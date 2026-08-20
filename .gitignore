@@ -4,3 +4,10 @@ out/
 .DS_Store
 *.log
 .env*
+.DS_Store
+.electron-cache/
+.npm-cache/
+.runtime/
+dist/
+node_modules/
+release/
