@@ -50,6 +50,29 @@ nahrávání schůzek pod kontrolou, s archivem pro celý tým.
 | C4 | **Tři nálezy v `ludone-app`** — deaktivace neodvolá klíče (`consents.ts:129` bez volajícího), prázdný výběr nástrojů vydá plný klíč (`mcp/actions.ts:90`), rozsah firmy má jedinou větev (`business-roles.ts:166-181`) | Zapsat do `DAN-TODO.md` jako samostatný úkol. **Platí na produkci dnes**, s tímhle projektem nesouvisí |
 | C5 | **Čtyři rozhodnutí z předchozího návrhu** — pilot, Anarlog Pro, práva vedoucího, denní soupis | Viz `2-navrh-luplaud.md` v Downloads |
 
+
+## D. Mandát pro práci bez Dana (20. 8. 2026, 22:40)
+
+Dan doslova: *„kdyžtak nějak volně pokračuj, mojí představu znáš. chci pak jen prostě schvalovat
+důležité věci, ale researchi a testování můžeš dělat a orchestrovat beze mě.“*
+
+**Smí se bez ptaní:** průzkum, měření, pokusy, mockupy, orchestrace Codexu, zápis nálezů, úklid
+po sobě, aktualizace tohoto souboru.
+
+**Musí se schválit:** cokoli, co stojí peníze (Apple Developer, placené služby), cokoli veřejného
+(založení repozitáře na GitHubu, sdílení odkazů ven), cokoli, co sahá na produkci `ludone-app`
+nebo na hub, a změna kteréhokoli rozhodnutí z tabulky A.
+
+**Každé rozhodnutí udělané bez Dana se zapíše sem** do tabulky níž — ne jen do zprávy v chatu,
+protože ta se ztratí.
+
+| Kdy | Rozhodnutí | Proč tak |
+|---|---|---|
+| 20. 8. | Repozitář zatím jen lokálně, bez GitHubu | Není co ukazovat, dokud pokus neproběhne (spadá pod „musí se schválit“, proto odloženo) |
+| 20. 8. | Dva oddělené pracovní stromy místo jednoho | Dva běhy v jednom stromu si přepisují soubory a výsledek pak vypadá jako důkaz, i když není |
+| 20. 8. | Codex běží se sandboxem **a** sítí | Bez sítě by nenainstaloval Electron; bez sandboxu by neměl žádnou zeď. Ověřeno, že jde obojí |
+| 20. 8. | Skill pro Electron se zatím nepíše | Až po pokusu, ať vzniká z doložených pastí, ne z domněnek |
+
 ---
 
 ## Kde co leží
