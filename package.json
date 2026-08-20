@@ -1,0 +1,13 @@
+{
+  "name": "ludone-zvuk-dukaz",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Jednorázový pokus se dvěma oddělenými zvukovými stopami v Electronu",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "43.4.1"
+  }
+}

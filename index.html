@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'">
+    <title>LuDone – důkaz zachycení zvuku</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #1f2a24;
+        background: #f5f2e9;
+      }
+
+      body {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 34px 28px;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font: 700 27px/1.2 system-ui, sans-serif;
+      }
+
+      p {
+        line-height: 1.5;
+      }
+
+      #meta {
+        padding: 12px 14px;
+        border: 1px solid #c9c1ae;
+        border-radius: 8px;
+        background: #fffdf7;
+      }
+
+      button {
+        margin: 18px 0;
+        padding: 13px 20px;
+        border: 0;
+        border-radius: 8px;
+        color: white;
+        background: #176b46;
+        font: 700 17px/1 system-ui, sans-serif;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.55;
+      }
+
+      #status {
+        min-height: 24px;
+        font: 700 16px/1.4 system-ui, sans-serif;
+      }
+
+      pre {
+        min-height: 250px;
+        max-height: 360px;
+        overflow: auto;
+        padding: 14px;
+        border: 1px solid #c9c1ae;
+        border-radius: 8px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: #e9f3ed;
+        background: #14241c;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Dvě oddělené zvukové stopy</h1>
+    <p id="meta">Načítám verze a zvolenou cestu…</p>
+    <button id="record" type="button">Nahrát 10 sekund</button>
+    <div id="status" role="status">Připraveno. Během pokusu zazní krátké testovací tóny.</div>
+    <pre id="log" aria-live="polite"></pre>
+    <script src="renderer.js"></script>
+  </body>
+</html>

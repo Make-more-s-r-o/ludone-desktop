@@ -4,3 +4,9 @@ out/
 .DS_Store
 *.log
 .env*
+.npm-cache/
+.electron-cache/
+.electron-user-data/
+.electron-session-data/
+.runtime-tmp/
+nahravky/*.webm
