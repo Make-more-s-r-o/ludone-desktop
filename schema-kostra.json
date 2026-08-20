@@ -1,0 +1,13 @@
+{"type":"object","additionalProperties":false,
+"required":["summary","spustilJsemToOpravdu","coJdeProkliknout","coJePredstirane","rozdeleniKodu","ocekavanePocty","navrhyNaZmenu","notes"],
+"properties":{
+"summary":{"type":"string"},
+"spustilJsemToOpravdu":{"type":"boolean"},
+"coJdeProkliknout":{"type":"array","items":{"type":"string"}},
+"coJePredstirane":{"type":"array","items":{"type":"string"}},
+"rozdeleniKodu":{"type":"string"},
+"navrhyNaZmenu":{"type":"array","items":{"type":"string"}},
+"notes":{"type":"array","items":{"type":"string"}},
+"ocekavanePocty":{"type":"object","additionalProperties":false,
+ "required":["vytvorenychSouboru","radkuKodu","poctCommitu","velikostNodeModulesMB","zmenenychSouboruMimoWorktree"],
+ "properties":{"vytvorenychSouboru":{"type":"integer"},"radkuKodu":{"type":"integer"},"poctCommitu":{"type":"integer"},"velikostNodeModulesMB":{"type":"integer"},"zmenenychSouboruMimoWorktree":{"type":"integer"}}}}}

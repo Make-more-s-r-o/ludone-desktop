@@ -1,0 +1,16 @@
+{"type":"object","additionalProperties":false,
+"required":["summary","systemovyZvukFunguje","kterouCestou","vyzadanaOpravneni","verzeElectron","verzeChromium","verzeMacOS","ocekavanePocty","spustilJsemToOpravdu","prekvapeni","notes"],
+"properties":{
+"summary":{"type":"string"},
+"systemovyZvukFunguje":{"type":"boolean"},
+"kterouCestou":{"type":"string"},
+"vyzadanaOpravneni":{"type":"array","items":{"type":"string"}},
+"verzeElectron":{"type":"string"},
+"verzeChromium":{"type":"string"},
+"verzeMacOS":{"type":"string"},
+"spustilJsemToOpravdu":{"type":"boolean"},
+"prekvapeni":{"type":"array","items":{"type":"string"}},
+"notes":{"type":"array","items":{"type":"string"}},
+"ocekavanePocty":{"type":"object","additionalProperties":false,
+ "required":["vytvorenychSouboru","velikostMikrofonBajtu","velikostSystemBajtu","poctCommitu","zmenenychSouboruMimoWorktree"],
+ "properties":{"vytvorenychSouboru":{"type":"integer"},"velikostMikrofonBajtu":{"type":"integer"},"velikostSystemBajtu":{"type":"integer"},"poctCommitu":{"type":"integer"},"zmenenychSouboruMimoWorktree":{"type":"integer"}}}}}
