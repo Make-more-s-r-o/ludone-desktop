@@ -37,6 +37,8 @@ nahrávání schůzek pod kontrolou, s archivem pro celý tým.
 |---|---|---|---|
 | B1 | ✅ **POTVRZENO 21. 8. měřením — Electron platí** | Systémový zvuk naměřen naostro: stopa `System audio`, ticho 996 B × se zvukem 43 339 B za 5 s. Bez jediného nového dialogu | Nic. Otázka je uzavřená |
 | B1-puvodni | ~~Electron (podmíněně)~~ | Chromium má od verze 141 zachycení systémového zvuku i potlačení ozvěny vestavěné, přes týž Core Audio tap jako Anarlog | Když noční pokus ukáže, že to v Electronu nejde, nebo si to řekne o oprávnění „Záznam obrazovky“ místo „Systémový zvuk“ → **Tauri s převzatým jádrem z Anarlogu** |
+| B5 | ✅ **Aplikace opravdu nahrává** (21. 8., commit `2bb09ce`) | Dvě oddělené stopy, měření ticho × zvuk: systém 1 351 B → 27 993 B (20,7×), potvrzeno i FFmpegem (−91 dB → −20 dB) | Nic |
+| B6 | ⚠️ **WebM z nahrávání má vadnou hlavičku Opus a chybí celková délka** | Zjistil Codex při ověřování FFmpegem | Vyřešit před zpracováním na serveru — teď nevadí, u přepisu může |
 | B2 | **Z Anarlogu převzít jediný modul** (ořezané rozpoznání schůzky) | Zbytek Chromium nahradí | Padá s B1 — při Tauri jich je potřeba deset |
 | B3 | **Klíč k přepisu nikdy v aplikaci**, jde přes prostředníka na serveru | Desktopová aplikace běží na cizím stroji; klíč z ní jde vytáhnout | Nic. Tohle je bezpečnostní, ne technická volba |
 | B4 | Odhad **5–8 dnů na první etapu**, 18–30 na plnou | Platí pro appku se seznamem a detailem | Po A11 (spouštěč) mají být **nižší** — přepočítává se |
@@ -102,6 +104,7 @@ protože ta se ztratí.
 | 21. 8. | Pokus se zvukem zopakován v Danově relaci, ne v sandboxu | Noční běh neměl audio zařízení vůbec; opakování to potvrdilo a rovnou zodpovědělo hlavní otázku |
 | 21. 8. | Dočasná klíčenka pro test podpisu vytvořena a smazána | Zásah do seznamu klíčenek vrácen zpět a ověřen |
 | 21. 8. | Doporučení u C1 otočeno na „začít bez placení“ | Měření ukázalo, že oprávnění drží i s vlastním certifikátem; placený program řeší jen Gatekeeper, což je jednorázová obtíž |
+| 21. 8. | Zákaz zvyšování práv doplněn do všech zadání | Danovi vyskočil dialog na heslo správce; Codex ho neprokazatelně nezpůsobil, ale pravidlo chybělo |
 | 21. 8. | Spuštěn třetí Codex běh: zapojit skutečné nahrávání do kostry | Zvuk je ověřený, kostra existuje — spojení je logický další krok |
 
 ---
