@@ -1,0 +1,15 @@
+{"type":"object","additionalProperties":false,
+"required":["summary","spustilJsemToOpravdu","nahravaniFunguje","mereni","kontrolaPredNahravanim","ocekavanePocty","coZustavaPredstirane","notes"],
+"properties":{
+"summary":{"type":"string"},
+"spustilJsemToOpravdu":{"type":"boolean"},
+"nahravaniFunguje":{"type":"boolean"},
+"kontrolaPredNahravanim":{"type":"string"},
+"coZustavaPredstirane":{"type":"array","items":{"type":"string"}},
+"notes":{"type":"array","items":{"type":"string"}},
+"mereni":{"type":"object","additionalProperties":false,
+ "required":["tichoMikrofonBajtu","tichoSystemBajtu","seZvukemMikrofonBajtu","seZvukemSystemBajtu"],
+ "properties":{"tichoMikrofonBajtu":{"type":"integer"},"tichoSystemBajtu":{"type":"integer"},"seZvukemMikrofonBajtu":{"type":"integer"},"seZvukemSystemBajtu":{"type":"integer"}}},
+"ocekavanePocty":{"type":"object","additionalProperties":false,
+ "required":["zmenenychSouboru","novychRadku","poctCommitu","zmenenychSouboruMimoWorktree"],
+ "properties":{"zmenenychSouboru":{"type":"integer"},"novychRadku":{"type":"integer"},"poctCommitu":{"type":"integer"},"zmenenychSouboruMimoWorktree":{"type":"integer"}}}}}

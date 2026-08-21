@@ -45,12 +45,38 @@ nahrávání schůzek pod kontrolou, s archivem pro celý tým.
 
 | # | Otázka | Doporučení |
 |---|---|---|
-| C1 | **Apple Developer Program, 99 $/rok** — jediná opakovaná platba v celém návrhu | Vzít. Bez stabilního podpisu se oprávnění resetují při každé aktualizaci a tým se s tím bude prát |
+| C1 | **Apple Developer Program, 99 $/rok** ⚠️ **doporučení se 21. 8. ZMĚNILO — viz níž** | **Začít bez placení.** Měřením se ukázalo, že jde o dvě nezávislé věci, ne o jednu |
 | C2 | **GitHub** — repo je zatím jen lokální | Založit, až bude co ukazovat |
 | C3 | **Jedna aplikace, nebo dvě** (nahrávání × čas) | Codex to řeší; předběžně jedna |
 | C4 | **Tři nálezy v `ludone-app`** — deaktivace neodvolá klíče (`consents.ts:129` bez volajícího), prázdný výběr nástrojů vydá plný klíč (`mcp/actions.ts:90`), rozsah firmy má jedinou větev (`business-roles.ts:166-181`) | Zapsat do `DAN-TODO.md` jako samostatný úkol. **Platí na produkci dnes**, s tímhle projektem nesouvisí |
 | C5 | **Čtyři rozhodnutí z předchozího návrhu** — pilot, Anarlog Pro, práva vedoucího, denní soupis | Viz `2-navrh-luplaud.md` v Downloads |
 
+
+### C1 podrobně — proč se doporučení změnilo (21. 8. 2026)
+
+Původně jsem psal, že bez placeného programu se oprávnění resetují při každé aktualizaci a je to
+tedy nutnost. **Dvě nezávislá měření na tomto Macu to vyvrátila** — problém se rozpadá na dvě věci,
+které se řeší každá jinak:
+
+| | Čeho se týká | Jak často bolí | Vyřeší vlastní certifikát zdarma? |
+|---|---|---|---|
+| **Gatekeeper** | první spuštění stažené aplikace | jednou na osobu | **NE** — chce notarizaci, ta je jen v placeném programu |
+| **TCC (mikrofon, systémový zvuk)** | po každé aktualizaci aplikace | pořád | **ANO** |
+
+**Naměřeno:** u vlastního certifikátu zůstal „designated requirement“ mezi dvěma sestaveními
+s odlišným kódem **totožný** (`identifier … and certificate root = H"…"`); u ad-hoc podpisu byl
+pokaždé jiný (`cdhash H"…"`). Ověřeno dvakrát nezávisle.
+
+**Zavřené cestičky:** `spctl --add` na macOS 26 už neexistuje · globální vypnutí Gatekeeperu systém
+nedovolí · ad-hoc podpis nejde ustálit ani přes `codesign -i` · certifikát se kolegům rozvážet
+nemusí (je v podpisu) a **nemá** (firemní důvěryhodný kořen je klíč od všeho a nic tím nezískáš).
+
+**Doporučení:** začít bez placení. Cena je čtyřkrokový dialog v Nastavení při **první** instalaci
+na osobu. Zaplatit až ve chvíli, kdy se aplikace bude rozdávat mimo firmu, nebo kdy to začne stát
+víc vysvětlování než dva tisíce ročně.
+
+⚠️ **Zbývá ověřit:** celý průběh od konce do konce (udělit oprávnění → změnit kód → znovu podepsat
+→ spustit → nehlásí se znovu). Měřil se mechanismus, ne celý řetěz. Je to test na deset minut.
 
 ## D. Mandát pro práci bez Dana (20. 8. 2026, 22:40)
 
@@ -75,6 +101,8 @@ protože ta se ztratí.
 | 20. 8. | Skill pro Electron se zatím nepíše | Až po pokusu, ať vzniká z doložených pastí, ne z domněnek |
 | 21. 8. | Pokus se zvukem zopakován v Danově relaci, ne v sandboxu | Noční běh neměl audio zařízení vůbec; opakování to potvrdilo a rovnou zodpovědělo hlavní otázku |
 | 21. 8. | Dočasná klíčenka pro test podpisu vytvořena a smazána | Zásah do seznamu klíčenek vrácen zpět a ověřen |
+| 21. 8. | Doporučení u C1 otočeno na „začít bez placení“ | Měření ukázalo, že oprávnění drží i s vlastním certifikátem; placený program řeší jen Gatekeeper, což je jednorázová obtíž |
+| 21. 8. | Spuštěn třetí Codex běh: zapojit skutečné nahrávání do kostry | Zvuk je ověřený, kostra existuje — spojení je logický další krok |
 
 ---
 
