@@ -526,6 +526,25 @@ svg {
   background: currentColor;
 }
 
+.recording-progress {
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.recording-progress p {
+  margin-bottom: 3px;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.recording-progress small {
+  color: var(--muted-foreground);
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+
 .recording-live {
   display: grid;
   grid-template-columns: 1fr auto;

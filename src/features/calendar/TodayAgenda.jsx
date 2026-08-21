@@ -6,7 +6,13 @@ const EVENTS = [
   { id: "client", time: "14:30", title: "Konzultace · Studio North" },
 ];
 
-export function TodayAgenda({ empty = false, recordingActive, recordingContext, onRecord }) {
+export function TodayAgenda({
+  empty = false,
+  recordingActive,
+  recordingBusy,
+  recordingContext,
+  onRecord,
+}) {
   return (
     <section className="agenda" aria-labelledby="agenda-title">
       <div className="section-heading">
@@ -34,7 +40,7 @@ export function TodayAgenda({ empty = false, recordingActive, recordingContext, 
                 <button
                   type="button"
                   className="button button--small"
-                  disabled={recordingActive}
+                  disabled={recordingBusy}
                   onClick={() => onRecord(event)}
                   aria-label={`Nahrát schůzku ${event.title}`}
                 >

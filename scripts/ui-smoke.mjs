@@ -267,7 +267,10 @@ let settings;
 
 try {
   panel = await connectTarget(
-    (target) => target.type === "page" && target.url === "ludone://app/index.html",
+    (target) => target.type === "page"
+      && target.url.startsWith("file://")
+      && target.url.includes("/dist/index.html")
+      && !target.url.endsWith("#settings"),
     "hlavní panel",
   );
 
@@ -311,7 +314,7 @@ try {
 
   await clickFirstMeeting(panel);
   await delay(1150);
-  await assertText(panel, "Mikrofon + systémový zvuk");
+  await assertText(panel, "Obě stopy ověřeny");
   await assertText(panel, "00:00:01");
   await assertTray(panel, "recording");
   await screenshot(panel, "04-meeting-recording");
@@ -352,7 +355,9 @@ try {
 
   await clickByAria(panel, "Otevřít nastavení");
   settings = await connectTarget(
-    (target) => target.type === "page" && target.url === "ludone://app/index.html#settings",
+    (target) => target.type === "page"
+      && target.url.startsWith("file://")
+      && target.url.includes("/dist/index.html#settings"),
     "nastavení",
   );
   await assertText(settings, "Kdy nahrávat");
@@ -360,7 +365,9 @@ try {
   await screenshot(settings, "08-settings-changed");
   await clickByText(settings, "Hotovo");
   await waitFor(
-    async () => !(await targets()).some((target) => target.url === "ludone://app/index.html#settings"),
+    async () => !(await targets()).some((target) => (
+      target.url.startsWith("file://") && target.url.includes("/dist/index.html#settings")
+    )),
     "zavření nastavení",
   );
 

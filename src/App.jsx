@@ -13,7 +13,7 @@ export function App() {
   const initiallyComplete = !runtime.resetOnboarding && window.localStorage.getItem(ONBOARDING_KEY) === "true";
   const [onboardingComplete, setOnboardingComplete] = useState(initiallyComplete);
   const [user, setUser] = useState(initiallyComplete ? DEFAULT_USER : null);
-  const [recording, setRecording] = useState({ active: false, context: null });
+  const [recording, setRecording] = useState({ active: false, busy: false, context: null });
   const [tracking, setTracking] = useState({ active: false });
   const [recordingRequest, setRecordingRequest] = useState(null);
 
@@ -78,6 +78,7 @@ export function App() {
         <TodayAgenda
           empty={runtime.emptyCalendar}
           recordingActive={recording.active}
+          recordingBusy={recording.busy}
           recordingContext={recording.context}
           onRecord={requestMeetingRecording}
         />

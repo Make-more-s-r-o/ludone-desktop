@@ -56,5 +56,13 @@ execFileSync("/usr/bin/plutil", [
   "cz.ludone.desktop.prototype",
   infoPlist,
 ]);
+execFileSync("/usr/bin/plutil", [
+  "-replace",
+  "NSMicrophoneUsageDescription",
+  "-string",
+  "LuDone potřebuje mikrofon pro oddělenou nahrávku vašeho hlasu.",
+  infoPlist,
+]);
 execFileSync("/usr/bin/plutil", ["-replace", "LSUIElement", "-bool", "YES", infoPlist]);
-console.log(`${outputApp} (lokální nepodepsaný prototyp)`);
+execFileSync("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", outputApp]);
+console.log(`${outputApp} (lokální ad-hoc podepsaný prototyp)`);

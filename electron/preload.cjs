@@ -8,8 +8,13 @@ contextBridge.exposeInMainWorld("ludone", {
   beginAuth: () => ipcRenderer.invoke("auth:begin"),
   requestPermission: (permission) =>
     ipcRenderer.invoke("permission:request", permission),
+  beginRecording: () => ipcRenderer.invoke("recording:begin"),
+  appendRecordingChunk: (sessionId, source, sequence, arrayBuffer) =>
+    ipcRenderer.invoke("recording:append", sessionId, source, sequence, arrayBuffer),
+  finishRecording: (sessionId) => ipcRenderer.invoke("recording:finish", sessionId),
   getTrayState: () => ipcRenderer.invoke("tray:get-state"),
   testClickTray: () => ipcRenderer.invoke("test:click-tray"),
+  testQuit: () => ipcRenderer.invoke("test:quit"),
   setTrayState: (state) => ipcRenderer.send("tray:set-state", state),
   hidePanel: () => ipcRenderer.send("panel:hide"),
   openSettings: () => ipcRenderer.send("settings:open"),

@@ -1,23 +1,34 @@
 const {
   app,
   BrowserWindow,
+  desktopCapturer,
   Tray,
   ipcMain,
   nativeImage,
   net,
   protocol,
   screen,
+  session,
   shell,
 } = require("electron");
+const { randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { pathToFileURL } = require("node:url");
+const { fileURLToPath, pathToFileURL } = require("node:url");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
+const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
 const PANEL_HEIGHT = 792;
+const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
+const RECORDING_TRACKS = new Map([
+  ["microphone", "mikrofon"],
+  ["system", "system"],
+]);
 const VALID_TRAY_STATES = new Set(["signed-out", "idle", "recording", "tracking"]);
+const recordingSessions = new Map();
+const recordingOwnersPreparing = new Map();
 
 let tray;
 let panelWindow;
@@ -39,15 +50,40 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 function registerAppProtocol() {
-  const distRoot = path.join(PROJECT_ROOT, "dist");
   protocol.handle("ludone", (request) => {
     const requestedPath = decodeURIComponent(new URL(request.url).pathname)
       .replace(/^\/+/, "") || "index.html";
-    const targetPath = path.resolve(distRoot, requestedPath);
-    const isInsideDist = targetPath === distRoot || targetPath.startsWith(`${distRoot}${path.sep}`);
+    const targetPath = path.resolve(DIST_ROOT, requestedPath);
+    const isInsideDist = targetPath === DIST_ROOT || targetPath.startsWith(`${DIST_ROOT}${path.sep}`);
     if (!isInsideDist) return new Response("Zakázaná cesta", { status: 403 });
     return net.fetch(pathToFileURL(targetPath).toString());
   });
+}
+
+function isTrustedAppUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol === "ludone:" && url.hostname === "app") return true;
+    if (url.protocol !== "file:") return false;
+    return path.resolve(fileURLToPath(url)) === path.join(DIST_ROOT, "index.html");
+  } catch {
+    return false;
+  }
+}
+
+function isTrustedWebContents(webContents) {
+  return Boolean(webContents && !webContents.isDestroyed() && isTrustedAppUrl(webContents.getURL()));
+}
+
+function requireTrustedRecordingSender(event) {
+  if (
+    !isTrustedWebContents(event.sender)
+    || !panelWindow
+    || event.sender !== panelWindow.webContents
+    || (event.senderFrame && event.senderFrame !== event.sender.mainFrame)
+  ) {
+    throw new Error("Nahrávací IPC odmítnuto: nedůvěryhodný odesílatel");
+  }
 }
 
 function configureWritablePaths() {
@@ -60,6 +96,7 @@ function configureWritablePaths() {
     sessionData: path.join(dataRoot, "session-data"),
     cache: path.join(dataRoot, "cache"),
     crashDumps: path.join(dataRoot, "crash-dumps"),
+    temp: path.join(dataRoot, "temp"),
   };
 
   fs.mkdirSync(dataRoot, { recursive: true });
@@ -161,7 +198,20 @@ function createPanelWindow() {
     },
   });
 
-  panelWindow.loadURL("ludone://app/index.html");
+  const panelContents = panelWindow.webContents;
+  panelWindow.loadFile(path.join(DIST_ROOT, "index.html"));
+  panelContents.on("render-process-gone", (_event, details) => {
+    console.error(`[recording] Renderer skončil: ${JSON.stringify(details)}`);
+    finalizeRecordingSessionsForOwner(panelContents.id, "pád rendereru");
+  });
+  panelContents.once("destroyed", () => {
+    finalizeRecordingSessionsForOwner(panelContents.id, "zničení okna");
+  });
+  panelContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
+    if (isMainFrame) {
+      finalizeRecordingSessionsForOwner(panelContents.id, "navigace nebo reload");
+    }
+  });
   panelWindow.once("ready-to-show", () => {
     positionPanel();
     panelWindow.show();
@@ -210,7 +260,7 @@ function createSettingsWindow() {
     },
   });
 
-  settingsWindow.loadURL("ludone://app/index.html#settings");
+  settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), { hash: "settings" });
   settingsWindow.once("ready-to-show", () => settingsWindow.show());
   settingsWindow.on("closed", () => {
     settingsWindow = undefined;
@@ -228,6 +278,208 @@ function togglePanel() {
   }
 }
 
+function installMediaHandlers() {
+  const defaultSession = session.defaultSession;
+  const allowedPermissions = new Set(["media", "display-capture"]);
+
+  defaultSession.setPermissionCheckHandler((webContents, permission) => (
+    allowedPermissions.has(permission) && isTrustedWebContents(webContents)
+  ));
+  defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(allowedPermissions.has(permission) && isTrustedWebContents(webContents));
+  });
+  defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+    if (!request.frame || !isTrustedAppUrl(request.frame.url)) {
+      callback({});
+      return;
+    }
+
+    try {
+      const sources = await desktopCapturer.getSources({ types: ["screen"] });
+      if (sources.length === 0) throw new Error("Nebyla nalezena žádná obrazovka");
+      console.log(`[recording] Systémový zvuk povolen přes obrazovku ${JSON.stringify(sources[0].name)}.`);
+      callback({ video: sources[0], audio: "loopback" });
+    } catch (error) {
+      console.error(`[recording] Získání systémového zvuku selhalo: ${error.stack || error.message}`);
+      try {
+        callback({});
+      } catch (callbackError) {
+        console.error(`[recording] Odmítnutí display capture selhalo: ${callbackError.message}`);
+      }
+    }
+  }, { useSystemPicker: false });
+}
+
+async function openRecordingTrack(recordingsDirectory, prefix, source) {
+  const suffix = RECORDING_TRACKS.get(source);
+  const filePath = path.join(recordingsDirectory, `${prefix}-${suffix}.webm`);
+  const handle = await fs.promises.open(filePath, "wx", 0o600);
+  return {
+    source,
+    filePath,
+    handle,
+    nextSequence: 0,
+    queue: Promise.resolve(),
+    writeError: null,
+  };
+}
+
+async function createRecordingSession(event) {
+  requireTrustedRecordingSender(event);
+  const ownerId = event.sender.id;
+  if (recordingOwnersPreparing.has(ownerId) || [...recordingSessions.values()].some((activeSession) => (
+    activeSession.ownerId === ownerId
+  ))) {
+    throw new Error("V tomto okně už jedna nahrávací session běží");
+  }
+  const preparation = { cancelled: false };
+  recordingOwnersPreparing.set(ownerId, preparation);
+  const tracks = new Map();
+  try {
+    const startedAt = new Date();
+    const timestamp = startedAt.toISOString().replace(/[:.]/g, "-");
+    const prefix = `${timestamp}-${randomUUID().slice(0, 8)}`;
+    const recordingsDirectory = path.join(app.getPath("userData"), "nahravky");
+    await fs.promises.mkdir(recordingsDirectory, { recursive: true, mode: 0o700 });
+
+    for (const source of RECORDING_TRACKS.keys()) {
+      tracks.set(source, await openRecordingTrack(recordingsDirectory, prefix, source));
+    }
+    if (preparation.cancelled || event.sender.isDestroyed()) {
+      throw new Error("Příprava nahrávání byla zrušena při navigaci nebo pádu rendereru");
+    }
+
+    const sessionId = randomUUID();
+    const recordingSession = {
+      sessionId,
+      ownerId,
+      owner: event.sender,
+      startedAt: startedAt.toISOString(),
+      tracks,
+      finalizePromise: null,
+      destroyedListener: null,
+    };
+    recordingSession.destroyedListener = () => {
+      void finalizeRecordingSession(sessionId).catch((error) => {
+        console.error(`[recording] Finalizace po pádu rendereru selhala: ${error.stack || error.message}`);
+      });
+    };
+    event.sender.once("destroyed", recordingSession.destroyedListener);
+    recordingSessions.set(sessionId, recordingSession);
+    console.log(`[recording] Připraveny oddělené soubory s prefixem ${prefix}.`);
+    return { sessionId, startedAt: recordingSession.startedAt };
+  } catch (error) {
+    await Promise.allSettled([...tracks.values()].map(async (track) => {
+      await track.handle.close();
+      await fs.promises.unlink(track.filePath).catch(() => {});
+    }));
+    throw error;
+  } finally {
+    if (recordingOwnersPreparing.get(ownerId) === preparation) {
+      recordingOwnersPreparing.delete(ownerId);
+    }
+  }
+}
+
+function ownedRecordingSession(event, sessionId) {
+  requireTrustedRecordingSender(event);
+  const recordingSession = recordingSessions.get(sessionId);
+  if (!recordingSession || recordingSession.ownerId !== event.sender.id) {
+    throw new Error("Neznámá nebo cizí nahrávací session");
+  }
+  if (recordingSession.finalizePromise) throw new Error("Nahrávací session se už uzavírá");
+  return recordingSession;
+}
+
+async function appendRecordingChunk(event, sessionId, source, sequence, arrayBuffer) {
+  const recordingSession = ownedRecordingSession(event, sessionId);
+  const track = recordingSession.tracks.get(source);
+  if (!track) throw new Error("Neplatný zdroj nahrávacího chunku");
+  if (!Number.isSafeInteger(sequence) || sequence < 0) {
+    throw new Error("Neplatné pořadí nahrávacího chunku");
+  }
+  if (!(arrayBuffer instanceof ArrayBuffer)) throw new Error("Nahrávací chunk není ArrayBuffer");
+  const bytes = Buffer.from(arrayBuffer);
+  if (bytes.length === 0 || bytes.length > MAX_RECORDING_CHUNK_BYTES) {
+    throw new Error(`Neplatná velikost nahrávacího chunku: ${bytes.length} B`);
+  }
+
+  const operation = track.queue.then(async () => {
+    if (track.writeError) throw track.writeError;
+    if (sequence !== track.nextSequence) {
+      throw new Error(`Chybné pořadí chunku ${source}: čekám ${track.nextSequence}, přišlo ${sequence}`);
+    }
+    let offset = 0;
+    while (offset < bytes.length) {
+      const { bytesWritten } = await track.handle.write(bytes, offset, bytes.length - offset, null);
+      if (bytesWritten === 0) throw new Error(`Zápis chunku ${source} se zastavil`);
+      offset += bytesWritten;
+    }
+    await track.handle.sync();
+    track.nextSequence += 1;
+    return { sequence, bytes: bytes.length };
+  });
+  track.queue = operation.catch((error) => {
+    track.writeError = error;
+  });
+  return operation;
+}
+
+async function finalizeRecordingSession(sessionId) {
+  const recordingSession = recordingSessions.get(sessionId);
+  if (!recordingSession) throw new Error("Neznámá nahrávací session");
+  if (recordingSession.finalizePromise) return recordingSession.finalizePromise;
+
+  recordingSession.finalizePromise = (async () => {
+    const files = {};
+    let firstError = null;
+    for (const [source, track] of recordingSession.tracks) {
+      try {
+        await track.queue;
+        if (track.writeError) throw track.writeError;
+        await track.handle.sync();
+      } catch (error) {
+        firstError ??= error;
+      } finally {
+        try {
+          await track.handle.close();
+        } catch (error) {
+          firstError ??= error;
+        }
+      }
+
+      try {
+        const stats = await fs.promises.stat(track.filePath);
+        files[source] = { name: path.basename(track.filePath), size: stats.size };
+      } catch (error) {
+        firstError ??= error;
+      }
+    }
+
+    recordingSessions.delete(sessionId);
+    if (!recordingSession.owner.isDestroyed()) {
+      recordingSession.owner.removeListener("destroyed", recordingSession.destroyedListener);
+    }
+    if (firstError) throw firstError;
+    console.log(`[recording] Uloženo: mikrofon ${files.microphone.size} B, systém ${files.system.size} B.`);
+    return { startedAt: recordingSession.startedAt, files };
+  })();
+  return recordingSession.finalizePromise;
+}
+
+function finalizeRecordingSessionsForOwner(ownerId, reason) {
+  const preparation = recordingOwnersPreparing.get(ownerId);
+  if (preparation) preparation.cancelled = true;
+  for (const recordingSession of recordingSessions.values()) {
+    if (recordingSession.ownerId !== ownerId) continue;
+    void finalizeRecordingSession(recordingSession.sessionId).then((result) => {
+      console.warn(`[recording] Session uzavřena po události „${reason}“: mikrofon ${result.files.microphone.size} B, systém ${result.files.system.size} B.`);
+    }).catch((error) => {
+      console.error(`[recording] Uzavření po události „${reason}“ selhalo: ${error.stack || error.message}`);
+    });
+  }
+}
+
 ipcMain.on("tray:set-state", (_event, state) => updateTray(state));
 ipcMain.handle("tray:get-state", () => trayState);
 ipcMain.handle("test:click-tray", () => {
@@ -238,6 +490,14 @@ ipcMain.handle("test:click-tray", () => {
 ipcMain.on("panel:hide", () => panelWindow?.hide());
 ipcMain.on("settings:open", () => createSettingsWindow());
 ipcMain.on("settings:close", () => settingsWindow?.close());
+ipcMain.handle("recording:begin", (event) => createRecordingSession(event));
+ipcMain.handle("recording:append", (event, sessionId, source, sequence, arrayBuffer) => (
+  appendRecordingChunk(event, sessionId, source, sequence, arrayBuffer)
+));
+ipcMain.handle("recording:finish", (event, sessionId) => {
+  ownedRecordingSession(event, sessionId);
+  return finalizeRecordingSession(sessionId);
+});
 
 ipcMain.handle("auth:begin", async () => {
   if (process.env.LUDONE_OPEN_AUTH_BROWSER === "1") {
@@ -259,6 +519,13 @@ ipcMain.handle("permission:request", async (_event, permission) => {
   return { granted: true, permission };
 });
 
+ipcMain.handle("test:quit", (event) => {
+  requireTrustedRecordingSender(event);
+  if (!IS_TEST_RUN) return { allowed: false };
+  setImmediate(() => app.quit());
+  return { allowed: true };
+});
+
 app.on("second-instance", () => {
   if (panelWindow) {
     positionPanel();
@@ -269,12 +536,20 @@ app.on("second-instance", () => {
 
 app.whenReady().then(() => {
   registerAppProtocol();
+  installMediaHandlers();
   if (process.platform === "darwin") app.dock.hide();
   tray = new Tray(trayImage(trayState));
   tray.setTitle("");
   tray.on("click", togglePanel);
   updateTray(trayState);
   createPanelWindow();
+  const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);
+  if (IS_TEST_RUN && Number.isFinite(hardStop) && hardStop > 0) {
+    setTimeout(() => {
+      console.error(`[test] Bezpečnostní ukončení po ${hardStop} ms.`);
+      app.quit();
+    }, hardStop);
+  }
 });
 
 app.on("activate", () => {
