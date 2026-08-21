@@ -35,7 +35,8 @@ nahrávání schůzek pod kontrolou, s archivem pro celý tým.
 
 | # | Rozhodnutí | Na čem stojí | Co ho otočí |
 |---|---|---|---|
-| B1 | **Electron** (React + TypeScript) | Chromium má od verze 141 zachycení systémového zvuku i potlačení ozvěny vestavěné, přes týž Core Audio tap jako Anarlog | Když noční pokus ukáže, že to v Electronu nejde, nebo si to řekne o oprávnění „Záznam obrazovky“ místo „Systémový zvuk“ → **Tauri s převzatým jádrem z Anarlogu** |
+| B1 | ✅ **POTVRZENO 21. 8. měřením — Electron platí** | Systémový zvuk naměřen naostro: stopa `System audio`, ticho 996 B × se zvukem 43 339 B za 5 s. Bez jediného nového dialogu | Nic. Otázka je uzavřená |
+| B1-puvodni | ~~Electron (podmíněně)~~ | Chromium má od verze 141 zachycení systémového zvuku i potlačení ozvěny vestavěné, přes týž Core Audio tap jako Anarlog | Když noční pokus ukáže, že to v Electronu nejde, nebo si to řekne o oprávnění „Záznam obrazovky“ místo „Systémový zvuk“ → **Tauri s převzatým jádrem z Anarlogu** |
 | B2 | **Z Anarlogu převzít jediný modul** (ořezané rozpoznání schůzky) | Zbytek Chromium nahradí | Padá s B1 — při Tauri jich je potřeba deset |
 | B3 | **Klíč k přepisu nikdy v aplikaci**, jde přes prostředníka na serveru | Desktopová aplikace běží na cizím stroji; klíč z ní jde vytáhnout | Nic. Tohle je bezpečnostní, ne technická volba |
 | B4 | Odhad **5–8 dnů na první etapu**, 18–30 na plnou | Platí pro appku se seznamem a detailem | Po A11 (spouštěč) mají být **nižší** — přepočítává se |
@@ -72,6 +73,8 @@ protože ta se ztratí.
 | 20. 8. | Dva oddělené pracovní stromy místo jednoho | Dva běhy v jednom stromu si přepisují soubory a výsledek pak vypadá jako důkaz, i když není |
 | 20. 8. | Codex běží se sandboxem **a** sítí | Bez sítě by nenainstaloval Electron; bez sandboxu by neměl žádnou zeď. Ověřeno, že jde obojí |
 | 20. 8. | Skill pro Electron se zatím nepíše | Až po pokusu, ať vzniká z doložených pastí, ne z domněnek |
+| 21. 8. | Pokus se zvukem zopakován v Danově relaci, ne v sandboxu | Noční běh neměl audio zařízení vůbec; opakování to potvrdilo a rovnou zodpovědělo hlavní otázku |
+| 21. 8. | Dočasná klíčenka pro test podpisu vytvořena a smazána | Zásah do seznamu klíčenek vrácen zpět a ověřen |
 
 ---
 
