@@ -80,6 +80,42 @@ víc vysvětlování než dva tisíce ročně.
 ⚠️ **Zbývá ověřit:** celý průběh od konce do konce (udělit oprávnění → změnit kód → znovu podepsat
 → spustit → nehlásí se znovu). Měřil se mechanismus, ne celý řetěz. Je to test na deset minut.
 
+## C2. Platformy — odpověď z 21. 8. 2026
+
+Dan se ptal na iPhone se stejnými funkcemi jako Mac, na Windows a na Android.
+
+| Funkce | macOS (hotové) | Windows | iPhone | Android |
+|---|---|---|---|---|
+| Mikrofon | ano | ano | ano | ano |
+| **Druhá strana hovoru / zvuk z jiných aplikací** | **ano, změřeno** | **ano** | **ne** | prakticky ne |
+| Spustit nahrávání samo podle kalendáře | ano | ano | ne | ne, výslovně zakázáno |
+| Časovač, dnešní schůzky, odeslání | ano | ano | ano | ano |
+
+🔴 **iPhone se stejnými funkcemi nejde a nepůjde.** Není to volbou nástroje — neumí to ani Otter,
+Fireflies, Granola ani Krisp, přestože na to mají stovky milionů dolarů. Na telefonu vznikne
+diktafon s časovačem, což je jiný produkt, ne menší verze téhož.
+
+⚠️ **Android má zákeřnou past:** při příchozím hovoru se **nahrává ticho** a na obrazovce to
+vypadá, že nahrávání běží.
+
+🔴 **Windows obrací intuici a je nejlevnější rozšíření.** Dokumentace Electronu popisuje zachycení
+systémového zvuku jako funkci podporovanou **pouze na Windows** — na Macu tedy funguje navzdory
+dokumentaci, na Windows by šlo po oficiální cestě. A **nevyžaduje tam žádné oprávnění ani dialog**.
+Odhad 10–18 člověkodnů, z toho většina není zvuk, ale balení, podpis a testování.
+
+**Windows je zároveň záchranná cesta:** kdyby aktualizace Chromia jednou zachycení na Macu utnula,
+je to jediné místo, kde je ta funkce garantovaná.
+
+**Přestavba na jeden kód pro všechno se nedoporučuje** — 10 až 32 člověkodnů a u části nástrojů
+ztráta systémového zvuku na Macu, tedy přesně té funkce, která projekt odlišuje.
+
+**Doporučení:** teď neudělat ani Windows, ani mobil. Tři přípravné kroky za jednotky dnů, které
+Windows později zlevní zhruba o polovinu; u telefonu nejdřív vyzkoušet Zkratku (3–4 ČD) místo
+aplikace (23–28 ČD). Detail: `luplaud-vyzkum/vystup/06-PLATFORMY.md`.
+
+⚠️ **Nejlevnější otevřená otázka:** půl dne změřit prototyp na skutečném stroji s Windows, stejnou
+metodou jako 21. 8. na Macu. Je to jediné, co může tohle doporučení otočit.
+
 ## D. Mandát pro práci bez Dana (20. 8. 2026, 22:40)
 
 Dan doslova: *„kdyžtak nějak volně pokračuj, mojí představu znáš. chci pak jen prostě schvalovat
@@ -105,6 +141,7 @@ protože ta se ztratí.
 | 21. 8. | Dočasná klíčenka pro test podpisu vytvořena a smazána | Zásah do seznamu klíčenek vrácen zpět a ověřen |
 | 21. 8. | Doporučení u C1 otočeno na „začít bez placení“ | Měření ukázalo, že oprávnění drží i s vlastním certifikátem; placený program řeší jen Gatekeeper, což je jednorázová obtíž |
 | 21. 8. | Zákaz zvyšování práv doplněn do všech zadání | Danovi vyskočil dialog na heslo správce; Codex ho neprokazatelně nezpůsobil, ale pravidlo chybělo |
+| 21. 8. | Repozitář založen na GitHubu (privátní, org Make more) a napojen do Orcy | Dan to zadal; obsah prověřen na tajemství před nahráním |
 | 21. 8. | Spuštěn třetí Codex běh: zapojit skutečné nahrávání do kostry | Zvuk je ověřený, kostra existuje — spojení je logický další krok |
 
 ---
