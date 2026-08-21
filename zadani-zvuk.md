@@ -16,6 +16,18 @@ jako dvě oddělené stopy?**
 
 **JSON je hlášení o práci, která už na disku je.** Když jsi nespustil nahrávání, nejsi hotový.
 
+## 🔴 ZÁKAZ ZVYŠOVÁNÍ PRÁV
+
+Nic v tomhle projektu nepotřebuje heslo správce ani `sudo`. Když na to narazíš:
+
+- **NEPOKOUŠEJ SE o to.** Žádné `sudo`, žádné `osascript ... with administrator privileges`,
+  žádná instalace systémových komponent, žádná změna systémového nastavení.
+- **Zapiš do `notes`, na čem jsi narazil, a pokračuj jinou cestou** nebo ten krok vynech.
+- Totéž platí pro dialogy klíčenky: nepokoušej se o podpis, který vyžaduje heslo uživatele.
+
+Důvod: majiteli 21. 8. vyskočil dialog žádající heslo správce a on ho (správně) odmítl. Nikdo
+nevěděl, odkud je. Cokoli, co si o taková práva řekne, zastaví práci a vyvolá nedůvěru.
+
 ## MANTINELY
 
 - `GIT_PAGER=cat`, `PAGER=cat`, `git --no-pager`. Nic interaktivního — žádný příkaz nesmí čekat na vstup.
