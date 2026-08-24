@@ -21,7 +21,8 @@ Zároveň databáze vynutí nejvýše jednu stopu každého druhu na nahrávku.
 | `client_recording_id` | UUID, povinný | Stabilní identifikátor vytvořený desktopem před zápisem manifestu. |
 | `started_at` | timestamp s pásmem | Začátek podle manifestu desktopu. |
 | `ended_at` | timestamp s pásmem, volitelný do uzavření | Konec nahrávání. |
-| `duration_ms` | bigint, zpočátku volitelný | Ověřená délka po remuxu; klientský odhad se drží odděleně. |
+| `client_duration_ms` | bigint | Nezáporný klientský odhad z inicializačního požadavku; slouží k časné validaci metadat a kapacitnímu odhadu, nikoli jako ověřená délka. |
+| `duration_ms` | bigint, zpočátku volitelný | Ověřená délka po remuxu; nikdy se neplní klientským odhadem. |
 | `processing_state` | enum | Stav celé dvojice stop podle tabulky přechodů níže. |
 | `project_id` | cizí klíč, volitelný | Odkaz na projekt; lze doplnit i po pořízení nahrávky. |
 | `calendar_event_id` | text / cizí klíč, volitelný | Schůzka z kalendáře; nahrávání bez kalendáře zůstává platné. |
@@ -50,6 +51,11 @@ Entita `recording_manifests` uchovává `id`, `client_recording_id`, `user_id`,
 `schema_version`, `created_at`, `closed_at`, klientský stav (`recording`, `complete`,
 `incomplete`), časové značky obou stop a jejich deklarované názvy, velikosti a hashe.
 Je serverovou kopií manifestu, který vzniká lokálně v etapě E4 ještě před prvním chunkem.
+Kanonický manifest se povinně přenese v inicializačním požadavku spolu s
+`manifestSha256`; server hash přepočítá z přijatého kanonického JSON a při neshodě
+požadavek odmítne.
+Volíme přenos při inicializaci, protože server tak v jediném idempotentním kroku získá
+úplný obsah potřebný k založení i ověření manifestu.
 Párování probíhá přes `(user_id, client_recording_id)`, nikdy jen podle názvu
 souboru, časové blízkosti nebo kalendářové události.
 Po prvním přijetí server založí `recordings` a manifest na něj odkazuje unikátním
@@ -66,10 +72,13 @@ Stejné ID s jiným hashem manifestu je konflikt, ne aktualizace naslepo.
 | `uploaded` | `failed` | Selžala kontrola kontejneru, remux nebo uložení. |
 | `ready` | `transcribed` (přepsáno) | Výsledek přepisu je atomicky uložen a svázán s nahrávkou. |
 | `ready` | `failed` | Selhal přepis nebo uložení jeho výsledku. |
-| `failed` | `uploaded` | Opakovaný upload nebo remux opravil chybu; obě stopy jsou znovu ověřeny. |
-| `failed` | `ready` | Opakování zpracování uspělo bez nového uploadu. |
+| `failed` | `uploaded` | Opakovaný upload opravil chybu příjmu; obě stopy jsou znovu ověřeny a čekají na remux. |
+| `failed` | `ready` | Opakovaný remux po chybě remuxu uspěl bez nového uploadu a server ověřil délku obou stop. |
+| `failed` | `transcribed` | Opakovaný přepis po chybě přepisu uspěl a výsledek je atomicky uložen. |
 
 Jiné přechody jsou zakázané; `transcribed` je pro tento proces koncový stav.
+`failure_code` uchovává fázi poslední chyby (`upload`, `remux` nebo `transcription`),
+takže worker smí při opakování použít jen odpovídající přechod z `failed`.
 Historii změn zapisuje append-only audit se starým a novým stavem, časem a důvodem.
 
 ## Remux a změřená vlastnost WebM

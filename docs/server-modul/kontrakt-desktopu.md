@@ -20,6 +20,17 @@ Povinné hlavičky jsou `Authorization`, `Content-Type: application/json` a
 Tělo obsahuje `clientRecordingId`, `manifestSha256`, `startedAt`, `endedAt`, klientský
 `durationMs`, volitelný `projectId` a `calendarEventId` a přesně dvě položky `tracks`:
 `{kind: "microphone"|"system", sizeBytes, sha256, mime}`.
+Povinné pole `manifest` navíc nese celý kanonický manifest: `schemaVersion`, `createdAt`,
+`closedAt`, stav (`recording`, `complete` nebo `incomplete`) a pro obě stopy jejich
+časové značky, deklarované názvy, velikosti a hashe. Kanonický JSON je UTF-8 bez BOM,
+má rekurzivně lexikograficky seřazené klíče a žádné nevýznamové mezery; SHA-256 právě
+těchto bajtů musí odpovídat `manifestSha256`. Server před založením záznamu hash
+přepočítá, porovná duplicitní top-level metadata s manifestem a neshodu odmítne jako
+`400 invalid_request`.
+Tuto variantu volíme proto, že inicializace poskytne serveru v jednom idempotentním
+kroku úplný obsah pro uložení i ověření manifestu.
+Klientský `durationMs` server uloží do `client_duration_ms` a použije jen pro časnou
+validaci metadat a kapacitní odhad; ověřené `duration_ms` určí až remux.
 
 Nový upload vrátí `201`:
 
@@ -43,10 +54,15 @@ Tělo jsou syrové bajty jedné části. Hlavičky obsahují `Content-Type:
 application/octet-stream`, `Content-Length`, `Content-Range: bytes A-B/total` a
 `X-Chunk-Sha256`. Doporučená část má 8 MiB a klient posílá nejvýše dvě souběžná
 volání; konkrétní serverový limit je součást nasazené konfigurace.
-Server přijme bajty jen tehdy, když `A` odpovídá aktuálnímu uloženému offsetu.
+Server zapíše nové bajty jen tehdy, když `A` odpovídá aktuálnímu uloženému offsetu.
+Výjimkou je opakování již potvrzeného rozsahu po ztrátě odpovědi: pokud celý rozsah
+`A-B` leží v uložené části, server ověří jeho délku a `X-Chunk-Sha256` proti uloženým
+bajtům a vrátí aktuální offset bez dalšího zápisu. Neshodný nebo jen částečně se
+překrývající rozsah vrátí jako `409 offset_mismatch`.
 
 Úspěch vrátí `200` s `{"kind":"microphone","uploadedBytes":8388608}`.
-Stejná část se stejným hashem je idempotentní no-op.
+Stejná již uložená část se stejným hashem je idempotentní no-op a odpověď obsahuje
+aktuální `uploadedBytes`, nikoli konec opakovaného rozsahu.
 Pokud spojení skončí uprostřed, server nepublikuje neúplnou temp část.
 Po obnovení desktop zopakuje inicializační volání, převezme potvrzené offsety a
 pokračuje od prvního nepotvrzeného bajtu; hodinová schůzka se dvěma stopami se neposílá
