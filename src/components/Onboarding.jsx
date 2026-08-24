@@ -19,14 +19,8 @@ const PERMISSIONS = [
   {
     id: "system-audio",
     title: "Systémový zvuk",
-    description: "Hlasy ze schůzky",
+    description: "Hlasy ze schůzky · zapíná se ručně v Nastavení systému",
     icon: VolumeIcon,
-  },
-  {
-    id: "calendar",
-    title: "Kalendář",
-    description: "Doporučení dnešních hovorů",
-    icon: CalendarIcon,
   },
 ];
 
@@ -39,7 +33,7 @@ export function Onboarding({ onAuthenticated, onComplete }) {
   const [permissionBusy, setPermissionBusy] = useState("");
   const [permissions, setPermissions] = useState({});
   const allGranted = useMemo(
-    () => PERMISSIONS.every((permission) => permissions[permission.id]),
+    () => PERMISSIONS.every((permission) => permissions[permission.id]?.status === "granted"),
     [permissions],
   );
 
@@ -60,11 +54,60 @@ export function Onboarding({ onAuthenticated, onComplete }) {
 
   async function grantPermission(id) {
     setPermissionBusy(id);
-    const result = await window.ludone.requestPermission(id);
-    if (result?.granted) {
-      setPermissions((current) => ({ ...current, [id]: true }));
+    try {
+      const result = await window.ludone.requestPermission(id);
+      setPermissions((current) => ({
+        ...current,
+        [id]: result || { status: "unknown", granted: false, nextAction: "none" },
+      }));
+    } catch {
+      setPermissions((current) => ({
+        ...current,
+        [id]: { status: "unknown", granted: false, nextAction: "none" },
+      }));
+    } finally {
+      setPermissionBusy("");
     }
-    setPermissionBusy("");
+  }
+
+  function permissionState(permission) {
+    const result = permissions[permission.id];
+    const status = result?.status || "not-determined";
+    if (status === "granted") {
+      return { granted: true, label: "Povoleno", detail: permission.description };
+    }
+    if (status === "denied") {
+      return {
+        granted: false,
+        label: "Otevřít Nastavení",
+        detail: "Oprávnění bylo odmítnuto. Povolte ho v Nastavení systému.",
+        alert: true,
+      };
+    }
+    if (status === "restricted") {
+      return {
+        granted: false,
+        label: "Omezeno systémem",
+        detail: "Oprávnění blokuje nastavení systému nebo zásada vaší organizace.",
+        alert: true,
+        disabled: true,
+      };
+    }
+    if (status === "unknown") {
+      return {
+        granted: false,
+        label: "Znovu ověřit",
+        detail: "Stav se nepodařilo zjistit. LuDone oprávnění nepovažuje za udělené.",
+        alert: true,
+      };
+    }
+    return {
+      granted: false,
+      label: permission.id === "system-audio" ? "Otevřít Nastavení" : "Požádat",
+      detail: permission.id === "system-audio"
+        ? "Záznam obrazovky musí člověk zapnout ručně v Nastavení systému."
+        : "macOS se na přístup k mikrofonu zatím nezeptal.",
+    };
   }
 
   return (
@@ -138,27 +181,33 @@ export function Onboarding({ onAuthenticated, onComplete }) {
       {step === 2 && (
         <section className="onboarding__content permission-step">
           <div className="onboarding-icon"><MicIcon /></div>
-          <p className="eyebrow">Tři srozumitelná oprávnění</p>
+          <p className="eyebrow">Dvě srozumitelná oprávnění</p>
           <h1>Aby LuDone pomohlo</h1>
-          <p className="lead">Každé oprávnění má jediný účel. V této kostře je udělení bezpečně simulované.</p>
+          <p className="lead">LuDone ukazuje skutečný stav macOS. Záznam obrazovky je potřeba zapnout ručně v Nastavení systému.</p>
           <div className="permission-list">
             {PERMISSIONS.map((permission) => {
               const Icon = permission.icon;
-              const granted = permissions[permission.id];
+              const state = permissionState(permission);
               return (
-                <div className={`permission-row${granted ? " is-granted" : ""}`} key={permission.id}>
+                <div
+                  className={`permission-row${state.granted ? " is-granted" : ""}`}
+                  key={permission.id}
+                  role={state.alert ? "alert" : undefined}
+                >
                   <span className="permission-row__icon"><Icon /></span>
                   <span className="permission-row__copy">
                     <strong>{permission.title}</strong>
-                    <small>{permission.description}</small>
+                    <small>{state.detail}</small>
                   </span>
                   <button
                     type="button"
                     className="button button--small"
-                    disabled={granted || permissionBusy === permission.id}
+                    disabled={state.granted || state.disabled || permissionBusy === permission.id}
                     onClick={() => grantPermission(permission.id)}
                   >
-                    {granted ? <><CheckIcon /> Povoleno</> : permissionBusy === permission.id ? "Čekám…" : "Povolit"}
+                    {state.granted
+                      ? <><CheckIcon /> {state.label}</>
+                      : permissionBusy === permission.id ? "Čekám…" : state.label}
                   </button>
                 </div>
               );
