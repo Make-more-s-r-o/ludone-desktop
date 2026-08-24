@@ -457,6 +457,30 @@ orca orchestration worker-release --dispatch <ctx_…>    # 🔴 PŘED `worktree
 ⚠️ **Cena varianty B: Orca startuje agenty BEZ SANDBOXU.** Práci kolem tokenů a přihlášení (E7)
 pouštěj variantou A.
 
+### 🔴 Co sandbox NEDOVOLÍ — a co z toho plyne pro brány (změřeno 25. 8. ~00:50 za běhu)
+
+Tohle jsou dvě pasti, na které běh narazil naostro a které v receptu výš chyběly:
+
+**1. `-s read-only` nedovolí zapsat ani soubor s odpovědí.** Recept pro nezávislé review má `-o
+<soubor>`, jenže v read-only kleci ten soubor **nevznikne** — odpověď zůstane jen v logu. Není to
+vada Codexu, je to důsledek klece.
+⇒ **U read-only review odpověď čti z logu**, ne z `-o`. Případně nech `-o` v příkazu, ale nikdy
+na jeho existenci nestav kontrolu hotovosti.
+
+**2. Sandbox nemá síť.** `curl` v něm končí **kódem 6 (DNS)** — ověřeno na `.well-known` pro labs
+i prod. To má tři konkrétní důsledky, které se snadno spletou se selháním práce:
+
+| Co | Kdo to musí udělat |
+|---|---|
+| **Akceptační kritérium E7** (`curl … \| jq -e .registration_endpoint`) | **orchestrátor**, ne worker — ve workeru selže vždycky |
+| `npm install` / `npm ci` | **orchestrátor předem**; Codex pak píše konfigurace proti už nainstalovaným balíčkům |
+| Jakékoli ověření proti živé službě | **orchestrátor** |
+
+⚠️ **A pozor na správné chování, které vypadá jako selhání:** když worker nemůže něco ověřit,
+má to **označit za nedoložené a datovat starším měřením**, ne to vydat za čerstvě ověřené. E8 to
+udělalo správně — hodnoty výslovně datovalo k 24. 8. To je přesně to, co po nich chceme; nekárej
+za to, kárej za opak.
+
 **Co po každém běhu udělá orchestrátor, ne Codex:**
 1. `git status --porcelain` ve worktree — soubory tam jsou i tehdy, když Codex hlásil, že nemohl commitnout
 2. spustit brány **sám**, nevěřit tvrzení
