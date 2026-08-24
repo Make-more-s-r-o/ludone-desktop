@@ -84,8 +84,16 @@ Premisy s čísly. **Tvrzení o dnešním stavu kódu ověř spuštěním, ne p�
 | WebM je zvukově v pořádku | 84 paketů, souvislé PTS po 60 ms, 241 920 vzorků = přesně 5,040 s. Hlavička Opus **platná** | ✅ |
 | Chybí jen celková délka | `ffprobe` vrací `N/A`; po `ffmpeg -c copy` vrací 5,040000, dekódovaný zvuk **bitově totožný** | ✅ |
 | Rozhoduje **Záznam obrazovky**, ne mikrofon | Loopback jde přes `getDisplayMedia` ⇒ `kTCCServiceScreenCapture` | ✅ |
-| Codex je funkční | `codex exec` smoke test: CLI 0.149.1, `gpt-5.6-sol`, effort `ultra`, **EXIT=0** | ✅ |
-| OAuth server LuDone je živý | `curl https://app.ludone.cz/.well-known/oauth-authorization-server` → **HTTP 200**. DCR otevřená, loopback redirect povolen, PKCE S256 povinné, veřejný klient bez secretu | ✅ |
+| Codex je funkční | `codex exec` smoke test: CLI 0.149.1, `gpt-5.6-sol`, **EXIT=0**, `Logged in using ChatGPT`. Sandbox hlásí `workspace-write [workdir, /tmp, $TMPDIR]` ⇒ **`/tmp` je zapsatelný**, věta o `.lab/` je na téhle verzi zbytečná | ✅ |
+| OAuth server LuDone je živý | `curl .well-known/oauth-authorization-server` → **HTTP 200 na labs i prod**. DCR otevřená, loopback redirect povolen, PKCE S256 povinné, veřejný klient bez secretu | ✅ |
+| 🔴 **Ten OAuth server je MCP serveru, ne LuDone účtu** | `scopes_supported` = **`["mcp:read","mcp:draft"]`**, `registration_endpoint` = `…/api/mcp/oauth/register` — **všechny endpointy pod `/api/mcp/`**. Token z něj **nemá scope, kterým by se dala nahrát nahrávka** | ⚠️ |
+| Stroj je vytížený | `load average 8,4`, 64 GB volných z 460 | ⚠️ počítej s tím u detekce mrtvého jobu |
+
+⚠️ **Co z toho plyne pro E7 a E8 — a co by jinak nikdo nezachytil:** E7 může skončit „hotovo"
+s tokenem, který **na E5 (upload) nestačí**. Přihlášení tím opravdu funguje, ale je to přihlášení
+**k MCP toolům**, ne k obecnému REST API. **E7 tedy nesmí tvrdit, že desktop umí odesílat** — smí
+tvrdit jen, že se přihlásí a zná identitu uživatele. Most na REST je obsah dokumentace v **E8**
+(`kontrakt-desktopu.md`) a podle D3 se staví **jen na labs**.
 | 🔴 **Google Meet netestován** | Testoval se `afplay`. A6 je **vyřazovací kritérium** | ⛔ dělá Dan |
 | ⛔ **Rozjezd stop na hodinové nahrávce neměřen** | Všechna měření trvala 5 sekund | ⛔ dělá Dan |
 | ⛔ **Podpisový řetěz neověřen** | Měřil se mechanismus, ne řetěz — a špatné oprávnění | ⛔ odloženo (D2) |
@@ -128,7 +136,7 @@ toho rozhodnutí není co dělat.
 | **S1** | 🔴 **Merge do `main` v `ludone-app`** — merge tam spouští **deploy na produkci** | Práce na větvi, nasazení na **labs**, PR nechat otevřený |
 | **S2** | Zapnutí killswitche `DESKTOP_UPLOAD_ENABLED` | Nechat OFF, do checkpointu napsat, že je připravený |
 | **S3** | Vytvoření nebo instalace podpisového certifikátu, změna klíčenky, cokoli s heslem správce | Zůstat u ad-hoc podpisu (D2) |
-| **S4** | Smazání worktree `zvuk` nebo čehokoli z `.runtime/` | Jsou to důkazy měření — archivovat, nemazat |
+| **S4** | Smazání worktree `zvuk` nebo `.runtime/` **BEZ PŘEDCHOZÍ ARCHIVACE** | Nejdřív zkopírovat do `dukazy/` a commitnout, **teprve pak** smět worktree odstranit *(upřesněno: původní znění „archivovat, nemazat" si odporovalo s kritériem E1b, které chce jediný worktree)* |
 | **S5** | Jakýkoli zápis do Tabidoo, rotace secretů, externí komunikace | Zapsat do checkpointu |
 | **S6** | Nové obrazovky nebo změna vzhledu (O1) | Sahat na chování, ne na vzhled |
 | **S7** | Cokoli, co si řekne o **heslo správce** | Zastavit a zapsat |
@@ -231,8 +239,36 @@ jménem podmínky říká, co opravit; `&&` řetěz řekne jen „nula". A exit 
 
 | ID | Podmínky |
 |---|---|
-| **E1** | `AGENTS.md` existuje · žádný výskyt „SYSTÉMOVÝ ZVUK NEFUNGUJE" bez značky PŘEKONÁNO · `ROZHODNUTI.md` neobsahuje „18–30", „repo je zatím jen lokální" ani „vadnou hlavičku Opus" · každý opravený rozpor má v dokumentu zapsáno, čím byl nahrazen |
-| **E1b** | `git merge-base --is-ancestor 2bb09ce main` · `electron/main.cjs` a `src/App.jsx` existují v kořeni · `git worktree list` má 1 řádek · `npm ci && npm run build && npm run package:mac` projde na čerstvém klonu |
+| **E1** | `AGENTS.md` existuje · **archivovaný `dukazy/zvuk-2026-08-20/NALEZ.md` existuje a jeho závěr odkazuje na `NALEZ-OPAKOVANI.md`** · `ROZHODNUTI.md` neobsahuje „18–30", „repo je zatím jen lokální" ani „vadnou hlavičku Opus" · každý opravený rozpor má zapsáno, čím byl nahrazen |
+| **E1b** | `git merge-base --is-ancestor 2bb09ce main` · `electron/main.cjs` a `src/App.jsx` existují v kořeni · **`dukazy/` obsahuje archiv z obou worktrees** · `git worktree list` má **1 řádek** · `npm ci && npm run build && npm run package:mac` projde na čerstvém klonu |
+
+🔴 **Past, na kterou první verze tohohle briéfu naletěla** (našla ji session, která běh povede —
+změřeno 24. 8. ve 21:40, díky):
+
+Kritérium E1 původně znělo *„žádný výskyt řetězce «SYSTÉMOVÝ ZVUK NEFUNGUJE» bez značky PŘEKONÁNO"*.
+**Takové kritérium nemohlo zezelenat nikdy.** Ten řetězec dnes sedí na **šesti místech a ani jedno
+z nich není ten rozpor** — jsou to dokumenty, které o rozporu **mluví**: `PLAN.md:42`,
+`specs/E0-startovaci-cara.md:233,265,554` a **sám tenhle briéf**. Brána by tedy zčervenala na svém
+vlastním zadání.
+
+A skutečný `NALEZ.md` **v gitu vůbec není** — leží v `.claude/worktrees/zvuk/NALEZ.md`, a worktrees
+jsou v `.gitignore`. `grep -rn` po disku ho najde, `git grep` ne, `git clone` ho nedostane vůbec.
+**Ten důkaz měření dnes existuje v jediné kopii mimo verzování.**
+
+**Z toho plyne skutečná práce E1 a E1b**, kterou původní znění zakrývalo:
+
+1. **E1 archivuje důkazy do repa.** `dukazy/zvuk-2026-08-20/` dostane `NALEZ.md` a
+   `NALEZ-OPAKOVANI.md` z worktree `zvuk`; do závěru `NALEZ.md` se **na první obrazovku** doplní,
+   že ho o den později vyvrátilo `NALEZ-OPAKOVANI.md`, i s korelačními čísly. Nemazat ani
+   nepřepisovat historii — doplnit.
+2. **E1b archivuje i `.runtime/audio-proof-*` z worktree `kostra`** (aspoň jeden tichý a jeden
+   zvukový běh + `proof-files.json`), teprve pak worktrees odstraní.
+3. Dokumenty, které o rozporu **mluví** (`PLAN.md`, `specs/**`, tenhle briéf), se **nemění** — je
+   to jejich obsah, ne dluh.
+
+⚠️ **A obecné poučení, které si odnes do všech dalších bran:** kritérium tvaru „nikde v repu
+nesmí být řetězec X" **zčervená i na dokumentaci, která X popisuje** — včetně sebe sama. Když
+takové kritérium píšeš, hledej v **konkrétních cestách**, ne v celém stromě.
 | **E2** | `npm run gates` = 0 · **a tři sabotáže demonstrované skriptem** (níž) |
 | **E3** | `plutil -p` na release bundlu vypíše `NSAudioCaptureUsageDescription` · `codesign --verify --deep --strict` projde · `scripts/package-mac.mjs` neobsahuje `cz.ludone.desktop.prototype` · unit testy `tray-authority` a `ipc-sender-guard` zelené |
 | **E4** | unit testy `manifest` zelené · mezi nimi test, že po simulovaném pádu **před prvním chunkem** manifest existuje se stavem `nedokonceno` |
@@ -402,6 +438,32 @@ od mrtvého**, na to je jen mtime.
 
 **Předletová kontrola** (skill má úplný checklist): Codex jede · místo na disku · žádný cizí job
 ve stejném worktree · Orca orchestrace zapnutá.
+
+---
+
+## 🔴 Dvě věci, které si Codex jinak vymyslí
+
+**1. `npm run gates` ani `npm run test:unit` v repu NEEXISTUJÍ.** Dnešní `package.json` má jen
+`build`, `start`, `package:mac`, `test:audio`, a v `devDependencies` je **pouze `electron` a `vite`**
+— žádný test runner, žádný lint, žádný typecheck. **Etapa E2 je zakládá od nuly**, včetně volby
+runneru. Když to v jejím zadání nebude napsané, Codex si příkaz vymyslí, dostane
+`command not found` a bránu ohlásí jako nespustitelnou.
+
+*Dobrá zpráva:* `node_modules` ve worktree `kostra` **jsou** (80 balíčků), takže na rozdíl od
+`ludone-app` se tam nemusí nic doinstalovávat, aby šlo spustit `vite`.
+
+Etapy E3–E7 tedy **nesmí předpokládat, že `npm run gates` existuje** — dokud E2 nedoběhne, běží
+jen `npm run build`. Proto E2 stojí v DAGu před nimi.
+
+**2. macOS nemá `timeout`.** `timeout 180 codex exec …` skončí `EXIT=127, command not found` —
+což vypadá jako pád Codexu a vede na úplně špatnou diagnózu. (Chytlo to dnes obě session, každou
+zvlášť.) Je to `gtimeout` z coreutils, nebo vlastní strop:
+
+```bash
+( sleep 900; kill $$ ) & <prikaz>
+```
+
+**Do akceptačních skriptů `timeout` nedávej vůbec** — 127 se pak tváří jako selhání kontroly.
 
 ---
 
