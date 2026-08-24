@@ -35,14 +35,16 @@ Volba mezi poskytovateli mění cenu za hodinu češtiny, limit délky jednoho p
 (a tím povinné dělení hodinové schůzky) a jestli je v ceně diarizace dvou mluvčích.
 Bez tvého objemu to nespočítám.
 
-### 🟡 D5 — Kalendář: čte ho server, nebo appka? *(blokuje E7)*
+### ✅ D5 — Kalendář: server *(rozhodnuto 24. 8.)*
 
-**Doporučení: server čte Google Kalendář přes OAuth, appka jen zobrazí hotový seznam.**
-Sedí k A11 („aplikace je spouštěč“), nepřidává jedinou nativní komponentu, u budoucího
-Windows ušetří 5–10 ČD. Varianta B (EventKit na Macu) znamená nativní Swift komponentu
-a **další TCC dialog** navíc k záznamu obrazovky.
+**Server čte Google Kalendář, appka jen zobrazí hotový seznam.** Sedí k A11 („aplikace je
+spouštěč“), nepřidává nativní komponentu, u budoucího Windows ušetří 5–10 ČD a nevyžaduje
+další TCC dialog navíc k záznamu obrazovky.
 
-Řekni ano/ne, nebo že to má být jinak.
+🔴 **Doplněno 24. 8.: napojení kalendáře se právě teď řeší v LuDone Hubu.** To mění etapu E7 —
+desktop **nesmí stavět vlastní Google OAuth**, ale má konzumovat, co vzniká tam. Než E7 začne,
+je potřeba zjistit: kde ta integrace bydlí, jaký má kontrakt, a jestli umí vrátit „dnešní schůzky
+pro přihlášeného člověka“. Do té doby je E7 zablokovaná na cizí práci, ne na rozhodnutí.
 
 ### 🔴 D6 — Právní rámec nahrávání *(neblokuje vývoj, blokuje OSTRÉ POUŽITÍ)*
 
@@ -61,19 +63,20 @@ Ohlášení nahrávání patří **do UI jako viditelný prvek, ne do Nastavení
 
 ---
 
-## 2b. Designové stopky — na těchhle šesti se PŘESKAKUJE, běh nezastavují
+## 2b. Designové stopky — čtyři ze šesti rozhodnuté 24. 8.
 
-Detail v [`specs/ED-design.md`](specs/ED-design.md). Dokud neodpovíš, běh pokračuje na tom,
-co na nich nezávisí, a rozhodnutí zapíše do tabulky D v `ROZHODNUTI.md`.
+Detail v [`specs/ED-design.md`](specs/ED-design.md). Zbylé dvě (D-A, D-C) se neřeší tabulkou —
+varianty jsou nakreslené vedle sebe v canvasu a iteruje se nad nimi v Claude Design:
+**https://claude.ai/code/artifact/870b288e-a46f-4c89-b3f3-3a1e93d58053**
 
-| # | Otázka | Kde je dnes rozpor |
+| # | Stav | Rozhodnutí |
 |---|---|---|
-| **D-A** | **Písmo nadpisů** | Mockup má Schibsted Grotesk · Přístroj DS má Instrument Sans · `ludone-app` má licencovaný Brockmann (Přístroj ho záměrně nepoužívá). Kód má `ui-rounded`, tedy systémové |
-| **D-B** | **Světlý režim, tmavý, nebo oba?** | Kód umí **jen tmavý** (`color-scheme: dark` natvrdo, žádný `prefers-color-scheme`), mockup kreslí **jen světlý**, a ty máš v systému zapnutý tmavý s omezenou průhledností |
-| **D-C** | **Zelený akcent vedle indigové z Přístroje** — a smí se objevit ve sdílených tokenech? | Doporučení: **ne.** Zápis do `tokens/colors.css` by přebarvil i `ui_kits/ludone-app`. Override patří do `tokens/desktop.css`. Navíc mockupová `#1B7A43` je laděná na světlé pozadí a na tmavém propadne kontrastem — tmavý režim potřebuje vlastní odstín |
-| **D-D** | **Co dělat, když spadne systémová stopa uprostřed schůzky?** | Dnešní kód **ukončí celé nahrávání**. Alternativa: banner + volba „Pokračovat jen s mikrofonem“ × „Ukončit a uložit“, s údajem, kolik minut je už bezpečně na disku |
-| **D-E** | **Pauza — ano, nebo ne?** | V mockupu nakreslená, v kódu **neexistuje** (`MediaRecorder.pause()` se nevolá). Se dvěma nezávislými rekordéry se nesynchronní pauza projeví jako **trvalý posun mezi stopami** ⇒ přepis, kde si lidé skáčou do řeči |
-| **D-F** | **Kalendář v onboardingu — povinný, nebo volitelný?** | Kód má `disabled={!allGranted}`, tedy **všechna tři oprávnění povinně**. Mockup ho označuje jako „volitelné“. Když dnes odmítneš kalendář, appka zůstane viset na třetím kroku a je z ní cihla |
+| **D-A** | 🟡 **otevřené** | **Písmo nadpisů** — varianty nakreslené vedle sebe v canvasu, iteruje se v Claude Design. Mockup má Schibsted Grotesk · Přístroj DS má Instrument Sans · `ludone-app` má licencovaný Brockmann (Přístroj ho záměrně nepoužívá) |
+| **D-B** | ✅ **oba režimy podle systému** | Kód umí jen tmavý, mockup jen světlý — dělá se obojí. Pozor: mockupová `#1B7A43` je laděná na světlé pozadí a na tmavém propadá kontrastem, tmavý režim potřebuje vlastní světlejší odstín |
+| **D-C** | 🟡 **otevřené** | **Barva akcentu** — varianty (zelená × indigová, světlý × tmavý) nakreslené v canvasu, iteruje se v Claude Design. Ať vyjde cokoli, zapisuje se **jen do `tokens/desktop.css`** — sdílený `tokens/colors.css` by přebarvil i `ui_kits/ludone-app` |
+| **D-D** | ✅ **pokračovat automaticky, jen upozornit** | Nahrávání běží dál, žádný dialog. 🔴 **Pojistka proti scénáři „UI lže“:** hlásí se to **třemi nezávislými způsoby najednou** — trvalý proužek v panelu, který nejde zavřít, dokud nahrávání běží · změna ikony v liště na varovnou · záznam v manifestu sezení, aby se to poznalo i zpětně z archivu |
+| **D-E** | ✅ **pauza se nedělá** | Se dvěma nezávislými rekordéry by nesynchronní pauza způsobila **trvalý posun mezi stopami**. Místo pauzy: **spojení dvou navazujících nahrávek** zpětně v archivu na webu (ne v appce) |
+| **D-F** | ✅ **kalendář volitelný** | Bez kalendáře se dá nahrávat i měřit čas, jen se nezobrazí dnešní schůzky. Dnešní `disabled={!allGranted}` z appky dělá cihlu, když ho uživatel odmítne |
 
 ⚠️ **Jedna věc, kterou stojí za to vědět hned:** appka se dnes vykresluje v **San Franciscu**, tedy
 nativním systémovém písmu — to je výtvarný **směr B, který jsi rozhodnutím A14 zabil**.
