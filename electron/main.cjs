@@ -11,13 +11,16 @@ const {
   session,
   shell,
 } = require("electron");
-const { randomUUID } = require("node:crypto");
+const { createHash, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { fileURLToPath, pathToFileURL } = require("node:url");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
+const manifestModulePromise = import(
+  pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "manifest.js")).href
+);
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
 const PANEL_HEIGHT = 792;
@@ -324,6 +327,22 @@ async function openRecordingTrack(recordingsDirectory, prefix, source) {
   };
 }
 
+async function recordingFileSha256(filePath) {
+  const hash = createHash("sha256");
+  for await (const chunk of fs.createReadStream(filePath)) hash.update(chunk);
+  return hash.digest("hex");
+}
+
+function recordingManifestTracks(tracks, startedAt, endedAt = null, files = null) {
+  return Object.fromEntries([...tracks].map(([source, track]) => [source, {
+    fileName: path.basename(track.filePath),
+    startedAt,
+    endedAt,
+    sizeBytes: files?.[source]?.size ?? 0,
+    sha256: files?.[source]?.sha256 ?? null,
+  }]));
+}
+
 async function createRecordingSession(event) {
   requireTrustedRecordingSender(event);
   const ownerId = event.sender.id;
@@ -335,10 +354,12 @@ async function createRecordingSession(event) {
   const preparation = { cancelled: false };
   recordingOwnersPreparing.set(ownerId, preparation);
   const tracks = new Map();
+  let manifestWasWritten = false;
   try {
     const startedAt = new Date();
     const timestamp = startedAt.toISOString().replace(/[:.]/g, "-");
-    const prefix = `${timestamp}-${randomUUID().slice(0, 8)}`;
+    const sessionId = randomUUID();
+    const prefix = `${timestamp}-${sessionId.slice(0, 8)}`;
     const recordingsDirectory = path.join(app.getPath("userData"), "nahravky");
     await fs.promises.mkdir(recordingsDirectory, { recursive: true, mode: 0o700 });
 
@@ -349,18 +370,34 @@ async function createRecordingSession(event) {
       throw new Error("Příprava nahrávání byla zrušena při navigaci nebo pádu rendereru");
     }
 
-    const sessionId = randomUUID();
+    const manifestPath = path.join(recordingsDirectory, `${prefix}.manifest.json`);
+    const { createManifest, transitionManifest, writeManifestAtomically } = await manifestModulePromise;
+    const manifest = createManifest({
+      clientRecordingId: sessionId,
+      createdAt: startedAt.toISOString(),
+      closedAt: null,
+      tracks: recordingManifestTracks(tracks, startedAt.toISOString()),
+    }, "recording");
+    // Recovery kopie musí existovat dřív, než session ID dostane renderer a může poslat první chunk.
+    await writeManifestAtomically(manifestPath, transitionManifest(manifest, "incomplete"));
+    manifestWasWritten = true;
+    if (preparation.cancelled || event.sender.isDestroyed()) {
+      throw new Error("Příprava nahrávání byla zrušena po zápisu obnovovacího manifestu");
+    }
+
     const recordingSession = {
       sessionId,
       ownerId,
       owner: event.sender,
       startedAt: startedAt.toISOString(),
       tracks,
+      manifest,
+      manifestPath,
       finalizePromise: null,
       destroyedListener: null,
     };
     recordingSession.destroyedListener = () => {
-      void finalizeRecordingSession(sessionId).catch((error) => {
+      void finalizeRecordingSession(sessionId, "incomplete").catch((error) => {
         console.error(`[recording] Finalizace po pádu rendereru selhala: ${error.stack || error.message}`);
       });
     };
@@ -371,7 +408,7 @@ async function createRecordingSession(event) {
   } catch (error) {
     await Promise.allSettled([...tracks.values()].map(async (track) => {
       await track.handle.close();
-      await fs.promises.unlink(track.filePath).catch(() => {});
+      if (!manifestWasWritten) await fs.promises.unlink(track.filePath).catch(() => {});
     }));
     throw error;
   } finally {
@@ -425,13 +462,17 @@ async function appendRecordingChunk(event, sessionId, source, sequence, arrayBuf
   return operation;
 }
 
-async function finalizeRecordingSession(sessionId) {
+async function finalizeRecordingSession(sessionId, finalState) {
+  if (finalState !== "complete" && finalState !== "incomplete") {
+    throw new Error("Nahrávací session lze uzavřít jen jako complete nebo incomplete");
+  }
   const recordingSession = recordingSessions.get(sessionId);
   if (!recordingSession) throw new Error("Neznámá nahrávací session");
   if (recordingSession.finalizePromise) return recordingSession.finalizePromise;
 
   recordingSession.finalizePromise = (async () => {
     const files = {};
+    const closedAt = new Date().toISOString();
     let firstError = null;
     for (const [source, track] of recordingSession.tracks) {
       try {
@@ -450,7 +491,29 @@ async function finalizeRecordingSession(sessionId) {
 
       try {
         const stats = await fs.promises.stat(track.filePath);
-        files[source] = { name: path.basename(track.filePath), size: stats.size };
+        files[source] = {
+          name: path.basename(track.filePath),
+          size: stats.size,
+          sha256: await recordingFileSha256(track.filePath),
+        };
+      } catch (error) {
+        firstError ??= error;
+      }
+    }
+
+    if (!firstError) {
+      try {
+        const { transitionManifest, writeManifestAtomically } = await manifestModulePromise;
+        const finalManifest = transitionManifest(recordingSession.manifest, finalState, {
+          closedAt,
+          tracks: recordingManifestTracks(
+            recordingSession.tracks,
+            recordingSession.startedAt,
+            closedAt,
+            files,
+          ),
+        });
+        await writeManifestAtomically(recordingSession.manifestPath, finalManifest);
       } catch (error) {
         firstError ??= error;
       }
@@ -472,7 +535,7 @@ function finalizeRecordingSessionsForOwner(ownerId, reason) {
   if (preparation) preparation.cancelled = true;
   for (const recordingSession of recordingSessions.values()) {
     if (recordingSession.ownerId !== ownerId) continue;
-    void finalizeRecordingSession(recordingSession.sessionId).then((result) => {
+    void finalizeRecordingSession(recordingSession.sessionId, "incomplete").then((result) => {
       console.warn(`[recording] Session uzavřena po události „${reason}“: mikrofon ${result.files.microphone.size} B, systém ${result.files.system.size} B.`);
     }).catch((error) => {
       console.error(`[recording] Uzavření po události „${reason}“ selhalo: ${error.stack || error.message}`);
@@ -496,7 +559,7 @@ ipcMain.handle("recording:append", (event, sessionId, source, sequence, arrayBuf
 ));
 ipcMain.handle("recording:finish", (event, sessionId) => {
   ownedRecordingSession(event, sessionId);
-  return finalizeRecordingSession(sessionId);
+  return finalizeRecordingSession(sessionId, "complete");
 });
 
 ipcMain.handle("auth:begin", async () => {
