@@ -5,6 +5,10 @@ release/
 .DS_Store
 *.log
 .env*
+# ...ale `.env.example` je dokumentace, ne tajemství — a je to jediné místo, kde je
+# napsané, že se odesílání nechává vypnuté (rozhodnutí D4, stopka S2). Bez téhle
+# výjimky by ho `.env*` spolklo a killswitch by v repu nebyl doložený nikde.
+!.env.example
 .claude/worktrees/
 .electron-cache/
 .npm-cache/
