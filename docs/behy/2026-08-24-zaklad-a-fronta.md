@@ -1,7 +1,25 @@
 # Briéf běhu — základ, měřidlo a odchozí fronta
 
-> **Verze 2** (24. 8. 2026 večer). Přepsáno po průzkumu doložených příčin selhání dlouhých
-> autonomních běhů a po ověření Codexu, Orcy a OAuth serveru naostro.
+> ## ✅ VERZE 3 — HOTOVO, SPUSTITELNÉ
+>
+> **Naposledy upraveno 24. 8. 2026 ve 22:05.** Když čteš tohle, čteš finální verzi — nespouštěj
+> nic, co ti zbylo v hlavě z dřívějška.
+>
+> **Změny proti verzi 2** (všechny z nálezů session, která běh povede, změřených proti repozitáři):
+>
+> 1. 🔴 **Kritérium E1 bylo NESPLNITELNÉ a je přepsané.** Zakazovalo řetězec, který sedí na šesti
+>    místech včetně tohoto briéfu — brána by zčervenala na vlastním zadání. Skutečná práce je
+>    **archivovat důkazy do repa**, protože `NALEZ.md` dnes v gitu není vůbec.
+> 2. 🔴 **Rozpor E1b × S4 vyřešen.** E1b chtěl jediný worktree, S4 zakazovala mazat ten s důkazy.
+>    Nově: **archivovat, commitnout, teprve pak odstranit.**
+> 3. ⚠️ **OAuth server je MCP serveru, ne LuDone účtu** (`scopes_supported` = `mcp:read`,
+>    `mcp:draft`) ⇒ **E7 nesmí tvrdit, že desktop umí odesílat.**
+> 4. **`npm run gates` ani `test:unit` neexistují** — E2 je zakládá od nuly; E3–E7 je nesmí
+>    předpokládat.
+> 5. **macOS nemá `timeout`** — do akceptačních skriptů ho nedávat, `EXIT=127` vypadá jako pád.
+>
+> *Verze 2 (téhož večera) přepsala verzi 1 po průzkumu doložených příčin selhání dlouhých
+> autonomních běhů a po ověření Codexu, Orcy a OAuth serveru naostro.*
 
 ---
 
