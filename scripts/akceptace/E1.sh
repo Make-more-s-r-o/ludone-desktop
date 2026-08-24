@@ -10,19 +10,26 @@ zkontroluj() {                     # zkontroluj "<popis>" <příkaz…>
   fi
 }
 
-zkontroluj "AGENTS.md existuje a má aspoň 40 řádků" \
-  bash -c 'test -f AGENTS.md && test "$(wc -l < AGENTS.md)" -ge 40'
-zkontroluj "archivovaný NALEZ.md existuje" \
-  test -f dukazy/zvuk-2026-08-20/NALEZ.md
-zkontroluj "archivovaný NALEZ-OPAKOVANI.md existuje" \
-  test -f dukazy/zvuk-2026-08-20/NALEZ-OPAKOVANI.md
+neobsahuje() {                     # neobsahuje <soubor> <řetězec>
+  test -s "$1" || return 1
+  ! grep -Fq "$2" "$1"
+}
+
+zkontroluj "AGENTS.md existuje a má aspoň 40 neprázdných řádků" \
+  awk 'NF { n++ } END { exit !(n >= 40) }' AGENTS.md
+zkontroluj "archivovaný NALEZ.md existuje a není prázdný" \
+  test -s dukazy/zvuk-2026-08-20/NALEZ.md
+zkontroluj "archivovaný NALEZ-OPAKOVANI.md existuje a není prázdný" \
+  test -s dukazy/zvuk-2026-08-20/NALEZ-OPAKOVANI.md
 zkontroluj "archivovaný závěr odkazuje na opakování a obsahuje korelaci 0,9638" \
   bash -c 'grep -Fq "NALEZ-OPAKOVANI.md" dukazy/zvuk-2026-08-20/NALEZ.md && grep -Fq "0,9638" dukazy/zvuk-2026-08-20/NALEZ.md'
+zkontroluj "README archivu zvuku existuje a odkazuje na reprodukovatelný důkaz" \
+  bash -c 'test -s dukazy/zvuk-2026-08-20/README.md && grep -Fq "nahravani-2026-08-21" dukazy/zvuk-2026-08-20/README.md'
 zkontroluj "ROZHODNUTI.md neobsahuje starý odhad 18–30" \
-  bash -c '! grep -Fq "18–30" ROZHODNUTI.md'
+  neobsahuje ROZHODNUTI.md "18–30"
 zkontroluj "ROZHODNUTI.md netvrdí, že repo je jen lokální" \
-  bash -c '! grep -Fq "repo je zatím jen lokální" ROZHODNUTI.md'
+  neobsahuje ROZHODNUTI.md "repo je zatím jen lokální"
 zkontroluj "ROZHODNUTI.md netvrdí, že Opus má vadnou hlavičku" \
-  bash -c '! grep -Fq "vadnou hlavičku Opus" ROZHODNUTI.md'
+  neobsahuje ROZHODNUTI.md "vadnou hlavičku Opus"
 
 echo "---"; echo "chyb: $chyby"; exit $(( chyby > 0 ? 1 : 0 ))

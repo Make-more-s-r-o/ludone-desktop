@@ -25,7 +25,9 @@ Konkrétní zadání etapy má přednost pro vlastnictví souborů a rozsah dan�
 
 ## Důkaz a stav ověření
 
-- Používej přesně tři stavy: ✅ ověřeno naostro, 🧪 zelené testy, ⛔ neověřeno.
+- Používej přesně pět stavů: ✅ ověřeno naostro, 🧪 zelené testy, ⛔ neověřeno,
+  🟡 podmíněně platné nebo čekající na výslovně uvedené ověření a ⚠️ varování či
+  rozpor vyžadující pozornost, který sám o sobě neurčuje stav ověření.
 - Zelený test není důkaz skutečné funkčnosti.
 - Tvrzení o zvukové cestě smí mít nejvýš stav 🧪, dokud ji nespustí člověk na
   skutečném Macu.

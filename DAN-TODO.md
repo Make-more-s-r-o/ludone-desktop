@@ -80,6 +80,11 @@ Rozhodnout dvě věci:
 
 Ohlášení nahrávání patří **do UI jako viditelný prvek, ne do Nastavení.**
 
+### ⚠️ D7 — Sjednotit odhad desktopu v `PLAN.md`
+
+`PLAN.md` má dva různé odhady desktopu: ř. 60 uvádí **12,5–20 ČD**, zatímco ř. 194
+uvádí **14,5–23,5 ČD**. Rozhodni, který platí; žádné z těchto čísel se zatím nemění ani nemaže.
+
 ---
 
 ## 2b. Designové stopky — čtyři ze šesti rozhodnuté 24. 8.

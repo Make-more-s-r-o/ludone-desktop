@@ -2,11 +2,11 @@
 
 > [!WARNING]
 > **PŘEKONÁNO 21. 8. 2026.** Měření z 20. 8. bylo o den později vyvráceno
-> souborem [`NALEZ-OPAKOVANI.md`](NALEZ-OPAKOVANI.md) ve stejném adresáři.
-> Křížová korelace systémové stopy s `Glass.aiff` byla **0,9638**, zatímco
-> u mikrofonu jen **0,0098**. Mikrofon byl se zvukem tišší (**−46,0 dB**) než
-> v tichu (**−44,2 dB**), což vylučuje akustický přeslech. Výsledek byl
-> reprodukován v **5 bězích** na Electronu 37 i 43.
+> závěrem v [`NALEZ-OPAKOVANI.md`](NALEZ-OPAKOVANI.md). Citovaná křížová korelace
+> **0,9638** pro systém a **0,0098** pro mikrofon v tomto adresáři doložená není,
+> protože se surová data nedochovala. Reprodukovatelný důkaz z 21. 8. je v
+> [`../nahravani-2026-08-21/`](../nahravani-2026-08-21/); kontext a pořadí čtení
+> shrnuje zdejší [`README.md`](README.md).
 
 
 Datum pokusu: 20. 8. 2026  
