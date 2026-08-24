@@ -60,6 +60,8 @@ musí přepsat (E0), jinak ho první skeptik shodí, přestože je pravdivý.
 **Celkem 19–29 ČD**, z toho desktop 12,5–20 ČD. Zbytek je serverová práce, kterou žádný dosavadní
 odhad nezahrnoval.
 
+⚠️ **Rozpor:** ř. 194 uvádí desktop **14,5–23,5 ČD**. Platný odhad zvolí Dan.
+
 | # | Etapa | Kdo | ČD | Spec |
 |---|---|---|---|---|
 | **E0** | Startovací čára — kód na `main`, `AGENTS.md`, jeden zdroj pravdy | Claude Opus | 0,5–1 | [`specs/E0`](specs/E0-startovaci-cara.md) |
@@ -189,7 +191,7 @@ commitnuté a nemá remote** (`git ls-files mockupy` vrací prázdno). Dokud nep
 
 | | Bylo | Je |
 |---|---|---|
-| Odhad desktopu | 18–30 ČD (`00-FINALNI-NAVRH.md`) | **14,5–23,5 ČD** (`05-ZAVERY`, po A11) |
+| Odhad desktopu | 18–30 ČD (`00-FINALNI-NAVRH.md`) | **14,5–23,5 ČD** (`05-ZAVERY`, po A11) <br>⚠️ **Rozpor:** ř. 60 uvádí desktop **12,5–20 ČD**. Platný odhad zvolí Dan. |
 | Serverová část | nezahrnuta v žádném odhadu | **+6,5–9 ČD** (E5 + E9) |
 | Balíčky z Anarlogu | 1 (`detect`) | **0** — `05-ZAVERY` oddíl 7.2 ruší i ten poslední, nahrazuje ho kalendář |
 | B6 „vadná hlavička Opus“ | riziko pro přepis | **kosmetika.** Hlavička je platná; skutečný problém je chybějící délka, opraví ji `ffmpeg -c copy` při příjmu |
