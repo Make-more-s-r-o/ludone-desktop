@@ -38,17 +38,17 @@ nahrávání schůzek pod kontrolou, s archivem pro celý tým.
 | B1 | ✅ **POTVRZENO 21. 8. měřením — Electron platí** | Systémový zvuk naměřen naostro: stopa `System audio`, ticho 996 B × se zvukem 43 339 B za 5 s. Bez jediného nového dialogu | Nic. Otázka je uzavřená |
 | B1-puvodni | ~~Electron (podmíněně)~~ | Chromium má od verze 141 zachycení systémového zvuku i potlačení ozvěny vestavěné, přes týž Core Audio tap jako Anarlog | Když noční pokus ukáže, že to v Electronu nejde, nebo si to řekne o oprávnění „Záznam obrazovky“ místo „Systémový zvuk“ → **Tauri s převzatým jádrem z Anarlogu** |
 | B5 | ✅ **Aplikace opravdu nahrává** (21. 8., commit `2bb09ce`) | Dvě oddělené stopy, měření ticho × zvuk: systém 1 351 B → 27 993 B (20,7×), potvrzeno i FFmpegem (−91 dB → −20 dB) | Nic |
-| B6 | ⚠️ **WebM z nahrávání má vadnou hlavičku Opus a chybí celková délka** | Zjistil Codex při ověřování FFmpegem | Vyřešit před zpracováním na serveru — teď nevadí, u přepisu může |
+| B6 | **WebM má platnou hlavičku Opus; chybí jen celková délka** | `ffprobe` vrací `N/A`; po `ffmpeg -c copy` vrátí `5,040000` a dekódovaný zvuk je bitově totožný. Naměřeno 84 paketů, souvislé PTS po 60 ms a 241 920 vzorků = přesně 5,040 s | Nahrazuje původní tvrzení o vadné hlavičce; při příjmu stačí remux `ffmpeg -c copy` |
 | B2 | **Z Anarlogu převzít jediný modul** (ořezané rozpoznání schůzky) | Zbytek Chromium nahradí | Padá s B1 — při Tauri jich je potřeba deset |
 | B3 | **Klíč k přepisu nikdy v aplikaci**, jde přes prostředníka na serveru | Desktopová aplikace běží na cizím stroji; klíč z ní jde vytáhnout | Nic. Tohle je bezpečnostní, ne technická volba |
-| B4 | Odhad **5–8 dnů na první etapu**, 18–30 na plnou | Platí pro appku se seznamem a detailem | Po A11 (spouštěč) mají být **nižší** — přepočítává se |
+| B4 | Platný odhad z `PLAN.md`: **19–29 ČD celkem, z toho desktop 12,5–20 ČD** | Nahrazuje starý odhad, který vznikl před A11 („aplikace je spouštěč“) | Přepočítáno podle aktuálního rozsahu desktopu a zahrnuté serverové práce |
 
 ## C. Čeká na Dana — neblokuje noční běh
 
 | # | Otázka | Doporučení |
 |---|---|---|
 | C1 | **Apple Developer Program, 99 $/rok** ⚠️ **doporučení se 21. 8. ZMĚNILO — viz níž** | **Začít bez placení.** Měřením se ukázalo, že jde o dvě nezávislé věci, ne o jednu |
-| C2 | **GitHub** — repo je zatím jen lokální | Založit, až bude co ukazovat |
+| C2 | **GitHub** — repozitář je na `https://github.com/Make-more-s-r-o/ludone-desktop.git` | Nahrazuje původní lokální stav; adresa ověřena přes `git remote -v` |
 | C3 | **Jedna aplikace, nebo dvě** (nahrávání × čas) | Codex to řeší; předběžně jedna |
 | C4 | **Tři nálezy v `ludone-app`** — deaktivace neodvolá klíče (`consents.ts:129` bez volajícího), prázdný výběr nástrojů vydá plný klíč (`mcp/actions.ts:90`), rozsah firmy má jedinou větev (`business-roles.ts:166-181`) | Zapsat do `DAN-TODO.md` jako samostatný úkol. **Platí na produkci dnes**, s tímhle projektem nesouvisí |
 | C5 | **Čtyři rozhodnutí z předchozího návrhu** — pilot, Anarlog Pro, práva vedoucího, denní soupis | Viz `2-navrh-luplaud.md` v Downloads |
