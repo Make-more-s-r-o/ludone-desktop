@@ -8,6 +8,25 @@ se změřit nedá bez tebe — druhé zařízení, sluchátka, restart Macu, pen
 
 ---
 
+## 0. Noční běh je připravený — co k němu patří
+
+Briéf: [`docs/behy/2026-08-24-zaklad-a-fronta.md`](docs/behy/2026-08-24-zaklad-a-fronta.md).
+Spouští se **v nové session** přes `/beh` — briéf je soběstačný, konverzaci nepotřebuje.
+
+**Ke spuštění od tebe nic nepotřebuju.** Ověřeno naostro: Codex jede (`EXIT=0`, `gpt-5.6-sol`,
+CLI 0.149.1) · Orca orchestrace zapnutá · OAuth server LuDone živý s dynamickou registrací
+(desktop si `client_id` vyžádá sám, žádný tvůj zásah) · Google Console beze změny.
+
+**Tři věci, které neblokují start, ale blokují to, co přijde po něm:**
+
+| | Co | Proč to nepočká donekonečna |
+|---|---|---|
+| 🔴 **1** | **Google Meet test** — půl dne, druhé zařízení | Jsi v Google ekosystému, takže Meet **je** ta platforma. A6 je vyřazovací kritérium a testoval se jen `afplay`. Připravím měřicí skript, ty pustíš hovor. **Dokud to neproběhne, stavíme na nezměřeném předpokladu** |
+| **2** | **Kolik hodin audia měsíčně** zbude, až zmizí krabička od Plaudu | Jedno číslo. Určuje volbu přepisu, cenu za hodinu češtiny a jestli je v ní rozlišení mluvčích. Jde do dokumentace (etapa E8) |
+| **3** | **Právní rámec** — souhlas účastníků a retence | Není to kód, je to hodina rozhovoru. Ale musí být **dřív, než vznikne první ostrá nahrávka** — pak už nahrávky existují a mažou se hůř, než by nevznikaly |
+
+---
+
 ## 1. Rozhodnutí, která jsi udělal 24. 8. (zapsáno, neotvírá se znovu)
 
 | # | Otázka | Rozhodnutí |
