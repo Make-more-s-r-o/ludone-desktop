@@ -29,7 +29,6 @@ const RECORDING_TRACKS = new Map([
   ["microphone", "mikrofon"],
   ["system", "system"],
 ]);
-const VALID_TRAY_STATES = new Set(["signed-out", "idle", "recording", "tracking"]);
 const recordingSessions = new Map();
 const recordingOwnersPreparing = new Map();
 
@@ -75,16 +74,25 @@ function isTrustedAppUrl(value) {
 }
 
 function isTrustedWebContents(webContents) {
-  return Boolean(webContents && !webContents.isDestroyed() && isTrustedAppUrl(webContents.getURL()));
+  try {
+    return Boolean(webContents && !webContents.isDestroyed() && isTrustedAppUrl(webContents.getURL()));
+  } catch {
+    return false;
+  }
+}
+
+function isTrustedRecordingSender(event, expectedWebContents) {
+  const sender = event?.sender;
+  return Boolean(
+    expectedWebContents
+    && isTrustedWebContents(sender)
+    && sender === expectedWebContents
+    && (!event.senderFrame || event.senderFrame === sender.mainFrame)
+  );
 }
 
 function requireTrustedRecordingSender(event) {
-  if (
-    !isTrustedWebContents(event.sender)
-    || !panelWindow
-    || event.sender !== panelWindow.webContents
-    || (event.senderFrame && event.senderFrame !== event.sender.mainFrame)
-  ) {
+  if (!isTrustedRecordingSender(event, panelWindow?.webContents)) {
     throw new Error("Nahrávací IPC odmítnuto: nedůvěryhodný odesílatel");
   }
 }
@@ -139,15 +147,27 @@ function traySvg(state) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">${variants[state]}</svg>`;
 }
 
+function trayIconName(state) {
+  switch (state) {
+    case "signed-out":
+    case "idle":
+    case "recording":
+    case "tracking":
+      return state;
+    default:
+      return "signed-out";
+  }
+}
+
 function trayImage(state) {
-  const encoded = Buffer.from(traySvg(state)).toString("base64");
+  const encoded = Buffer.from(traySvg(trayIconName(state))).toString("base64");
   return nativeImage
     .createFromDataURL(`data:image/svg+xml;base64,${encoded}`)
     .resize({ width: 18, height: 18 });
 }
 
 function updateTray(nextState) {
-  trayState = VALID_TRAY_STATES.has(nextState) ? nextState : "signed-out";
+  trayState = trayIconName(nextState);
   if (!tray) return;
   const labels = {
     "signed-out": "LuDone · nepřihlášeno",
