@@ -18,3 +18,8 @@ nahravky/
 # vůbec nevleze a znovu-zahrnutí by nefungovalo. Nahrávky proto archivujeme
 # rozbalené, ne v podadresáři toho jména.
 !dukazy/**
+
+# ...ale výjimka nesmí vpustit binární smetí. `.DS_Store` si macOS přepisuje sám
+# pokaždé, kdy se na složku někdo podívá, takže jednou vpuštěný by způsobil,
+# že `git status` už nikdy nebude čistý a každý `add -A` by ho přibalil.
+dukazy/**/.DS_Store
