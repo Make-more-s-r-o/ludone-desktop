@@ -1,0 +1,67 @@
+{
+  "proofRoot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged",
+  "runs": [
+    {
+      "mode": "silence",
+      "actualRecordingMs": 5010,
+      "secureContext": {
+        "secure": true,
+        "mediaDevices": true,
+        "href": "file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/release/LuDone%20Desktop.app/Contents/Resources/app/dist/index.html"
+      },
+      "labels": {
+        "microphone": "Default - Mikrofon MacBook Pro (Built-in)",
+        "system": "System audio"
+      },
+      "files": [
+        "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/silence/user-data/nahravky/2026-08-21T06-39-05-699Z-ae649b64-mikrofon.webm",
+        "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/silence/user-data/nahravky/2026-08-21T06-39-05-699Z-ae649b64-system.webm"
+      ],
+      "applicationLog": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/silence/application.log",
+      "measurements": {
+        "microphone": {
+          "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/silence/user-data/nahravky/2026-08-21T06-39-05-699Z-ae649b64-mikrofon.webm",
+          "size": 85169
+        },
+        "system": {
+          "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/silence/user-data/nahravky/2026-08-21T06-39-05-699Z-ae649b64-system.webm",
+          "size": 1351
+        }
+      }
+    },
+    {
+      "mode": "sound",
+      "actualRecordingMs": 5013,
+      "secureContext": {
+        "secure": true,
+        "mediaDevices": true,
+        "href": "file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/release/LuDone%20Desktop.app/Contents/Resources/app/dist/index.html"
+      },
+      "labels": {
+        "microphone": "Default - Mikrofon MacBook Pro (Built-in)",
+        "system": "System audio"
+      },
+      "files": [
+        "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/sound/user-data/nahravky/2026-08-21T06-39-12-336Z-e806fb48-mikrofon.webm",
+        "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/sound/user-data/nahravky/2026-08-21T06-39-12-336Z-e806fb48-system.webm"
+      ],
+      "applicationLog": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/sound/application.log",
+      "measurements": {
+        "microphone": {
+          "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/sound/user-data/nahravky/2026-08-21T06-39-12-336Z-e806fb48-mikrofon.webm",
+          "size": 85517
+        },
+        "system": {
+          "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/kostra/.runtime/audio-proof-20260821-committable-packaged/sound/user-data/nahravky/2026-08-21T06-39-12-336Z-e806fb48-system.webm",
+          "size": 27993
+        }
+      }
+    }
+  ],
+  "comparison": {
+    "silenceSystemBytes": 1351,
+    "soundSystemBytes": 27993,
+    "requiredSystemBytes": 5447,
+    "passes": true
+  }
+}
