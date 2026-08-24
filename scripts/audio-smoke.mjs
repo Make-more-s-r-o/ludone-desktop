@@ -20,6 +20,12 @@ const proofRoot = path.resolve(
 );
 const onboardingKey = "ludone.prototype.onboarding-complete";
 const glassSound = "/System/Library/Sounds/Glass.aiff";
+// Čisté tiché běhy mají stovky bajtů až přibližně 1,4 kB, doložený
+// znečištěný běh měl 50 107 B. 4 KiB nechává čistému tichu téměř 3× rezervu.
+const SILENCE_CONTAMINATION_MAX_BYTES = 4_096;
+// Tři celkové pokusy znamenají nejvýš dvě opakování: stačí na krátké rušení,
+// ale měření zůstane časově omezené a nemůže se opakovat donekonečna.
+const MAX_SILENCE_ATTEMPTS = 3;
 
 await access(appBundle);
 await access(glassSound);
@@ -382,7 +388,7 @@ async function runRecording(mode) {
     }
     await waitForExit(child);
     await persistApplicationLog();
-    throw new Error(`${mode}: ${error.message}\nLog aplikace: ${applicationLogPath}`);
+    throw new Error(`${mode}: ${error.message}\nLog aplikace: ${applicationLogPath}`, { cause: error });
   }
 }
 
@@ -399,28 +405,63 @@ async function measureRun(run) {
   return { ...run, measurements: { microphone, system } };
 }
 
-const rawRuns = [
-  await runRecording("silence"),
-  await runRecording("sound"),
-];
-const runs = await Promise.all(rawRuns.map(measureRun));
-const silenceSystemBytes = runs[0].measurements.system.size;
-const soundSystemBytes = runs[1].measurements.system.size;
+const discardedSilenceRuns = [];
+let acceptedSilenceRun;
+
+for (let attempt = 1; attempt <= MAX_SILENCE_ATTEMPTS; attempt += 1) {
+  const measured = await measureRun(await runRecording(`silence-pokus-${attempt}`));
+  const systemBytes = measured.measurements.system.size;
+  if (systemBytes <= SILENCE_CONTAMINATION_MAX_BYTES) {
+    acceptedSilenceRun = { ...measured, attempt };
+    break;
+  }
+
+  discardedSilenceRuns.push({ ...measured, attempt, outcome: "measurement-contaminated" });
+  console.warn(
+    `Tichý běh zahozen (pokus ${attempt}/${MAX_SILENCE_ATTEMPTS}): systémová stopa má ${systemBytes} B, práh je ${SILENCE_CONTAMINATION_MAX_BYTES} B — měření bylo znečištěné cizím zvukem.`,
+  );
+  if (attempt < MAX_SILENCE_ATTEMPTS) await delay(1_000);
+}
+
+const proofFile = path.join(proofRoot, "proof-files.json");
+if (!acceptedSilenceRun) {
+  const contaminatedResult = {
+    proofRoot,
+    outcome: "measurement-contaminated",
+    silenceContaminationMaxBytes: SILENCE_CONTAMINATION_MAX_BYTES,
+    maxSilenceAttempts: MAX_SILENCE_ATTEMPTS,
+    discardedSilenceRuns,
+  };
+  await writeFile(proofFile, `${JSON.stringify(contaminatedResult, null, 2)}\n`);
+  throw new Error(
+    `Měření bylo opakovaně znečištěné cizím zvukem (${MAX_SILENCE_ATTEMPTS}/${MAX_SILENCE_ATTEMPTS} pokusů); nejde o důkaz selhání aplikace.`,
+  );
+}
+
+const soundRun = await measureRun(await runRecording("sound"));
+const runs = [acceptedSilenceRun, soundRun];
+const silenceSystemBytes = acceptedSilenceRun.measurements.system.size;
+const soundSystemBytes = soundRun.measurements.system.size;
 const requiredSystemBytes = Math.max(silenceSystemBytes * 3, silenceSystemBytes + 4_096);
+const applicationRecorded = soundSystemBytes > requiredSystemBytes;
 const result = {
   proofRoot,
+  outcome: applicationRecorded ? "measurement-ok" : "application-did-not-record",
+  silenceContaminationMaxBytes: SILENCE_CONTAMINATION_MAX_BYTES,
+  maxSilenceAttempts: MAX_SILENCE_ATTEMPTS,
+  discardedSilenceRuns,
   runs,
   comparison: {
     silenceSystemBytes,
     soundSystemBytes,
     requiredSystemBytes,
-    passes: soundSystemBytes > requiredSystemBytes,
+    passes: applicationRecorded,
   },
 };
-await writeFile(path.join(proofRoot, "proof-files.json"), `${JSON.stringify(result, null, 2)}\n`);
-if (!result.comparison.passes) {
+await writeFile(proofFile, `${JSON.stringify(result, null, 2)}\n`);
+if (!applicationRecorded) {
   throw new Error(
-    `Systémová stopa se zvukem není výrazně větší: ${soundSystemBytes} B, požadováno více než ${requiredSystemBytes} B`,
+    `Měření proběhlo bez znečištění, ale aplikace opravdu nenahrála systémový zvuk: ${soundSystemBytes} B, požadováno více než ${requiredSystemBytes} B.`,
   );
 }
 console.log(JSON.stringify(result, null, 2));

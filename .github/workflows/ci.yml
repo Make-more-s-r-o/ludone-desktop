@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run gates
+      - run: npm run build
+
+      # Smoke testy jsou v CI záměrně zařazené, ale vypnuté. Potřebují GUI,
+      # fyzický zvuk a oprávnění Záznam obrazovky, která runner nemá komu
+      # potvrdit. Spouští je člověk na skutečném Macu.
+      - name: UI smoke (ruční checkpoint na Macu)
+        if: ${{ false }}
+        run: node scripts/ui-smoke.mjs
+      - name: Audio smoke (ruční checkpoint na Macu)
+        if: ${{ false }}
+        run: npm run test:audio

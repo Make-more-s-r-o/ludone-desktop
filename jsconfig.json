@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "maxNodeModuleJsDepth": 0,
+    "types": ["node"]
+  },
+  // E2 kontroluje jen nově vznikající čistou logiku a testy. Starší UI, Electron
+  // a skripty kontrolou nikdy neprošly; rozsah rozšíří E3 po opravě jejich nálezů.
+  "include": ["src/lib/**/*.js", "tests/**/*.js"],
+  "exclude": ["src/components/**", "src/App.jsx", "electron/**", "scripts/**"]
+}
