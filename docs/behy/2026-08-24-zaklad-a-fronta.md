@@ -170,63 +170,106 @@ Závislosti jdou do `orca orchestration task-create --deps`, takže pořadí dr�
 — dva zapisovatelé v jednom stromě si přepisují práci a důkaz z takového běhu je neplatný, i když
 oba doběhnou „úspěšně". E8 nezávisí na ničem a dá se pustit hned.
 
-### Akceptační kritéria — spustitelné příkazy
+### Vlastnictví souborů
 
-Každé vrací **0 = hotovo**. Do checkpointu patří doslovný výpis.
+🔴 **Tohle patří do zadání každé etapy jako VÝČET CEST, ne jako zákaz v próze.** Próza prohraje
+s „tady to logicky patří taky"; výčet umí Codex použít jako filtr při každé jednotlivé editaci.
+Doloženo, že to funguje: v běhu, kde ve stromě pracovaly tři ruce, si Codex cizích změn všiml,
+napsal do `notes`, že jsou mimo jeho vlastnictví, a **nedotkl se jich**.
 
-**E1**
+Cesty jsou relativní ke kořeni repozitáře **po etapě E1b** (do té doby leží kód aplikace na větvi
+`feat/kostra-appky` ve worktree `.claude/worktrees/kostra`).
+
+| ID | SMÍŠ MĚNIT | NESMÍŠ MĚNIT |
+|---|---|---|
+| **E1** | `AGENTS.md` · `ROZHODNUTI.md` · `README.md` · `dukazy/**` | jakýkoli `.js/.jsx/.cjs/.mjs` · `package.json` · `.github/**` |
+| **E2** | `eslint.config.js` · `jsconfig.json` · `vitest.config.js` · `tests/**` · `scripts/akceptace/**` · `scripts/audio-smoke.mjs` · `.github/workflows/**` · `package.json` *(jen pole `scripts` a `devDependencies`)* | `electron/**` · `src/**` — E2 staví měřidlo, neopravuje kód |
+| **E3** | `electron/main.cjs` · `electron/preload.cjs` · `src/App.jsx` · `scripts/package-mac.mjs` · `tests/tray-authority.test.js` · `tests/ipc-sender-guard.test.js` | `src/features/**` · `src/components/**` · existující testy jiných etap |
+| **E4** | `electron/main.cjs` *(jen zápis manifestu)* · `src/lib/manifest.js` *(nový)* · `tests/manifest.test.js` | `src/features/recording/RecordingCard.jsx` · cokoli z E5 |
+| **E5** | `src/lib/queue.js` *(nový)* · `electron/queue.cjs` *(nový)* · `tests/queue.test.js` · `.env.example` | `src/lib/manifest.js` *(vlastní E4)* · `electron/main.cjs` |
+| **E6** | `electron/main.cjs` *(jen `permission:request`)* · `src/components/Onboarding.jsx` · `tests/permissions.test.js` | `src/App.jsx` · cokoli z E3 |
+| **E7** | `src/lib/oauth.js` *(nový)* · `electron/auth.cjs` *(nový)* · `tests/pkce.test.js` · `tests/oauth-state.test.js` | `electron/main.cjs` · `src/components/Settings.jsx` |
+| **E8** | `docs/server-modul/**` | **cokoli mimo `docs/`** — E8 nepíše ani řádek kódu |
+
+**Když etapa najde v pracovním stromě změny mimo svůj výčet: nechá je být a zapíše je do `notes`.**
+Neuklízí je, nevrací, nepřebírá.
+
+⚠️ **Kolize, kterou souběh vyrábí:** E3, E4 a E6 všechny chtějí `electron/main.cjs`. Buď je pusť
+**za sebou**, nebo každou ve vlastním worktree a **sloučení nech na orchestrátorovi** — ale nikdy
+dvě naráz do téhož stromu.
+
+### Akceptační kritéria — spustitelné skripty
+
+🔴 **Každá etapa si jako součást své práce vytvoří skript `scripts/akceptace/<ID>.sh`.** Kritérium
+není řetěz podmínek slepený `&&` — ten při selhání neřekne, **co** selhalo, a jedna přehlédnutá
+negace ho promění v bránu, která projde vždycky.
+
+**Tvar, který každý ten skript má mít:**
+
 ```bash
-test -f AGENTS.md \
-  && ! grep -rn "SYSTÉMOVÝ ZVUK NEFUNGUJE" --include='*.md' . | grep -qv "PŘEKONÁNO" \
-  && ! grep -qn "18–30\|repo je zatím jen lokální\|vadnou hlavičku Opus" ROZHODNUTI.md
+#!/usr/bin/env bash
+# Akceptace <ID>. Vypíše PASS/FAIL za každou podmínku a skončí 1, když aspoň jedna padne.
+chyby=0
+zkontroluj() {                     # zkontroluj "<popis>" <příkaz…>
+  local popis="$1"; shift
+  if "$@" > /tmp/akc.out 2>&1; then
+    echo "PASS  $popis"
+  else
+    echo "FAIL  $popis"; sed 's/^/      | /' /tmp/akc.out; chyby=$((chyby+1))
+  fi
+}
+# … jednotlivé kontroly …
+echo "---"; echo "chyb: $chyby"; exit $(( chyby > 0 ? 1 : 0 ))
 ```
 
-**E1b**
+Proč zrovna takhle: **výpis skriptu JE ten důkaz**, který patří do checkpointu. Řádek `FAIL` se
+jménem podmínky říká, co opravit; `&&` řetěz řekne jen „nula". A exit kód se měří **před rourou**
+(`cmd > /tmp/out 2>&1; echo $?`) — za `| tail` čteš status roury a fail-open brána vypadá jako
+úspěch.
+
+**Co má která etapa kontrolovat:**
+
+| ID | Podmínky |
+|---|---|
+| **E1** | `AGENTS.md` existuje · žádný výskyt „SYSTÉMOVÝ ZVUK NEFUNGUJE" bez značky PŘEKONÁNO · `ROZHODNUTI.md` neobsahuje „18–30", „repo je zatím jen lokální" ani „vadnou hlavičku Opus" · každý opravený rozpor má v dokumentu zapsáno, čím byl nahrazen |
+| **E1b** | `git merge-base --is-ancestor 2bb09ce main` · `electron/main.cjs` a `src/App.jsx` existují v kořeni · `git worktree list` má 1 řádek · `npm ci && npm run build && npm run package:mac` projde na čerstvém klonu |
+| **E2** | `npm run gates` = 0 · **a tři sabotáže demonstrované skriptem** (níž) |
+| **E3** | `plutil -p` na release bundlu vypíše `NSAudioCaptureUsageDescription` · `codesign --verify --deep --strict` projde · `scripts/package-mac.mjs` neobsahuje `cz.ludone.desktop.prototype` · unit testy `tray-authority` a `ipc-sender-guard` zelené |
+| **E4** | unit testy `manifest` zelené · mezi nimi test, že po simulovaném pádu **před prvním chunkem** manifest existuje se stavem `nedokonceno` |
+| **E5** | unit testy `queue` zelené · **a test s NENASTAVENÝM `DESKTOP_UPLOAD_ENABLED`**, který assertuje `toHaveBeenCalledTimes(0)` na odesílací vrstvě |
+| **E6** | unit testy `permissions` zelené · `grep -c "granted: true" electron/main.cjs` = **0** (atrapa je pryč) · test, že odmítnutý mikrofon nevrací `granted` |
+| **E7** | `curl -sf https://labs.ludone.cz/.well-known/oauth-authorization-server \| jq -e .registration_endpoint` — **ověřitelné naostro** · unit testy `pkce` a `oauth-state` zelené |
+| **E8** | `docs/server-modul/` existuje · `datovy-model.md` obsahuje `recordings` · `autentizace.md` obsahuje `code_challenge_method` · `kontrakt-desktopu.md` obsahuje `DESKTOP_UPLOAD_ENABLED` · každý soubor má aspoň 40 řádků *(kontrola proti prázdné slupce)* |
+
+### 🔴 E2: sabotáže jsou KROK, ne komentář
+
+Sabotáž popsaná v komentáři nikdo nespustí. E2 proto vytvoří **`scripts/akceptace/E2-sabotaze.sh`**,
+který každou z nich provede, změří a vrátí strom do původního stavu.
+
 ```bash
-git merge-base --is-ancestor 2bb09ce main \
-  && test -f electron/main.cjs && test -f src/App.jsx \
-  && [ "$(git worktree list | wc -l)" -eq 1 ]
+# Kostra jedné sabotáže — a POŘADÍ, které se nesmí obrátit:
+# 1) brána nad NEDOTČENÝM stromem musí být ZELENÁ, jinak STOP (neuklízej, neměř)
+# 2) mutace → grep -c na vložený vzorec MUSÍ být > 0, jinak sabotáž MINULA a o bráně nevíš nic
+# 3) spustit bránu → očekává se ČERVENÁ, doslovný výpis do logu
+# 4) git checkout HEAD -- <cesta>   (HEAD, ne `--` samotné: to obnovuje z INDEXU)
+# 5) brána znovu ZELENÁ, jinak zbyla půlka sabotáže v kódu
 ```
 
-**E2** — a **sabotáže musí být demonstrované, ne slíbené**:
-```bash
-npm run gates                      # lint + typecheck + unit, exit 0
-# (a) odstraň kontrolu pořadí chunků  → unit test PADNE
-# (b) přejmenuj „Zastavit nahrávání"  → ui-smoke PADNE
-# (c) tichý běh, zatímco hraje hudba  → brána běh ZAHODÍ a zopakuje
-```
-🔴 Exit kód měř **před rourou** (`cmd > /tmp/out 2>&1; echo $?`), ne za `| tail` — jinak čteš status
-roury a fail-open kontrola vypadá jako nález.
+**Tři povinné sabotáže:**
 
-**E3**
-```bash
-plutil -p "release/LuDone Desktop.app/Contents/Info.plist" | grep -q NSAudioCaptureUsageDescription \
-  && codesign --verify --deep --strict "release/LuDone Desktop.app" \
-  && ! grep -q "cz.ludone.desktop.prototype" scripts/package-mac.mjs \
-  && npm run test:unit -- tray-authority ipc-sender-guard
-```
+| # | Mutace | Očekávání |
+|---|---|---|
+| a | odstranit kontrolu pořadí chunků v `appendRecordingChunk` | unit test **PADNE** |
+| b | přejmenovat tlačítko „Zastavit nahrávání" | `ui-smoke` **PADNE** |
+| c | tichý běh, zatímco na pozadí hraje zvuk | brána běh **ZAHODÍ a zopakuje** — ne vyhlásí neúspěch |
 
-**E4 / E5 / E6** — unit testy nad čistou logikou:
-```bash
-npm run test:unit -- manifest queue permissions
-```
-U **E5** musí být mezi testy i ten, který ověří, že při **nenastaveném** `DESKTOP_UPLOAD_ENABLED`
-se odesílací vrstva **nezavolá ani jednou** (`toHaveBeenCalledTimes(0)`). Obě polohy přepínače
-nestačí — chybějící konfigurace je běžnější stav než špatná.
+⚠️ Sabotáž **c** potřebuje zvuk, takže **ji spustí Dan, ne běh.** E2 ji připraví jako skript
+a v checkpointu ji označí ⛔ neověřeno. Sabotáže **a** a **b** běh provést umí a musí.
 
-**E7** — tohle jde ověřit **naostro proti labs**:
-```bash
-curl -sf https://labs.ludone.cz/.well-known/oauth-authorization-server | jq -e '.registration_endpoint' \
-  && npm run test:unit -- pkce oauth-state
-```
-
-**E8**
-```bash
-test -d docs/server-modul \
-  && grep -q "recordings" docs/server-modul/datovy-model.md \
-  && grep -q "code_challenge_method" docs/server-modul/autentizace.md \
-  && grep -q "DESKTOP_UPLOAD_ENABLED" docs/server-modul/kontrakt-desktopu.md
-```
+⚠️ A pozor na past, která vypadá jako nález: **zelená po sabotáži má tři různé příčiny** — test je
+slabý (artefakt, který assert čte, se změnil) × sabotáž minula cíl (artefakt je bajt po bajtu
+stejný) × invariant přežil. Rozliší je jedině to, že si vypíšeš, **co assert čte, před mutací
+a po ní.** Bez toho „nezčervenalo" není nález, ale prázdný běh.
 
 ---
 
