@@ -2,10 +2,15 @@
 
 > ## ✅ VERZE 3 — HOTOVO, SPUSTITELNÉ
 >
-> **Naposledy upraveno 24. 8. 2026 ve 22:05.** Když čteš tohle, čteš finální verzi — nespouštěj
+> **Naposledy upraveno 24. 8. 2026 ve 22:20.** Když čteš tohle, čteš finální verzi — nespouštěj
 > nic, co ti zbylo v hlavě z dřívějška.
 >
-> **Změny proti verzi 2** (všechny z nálezů session, která běh povede, změřených proti repozitáři):
+> **Nejnovější změna (22:20):** přibyla sekce **„Danův pokyn pro start"** hned pod tímhle blokem —
+> šetři kontext hlavní session, deleguj implementaci **i obě kola review** na Codex workery
+> v oddělených worktrees, a recovery vede **jediná** náhradní session od posledního checkpointu.
+> Ten pokyn **má přednost před dělbou práce popsanou níž**.
+>
+> **Změny proti verzi 2** (z nálezů session, která běh povede, změřených proti repozitáři):
 >
 > 1. 🔴 **Kritérium E1 bylo NESPLNITELNÉ a je přepsané.** Zakazovalo řetězec, který sedí na šesti
 >    místech včetně tohoto briéfu — brána by zčervenala na vlastním zadání. Skutečná práce je
