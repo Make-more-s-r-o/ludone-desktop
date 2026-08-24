@@ -576,10 +576,78 @@ ipcMain.handle("auth:begin", async () => {
 });
 
 ipcMain.handle("permission:request", async (_event, permission) => {
-  const supported = new Set(["microphone", "system-audio", "calendar"]);
-  if (!supported.has(permission)) return { granted: false };
-  await new Promise((resolve) => setTimeout(resolve, 280));
-  return { granted: true, permission };
+  function decidePermissionResult(requestedPermission, systemStatus) {
+    const mediaTypes = {
+      microphone: "microphone",
+      "system-audio": "screen",
+    };
+    const knownStatuses = new Set(["granted", "denied", "restricted", "not-determined"]);
+    const status = knownStatuses.has(systemStatus) ? systemStatus : "unknown";
+    const mediaType = mediaTypes[requestedPermission];
+
+    if (!mediaType) {
+      return {
+        permission: requestedPermission,
+        status: "unknown",
+        granted: false,
+        nextAction: "none",
+        settingsUrl: null,
+      };
+    }
+
+    let nextAction = "none";
+    if (status === "not-determined") {
+      nextAction = mediaType === "microphone" ? "request" : "open-settings";
+    } else if (status === "denied") {
+      nextAction = "open-settings";
+    }
+
+    const settingsUrls = {
+      microphone: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone",
+      screen: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+    };
+    return {
+      permission: requestedPermission,
+      status,
+      granted: status === "granted",
+      nextAction,
+      settingsUrl: nextAction === "open-settings" ? settingsUrls[mediaType] : null,
+    };
+  }
+
+  const mediaType = permission === "microphone"
+    ? "microphone"
+    : permission === "system-audio" ? "screen" : null;
+  if (!mediaType) return decidePermissionResult(permission);
+
+  const { systemPreferences } = require("electron");
+  let status;
+  try {
+    status = systemPreferences.getMediaAccessStatus(mediaType);
+  } catch (error) {
+    console.error(`[permissions] Stav oprávnění ${permission} se nepodařilo přečíst: ${error.message}`);
+    return decidePermissionResult(permission);
+  }
+
+  let result = decidePermissionResult(permission, status);
+  if (result.nextAction === "request") {
+    try {
+      await systemPreferences.askForMediaAccess("microphone");
+      status = systemPreferences.getMediaAccessStatus("microphone");
+      result = decidePermissionResult(permission, status);
+    } catch (error) {
+      console.error(`[permissions] Žádost o mikrofon selhala: ${error.message}`);
+      result = decidePermissionResult(permission);
+    }
+  } else if (result.nextAction === "open-settings") {
+    try {
+      await shell.openExternal(result.settingsUrl);
+    } catch (error) {
+      console.error(`[permissions] Nastavení systému se nepodařilo otevřít: ${error.message}`);
+    }
+  }
+
+  return result;
 });
 
 ipcMain.handle("test:quit", (event) => {
