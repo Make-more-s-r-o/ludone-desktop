@@ -11,6 +11,8 @@ const outputApp = path.join(releaseDir, "LuDone Desktop.app");
 const resourcesDir = path.join(outputApp, "Contents", "Resources");
 const bundledAppDir = path.join(resourcesDir, "app");
 const infoPlist = path.join(outputApp, "Contents", "Info.plist");
+// Změna bundle id resetuje dříve udělená oprávnění macOS.
+const BUNDLE_ID = "cz.ludone.desktop";
 
 await mkdir(releaseDir, { recursive: true });
 await rm(outputApp, { recursive: true, force: true });
@@ -53,7 +55,7 @@ execFileSync("/usr/bin/plutil", [
   "-replace",
   "CFBundleIdentifier",
   "-string",
-  "cz.ludone.desktop.prototype",
+  BUNDLE_ID,
   infoPlist,
 ]);
 execFileSync("/usr/bin/plutil", [
@@ -61,6 +63,13 @@ execFileSync("/usr/bin/plutil", [
   "NSMicrophoneUsageDescription",
   "-string",
   "LuDone potřebuje mikrofon pro oddělenou nahrávku vašeho hlasu.",
+  infoPlist,
+]);
+execFileSync("/usr/bin/plutil", [
+  "-replace",
+  "NSAudioCaptureUsageDescription",
+  "-string",
+  "LuDone zachytává zvuk z ostatních aplikací, aby v nahrávce schůzky byla slyšet i druhá strana.",
   infoPlist,
 ]);
 execFileSync("/usr/bin/plutil", ["-replace", "LSUIElement", "-bool", "YES", infoPlist]);
