@@ -23,6 +23,38 @@
 
 ---
 
+## 🔴 Danův pokyn pro start (24. 8. 2026, 21:45) — má přednost před dělbou níž
+
+Doslova: *„šetři Claude maximum. Po probuzení Claude pouze načte briéf, vytvoří/řídí DAG, přečte
+kontrakty a diff, spustí brány, commituje a integruje. Veškerou implementaci, testy, první
+i nezávislé review deleguj na konkrétní Codex gpt-5.6-sol workery v oddělených Orca worktrees.
+Použij /beh ultracode. Pokud se tato session nezotaví, Hermes založí jedinou recovery session
+se stejným briéfem a od posledního checkpointu."*
+
+| Claude (hlavní session) SMÍ | Codex `gpt-5.6-sol` MUSÍ |
+|---|---|
+| načíst briéf, postavit a řídit DAG | implementaci všech osmi etap |
+| přečíst zadání, output contract a **diff** | psaní testů |
+| spustit brány a sabotáže | **první review** vlastní práce |
+| commitnout a integrovat | **nezávislé review** cizí etapy (druhý worker, jiný worktree) |
+
+🔴 **Jeden worker = jeden worktree.** Etapy E3, E4 a E6 sahají na týž `electron/main.cjs`
+(viz tabulka vlastnictví níž) — buď jedou za sebou, nebo každá ve vlastním stromě. Dva zapisovatelé
+v jednom stromě dělají důkaz neplatným, i když oba doběhnou „úspěšně".
+
+🔴 **Nezávislé review dělá JINÝ worker než ten, který kód psal**, a dostane za cíl **celý diff
+etapy**, ne „Codexovu část". Review běží read-only (`codex exec` bez `-s workspace-write`).
+
+🔴 **Konsolidace zůstává na Claude i pod tímhle pokynem.** Codex ve worktree nesáhne na
+`index.lock` v nadřazeném `.git`, takže práci nechá v pracovním stromě — převzetí, brány, diff
+a commit musí udělat hlavní session. Delegace je o vykonávání, ne o odpovědnosti.
+
+**Recovery:** když tahle session umře, Hermes založí **jedinou** náhradní session se stejným
+briéfem, která naváže **na poslední `▪ CHECKPOINT`** (`~/.claude/runs/`, příkaz `runs`).
+Dvě souběžné recovery session by si přepsaly práci — proto jedna.
+
+---
+
 ## ZAČNI TADY
 
 Tenhle soubor je **soběstačný**. Kdo ho čte, nepotřebuje žádnou konverzaci — a nesmí ji potřebovat,
