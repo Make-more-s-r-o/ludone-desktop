@@ -1,9 +1,20 @@
 node_modules/
 dist/
 out/
+release/
 .DS_Store
 *.log
 .env*
 .claude/worktrees/
-release/
+.electron-cache/
+.npm-cache/
+.runtime/
 nahravky/
+
+# Archiv důkazů je výjimka: měření se do repa ukládá schválně.
+# Bez tohohle řádku by *.log spolklo application.log z proof běhů
+# a nikdo by si toho nevšiml — soubor prostě nikde není.
+# Pozor: adresář `nahravky/` je vyloučený jako adresář, takže do něj git
+# vůbec nevleze a znovu-zahrnutí by nefungovalo. Nahrávky proto archivujeme
+# rozbalené, ne v podadresáři toho jména.
+!dukazy/**
