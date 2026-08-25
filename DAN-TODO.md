@@ -179,6 +179,33 @@ Nikdy nepodepisovat klíčem, který existuje jen na jednom disku.
 
 ---
 
+## 3a. 🔴 NÁLEZ Z 25. 8. 10:27 — `ui-smoke` je na `main` ČERVENÝ
+
+Spustil jsem `bash scripts/akceptace/E2-sabotaze.sh`. Výsledek:
+
+| Sabotáž | Výsledek |
+|---|---|
+| **a — odstraněná kontrola pořadí chunků** | ✅ **prošla správně**: test pod mutací spadl (1 failed), po obnově zelený. Brána umí zčervenat |
+| **b — přejmenované tlačítko** | 🔴 **NESPUSTILA SE**: `STOP — nedotčená brána není zelená: ui-smoke před mutací` |
+| **c — tiché měření se zvukem na pozadí** | ⛔ nedoběhlo, zastaveno u (b) |
+
+**Příčina (b):** `scripts/ui-smoke.mjs:301` klikne na tlačítko **„Povolit"**, které v
+`src/components/Onboarding.jsx` **neexistuje** — `grep` na něj vrací nulu. Etapa **E6** nahradila
+atrapu oprávnění skutečným macOS API a tím změnila onboarding, ale `ui-smoke` s ní nikdo neposunul.
+
+**Proč to CI nechytilo:** `ui-smoke` je v CI vypnutý (`if: ${{ false }}`), protože potřebuje GUI
+a oprávnění, která runner nemá komu potvrdit. Je to tedy **správně navržené CI, které tuhle třídu
+regrese z principu nevidí** — a přesně proto ta ruční měření v seznamu níž existují.
+
+**Co s tím:** srovnat `ui-smoke.mjs` s novým onboardingem (jedna až dvě editace textů kroků),
+pak teprve doběhne sabotáž (b) a (c). **Chování audio brány zůstává ⛔ neověřené**, dokud (c)
+neproběhne.
+
+⚠️ Sabotážní skript se zachoval správně: **odmítl měřit nad červeným baseline** místo aby vyrobil
+nesmyslný výsledek, a strom po sobě uklidil do posledního bajtu (`git diff HEAD` prázdný).
+
+---
+
 ## 3b. Co zbylo z nočního běhu 25. 8. — nálezy review, které jsem NEOPRAVIL
 
 Běh dokončil všech osm etap a všech devět bran je zelených. Tři nezávislí skeptici pak
