@@ -381,4 +381,89 @@ function createAuthController(options) {
   };
 }
 
-module.exports = { createAuthController };
+const PERMISSION_MEDIA_TYPES = Object.freeze({
+  microphone: "microphone",
+  "system-audio": "screen",
+});
+
+const PERMISSION_SETTINGS_URLS = Object.freeze({
+  microphone: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone",
+  screen: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+});
+
+function decidePermissionResult(requestedPermission, systemStatus) {
+  const knownStatuses = new Set(["granted", "denied", "restricted", "not-determined"]);
+  const status = knownStatuses.has(systemStatus) ? systemStatus : "unknown";
+  const mediaType = PERMISSION_MEDIA_TYPES[requestedPermission];
+
+  if (!mediaType) {
+    return {
+      permission: requestedPermission,
+      status: "unknown",
+      granted: false,
+      nextAction: "none",
+      settingsUrl: null,
+    };
+  }
+
+  let nextAction = "none";
+  if (status === "not-determined") {
+    nextAction = mediaType === "microphone" ? "request" : "open-settings";
+  } else if (status === "denied") {
+    nextAction = "open-settings";
+  }
+
+  return {
+    permission: requestedPermission,
+    status,
+    granted: status === "granted",
+    nextAction,
+    settingsUrl: nextAction === "open-settings" ? PERMISSION_SETTINGS_URLS[mediaType] : null,
+  };
+}
+
+function createPermissionRequestHandler({ systemPreferences, shell, logger = console }) {
+  if (!systemPreferences?.getMediaAccessStatus || !systemPreferences?.askForMediaAccess) {
+    throw new TypeError("Chybí Electron systemPreferences pro kontrolu oprávnění");
+  }
+  if (!shell?.openExternal) throw new TypeError("Chybí Electron shell pro otevření Nastavení");
+
+  return async function requestPermission(permission) {
+    const mediaType = PERMISSION_MEDIA_TYPES[permission];
+    if (!mediaType) return decidePermissionResult(permission);
+
+    let status;
+    try {
+      status = systemPreferences.getMediaAccessStatus(mediaType);
+    } catch (error) {
+      logger.error(`[permissions] Stav oprávnění ${permission} se nepodařilo přečíst: ${error.message}`);
+      return decidePermissionResult(permission);
+    }
+
+    let result = decidePermissionResult(permission, status);
+    if (result.nextAction === "request") {
+      try {
+        await systemPreferences.askForMediaAccess("microphone");
+        status = systemPreferences.getMediaAccessStatus("microphone");
+        result = decidePermissionResult(permission, status);
+      } catch (error) {
+        logger.error(`[permissions] Žádost o mikrofon selhala: ${error.message}`);
+        result = decidePermissionResult(permission);
+      }
+    } else if (result.nextAction === "open-settings") {
+      try {
+        await shell.openExternal(result.settingsUrl);
+      } catch (error) {
+        logger.error(`[permissions] Nastavení systému se nepodařilo otevřít: ${error.message}`);
+      }
+    }
+
+    return result;
+  };
+}
+
+module.exports = {
+  createAuthController,
+  createPermissionRequestHandler,
+  decidePermissionResult,
+};

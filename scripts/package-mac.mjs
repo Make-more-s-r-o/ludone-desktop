@@ -23,14 +23,22 @@ await cp(path.join(projectRoot, "dist"), path.join(bundledAppDir, "dist"), { rec
 await cp(path.join(projectRoot, "electron"), path.join(bundledAppDir, "electron"), {
   recursive: true,
 });
+await mkdir(path.join(bundledAppDir, "src"), { recursive: true });
+await cp(path.join(projectRoot, "src", "lib"), path.join(bundledAppDir, "src", "lib"), {
+  recursive: true,
+});
 
 const sourcePackage = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
+if (sourcePackage.type !== "module") {
+  throw new Error("Balíček musí zachovat type=module pro ESM moduly v src/lib");
+}
 const bundledPackage = {
   name: sourcePackage.name,
   productName: "LuDone Desktop",
   version: sourcePackage.version,
   description: sourcePackage.description,
   main: sourcePackage.main,
+  type: sourcePackage.type,
 };
 await writeFile(
   path.join(bundledAppDir, "package.json"),

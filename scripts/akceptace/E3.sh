@@ -21,6 +21,49 @@ balici_skript_nema_prototypove_id() {
     && ! grep -Fq "$prototypove_id" scripts/package-mac.mjs
 }
 
+balene_src_moduly_existuji() {
+  node <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+
+function filesUnder(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const target = path.join(directory, entry.name);
+    return entry.isDirectory() ? filesUnder(target) : [target];
+  });
+}
+
+const references = new Set();
+for (const file of filesUnder("electron").filter((candidate) => candidate.endsWith(".cjs"))) {
+  const source = fs.readFileSync(file, "utf8");
+  for (const match of source.matchAll(/path\.join\(([^)]*["']src["'][^)]*)\)/gs)) {
+    const parts = [...match[1].matchAll(/["']([^"']+)["']/g)].map((part) => part[1]);
+    const srcIndex = parts.indexOf("src");
+    if (srcIndex >= 0) references.add(path.join(...parts.slice(srcIndex)));
+  }
+}
+
+if (references.size === 0) {
+  console.error("V electron/** nebyl odvozen žádný modul načítaný ze src/");
+  process.exit(1);
+}
+
+const missing = [...references].filter((relativePath) => (
+  !fs.existsSync(relativePath)
+  || !fs.existsSync(path.join("release", "LuDone Desktop.app", "Contents", "Resources", "app", relativePath))
+));
+const packagePath = path.join("release", "LuDone Desktop.app", "Contents", "Resources", "app", "package.json");
+if (!fs.existsSync(packagePath) || JSON.parse(fs.readFileSync(packagePath, "utf8")).type !== "module") {
+  missing.push("package.json:type=module");
+}
+if (missing.length > 0) {
+  console.error(`V bundlu chybí moduly nebo ESM režim: ${missing.join(", ")}`);
+  process.exit(1);
+}
+console.log(`Odvozené moduly v bundlu: ${[...references].sort().join(", ")}`);
+NODE
+}
+
 zkontroluj "balicí skript obsahuje NSAudioCaptureUsageDescription" \
   balici_skript_ma_audio_popis
 zkontroluj "balicí skript neobsahuje prototypové bundle id" \
@@ -33,6 +76,7 @@ zkontroluj "unit test kontroly odesílatele IPC je zelený" \
 bundle="release/LuDone Desktop.app"
 plist="$bundle/Contents/Info.plist"
 if test -d "$bundle"; then
+  zkontroluj "release bundle existuje" test -d "$bundle"
   plist_release_plati() {
     test -s "$plist" || return 1
     /usr/bin/plutil -p "$plist" > /tmp/e3-plist.out 2>&1 || return 1
@@ -42,9 +86,13 @@ if test -d "$bundle"; then
   zkontroluj "release plist má audio popis a ostré bundle id" plist_release_plati
   zkontroluj "release bundle má platný podpis" \
     /usr/bin/codesign --verify --deep --strict "$bundle"
+  zkontroluj "všechny moduly načítané z electron/** přes src/ jsou v bundlu" \
+    balene_src_moduly_existuji
 else
-  echo "PASS  release plist (podmíněná kontrola: bundle neexistuje)"
-  echo "PASS  podpis release bundlu (podmíněná kontrola: bundle neexistuje)"
+  zkontroluj "release bundle existuje; spusť npm run package:mac" test -d "$bundle"
+  echo "SKIP  release plist: bundle chybí"
+  echo "SKIP  podpis release bundlu: bundle chybí"
+  echo "SKIP  moduly src/ v bundlu: bundle chybí"
 fi
 
 echo "---"
