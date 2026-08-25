@@ -10,11 +10,13 @@ const {
   screen,
   session,
   shell,
+  systemPreferences,
 } = require("electron");
 const { createHash, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { fileURLToPath, pathToFileURL } = require("node:url");
+const { createPermissionRequestHandler } = require("./auth.cjs");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
@@ -87,7 +89,8 @@ function isTrustedRecordingSender(event, expectedWebContents) {
     expectedWebContents
     && isTrustedWebContents(sender)
     && sender === expectedWebContents
-    && (!event.senderFrame || event.senderFrame === sender.mainFrame)
+    && event.senderFrame
+    && event.senderFrame === sender.mainFrame
   );
 }
 
@@ -95,6 +98,38 @@ function requireTrustedRecordingSender(event) {
   if (!isTrustedRecordingSender(event, panelWindow?.webContents)) {
     throw new Error("Nahrávací IPC odmítnuto: nedůvěryhodný odesílatel");
   }
+}
+
+function trustedSenderKind(event) {
+  if (isTrustedRecordingSender(event, panelWindow?.webContents)) return "panel";
+  if (isTrustedRecordingSender(event, settingsWindow?.webContents)) return "settings";
+  return null;
+}
+
+function requireTrustedSender(event, allowedKinds) {
+  const senderKind = trustedSenderKind(event);
+  if (!senderKind || !allowedKinds.includes(senderKind)) {
+    throw new Error("IPC odmítnuto: nedůvěryhodný odesílatel");
+  }
+}
+
+function handleValidated(channel, allowedKinds, handler) {
+  ipcMain.handle(channel, (event, ...args) => {
+    requireTrustedSender(event, allowedKinds);
+    return handler(event, ...args);
+  });
+}
+
+function onValidated(channel, allowedKinds, handler) {
+  ipcMain.on(channel, (event, ...args) => {
+    try {
+      requireTrustedSender(event, allowedKinds);
+      return handler(event, ...args);
+    } catch (error) {
+      console.error(`[ipc] Odmítnuto ${channel}: ${error.message}`);
+      return undefined;
+    }
+  });
 }
 
 function configureWritablePaths() {
@@ -563,26 +598,26 @@ function finalizeRecordingSessionsForOwner(ownerId, reason) {
   }
 }
 
-ipcMain.on("tray:set-state", (_event, state) => updateTray(state));
-ipcMain.handle("tray:get-state", () => trayState);
-ipcMain.handle("test:click-tray", () => {
+onValidated("tray:set-state", ["panel"], (_event, state) => updateTray(state));
+handleValidated("tray:get-state", ["panel", "settings"], () => trayState);
+handleValidated("test:click-tray", ["panel"], () => {
   if (!IS_TEST_RUN || !tray || !panelWindow) return { allowed: false, visible: false };
   tray.emit("click");
   return { allowed: true, visible: panelWindow.isVisible() };
 });
-ipcMain.on("panel:hide", () => panelWindow?.hide());
-ipcMain.on("settings:open", () => createSettingsWindow());
-ipcMain.on("settings:close", () => settingsWindow?.close());
-ipcMain.handle("recording:begin", (event) => createRecordingSession(event));
-ipcMain.handle("recording:append", (event, sessionId, source, sequence, arrayBuffer) => (
+onValidated("panel:hide", ["panel"], () => panelWindow?.hide());
+onValidated("settings:open", ["panel"], () => createSettingsWindow());
+onValidated("settings:close", ["settings"], () => settingsWindow?.close());
+handleValidated("recording:begin", ["panel"], (event) => createRecordingSession(event));
+handleValidated("recording:append", ["panel"], (event, sessionId, source, sequence, arrayBuffer) => (
   appendRecordingChunk(event, sessionId, source, sequence, arrayBuffer)
 ));
-ipcMain.handle("recording:finish", (event, sessionId) => {
+handleValidated("recording:finish", ["panel"], (event, sessionId) => {
   ownedRecordingSession(event, sessionId);
   return finalizeRecordingSession(sessionId, "complete");
 });
 
-ipcMain.handle("auth:begin", async () => {
+handleValidated("auth:begin", ["panel"], async () => {
   if (process.env.LUDONE_OPEN_AUTH_BROWSER === "1") {
     await shell.openExternal("https://app.ludone.cz");
   }
@@ -595,82 +630,12 @@ ipcMain.handle("auth:begin", async () => {
   };
 });
 
-ipcMain.handle("permission:request", async (_event, permission) => {
-  function decidePermissionResult(requestedPermission, systemStatus) {
-    const mediaTypes = {
-      microphone: "microphone",
-      "system-audio": "screen",
-    };
-    const knownStatuses = new Set(["granted", "denied", "restricted", "not-determined"]);
-    const status = knownStatuses.has(systemStatus) ? systemStatus : "unknown";
-    const mediaType = mediaTypes[requestedPermission];
+const requestPermission = createPermissionRequestHandler({ systemPreferences, shell });
+handleValidated("permission:request", ["panel"], (_event, permission) => (
+  requestPermission(permission)
+));
 
-    if (!mediaType) {
-      return {
-        permission: requestedPermission,
-        status: "unknown",
-        granted: false,
-        nextAction: "none",
-        settingsUrl: null,
-      };
-    }
-
-    let nextAction = "none";
-    if (status === "not-determined") {
-      nextAction = mediaType === "microphone" ? "request" : "open-settings";
-    } else if (status === "denied") {
-      nextAction = "open-settings";
-    }
-
-    const settingsUrls = {
-      microphone: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone",
-      screen: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
-    };
-    return {
-      permission: requestedPermission,
-      status,
-      granted: status === "granted",
-      nextAction,
-      settingsUrl: nextAction === "open-settings" ? settingsUrls[mediaType] : null,
-    };
-  }
-
-  const mediaType = permission === "microphone"
-    ? "microphone"
-    : permission === "system-audio" ? "screen" : null;
-  if (!mediaType) return decidePermissionResult(permission);
-
-  const { systemPreferences } = require("electron");
-  let status;
-  try {
-    status = systemPreferences.getMediaAccessStatus(mediaType);
-  } catch (error) {
-    console.error(`[permissions] Stav oprávnění ${permission} se nepodařilo přečíst: ${error.message}`);
-    return decidePermissionResult(permission);
-  }
-
-  let result = decidePermissionResult(permission, status);
-  if (result.nextAction === "request") {
-    try {
-      await systemPreferences.askForMediaAccess("microphone");
-      status = systemPreferences.getMediaAccessStatus("microphone");
-      result = decidePermissionResult(permission, status);
-    } catch (error) {
-      console.error(`[permissions] Žádost o mikrofon selhala: ${error.message}`);
-      result = decidePermissionResult(permission);
-    }
-  } else if (result.nextAction === "open-settings") {
-    try {
-      await shell.openExternal(result.settingsUrl);
-    } catch (error) {
-      console.error(`[permissions] Nastavení systému se nepodařilo otevřít: ${error.message}`);
-    }
-  }
-
-  return result;
-});
-
-ipcMain.handle("test:quit", (event) => {
+handleValidated("test:quit", ["panel"], (event) => {
   requireTrustedRecordingSender(event);
   if (!IS_TEST_RUN) return { allowed: false };
   setImmediate(() => app.quit());

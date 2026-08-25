@@ -15,15 +15,17 @@ bez_atrapy_granted_true() {
   test "$(grep -c "granted: true" electron/main.cjs || true)" -eq 0
 }
 
-obsahuje_cteni_stavu() {
-  test -s electron/main.cjs || return 1
-  grep -Fq "getMediaAccessStatus" electron/main.cjs
+produkce_pouziva_exportovany_handler() {
+  test -s electron/auth.cjs || return 1
+  grep -Fq "function createPermissionRequestHandler" electron/auth.cjs \
+    && grep -Fq "createPermissionRequestHandler({ systemPreferences, shell })" electron/main.cjs \
+    && grep -Fq "requestPermission(permission)" electron/main.cjs
 }
 
 zkontroluj "permission:request už neobsahuje atrapu granted: true" \
   bez_atrapy_granted_true
-zkontroluj "permission:request čte skutečný stav přes getMediaAccessStatus" \
-  obsahuje_cteni_stavu
+zkontroluj "produkční permission:request používá exportovaný testovaný handler" \
+  produkce_pouziva_exportovany_handler
 zkontroluj "unit testy oprávnění jsou zelené" \
   npm run test:unit -- permissions
 

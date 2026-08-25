@@ -67,6 +67,22 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     )).toBe(false);
   });
 
+  it("odmítne chybějící senderFrame", () => {
+    const expected = createWebContents();
+    expect(isTrustedRecordingSender(
+      { sender: expected },
+      expected,
+    )).toBe(false);
+  });
+
+  it("odmítne senderFrame s hodnotou null", () => {
+    const expected = createWebContents();
+    expect(isTrustedRecordingSender(
+      { sender: expected, senderFrame: null },
+      expected,
+    )).toBe(false);
+  });
+
   it("odmítne zničené webContents bez výjimky", () => {
     const destroyed = createWebContents(trustedUrl, true);
     expect(() => isTrustedRecordingSender(
@@ -95,9 +111,27 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     )).toBe(false);
   });
 
-  it("produkční guard používá otestovanou čistou kontrolu", () => {
-    expect(functionSource(mainSource, "requireTrustedRecordingSender")).toContain(
-      "isTrustedRecordingSender(event, panelWindow?.webContents)",
-    );
+  it("všechny IPC kanály z produkčního kódu registruje přes validační wrapper", () => {
+    const registrations = [...mainSource.matchAll(
+      /\b(ipcMain\.(?:on|handle)|(?:on|handle)Validated)\(\s*["']([^"']+)["']/g,
+    )].map((match) => ({ registration: match[1], channel: match[2] }));
+
+    expect(registrations.map(({ channel }) => channel).sort()).toEqual([
+      "auth:begin",
+      "panel:hide",
+      "permission:request",
+      "recording:append",
+      "recording:begin",
+      "recording:finish",
+      "settings:close",
+      "settings:open",
+      "test:click-tray",
+      "test:quit",
+      "tray:get-state",
+      "tray:set-state",
+    ].sort());
+    expect(registrations.filter(({ registration }) => registration.startsWith("ipcMain."))).toEqual([]);
+    expect(functionSource(mainSource, "handleValidated")).toContain("requireTrustedSender");
+    expect(functionSource(mainSource, "onValidated")).toContain("requireTrustedSender");
   });
 });
