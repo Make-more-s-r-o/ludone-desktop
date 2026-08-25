@@ -179,6 +179,25 @@ Nikdy nepodepisovat klíčem, který existuje jen na jednom disku.
 
 ---
 
+## 3b. Co zbylo z nočního běhu 25. 8. — nálezy review, které jsem NEOPRAVIL
+
+Běh dokončil všech osm etap a všech devět bran je zelených. Tři nezávislí skeptici pak
+prošli hotovou práci a **všichni tři vrátili VRATIT**. Nálezy, které byly mechanické nebo
+bezpečnostní, jsem opravil ve dvou kolech (`fa794ce` a další). **Tyhle zbývají — každý
+jsem ověřil, že platí, ale opravit je za tebe nemůžu.**
+
+| # | Co | Proč to nechávám tobě |
+|---|---|---|
+| 🔴 **1** | **Autoritou stavu ikony v liště zůstává renderer.** Hlavní proces sice eviduje `recordingSessions`, ale tray z nich stav neodvozuje — dostane ho zprávou z okna. Pád nebo zamrznutí rendereru tedy nechá v liště **falešný stav** („nahrává se", i když ne) | Je to **architektonická změna**, ne oprava: autorita se musí přesunout do hlavního procesu a tray odvozovat ze sessions. Chci na to tvoje ano, protože to mění, kdo o stavu rozhoduje |
+| 🔴 **2** | **Ikona v liště se vyrábí z SVG data URL** a uložené měření pro tohle Electron prostředí říká, že ta cesta vrací **prázdný `nativeImage`**. Testy i brána přitom kontrolují jen textový stav, ne vykreslenou ikonu | **Nemám jak to změřit** — potřebuje spuštěnou aplikaci na tvém Macu a lidské oko. Až appku pustíš, podívej se, jestli ikona v liště **vůbec je vidět**. Když ne, je to tohle |
+| 🔴 **3** | **Helper procesy v bundlu mají generické Electron bundle id.** Hlavní bundle už je správně `cz.ludone.desktop`, ale čtyři helpery ne | Souvisí s **TCC a podpisem** — tedy s tím, komu macOS přiděluje oprávnění. Sahat na identitu procesů bez tvého vědomí nechci, zvlášť když se kvůli tomu resetují udělená oprávnění |
+| **4** | **Onboarding tvrdě blokuje**, když je systémový zvuk odmítnutý — nepustí dál ani uživatele, který má povolený mikrofon. Specifikace přitom dovoluje pokračovat s trvalým varováním | Je to **UX rozhodnutí** a spadá pod otevřenou otázku **O1** (výtvarný směr). Běh měl zakázáno sahat na vzhled |
+| **5** | **Výchozí cesta k identitě uživatele v `electron/auth.cjs`** hledá jméno a e-mail přímo v odpovědi s tokenem. Proti skutečnému LuDone endpointu to podle reviewera neprojde | **Nemám jak ověřit** bez živého přihlášení, které by otevřelo prohlížeč a čekalo na tebe. Až budeš přihlášení zkoušet naostro, tohle spadne první |
+| **6** | **Brány etapy E2 měří místy jen přítomnost textu.** Např. „CI vysvětluje vypnuté smoke testy" projde i nad souborem, kde je jen komentář a žádný job | Není to díra, kterou by šlo zneužít — je to **slabina měřidla**. Opravit ji znamená rozhodnout, jak přísné brány chceš; to je tvoje volba, ne moje |
+
+⚠️ **Co z toho plyne prakticky:** body 1 a 2 jsou jediné, které můžou zkazit dojem z první
+ostré zkoušky — ikona buď nebude vidět, nebo bude ukazovat nesmysl. Zbytek počká.
+
 ## 4. Dluhy z jiných projektů, které tu visí
 
 ### C4 — Tři bezpečnostní nálezy v `ludone-app` *(platí na produkci DNES)*
