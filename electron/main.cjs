@@ -67,7 +67,13 @@ function registerAppProtocol() {
 function isTrustedAppUrl(value) {
   try {
     const url = new URL(value);
-    if (url.protocol === "ludone:" && url.hostname === "app") return true;
+    if (url.protocol === "ludone:") {
+      return url.hostname === "app"
+        && url.username === ""
+        && url.password === ""
+        && url.port === ""
+        && url.pathname === "/index.html";
+    }
     if (url.protocol !== "file:") return false;
     return path.resolve(fileURLToPath(url)) === path.join(DIST_ROOT, "index.html");
   } catch {
@@ -111,6 +117,35 @@ function requireTrustedSender(event, allowedKinds) {
   if (!senderKind || !allowedKinds.includes(senderKind)) {
     throw new Error("IPC odmítnuto: nedůvěryhodný odesílatel");
   }
+}
+
+function isAllowedMediaPermission(webContents, permission, details) {
+  let senderFrame = null;
+  try {
+    if (details?.isMainFrame === true) senderFrame = webContents?.mainFrame;
+    requireTrustedSender({ sender: webContents, senderFrame }, ["panel"]);
+  } catch {
+    return false;
+  }
+
+  if (!isTrustedAppUrl(details?.requestingUrl)) return false;
+  if (permission === "display-capture") return true;
+  if (permission !== "media") return false;
+
+  if (Array.isArray(details.mediaTypes)) {
+    return details.mediaTypes.length === 1 && details.mediaTypes[0] === "audio";
+  }
+  return details.mediaType === "audio";
+}
+
+function isTrustedPanelFrame(frame) {
+  const panelWebContents = panelWindow?.webContents;
+  return Boolean(
+    frame
+    && panelWebContents
+    && trustedSenderKind({ sender: panelWebContents, senderFrame: frame }) === "panel"
+    && isTrustedAppUrl(frame.url)
+  );
 }
 
 function handleValidated(channel, allowedKinds, handler) {
@@ -338,16 +373,18 @@ function togglePanel() {
 
 function installMediaHandlers() {
   const defaultSession = session.defaultSession;
-  const allowedPermissions = new Set(["media", "display-capture"]);
-
-  defaultSession.setPermissionCheckHandler((webContents, permission) => (
-    allowedPermissions.has(permission) && isTrustedWebContents(webContents)
+  defaultSession.setPermissionCheckHandler((webContents, permission, _origin, details) => (
+    isAllowedMediaPermission(webContents, permission, details)
   ));
-  defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    callback(allowedPermissions.has(permission) && isTrustedWebContents(webContents));
+  defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    callback(isAllowedMediaPermission(webContents, permission, details));
   });
   defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
-    if (!request.frame || !isTrustedAppUrl(request.frame.url)) {
+    if (
+      !isTrustedPanelFrame(request.frame)
+      || request.audioRequested !== true
+      || request.videoRequested !== true
+    ) {
       callback({});
       return;
     }

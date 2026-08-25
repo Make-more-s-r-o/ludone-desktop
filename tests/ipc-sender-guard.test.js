@@ -32,6 +32,29 @@ const createGuard = Function(
 );
 const isTrustedRecordingSender = createGuard(path, fileURLToPath, distRoot);
 
+const createPermissionGuard = Function(
+  "path",
+  "fileURLToPath",
+  "DIST_ROOT",
+  `"use strict";
+  let panelWindow;
+  let settingsWindow;
+  ${functionSource(mainSource, "isTrustedAppUrl")}
+  ${functionSource(mainSource, "isTrustedWebContents")}
+  ${functionSource(mainSource, "isTrustedRecordingSender")}
+  ${functionSource(mainSource, "trustedSenderKind")}
+  ${functionSource(mainSource, "requireTrustedSender")}
+  ${functionSource(mainSource, "isAllowedMediaPermission")}
+  return {
+    isAllowedMediaPermission,
+    setWindows(panel, settings) {
+      panelWindow = panel;
+      settingsWindow = settings;
+    },
+  };`,
+);
+const permissionGuard = createPermissionGuard(path, fileURLToPath, distRoot);
+
 function createWebContents(url = trustedUrl, destroyed = false) {
   const mainFrame = {};
   return {
@@ -111,6 +134,55 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     )).toBe(false);
   });
 
+  it("odmítne jiný dokument na interním protokolu ludone", () => {
+    const malicious = createWebContents("ludone://app/neco-jineho");
+    expect(isTrustedRecordingSender(
+      { sender: malicious, senderFrame: malicious.mainFrame },
+      malicious,
+    )).toBe(false);
+  });
+
+  it("odmítne žádost okna nastavení o mikrofon", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(settings, "media", {
+      isMainFrame: true,
+      requestingUrl: trustedUrl,
+      mediaTypes: ["audio"],
+    })).toBe(false);
+  });
+
+  it("povolí panelu pouze žádost o zvuk", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(panel, "media", {
+      isMainFrame: true,
+      requestingUrl: trustedUrl,
+      mediaTypes: ["audio"],
+    })).toBe(true);
+    expect(permissionGuard.isAllowedMediaPermission(panel, "media", {
+      isMainFrame: true,
+      requestingUrl: trustedUrl,
+      mediaTypes: ["video"],
+    })).toBe(false);
+  });
+
+  it("odmítne žádost o média z podrámu panelu", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(panel, "media", {
+      isMainFrame: false,
+      requestingUrl: trustedUrl,
+      mediaTypes: ["audio"],
+    })).toBe(false);
+  });
+
   it("všechny IPC kanály z produkčního kódu registruje přes validační wrapper", () => {
     const registrations = [...mainSource.matchAll(
       /\b(ipcMain\.(?:on|handle)|(?:on|handle)Validated)\(\s*["']([^"']+)["']/g,
@@ -133,5 +205,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     expect(registrations.filter(({ registration }) => registration.startsWith("ipcMain."))).toEqual([]);
     expect(functionSource(mainSource, "handleValidated")).toContain("requireTrustedSender");
     expect(functionSource(mainSource, "onValidated")).toContain("requireTrustedSender");
+    expect(functionSource(mainSource, "installMediaHandlers")).toContain("isAllowedMediaPermission");
+    expect(functionSource(mainSource, "installMediaHandlers")).toContain("isTrustedPanelFrame");
   });
 });

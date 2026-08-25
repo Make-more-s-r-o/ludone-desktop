@@ -31,6 +31,16 @@ describe("PKCE S256", () => {
     expect(verifier).toMatch(/^[A-Za-z0-9._~-]+$/);
   });
 
+  it("využije každý dodaný náhodný bajt ve verifieru", () => {
+    const baseline = generateCodeVerifier(() => Buffer.alloc(32));
+
+    for (let index = 0; index < 32; index += 1) {
+      const input = Buffer.alloc(32);
+      input[index] = 1;
+      expect(generateCodeVerifier(() => input)).not.toBe(baseline);
+    }
+  });
+
   it("pro dva různé verifiery počítá dvě různé challenge", () => {
     const first = createPkce((size) => Buffer.alloc(size, 0x11));
     const second = createPkce((size) => Buffer.alloc(size, 0x22));

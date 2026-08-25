@@ -1,11 +1,16 @@
 import { createRequire } from "node:module";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
   createPermissionRequestHandler,
   decidePermissionResult,
+  tokenStorageDirectory,
 } = require("../electron/auth.cjs");
+
+const projectRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 
 describe("rozhodnutí podle skutečného stavu oprávnění macOS", () => {
   it("považuje granted za udělené a nic dalšího nedělá", () => {
@@ -71,6 +76,18 @@ describe("rozhodnutí podle skutečného stavu oprávnění macOS", () => {
     });
   });
 
+  it.each(["constructor", "__proto__"])(
+    "zděděný klíč %s nepovažuje za podporované oprávnění",
+    (permission) => {
+      expect(decidePermissionResult(permission, "granted")).toMatchObject({
+        permission,
+        status: "unknown",
+        granted: false,
+        nextAction: "none",
+      });
+    },
+  );
+
   it("produkční handler při denied z macOS nevrátí granted", async () => {
     const systemPreferences = {
       askForMediaAccess: vi.fn(),
@@ -102,5 +119,24 @@ describe("rozhodnutí podle skutečného stavu oprávnění macOS", () => {
     expect(result).toMatchObject({ status: "denied", granted: false });
     expect(systemPreferences.askForMediaAccess).toHaveBeenCalledWith("microphone");
     expect(systemPreferences.getMediaAccessStatus).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("úložiště přihlašovacích údajů", () => {
+  it("používá systémové appData nezávislé na přesměrovaném userData", () => {
+    const appData = path.join(path.dirname(projectRoot), "system-app-data");
+    const app = { getPath: vi.fn(() => appData) };
+
+    expect(tokenStorageDirectory(app)).toBe(
+      path.join(appData, "cz.ludone.desktop", "auth"),
+    );
+    expect(app.getPath).toHaveBeenCalledWith("appData");
+    expect(app.getPath).not.toHaveBeenCalledWith("userData");
+  });
+
+  it("odmítne cílovou cestu uvnitř repozitáře", () => {
+    const app = { getPath: vi.fn(() => path.join(projectRoot, ".runtime")) };
+
+    expect(() => tokenStorageDirectory(app)).toThrow(/uvnitř repozitáře/);
   });
 });

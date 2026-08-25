@@ -9,6 +9,8 @@ const CALLBACK_PATH = "/callback";
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 const TOKEN_DIRECTORY = "auth";
 const TOKEN_FILE = "oauth.enc";
+const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
+const PROJECT_ROOT = path.resolve(__dirname, "..");
 const MCP_SCOPES = new Set(["mcp:read", "mcp:draft"]);
 
 let oauthLogicPromise;
@@ -257,12 +259,46 @@ async function syncDirectory(directory) {
   }
 }
 
+function isPathInside(parent, candidate) {
+  const relative = path.relative(parent, candidate);
+  return relative === ""
+    || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+}
+
+function physicalPotentialPath(value) {
+  let existing = path.resolve(value);
+  const missingParts = [];
+  while (!fs.existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) break;
+    missingParts.unshift(path.basename(existing));
+    existing = parent;
+  }
+
+  const realExisting = fs.realpathSync.native
+    ? fs.realpathSync.native(existing)
+    : fs.realpathSync(existing);
+  return path.resolve(realExisting, ...missingParts);
+}
+
+function tokenStorageDirectory(app) {
+  const appData = requiredString(app.getPath("appData"), "appData");
+  const directory = path.resolve(appData, TOKEN_STORAGE_NAMESPACE, TOKEN_DIRECTORY);
+  const projectRoots = [PROJECT_ROOT, physicalPotentialPath(PROJECT_ROOT)];
+  const candidatePaths = [directory, physicalPotentialPath(directory)];
+
+  if (projectRoots.some((root) => candidatePaths.some((candidate) => isPathInside(root, candidate)))) {
+    throw new Error("Přihlašovací údaje se neuložily: cílové úložiště leží uvnitř repozitáře");
+  }
+  return directory;
+}
+
 async function persistEncryptedSession(app, safeStorage, session) {
   if (!safeStorage?.isEncryptionAvailable?.()) {
     throw new Error("Bezpečné úložiště systému není dostupné; přihlašovací údaje se neuložily");
   }
 
-  const directory = path.join(app.getPath("userData"), TOKEN_DIRECTORY);
+  const directory = tokenStorageDirectory(app);
   const destination = path.join(directory, TOKEN_FILE);
   const temporary = path.join(directory, `.${TOKEN_FILE}.${randomUUID()}.tmp`);
   await fs.promises.mkdir(directory, { recursive: true, mode: 0o700 });
@@ -381,10 +417,10 @@ function createAuthController(options) {
   };
 }
 
-const PERMISSION_MEDIA_TYPES = Object.freeze({
-  microphone: "microphone",
-  "system-audio": "screen",
-});
+const PERMISSION_MEDIA_TYPES = new Map([
+  ["microphone", "microphone"],
+  ["system-audio", "screen"],
+]);
 
 const PERMISSION_SETTINGS_URLS = Object.freeze({
   microphone: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone",
@@ -394,7 +430,7 @@ const PERMISSION_SETTINGS_URLS = Object.freeze({
 function decidePermissionResult(requestedPermission, systemStatus) {
   const knownStatuses = new Set(["granted", "denied", "restricted", "not-determined"]);
   const status = knownStatuses.has(systemStatus) ? systemStatus : "unknown";
-  const mediaType = PERMISSION_MEDIA_TYPES[requestedPermission];
+  const mediaType = PERMISSION_MEDIA_TYPES.get(requestedPermission);
 
   if (!mediaType) {
     return {
@@ -429,7 +465,7 @@ function createPermissionRequestHandler({ systemPreferences, shell, logger = con
   if (!shell?.openExternal) throw new TypeError("Chybí Electron shell pro otevření Nastavení");
 
   return async function requestPermission(permission) {
-    const mediaType = PERMISSION_MEDIA_TYPES[permission];
+    const mediaType = PERMISSION_MEDIA_TYPES.get(permission);
     if (!mediaType) return decidePermissionResult(permission);
 
     let status;
@@ -466,4 +502,5 @@ module.exports = {
   createAuthController,
   createPermissionRequestHandler,
   decidePermissionResult,
+  tokenStorageDirectory,
 };
