@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   buildAuthorizationUrl,
@@ -26,6 +27,15 @@ describe("OAuth state", () => {
   it("generuje state výhradně z povinného zdroje náhodnosti", () => {
     expect(generateState((size) => Buffer.alloc(size, 0xa5))).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(() => generateState()).toThrow(/zdroj náhodnosti/);
+  });
+
+  it("generuje 50 různých state s 256 bity dodané náhodnosti", () => {
+    const states = Array.from({ length: 50 }, () => generateState(randomBytes));
+
+    expect(new Set(states)).toHaveLength(states.length);
+    for (const state of states) {
+      expect(Buffer.from(state, "base64url")).toHaveLength(32);
+    }
   });
 });
 
