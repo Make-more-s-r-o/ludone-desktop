@@ -229,6 +229,22 @@ function trayIconName(state) {
   }
 }
 
+// Kolik systémových dialogů o oprávnění právě běží. Dokud je to > 0, panel se po
+// ztrátě fokusu NESMÍ schovat: dialog mu fokus vezme vždycky, a protože aplikace nemá
+// ikonu v Docku, zmizelý panel je k nerozeznání od pádu. Doloženo 26. 8. 2026 při
+// prvním pokusu o test na Google Meetu — uživatel povolil mikrofon a aplikace podle
+// něj „spadla“, přestože běžela dál.
+let permissionPromptsInFlight = 0;
+
+// Vytažené do samostatné čisté funkce schválně — je to jediný způsob, jak tohle
+// rozhodnutí otestovat bez GUI (viz tests/panel-blur-guard.test.js).
+function shouldHidePanelOnBlur({ isTestRun, permissionPromptsInFlight, settingsVisible }) {
+  if (isTestRun) return false;
+  if (permissionPromptsInFlight > 0) return false;
+  if (settingsVisible) return false;
+  return true;
+}
+
 function trayImage(state) {
   const encoded = Buffer.from(traySvg(trayIconName(state))).toString("base64");
   return nativeImage
@@ -310,7 +326,15 @@ function createPanelWindow() {
     panelWindow.show();
   });
   panelWindow.on("blur", () => {
-    if (!IS_TEST_RUN && !settingsWindow?.isVisible()) panelWindow.hide();
+    if (
+      shouldHidePanelOnBlur({
+        isTestRun: IS_TEST_RUN,
+        permissionPromptsInFlight,
+        settingsVisible: Boolean(settingsWindow?.isVisible()),
+      })
+    ) {
+      panelWindow.hide();
+    }
   });
   panelWindow.on("close", (event) => {
     if (!isQuitting) {
@@ -668,9 +692,19 @@ handleValidated("auth:begin", ["panel"], async () => {
 });
 
 const requestPermission = createPermissionRequestHandler({ systemPreferences, shell });
-handleValidated("permission:request", ["panel"], (_event, permission) => (
-  requestPermission(permission)
-));
+handleValidated("permission:request", ["panel"], async (_event, permission) => {
+  permissionPromptsInFlight += 1;
+  try {
+    return await requestPermission(permission);
+  } finally {
+    permissionPromptsInFlight -= 1;
+    // Po zavření systémového dialogu nemusí panel dostat fokus zpátky sám.
+    if (!IS_TEST_RUN && panelWindow && !panelWindow.isDestroyed()) {
+      if (!panelWindow.isVisible()) panelWindow.show();
+      panelWindow.focus();
+    }
+  }
+});
 
 handleValidated("test:quit", ["panel"], (event) => {
   requireTrustedRecordingSender(event);
