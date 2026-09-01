@@ -28,6 +28,17 @@ nahravky/
 # že `git status` už nikdy nebude čistý a každý `add -A` by ho přibalil.
 dukazy/**/.DS_Store
 
+# 🔴 A ZVUK UŽ VŮBEC NE. Pět syntetických souborů (tón, ticho, referenční stopa) v historii
+# zůstává — jsou to důkazy a jsou to pípání, ne lidé. Ale jakmile se změří A6 na SKUTEČNÉ
+# schůzce, vznikne v `dukazy/` nahrávka s hlasem cizí protistrany. Do gitu nesmí: z historie
+# se nemaže a Dan zvažuje repozitář zveřejnit. Do `dukazy/` patří `vysledek.json` a `README.md`.
+dukazy/**/*.m4a
+dukazy/**/*.wav
+dukazy/**/*.mp3
+dukazy/**/*.opus
+dukazy/**/*.webm
+dukazy/**/*.aiff
+
 # Publikovaný canvas je 2,3MB generovaný balík — vzniká z `design/canvas/*.dc.html`
 # a `canvas.json`, které verzované JSOU. Do repa nepatří: zdroj ano, výstup ne.
 # Pozor na jméno: dřívější návrh pravidla zněl `*-mockupy.html` a na tenhle soubor

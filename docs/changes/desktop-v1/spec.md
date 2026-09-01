@@ -274,3 +274,63 @@ ale měření:
 
 Aktualizace, odinstalování a odebrání z firmy jako **obrazovky** — patří do etapy o rozvozu.
 Chování panelu při dvaceti a více položkách ve frontě. Přesná kresba ikony pro všech osm stavů.
+
+---
+
+## 11. Co našla skeptická revize — a co z toho je pravidlo
+
+**1. 9. 2026** psalo šest agentů chybějící sekce masterplánu a dalších šest je četlo se zadáním
+„najdi, čím se to dá obejít nebo v čem to lže". Našli nepravdy. **Sekce se proto celé nevkládají**
+— leží jako návrhy v [`sekce-navrhy/`](sekce-navrhy/) i s revizemi vedle. Sem jde jen to, co
+revizi přežilo a mění chování.
+
+### R21 · Časovač, který přežil pád, se musí ZEPTAT 🔴 money
+
+Je-li `startedAt` starší než start procesu, časovač **nepokračuje ani se nezahodí** — zeptá se.
+
+⚠️ Bez tohohle pravidla zavřené víko v pátek vyfakturuje víkend. Spec už jednou totéž řekla
+správně pro nečinnost (M21: „nikdy tiše nesmazat ani tiše nezapočítat"), ale pro pád to pravidlo
+neplatilo. Ta nekonzistence byla uvnitř jedné sekce a našel ji až skeptik.
+
+### R22 · Klíč proti duplikaci musí přežít ztrátu manifestu 🔴 money
+
+Jméno souboru dnes nese jen `sessionId.slice(0, 8)` (`main.cjs:478`), tedy **32 bitů**; celý
+`clientRecordingId` žije **jen v manifestu**. Zmizí manifest ⇒ obnova vyrobí nový klíč ⇒ vznikne
+duplikát, proti kterému R10 celá stojí. **Do jména souboru patří plný GUID**, nebo sidecar
+vedle každé stopy.
+
+### R23 · Retence musí v v1 opravdu běžet
+
+Bez ní se disk zaplní a **aplikace po zhruba 38 hodinách schůzek přestane nahrávat** — prahy
+2 GB / 5 GB jsou v `specs/E6:67`. Retence tedy není nastavení navíc (B11), je to podmínka, aby
+nahrávání fungovalo dál než pár týdnů.
+
+### R24 · Zvuk ze skutečných schůzek nikdy do gitu
+
+`.gitignore` měl `!dukazy/**` a v repozitáři **už leží pět zvukových souborů**. Jsou syntetické
+(tón, ticho, referenční stopa), takže zůstávají. Ale měření A6 vyrobí nahrávku **s hlasem cizí
+protistrany** — a Dan zvažuje repozitář zveřejnit. Z historie gitu se to nemaže. Pravidlo je
+proto v `.gitignore`, ne v dokumentu: do `dukazy/` patří `vysledek.json` a `README.md`.
+
+### R25 · Odepřené oprávnění po návratu z Nastavení: platforma vyžaduje restart
+
+Electron dokumentuje u `askForMediaAccess`: *„the app must be restarted for new permissions to
+take effect."* Scénář, který jako úspěch žádá zachycení bez restartu, by tedy zapsal
+**zdokumentované chování platformy jako vadu aplikace**. Rozděluje se: panel po návratu
+**zobrazí** stav z `getMediaAccessStatus('screen')` bez restartu (to jít má) · že se rozjede
+i zachycení, je **nezměřené** a zapisuje se jako zjištění, ne jako pass/fail.
+
+### Co revize našla a co s tím dělá `plan.md`
+
+| Nález | Kam patří |
+|---|---|
+| `processNext` vrací i `disabled` (`:203`) a `idle` (`:213`) — pravidlo je na ně slepé | packet **B7** |
+| Brána `L11` je zaručeně zelená: `setAppLogsPath` běží jen pod `LUDONE_DATA_DIR` a appka z Finderu nemá stdout ⇒ nula nálezů = ✅ | **kanárek** v protokolu, viz níž |
+| `app.getAppLogsPath()` **neexistuje** | vyhozeno z návrhu, nevkládá se |
+| 250 MB pro dimenzování je odvozeno z **poloviny** citovaného měření (blíž pravdě je 160 MB) | číslo se do specu nedostalo |
+
+🔴 **Kanárek místo „nenašel jsem nic".** Brána, která hledá v logu a nic nenajde, dnes hlásí
+zelenou. Napříště musí najít **aspoň jeden očekávaný záznam** (`[recording] Uloženo:`); když
+tam není, výsledek je **⛔ NEMĚŘENO**, ne ✅. Grep, který nenajde ani kanárka, je rozbitý grep —
+ne důkaz čistoty.
+
