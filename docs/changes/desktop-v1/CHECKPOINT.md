@@ -3,7 +3,7 @@
 **PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
 kontextem, musí pokračovat, aniž by se ptal. Zadání: [`BEH-NOC.md`](BEH-NOC.md).
 
-**Poslední zápis: 2. 9. 2026, 01:30.**
+**Poslední zápis: 2. 9. 2026, 02:15.**
 
 🔴 **Režim od 23:15 (Dan): NEPTAT SE.** Bezpečné vratné defaulty rozhodni a zapiš do
 `decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
@@ -21,11 +21,11 @@ práce. Mechanika Codex, Claude koordinace a review.
 | **B3** autorita tray | [#4](https://github.com/Make-more-s-r-o/ludone-desktop/pull/4) | 🟢 | 113/113 | hotovo, **3 kola oprav** |
 | **B8** zapojit auth | [#5](https://github.com/Make-more-s-r-o/ludone-desktop/pull/5) *(nad b4)* | 🟢 | 117/117 | hotovo |
 | **B5** časovač do main | [#6](https://github.com/Make-more-s-r-o/ludone-desktop/pull/6) *(nad b3)* | ⏳ | 159/159 | hotovo |
-| **B7** fronta | — | — | — | 🔄 Codex píše |
-| **B9** odhlášení | — | — | — | 🔄 Codex píše |
+| **B7** fronta | [#7](https://github.com/Make-more-s-r-o/ludone-desktop/pull/7) *(nad b5)* | ⏳ | 186/186 (26 nových) | hotovo |
+| **B9** odhlášení | [#8](https://github.com/Make-more-s-r-o/ludone-desktop/pull/8) *(nad b8)* | ⏳ | 134/134 (17 nových) | hotovo, 🔴 **race NEOPRAVENA**, BD-N14 |
 | **B6** výběr projektu | — | — | — | 🛑 **STOP**, viz BD-N12 |
 | **B10** sdílené zařízení | — | — | — | 🛑 **návrh napsán**, stavba čeká na Dana |
-| **B11** retence | — | — | — | čeká na B7 |
+| **B11** retence | — | — | — | 🔄 Codex píše, nad b7 |
 
 🔴 **Žádná netvrdí `verified-live`.** Vše je 🧪, ne ✅.
 
@@ -33,14 +33,16 @@ práce. Mechanika Codex, Claude koordinace a review.
 
 | Co | Log | Konec |
 |---|---|---|
-| Codex **B7** | `/tmp/beh-noc/b7-codex.log` | hlídač na pozadí |
-| Codex **B9** | `/tmp/beh-noc/b9-codex.log` | hlídač na pozadí |
+| Codex **B11** | `/tmp/beh-noc/b11-codex.log` | hlídač na pozadí |
 
 🔴 Log bez pohybu 20 min = mrtvý job. Práce bývá na disku — `git status` ve worktree.
 🔴 **Po doběhnutí COMMITNI HNED**, teprve pak brány a sabotáže.
-🔴 **B7 a B9 stojí na starších podobách b5/b8** — po převzetí je přebasovat (b3 i b4 se
-mezitím posunuly o opravy z review). Konflikt v `tray-authority.test.js` bývá „oba přidali
-blok na konec" ⇒ nechat OBĚ sady.
+🔴 **Celý stoh je srovnaný** (02:10): b4 nad main, b8 nad b4, b9 nad b8; b5 nad b3, b7 nad b5,
+b11 nad b7. Po převzetí B11 ji přebasovat na aktuální b7.
+🔴 **Při rebase stohu uveď STAROU špičku výslovně** (`git rebase --onto <nova> <stara-spicka>`)
+— po přebasování rodiče už jeho stará špička není předkem a `merge-base` vrátí bod, ze kterého
+se přehraje i cizí commit. Konflikt „add/add" v testech bývá „oba přidali blok na konec"
+⇒ nechat OBĚ sady.
 
 ## 🛑 Zastavené s blockerem (jen dotčený task, běh jede dál)
 
@@ -96,6 +98,7 @@ Všechno je jedna třída: **brána, která nic nenajde, není zelená — je ne
 
 ## Další krok
 
-1. Převzít **B7** a **B9**: commit → rebase na aktuální b5/b4 → brány → diff → sabotáže → PR.
-2. Pak **B11** (po B7).
-3. Ráno: plný report + verdikt pilota podle masterplánu §20.
+1. Převzít **B11**: commit → rebase na aktuální b7 → brány → diff → sabotáže → PR.
+2. Ráno: plný report + **verdikt pilota podle masterplánu §20** (VALIDATED / PARTIAL /
+   INVALIDATED, s posouzením, jestli šel packet implementovat bez produktového hádání,
+   jestli Claude review odhalilo odchylky a jestli hlavní session zůstala úsporná).
