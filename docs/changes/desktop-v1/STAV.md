@@ -9,9 +9,9 @@ konverzaci. Čti odshora, je to seřazené podle toho, co potřebuješ dřív.
 
 | Co | Kde |
 |---|---|
-| Artefakty změny | `docs/changes/desktop-v1/` na větvi **`orca/desktop-spec-plan`** |
-| Pracovní strom | `~/orca/workspaces/ludone-desktop/desktop-spec-plan` |
-| Hlavní checkout | `/Users/dan/Dev/ClaudeCode/ludone-desktop` — **musí zůstat čistý**, nepsat do něj |
+| Artefakty změny | `docs/changes/desktop-v1/` — **vše je v `main`** (1. 9. 2026, 21:50) |
+| Zadání nočního běhu | [`BEH-NOC.md`](BEH-NOC.md) — podle něj běh jede |
+| Pracovní strom pro spec | ✅ zrušen, větev `orca/desktop-spec-plan` mergována a smazána |
 | Zmrazená implementace T1 | větev `fix/tray-prazdna-ikona`, commit `ce2bea6` |
 | Masterplán | `docs/MASTERPLAN.md` (na `main`) |
 | Schválený design | `design/approved.json` + náhled `design/navrh/nahled.html` (na `main`) |
@@ -21,18 +21,17 @@ konverzaci. Čti odshora, je to seřazené podle toho, co potřebuješ dřív.
 
 ---
 
-## Co právě běží
+## Co doběhlo
 
-| Úloha | Kde je výstup |
+| Úloha | Výsledek |
 |---|---|
-| **Codex — vytěžení podkladů** | `…/scratchpad/codex-vytezeni/vystup.md` · log `/var/folders/…/codex-1788289339.log` |
-| **Workflow `doplneni-masterplanu`** | šest sekcí + šest skeptiků; výsledek přijde notifikací |
-| **Hlídač** | background úloha čeká na `EXIT=` v Codexově logu |
+| **Codex — vytěžení podkladů** | ✅ `podklady-vytezene.md`; odhalil, že 9 z 12 stories sahá do `main.cjs` |
+| **Workflow `doplneni-masterplanu`** | ⚠️ 12 z 13 agentů; třináctý se zasekl (20 min ticha) a byl zastaven |
 
-Codex vytěžuje: inventář obrazovek z náhledu · datové modely z kódu · přesné soubory pro každou
-story. Workflow píše: user journeys · information architecture · performance · responzivita ·
-redaction · audit a observability · transakční hranice · concurrence · live-verification ·
-**distribuce přes veřejný GitHub**.
+🔴 **Skeptici našli v návrzích sekcí nepravdy**, takže se do zmrazeného specu **nevložily celé**.
+Leží v [`sekce-navrhy/`](sekce-navrhy/) s revizemi vedle. Do `spec.md` §11 šlo pět pravidel,
+která revizi přežila — mezi nimi dvě money (R21 časovač po pádu se ptá, R22 klíč přežije ztrátu
+manifestu) a jedno nevratné (R24 zvuk ze schůzek nikdy do gitu).
 
 ---
 
@@ -49,16 +48,14 @@ musí spustit Dan. **Nic to nezdržuje:** schválený návrh je kompletní v `de
 z artboardů, ne ze zdroje — takže implementátor nemá kde vzít `--space-3` nebo poloměr z DS.
 Doplnit při tom závěrečném stažení.
 
-## Co udělat, až obojí doběhne
+## Hotovo — masterplán je uzavřený
 
-1. **Zkonsolidovat bloky** do `spec.md` a `plan.md` — workflow je vrací hotové k vložení.
-2. **Feature matrix na čtyři osy** (`scopeStatus`, `deliveryStatus`, `exposureStatus`,
-   `verificationStatus`). 🔴 Dnešní tabulka má jeden sloupec „stav" — a masterplán §8 to
-   výslovně zakazuje. Tenhle projekt už jednou stálo devět zelených bran nad nehotovou prací.
-3. **PR-sized rozpad stories** B1–B12.
-4. **Říct Danovi, že může pustit Fable** — prompt je v `PROMPT-FABLE.md` vedle tohohle souboru.
-5. Po Fable review a Danově schválení: implementace **v nové session**.
-6. **Úplně nakonec**: `/design-login` a dostažení zbylých podkladů z Claude Designu.
+1. ✅ **Feature matrix na čtyři osy** — `spec.md` §3. Jeden sloupec „stav" je pryč.
+2. ✅ **PR-sized rozpad** B1–B11 — `plan.md` §2b.
+3. ✅ **Zadání nočního běhu** — `BEH-NOC.md`.
+4. ✅ **Rozhodnutí za Dana i stopky** — `DAN-TODO.md`.
+5. ⏭️ **Implementace v nové session** — prompt v `PROMPT-IMPLEMENTACE.md`.
+6. ⏭️ **Úplně nakonec**: `/design-login` a dostažení zbylých podkladů z Claude Designu.
 
 ---
 
