@@ -3,113 +3,93 @@
 **Tenhle soubor se PŘEPISUJE po každé vlně, neroste.** Je to pojistka proti compaction:
 kdo ho čte s prázdným kontextem, musí být schopen pokračovat, aniž by se ptal.
 
-**Poslední zápis: 1. 9. 2026, 23:05.** Zadání běhu: [`BEH-NOC.md`](BEH-NOC.md).
+**Poslední zápis: 1. 9. 2026, 23:25.** Zadání běhu: [`BEH-NOC.md`](BEH-NOC.md).
+
+🔴 **Režim od 23:15 (Danův pokyn): NEPTAT SE.** Bezpečné vratné defaulty rozhodni, zapiš do
+`decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
+přeskoč **jen dotčený task**, zapiš blocker, jeď dál na všem nezávislém. **Celý běh nezastavuj,
+dokud existuje bezpečná práce.** Mechanika primárně Codex, Claude koordinace a review.
 
 ---
 
 ## Vlna
 
-`2 / 4` — B3 hotová v kódu, čeká na nezávislé review od Codexe, pak PR.
+`3 / 4` — B5 a B8 běží na Codexu souběžně, každá ve svém stromě.
 
-## Hotovo
+## Hotovo — tři PR otevřené
 
-| Story | PR | Brány | Doloženo |
-|---|---|---|---|
-| **B1** `ui-smoke` | [#2](https://github.com/Make-more-s-r-o/ludone-desktop/pull/2) 🟢 CI SUCCESS | lint 0 · typecheck 0 · **77/77** | červený baseline naostro + 4 sabotáže diferenciálně |
-| **B4** tři vady přihlášení | [#3](https://github.com/Make-more-s-r-o/ludone-desktop/pull/3) 🟢 CI SUCCESS | lint 0 · typecheck 0 · **86/86** (9 nových) | 3 doslovné červené výpisy + recept na 4 sabotáže |
-| **B3** autorita tray | ⏳ PR ještě ne | lint 0 · typecheck 0 · **98/98** (6 nových) | 4 sabotáže 3🔴:1🟢 + cílená sabotáž jediného přepočtu |
+| Story | PR | CI | Brány (měřil jsem já, před rourou) | Doloženo |
+|---|---|---|---|---|
+| **B1** `ui-smoke` | [#2](https://github.com/Make-more-s-r-o/ludone-desktop/pull/2) | 🟢 | lint 0 · tc 0 · **77/77** | červený baseline naostro + 4 sabotáže diferenciálně |
+| **B4** tři vady přihlášení | [#3](https://github.com/Make-more-s-r-o/ludone-desktop/pull/3) | 🟢 | lint 0 · tc 0 · **86/86** (9 nových) | 3 doslovné červené výpisy + recept na sabotáže |
+| **B3** autorita tray | [#4](https://github.com/Make-more-s-r-o/ludone-desktop/pull/4) | ⏳ | lint 0 · tc 0 · **98/98** (6 nových) | 4 sabotáže 3🔴:1🟢 + cílená sabotáž jediného přepočtu |
 
-🔴 **Ani jedna netvrdí `verified-live`.** Osy po změně: `delivery: pr-open` · `exposure`
-beze změny · `verification: tests-green`. Naostro to nikdo neviděl.
+🔴 **Žádná netvrdí `verified-live`.** Osy: `delivery: pr-open` · `exposure` beze změny ·
+`verification: tests-green`. To je 🧪, ne ✅.
 
-**Brány jsem měřil SÁM po rebase**, ne převzal od Codexu. `test:unit` u B4 dalo **86** —
-přesně to číslo, které Codex předpověděl v `ocekavanePocty`, což je nejlevnější důkaz,
-že testy opravdu spustil.
+## Běží právě teď
 
-## Padá
-
-**Nic rozbitého tímhle během.** Jediná červená je `ui-smoke` a je to blokátor na člověku:
-
-🔴 **`ui-smoke` nedojede do zelené, dokud Dan neudělí oprávnění Nahrávání obrazovky.**
-Každý běh končí na `ui-smoke.mjs:364` hláškou `systémový zvuk: Permission denied`. Změřeno
-**dvakrát nezávisle** — ve worktree i v hlavním checkoutu, obojí s `package:mac` EXIT=0.
-Původní pád na `:301` je prokazatelně pryč, takže **oprava B1 funguje**; padá o 60 řádků dál
-z jiné příčiny. Postup pro Dana je v `DAN-TODO.md` (commit `189d345`).
-
-⇒ **Druhá půlka zadání B1 (doběhnout sabotáže (b) a (c) v `E2-sabotaze.sh`) zůstává
-nesplněná.** Ta brána správně odmítá měřit nad červeným baseline.
-
-## Přeskočeno
-
-| Story | Proč | Kam zapsáno |
+| Co | Kde | Jak poznat konec |
 |---|---|---|
-| **B2** čísla `B*`/`BD*` | 377 odkazů · `LUDONE_E2E` obsahuje `E2` · 3 sabotážní markery v produkčním kódu · 22 souborů s číslem v názvu | `DAN-TODO.md` → BD-N1 |
-| **B4 vada (c), viditelná půlka** | `Onboarding.jsx` vlastní B1; zmrazený plán dává B4 jen `auth.cjs` + `main.cjs` | `DAN-TODO.md` → BD-N2, návrh story **B4b** |
-| **B12** migrace | Živá databáze 24 lidí | `BEH-NOC.md` |
+| **Codex B5** časovač do main | worktree `desktop-b5` (nad B3) | log `…/codex-1788295518.log`, hlídač na pozadí |
+| **Codex B8** zapojit auth | worktree `desktop-b8` (nad B4) | log `…/codex-1788295853.log`, hlídač na pozadí |
+| **Codex review B3** read-only | panel „🔎 Codex review: B3" | log `/tmp/beh-noc/b3-review.log` — 🔴 **odpověď je v LOGU, `-o` v read-only kleci nic nezapíše** |
+| **Workflow review 3 PR** | 4 čočky → 2 skeptici na nález | task `w7j4w7yen`, notifikace sama |
+
+🔴 **Log bez pohybu 20 minut = mrtvý job** bez ohledu na hlášený stav. Práce ale bývá hotová
+na disku — než ho pustíš znovu, `git status` ve worktree.
+
+## Přeskočeno / blokováno
+
+| Co | Proč | Kam zapsáno |
+|---|---|---|
+| **B2** čísla `B*`/`BD*` | 377 odkazů, `LUDONE_E2E` obsahuje `E2`, sabotážní markery v produkčním kódu | `DAN-TODO.md` BD-N1 |
+| **B4 vada (c), viditelná půlka** | `Onboarding.jsx` vlastní B1 | BD-N2, návrh story **B4b** |
+| **Pátý stav `recording-tracking`** | ikony patří do **zmrazené T1** | BD-N5 / PR #4 |
+| **Kalendář** (design ho ruší, `ui-smoke` ho vyžaduje) | user-visible změna bez packetu = hard gate | **O14**, vzniká story **B13** až PO B1 |
+| **B12** migrace | živá DB 24 lidí | `BEH-NOC.md` |
+| 🔴 **`ui-smoke` do zelené** | chybí systémové oprávnění **Nahrávání obrazovky** | `DAN-TODO.md`, čeká na Dana |
+
+## Rozhodnutí koordinátora k B8 (23:20) — jsou v `decisions.md`
+
+- **BD-N6:** registrace klienta **statická, `clientId` POVINNÝ, fail-closed**. DCR se nepoužije
+  ani jako záloha — zrušila by Danovo rozhodnutí a má změřený pád (429 po 20 přihlášeních
+  z jedné NAT IP). ⇒ **Přihlášení naostro nepůjde, dokud `clientId` neexistuje. To je záměr.**
+- **BD-N7:** proměnná **`LUDONE_ORIGIN`** (existující konvence E6 §11), `LUDONE_ISSUER` zamítnuta
+  jako změna kontraktu. Default `app.ludone.cz`, ⚠️ ale **všechna živá evidence míří na `labs`**
+  ⇒ ověření naostro spouštět s `LUDONE_ORIGIN=https://labs.ludone.cz`.
 
 ## Kde co leží
 
 | Worktree | Větev | Stav |
 |---|---|---|
-| `~/orca/workspaces/ludone-desktop/desktop-b1` | `orca/desktop-b1` | ✅ pushnuto, PR #2, **volný** |
-| `~/orca/workspaces/ludone-desktop/desktop-b4` | `orca/desktop-b4` | ✅ pushnuto, PR #3, **volný** |
-| `~/orca/workspaces/ludone-desktop/desktop-b3` | `orca/desktop-b3` | 3 commity, **nepushnuto**, čeká na review |
-| `/Users/dan/Dev/ClaudeCode/ludone-desktop` | `main` | čistý, srovnaný s `origin/main` |
+| `desktop-b1` | `orca/desktop-b1` | pushnuto, PR #2 |
+| `desktop-b4` | `orca/desktop-b4` | pushnuto, PR #3 |
+| `desktop-b3` | `orca/desktop-b3` | pushnuto, PR #4 |
+| `desktop-b5` | `orca/desktop-b5` **nad b3** | Codex píše |
+| `desktop-b8` | `orca/desktop-b8` **nad b4** | Codex píše |
+| hlavní checkout | `main` | jen dokumenty |
 
-🔴 **Obě worktree mají `node_modules` jako SYMLINK** do hlavního checkoutu (Codexův sandbox
-nemá síť, `npm ci` by tam neprošel). Při úklidu na to pozor.
+🔴 Všechny worktrees mají `node_modules` jako **symlink** (Codexův sandbox nemá síť).
+🔴 **V hlavním checkoutu NIKDY `git add -A`** — je v něm i souběžná session.
 
-🔴 **V hlavním checkoutu NIKDY `git add -A`** — pracuje v něm i souběžná session a jednou
-už si tím vzala moji rozdělanou práci. Stageuj jmenovitými cestami.
+## Co se tenhle běh naučil a nesmí se zapomenout
 
-## Běžící procesy
-
-**Codex review B3** — read-only, panel „🔎 Codex review: B3 autorita tray“,
-log `/tmp/beh-noc/b3-review.log`. 🔴 **V read-only kleci Codex NEZAPÍŠE soubor `-o`** —
-odpověď se čte z LOGU, ne z `.answer`. Hlídač: `/tmp/beh-noc/cekej-review.sh`.
-
-**Kompaktní hlídač:** `/tmp/beh-noc/stav.sh <cesta-bez-pripony>` — velikost, ticho, `EXIT`,
-nikdy obsah logu (`--json` má stovky kB a zaplavil by kontext).
-**Čekání na job:** `/tmp/beh-noc/cekej.sh <cesta-bez-pripony> <jmeno>` na pozadí — hlídá
-oba konce, odpověď i úmrtí (ticho > 20 min).
-
-## Souběžná session
-
-`ludone-desktop-09` (`uds:/tmp/cc-socks/50721.sock`) — má **11 draftů packetů**, skeptici je
-čtou proti kódu, **B9 ověřený**. Píše B3, B5, B6, B7, B8, B9, B10, B11.
-**Před každou vlnou `git fetch origin main` a `tasks/` přečíst znovu.**
+1. 🔴 **Ke každému „umí to rozhodnout správně" patří druhá otázka „zeptá se toho někdo?"**
+   B3 měla správné odvození stavu a **92 zelených testů**, a lišta by nahrávání neukázala nikdy —
+   chyběl přepočet na pěti místech. Testy chování si obsluhu volaly samy.
+2. 🔴 **Kritérium „nic se nestalo" má víc příčin.** B1: kontrola `disabled === 2` procházela
+   i tehdy, když systém oprávnění **odepřel**. Sabotáž to vypsala doslova: `granted:0, disabled:2`.
+3. **Strukturální test nad zdrojovým textem padá i na komentář** — hledej registraci
+   (`"kanal"` v uvozovkách), ne zmínku.
+4. **Zpětné apostrofy uvnitř template literálu ho ukončí** a shodí celý testovací soubor.
+5. **`functionSource` musí přeskočit parametry závorkami** — funkce s rozbaleným parametrem
+   má `{` už v hlavičce a naivní hledač vyřízne jen hlavičku.
 
 ## Další krok
 
-**B3 — přesun autority tray stavu do hlavního procesu.** Drží ji Claude (`plan.md` §2:
-architektonická změna). Recept je hotový v `specs/E3-vady-a-identita.md` §3.
-
-🔴 **Past, kterou už mám změřenou:** `tests/tray-authority.test.js:39` vyžaduje, aby
-`updateTray` obsahoval `trayIconName(nextState)`, zatímco `specs/E3` §3 přikazuje `updateTray`
-**smazat** a nahradit bezargumentovým `refreshTray()`. Ten test tu změnu **blokuje**. Přepsat
-ho není oslabení — je to výměna zámku na překonaný směr za zámek na nový, který `plan.md` §1
-výslovně zavádí. Nový test musí být **striktně silnější**: `grep updateTray` nesmí nic vrátit
-a kanál `tray:set-state` musí zmizet.
-
-⚠️ **B3 sahá do `main.cjs` blízko bloku, který změnila B4** (řádky ~237–244 vs ~255).
-PR #3 zatím není mergnutý, takže B3 vzniká nad `main` bez něj — konflikt je nepravděpodobný
-(11 řádků odstup), ale kdyby nastal, řeší se při merge, ne přebasováním B3 na B4.
-
----
-
-## 🔴 Co našlo review B3 na MNĚ (a co se z toho učí)
-
-Packet pro B3 (od souběžné session, commit `ae507ff`) našel v mé hotové implementaci
-**skutečnou díru**: `refreshTray()` chyběl na **pěti místech**, kde se mění nahrávací fakt.
-Odvození stavu bylo správné, ale nikdo se ho po startu nahrávání nezeptal — lišta by
-nahrávání **neukázala nikdy**.
-
-🔴 **Prošlo to 92 zelenými testy.** Testy chování volaly `refreshTray()` samy, takže dokázaly
-ROZHODNUTÍ a nikdy ZAPOJENÍ. Přesně ta třída, kvůli které v tomhle repu existuje pravidlo
-o kanárkovi.
-
-Opraveno v `bd6dd7a` + nový kanárek, který padne, když zmizí **jediný** přepočet (ověřeno
-cílenou sabotáží: 1 failed | 97 passed, a padl právě ten správný test).
-
-**Ponaučení do dalších vln:** ke každému „umí to rozhodnout správně" patří druhá otázka
-**„zeptá se toho někdo?"**. Test, který si obsluhu zavolá sám, na ni neodpoví.
+1. Převzít **Codex review B3** (z logu) a **workflow review** tří PR → nálezy opravit na větvích.
+2. Převzít **B5** a **B8**: commit HNED po doběhnutí, pak brány, pak sabotáže, pak PR.
+3. Pak **B6 + B7** (obě po B5, jiné bloky `main.cjs`) a **B9** (po B8) na Codexe.
+4. **B10** potřebuje návrh (sdílené zařízení `zasedacka@`) — návrh je koordinátorův.
+5. **B11** až po B7.
