@@ -16,10 +16,19 @@ Zadání je v repozitáři, ne v týhle konverzaci — konverzaci sežere compac
 
   docs/changes/desktop-v1/BEH-NOC.md
 
-První krok: přečti BEH-NOC.md a task packety v docs/changes/desktop-v1/tasks/.
-Každý packet je samostatné zadání podle masterplánu §9 — má přesné soubory, vlastnictví
-bloků, TDD kroky, sabotáže a live-verification scénář. Implementátor nedostává celý plán,
-dostane jeden packet.
+První krok: přečti BEH-NOC.md a podívej se do docs/changes/desktop-v1/tasks/.
+
+🔴 TASK PACKETY TAM PRŮBĚŽNĚ PŘIBÝVAJÍ. Píše je souběžná session a commituje je do main.
+Proto:
+- PŘED KAŽDOU VLNOU udělej `git fetch origin main` a adresář si přečti ZNOVU.
+- Když packet pro story existuje, je závazný — má přesné soubory, vlastnictví bloků,
+  TDD kroky, sabotáže a live-verification scénář (masterplán §9).
+- Když packet NEEXISTUJE, zadání je kompletní i bez něj: plan.md §2b (rozpad na PR:
+  soubory, test co jde napřed, velikost diffu), plan.md §2 (vlastnictví bloků uvnitř
+  main.cjs a preload.cjs) a spec.md (Feature ID, pravidla R1-R25, acceptance §8).
+  V tom případě si packet napiš SÁM před implementací a ulož do tasks/ — ať je stejný
+  doklad jako u ostatních.
+- Nečekej na packet. Práce má přednost před formulářem.
 
 Zmrazené a neměnit: spec.md, plan.md. Chybu v nich zapiš do DAN-TODO.md a jeď dál po tom,
 co na ní nezávisí.
