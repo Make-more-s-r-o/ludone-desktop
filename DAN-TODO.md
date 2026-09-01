@@ -27,6 +27,29 @@ CLI 0.149.1) · Orca orchestrace zapnutá · OAuth server LuDone živý s dynami
 
 ---
 
+## 0a. 🔴 ROZHODOVACÍ BALÍK — deset otázek, jeden průchod
+
+Plné znění i s trade-offy: [`docs/changes/desktop-v1/rozhodovaci-balik.md`](docs/changes/desktop-v1/rozhodovaci-balik.md).
+**Když přijmeš doporučené defaulty, stačí říct „beru defaulty".**
+
+| # | Otázka | Doporučeno | Blokuje |
+|---|---|---|---|
+| A1 | Kdy smí vzniknout první ostrá nahrávka | až po sepsání souhlasu a retence | 🔴 první použití, E9 |
+| A2 | Koupit Apple Developer Program (99 $/rok) | NE, dokud neproběhne P1/P2 | 🔴 rozvoz (E10) |
+| A3 | Potvrdit `gemini-3.5-transcribe` | ano, ale po ostrém testu na české hodinovce | 🟡 E9 |
+| B1 | Kdo vidí čí nahrávky | vlastník + stejný company scope, ne „všichni všechno" | 🔴 serverový kontrakt (E5) |
+| B2 | Nahrávky při odchodu z firmy | server zachová a odepře; desktop přestane nabízet, nemaže | 🔴 fronta (E6) |
+| B3 | Retence na disku | 7 dní, nastavitelné | 🟡 nic |
+| B4 | Přesun pravidel časovače do DB | NE teď; spec popíše chování při porušení jiným klientem | 🟡 nic |
+| C1 | Zastaví se časovač s nahráváním | NE, jen nabídnout | 🔴 spec panelu |
+| C2 | Samostatný vypínač pro čas | ano, dva | 🔴 E6 |
+| C3 | Osud LuTracku | nerozhodovat, adaptér drží obě cesty | 🟡 nic |
+
+🔴 **Šest z deseti blokuje spec nebo etapu.** Čtyři odložitelné mají default, který drží obě
+budoucnosti otevřené — na ty spěch není.
+
+---
+
 ## 0b. 🔴 Z běhu 1. 9. 2026 — co čeká na tebe
 
 Plný záznam běhu: [`docs/behy/2026-09-01-masterplan-a-design.md`](docs/behy/2026-09-01-masterplan-a-design.md).
