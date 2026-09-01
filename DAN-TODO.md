@@ -204,6 +204,23 @@ neproběhne.
 ⚠️ Sabotážní skript se zachoval správně: **odmítl měřit nad červeným baseline** místo aby vyrobil
 nesmyslný výsledek, a strom po sobě uklidil do posledního bajtu (`git diff HEAD` prázdný).
 
+**Potvrzeno nezávisle 25. 8. odpoledne** (druhá session, jiným postupem, stejný závěr) — a k tomu
+**dvě pasti, kvůli kterým to vypadá na úplně jinou vadu**, než jaká to je:
+
+1. 🔴 **`node scripts/ui-smoke.mjs` samo o sobě NIC nespustí.** Skript si aplikaci **nespouští** —
+   čeká na už běžící instanci s `--remote-debugging-port=9333`. Bez ní vrátí
+   `Timeout: nenalezen CDP target: hlavní panel (fetch failed)`, což vypadá, že **appka je
+   rozbitá**, ne že chybí tlačítko. Správně se pouští tak, jak to dělá `spust_ui_branu`
+   v `scripts/akceptace/E2-sabotaze.sh`: `LUDONE_E2E=1 LUDONE_RESET_ONBOARDING=1
+   LUDONE_DATA_DIR=<tmp> "release/LuDone Desktop.app/Contents/MacOS/Electron"
+   --remote-debugging-port=9333 &` a **teprve pak** `node scripts/ui-smoke.mjs`.
+2. 🔴 **Osiřelá instance aplikace tiše zabije každou další.** `electron/main.cjs:197` volá
+   `requestSingleInstanceLock()` a na ř. 199 `app.quit()`. Druhá instance tedy skončí
+   **exit 0 bez jediné chybové hlášky** — vypadá to jako čistý konec, ne jako kolize. Zůstane-li
+   po nedokončeném běhu viset `npm start` (osiřelý, `PPID 1`), neproběhne pak **žádný** ui-smoke
+   a příčina není nikde vidět. Než začneš cokoli ladit:
+   `ps aux | grep "[l]udone-desktop.*Electron"` musí být **prázdné**.
+
 ---
 
 ## 3b. Co zbylo z nočního běhu 25. 8. — nálezy review, které jsem NEOPRAVIL

@@ -26,13 +26,27 @@ zadny_zapnuty_killswitch() {
   # ani na runneru CI — a brána, která běží jen v jednom prostředí, není brána.
   # `git grep` se sem nehodí, protože ignorované soubory nevidí, a `.env.example`
   # je právě takový soubor. Musí se tedy prohledat i to, co git ignoruje.
-  grep -r -n -F "$hledany_retezec" . \
-    --exclude-dir=.git \
-    --exclude-dir=node_modules \
-    --exclude-dir=dist \
-    --exclude-dir=out \
-    --exclude-dir=release \
-    --exclude-dir=.runtime > "$vystup" 2>&1
+  #
+  # 🔴 Hledá se v KONKRÉTNÍCH CESTÁCH, ne v celém stromě. Kritérium tvaru „nikde v repu
+  # nesmí být řetězec X" zčervená i na dokumentaci, která X jen POPISUJE — a přesně to
+  # se 25. 8. stalo: archiv zadání v `docs/behy/` ten řetězec cituje ve větě o tom, jak
+  # se má tahle kontrola napsat, a brána na něm spadla. Killswitch se dá ZAPNOUT jen
+  # v konfiguraci nebo v kódu, takže se prohledávají jen ta místa; `docs/` popisuje,
+  # nenastavuje.
+  local cile=(.env .env.example .env.local src electron scripts .github package.json)
+  local existujici=()
+  local c
+  for c in "${cile[@]}"; do
+    [ -e "$c" ] && existujici+=("$c")
+  done
+  # Prázdný seznam cílů = brána nemá co měřit a nesmí projít (fail-closed).
+  if [ "${#existujici[@]}" -eq 0 ]; then
+    echo "žádný z hlídaných cílů neexistuje — brána nemá co měřit"
+    return 1
+  fi
+  grep -r -n -F "$hledany_retezec" "${existujici[@]}" \
+    --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=out \
+    --exclude-dir=release --exclude-dir=.runtime > "$vystup" 2>&1
   local stav=$?
 
   # Nejdřív odmítneme jakýkoli neprázdný nález, včetně diagnostiky chyby grepu.
