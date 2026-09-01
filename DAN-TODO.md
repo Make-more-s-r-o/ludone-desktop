@@ -523,3 +523,18 @@ a odůvodnění pořadí je v `decisions.md`, O14.
 **Co po tobě chci:** až se na to podíváš, potvrď, že B13 má vzniknout — nebo řekni, že
 kalendář má zůstat, a pak je potřeba změnit `approved.json`, ne kód.
 
+
+### BD-N9 — brána IPC kanálů má díru, kterou nezavedl tenhle běh
+
+Nezávislé review B3 našlo v `tests/ipc-sender-guard.test.js` slabinu, která tu byla **už
+předtím**: kontrola drží úplný výčet dvanácti IPC kanálů, ale **nevidí dynamickou registraci**
+`ipcMain.on(channel, ...)` s proměnnou místo doslovného řetězce. Druhá, pozdější deklarace
+`onValidated` může za běhu guard obejít, zatímco textová kontrola dál čte tu první, bezpečnou.
+
+**Neopravoval jsem to v B3** — není to vada, kterou tenhle běh způsobil, a rozšiřovat kvůli ní
+rozsah bezpečnostní brány uprostřed noci by znamenalo sáhnout na měřidlo, které zrovna používám
+k měření jiné práce.
+
+**Doporučený default:** samostatná drobná story — zakázat každou syrovou registraci `ipcMain`
+mimo jediný validační modul, a to kontrolou nad AST, ne regulárním výrazem nad textem.
+Odhad do 60 řádků diffu včetně testu.
