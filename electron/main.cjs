@@ -827,6 +827,25 @@ handleValidated(AUTH_CANCEL_CHANNEL, ["panel"], () => {
   return { ok: true, cancelled };
 });
 
+const { createLogoutController } = require("./auth.cjs");
+const logoutAuthController = createLogoutController({ app, safeStorage, logger: console });
+handleValidated("auth:logout", ["panel"], async () => {
+  const result = await logoutAuthController.logout();
+  if (result.signedOutLocally) {
+    try {
+      updateTray("signed-out");
+    } catch (error) {
+      try {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[auth] Stav ikony po odhlášení se nepodařilo změnit: ${message}`);
+      } catch {
+        // Diagnostika stavu ikony nesmí změnit hodnotový výsledek odhlášení.
+      }
+    }
+  }
+  return result;
+});
+
 const requestPermission = createPermissionRequestHandler({ systemPreferences, shell });
 handleValidated("permission:request", ["panel"], async (_event, permission) => {
   permissionPromptsInFlight += 1;

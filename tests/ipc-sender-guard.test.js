@@ -215,6 +215,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     expect(registrations.map(({ channel }) => channel).sort()).toEqual([
       "auth:begin",
       "auth:cancel",
+      "auth:logout",
       "panel:hide",
       "permission:request",
       "recording:append",

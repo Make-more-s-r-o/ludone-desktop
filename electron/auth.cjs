@@ -108,14 +108,14 @@ async function discoverEndpoints(fetchImpl, issuer) {
       "authorization_endpoint",
     ),
     tokenEndpoint: trustedRemoteEndpoint(metadata.token_endpoint, issuer, "token_endpoint"),
-    revocationEndpoint: metadata.revocation_endpoint === undefined
-      ? null
-      : trustedRemoteEndpoint(metadata.revocation_endpoint, issuer, "revocation_endpoint"),
     registrationEndpoint: trustedRemoteEndpoint(
       metadata.registration_endpoint,
       issuer,
       "registration_endpoint",
     ),
+    revocationEndpoint: metadata.revocation_endpoint === undefined
+      ? undefined
+      : trustedRemoteEndpoint(metadata.revocation_endpoint, issuer, "revocation_endpoint"),
   };
 }
 
@@ -339,8 +339,8 @@ function assertEncryptionAvailable(safeStorage) {
 async function prepareTokenStorage(app, safeStorage) {
   assertEncryptionAvailable(safeStorage);
 
-  const directory = tokenStorageDirectory(app);
-  const destination = path.join(directory, TOKEN_FILE);
+  const storage = tokenStorageLocation(app);
+  const { directory } = storage;
   const probe = path.join(directory, `.${TOKEN_FILE}.${randomUUID()}.preflight`);
   let handle;
   try {
@@ -350,17 +350,17 @@ async function prepareTokenStorage(app, safeStorage) {
     await handle.sync();
     await handle.close();
     handle = undefined;
-    await fs.promises.unlink(probe);
+    await fs.promises.rm(probe);
     await syncDirectory(directory);
   } catch (cause) {
     await handle?.close().catch(() => {});
-    await fs.promises.unlink(probe).catch(() => {});
+    await fs.promises.rm(probe, { force: true }).catch(() => {});
     throw new Error(
       "Bezpečné úložiště systému není dostupné: adresář přihlašovacích údajů nelze připravit",
       { cause },
     );
   }
-  return Object.freeze({ directory, destination });
+  return storage;
 }
 
 async function writeEncryptedSession(storage, encrypted) {
@@ -381,6 +381,18 @@ async function writeEncryptedSession(storage, encrypted) {
     await fs.promises.unlink(temporary).catch(() => {});
     throw error;
   }
+}
+
+function tokenStorageLocation(app) {
+  const directory = tokenStorageDirectory(app);
+  return Object.freeze({
+    directory,
+    destination: path.join(directory, TOKEN_FILE),
+  });
+}
+
+function tokenSessionFilePath(app) {
+  return tokenStorageLocation(app).destination;
 }
 
 async function persistEncryptedSession(safeStorage, session, storage) {
@@ -508,6 +520,184 @@ function rollbackFailure(primaryError, rollbackError, cancelled) {
     : `${primaryError.message}; vydané přihlašovací údaje se nepodařilo bezpečně uklidit`;
   return new Error(message, {
     cause: new AggregateError([primaryError, rollbackError]),
+  });
+}
+
+function decryptStoredSession(safeStorage, encrypted) {
+  try {
+    assertEncryptionAvailable(safeStorage);
+    if (typeof safeStorage.decryptString !== "function") return null;
+    const session = JSON.parse(safeStorage.decryptString(encrypted));
+    return session && typeof session === "object" && !Array.isArray(session) && session.v === 1
+      ? session
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function storedTokenResponse(session) {
+  const refreshToken = typeof session?.refreshToken === "string" && session.refreshToken.length > 0
+    ? session.refreshToken
+    : null;
+  const accessToken = typeof session?.accessToken === "string" && session.accessToken.length > 0
+    ? session.accessToken
+    : null;
+  if (!refreshToken && !accessToken) return null;
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  };
+}
+
+async function fetchWithLogoutTimeout(fetchImpl, url, options) {
+  const abortController = new AbortController();
+  let timeout;
+  const deadline = new Promise((_, reject) => {
+    timeout = setTimeout(() => {
+      abortController.abort();
+      reject(new Error("OAuth discovery pro odhlášení překročilo časový limit"));
+    }, REVOKE_TIMEOUT_MS);
+    timeout.unref?.();
+  });
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => fetchImpl(url, {
+        ...options,
+        signal: abortController.signal,
+      })),
+      deadline,
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function discoveryFailureReason(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const status = message.match(/\bHTTP\s+(\d{3})\b/);
+  if (status) return `http-${status[1]}`;
+  if (/fetch failed|ENOTFOUND|ECONN|network|net::ERR_|socket|timed out|timeout|časový limit/i.test(message)) {
+    return "offline";
+  }
+  return "no-revocation-endpoint";
+}
+
+function logLogoutResult(logger, result) {
+  const message = `[auth] Odhlášení: server=${result.serverRevoked}, local=${result.signedOutLocally}, reason=${result.reason}`;
+  try {
+    if (result.serverRevoked) logger?.log?.(message);
+    else logger?.warn?.(message);
+  } catch {
+    // Selhání diagnostiky nesmí změnit bezpečnostní výsledek odhlášení.
+  }
+}
+
+async function storageForLogout(app, safeStorage) {
+  try {
+    return await prepareTokenStorage(app, safeStorage);
+  } catch {
+    // I při nedostupném šifrování musí jít existující lokální blob bezpečně odstranit.
+    return tokenStorageLocation(app);
+  }
+}
+
+async function logoutEncryptedSession({ app, safeStorage, fetchImpl, logger }) {
+  let result;
+  try {
+    const storage = await storageForLogout(app, safeStorage);
+    result = await withTokenStorageTransaction(async () => {
+      let encrypted;
+      let session;
+      let reason;
+      try {
+        encrypted = await readEncryptedSession(storage);
+        session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
+        reason = encrypted === null || session ? "no-token" : "unreadable-session";
+      } catch {
+        reason = "unreadable-session";
+      }
+
+      const tokenResponse = storedTokenResponse(session);
+      let serverRevoked = false;
+      if (tokenResponse) {
+        let issuer;
+        let clientId;
+        try {
+          issuer = normalizedIssuer(session.issuer);
+          clientId = requiredString(session.clientId, "clientId");
+        } catch {
+          reason = "unreadable-session";
+        }
+
+        if (issuer && clientId) {
+          let endpoints;
+          try {
+            endpoints = await discoverEndpoints(
+              (url, options) => fetchWithLogoutTimeout(fetchImpl, url, options),
+              issuer,
+            );
+          } catch (error) {
+            reason = discoveryFailureReason(error);
+          }
+
+          if (endpoints?.revocationEndpoint) {
+            try {
+              await revokeIssuedTokens(
+                fetchImpl,
+                endpoints.revocationEndpoint,
+                clientId,
+                tokenResponse,
+              );
+              serverRevoked = true;
+              reason = null;
+            } catch (error) {
+              reason = discoveryFailureReason(error);
+            }
+          } else if (endpoints) {
+            reason = "no-revocation-endpoint";
+          }
+        }
+      }
+
+      let signedOutLocally = false;
+      try {
+        await removeEncryptedSession(storage);
+        signedOutLocally = true;
+      } catch {
+        reason = "local-delete-failed";
+      }
+      return { signedOutLocally, serverRevoked, reason };
+    });
+  } catch {
+    result = {
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "local-delete-failed",
+    };
+  }
+  logLogoutResult(logger, result);
+  return result;
+}
+
+/**
+ * Vytvoří úzký controller odhlášení bez závislosti na konfiguraci nového přihlášení.
+ * @param {{app: any, safeStorage: any, fetchImpl?: any, logger?: any}} options
+ */
+function createLogoutController(options) {
+  const {
+    app,
+    safeStorage,
+    fetchImpl = globalThis.fetch,
+    logger = console,
+  } = options;
+  return Object.freeze({
+    logout: () => logoutEncryptedSession({
+      app,
+      safeStorage,
+      fetchImpl,
+      logger,
+    }),
   });
 }
 
@@ -696,6 +886,14 @@ function createAuthController(options) {
       const attempt = await start();
       return attempt.result;
     },
+    async logout() {
+      return logoutEncryptedSession({
+        app,
+        safeStorage,
+        fetchImpl,
+        logger: options.logger ?? console,
+      });
+    },
     start,
   };
 }
@@ -784,8 +982,11 @@ function createPermissionRequestHandler({ systemPreferences, shell, logger = con
 module.exports = {
   DEFAULT_TIMEOUT_MS,
   createAuthController,
+  createLogoutController,
   createPermissionRequestHandler,
   decidePermissionResult,
+  discoverEndpoints,
   resolveAuthTimeout,
+  tokenSessionFilePath,
   tokenStorageDirectory,
 };
