@@ -3,7 +3,7 @@
 **PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
 kontextem, musí pokračovat, aniž by se ptal. Zadání: [`BEH-NOC.md`](BEH-NOC.md).
 
-**Poslední zápis: 2. 9. 2026, 02:15.**
+**Poslední zápis: 2. 9. 2026, 02:45 — BĚH UKONČEN.**
 
 🔴 **Režim od 23:15 (Dan): NEPTAT SE.** Bezpečné vratné defaulty rozhodni a zapiš do
 `decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
@@ -12,7 +12,7 @@ práce. Mechanika Codex, Claude koordinace a review.
 
 ---
 
-## Vlna `4 / 4`
+## Vlna `4 / 4` — DOKONČENO
 
 | Story | PR | CI | Testy (měřil jsem já, před rourou) | Stav |
 |---|---|---|---|---|
@@ -25,7 +25,7 @@ práce. Mechanika Codex, Claude koordinace a review.
 | **B9** odhlášení | [#8](https://github.com/Make-more-s-r-o/ludone-desktop/pull/8) *(nad b8)* | ⏳ | 134/134 (17 nových) | hotovo, 🔴 **race NEOPRAVENA**, BD-N14 |
 | **B6** výběr projektu | — | — | — | 🛑 **STOP**, viz BD-N12 |
 | **B10** sdílené zařízení | — | — | — | 🛑 **návrh napsán**, stavba čeká na Dana |
-| **B11** retence | — | — | — | 🔄 Codex píše, nad b7 |
+| **B11** retence | [#9](https://github.com/Make-more-s-r-o/ludone-desktop/pull/9) *(nad b7)* | ⏳ | 201/201 (13+2 nových) | hotovo |
 
 🔴 **Žádná netvrdí `verified-live`.** Vše je 🧪, ne ✅.
 
@@ -33,7 +33,7 @@ práce. Mechanika Codex, Claude koordinace a review.
 
 | Co | Log | Konec |
 |---|---|---|
-| Codex **B11** | `/tmp/beh-noc/b11-codex.log` | hlídač na pozadí |
+| — | — | **žádné, všechny joby doběhly** |
 
 🔴 Log bez pohybu 20 min = mrtvý job. Práce bývá na disku — `git status` ve worktree.
 🔴 **Po doběhnutí COMMITNI HNED**, teprve pak brány a sabotáže.
@@ -98,7 +98,6 @@ Všechno je jedna třída: **brána, která nic nenajde, není zelená — je ne
 
 ## Další krok
 
-1. Převzít **B11**: commit → rebase na aktuální b7 → brány → diff → sabotáže → PR.
-2. Ráno: plný report + **verdikt pilota podle masterplánu §20** (VALIDATED / PARTIAL /
-   INVALIDATED, s posouzením, jestli šel packet implementovat bez produktového hádání,
-   jestli Claude review odhalilo odchylky a jestli hlavní session zůstala úsporná).
+**Běh je u konce.** Osm PR (#2–#9), sedm se zeleným CI, nic nemergováno.
+Ráno: rozhodnout čtyři otázky z „Čeká na Dana", pak merge zdola nahoru podle stohu
+(b1, b3, b4 → main; pak b5, b8; pak b7, b9; nakonec b11).
