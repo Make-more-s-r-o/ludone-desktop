@@ -464,3 +464,31 @@ describe("IPC povrch", () => {
     expect(mainSource.slice(hookStart, hookStart + 180)).toContain("handleRendererGone(");
   });
 });
+
+describe("R22: klíč proti duplikaci musí být jedinečný i BEZ podstrčeného generátoru", () => {
+  // 🔴 Tenhle test vznikl ze sabotáže, která zůstala ZELENÁ. Přepsal jsem produkční výchozí
+  // `newId = randomUUID` na konstantu — tedy stav, kdy každý záznam nese TÝŽ klíč proti
+  // duplikaci — a všech 158 testů prošlo. Důvod: každý test si `newId` podstrkuje, takže
+  // produkční výchozí hodnota se nikdy nespustila. Test na různost klíčů měřil můj generátor,
+  // ne kód. Na money cestě je to díra: duplicitní klíč znamená dvakrát vykázaný čas.
+  it("dva starty za sebou dostanou různé klíče", async () => {
+    const filePath = path.join(await mkdtemp(path.join(os.tmpdir(), "ludone-r22-")), "stav.json");
+    // ŽÁDNÝ newId override — schválně. Tenhle test měří produkční `randomUUID`.
+    const store = createTrackingStore({
+      filePath,
+      timeEnabled: "true",
+      processStartedAt: PROCESS_A,
+      log: () => {},
+    });
+
+    const prvni = await store.start({ projectId: GUID_A });
+    const prvniKlic = prvni.entry?.clientTimeEntryId ?? (await onDisk(filePath)).aktualni.clientTimeEntryId;
+    await store.stop();
+    const druhy = await store.start({ projectId: GUID_A });
+    const druhyKlic = druhy.entry?.clientTimeEntryId ?? (await onDisk(filePath)).aktualni.clientTimeEntryId;
+
+    expect(prvniKlic).toBeTruthy();
+    expect(druhyKlic).toBeTruthy();
+    expect(druhyKlic).not.toBe(prvniKlic);
+  });
+});
