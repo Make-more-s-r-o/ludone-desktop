@@ -149,3 +149,38 @@ Noční běh proto ráno vrací **i verdikt o procesu** — zvlášť k tomu, je
 implementovat bez produktového hádání a jestli hlavní session zůstala kontextově úsporná.
 **Neúspěšný pilot je platný výsledek**, když přesně ukáže, co změnit.
 
+## O13 — přepsat `tray-authority.test.js` NENÍ oslabení testu
+
+**1. 9. 2026 22:5x, zeptal se noční běh před tím, než to udělal.** Správně — „neoslabuj test"
+je tvrdé pravidlo a výjimka z něj patří na papír předem, ne do PR dodatečně.
+
+**Nález:** `tests/tray-authority.test.js:39` tvrdí, že `updateTray` obsahuje
+`trayIconName(nextState)`. Jenže `specs/E3` §3 přikazuje `updateTray(nextState)` **nahradit
+funkcí `refreshTray()` BEZ ARGUMENTU** a jako podmínku hotovo uvádí doslova:
+*„`grep -n 'updateTray' electron/main.cjs` nevrátí nic."* Pomocná funkce `functionSource`
+navíc **hodí výjimku**, když funkci nenajde — takže smazání `updateTray` ten test rozbije.
+
+**Rozhodnutí: přepsání je výměna zámku, ne jeho odstranění.** Test zamyká směr, který
+`plan.md` §1 výslovně ruší („renderer hlásí fakta, neurčuje stav"). Ale platí tři podmínky,
+protože „není to oslabení" se dá zneužít:
+
+1. 🔴 **Invariant musí přežít, ne zmizet.** Co ten test chrání, je *„volba ikony je čisté
+   mapování ze stavu"*. Po B3 se to tvrdí o `refreshTray`, se stejnou silou. **Smazat
+   to tvrzení místo přesunutí JE oslabení.**
+2. 🔴 **A musí zesílit tam, kde je nový směr silnější.** Dnešní test čte `main.cjs` jako
+   **text** — autoritu tím prokázat nejde. B3 dluží **test chování**: po pádu rendereru
+   lišta pořád hlásí správný stav. `specs/E3` §3 k tomu dává i měřidlo — řádek
+   `[tray] <ISO čas> stav=… nahrávání=… lutrack=… přihlášen=…`.
+3. 🔴 **Nejsilnější jediný důkaz, který B3 může nechat: `tray:set-state` musí zmizet.**
+   `specs/E3` §4 velí „kanál `tray:set-state` SMAZAT celý", a `preload.cjs:18` ho dnes
+   pořád vystavuje jako `setTrayState`. Test, že se ani jedno jméno nikde nevyskytuje,
+   je levný zámek na **nový** směr.
+
+⚠️ **A jedna past, kterou spec zmiňuje a implementace snadno mine:** `appState.signedIn` se
+při pádu rendereru **NEMĚNÍ** — session drží main, takže cílový stav po `kill -9` je
+**`idle`, ne `signed-out`**. Kdo to splete, postaví „autoritu v main procesu", která se při
+pádu chová jako by uživatele odhlásila.
+
+**Zůstává zelené:** `it("výběr obrázku používá čisté mapování stavu")` nad `trayImage` —
+tenhle případ se nemění a je to ta jedna zelená v poměru 2–3 červené : 1 zelená.
+
