@@ -14,7 +14,7 @@ const STORAGE_KEY = "ludone.prototype.settings";
 const DEFAULTS = {
   autoCalendar: false,
   askOther: true,
-  retention: "24 hodin po odeslání",
+  retention: "7 dní po odeslání",
 };
 
 function loadSettings() {
@@ -83,6 +83,7 @@ export function SettingsApp() {
               <option>24 hodin po odeslání</option>
               <option>7 dní po odeslání</option>
               <option>30 dní po odeslání</option>
+              <option>Nemazat</option>
             </select>
           </label>
           <p className="settings-hint">V prototypu se žádný zvukový soubor nevytváří ani nemaže.</p>

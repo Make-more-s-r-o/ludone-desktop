@@ -712,3 +712,28 @@ Tyto body B7 nerozhoduje ani neopravuje mimo své vlastnictví:
     obě podmínky současně splnit nejdou. B7 zachovává výslovné pravidlo dvou budíčků, takže
     K3 v popsaném čerstvém scénáři nemůže projít; Dan musí potvrdit, zda přidat třetí budíček
     po zařazení nahrávky, nebo změnit scénář K3.
+
+---
+
+## ⚠️ Otevřené body B11 — retence lokálních kopií (2. 9. 2026)
+
+B3 už rozhoduje lokální výchozí retenci „7 dní, nastavitelné“. Následující body toto
+rozhodnutí neotvírají; zachycují rozpory mezi zmrazeným specem, plánem a proveditelným
+zapojením. Do jejich rozhodnutí platí bezpečný směr packetu: neodeslané soubory ani manifesty
+se nemažou a neznámá volba znamená „Nemazat“.
+
+| ID | Co je potřeba rozhodnout nebo přiřadit | Proč |
+|---|---|---|
+| **O-B11-1** | Kdo a v jaké story zapojí `electron/retention.cjs` do hlavního procesu? | B11 vlastní v `main.cjs` i `preload.cjs` „nic“, takže modul nikdo nezavolá a R23 zůstane nesplněné. |
+| **O-B11-2** | Má v1 někdy mazat i neodeslané nahrávky po N dnech? | R19 dovoluje mazat až po úspěšném odeslání, ale S1 drží odesílání vypnuté; bez dalšího rozhodnutí retence nic nesmaže. Do rozhodnutí se neodeslané soubory nemažou. |
+| **O-B11-3** | Kde trvale bydlí nastavení retence a kdo vlastní implementaci? | Architecture Spine vyžaduje stav přežívající pád v hlavním procesu; starší E6 požaduje `electron/settings.cjs`, `nastaveni.json` a IPC, plán B11 je nevlastní. |
+| **O-B11-4** | Má po smazání vzniknout stav manifestu `purged`, nebo musí manifest zůstat bajtově beze změny? | Starší E6 chce `purged`, současné schéma tento stav nemá a R22 vyžaduje zachovat klíč proti duplikaci. |
+| **O-B11-5** | Kdo schválí podobu částí Nastavení „Zvuk“ a „Záznamy“? | Pro tyto části chybí schválená kresba; B11 smí jen minimálně změnit dnešní výběr retence. |
+| **O-B11-6** | Potvrdit přesné uživatelské popisky, zejména „Nemazat“ a zachování čtyř stávajících voleb. | Copy není ve zmrazeném specu ani plánu určeno. |
+| **O-B11-7** | Patří prahy volného místa 2 GB / 5 GB do B11, nebo do samostatné story? | R23 na ně odkazuje, ale plán B11 je ve scope nemá. |
+| **O-B11-8** | Potvrdit, že stáří se počítá z `sentAt`, nikoli z `mtime`. | Plán říká jen „soubor starší 7 dnů“; volba mění chování po obnově nebo kopírování. |
+| **O-B11-9** | Aktualizovat předpoklad a fixturu B11 podle skutečného kontraktu dokončené B7. | B7 už proběhla: položka má `kind` a `processNext` bere objekt obou killswitchů. Packetův argument `"true"` je zastaralý. |
+| **O-B11-10** | Potvrdit, že `exposure` DSK-F015 zůstává `labs`, ne `disabled`. | Matice má F015 už na `labs`; B11 dosažitelnost okna nemění. |
+| **O-B11-11** | Patří mazací mechanismus pod DSK-F015, nebo má vzniknout DSK-F017? | Funkční matice samostatnou retenci nemá. |
+| **O-B11-12** | Má B11 zavést guard, že cesty stop musí ležet pod adresářem nahrávek, a jeho test? | Bez něj může podvržená položka fronty ukázat na cizí soubor; jde o nové bezpečnostní pravidlo mimo zmrazený plán. |
+| **O-B11-13** | Kdo opraví `ui-smoke`, aby po změně výchozí hodnoty neměřil tautologii? | Má nejdřív ověřit výchozí stav a potom nastavit jinou hodnotu, například „30 dní po odeslání“. Starší zápisy o onboardingu a oprávnění tento nový problém nepokrývají. |
