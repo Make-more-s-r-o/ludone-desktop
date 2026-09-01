@@ -235,11 +235,22 @@ function trayIconName(state) {
 // prvním pokusu o test na Google Meetu — uživatel povolil mikrofon a aplikace podle
 // něj „spadla“, přestože běžela dál.
 let permissionPromptsInFlight = 0;
+// Pokusy evidujeme čítačem, protože dvě souběžná přihlášení mohou skončit v jiném
+// pořadí; boolean by panel uvolnil už při dokončení prvního z nich.
+let authAttemptsInFlight = 0;
+const activeAuthAttempts = new Set();
+const AUTH_CANCEL_CHANNEL = "auth:cancel";
 
 // Vytažené do samostatné čisté funkce schválně — je to jediný způsob, jak tohle
 // rozhodnutí otestovat bez GUI (viz tests/panel-blur-guard.test.js).
-function shouldHidePanelOnBlur({ isTestRun, permissionPromptsInFlight, settingsVisible }) {
+function shouldHidePanelOnBlur({
+  authAttemptsInFlight,
+  isTestRun,
+  permissionPromptsInFlight,
+  settingsVisible,
+}) {
   if (isTestRun) return false;
+  if (authAttemptsInFlight > 0) return false;
   if (permissionPromptsInFlight > 0) return false;
   if (settingsVisible) return false;
   return true;
@@ -328,6 +339,7 @@ function createPanelWindow() {
   panelWindow.on("blur", () => {
     if (
       shouldHidePanelOnBlur({
+        authAttemptsInFlight,
         isTestRun: IS_TEST_RUN,
         permissionPromptsInFlight,
         settingsVisible: Boolean(settingsWindow?.isVisible()),
@@ -679,16 +691,38 @@ handleValidated("recording:finish", ["panel"], (event, sessionId) => {
 });
 
 handleValidated("auth:begin", ["panel"], async () => {
-  if (process.env.LUDONE_OPEN_AUTH_BROWSER === "1") {
-    await shell.openExternal("https://app.ludone.cz");
+  const authorizationUrl = "https://app.ludone.cz";
+  const attempt = new AbortController();
+  activeAuthAttempts.add(attempt);
+  authAttemptsInFlight += 1;
+  try {
+    if (process.env.LUDONE_OPEN_AUTH_BROWSER === "1") {
+      await shell.openExternal(authorizationUrl);
+    }
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(resolve, 650);
+      attempt.signal.addEventListener("abort", () => {
+        clearTimeout(timer);
+        reject(new Error("Přihlášení bylo zrušeno"));
+      }, { once: true });
+    });
+    return {
+      ok: true,
+      authorizationUrl,
+      callback: "ludone://auth/callback?code=demo-code",
+      token: "mock-token-not-persisted",
+      user: { name: "Daniel Novák", email: "daniel@ludone.cz" },
+    };
+  } finally {
+    authAttemptsInFlight -= 1;
+    activeAuthAttempts.delete(attempt);
   }
-  await new Promise((resolve) => setTimeout(resolve, 650));
-  return {
-    ok: true,
-    callback: "ludone://auth/callback?code=demo-code",
-    token: "mock-token-not-persisted",
-    user: { name: "Daniel Novák", email: "daniel@ludone.cz" },
-  };
+});
+
+handleValidated(AUTH_CANCEL_CHANNEL, ["panel"], () => {
+  const cancelled = activeAuthAttempts.size;
+  for (const attempt of activeAuthAttempts) attempt.abort();
+  return { ok: true, cancelled };
 });
 
 const requestPermission = createPermissionRequestHandler({ systemPreferences, shell });
