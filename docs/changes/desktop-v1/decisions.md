@@ -54,3 +54,39 @@ Dan u nich řekl „je mi jedno" nebo „nerozumím" — masterplán §4 velí r
 ## Otevřené, s doporučeným defaultem
 
 Viz `intent.md` § Open questions. Nic z toho neblokuje práci na nezávislých větvích DAG.
+
+---
+
+## Kolo 2 — rozhodovací balík zodpovězen (1. 9. 2026 večer)
+
+| # | Rozhodnutí | Proti doporučení? |
+|---|---|---|
+| **A1** | Nahrávat **kdykoli**, nečeká se na právní rámec | 🔴 ano |
+| **A2** | Apple Developer Program **nekupovat**, dokud neproběhne P1/P2 | ne |
+| **A3** | `gemini-3.5-transcribe` jako default. **Klíče měnitelné v `app.ludone.cz`**, ne natvrdo v kódu | ne, ale přidává požadavek |
+| **B1** | v1: **každý vidí jen svoje**. **Sdílený účet `zasedacka@makemore.cz` je SOUČÁSTÍ v1** | 🔴 ano |
+| **B2** | Nahrávky jsou **majetkem firmy**. **Admin vidí vše** | ne |
+| **B3** | Retence **7 dní**, nastavitelné | ne |
+| **B4** | **Zamknout pravidla v databázi HNED**, ne později | 🔴 ano |
+| **C1** | Časovač se s nahráváním **nezastaví**, jen se nabídne | ne |
+| **C2** | **Dva samostatné vypínače** | ne |
+| **C3** | LuTrack: **jen příprava**. Vlastní spec a masterplán později | ne |
+
+### Co z toho plyne, a co jsem k tomu neřekl dopředu
+
+**A1 — riziko přijaté vědomě.** Nahrávky nesou hlasy lidí, kteří o aplikaci nevědí, včetně lidí
+mimo firmu. Dan rozhodl, že se nečeká. Zapsáno jako přijaté riziko, ne jako opomenutí.
+
+**A3 — nový požadavek na server.** „Klíče měnitelné v `app.ludone.cz`" znamená správu klíčů
+v hlavní aplikaci, ne konstantu v kódu. To je **práce na straně serveru**, která v žádném dosavadním
+plánu nebyla. Patří do etapy přepisu (E9), ne do desktopu.
+
+🔴 **B4 — zásah do ostrého provozu, který se nedá udělat naslepo.** Přidat unikátní index
+a zákaz překryvů na živou tabulku, kde **už překrývající se řádky existují**, migrace **odmítne**.
+Nejdřív se musí změřit, kolik jich je, a rozhodnout, co s nimi. Do té doby je to **stopka**:
+plánuju to, nespouštím.
+
+🔴 **B1 — sdílený účet je nová etapa, ne detail.** „Zasedačka" znamená vyřešit: jak se pozná
+sdílené zařízení od osobního · komu se přiřadí nahrávka, když se u jednoho Macu vystřídají tři lidé ·
+co se stane s frontou při odhlášení uprostřed odesílání · jestli sdílený účet smí měřit čas
+(a komu by se ty hodiny připsaly). **Odhad +2 až 3 ČD** a dotýká se to RBAC.

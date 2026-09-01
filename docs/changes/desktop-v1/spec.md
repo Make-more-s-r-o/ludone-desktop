@@ -1,7 +1,7 @@
 # Spec: LuDone Desktop v1
 
-**Stav: NÁVRH.** Blokován odpověďmi na `rozhodovaci-balik.md` — místa, která na nich visí, jsou
-označená `⛔ ČEKÁ NA A1/B1/…`. Zbytek je zmrazený a implementovatelný.
+**Stav: ZMRAZENO 1. 9. 2026.** Všech deset otázek rozhodovacího balíku je zodpovězeno
+(`decisions.md`, kolo 2). Zbývají už jen dvě **měření**, ne rozhodnutí — viz §9.
 
 Nadřazené: [`intent.md`](intent.md) · [`decisions.md`](decisions.md) ·
 schválený design [`../../design/approved.json`](../../../design/approved.json) a jeho náhled
@@ -38,8 +38,10 @@ Kalendář (M15). Seznam účastníků schůzky — **ztrácí se bez náhrady**
 | Role | Co smí |
 |---|---|
 | **Uživatel** | Nahrávat, měřit čas, vidět a odeslat vlastní záznamy |
-| **Vedoucí projektu** | ⛔ ČEKÁ NA B1 |
-| **Odebraný z firmy** | ⛔ ČEKÁ NA B2 |
+| **Vedoucí projektu** | v1 nic navíc — vidí jen své vlastní záznamy |
+| **Admin** | Vidí **vše**. Nahrávky jsou majetkem firmy (B2) |
+| **Odebraný z firmy** | Server data **zachová a odepře přístup**. Desktop přestane odesílat i nabízet, lokální soubory nemaže — smazání je vědomý krok správce |
+| **Sdílené zařízení** (`zasedacka@makemore.cz`) | 🔴 **Součást v1.** Vlastní etapa, viz `plan.md` B10 |
 
 🔴 **Tři nezávislé osy práv** (dědí se z `ludone-app`, neobcházet): modul-gate × company-scope ×
 citlivá pole. Vše **default-deny**.
@@ -77,7 +79,7 @@ citlivá pole. Vše **default-deny**.
 - **R2** Chunky jdou na disk **dřív, než se cokoli pošle** na server.
 - **R3** Když vypadne jedna stopa, nahrávání **pokračuje** a řekne, **která** chybí.
   🔴 Kód dnes zastaví obě — to je vada, ne chování.
-- **R4** Zastavení nahrávání **nezastaví časovač**. ⛔ ČEKÁ NA C1 (nabídka ano/ne).
+- **R4** Zastavení nahrávání **nezastaví časovač**. Nabídne se „Zastavit i měření času?“ a nabídka zmizí sama (C1).
 - **R5** Aktualizace se **nikdy** nenabídne během nahrávání ani ukládání.
 
 ### Čas
@@ -99,7 +101,9 @@ citlivá pole. Vše **default-deny**.
 - **R15** Obnova tokenu je **jednovláknová**. Dva souběžné pokusy odhlásí uživatele „sám od sebe".
 - **R16** `403` a „uzavřený týden" jsou **trvalé** chyby: neopakovat, data zachovat, říct důvod.
 - **R17** `invalid_grant` je **pauza**, ne selhání — nespotřebovává pokusy.
-- **R18** ⛔ ČEKÁ NA C2: dva samostatné vypínače.
+- **R18** **Dva samostatné vypínače** (C2): `DESKTOP_UPLOAD_ENABLED` a `DESKTOP_TIME_ENABLED`. Oba fail-closed — chybějící hodnota znamená vypnuto a musí mít vlastní test.
+- **R19** Lokální kopie nahrávky se po úspěšném odeslání smaže za **7 dní** (B3). Nastavitelné včetně „nemazat“.
+- **R20** Nahrávky jsou **majetkem firmy** (B2). Admin je vidí všechny.
 
 ---
 
@@ -146,7 +150,8 @@ citlivá pole. Vše **default-deny**.
 | Účet nemá přístup | jméno účtu + přihlásit jiným | — | chybí |
 | Oprávnění zamítnuto | částečné povolení funguje dál | — | 🔴 zamyká celou appku |
 | Projekt přečerpán | zašedlý s důvodem | — | chybí |
-| Prázdno (žádná alokace) | ⛔ ČEKÁ NA B1 | — | chybí |
+| Prázdno (žádná alokace) | „Nemáš dnes žádný projekt s alokací“ + odkaz do LuDone | — | chybí |
+| Sdílené zařízení | jméno účtu v hlavičce, po zastavení se ptá čí to bylo | — | chybí |
 
 ---
 
@@ -194,14 +199,13 @@ Given běžící nahrávání · When vypadne systémový zvuk · Then nahrává
 
 ## 9. Otevřené — blokuje spec
 
-| Kde | Čeká na |
+**Všech deset otázek balíku je zodpovězeno.** Zbývají dvě věci, které nejsou rozhodnutí,
+ale měření:
+
+| Co | Proč to blokuje |
 |---|---|
-| §2 role a viditelnost | **B1** kdo vidí čí nahrávky |
-| §2 odebrání z firmy | **B2** |
-| §4 R4 nabídka zastavení času | **C1** |
-| §4 R18 vypínače | **C2** |
-| §6 prázdný stav výběru projektu | **B1** |
-| retence na disku | **B3** (default 7 dní drží) |
+| Kolik překrývajících se časových záznamů dnes v živých datech je | Bez toho migrace k B4 buď selže, nebo tiše projde nad daty, která pravidlo porušují |
+| Měření A6 na skutečné schůzce | Vyřazovací kritérium projektu |
 
 ## 10. Vědomě odložené
 

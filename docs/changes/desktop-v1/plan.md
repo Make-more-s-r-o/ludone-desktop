@@ -1,7 +1,6 @@
 # Plan: LuDone Desktop v1
 
-**Stav: NÁVRH.** Task DAG je použitelný; úkoly závislé na otevřených rozhodnutích jsou
-označené `⛔`. Nadřazené: [`intent.md`](intent.md) · [`spec.md`](spec.md) · [`decisions.md`](decisions.md)
+**Stav: ZMRAZENO 1. 9. 2026** po zodpovězení rozhodovacího balíku. Nadřazené: [`intent.md`](intent.md) · [`spec.md`](spec.md) · [`decisions.md`](decisions.md)
 
 ---
 
@@ -37,7 +36,12 @@ architektonická změna v tomhle plánu.
 ### Jak se vymáhá RBAC
 
 Default-deny na třech osách. Desktop **žádnou z nich nevyhodnocuje sám** — ptá se serveru
-a odpověď respektuje. ⛔ ČEKÁ NA B1, B2.
+a odpověď respektuje.
+
+- v1 vidí každý **jen své vlastní** záznamy; **admin vidí vše** (B2).
+- Odebraný z firmy: server data zachová a odepře přístup; desktop přestane odesílat i nabízet,
+  **lokální soubory nemaže**.
+- 🔴 **Sdílené zařízení `zasedacka@makemore.cz` je v rozsahu v1** (B1) — vlastní story B10.
 
 ### Jak se chrání peníze
 
@@ -48,7 +52,7 @@ a odpověď respektuje. ⛔ ČEKÁ NA B1, B2.
 
 ### Vypínače
 
-Dva samostatné: `DESKTOP_UPLOAD_ENABLED` a `DESKTOP_TIME_ENABLED`. ⛔ ČEKÁ NA C2.
+Dva samostatné: `DESKTOP_UPLOAD_ENABLED` a `DESKTOP_TIME_ENABLED` (C2).
 Oba **fail-closed** — chybějící hodnota znamená vypnuto, a to musí mít vlastní test.
 
 ### Rollback
@@ -78,6 +82,9 @@ B4 ── přihlášení: 3 vady ──▶ B8 zapojit auth ──▶ B9 odhláš
 | **B7** | Rozlišovač typu položky ve frontě + zapojení | Codex | B5 | — |
 | **B8** | Zapojit `createAuthController` místo atrapy | **Claude** | B4 | B9 |
 | **B9** | Odhlášení s odvoláním na serveru | Codex | B8 | — |
+| **B10** | 🔴 **Sdílené zařízení** — rozlišit sdílený účet od osobního, přiřazení nahrávky člověku, fronta při střídání lidí | **Claude** návrh, Codex stavba | B8 | — |
+| **B11** | Retence 7 dní + nastavení (B3) | Codex | B7 | — |
+| **B12** | ⛔ **STOPKA** — zamknout v databázi jeden běžící časovač a zákaz překryvů (B4) | **Dan** | měření překryvů | skutečné napojení času |
 | **T1** | Ikona v liště ❄️ **zmrazeno** | hotovo Codexem | — | ruční testování |
 
 **Proč B3 a B8 drží Claude:** B3 je architektonická změna, kterou spec fixuje a která se dotýká
@@ -105,3 +112,7 @@ ve třech worktrees. **B3 → B5 → B6/B7** sdílí `electron/main.cjs` → sek
 
 Zapojovat frontu k serveru, který neexistuje · sahat na `design/**` · flipovat cizí vypínače ·
 psát do Tabidoo · pushovat do `main` · vyrábět výjimku z brány · pouštět `ui-smoke` v sandboxu.
+
+🔴 **A pouštět migraci B12.** Dan ji schválil, ale je to zásah do živé databáze 24 lidí a
+**migrace na tabulku s už existujícími překryvy selže**. Nejdřív měření, pak rozhodnutí co
+s nalezenými řádky, teprve pak migrace — a ta patří Danovi, ne nočnímu běhu.
