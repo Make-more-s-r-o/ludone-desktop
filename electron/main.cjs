@@ -691,6 +691,23 @@ handleValidated("recording:finish", ["panel"], (event, sessionId) => {
   return finalizeRecordingSession(sessionId, "complete");
 });
 
+// 🔴 Identifikátor klienta se NEUHODNE a nezadrátuje. Musí odpovídat záznamu, který někdo
+// založil na serveru — a ten zatím neexistuje. Zadrátovaná hodnota by se serveru nesešla
+// a přihlášení by spadlo na nesrozumitelnou serverovou chybu místo na srozumitelné
+// „ještě to není nastavené". Rozhodnutí BD-N6: statická registrace, povinný clientId,
+// fail-closed. Dynamická registrace se nepoužije ani jako záloha (kancelář za jednou NAT IP
+// vyčerpá 20 registrací za hodinu a dostane 429).
+function resolveAuthClientId(env) {
+  const value = env?.LUDONE_OAUTH_CLIENT_ID;
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(
+      "Přihlášení zatím není nastavené: chybí identifikátor klienta. "
+      + "Doplní ho správce v nastavení aplikace.",
+    );
+  }
+  return value.trim();
+}
+
 function resolveAuthIssuer(env) {
   const value = env?.LUDONE_ORIGIN ?? "https://app.ludone.cz";
   if (typeof value !== "string" || value.length === 0) {
@@ -728,12 +745,7 @@ function createAuthBeginHandler(createController) {
 
       try {
         const issuer = resolveAuthIssuer(env);
-        const staticClientIds = {
-          "https://app.ludone.cz": "ldmcp_oauth_client_prod_v1_desktop",
-          "https://labs.ludone.cz": "ldmcp_oauth_client_labs_v1_desktop",
-        };
-        const clientId = staticClientIds[issuer];
-        if (!clientId) throw new Error("Pro tuto adresu není přihlášení nastavené");
+        const clientId = resolveAuthClientId(env);
 
         logger?.log?.("[auth] Přihlášení zahájeno");
         const controller = createController({ issuer, clientId, app, safeStorage, shell });
@@ -766,7 +778,12 @@ function createAuthBeginHandler(createController) {
         } else if (/Bezpečné úložiště|cílové úložiště/i.test(message)) {
           duvod = "uloziste";
         } else if (
-          /Adresa přihlášení|HTTPS origin|není přihlášení nastavené|OAuth issuer|MCP resource|MCP scopy|Chybí Electron|clientId/i.test(message)
+          // 🔴 Klasifikuje se podle VĚT, které sami házíme, ne podle volného podřetězce.
+          // Dřív tu stálo i holé `clientId`, a to je natolik volné, že se do „konfigurace"
+          // trefila i programátorská chyba `ReferenceError: resolveAuthClientId is not
+          // defined` — uživatel by dostal „doplní správce" u vady, kterou žádný správce
+          // neopraví. Chyba, kterou neumíme zařadit, musí zůstat „neznama".
+          /Adresa přihlášení|HTTPS origin|přihlášení zatím není nastavené|OAuth issuer|MCP resource|MCP scopy|Chybí Electron/i.test(message)
         ) {
           duvod = "konfigurace";
         } else if (error instanceof TypeError || /fetch failed|net::ERR_|ENOTFOUND|ECONNREFUSED/i.test(message)) {

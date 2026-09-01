@@ -44,6 +44,7 @@ function compiledAuthWiring(createAuthController) {
     "createAuthController",
     `"use strict";
      ${functionSource(mainSource, "resolveAuthIssuer")}
+     ${functionSource(mainSource, "resolveAuthClientId")}
      ${functionSource(mainSource, "createAuthBeginHandler")}
      return createAuthBeginHandler(createAuthController);`,
   )(createAuthController);
@@ -55,7 +56,9 @@ const fakeSafeStorage = { isEncryptionAvailable: vi.fn(() => true) };
 function dependencies(overrides = {}) {
   return {
     app: fakeApp,
-    env: {},
+    // Platný clientId je v základu, aby testy měřily zapojení. Jeho NEPŘÍTOMNOST
+    // má vlastní test níž — je to fail-closed cesta z rozhodnutí BD-N6.
+    env: { LUDONE_OAUTH_CLIENT_ID: "klient-z-konfigurace" },
     isTestRun: false,
     logger: { log: vi.fn(), warn: vi.fn() },
     safeStorage: fakeSafeStorage,
@@ -117,13 +120,13 @@ describe("zapojení skutečného OAuth controlleru", () => {
   });
 
   it.each([
-    [undefined, "https://app.ludone.cz", "ldmcp_oauth_client_prod_v1_desktop"],
-    ["https://labs.ludone.cz", "https://labs.ludone.cz", "ldmcp_oauth_client_labs_v1_desktop"],
-  ])("použije LUDONE_ORIGIN %s a statické ID", async (origin, issuer, clientId) => {
+    [undefined, "https://app.ludone.cz", "klient-prod"],
+    ["https://labs.ludone.cz", "https://labs.ludone.cz", "klient-labs"],
+  ])("použije LUDONE_ORIGIN %s a clientId Z KONFIGURACE", async (origin, issuer, clientId) => {
     const calls = [];
-    const handler = compiledAuthWiring(successfulController(calls))(
-      dependencies({ env: origin ? { LUDONE_ORIGIN: origin } : {} }),
-    );
+    const env = { LUDONE_OAUTH_CLIENT_ID: clientId };
+    if (origin) env.LUDONE_ORIGIN = origin;
+    const handler = compiledAuthWiring(successfulController(calls))(dependencies({ env }));
 
     await expect(handler()).resolves.toEqual({
       ok: true,
@@ -238,7 +241,7 @@ describe("zapojení skutečného OAuth controlleru", () => {
     const handler = compiledAuthWiring(successfulController(calls))(dependencies());
 
     await handler();
-    expect(calls[0].clientId).toBe("ldmcp_oauth_client_prod_v1_desktop");
+    expect(calls[0].clientId).toBe("klient-z-konfigurace");
     expect(authSource).toContain("registerPublicClient");
   });
 
@@ -284,5 +287,50 @@ describe("zapojení skutečného OAuth controlleru", () => {
     });
     expect(requestedPaths).toEqual(["/.well-known/oauth-authorization-server"]);
     expect(requestedPaths).not.toContain("/api/mcp/oauth/register");
+  });
+});
+
+describe("BD-N6: clientId se nehádá, chybí-li, přihlášení se NEPOKUSÍ", () => {
+  it.each([
+    ["chybí úplně", {}],
+    ["je prázdný", { LUDONE_OAUTH_CLIENT_ID: "" }],
+    ["jsou jen mezery", { LUDONE_OAUTH_CLIENT_ID: "   " }],
+    ["není řetězec", { LUDONE_OAUTH_CLIENT_ID: 42 }],
+  ])("když %s, vrátí důvod konfigurace a controller ani nevznikne", async (_popis, env) => {
+    const calls = [];
+    const handler = compiledAuthWiring(successfulController(calls))(dependencies({ env }));
+
+    await expect(handler()).resolves.toEqual({ ok: false, duvod: "konfigurace" });
+    // 🔴 Nula je tady to podstatné: nesmí se ani pokusit. Kdyby se controller vytvořil,
+    // sáhne na síť a uživatel dostane serverovou chybu místo srozumitelné věty.
+    expect(calls).toHaveLength(0);
+  });
+
+  it("v kódu není zadrátovaný žádný identifikátor klienta", () => {
+    // Vykonavatel si dvě konkrétní ID vymyslel a zadrátoval, přestože serverový záznam
+    // pro ně neexistuje. Tenhle kanárek hlídá, aby se to nevrátilo.
+    expect(mainSource).not.toMatch(/ldmcp_oauth_client/);
+    expect(mainSource).not.toMatch(/staticClientIds/);
+    // Jediný zdroj je proměnná prostředí.
+    expect(mainSource).toMatch(/LUDONE_OAUTH_CLIENT_ID/);
+  });
+});
+
+describe("mapování chyb nesmí zaměnit vadu kódu za vadu konfigurace", () => {
+  it("programátorská chyba se hlásí jako neznámá, ne jako konfigurace", async () => {
+    // Doloženo naostro při psaní téhle story: harness zapomněl injektovat resolveAuthClientId
+    // a `ReferenceError: resolveAuthClientId is not defined` se kvůli volnému podřetězci
+    // `clientId` zařadil jako „konfigurace". Uživatel by dostal větu „doplní správce"
+    // u chyby, kterou žádný správce neopraví — a mě to na minutu svedlo ze stopy.
+    const handler = compiledAuthWiring(() => {
+      throw new ReferenceError("resolveAuthClientId is not defined");
+    })(dependencies());
+
+    await expect(handler()).resolves.toEqual({ ok: false, duvod: "neznama" });
+  });
+
+  it("skutečně chybějící konfigurace se pořád hlásí jako konfigurace", () => {
+    // Povinně zelený protějšek: zúžení nesmí zabít správné zařazení.
+    expect(mainSource).toMatch(/přihlášení zatím není nastavené/);
   });
 });
