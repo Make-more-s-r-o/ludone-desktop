@@ -382,3 +382,37 @@ ručního zásahu), ne na kalendářní datum.
   znovu** — a tokeny mimo barvy se odtamtud už vzít nedají.
   ⚠️ Praktický důsledek: buď je dopíšeme z artboardů ručně (jsou lokálně v `design/navrh/`),
   nebo se design systém založí nanovo. Rozhodni, až na to dojde — **nic to teď neblokuje.**
+
+---
+
+## 🔴 NÁLEZ 1. 9. 22:07 — B2 není přejmenování v próze
+
+Noční běh se zeptal na mapu starých čísel na nová a při ověřování se ukázalo, že **B2 je
+mnohem rizikovější, než jak ho `plan.md` odhaduje („0 řádků kódu")**. Změřeno:
+
+| Co | Kolik |
+|---|---|
+| Odkazů na `E<číslo>` v `.md`, `.sh`, `.mjs`, `.yml` | **377** |
+| Souborů, které mají E-číslo **v názvu** | **22** — `specs/E5-server-prijem.md`, `scripts/akceptace/E7.sh`, … |
+| Míst s proměnnou `LUDONE_E2E` | **8** |
+| Sabotážních markerů zapsaných **do produkčního kódu** | `E2_SABOTAZ_CHUNK_ORDER_REMOVED`, `E2_SABOTAZ_STOP_NAHRAVANI`, `E2_SABOTAZ_AUDIO_CONTAMINATION` |
+
+**Tři pasti, každá tichá:**
+
+1. 🔴 **`LUDONE_E2E` obsahuje řetězec `E2`.** Nedbalé `s/E2/B2/g` z něj udělá `LUDONE_B2E`
+   a rozbije `audio-smoke.mjs` i `E2-sabotaze.sh` — bez chybové hlášky, jen přestane platit
+   podmínka a test se začne chovat jinak.
+2. 🔴 **Sabotážní markery se zapisují do `electron/main.cjs` a pak se na ně grepuje.**
+   Přejmenování jen na jedné straně znamená, že sabotáž **tiše přestane měřit** — přesně ta
+   třída vady, kvůli které v tomhle repu existuje pravidlo o kanárkovi.
+3. ⚠️ **22 souborů má číslo v názvu.** Přejmenování souboru rozbije odkazy z ostatních
+   dokumentů a z `.sh` skriptů, které je volají cestou.
+
+**Doporučení: B2 dnes v noci NEDĚLAT.** Má nulovou produktovou hodnotu (je to konzistence
+značení) a nejvyšší poměr rizika k užitku ze všech stories. Přejmenování 377 míst včetně
+názvů souborů a markerů v produkčním kódu patří do samostatného PR za denního světla,
+kde se dá projít očima — ne do noční vlny vedle skutečné práce.
+
+`plan.md` §2 to ostatně už říká: *„B2, B10 a B12 mají soubory neurčené a nesmí se pouštět,
+dokud se neurčí."* Tenhle nález je důvod, proč to platí silněji, než jak to bylo míněno.
+
