@@ -587,3 +587,37 @@ přesně ten způsob, jak se do brány zanese chyba.
 🔴 **Patnáct nálezů review VYVRÁTILI skeptici** — mimo jiné tvrzení, že zpřísněný kanál faktů
 je fail-open, že se `abort` posluchač připojuje pozdě, a že oprava B1 vzorkuje stav jen jednou.
 Ověřovací kolo tedy dělalo svou práci oběma směry, ne jen potvrzovací.
+
+### BD-N14 — 🔴 B9 NENÍ bezpečnostně dokončená pro souběžné přihlášení
+
+Vykonavatel B9 si udělal vlastní bezpečnostní průchod a **sám oznámil**, že diff nelze označit
+za hotový. To je přesně to chování, které od něj chceme — a proto to nezastírám.
+
+| nález | dopad |
+|---|---|
+| **Race `auth:begin` × `auth:logout`** | odhlášení v průběhu přihlašování může nechat platnou session, nebo naopak zahodit právě získanou |
+| **Chybí deadline u discovery a revoke** | zaseknutá serverová odpověď zablokuje odhlášení bez konce |
+| **Možné zbylé `.oauth.enc.*.tmp`** | po pádu během zápisu může na disku zůstat dočasný soubor se session |
+
+**Neopravil jsem to a je to vědomé rozhodnutí.** Tři důvody:
+
+1. Oprava sahá do bloků, které vlastní **B8**, nebo vyžaduje persistenci — tedy rozšíření
+   rozsahu uprostřed noci.
+2. **Nedá se ověřit naostro.** Bez `LUDONE_OAUTH_CLIENT_ID` se přihlášení ani nepokusí, takže
+   souběh přihlášení a odhlášení nemám jak vyvolat.
+3. Je to autentizace. Improvizovaná noční oprava bez živého ověření je přesně to, čím se
+   bezpečnostní chyby zanášejí.
+
+**Doporučený default:** samostatná story **B9b** — jeden zámek přes obě operace, deadline na
+discovery i revoke, úklid dočasných souborů při startu. Odhad do 120 řádků včetně testů.
+**Musí se dělat až s možností ověřit to naostro**, tedy po zřízení statického OAuth klienta.
+
+### BD-N15 — chyba v MÉM zadání, ne v práci vykonavatele
+
+Společný dodatek pro vlnu 4 tvrdil, že **B3 je hotová v každém stromě**. Není: `b9` stojí na
+`b8` → `b4` → `main`, kdežto **B3 je sourozenecká větev**, ne předek. Vykonavatel B9 to změřil,
+napsal `premisaPlatila: false` a rozdíl vypsal — takže se nic nerozbilo.
+
+**Ponaučení:** u stohovaných větví nestačí napsat „tyhle story jsou hotové". Musí se napsat,
+**KTERÉ jsou v TOMHLE stromě** — jinak vykonavatel hledá kód, který tam z principu není,
+a v horším případě si ho dopíše podruhé.
