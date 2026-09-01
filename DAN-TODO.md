@@ -416,3 +416,59 @@ kde se dá projít očima — ne do noční vlny vedle skutečné práce.
 `plan.md` §2 to ostatně už říká: *„B2, B10 a B12 mají soubory neurčené a nesmí se pouštět,
 dokud se neurčí."* Tenhle nález je důvod, proč to platí silněji, než jak to bylo míněno.
 
+
+---
+
+## 🔴 ROZHODNUTÍ NOČNÍHO BĚHU 1./2. 9. 2026 — co jsem udělal za tebe
+
+Tenhle oddíl píše noční implementační session. **Tichý default je vada**, takže tady je
+vypsané každé rozhodnutí, které jsem udělal místo tebe, i s tím, co bys musel udělat,
+kdybys ho chtěl zvrátit.
+
+### BD-N1 — B2 se dnes v noci NEPOUŠTÍ
+
+**Rozhodl jsem: přeskočit.** Souběžná session změřila rozsah (nález 22:07 výš: 377 odkazů,
+`LUDONE_E2E` obsahuje `E2`, tři sabotážní markery v produkčním kódu, 22 souborů s číslem
+v názvu). Je to jediná story vlny 1 s nulovou produktovou hodnotou a nejvyšším rizikem,
+a `plan.md` §2 ji sám označuje jako story s neurčenými soubory.
+
+**Kdybys to chtěl jinak:** je to samostatný PR za denního světla, ne noční práce.
+
+### BD-N2 — B4 se zastaví na hranici hlavního procesu
+
+**Rozhodl jsem: rozdělit vadu (c) a postavit jen strojovou půlku.**
+
+Zmrazený `plan.md` §2b dává B4 soubory `electron/auth.cjs` a `electron/main.cjs`. Ale třetí
+vada („čekání nemá konec ani únik") žije **z poloviny v rendereru** — změřeno naostro:
+`src/components/Onboarding.jsx:174` drží `authBusy ? "Čekám na prohlížeč…" : "Přihlásit
+v prohlížeči"`. Odpočet, tlačítko Zrušit a adresa k ručnímu zkopírování jsou tedy JSX.
+
+Ten soubor přitom **paralelně vlastní story B1** (dostává `data-testid`). Dva zapisovatelé
+v jednom souboru dělají důkaz neplatným, i když oba doběhnou úspěšně.
+
+**Takže:** B4 staví konec čekání, zrušení a dostupnost adresy v hlavním procesu; viditelnou
+půlku nechává být. **Neopravoval jsem zmrazený plán za pochodu** — tím by se ztratilo, že
+se rozhodnutí změnilo.
+
+🔴 **Mezera, kterou to nechává:** po B4 má čekání konec strojově, ale člověk pořád vidí jen
+„Čekám na prohlížeč…" bez odpočtu a bez úniku. **Doporučený default: samostatná story B4b**
+(renderer, po mergi B1 i B4), odhad do 60 řádků diffu.
+
+### BD-N3 — `--display-name` u Orca worktree v téhle verzi neexistuje
+
+Drobnost, ale `CLAUDE.md` i `BEH-NOC.md` ho uvádějí jako platný přepínač. Ověřeno naostro:
+`orca worktree create --display-name` vrací `invalid_argument — Unknown flag`. Worktrees
+jsem tedy založil jen s `--name` (`orca/desktop-b1`, `orca/desktop-b4`).
+
+**Pro tebe:** až se bude `CLAUDE.md` příště upravovat, ten přepínač z pravidla 1b vyhodit
+nebo nahradit tím, co ta verze Orcy umí.
+
+### BD-N4 — závislosti ve worktree jsem vyřešil symlinkem
+
+Codexův sandbox **nemá síť** (ověřeno v skillu `codex-delegace-orchestrace`), takže si
+`npm ci` ve worktree spustit nemůže. Nalinkoval jsem `node_modules` z kořenového checkoutu.
+Ověřeno naostro ve worktree `desktop-b1`: `lint` EXIT=0 · `typecheck` EXIT=0 ·
+`test:unit` **77 zelených**.
+
+**Pozor při úklidu:** ty symlinky odkazují do hlavního checkoutu. `orca worktree rm` je
+odstraní s worktree, ale kdyby někdo mazal ručně, `rm -rf` na worktree by šel po symlinku.
