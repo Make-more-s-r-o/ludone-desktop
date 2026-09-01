@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.72 0.14 268); }
+    a:hover { color: oklch(0.8 0.11 268); }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; padding: 30px 32px 36px; background: {{t.page}}; color: {{t.text}}; font-family: 'Public Sans', -apple-system, sans-serif; font-size: 13px;">
+
+  <div style="display: flex; align-items: flex-end; gap: 24px; margin-bottom: 22px;">
+    <div style="flex-grow: 1;">
+      <div style="font-family: 'Instrument Sans', sans-serif; font-size: 26px; font-weight: 700; color: {{t.strong}}; letter-spacing: -0.022em;">Cesta uživatele</div>
+      <div style="font-size: 13.5px; color: {{t.muted}}; margin-top: 6px; max-width: 78ch; line-height: 1.5;">Od odkazu ke stažení po odinstalování. Barva říká, <b style="color:{{t.text}}">kde</b> se to odehrává; rám říká, jestli to <b style="color:{{t.text}}">má kde proběhnout</b>. Změřeno na macOS 26.4 a Electronu 37.3.1.</div>
+    </div>
+    <div style="display: flex; gap: 18px; text-align: right;">
+      <div><div style="font-family:'Instrument Sans',sans-serif; font-size: 26px; font-weight: 700; color: {{t.strong}}; font-variant-numeric: tabular-nums;">31</div><div style="font-size: 10.5px; color: {{t.subtle}};">momentů</div></div>
+      <div><div style="font-family:'Instrument Sans',sans-serif; font-size: 26px; font-weight: 700; color: {{t.bad}}; font-variant-numeric: tabular-nums;">20</div><div style="font-size: 10.5px; color: {{t.subtle}};">bez obrazovky</div></div>
+      <div><div style="font-family:'Instrument Sans',sans-serif; font-size: 26px; font-weight: 700; color: {{t.wait}}; font-variant-numeric: tabular-nums;">11</div><div style="font-size: 10.5px; color: {{t.subtle}};">porušených konvencí</div></div>
+    </div>
+  </div>
+
+  <!-- LEGENDA -->
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; padding: 11px 14px; border-radius: 8px; background: {{t.card}}; border: 1px solid {{t.hair}}; margin-bottom: 20px; font-size: 11px;">
+    <sc-for list="{{legenda}}" as="l" hint-placeholder-count="5">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 11px; height: 11px; border-radius: 3px; background: {{l.barva}};"></div>
+        <span style="color: {{t.muted}};">{{l.popis}}</span>
+      </div>
+    </sc-for>
+    <div style="width: 1px; background: {{t.hair}};"></div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <div style="width: 11px; height: 11px; border-radius: 3px; border: 1.5px dashed {{t.bad}};"></div>
+      <span style="color: {{t.muted}};">nemá kde proběhnout</span>
+    </div>
+  </div>
+
+  <!-- FÁZE -->
+  <sc-for list="{{faze}}" as="f" hint-placeholder-count="6">
+    <div style="margin-bottom: 22px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 9px;">
+        <div style="font-family: 'Instrument Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: {{t.subtle}};">{{f.nazev}}</div>
+        <div style="flex-grow: 1; height: 1px; background: {{t.hair}};"></div>
+        <div style="font-size: 10.5px; color: {{f.varovaniBarva}};">{{f.varovani}}</div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px;">
+        <sc-for list="{{f.momenty}}" as="m" hint-placeholder-count="4">
+          <div style="padding: 11px 12px; border-radius: 8px; background: {{m.pozadi}}; border: {{m.ram}}; display: flex; flex-direction: column; gap: 5px; min-height: 96px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="width: 8px; height: 8px; border-radius: 2px; background: {{m.kdeBarva}}; flex-shrink: 0;"></div>
+              <div style="font-size: 12px; font-weight: 600; color: {{t.strong}}; line-height: 1.25;">{{m.nazev}}</div>
+            </div>
+            <div style="font-size: 11px; color: {{t.muted}}; line-height: 1.45; flex-grow: 1;">{{m.co}}</div>
+            <sc-if value="{{m.maRiziko}}" hint-placeholder-val="{{ true }}">
+              <div style="font-size: 10.5px; color: {{m.rizikoBarva}}; line-height: 1.4; padding-top: 5px; border-top: 1px dashed {{t.hair}};">{{m.riziko}}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{
+  "rezim": {"editor": "enum", "options": ["tmavý", "světlý"], "default": "tmavý", "section": "Vzhled"}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tmavy = (this.props.rezim ?? 'tmavý') === 'tmavý';
+    const t = tmavy ? {
+      page: 'oklch(0.185 0.012 262)', card: 'oklch(0.235 0.012 262)',
+      hair: 'oklch(0.305 0.013 262)', subtle: 'oklch(0.585 0.014 262)',
+      muted: 'oklch(0.715 0.012 262)', text: 'oklch(0.925 0.005 262)',
+      strong: 'oklch(0.975 0.003 262)', accent: 'oklch(0.72 0.14 268)',
+      ok: 'oklch(0.78 0.11 178)', wait: 'oklch(0.8 0.13 76)', bad: 'oklch(0.75 0.14 34)',
+      sys: 'oklch(0.7 0.1 300)', web: 'oklch(0.75 0.09 220)',
+    } : {
+      page: 'oklch(0.978 0.004 85)', card: 'oklch(0.993 0.003 85)',
+      hair: 'oklch(0.925 0.006 80)', subtle: 'oklch(0.635 0.013 260)',
+      muted: 'oklch(0.505 0.016 262)', text: 'oklch(0.245 0.019 266)',
+      strong: 'oklch(0.165 0.02 266)', accent: 'oklch(0.48 0.16 268)',
+      ok: 'oklch(0.46 0.1 178)', wait: 'oklch(0.52 0.12 70)', bad: 'oklch(0.5 0.15 32)',
+      sys: 'oklch(0.45 0.13 300)', web: 'oklch(0.48 0.12 220)',
+    };
+
+    const KDE = {
+      panel: t.accent, lista: t.ok, system: t.sys, prohlizec: t.web, nikde: t.subtle,
+    };
+    const legenda = [
+      { barva: KDE.panel, popis: 'panel pod ikonou' },
+      { barva: KDE.lista, popis: 'lišta' },
+      { barva: KDE.system, popis: 'systémový dialog' },
+      { barva: KDE.prohlizec, popis: 'prohlížeč' },
+      { barva: KDE.nikde, popis: 'nikde' },
+    ];
+
+    const mk = (nazev, kde, co, riziko, chybi) => ({
+      nazev, co,
+      kdeBarva: KDE[kde],
+      riziko: riziko || '', maRiziko: Boolean(riziko),
+      rizikoBarva: chybi ? t.bad : t.wait,
+      pozadi: chybi ? 'color-mix(in oklab, ' + t.bad + ' 7%, transparent)' : t.card,
+      ram: chybi ? '1.5px dashed color-mix(in oklab, ' + t.bad + ' 42%, transparent)'
+                 : '1px solid ' + t.hair,
+    });
+
+    const faze = [
+      {
+        nazev: 'Než to vůbec spustí',
+        varovani: 'čtyři momenty ze čtyř bez obrazovky',
+        varovaniBarva: t.bad,
+        momenty: [
+          mk('Stažení', 'prohlizec', 'Dnes nic — build vyrábí jen adresář, žádný .dmg ani .zip, stahovací stránka není.', 'Kdo dostane appku AirDropem, Gatekeeper neuvidí. Kdo prohlížečem, projde šesti kroky. Dva lidé, dva zážitky.', true),
+          mk('Gatekeeper', 'system', 'Apple nemůže ověřit, že aplikace neobsahuje škodlivý software. Tlačítko Otevřít tam NENÍ.', 'Od macOS 15 neexistuje ani pravý klik → Otevřít. Cesta vede přes Nastavení systému a Touch ID.', true),
+          mk('Přesun do Aplikací', 'nikde', 'App Translocation spustí appku z náhodné read-only cesty.', 'Sebeaktualizace pak nemůže fungovat a v oprávněních přibude druhá cesta. Nikdo to uživateli neřekne.', true),
+          mk('Hledání ikony', 'lista', 'NIC. Změřeno: ikona se staví z SVG, Chromium ho nedekóduje, obrázek je 0×0 a 0 bajtů.', '🔴 Nejrizikovější moment celé cesty. Selhání je neviditelné — člověk usoudí, že se appka nespustila.', false),
+        ],
+      },
+      {
+        nazev: 'Přihlášení',
+        varovani: 'tři nejčastější chyby se do aplikace nevrátí',
+        varovaniBarva: t.bad,
+        momenty: [
+          mk('Odchod do prohlížeče', 'panel', 'Tlačítko Přihlásit, pak „Čekám na prohlížeč…" bez konce a bez Zrušit.', 'Panel se navíc při ztrátě fokusu schová — výjimka pro běžící přihlášení chybí.', false),
+          mk('Souhlas', 'prohlizec', '„LuDone MCP chce číst tvoje data." Nikde není, pod kterým účtem je člověk přihlášený.', 'Povolí přístup cizí identitě, pod kterou je zrovna v prohlížeči. Text mluví jazykem MCP, ne diktafonu.', false),
+          mk('Slepá ulička', 'prohlizec', 'Vypršelo · nesedí iniciátor · účet nemá přístup — všechno končí stránkou v prohlížeči.', 'Do panelu se vrací JEN odmítnutí. Zbytek vypadá identicky s tím, že člověk odešel od počítače.', true),
+          mk('Pozdní návrat', 'prohlizec', 'Server drží žádost 10 minut, desktop zavírá naslouchání po 5.', '🔴 Kdo se vrátí v 7. minutě, dostane „nelze se připojit" — a na serveru mu VZNIKNE souhlas, který nepatří žádnému zařízení.', false),
+        ],
+      },
+      {
+        nazev: 'Oprávnění',
+        varovani: 'systémový zvuk se o zvuk vůbec neprosí',
+        varovaniBarva: t.wait,
+        momenty: [
+          mk('Mikrofon', 'system', 'Systémový dialog. Jediné oprávnění, které si appka umí vyžádat sama.', 'Po odmítnutí už macOS dialog nikdy neukáže. Tlačítko „Povolit" je v tom stavu lež.', false),
+          mk('Systémový zvuk', 'system', 'Dialog o nahrávání OBRAZOVKY — přestože jsme slíbili zvuk.', 'Vyžádat programově nejde. A celé to stojí na chování, které Electron dokumentuje jako „jen Windows".', false),
+          mk('Opakované potvrzení', 'system', 'Týž dialog znovu, typicky když spouštíš nahrávání už začaté schůzky.', 'Interval není pevných 30 dní a používáním se prodlužuje. Panel musí stav číst při každém otevření.', true),
+          mk('Částečné povolení', 'panel', 'Kdo povolí jen mikrofon, měl by umět aspoň LuTrack a jednostopou nahrávku.', 'Dnešní onboarding zamyká celou aplikaci, dokud nejsou obě oprávnění. Cihla.', false),
+        ],
+      },
+      {
+        nazev: 'Běžný den',
+        varovani: '',
+        varovaniBarva: t.subtle,
+        momenty: [
+          mk('Spustit nahrávání', 'panel', 'Fáze „kontroluji obě stopy", pak běžící čas a zdroj.', 'Když start selže na jedné stopě, musí být vidět KTERÁ a proč.', false),
+          mk('Měřit čas', 'panel', 'Vybrat projekt z alokací, spustit, během dne přepnout.', 'Nabídnout jen projekty s platnou alokací, jinak zápis projde a sazba spadne na prázdno.', false),
+          mk('Obojí naráz', 'lista', 'Ikona musí nést obě agendy zároveň.', '🔴 Pátý stav v kódu není a tiše se překlopí na šedé „nepřihlášeno" — appka vypadá jako spadlá.', false),
+          mk('Pojmenovat nahrávku', 'panel', 'Při STOPU předvyplněný řádek s fokusem: datum, čas, projekt z LuTracku.', 'Bez toho má člověk po třech měsících 180 řádků „2026-09-01 09:14" a hledá přehráváním.', true),
+        ],
+      },
+      {
+        nazev: 'Když se něco pokazí',
+        varovani: 'nic z toho dnes nemá obrazovku',
+        varovaniBarva: t.bad,
+        momenty: [
+          mk('Zavřené víko', 'panel', 'Nahrávka i čas se ukládají na disk dřív, než se cokoli pošle.', 'Časovač dnes žije jen v paměti prohlížeče — reload naměřený čas zahodí.', true),
+          mk('Ztráta jedné stopy', 'panel', 'Návrh pokračuje a třikrát varuje.', '🔴 Kód zastaví OBĚ. Návrh a kód si přímo odporují a ani jedna strana o tom neví.', true),
+          mk('Vypršelo přihlášení', 'panel', 'Během nahrávání se nesmí objevit nic — zvuk jde na disk, token je potřeba až pro odeslání.', 'Dva souběžné pokusy o obnovu tokenu odhlásí člověka „sám od sebe". Musí být jednovláknové.', true),
+          mk('Pád aplikace', 'nikde', 'Není crash handler, ani obnova nedokončených nahrávek.', 'Soubor na disku zůstane, ale nikdo ho uživateli nenabídne.', true),
+        ],
+      },
+      {
+        nazev: 'Konec',
+        varovani: 'čtyři momenty ze čtyř bez obrazovky',
+        varovaniBarva: t.bad,
+        momenty: [
+          mk('Aktualizace', 'nikde', 'Není updater, verze, poznámky k vydání ani odložení.', 'A bez vývojářského certifikátu se „po aktualizaci zůstaneš přihlášený" slíbit nedá — mění se identita appky.', true),
+          mk('Odhlášení', 'panel', 'Nejdřív odvolat na serveru, teprve pak smazat lokálně.', 'Opačné pořadí znamená, že token už nemáme a odvolat ho nikdy nepůjde. Fronta se nesmí smazat.', true),
+          mk('Odebrání z firmy', 'nikde', 'Server vrátí 403 a data si nechá.', 'Desktop nemá pravidla pro lokální firemní zvuk, který zůstal na disku.', true),
+          mk('Odinstalování', 'nikde', 'Není postup ani osud dat, oprávnění, logů a neodeslaných nahrávek.', 'Po smazání appky zůstanou nahrávky i klíč v systému. Nikdo neví kde.', true),
+        ],
+      },
+    ];
+
+    return { t, legenda, faze };
+  }
+}
+</script>
+</body>
+</html>

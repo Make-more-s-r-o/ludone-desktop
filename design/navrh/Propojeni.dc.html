@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.72 0.14 268); }
+    a:hover { color: oklch(0.8 0.11 268); }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; padding: 30px 32px 36px; background: {{t.page}}; color: {{t.text}}; font-family: 'Public Sans', -apple-system, sans-serif; font-size: 13px;">
+
+  <div style="margin-bottom: 22px;">
+    <div style="font-family: 'Instrument Sans', sans-serif; font-size: 26px; font-weight: 700; color: {{t.strong}}; letter-spacing: -0.022em;">Propojení s LuDone</div>
+    <div style="font-size: 13.5px; color: {{t.muted}}; margin-top: 6px; max-width: 82ch; line-height: 1.5;">Dvě agendy tečou <b style="color:{{t.text}}">jinam</b> a to je hlavní architektonický fakt projektu. Plná čára = existuje. Přerušovaná = neexistuje ani řádek.</div>
+  </div>
+
+  <!-- DVĚ CESTY -->
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-bottom: 22px;">
+    <sc-for list="{{cesty}}" as="c" hint-placeholder-count="2">
+      <div style="border-radius: 12px; background: {{t.card}}; border: 1px solid {{c.ram}}; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <div style="width: 9px; height: 9px; border-radius: 50%; background: {{c.barva}};"></div>
+          <div style="font-family: 'Instrument Sans', sans-serif; font-size: 16px; font-weight: 600; color: {{t.strong}};">{{c.nazev}}</div>
+          <div style="flex-grow: 1;"></div>
+          <div style="font-size: 10.5px; padding: 3px 9px; border-radius: 4px; background: {{c.stavPozadi}}; color: {{c.stavBarva}}; font-weight: 600;">{{c.stav}}</div>
+        </div>
+
+        <sc-for list="{{c.kroky}}" as="k" hint-placeholder-count="5">
+          <div style="display: flex; gap: 11px; align-items: flex-start;">
+            <div style="width: 22px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding-top: 3px;">
+              <div style="width: 10px; height: 10px; border-radius: 50%; border: 2px solid {{k.teckaBarva}}; background: {{k.teckaVypln}};"></div>
+              <sc-if value="{{k.maCaru}}" hint-placeholder-val="{{ true }}">
+                <div style="width: 0; flex-grow: 1; min-height: 26px; border-left: 2px {{k.caraStyl}} {{k.caraBarva}};"></div>
+              </sc-if>
+            </div>
+            <div style="flex-grow: 1; padding-bottom: 12px;">
+              <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                <div style="font-size: 12.5px; font-weight: 600; color: {{k.nazevBarva}};">{{k.nazev}}</div>
+                <div style="font-family: 'Instrument Sans', sans-serif; font-size: 10.5px; color: {{t.subtle}};">{{k.kde}}</div>
+              </div>
+              <div style="font-size: 11.5px; color: {{t.muted}}; line-height: 1.45; margin-top: 3px;">{{k.popis}}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- ROZHODNUTÍ N1 -->
+  <div style="border-radius: 12px; background: {{t.card}}; border: 1.5px solid {{t.badRam}}; padding: 18px; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 12px;">
+      <div style="font-family: 'Instrument Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: {{t.bad}};">Rozhodnutí N1 — blokuje všechno kolem časovače</div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+      <sc-for list="{{varianty}}" as="v" hint-placeholder-count="2">
+        <div style="padding: 14px; border-radius: 9px; background: {{t.sunken}}; border: 1px solid {{t.hair}};">
+          <div style="font-size: 13px; font-weight: 600; color: {{t.strong}}; margin-bottom: 7px;">{{v.nazev}}</div>
+          <div style="font-size: 11.5px; color: {{t.ok}}; line-height: 1.45; margin-bottom: 6px;">{{v.pro}}</div>
+          <div style="font-size: 11.5px; color: {{t.bad}}; line-height: 1.45;">{{v.proti}}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- MANTINELY -->
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+    <sc-for list="{{mantinely}}" as="m" hint-placeholder-count="3">
+      <div style="padding: 13px 14px; border-radius: 9px; background: {{m.pozadi}}; border: 1px solid {{m.ram}};">
+        <div style="font-size: 12px; font-weight: 600; color: {{m.nadpisBarva}}; margin-bottom: 5px;">{{m.nazev}}</div>
+        <div style="font-size: 11.5px; color: {{t.muted}}; line-height: 1.45;">{{m.popis}}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{
+  "rezim": {"editor": "enum", "options": ["tmavý", "světlý"], "default": "tmavý", "section": "Vzhled"}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tmavy = (this.props.rezim ?? 'tmavý') === 'tmavý';
+    const t = tmavy ? {
+      page: 'oklch(0.185 0.012 262)', card: 'oklch(0.235 0.012 262)',
+      sunken: 'oklch(0.16 0.012 262)', hair: 'oklch(0.305 0.013 262)',
+      subtle: 'oklch(0.585 0.014 262)', muted: 'oklch(0.715 0.012 262)',
+      text: 'oklch(0.925 0.005 262)', strong: 'oklch(0.975 0.003 262)',
+      accent: 'oklch(0.72 0.14 268)', ok: 'oklch(0.78 0.11 178)',
+      wait: 'oklch(0.8 0.13 76)', bad: 'oklch(0.75 0.14 34)',
+      badRam: 'color-mix(in oklab, oklch(0.75 0.14 34) 40%, transparent)',
+      okRam: 'color-mix(in oklab, oklch(0.78 0.11 178) 34%, transparent)',
+    } : {
+      page: 'oklch(0.978 0.004 85)', card: 'oklch(0.993 0.003 85)',
+      sunken: 'oklch(0.958 0.005 82)', hair: 'oklch(0.925 0.006 80)',
+      subtle: 'oklch(0.635 0.013 260)', muted: 'oklch(0.505 0.016 262)',
+      text: 'oklch(0.245 0.019 266)', strong: 'oklch(0.165 0.02 266)',
+      accent: 'oklch(0.48 0.16 268)', ok: 'oklch(0.46 0.1 178)',
+      wait: 'oklch(0.52 0.12 70)', bad: 'oklch(0.5 0.15 32)',
+      badRam: 'color-mix(in oklab, oklch(0.5 0.15 32) 36%, transparent)',
+      okRam: 'color-mix(in oklab, oklch(0.46 0.1 178) 30%, transparent)',
+    };
+
+    const krok = (nazev, kde, popis, existuje, posledni) => ({
+      nazev, kde, popis,
+      nazevBarva: existuje ? t.strong : t.muted,
+      teckaBarva: existuje ? t.ok : t.bad,
+      teckaVypln: existuje ? t.ok : 'transparent',
+      maCaru: !posledni,
+      caraStyl: existuje ? 'solid' : 'dashed',
+      caraBarva: existuje ? t.okRam : t.badRam,
+    });
+
+    const cesty = [
+      {
+        nazev: 'Nahrávka schůzky', barva: t.bad, ram: t.hair,
+        stav: 'server neexistuje', stavBarva: t.bad,
+        stavPozadi: 'color-mix(in oklab, ' + t.bad + ' 14%, transparent)',
+        kroky: [
+          krok('Dvě stopy na disk', 'desktop', 'Mikrofon a systémový zvuk zvlášť, chunky po 1 s, kontrola pořadí. Ověřeno naostro.', true, false),
+          krok('Fronta odeslání', 'desktop', 'Kód existuje — 255 řádků a 212 řádků testů. Ale aplikace ho nikdy nezavolá.', false, false),
+          krok('POST /api/desktop/recordings', 'app.ludone.cz', 'Kontrakt je popsaný, routa ani migrace neexistuje. Nula řádků.', false, false),
+          krok('Přepis', 'server', 'Gemini 3.5 Transcribe, 0,60 $ za hodinu schůzky. Rozhodnuto podmíněně, nepostaveno.', false, false),
+          krok('Archiv a hledání', 'app.ludone.cz', 'Podle A12 zůstává na webu. Desktop sem jen odkazuje.', false, true),
+        ],
+      },
+      {
+        nazev: 'Vykázaný čas', barva: t.ok, ram: t.okRam,
+        stav: 'řetěz běží, desktop mimo', stavBarva: t.ok,
+        stavPozadi: 'color-mix(in oklab, ' + t.ok + ' 14%, transparent)',
+        kroky: [
+          krok('Časovač v panelu', 'desktop', '77 řádků atrapy. Stav v paměti prohlížeče, Stop naměřený čas zahodí.', false, false),
+          krok('time_entries', 'Supabase', 'Živá tabulka. Sazbu dosadí databázový trigger z alokace — klient ji nikdy neposílá.', true, false),
+          krok('Týdenní souhrn', 'Supabase', 'Trigger přepočítá při každém zápisu. Zrno je uživatel × týden × projekt × sazba.', true, false),
+          krok('sptWorkReportHours', 'Tabidoo', 'Cron každou hodinu. Teče AGREGÁT, ne jednotlivý záznam.', true, false),
+          krok('Mzdové náklady projektů', 'sklad → ludone-app', 'HR, tábory, rozpočty, CFO. Odsud se počítají peníze.', true, true),
+        ],
+      },
+    ];
+
+    const varianty = [
+      {
+        nazev: 'Přímo do Supabase, jako web',
+        pro: '✓ Hotová cesta. Dědí práva i celý řetěz do Tabidoo a do skladu zadarmo. Nejrychlejší k funkční verzi.',
+        proti: '✗ Přístupový klíč se roznese po noteboocích. A desktop bude třetí klient v závodě, kde jedinečnost běžícího časovače hlídá jen klient — v databázi to nehlídá nic.',
+      },
+      {
+        nazev: 'Přes tenký endpoint na app.ludone.cz',
+        pro: '✓ Klíč zůstane na serveru. Pravidla se dají schovat na jedno místo. Táž cesta jako nahrávky, tedy jedno přihlášení a jedna fronta.',
+        proti: '✗ Práce navíc a je to nový kód na money-path. A dnešní token má rozsah jen pro čtení, takže potřebuje nový zápisový scope.',
+      },
+    ];
+
+    const mantinely = [
+      {
+        nazev: '🔴 Duplicita tiše navýší hodiny',
+        popis: 'Do Tabidoo teče týdenní agregát, takže dvojí zápis není vidět jako duplikát — jen se zvednou hodiny a projdou do nákladů projektu. Klíč proti duplikaci musí vzniknout už při startu časovače.',
+        pozadi: 'color-mix(in oklab, ' + t.bad + ' 9%, transparent)', ram: t.badRam, nadpisBarva: t.bad,
+      },
+      {
+        nazev: 'Sazby se desktop nedotkne',
+        popis: 'Klient hourly_rate nikdy neposílá; dosazuje ji trigger z alokace platné k datu, a přímou editaci shodí. Peníze si desktop nemůže osahat ani omylem.',
+        pozadi: 'color-mix(in oklab, ' + t.ok + ' 9%, transparent)', ram: t.okRam, nadpisBarva: t.ok,
+      },
+      {
+        nazev: 'Vlastní vypínač pro každou agendu',
+        popis: 'Nahrávání je experiment blokovaný nerozhodnutým právním rámcem, LuTrack je ostrý provoz týmu. Jeden společný přepínač by je spojil a vypnutí experimentu by zastavilo výkazy.',
+        pozadi: t.card, ram: t.hair, nadpisBarva: t.wait,
+      },
+    ];
+
+    return { t, cesty, varianty, mantinely };
+  }
+}
+</script>
+</body>
+</html>
