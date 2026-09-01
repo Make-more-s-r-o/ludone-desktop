@@ -115,3 +115,37 @@ aplikační strana stavět.
 Masterplán §17 chce agent-support od začátku. Splní se **na straně aplikace**, ne v desktopu.
 Desktop musí jen zajistit, aby data, která pošle, byla přes MCP čitelná — tedy nést vlastníka,
 projekt jako GUID a časy v UTC. Do specu jako požadavek na tvar dat, ne jako funkce desktopu.
+
+---
+
+## O10 — design zůstává v `design/`, ne v `artifacts/design/`
+
+**1. 9. 2026, rozhodl orchestrátor.** Masterplán §3 předepisuje kanonickou cestu
+`docs/changes/<change-id>/artifacts/design/`. Design ale bydlí v `design/` v kořeni repozitáře
+a ukazuje na něj `.gitignore`, `approved.json` i všechny odkazy v návrhu.
+
+**Přesun den před nočním během by rozbil odkazy** a nic by nezískal. Místo přesunu vznikl
+`artifacts/design/design-manifest.md`, který kanonické místo pojmenovává. Není to druhý zdroj
+pravdy — je to rozcestník k jedinému.
+
+**Kdyby to mělo být podle masterplánu doslova**, je to přesun po nočním běhu, ne před ním.
+
+## O11 — režimy `/goal` a `/loop` chyběly ve spouštěcím promptu
+
+**1. 9. 2026, našel Dan.** První verze promptu říkala „pracuj autonomně", ale nenesla
+měřitelný completion condition (`/goal`) ani způsob, jak se vrátit po resetu limitů (`/loop`).
+Bez `/goal` běh neví, kdy uspěl; bez `/loop` se po vyčerpání limitu nerozjede.
+
+Doplněno. 🔴 **`/loop` úmyslně úzce** — masterplán §11 ho zakazuje jako stavový automat,
+důkaz dokončení i náhradu task DAG. Slouží jen k čekání na Codex, CI a reset limitů.
+
+## O12 — tenhle modul je PILOT procesu, ne jen modul
+
+**1. 9. 2026.** Masterplán §20 chce, aby se proces nejdřív ověřil na malém modulu a skončil
+verdiktem `VALIDATED` / `PARTIAL` / `INVALIDATED`. Do téhle chvíle to nikde nestálo a běh by
+odevzdal jen kód.
+
+Noční běh proto ráno vrací **i verdikt o procesu** — zvlášť k tomu, jestli šel packet
+implementovat bez produktového hádání a jestli hlavní session zůstala kontextově úsporná.
+**Neúspěšný pilot je platný výsledek**, když přesně ukáže, co změnit.
+
