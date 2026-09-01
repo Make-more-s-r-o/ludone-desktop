@@ -559,3 +559,31 @@ Sandbox i síťová klec zůstávají — `-s workspace-write` visí na `codex e
 
 **Doporučený default:** do `orca-codex.sh` přidat do názvu logu ještě PID nebo náhodný přípon
 (`codex-<ts>-$$.log`). Do té doby: **mezi dvěma starty počkej vteřinu, nebo si log pojmenuj sám.**
+
+### BD-N13 — dva nálezy z adversariálního review, které noční běh NEOPRAVIL
+
+Review tří otevřených PR (4 čočky, 52 agentů, každý nález ověřen dvěma nezávislými skeptiky)
+vrátilo **9 potvrzených nálezů z 24**. Sedm je opravených v příslušných PR; tyhle dva ne,
+protože patří jinam než k práci toho běhu.
+
+**1. Test čítače přihlášení měří ROZHODNUTÍ, ne ZAPOJENÍ** (`tests/auth-panel-blur-guard.test.js:45`).
+Sestaví si vstupní objekt a sám zavolá čistou funkci `shouldHidePanelOnBlur`. **Nic v celé
+sadě nehlídá, že blur handler na `main.cjs:342` ten čítač do volání opravdu předá.** Zbylé
+dva testy v souboru jsou strukturální regexy nad textem.
+
+Je to **tatáž třída, kterou tenhle běh potkal třikrát** (tray přepočet, klíč proti duplikaci,
+kanárek měřící komentář). Oprava patří k testu založenému v `04e87fc`, ne k B4.
+**Doporučený default:** test, který blur handler skutečně zavolá s podstrčeným čítačem.
+
+**2. Počítadlo mutací hlídá jen ČLENSTVÍ ve dvou mapách** (`tests/tray-authority.test.js`).
+`hasLiveRecording()` čte **čtyři** fakta — kromě členství taky `preparation.cancelled`
+a `recordingSession.finalizePromise`. Obě se mění mimo hlídané vzory, takže by mohlo přibýt
+šesté místo, které lištu nepřepočítá, a počítadlo by mlčelo.
+
+**Doporučený default:** rozšířit počítadlo o obě přiřazení. **Nedělal jsem to dnes v noci**,
+protože B3 už má za sebou dvě kola oprav a třetí zásah do téhož měřidla bez klidné hlavy je
+přesně ten způsob, jak se do brány zanese chyba.
+
+🔴 **Patnáct nálezů review VYVRÁTILI skeptici** — mimo jiné tvrzení, že zpřísněný kanál faktů
+je fail-open, že se `abort` posluchač připojuje pozdě, a že oprava B1 vzorkuje stav jen jednou.
+Ověřovací kolo tedy dělalo svou práci oběma směry, ne jen potvrzovací.
