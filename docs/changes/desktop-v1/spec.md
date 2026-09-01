@@ -31,6 +31,14 @@ interpretovaný přes tenhle dokument. Technická realizace → `plan.md`.
 Archiv, přepisy, hledání, grafy, přehledy, management a admin LuTracku — všechno na webu.
 Kalendář (M15). Seznam účastníků schůzky — **ztrácí se bez náhrady**. Mobilní aplikace (A5).
 
+🔴 **Serverová strana není v rozsahu této změny** (S1). Desktop ukládá na disk a řadí do fronty,
+ale odesílání zůstává za vypnutým `DESKTOP_UPLOAD_ENABLED`. Příjem na `app.ludone.cz` dostane
+vlastní průchod masterplánem; most je [`docs/server-modul/KONTRAKT.md`](../../server-modul/KONTRAKT.md).
+
+🔴 **MCP nástroje nejsou v rozsahu** (S2). Ptát se bude přes LuDone MCP nad aplikací. Desktop má
+jedinou povinnost: **data, která odešle, musí být přes MCP čitelná** — nesou vlastníka, projekt
+jako GUID a časy v UTC.
+
 ---
 
 ## 2. Role a viditelnost

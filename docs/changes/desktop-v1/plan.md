@@ -55,6 +55,14 @@ a odpověď respektuje.
 Dva samostatné: `DESKTOP_UPLOAD_ENABLED` a `DESKTOP_TIME_ENABLED` (C2).
 Oba **fail-closed** — chybějící hodnota znamená vypnuto, a to musí mít vlastní test.
 
+### Co tenhle plán NEPOKRÝVÁ
+
+🔴 **Serverovou stranu** (S1). Všech dvanáct stories je desktopových. `ludone-app` je jiný
+repozitář s jinými branami a s merge do `main` jako deployem na produkci — patří mu vlastní
+průchod masterplánem. Tenhle běh mu předá `docs/server-modul/KONTRAKT.md`.
+
+🔴 **MCP nástroje** (S2) — věc aplikace.
+
 ### Rollback
 
 Každá story je samostatně revertovatelná. Žádná migrace v1 (desktop nikam nepíše).

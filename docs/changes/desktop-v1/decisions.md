@@ -90,3 +90,28 @@ plánuju to, nespouštím.
 sdílené zařízení od osobního · komu se přiřadí nahrávka, když se u jednoho Macu vystřídají tři lidé ·
 co se stane s frontou při odhlášení uprostřed odesílání · jestli sdílený účet smí měřit čas
 (a komu by se ty hodiny připsaly). **Odhad +2 až 3 ČD** a dotýká se to RBAC.
+
+---
+
+## Kolo 3 — rozsah a MCP (1. 9. 2026 večer)
+
+| # | Rozhodnutí |
+|---|---|
+| **S1** | **Serverová část NENÍ v tomhle plánu.** Desktop se dotáhne kompletně, sepíše se technická dokumentace kontraktu, a na straně `ludone-app` proběhne **vlastní průchod masterplánem** |
+| **S2** | **MCP je věc aplikace, ne desktopu.** Na nahrávky a hodiny se ptá přes LuDone MCP nad `app.ludone.cz`. Desktop žádné MCP nástroje nevystavuje |
+| **S3** | **Pořadí: nejdřív desktop, server potom** |
+
+### Co z S1 plyne pro tenhle běh
+
+Desktop **nemá kam odesílat** a v tomhle plánu mít nebude. Fronta se tedy postaví a otestuje,
+ale zůstane za vypnutým `DESKTOP_UPLOAD_ENABLED`. Úspěšný signál z `intent.md` „nahrávka doputuje
+sama" **v této vlně nelze splnit** — je to vědomé, ne opomenutí.
+
+Most k příštímu běhu je `docs/server-modul/KONTRAKT.md`: jeden dokument, proti kterému bude
+aplikační strana stavět.
+
+### Co z S2 plyne
+
+Masterplán §17 chce agent-support od začátku. Splní se **na straně aplikace**, ne v desktopu.
+Desktop musí jen zajistit, aby data, která pošle, byla přes MCP čitelná — tedy nést vlastníka,
+projekt jako GUID a časy v UTC. Do specu jako požadavek na tvar dat, ne jako funkce desktopu.
