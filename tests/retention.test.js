@@ -174,6 +174,66 @@ describe("retence 7 dní", () => {
     expect(existsSync(freshRecording.systemPath)).toBe(true);
   });
 
+  it("NEODESLANOU nahrávku nesmaže, ani když je stará osm dní", async () => {
+    // 🔴 Tenhle test chyběl a odhalila to sabotáž, která zůstala ZELENÁ: nahradil jsem
+    // podmínku `item.state === "odeslano"` literálem `true` — tedy stav, kdy se maže
+    // i to, co nikam neodešlo — a všech 199 testů prošlo. Ochrana existovala, ale nikdo
+    // ji neměřil, protože každý test pracoval s odeslanou položkou.
+    //
+    // Na cestě, která maže data, je to nejdražší možná díra: nahrávka, která se ještě
+    // neodeslala, je jediná kopie toho, co se na schůzce řeklo.
+    const recording = await createQueuedRecording({
+      clientRecordingId: "9f1c2f5e-6a3b-4c8d-9e0f-1a2b3c4d5e6f",
+      recordedAt: NOW - 8 * DAY_MS,
+      suffix: "neodeslana",
+    });
+
+    // Kanárek: soubory před úklidem prokazatelně JSOU, a položka prokazatelně NENÍ odeslaná.
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.systemPath)).toBe(true);
+    expect(recording.queue.items.at(-1).state).not.toBe(QUEUE_STATES.SENT);
+
+    await applyRetention({
+      queue: recording.queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.systemPath)).toBe(true);
+  });
+
+  it("položka s časem odeslání, ale NEODESLANÝM stavem, přežije", async () => {
+    // 🔴 Tenhle test dělá kontrolu stavu NOSNOU. Bez něj je `item.state === "odeslano"`
+    // redundantní: neodeslaná položka nemá `sentAt`, takže ji stejně zachytí následující
+    // `Number.isFinite(sentAtMs)`. Sabotáž, která kontrolu stavu odstraní, proto zůstávala
+    // ZELENÁ — invariant přežil, protože ho nesla jiná podmínka.
+    //
+    // Dnes takový stav queue API nevyrobí (`sentAt` se nastavuje jen při odeslání a přechod
+    // pryč ze SENT neexistuje). Až ho vyrobí — třeba opakovaným odesláním po chybě, které
+    // si `sentAt` ponechá — bude tahle podmínka jediné, co brání smazání. Test to zamyká
+    // dřív, než ta cesta vznikne.
+    const recording = await createSentRecording({
+      clientRecordingId: "5c7d9e11-2b4a-4d6f-8a1c-3e5f7a9b1d3e",
+      sentAt: NOW - 8 * DAY_MS,
+      suffix: "selhala-po-odeslani",
+    });
+    const polozka = recording.queue.items.at(-1);
+    const queue = {
+      ...recording.queue,
+      items: [{ ...polozka, state: QUEUE_STATES.FAILED }],
+    };
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(queue.items[0].sentAt).toBeTruthy();
+    expect(queue.items[0].state).not.toBe(QUEUE_STATES.SENT);
+
+    await applyRetention({ queue, policy: RETENTION_POLICIES.DNI_7, now: NOW });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.systemPath)).toBe(true);
+  });
+
   it("neznámá hodnota nastavení nemaže nic (fail-closed)", async () => {
     const recording = await createSentRecording({ sentAt: NOW - 400 * DAY_MS });
 
