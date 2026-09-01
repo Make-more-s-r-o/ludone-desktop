@@ -225,3 +225,35 @@ describe("lišta se překresluje jen při skutečné změně", () => {
     expect(harness.tooltips.at(-1)).toBe("L·lutrack");
   });
 });
+
+describe("každá změna nahrávacího faktu lištu přepočítá", () => {
+  // 🔴 Tenhle test vznikl z díry, kterou 92 zelených testů NEVIDĚLO. Odvození stavu bylo
+  // správné, jenže se po startu nahrávání nikdo nezeptal — `refreshTray()` chyběl na všech
+  // pěti místech, kde se nahrávací fakt mění, takže lišta by nahrávání neukázala nikdy.
+  // Test chování to nechytilo, protože volalo `refreshTray()` samo. Chybělo měřidlo ZAPOJENÍ.
+  const mutace = [
+    "recordingOwnersPreparing.set(ownerId, preparation);",
+    "recordingSessions.set(sessionId, recordingSession);",
+    "recordingOwnersPreparing.delete(ownerId);",
+    "recordingSessions.delete(sessionId);",
+    "return recordingSession.finalizePromise;",
+  ];
+
+  it.each(mutace)("po „%s“ následuje refreshTray()", (radek) => {
+    const index = mainSource.indexOf(radek);
+    expect(index, `řádek se v main.cjs nenašel: ${radek}`).toBeGreaterThan(-1);
+    // Okno tří řádků: přepočet musí být hned vedle mutace, ne někde v téže funkci.
+    const okno = mainSource.slice(index, index + radek.length + 220);
+    expect(okno).toContain("refreshTray()");
+  });
+
+  it("žádná mutace nezůstala nezmapovaná", () => {
+    // Kdyby v kódu přibylo další místo, kde se ty mapy mění, tenhle počet přestane sedět
+    // a někdo se na to bude muset podívat — místo aby to tiše chybělo.
+    const vyskytu = (vzor) => mainSource.split(vzor).length - 1;
+    expect(vyskytu("recordingOwnersPreparing.set(")).toBe(1);
+    expect(vyskytu("recordingOwnersPreparing.delete(")).toBe(1);
+    expect(vyskytu("recordingSessions.set(")).toBe(1);
+    expect(vyskytu("recordingSessions.delete(")).toBe(1);
+  });
+});

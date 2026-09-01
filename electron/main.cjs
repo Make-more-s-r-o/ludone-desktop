@@ -544,6 +544,7 @@ async function createRecordingSession(event) {
   }
   const preparation = { cancelled: false };
   recordingOwnersPreparing.set(ownerId, preparation);
+  refreshTray();
   const tracks = new Map();
   let manifestWasWritten = false;
   try {
@@ -594,6 +595,7 @@ async function createRecordingSession(event) {
     };
     event.sender.once("destroyed", recordingSession.destroyedListener);
     recordingSessions.set(sessionId, recordingSession);
+    refreshTray();
     console.log(`[recording] Připraveny oddělené soubory s prefixem ${prefix}.`);
     return { sessionId, startedAt: recordingSession.startedAt };
   } catch (error) {
@@ -605,6 +607,7 @@ async function createRecordingSession(event) {
   } finally {
     if (recordingOwnersPreparing.get(ownerId) === preparation) {
       recordingOwnersPreparing.delete(ownerId);
+      refreshTray();
     }
   }
 }
@@ -661,6 +664,8 @@ async function finalizeRecordingSession(sessionId, finalState) {
   if (!recordingSession) throw new Error("Neznámá nahrávací session");
   if (recordingSession.finalizePromise) return recordingSession.finalizePromise;
 
+  // Přiřazení `finalizePromise` je okamžik, kdy session přestává být živé nahrávání.
+  // `refreshTray()` musí přijít až ZA ním, jinak by ještě viděl starý stav.
   recordingSession.finalizePromise = (async () => {
     const files = {};
     const closedAt = new Date().toISOString();
@@ -711,6 +716,7 @@ async function finalizeRecordingSession(sessionId, finalState) {
     }
 
     recordingSessions.delete(sessionId);
+    refreshTray();
     if (!recordingSession.owner.isDestroyed()) {
       recordingSession.owner.removeListener("destroyed", recordingSession.destroyedListener);
     }
@@ -718,6 +724,7 @@ async function finalizeRecordingSession(sessionId, finalState) {
     console.log(`[recording] Uloženo: mikrofon ${files.microphone.size} B, systém ${files.system.size} B.`);
     return { startedAt: recordingSession.startedAt, files };
   })();
+  refreshTray();
   return recordingSession.finalizePromise;
 }
 
