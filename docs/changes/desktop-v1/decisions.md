@@ -272,3 +272,44 @@ s `LUDONE_ORIGIN=https://labs.ludone.cz`**, jinak se testuje adresa, kterou nikd
 *„Mechanika primárně Codex, Claude koordinace a review"* — a je novější. Dělba je tedy:
 **koordinátor rozhodl oba blokery (výš) a přečte diff; Codex napíše kód.** Záměr plánu
 zůstal: bezpečnostní rozhodnutí neudělal vykonavatel.
+
+---
+
+## BD-N8 — nový IPC kanál `tray:report-facts` (koordinátor, 1. 9. 2026, 23:45)
+
+Nezávislé review B3 vytklo, že B3 zavedla **nový IPC kontrakt, který není v plánu ani
+v rozhodnutích**. Má pravdu, tak ho sem zapisuju — mlčky zavedený kontrakt je přesně to,
+co masterplán §9 zakazuje.
+
+**Kanál:** `tray:report-facts`, směr renderer → hlavní proces, přes `onValidated([...panel])`.
+
+**Proč vznikl.** Smazáním `tray:set-state` by hlavní proces ztratil jediný zdroj dvou faktů,
+které dnes zná jen renderer: jestli je někdo přihlášený a jestli běží časovač. Bez náhrady by
+lišta zůstala navždy na „nepřihlášeno". `plan.md` §1 přitom ten směr určuje sám:
+*„Renderer hlásí fakta, neurčuje stav."*
+
+**Kontrakt — a je úzký schválně:**
+
+| | |
+|---|---|
+| přijímá | **právě dva klíče**: `signedIn`, `tracking` |
+| typ | **oba striktně `boolean`**, nic jiného |
+| klíč navíc | **odmítnuto** (`state`, `icon`, cokoli) |
+| neplatný obsah | **NIC nemění**, zaloguje se; fail-closed |
+| jméno ikony | do kanálu **nesmí** — hlídá to test |
+
+**Proč tak úzký:** volnější kontrola z něj udělá `tray:set-state` pod novým jménem. Doloženo
+review: `{ tracking: "tracking" }` by protlačilo doslovné jméno ikony a `{}` by tiše přepsalo
+přihlášení na false. Ověřeno sabotážemi — obě rozvolnění brána chytí.
+
+🔴 **Je to DOČASNÝ stav.** Až přistane **B5** (časovač v hlavním procesu) a **B8** (skutečné
+přihlášení), budou obě fakta pocházet přímo z hlavního procesu a kanál se **zúží nebo zmizí**.
+Kdo bude dělat B5 nebo B8, ať to nezapomene — jinak tu zůstane cesta, kterou renderer ovlivňuje
+stav, přestože ji už nikdo nepotřebuje.
+
+### Vlastnictví crash hooků — přiznaná odchylka od zmrazeného plánu
+
+`plan.md` §2 dává tři posluchače smrti rendereru story **B5**. B3 je změnila, protože bez nich
+`refreshTray()` po pádu okna nikdo nezavolá a story nedodá nic. Packet `B3-tray-autorita.md`
+si tuhle odchylku sám přiznává v §12.1b. **Zmrazený plán neopravuju za pochodu** — zapsáno tady,
+aby se to při B5 nevyřešilo podruhé a jinak.
