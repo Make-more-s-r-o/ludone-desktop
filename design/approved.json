@@ -1,0 +1,55 @@
+{
+  "status": "approved",
+  "approvedBy": "Dan",
+  "approvedAt": "2026-09-01",
+  "approvedVia": "statická náhledová stránka design/navrh/nahled.html, Danova věta „za mě teda schváleno“",
+  "designProject": "LuDone Přístroj Design System (c5ee8498-bd71-466b-8e3e-3c264ae6d7f3) — v době schválení nedostupný, viz design/zadani/README.md",
+  "approvedDirection": "strong-fit",
+  "coveredScreens": [
+    "lišta — ikona a stavy",
+    "lišta — kontextové menu (pravý klik)",
+    "panel — klid",
+    "panel — výběr projektu",
+    "panel — měří se čas",
+    "panel — nahrává se",
+    "panel — běží obojí",
+    "panel — konec nahrávky a pojmenování",
+    "panel — výpadek ostatního zvuku",
+    "panel — čeká fronta",
+    "onboarding — uvítání",
+    "onboarding — čekání na prohlížeč",
+    "prohlížeč — obrazovka souhlasu",
+    "onboarding — přihlášeno",
+    "onboarding — oprávnění",
+    "onboarding — test záznamu",
+    "onboarding — připraveno",
+    "chyba — přihlášení vypršelo",
+    "chyba — účet nemá přístup",
+    "chyba — bez sítě",
+    "nastavení — účet",
+    "nastavení — diagnostika"
+  ],
+  "coveredStates": [
+    "klid", "jen nahrávání", "jen čas", "obojí",
+    "výpadek systémového zvuku", "čeká fronta",
+    "přihlášení vypršelo", "účet nemá přístup", "offline",
+    "projekt s vyčerpaným rozpočtem (zablokovaný)",
+    "oprávnění neověřeno / povoleno / zamítnuto"
+  ],
+  "approvedNewDesignSystemElements": [
+    "měřák zvukové stopy (vodorovný pruh se stavovým popiskem)",
+    "sbalený řádek klidové agendy",
+    "kontextové menu ikony v liště se zkratkami"
+  ],
+  "openDesignQuestions": [
+    "Přesná kresba ikony v liště pro všech osm stavů — zatím jen popis, ne artboard. Řeší úkol T1.",
+    "Chování panelu při dvaceti a více položkách ve frontě — souhrn navržen, přetečení neřešeno.",
+    "Obrazovky pro aktualizaci, odinstalování a odebrání z firmy — vědomě odloženo na etapu E10."
+  ],
+  "explicitlyCut": [
+    "kalendář a sekce Dnešní schůzky — ruší se, náhrada popsaná v sekci 05 náhledu",
+    "varianta Divergent — stála na časové ose dne, tedy na rušeném kalendáři",
+    "seznam účastníků schůzky — ztrácí se bez náhrady, doloženo měřením"
+  ],
+  "specVersion": "před sepsáním spec.md; schváleno nad commitem babdd5a"
+}

@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LuDone Desktop — všechny obrazovky</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --page:oklch(0.185 0.012 262);--card:oklch(0.235 0.012 262);--raised:oklch(0.265 0.012 262);
+  --sunken:oklch(0.16 0.012 262);--hair:oklch(0.305 0.013 262);
+  --subtle:oklch(0.585 0.014 262);--muted:oklch(0.715 0.012 262);
+  --text:oklch(0.925 0.005 262);--strong:oklch(0.975 0.003 262);
+  --accent:oklch(0.72 0.14 268);--accent-t:color-mix(in oklab,oklch(0.72 0.14 268) 16%,transparent);
+  --accent-r:color-mix(in oklab,oklch(0.72 0.14 268) 40%,transparent);
+  --ok:oklch(0.78 0.11 178);--ok-r:color-mix(in oklab,oklch(0.78 0.11 178) 34%,transparent);
+  --ok-t:color-mix(in oklab,oklch(0.78 0.11 178) 12%,transparent);
+  --wait:oklch(0.8 0.13 76);--wait-t:color-mix(in oklab,oklch(0.8 0.13 76) 14%,transparent);
+  --wait-r:color-mix(in oklab,oklch(0.8 0.13 76) 32%,transparent);
+  --bad:oklch(0.75 0.14 34);--bad-r:color-mix(in oklab,oklch(0.75 0.14 34) 34%,transparent);
+  --bad-t:color-mix(in oklab,oklch(0.75 0.14 34) 12%,transparent);--bad-fg:oklch(0.16 0.012 262);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:"Public Sans",-apple-system,sans-serif;
+  font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1340px;margin:0 auto;padding:0 28px 110px}
+h1,h2,h3{font-family:"Instrument Sans",sans-serif;margin:0;letter-spacing:-.02em;text-wrap:balance}
+header{padding:52px 0 30px;border-bottom:1px solid var(--hair);margin-bottom:8px}
+h1{font-size:38px;font-weight:700;color:var(--strong)}
+.dek{font-size:17px;color:var(--muted);margin-top:12px;max-width:72ch}
+section{padding:40px 0;border-top:1px solid var(--hair)}
+.eyebrow{font-family:"Instrument Sans",sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:9px}
+h2{font-size:25px;font-weight:600;color:var(--strong)}
+.lead{font-size:15.5px;color:var(--muted);margin-top:11px;max-width:78ch}
+.row{display:flex;gap:24px;flex-wrap:wrap;margin-top:26px;align-items:flex-start}
+.pv{display:flex;flex-direction:column;gap:9px;width:366px}
+.pv-lbl{font-family:"Instrument Sans",sans-serif;font-size:13px;font-weight:600;color:var(--strong);
+  display:flex;align-items:center;gap:8px}
+.pv-lbl b{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--accent-t);color:var(--accent);font-weight:700}
+.pv-sub{font-size:12px;color:var(--subtle);line-height:1.4;min-height:34px}
+
+/* panel */
+.panel{width:366px;border:1px solid var(--hair);border-radius:26px;background:var(--page);overflow:hidden;
+  display:flex;flex-direction:column;box-shadow:0 12px 40px -18px rgba(0,0,0,.7)}
+.panel.hi{border-color:var(--accent-r)}
+.ph{height:52px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 14px;
+  border-bottom:1px solid var(--hair);background:var(--card)}
+.mark{width:22px;height:22px;border-radius:6px;background:var(--accent);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.nm{font-family:'Instrument Sans',sans-serif;font-weight:600;font-size:13px;color:var(--strong)}
+.pb{padding:14px;display:flex;flex-direction:column;gap:11px}
+.pf{height:34px;display:flex;align-items:center;gap:8px;padding:0 14px;border-top:1px solid var(--hair);
+  background:var(--card);font-size:10.5px;color:var(--subtle)}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.grow{flex-grow:1;min-width:0}
+.rowline{display:flex;align-items:center;gap:10px}
+.card{border:1px solid var(--hair);border-radius:14px;background:var(--card);padding:12px;
+  display:flex;flex-direction:column;gap:9px}
+.card.rec{border-color:var(--bad-r);background:var(--raised)}
+.card.tim{border-color:var(--ok-r);background:var(--raised)}
+.ct{font-family:"Instrument Sans",sans-serif;font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+.big{font-family:"Instrument Sans",sans-serif;font-size:32px;font-weight:600;color:var(--strong);
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}
+.sub{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini{font-size:10.5px;color:var(--subtle);line-height:1.4}
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;height:38px;border-radius:10px;
+  font-weight:600;font-size:13px}
+.b-pri{background:var(--accent);color:var(--page)}
+.b-stop{background:var(--bad);color:var(--bad-fg)}
+.b-quiet{background:var(--sunken);color:var(--text)}
+.b-ghost{background:var(--accent-t);color:var(--accent);height:28px;padding:0 12px;border-radius:7px;
+  font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+.idle{display:flex;align-items:center;gap:10px;height:46px;padding:0 12px;border-radius:10px;
+  background:var(--card);border:1px solid var(--hair)}
+.meter{height:5px;border-radius:3px;background:var(--sunken);overflow:hidden;flex-grow:1}
+.meter i{display:block;height:100%;border-radius:3px}
+.field{display:flex;align-items:center;gap:9px;height:36px;padding:0 11px;border-radius:9px;
+  background:var(--sunken);border:1px solid var(--hair);font-size:12.5px}
+.field.focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-t)}
+.pill{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;white-space:nowrap}
+.note-in{padding:10px 11px;border-radius:10px;font-size:11px;line-height:1.45;display:flex;gap:8px}
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--page);
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:'Instrument Sans',sans-serif}
+
+/* prohlížeč */
+.brw{width:366px;border:1px solid var(--hair);border-radius:12px;overflow:hidden;background:oklch(0.99 0.003 85)}
+.brw-bar{height:36px;background:oklch(0.92 0.005 85);display:flex;align-items:center;gap:7px;padding:0 11px}
+.brw-bar i{width:9px;height:9px;border-radius:50%;font-style:normal}
+.brw-url{flex-grow:1;height:22px;border-radius:11px;background:oklch(0.99 0.003 85);font-size:10.5px;
+  color:oklch(0.45 0.016 262);display:flex;align-items:center;padding:0 10px;overflow:hidden;white-space:nowrap}
+.brw-body{padding:20px 18px;color:oklch(0.2 0.019 266);display:flex;flex-direction:column;gap:12px;min-height:200px}
+
+/* lišta */
+.bar{height:30px;border-radius:7px;background:oklch(0.12 0.01 262);display:flex;align-items:center;
+  justify-content:flex-end;gap:10px;padding:0 10px}
+.menu{width:250px;border-radius:11px;background:var(--card);border:1px solid var(--hair);padding:6px;
+  display:flex;flex-direction:column;gap:1px}
+.mi{display:flex;align-items:center;gap:9px;height:30px;padding:0 10px;border-radius:6px;font-size:12.5px}
+.mi em{font-family:'Instrument Sans',sans-serif;font-size:11px;color:var(--subtle);font-style:normal;margin-left:auto}
+.msep{height:1px;background:var(--hair);margin:5px 8px}
+
+.note{border-radius:10px;padding:15px 17px;margin-top:22px;font-size:14.5px;line-height:1.55}
+.note.bad{background:var(--bad-t);border:1px solid var(--bad-r)}
+.note.ok{background:var(--ok-t);border:1px solid var(--ok-r)}
+.note.n{background:var(--card);border:1px solid var(--hair)}
+.note b{color:var(--strong)}
+.tbl{width:100%;border-collapse:collapse;margin-top:20px;font-size:13.5px}
+.tbl th{text-align:left;font-family:'Instrument Sans',sans-serif;font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--subtle);padding:9px 12px;border-bottom:1px solid var(--hair);font-weight:600}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--hair);vertical-align:top;color:var(--muted)}
+.tbl td b{color:var(--strong)}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.88em;background:var(--sunken);
+  border:1px solid var(--hair);border-radius:3px;padding:.08em .34em}
+footer{border-top:1px solid var(--hair);padding-top:26px;margin-top:44px;font-size:13px;color:var(--subtle)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>LuDone Desktop — všechny obrazovky</h1>
+  <p class="dek">Celý průchod aplikací: od prvního spuštění přes přihlášení a oprávnění po běžný den. Bez kalendáře — ten se ruší, viz poslední sekce.</p>
+</header>
+
+<!-- ============ 00 KLIK NA IKONU ============ -->
+<section>
+  <div class="eyebrow">00 — Odpověď na tvoji otázku</div>
+  <h2>Co se stane, když kliknu na ikonu?</h2>
+  <p class="lead">Ikona v liště je jediný vstup do aplikace. Není v Docku, nemá okno. <b style="color:var(--text)">Levý klik otevře panel</b> přilepený pod ikonou, <b style="color:var(--text)">pravý klik otevře menu</b> s rychlými akcemi. Panel se zavře kliknutím vedle nebo klávesou Esc.</p>
+
+  <div class="row">
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">1</span> Ikona v liště</div>
+      <div class="pv-sub">Vždycky vidíš, co běží — barva a text vedle ikony.</div>
+      <div style="padding:14px;border-radius:12px;background:var(--card);border:1px solid var(--hair)">
+        <div class="bar">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.5 0.012 262)" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.5 0.012 262)" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <div style="display:flex;align-items:center;gap:5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.2" stroke-linecap="round"><path d="M4 18 L10 6 L14 14 L20 9"/></svg>
+            <span style="font-family:'Instrument Sans';font-size:10.5px;font-weight:600;color:var(--bad);font-variant-numeric:tabular-nums">12:41</span>
+          </div>
+        </div>
+        <div class="mini" style="margin-top:10px">Nahrává se dvanáct minut. Kdyby běžel i časovač, přibude vedle druhý údaj.</div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">2</span> Levý klik → panel</div>
+      <div class="pv-sub">Přilepený pod ikonou, 366 bodů široký. Obě agendy a nic víc.</div>
+      <div class="panel hi">
+        <div class="ph"><div class="mark"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--page)" stroke-width="2.4" stroke-linecap="round"><path d="M4 18 L10 6 L14 14 L20 9"/></svg></div>
+          <div class="grow"><div class="nm">LuDone</div><div class="mini">Dan Jirotka · připojeno</div></div></div>
+        <div class="pb">
+          <div class="card rec">
+            <div class="rowline"><span class="dot" style="background:var(--bad)"></span><span class="ct grow" style="color:var(--bad)">Nahrává se</span></div>
+            <div class="big">12:41</div>
+            <div class="rowline"><span class="mini" style="width:72px">Mikrofon</span><span class="meter"><i style="width:68%;background:var(--ok)"></i></span></div>
+            <div class="rowline"><span class="mini" style="width:72px">Ostatní zvuk</span><span class="meter"><i style="width:54%;background:var(--ok)"></i></span></div>
+            <div class="btn b-stop">Ukončit a uložit</div>
+          </div>
+          <div class="idle">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span class="grow sub">LuTrack</span><span class="b-ghost">Spustit</span></div>
+        </div>
+        <div class="pf"><span class="dot" style="background:var(--ok)"></span><span class="grow">Vše odesláno</span><span>Nastavení</span></div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">3</span> Pravý klik → menu</div>
+      <div class="pv-sub">Rychlé akce bez otevírání panelu. Se zkratkami.</div>
+      <div class="menu">
+        <div class="mi" style="color:var(--bad)">Ukončit nahrávání<em>⌃⌥R</em></div>
+        <div class="mi" style="color:var(--subtle)">Spustit LuTrack<em>⌃⌥T</em></div>
+        <div class="msep"></div>
+        <div class="mi">Otevřít panel<em>⌃⌥L</em></div>
+        <div class="mi">Otevřít LuDone v prohlížeči</div>
+        <div class="msep"></div>
+        <div class="mi">Nastavení…<em>⌘,</em></div>
+        <div class="mi">O aplikaci</div>
+        <div class="msep"></div>
+        <div class="mi">Ukončit LuDone<em>⌘Q</em></div>
+      </div>
+      <div class="note-in" style="background:var(--wait-t);border:1px solid var(--wait-r);margin-top:11px">
+        <span style="color:var(--wait)">Tohle menu dnes neexistuje vůbec — ani ono, ani zkratky. Bez něj se aplikace nedá ani ukončit.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 01 PRVNÍ SPUŠTĚNÍ A PŘIHLÁŠENÍ ============ -->
+<section>
+  <div class="eyebrow">01 — První spuštění</div>
+  <h2>Jak funguje přihlášení</h2>
+  <p class="lead">Žádné heslo v aplikaci, žádné vkládání tokenu. Klikneš na tlačítko, otevře se ti prohlížeč na <code>app.ludone.cz</code>, tam potvrdíš, a aplikace to pozná sama.</p>
+
+  <div class="row">
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">1</span> Uvítání</div>
+      <div class="pv-sub">Co appka dělá, jednou větou. Jedno tlačítko.</div>
+      <div class="panel">
+        <div class="pb" style="padding:26px 22px;gap:16px;align-items:center;text-align:center">
+          <div style="width:52px;height:52px;border-radius:14px;background:var(--accent);display:flex;align-items:center;justify-content:center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--page)" stroke-width="2.4" stroke-linecap="round"><path d="M4 18 L10 6 L14 14 L20 9"/></svg></div>
+          <div><div style="font-family:'Instrument Sans';font-size:20px;font-weight:700;color:var(--strong)">LuDone pro Mac</div>
+            <div class="sub" style="white-space:normal;margin-top:7px;line-height:1.5">Nahrává schůzky a měří čas na projektech. Zápisy a přehledy zůstávají v LuDone.</div></div>
+          <div class="btn b-pri" style="width:100%;margin-top:6px">Přihlásit přes app.ludone.cz</div>
+          <div class="mini" style="line-height:1.45">Otevře se ti prohlížeč. Po potvrzení se sem vrátíš sám.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">2</span> Čekání</div>
+      <div class="pv-sub">S odpočtem a možností zrušit. Nikdy tři tečky bez konce.</div>
+      <div class="panel">
+        <div class="pb" style="padding:26px 22px;gap:14px;align-items:center;text-align:center">
+          <div style="width:44px;height:44px;border-radius:50%;border:3px solid var(--hair);border-top-color:var(--accent)"></div>
+          <div style="font-family:'Instrument Sans';font-size:16px;font-weight:600;color:var(--strong)">Čekám na prohlížeč</div>
+          <div class="big" style="font-size:22px;color:var(--muted)">9:42</div>
+          <div class="field" style="width:100%;font-size:11px;color:var(--muted)">
+            <span class="grow" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">app.ludone.cz/oauth/…</span>
+            <span style="color:var(--accent);font-weight:600">Kopírovat</span></div>
+          <div class="mini" style="line-height:1.45">Neotevřelo se ti okno? Zkopíruj odkaz a otevři ho ručně.</div>
+          <div class="btn b-quiet" style="width:100%">Zrušit</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">3</span> Prohlížeč — souhlas</div>
+      <div class="pv-sub">Tohle už je web LuDone, ne aplikace.</div>
+      <div class="brw">
+        <div class="brw-bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i>
+          <div class="brw-url">app.ludone.cz/oauth/authorize</div></div>
+        <div class="brw-body">
+          <div style="font-family:'Instrument Sans';font-size:17px;font-weight:600">Povolit přístup pro LuDone Desktop?</div>
+          <div style="font-size:12.5px;color:oklch(0.42 0.016 262);line-height:1.5">Aplikace bude smět nahrávat schůzky a zapisovat vykázaný čas pod tvým účtem.</div>
+          <div style="border-radius:9px;background:oklch(0.955 0.005 82);padding:11px 12px;font-size:12px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex"><span style="width:96px;color:oklch(0.5 0.016 262)">Přihlášen jako</span><b>dan.jirotka@makemore.cz</b></div>
+            <div style="display:flex"><span style="width:96px;color:oklch(0.5 0.016 262)">Zařízení</span><span>MacBook Pro — Dan</span></div>
+            <div style="display:flex"><span style="width:96px;color:oklch(0.5 0.016 262)">Prostředí</span><span>produkce</span></div>
+          </div>
+          <div style="font-size:11.5px;color:oklch(0.5 0.016 262)">Nejsi to ty? <span style="color:oklch(0.4 0.15 268);font-weight:600">Přihlásit jiným účtem</span></div>
+          <div style="display:flex;gap:9px;margin-top:2px">
+            <div style="flex-grow:1;height:38px;border-radius:9px;background:oklch(0.4 0.15 268);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">Povolit</div>
+            <div style="width:100px;height:38px;border-radius:9px;border:1px solid oklch(0.88 0.007 260);display:flex;align-items:center;justify-content:center;font-size:13px">Odmítnout</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">4</span> Hotovo</div>
+      <div class="pv-sub">Aplikace se sama přepne dopředu a ukáže, kdo jsi.</div>
+      <div class="panel">
+        <div class="pb" style="padding:26px 22px;gap:14px;align-items:center;text-align:center">
+          <div style="width:46px;height:46px;border-radius:50%;background:var(--ok-t);border:1px solid var(--ok-r);display:flex;align-items:center;justify-content:center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div style="font-family:'Instrument Sans';font-size:17px;font-weight:600;color:var(--strong)">Přihlášeno</div>
+          <div style="width:100%;border-radius:10px;background:var(--card);border:1px solid var(--hair);padding:12px;display:flex;flex-direction:column;gap:5px;text-align:left">
+            <div class="rowline"><span class="mini" style="width:74px">Jméno</span><span class="sub" style="color:var(--text)">Dan Jirotka</span></div>
+            <div class="rowline"><span class="mini" style="width:74px">E-mail</span><span class="sub">dan.jirotka@makemore.cz</span></div>
+            <div class="rowline"><span class="mini" style="width:74px">Zařízení</span><span class="sub">MacBook Pro — Dan</span></div>
+          </div>
+          <div class="btn b-pri" style="width:100%">Pokračovat</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note bad"><b>Tři chybové stavy, které se dnes do aplikace vůbec nevrátí.</b> Když přihlášení vyprší, účet nemá přístup, nebo nesedí iniciátor, skončí to stránkou v prohlížeči a panel dál mlčí — vypadá to úplně stejně, jako když odejdeš od počítače. Proto tři obrazovky níž.</div>
+
+  <div class="row">
+    <div class="pv">
+      <div class="pv-lbl">Vypršelo</div>
+      <div class="pv-sub">Po deseti minutách. Musí říct, co dál.</div>
+      <div class="panel">
+        <div class="pb" style="padding:22px;gap:13px">
+          <div class="rowline" style="gap:9px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wait)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span style="font-family:'Instrument Sans';font-size:15px;font-weight:600;color:var(--strong)">Přihlášení vypršelo</span></div>
+          <div class="sub" style="white-space:normal;line-height:1.5">Okno v prohlížeči zůstalo moc dlouho otevřené.</div>
+          <div class="btn b-pri">Zkusit znovu</div>
+          <div style="border-top:1px solid var(--hair);padding-top:11px">
+            <div class="mini" style="font-weight:600;color:var(--muted);margin-bottom:5px">Co se mohlo stát</div>
+            <div class="mini">· okno se otevřelo na druhé ploše<br>· jsi v prohlížeči pod jiným účtem<br>· účet nemá v LuDone povolený přístup</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl">Účet nemá přístup</div>
+      <div class="pv-sub">Přihlášení proběhlo, ale práva chybí.</div>
+      <div class="panel">
+        <div class="pb" style="padding:22px;gap:13px">
+          <div class="rowline" style="gap:9px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+            <span style="font-family:'Instrument Sans';font-size:15px;font-weight:600;color:var(--strong)">Účet nemá přístup</span></div>
+          <div class="sub" style="white-space:normal;line-height:1.5"><b style="color:var(--text)">dan.jirotka@makemore.cz</b> se přihlásil, ale nemá v LuDone povolený desktop.</div>
+          <div class="btn b-quiet">Přihlásit jiným účtem</div>
+          <div class="mini">Napiš správci, ať ti přístup povolí.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl">Bez sítě</div>
+      <div class="pv-sub">Nahrávat jde dál — odesílá se, až bude spojení.</div>
+      <div class="panel">
+        <div class="pb" style="padding:22px;gap:13px">
+          <div class="rowline" style="gap:9px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wait)" stroke-width="2" stroke-linecap="round"><path d="M2 2l20 20"/><path d="M5 12.55a11 11 0 0 1 5.2-2.4M10.7 5.05a16 16 0 0 1 10.3 4.5M1.4 8.9a16 16 0 0 1 4.3-2.9"/><path d="M8.5 16.1a6 6 0 0 1 7 0M12 20h.01"/></svg>
+            <span style="font-family:'Instrument Sans';font-size:15px;font-weight:600;color:var(--strong)">Nejsi připojený</span></div>
+          <div class="sub" style="white-space:normal;line-height:1.5">Přihlásit se teď nejde. <b style="color:var(--text)">Nahrávat a měřit čas můžeš dál</b> — uloží se to na disk a odešle později.</div>
+          <div class="btn b-quiet">Zkusit znovu</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 OPRÁVNĚNÍ ============ -->
+<section>
+  <div class="eyebrow">02 — Oprávnění</div>
+  <h2>Co si aplikace musí vyžádat</h2>
+  <p class="lead">Dvě oprávnění, každé zvlášť, a na konci zkouška. <b style="color:var(--text)">Zelené „Připraveno" se nesmí ukázat, dokud oba kanály nedávají signál.</b></p>
+
+  <div class="row">
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">1</span> Přehled</div>
+      <div class="pv-sub">Každé oprávnění má svůj stav a svoje tlačítko.</div>
+      <div class="panel">
+        <div class="pb">
+          <div style="font-family:'Instrument Sans';font-size:16px;font-weight:600;color:var(--strong)">Oprávnění</div>
+          <div class="card" style="gap:8px">
+            <div class="rowline"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+              <span class="grow" style="font-size:13px;color:var(--strong);font-weight:600">Mikrofon</span>
+              <span class="pill" style="background:var(--ok-t);color:var(--ok)">Povoleno</span></div>
+            <div class="mini">Tvůj hlas. Bez něj nenahraješ nic.</div>
+          </div>
+          <div class="card" style="gap:8px;border-color:var(--wait-r)">
+            <div class="rowline"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--wait)" stroke-width="2" stroke-linecap="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+              <span class="grow" style="font-size:13px;color:var(--strong);font-weight:600">Ostatní zvuk</span>
+              <span class="pill" style="background:var(--wait-t);color:var(--wait)">Neověřeno</span></div>
+            <div class="mini">Druhá strana hovoru. macOS tomu říká „nahrávání obrazovky", ale <b style="color:var(--text)">obraz se neukládá</b> — bereme jen zvuk.</div>
+            <div class="btn b-ghost" style="height:32px">Otevřít Nastavení systému</div>
+          </div>
+          <div class="note-in" style="background:var(--card);border:1px solid var(--hair)">
+            <span class="mini">Můžeš povolit jen mikrofon. Časovač poběží a nahrávka bude jednostopá — jen se dozvíš, že chybí druhá strana.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">2</span> Zkouška</div>
+      <div class="pv-sub">Bez ní se nedá tvrdit, že to funguje.</div>
+      <div class="panel">
+        <div class="pb">
+          <div style="font-family:'Instrument Sans';font-size:16px;font-weight:600;color:var(--strong)">Test záznamu</div>
+          <div class="sub" style="white-space:normal;line-height:1.5">Řekni něco nahlas a pusť si libovolný zvuk. Oba měřáky se musí hýbat.</div>
+          <div class="card" style="gap:11px">
+            <div class="rowline"><span class="mini" style="width:78px">Mikrofon</span><span class="meter"><i style="width:72%;background:var(--ok)"></i></span><span class="pill" style="background:var(--ok-t);color:var(--ok)">slyším</span></div>
+            <div class="rowline"><span class="mini" style="width:78px">Ostatní zvuk</span><span class="meter"><i style="width:4%;background:var(--wait)"></i></span><span class="pill" style="background:var(--wait-t);color:var(--wait)">ticho</span></div>
+          </div>
+          <div class="field"><span class="grow">MacBook Pro — mikrofon</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="btn b-quiet">Přehrát zkušební zvuk</div>
+          <div class="btn" style="background:var(--sunken);color:var(--subtle)">Pokračovat</div>
+          <div class="mini" style="text-align:center">Pokračovat půjde, až uslyším oba kanály.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">3</span> Připraveno</div>
+      <div class="pv-sub">Teprve teď smí být zeleno.</div>
+      <div class="panel">
+        <div class="pb" style="padding:26px 22px;gap:14px;align-items:center;text-align:center">
+          <div style="width:46px;height:46px;border-radius:50%;background:var(--ok-t);border:1px solid var(--ok-r);display:flex;align-items:center;justify-content:center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div style="font-family:'Instrument Sans';font-size:17px;font-weight:600;color:var(--strong)">Připraveno</div>
+          <div class="sub" style="white-space:normal;line-height:1.5">Oba kanály slyším. Panel najdeš pod ikonou v horní liště.</div>
+          <div class="btn b-pri" style="width:100%">Hotovo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 BĚŽNÝ DEN ============ -->
+<section>
+  <div class="eyebrow">03 — Běžný den</div>
+  <h2>Klid → vybrat projekt → měřit → nahrávat</h2>
+  <p class="lead">Panel má dvě věci a nic jiného. Obě se spouštějí i zastavují samostatně.</p>
+
+  <div class="row">
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">1</span> Klid</div>
+      <div class="pv-sub">Nic neběží. Dvě tlačítka a shrnutí dneška.</div>
+      <div class="panel">
+        <div class="ph"><div class="mark"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--page)" stroke-width="2.4" stroke-linecap="round"><path d="M4 18 L10 6 L14 14 L20 9"/></svg></div>
+          <div class="grow"><div class="nm">LuDone</div><div class="mini">Dan Jirotka · připojeno</div></div></div>
+        <div class="pb">
+          <div class="idle" style="height:56px">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
+            <div class="grow"><div style="font-size:13px;color:var(--text);font-weight:600">Nahrávání</div><div class="mini">Dnes 2 nahrávky · 1h 12m</div></div>
+            <span class="b-ghost">Nahrát</span></div>
+          <div class="idle" style="height:56px">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <div class="grow"><div style="font-size:13px;color:var(--text);font-weight:600">LuTrack</div><div class="mini">Dnes vykázáno 3h 05m</div></div>
+            <span class="b-ghost">Spustit</span></div>
+        </div>
+        <div class="pf"><span class="dot" style="background:var(--ok)"></span><span class="grow">Vše odesláno · 13:58</span><span>Nastavení</span></div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">2</span> Výběr projektu</div>
+      <div class="pv-sub">Jen projekty, na které máš dnes platnou alokaci.</div>
+      <div class="panel hi">
+        <div class="pb">
+          <div class="field focus"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span class="grow" style="color:var(--muted)">Hledat projekt…</span></div>
+          <div class="mini" style="font-weight:600;color:var(--muted)">Naposledy</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div class="rowline" style="padding:9px 11px;border-radius:9px;background:var(--accent-t);border:1px solid var(--accent-r)">
+              <div class="grow"><div style="font-size:12.5px;color:var(--strong);font-weight:600">Make more Finanční řízení 2026</div><div class="mini">zbývá 116:19 z alokace</div></div></div>
+            <div class="rowline" style="padding:9px 11px;border-radius:9px;background:var(--card);border:1px solid var(--hair)">
+              <div class="grow"><div style="font-size:12.5px;color:var(--text)">LuDone Desktop</div><div class="mini">zbývá 42:00</div></div></div>
+          </div>
+          <div class="mini" style="font-weight:600;color:var(--muted);margin-top:3px">Všechny</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div class="rowline" style="padding:9px 11px;border-radius:9px;background:var(--card);border:1px solid var(--hair)">
+              <div class="grow"><div style="font-size:12.5px;color:var(--text)">Maker Faire Praha 2026</div><div class="mini">zbývá 8:30</div></div></div>
+            <div class="rowline" style="padding:9px 11px;border-radius:9px;background:var(--sunken);border:1px dashed var(--bad-r);opacity:.75">
+              <div class="grow"><div style="font-size:12.5px;color:var(--subtle)">MF M. Boleslav 2026</div><div class="mini" style="color:var(--bad)">rozpočet vyčerpán — vykazovat nejde</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">3</span> Měří se čas</div>
+      <div class="pv-sub">Projekt jde přepnout za běhu, časovač se nezastaví.</div>
+      <div class="panel">
+        <div class="pb">
+          <div class="card tim">
+            <div class="rowline"><span class="dot" style="background:var(--ok)"></span><span class="ct grow" style="color:var(--ok)">Měří se čas</span><span class="mini">od 08:55</span></div>
+            <div class="big">5h 16m</div>
+            <div class="sub">Make more Finanční řízení 2026</div>
+            <div class="rowline"><span class="mini grow">Zbývá z alokace</span><span style="font-size:11.5px;color:var(--wait);font-weight:600">116:19</span></div>
+            <div class="meter" style="height:4px"><i style="width:62%;background:var(--wait)"></i></div>
+            <div class="rowline" style="gap:8px"><span class="btn b-quiet grow" style="height:34px">Přepnout projekt</span><span class="btn b-quiet" style="height:34px;width:74px">Stop</span></div>
+          </div>
+          <div class="idle"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg><span class="grow sub">Nahrávání</span><span class="b-ghost">Nahrát</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">4</span> Běží obojí</div>
+      <div class="pv-sub">Dvě nezávislé věci. Každá se zastaví zvlášť.</div>
+      <div class="panel">
+        <div class="pb">
+          <div class="card rec">
+            <div class="rowline"><span class="dot" style="background:var(--bad)"></span><span class="ct grow" style="color:var(--bad)">Nahrává se</span></div>
+            <div class="big">12:41</div>
+            <div class="rowline"><span class="mini" style="width:72px">Mikrofon</span><span class="meter"><i style="width:68%;background:var(--ok)"></i></span></div>
+            <div class="rowline"><span class="mini" style="width:72px">Ostatní zvuk</span><span class="meter"><i style="width:54%;background:var(--ok)"></i></span></div>
+            <div class="btn b-stop">Ukončit a uložit</div>
+          </div>
+          <div class="card tim">
+            <div class="rowline"><span class="dot" style="background:var(--ok)"></span><span class="ct grow" style="color:var(--ok)">Měří se čas</span><span class="big" style="font-size:17px;color:var(--ok)">5h 16m</span></div>
+            <div class="sub">Make more Finanční řízení 2026</div>
+            <div class="rowline" style="gap:8px"><span class="btn b-quiet grow" style="height:32px">Přepnout</span><span class="btn b-quiet" style="height:32px;width:70px">Stop</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:30px">
+    <div class="pv">
+      <div class="pv-lbl"><span class="step-n">5</span> Konec nahrávky → pojmenování</div>
+      <div class="pv-sub">Jediný okamžik, kdy se ptáme. Předvyplněné, kurzor v poli, Enter potvrdí.</div>
+      <div class="panel hi">
+        <div class="pb">
+          <div style="font-family:'Instrument Sans';font-size:16px;font-weight:600;color:var(--strong)">Nahrávka uložena</div>
+          <div class="rowline"><span class="mini grow">1. září, 14:00–14:38</span><span class="mini">38 minut · 42 MB</span></div>
+          <div class="field focus" style="height:40px"><span class="grow" style="color:var(--strong)">Porada provozu</span></div>
+          <div class="mini">Předvyplněno podle projektu, na kterém běží čas. Můžeš přepsat teď nebo později v LuDone.</div>
+          <div class="btn b-pri">Uložit a odeslat</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl" style="color:var(--wait)">Výpadek ostatního zvuku</div>
+      <div class="pv-sub">Nahrávání pokračuje. Musí být vidět, co přesně chybí.</div>
+      <div class="panel">
+        <div class="pb">
+          <div class="card rec" style="border-color:var(--wait-r)">
+            <div class="rowline"><span class="dot" style="background:var(--wait)"></span><span class="ct grow" style="color:var(--wait)">Nahrává se omezeně</span></div>
+            <div class="big">12:41</div>
+            <div class="rowline"><span class="mini" style="width:72px">Mikrofon</span><span class="meter"><i style="width:68%;background:var(--ok)"></i></span><span class="pill" style="background:var(--ok-t);color:var(--ok)">ok</span></div>
+            <div class="rowline"><span class="mini" style="width:72px">Ostatní zvuk</span><span class="meter"><i style="width:2%;background:var(--wait)"></i></span><span class="pill" style="background:var(--wait-t);color:var(--wait)">ticho</span></div>
+            <div class="note-in" style="background:var(--wait-t);border:1px solid var(--wait-r)">
+              <span style="color:var(--muted)"><b style="color:var(--strong)">Druhá strana hovoru se nenahrává.</b> Tvůj hlas ano. Pokračovat můžeš, ale ze schůzky bude jen půlka.</span></div>
+            <div class="rowline" style="gap:8px"><span class="btn b-quiet grow" style="height:34px">Pokračovat</span><span class="btn b-stop" style="height:34px;width:90px">Ukončit</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv">
+      <div class="pv-lbl" style="color:var(--wait)">Čeká fronta</div>
+      <div class="pv-sub">Nic se neztratilo, jen to zatím neodešlo.</div>
+      <div class="panel">
+        <div class="pb">
+          <div class="card" style="border-color:var(--wait-r);background:var(--wait-t)">
+            <div class="rowline"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--wait)" stroke-width="2" stroke-linecap="round"><path d="M12 3v6"/><path d="m8 7 4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+              <div class="grow"><div style="font-size:12.5px;color:var(--strong);font-weight:600">3 čekají na odeslání</div><div class="mini">412 MB · další pokus za 2 min</div></div></div>
+            <div class="btn b-quiet" style="height:32px">Zkusit teď</div>
+          </div>
+          <div class="idle"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg><span class="grow sub">Nahrávání</span><span class="b-ghost">Nahrát</span></div>
+          <div class="idle"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="grow sub">LuTrack</span><span class="b-ghost">Spustit</span></div>
+        </div>
+        <div class="pf"><span class="dot" style="background:var(--wait)"></span><span class="grow">3 čekají · poslední sync 12:04</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 NASTAVENÍ ============ -->
+<section>
+  <div class="eyebrow">04 — Nastavení</div>
+  <h2>Vlastní okno, ne panel</h2>
+  <p class="lead">Otevírá se z patičky panelu nebo zkratkou <code>⌘,</code>. Čtyři části.</p>
+
+  <div class="row">
+    <div class="pv" style="width:560px">
+      <div class="pv-lbl">Účet a zvuk</div>
+      <div class="pv-sub">Kdo jsi, na jakém prostředí, a čím se nahrává.</div>
+      <div style="width:560px;border:1px solid var(--hair);border-radius:14px;background:var(--page);overflow:hidden">
+        <div style="height:44px;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid var(--hair);background:var(--card);font-size:13px">
+          <span style="color:var(--accent);font-weight:600;border-bottom:2px solid var(--accent);height:44px;display:flex;align-items:center">Účet</span>
+          <span style="color:var(--muted)">Zvuk</span><span style="color:var(--muted)">Záznamy</span><span style="color:var(--muted)">Diagnostika</span>
+        </div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div class="card" style="gap:7px">
+            <div class="rowline"><span class="mini" style="width:100px">Přihlášen</span><span class="sub" style="color:var(--strong)">Dan Jirotka</span></div>
+            <div class="rowline"><span class="mini" style="width:100px">E-mail</span><span class="sub">dan.jirotka@makemore.cz</span></div>
+            <div class="rowline"><span class="mini" style="width:100px">Zařízení</span><span class="sub">MacBook Pro — Dan</span></div>
+            <div class="rowline"><span class="mini" style="width:100px">Prostředí</span><span class="sub">produkce</span></div>
+          </div>
+          <div class="rowline" style="gap:9px"><span class="btn b-quiet" style="height:34px;padding:0 14px">Odhlásit tento Mac</span>
+            <span class="mini grow">Fronta zůstane. Nahrávky se odešlou po dalším přihlášení.</span></div>
+          <div style="height:1px;background:var(--hair)"></div>
+          <div class="rowline"><span class="grow" style="font-size:13px">Zobrazovat i ikonu v Docku</span>
+            <span style="width:38px;height:22px;border-radius:11px;background:var(--sunken);border:1px solid var(--hair);position:relative"><i style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--subtle)"></i></span></div>
+          <div class="mini" style="margin-top:-8px">Zapni, když se ti ikona v liště schovává za notch nebo za jinou aplikaci.</div>
+          <div class="rowline"><span class="grow" style="font-size:13px">Spouštět po přihlášení do systému</span>
+            <span style="width:38px;height:22px;border-radius:11px;background:var(--accent);position:relative"><i style="position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--page)"></i></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv" style="width:560px">
+      <div class="pv-lbl">Diagnostika</div>
+      <div class="pv-sub">Když něco nefunguje, tohle pošleš. Bez zvuku, bez tokenu, bez názvů schůzek.</div>
+      <div style="width:560px;border:1px solid var(--hair);border-radius:14px;background:var(--page);overflow:hidden">
+        <div style="height:44px;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid var(--hair);background:var(--card);font-size:13px">
+          <span style="color:var(--muted)">Účet</span><span style="color:var(--muted)">Zvuk</span><span style="color:var(--muted)">Záznamy</span>
+          <span style="color:var(--accent);font-weight:600;border-bottom:2px solid var(--accent);height:44px;display:flex;align-items:center">Diagnostika</span>
+        </div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:11px">
+          <div class="card" style="gap:6px">
+            <div class="rowline"><span class="mini" style="width:130px">Verze</span><span class="sub">1.0.0 (build 42)</span></div>
+            <div class="rowline"><span class="mini" style="width:130px">Architektura</span><span class="sub">Apple Silicon</span></div>
+            <div class="rowline"><span class="mini" style="width:130px">Mikrofon</span><span class="pill" style="background:var(--ok-t);color:var(--ok)">Povoleno</span></div>
+            <div class="rowline"><span class="mini" style="width:130px">Ostatní zvuk</span><span class="pill" style="background:var(--ok-t);color:var(--ok)">Povoleno</span></div>
+            <div class="rowline"><span class="mini" style="width:130px">Spojení se serverem</span><span class="pill" style="background:var(--ok-t);color:var(--ok)">V pořádku</span></div>
+            <div class="rowline"><span class="mini" style="width:130px">Fronta</span><span class="sub">prázdná</span></div>
+          </div>
+          <div class="rowline" style="gap:9px"><span class="btn b-quiet" style="height:34px;padding:0 14px">Exportovat diagnostiku</span>
+            <span class="mini grow">Textový soubor. Nikdy neobsahuje zvuk, přihlašovací údaje ani názvy schůzek.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+  <div class="row" style="margin-top:28px">
+    <div class="pv" style="width:560px">
+      <div class="pv-lbl">Připomínky <b>nové</b></div>
+      <div class="pv-sub">Ve zvolené dny přijde oznámení, když neběží časovač. Jako v Togglu.</div>
+      <div style="width:560px;border:1px solid var(--hair);border-radius:14px;background:var(--page);overflow:hidden">
+        <div style="height:44px;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid var(--hair);background:var(--card);font-size:13px">
+          <span style="color:var(--muted)">Účet</span><span style="color:var(--muted)">Zvuk</span>
+          <span style="color:var(--accent);font-weight:600;border-bottom:2px solid var(--accent);height:44px;display:flex;align-items:center">Připomínky</span>
+          <span style="color:var(--muted)">Diagnostika</span>
+        </div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:15px">
+          <div class="rowline"><span class="grow" style="font-size:13px">Připomínat, když neběží LuTrack</span>
+            <span style="width:38px;height:22px;border-radius:11px;background:var(--accent);position:relative"><i style="position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--page)"></i></span></div>
+          <div>
+            <div class="mini" style="font-weight:600;color:var(--muted);margin-bottom:7px">Ve které dny</div>
+            <div style="display:flex;gap:6px">
+              <span class="pill" style="background:var(--accent-t);color:var(--accent);padding:6px 11px;font-size:11.5px">po</span>
+              <span class="pill" style="background:var(--accent-t);color:var(--accent);padding:6px 11px;font-size:11.5px">út</span>
+              <span class="pill" style="background:var(--accent-t);color:var(--accent);padding:6px 11px;font-size:11.5px">st</span>
+              <span class="pill" style="background:var(--accent-t);color:var(--accent);padding:6px 11px;font-size:11.5px">čt</span>
+              <span class="pill" style="background:var(--accent-t);color:var(--accent);padding:6px 11px;font-size:11.5px">pá</span>
+              <span class="pill" style="background:var(--sunken);color:var(--subtle);padding:6px 11px;font-size:11.5px">so</span>
+              <span class="pill" style="background:var(--sunken);color:var(--subtle);padding:6px 11px;font-size:11.5px">ne</span>
+            </div>
+          </div>
+          <div class="rowline" style="gap:12px">
+            <div><div class="mini" style="font-weight:600;color:var(--muted);margin-bottom:5px">Od</div>
+              <div class="field" style="width:96px"><span class="grow">09:00</span></div></div>
+            <div><div class="mini" style="font-weight:600;color:var(--muted);margin-bottom:5px">Do</div>
+              <div class="field" style="width:96px"><span class="grow">17:00</span></div></div>
+            <div class="grow"><div class="mini" style="font-weight:600;color:var(--muted);margin-bottom:5px">Jak často</div>
+              <div class="field"><span class="grow">každou hodinu</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div></div>
+          </div>
+          <div style="height:1px;background:var(--hair)"></div>
+          <div class="mini" style="font-weight:600;color:var(--muted)">Jak to vypadá</div>
+          <div style="border-radius:12px;background:var(--raised);border:1px solid var(--hair);padding:13px 14px;display:flex;gap:11px;align-items:flex-start;max-width:340px">
+            <div style="width:30px;height:30px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--page)" stroke-width="2.4" stroke-linecap="round"><path d="M4 18 L10 6 L14 14 L20 9"/></svg></div>
+            <div class="grow"><div style="font-size:12.5px;font-weight:600;color:var(--strong)">LuDone</div>
+              <div class="sub" style="white-space:normal;line-height:1.45;margin-top:2px">Neměříš čas. Dnes máš vykázáno 3h 05m.</div>
+              <div style="display:flex;gap:7px;margin-top:9px"><span class="b-ghost" style="height:26px">Spustit</span><span class="b-ghost" style="height:26px;background:var(--sunken);color:var(--muted)">Dnes už ne</span></div></div>
+          </div>
+          <div class="note-in" style="background:var(--card);border:1px solid var(--hair)">
+            <span class="mini">Připomínka nikdy nepřijde, když <b style="color:var(--text)">běží nahrávání</b> — to je taky práce, jen se nevykazuje časovačem.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- ============ 05 KALENDÁŘ ============ -->
+<section>
+  <div class="eyebrow">05 — Kalendář</div>
+  <h2>Proč se ruší a co ho nahradí</h2>
+  <p class="lead">Tohle jsi trefil: dřívější varianta <b style="color:var(--text)">Divergent</b> byla postavená na časové ose dne, což je kalendář. Když se kalendář ruší, ta varianta nemůže existovat — proto tady už není. A sekce „Dnešní schůzky" z ostatních variant zmizela taky.</p>
+
+  <table class="tbl">
+    <thead><tr><th style="width:26%">Co kalendář dával</th><th style="width:37%">Čím se nahradí</th><th>Poznámka</th></tr></thead>
+    <tbody>
+      <tr><td><b>Pojmenování nahrávky</b></td><td>Datum, čas a délka automaticky + <b>projekt z LuTracku</b>, na kterém běží čas</td><td>Nejlevnější signál v celém výzkumu — appka ten projekt už drží, nepotřebuje žádné API ani oprávnění</td></tr>
+      <tr><td><b>Ruční upřesnění</b></td><td>Jedno textové pole nabídnuté <b>při zastavení nahrávky</b>, s kurzorem v něm</td><td>Ne před startem — to bys mačkal Nahrát pozdě a přišel o první minuty</td></tr>
+      <tr><td><b>Automatické nahrávání schůzek</b></td><td><b>Odpadá.</b> Nahrávání spouštíš vždycky ručně</td><td>Odpovídá rozhodnutí, že nahrávat se má jen vybraná schůzka, ne všechno</td></tr>
+      <tr><td><b>Seznam účastníků</b></td><td><b>Nic. Ztrácí se.</b></td><td>Nenese ho název okna ani zvukové API — jediný zdroj je kalendář. Filtrovat „schůzky s klientem X" půjde jen přes ručně zvolený projekt</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note bad"><b>Co mě k tomu vedlo, ať to není jen tvrzení.</b> Kalendář nemá v kódu ani začátek — tři události jsou natvrdo v souboru a nikde se nic nenačítá ze serveru. Skutečný blokátor navíc není rozhodnutí, ale cizí práce: napojení na Google kalendář se řeší v LuDone Hubu, mimo tenhle projekt. Čekali bychom na někoho jiného kvůli funkci, kterou umíme obejít.</div>
+
+  <div class="note n">A ještě jedna oprava mého vlastního nápadu: navrhoval jsem brát název okna nebo záložky („Meet — Porada provozu"). <b>Změřilo se to a nefunguje</b> — obě konferenční okna se jmenovala doslova „Google Meet", tedy jméno nástroje a nic víc. Identifikaci nesly jen věci, které se schůzkou nesouvisí, třeba skladba ve Spotify.</div>
+</section>
+
+<!-- ============ 06 CO ROZHODNOUT ============ -->
+<section>
+  <div class="eyebrow">06 — Rozhodnuto</div>
+  <h2>Schváleno 1. 9. 2026</h2>
+  <p class="lead">Dan schválil tenhle návrh jako celek. Tím padla i poslední tři rozhodnutí — dvě z nich nechal na mně, jsou tedy vypsaná i s důvodem.</p>
+  <table class="tbl">
+    <thead><tr><th style="width:22%">Co</th><th style="width:26%">Rozhodnuto</th><th>Proč</th></tr></thead>
+    <tbody>
+      <tr><td><b>Hustota panelu</b></td><td><b style="color:var(--ok)">Klidová agenda = jeden řádek</b><br><span class="mini">rozhodl Claude</span></td><td>Rozpočet panelu je 670 px a při běžícím nahrávání s frontou a hlášením o výpadku zvuku by druhá rozbalená karta nezbyla. Takhle je místo vždycky tam, kde se právě něco děje.</td></tr>
+      <tr><td><b>Ikona v Docku</b></td><td><b style="color:var(--ok)">Výchozí vypnutá, přepínač v Nastavení</b><br><span class="mini">rozhodl Claude, Dan potvrdil</span></td><td>Apple v pokynech pro návrháře píše, že se na přítomnost ikony v liště nemá spoléhat — schová ji notch nebo jiná aplikace. Bez záchranné cesty by běželo nahrávání, ke kterému se nedostaneš.</td></tr>
+      <tr><td><b>Pojmenování při stopu</b></td><td><b style="color:var(--ok)">Předvyplněný název + čas od–do, editovatelné</b><br><span class="mini">rozhodl Dan</span></td><td>Čas se ukládá zvlášť jako údaj o nahrávce, takže přepsání názvu ho nezruší. Ptáme se při každém zastavení — kurzor v poli, Enter potvrdí.</td></tr>
+      <tr><td><b>Připomínky</b></td><td><b style="color:var(--accent)">Přidáno Danem</b><br><span class="mini">nové</span></td><td>Ve zvolené pracovní dny a hodiny přijde oznámení, když neběží časovač. Nikdy během nahrávání. Nakresleno v sekci 04.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note ok"><b>Co ještě není rozhodnuté a vědomě to necháváme otevřené:</b> přesná kresba ikony pro všech osm stavů (řeší úkol T1), chování panelu při dvaceti a více položkách ve frontě, a obrazovky pro aktualizaci, odinstalování a odebrání z firmy — ty patří až do etapy o rozvozu aplikace.</div>
+</section>
+
+<footer>
+  Kresleno v tokenech LuDone Přístroj Design System. Zdroje v repozitáři v <code>design/navrh/</code>.
+  Statická stránka — otevře se bez přihlášení a bez internetu (kromě písem).
+</footer>
+
+</div>
+</body>
+</html>

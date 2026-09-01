@@ -180,3 +180,39 @@ Workflow **`mac-experience-vyzkum`** (6 dimenzí: konvence macOS, referenční a
 nahrávky bez kalendáře, přihlášení očima uživatele, notarizace a aktualizace, úplná cesta uživatele).
 Při pauze pořád běželo. Výsledek se hledá v adresáři úloh session `8587ed88`; když tam není,
 skript workflow je uložený a dá se spustit znovu.
+
+---
+
+# DODATEK — design schválen 1. 9. 2026 večer
+
+🔴 **Toto je masterplánový DESIGN APPROVAL GATE.** Artefakt: `design/approved.json`.
+Dan schválil návrh větou „za mě teda schváleno" nad statickou stránkou `design/navrh/nahled.html`,
+která pokrývá 22 obrazovek a 11 stavů. Tím je **implementace user-visible částí odemčená**.
+
+## Rozhodnutí M15–M19
+
+| # | Rozhodnutí | Kdo |
+|---|---|---|
+| M15 | **Kalendář se ruší.** Sekce „Dnešní schůzky" mizí z panelu. Nahrávku identifikuje datum, čas, délka a **projekt z LuTracku**, plus textové pole při stopu | Dan nadhodil, Claude doložil |
+| M16 | **Varianta Divergent se ruší** — stála na časové ose dne, tedy na rušeném kalendáři | Claude, Dan potvrdil |
+| M17 | **Hustota panelu: klidová agenda je jeden řádek**, rozbalí se jen běžící | Claude (Dan: „rozhodni") |
+| M18 | **Ikona v Docku výchozí vypnutá, s přepínačem v Nastavení** | Claude (Dan: „rozhodni"), Dan potvrdil |
+| M19 | **Pojmenování při stopu:** předvyplněný název + čas od–do, editovatelné; **čas se ukládá zvlášť** jako údaj o nahrávce, takže přepsání názvu ho nezruší | Dan |
+| M20 | **NOVÉ — připomínky.** Ve zvolené dny a hodiny přijde oznámení, když neběží časovač (jako Toggl). Nikdy během nahrávání. Nastavitelné: dny, od–do, jak často | Dan |
+
+## Co se ztrácí a nemá náhradu
+
+**Seznam účastníků schůzky.** Nenese ho název okna ani zvukové API — jediný zdroj byl kalendář.
+Filtrovat „schůzky s klientem X" půjde jen přes ručně zvolený projekt. Doloženo měřením:
+`DesktopCapturerSource` má pět polí a obě konferenční okna se jmenovala doslova „Google Meet".
+
+## Vyvrácený vlastní návrh
+
+Navrhoval jsem identifikovat nahrávku podle názvu okna nebo záložky. **Změřeno a nefunguje** —
+titulky nesou jméno nástroje, ne schůzky. Do specu se to nesmí dostat.
+
+## Kde to stojí
+
+Design schválen ⇒ podle masterplánu následuje **spec.md** (zmrazit chování) a pak **plan.md**.
+Noční běh T1–T4 (`docs/behy/2026-09-01-nocni-beh-zadani.md`) na spec nečeká — opravuje změřené
+vady a je spustitelný kdykoli.
