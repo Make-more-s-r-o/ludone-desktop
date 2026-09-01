@@ -43,6 +43,7 @@ let tray;
 let panelWindow;
 let settingsWindow;
 let trayState = "signed-out";
+let trayApplied = false;
 let isQuitting = false;
 
 protocol.registerSchemesAsPrivileged([
@@ -315,7 +316,9 @@ function refreshTray() {
     recording,
     tracking,
   }));
-  if (next === trayState) return;
+  // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při
+  // startu obojí rovná „signed-out“, funkce skončí předčasně a popisek se nenastaví NIKDY.
+  if (next === trayState && trayApplied) return;
   trayState = next;
   console.log(
     `[tray] ${new Date().toISOString()} stav=${trayState} nahrávání=${recording} `
@@ -324,6 +327,7 @@ function refreshTray() {
   if (!tray) return;
   tray.setImage(trayImage(trayState));
   tray.setToolTip(TRAY_LABELS[trayState]);
+  trayApplied = true;
 }
 
 // Renderer sem hlásí FAKTA, která zatím zná jen on — jestli je někdo přihlášený a jestli
@@ -332,11 +336,23 @@ function refreshTray() {
 //
 // Až přistane B5 (časovač do hlavního procesu) a B8 (skutečné přihlášení), budou obě fakta
 // pocházet přímo z hlavního procesu a tenhle kanál se zúží nebo zmizí.
+// 🔴 Přijímá PRÁVĚ dva klíče a PRÁVĚ boolean. Volnější kontrola by z tohohle kanálu udělala
+// `tray:set-state` pod novým jménem: `{ tracking: "tracking" }` protlačí doslovné jméno ikony
+// a `{}` tiše přepíše přihlášení na false. Neplatný obsah proto NIC nemění — fail-closed,
+// protože zapomenout fakt je horší než ho neaktualizovat.
+const REPORTED_FACT_KEYS = ["signedIn", "tracking"];
+
 function applyReportedFacts(ownerId, facts) {
-  appState.signedIn = Boolean(facts?.signedIn);
-  if (facts?.tracking) appState.trackingOwners.add(ownerId);
+  if (!facts || typeof facts !== "object" || Array.isArray(facts)) return false;
+  const klice = Object.keys(facts);
+  if (klice.length !== REPORTED_FACT_KEYS.length) return false;
+  if (!REPORTED_FACT_KEYS.every((klic) => typeof facts[klic] === "boolean")) return false;
+
+  appState.signedIn = facts.signedIn;
+  if (facts.tracking) appState.trackingOwners.add(ownerId);
   else appState.trackingOwners.delete(ownerId);
   refreshTray();
+  return true;
 }
 
 function positionPanel() {
@@ -745,17 +761,24 @@ function finalizeRecordingSessionsForOwner(ownerId, reason) {
 }
 
 // Okno zmizelo — zapomeň na všechno, co k němu patřilo. `appState.signedIn` se přitom
-// NEMĚNÍ: session drží hlavní proces, takže po pádu rendereru je správný cílový stav
-// `idle`, ne `signed-out`. Kdo to splete, postaví autoritu, která tvrdí, že pád odhlásil.
+// NEMĚNÍ: pád okna nikoho neodhlásil, takže cílový stav je `idle`, ne `signed-out`.
+//
+// ⚠️ Ale bez příkras: hlavní proces se dnes o přihlášení dozvídá JEN z reportu rendereru.
+// Když renderer spadne dřív, než první report pošle, zůstane `signedIn` na false a lišta
+// ukáže `signed-out`. Skutečné vlastnictví session přijde s B8, který zapojí auth controller;
+// do té doby je tohle chování popsané správně jen PO prvním reportu. Nepiš sem, že session
+// vlastní main — zatím ji nevlastní.
 function forgetOwnerActivity(ownerId, reason) {
   finalizeRecordingSessionsForOwner(ownerId, reason);
   appState.trackingOwners.delete(ownerId);
   refreshTray();
 }
 
-onValidated("tray:report-facts", ["panel"], (event, facts) => (
-  applyReportedFacts(event.sender.id, facts)
-));
+onValidated("tray:report-facts", ["panel"], (event, facts) => {
+  if (!applyReportedFacts(event.sender.id, facts)) {
+    console.warn("[tray] Odmítnut neplatný report faktů; předchozí stav zachován.");
+  }
+});
 handleValidated("tray:get-state", ["panel", "settings"], () => trayState);
 handleValidated("test:click-tray", ["panel"], () => {
   if (!IS_TEST_RUN || !tray || !panelWindow) return { allowed: false, visible: false };

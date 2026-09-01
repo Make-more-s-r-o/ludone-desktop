@@ -2,8 +2,15 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 function functionSource(source, name) {
-  const start = source.indexOf(`function ${name}(`);
-  if (start < 0) throw new Error(`Funkce ${name} nebyla nalezena`);
+  // 🔴 Deklarace se hledá NA ZAČÁTKU ŘÁDKU a musí být právě jedna. Naivní indexOf bere první
+  // textový výskyt, tedy i odsazenou zmínku v komentáři — a review doložilo, že se pak testuje
+  // napodobenina z komentáře, zatímco skutečná funkce vrací něco jiného.
+  const deklarace = [...source.matchAll(new RegExp(`^function ${name}\\(`, "gm"))];
+  if (deklarace.length === 0) throw new Error(`Funkce ${name} nebyla nalezena`);
+  if (deklarace.length > 1) {
+    throw new Error(`Funkce ${name} je deklarovaná ${deklarace.length}x — nevím, kterou měřit`);
+  }
+  const start = deklarace[0].index;
 
   // 🔴 Seznam parametrů se musí přeskočit ZÁVORKAMI, ne hledáním první `{`. Funkce
   // s rozbaleným parametrem — `function f({ a, b }) {` — má složenou závorku už v hlavičce,
@@ -35,6 +42,12 @@ const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url)
 const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 
+// Konstantu bereme z PRODUKČNÍHO zdroje, ne z kopie. Kdyby si ji test definoval sám,
+// měřil by svoji představu a rozšíření povolených klíčů v main.cjs by prošlo nepovšimnuto.
+const reportedFactKeys = Function(
+  `"use strict"; ${/const REPORTED_FACT_KEYS = \[[^\]]*\];/.exec(mainSource)[0]}; return REPORTED_FACT_KEYS;`,
+)();
+
 const trayIconName = Function(
   `"use strict"; ${functionSource(mainSource, "trayIconName")}; return trayIconName;`,
 )();
@@ -58,8 +71,10 @@ function trayHarness({
     "TRAY_LABELS",
     "tray",
     "finalizeRecordingSession",
+    "REPORTED_FACT_KEYS",
     `"use strict";
      let trayState = "signed-out";
+     let trayApplied = false;
      const applied = [];
      ${functionSource(mainSource, "hasLiveRecording")}
      ${functionSource(mainSource, "deriveTrayState")}
@@ -102,6 +117,7 @@ function trayHarness({
         finalized.push({ sessionId, reason });
         return Promise.resolve({ files: { microphone: { size: 0 }, system: { size: 0 } } });
       },
+      reportedFactKeys,
     ),
   };
 }
@@ -255,5 +271,76 @@ describe("každá změna nahrávacího faktu lištu přepočítá", () => {
     expect(vyskytu("recordingOwnersPreparing.delete(")).toBe(1);
     expect(vyskytu("recordingSessions.set(")).toBe(1);
     expect(vyskytu("recordingSessions.delete(")).toBe(1);
+  });
+});
+
+describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
+  // 🔴 Nezávislé review našlo, že `Boolean(facts.signedIn)` a `if (facts.tracking)` berou
+  // cokoli pravdivého. Renderer tím mohl protlačit doslovné jméno ikony (tracking:"tracking")
+  // a prázdný objekt tiše přepsal přihlášení na false. To je přesně ten starý rozhodovací
+  // kanál pod novým jménem — jen se to nepozná, protože se to tváří jako fakt.
+  it("odmítne hodnotu, která není boolean, a fakta NECHÁ být", () => {
+    const harness = trayHarness({ signedIn: true, trackingOwners: [] });
+    harness.refreshTray();
+    expect(harness.getTrayState()).toBe("idle");
+
+    expect(harness.applyReportedFacts(1, { signedIn: true, tracking: "tracking" })).toBe(false);
+    expect(harness.getTrayState()).toBe("idle");
+  });
+
+  it("prázdný objekt uživatele NEODHLÁSÍ", () => {
+    const harness = trayHarness({ signedIn: true });
+    harness.refreshTray();
+    expect(harness.applyReportedFacts(1, {})).toBe(false);
+    expect(harness.getTrayState()).toBe("idle");
+  });
+
+  it.each([
+    [undefined], [null], ["idle"], [42],
+    [{ signedIn: 1, tracking: false }],
+    [{ signedIn: true }],
+    // Klíč navíc je pašerácký vektor: kdo umí přiložit `state`, přiloží i jméno ikony.
+    // Přijímáme PRÁVĚ dva klíče, nic víc.
+    [{ signedIn: true, tracking: false, state: "recording" }],
+    [{ signedIn: true, tracking: false, icon: "recording" }],
+  ])("odmítne %j a nechá fakta být", (payload) => {
+    const harness = trayHarness({ signedIn: true });
+    harness.refreshTray();
+    expect(harness.applyReportedFacts(1, payload)).toBe(false);
+    expect(harness.getTrayState()).toBe("idle");
+  });
+
+  it("platnou dvojici boolean přijme", () => {
+    const harness = trayHarness({ signedIn: false });
+    harness.refreshTray();
+    expect(harness.applyReportedFacts(1, { signedIn: true, tracking: true })).toBe(true);
+    expect(harness.getTrayState()).toBe("tracking");
+  });
+});
+
+describe("první vykreslení lišty", () => {
+  // 🔴 Review: při startu je odvozený stav i uložený stav „signed-out“, takže se refreshTray
+  // ukončil PŘED setToolTip a popisek „LuDone · nepřihlášeno“ se nenastavil nikdy.
+  it("nastaví obrázek i popisek, i když se stav nezměnil", () => {
+    const harness = trayHarness({ signedIn: false });
+    harness.refreshTray();
+    expect(harness.images.at(-1)).toBe("obrazek:signed-out");
+    expect(harness.tooltips.at(-1)).toBe("L·odhlášeno");
+  });
+
+  it("podruhé už na lištu nesahá", () => {
+    const harness = trayHarness({ signedIn: false });
+    harness.refreshTray();
+    const po = harness.images.length;
+    harness.refreshTray();
+    expect(harness.images.length).toBe(po);
+  });
+});
+
+describe("povolené klíče kanálu faktů", () => {
+  it("jsou právě signedIn a tracking", () => {
+    // Kdyby do nich někdo přidal třetí, protlačí jím rozhodnutí a testy výš by o tom mlčely,
+    // protože si povolené klíče berou z produkce.
+    expect([...reportedFactKeys].sort()).toEqual(["signedIn", "tracking"]);
   });
 });
