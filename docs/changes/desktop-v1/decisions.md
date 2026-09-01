@@ -224,3 +224,51 @@ tedy hard gate, přeskakuje se. **B1 tím není blokovaná:** komponenta zatím 
 dřív, než `ui-smoke` vůbec běží, nikdo by neuviděl, že je odebral správně — měřidlo se
 neopravuje a nezkracuje v jednom kroku.
 
+
+---
+
+## BD-N6 a BD-N7 — dva blokery B8, rozhodnuté koordinátorem 1. 9. 2026 ve 23:20
+
+Packet `tasks/B8-zapojit-auth.md` odmítl obojí rozhodnout sám a udělal správně — jsou to
+rozpory mezi zdroji, ne mezery v zadání. Dan v 23:15 nařídil, že se běh **nemá ptát**:
+*„Bezpečné, reverzibilní technické defaulty rozhodni s doporučením a zapiš."* Takže:
+
+### BD-N6 — registrace klienta: **statická, a fail-closed**
+
+**Rozhodnuto: (a) s pojistkou.** `createAuthController` se zapojí tak, že **`clientId` je
+POVINNÝ**. Když chybí, přihlášení **selže s českou hláškou** — a **dynamická registrace se
+NEPOUŽIJE ANI JAKO ZÁLOHA**.
+
+**Proč ne (b) „zatím DCR":** `decisions.md:42` statickou registraci už rozhodl. Zapojit DCR by
+Danovo rozhodnutí tiše zrušilo — a je to změřená vada, ne teorie: kancelář za jednou NAT IP
+vyčerpá **20 registrací za hodinu** a přihlášení spadne na **429**
+(`docs/ux/cesta-uzivatele-2026-09-01.md`).
+
+**Proč ne (c) „počkat na server":** zastavilo by to celou větev B8 → B9, a Dan nařídil
+*„nezastavuj celý běh, dokud existuje bezpečná práce"*. Přeskakuje se jen dotčený task.
+
+🔴 **Co to znamená prakticky:** dokud `clientId` neexistuje, **přihlášení naostro nepůjde** —
+a to je záměr, ne nedodělek. Fail-closed je lepší než tiše zapojená zamítnutá varianta.
+**Vratné:** je to jedna proměnná prostředí a jedna větev v kódu.
+
+### BD-N7 — název proměnné: **`LUDONE_ORIGIN`**, nová se nezavádí
+
+**Rozhodnuto: `LUDONE_ORIGIN`.** Packetem navržená `LUDONE_ISSUER` se **zamítá**.
+
+**Proč:** `specs/E6-prihlaseni-a-fronta.md` §11 tu konvenci už zavádí a masterplán §9 zakazuje
+*„změnit API/datový kontrakt bez aktualizace plánu"*. Druhá proměnná pro **týž origin** je přesně to.
+
+**Výchozí hodnota zůstává `https://app.ludone.cz`** podle E6 §11 — `spec.md` a `plan.md` jsou
+zmrazené a nebudu je za pochodu opravovat.
+
+⚠️ **Ale pozor, a patří to do reportu:** **všechna živá evidence v repu míří na `labs.ludone.cz`**
+(`E7.sh:45-46`, `tests/oauth-state.test.js:45,51,54`). Proti `app.ludone.cz` **nikdy neproběhl
+celý OAuth tok** — jen discovery HTTP 200 z 24. 8. ⇒ **ověření naostro se musí spouštět
+s `LUDONE_ORIGIN=https://labs.ludone.cz`**, jinak se testuje adresa, kterou nikdo nezměřil.
+
+### Kdo B8 vykonává
+
+`plan.md` §2 dává B8 Claudovi (bezpečnostní cesta). Danův pokyn z 23:15 říká
+*„Mechanika primárně Codex, Claude koordinace a review"* — a je novější. Dělba je tedy:
+**koordinátor rozhodl oba blokery (výš) a přečte diff; Codex napíše kód.** Záměr plánu
+zůstal: bezpečnostní rozhodnutí neudělal vykonavatel.
