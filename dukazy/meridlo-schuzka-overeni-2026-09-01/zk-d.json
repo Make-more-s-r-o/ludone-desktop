@@ -1,0 +1,39 @@
+{
+  "nazev": "zk-d",
+  "kdy": "2026-09-01T16:52:00.980Z",
+  "vstupy": {
+    "system": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/f_sys.webm",
+    "mikrofon": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/f_mic_preslech.webm"
+  },
+  "metoda": {
+    "popis": "Detekce řeči v obou stopách zvlášť; hledají se úseky, kdy mikrofon mlčí a systémová stopa má řeč.",
+    "duvod": "Bez referenčního signálu nelze korelovat. Úsek, kdy mluví jen systémová stopa, může nést pouze protistranu.",
+    "obranyProtiLzi": [
+      "délka obou stop se musí shodovat (jinak nejsou z téže nahrávky)",
+      "mikrofonní stopa musí nést řeč (jinak projde jako protistrana cokoli)",
+      "mikrofon musí být u své podlahy, když mluví protistrana (jinak prosakuje reproduktor)",
+      "systémová stopa musí kolísat v rytmu řeči (jinak je to tón nebo zvonění, ne hlas)",
+      "protistrana musí mluvit aspoň 20 s ve 4 replikách"
+    ]
+  },
+  "delkaSekundy": 80,
+  "rozpad": {
+    "jenProtistranaSekundy": 2.08,
+    "jenTySekundy": 29.94,
+    "obaNarazSekundy": 23,
+    "tichoSekundy": 24.98,
+    "podilProtistrany": 0.026,
+    "replikProtistrany": 16
+  },
+  "kontroly": {
+    "modulacniIndexSystemu": 0.5162665751638328,
+    "prosakDoMikrofonuDb": 42.65725684324005,
+    "rozdilDelekStop": 0,
+    "podlahaSystemDb": -140,
+    "podlahaMikrofonDb": -95.74972812259551,
+    "prahSystemDb": -43,
+    "prahMikrofonDb": -43
+  },
+  "zaver": "NEPLATNÉ",
+  "duvod": "Když mluví protistrana, je mikrofon 42.7 dB nad svou podlahou (limit 6 dB). Prosakuje do něj reproduktor — nejspíš jsi neměl sluchátka. Zopakuj se sluchátky."
+}

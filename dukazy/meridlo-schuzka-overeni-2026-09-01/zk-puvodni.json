@@ -1,0 +1,39 @@
+{
+  "nazev": "zk-puvodni",
+  "kdy": "2026-09-01T16:52:28.022Z",
+  "vstupy": {
+    "system": "dukazy/nahravani-2026-08-21/zvuk/2026-08-21T06-39-12-336Z-e806fb48-system.webm",
+    "mikrofon": "dukazy/nahravani-2026-08-21/zvuk/2026-08-21T06-39-12-336Z-e806fb48-mikrofon.webm"
+  },
+  "metoda": {
+    "popis": "Detekce řeči v obou stopách zvlášť; hledají se úseky, kdy mikrofon mlčí a systémová stopa má řeč.",
+    "duvod": "Bez referenčního signálu nelze korelovat. Úsek, kdy mluví jen systémová stopa, může nést pouze protistranu.",
+    "obranyProtiLzi": [
+      "délka obou stop se musí shodovat (jinak nejsou z téže nahrávky)",
+      "mikrofonní stopa musí nést řeč (jinak projde jako protistrana cokoli)",
+      "mikrofon musí být u své podlahy, když mluví protistrana (jinak prosakuje reproduktor)",
+      "systémová stopa musí kolísat v rytmu řeči (jinak je to tón nebo zvonění, ne hlas)",
+      "protistrana musí mluvit aspoň 20 s ve 4 replikách"
+    ]
+  },
+  "delkaSekundy": 5.04,
+  "rozpad": {
+    "jenProtistranaSekundy": 0.5,
+    "jenTySekundy": 0,
+    "obaNarazSekundy": 0,
+    "tichoSekundy": 4.54,
+    "podilProtistrany": 0.0992063492063492,
+    "replikProtistrany": 1
+  },
+  "kontroly": {
+    "modulacniIndexSystemu": 0,
+    "prosakDoMikrofonuDb": 4.6131636473259405,
+    "rozdilDelekStop": 0.06666666666666667,
+    "podlahaSystemDb": -140,
+    "podlahaMikrofonDb": -64.5218928685132,
+    "prahSystemDb": -43,
+    "prahMikrofonDb": -43
+  },
+  "zaver": "NEPLATNÉ",
+  "duvod": "Stopy se liší v délce o 6.7 %, takže nejsou z téže nahrávky. Zkontroluj, že obě patří k jedné schůzce."
+}

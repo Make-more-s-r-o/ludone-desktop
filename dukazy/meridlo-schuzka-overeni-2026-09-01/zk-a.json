@@ -1,0 +1,39 @@
+{
+  "nazev": "zk-a",
+  "kdy": "2026-09-01T16:52:00.368Z",
+  "vstupy": {
+    "system": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/f_sys.webm",
+    "mikrofon": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/f_mic.webm"
+  },
+  "metoda": {
+    "popis": "Detekce řeči v obou stopách zvlášť; hledají se úseky, kdy mikrofon mlčí a systémová stopa má řeč.",
+    "duvod": "Bez referenčního signálu nelze korelovat. Úsek, kdy mluví jen systémová stopa, může nést pouze protistranu.",
+    "obranyProtiLzi": [
+      "délka obou stop se musí shodovat (jinak nejsou z téže nahrávky)",
+      "mikrofonní stopa musí nést řeč (jinak projde jako protistrana cokoli)",
+      "mikrofon musí být u své podlahy, když mluví protistrana (jinak prosakuje reproduktor)",
+      "systémová stopa musí kolísat v rytmu řeči (jinak je to tón nebo zvonění, ne hlas)",
+      "protistrana musí mluvit aspoň 20 s ve 4 replikách"
+    ]
+  },
+  "delkaSekundy": 80,
+  "rozpad": {
+    "jenProtistranaSekundy": 25.08,
+    "jenTySekundy": 30,
+    "obaNarazSekundy": 0,
+    "tichoSekundy": 24.92,
+    "podilProtistrany": 0.3135,
+    "replikProtistrany": 12
+  },
+  "kontroly": {
+    "modulacniIndexSystemu": 0.5162665751638328,
+    "prosakDoMikrofonuDb": 0.023406290176566813,
+    "rozdilDelekStop": 0,
+    "podlahaSystemDb": -140,
+    "podlahaMikrofonDb": -100.0726285631236,
+    "prahSystemDb": -43,
+    "prahMikrofonDb": -43
+  },
+  "zaver": "FUNGUJE",
+  "duvod": "Systémová stopa nese řeč 0:25 ve 12 replikách, kdy mikrofon mlčí, kolísá v rytmu řeči (index 0.516) a mikrofon je přitom u své podlahy (+0.0 dB). Zachycení systémového zvuku v hovoru tedy funguje."
+}

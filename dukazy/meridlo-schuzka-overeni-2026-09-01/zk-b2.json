@@ -1,0 +1,39 @@
+{
+  "nazev": "zk-b2",
+  "kdy": "2026-09-01T16:52:37.945Z",
+  "vstupy": {
+    "system": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/f_sys_gong2.webm",
+    "mikrofon": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/f_mic.webm"
+  },
+  "metoda": {
+    "popis": "Detekce řeči v obou stopách zvlášť; hledají se úseky, kdy mikrofon mlčí a systémová stopa má řeč.",
+    "duvod": "Bez referenčního signálu nelze korelovat. Úsek, kdy mluví jen systémová stopa, může nést pouze protistranu.",
+    "obranyProtiLzi": [
+      "délka obou stop se musí shodovat (jinak nejsou z téže nahrávky)",
+      "mikrofonní stopa musí nést řeč (jinak projde jako protistrana cokoli)",
+      "mikrofon musí být u své podlahy, když mluví protistrana (jinak prosakuje reproduktor)",
+      "systémová stopa musí kolísat v rytmu řeči (jinak je to tón nebo zvonění, ne hlas)",
+      "protistrana musí mluvit aspoň 20 s ve 4 replikách"
+    ]
+  },
+  "delkaSekundy": 80,
+  "rozpad": {
+    "jenProtistranaSekundy": 7.68,
+    "jenTySekundy": 30,
+    "obaNarazSekundy": 0,
+    "tichoSekundy": 42.32,
+    "podilProtistrany": 0.096,
+    "replikProtistrany": 16
+  },
+  "kontroly": {
+    "modulacniIndexSystemu": 0.8754642303510813,
+    "prosakDoMikrofonuDb": 0.023294879741555974,
+    "rozdilDelekStop": 0,
+    "podlahaSystemDb": -140,
+    "podlahaMikrofonDb": -100.0726285631236,
+    "prahSystemDb": -43,
+    "prahMikrofonDb": -43
+  },
+  "zaver": "NEPRŮKAZNÉ",
+  "duvod": "Protistrana mluví jen 0:07 ve 16 replikách (9.6 % času). Potřeba aspoň 20 s ve 4 replikách. Zopakuj na schůzce, kde druhá strana mluví víc — z tohohle se nedá nic uzavřít."
+}

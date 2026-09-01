@@ -45,9 +45,37 @@ const MIN_PROMLUVA_RAMCU = 30;
 // Při schůzce, kde druhá strana nemluví skoro vůbec, měření nic nedokazuje.
 const MIN_PODIL_PROTISTRANY = 0.05;
 
-// Nad touhle korelací obálek se obě stopy pohybují společně — tedy přeslech,
-// a měření neplatí bez ohledu na to, jak dobře vyšlo všechno ostatní.
-const PRESLECH_KORELACE_MAX = 0.6;
+// Kolik decibelů nad vlastní podlahou smí být mikrofon ve chvíli, kdy mluví protistrana.
+// Při čistém oddělení je mikrofon u své podlahy. Když je znatelně výš, prosakuje do něj
+// reproduktor — a měření pak nic nedokazuje.
+//
+// 🔴 GLOBÁLNÍ KORELACE OBÁLEK SE NEPOUŽÍVÁ. Vypadá jako rozumná obrana proti přeslechu,
+// ale na skutečné schůzce je slepá: při střídání replik jsou obálky PROTIkorelované
+// a globální průměr přeslech vyruší. Změřeno — přeslech utlumený o 12 dB dal korelaci
+// −0,155, tedy hluboko pod jakýmkoli prahem, a prošel by jako úspěch. Práh 0,6 z první
+// verze byl na hovoru nedosažitelný a ověřovací případ ho splnil jen proto, že v mikrofonní
+// stopě nikdo nemluvil — stav, který na schůzce nenastane.
+const PROSAK_MAX_DB = 6;
+
+// Řeč není energie. Hudba, sdílené video nebo trvalý tón mají energii taky. Řeč se od nich
+// pozná tím, že její hlasitost KOLÍSÁ v rytmu slabik, tedy zhruba 2–8× za sekundu.
+//
+// 🔴 HRANICE TÉHLE KONTROLY, ať ji nikdo nepřeceňuje: chytá TRVALÉ zvuky (tón, šum, hukot),
+// ale NECHYTÁ opakované krátké zvuky. Změřeno: řada systémových gongů po 2,5 s dala index
+// 0,875, tedy vysoko nad prahem — protože rychlý doznívající náběh gongu leží v témže pásmu
+// jako slabiky. Z obálky se to rozlišit nedá a nepředstírej, že ano.
+//
+// Proto skript na konci VŽDYCKY vyřízne ukázku systémové stopy k poslechu. Lidské ucho
+// rozliší řeč od zvonění okamžitě a je to jediná spolehlivá kontrola, kterou máme.
+const MIN_MODULACE = 0.18;
+
+// Podíl sám nestačí: na pětisekundové nahrávce je 0,5 s zvuku „9,9 %“. Potřeba i absolutní
+// minimum a několik oddělených replik, aby to nebyl jeden osamocený zvuk.
+const MIN_PROTISTRANA_SEKUND = 20;
+const MIN_REPLIK = 4;
+
+// Když se délky stop liší o víc, nejsou z téže nahrávky a měření nedává smysl.
+const MAX_ROZDIL_DELKY = 0.03;
 
 function spustit(prikaz, argumenty) {
   return new Promise((resolve, reject) => {
@@ -86,7 +114,7 @@ function obalka(vzorky) {
       const v = vzorky[z + j];
       s += v * v;
     }
-    out[i] = 20 * Math.log10(Math.max(Math.sqrt(s / FRAME_SAMPLES), 1e-5));
+    out[i] = 20 * Math.log10(Math.max(Math.sqrt(s / FRAME_SAMPLES), 1e-7));
   }
   return out;
 }
@@ -101,6 +129,18 @@ function detekujRec(obal, prah) {
   const syrove = new Uint8Array(obal.length);
   for (let i = 0; i < obal.length; i += 1) syrove[i] = obal[i] > prah ? 1 : 0;
 
+  // Uvnitř slov jsou závěry 20-80 ms. Bez přemostění detektor rozseká jednu promluvu
+  // na kusy pod minimální délkou a zahodí ji celou — změřeno 88,6 % místo 99,8 %.
+  const MEZERA_RAMCU = 20;
+  let g = 0;
+  while (g < syrove.length) {
+    if (syrove[g]) { g += 1; continue; }
+    let h = g;
+    while (h < syrove.length && !syrove[h]) h += 1;
+    if (h - g <= MEZERA_RAMCU && g > 0 && h < syrove.length) syrove.fill(1, g, h);
+    g = h;
+  }
+
   const cisty = new Uint8Array(obal.length);
   let i = 0;
   while (i < syrove.length) {
@@ -111,6 +151,40 @@ function detekujRec(obal, prah) {
     i = j;
   }
   return cisty;
+}
+
+
+// Kolísá hlasitost v rytmu slabik? Řeč ano (2–8× za sekundu), tón po náběhu ne.
+// Počítá se jen přes rámce, kde detektor slyší zvuk — jinak by ticho index rozředilo.
+function modulacniIndex(obal, maska) {
+  const vzorky = [];
+  for (let i = 0; i < obal.length; i += 1) if (!maska || maska[i]) vzorky.push(obal[i]);
+  if (vzorky.length < 100) return 0;
+  const prumer = vzorky.reduce((a, b) => a + b, 0) / vzorky.length;
+  const stred = vzorky.map((v) => v - prumer);
+  const fs = 1000 / FRAME_MS;
+
+  // Diskrétní Fourier jen pro pásma, která nás zajímají — celý spektrální rozklad
+  // by tu byl zbytečně drahý.
+  const vykon = (odHz, doHz) => {
+    let soucet = 0;
+    const krok = 0.25;
+    for (let f = odHz; f <= doHz; f += krok) {
+      let re = 0;
+      let im = 0;
+      for (let i = 0; i < stred.length; i += 1) {
+        const uhel = (2 * Math.PI * f * i) / fs;
+        re += stred[i] * Math.cos(uhel);
+        im += stred[i] * Math.sin(uhel);
+      }
+      soucet += (re * re + im * im);
+    }
+    return soucet;
+  };
+
+  const rec = vykon(2, 8);
+  const vse = vykon(0.5, 20);
+  return vse > 0 ? rec / vse : 0;
 }
 
 function korelaceObalek(a, b) {
@@ -181,10 +255,10 @@ const sysObal = obalka(sysVz);
 const micObal = obalka(micVz);
 const delkaS = Math.min(sysObal.length, micObal.length) * (FRAME_MS / 1000);
 
-const sysPodlaha = Math.max(percentil(sysObal, 0.1), ABSOLUTNI_PODLAHA_DB);
-const micPodlaha = Math.max(percentil(micObal, 0.1), ABSOLUTNI_PODLAHA_DB);
-const sysPrah = sysPodlaha + PRAH_NAD_PODLAHOU_DB;
-const micPrah = micPodlaha + PRAH_NAD_PODLAHOU_DB;
+const sysPodlaha = percentil(sysObal, 0.1);
+const micPodlaha = percentil(micObal, 0.1);
+const sysPrah = Math.max(sysPodlaha, ABSOLUTNI_PODLAHA_DB) + PRAH_NAD_PODLAHOU_DB;
+const micPrah = Math.max(micPodlaha, ABSOLUTNI_PODLAHA_DB) + PRAH_NAD_PODLAHOU_DB;
 
 const sysRec = detekujRec(sysObal, sysPrah);
 const micRec = detekujRec(micObal, micPrah);
@@ -202,31 +276,68 @@ for (let i = 0; i < n; i += 1) {
 }
 const naS = (r) => (r * FRAME_MS) / 1000;
 const podilProtistrany = jenProtistrana / n;
-const korelace = korelaceObalek(sysObal, micObal);
+
+// Kolik oddělených replik protistrana pronesla. Jeden souvislý zvuk není hovor.
+let replikProtistrany = 0;
+for (let i = 0; i < n; i += 1) {
+  if (sysRec[i] && !micRec[i] && !(i > 0 && sysRec[i - 1] && !micRec[i - 1])) replikProtistrany += 1;
+}
+
+// Prosakování: jak vysoko nad SVOU podlahou je mikrofon, když mluví protistrana.
+let prosakSoucet = 0;
+let prosakPocet = 0;
+for (let i = 0; i < n; i += 1) {
+  if (sysRec[i] && !micRec[i]) { prosakSoucet += micObal[i]; prosakPocet += 1; }
+}
+const prosakDb = prosakPocet > 0 ? (prosakSoucet / prosakPocet) - micPodlaha : 0;
+
+const modulaceSys = modulacniIndex(sysObal, sysRec);
+const rozdilDelky = Math.abs(sysObal.length - micObal.length) / Math.max(sysObal.length, micObal.length, 1);
 
 // --- verdikt ---------------------------------------------------------------
-// Pořadí podmínek není libovolné: přeslech se musí vyloučit DŘÍV, než se cokoli
-// prohlásí za úspěch, protože přeslech vypadá jako úspěch ve všech ostatních číslech.
+// Pořadí není libovolné. Každá podmínka vylučuje způsob, jak by měřidlo mohlo lhát,
+// a musí se vyloučit DŘÍV, než se cokoli prohlásí za úspěch — protože každý z těch
+// stavů vypadá v ostatních číslech jako úspěch.
 let zaver;
 let duvod;
-if (korelace > PRESLECH_KORELACE_MAX) {
+
+if (rozdilDelky > MAX_ROZDIL_DELKY) {
   zaver = "NEPLATNÉ";
-  duvod = "Obě stopy se pohybují společně (korelace obálek " + korelace.toFixed(3) + "). "
-    + "Nejspíš jsi neměl sluchátka a reproduktor hrál protistranu do mikrofonu. "
-    + "Měření nic nedokazuje — zopakuj se sluchátky.";
-} else if (podilProtistrany >= MIN_PODIL_PROTISTRANY) {
-  zaver = "FUNGUJE";
-  duvod = "Systémová stopa nese řeč po dobu " + fmt(naS(jenProtistrana)) + ", kdy mikrofon mlčí. "
-    + "To může být jen protistrana. Zachycení systémového zvuku tedy funguje i v hovoru.";
+  duvod = "Stopy se liší v délce o " + (rozdilDelky * 100).toFixed(1) + " %, takže nejsou "
+    + "z téže nahrávky. Zkontroluj, že obě patří k jedné schůzce.";
+} else if (naS(jenTy) + naS(obaNaraz) < 5) {
+  zaver = "NEPLATNÉ";
+  duvod = "V mikrofonní stopě není řeč (" + fmt(naS(jenTy) + naS(obaNaraz)) + "). Buď byl "
+    + "mikrofon ztlumený, nebo se nahrával jiný vstup. Bez živého mikrofonu prohlásí měřidlo "
+    + "za protistranu jakýkoli zvuk — takový výsledek nic nedokazuje.";
+} else if (prosakPocet > 0 && prosakDb > PROSAK_MAX_DB) {
+  zaver = "NEPLATNÉ";
+  duvod = "Když mluví protistrana, je mikrofon " + prosakDb.toFixed(1) + " dB nad svou podlahou "
+    + "(limit " + PROSAK_MAX_DB + " dB). Prosakuje do něj reproduktor — nejspíš jsi neměl "
+    + "sluchátka. Zopakuj se sluchátky.";
 } else if (jenProtistrana === 0 && obaNaraz === 0) {
   zaver = "NEFUNGUJE";
-  duvod = "V systémové stopě není řeč vůbec. Buď ji potlačení ozvěny odečetlo, "
-    + "nebo se systémový zvuk nezachytával. Tohle je selhání kritéria A6.";
-} else {
+  duvod = "V systémové stopě není žádný zvuk, zatímco v mikrofonní ano. Buď hlas protistrany "
+    + "odečetlo potlačení ozvěny, nebo se systémový zvuk vůbec nezachytával. To je selhání "
+    + "kritéria A6.";
+} else if (modulaceSys < MIN_MODULACE) {
+  zaver = "NEFUNGUJE";
+  duvod = "Systémová stopa sice má zvuk, ale nekolísá v rytmu řeči (index " + modulaceSys.toFixed(3)
+    + ", potřeba nad " + MIN_MODULACE + "). Je to nejspíš tón, zvonění při připojení nebo hudba, "
+    + "ne hlas. Hlas protistrany se tedy nezachytil.";
+} else if (naS(jenProtistrana) < MIN_PROTISTRANA_SEKUND || replikProtistrany < MIN_REPLIK
+           || podilProtistrany < MIN_PODIL_PROTISTRANY) {
   zaver = "NEPRŮKAZNÉ";
-  duvod = "Protistrana mluví jen " + (podilProtistrany * 100).toFixed(1) + " % času, "
-    + "což je pod prahem " + (MIN_PODIL_PROTISTRANY * 100) + " %. Zopakuj na schůzce, "
-    + "kde druhá strana mluví víc.";
+  duvod = "Protistrana mluví jen " + fmt(naS(jenProtistrana)) + " ve " + replikProtistrany
+    + " replikách (" + (podilProtistrany * 100).toFixed(1) + " % času). Potřeba aspoň "
+    + MIN_PROTISTRANA_SEKUND + " s ve " + MIN_REPLIK + " replikách. Zopakuj na schůzce, "
+    + "kde druhá strana mluví víc — z tohohle se nedá nic uzavřít.";
+} else {
+  zaver = "FUNGUJE";
+  duvod = "Systémová stopa nese řeč " + fmt(naS(jenProtistrana)) + " ve " + replikProtistrany
+    + " replikách, kdy mikrofon mlčí, kolísá v rytmu řeči (index " + modulaceSys.toFixed(3)
+    + ") a mikrofon je přitom u své podlahy (+" + prosakDb.toFixed(1) + " dB). "
+    + "Zachycení systémového zvuku v hovoru tedy funguje.";
 }
 
 console.log("Archivuji surová data…");
@@ -241,8 +352,13 @@ const zaznam = {
   metoda: {
     popis: "Detekce řeči v obou stopách zvlášť; hledají se úseky, kdy mikrofon mlčí a systémová stopa má řeč.",
     duvod: "Bez referenčního signálu nelze korelovat. Úsek, kdy mluví jen systémová stopa, může nést pouze protistranu.",
-    obranaProtiPreslechu: "Korelace obálek obou stop; nad " + PRESLECH_KORELACE_MAX + " se výsledek prohlásí za neplatný.",
-    prahyDb: { system: sysPrah, mikrofon: micPrah, podlahaSystem: sysPodlaha, podlahaMikrofon: micPodlaha },
+    obranyProtiLzi: [
+      "délka obou stop se musí shodovat (jinak nejsou z téže nahrávky)",
+      "mikrofonní stopa musí nést řeč (jinak projde jako protistrana cokoli)",
+      "mikrofon musí být u své podlahy, když mluví protistrana (jinak prosakuje reproduktor)",
+      "systémová stopa musí kolísat v rytmu řeči (jinak je to tón nebo zvonění, ne hlas)",
+      "protistrana musí mluvit aspoň " + MIN_PROTISTRANA_SEKUND + " s ve " + MIN_REPLIK + " replikách",
+    ],
   },
   delkaSekundy: delkaS,
   rozpad: {
@@ -251,8 +367,17 @@ const zaznam = {
     obaNarazSekundy: naS(obaNaraz),
     tichoSekundy: naS(ticho),
     podilProtistrany,
+    replikProtistrany,
   },
-  korelaceObalek: korelace,
+  kontroly: {
+    modulacniIndexSystemu: modulaceSys,
+    prosakDoMikrofonuDb: prosakDb,
+    rozdilDelekStop: rozdilDelky,
+    podlahaSystemDb: sysPodlaha,
+    podlahaMikrofonDb: micPodlaha,
+    prahSystemDb: sysPrah,
+    prahMikrofonDb: micPrah,
+  },
   zaver,
   duvod,
 };
@@ -260,56 +385,69 @@ const zaznam = {
 await writeFile(path.join(slozka, "vysledek.json"), `${JSON.stringify(zaznam, null, 2)}\n`, "utf8");
 
 const md = [
-  `# Měření A6 ze skutečné schůzky — ${nazev}`,
-  "",
-  `Kdy: ${zaznam.kdy}`,
-  `Délka: ${fmt(delkaS)}`,
-  "",
-  `## Závěr: **${zaver}**`,
-  "",
-  duvod,
-  "",
-  "## Jak se čas rozdělil",
-  "",
-  "| Kdo mluví | Čas | Podíl |",
-  "|---|---|---|",
+  `# Měření A6 ze skutečné schůzky — ${nazev}`, "",
+  `Kdy: ${zaznam.kdy}`, `Délka: ${fmt(delkaS)}`, "",
+  `## Závěr: **${zaver}**`, "", duvod, "",
+  "## Jak se čas rozdělil", "",
+  "| Kdo mluví | Čas | Podíl |", "|---|---|---|",
   `| jen protistrana | ${fmt(naS(jenProtistrana))} | ${(jenProtistrana / n * 100).toFixed(1)} % |`,
   `| jen ty | ${fmt(naS(jenTy))} | ${(jenTy / n * 100).toFixed(1)} % |`,
   `| oba naráz | ${fmt(naS(obaNaraz))} | ${(obaNaraz / n * 100).toFixed(1)} % |`,
-  `| ticho | ${fmt(naS(ticho))} | ${(ticho / n * 100).toFixed(1)} % |`,
+  `| ticho | ${fmt(naS(ticho))} | ${(ticho / n * 100).toFixed(1)} % |`, "",
+  "## Kontroly proti falešnému úspěchu", "",
+  "| Co | Naměřeno | Musí být |", "|---|---|---|",
+  `| řeč v mikrofonu | ${fmt(naS(jenTy) + naS(obaNaraz))} | přes 0:05 |`,
+  `| prosak do mikrofonu | ${prosakDb.toFixed(1)} dB | pod ${PROSAK_MAX_DB} dB |`,
+  `| kolísání v rytmu řeči | ${modulaceSys.toFixed(3)} | nad ${MIN_MODULACE} |`,
+  `| replik protistrany | ${replikProtistrany} | aspoň ${MIN_REPLIK} |`,
+  `| rozdíl délek stop | ${(rozdilDelky * 100).toFixed(2)} % | pod ${MAX_ROZDIL_DELKY * 100} % |`, "",
+  "## Proč tolik kontrol", "",
+  "První verze tohohle měřidla prohlásila za úspěch nahrávku tří gongů — a v odůvodnění",
+  "sama napsala „nese řeč po dobu 0:00\". Každá kontrola výš vylučuje jeden způsob,",
+  "kterým měřidlo dokázalo lhát:",
   "",
-  `Korelace obálek: **${korelace.toFixed(3)}** (nad ${PRESLECH_KORELACE_MAX} = přeslech, měření neplatí)`,
+  "- **mrtvý mikrofon** byl nejsebejistější možné „funguje\" — bez řeči v mikrofonní stopě",
+  "  projde jako protistrana jakýkoli zvuk;",
+  "- **energie není řeč** — gong, oznámení systému i hudba mají energii;",
+  "- **globální korelace obálek je na hovoru slepá** — při střídání replik jsou obálky",
+  "  protikorelované a přeslech se v průměru vyruší; proto se místo ní měří, jak vysoko",
+  "  je mikrofon nad svou podlahou ve chvílích, kdy mluví protistrana.",
   "",
-  "## Jak to funguje",
-  "",
-  "Nemáme referenční signál, se kterým by se dalo korelovat. Místo toho se hledají úseky,",
-  "kdy **mikrofon mlčí a systémová stopa má řeč** — v takové chvíli může mluvit jedině",
-  "protistrana, takže zachycení funguje.",
-  "",
-  "Práh řeči se počítá z nahrávky samotné (podlaha + 12 dB), ne pevně — každá místnost",
-  "a každý mikrofon má jinou podlahu. Úseky kratší než třetina sekundy se zahazují,",
-  "aby se nechytaly lupance a dech.",
-  "",
-  "Proti tomu, aby se za úspěch vydal přeslech ze sluchátek či reproduktoru, stojí korelace",
-  "obálek: když se obě stopy pohybují společně, výsledek se prohlásí za neplatný.",
-  "",
-  "Surová data jsou v této složce, výsledek jde přepočítat kdykoli znovu.",
-  "",
+  "Surová data jsou v této složce, výsledek jde přepočítat kdykoli znovu.", "",
 ];
 await writeFile(path.join(slozka, "README.md"), `${md.join("\n")}\n`, "utf8");
 
 console.log("");
-console.log(`délka schůzky        ${fmt(delkaS)}`);
-console.log(`jen protistrana      ${fmt(naS(jenProtistrana))}  (${(jenProtistrana / n * 100).toFixed(1)} %)`);
+console.log(`délka                ${fmt(delkaS)}`);
+console.log(`jen protistrana      ${fmt(naS(jenProtistrana))}  (${(jenProtistrana / n * 100).toFixed(1)} %, ${replikProtistrany} replik)`);
 console.log(`jen ty               ${fmt(naS(jenTy))}  (${(jenTy / n * 100).toFixed(1)} %)`);
 console.log(`oba naráz            ${fmt(naS(obaNaraz))}  (${(obaNaraz / n * 100).toFixed(1)} %)`);
-console.log(`ticho                ${fmt(naS(ticho))}  (${(ticho / n * 100).toFixed(1)} %)`);
-console.log(`korelace obálek      ${korelace.toFixed(3)}`);
+console.log("");
+console.log(`kolísání v rytmu řeči ${modulaceSys.toFixed(3)}  (musí nad ${MIN_MODULACE})`);
+console.log(`prosak do mikrofonu   ${prosakDb.toFixed(1)} dB  (musí pod ${PROSAK_MAX_DB})`);
+console.log(`rozdíl délek stop     ${(rozdilDelky * 100).toFixed(2)} %`);
 console.log("");
 console.log(`ZÁVĚR: ${zaver}`);
 console.log(duvod);
 console.log("");
+// Žádná z automatických kontrol nerozliší řeč od opakovaného zvonění (viz MIN_MODULACE).
+// Ukázka k poslechu je proto povinná součást důkazu, ne bonus.
+const ukazka = path.join(slozka, "ukazka-systemove-stopy.m4a");
+try {
+  const zacatek = Math.max(0, Math.min(delkaS - 30, delkaS * 0.3));
+  await spustit("ffmpeg", ["-v", "error", "-y", "-ss", String(Math.floor(zacatek)),
+    "-i", args.system, "-t", "30", "-ac", "1", "-c:a", "aac", "-b:a", "64k", ukazka]);
+  console.log(`Ukázka k poslechu: ${path.relative(projectRoot, ukazka)}`);
+  console.log("🔴 POSLECHNI SI JI. Ani jedna z kontrol výš nerozliší řeč od opakovaného");
+  console.log("   zvonění nebo hudby — tvoje ucho ano, a trvá to půl minuty.");
+} catch {
+  console.log("(ukázku k poslechu se nepodařilo vyříznout)");
+}
+console.log("");
 console.log(`Důkaz uložen do ${path.relative(projectRoot, slozka)}`);
 console.log("");
 
-if (zaver === "NEFUNGUJE" || zaver === "NEPLATNÉ") process.exitCode = 1;
+// Jediný stav, který smí být zelený, je FUNGUJE. NEPRŮKAZNÉ dřív končilo nulou,
+// takže pro jakoukoli bránu nebo obal vypadalo jako úspěch — a je to přitom
+// nejpravděpodobnější výsledek.
+if (zaver !== "FUNGUJE") process.exitCode = 1;

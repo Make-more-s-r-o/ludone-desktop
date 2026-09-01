@@ -3,34 +3,58 @@
 Skript `scripts/schuzka-mereni.mjs` měří kritérium A6 **bez referenčního signálu** — vezme
 dvě stopy z běžné nahrané schůzky a rozhodne, jestli systémová stopa nese hlas protistrany.
 
-Ověřeno **1. 9. 2026** na syntetických datech, kde je odpověď známá dopředu.
+## 🔴 První verze lhala. Tohle je druhá.
 
-| Scénář | korelace obálek | Závěr | Očekáváno |
-|---|---|---|---|
-| **A** — protistrana mluví, mikrofon mlčí | 0,006 | ✅ FUNGUJE | FUNGUJE |
-| **B** — v systémové stopě není řeč | 0,010 | 🔴 NEFUNGUJE | NEFUNGUJE |
-| **C** — táž řeč v obou stopách | 0,998 | ⚠️ NEPLATNÉ | NEPLATNÉ |
+Verze z 1. 9. 16:23 (commit `321a2e6`) prohlásila za funkční zachycení nahrávku **tří gongů**
+z `dukazy/nahravani-2026-08-21/` — a v odůvodnění sama napsala *„nese řeč po dobu 0:00"*.
+Ta věta si protiřečí sama v sobě a nikdo si toho nevšiml, protože měřidlo nikdo nezkusil
+oklamat.
 
-**Scénář C je ten, na kterém záleží.** Bez sluchátek hraje reproduktor protistranu do mikrofonu,
-takže systémová stopa vypadá plná řeči a všechna ostatní čísla ukazují úspěch. Kdyby měřidlo
-sledovalo jen systémovou stopu, prohlásilo by přeslech za funkční zachycení — a projekt by se
-postavil na závěru, který neplatí. Odhalí ho jedině korelace mezi stopami.
+Odhalil to výzkum, jehož **povinnou částí bylo pole „čím se to dá oklamat"**. Skeptici jich
+našli šestnáct. Šest nejzávažnějších je opravených, jeden se opravit nedá a je přiznaný.
 
-## Jak metoda funguje
+## Co měřidlo teď kontroluje, než cokoli prohlásí za úspěch
 
-Nemáme referenční signál. Místo korelace s ním se hledají úseky, kdy **mikrofon mlčí
-a systémová stopa má řeč** — tam může mluvit jedině protistrana.
+| Kontrola | Proti čemu stojí |
+|---|---|
+| délky obou stop se shodují | stopy z různých nahrávek — změřeno, že dřív prošly bez výhrady |
+| mikrofonní stopa nese řeč | **mrtvý mikrofon byl nejsebejistější možné „funguje"** — bez řeči v mikrofonu projde jako protistrana jakýkoli zvuk |
+| mikrofon je u své podlahy, když mluví protistrana | přeslech z reproduktoru |
+| systémová stopa kolísá v rytmu řeči | trvalý tón, šum, hukot |
+| protistrana mluví ≥ 20 s ve ≥ 4 replikách | jeden osamocený zvuk vydávaný za hovor |
 
-- Práh řeči se počítá z nahrávky samotné (10. percentil + 12 dB), ne pevně. Každá místnost
-  a každý mikrofon má jinou podlahu.
-- Úseky kratší než třetina sekundy se zahazují, aby se nechytaly lupance a dech.
-- Když protistrana mluví méně než 5 % času, výsledek je NEPRŮKAZNÝ — na takové schůzce
-  se nedá nic dokázat.
+## Výsledky zkoušek
 
-## Reprodukce
+| Scénář | Závěr | Očekáváno |
+|---|---|---|
+| **A** — střídavý hovor, obě strany mluví | ✅ FUNGUJE | FUNGUJE |
+| **B2** — gongy v mezerách mezi replikami | ⚠️ NEPRŮKAZNÉ | nemá projít |
+| **C** — v systémové stopě ticho | 🔴 NEFUNGUJE | NEFUNGUJE |
+| **D** — protistrana prosakuje do mikrofonu | ⚠️ NEPLATNÉ | NEPLATNÉ |
+| **E** — mikrofon nic nezachytil | ⚠️ NEPLATNÉ | NEPLATNÉ |
+| **původní** — důkaz z 21. 8., dřív „FUNGUJE" | ⚠️ NEPLATNÉ | nemá projít |
 
-Syntetická data vzniknou příkazy uvedenými v `dukazy/meridlo-meet-overeni-2026-09-01/README.md`.
-Pak stačí spustit skript nad dvojicemi souborů podle tabulky výš.
+## 🔴 Hranice, kterou neumím odstranit
 
-⚠️ **Tohle NENÍ měření Google Meetu.** Je to ověření nástroje. Skutečné měření A6 vyžaduje
-nahranou schůzku s živou protistranou — dělá ho Dan.
+**Kontrola rytmu řeči nerozliší opakované krátké zvuky.** Změřeno: řada systémových gongů
+po 2,5 s dala index 0,875, tedy vysoko nad prahem 0,18 — rychlý doznívající náběh gongu leží
+v témže pásmu jako slabiky. Ve scénáři B2 to zachránila až podmínka na délku, a to je náhoda,
+ne návrh: delší řada gongů by prošla.
+
+Z obálky se to rozlišit nedá. Proto skript **vždycky vyřízne třicetisekundovou ukázku systémové
+stopy** a řekne, ať si ji člověk poslechne. Ucho rozliší řeč od zvonění okamžitě a je to jediná
+spolehlivá kontrola, kterou máme.
+
+## Co se opravilo mimo verdikt
+
+- **Práh nebyl adaptivní.** Podlaha obálky `1e-5` dělala z desátého percentilu vždycky −100 dB,
+  takže `Math.max(−100, −55) + 12` dávalo pevných −43 dBFS pro obě stopy v každé nahrávce.
+  Doloženo v `zk-*.json` z první verze, kde svítilo `system: −43, mikrofon: −43`.
+- **Detektor zahazoval řeč.** Vyžadoval 30 souvislých rámců a nepřemosťoval závěry uvnitř slov
+  (20–80 ms), takže z jedné promluvy udělal kusy pod minimální délkou. Doloženo měřením
+  88,6 % zachycené řeči proti 99,8 % s přemostěním.
+- **NEPRŮKAZNÉ končilo nulou**, takže pro jakoukoli bránu vypadalo jako úspěch — a je to přitom
+  nejpravděpodobnější výsledek. Nyní končí nenulově všechno kromě FUNGUJE.
+
+⚠️ **Tohle NENÍ měření Google Meetu.** Je to ověření nástroje. Skutečné měření dělá Dan
+nahráním běžné schůzky se sluchátky.
