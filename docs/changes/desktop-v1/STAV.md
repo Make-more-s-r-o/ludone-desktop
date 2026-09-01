@@ -36,6 +36,19 @@ redaction · audit a observability · transakční hranice · concurrence · liv
 
 ---
 
+## 🔴 Pořadí, které určil Dan
+
+**Design je POSLEDNÍ.** Dostažení zbylých podkladů z Claude Designu (`SmerA/B/C.jsx`, reference
+z VPS, tokeny písma/tvaru/pohybu/mezer, ikony a loga) se dělá **až na konci**, ne teď.
+
+Blokuje to autorizace — po přepnutí Claude účtu `DesignSync` vyžaduje `/design-login`, který
+musí spustit Dan. **Nic to nezdržuje:** schválený návrh je kompletní v `design/navrh/`
+(6 artboardů + náhled s 23 obrazovkami) a `design/canvas/` má 10 artboardů z 24. 8.
+
+⚠️ Jediné, co chybí věcně: **tokeny mimo barvy**. Písmo, tvar, pohyb a mezery jsou opsané
+z artboardů, ne ze zdroje — takže implementátor nemá kde vzít `--space-3` nebo poloměr z DS.
+Doplnit při tom závěrečném stažení.
+
 ## Co udělat, až obojí doběhne
 
 1. **Zkonsolidovat bloky** do `spec.md` a `plan.md` — workflow je vrací hotové k vložení.
@@ -44,7 +57,8 @@ redaction · audit a observability · transakční hranice · concurrence · liv
    výslovně zakazuje. Tenhle projekt už jednou stálo devět zelených bran nad nehotovou prací.
 3. **PR-sized rozpad stories** B1–B12.
 4. **Říct Danovi, že může pustit Fable** — prompt je v `PROMPT-FABLE.md` vedle tohohle souboru.
-5. Teprve po Fable review a Danově schválení: implementace **v nové session**.
+5. Po Fable review a Danově schválení: implementace **v nové session**.
+6. **Úplně nakonec**: `/design-login` a dostažení zbylých podkladů z Claude Designu.
 
 ---
 
