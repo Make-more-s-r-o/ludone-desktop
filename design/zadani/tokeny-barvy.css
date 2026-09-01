@@ -1,0 +1,127 @@
+/* ZÁLOHA opsaná 1. 9. 2026 z Claude Designu, projekt „LuDone Přístroj Design System"
+   (c5ee8498), cesta `tokens/colors.css`. Doslovně, beze změn.
+
+   🔴 Dnešní `src/styles.css` tyhle tokeny NEPOUŽÍVÁ — má natvrdo šedou rampu
+   `oklch(0.16 0 0)` a zelený akcent `oklch(0.5 0.17 145)`, jen tmavý režim.
+   Podle rozhodnutí M12 (1. 9. 2026) vyhrává tenhle soubor. Rozdíl je tedy
+   úkol, ne stav.
+
+   ===== Barvy — LuDone Přístroj =====================================
+   Neutrální rampa n-0…n-10 je JEDINÝ zdroj šedých. Světlý režim = teplý papír
+   (hue 80–85) + chladný inkoust (hue 260–266); tmavý režim = chladný inkoust.
+   Peníze: --money-pos (teal 178) / --money-neg (rust 32). Nikdy nestojí sama —
+   vždy s znaménkem nebo popiskem sloupce (viz guidelines/money-semantics).
+   =================================================================== */
+:root {
+  /* neutrální rampa — světlý režim */
+  --n-0: oklch(0.993 0.003 85);
+  --n-1: oklch(0.978 0.004 85);
+  --n-2: oklch(0.958 0.005 82);
+  --n-3: oklch(0.925 0.006 80);
+  --n-4: oklch(0.878 0.007 260);
+  --n-5: oklch(0.775 0.01 260);
+  --n-6: oklch(0.635 0.013 260);
+  --n-7: oklch(0.505 0.016 262);
+  --n-8: oklch(0.36 0.018 264);
+  --n-9: oklch(0.245 0.019 266);
+  --n-10: oklch(0.165 0.02 266);
+
+  /* akcent — interakce, výběr, fokus, série 1 v grafech */
+  --accent-strong: oklch(0.4 0.15 268);
+  --accent: oklch(0.48 0.16 268);
+  --accent-soft: oklch(0.66 0.13 268);
+
+  /* peníze */
+  --money-pos-base: oklch(0.46 0.1 178);
+  --money-neg-base: oklch(0.5 0.15 32);
+  /* stavy schvalování */
+  --wait-base: oklch(0.52 0.12 70);
+  --ok-base: var(--money-pos-base);
+  --bad-base: var(--money-neg-base);
+
+  /* --- sémantické role: plochy --- */
+  --surface-page: var(--n-1);
+  --surface-card: var(--n-0);
+  --surface-sunken: var(--n-2);
+  --surface-raised: var(--n-0);
+  --surface-hover: color-mix(in oklab, var(--n-10) 4%, transparent);
+  --surface-active: color-mix(in oklab, var(--n-10) 7%, transparent);
+  --surface-selected: color-mix(in oklab, var(--accent) 8%, transparent);
+  --surface-zebra: color-mix(in oklab, var(--n-10) 2.5%, transparent);
+  --surface-inverse: var(--n-10);
+
+  /* --- sémantické role: text --- */
+  --text-strong: var(--n-10);
+  --text: var(--n-9);
+  --text-muted: var(--n-7);
+  --text-subtle: var(--n-6);
+  --text-disabled: var(--n-5);
+  --text-inverse: var(--n-0);
+  --text-accent: var(--accent-strong);
+
+  /* --- sémantické role: linky a rámy --- */
+  --border-hairline: var(--n-3);
+  --border-strong: var(--n-4);
+  --border-heavy: var(--n-5);
+  --border-focus: var(--accent);
+  --border-inverse: color-mix(in oklab, var(--n-0) 24%, transparent);
+
+  /* --- stavy --- */
+  --state-wait: var(--wait-base);
+  --state-wait-tint: color-mix(in oklab, var(--wait-base) 12%, transparent);
+  --state-ok: var(--ok-base);
+  --state-ok-tint: color-mix(in oklab, var(--ok-base) 10%, transparent);
+  --state-bad: var(--bad-base);
+  --state-bad-tint: color-mix(in oklab, var(--bad-base) 10%, transparent);
+  --state-info: var(--accent);
+  --state-info-tint: color-mix(in oklab, var(--accent) 8%, transparent);
+  --state-neutral: var(--text-muted);
+  --state-neutral-tint: color-mix(in oklab, var(--n-10) 6%, transparent);
+  /* „propsáno do účetnictví" = nejvyšší váha: plný inkoust, ne barva */
+  --state-final: var(--n-10);
+  --state-final-fg: var(--n-0);
+  /* nevratná akce — rámec i výplň */
+  --danger-write: oklch(0.44 0.17 30);
+  --danger-write-fg: oklch(0.99 0.01 60);
+  --danger-write-tint: color-mix(in oklab, var(--danger-write) 8%, transparent);
+
+  /* --- překryvy a stíny --- */
+  --scrim: color-mix(in oklab, oklch(0.165 0.02 266) 46%, transparent);
+  --shadow-color: 264 20%;
+}
+
+/* ===== Tmavý režim ===== */
+.dark,
+[data-theme="dark"] {
+  --n-0: oklch(0.235 0.012 262);
+  --n-1: oklch(0.185 0.012 262);
+  --n-2: oklch(0.265 0.012 262);
+  --n-3: oklch(0.305 0.013 262);
+  --n-4: oklch(0.365 0.014 262);
+  --n-5: oklch(0.455 0.015 262);
+  --n-6: oklch(0.585 0.014 262);
+  --n-7: oklch(0.715 0.012 262);
+  --n-8: oklch(0.835 0.008 262);
+  --n-9: oklch(0.925 0.005 262);
+  --n-10: oklch(0.975 0.003 262);
+
+  --accent-strong: oklch(0.8 0.11 268);
+  --accent: oklch(0.72 0.14 268);
+  --accent-soft: oklch(0.55 0.15 268);
+
+  --money-pos-base: oklch(0.78 0.11 178);
+  --money-neg-base: oklch(0.75 0.14 34);
+  --wait-base: oklch(0.8 0.13 76);
+
+  --surface-page: var(--n-1);
+  --surface-card: var(--n-0);
+  --surface-sunken: oklch(0.16 0.012 262);
+  --surface-raised: var(--n-2);
+  --text-inverse: oklch(0.165 0.02 266);
+  --state-final-fg: oklch(0.165 0.02 266);
+  --danger-write: oklch(0.62 0.19 30);
+  --danger-write-fg: oklch(0.14 0.02 40);
+
+  --scrim: color-mix(in oklab, oklch(0.1 0.01 262) 64%, transparent);
+  --shadow-color: 262 60%;
+}
