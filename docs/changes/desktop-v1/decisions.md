@@ -348,3 +348,55 @@ chyba zůstává `neznama`. Má vlastní test i povinně zelený protějšek.
 
 **Obecně:** klasifikátor chyb, který se chytá podřetězců z identifikátorů, dřív nebo později
 zamění vadu kódu za vadu konfigurace. Chytej se vět, ne jmen proměnných.
+
+---
+
+## BD-N12 — B6 se dnes v noci NEDĚLÁ (koordinátor, 2. 9. 2026, 00:55)
+
+Vykonavatel B6 **nezačal psát produkční kód** a udělal správně. Narazil na dva blokery
+a zapsal je místo toho, aby si money pravidlo domyslel.
+
+### 🛑 Bloker 1 — dva ZMRAZENÉ dokumenty si o money pravidle odporují
+
+| zdroj | co říká o projektu s čerpáním nad 110 % |
+|---|---|
+| `spec.md` R7, ř. 152 | *„je **zašedlý a s důvodem**. Databáze to nehlídá."* ⇒ **zobrazit**, jen nejde vybrat |
+| `plan.md` §2b, ř. 147 | *„Přečerpaný projekt (>110 %) **není v nabídce**"* ⇒ **skrýt** |
+
+**To není nejasnost v zadání, to je rozpor mezi dvěma zmrazenými texty** — a rozhoduje o tom,
+co uživatel uvidí, když chce vykázat čas na přečerpaný projekt. **Zašedlý s důvodem** a
+**neexistující** jsou pro člověka dvě různé odpovědi: první říká „tenhle projekt znám, ale
+nemůžeš", druhá „takový projekt nemám".
+
+🔴 **Nerozhoduju to.** Je to money pravidlo a hard gate. Danův pokyn zní přeskočit **dotčený
+task**, ne celý běh — a to dělám.
+
+**Doporučený default, až se k tomu Dan dostane:** vyhrát má **`spec.md` R7** (zašedlý s důvodem).
+Spec je v hierarchii nad plánem, a „vidím, proč to nejde" je lepší UX než mlčky chybějící
+položka — uživatel jinak hledá projekt, který má, a myslí si, že se rozbil výběr. Ale je to
+**doporučení, ne rozhodnutí**.
+
+⚠️ Otevřený zůstává i **přesně 110,0 %**: `< 110` nebo `<= 110`. Ostrá nerovnost tam není
+napsaná nikde.
+
+### 🛑 Bloker 2 — stav vypínače se rendereru nevystavuje (technický, TEN rozhoduju)
+
+`DESKTOP_TIME_ENABLED` zná jen hlavní proces; `tracking:get-state` vrací stav časovače, ne
+stav vypínače. Renderer tedy nepozná, jestli je časová agenda zapnutá — a B6 by musela buď
+nabízet projekty i při vypnutém vypínači, nebo zůstat trvale fail-closed a nenabídnout nic.
+
+**Rozhodnuto (vratné, technické, žádné money pravidlo):** až se B6 pustí, **smí rozšířit
+`tracking:get-state` o jediné boolean pole „časová agenda je zapnutá"** a vystavit ho
+v preloadu. Vlastnictví toho bloku jí tímto přiděluji, přestože `plan.md` §2 ho dává B5.
+
+🔴 **Do kanálu smí jít JEN ta jedna boolean hodnota** — žádná další data, žádná business
+pravidla. Jinak z něj vznikne druhá cesta, kterou renderer rozhoduje o penězích.
+
+### Co to znamená pro plán
+
+B6 zůstává **nezapočatá**. **B11 (retence) na ní nezávisí** — visí na B7. Běh tedy pokračuje.
+
+**Vedlejší nález vykonavatele, který stojí za zapsání:** `plan.md:170` a
+`podklady-vytezene.md:172` připisují B6 zásahy do `main.cjs`/`preload.cjs`, zatímco tabulka
+vlastnictví v `plan.md:147` jí žádný takový blok nedává. Vykonavatel zvolil **bezpečnější**
+výklad a do obou souborů nesáhl. To je přesně to chování, které od něj chceme.
