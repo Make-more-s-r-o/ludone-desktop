@@ -538,3 +538,24 @@ k měření jiné práce.
 **Doporučený default:** samostatná drobná story — zakázat každou syrovou registraci `ipcMain`
 mimo jediný validační modul, a to kontrolou nad AST, ne regulárním výrazem nad textem.
 Odhad do 60 řádků diffu včetně testu.
+
+### BD-N11 — `orca-codex.sh` srazí dva joby spuštěné v téže vteřině
+
+**Změřeno naostro 2. 9. 2026 v 00:32.** Spustil jsem B6 a B7 hned po sobě a **oba dostaly
+tentýž log i tentýž soubor s odpovědí** (`codex-1788297166`). Skript pojmenovává výstupy
+časovým razítkem **v sekundách**, takže dva starty ve stejné vteřině sdílejí obojí.
+
+**Proč to bolí:** práce na disku se nesrazí (každý job má svůj worktree), ale **output contract
+druhého jobu přepíše ten první** — a to je jediné místo, kde se dozvíš `premisaPlatila`,
+očekávané počty testů a recept na sabotáže. Ztratí se tiše; ve výpisu to vypadá, že se
+spustil jen jeden job.
+
+**Jak to poznáš:** `orca-codex.sh start` vrátí u obou spuštění **stejnou cestu k logu**.
+Kdo si toho nevšimne, čeká na dvě odpovědi a dostane jednu.
+
+**Co jsem udělal:** druhý job jsem zabil (ztráta ~1 minuta) a spustil ho znovu vlastním
+launcher skriptem s explicitní cestou k logu, panel v Orce přes `orca terminal create`.
+Sandbox i síťová klec zůstávají — `-s workspace-write` visí na `codex exec`, ne na Orce.
+
+**Doporučený default:** do `orca-codex.sh` přidat do názvu logu ještě PID nebo náhodný přípon
+(`codex-<ts>-$$.log`). Do té doby: **mezi dvěma starty počkej vteřinu, nebo si log pojmenuj sám.**
