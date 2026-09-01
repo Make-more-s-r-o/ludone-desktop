@@ -189,6 +189,7 @@ Značky v „Otestováno" povinně: ✅ ověřeno naostro · 🧪 zelené testy 
 
 | Co | Proč |
 |---|---|
+| 🔴 **Udělit „Nahrávání obrazovky" balíčku `release/LuDone Desktop.app`** | macOS to nedovolí programově. Bez toho `ui-smoke` nedojede do zelené a sabotáže (b) a (c) nedoběhnou — **není to vada B1**, ta je opravená. Postup v `DAN-TODO.md` |
 | Změřit **A6** na skutečné schůzce | Potřebuje živý hovor. Měřidlo `scripts/schuzka-mereni.mjs` |
 | **B12** migrace | Živá databáze 24 lidí |
 | **A2** Apple Developer Program | Bez něj se nic nerozveze |

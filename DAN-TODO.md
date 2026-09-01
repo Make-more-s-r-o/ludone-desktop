@@ -472,3 +472,39 @@ Ověřeno naostro ve worktree `desktop-b1`: `lint` EXIT=0 · `typecheck` EXIT=0 
 
 **Pozor při úklidu:** ty symlinky odkazují do hlavního checkoutu. `orca worktree rm` je
 odstraní s worktree, ale kdyby někdo mazal ručně, `rm -rf` na worktree by šel po symlinku.
+
+---
+
+## 🔴 STOPKA PRO TEBE — `ui-smoke` nedojede do zelené bez tvého kliknutí (1. 9. 22:38)
+
+**Oprava B1 funguje.** Původní pád na `ui-smoke.mjs:301` (tlačítko „Povolit", které po E6
+neexistovalo) je **pryč** — test projde celým onboardingem. Padá až o šedesát řádků dál:
+
+```
+Error: Timeout: text „Obě stopy ověřeny"
+  ... "Nahrávání se nespustilo: systémový zvuk: Permission denied."
+  at ui-smoke.mjs:364
+```
+
+Změřeno **dvakrát** (ve worktree i v hlavním checkoutu, `package:mac` EXIT=0, aplikace naběhla).
+
+**Příčina není v kódu.** Balíčku `release/LuDone Desktop.app` macOS neudělil **Nahrávání
+obrazovky** — a to je oprávnění, které nejde udělit programově. Musí ho odklepnout člověk.
+
+### Co udělat (dvě minuty)
+
+1. **Nastavení systému → Soukromí a zabezpečení → Nahrávání obrazovky**
+2. Přidat `release/LuDone Desktop.app` (v repozitáři, `⌘⇧G` a vlož cestu) a **zapnout**
+3. Ověřit: `npm run package:mac && node scripts/ui-smoke.mjs` — má dojít až na „Obě stopy ověřeny"
+
+⚠️ **Electron dokumentuje, že po změně oprávnění je nutný restart aplikace**, takže když to
+napoprvé nezabere, nespěchej hlásit vadu — zavři appku a spusť znovu.
+
+### Co se kvůli tomu NEUDĚLALO
+
+Druhá půlka cíle B1 — **doběhnout sabotáže (b) a (c)** v `E2-sabotaze.sh`. Ta brána správně
+odmítá měřit nad červeným baseline, jen ta červená má teď **jinou příčinu** než ráno.
+Noční běh místo toho měří **posun místa selhání** (sabotáž musí shodit test dřív a jinou
+hláškou než reference) — je to poctivý důkaz, že kontrola kouše, ale **není to náhrada**.
+Až oprávnění udělíš, doběhne to normálně.
+
