@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("ludone", {
     resetOnboarding: process.env.LUDONE_RESET_ONBOARDING === "1",
   }),
   beginAuth: () => ipcRenderer.invoke("auth:begin"),
+  cancelAuth: () => ipcRenderer.invoke("auth:cancel"),
   requestPermission: (permission) =>
     ipcRenderer.invoke("permission:request", permission),
   beginRecording: () => ipcRenderer.invoke("recording:begin"),

@@ -7,6 +7,7 @@ const {
   nativeImage,
   net,
   protocol,
+  safeStorage,
   screen,
   session,
   shell,
@@ -16,7 +17,7 @@ const { createHash, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { fileURLToPath, pathToFileURL } = require("node:url");
-const { createPermissionRequestHandler } = require("./auth.cjs");
+const { createAuthController, createPermissionRequestHandler } = require("./auth.cjs");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
@@ -690,29 +691,110 @@ handleValidated("recording:finish", ["panel"], (event, sessionId) => {
   return finalizeRecordingSession(sessionId, "complete");
 });
 
+function resolveAuthIssuer(env) {
+  const value = env?.LUDONE_ORIGIN ?? "https://app.ludone.cz";
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error("Adresa přihlášení není nastavená");
+  }
+
+  let issuer;
+  try {
+    issuer = new URL(value);
+  } catch {
+    throw new Error("Adresa přihlášení není platná");
+  }
+  if (
+    issuer.protocol !== "https:"
+    || issuer.username
+    || issuer.password
+    || issuer.pathname !== "/"
+    || issuer.search
+    || issuer.hash
+  ) {
+    throw new Error("Adresa přihlášení musí být čistý HTTPS origin");
+  }
+  return issuer.origin;
+}
+
+function createAuthBeginHandler(createController) {
+  return function configureAuthBegin({ app, env, isTestRun, logger, safeStorage, shell }) {
+    return async function beginAuth({ signal } = {}) {
+      if (isTestRun && app?.isPackaged !== true) {
+        return {
+          ok: true,
+          user: { name: "Testovací uživatel", email: "test@ludone.cz" },
+        };
+      }
+
+      try {
+        const issuer = resolveAuthIssuer(env);
+        const staticClientIds = {
+          "https://app.ludone.cz": "ldmcp_oauth_client_prod_v1_desktop",
+          "https://labs.ludone.cz": "ldmcp_oauth_client_labs_v1_desktop",
+        };
+        const clientId = staticClientIds[issuer];
+        if (!clientId) throw new Error("Pro tuto adresu není přihlášení nastavené");
+
+        logger?.log?.("[auth] Přihlášení zahájeno");
+        const controller = createController({ issuer, clientId, app, safeStorage, shell });
+        const attempt = await controller.start();
+        const cancel = () => attempt.cancel();
+        if (signal?.aborted) {
+          cancel();
+        } else {
+          signal?.addEventListener?.("abort", cancel, { once: true });
+        }
+
+        try {
+          const result = await attempt.result;
+          const name = result?.user?.name;
+          const email = result?.user?.email;
+          if (typeof name !== "string" || !name || typeof email !== "string" || !email) {
+            throw new Error("LuDone nevrátilo úplnou identitu uživatele");
+          }
+          return { ok: true, user: { name, email } };
+        } finally {
+          signal?.removeEventListener?.("abort", cancel);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        let duvod = "neznama";
+        if (/časovém limitu/i.test(message)) {
+          duvod = "vyprselo";
+        } else if (/access_denied|Chybí autorizační kód|zrušeno/i.test(message)) {
+          duvod = "odmitnuto";
+        } else if (/Bezpečné úložiště|cílové úložiště/i.test(message)) {
+          duvod = "uloziste";
+        } else if (
+          /Adresa přihlášení|HTTPS origin|není přihlášení nastavené|OAuth issuer|MCP resource|MCP scopy|Chybí Electron|clientId/i.test(message)
+        ) {
+          duvod = "konfigurace";
+        } else if (error instanceof TypeError || /fetch failed|net::ERR_|ENOTFOUND|ECONNREFUSED/i.test(message)) {
+          duvod = "bez-site";
+        }
+        const response = { ok: false, duvod };
+        logger?.warn?.(`[auth] Přihlášení skončilo: ${JSON.stringify(response)}`);
+        return response;
+      }
+    };
+  };
+}
+
+const beginAuth = createAuthBeginHandler(createAuthController)({
+  app,
+  env: process.env,
+  isTestRun: IS_TEST_RUN,
+  logger: console,
+  safeStorage,
+  shell,
+});
+
 handleValidated("auth:begin", ["panel"], async () => {
-  const authorizationUrl = "https://app.ludone.cz";
   const attempt = new AbortController();
   activeAuthAttempts.add(attempt);
   authAttemptsInFlight += 1;
   try {
-    if (process.env.LUDONE_OPEN_AUTH_BROWSER === "1") {
-      await shell.openExternal(authorizationUrl);
-    }
-    await new Promise((resolve, reject) => {
-      const timer = setTimeout(resolve, 650);
-      attempt.signal.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(new Error("Přihlášení bylo zrušeno"));
-      }, { once: true });
-    });
-    return {
-      ok: true,
-      authorizationUrl,
-      callback: "ludone://auth/callback?code=demo-code",
-      token: "mock-token-not-persisted",
-      user: { name: "Daniel Novák", email: "daniel@ludone.cz" },
-    };
+    return await beginAuth({ signal: attempt.signal });
   } finally {
     authAttemptsInFlight -= 1;
     activeAuthAttempts.delete(attempt);
