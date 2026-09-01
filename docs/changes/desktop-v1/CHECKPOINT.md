@@ -3,13 +3,13 @@
 **Tenhle soubor se PŘEPISUJE po každé vlně, neroste.** Je to pojistka proti compaction:
 kdo ho čte s prázdným kontextem, musí být schopen pokračovat, aniž by se ptal.
 
-**Poslední zápis: 1. 9. 2026, 22:30.** Zadání běhu: [`BEH-NOC.md`](BEH-NOC.md).
+**Poslední zápis: 1. 9. 2026, 23:05.** Zadání běhu: [`BEH-NOC.md`](BEH-NOC.md).
 
 ---
 
 ## Vlna
 
-`1 / 4` — **uzavřena**. Vlna 2 (B3) začíná.
+`2 / 4` — B3 hotová v kódu, čeká na nezávislé review od Codexe, pak PR.
 
 ## Hotovo
 
@@ -17,6 +17,7 @@ kdo ho čte s prázdným kontextem, musí být schopen pokračovat, aniž by se 
 |---|---|---|---|
 | **B1** `ui-smoke` | [#2](https://github.com/Make-more-s-r-o/ludone-desktop/pull/2) 🟢 CI SUCCESS | lint 0 · typecheck 0 · **77/77** | červený baseline naostro + 4 sabotáže diferenciálně |
 | **B4** tři vady přihlášení | [#3](https://github.com/Make-more-s-r-o/ludone-desktop/pull/3) 🟢 CI SUCCESS | lint 0 · typecheck 0 · **86/86** (9 nových) | 3 doslovné červené výpisy + recept na 4 sabotáže |
+| **B3** autorita tray | ⏳ PR ještě ne | lint 0 · typecheck 0 · **98/98** (6 nových) | 4 sabotáže 3🔴:1🟢 + cílená sabotáž jediného přepočtu |
 
 🔴 **Ani jedna netvrdí `verified-live`.** Osy po změně: `delivery: pr-open` · `exposure`
 beze změny · `verification: tests-green`. Naostro to nikdo neviděl.
@@ -52,6 +53,7 @@ nesplněná.** Ta brána správně odmítá měřit nad červeným baseline.
 |---|---|---|
 | `~/orca/workspaces/ludone-desktop/desktop-b1` | `orca/desktop-b1` | ✅ pushnuto, PR #2, **volný** |
 | `~/orca/workspaces/ludone-desktop/desktop-b4` | `orca/desktop-b4` | ✅ pushnuto, PR #3, **volný** |
+| `~/orca/workspaces/ludone-desktop/desktop-b3` | `orca/desktop-b3` | 3 commity, **nepushnuto**, čeká na review |
 | `/Users/dan/Dev/ClaudeCode/ludone-desktop` | `main` | čistý, srovnaný s `origin/main` |
 
 🔴 **Obě worktree mají `node_modules` jako SYMLINK** do hlavního checkoutu (Codexův sandbox
@@ -62,7 +64,9 @@ už si tím vzala moji rozdělanou práci. Stageuj jmenovitými cestami.
 
 ## Běžící procesy
 
-**Žádné.** Oba Codex joby doběhly `EXIT=0`, oba Orca panely jsou hotové.
+**Codex review B3** — read-only, panel „🔎 Codex review: B3 autorita tray“,
+log `/tmp/beh-noc/b3-review.log`. 🔴 **V read-only kleci Codex NEZAPÍŠE soubor `-o`** —
+odpověď se čte z LOGU, ne z `.answer`. Hlídač: `/tmp/beh-noc/cekej-review.sh`.
 
 **Kompaktní hlídač:** `/tmp/beh-noc/stav.sh <cesta-bez-pripony>` — velikost, ticho, `EXIT`,
 nikdy obsah logu (`--json` má stovky kB a zaplavil by kontext).
@@ -90,3 +94,22 @@ a kanál `tray:set-state` musí zmizet.
 ⚠️ **B3 sahá do `main.cjs` blízko bloku, který změnila B4** (řádky ~237–244 vs ~255).
 PR #3 zatím není mergnutý, takže B3 vzniká nad `main` bez něj — konflikt je nepravděpodobný
 (11 řádků odstup), ale kdyby nastal, řeší se při merge, ne přebasováním B3 na B4.
+
+---
+
+## 🔴 Co našlo review B3 na MNĚ (a co se z toho učí)
+
+Packet pro B3 (od souběžné session, commit `ae507ff`) našel v mé hotové implementaci
+**skutečnou díru**: `refreshTray()` chyběl na **pěti místech**, kde se mění nahrávací fakt.
+Odvození stavu bylo správné, ale nikdo se ho po startu nahrávání nezeptal — lišta by
+nahrávání **neukázala nikdy**.
+
+🔴 **Prošlo to 92 zelenými testy.** Testy chování volaly `refreshTray()` samy, takže dokázaly
+ROZHODNUTÍ a nikdy ZAPOJENÍ. Přesně ta třída, kvůli které v tomhle repu existuje pravidlo
+o kanárkovi.
+
+Opraveno v `bd6dd7a` + nový kanárek, který padne, když zmizí **jediný** přepočet (ověřeno
+cílenou sabotáží: 1 failed | 97 passed, a padl právě ten správný test).
+
+**Ponaučení do dalších vln:** ke každému „umí to rozhodnout správně" patří druhá otázka
+**„zeptá se toho někdo?"**. Test, který si obsluhu zavolá sám, na ni neodpoví.
