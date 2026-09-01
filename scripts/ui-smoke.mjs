@@ -8,6 +8,7 @@ const projectRoot = path.resolve(scriptDir, "..");
 const outputDir = path.join(projectRoot, ".runtime", "smoke");
 const observations = [];
 const PERMISSION_ACTION_SELECTOR = '[data-testid="permission-action"]';
+const PERMISSION_GRANTED_SELECTOR = ".permission-row.is-granted";
 const EXPECTED_PERMISSION_COUNT = 2;
 
 await mkdir(outputDir, { recursive: true });
@@ -191,14 +192,23 @@ async function clickPermissionAction(client) {
 }
 
 async function assertPermissionActionsGranted(client) {
+  // Pozor na tlačítko: `disabled` je pravdivé ve TŘECH různých situacích — oprávnění je
+  // udělené, systém ho zakázal, nebo se na něj právě čeká. Kdyby se brána ptala na ně,
+  // prošla by i tehdy, když nám systém přístup odepřel, a měřila by sjednocení úspěchu
+  // se selháním. Ptá se proto na `is-granted`, což je jediný stav, který znamená udělení.
   const state = await client.evaluate(`(() => {
     const controls = [...document.querySelectorAll(${JSON.stringify(PERMISSION_ACTION_SELECTOR)})];
-    return { count: controls.length, disabled: controls.filter((item) => item.disabled).length };
+    const granted = document.querySelectorAll(${JSON.stringify(PERMISSION_GRANTED_SELECTOR)}).length;
+    return {
+      count: controls.length,
+      granted,
+      disabled: controls.filter((item) => item.disabled).length,
+    };
   })()`);
-  if (state.count !== EXPECTED_PERMISSION_COUNT || state.disabled !== EXPECTED_PERMISSION_COUNT) {
-    throw new Error(`Oprávnění nejsou všechna potvrzená: ${JSON.stringify(state)}.`);
+  if (state.count !== EXPECTED_PERMISSION_COUNT || state.granted !== EXPECTED_PERMISSION_COUNT) {
+    throw new Error(`Oprávnění nejsou všechna udělená: ${JSON.stringify(state)}.`);
   }
-  observations.push({ check: "permissions-granted", value: state.count });
+  observations.push({ check: "permissions-granted", value: state.granted });
 }
 
 async function clickFirstMeeting(client) {
