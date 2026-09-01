@@ -1,0 +1,30 @@
+{
+  "nazev": "t-c-preslech",
+  "kdy": "2026-09-01T16:23:05.711Z",
+  "vstupy": {
+    "system": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/fake_system.webm",
+    "mikrofon": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/fake_mic_preslech.webm"
+  },
+  "metoda": {
+    "popis": "Detekce řeči v obou stopách zvlášť; hledají se úseky, kdy mikrofon mlčí a systémová stopa má řeč.",
+    "duvod": "Bez referenčního signálu nelze korelovat. Úsek, kdy mluví jen systémová stopa, může nést pouze protistranu.",
+    "obranaProtiPreslechu": "Korelace obálek obou stop; nad 0.6 se výsledek prohlásí za neplatný.",
+    "prahyDb": {
+      "system": -43,
+      "mikrofon": -43,
+      "podlahaSystem": -55,
+      "podlahaMikrofon": -55
+    }
+  },
+  "delkaSekundy": 38,
+  "rozpad": {
+    "jenProtistranaSekundy": 9.24,
+    "jenTySekundy": 0,
+    "obaNarazSekundy": 9.88,
+    "tichoSekundy": 18.88,
+    "podilProtistrany": 0.2431578947368421
+  },
+  "korelaceObalek": 0.9976776446310537,
+  "zaver": "NEPLATNÉ",
+  "duvod": "Obě stopy se pohybují společně (korelace obálek 0.998). Nejspíš jsi neměl sluchátka a reproduktor hrál protistranu do mikrofonu. Měření nic nedokazuje — zopakuj se sluchátky."
+}
