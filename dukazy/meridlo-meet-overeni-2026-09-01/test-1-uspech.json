@@ -1,0 +1,50 @@
+{
+  "nazev": "test-1-uspech",
+  "kdy": "2026-09-01T13:16:41.101Z",
+  "vstupy": {
+    "system": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/fake_system.webm",
+    "mikrofon": "/private/tmp/claude-501/-Users-dan-Dev-ClaudeCode-ludone-desktop/8587ed88-97d6-4ae0-b293-e21e38032adb/scratchpad/fake_mic.webm",
+    "reference": "dukazy/test-meridla-2026-09-01/referencni.aiff"
+  },
+  "metoda": {
+    "popis": "Normalizovaná křížová korelace obálky energie po 10 ms rámcích, v decibelech.",
+    "duvod": "Přes Meet jde zvuk překódovaný Opusem a zpožděný; vzorková korelace by selhala i při úspěchu.",
+    "vzorkovaciKmitocet": 16000,
+    "ramMs": 10
+  },
+  "delkySekundy": {
+    "reference": 28.5489375,
+    "system": 38,
+    "mikrofon": 38
+  },
+  "vysledky": {
+    "systemKorelace": 0.998348282729937,
+    "systemPosunSekundy": 5,
+    "mikrofonKorelace": 0.0430807855449017,
+    "mikrofonPosunSekundy": 4.03,
+    "rozdilKorelaci": 0.9552674971850353,
+    "systemHlasitostDb": -18.62922306682962,
+    "mikrofonHlasitostDb": -66.8643499341649
+  },
+  "podminky": [
+    {
+      "klic": "system-korelace",
+      "popis": "Systémová stopa nese referenční zvuk (korelace obálky > 0.8)",
+      "namereno": 0.998348282729937,
+      "prosel": true
+    },
+    {
+      "klic": "system-hlasitost",
+      "popis": "Systémová stopa je slyšitelná (nad -40 dB)",
+      "namereno": -18.62922306682962,
+      "prosel": true
+    },
+    {
+      "klic": "neni-preslech",
+      "popis": "Nejde o přeslech do mikrofonu (rozdíl korelací > 0.3)",
+      "namereno": 0.9552674971850353,
+      "prosel": true
+    }
+  ],
+  "zaver": "PASS"
+}

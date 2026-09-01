@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap');
+    body { margin: 0; }
+    a { color: #1B7A43; } a:hover { color: #14602f; }
+    .op * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div class="op" style="width: 1560px; padding: 28px; background: oklch(0.13 0.005 250); color: oklch(0.985 0 0); font-family: 'Public Sans', system-ui, sans-serif;">
+
+  <div style="margin-bottom: 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.708 0 0);">Onboarding · rozhodnutí D-F</div>
+  <div style="margin-bottom: 4px; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.03em;">Oprávnění, včetně odmítnutých</div>
+
+  <div style="display: flex; gap: 16px; max-width: 1160px; margin-bottom: 24px;">
+    <div style="flex-grow: 1; padding: 12px 14px; border: 1px solid oklch(0.63 0.19 25 / 32%); border-radius: 12px; background: oklch(0.63 0.19 25 / 12%); font-size: 12px; line-height: 1.6; color: oklch(0.8 0.11 25);">
+      <strong>macOS se po odmítnutí už NIKDY nezeptá znovu.</strong> Tlačítko „Povolit“ v odmítnutém stavu je mrtvé tlačítko — jediná funkční cesta vede do Nastavení systému.
+      Dnešní kód vrací vždy <code style="font-size: 11px;">{ granted: true }</code>, takže tuhle větev nikdo nikdy neviděl.
+    </div>
+    <div style="flex-grow: 1; padding: 12px 14px; border: 1px solid oklch(0.75 0.15 75 / 32%); border-radius: 12px; background: oklch(0.75 0.15 75 / 11%); font-size: 12px; line-height: 1.6; color: oklch(0.84 0.1 75);">
+      <strong>Systém se zeptá na „Záznam obrazovky“, ne na „Systémový zvuk“.</strong> Zachytávání jde přes <code style="font-size: 11px;">getDisplayMedia</code>.
+      Mockup i onboarding dnes slibují dialog, který uživatel neuvidí — lekne se a odmítne. Text musí připravit na to, co doopravdy přijde.
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px;">
+    <sc-for list="{{cards}}" as="c" hint-placeholder-count="4">
+      <div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 9px;">
+          <code style="padding: 2px 7px; border-radius: 6px; background: oklch(0.26 0 0); font-size: 10.5px; color: oklch(0.85 0 0);">{{c.id}}</code>
+          <div style="font-size: 12px; font-weight: 650;">{{c.label}}</div>
+        </div>
+
+        <div style="height: 452px; padding: 20px 18px; display: flex; flex-direction: column; border: 1px solid oklch(1 0 0 / 20%); border-radius: 20px; background: oklch(0.2 0 0);">
+          <div style="font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 19px; font-weight: 680; letter-spacing: -0.03em; line-height: 1.15;">{{c.title}}</div>
+          <div style="margin-top: 8px; font-size: 12px; line-height: 1.55; color: oklch(0.708 0 0);">{{c.body}}</div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+            <sc-for list="{{c.perms}}" as="p" hint-placeholder-count="3">
+              <div style="display: flex; align-items: flex-start; gap: 9px; padding: 10px; border: 1px solid {{p.border}}; border-radius: 11px; background: {{p.bg}};">
+                <span style="display: inline-flex; width: 20px; height: 20px; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 50%; background: {{p.dotBg}}; color: {{p.dotInk}}; font-size: 11px; font-weight: 700;">{{p.glyph}}</span>
+                <div style="min-width: 0;">
+                  <div style="font-size: 12px; font-weight: 600;">{{p.name}}</div>
+                  <div style="margin-top: 2px; font-size: 10.5px; line-height: 1.4; color: {{p.stateColor}};">{{p.state}}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="flex-grow: 1;"></div>
+
+          <button type="button" style="display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: center; border: 1px solid {{c.btnBorder}}; border-radius: 10px; background: {{c.btnBg}}; color: {{c.btnColor}}; font-family: inherit; font-size: 13px; font-weight: 650; opacity: {{c.btnOpacity}};">{{c.btn}}</button>
+          <sc-if value="{{c.showSecondary}}" hint-placeholder-val="{{ true }}">
+            <button type="button" style="display: flex; width: 100%; min-height: 36px; align-items: center; justify-content: center; margin-top: 7px; border: 0; background: transparent; color: oklch(0.708 0 0); font-family: inherit; font-size: 12px; font-weight: 600;">{{c.secondary}}</button>
+          </sc-if>
+        </div>
+
+        <div style="margin-top: 10px; font-size: 11px; line-height: 1.5; color: oklch(0.65 0 0);">{{c.note}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 1560, "height": 700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const GREEN = 'oklch(0.7 0.18 145)';
+    const RED = 'oklch(0.75 0.13 25)';
+    const MUTED = 'oklch(0.708 0 0)';
+
+    const ok = (name) => ({
+      name, glyph: '✓', state: 'Povoleno', stateColor: GREEN,
+      border: 'oklch(0.7 0.18 145 / 32%)', bg: 'oklch(0.5 0.17 145 / 13%)',
+      dotBg: 'oklch(0.5 0.17 145 / 30%)', dotInk: GREEN,
+    });
+    const waiting = (name) => ({
+      name, glyph: '·', state: 'Zatím nepovoleno', stateColor: MUTED,
+      border: 'oklch(1 0 0 / 10%)', bg: 'oklch(0.24 0 0)',
+      dotBg: 'oklch(0.32 0 0)', dotInk: MUTED,
+    });
+    const denied = (name, why) => ({
+      name, glyph: '×', state: why, stateColor: RED,
+      border: 'oklch(0.63 0.19 25 / 32%)', bg: 'oklch(0.63 0.19 25 / 12%)',
+      dotBg: 'oklch(0.63 0.19 25 / 28%)', dotInk: RED,
+    });
+    const optional = (name) => ({
+      name, glyph: '–', state: 'Přeskočeno · volitelné', stateColor: MUTED,
+      border: 'oklch(1 0 0 / 10%)', bg: 'oklch(0.24 0 0)',
+      dotBg: 'oklch(0.32 0 0)', dotInk: MUTED,
+    });
+
+    const primary = { btnBorder: 'oklch(0.5 0.17 145)', btnBg: 'oklch(0.5 0.17 145)', btnColor: '#fff', btnOpacity: '1' };
+    const ghost = { btnBorder: 'oklch(1 0 0 / 20%)', btnBg: 'oklch(0.26 0 0)', btnColor: 'oklch(0.985 0 0)', btnOpacity: '1' };
+
+    return {
+      cards: [
+        {
+          id: 'perm.before', label: 'Před dotazem',
+          title: 'Povol dvě věci', body: 'Systém se za chvíli zeptá. U druhé se ptá na „Záznam obrazovky“ — je to tatáž věc jako zvuk z jiných aplikací.',
+          perms: [waiting('Mikrofon'), waiting('Záznam obrazovky'), waiting('Kalendář · volitelné')],
+          ...primary, btn: 'Zeptat se systému', showSecondary: false,
+          note: 'Nejdůležitější věta na celé obrazovce je ta o záznamu obrazovky. Bez ní uživatel odmítne z leknutí.',
+        },
+        {
+          id: 'perm.denied.screen', label: 'Odmítnut záznam obrazovky',
+          title: 'Bez toho se nenahraje druhá strana', body: 'Mikrofon funguje, ale zvuk z Meetu, Teams a telefonátů zachytit nejde.',
+          perms: [ok('Mikrofon'), denied('Záznam obrazovky', 'Odmítnuto — systém se znovu nezeptá'), optional('Kalendář · volitelné')],
+          ...primary, btn: 'Otevřít Nastavení systému',
+          showSecondary: true, secondary: 'Pokračovat jen s mikrofonem',
+          note: 'Tlačítko vede do Nastavení, ne k dialogu. A pokračovat jen s mikrofonem musí jít — je to pořád použitelný diktafon.',
+        },
+        {
+          id: 'perm.denied.mic', label: 'Odmítnut mikrofon',
+          title: 'Bez mikrofonu\nnahrávat nejde', body: 'Nahrávání se nespustí. Časovač LuTracku funguje dál.',
+          perms: [denied('Mikrofon', 'Odmítnuto — systém se znovu nezeptá'), ok('Záznam obrazovky'), optional('Kalendář · volitelné')],
+          ...primary, btn: 'Otevřít Nastavení systému',
+          showSecondary: true, secondary: 'Používat jen LuTrack',
+          note: 'Jediné tvrdě blokující oprávnění. I tak se z appky nesmí stát cihla — časovač na mikrofonu nezávisí.',
+        },
+        {
+          id: 'perm.calendar-skipped', label: 'Kalendář přeskočen',
+          title: 'Hotovo', body: 'Nahrávat i měřit čas můžeš. Dnešní schůzky se nezobrazí a appka ti nenabídne nahrávání sama.',
+          perms: [ok('Mikrofon'), ok('Záznam obrazovky'), optional('Kalendář · volitelné')],
+          ...ghost, btn: 'Pokračovat do aplikace',
+          showSecondary: true, secondary: 'Připojit kalendář později',
+          note: 'Rozhodnutí D-F: volitelný. Dnešní kód má disabled={!allGranted} — tedy přesně tenhle stav neumí a zamrzne.',
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

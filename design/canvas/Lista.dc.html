@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap');
+    body { margin: 0; }
+    a { color: #1B7A43; } a:hover { color: #14602f; }
+    .li * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div class="li" style="width: 1240px; padding: 28px; background: oklch(0.13 0.005 250); color: oklch(0.985 0 0); font-family: 'Public Sans', system-ui, sans-serif;">
+
+  <div style="margin-bottom: 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.708 0 0);">Etapa E3 — dnes umí jen čtyři</div>
+  <div style="margin-bottom: 4px; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.03em;">Ikona v liště</div>
+  <div style="max-width: 940px; margin-bottom: 20px; color: oklch(0.708 0 0); font-size: 13px; line-height: 1.55;">
+    Ikona je jediné, co je z appky vidět, když je panel zavřený — a proto je to jediné místo, kde se nesmí lhát.
+    Dnešní kód má čtyři stavy a při souběhu nahrávání s časovačem o časovači mlčí; při pádu rendereru zůstane zelený.
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 26px;">
+    <sc-for list="{{states}}" as="s" hint-placeholder-count="7">
+      <div style="display: flex; align-items: center; gap: 16px; padding: 11px 14px; border: 1px solid {{s.rowBorder}}; border-radius: 12px; background: oklch(0.2 0 0);">
+
+        <!-- výřez lišty -->
+        <div style="display: flex; align-items: center; gap: 7px; flex: 0 0 auto; width: 132px; height: 30px; padding: 0 11px; border-radius: 8px; background: oklch(0.28 0 0);">
+          <svg width="17" height="17" viewBox="0 0 32 32" fill="none" style="color: {{s.iconColor}};">
+            <rect width="32" height="32" rx="10" fill="currentColor"></rect>
+            <path d="M10 8.5v9.25c0 3.3 2.35 5.75 6 5.75s6-2.45 6-5.75V8.5" stroke="{{s.markInk}}" stroke-width="3.4" stroke-linecap="round"></path>
+          </svg>
+          <sc-if value="{{s.showBadge}}" hint-placeholder-val="{{ true }}">
+            <span style="width: 7px; height: 7px; margin-left: -3px; border: 1.5px solid oklch(0.28 0 0); border-radius: 50%; background: {{s.badgeColor}};"></span>
+          </sc-if>
+          <sc-if value="{{s.showTime}}" hint-placeholder-val="{{ true }}">
+            <span style="font-variant-numeric: tabular-nums; font-size: 11.5px; font-weight: 650; color: {{s.timeColor}};">{{s.time}}</span>
+          </sc-if>
+        </div>
+
+        <code style="flex: 0 0 auto; width: 122px; padding: 2px 7px; border-radius: 6px; background: oklch(0.26 0 0); font-size: 10.5px; color: oklch(0.85 0 0);">{{s.id}}</code>
+        <div style="flex: 0 0 auto; width: 168px; font-size: 12.5px; font-weight: 650;">{{s.label}}</div>
+        <div style="flex-grow: 1; font-size: 11.5px; line-height: 1.5; color: oklch(0.7 0 0);">{{s.why}}</div>
+        <div style="flex: 0 0 auto; width: 96px; text-align: right; font-size: 10.5px; font-weight: 650; color: {{s.statusColor}};">{{s.status}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; gap: 26px; align-items: flex-start;">
+
+    <!-- kontextové menu -->
+    <div style="flex: 0 0 auto;">
+      <div style="margin-bottom: 9px; font-size: 12px; font-weight: 650;">Pravý klik</div>
+      <div style="width: 244px; padding: 6px; border: 1px solid oklch(1 0 0 / 14%); border-radius: 12px; background: oklch(0.24 0 0); box-shadow: 0 12px 32px rgb(0 0 0 / 45%);">
+        <sc-for list="{{menu}}" as="m" hint-placeholder-count="7">
+          <sc-if value="{{m.divider}}" hint-placeholder-val="{{ false }}">
+            <div style="height: 1px; margin: 5px 8px; background: oklch(1 0 0 / 10%);"></div>
+          </sc-if>
+          <sc-if value="{{m.item}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; background: {{m.bg}};">
+              <span style="font-size: 12.5px; font-weight: {{m.weight}}; color: {{m.color}};">{{m.label}}</span>
+              <span style="margin-left: auto; font-variant-numeric: tabular-nums; font-size: 11px; color: oklch(0.65 0 0);">{{m.hint}}</span>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- upozornění -->
+    <div style="flex-grow: 1;">
+      <div style="margin-bottom: 9px; font-size: 12px; font-weight: 650;">Upozornění „začíná schůzka“</div>
+      <div style="max-width: 420px; padding: 14px; border: 1px solid oklch(1 0 0 / 14%); border-radius: 16px; background: oklch(0.24 0 0); box-shadow: 0 12px 32px rgb(0 0 0 / 45%);">
+        <div style="display: flex; align-items: flex-start; gap: 11px;">
+          <svg width="30" height="30" viewBox="0 0 32 32" fill="none" style="color: oklch(0.7 0.18 145); flex: 0 0 auto;">
+            <rect width="32" height="32" rx="10" fill="currentColor"></rect>
+            <path d="M10 8.5v9.25c0 3.3 2.35 5.75 6 5.75s6-2.45 6-5.75V8.5" stroke="#171717" stroke-width="3.2" stroke-linecap="round"></path>
+          </svg>
+          <div style="min-width: 0; flex-grow: 1;">
+            <div style="font-size: 12.5px; font-weight: 700;">LuDone Desktop</div>
+            <div style="margin-top: 2px; font-size: 12.5px;">Za 2 minuty začíná <strong>Týdenní schůzka</strong> (Google Meet).</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="button" style="flex-grow: 1; min-height: 34px; border: 1px solid oklch(0.5 0.17 145); border-radius: 9px; background: oklch(0.5 0.17 145); color: #fff; font-family: inherit; font-size: 12px; font-weight: 650;">Nahrát</button>
+          <button type="button" style="flex-grow: 1; min-height: 34px; border: 1px solid oklch(1 0 0 / 20%); border-radius: 9px; background: oklch(0.3 0 0); color: oklch(0.985 0 0); font-family: inherit; font-size: 12px; font-weight: 650;">Teď ne</button>
+        </div>
+      </div>
+      <div style="max-width: 420px; margin-top: 12px; font-size: 11.5px; line-height: 1.55; color: oklch(0.7 0 0);">
+        Nahrávání se nikdy nespustí samo — jen se nabídne. V kódu dnes není <code style="font-size: 11px;">Notification</code> použité ani jednou.
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 1240, "height": 860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const GREEN = 'oklch(0.7 0.18 145)';
+    const RED = 'oklch(0.72 0.19 25)';
+    const AMBER = 'oklch(0.82 0.13 75)';
+    const GREY = 'oklch(0.6 0 0)';
+    const NEW = 'oklch(0.75 0.15 75)';
+
+    const has = { status: 'má dnes', statusColor: 'oklch(0.6 0 0)', rowBorder: 'oklch(1 0 0 / 10%)' };
+    const missing = { status: 'CHYBÍ', statusColor: NEW, rowBorder: 'oklch(0.75 0.15 75 / 30%)' };
+
+    const item = (label, hint, opts = {}) => ({ item: true, divider: false, label, hint, bg: 'transparent', color: 'oklch(0.95 0 0)', weight: '500', ...opts });
+
+    return {
+      states: [
+        { id: 'signed-out', label: 'Nepřihlášeno', iconColor: GREY, markInk: '#1a1a1a', showBadge: false, showTime: false,
+          why: 'Ikona je šedá. Klik otevře přihlášení, nic jiného nejde.', ...has },
+        { id: 'idle', label: 'Připraveno', iconColor: 'oklch(0.85 0 0)', markInk: '#1a1a1a', showBadge: false, showTime: false,
+          why: 'Výchozí stav. Nic neběží, appka jen čeká.', ...has },
+        { id: 'recording', label: 'Nahrává', iconColor: RED, markInk: '#1a1a1a', showBadge: true, badgeColor: RED, showTime: true, time: '24:18', timeColor: 'oklch(0.9 0 0)',
+          why: 'Červená a čas přímo v liště. Musí být poznat přes celou obrazovku, že se nahrává.', ...has },
+        { id: 'tracking', label: 'LuTrack běží', iconColor: GREEN, markInk: '#1a1a1a', showBadge: false, showTime: true, time: '1:42', timeColor: GREEN,
+          why: 'Zelená a čas. Jiný význam než u nahrávání, proto jiná barva.', ...has },
+        { id: 'recording+tracking', label: 'Nahrává i měří čas', iconColor: RED, markInk: '#1a1a1a', showBadge: true, badgeColor: GREEN, showTime: true, time: '24:18', timeColor: 'oklch(0.9 0 0)',
+          why: 'Souběh. Dnešní useMemo v App.jsx dá přednost nahrávání a o běžícím časovači ikona MLČÍ — tedy lže.', ...missing },
+        { id: 'track-lost', label: 'Ztratila se stopa', iconColor: AMBER, markInk: '#1a1a1a', showBadge: true, badgeColor: AMBER, showTime: true, time: '24:18', timeColor: AMBER,
+          why: 'Pojistka k rozhodnutí D-D: nahrávání pokračuje, ale lišta to musí přiznat, i když je panel zavřený.', ...missing },
+        { id: 'queue-failed', label: 'Fronta selhala', iconColor: 'oklch(0.85 0 0)', markInk: '#1a1a1a', showBadge: true, badgeColor: RED, showTime: false,
+          why: 'Nahrávka se nedostala na server a automatika to vzdala. Bez tohoto stavu se to nikdo nedozví.', ...missing },
+      ],
+      menu: [
+        item('Začít nahrávat', '⌃⌥R'),
+        item('Spustit LuTrack', '⌃⌥T'),
+        { item: false, divider: true },
+        item('Dnešní schůzky (3)', '', { color: 'oklch(0.7 0 0)' }),
+        item('Fronta — 1 selhalo', '', { color: 'oklch(0.8 0.11 25)', weight: '650' }),
+        { item: false, divider: true },
+        item('Otevřít archiv na webu', '↗'),
+        item('Nastavení…', '⌘,'),
+        item('Ukončit', '⌘Q', { color: 'oklch(0.7 0 0)' }),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

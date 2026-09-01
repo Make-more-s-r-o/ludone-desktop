@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap');
+    body { margin: 0; }
+    a { color: #1B7A43; }
+    a:hover { color: #14602f; }
+    .lu * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div class="lu" style="width: 366px; height: 792px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid {{t.borderStrong}}; border-radius: 26px; background: {{t.card}}; color: {{t.fg}}; font-family: {{t.fontUi}}; box-shadow: 0 8px 32px rgb(0 0 0 / 40%);">
+
+  <!-- hlavička -->
+  <div style="display: flex; align-items: center; gap: 10px; height: 56px; padding: 10px 12px 10px 15px; border-bottom: 1px solid {{t.border}};">
+    <div style="display: flex; align-items: center; gap: 9px; font-family: {{t.fontDisplay}}; font-size: 16px; font-weight: 700; letter-spacing: -0.025em;">
+      <svg width="30" height="30" viewBox="0 0 32 32" fill="none" style="color: {{t.accentBright}};">
+        <rect width="32" height="32" rx="10" fill="currentColor"></rect>
+        <path d="M10 8.5v9.25c0 3.3 2.35 5.75 6 5.75s6-2.45 6-5.75V8.5" stroke="{{t.markInk}}" stroke-width="3.2" stroke-linecap="round"></path>
+      </svg>
+      <span>LuDone</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; padding: 4px 9px; border: 1px solid {{t.accentBorder}}; border-radius: 999px; background: {{t.accentSoft}}; color: {{t.accentBright}}; font-size: 11px; font-weight: 650;">
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{t.accentBright}};"></span>
+      Připraveno
+    </div>
+    <button type="button" aria-label="Skrýt panel" style="display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; padding: 0; border: 1px solid {{t.border}}; border-radius: 10px; background: {{t.elevated}}; color: {{t.muted}};">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+  </div>
+
+  <!-- obsah -->
+  <div style="display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; padding: 14px 12px; overflow: hidden;">
+
+    <!-- dnešní schůzky -->
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <span style="display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border: 1px solid {{t.border}}; border-radius: 10px; background: {{t.elevated2}}; color: {{t.muted}};">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>
+        </span>
+        <div>
+          <div style="font-family: {{t.fontDisplay}}; font-size: 16px; font-weight: 650; letter-spacing: -0.02em;">Dnes</div>
+          <div style="color: {{t.muted}}; font-size: 11px;">tři schůzky · z kalendáře</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <sc-for list="{{events}}" as="ev" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid {{ev.border}}; border-radius: 12px; background: {{ev.bg}};">
+            <div style="font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 650; color: {{ev.timeColor}};">{{ev.time}}</div>
+            <div style="min-width: 0; flex-grow: 1;">
+              <div style="font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ev.title}}</div>
+              <div style="color: {{t.muted}}; font-size: 10.5px;">{{ev.where}}</div>
+            </div>
+            <button type="button" style="min-height: 30px; padding: 0 10px; border: 1px solid {{ev.btnBorder}}; border-radius: 8px; background: {{ev.btnBg}}; color: {{ev.btnColor}}; font-size: 11px; font-weight: 650;">{{ev.action}}</button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- nahrávání -->
+    <div style="padding: 12px; border: 1px solid {{t.border}}; border-radius: 18px; background: {{t.elevated}};">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border: 1px solid rgb(220 60 50 / 22%); border-radius: 10px; background: rgb(220 60 50 / 13%); color: #d4574a;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
+        </span>
+        <div style="flex-grow: 1;">
+          <div style="font-family: {{t.fontDisplay}}; font-size: 16px; font-weight: 650; letter-spacing: -0.02em;">Nahrávání</div>
+          <div style="color: {{t.muted}}; font-size: 11px;">mikrofon i systémový zvuk</div>
+        </div>
+      </div>
+      <button type="button" style="display: flex; width: 100%; min-height: 46px; align-items: center; justify-content: center; gap: 8px; margin-top: 11px; border: 1px solid {{t.accent}}; border-radius: 10px; background: {{t.accent}}; color: #fff; font-size: 13px; font-weight: 650;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"></circle></svg>
+        Začít nahrávat
+      </button>
+      <div style="margin-top: 8px; color: {{t.muted}}; font-size: 10.5px; line-height: 1.4;">Před startem se ověří obě stopy. Když jedna chybí, nahrávání se nespustí.</div>
+    </div>
+
+    <!-- LuTrack -->
+    <div style="padding: 12px; border: 1px solid {{t.border}}; border-radius: 18px; background: {{t.elevated}};">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border: 1px solid {{t.accentBorder}}; border-radius: 10px; background: {{t.accentSoft}}; color: {{t.accentBright}};">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 2h6"></path></svg>
+        </span>
+        <div style="flex-grow: 1;">
+          <div style="font-family: {{t.fontDisplay}}; font-size: 16px; font-weight: 650; letter-spacing: -0.02em;">LuTrack</div>
+          <div style="color: {{t.muted}}; font-size: 11px;">měření času</div>
+        </div>
+        <div style="font-family: {{t.fontDisplay}}; font-variant-numeric: tabular-nums; font-size: 19px; font-weight: 650; letter-spacing: -0.02em; color: {{t.muted}};">0:00:00</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 11px;">
+        <select style="flex-grow: 1; min-height: 38px; padding: 0 10px; border: 1px solid {{t.borderStrong}}; border-radius: 10px; background: {{t.elevated2}}; color: {{t.fg}}; font-size: 13px; font-family: inherit;">
+          <option>MakerFaire Praha 2026</option>
+        </select>
+        <button type="button" style="display: inline-flex; min-height: 38px; align-items: center; padding: 0 14px; border: 1px solid {{t.borderStrong}}; border-radius: 10px; background: {{t.elevated2}}; color: {{t.fg}}; font-size: 13px; font-weight: 650;">Start</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- patička -->
+  <div style="display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 12px 0 15px; border-top: 1px solid {{t.border}};">
+    <span style="display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 50%; background: {{t.elevated2}}; color: {{t.muted}}; font-size: 11px; font-weight: 700;">DJ</span>
+    <div style="min-width: 0; flex-grow: 1;">
+      <div style="font-size: 12px; font-weight: 600;">Dan Jirotka</div>
+      <div style="color: {{t.muted}}; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">dan.jirotka@makemore.cz</div>
+    </div>
+    <button type="button" aria-label="Nastavení" style="display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; padding: 0; border: 1px solid {{t.border}}; border-radius: 10px; background: {{t.elevated}}; color: {{t.muted}};">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.33-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v0a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"></path></svg>
+    </button>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "akcent": {"editor": "enum", "options": ["zelená", "indigová"], "default": "zelená", "section": "Rozhodnutí"},
+  "rezim": {"editor": "enum", "options": ["tmavý", "světlý"], "default": "tmavý", "section": "Rozhodnutí"},
+  "pismo": {"editor": "enum", "options": ["Instrument Sans", "Schibsted Grotesk", "Brockmann (náhrada)"], "default": "Instrument Sans", "section": "Rozhodnutí"},
+  "$preview": {"width": 366, "height": 792}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = (this.props.rezim ?? 'tmavý') === 'tmavý';
+    const green = (this.props.akcent ?? 'zelená') === 'zelená';
+
+    const displayFont = {
+      'Instrument Sans': '"Instrument Sans", system-ui, sans-serif',
+      'Schibsted Grotesk': '"Schibsted Grotesk", system-ui, sans-serif',
+      'Brockmann (náhrada)': '"Plus Jakarta Sans", system-ui, sans-serif',
+    }[this.props.pismo ?? 'Instrument Sans'];
+
+    // Akcent: zelená z mockupu vs indigová z Přístroj DS.
+    // Tmavý režim potřebuje světlejší odstín — mockupová #1B7A43 na tmavém propadne kontrastem.
+    const accent = green
+      ? (dark ? 'oklch(0.5 0.17 145)' : '#1B7A43')
+      : (dark ? 'oklch(0.55 0.16 268)' : 'oklch(0.48 0.16 268)');
+    const accentBright = green
+      ? (dark ? 'oklch(0.7 0.18 145)' : '#1B7A43')
+      : (dark ? 'oklch(0.72 0.14 268)' : 'oklch(0.48 0.16 268)');
+    const accentHue = green ? '145' : '268';
+    const accentChroma = green ? '0.18' : '0.14';
+
+    const t = dark ? {
+      card: 'oklch(0.2 0 0)',
+      elevated: 'oklch(0.22 0 0)',
+      elevated2: 'oklch(0.26 0 0)',
+      fg: 'oklch(0.985 0 0)',
+      muted: 'oklch(0.708 0 0)',
+      border: 'oklch(1 0 0 / 10%)',
+      borderStrong: 'oklch(1 0 0 / 20%)',
+      markInk: '#171717',
+    } : {
+      card: 'oklch(0.99 0.002 250)',
+      elevated: 'oklch(0.97 0.003 250)',
+      elevated2: 'oklch(0.94 0.004 250)',
+      fg: 'oklch(0.22 0.01 250)',
+      muted: 'oklch(0.52 0.01 250)',
+      border: 'oklch(0.2 0.02 250 / 11%)',
+      borderStrong: 'oklch(0.2 0.02 250 / 18%)',
+      markInk: '#ffffff',
+    };
+
+    t.accent = accent;
+    t.accentBright = accentBright;
+    t.accentSoft = `oklch(${dark ? 0.6 : 0.55} ${accentChroma} ${accentHue} / ${dark ? '15%' : '11%'})`;
+    t.accentBorder = `oklch(${dark ? 0.7 : 0.5} ${accentChroma} ${accentHue} / 35%)`;
+    t.fontUi = '"Public Sans", system-ui, sans-serif';
+    t.fontDisplay = displayFont;
+
+    const plain = {
+      border: t.border, bg: t.elevated, timeColor: t.muted,
+      btnBorder: t.borderStrong, btnBg: t.elevated2, btnColor: t.fg,
+    };
+
+    return {
+      t,
+      events: [
+        { time: '9:30', title: 'Týdenní schůzka', where: 'Google Meet', action: 'Nahrát',
+          border: t.accentBorder, bg: t.accentSoft, timeColor: accentBright,
+          btnBorder: accent, btnBg: accent, btnColor: '#fff' },
+        { time: '11:00', title: 'MakerFaire — rozpočet', where: 'zasedačka', action: 'Nahrát', ...plain },
+        { time: '15:00', title: 'Marcela — fakturace', where: 'telefon', action: 'Nahrát', ...plain },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

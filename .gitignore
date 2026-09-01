@@ -27,3 +27,9 @@ nahravky/
 # pokaždé, kdy se na složku někdo podívá, takže jednou vpuštěný by způsobil,
 # že `git status` už nikdy nebude čistý a každý `add -A` by ho přibalil.
 dukazy/**/.DS_Store
+
+# Publikovaný canvas je 2,3MB generovaný balík — vzniká z `design/canvas/*.dc.html`
+# a `canvas.json`, které verzované JSOU. Do repa nepatří: zdroj ano, výstup ne.
+# Pozor na jméno: dřívější návrh pravidla zněl `*-mockupy.html` a na tenhle soubor
+# nesedí, takže by ho vpustil dovnitř.
+design/canvas/ludone-desktop-design.html

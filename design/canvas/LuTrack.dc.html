@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap');
+    body { margin: 0; }
+    a { color: #1B7A43; } a:hover { color: #14602f; }
+    .lt * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div class="lt" style="width: 1240px; padding: 28px; background: oklch(0.13 0.005 250); color: oklch(0.985 0 0); font-family: 'Public Sans', system-ui, sans-serif;">
+
+  <div style="margin-bottom: 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.708 0 0);">Etapa E8 · rozhodnutí A13</div>
+  <div style="margin-bottom: 4px; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.03em;">LuTrack</div>
+  <div style="max-width: 960px; margin-bottom: 24px; color: oklch(0.708 0 0); font-size: 13px; line-height: 1.55;">
+    A13 říká, že časovač je rovnocenná funkce, ne přívěsek. Dnes je to <code style="font-size: 12px;">setInterval</code> nad <code style="font-size: 12px;">Date.now()</code> v React state —
+    reload panelu naměřený čas beze stopy smaže a hlavní proces o něm neví.
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px;">
+    <sc-for list="{{states}}" as="s" hint-placeholder-count="4">
+      <div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 9px;">
+          <code style="padding: 2px 7px; border-radius: 6px; background: oklch(0.26 0 0); font-size: 10.5px; color: oklch(0.85 0 0);">{{s.id}}</code>
+          <div style="font-size: 12px; font-weight: 650;">{{s.label}}</div>
+        </div>
+
+        <div style="padding: 14px; border: 1px solid oklch(1 0 0 / 10%); border-radius: 18px; background: oklch(0.22 0 0);">
+
+          <sc-if value="{{s.showRecBanner}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 8px; margin: -14px -14px 13px; padding: 9px 13px; border-bottom: 1px solid oklch(0.63 0.19 25 / 25%); background: oklch(0.63 0.19 25 / 12%); border-radius: 17px 17px 0 0;">
+              <span style="width: 7px; height: 7px; border-radius: 50%; background: oklch(0.72 0.19 25);"></span>
+              <div style="font-size: 11px; font-weight: 650; color: oklch(0.8 0.12 25);">Zároveň běží nahrávání · 24:18</div>
+            </div>
+          </sc-if>
+
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border: 1px solid {{s.iconBorder}}; border-radius: 10px; background: {{s.iconBg}}; color: {{s.iconColor}};">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 2h6"></path></svg>
+            </span>
+            <div style="flex-grow: 1; min-width: 0;">
+              <div style="font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 15px; font-weight: 650; letter-spacing: -0.02em;">LuTrack</div>
+              <div style="font-size: 11px; color: {{s.subColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{s.sub}}</div>
+            </div>
+            <div style="font-family: 'Instrument Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 650; letter-spacing: -0.02em; color: {{s.timeColor}};">{{s.time}}</div>
+          </div>
+
+          <sc-if value="{{s.showPicker}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+              <select style="width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid oklch(1 0 0 / 20%); border-radius: 10px; background: oklch(0.26 0 0); color: oklch(0.985 0 0); font-family: inherit; font-size: 13px;">
+                <option>{{s.project}}</option>
+              </select>
+              <input type="text" placeholder="Co děláš? (nepovinné)" style="width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid oklch(1 0 0 / 15%); border-radius: 10px; background: oklch(0.24 0 0); color: oklch(0.985 0 0); font-family: inherit; font-size: 13px;">
+            </div>
+          </sc-if>
+
+          <sc-if value="{{s.showRunning}}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: 12px; padding: 10px 12px; border: 1px solid oklch(0.7 0.18 145 / 30%); border-radius: 11px; background: oklch(0.5 0.17 145 / 12%);">
+              <div style="font-size: 12px; font-weight: 600;">{{s.project}}</div>
+              <div style="margin-top: 3px; font-size: 11px; color: oklch(0.7 0 0);">{{s.desc}}</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{s.showRestore}}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: 12px; padding: 10px 12px; border: 1px solid oklch(0.75 0.15 75 / 30%); border-radius: 11px; background: oklch(0.75 0.15 75 / 11%);">
+              <div style="font-size: 11.5px; font-weight: 650; color: oklch(0.84 0.11 75);">Obnoveno po pádu</div>
+              <div style="margin-top: 3px; font-size: 11px; line-height: 1.45; color: oklch(0.76 0.08 75);">Měření drží hlavní proces, ne okno. Reload ani pád panelu čas nesmaže.</div>
+            </div>
+          </sc-if>
+
+          <button type="button" style="display: flex; width: 100%; min-height: 42px; align-items: center; justify-content: center; margin-top: 12px; border: 1px solid {{s.btnBorder}}; border-radius: 10px; background: {{s.btnBg}}; color: {{s.btnColor}}; font-family: inherit; font-size: 13px; font-weight: 650;">{{s.btn}}</button>
+          <div style="margin-top: 8px; font-size: 10.5px; line-height: 1.4; color: oklch(0.708 0 0);">{{s.note}}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top: 22px; padding: 14px 16px; border: 1px solid oklch(0.75 0.15 75 / 32%); border-radius: 14px; background: oklch(0.75 0.15 75 / 11%); font-size: 12px; line-height: 1.6; color: oklch(0.84 0.1 75);">
+    <strong>Otevřená otázka, kterou kód dnes neřeší:</strong> zastaví se časovač, když skončí nahrávání?
+    Dnešní <code style="font-size: 11px;">TrackingCard.jsx</code> o nahrávání neví vůbec. Návrh výše říká <em>ne</em> — jsou to dvě nezávislé věci a schůzka často pokračuje prací nad ní.
+    Ale nabídne to: po zastavení nahrávání se v kartě LuTracku objeví „Zastavit i měření času?“.
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 1240, "height": 620}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const GREEN = 'oklch(0.7 0.18 145)';
+    const MUTED = 'oklch(0.708 0 0)';
+    const greenIcon = { iconBorder: 'oklch(0.7 0.18 145 / 35%)', iconBg: 'oklch(0.5 0.17 145 / 15%)', iconColor: GREEN };
+    const greyIcon = { iconBorder: 'oklch(1 0 0 / 10%)', iconBg: 'oklch(0.26 0 0)', iconColor: MUTED };
+    const startBtn = { btnBorder: 'oklch(1 0 0 / 20%)', btnBg: 'oklch(0.26 0 0)', btnColor: 'oklch(0.985 0 0)', btn: 'Start' };
+    const stopBtn = { btnBorder: 'oklch(0.7 0.18 145 / 40%)', btnBg: 'oklch(0.5 0.17 145 / 15%)', btnColor: GREEN, btn: 'Zastavit a zapsat' };
+
+    return {
+      states: [
+        {
+          id: 'track.idle', label: 'Nic neběží', ...greyIcon, sub: 'vyber projekt', subColor: MUTED,
+          time: '0:00:00', timeColor: MUTED, showPicker: true, project: 'MakerFaire Praha 2026',
+          showRunning: false, showRestore: false, showRecBanner: false, ...startBtn,
+          note: 'Projekty se načtou ze serveru. Dnes je to natvrdo zapsané pole tří řetězců.',
+        },
+        {
+          id: 'track.running', label: 'Běží', ...greenIcon, sub: 'měřím čas', subColor: GREEN,
+          time: '1:42:07', timeColor: GREEN, showPicker: false,
+          project: 'MakerFaire Praha 2026', desc: 'Příprava rozpočtu stánků',
+          showRunning: true, showRestore: false, showRecBanner: false, ...stopBtn,
+          note: 'Zastavení zapíše záznam na server. Když není síť, jde do téže fronty jako nahrávky.',
+        },
+        {
+          id: 'track.with-recording', label: 'Souběh s nahráváním', ...greenIcon, sub: 'měřím čas', subColor: GREEN,
+          time: '0:24:31', timeColor: GREEN, showPicker: false,
+          project: 'MakerFaire Praha 2026', desc: 'Týdenní schůzka',
+          showRunning: true, showRestore: false, showRecBanner: true, ...stopBtn,
+          note: 'Dva časy v jednom panelu, každý znamená něco jiného. Proto má nahrávání vlastní proužek a jinou barvu.',
+        },
+        {
+          id: 'track.restored', label: 'Po pádu panelu', ...greenIcon, sub: 'měřím čas', subColor: GREEN,
+          time: '3:08:55', timeColor: GREEN, showPicker: false,
+          project: 'LuDone Desktop', desc: 'Vývoj',
+          showRunning: true, showRestore: true, showRecBanner: false, ...stopBtn,
+          note: 'Měřítko etapy E8: spustit časovač, kill -9 rendereru, znovu otevřít panel — čas musí sedět.',
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

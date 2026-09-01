@@ -1,0 +1,54 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Rozhodnutí" },
+    { "id": "page-2", "name": "Stavy" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "page": "page-1", "x": 0, "y": 0, "w": 366, "h": 792, "title": "Panel — přepínej akcent, režim a písmo" },
+    { "file": "Pisma.dc.html", "page": "page-1", "x": 466, "y": 0, "w": 1180, "h": 720, "title": "D-A · Písmo nadpisů" },
+    { "file": "Akcenty.dc.html", "page": "page-1", "x": 1746, "y": 0, "w": 1180, "h": 900, "title": "D-C · Barva akcentu" },
+
+    { "file": "Nahravani.dc.html", "page": "page-2", "x": 0, "y": 0, "w": 1500, "h": 620, "title": "Nahrávání — pět stavů" },
+    { "file": "ZtrataStopy.dc.html", "page": "page-2", "x": 1600, "y": 0, "w": 1240, "h": 700, "title": "D-D · Ztráta stopy" },
+    { "file": "Fronta.dc.html", "page": "page-2", "x": 0, "y": 820, "w": 1240, "h": 720, "title": "Fronta odesílání — blokuje E5" },
+    { "file": "Prihlaseni.dc.html", "page": "page-2", "x": 1340, "y": 820, "w": 1560, "h": 620, "title": "Přihlášení — blokuje E6" },
+    { "file": "Opravneni.dc.html", "page": "page-2", "x": 0, "y": 1660, "w": 1560, "h": 700, "title": "Oprávnění, včetně odmítnutých" },
+    { "file": "Lista.dc.html", "page": "page-2", "x": 1660, "y": 1660, "w": 1240, "h": 860, "title": "Ikona v liště — 7 stavů" },
+    { "file": "LuTrack.dc.html", "page": "page-2", "x": 0, "y": 2640, "w": 1240, "h": 620, "title": "LuTrack" }
+  ],
+  "annotations": [
+    {
+      "id": "jak-rozhodnout",
+      "page": "page-1",
+      "x": 0,
+      "y": -210,
+      "w": 900,
+      "text": "Dvě otevřená rozhodnutí — D-A (písmo) a D-C (akcent).\n\nPanel vlevo má nad sebou tři přepínače: akcent, režim a písmo. Přepni si je a dívej se na živý panel, ne na obrázek.\nVedle jsou obě rozhodnutí rozepsaná zvlášť, aby šlo srovnat všechny varianty naráz.\n\nCo už rozhodnuté je: oba režimy podle systému (D-B) · pauza se nedělá, místo ní spojení dvou nahrávek (D-E) · kalendář v onboardingu volitelný (D-F) · při ztrátě stopy se pokračuje a jen upozorní (D-D)."
+    },
+    {
+      "id": "pozor-brockmann",
+      "page": "page-1",
+      "x": 1746,
+      "y": 940,
+      "w": 620,
+      "text": "Ať vybereš kterýkoli akcent, zapíše se jen do tokens/desktop.css.\n\nDo sdíleného tokens/colors.css nesmí — přebarvil by i ui_kits/ludone-app, kde je akcent indigový."
+    },
+    {
+      "id": "co-blokuje",
+      "page": "page-2",
+      "x": 0,
+      "y": -190,
+      "w": 900,
+      "text": "Obrazovky, které v mockupech chyběly — a bez nichž se nedá stavět.\n\nFronta a Přihlášení jsou tvrdá podmínka: dokud je neodsouhlasíš, etapy E5 (server) a E6 (desktop) se nespouštějí, jinak se to bude kreslit dvakrát.\n\nU stavů jsou uvedená id (rec.recording, queue.failed, …). Ta samá id půjdou do kódu jako data-state, aby se dalo strojově ověřit, že se artboard a appka nerozešly."
+    },
+    {
+      "id": "lista-nelze",
+      "page": "page-2",
+      "x": 1660,
+      "y": 2560,
+      "w": 620,
+      "text": "Tři ze sedmi stavů ikony dnešní kód neumí vůbec — souběh, ztráta stopy a selhaná fronta.\n\nPrávě tyhle tři jsou přitom jediné, kdy je něco špatně a panel je zavřený."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

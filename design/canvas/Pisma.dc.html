@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap');
+    body { margin: 0; }
+    a { color: #1B7A43; } a:hover { color: #14602f; }
+    .sp * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div class="sp" style="width: 1180px; padding: 28px; background: oklch(0.16 0 0); color: oklch(0.985 0 0); font-family: 'Public Sans', system-ui, sans-serif;">
+
+  <div style="margin-bottom: 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.708 0 0);">Rozhodnutí D-A</div>
+  <div style="margin-bottom: 4px; font-size: 24px; font-weight: 700; letter-spacing: -0.03em;">Písmo nadpisů</div>
+  <div style="max-width: 760px; margin-bottom: 24px; color: oklch(0.708 0 0); font-size: 13px; line-height: 1.55;">
+    Tělo textu zůstává Public Sans ve všech třech. Mění se jen nadpisy, značka a číslice časovače — tedy to, co dává appce tvář.
+    Appka se dnes vykresluje systémovým San Franciscem, protože v repu není jediný soubor písma; to je výtvarný směr B, který rozhodnutí A14 zabilo.
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+    <sc-for list="{{fonts}}" as="f" hint-placeholder-count="3">
+      <div style="padding: 20px; border: 1px solid {{f.frameBorder}}; border-radius: 18px; background: oklch(0.2 0 0);">
+
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 18px;">
+          <div style="font-size: 13px; font-weight: 650;">{{f.name}}</div>
+          <div style="font-size: 11px; color: oklch(0.708 0 0);">{{f.note}}</div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 16px; font-family: {{f.stack}}; font-size: 17px; font-weight: 700; letter-spacing: -0.025em;">
+          <svg width="30" height="30" viewBox="0 0 32 32" fill="none" style="color: oklch(0.7 0.18 145);">
+            <rect width="32" height="32" rx="10" fill="currentColor"></rect>
+            <path d="M10 8.5v9.25c0 3.3 2.35 5.75 6 5.75s6-2.45 6-5.75V8.5" stroke="#171717" stroke-width="3.2" stroke-linecap="round"></path>
+          </svg>
+          <span>LuDone</span>
+        </div>
+
+        <div style="font-family: {{f.stack}}; font-size: 30px; font-weight: 680; letter-spacing: -0.04em; line-height: 1.05;">Nahrávám<br>schůzku</div>
+
+        <div style="margin: 16px 0; font-family: {{f.stack}}; font-variant-numeric: tabular-nums; font-size: 38px; font-weight: 650; letter-spacing: -0.03em; color: oklch(0.7 0.18 145);">24:18</div>
+
+        <div style="font-family: {{f.stack}}; font-size: 16px; font-weight: 650; letter-spacing: -0.02em;">Dnešní schůzky</div>
+        <div style="margin-top: 4px; font-size: 13px; line-height: 1.55; color: oklch(0.708 0 0);">
+          Příliš žluťoučký kůň úpěl ďábelské ódy. Řeřicha, ťuhýk, žížala.
+        </div>
+
+        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid oklch(1 0 0 / 10%); font-size: 11.5px; line-height: 1.5; color: {{f.verdictColor}};">{{f.verdict}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top: 22px; padding: 14px 16px; border: 1px solid oklch(1 0 0 / 10%); border-radius: 14px; background: oklch(0.2 0 0); font-size: 12px; line-height: 1.6; color: oklch(0.708 0 0);">
+    <strong style="color: oklch(0.985 0 0);">Brockmann nejde ukázat doopravdy.</strong>
+    Je licencované a nedá se do téhle ukázky načíst — třetí sloupec proto kreslí Plus Jakarta Sans, což je nejbližší volná náhrada, ne Brockmann sám.
+    Než ho vybereš, stojí za to zjistit, proč ho „LuDone Přístroj Design System“ záměrně nepoužívá.
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 1180, "height": 720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      fonts: [
+        {
+          name: 'Instrument Sans',
+          note: 'z Přístroj DS',
+          stack: '"Instrument Sans", system-ui, sans-serif',
+          frameBorder: 'oklch(0.7 0.18 145 / 35%)',
+          verdictColor: 'oklch(0.7 0.18 145)',
+          verdict: 'Už ho máš. Desktop bude vypadat jako sourozenec toho, co stavíš. Žádné nové rozhodnutí, žádná nová licence.',
+        },
+        {
+          name: 'Schibsted Grotesk',
+          note: 'z mockupů',
+          stack: '"Schibsted Grotesk", system-ui, sans-serif',
+          frameBorder: 'oklch(1 0 0 / 10%)',
+          verdictColor: 'oklch(0.708 0 0)',
+          verdict: 'To, cos viděl v mockupech. Zdarma, výraznější. Ale zavádíš třetí písmo do ekosystému, který už dvě má.',
+        },
+        {
+          name: 'Brockmann',
+          note: 'náhrada — Plus Jakarta Sans',
+          stack: '"Plus Jakarta Sans", system-ui, sans-serif',
+          frameBorder: 'oklch(1 0 0 / 10%)',
+          verdictColor: 'oklch(0.708 0 0)',
+          verdict: 'Největší jednota s app.ludone.cz. Pozor: tenhle sloupec kreslí náhradu, ne Brockmann — a Přístroj DS ho záměrně nepoužívá.',
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap');
+    body { margin: 0; }
+    a { color: #1B7A43; } a:hover { color: #14602f; }
+    .zs * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div class="zs" style="width: 1240px; padding: 28px; background: oklch(0.13 0.005 250); color: oklch(0.985 0 0); font-family: 'Public Sans', system-ui, sans-serif;">
+
+  <div style="margin-bottom: 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.708 0 0);">Rozhodnutí D-D · rozhodnuto</div>
+  <div style="margin-bottom: 4px; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.03em;">Ztráta stopy uprostřed schůzky</div>
+  <div style="max-width: 940px; margin-bottom: 12px; color: oklch(0.708 0 0); font-size: 13px; line-height: 1.55;">
+    Rozhodnuto: <strong style="color: oklch(0.985 0 0);">nahrávání pokračuje automaticky, jen se na to upozorní</strong> — žádný dialog, který by tě vytrhl ze schůzky.
+  </div>
+
+  <div style="max-width: 940px; margin-bottom: 24px; padding: 12px 14px; border: 1px solid oklch(0.75 0.15 75 / 35%); border-radius: 12px; background: oklch(0.75 0.15 75 / 10%); font-size: 12px; line-height: 1.6; color: oklch(0.85 0.09 75);">
+    <strong>Pojistka proti scénáři „UI lže“.</strong> Upozornění samo o sobě jde přehlédnout, a to je přesně ta tichá vada, před kterou varuje vlastní podklad projektu.
+    Proto se ztráta stopy hlásí <strong>třemi nezávislými způsoby najednou</strong>: trvalý proužek v panelu, který nejde zavřít, dokud nahrávání běží · změna ikony v liště na varovnou · záznam v manifestu sezení, takže se to pozná i zpětně z archivu.
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+    <sc-for list="{{cases}}" as="c" hint-placeholder-count="3">
+      <div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 9px;">
+          <code style="padding: 2px 7px; border-radius: 6px; background: oklch(0.26 0 0); font-size: 10.5px; color: oklch(0.85 0 0);">{{c.id}}</code>
+          <div style="font-size: 12px; font-weight: 650;">{{c.label}}</div>
+        </div>
+
+        <div style="width: 366px; border: 1px solid oklch(1 0 0 / 20%); border-radius: 20px; background: oklch(0.2 0 0); overflow: hidden;">
+
+          <!-- trvalý proužek -->
+          <div style="display: flex; align-items: flex-start; gap: 9px; padding: 11px 13px; background: {{c.bannerBg}}; border-bottom: 1px solid {{c.bannerBorder}};">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.bannerInk}}" stroke-width="2" stroke-linecap="round" style="margin-top: 1px;"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+            <div>
+              <div style="font-size: 12px; font-weight: 650; color: {{c.bannerInk}};">{{c.bannerTitle}}</div>
+              <div style="margin-top: 3px; font-size: 11px; line-height: 1.45; color: {{c.bannerSub}};">{{c.bannerText}}</div>
+            </div>
+          </div>
+
+          <div style="padding: 14px;">
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <div style="font-family: 'Instrument Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-size: 28px; font-weight: 650; letter-spacing: -0.03em;">{{c.time}}</div>
+              <div style="font-size: 11px; color: oklch(0.708 0 0);">{{c.timeNote}}</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 7px; margin-top: 12px;">
+              <sc-for list="{{c.tracks}}" as="tr" hint-placeholder-count="2">
+                <div style="display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid {{tr.border}}; border-radius: 10px; background: {{tr.bg}};">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: {{tr.color}};"></span>
+                  <div style="font-size: 12px; font-weight: 600; flex-grow: 1;">{{tr.name}}</div>
+                  <div style="font-size: 11px; font-weight: 650; color: {{tr.color}};">{{tr.state}}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <button type="button" style="display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: center; margin-top: 12px; border: 1px solid {{c.btnBorder}}; border-radius: 10px; background: {{c.btnBg}}; color: {{c.btnColor}}; font-family: inherit; font-size: 13px; font-weight: 650;">{{c.btn}}</button>
+            <div style="margin-top: 8px; font-size: 10.5px; line-height: 1.4; color: oklch(0.708 0 0);">{{c.note}}</div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 1240, "height": 700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const GREEN = 'oklch(0.7 0.18 145)';
+    const RED = 'oklch(0.75 0.13 25)';
+    const AMBER = 'oklch(0.82 0.12 75)';
+
+    const live = (name) => ({ name, state: 'běží', color: GREEN, border: 'oklch(0.7 0.18 145 / 35%)', bg: 'oklch(0.5 0.17 145 / 15%)' });
+    const dead = (name) => ({ name, state: 'spadla', color: RED, border: 'oklch(0.63 0.19 25 / 35%)', bg: 'oklch(0.63 0.19 25 / 13%)' });
+
+    const amberBanner = {
+      bannerBg: 'oklch(0.75 0.15 75 / 14%)', bannerBorder: 'oklch(0.75 0.15 75 / 30%)',
+      bannerInk: AMBER, bannerSub: 'oklch(0.78 0.08 75)',
+    };
+    const redBanner = {
+      bannerBg: 'oklch(0.63 0.19 25 / 15%)', bannerBorder: 'oklch(0.63 0.19 25 / 32%)',
+      bannerInk: 'oklch(0.8 0.12 25)', bannerSub: 'oklch(0.74 0.1 25)',
+    };
+    const stopBtn = { btnBorder: 'oklch(0.63 0.19 25 / 35%)', btnBg: 'oklch(0.63 0.19 25 / 13%)', btnColor: 'oklch(0.78 0.12 25)' };
+
+    return {
+      cases: [
+        {
+          id: 'loss.system', label: 'Spadla systémová stopa', ...amberBanner,
+          bannerTitle: 'Systémový zvuk se ztratil — nahrávám dál jen mikrofon',
+          bannerText: 'Bezpečně uloženo 23 minut obou stop. Od 23:04 je slyšet jen tebe.',
+          time: '24:18', timeNote: 'systém utnut v 23:04',
+          tracks: [live('Mikrofon'), dead('Systém')],
+          ...stopBtn, btn: 'Ukončit a zpracovat',
+          note: 'Nejčastější příčina: odpojená sluchátka nebo restart zvukového zařízení. Druhá strana hovoru se od téhle chvíle nenahrává.',
+        },
+        {
+          id: 'loss.mic', label: 'Spadl mikrofon', ...amberBanner,
+          bannerTitle: 'Mikrofon se ztratil — nahrávám dál jen systémový zvuk',
+          bannerText: 'Bezpečně uloženo 12 minut obou stop. Od 12:40 nejsi slyšet ty.',
+          time: '18:02', timeNote: 'mikrofon utnut v 12:40',
+          tracks: [dead('Mikrofon'), live('Systém')],
+          ...stopBtn, btn: 'Ukončit a zpracovat',
+          note: 'Přepis pak bude mít jen protistranu. V archivu je to potřeba poznat, proto to jde i do manifestu.',
+        },
+        {
+          id: 'loss.both', label: 'Spadlo obojí', ...redBanner,
+          bannerTitle: 'Obě stopy se ztratily — nahrávání skončilo',
+          bannerText: 'Uloženo 8 minut. Tady už není co nahrávat, soubor je uzavřený.',
+          time: '8:11', timeNote: 'konec v 8:11',
+          tracks: [dead('Mikrofon'), dead('Systém')],
+          btnBorder: 'oklch(0.5 0.17 145)', btnBg: 'oklch(0.5 0.17 145)', btnColor: '#fff', btn: 'Začít znovu',
+          note: 'Jediný případ, kdy nahrávání skutečně končí samo. Osm minut zůstává použitelných a jde do fronty.',
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

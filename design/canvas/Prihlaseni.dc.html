@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap');
+    body { margin: 0; }
+    a { color: #1B7A43; } a:hover { color: #14602f; }
+    .pr * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div class="pr" style="width: 1560px; padding: 28px; background: oklch(0.13 0.005 250); color: oklch(0.985 0 0); font-family: 'Public Sans', system-ui, sans-serif;">
+
+  <div style="margin-bottom: 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.708 0 0);">Blokuje etapu E6 · rozhodnutí D1</div>
+  <div style="margin-bottom: 4px; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.03em;">Přihlášení přes prohlížeč</div>
+  <div style="max-width: 980px; margin-bottom: 24px; color: oklch(0.708 0 0); font-size: 13px; line-height: 1.55;">
+    OAuth 2.1 s PKCE a návratem na <code style="font-size: 12px;">127.0.0.1</code>. Uživatel odejde do prohlížeče a vrátí se — appka musí umět všechno, co se mezitím může pokazit.
+    Token bydlí v Klíčence, ne v localStorage. Dnešní kód je 650ms atrapa, takže žádný z těchhle stavů zatím nikdo nenavrhl.
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px;">
+    <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+      <div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 9px;">
+          <code style="padding: 2px 7px; border-radius: 6px; background: oklch(0.26 0 0); font-size: 10.5px; color: oklch(0.85 0 0);">{{s.id}}</code>
+        </div>
+
+        <div style="height: 400px; padding: 22px 18px; display: flex; flex-direction: column; border: 1px solid oklch(1 0 0 / 20%); border-radius: 20px; background: oklch(0.2 0 0);">
+
+          <svg width="34" height="34" viewBox="0 0 32 32" fill="none" style="color: {{s.markColor}};">
+            <rect width="32" height="32" rx="10" fill="currentColor"></rect>
+            <path d="M10 8.5v9.25c0 3.3 2.35 5.75 6 5.75s6-2.45 6-5.75V8.5" stroke="#171717" stroke-width="3.2" stroke-linecap="round"></path>
+          </svg>
+
+          <div style="margin-top: 18px; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 21px; font-weight: 680; letter-spacing: -0.03em; line-height: 1.15; color: {{s.titleColor}};">{{s.title}}</div>
+          <div style="margin-top: 9px; font-size: 12.5px; line-height: 1.55; color: oklch(0.708 0 0);">{{s.body}}</div>
+
+          <sc-if value="{{s.showSpinner}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; align-items: center; gap: 9px; margin-top: 16px; padding: 10px 12px; border: 1px solid oklch(1 0 0 / 10%); border-radius: 10px; background: oklch(0.26 0 0);">
+              <span style="width: 14px; height: 14px; border: 2px solid oklch(0.7 0.18 145); border-right-color: transparent; border-radius: 50%;"></span>
+              <div style="font-size: 11.5px; color: oklch(0.85 0 0);">{{s.spinnerText}}</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{s.showWarn}}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top: 16px; padding: 10px 12px; border: 1px solid {{s.warnBorder}}; border-radius: 10px; background: {{s.warnBg}};">
+              <div style="font-size: 11.5px; font-weight: 650; color: {{s.warnInk}};">{{s.warnTitle}}</div>
+              <div style="margin-top: 4px; font-size: 11px; line-height: 1.45; color: {{s.warnSub}};">{{s.warnText}}</div>
+            </div>
+          </sc-if>
+
+          <div style="flex-grow: 1;"></div>
+
+          <button type="button" style="display: flex; width: 100%; min-height: 46px; align-items: center; justify-content: center; border: 1px solid {{s.btnBorder}}; border-radius: 10px; background: {{s.btnBg}}; color: {{s.btnColor}}; font-family: inherit; font-size: 13px; font-weight: 650;">{{s.btn}}</button>
+          <sc-if value="{{s.showSecondary}}" hint-placeholder-val="{{ true }}">
+            <button type="button" style="display: flex; width: 100%; min-height: 38px; align-items: center; justify-content: center; margin-top: 8px; border: 0; background: transparent; color: oklch(0.708 0 0); font-family: inherit; font-size: 12px; font-weight: 600;">{{s.secondary}}</button>
+          </sc-if>
+        </div>
+
+        <div style="margin-top: 10px; font-size: 11px; line-height: 1.5; color: oklch(0.65 0 0);">{{s.note}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top: 22px; padding: 14px 16px; border: 1px solid oklch(1 0 0 / 10%); border-radius: 14px; background: oklch(0.2 0 0); font-size: 12px; line-height: 1.6; color: oklch(0.708 0 0);">
+    <strong style="color: oklch(0.985 0 0);">Chybí sem ještě jedna obrazovka, která není v appce.</strong>
+    Po úspěšném návratu uvidí uživatel stránku v PROHLÍŽEČI — „Hotovo, tohle okno můžeš zavřít“. Patří k etapě E5 (server), ale je součástí téhož zážitku, tak ať se na ni nezapomene.
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 1560, "height": 620}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const GREEN = 'oklch(0.5 0.17 145)';
+    const primary = { btnBorder: GREEN, btnBg: GREEN, btnColor: '#fff' };
+    const ghost = { btnBorder: 'oklch(1 0 0 / 20%)', btnBg: 'oklch(0.26 0 0)', btnColor: 'oklch(0.985 0 0)' };
+    const amberWarn = {
+      showWarn: true, warnBorder: 'oklch(0.75 0.15 75 / 32%)', warnBg: 'oklch(0.75 0.15 75 / 12%)',
+      warnInk: 'oklch(0.84 0.11 75)', warnSub: 'oklch(0.76 0.08 75)',
+    };
+    const redWarn = {
+      showWarn: true, warnBorder: 'oklch(0.63 0.19 25 / 35%)', warnBg: 'oklch(0.63 0.19 25 / 13%)',
+      warnInk: 'oklch(0.8 0.12 25)', warnSub: 'oklch(0.74 0.1 25)',
+    };
+
+    return {
+      steps: [
+        {
+          id: 'auth.idle', markColor: 'oklch(0.7 0.18 145)',
+          title: 'Přihlas se\nk LuDone', titleColor: 'oklch(0.985 0 0)',
+          body: 'Otevře se prohlížeč, kde už nejspíš přihlášený jsi. Nic se nikam neopisuje.',
+          showSpinner: false, showWarn: false, showSecondary: false,
+          ...primary, btn: 'Přihlásit se',
+          note: 'Žádné pole na token. Kdyby tu bylo, znamená to, že jsme zvolili variantu, kterou D1 zamítlo.',
+        },
+        {
+          id: 'auth.browser-wait', markColor: 'oklch(0.7 0.18 145)',
+          title: 'Čekám\nna prohlížeč', titleColor: 'oklch(0.985 0 0)',
+          body: 'Dokonči přihlášení v prohlížeči. Až budeš hotov, tenhle panel se přepne sám.',
+          showSpinner: true, spinnerText: 'Zbývá 4:12', showWarn: false, showSecondary: true, secondary: 'Otevřít prohlížeč znovu',
+          ...ghost, btn: 'Zrušit',
+          note: 'Časový limit je vidět. Bez něj appka visí navždy, když uživatel okno zavře a zapomene na to.',
+        },
+        {
+          id: 'auth.cancelled', markColor: 'oklch(0.55 0 0)',
+          title: 'Přihlášení\nse nedokončilo', titleColor: 'oklch(0.985 0 0)',
+          body: 'Okno prohlížeče se zavřelo dřív, než přišla odpověď.',
+          showSpinner: false, ...amberWarn, warnTitle: 'Nic se nestalo',
+          warnText: 'Žádné údaje neodešly a nic se neuložilo. Můžeš to zkusit znovu.',
+          showSecondary: false, ...primary, btn: 'Zkusit znovu',
+          note: 'Nejčastější případ ze všech pěti. Musí být neděsivý — není to chyba, jen nedokončený krok.',
+        },
+        {
+          id: 'auth.state-mismatch', markColor: 'oklch(0.55 0 0)',
+          title: 'Odpověď\nnesouhlasí', titleColor: 'oklch(0.985 0 0)',
+          body: 'Návrat z prohlížeče neodpovídá tomu, co appka poslala.',
+          showSpinner: false, ...redWarn, warnTitle: 'Přihlášení jsem zahodil',
+          warnText: 'Tohle se stává při vypršení nebo při pokusu odpověď podvrhnout. Nikdy to netiskni jako „zkuste to znovu“ bez vysvětlení.',
+          showSecondary: false, ...primary, btn: 'Začít znovu',
+          note: 'Vzácné, ale je to jediné místo, kde se pozná pokus o podvržení. Nesmí to vypadat jako běžná chyba sítě.',
+        },
+        {
+          id: 'auth.other-account', markColor: 'oklch(0.7 0.18 145)',
+          title: 'Přihlášen\njiný účet', titleColor: 'oklch(0.985 0 0)',
+          body: 'Ve frontě čekají 3 nahrávky pořízené pod účtem dan.jirotka@makemore.cz.',
+          showSpinner: false, ...amberWarn, warnTitle: 'Co s frontou?',
+          warnText: 'Nahrávky patří původnímu účtu. Pod novým je nelze odeslat, ale ani se nesmějí ztratit.',
+          showSecondary: true, secondary: 'Přihlásit původní účet',
+          ...ghost, btn: 'Nechat frontu čekat',
+          note: 'Případ, na který se zapomíná. Bez něj se buď fronta tiše smaže, nebo se cizí nahrávky pošlou pod cizím účtem.',
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

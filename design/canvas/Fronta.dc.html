@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap');
+    body { margin: 0; }
+    a { color: #1B7A43; } a:hover { color: #14602f; }
+    .fr * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div class="fr" style="width: 1240px; padding: 28px; background: oklch(0.13 0.005 250); color: oklch(0.985 0 0); font-family: 'Public Sans', system-ui, sans-serif;">
+
+  <div style="margin-bottom: 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.708 0 0);">Blokuje etapu E5</div>
+  <div style="margin-bottom: 4px; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.03em;">Fronta odesílání</div>
+  <div style="max-width: 940px; margin-bottom: 24px; color: oklch(0.708 0 0); font-size: 13px; line-height: 1.55;">
+    Schůzka skončí a notebook jde do tašky — proto upload bez fronty s opakováním nemá smysl. Fronta musí přežít zavření víka, restart i vypršelý token,
+    a nesmí týž soubor poslat dvakrát. Dokud tenhle artboard neodsouhlasíš, E5 ani E6 se nespouští.
+  </div>
+
+  <div style="display: flex; gap: 26px; align-items: flex-start;">
+
+    <!-- panel s frontou -->
+    <div style="width: 366px; flex: 0 0 auto;">
+      <div style="margin-bottom: 9px; font-size: 12px; font-weight: 650;">Fronta v panelu</div>
+      <div style="border: 1px solid oklch(1 0 0 / 20%); border-radius: 20px; background: oklch(0.2 0 0); overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 13px 14px; border-bottom: 1px solid oklch(1 0 0 / 10%);">
+          <span style="display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border: 1px solid oklch(1 0 0 / 10%); border-radius: 10px; background: oklch(0.26 0 0); color: oklch(0.708 0 0);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 8l5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path></svg>
+          </span>
+          <div style="flex-grow: 1;">
+            <div style="font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 15px; font-weight: 650; letter-spacing: -0.02em;">Odesílání</div>
+            <div style="font-size: 11px; color: oklch(0.708 0 0);">3 čekají · 1 selhalo</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+          <sc-for list="{{items}}" as="i" hint-placeholder-count="7">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid oklch(1 0 0 / 7%);">
+              <span style="display: inline-flex; width: 26px; height: 26px; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 8px; background: {{i.iconBg}}; color: {{i.iconColor}};">{{i.glyph}}</span>
+              <div style="min-width: 0; flex-grow: 1;">
+                <div style="font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{i.title}}</div>
+                <div style="margin-top: 2px; font-size: 10.5px; color: {{i.stateColor}};">{{i.state}}</div>
+                <sc-if value="{{i.showBar}}" hint-placeholder-val="{{ true }}">
+                  <div style="height: 3px; margin-top: 6px; border-radius: 2px; background: oklch(1 0 0 / 12%);">
+                    <div style="width: {{i.progress}}; height: 3px; border-radius: 2px; background: oklch(0.7 0.18 145);"></div>
+                  </div>
+                </sc-if>
+              </div>
+              <sc-if value="{{i.showAction}}" hint-placeholder-val="{{ true }}">
+                <button type="button" style="min-height: 28px; padding: 0 9px; border: 1px solid {{i.actionBorder}}; border-radius: 8px; background: {{i.actionBg}}; color: {{i.actionColor}}; font-family: inherit; font-size: 10.5px; font-weight: 650;">{{i.action}}</button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- vysvětlivky stavů -->
+    <div style="flex-grow: 1;">
+      <div style="margin-bottom: 9px; font-size: 12px; font-weight: 650;">Co který stav znamená</div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <sc-for list="{{items}}" as="i" hint-placeholder-count="7">
+          <div style="display: flex; align-items: flex-start; gap: 12px; padding: 11px 13px; border: 1px solid oklch(1 0 0 / 10%); border-radius: 12px; background: oklch(0.2 0 0);">
+            <code style="flex: 0 0 auto; padding: 2px 7px; border-radius: 6px; background: oklch(0.26 0 0); font-size: 10.5px; color: oklch(0.85 0 0);">{{i.id}}</code>
+            <div style="font-size: 11.5px; line-height: 1.5; color: oklch(0.75 0 0);">{{i.why}}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="margin-top: 14px; padding: 13px 15px; border: 1px solid oklch(0.7 0.18 145 / 30%); border-radius: 12px; background: oklch(0.5 0.17 145 / 12%); font-size: 11.5px; line-height: 1.6; color: oklch(0.82 0.08 145);">
+        <strong style="color: oklch(0.9 0.1 145);">Prázdná fronta není chyba.</strong> Když není co odesílat, karta se v panelu vůbec nezobrazí — místo prázdného seznamu s nulou.
+        Fronta se objeví ve chvíli, kdy do ní něco přibude, a zmizí, až je hotovo.
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 1240, "height": 720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const GREEN = 'oklch(0.7 0.18 145)';
+    const RED = 'oklch(0.75 0.13 25)';
+    const AMBER = 'oklch(0.82 0.12 75)';
+    const MUTED = 'oklch(0.708 0 0)';
+
+    const dot = (color, bg) => ({ iconColor: color, iconBg: bg });
+    const ghost = { showAction: true, actionBorder: 'oklch(1 0 0 / 20%)', actionBg: 'oklch(0.26 0 0)', actionColor: 'oklch(0.985 0 0)' };
+
+    return {
+      items: [
+        {
+          id: 'queue.waiting', title: 'Týdenní schůzka · 9:30', state: 'Čeká — jsi offline', stateColor: MUTED,
+          glyph: '⏸', ...dot(MUTED, 'oklch(0.26 0 0)'), showBar: false, showAction: false,
+          why: 'Nahrávka je hotová a leží na disku. Bez sítě se nic nezkouší — žádné marné pokusy, žádné vybíjení baterky.',
+        },
+        {
+          id: 'queue.sending', title: 'MakerFaire — rozpočet', state: 'Odesílá se · 62 % z 84 MB', stateColor: GREEN,
+          glyph: '↑', ...dot(GREEN, 'oklch(0.5 0.17 145 / 18%)'), showBar: true, progress: '62%', showAction: false,
+          why: 'Nahrává se po částech. Když spojení spadne uprostřed, pokračuje se od poslední potvrzené části, ne od začátku.',
+        },
+        {
+          id: 'queue.done', title: 'Marcela — fakturace', state: 'Odesláno · v archivu', stateColor: GREEN,
+          glyph: '✓', ...dot(GREEN, 'oklch(0.5 0.17 145 / 18%)'), showBar: false, showAction: false,
+          why: 'Server potvrdil příjem obou stop. Lokální soubor se maže až podle nastavené retence, ne hned.',
+        },
+        {
+          id: 'queue.retry', title: 'Porada vedení · 14:00', state: 'Další pokus za 1:47', stateColor: AMBER,
+          glyph: '↻', ...dot(AMBER, 'oklch(0.75 0.15 75 / 16%)'), showBar: false, ...ghost, action: 'Hned',
+          why: 'Server odpověděl chybou, která může přejít sama. Odstup mezi pokusy se zdvojnásobuje, odpočet je vidět.',
+        },
+        {
+          id: 'queue.failed', title: 'Kickoff — nový klient', state: 'Selhalo · soubor je větší než limit', stateColor: RED,
+          glyph: '!', ...dot(RED, 'oklch(0.63 0.19 25 / 16%)'), showBar: false,
+          showAction: true, actionBorder: 'oklch(0.63 0.19 25 / 40%)', actionBg: 'oklch(0.63 0.19 25 / 15%)', actionColor: 'oklch(0.8 0.12 25)', action: 'Detail',
+          why: 'Chyba, kterou opakování nespraví. Ukazuje se DŮVOD, ne „nepodařilo se“ — jinak není co udělat.',
+        },
+        {
+          id: 'queue.gaveup', title: 'Telefonát — dodavatel', state: 'Vzdáno po 6 pokusech', stateColor: RED,
+          glyph: '×', ...dot(RED, 'oklch(0.63 0.19 25 / 16%)'), showBar: false, ...ghost, action: 'Zkusit znovu',
+          why: 'Automatika se vzdala, ale soubor se NESMAŽE. Ruční pokus je vždycky po ruce.',
+        },
+        {
+          id: 'queue.reauth', title: 'Celá fronta', state: 'Přihlášení vypršelo', stateColor: AMBER,
+          glyph: '⚿', ...dot(AMBER, 'oklch(0.75 0.15 75 / 16%)'), showBar: false,
+          showAction: true, actionBorder: 'oklch(0.5 0.17 145)', actionBg: 'oklch(0.5 0.17 145)', actionColor: '#fff', action: 'Přihlásit',
+          why: 'Token vypršel uprostřed odesílání. Fronta se zastaví celá a čeká — nezkouší dál a nezahltí server odmítnutými požadavky.',
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
