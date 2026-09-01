@@ -385,3 +385,24 @@ describe("povolené klíče kanálu faktů", () => {
     expect([...reportedFactKeys].sort()).toEqual(["signedIn", "tracking"]);
   });
 });
+
+describe("každá změna časovače lištu přepočítá z faktu hlavního procesu", () => {
+  it("běžící store drží stabilní vlastník mimo renderer a vždy volá refreshTray", () => {
+    const source = functionSource(mainSource, "syncTrackingTray");
+    expect(source).toContain("appState.trackingOwners.add(TRACKING_STORE_OWNER_ID)");
+    expect(source).toContain("appState.trackingOwners.delete(TRACKING_STORE_OWNER_ID)");
+    expect(source).toContain("refreshTray()");
+  });
+
+  it.each([
+    ["tracking:start", "start"],
+    ["tracking:switch-project", "switchProject"],
+    ["tracking:stop", "stop"],
+    ["tracking:resolve-recovered", "resolveRecovered"],
+  ])("kanál %s prochází společnou mutací %s", (channel, method) => {
+    const start = mainSource.indexOf(`handleValidated("${channel}"`);
+    expect(start, `kanál ${channel} se v main.cjs nenašel`).toBeGreaterThan(-1);
+    const registration = mainSource.slice(start, start + 260);
+    expect(registration).toContain(`runTrackingMutation("${method}"`);
+  });
+});
