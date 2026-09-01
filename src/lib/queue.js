@@ -1,5 +1,16 @@
 export const QUEUE_SCHEMA_VERSION = 1;
 
+export const QUEUE_ITEM_KINDS = Object.freeze({
+  RECORDING: "recording",
+  TIME: "time",
+});
+
+export const FAILURE_CLASSES = Object.freeze({
+  PERMANENT: "permanent",
+  PAUSED: "paused",
+  RETRYABLE: "retryable",
+});
+
 export const QUEUE_STATES = Object.freeze({
   WAITING: "ceka",
   SENDING: "odesila",
@@ -16,6 +27,8 @@ export const DEFAULT_RETRY_POLICY = Object.freeze({
   jitterRatio: 0.2,
 });
 
+const PROJECT_GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 function requireObject(value, field) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new TypeError(`${field} musí být objekt`);
@@ -26,6 +39,14 @@ function requireObject(value, field) {
 function requireNonEmptyString(value, field) {
   if (typeof value !== "string" || value.length === 0) {
     throw new TypeError(`${field} musí být neprázdný řetězec`);
+  }
+  return value;
+}
+
+function requireGuid(value, field) {
+  requireNonEmptyString(value, field);
+  if (!PROJECT_GUID_PATTERN.test(value)) {
+    throw new TypeError(`${field} musí být GUID`);
   }
   return value;
 }
@@ -89,6 +110,13 @@ function errorReason(error) {
   return String(error);
 }
 
+function errorFailureClass(error) {
+  if (!error || typeof error !== "object") return FAILURE_CLASSES.RETRYABLE;
+  if (error.failureClass === FAILURE_CLASSES.PERMANENT) return FAILURE_CLASSES.PERMANENT;
+  if (error.failureClass === FAILURE_CLASSES.PAUSED) return FAILURE_CLASSES.PAUSED;
+  return FAILURE_CLASSES.RETRYABLE;
+}
+
 function replaceItem(queue, index, item) {
   const items = [...queue.items];
   items[index] = item;
@@ -132,6 +160,7 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
     attempts: 0,
     clientRecordingId: manifest.clientRecordingId,
     enqueuedAt: new Date(timestamp(now, "now")).toISOString(),
+    kind: QUEUE_ITEM_KINDS.RECORDING,
     lastFailureReason: null,
     manifestPath,
     nextAttemptAt: null,
@@ -148,6 +177,65 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
     item,
     queue: { ...queue, items: [...queue.items, item] },
   };
+}
+
+export function enqueueTimeEntry(queue, entry, now = Date.now()) {
+  requireQueue(queue);
+  requireObject(entry, "entry");
+  const rateField = Object.keys(entry).find((field) => /(?:rate|sazb)/i.test(field));
+  if (rateField) throw new TypeError(`časový záznam nesmí obsahovat sazbu (${rateField})`);
+
+  if (
+    entry.clientTimeEntryId !== undefined
+    && entry.trackingId !== undefined
+    && entry.clientTimeEntryId !== entry.trackingId
+  ) {
+    throw new TypeError("clientTimeEntryId a trackingId se nesmí lišit");
+  }
+  const clientTimeEntryId = requireGuid(
+    entry.clientTimeEntryId ?? entry.trackingId,
+    "entry.clientTimeEntryId",
+  );
+  const projectId = requireGuid(entry.projectId, "entry.projectId");
+  const startedAt = requireNonEmptyString(entry.startedAt, "entry.startedAt");
+  const endedAt = requireNonEmptyString(entry.endedAt, "entry.endedAt");
+  const existing = queue.items.find((item) => item.clientRecordingId === clientTimeEntryId);
+  if (existing) return { added: false, item: existing, queue };
+
+  const item = {
+    attempts: 0,
+    clientRecordingId: clientTimeEntryId,
+    enqueuedAt: new Date(timestamp(now, "now")).toISOString(),
+    entry: { projectId, startedAt, endedAt },
+    kind: QUEUE_ITEM_KINDS.TIME,
+    lastFailureReason: null,
+    nextAttemptAt: null,
+    sentAt: null,
+    state: QUEUE_STATES.WAITING,
+  };
+  return {
+    added: true,
+    item,
+    queue: { ...queue, items: [...queue.items, item] },
+  };
+}
+
+export function killswitchNameForKind(kind = QUEUE_ITEM_KINDS.RECORDING) {
+  if (kind === QUEUE_ITEM_KINDS.RECORDING) return "DESKTOP_UPLOAD_ENABLED";
+  if (kind === QUEUE_ITEM_KINDS.TIME) return "DESKTOP_TIME_ENABLED";
+  throw new TypeError(`neznámý typ položky fronty: ${String(kind)}`);
+}
+
+export function reduceQueueForRenderer(queue) {
+  requireQueue(queue);
+  return queue.items.map((item) => ({
+    id: item.clientRecordingId,
+    kind: item.kind ?? QUEUE_ITEM_KINDS.RECORDING,
+    state: item.state,
+    attempts: item.attempts,
+    nextAttemptAt: item.nextAttemptAt,
+    lastFailureReason: item.lastFailureReason,
+  }));
 }
 
 /**
@@ -189,26 +277,36 @@ export function retryDelayMs(attempts, retryPolicy = {}, random = Math.random) {
 }
 
 /**
- * Zpracuje nejvýše jednu připravenou položku. Killswitch je povinný argument
- * a povoluje odesílací vrstvu výhradně při přesné řetězcové hodnotě "true".
+ * Zpracuje nejvýše jednu připravenou položku. Oba killswitche jsou povinné
+ * a každý typ povolují výhradně při přesné řetězcové hodnotě "true".
  */
-export async function processNext(queue, uploadEnabled, send, options = {}) {
+export async function processNext(queue, killswitches, send, options = {}) {
   requireQueue(queue);
   if (arguments.length < 3) {
-    throw new TypeError("queue, uploadEnabled a send jsou povinné argumenty");
+    throw new TypeError("queue, killswitches a send jsou povinné argumenty");
   }
+  requireObject(killswitches, "killswitches");
   if (typeof send !== "function") throw new TypeError("send musí být funkce");
 
-  if (uploadEnabled !== "true") {
-    return { item: null, outcome: "disabled", queue, reason: UPLOAD_DISABLED_REASON };
-  }
-
   const now = timestamp(options.now ?? Date.now(), "options.now");
-  const index = queue.items.findIndex((item) => (
-    item.state === QUEUE_STATES.WAITING
-      && (item.nextAttemptAt === null || item.nextAttemptAt <= now)
+  const waitingItems = queue.items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => item.state === QUEUE_STATES.WAITING);
+  const isEnabled = (item) => {
+    try {
+      return killswitches[killswitchNameForKind(item.kind)] === "true";
+    } catch {
+      return false;
+    }
+  };
+  const readyEnabled = waitingItems.find(({ item }) => (
+    isEnabled(item) && (item.nextAttemptAt === null || item.nextAttemptAt <= now)
   ));
+  const index = readyEnabled?.index ?? -1;
   if (index === -1) {
+    if (waitingItems.some(({ item }) => !isEnabled(item))) {
+      return { item: null, outcome: "disabled", queue, reason: UPLOAD_DISABLED_REASON };
+    }
     return { item: null, outcome: "idle", queue, reason: "žádná položka není připravená" };
   }
 
@@ -236,6 +334,37 @@ export async function processNext(queue, uploadEnabled, send, options = {}) {
       reason: null,
     };
   } catch (error) {
+    const failureClass = errorFailureClass(error);
+    if (failureClass === FAILURE_CLASSES.PERMANENT) {
+      const failedItem = {
+        ...sendingItem,
+        lastFailureReason: errorReason(error),
+        nextAttemptAt: null,
+        state: QUEUE_STATES.FAILED,
+      };
+      return {
+        item: failedItem,
+        outcome: "failed",
+        queue: replaceItem(sendingQueue, index, failedItem),
+        reason: failedItem.lastFailureReason,
+      };
+    }
+    if (failureClass === FAILURE_CLASSES.PAUSED) {
+      const originalItem = queue.items[index];
+      const pausedItem = {
+        ...sendingItem,
+        attempts: originalItem.attempts,
+        lastFailureReason: errorReason(error),
+        nextAttemptAt: originalItem.nextAttemptAt,
+        state: QUEUE_STATES.WAITING,
+      };
+      return {
+        item: pausedItem,
+        outcome: "paused",
+        queue: replaceItem(sendingQueue, index, pausedItem),
+        reason: pausedItem.lastFailureReason,
+      };
+    }
     const exhausted = sendingItem.attempts >= policy.maxAttempts;
     const failedItem = {
       ...sendingItem,

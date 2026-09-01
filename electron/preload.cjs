@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld("ludone", {
   appendRecordingChunk: (sessionId, source, sequence, arrayBuffer) =>
     ipcRenderer.invoke("recording:append", sessionId, source, sequence, arrayBuffer),
   finishRecording: (sessionId) => ipcRenderer.invoke("recording:finish", sessionId),
+  listQueue: () => ipcRenderer.invoke("queue:list"),
+  retryQueue: () => ipcRenderer.invoke("queue:retry"),
   startTracking: (payload) => ipcRenderer.invoke("tracking:start", payload),
   switchTrackingProject: (payload) =>
     ipcRenderer.invoke("tracking:switch-project", payload),

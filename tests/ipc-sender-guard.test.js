@@ -235,6 +235,8 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "auth:logout",
       "panel:hide",
       "permission:request",
+      "queue:list",
+      "queue:retry",
       "recording:append",
       "recording:begin",
       "recording:finish",
