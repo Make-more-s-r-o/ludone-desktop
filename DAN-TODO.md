@@ -508,3 +508,18 @@ Noční běh místo toho měří **posun místa selhání** (sabotáž musí sho
 hláškou než reference) — je to poctivý důkaz, že kontrola kouše, ale **není to náhrada**.
 Až oprávnění udělíš, doběhne to normálně.
 
+---
+
+## Kalendář: schválil jsi jeho zrušení, ale nikdo ho neodstraňuje (nález 1. 9. 22:4x)
+
+Rozhodnutí M15/M16 kalendář ruší a `design/approved.json` to má v `explicitlyCut`. Komponenta
+`src/features/calendar/TodayAgenda.jsx` ale **žije dál** a `scripts/ui-smoke.mjs` ji na pěti
+místech **vyžaduje**. Žádná story B1–B12 ji neodstraňuje — **díra v plánu, ne v designu**.
+
+**Rozhodl jsem za tebe (bezpečný default):** dnes v noci se kalendář **neodstraňuje** (je to
+user-visible změna bez packetu = hard gate) a vzniká story **B13** na později. Detail
+a odůvodnění pořadí je v `decisions.md`, O14.
+
+**Co po tobě chci:** až se na to podíváš, potvrď, že B13 má vzniknout — nebo řekni, že
+kalendář má zůstat, a pak je potřeba změnit `approved.json`, ne kód.
+

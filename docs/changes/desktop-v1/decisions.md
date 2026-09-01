@@ -184,3 +184,43 @@ pádu chová jako by uživatele odhlásila.
 **Zůstává zelené:** `it("výběr obrázku používá čisté mapování stavu")` nad `trayImage` —
 tenhle případ se nemění a je to ta jedna zelená v poměru 2–3 červené : 1 zelená.
 
+## O14 — kalendář je zrušený designem, ale žádná story ho neodstraňuje
+
+**1. 9. 2026 22:4x, našel skeptik packetu B1. Změřeno, ne odvozeno.**
+
+`design/approved.json` má v `explicitlyCut` doslova: *„kalendář a sekce Dnešní schůzky —
+**ruší se**"* a *„varianta Divergent — stála na časové ose dne, tedy na rušeném kalendáři"*.
+Je to Danovo rozhodnutí M15/M16.
+
+**Jenže:**
+
+| Kde | Co tam je |
+|---|---|
+| `src/features/calendar/TodayAgenda.jsx:22` | `<h2 id="agenda-title">Co mě dnes čeká</h2>` — komponenta **žije** |
+| `scripts/ui-smoke.mjs:310` a `:374` | `assertText(panel, "Co mě dnes čeká")` — měřidlo to **vyžaduje** |
+| `scripts/ui-smoke.mjs:243`, `:255` | přepínač „Automaticky nahrávat schůzky z kalendáře" |
+| `scripts/ui-smoke.mjs:170` | tlačítko „Nahrát schůzku" u položky kalendáře |
+| `plan.md` §2, DAG B1–B12 | **grep na „kalendář" nevrací nic** — žádná story ho neodstraňuje |
+
+🔴 **Je to díra v mém plánu, ne v designu.** Schválený design něco ruší a task DAG na to nemá
+úkol. Kdyby to nikdo nenašel, dopadlo by to takhle: `ui-smoke` se opraví tak, aby kalendář
+**vyžadoval**, tím se zrušená obrazovka zamkne testem — a až ji někdo bude odstraňovat,
+narazí na zelenou bránu, která ji brání.
+
+### Rozhodnutí (bezpečný default, reverzibilní)
+
+**Dnes v noci kalendář NEODSTRAŇOVAT.** Je to user-visible změna a žádný packet ji nekryje —
+tedy hard gate, přeskakuje se. **B1 tím není blokovaná:** komponenta zatím existuje, takže
+`ui-smoke` na ni smí asertovat a je to pravdivé měření dnešního stavu.
+
+**Vzniká story `B13 — odstranit zrušený kalendář`**, mimo dnešní běh:
+
+1. smazat `src/features/calendar/` a jeho zapojení v panelu,
+2. odebrat asertace `ui-smoke.mjs:170, 243, 255, 310, 374`,
+3. sladit `spec.md` §3 — dnes tam kalendář jako Feature ID **vůbec není**, což je konzistentní
+   se zrušením, takže se jen doplní poznámka, že komponenta v kódu přežívá.
+
+⚠️ **Pořadí je důležité:** B13 musí jít **po** B1, ne před ním. Kdyby se asertace odebraly
+dřív, než `ui-smoke` vůbec běží, nikdo by neuviděl, že je odebral správně — měřidlo se
+neopravuje a nezkracuje v jednom kroku.
+
