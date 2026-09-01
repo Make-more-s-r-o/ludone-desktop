@@ -27,6 +27,58 @@ CLI 0.149.1) · Orca orchestrace zapnutá · OAuth server LuDone živý s dynami
 
 ---
 
+## 0b. 🔴 Z běhu 1. 9. 2026 — co čeká na tebe
+
+Plný záznam běhu: [`docs/behy/2026-09-01-masterplan-a-design.md`](docs/behy/2026-09-01-masterplan-a-design.md).
+Rozhodnutí M1–M13 tam jsou vypsaná; **do `ROZHODNUTI.md` je zapíšu, až plán schválíš.**
+
+### Rozhodnutí, bez kterých se nedá pokračovat
+
+| # | Co | Proč to nejde za tebe |
+|---|---|---|
+| 🔴 **N1** | **Kam desktop píše hodiny** — přímo do Supabase pod RLS, nebo přes tenký endpoint na `app.ludone.cz`? | Supabase je hotová cesta a dědí celý řetěz do Tabidoo zadarmo, ale roznese přístupový klíč po noteboocích a přidá **třetího zapisovatele** do systému, kde jedinečnost běžícího timeru hlídá jen klient. Blokuje přihlašovací obrazovku, tvar položky fronty i zpracování chyb — postavily by se dvakrát |
+| 🔴 **N2** | **Přesunout pravidla do DB, než se desktop připojí?** Parciální unikátní index na běžící timer a zákaz překryvů | Zásah do ostrého provozu 24 lidí. Bez toho musí spec výslovně popsat, jak se desktop zachová, když pravidla poruší jiný klient |
+| **N3** | **Zastaví se časovač, když skončí nahrávání?** | Produktová otázka o tom, jak lidé pracují. Návrh v `LuTrack.dc.html` říká NE a navrhuje nabídnout „Zastavit i měření času?" |
+| **Směr** | **Vyber jeden ze tří směrů panelu** | Bez toho se nedá zmrazit spec. Canvas: https://claude.ai/code/artifact/88609f77-b817-4d3f-99b6-1ea0af8f4f75 |
+| **D7** | **Odhad desktopu** — `PLAN.md:60` říká 12,5–20 ČD, `PLAN.md:194` říká 14,5–23,5 a cituje třetí číslo 18–30 | 🔴 Ani jeden z těch odhadů nezná mrtvý kód fronty, nezapojený OAuth a nulovou serverovou stranu. **Kterýkoli odhad nad dnešním plánem je nižší než skutečnost** |
+
+### Měření, která umím připravit, ale spustit je musíš ty
+
+**🔴 A6 — Google Meet.** Měřidlo je hotové a ověřené (`scripts/meet-mereni.mjs`), referenční
+nahrávka připravená (`dukazy/meet-2026-09-01/referencni.aiff`). Potřebuješ **druhé zařízení
+a sluchátka**, asi hodinu.
+
+```
+node scripts/meet-mereni.mjs --priprav
+```
+
+Vypíše postup. Má **tři běhy**: ostrý, kontrola ticha, kontrola přeslechu. Bez kontrolních běhů
+se výsledek nedá obhájit. Je to vyřazovací kritérium — kdyby dopadlo špatně, ušetří ti to všechnu
+ostatní práci na projektu.
+
+### Co jsem ti zapsal jinam a čeká to na tvou dávku
+
+**Bezpečnostní nálezy C4** jsou expedované do `LuDone/DAN-TODO.md` — **zapsané, ale NECOMMITNUTÉ**.
+V tom repu je merge do `main` fakticky nasazení na produkci, takže doc-only commit tam nepatří jako
+vedlejší efekt cizí práce. Leží to tam jako změna v pracovním stromě.
+
+### 🔴 Nález mimo rozsah tohohle projektu
+
+**Pět edge funkcí LuTracku má vypnuté ověřování volajícího** (`verify_jwt = false` bez náhradní
+kontroly) — mimo jiné ta, co sype týdenní souhrny do Tabidoo, a ta, co zastavuje zapomenuté
+časovače. Kdokoli se znalostí project refu, který je v gitu natvrdo, je může spustit zvenčí.
+**Ověřeno v repu, ne naostro.** S desktopem to nesouvisí; patří to majiteli LuTracku.
+
+### Přístup ke Claude Designu
+
+Odpoledne 1. 9. ses přepnul na jiný Claude účet a tím zmizel přístup k projektu **„LuDone Přístroj
+Design System"** (`c5ee8498`), kde leží závazné zadání. Zálohoval jsem brief, kit README a barevné
+tokeny do `design/zadani/`. **Nezálohovalo se:** `SmerA/B/C.jsx`, tři referenční návrhy z VPS,
+`porovnani-navrhu.html` a zbytek tokenů (písmo, tvar, pohyb, mezery). Až se přihlásíš zpět,
+stojí za to zálohu dotáhnout.
+
+---
+
 ## 1. Rozhodnutí, která jsi udělal 24. 8. (zapsáno, neotvírá se znovu)
 
 | # | Otázka | Rozhodnutí |
