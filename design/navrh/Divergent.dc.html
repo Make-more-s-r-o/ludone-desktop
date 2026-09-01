@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.72 0.14 268); }
+    a:hover { color: oklch(0.8 0.11 268); }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="width: 366px; height: 792px; display: flex; flex-direction: column; background: {{t.page}}; color: {{t.text}}; font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; border-radius: 26px; overflow: hidden; border: 1px solid {{t.hair}};">
+
+  <!-- HLAVIČKA: dnešek jako celek -->
+  <div style="flex-shrink: 0; padding: 16px 16px 12px; border-bottom: 1px solid {{t.hair}}; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: baseline; gap: 8px;">
+      <div style="font-family: 'Instrument Sans', sans-serif; font-size: 19px; font-weight: 700; color: {{t.strong}}; letter-spacing: -0.02em;">Úterý</div>
+      <div style="font-family: 'Instrument Sans', sans-serif; font-size: 19px; font-weight: 500; color: {{t.subtle}}; letter-spacing: -0.02em;">1. září</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="font-family: 'Instrument Sans', sans-serif; font-size: 19px; font-weight: 700; color: {{t.ok}}; font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">{{souhrnDne}}</div>
+    </div>
+    <!-- Pruh dne: jedna osa, na které leží obě agendy -->
+    <div style="height: 26px; border-radius: 6px; background: {{t.sunken}}; display: flex; overflow: hidden; position: relative;">
+      <sc-for list="{{pruh}}" as="p" hint-placeholder-count="5">
+        <div style="width: {{p.sirka}}; background: {{p.barva}}; border-right: 1px solid {{t.page}};"></div>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 14px; font-size: 10px; color: {{t.subtle}};">
+      <div style="display: flex; align-items: center; gap: 5px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: {{t.ok}};"></div>vykázaný čas</div>
+      <div style="display: flex; align-items: center; gap: 5px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: {{t.bad}};"></div>nahrávka</div>
+      <div style="display: flex; align-items: center; gap: 5px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: {{t.hair}};"></div>nevykázáno</div>
+    </div>
+  </div>
+
+  <!-- ČASOVÁ OSA -->
+  <div style="flex-grow: 1; overflow: hidden; padding: 4px 0;">
+    <sc-for list="{{osa}}" as="r" hint-placeholder-count="6">
+      <div style="display: flex; gap: 0; min-height: {{r.vyska}};">
+        <!-- sloupec hodin -->
+        <div style="width: 46px; flex-shrink: 0; padding: 10px 0 0 16px; font-family: 'Instrument Sans', sans-serif; font-size: 10.5px; font-weight: 600; color: {{t.subtle}}; font-variant-numeric: tabular-nums;">{{r.hodina}}</div>
+        <!-- osa -->
+        <div style="width: 2px; flex-shrink: 0; background: {{t.hair}}; position: relative;">
+          <div style="position: absolute; left: -3px; top: 13px; width: 8px; height: 8px; border-radius: 50%; background: {{r.teckaBarva}};"></div>
+        </div>
+        <!-- obsah -->
+        <div style="flex-grow: 1; padding: 6px 16px 6px 12px; overflow: hidden;">
+          <div style="padding: 10px 12px; border-radius: 12px; background: {{r.pozadi}}; border: 1px solid {{r.ram}}; display: flex; flex-direction: column; gap: {{r.mezera}};">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="flex-grow: 1; font-size: 12.5px; font-weight: {{r.tucne}}; color: {{r.textBarva}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{r.nazev}}</div>
+              <div style="font-size: 10.5px; color: {{r.znackaBarva}}; font-weight: 600; flex-shrink: 0;">{{r.znacka}}</div>
+            </div>
+            <sc-if value="{{r.maDetail}}" hint-placeholder-val="{{ true }}">
+              <div style="font-size: 11px; color: {{t.muted}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{r.detail}}</div>
+            </sc-if>
+            <sc-if value="{{r.maAkce}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 7px; margin-top: 2px;">
+                <sc-for list="{{r.akce}}" as="a" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 8px; background: {{a.pozadi}}; color: {{a.barva}}; font-size: 11.5px; font-weight: 600; cursor: pointer;">{{a.popis}}</div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- KONTEXTOVÁ LIŠTA -->
+  <div style="flex-shrink: 0; padding: 12px 16px; border-top: 1px solid {{t.hair}}; background: {{t.card}}; display: flex; align-items: center; gap: 10px;">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 12px; color: {{t.strong}}; font-weight: 600;">{{listaTitulek}}</div>
+      <div style="font-size: 10.5px; color: {{t.subtle}};">{{listaPodtitulek}}</div>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; height: 34px; padding: 0 16px; border-radius: 9px; background: {{listaPozadi}}; color: {{listaText}}; font-weight: 600; font-size: 12.5px; cursor: pointer;">{{listaAkce}}</div>
+  </div>
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{
+  "stav": {"editor": "enum", "options": ["klid", "jen čas", "jen nahrávání", "obojí"], "default": "obojí", "section": "Stav"},
+  "rezim": {"editor": "enum", "options": ["tmavý", "světlý"], "default": "tmavý", "section": "Vzhled"}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    const stav = this.props.stav ?? 'obojí';
+    const tmavy = (this.props.rezim ?? 'tmavý') === 'tmavý';
+
+    const t = tmavy ? {
+      page: 'oklch(0.185 0.012 262)', card: 'oklch(0.235 0.012 262)',
+      sunken: 'oklch(0.16 0.012 262)', hair: 'oklch(0.305 0.013 262)',
+      subtle: 'oklch(0.585 0.014 262)', muted: 'oklch(0.715 0.012 262)',
+      text: 'oklch(0.925 0.005 262)', strong: 'oklch(0.975 0.003 262)',
+      accent: 'oklch(0.72 0.14 268)',
+      accentTint: 'color-mix(in oklab, oklch(0.72 0.14 268) 16%, transparent)',
+      ok: 'oklch(0.78 0.11 178)',
+      okTint: 'color-mix(in oklab, oklch(0.78 0.11 178) 12%, transparent)',
+      okRam: 'color-mix(in oklab, oklch(0.78 0.11 178) 34%, transparent)',
+      bad: 'oklch(0.75 0.14 34)',
+      badTint: 'color-mix(in oklab, oklch(0.75 0.14 34) 12%, transparent)',
+      badRam: 'color-mix(in oklab, oklch(0.75 0.14 34) 34%, transparent)',
+      badFg: 'oklch(0.16 0.012 262)',
+    } : {
+      page: 'oklch(0.978 0.004 85)', card: 'oklch(0.993 0.003 85)',
+      sunken: 'oklch(0.958 0.005 82)', hair: 'oklch(0.925 0.006 80)',
+      subtle: 'oklch(0.635 0.013 260)', muted: 'oklch(0.505 0.016 262)',
+      text: 'oklch(0.245 0.019 266)', strong: 'oklch(0.165 0.02 266)',
+      accent: 'oklch(0.48 0.16 268)',
+      accentTint: 'color-mix(in oklab, oklch(0.48 0.16 268) 9%, transparent)',
+      ok: 'oklch(0.46 0.1 178)',
+      okTint: 'color-mix(in oklab, oklch(0.46 0.1 178) 10%, transparent)',
+      okRam: 'color-mix(in oklab, oklch(0.46 0.1 178) 30%, transparent)',
+      bad: 'oklch(0.5 0.15 32)',
+      badTint: 'color-mix(in oklab, oklch(0.5 0.15 32) 10%, transparent)',
+      badRam: 'color-mix(in oklab, oklch(0.5 0.15 32) 30%, transparent)',
+      badFg: 'oklch(0.993 0.003 85)',
+    };
+
+    const nahrava = stav === 'jen nahrávání' || stav === 'obojí';
+    const cas = stav === 'jen čas' || stav === 'obojí';
+
+    // Pruh dne 8:00–18:00 po půlhodinách, jedna osa pro obě agendy.
+    const pruh = [
+      { sirka: '9%', barva: t.hair },
+      { sirka: cas ? '46%' : '0%', barva: t.ok },
+      { sirka: nahrava ? '11%' : '0%', barva: t.bad },
+      { sirka: cas ? '8%' : '0%', barva: t.ok },
+      { sirka: '26%', barva: t.hair },
+    ];
+
+    const osa = [];
+
+    osa.push({
+      hodina: '08:55', vyska: '76px',
+      nazev: cas ? 'Make more Finanční řízení 2026' : 'Zatím nic nevykázáno',
+      detail: cas ? 'Měří se · 5h 16m · zbývá z alokace 116:19' : '',
+      maDetail: cas, maAkce: false, akce: [], mezera: '4px',
+      znacka: cas ? 'běží' : '', znackaBarva: t.ok, tucne: '600',
+      textBarva: cas ? t.strong : t.subtle,
+      pozadi: cas ? t.okTint : 'transparent',
+      ram: cas ? t.okRam : t.hair,
+      teckaBarva: cas ? t.ok : t.hair,
+    });
+
+    osa.push({
+      hodina: '14:00', vyska: nahrava ? '104px' : '86px',
+      nazev: 'Porada provozu',
+      detail: nahrava ? 'Nahrává se · 12:41 · mikrofon i ostatní zvuk' : 'Za 38 minut · 4 účastníci',
+      maDetail: true, mezera: '6px',
+      maAkce: !nahrava,
+      akce: [
+        { popis: 'Nahrát', pozadi: t.accentTint, barva: t.accent },
+        { popis: 'Importovat zvuk', pozadi: 'transparent', barva: t.subtle },
+      ],
+      znacka: nahrava ? 'nahrává se' : '', znackaBarva: t.bad, tucne: '600',
+      textBarva: t.strong,
+      pozadi: nahrava ? t.badTint : t.card,
+      ram: nahrava ? t.badRam : t.hair,
+      teckaBarva: nahrava ? t.bad : t.subtle,
+    });
+
+    osa.push({
+      hodina: '15:30', vyska: '76px',
+      nazev: 'MF Praha — dodavatel',
+      detail: 'Za 2 hodiny · externí účastník',
+      maDetail: true, maAkce: false, akce: [], mezera: '4px',
+      znacka: '', znackaBarva: t.subtle, tucne: '500',
+      textBarva: t.text, pozadi: t.card, ram: t.hair, teckaBarva: t.subtle,
+    });
+
+    osa.push({
+      hodina: '17:00', vyska: '70px',
+      nazev: 'Maker Tábor rozpočet',
+      detail: 'Za 3,5 hodiny',
+      maDetail: true, maAkce: false, akce: [], mezera: '4px',
+      znacka: '', znackaBarva: t.subtle, tucne: '500',
+      textBarva: t.text, pozadi: t.card, ram: t.hair, teckaBarva: t.subtle,
+    });
+
+    let listaTitulek = 'Nic neběží';
+    let listaPodtitulek = 'Dnes vykázáno 0h 00m';
+    let listaAkce = 'Spustit čas';
+    let listaPozadi = t.accentTint;
+    let listaText = t.accent;
+
+    if (cas && nahrava) {
+      listaTitulek = 'Běží obojí';
+      listaPodtitulek = 'Čas 5h 16m · nahrávka 12:41';
+      listaAkce = 'Ukončit nahrávku';
+      listaPozadi = t.bad;
+      listaText = t.badFg;
+    } else if (cas) {
+      listaTitulek = 'Měří se čas';
+      listaPodtitulek = 'Make more Finanční řízení 2026';
+      listaAkce = 'Stop';
+      listaPozadi = t.sunken;
+      listaText = t.text;
+    } else if (nahrava) {
+      listaTitulek = 'Nahrává se';
+      listaPodtitulek = 'Porada provozu · 12:41';
+      listaAkce = 'Ukončit';
+      listaPozadi = t.bad;
+      listaText = t.badFg;
+    }
+
+    return {
+      t, pruh, osa,
+      souhrnDne: cas ? '5h 16m' : '0h 00m',
+      listaTitulek, listaPodtitulek, listaAkce, listaPozadi, listaText,
+    };
+  }
+}
+</script>
+</body>
+</html>

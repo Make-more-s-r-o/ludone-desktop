@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.72 0.14 268); }
+    a:hover { color: oklch(0.8 0.11 268); }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="width: 760px; height: 560px; padding: 28px; background: {{t.page}}; color: {{t.text}}; font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; gap: 22px;">
+
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <div style="font-family: 'Instrument Sans', sans-serif; font-size: 20px; font-weight: 700; color: {{t.strong}}; letter-spacing: -0.02em;">Ikona v liště</div>
+    <div style="font-size: 13px; color: {{t.muted}}; max-width: 62ch; line-height: 1.5;">Většinu času je panel zavřený a tohle je jediné, co uživatel vidí. Dnešní kód zná čtyři stavy a při souběhu o časovači mlčí — a pátý stav by se tiše překlopil na šedé „nepřihlášeno".</div>
+  </div>
+
+  <!-- STAVY IKONY -->
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+    <sc-for list="{{stavy}}" as="s" hint-placeholder-count="8">
+      <div style="display: flex; flex-direction: column; gap: 9px; padding: 13px; border-radius: 10px; background: {{s.pozadi}}; border: 1px solid {{s.ram}};">
+        <!-- výřez lišty macOS -->
+        <div style="height: 28px; border-radius: 6px; background: {{t.listaPozadi}}; display: flex; align-items: center; justify-content: flex-end; gap: 9px; padding: 0 9px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{t.listaCizi}}" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{t.listaCizi}}" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 3v4M8 3v4"></path></svg>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{s.ikonaBarva}}" stroke-width="2.2" stroke-linecap="round"><path d="M4 18 L10 6 L14 14 L20 9"></path></svg>
+            <sc-if value="{{s.maOdznak}}" hint-placeholder-val="{{ false }}">
+              <div style="width: 7px; height: 7px; border-radius: 50%; background: {{s.odznakBarva}}; border: 1.5px solid {{t.listaPozadi}}; margin-left: -8px; margin-top: 8px;"></div>
+            </sc-if>
+            <sc-if value="{{s.maTitulek}}" hint-placeholder-val="{{ false }}">
+              <div style="font-family: 'Instrument Sans', sans-serif; font-size: 10.5px; font-weight: 600; color: {{s.ikonaBarva}}; font-variant-numeric: tabular-nums;">{{s.titulek}}</div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="font-size: 12px; font-weight: 600; color: {{t.strong}};">{{s.nazev}}</div>
+        <div style="font-size: 10.5px; color: {{s.poznamkaBarva}}; line-height: 1.4;">{{s.poznamka}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- KONTEXTOVÉ MENU -->
+  <div style="display: flex; gap: 22px; align-items: flex-start;">
+    <div style="width: 260px; flex-shrink: 0; border-radius: 11px; background: {{t.card}}; border: 1px solid {{t.hair}}; padding: 6px; display: flex; flex-direction: column; gap: 1px;">
+      <sc-for list="{{menu}}" as="m" hint-placeholder-count="7">
+        <sc-if value="{{m.jeCara}}" hint-placeholder-val="{{ false }}">
+          <div style="height: 1px; background: {{t.hair}}; margin: 5px 8px;"></div>
+        </sc-if>
+        <sc-if value="{{m.jePolozka}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 10px; border-radius: 6px; background: {{m.pozadi}};">
+            <div style="flex-grow: 1; font-size: 12.5px; color: {{m.barva}};">{{m.popis}}</div>
+            <div style="font-family: 'Instrument Sans', sans-serif; font-size: 11px; color: {{t.subtle}};">{{m.zkratka}}</div>
+          </div>
+        </sc-if>
+      </sc-for>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 11px;">
+      <div style="font-family: 'Instrument Sans', sans-serif; font-size: 14px; font-weight: 600; color: {{t.strong}};">Co z toho plyne</div>
+      <sc-for list="{{zavery}}" as="z" hint-placeholder-count="3">
+        <div style="display: flex; gap: 10px; padding: 11px 13px; border-radius: 9px; background: {{z.pozadi}}; border: 1px solid {{z.ram}};">
+          <div style="width: 5px; flex-shrink: 0; border-radius: 3px; background: {{z.pruh}};"></div>
+          <div style="font-size: 12px; color: {{t.text}}; line-height: 1.5;">{{z.text}}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{
+  "rezim": {"editor": "enum", "options": ["tmavý", "světlý"], "default": "tmavý", "section": "Vzhled"}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tmavy = (this.props.rezim ?? 'tmavý') === 'tmavý';
+
+    const t = tmavy ? {
+      page: 'oklch(0.185 0.012 262)', card: 'oklch(0.235 0.012 262)',
+      sunken: 'oklch(0.16 0.012 262)', hair: 'oklch(0.305 0.013 262)',
+      subtle: 'oklch(0.585 0.014 262)', muted: 'oklch(0.715 0.012 262)',
+      text: 'oklch(0.925 0.005 262)', strong: 'oklch(0.975 0.003 262)',
+      accent: 'oklch(0.72 0.14 268)',
+      ok: 'oklch(0.78 0.11 178)',
+      wait: 'oklch(0.8 0.13 76)',
+      bad: 'oklch(0.75 0.14 34)',
+      listaPozadi: 'oklch(0.12 0.01 262)',
+      listaCizi: 'oklch(0.5 0.012 262)',
+    } : {
+      page: 'oklch(0.978 0.004 85)', card: 'oklch(0.993 0.003 85)',
+      sunken: 'oklch(0.958 0.005 82)', hair: 'oklch(0.925 0.006 80)',
+      subtle: 'oklch(0.635 0.013 260)', muted: 'oklch(0.505 0.016 262)',
+      text: 'oklch(0.245 0.019 266)', strong: 'oklch(0.165 0.02 266)',
+      accent: 'oklch(0.48 0.16 268)',
+      ok: 'oklch(0.46 0.1 178)',
+      wait: 'oklch(0.52 0.12 70)',
+      bad: 'oklch(0.5 0.15 32)',
+      listaPozadi: 'oklch(0.92 0.005 85)',
+      listaCizi: 'oklch(0.62 0.012 262)',
+    };
+
+    const chybi = 'color-mix(in oklab, ' + t.bad + ' 10%, transparent)';
+    const chybiRam = 'color-mix(in oklab, ' + t.bad + ' 34%, transparent)';
+
+    const stavy = [
+      { nazev: 'Nepřihlášeno', ikonaBarva: t.subtle, maOdznak: false, maTitulek: false,
+        poznamka: 'V kódu je', poznamkaBarva: t.subtle, pozadi: t.card, ram: t.hair },
+      { nazev: 'Klid', ikonaBarva: t.text, maOdznak: false, maTitulek: false,
+        poznamka: 'V kódu je', poznamkaBarva: t.subtle, pozadi: t.card, ram: t.hair },
+      { nazev: 'Nahrává', ikonaBarva: t.bad, maOdznak: true, odznakBarva: t.bad, maTitulek: false,
+        poznamka: 'V kódu je', poznamkaBarva: t.subtle, pozadi: t.card, ram: t.hair },
+      { nazev: 'Měří čas', ikonaBarva: t.ok, maOdznak: false, maTitulek: true, titulek: '5:16',
+        poznamka: 'V kódu je, ale titulek se nikdy nenastaví', poznamkaBarva: t.wait, pozadi: t.card, ram: t.hair },
+      { nazev: 'Nahrává + měří', ikonaBarva: t.bad, maOdznak: true, odznakBarva: t.ok, maTitulek: true, titulek: '12:41',
+        poznamka: 'CHYBÍ — dnes se tiše překlopí na šedé „nepřihlášeno"', poznamkaBarva: t.bad, pozadi: chybi, ram: chybiRam },
+      { nazev: 'Čeká fronta', ikonaBarva: t.wait, maOdznak: true, odznakBarva: t.wait, maTitulek: false,
+        poznamka: 'CHYBÍ', poznamkaBarva: t.bad, pozadi: chybi, ram: chybiRam },
+      { nazev: 'Výpadek zvuku', ikonaBarva: t.wait, maOdznak: true, odznakBarva: t.bad, maTitulek: true, titulek: '12:41',
+        poznamka: 'CHYBÍ — a je to právě chvíle, kdy je panel zavřený', poznamkaBarva: t.bad, pozadi: chybi, ram: chybiRam },
+      { nazev: 'Bez spojení', ikonaBarva: t.subtle, maOdznak: true, odznakBarva: t.wait, maTitulek: false,
+        poznamka: 'CHYBÍ', poznamkaBarva: t.bad, pozadi: chybi, ram: chybiRam },
+    ];
+
+    const P = (popis, zkratka, barva, pozadi) => ({
+      jePolozka: true, jeCara: false, popis, zkratka: zkratka || '', barva: barva || t.text, pozadi: pozadi || 'transparent',
+    });
+    const CARA = { jePolozka: false, jeCara: true, popis: '', zkratka: '', barva: '', pozadi: '' };
+
+    const menu = [
+      P('Ukončit nahrávání', '⌃⌥R', t.bad),
+      P('Zastavit měření času', '⌃⌥T', t.ok),
+      CARA,
+      P('Otevřít panel', '⌃⌥L'),
+      P('Přepnout projekt…'),
+      CARA,
+      P('3 čekají na odeslání', '', t.wait),
+      P('Nastavení…'),
+    ];
+
+    const zavery = [
+      { text: 'Osm stavů, čtyři existují. Čtyři chybějící jsou přesně ty, které nastanou, když je panel zavřený a něco je špatně.',
+        pozadi: 'color-mix(in oklab, ' + t.bad + ' 8%, transparent)', ram: chybiRam, pruh: t.bad },
+      { text: 'Souběh potřebuje odznak, ne pátou ikonu. Barva nese hlavní agendu, odznak tu druhou — a stav nikdy nesmí záviset jen na barvě.',
+        pozadi: t.card, ram: t.hair, pruh: t.accent },
+      { text: 'Klávesové zkratky a kontextové menu v repu neexistují vůbec. Bez nich je lišta jen ukazatel, ne ovládání.',
+        pozadi: t.card, ram: t.hair, pruh: t.wait },
+    ];
+
+    return { t, stavy, menu, zavery };
+  }
+}
+</script>
+</body>
+</html>

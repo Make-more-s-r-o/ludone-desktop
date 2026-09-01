@@ -1,0 +1,46 @@
+{
+  "artboards": [
+    { "file": "Conservative.dc.html", "x": 0, "y": 0, "w": 366, "h": 792, "title": "Conservative" },
+    { "file": "Main.dc.html", "x": 466, "y": 0, "w": 366, "h": 792, "title": "Strong-fit" },
+    { "file": "Divergent.dc.html", "x": 932, "y": 0, "w": 366, "h": 792, "title": "Divergent" },
+    { "file": "Lista.dc.html", "x": 0, "y": 1010, "w": 760, "h": 560, "title": "Lišta a souběh" }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": -520,
+      "y": 0,
+      "w": 440,
+      "text": "TŘI SMĚRY PRO PANEL 366 × 792\n\nJedna aplikace, dvě agendy s nezávislým životním cyklem: nahrávání schůzek a měření času. Nesdílejí start ani stop — sdílejí shell, přihlášení a projektový kontext.\n\nVšechny tři kreslí tytéž tokeny LuDone Přístroj DS (indigový akcent, OKLCH rampa, Instrument Sans + Public Sans). Neliší se barvou, ale informační architekturou.\n\nNaměřený rozpočet panelu: obsahová plocha 670 px, dnes zabráno 529, volných 141 px. Sedmá schůzka panel přetéká a nic to neohlásí — proto je hustota u každé varianty to hlavní, o čem se rozhoduje.\n\nStavy se přepínají chipy nad každým artboardem."
+    },
+    {
+      "id": "note-conservative",
+      "x": 0,
+      "y": -186,
+      "w": 366,
+      "text": "CONSERVATIVE — nejblíž tomu, co dnes existuje\n\nTři karty pod sebou v plné výšce, každá se svým startem a stopem. Typ plochy: Operate.\n\nPRO: nic se neučí znovu, nejlevnější cesta ke kódu, obě agendy jsou vidět naráz vždycky.\nPROTI: přetéká. Zkus přepnout počet schůzek na 4 — panel dojede a fronta ani hlášení o výpadku zvuku už se nevejdou."
+    },
+    {
+      "id": "note-strongfit",
+      "x": 466,
+      "y": -186,
+      "w": 366,
+      "text": "STRONG-FIT ★ — LuDone DS + Linear a Raycast\n\nKlidová agenda je jeden řádek, běžící se rozbalí. Typ plochy: Operate + Command/Inspect.\n\nPRO: řeší rozpočet panelu strukturou, ne zmenšováním písma. Priorita se řídí tím, co běží. Místo zbývá i na frontu a na výpadek zvuku.\nPROTI: klidový stav ukazuje míň — kdo chce vidět obě agendy pořád, tady je nenajde v plné podobě."
+    },
+    {
+      "id": "note-divergent",
+      "x": 932,
+      "y": -186,
+      "w": 366,
+      "text": "DIVERGENT — dnešek je objekt, agendy jsou slovesa\n\nJedna časová osa. Schůzka i vykázaný čas leží na téže ose; nahrát a měřit jsou akce na řádku. Typ plochy: Monitor + Operate.\n\nPRO: odpovídá na otázku, kterou si člověk klade doopravdy — „co jsem dnes dělal a co mě čeká\". Souběh je vidět jako fakt, ne jako dvě čísla.\nPROTI: největší odklon od A11 „spouštěč, ne platforma\". Potřebuje kalendář, který dnes nefunguje (tři události natvrdo, žádné volání serveru)."
+    },
+    {
+      "id": "note-lista",
+      "x": 0,
+      "y": 880,
+      "w": 760,
+      "text": "LIŠTA — tady se láme důvěra. Panel je většinu času zavřený, takže ikona je jediné, co uživatel vidí. Dnešní kód zná čtyři stavy z osmi a při souběhu o časovači mlčí; pátý stav by se tiše překlopil na šedé „nepřihlášeno\", tedy aplikace by vypadala jako spadlá právě ve chvíli, kdy nahrává i měří."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

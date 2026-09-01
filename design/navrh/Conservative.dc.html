@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.72 0.14 268); }
+    a:hover { color: oklch(0.8 0.11 268); }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="width: 366px; height: 792px; display: flex; flex-direction: column; background: {{t.page}}; color: {{t.text}}; font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; border-radius: 26px; overflow: hidden; border: 1px solid {{t.hair}};">
+
+  <div style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid {{t.hair}};">
+    <div style="width: 24px; height: 24px; border-radius: 7px; background: {{t.accent}}; display: flex; align-items: center; justify-content: center;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{t.page}}" stroke-width="2.4" stroke-linecap="round"><path d="M4 18 L10 6 L14 14 L20 9"></path></svg>
+    </div>
+    <div style="flex-grow: 1; font-family: 'Instrument Sans', sans-serif; font-weight: 600; font-size: 14px; color: {{t.strong}};">LuDone</div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{t.subtle}}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"></path></svg>
+  </div>
+
+  <div style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 14px;">
+
+    <!-- KARTA: DNEŠNÍ SCHŮZKY -->
+    <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: {{t.card}}; border: 1px solid {{t.hair}};">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{t.accent}}" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 11h18"></path></svg>
+        <div style="flex-grow: 1; font-family: 'Instrument Sans', sans-serif; font-size: 14px; font-weight: 600; color: {{t.strong}};">Dnešní schůzky</div>
+      </div>
+      <sc-for list="{{schuzky}}" as="s" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 10px; height: 38px;">
+          <div style="font-family: 'Instrument Sans', sans-serif; font-size: 12px; font-weight: 600; color: {{t.muted}}; font-variant-numeric: tabular-nums; width: 36px;">{{s.cas}}</div>
+          <div style="flex-grow: 1; font-size: 12.5px; color: {{t.text}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{s.nazev}}</div>
+          <div style="font-size: 11px; color: {{t.accent}}; font-weight: 600;">Nahrát</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- KARTA: NAHRÁVÁNÍ -->
+    <div style="display: flex; flex-direction: column; gap: 11px; padding: 14px; border-radius: 18px; background: {{t.card}}; border: 1px solid {{ramNahravani}};">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{barvaNahravani}}" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><path d="M12 19v3"></path></svg>
+        <div style="flex-grow: 1; font-family: 'Instrument Sans', sans-serif; font-size: 14px; font-weight: 600; color: {{t.strong}};">Nahrávání</div>
+        <div style="font-family: 'Instrument Sans', sans-serif; font-size: 15px; font-weight: 600; color: {{barvaNahravani}}; font-variant-numeric: tabular-nums;">{{casNahravky}}</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <sc-for list="{{meraky}}" as="m" hint-placeholder-count="2">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <div style="font-size: 10.5px; color: {{t.muted}}; width: 74px; flex-shrink: 0;">{{m.popiska}}</div>
+            <div style="flex-grow: 1; height: 5px; border-radius: 3px; background: {{t.sunken}}; overflow: hidden;">
+              <div style="height: 100%; width: {{m.sirka}}; background: {{m.barva}}; border-radius: 3px;"></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 7px; height: 38px; border-radius: 10px; background: {{pozadiTlacitka}}; color: {{textTlacitka}}; font-weight: 600; font-size: 13px; cursor: pointer;">{{popisTlacitka}}</div>
+    </div>
+
+    <!-- KARTA: LUTRACK -->
+    <div style="display: flex; flex-direction: column; gap: 11px; padding: 14px; border-radius: 18px; background: {{t.card}}; border: 1px solid {{ramCasu}};">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{barvaCasu}}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+        <div style="flex-grow: 1; font-family: 'Instrument Sans', sans-serif; font-size: 14px; font-weight: 600; color: {{t.strong}};">LuTrack</div>
+        <div style="font-family: 'Instrument Sans', sans-serif; font-size: 15px; font-weight: 600; color: {{barvaCasu}}; font-variant-numeric: tabular-nums;">{{casMereni}}</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 9px; height: 34px; padding: 0 11px; border-radius: 10px; background: {{t.sunken}}; border: 1px solid {{t.hair}};">
+        <div style="flex-grow: 1; font-size: 12px; color: {{t.text}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Make more Finanční řízení 2026</div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{t.subtle}}" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg>
+      </div>
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <div style="font-size: 10.5px; color: {{t.subtle}};">Zbývá z alokace</div>
+        <div style="font-size: 11.5px; color: {{t.wait}}; font-weight: 600; font-variant-numeric: tabular-nums;">116:19</div>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: center; height: 38px; border-radius: 10px; background: {{pozadiCasu}}; color: {{textCasu}}; font-weight: 600; font-size: 13px; cursor: pointer;">{{popisCasu}}</div>
+    </div>
+
+    <sc-if value="{{pretekaVidet}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 10px; background: {{t.badTint}}; border: 1px dashed {{t.badRam}};">
+        <div style="font-size: 10.5px; color: {{t.bad}}; line-height: 1.4;"><b>Rozpočet panelu je vyčerpaný.</b> Se třemi schůzkami už sem fronta ani hlášení o výpadku zvuku nevejdou.</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="height: 36px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-top: 1px solid {{t.hair}}; font-size: 10.5px; color: {{t.subtle}};">
+    <div style="width: 6px; height: 6px; border-radius: 50%; background: {{t.ok}};"></div>
+    <div style="flex-grow: 1;">Vše odesláno</div>
+  </div>
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{
+  "stav": {"editor": "enum", "options": ["klid", "jen čas", "jen nahrávání", "obojí"], "default": "obojí", "section": "Stav"},
+  "rezim": {"editor": "enum", "options": ["tmavý", "světlý"], "default": "tmavý", "section": "Vzhled"},
+  "pocetSchuzek": {"editor": "int", "default": 3, "min": 1, "max": 7, "section": "Stav"}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    const stav = this.props.stav ?? 'obojí';
+    const tmavy = (this.props.rezim ?? 'tmavý') === 'tmavý';
+    const pocet = this.props.pocetSchuzek ?? 3;
+
+    const t = tmavy ? {
+      page: 'oklch(0.185 0.012 262)', card: 'oklch(0.235 0.012 262)',
+      sunken: 'oklch(0.16 0.012 262)', hair: 'oklch(0.305 0.013 262)',
+      subtle: 'oklch(0.585 0.014 262)', muted: 'oklch(0.715 0.012 262)',
+      text: 'oklch(0.925 0.005 262)', strong: 'oklch(0.975 0.003 262)',
+      accent: 'oklch(0.72 0.14 268)',
+      accentTint: 'color-mix(in oklab, oklch(0.72 0.14 268) 16%, transparent)',
+      ok: 'oklch(0.78 0.11 178)',
+      okRam: 'color-mix(in oklab, oklch(0.78 0.11 178) 34%, transparent)',
+      wait: 'oklch(0.8 0.13 76)',
+      bad: 'oklch(0.75 0.14 34)',
+      badRam: 'color-mix(in oklab, oklch(0.75 0.14 34) 34%, transparent)',
+      badTint: 'color-mix(in oklab, oklch(0.75 0.14 34) 12%, transparent)',
+      badFg: 'oklch(0.16 0.012 262)',
+    } : {
+      page: 'oklch(0.978 0.004 85)', card: 'oklch(0.993 0.003 85)',
+      sunken: 'oklch(0.958 0.005 82)', hair: 'oklch(0.925 0.006 80)',
+      subtle: 'oklch(0.635 0.013 260)', muted: 'oklch(0.505 0.016 262)',
+      text: 'oklch(0.245 0.019 266)', strong: 'oklch(0.165 0.02 266)',
+      accent: 'oklch(0.48 0.16 268)',
+      accentTint: 'color-mix(in oklab, oklch(0.48 0.16 268) 9%, transparent)',
+      ok: 'oklch(0.46 0.1 178)',
+      okRam: 'color-mix(in oklab, oklch(0.46 0.1 178) 30%, transparent)',
+      wait: 'oklch(0.52 0.12 70)',
+      bad: 'oklch(0.5 0.15 32)',
+      badRam: 'color-mix(in oklab, oklch(0.5 0.15 32) 30%, transparent)',
+      badTint: 'color-mix(in oklab, oklch(0.5 0.15 32) 10%, transparent)',
+      badFg: 'oklch(0.993 0.003 85)',
+    };
+
+    const nahrava = stav === 'jen nahrávání' || stav === 'obojí';
+    const cas = stav === 'jen čas' || stav === 'obojí';
+
+    const vsechny = [
+      { cas: '09:30', nazev: 'Denní stand-up' },
+      { cas: '14:00', nazev: 'Porada provozu' },
+      { cas: '15:30', nazev: 'MF Praha — dodavatel' },
+      { cas: '16:15', nazev: 'LuFak — přejímka' },
+      { cas: '17:00', nazev: 'Maker Tábor rozpočet' },
+      { cas: '17:45', nazev: 'Hovor s účetní' },
+      { cas: '18:30', nazev: 'Retro týdne' },
+    ];
+
+    return {
+      t,
+      schuzky: vsechny.slice(0, pocet),
+      meraky: [
+        { popiska: 'Mikrofon', sirka: nahrava ? '68%' : '3%', barva: nahrava ? t.ok : t.hair },
+        { popiska: 'Ostatní zvuk', sirka: nahrava ? '54%' : '3%', barva: nahrava ? t.ok : t.hair },
+      ],
+      casNahravky: nahrava ? '12:41' : '00:00',
+      casMereni: cas ? '5h 16m' : '0h 00m',
+      barvaNahravani: nahrava ? t.bad : t.subtle,
+      barvaCasu: cas ? t.ok : t.subtle,
+      ramNahravani: nahrava ? t.badRam : t.hair,
+      ramCasu: cas ? t.okRam : t.hair,
+      popisTlacitka: nahrava ? 'Ukončit a uložit' : 'Začít nahrávat',
+      pozadiTlacitka: nahrava ? t.bad : t.accentTint,
+      textTlacitka: nahrava ? t.badFg : t.accent,
+      popisCasu: cas ? 'Stop' : 'Spustit',
+      pozadiCasu: cas ? t.sunken : t.accentTint,
+      textCasu: cas ? t.text : t.accent,
+      // Tři karty v plné výšce + čtyři schůzky panel přetečou. Ukazuje se to
+      // schválně: je to hlavní slabina této varianty a naměřený fakt, ne dojem.
+      pretekaVidet: pocet >= 4,
+    };
+  }
+}
+</script>
+</body>
+</html>
