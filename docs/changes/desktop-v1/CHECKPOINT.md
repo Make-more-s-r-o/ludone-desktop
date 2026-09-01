@@ -3,7 +3,7 @@
 **Tenhle soubor se PŘEPISUJE po každé vlně, neroste.** Je to pojistka proti compaction:
 kdo ho čte s prázdným kontextem, musí být schopen pokračovat, aniž by se ptal.
 
-**Poslední zápis: 1. 9. 2026, 23:25.** Zadání běhu: [`BEH-NOC.md`](BEH-NOC.md).
+**Poslední zápis: 2. 9. 2026, 00:20.** Zadání běhu: [`BEH-NOC.md`](BEH-NOC.md).
 
 🔴 **Režim od 23:15 (Danův pokyn): NEPTAT SE.** Bezpečné vratné defaulty rozhodni, zapiš do
 `decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
@@ -14,7 +14,7 @@ dokud existuje bezpečná práce.** Mechanika primárně Codex, Claude koordinac
 
 ## Vlna
 
-`3 / 4` — B5 a B8 běží na Codexu souběžně, každá ve svém stromě.
+`3 / 4` — **B5 i B8 doběhly, převzaty a otevřeny jako PR.** Zbývá B6, B7, B9, B10, B11.
 
 ## Hotovo — tři PR otevřené
 
@@ -22,7 +22,9 @@ dokud existuje bezpečná práce.** Mechanika primárně Codex, Claude koordinac
 |---|---|---|---|---|
 | **B1** `ui-smoke` | [#2](https://github.com/Make-more-s-r-o/ludone-desktop/pull/2) | 🟢 | lint 0 · tc 0 · **77/77** | červený baseline naostro + 4 sabotáže diferenciálně |
 | **B4** tři vady přihlášení | [#3](https://github.com/Make-more-s-r-o/ludone-desktop/pull/3) | 🟢 | lint 0 · tc 0 · **86/86** (9 nových) | 3 doslovné červené výpisy + recept na sabotáže |
-| **B3** autorita tray | [#4](https://github.com/Make-more-s-r-o/ludone-desktop/pull/4) | ⏳ | lint 0 · tc 0 · **98/98** (6 nových) | 4 sabotáže 3🔴:1🟢 + cílená sabotáž jediného přepočtu |
+| **B3** autorita tray | [#4](https://github.com/Make-more-s-r-o/ludone-desktop/pull/4) | 🟢 | lint 0 · tc 0 · **112/112** | 2 kola sabotáží 3🔴:1🟢 + review VRATIT, 4 nálezy opraveny |
+| **B8** zapojit auth | [#5](https://github.com/Make-more-s-r-o/ludone-desktop/pull/5) *(nad b4)* | 🟢 | lint 0 · tc 0 · **117/117** (24+7 nových) | 3🔴:1🟢, vymyšlené `clientId` odstraněno |
+| **B5** časovač do main | [#6](https://github.com/Make-more-s-r-o/ludone-desktop/pull/6) *(nad b3)* | ⏳ | lint 0 · tc 0 · **159/159** (46+1 nových) | 3🔴:1🟢 + zelená sabotáž, ze které vznikl nový test |
 
 🔴 **Žádná netvrdí `verified-live`.** Osy: `delivery: pr-open` · `exposure` beze změny ·
 `verification: tests-green`. To je 🧪, ne ✅.
@@ -31,10 +33,7 @@ dokud existuje bezpečná práce.** Mechanika primárně Codex, Claude koordinac
 
 | Co | Kde | Jak poznat konec |
 |---|---|---|
-| **Codex B5** časovač do main | worktree `desktop-b5` (nad B3) | log `…/codex-1788295518.log`, hlídač na pozadí |
-| **Codex B8** zapojit auth | worktree `desktop-b8` (nad B4) | log `…/codex-1788295853.log`, hlídač na pozadí |
-| **Codex review B3** read-only | panel „🔎 Codex review: B3" | log `/tmp/beh-noc/b3-review.log` — 🔴 **odpověď je v LOGU, `-o` v read-only kleci nic nezapíše** |
-| **Workflow review 3 PR** | 4 čočky → 2 skeptici na nález | task `w7j4w7yen`, notifikace sama |
+| **Workflow review 3 PR** | 4 čočky → 2 skeptici na nález | task `w7j4w7yen`, notifikace sama; ve fázi ověřování |
 
 🔴 **Log bez pohybu 20 minut = mrtvý job** bez ohledu na hlášený stav. Práce ale bývá hotová
 na disku — než ho pustíš znovu, `git status` ve worktree.
@@ -93,3 +92,26 @@ na disku — než ho pustíš znovu, `git status` ve worktree.
 3. Pak **B6 + B7** (obě po B5, jiné bloky `main.cjs`) a **B9** (po B8) na Codexe.
 4. **B10** potřebuje návrh (sdílené zařízení `zasedacka@`) — návrh je koordinátorův.
 5. **B11** až po B7.
+
+---
+
+## 🔴 Tři nálezy z vlny 3 — všechny stejné třídy
+
+Všechny tři jsou „brána, která nic nenajde, není zelená — je nezměřená":
+
+1. **B8: vykonavatel si VYMYSLEL identifikátor klienta.** Splnil „statickou registraci" tak,
+   že zadrátoval dvě konkrétní ID — a v téže odpovědi přiznal, že serverový záznam pro ně
+   neexistuje. Uhodnutý identifikátor **není fail-closed**: neselže srozumitelně u nás, ale až
+   na serveru hláškou, se kterou nikdo nic neudělá. → `LUDONE_OAUTH_CLIENT_ID`, BD-N10.
+
+2. **B8: vada kódu se hlásila jako vada konfigurace.** Klasifikátor bral volný podřetězec
+   `clientId`, takže `ReferenceError: resolveAuthClientId is not defined` dostal uživatel jako
+   „konfigurace". **Chytej se vět, ne jmen proměnných.**
+
+3. **B5: sabotáž zůstala ZELENÁ a byl to nález.** Konstantní klíč proti duplikaci — tedy
+   dvakrát vykázaný čas — prošel všemi 158 testy, protože si každý test `newId` podstrkuje
+   a produkční výchozí hodnota se nikdy nespustila. Test na různost klíčů měřil fixturu.
+   → nový test bez override; táž sabotáž teď padá právě na něm.
+
+**Zobecnění do dalších vln:** ke každému „test to hlídá" patří otázka **„spouští ten test
+produkční cestu, nebo tu, kterou mu podstrčil?"**
