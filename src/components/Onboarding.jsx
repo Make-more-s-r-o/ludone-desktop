@@ -202,6 +202,7 @@ export function Onboarding({ onAuthenticated, onComplete }) {
                   <button
                     type="button"
                     className="button button--small"
+                    data-testid="permission-action"
                     disabled={state.granted || state.disabled || permissionBusy === permission.id}
                     onClick={() => grantPermission(permission.id)}
                   >

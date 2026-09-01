@@ -7,6 +7,8 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");
 const outputDir = path.join(projectRoot, ".runtime", "smoke");
 const observations = [];
+const PERMISSION_ACTION_SELECTOR = '[data-testid="permission-action"]';
+const EXPECTED_PERMISSION_COUNT = 2;
 
 await mkdir(outputDir, { recursive: true });
 
@@ -165,6 +167,40 @@ async function clickByAria(client, label) {
   await delay(120);
 }
 
+async function assertElementCount(client, selector, expected) {
+  const actual = await client.evaluate(
+    `document.querySelectorAll(${JSON.stringify(selector)}).length`,
+  );
+  if (actual !== expected) {
+    throw new Error(`Selektor ${selector}: čekám ${expected} prvků, nalezeno ${actual}.`);
+  }
+  observations.push({ check: "element-count", selector, value: actual });
+}
+
+async function clickPermissionAction(client) {
+  const result = await client.evaluate(`(() => {
+    const control = [...document.querySelectorAll(${JSON.stringify(PERMISSION_ACTION_SELECTOR)})]
+      .find((item) => !item.disabled);
+    if (!control) return false;
+    control.click();
+    return true;
+  })()`);
+  if (!result) throw new Error("Klikací tlačítko oprávnění nebylo nalezeno.");
+  observations.push({ action: "click", target: PERMISSION_ACTION_SELECTOR });
+  await delay(120);
+}
+
+async function assertPermissionActionsGranted(client) {
+  const state = await client.evaluate(`(() => {
+    const controls = [...document.querySelectorAll(${JSON.stringify(PERMISSION_ACTION_SELECTOR)})];
+    return { count: controls.length, disabled: controls.filter((item) => item.disabled).length };
+  })()`);
+  if (state.count !== EXPECTED_PERMISSION_COUNT || state.disabled !== EXPECTED_PERMISSION_COUNT) {
+    throw new Error(`Oprávnění nejsou všechna potvrzená: ${JSON.stringify(state)}.`);
+  }
+  observations.push({ check: "permissions-granted", value: state.count });
+}
+
 async function clickFirstMeeting(client) {
   const result = await client.evaluate(`(() => {
     const control = document.querySelector('button[aria-label^="Nahrát schůzku"]');
@@ -297,11 +333,12 @@ try {
   await clickByText(panel, "Přihlásit v prohlížeči");
   await assertText(panel, "Aby LuDone pomohlo");
 
-  for (let index = 0; index < 3; index += 1) {
-    await clickByText(panel, "Povolit");
+  await assertElementCount(panel, PERMISSION_ACTION_SELECTOR, EXPECTED_PERMISSION_COUNT);
+  for (let index = 0; index < EXPECTED_PERMISSION_COUNT; index += 1) {
+    await clickPermissionAction(panel);
     await delay(350);
   }
-  await assertText(panel, "Povoleno");
+  await assertPermissionActionsGranted(panel);
   await clickByText(panel, "Pokračovat");
   await assertText(panel, "LuDone čeká");
   await screenshot(panel, "02-onboarding-done");
