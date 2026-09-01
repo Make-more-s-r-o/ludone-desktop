@@ -187,25 +187,6 @@ function modulacniIndex(obal, maska) {
   return vse > 0 ? rec / vse : 0;
 }
 
-function korelaceObalek(a, b) {
-  const n = Math.min(a.length, b.length);
-  if (n < 10) return 0;
-  let ma = 0;
-  let mb = 0;
-  for (let i = 0; i < n; i += 1) { ma += a[i]; mb += b[i]; }
-  ma /= n; mb /= n;
-  let sab = 0;
-  let sa = 0;
-  let sb = 0;
-  for (let i = 0; i < n; i += 1) {
-    const da = a[i] - ma;
-    const db = b[i] - mb;
-    sab += da * db; sa += da * da; sb += db * db;
-  }
-  if (sa === 0 || sb === 0) return 0;
-  return sab / Math.sqrt(sa * sb);
-}
-
 function fmt(sekundy) {
   const m = Math.floor(sekundy / 60);
   const s = Math.floor(sekundy % 60);
