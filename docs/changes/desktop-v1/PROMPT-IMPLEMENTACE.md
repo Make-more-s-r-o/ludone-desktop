@@ -73,7 +73,8 @@ commit, PR. Money-critical kód od Codexu nikdy nemerguj bez přečtení diffu.
 
 🔴 Codex ve worktree needituje git, edituje jen SOUBORY — git add/fetch/merge/checkout mu
 spadnou na "Operation not permitted", protože index leží mimo pracovní strom. Do KAŽDÉHO
-zadání dej větu "NEDĚLEJ ŽÁDNOU git operaci" a commituj po něm sám, HNED po doběhnutí:
+zadání dej větu "NEDĚLEJ ŽÁDNOU git operaci, jediná povolená je git --no-pager status
+--porcelain, ta jen čte" a commituj po něm sám, HNED po doběhnutí:
 sabotážní kolo končí git checkout -- . a nad necommitnutou prací by ji smazalo.
 
 🔴 Codexův job, jehož log se nehýbe 20 minut, je mrtvý bez ohledu na to, co hlásí status.

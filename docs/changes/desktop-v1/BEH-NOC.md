@@ -68,6 +68,10 @@ i u Codexovy práce.
 `checkout` mu v sandboxu spadnou na `Operation not permitted` — index leží mimo pracovní
 strom. Do každého zadání patří věta „NEDĚLEJ ŽÁDNOU git operaci"; commituje orchestrátor.
 
+⚠️ **Jedna výjimka, ať si zadání neodporuje:** povolená je `git --no-pager status --porcelain`,
+protože jen čte a nesahá na index. Bez té věty vykonavatel buď poruší zákaz, nebo vynechá
+baseline — obojí je horší než výjimka napsaná rovnou.
+
 🔴 **Po každém `--write` běhu je první akce `git add -A && git commit`**, teprve pak brány
 a sabotáže. Sabotážní kolo končí `git checkout -- .` — nad necommitnutou prací by ji smazalo.
 
@@ -118,6 +122,17 @@ runner nemá komu potvrdit. **CI tuhle třídu regrese z principu nevidí** — 
 4. Nejmíň jeden případ, který musí zůstat **zelený** (poměr 2–3 červené : 1 zelená).
 5. Diff přečtený Claudem — u money a RBAC povinně.
 6. PR nese **Feature ID** a čtyři osy po změně.
+
+🔴 **Kritérium tvaru „nic už nejde zmáčknout" měří součet příčin, ne úspěch.**
+Doloženo v B1 dnes v noci: kontrola „všechna oprávnění jsou potvrzená" se ptala na
+`disabled === 2`, jenže `Onboarding.jsx:206` je `disabled={state.granted || state.disabled
+|| permissionBusy}` — tlačítko je mrtvé při **udělení, odepření i čekání**. Brána by prošla
+i na stroji, kde systém přístup ODEPŘEL. Opraveno dotazem na `.permission-row.is-granted`
+(commit `0140911`), což je jediný stav znamenající udělení.
+
+**Pravidlo pro každý test v tomhle běhu:** ptej se na stav, který znamená ÚSPĚCH, nikdy na
+nepřítomnost akce. A do output contractu dej **počet viděných subjektů** („kolik pokusů /
+tiků / řádků jsi napočítal"), ne jen „prošlo". **Nula viděných subjektů je nález, ne zelená.**
 
 🔴 **Brána, která nic nenajde, není zelená — je nezměřená.** Grep bez kanárka, test nad kopií
 logiky místo nad produkční funkcí, „neměřeno" vydávané za pass. Tenhle repozitář na tom
