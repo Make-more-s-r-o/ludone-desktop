@@ -88,6 +88,28 @@ věta „nesahej na cizí" prohraje s prvním „tady to logicky patří taky".
 
 ---
 
+## Výchozí stav bran — ZMĚŘENO 1. 9. 2026 ve 22:03
+
+| Brána | Výsledek |
+|---|---|
+| `npm run lint` | ✅ EXIT=0 |
+| `npm run typecheck` | ✅ EXIT=0 |
+| `npm run test:unit` | ✅ **77 testů v 9 souborech, všechny zelené** |
+| `ui-smoke` | 🔴 **ČERVENÁ** — a je to úkol B1 |
+
+**Baseline je zelený.** Když ráno svítí červená mimo `ui-smoke`, **rozbil ji tenhle běh** —
+není to zděděná vada a nehledej ji v historii.
+
+🔴 Příčina červené `ui-smoke` je známá na řádek: `scripts/ui-smoke.mjs:301` klikne na tlačítko
+**„Povolit"**, které v `src/components/Onboarding.jsx` po etapě E6 **neexistuje**. Sabotážní
+skript se zachoval správně — odmítl měřit nad červeným baseline. B1 je tedy srovnání textů
+kroků, ne výkop.
+
+⚠️ `ui-smoke` je v CI vypnutý (`if: ${{ false }}`), protože potřebuje GUI a oprávnění, která
+runner nemá komu potvrdit. **CI tuhle třídu regrese z principu nevidí** — proto ta ruční měření.
+
+---
+
 ## Definition of Done
 
 1. **Cílený test napřed, viděný červený ze správného důvodu.** Do PR jeho **doslovný výpis**.
