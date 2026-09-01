@@ -243,34 +243,56 @@ describe("lišta se překresluje jen při skutečné změně", () => {
 });
 
 describe("každá změna nahrávacího faktu lištu přepočítá", () => {
-  // 🔴 Tenhle test vznikl z díry, kterou 92 zelených testů NEVIDĚLO. Odvození stavu bylo
-  // správné, jenže se po startu nahrávání nikdo nezeptal — `refreshTray()` chyběl na všech
-  // pěti místech, kde se nahrávací fakt mění, takže lišta by nahrávání neukázala nikdy.
-  // Test chování to nechytilo, protože volalo `refreshTray()` samo. Chybělo měřidlo ZAPOJENÍ.
+  // 🔴 Tenhle test vznikl z díry, kterou 92 zelených testů NEVIDĚLO: odvození stavu bylo
+  // správné, jenže se po startu nahrávání nikdo nezeptal. Chybělo měřidlo ZAPOJENÍ.
+  //
+  // 🔴 A pak měl díru sám. Nezávislé review doložilo, že pátá položka měřila KOMENTÁŘ:
+  // `indexOf("return recordingSession.finalizePromise;")` se trefil do dřívějšího
+  // předčasného návratu a okno za ním uspokojila věta z komentáře, ve které se
+  // `refreshTray()` jen jmenuje. Skutečné volání nebylo měřené vůbec — sabotáž, která ho
+  // smazala, nechala všech 112 testů zelených.
+  //
+  // Proto se teď měří nad zdrojem BEZ celořádkových komentářů a každá položka říká,
+  // na které straně mutace má přepočet stát.
+  const kodBezKomentaru = mainSource
+    .split("\n")
+    .map((radek) => (radek.trim().startsWith("//") ? "" : radek))
+    .join("\n");
+
   const mutace = [
-    "recordingOwnersPreparing.set(ownerId, preparation);",
-    "recordingSessions.set(sessionId, recordingSession);",
-    "recordingOwnersPreparing.delete(ownerId);",
-    "recordingSessions.delete(sessionId);",
-    "return recordingSession.finalizePromise;",
+    { kotva: "recordingOwnersPreparing.set(ownerId, preparation);", strana: "za" },
+    { kotva: "recordingSessions.set(sessionId, recordingSession);", strana: "za" },
+    { kotva: "recordingOwnersPreparing.delete(ownerId);", strana: "za" },
+    { kotva: "recordingSessions.delete(sessionId);", strana: "za" },
+    // Přiřazení finalizePromise je okamžik, kdy session přestává být živé nahrávání.
+    // Přepočet stojí PŘED návratem, a ten návrat je v souboru dvakrát — bereme poslední.
+    { kotva: "return recordingSession.finalizePromise;", strana: "pred", posledni: true },
   ];
 
-  it.each(mutace)("po „%s“ následuje refreshTray()", (radek) => {
-    const index = mainSource.indexOf(radek);
-    expect(index, `řádek se v main.cjs nenašel: ${radek}`).toBeGreaterThan(-1);
-    // Okno tří řádků: přepočet musí být hned vedle mutace, ne někde v téže funkci.
-    const okno = mainSource.slice(index, index + radek.length + 220);
+  it.each(mutace)("u „$kotva“ stojí refreshTray() $strana ní", ({ kotva, strana, posledni }) => {
+    const index = posledni ? kodBezKomentaru.lastIndexOf(kotva) : kodBezKomentaru.indexOf(kotva);
+    expect(index, `kotva se v main.cjs nenašla: ${kotva}`).toBeGreaterThan(-1);
+    const okno = strana === "za"
+      ? kodBezKomentaru.slice(index, index + kotva.length + 220)
+      : kodBezKomentaru.slice(Math.max(0, index - 220), index);
     expect(okno).toContain("refreshTray()");
   });
 
+  it("kotva pátého případu se v kódu vyskytuje víckrát — proto lastIndexOf", () => {
+    // Kdyby ten předčasný návrat zmizel, `posledni: true` přestane být nutné a někdo by
+    // ho mohl „uklidit". Tenhle test řekne, že nutné pořád je.
+    const vyskytu = kodBezKomentaru.split("return recordingSession.finalizePromise;").length - 1;
+    expect(vyskytu).toBeGreaterThan(1);
+  });
+
   it("žádná mutace nezůstala nezmapovaná", () => {
-    // Kdyby v kódu přibylo další místo, kde se ty mapy mění, tenhle počet přestane sedět
-    // a někdo se na to bude muset podívat — místo aby to tiše chybělo.
-    const vyskytu = (vzor) => mainSource.split(vzor).length - 1;
+    const vyskytu = (vzor) => kodBezKomentaru.split(vzor).length - 1;
     expect(vyskytu("recordingOwnersPreparing.set(")).toBe(1);
     expect(vyskytu("recordingOwnersPreparing.delete(")).toBe(1);
     expect(vyskytu("recordingSessions.set(")).toBe(1);
     expect(vyskytu("recordingSessions.delete(")).toBe(1);
+    // Přiřazení finalizePromise chybělo v původním výčtu úplně.
+    expect(vyskytu("recordingSession.finalizePromise = (async ()")).toBe(1);
   });
 });
 
