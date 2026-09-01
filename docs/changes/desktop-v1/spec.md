@@ -58,24 +58,79 @@ citlivá pole. Vše **default-deny**.
 
 ## 3. Funkční matice
 
-| ID | Funkce | Riziko | Stav |
-|---|---|---|---|
-| `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | rozpracováno (T1, zmrazeno) |
-| `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | neexistuje |
-| `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | logika hotová, nezapojená |
-| `DSK-F004` | Odhlášení s odvoláním na serveru | security | neexistuje |
-| `DSK-F005` | Obnova tokenu, jednovláknová | security | neexistuje |
-| `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | částečně, zamyká celou appku |
-| `DSK-F007` | Nahrávání dvou stop na disk | normal | hotové, ověřené |
-| `DSK-F008` | Pojmenování nahrávky při zastavení | normal | neexistuje |
-| `DSK-F009` | Odchozí fronta s opakováním | normal | kód existuje, **nezapojený** |
-| `DSK-F010` | Odeslání na server | rbac | server neexistuje |
-| `DSK-F011` | Časovač: start, přepnutí projektu, stop | **money** | 77 řádků atrapy |
-| `DSK-F012` | Výběr projektu z alokací | **money** | tři řetězce natvrdo |
-| `DSK-F013` | Časovač přežije pád a restart | **money** | neexistuje |
-| `DSK-F014` | Připomínky, když neběží časovač | normal | neexistuje |
-| `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika | normal | částečně |
-| `DSK-F016` | Ikona v Docku jako volba | normal | neexistuje |
+🔴 **Čtyři nezávislé osy, ne jeden sloupec „hotovo".** Masterplán §8 to jmenovitě zakazuje a tenhle
+repozitář ví proč: v srpnu tu devět zelených bran hlásilo hotovou práci, která se nikdy nespustila.
+Funkce může být **napsaná, nikam nezapojená a neověřená naráz** — jeden sloupec to neumí říct.
+
+| Osa | Hodnoty | Odpovídá na otázku |
+|---|---|---|
+| **scope** | `approved` · `draft` · `rejected` | Je to schválené do téhle vlny? |
+| **delivery** | `no-code` · `coded` · `committed` · `pr-open` · `merged` | Existuje kód a kde leží? |
+| **exposure** | `disabled` · `labs` · `production` | Dostane se k tomu člověk? |
+| **verification** | `unverified` · `tests-green` · `verified-live` | Kdo to viděl fungovat? |
+
+⚠️ **Osa `exposure` je pro desktop přeložená**, protože se nic nerozváží: `labs` = běží ze zdrojáku
+na Danově Macu · `production` = podepsaný build v rukou týmu. **Do `production` dnes nesahá nic**
+a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodělek, to je stav.
+
+| ID | Funkce | Riziko | scope | delivery | exposure | verification |
+|---|---|---|---|---|---|---|
+| `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | approved | committed ¹ | disabled | tests-green |
+| `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | approved | no-code | disabled | unverified |
+| `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | approved | coded ² | disabled | unverified |
+| `DSK-F004` | Odhlášení s odvoláním na serveru | security | approved | no-code | disabled | unverified |
+| `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | no-code | disabled | unverified |
+| `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | approved | coded ³ | labs | unverified |
+| `DSK-F007` | Nahrávání dvou stop na disk | normal | approved | merged | labs | tests-green ⁴ |
+| `DSK-F008` | Pojmenování nahrávky při zastavení | normal | approved | no-code | disabled | unverified |
+| `DSK-F009` | Odchozí fronta s opakováním | normal | approved | coded ⁵ | disabled | tests-green |
+| `DSK-F010` | Odeslání na server | rbac | **draft** ⁶ | no-code | disabled | unverified |
+| `DSK-F011` | Časovač: start, přepnutí projektu, stop | **money** | approved | no-code ⁷ | disabled | unverified |
+| `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ⁸ | disabled | unverified |
+| `DSK-F013` | Časovač přežije pád a restart | **money** | approved | no-code | disabled | unverified |
+| `DSK-F014` | Připomínky, když neběží časovač | normal | approved | no-code | disabled | unverified |
+| `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika | normal | approved | coded | labs | unverified |
+| `DSK-F016` | Ikona v Docku jako volba | normal | approved | no-code | disabled | unverified |
+
+**Poznámky — každá je změřená, ne odhadnutá (1. 9. 2026):**
+
+¹ Commit `ce2bea6` na větvi `fix/tray-prazdna-ikona`, **záměrně nemergováno** — je to user-visible
+implementace bez schváleného specu, tedy přesně to, co tenhle masterplán zakazuje. Brána volá
+produkční `trayImage()`, takže neměří kopii logiky. Ale `verified-live` to není: po opravě
+ikonu nikdo na Macu neviděl.
+
+² `createAuthController` je v `electron/auth.cjs:325` definovaná a na řádku 502 exportovaná —
+a **nikde v repozitáři se neimportuje**. Je to hotová logika mimo provoz. 🔴 Navíc má token scope
+jen `mcp:read` a `mcp:draft` (`auth.cjs:14`), tedy **nemůže zapisovat**; bez zápisového scope
+je serverový kontrakt nepoužitelný.
+
+³ Existuje, ale zamyká celou aplikaci — odepřené oprávnění dnes shodí i časovou agendu, která
+s mikrofonem nemá co do činění.
+
+⁴ **Tady je hranice, na které tenhle projekt už jednou uklouzl.** Změřeno je: dvě stopy vzniknou
+na disku a zvuk z loopbacku nese řeč (`meet-mereni.mjs`, referenční soubor: úspěch 0,9983 ·
+odebrané AEC 0,0696 · přeslech odhalen). **Nezměřeno je to podstatné** — že to funguje na
+skutečné schůzce s živým protějškem (A6, čeká na Dana). A cesta, po které to jede, je ta,
+kterou `IsSystemLoopbackCaptureSupported()` na macOS 26.4 hlásí jako nepodporovanou. Proto
+`tests-green`, ne `verified-live`.
+
+⁵ `src/lib/queue.js` má 200+ řádků a vlastní testy, ale **žádný soubor v `src/` ani `electron/`
+ji neimportuje**. Zelené testy nad nezapojeným kódem.
+
+⁶ **Jediná funkce se scope `draft`, a je to úmysl.** Serverová strana je S1 — dostane vlastní
+průchod masterplánem v `ludone-app`. Zapojit frontu k serveru, který neexistuje, je v `plan.md`
+výslovně zakázané. Zadání pro ten běh je `docs/server-modul/KONTRAKT.md`.
+
+⁷ `src/features/tracking/TrackingCard.jsx` má **77 řádků a všechen stav v `useState`** — tedy
+v rendereru, kde ho zabije každý pád okna. Atrapa není `coded`; kdyby byla, matice by lhala
+přesně tím způsobem, kvůli kterému tahle tabulka má čtyři sloupce.
+
+⁸ Tamtéž, řádek 5: `const PROJECTS = ["LuDone Desktop", "Web · klientská zóna", "Interní provoz"]`.
+Tři řetězce natvrdo. Žádná alokace, žádné GUID.
+
+**Součet, ať se to nemusí počítat očima:** ze šestnácti funkcí je **jedna** v `main` a běží
+(F007), **čtyři** mají kód mimo provoz (F001, F003, F006/F015, F009), **jedenáct** neexistuje.
+Nic není `verified-live`. **Nic není v `production`.**
 
 ---
 

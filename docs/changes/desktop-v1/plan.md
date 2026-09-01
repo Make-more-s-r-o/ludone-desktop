@@ -131,6 +131,50 @@ starých čísel na nová, B10 nejdřív návrh, B12 je Danova migrace mimo tenh
 
 ---
 
+## 2b. Rozpad na PR
+
+**Jedna story = jeden PR.** Masterplán chce PR, který jde přečíst na jedno posezení a vrátit
+jedním revertem. Odhad je v **řádcích diffu bez testů**; přes ~250 se PR dělí, protože review
+nad větším diffem přestává být review a stává se prohlížením.
+
+| Story | Název PR (anglicky) | Soubory | Test, který jde napřed | ~diff | Dělitelné? |
+|---|---|---|---|---|---|
+| **B1** | `Make ui-smoke fail when the panel does not open` | `scripts/ui-smoke.mjs` | Sabotáž (b) a (c) musí zčervenat — dnes nezčervená | 60 | ne |
+| **B2** | `Rename run numbers to B*/BD*` | `docs/**` | žádný — jen dokumenty | 0 kódu | ne |
+| **B3** | `Move tray state authority into the main process` | `electron/main.cjs`, `preload.cjs`, `src/App.jsx` | Tray drží stav i když renderer spadne | 120 | ne |
+| **B4** | `Fix three login defects` | `electron/auth.cjs`, `main.cjs` | Tři testy: 5↔10 min · panel nemizí při dialogu · čekání má konec | 90 | **ano, 3×** |
+| **B5** | `Own the timer in the main process` | `electron/tracking.cjs` *(nový)*, `main.cjs`, `preload.cjs` | Čas přežije `webContents.forcefullyCrashRenderer()` | 220 | ne |
+| **B6** | `Offer only projects with a valid allocation` | `src/lib/adapters/`, `TrackingCard.jsx` | Přečerpaný projekt (>110 %) není v nabídce | 150 | ne |
+| **B7** | `Wire the outbound queue for both item kinds` | `electron/queue.cjs`, `main.cjs`, `preload.cjs` | Trvalá chyba se **neopakuje pětkrát**; rozlišovač typu | 180 | ne |
+| **B8** | `Use the real auth controller instead of the stub` | `electron/main.cjs`, `auth.cjs` | Přihlášení projde skutečným `createAuthController` | 110 | ne |
+| **B9** | `Revoke the token on logout` | `electron/auth.cjs`, `main.cjs`, `preload.cjs` | Po odhlášení není token v `safeStorage` **ani na serveru** | 80 | ne |
+| **B10** | `Tell a shared device apart from a personal one` | návrh napřed, pak `auth.cjs`, `tracking.cjs` | Nahrávka ze `zasedacka@` se přiřadí člověku, ne zařízení | 200 | **ano, návrh + stavba** |
+| **B11** | `Delete local copies after seven days` | `electron/retention.cjs` *(nový)*, Nastavení | Soubor starší 7 dnů zmizí; „nemazat" ho nechá | 130 | ne |
+| **B12** | ⛔ **není PR do tohohle repa** | migrace v LuTracku | měření překryvů **napřed** | — | — |
+
+### Co musí být v každém PR napsané
+
+1. **Feature ID** z `spec.md` a odkaz na tenhle plán.
+2. **Doslovný výpis červeného testu** před opravou. Ne „test padal", ale co vypsal.
+3. **Sabotáž**: co jsem rozbil, aby brána zčervenala, a čím to doložím.
+4. **Čtyři osy** po změně — co se posunulo z `no-code` na `coded`, co zůstalo `disabled`.
+
+🔴 **PR nesmí tvrdit `verified-live`, dokud to někdo neviděl běžet.** V tomhle repozitáři to
+platí doslova: zelené testy jsou `tests-green`, nic víc. Tvrzení „ověřeno", které stojí jen
+na zelené bráně, je vada PR, ne formalita.
+
+### Pořadí, ve kterém to má smysl pouštět
+
+**První vlna paralelně:** B1 · B2 · B4 — prokazatelně nesdílejí soubory.
+**Druhá:** B3 (čeká na B1), pak B5.
+**Třetí:** B6 · B7 (obě po B5, ale sahají do jiných bloků `main.cjs`) · B8 (po B4).
+**Čtvrtá:** B9 (po B8) · B11 (po B7) · B10 (návrh po B8, stavba až po návrhu).
+
+⚠️ **B5 je nejtěžší kus a všechno za ním na něm visí.** Když se má něco pustit první a pořádně,
+je to on — ne proto, že je nejsložitější, ale protože jeho odklad zdrží pět dalších stories.
+
+---
+
 ## 3. Definition of Done pro každou story
 
 1. Cílený test **napřed** a viděný **červený** ze správného důvodu.
