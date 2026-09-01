@@ -348,3 +348,31 @@ ručního zásahu), ne na kalendářní datum.
   před právním rozhodnutím, se mažou hůř, než by nevznikly.
 - **Nevěřit tvrzení „proklikáno“.** Dnešní `ui-smoke` používá programové `element.click()`,
   což obchází hit-testing, překryvy a z-order. Opravuje se v E2.
+
+---
+
+## Před nočním během / ráno po něm (1. 9. 2026)
+
+**Rozhodnutí, která běh udělal za tebe** — všechna jsou zápis, ne beton:
+
+- **Návrhy šesti sekcí masterplánu se nevložily do zmrazeného specu.** Skeptická revize v nich
+  našla nepravdy (neexistující `app.getAppLogsPath()`, číslo odvozené z poloviny vlastní citace,
+  brána zelená tím, že nic nenajde). Leží v `docs/changes/desktop-v1/sekce-navrhy/` i s revizemi.
+  Do specu šlo jen pět pravidel, která revizi přežila — `spec.md` §11.
+- **Třináctý agent workflow se zasekl** (20 minut bez zápisu) a byl zastaven. Dvanáct výsledků
+  je v hrsti, chybí jedna skeptická revize sekce „journeys/IA". Ta sekce se stejně nevkládá.
+
+**Čeká to na tebe:**
+
+- 🔴 **Změřit A6 na skutečné schůzce.** `node scripts/schuzka-mereni.mjs` — potřebuje živý hovor
+  a sluchátka. Do té doby je nahrávání systémového zvuku `tests-green`, ne ověřené. **A vzniklý
+  zvuk necommituj** — `.gitignore` to teď blokuje, ale ať to víš proč: je v tom cizí hlas.
+- 🔴 **B12 migrace** — jeden běžící časovač na člověka a zákaz překryvů. Zásah do živé databáze
+  24 lidí a **na tabulce s existujícími překryvy migrace selže**. Nejdřív změřit, kolik jich tam
+  je, pak rozhodnout, co s nimi. Noční běh to nedělá.
+- **A2 — Apple Developer Program (99 $/rok).** Doporučení zůstává NE, dokud neproběhne P1/P2.
+  Bez něj se ale nedá nic rozvézt týmu, takže tohle blokuje rozvoz, ne vývoj.
+- **Pět edge funkcí LuTracku běží s `verify_jwt = false`.** Cizí systém, patří jeho majiteli.
+- **Podklady z Claude Designu** — `/design-login` umíš spustit jen ty. Schválený návrh je
+  kompletní lokálně; chybí jen tokeny mimo barvy (písmo, tvar, pohyb, mezery). **Až úplně
+  nakonec**, jak jsi řekl.
