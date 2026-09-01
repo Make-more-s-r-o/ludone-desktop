@@ -230,34 +230,11 @@ if (!gotSingleInstanceLock) {
   app.quit();
 }
 
-function traySvg(state) {
-  const variants = {
-    "signed-out": `
-      <circle cx="9" cy="9" r="6.3" fill="none" stroke="#737373" stroke-width="1.8"/>
-      <path d="M4.5 13.5 13.5 4.5" stroke="#737373" stroke-width="1.8" stroke-linecap="round"/>`,
-    idle: `
-      <circle cx="9" cy="9" r="6.2" fill="none" stroke="#d4d4d4" stroke-width="1.8"/>
-      <circle cx="9" cy="9" r="2.1" fill="#d4d4d4"/>`,
-    recording: `
-      <circle cx="9" cy="9" r="7" fill="#2f9e44"/>
-      <rect x="6.5" y="5.4" width="5" height="7.2" rx="2.5" fill="#f7fff8"/>`,
-    tracking: `
-      <circle cx="9" cy="9" r="6.3" fill="none" stroke="#75d38c" stroke-width="1.8"/>
-      <path d="M9 5.2V9l2.7 1.8" fill="none" stroke="#75d38c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-  };
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">${variants[state]}</svg>`;
-}
-
 function trayIconName(state) {
-  switch (state) {
-    case "signed-out":
-    case "idle":
-    case "recording":
-    case "tracking":
-      return state;
-    default:
-      return "signed-out";
-  }
+  const names = ["signed-out", "idle", "recording", "tracking"];
+  // Brána čte seznam bez druhého výčtu; nový stav se tak přidává na jediné místo.
+  if (arguments.length === 0) return [...names];
+  return names.includes(state) ? state : "signed-out";
 }
 
 // Kolik systémových dialogů o oprávnění právě běží. Dokud je to > 0, panel se po
@@ -290,10 +267,20 @@ function shouldHidePanelOnBlur({
 }
 
 function trayImage(state) {
-  const encoded = Buffer.from(traySvg(trayIconName(state))).toString("base64");
-  return nativeImage
-    .createFromDataURL(`data:image/svg+xml;base64,${encoded}`)
-    .resize({ width: 18, height: 18 });
+  const iconName = trayIconName(state);
+  const iconDirectory = path.join(__dirname, "ikony");
+  const imageBuffer = fs.readFileSync(path.join(iconDirectory, `${iconName}.png`));
+  const retinaBuffer = fs.readFileSync(path.join(iconDirectory, `${iconName}@2x.png`));
+  const image = nativeImage.createFromBuffer(imageBuffer, { scaleFactor: 1 });
+  const retinaImage = nativeImage.createFromBuffer(retinaBuffer, { scaleFactor: 1 });
+
+  if (image.isEmpty() || retinaImage.isEmpty()) {
+    throw new Error(`Ikona lišty ${iconName} se nenačetla`);
+  }
+
+  image.addRepresentation({ scaleFactor: 2, buffer: retinaBuffer });
+  image.setTemplateImage(true);
+  return image;
 }
 
 const TRAY_LABELS = {
