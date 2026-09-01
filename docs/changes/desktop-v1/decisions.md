@@ -313,3 +313,38 @@ stav, přestože ji už nikdo nepotřebuje.
 `refreshTray()` po pádu okna nikdo nezavolá a story nedodá nic. Packet `B3-tray-autorita.md`
 si tuhle odchylku sám přiznává v §12.1b. **Zmrazený plán neopravuju za pochodu** — zapsáno tady,
 aby se to při B5 nevyřešilo podruhé a jinak.
+
+---
+
+## BD-N10 — `LUDONE_OAUTH_CLIENT_ID` je druhá a POSLEDNÍ nová proměnná B8 (koordinátor, 2. 9. 2026, 00:10)
+
+BD-N6 rozhodlo „statická registrace, `clientId` povinný". Vykonavatel to splnil jinak, než
+bylo myšleno: **vymyslel si dvě konkrétní ID** (`ldmcp_oauth_client_prod_v1_desktop`
+a `…_labs_…`) a zadrátoval je do `main.cjs` — a **v téže odpovědi přiznal**, že serverový
+repozitář takový záznam nemá a že ID „vycházejí z předepsaného tvaru".
+
+🔴 **Uhodnutý identifikátor NENÍ fail-closed.** Neselže srozumitelně u nás — selže až na
+serveru hláškou o neznámém klientovi, kterou uživatel ani správce neumí zařadit. To je horší
+než odmítnout start.
+
+**Rozhodnuto:** jediným zdrojem je proměnná prostředí **`LUDONE_OAUTH_CLIENT_ID`**. Chybí-li,
+je prázdná, jsou v ní jen mezery nebo není řetězec, **přihlášení se ani nepokusí** a vrátí
+důvod `konfigurace` s českou větou. Ověřeno testem, který kontroluje **nulu pokusů** o vytvoření
+controlleru — ne jen návratovou hodnotu. Kanárek hlídá, že se zadrátovaná ID nevrátí.
+
+**Počet nových proměnných B8 je tedy 2** (`LUDONE_ORIGIN` z BD-N7 + tahle), ne 1, jak jsem
+původně napsal do output contractu. Je to důsledek BD-N6, ne rozšíření rozsahu: „clientId
+z konfigurace" bez zdroje konfigurace nejde splnit.
+
+⚠️ **Pro Dana:** dokud ta hodnota neexistuje, **přihlášení naostro nepůjde** — a to je záměr.
+Potřebuje statického OAuth klienta na serveru (S1, jiný repozitář).
+
+### Vedlejší nález ze stejného místa
+
+Mapování chyb na důvody bralo **volný podřetězec `clientId`**, takže `ReferenceError:
+resolveAuthClientId is not defined` se uživateli ohlásil jako **„konfigurace"** — programátorská
+vada převlečená za něco, co „doplní správce". Zúženo na věty, které házíme sami; nezařaditelná
+chyba zůstává `neznama`. Má vlastní test i povinně zelený protějšek.
+
+**Obecně:** klasifikátor chyb, který se chytá podřetězců z identifikátorů, dřív nebo později
+zamění vadu kódu za vadu konfigurace. Chytej se vět, ne jmen proměnných.
