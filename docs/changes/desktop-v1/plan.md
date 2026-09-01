@@ -101,8 +101,33 @@ na Claudovi.
 
 ### Rozvržení do worktrees
 
-Jeden zapisovatel na strom. **B1, B2 a B4 sahají do různých souborů** → mohou běžet paralelně
-ve třech worktrees. **B3 → B5 → B6/B7** sdílí `electron/main.cjs` → sekvenčně v jednom.
+🔴 **Původní rozvržení bylo špatně a Codexovo vytěžení to odhalilo.** Devět z dvanácti stories
+sahá do `electron/main.cjs`, osm do `electron/preload.cjs` — včetně obou řetězců, které měly
+běžet paralelně. Samotná závislost v DAG tedy nestačí; rozhoduje, kdo píše do kterého souboru.
+
+**B1, B2 a B4 paralelně** — ověřeno, že se nepřekrývají: B1 sahá jen do `scripts/ui-smoke.mjs`,
+B2 do dokumentů, B4 do `electron/auth.cjs` a okolí.
+
+**Všechno ostatní se sráží.** Řešení není serializovat celý zbytek — je to **vlastnictví bloku
+uvnitř souboru**. V tomhle repozitáři to prokazatelně funguje: při běhu 25. 8. psaly tři etapy
+souběžně do `electron/main.cjs` ze tří worktrees a **všechny čtyři merge proběhly bez jediného
+konfliktu**, protože každá měla vlastnictví zadané jako výčet bloků, ne prózou.
+
+| Story | Vlastní v `main.cjs` | Vlastní v `preload.cjs` |
+|---|---|---|
+| **B3** | `trayIconName`, `updateTray`, `deriveTrayState`, registrace tray | odebrat `setTrayState` |
+| **B4** | `shouldHidePanelOnBlur` a jeho čítače | nic |
+| **B5** | registrace `tracking:*` kanálů, hook na pád rendereru | přidat `tracking:*` |
+| **B7** | zapojení fronty, `queue:*` kanály | přidat `queue:*` |
+| **B8** | `auth:begin` a jeho okolí | `beginAuth` |
+| **B9** | `auth:logout` | přidat `logout` |
+| **B11** | nic | nic |
+
+🔴 **Task packet musí vlastnictví zadat VÝČTEM, ne větou „nesahej na cizí".** Próza prohraje
+s prvním „tady to logicky patří taky"; výčet umí vykonavatel použít jako filtr při každé editaci.
+
+⚠️ **B2, B10 a B12 mají soubory neurčené** a nesmí se pouštět, dokud se neurčí: B2 potřebuje mapu
+starých čísel na nová, B10 nejdřív návrh, B12 je Danova migrace mimo tenhle repozitář.
 
 ---
 
