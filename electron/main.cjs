@@ -22,6 +22,11 @@ const {
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
 } = require("./auth.cjs");
+const {
+  TRACKING_STATES,
+  createTrackingStore,
+  handleRendererGone,
+} = require("./tracking.cjs");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
@@ -36,6 +41,7 @@ const RECORDING_TRACKS = new Map([
   ["microphone", "mikrofon"],
   ["system", "system"],
 ]);
+const PROCESS_STARTED_AT = new Date().toISOString();
 const recordingSessions = new Map();
 const recordingOwnersPreparing = new Map();
 
@@ -402,6 +408,9 @@ function createPanelWindow() {
   panelContents.on("render-process-gone", (_event, details) => {
     console.error(`[recording] Renderer skončil: ${JSON.stringify(details)}`);
     forgetOwnerActivity(panelContents.id, "pád rendereru");
+  });
+  panelContents.on("render-process-gone", () => {
+    if (trackingStore) handleRendererGone(trackingStore, {});
   });
   panelContents.once("destroyed", () => {
     forgetOwnerActivity(panelContents.id, "zničení okna");
@@ -796,6 +805,63 @@ handleValidated("recording:finish", ["panel"], (event, sessionId) => {
   ownedRecordingSession(event, sessionId);
   return finalizeRecordingSession(sessionId, "complete");
 });
+
+const TRACKING_STORE_OWNER_ID = "main-process-timer";
+let trackingStore;
+let trackingStoreReady;
+
+function getTrackingStore() {
+  if (!trackingStore) {
+    trackingStore = createTrackingStore({
+      filePath: path.join(app.getPath("userData"), "cas", "casovac.json"),
+      timeEnabled: process.env.DESKTOP_TIME_ENABLED,
+      processStartedAt: PROCESS_STARTED_AT,
+    });
+  }
+  return trackingStore;
+}
+
+function syncTrackingTray(store) {
+  if (store.getState().aktualni?.state === TRACKING_STATES.RUNNING) {
+    appState.trackingOwners.add(TRACKING_STORE_OWNER_ID);
+  } else {
+    appState.trackingOwners.delete(TRACKING_STORE_OWNER_ID);
+  }
+  refreshTray();
+}
+
+async function getReadyTrackingStore() {
+  const store = getTrackingStore();
+  if (!trackingStoreReady) {
+    trackingStoreReady = store.load().then(() => {
+      syncTrackingTray(store);
+      return store;
+    });
+  }
+  return trackingStoreReady;
+}
+
+async function runTrackingMutation(method, payload) {
+  const store = await getReadyTrackingStore();
+  const result = await store[method](payload);
+  syncTrackingTray(store);
+  return result;
+}
+
+handleValidated("tracking:start", ["panel"], (_event, payload) => (
+  runTrackingMutation("start", payload)
+));
+handleValidated("tracking:switch-project", ["panel"], (_event, payload) => (
+  runTrackingMutation("switchProject", payload)
+));
+handleValidated("tracking:stop", ["panel"], () => runTrackingMutation("stop"));
+handleValidated("tracking:get-state", ["panel", "settings"], async () => {
+  const store = await getReadyTrackingStore();
+  return store.getState();
+});
+handleValidated("tracking:resolve-recovered", ["panel"], (_event, payload) => (
+  runTrackingMutation("resolveRecovered", payload)
+));
 
 // 🔴 Identifikátor klienta se NEUHODNE a nezadrátuje. Musí odpovídat záznamu, který někdo
 // založil na serveru — a ten zatím neexistuje. Zadrátovaná hodnota by se serveru nesešla

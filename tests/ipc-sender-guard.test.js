@@ -193,13 +193,22 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     // (`ipcMain.handle(channel, …)` uvnitř `handleValidated`). Že jdou přes
     // `requireTrustedSender`, hlídají samostatné asserce níž — z inventury je proto
     // vyřízneme, jinak by se hlásily jako kanál, jehož jméno neumíme rozluštit.
+    // 🔴 Inventura se dívá na KÓD, ne na prózu. Bez tohohle kroku ji rozbil obyčejný
+    // komentář, který ukazuje registraci kanálu — sabotáž `// handleValidated("auth:begin", …)`
+    // shodila test, přestože v kódu se nic nezměnilo. Odstraňujeme jen CELOŘÁDKOVÉ
+    // komentáře: kdo by mazal každé `//`, rozřízne i `"https://app.ludone.cz"` uvnitř řetězce.
+    const kodBezKomentaru = mainSource
+      .split("\n")
+      .map((radek) => (radek.trim().startsWith("//") ? "" : radek))
+      .join("\n");
+
     const zdrojBezWrapperu = [
-      functionSource(mainSource, "handleValidated"),
-      functionSource(mainSource, "onValidated"),
-    ].reduce((text, telo) => text.replace(telo, ""), mainSource);
+      functionSource(kodBezKomentaru, "handleValidated"),
+      functionSource(kodBezKomentaru, "onValidated"),
+    ].reduce((text, telo) => text.replace(telo, ""), kodBezKomentaru);
 
     const konstanty = Object.fromEntries(
-      [...mainSource.matchAll(/^const\s+([A-Z0-9_]+)\s*=\s*["']([^"']+)["'];/gm)]
+      [...kodBezKomentaru.matchAll(/^const\s+([A-Z0-9_]+)\s*=\s*["']([^"']+)["'];/gm)]
         .map((m) => [m[1], m[2]]),
     );
     const registrations = [...zdrojBezWrapperu.matchAll(
@@ -212,7 +221,15 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       return { registration: match[1], channel };
     });
 
-    expect(registrations.map(({ channel }) => channel).sort()).toEqual([
+    // Dvojí registrace téhož kanálu je v Electronu výjimka při startu. Porovnání
+    // seřazených polí ji chytne taky, ale hlásí ji jako nesrovnalost dvou seznamů —
+    // tahle asserce řekne rovnou, o který kanál jde. Vzniklo při slučování dvou linií,
+    // kde jedna nesla atrapu `auth:begin` a druhá skutečný handler.
+    const jmena = registrations.map(({ channel }) => channel);
+    const dvakrat = [...new Set(jmena.filter((j, i) => jmena.indexOf(j) !== i))];
+    expect(dvakrat, `kanál registrovaný dvakrát: ${dvakrat.join(", ")}`).toEqual([]);
+
+    expect(jmena.sort()).toEqual([
       "auth:begin",
       "auth:cancel",
       "auth:logout",
@@ -225,6 +242,11 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "settings:open",
       "test:click-tray",
       "test:quit",
+      "tracking:get-state",
+      "tracking:resolve-recovered",
+      "tracking:start",
+      "tracking:stop",
+      "tracking:switch-project",
       "tray:get-state",
       "tray:report-facts",
     ].sort());

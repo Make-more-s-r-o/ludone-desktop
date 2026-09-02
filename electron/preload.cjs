@@ -14,6 +14,13 @@ contextBridge.exposeInMainWorld("ludone", {
   appendRecordingChunk: (sessionId, source, sequence, arrayBuffer) =>
     ipcRenderer.invoke("recording:append", sessionId, source, sequence, arrayBuffer),
   finishRecording: (sessionId) => ipcRenderer.invoke("recording:finish", sessionId),
+  startTracking: (payload) => ipcRenderer.invoke("tracking:start", payload),
+  switchTrackingProject: (payload) =>
+    ipcRenderer.invoke("tracking:switch-project", payload),
+  stopTracking: () => ipcRenderer.invoke("tracking:stop"),
+  getTrackingState: () => ipcRenderer.invoke("tracking:get-state"),
+  resolveRecoveredTracking: (payload) =>
+    ipcRenderer.invoke("tracking:resolve-recovered", payload),
   getTrayState: () => ipcRenderer.invoke("tray:get-state"),
   testClickTray: () => ipcRenderer.invoke("test:click-tray"),
   testQuit: () => ipcRenderer.invoke("test:quit"),
