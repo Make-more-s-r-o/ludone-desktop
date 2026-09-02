@@ -56,6 +56,40 @@ describe("panel během přihlášení", () => {
     expect(mainSource).toMatch(/handleValidated\(AUTH_CANCEL_CHANNEL, \["panel"\]/);
   });
 
+  it("blur handler PŘEDÁVÁ čítač do volání — ne jen že funkce umí rozhodnout", () => {
+    // 🔴 Nález nezávislého review: testy výš skládají vstupní objekt samy a volají čistou
+    // funkci. Tím dokazují ROZHODNUTÍ a nikdy ZAPOJENÍ — kdyby volající místo v `main.cjs`
+    // přestalo `authAttemptsInFlight` posílat, panel by se během přihlašování zase schovával
+    // a všechny ostatní testy v tomhle souboru by zůstaly zelené.
+    //
+    // Porovnáváme proto PARAMETRY funkce s KLÍČI, které jí volající skutečně předává. Chytí
+    // to obojí: když volající pole vypustí, i když funkce dostane nový parametr, který jí
+    // nikdo neposílá.
+    const kodBezKomentaru = mainSource
+      .split("\n")
+      .map((radek) => (radek.trim().startsWith("//") ? "" : radek))
+      .join("\n");
+
+    const hlavicka = /function shouldHidePanelOnBlur\(\{([^}]*)\}\)/.exec(kodBezKomentaru);
+    expect(hlavicka, "hlavička shouldHidePanelOnBlur se nenašla").not.toBeNull();
+    const parametry = hlavicka[1]
+      .split(",").map((kus) => kus.trim().split(":")[0].trim()).filter(Boolean).sort();
+
+    const volani = /shouldHidePanelOnBlur\(\{([^}]*)\}\)/g;
+    const volaci = [...kodBezKomentaru.matchAll(volani)]
+      .map((m) => m[1])
+      // Hlavička se do téhle množiny taky trefí; poznáme ji podle toho, že jí předchází
+      // `function `. Ta nás nezajímá, zajímá nás skutečné volání.
+      .filter((_, i) => i > 0);
+    expect(volaci.length, "volání shouldHidePanelOnBlur se v main.cjs nenašlo").toBeGreaterThan(0);
+
+    for (const argumenty of volaci) {
+      const klice = argumenty
+        .split(",").map((kus) => kus.trim().split(":")[0].trim()).filter(Boolean).sort();
+      expect(klice).toEqual(parametry);
+    }
+  });
+
   it("zachovává ochranu pro dialogy oprávnění", () => {
     expect(shouldHidePanelOnBlur({ ...zaklad, permissionPromptsInFlight: 1 })).toBe(false);
   });
