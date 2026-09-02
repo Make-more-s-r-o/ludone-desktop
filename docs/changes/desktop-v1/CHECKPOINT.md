@@ -3,7 +3,7 @@
 **PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
 kontextem, musí pokračovat, aniž by se ptal. Zadání: [`BEH-NOC.md`](BEH-NOC.md).
 
-**Poslední zápis: 2. 9. 2026 — VLNA 5 po obnovení limitů.**
+**Poslední zápis: 2. 9. 2026 — VLNA 5, po druhém review.**
 
 🔴 **Režim od 23:15 (Dan): NEPTAT SE.** Bezpečné vratné defaulty rozhodni a zapiš do
 `decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
@@ -33,8 +33,7 @@ práce. Mechanika Codex, Claude koordinace a review.
 
 | Co | Log | Konec |
 |---|---|---|
-| Codex **B9b** bezpečnost odhlášení | `/tmp/beh-noc/b9b-codex.log` | hlídač na pozadí |
-| Workflow **review druhé vlny** | 5 čoček nad b5/b7/b8/b9/b11 | task `ws42r5dai`, ozve se samo |
+| Codex **B5c** skok hodin zpět | `/tmp/beh-noc/b5c-codex.log` | hlídač na pozadí |
 
 🔴 Log bez pohybu 20 min = mrtvý job. Práce bývá na disku — `git status` ve worktree.
 🔴 **Po doběhnutí COMMITNI HNED**, teprve pak brány a sabotáže.
@@ -113,3 +112,40 @@ Všechno je jedna třída: **brána, která nic nenajde, není zelená — je ne
 
 **Až bude hotovo:** merge zdola nahoru (b1, b3, b4 → main; pak b5, b8; pak b7, b9;
 nakonec b11 a b9b). **Merge je Danovo rozhodnutí** — masterplán M4 ruší „dotáhni to sám".
+
+---
+
+## Vlna 5, druhá půlka — co udělalo adversariální review druhé vlny
+
+**55 agentů, 15 potvrzených nálezů z 25**, deset skeptici vyvrátili. Vše v
+[`review-2-nalezy.md`](review-2-nalezy.md), včetně vyvrácených a s důvodem.
+
+### ✅ Opraveno
+
+| nález | kde | doloženo |
+|---|---|---|
+| 🔴 **`cancel()` byl po doručení kódu no-op** — uživatel klikl Zrušit a **skončil přihlášený s tokeny na disku** | `b8` → PR #5 | ověřeno reviewerem **spuštěním**; sabotáž `6 failed` |
+| 🔴 **`resolveAuthIssuer` neověřoval hostitele** — prošel libovolný čistý HTTPS origin | `b8` → PR #5 | test dá cizímu originu **platný `clientId`** a stejně čeká odmítnutí |
+| 🔴 **úložiště se ověřovalo až PO výměně tokenu** | `b8` → PR #5 | preflight s `fsync` **před** `openExternal`; sabotáž `9 failed` |
+| **tautologická kontrola retence v `ui-smoke`** | `b11` → PR #9 | 4 sabotáže, statický kanárek na volby |
+| **test čítače přihlášení měřil rozhodnutí, ne zapojení** | `b4` → PR #3 | porovnává parametry funkce s klíči volajícího |
+| **počítadlo mutací hlídalo 2 fakta ze 4** | `b3` → PR #4 | + test pořadí přepočtu vůči smyčce |
+
+### Stoh po dvou konfliktech v `auth.cjs`
+
+Obě strany si přepsaly vrstvu úložiště a měly **neslučitelné signatury**. Rebase rozjel
+orchestrátor, přeeditování dostal Codex s **výčtem invariantů**, dokončení a měření zase
+orchestrátor. Výsledek ověřen **měřením, ne tvrzením**:
+
+`b4 → b8 (131) → b9 (148) → b9b (162)` · `b3 (114) → b5 (161) → b7 (187) → b11 (206)`
+
+🔴 **Čísla testů musí po slučování SEDĚT na součet** — 135 + 13 = 148 a 148 + 14 = 162.
+Když nesedí, něco se při slučování ztratilo a je to vidět dřív než v provozu.
+
+### 🛑 Nálezy, které NEJDOU opravit bez Dana
+
+| co | proč |
+|---|---|
+| **čas se nikdy nedostane do fronty** (`enqueueTimeEntry` nemá volajícího) | zapojení nemá vlastníka; B5 ani B7 ho podle §12 nevlastní |
+| **retenční modul nikdo nevolá** | totéž; PR #9 to sám přiznává |
+| **selhání zařazení do fronty se jen zaloguje** | potřebuje reconciliaci na startu — návrh, ne oprava |
