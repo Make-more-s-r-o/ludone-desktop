@@ -1,55 +1,120 @@
 import { readFileSync } from "node:fs";
+import { Linter } from "eslint";
 import { describe, expect, it } from "vitest";
+import trackingModule from "../electron/tracking.cjs";
+
+const { TRACKING_STATES } = trackingModule;
+const parsedSources = new Map();
+
+function sourceCodeFor(source) {
+  if (parsedSources.has(source)) return parsedSources.get(source);
+  const linter = new Linter();
+  const messages = linter.verify(source, [{
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+  }]);
+  const fatal = messages.find((message) => message.fatal);
+  if (fatal) throw new Error(`Zdroj nejde analyzovat: ${fatal.message}`);
+  const sourceCode = linter.getSourceCode();
+  if (!sourceCode) throw new Error("Zdroj se nepodařilo analyzovat");
+  parsedSources.set(source, sourceCode);
+  return sourceCode;
+}
+
+function withoutComments(source) {
+  let result = source;
+  const comments = sourceCodeFor(source).getAllComments().toReversed();
+  for (const comment of comments) {
+    const [start, end] = comment.range;
+    const whitespace = source.slice(start, end).replace(/[^\r\n]/g, " ");
+    result = `${result.slice(0, start)}${whitespace}${result.slice(end)}`;
+  }
+  return result;
+}
 
 function functionSource(source, name) {
-  // 🔴 Deklarace se hledá NA ZAČÁTKU ŘÁDKU a musí být právě jedna. Naivní indexOf bere první
-  // textový výskyt, tedy i odsazenou zmínku v komentáři — a review doložilo, že se pak testuje
-  // napodobenina z komentáře, zatímco skutečná funkce vrací něco jiného.
-  const deklarace = [...source.matchAll(new RegExp(`^function ${name}\\(`, "gm"))];
-  if (deklarace.length === 0) throw new Error(`Funkce ${name} nebyla nalezena`);
-  if (deklarace.length > 1) {
-    throw new Error(`Funkce ${name} je deklarovaná ${deklarace.length}x — nevím, kterou měřit`);
+  const declarations = sourceCodeFor(source).ast.body.filter((node) => (
+    node.type === "FunctionDeclaration" && node.id?.name === name
+  ));
+  if (declarations.length === 0) throw new Error(`Funkce ${name} nebyla nalezena`);
+  if (declarations.length > 1) {
+    throw new Error(`Funkce ${name} je deklarovaná ${declarations.length}x — nevím, kterou měřit`);
   }
-  const start = deklarace[0].index;
-
-  // 🔴 Seznam parametrů se musí přeskočit ZÁVORKAMI, ne hledáním první `{`. Funkce
-  // s rozbaleným parametrem — `function f({ a, b }) {` — má složenou závorku už v hlavičce,
-  // takže naivní hledání vyřízne jen hlavičku bez těla a výsledek se ani nedá spustit.
-  let parenDepth = 0;
-  let bodyStart = -1;
-  for (let index = source.indexOf("(", start); index < source.length; index += 1) {
-    if (source[index] === "(") parenDepth += 1;
-    if (source[index] === ")") {
-      parenDepth -= 1;
-      if (parenDepth === 0) {
-        bodyStart = source.indexOf("{", index);
-        break;
-      }
-    }
-  }
-  if (bodyStart < 0) throw new Error(`Funkce ${name} nemá hlavičku, kterou umím přeskočit`);
-
-  let depth = 0;
-  for (let index = bodyStart; index < source.length; index += 1) {
-    if (source[index] === "{") depth += 1;
-    if (source[index] === "}") depth -= 1;
-    if (depth === 0) return source.slice(start, index + 1);
-  }
-  throw new Error(`Funkce ${name} nemá uzavřené tělo`);
+  const [start, end] = declarations[0].range;
+  return source.slice(start, end);
 }
 
 const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
 const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
+const mainCodeWithoutComments = withoutComments(mainSource);
+const preloadCodeWithoutComments = withoutComments(preloadSource);
+const appCodeWithoutComments = withoutComments(appSource);
+const trackingStoreOwnerId = Function(
+  `"use strict";
+   ${/^const TRACKING_STORE_OWNER_ID = [^;]+;/m.exec(mainCodeWithoutComments)[0]}
+   return TRACKING_STORE_OWNER_ID;`,
+)();
+
+const createTrackingMutationRunner = Function(
+  "getReadyTrackingStore",
+  "appState",
+  "refreshTray",
+  "TRACKING_STATES",
+  "TRACKING_STORE_OWNER_ID",
+  `"use strict";
+   ${functionSource(mainCodeWithoutComments, "syncTrackingTray")}
+   ${functionSource(mainCodeWithoutComments, "runTrackingMutation")}
+   return runTrackingMutation;`,
+);
+
+function trackingMutationHarness({ method, initialEntry, initialOwners, nextEntry }) {
+  const trackingOwners = new Set(initialOwners);
+  const calls = [];
+  const refreshSnapshots = [];
+  let state = { aktualni: initialEntry };
+  let markMutationStarted;
+  let releaseMutation;
+  const mutationStarted = new Promise((resolve) => { markMutationStarted = resolve; });
+  const mutationReleased = new Promise((resolve) => { releaseMutation = resolve; });
+  const store = {
+    getState: () => state,
+    async [method](payload) {
+      calls.push({ method, payload });
+      markMutationStarted();
+      await mutationReleased;
+      state = { aktualni: nextEntry };
+      return { method, payload };
+    },
+  };
+  const runTrackingMutation = createTrackingMutationRunner(
+    async () => store,
+    { trackingOwners },
+    () => { refreshSnapshots.push([...trackingOwners]); },
+    TRACKING_STATES,
+    trackingStoreOwnerId,
+  );
+  return {
+    calls,
+    mutationStarted,
+    releaseMutation,
+    refreshSnapshots,
+    runTrackingMutation,
+    trackingOwners,
+  };
+}
 
 // Konstantu bereme z PRODUKČNÍHO zdroje, ne z kopie. Kdyby si ji test definoval sám,
 // měřil by svoji představu a rozšíření povolených klíčů v main.cjs by prošlo nepovšimnuto.
 const reportedFactKeys = Function(
-  `"use strict"; ${/const REPORTED_FACT_KEYS = \[[^\]]*\];/.exec(mainSource)[0]}; return REPORTED_FACT_KEYS;`,
+  `"use strict"; ${/const REPORTED_FACT_KEYS = \[[^\]]*\];/.exec(mainCodeWithoutComments)[0]}; return REPORTED_FACT_KEYS;`,
 )();
 
 const trayIconName = Function(
-  `"use strict"; ${functionSource(mainSource, "trayIconName")}; return trayIconName;`,
+  `"use strict"; ${functionSource(mainCodeWithoutComments, "trayIconName")}; return trayIconName;`,
 )();
 
 // Hlavní proces se nedá načíst bez Electronu, tak si z něj vyřízneme rozhodovací funkce
@@ -76,12 +141,12 @@ function trayHarness({
      let trayState = "signed-out";
      let trayApplied = false;
      const applied = [];
-     ${functionSource(mainSource, "hasLiveRecording")}
-     ${functionSource(mainSource, "deriveTrayState")}
-     ${functionSource(mainSource, "refreshTray")}
-     ${functionSource(mainSource, "finalizeRecordingSessionsForOwner")}
-     ${functionSource(mainSource, "forgetOwnerActivity")}
-     ${functionSource(mainSource, "applyReportedFacts")}
+     ${functionSource(mainCodeWithoutComments, "hasLiveRecording")}
+     ${functionSource(mainCodeWithoutComments, "deriveTrayState")}
+     ${functionSource(mainCodeWithoutComments, "refreshTray")}
+     ${functionSource(mainCodeWithoutComments, "finalizeRecordingSessionsForOwner")}
+     ${functionSource(mainCodeWithoutComments, "forgetOwnerActivity")}
+     ${functionSource(mainCodeWithoutComments, "applyReportedFacts")}
      return {
        refreshTray,
        forgetOwnerActivity,
@@ -135,13 +200,13 @@ describe("autorita stavu tray ikony", () => {
 
   // Tahle asserce se NEMĚNÍ — je to invariant, který platil před B3 i po ní.
   it("výběr obrázku používá čisté mapování stavu", () => {
-    expect(functionSource(mainSource, "trayImage")).toContain("trayIconName(state)");
+    expect(functionSource(mainCodeWithoutComments, "trayImage")).toContain("trayIconName(state)");
   });
 
   // Týž invariant, přesunutý na funkci, která nahradila `updateTray`. Kdyby se smazal
   // místo přesunutí, bylo by to oslabení brány.
   it("uložený stav lišty používá stejné čisté mapování", () => {
-    expect(functionSource(mainSource, "refreshTray")).toContain("trayIconName(");
+    expect(functionSource(mainCodeWithoutComments, "refreshTray")).toContain("trayIconName(");
   });
 });
 
@@ -152,19 +217,21 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     // Hledá se REGISTRACE kanálu, tedy jméno v uvozovkách — ne zmínka o něm. Komentáře
     // v `main.cjs` ten kanál jmenují schválně, aby bylo vidět, co se sem vrátit nesmí,
     // a kontrola, která by na ně padala, by byla přecitlivělá a někdo by ji oslabil.
-    expect(mainSource).not.toContain('"tray:set-state"');
-    expect(preloadSource).not.toContain('"tray:set-state"');
-    expect(preloadSource).not.toContain("setTrayState");
-    expect(appSource).not.toContain("setTrayState");
-    expect(mainSource).not.toContain("function updateTray(");
+    expect(mainCodeWithoutComments).not.toContain('"tray:set-state"');
+    expect(preloadCodeWithoutComments).not.toContain('"tray:set-state"');
+    expect(preloadCodeWithoutComments).not.toContain("setTrayState");
+    expect(appCodeWithoutComments).not.toContain("setTrayState");
+    expect(mainCodeWithoutComments).not.toContain("function updateTray(");
   });
 
   it("renderer hlásí fakta, ne jméno ikony", () => {
-    const handler = mainSource.slice(mainSource.indexOf('onValidated("tray:report-facts"'));
+    const handler = mainCodeWithoutComments.slice(
+      mainCodeWithoutComments.indexOf('onValidated("tray:report-facts"'),
+    );
     expect(handler).toContain("applyReportedFacts");
     // Do kanálu faktů se nesmí dostat jméno stavu — tím by se `tray:set-state` vrátil
     // pod jiným jménem.
-    expect(functionSource(mainSource, "applyReportedFacts")).not.toContain("trayIconName");
+    expect(functionSource(mainCodeWithoutComments, "applyReportedFacts")).not.toContain("trayIconName");
   });
 
   it.each([
@@ -254,10 +321,7 @@ describe("každá změna nahrávacího faktu lištu přepočítá", () => {
   //
   // Proto se teď měří nad zdrojem BEZ celořádkových komentářů a každá položka říká,
   // na které straně mutace má přepočet stát.
-  const kodBezKomentaru = mainSource
-    .split("\n")
-    .map((radek) => (radek.trim().startsWith("//") ? "" : radek))
-    .join("\n");
+  const kodBezKomentaru = mainCodeWithoutComments;
 
   const mutace = [
     { kotva: "recordingOwnersPreparing.set(ownerId, preparation);", strana: "za" },
@@ -306,7 +370,7 @@ describe("každá změna nahrávacího faktu lištu přepočítá", () => {
     // až ZA smyčkou přes sessions — jinak by přepočet viděl stav, ve kterém část session
     // ještě nemá přiřazenou finalizaci. Měříme proto, že obojí je v TÉŽE funkci a ve
     // správném pořadí, ne že jsou vedle sebe.
-    const telo = functionSource(mainSource, "finalizeRecordingSessionsForOwner");
+    const telo = functionSource(mainCodeWithoutComments, "finalizeRecordingSessionsForOwner");
     const zruseni = telo.indexOf("preparation.cancelled = ");
     const prepocet = telo.lastIndexOf("refreshTray()");
     expect(zruseni, "zrušení přípravy se ve funkci nenašlo").toBeGreaterThan(-1);
@@ -387,8 +451,10 @@ describe("povolené klíče kanálu faktů", () => {
 });
 
 describe("každá změna časovače lištu přepočítá z faktu hlavního procesu", () => {
+  const unrelatedOwnerId = "renderer-window";
+
   it("běžící store drží stabilní vlastník mimo renderer a vždy volá refreshTray", () => {
-    const source = functionSource(mainSource, "syncTrackingTray");
+    const source = functionSource(mainCodeWithoutComments, "syncTrackingTray");
     expect(source).toContain("appState.trackingOwners.add(TRACKING_STORE_OWNER_ID)");
     expect(source).toContain("appState.trackingOwners.delete(TRACKING_STORE_OWNER_ID)");
     expect(source).toContain("refreshTray()");
@@ -400,9 +466,66 @@ describe("každá změna časovače lištu přepočítá z faktu hlavního proce
     ["tracking:stop", "stop"],
     ["tracking:resolve-recovered", "resolveRecovered"],
   ])("kanál %s prochází společnou mutací %s", (channel, method) => {
-    const start = mainSource.indexOf(`handleValidated("${channel}"`);
+    const start = mainCodeWithoutComments.indexOf(`handleValidated("${channel}"`);
     expect(start, `kanál ${channel} se v main.cjs nenašel`).toBeGreaterThan(-1);
-    const registration = mainSource.slice(start, start + 260);
+    const registration = mainCodeWithoutComments.slice(start, start + 260);
     expect(registration).toContain(`runTrackingMutation("${method}"`);
   });
+
+  it.each([
+    [
+      "start",
+      { projectId: "projekt-a" },
+      null,
+      [unrelatedOwnerId],
+      { state: TRACKING_STATES.RUNNING },
+      [unrelatedOwnerId, trackingStoreOwnerId],
+    ],
+    [
+      "switchProject",
+      { projectId: "projekt-b" },
+      { state: TRACKING_STATES.RUNNING },
+      [unrelatedOwnerId, trackingStoreOwnerId],
+      { state: TRACKING_STATES.RUNNING },
+      [unrelatedOwnerId, trackingStoreOwnerId],
+    ],
+    [
+      "stop",
+      undefined,
+      { state: TRACKING_STATES.RUNNING },
+      [unrelatedOwnerId, trackingStoreOwnerId],
+      null,
+      [unrelatedOwnerId],
+    ],
+    [
+      "resolveRecovered",
+      { decision: "pokracovat" },
+      { state: TRACKING_STATES.PENDING },
+      [unrelatedOwnerId],
+      { state: TRACKING_STATES.RUNNING },
+      [unrelatedOwnerId, trackingStoreOwnerId],
+    ],
+  ])(
+    "%s skutečně synchronizuje trackingOwners a právě jednou překreslí lištu",
+    async (method, payload, initialEntry, initialOwners, nextEntry, expectedOwners) => {
+      const harness = trackingMutationHarness({
+        method,
+        initialEntry,
+        initialOwners,
+        nextEntry,
+      });
+
+      const mutation = harness.runTrackingMutation(method, payload);
+      await harness.mutationStarted;
+      const refreshesBeforeMutationFinished = [...harness.refreshSnapshots];
+      harness.releaseMutation();
+
+      expect(refreshesBeforeMutationFinished).toEqual([]);
+      await expect(mutation).resolves.toEqual({ method, payload });
+
+      expect(harness.calls).toEqual([{ method, payload }]);
+      expect([...harness.trackingOwners]).toEqual(expectedOwners);
+      expect(harness.refreshSnapshots).toEqual([expectedOwners]);
+    },
+  );
 });

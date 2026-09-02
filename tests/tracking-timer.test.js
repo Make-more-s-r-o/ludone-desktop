@@ -9,6 +9,7 @@ import {
 } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { Linter } from "eslint";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import trackingModule from "../electron/tracking.cjs";
 
@@ -29,6 +30,36 @@ const PROCESS_A = "2026-09-01T06:20:11.004Z";
 const PROCESS_B = "2026-09-01T12:00:00.000Z";
 const CLOCK_ROLLBACK_ANOMALY = "wall-clock-moved-backward";
 const temporaryRoots = [];
+const parsedSources = new Map();
+
+function sourceCodeFor(source) {
+  if (parsedSources.has(source)) return parsedSources.get(source);
+  const linter = new Linter();
+  const messages = linter.verify(source, [{
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+  }]);
+  const fatal = messages.find((message) => message.fatal);
+  if (fatal) throw new Error(`Zdroj nejde analyzovat: ${fatal.message}`);
+  const sourceCode = linter.getSourceCode();
+  if (!sourceCode) throw new Error("Zdroj se nepodařilo analyzovat");
+  parsedSources.set(source, sourceCode);
+  return sourceCode;
+}
+
+function withoutComments(source) {
+  let result = source;
+  const comments = sourceCodeFor(source).getAllComments().toReversed();
+  for (const comment of comments) {
+    const [start, end] = comment.range;
+    const whitespace = source.slice(start, end).replace(/[^\r\n]/g, " ");
+    result = `${result.slice(0, start)}${whitespace}${result.slice(end)}`;
+  }
+  return result;
+}
 
 async function temporaryFile() {
   const root = await mkdtemp(path.join(os.tmpdir(), "ludone-tracking-test-"));
@@ -58,28 +89,51 @@ async function onDisk(filePath) {
 }
 
 function functionSource(source, name) {
-  const start = source.indexOf(`function ${name}(`);
-  if (start < 0) throw new Error(`Funkce ${name} nebyla nalezena`);
-  let parentheses = 0;
-  let bodyStart = -1;
-  for (let index = source.indexOf("(", start); index < source.length; index += 1) {
-    if (source[index] === "(") parentheses += 1;
-    if (source[index] === ")") {
-      parentheses -= 1;
-      if (parentheses === 0) {
-        bodyStart = source.indexOf("{", index);
-        break;
-      }
-    }
+  const declarations = sourceCodeFor(source).ast.body.filter((node) => (
+    node.type === "FunctionDeclaration" && node.id?.name === name
+  ));
+  if (declarations.length === 0) throw new Error(`Funkce ${name} nebyla nalezena`);
+  if (declarations.length > 1) {
+    throw new Error(`Funkce ${name} je deklarovaná ${declarations.length}x — nevím, kterou měřit`);
   }
-  if (bodyStart < 0) throw new Error(`Funkce ${name} nemá čitelnou hlavičku`);
-  let depth = 0;
-  for (let index = bodyStart; index < source.length; index += 1) {
-    if (source[index] === "{") depth += 1;
-    if (source[index] === "}") depth -= 1;
-    if (depth === 0) return source.slice(start, index + 1);
-  }
-  throw new Error(`Funkce ${name} nemá uzavřené tělo`);
+  const [start, end] = declarations[0].range;
+  return source.slice(start, end);
+}
+
+const mainCodeWithoutComments = withoutComments(readFileSync(
+  new URL("../electron/main.cjs", import.meta.url),
+  "utf8",
+));
+const createProductionTrackingStore = Function(
+  "createTrackingStore",
+  "path",
+  "app",
+  "process",
+  "PROCESS_STARTED_AT",
+  `"use strict";
+   let trackingStore;
+   ${functionSource(mainCodeWithoutComments, "getTrackingStore")}
+   return getTrackingStore();`,
+);
+
+function storeFromProductionWiring(filePath, timeEnabled) {
+  const environment = {};
+  if (timeEnabled !== undefined) environment.DESKTOP_TIME_ENABLED = timeEnabled;
+  const userDataPath = path.dirname(path.dirname(filePath));
+  const createStore = vi.fn((deps) => createTrackingStore(deps));
+  const store = createProductionTrackingStore(
+    createStore,
+    path,
+    {
+      getPath(name) {
+        if (name !== "userData") throw new Error(`Neočekávaná cesta aplikace: ${name}`);
+        return userDataPath;
+      },
+    },
+    { env: environment },
+    PROCESS_A,
+  );
+  return { createStore, store };
 }
 
 afterEach(async () => {
@@ -581,6 +635,32 @@ describe("vypínač DESKTOP_TIME_ENABLED", () => {
       expect(existsSync(filePath)).toBe(false);
     },
   );
+
+  it.each([
+    [undefined, "disabled"],
+    ["false", "disabled"],
+    ["TRUE", "disabled"],
+    ["1", "disabled"],
+    [" true ", "disabled"],
+    ["true", "started"],
+  ])(
+    "produkční wiring s hodnotou %s skončí jako %s",
+    async (timeEnabled, expectedOutcome) => {
+      const filePath = await temporaryFile();
+      const { createStore, store } = storeFromProductionWiring(filePath, timeEnabled);
+
+      const result = await store.start({ projectId: GUID_A });
+
+      expect(createStore).toHaveBeenCalledOnce();
+      expect(createStore.mock.calls[0][0]).toMatchObject({
+        filePath,
+        processStartedAt: PROCESS_A,
+        timeEnabled,
+      });
+      expect(result.outcome).toBe(expectedOutcome);
+      expect(existsSync(filePath)).toBe(expectedOutcome === "started");
+    },
+  );
 });
 
 describe("atomická perzistence", () => {
@@ -623,8 +703,98 @@ describe("atomická perzistence", () => {
       .toEqual([]);
   });
 
+  it("atomický zápis casovac.json fsyncne data i adresář", async () => {
+    const filePath = "/virtual/cas/casovac.json";
+    const directory = path.dirname(filePath);
+    const events = [];
+    let temporaryPath;
+    const unlink = vi.fn(async () => undefined);
+    const observableStep = (name) => {
+      events.push(`${name}:start`);
+      return new Promise((resolve) => {
+        setImmediate(() => {
+          events.push(`${name}:done`);
+          resolve(undefined);
+        });
+      });
+    };
+    const injectedFs = {
+      promises: {
+        async readFile(target, encoding) {
+          expect(String(target)).toBe(filePath);
+          expect(encoding).toBe("utf8");
+          throw Object.assign(new Error("soubor neexistuje"), { code: "ENOENT" });
+        },
+        async mkdir(target, options) {
+          expect(String(target)).toBe(directory);
+          expect(options).toEqual({ recursive: true, mode: 0o700 });
+        },
+        async open(target, flags, mode) {
+          const targetPath = String(target);
+          if (flags === "wx") {
+            temporaryPath = targetPath;
+            expect(path.dirname(targetPath)).toBe(directory);
+            expect(path.basename(targetPath)).toMatch(/^\.casovac\.json\..+\.tmp$/);
+            expect(mode).toBe(0o600);
+            return {
+              writeFile(contents, encoding) {
+                expect(encoding).toBe("utf8");
+                expect(JSON.parse(contents)).toMatchObject({
+                  schemaVersion: 1,
+                  aktualni: {
+                    projectId: GUID_A,
+                    state: TRACKING_STATES.RUNNING,
+                  },
+                  uzavrene: [],
+                });
+                return observableStep("write:wx");
+              },
+              sync() { return observableStep("sync:wx"); },
+              close() { return observableStep("close:wx"); },
+            };
+          }
+          if (flags === "r") {
+            expect(targetPath).toBe(directory);
+            expect(mode).toBeUndefined();
+            return {
+              sync() { return observableStep("sync:r"); },
+              close() { return observableStep("close:r"); },
+            };
+          }
+          throw new Error(`Neočekávaný režim open: ${String(flags)}`);
+        },
+        rename(source, target) {
+          expect(String(source)).toBe(temporaryPath);
+          expect(String(target)).toBe(filePath);
+          return observableStep("rename");
+        },
+        unlink,
+      },
+    };
+
+    await storeFor(filePath, { fs: injectedFs }).start({ projectId: GUID_A });
+
+    expect(unlink).not.toHaveBeenCalled();
+    expect(events).toEqual([
+      "write:wx:start",
+      "write:wx:done",
+      "sync:wx:start",
+      "sync:wx:done",
+      "close:wx:start",
+      "close:wx:done",
+      "rename:start",
+      "rename:done",
+      "sync:r:start",
+      "sync:r:done",
+      "close:r:start",
+      "close:r:done",
+    ]);
+  });
+
   it("produkční zápis používá wx, fsync a rename až po fsync", () => {
-    const source = readFileSync(new URL("../electron/tracking.cjs", import.meta.url), "utf8");
+    const source = withoutComments(
+      readFileSync(new URL("../electron/tracking.cjs", import.meta.url), "utf8"),
+    );
     const writer = functionSource(source, "writeStateAtomically");
     expect(writer).toContain("open(");
     expect(writer).toContain('"wx"');
@@ -655,7 +825,9 @@ describe("pád rendereru", () => {
   });
 
   it("hook nevolá žádnou mutující metodu", () => {
-    const source = readFileSync(new URL("../electron/tracking.cjs", import.meta.url), "utf8");
+    const source = withoutComments(
+      readFileSync(new URL("../electron/tracking.cjs", import.meta.url), "utf8"),
+    );
     const hook = functionSource(source, "handleRendererGone");
     for (const forbidden of ["stop(", "switchProject(", "resolveRecovered(", "writeStateAtomically("]) {
       expect(hook).not.toContain(forbidden);
@@ -664,8 +836,12 @@ describe("pád rendereru", () => {
 });
 
 describe("IPC povrch", () => {
-  const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
-  const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");
+  const mainSource = withoutComments(
+    readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8"),
+  );
+  const preloadSource = withoutComments(
+    readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8"),
+  );
 
   it.each([
     ["tracking:start", '["panel"]'],
@@ -690,7 +866,9 @@ describe("IPC povrch", () => {
   });
 
   it("tracking modul zůstává načitatelný bez Electronu", () => {
-    const source = readFileSync(new URL("../electron/tracking.cjs", import.meta.url), "utf8");
+    const source = withoutComments(
+      readFileSync(new URL("../electron/tracking.cjs", import.meta.url), "utf8"),
+    );
     expect(source).not.toContain('require("electron")');
   });
 
