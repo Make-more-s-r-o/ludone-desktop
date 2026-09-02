@@ -18,6 +18,10 @@ const LOGOUT_DISCOVERY_DEADLINE_MS = 5_000;
 // Revokace je malý formulářový POST. Stejný strop omezuje celé síťové čekání
 // odhlášení přibližně na deset sekund, než se pokračuje lokálním smazáním.
 const LOGOUT_REVOKE_DEADLINE_MS = 5_000;
+// Zjištění identity je stejně malý best-effort požadavek jako OAuth discovery.
+// Sdílí proto její pětisekundový strop i společný AbortController vzor níž.
+const IDENTITY_LOOKUP_DEADLINE_MS = LOGOUT_DISCOVERY_DEADLINE_MS;
+const MCP_IDENTITY_REQUEST_ID = 1;
 const TOKEN_DIRECTORY = "auth";
 const TOKEN_FILE = "oauth.enc";
 const TOKEN_TEMP_FILE_PATTERN = /^\.oauth\.enc\.[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.tmp$/;
@@ -262,30 +266,121 @@ async function registerPublicClient(fetchImpl, endpoint, redirectUri, scope) {
 
 function normalizeIdentity(value) {
   const identity = value?.user ?? value?.identity ?? value?.account ?? value;
-  const email = identity?.email;
-  const name = identity?.name ?? identity?.displayName;
-  if (typeof email !== "string" || email.length === 0 || typeof name !== "string" || name.length === 0) {
-    throw new Error("LuDone nevrátilo úplnou identitu uživatele");
-  }
+  const rawEmail = identity?.email;
+  const rawName = identity?.name ?? identity?.displayName;
+  const email = typeof rawEmail === "string" && rawEmail.length > 0 ? rawEmail : null;
+  const name = typeof rawName === "string" && rawName.length > 0 ? rawName : null;
   return { name, email };
 }
 
+function mergeIdentity(primary, fallback) {
+  return {
+    name: primary.name ?? fallback.name,
+    email: primary.email ?? fallback.email,
+  };
+}
+
+function parseMcpIdentity(rpc) {
+  if (
+    !rpc
+    || typeof rpc !== "object"
+    || Array.isArray(rpc)
+    || rpc.jsonrpc !== "2.0"
+    || rpc.id !== MCP_IDENTITY_REQUEST_ID
+    || Object.prototype.hasOwnProperty.call(rpc, "error")
+  ) {
+    return normalizeIdentity(null);
+  }
+  const result = rpc.result;
+  if (!result || typeof result !== "object" || Array.isArray(result) || result.isError === true) {
+    return normalizeIdentity(null);
+  }
+  const textBlocks = Array.isArray(result.content)
+    ? result.content.filter((item) => (
+      item?.type === "text" && typeof item.text === "string"
+    ))
+    : [];
+  if (textBlocks.length !== 1) return normalizeIdentity(null);
+
+  try {
+    const payload = JSON.parse(textBlocks[0].text);
+    const email = typeof payload?.user === "string" ? payload.user.trim() : "";
+    return normalizeIdentity({ email });
+  } catch {
+    return normalizeIdentity(null);
+  }
+}
+
+async function requestMcpIdentity(fetchImpl, issuer, accessToken, signal) {
+  const endpoint = trustedRemoteEndpoint(
+    new URL("/api/mcp", issuer).href,
+    issuer,
+    "MCP identity endpoint",
+  );
+  const response = await fetchImpl(endpoint, {
+    method: "POST",
+    headers: {
+      accept: "application/json, text/event-stream",
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    redirect: "error",
+    signal,
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: MCP_IDENTITY_REQUEST_ID,
+      method: "tools/call",
+      params: { name: "ludone_ping", arguments: {} },
+    }),
+  });
+  if (!response?.ok) return normalizeIdentity(null);
+  return parseMcpIdentity(await response.json());
+}
+
 async function resolveUserIdentity(options, fetchImpl, accessToken, tokenResponse, issuer) {
-  if (typeof options.resolveIdentity === "function") {
-    return normalizeIdentity(await options.resolveIdentity({ accessToken, issuer }));
+  let identity = normalizeIdentity(tokenResponse);
+  const hasConfiguredResolver = typeof options.resolveIdentity === "function" || options.identityEndpoint;
+  if (!hasConfiguredResolver && identity.email !== null) return identity;
+
+  try {
+    return await runWithDeadline(async (signal) => {
+      if (typeof options.resolveIdentity === "function") {
+        try {
+          const resolved = await options.resolveIdentity({ accessToken, issuer, signal });
+          identity = mergeIdentity(normalizeIdentity(resolved), identity);
+        } catch {
+          // Identita je pouze popisek; chyba resolveru nesmí zrušit vydaný token.
+        }
+      } else if (options.identityEndpoint) {
+        try {
+          const endpoint = trustedRemoteEndpoint(options.identityEndpoint, issuer, "identityEndpoint");
+          const result = await jsonResponse(fetchImpl, endpoint, {
+            headers: {
+              accept: "application/json",
+              authorization: `Bearer ${accessToken}`,
+            },
+            redirect: "error",
+            signal,
+          }, "Načtení identity uživatele");
+          identity = mergeIdentity(normalizeIdentity(result), identity);
+        } catch {
+          // Když volitelný endpoint nedopoví, zůstane dostupná tokenová identita.
+        }
+      }
+
+      if (identity.email === null) {
+        try {
+          const mcpIdentity = await requestMcpIdentity(fetchImpl, issuer, accessToken, signal);
+          identity = mergeIdentity(identity, mcpIdentity);
+        } catch {
+          // MCP je best-effort: přihlášení pokračuje i offline nebo s vadnou odpovědí.
+        }
+      }
+      return identity;
+    }, IDENTITY_LOOKUP_DEADLINE_MS, "MCP identity lookup");
+  } catch {
+    return identity;
   }
-  if (options.identityEndpoint) {
-    const endpoint = trustedRemoteEndpoint(options.identityEndpoint, issuer, "identityEndpoint");
-    const result = await jsonResponse(fetchImpl, endpoint, {
-      headers: {
-        accept: "application/json",
-        authorization: `Bearer ${accessToken}`,
-      },
-      redirect: "error",
-    }, "Načtení identity uživatele");
-    return normalizeIdentity(result);
-  }
-  return normalizeIdentity(tokenResponse);
 }
 
 async function syncDirectory(directory) {
@@ -1214,6 +1309,7 @@ function createPermissionRequestHandler({ systemPreferences, shell, logger = con
 
 module.exports = {
   DEFAULT_TIMEOUT_MS,
+  IDENTITY_LOOKUP_DEADLINE_MS,
   LOGOUT_DISCOVERY_DEADLINE_MS,
   LOGOUT_REVOKE_DEADLINE_MS,
   createAuthController,

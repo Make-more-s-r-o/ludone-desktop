@@ -202,7 +202,6 @@ describe("zapojení skutečného OAuth controlleru", () => {
     ["Přihlášení bylo zrušeno", "odmitnuto"],
     ["Bezpečné úložiště systému není dostupné", "uloziste"],
     ["TypeError: fetch failed", "bez-site"],
-    ["LuDone nevrátilo úplnou identitu uživatele", "neznama"],
   ])("přeloží chybu %s na %s", async (message, expectedReason) => {
     const handler = compiledAuthWiring(() => ({
       async start() {
@@ -215,6 +214,29 @@ describe("zapojení skutečného OAuth controlleru", () => {
     }))(dependencies());
 
     await expect(handler()).resolves.toEqual({ ok: false, duvod: expectedReason });
+  });
+
+  it("propustí neúplnou identitu a do rendereru pustí jen jméno a e-mail", async () => {
+    const handler = compiledAuthWiring(() => ({
+      async start() {
+        return {
+          authorizationUrl: "https://app.ludone.cz/api/mcp/oauth/authorize",
+          cancel: vi.fn(),
+          result: Promise.resolve({
+            ok: true,
+            user: { name: "", email: "cast@ludone.cz" },
+            accessToken: "token-se-nesmi-propustit",
+          }),
+        };
+      },
+    }))(dependencies());
+
+    const result = await handler();
+    expect(result).toEqual({
+      ok: true,
+      user: { name: null, email: "cast@ludone.cz" },
+    });
+    expect(JSON.stringify(result)).not.toContain("token-se-nesmi-propustit");
   });
 
   it("při zrušení předá abort do pokusu controlleru", async () => {

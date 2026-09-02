@@ -1186,11 +1186,10 @@ function createAuthBeginHandler(createController) {
 
         try {
           const result = await attempt.result;
-          const name = result?.user?.name;
-          const email = result?.user?.email;
-          if (typeof name !== "string" || !name || typeof email !== "string" || !email) {
-            throw new Error("LuDone nevrátilo úplnou identitu uživatele");
-          }
+          const rawName = result?.user?.name;
+          const rawEmail = result?.user?.email;
+          const name = typeof rawName === "string" && rawName.length > 0 ? rawName : null;
+          const email = typeof rawEmail === "string" && rawEmail.length > 0 ? rawEmail : null;
           return { ok: true, user: { name, email } };
         } finally {
           signal?.removeEventListener?.("abort", cancel);
