@@ -130,12 +130,14 @@ function trayHarness({
   const factory = Function(
     "recordingOwnersPreparing",
     "recordingSessions",
+    "recordingExportStages",
     "appState",
     "trayIconName",
     "trayImage",
     "TRAY_LABELS",
     "tray",
     "finalizeRecordingSession",
+    "finalizeRecordingExportStage",
     "REPORTED_FACT_KEYS",
     `"use strict";
      let trayState = "signed-out";
@@ -170,6 +172,7 @@ function trayHarness({
     ...factory(
       new Map(preparing),
       new Map(sessions),
+      new Map(),
       { signedIn, trackingOwners: new Set(trackingOwners) },
       trayIconName,
       (state) => `obrazek:${state}`,
@@ -182,6 +185,7 @@ function trayHarness({
         finalized.push({ sessionId, reason });
         return Promise.resolve({ files: { microphone: { size: 0 }, system: { size: 0 } } });
       },
+      () => Promise.resolve(),
       reportedFactKeys,
     ),
   };

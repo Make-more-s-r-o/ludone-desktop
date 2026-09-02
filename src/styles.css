@@ -532,6 +532,34 @@ svg {
   background: linear-gradient(var(--danger-soft), var(--danger-soft)), var(--surface-elevated);
 }
 
+.recording-card--saved {
+  padding: 12px;
+}
+
+.recording-saved {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recording-saved h2 {
+  margin-bottom: 4px;
+  color: var(--panel-strong);
+  font-size: 16px;
+}
+
+.recording-saved small {
+  color: var(--panel-subtle);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.recording-saved__error {
+  color: var(--panel-bad);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
 .tracking-card.is-active {
   border-color: var(--green-border);
   background: linear-gradient(var(--green-soft), var(--green-soft)), var(--surface-elevated);

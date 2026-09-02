@@ -17,6 +17,10 @@ function deferred() {
 
 function recordingResult() {
   return {
+    clientRecordingId: SESSION_ID,
+    startedAt: "2026-09-02T12:00:00.010Z",
+    endedAt: "2026-09-02T12:30:00.020Z",
+    trackStartDeltaMs: 25,
     files: {
       microphone: { name: "microphone.webm", size: 4 },
       system: { name: "system.webm", size: 6 },
@@ -53,6 +57,15 @@ async function renderRecordingCard(options = {}) {
     muted: false,
     stop: vi.fn(),
   });
+  const stereoTrack = Object.assign(new dom.window.EventTarget(), {
+    kind: "audio",
+    label: "Testovací stereo derivát",
+    readyState: "live",
+    enabled: true,
+    muted: false,
+    stop: vi.fn(),
+    getSettings: () => ({ channelCount: 2, sampleRate: 48_000 }),
+  });
   const microphoneStream = {
     getTracks: () => [microphoneTrack],
     getAudioTracks: () => [microphoneTrack],
@@ -85,6 +98,11 @@ async function renderRecordingCard(options = {}) {
     beginRecording: vi.fn().mockResolvedValue({ sessionId: SESSION_ID }),
     appendRecordingChunk: vi.fn().mockResolvedValue({ sequence: 0, bytes: 4 }),
     finishRecording: vi.fn().mockResolvedValue(recordingResult()),
+    finishRecordingExport: vi.fn().mockResolvedValue({ ok: true }),
+    exportRecording: vi.fn().mockResolvedValue({
+      ok: true,
+      fileName: `LuDone-${SESSION_ID}.webm`,
+    }),
   };
   Object.defineProperty(dom.window, "ludone", { value: ludone });
 
@@ -100,18 +118,25 @@ async function renderRecordingCard(options = {}) {
       this.options = recorderOptions;
       this.state = "inactive";
       this.timeslice = null;
+      this.index = recorders.length;
       recorders.push(this);
     }
 
     start(timeslice) {
       this.timeslice = timeslice;
       this.state = "recording";
-      /** @type {any} */ (this).dispatchEvent(new dom.window.Event("start"));
+      const event = new dom.window.Event("start");
+      const startTimestamps = [100, 125, 75];
+      Object.defineProperty(event, "timeStamp", { value: startTimestamps[this.index] });
+      /** @type {any} */ (this).dispatchEvent(event);
     }
 
     stop() {
       this.state = "inactive";
-      /** @type {any} */ (this).dispatchEvent(new dom.window.Event("stop"));
+      const event = new dom.window.Event("stop");
+      const stopTimestamps = [10_150, 10_175, 10_200];
+      Object.defineProperty(event, "timeStamp", { value: stopTimestamps[this.index] });
+      /** @type {any} */ (this).dispatchEvent(event);
     }
 
     emitChunk(data) {
@@ -129,6 +154,42 @@ async function renderRecordingCard(options = {}) {
     getTracks() {
       return this.tracks;
     }
+
+    getAudioTracks() {
+      return this.tracks.filter((track) => track.kind === "audio");
+    }
+  }
+
+  class FakeAudioContext {
+    constructor() {
+      this.sampleRate = 48_000;
+      this.state = "running";
+    }
+
+    createMediaStreamSource() {
+      return { connect: vi.fn(), disconnect: vi.fn() };
+    }
+
+    createChannelMerger() {
+      return { connect: vi.fn(), disconnect: vi.fn() };
+    }
+
+    createMediaStreamDestination() {
+      return {
+        stream: new FakeMediaStream([stereoTrack]),
+        channelCount: 2,
+        channelCountMode: "explicit",
+        channelInterpretation: "speakers",
+      };
+    }
+
+    close() {
+      return Promise.resolve();
+    }
+
+    resume() {
+      return Promise.resolve();
+    }
   }
 
   vi.stubGlobal("React", React);
@@ -139,6 +200,7 @@ async function renderRecordingCard(options = {}) {
   vi.stubGlobal("HTMLElement", dom.window.HTMLElement);
   vi.stubGlobal("MediaRecorder", FakeMediaRecorder);
   vi.stubGlobal("MediaStream", FakeMediaStream);
+  vi.stubGlobal("AudioContext", FakeAudioContext);
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
 
   const root = createRoot(dom.window.document.querySelector("#root"));
@@ -174,7 +236,10 @@ async function renderRecordingCard(options = {}) {
     },
     async waitForPhase(expectedPhase) {
       await React.act(async () => {
-        await vi.waitFor(() => expect(phase()).toBe(expectedPhase));
+        await vi.waitFor(() => expect(
+          phase(),
+          dom.window.document.body.textContent || "panel nemá text",
+        ).toBe(expectedPhase));
       });
     },
     async cleanup() {
@@ -192,7 +257,7 @@ async function startRecording(panel) {
 
 async function stopRecording(panel) {
   await panel.click(panel.currentButton());
-  await panel.waitForPhase("idle");
+  await panel.waitForPhase("saved");
 }
 
 describe("RecordingCard", () => {
@@ -210,7 +275,7 @@ describe("RecordingCard", () => {
       expect(panel.getDisplayMedia).toHaveBeenCalledWith(expect.objectContaining({
         audio: expect.anything(),
       }));
-      expect(panel.recorders).toHaveLength(2);
+      expect(panel.recorders).toHaveLength(3);
 
       await stopRecording(panel);
     } finally {
@@ -263,7 +328,7 @@ describe("RecordingCard", () => {
       await panel.waitForPhase("recording");
 
       expect(panel.ludone.beginRecording).toHaveBeenCalledTimes(1);
-      expect(panel.recorders).toHaveLength(2);
+      expect(panel.recorders).toHaveLength(3);
       await stopRecording(panel);
     } finally {
       await panel.cleanup();
@@ -278,8 +343,25 @@ describe("RecordingCard", () => {
       await stopRecording(panel);
 
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
-      expect(panel.ludone.finishRecording).toHaveBeenCalledWith(SESSION_ID);
-      expect(panel.phase()).toBe("idle");
+      expect(panel.ludone.finishRecording).toHaveBeenCalledWith(
+        SESSION_ID,
+        {
+          microphone: expect.objectContaining({
+            startedAt: expect.any(String),
+            endedAt: expect.any(String),
+          }),
+          system: expect.objectContaining({
+            startedAt: expect.any(String),
+            endedAt: expect.any(String),
+          }),
+        },
+      );
+      const trackTimings = panel.ludone.finishRecording.mock.calls[0][1];
+      expect(Math.abs(
+        Date.parse(trackTimings.microphone.startedAt)
+        - Date.parse(trackTimings.system.startedAt),
+      )).toBe(25);
+      expect(panel.phase()).toBe("saved");
     } finally {
       await panel.cleanup();
     }
@@ -323,6 +405,68 @@ describe("RecordingCard", () => {
       );
 
       await stopRecording(panel);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("po uložení nabídne samostatné tlačítko Uložit a odeslat", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      await panel.click(panel.currentButton());
+      await React.act(async () => {
+        await vi.waitFor(() => {
+          expect(panel.document.querySelector("[data-recording-phase]")?.textContent)
+            .toContain("Nahrávka uložena");
+          expect(panel.currentButton()?.textContent).toContain("Uložit a odeslat");
+        });
+      });
+      expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("uložení původních stop nečeká na dokončení stereo exportu", async () => {
+    const panel = await renderRecordingCard();
+    panel.ludone.finishRecordingExport.mockImplementation(() => new Promise(() => {}));
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      expect(panel.phase()).toBe("saved");
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+      expect(panel.ludone.finishRecordingExport).toHaveBeenCalledTimes(1);
+      expect(panel.currentButton()?.textContent).toContain("Uložit a odeslat");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("selhání exportu ponechá uloženou nahrávku i možnost pokus opakovat", async () => {
+    const panel = await renderRecordingCard();
+    panel.ludone.exportRecording.mockRejectedValueOnce(new Error("Disk je plný"));
+
+    try {
+      await startRecording(panel);
+      await panel.click(panel.currentButton());
+      await React.act(async () => {
+        await vi.waitFor(() => expect(panel.currentButton()?.textContent).toContain("Uložit a odeslat"));
+      });
+      await panel.click(panel.currentButton());
+      await React.act(async () => {
+        await vi.waitFor(() => {
+          const alert = panel.document.querySelector('[data-recording-phase] [role="alert"]');
+          expect(alert?.textContent).toContain("Disk je plný");
+          expect(panel.currentButton()?.textContent).toContain("Uložit a odeslat");
+        });
+      });
+
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID);
     } finally {
       await panel.cleanup();
     }
