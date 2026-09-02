@@ -978,7 +978,17 @@ app.ludone.cz to nepřepisuje
 Tvoje zjednodušení (nahrává prohlížeč, ne desktop) **odložilo scope u nahrávek** — ale
 neplatí to na všechno.
 
-### 🔴 Kudy půjde naměřený ČAS?
+### ✅ VYŘEŠENO 2. 9. — LuTrack se odkládá a kontrakt určí aplikace (BD-N38)
+
+Dan: *„ten LuTrack bych zatím neřešil na serveru… naopak, že to vymyslí app a desktop se pak
+přizpůsobí."* Díra tím zmizela: čas se neodesílá, scope se neřeší, a až na to dojde, rozhodne
+tvar `ludone-app`.
+
+⚠️ **Zbývá jedna věc k pojmenování:** LuTrack v panelu tak zůstane funkční jen lokálně
+a naměřený čas nikam neodejde. Je to vědomý stav, ale **nesmí vypadat jako hotová funkce** —
+jinak si někdo odklikne den práce, který se nikam nezapíše.
+
+### ~~Kudy půjde naměřený ČAS?~~ (už neplatí)
 
 Nahrávky nově chodí z prohlížeče. **Naměřený čas ale posílá desktop sám**, a ten se
 autorizovat musí. Takže:
