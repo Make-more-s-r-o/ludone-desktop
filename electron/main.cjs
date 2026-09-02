@@ -1155,6 +1155,71 @@ function createAuthBeginHandler(createController) {
     safeStorage,
     shell,
   }) {
+    function writeAuthLog(level, line) {
+      try {
+        const pending = logger?.[level]?.(line);
+        pending?.catch?.(() => {});
+      } catch {
+        // Selhání diagnostiky nesmí změnit výsledek přihlášení.
+      }
+    }
+
+    function authErrorClassName(error) {
+      try {
+        if (!(error instanceof Error)) return typeof error;
+        const name = Object.getPrototypeOf(error)?.constructor?.name;
+        const isSafeName = typeof name === "string"
+          && /^[A-Za-z_$][A-Za-z0-9_$]{0,79}(?:Error|Exception)$/.test(name)
+          && !/token|bearer|code|verifier|e-?mail|name|user/i.test(name);
+        return isSafeName ? name : "Error";
+      } catch {
+        return "Error";
+      }
+    }
+
+    function authErrorMessage(error) {
+      try {
+        const value = error instanceof Error ? error.message : error;
+        return typeof value === "string" ? value : String(value);
+      } catch {
+        return "Chybovou zprávu se nepodařilo přečíst";
+      }
+    }
+
+    function authErrorMessageForLog(message) {
+      try {
+        const normalized = Array.from(String(message), (character) => {
+          const codePoint = character.codePointAt(0);
+          const isControl = codePoint <= 0x1f
+            || (codePoint >= 0x7f && codePoint <= 0x9f)
+            || (codePoint >= 0x2028 && codePoint <= 0x202e)
+            || (codePoint >= 0x2066 && codePoint <= 0x2069);
+          return isControl ? " " : character;
+        })
+          .join("")
+          .replace(/ +/g, " ")
+          .trim();
+        const containsSensitiveValue = [
+          /token/i,
+          /\bbearer\b/i,
+          /\b(?:pkce[ _-]?)?verifier\b/i,
+          /code[_ -]?verifier/i,
+          /(?:authorization|authorisation|auth)[_ -]?code/i,
+          /autorizační(?:ho)?[ _-]*k[oó]d(?:u)?/i,
+          /(?:^|[^A-Za-z0-9_])["']?code["']?\s*[:=]/i,
+          /["']?code["']?\s+(?:is|was|je|byl)\b/i,
+          /[^\s@]+@[^\s@]+/u,
+          /(?:^|[^A-Za-z0-9_])["']?(?:e-?mail|display[_ -]?name|full[_ -]?name|first[_ -]?name|last[_ -]?name|given[_ -]?name|family[_ -]?name|preferred[_ -]?username|username|user[_ -]?name|name|jméno|user)["']?\s*[:=]/i,
+          /\b(?:client[_ -]?secret|password|heslo)\b/i,
+          /\b[A-Za-z0-9_-]{32,}\b/,
+        ].some((pattern) => pattern.test(normalized));
+        if (containsSensitiveValue) return "[citlivý obsah skryt]";
+        return normalized.length > 500 ? `${normalized.slice(0, 500)}…` : normalized;
+      } catch {
+        return "[zprávu se nepodařilo bezpečně přečíst]";
+      }
+    }
+
     return async function beginAuth({ signal } = {}) {
       if (isTestRun && app?.isPackaged !== true) {
         return {
@@ -1167,7 +1232,7 @@ function createAuthBeginHandler(createController) {
         const issuer = resolveAuthIssuer(env);
         const clientId = resolveAuthClientId(env);
 
-        logger?.log?.("[auth] Přihlášení zahájeno");
+        writeAuthLog("log", "[auth] Přihlášení zahájeno");
         const controller = createController({
           issuer,
           clientId,
@@ -1190,12 +1255,13 @@ function createAuthBeginHandler(createController) {
           const rawEmail = result?.user?.email;
           const name = typeof rawName === "string" && rawName.length > 0 ? rawName : null;
           const email = typeof rawEmail === "string" && rawEmail.length > 0 ? rawEmail : null;
+          writeAuthLog("log", "[auth] Přihlášení dokončeno úspěšně");
           return { ok: true, user: { name, email } };
         } finally {
           signal?.removeEventListener?.("abort", cancel);
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = authErrorMessage(error);
         let duvod = "neznama";
         if (/časovém limitu/i.test(message)) {
           duvod = "vyprselo";
@@ -1216,7 +1282,10 @@ function createAuthBeginHandler(createController) {
           duvod = "bez-site";
         }
         const response = { ok: false, duvod };
-        logger?.warn?.(`[auth] Přihlášení skončilo: ${JSON.stringify(response)}`);
+        const detail = duvod === "neznama"
+          ? `; ${authErrorClassName(error)}: ${authErrorMessageForLog(message)}`
+          : "";
+        writeAuthLog("warn", `[auth] Přihlášení skončilo: ${JSON.stringify(response)}${detail}`);
         return response;
       }
     };

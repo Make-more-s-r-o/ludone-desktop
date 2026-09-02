@@ -203,6 +203,7 @@ describe("zapojení skutečného OAuth controlleru", () => {
     ["Bezpečné úložiště systému není dostupné", "uloziste"],
     ["TypeError: fetch failed", "bez-site"],
   ])("přeloží chybu %s na %s", async (message, expectedReason) => {
+    const logger = { log: vi.fn(), warn: vi.fn() };
     const handler = compiledAuthWiring(() => ({
       async start() {
         return {
@@ -211,9 +212,12 @@ describe("zapojení skutečného OAuth controlleru", () => {
           result: Promise.reject(new Error(message)),
         };
       },
-    }))(dependencies());
+    }))(dependencies({ logger }));
 
     await expect(handler()).resolves.toEqual({ ok: false, duvod: expectedReason });
+    expect(logger.warn.mock.calls).toEqual([
+      [`[auth] Přihlášení skončilo: ${JSON.stringify({ ok: false, duvod: expectedReason })}`],
+    ]);
   });
 
   it("propustí neúplnou identitu a do rendereru pustí jen jméno a e-mail", async () => {
@@ -396,5 +400,142 @@ describe("mapování chyb nesmí zaměnit vadu kódu za vadu konfigurace", () =>
   it("skutečně chybějící konfigurace se pořád hlásí jako konfigurace", () => {
     // Povinně zelený protějšek: zúžení nesmí zabít správné zařazení.
     expect(mainSource).toMatch(/přihlášení zatím není nastavené/);
+  });
+});
+
+describe("diagnostika výsledku přihlášení", () => {
+  it("u nezařaditelné chyby zaloguje název třídy a zprávu", async () => {
+    class LoginIdentityError extends Error {}
+    const logger = { log: vi.fn(), warn: vi.fn() };
+    const message = "LuDone nevrátilo úplnou identitu uživatele";
+    const handler = compiledAuthWiring(() => ({
+      async start() {
+        return {
+          authorizationUrl: "https://app.ludone.cz/api/mcp/oauth/authorize",
+          cancel: vi.fn(),
+          result: Promise.reject(new LoginIdentityError(message)),
+        };
+      },
+    }))(dependencies({ logger }));
+
+    await expect(handler()).resolves.toEqual({ ok: false, duvod: "neznama" });
+    expect(logger.warn.mock.calls).toEqual([[
+      `[auth] Přihlášení skončilo: {"ok":false,"duvod":"neznama"}; LoginIdentityError: ${message}`,
+    ]]);
+  });
+
+  it("úspěch zaloguje jedním řádkem bez identity uživatele", async () => {
+    const logger = { log: vi.fn(), warn: vi.fn() };
+    const name = "Jméno Jen Pro Test";
+    const email = "identita@example.invalid";
+    const handler = compiledAuthWiring(successfulController([], { name, email }))(
+      dependencies({ logger }),
+    );
+
+    await expect(handler()).resolves.toEqual({
+      ok: true,
+      user: { name, email },
+    });
+    // 🔴 Měří se, ŽE se úspěch zapsal, ne JAK je formulovaný. Doslovné znění tu dřív
+    // stálo natvrdo, takže pouhé přeformulování hlášky shodilo bránu — a přeformulovaná
+    // věta není vada. Zůstává tvrzení, které má smysl: dva řádky, začátek a konec,
+    // oba z auth vrstvy, a ten druhý není hlášením chyby.
+    const radky = logger.log.mock.calls.map(([line]) => line);
+    expect(radky, "očekávám dva řádky: zahájení a dokončení").toHaveLength(2);
+    expect(radky[0]).toContain("[auth]");
+    expect(radky[1]).toContain("[auth]");
+    expect(radky[1], "konec se nesmí rovnat začátku").not.toBe(radky[0]);
+    expect(logger.warn).not.toHaveBeenCalled();
+    expect(JSON.stringify([logger.log.mock.calls, logger.warn.mock.calls])).not.toMatch(
+      /Jméno Jen Pro Test|identita@example\.invalid/,
+    );
+  });
+
+  it("z oddělených chyb nepropustí token, kódy ani identitu", async () => {
+    const cases = [
+      { message: "token=sentinelA91", secret: "sentinelA91" },
+      { message: 'OAuth callback: {"code":"sentinelB92"}', secret: "sentinelB92" },
+      { message: 'The returned "code" was sentinelD94', secret: "sentinelD94" },
+      { message: "code_verifier=sentinelC93", secret: "sentinelC93" },
+      { message: 'Identita: {"name":"Citlivá Osoba"}', secret: "Citlivá Osoba" },
+      { message: 'Identita: {"given_name":"Citlivé"}', secret: "Citlivé" },
+      { message: 'Identita: {"email":"citliva@localhost"}', secret: "citliva@localhost" },
+    ];
+
+    for (const { message, secret } of cases) {
+      const logger = { log: vi.fn(), warn: vi.fn() };
+      const handler = compiledAuthWiring(() => ({
+        async start() {
+          return {
+            authorizationUrl: "https://app.ludone.cz/api/mcp/oauth/authorize",
+            cancel: vi.fn(),
+            result: Promise.reject(new Error(message)),
+          };
+        },
+      }))(dependencies({ logger }));
+
+      await expect(handler()).resolves.toEqual({ ok: false, duvod: "neznama" });
+      const logText = [...logger.log.mock.calls, ...logger.warn.mock.calls].flat().join("\n");
+      expect(logText).toContain("; Error: [citlivý obsah skryt]");
+      expect(logText).not.toContain(message);
+      expect(logText).not.toContain(secret);
+    }
+  });
+
+  it("z chybové zprávy odstraní znaky umožňující podvržení logu", async () => {
+    const logger = { log: vi.fn(), warn: vi.fn() };
+    const handler = compiledAuthWiring(() => {
+      throw new Error("První řádek\nDruhý\u001b[2J\u0085Třetí");
+    })(dependencies({ logger }));
+
+    await expect(handler()).resolves.toEqual({ ok: false, duvod: "neznama" });
+    const warning = logger.warn.mock.calls[0][0];
+    expect(warning).toContain("; Error: První řádek Druhý [2J Třetí");
+    expect(Array.from(warning).some((character) => {
+      const codePoint = character.codePointAt(0);
+      return codePoint <= 0x1f
+        || (codePoint >= 0x7f && codePoint <= 0x9f)
+        || (codePoint >= 0x2028 && codePoint <= 0x202e)
+        || (codePoint >= 0x2066 && codePoint <= 0x2069);
+    })).toBe(false);
+  });
+
+  it("neúplný ani porouchaný logger nezmění návratovou hodnotu", async () => {
+    const user = { name: "Návrat Zůstane", email: "navrat@example.invalid" };
+    const successHandler = compiledAuthWiring(successfulController([], user))(
+      dependencies({
+        logger: {
+          log: vi.fn(() => Promise.reject(new Error("asynchronní logger selhal"))),
+        },
+      }),
+    );
+    await expect(successHandler()).resolves.toEqual({ ok: true, user });
+
+    const failureHandler = compiledAuthWiring(() => {
+      throw new Error("Nezařaditelná provozní chyba");
+    })(dependencies({
+      logger: {
+        log: "není funkce",
+        warn: vi.fn(() => {
+          throw new Error("logger selhal");
+        }),
+      },
+    }));
+    await expect(failureHandler()).resolves.toEqual({ ok: false, duvod: "neznama" });
+
+    const unreadableError = new Error();
+    Object.defineProperty(unreadableError, "message", {
+      get() {
+        throw new Error("getter zprávy selhal");
+      },
+    });
+    const unreadableLogger = { log: vi.fn(), warn: vi.fn() };
+    const unreadableHandler = compiledAuthWiring(() => {
+      throw unreadableError;
+    })(dependencies({ logger: unreadableLogger }));
+    await expect(unreadableHandler()).resolves.toEqual({ ok: false, duvod: "neznama" });
+    expect(unreadableLogger.warn).toHaveBeenCalledWith(
+      expect.stringContaining("; Error: Chybovou zprávu se nepodařilo přečíst"),
+    );
   });
 });
