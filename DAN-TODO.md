@@ -759,3 +759,35 @@ s explicitní cestou v `--command`.
 
 **Doporučený default do té doby:** delegovat Codexu jen práci v **hlavním checkoutu**,
 a ve worktree ji dělat Claude.
+
+---
+
+## 🔴 Rozhodnutí pro tebe: smí odhlášení zhasnout ikonu nad běžícím mikrofonem? (2. 9. 2026)
+
+Vyplynulo z třetího review (`docs/changes/desktop-v1/review-3-integrace.md`).
+
+**Fakt:** `deriveTrayState` dává `signed-out` přednost před `recording`. Tak to má B3
+**předepsané** — packet `B3-tray-autorita.md:597` i `specs/E3-vady-a-identita.md:48` to říkají
+doslova, takže to není chyba implementace.
+
+**Důsledek, který tehdy nikdo nedomyslel:** až půjde odhlásit se **za běhu nahrávky**, tím
+kliknutím zhasne **jediný indikátor, že mikrofon nahrává** — a nahrávka poběží dál. Člověk
+uvidí „odhlášeno" a bude si myslet, že je hotovo.
+
+**Proč to nerozhodl běh:** je to změna designového pravidla ve **zmrazeném** dokumentu, tedy
+hard gate. Přeskočeno, běh pokračoval na tom, co na tom nezávisí.
+
+**Varianty:**
+
+| | co udělat | pro | proti |
+|---|---|---|---|
+| **A** ⭐ | odhlášení běžící nahrávku **nejdřív ukončí**, teprve pak odhlásí | nic se neztratí, ikona nelže | odhlášení chvíli trvá |
+| **B** | odhlášení při běžící nahrávce **odmítnout** s vysvětlením | nejjednodušší | otravné, když člověk chce rychle pryč |
+| **C** | nechat prioritu být a spolehnout se na jiný indikátor | žádná změna specu | **žádný jiný indikátor neexistuje** |
+
+**Doporučuju A.** Odhlášení je bezpečnostní akce — nesmí po sobě nechat běžet mikrofon.
+
+**Do té doby to nikoho neohrozí:** `auth:logout` dnes **nemá v UI volajícího** (změřeno,
+0 výskytů v `src/`). Hlídá to `tests/zapojeni-odhlaseni.test.js` — jakmile někdo tlačítko
+zapojí, brána zčervená a připomene tohle rozhodnutí i další dvě věci (časovač poběží dál
+a panel odhlášení tiše vrátí zpět).
