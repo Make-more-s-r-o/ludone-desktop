@@ -212,6 +212,29 @@ běžnou akci ten význam smaže.
 Ukázka obou variant vedle sebe:
 `docs/changes/desktop-v1/progress/barva-tlacitka.html`
 
+### B3 · Allowlist vydavatelů brání jiným instalacím app.ludone
+
+**Přesný blocker:** `electron/main.cjs:1831` má natvrdo
+
+```js
+if (!["app.ludone.cz", "labs.ludone.cz"].includes(issuer.host)) { … }
+```
+
+Je to **bezpečnostní kontrola** — brání tomu, aby někdo aplikaci nasměroval na cizí
+přihlašovací server. Zadrátovaná je záměrně a rozvolnit ji nesmím sám.
+
+🔴 **Koliduje to ale s tvým vlastním zadáním** („aby fungovala aplikace i pro jiné instalace
+app.ludone pro jiné klienty"). Klient s vlastní doménou se dnes **nepřihlásí**.
+
+**Doporučená varianta:** allowlist ponechat, ale načítat ho z podepsané konfigurace nebo
+z proměnné prostředí, kterou nastavuje **instalace**, ne uživatel — tedy zůstane uzavřený
+výčet, jen ne zadrátovaný v kódu. Volná proměnná, kterou si přepíše kdokoli, by tu ochranu
+zrušila; to nedoporučuju.
+
+Rozhodnout musíš ty, protože je to bezpečnostní hranice a zároveň produktové rozhodnutí,
+jestli a jak podporujeme víc instalací.
+
+
 ## 0. Noční běh je připravený — co k němu patří
 
 Briéf: [`docs/behy/2026-08-24-zaklad-a-fronta.md`](docs/behy/2026-08-24-zaklad-a-fronta.md).
