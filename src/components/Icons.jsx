@@ -88,6 +88,25 @@ export function TimerIcon({ variant = "default" }) {
   );
 }
 
+export function AccessDeniedIcon() {
+  return (
+    <svg {...baseProps}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m15 9-6 6M9 9l6 6" />
+    </svg>
+  );
+}
+
+export function OfflineIcon() {
+  return (
+    <svg {...baseProps}>
+      <path d="M2 2l20 20" />
+      <path d="M5 12.55a11 11 0 0 1 5.2-2.4M10.7 5.05a16 16 0 0 1 10.3 4.5M1.4 8.9A16 16 0 0 1 5.7 6" />
+      <path d="M8.5 16.1a6 6 0 0 1 7 0M12 20h.01" />
+    </svg>
+  );
+}
+
 export function SettingsIcon() {
   return (
     <svg {...baseProps}>

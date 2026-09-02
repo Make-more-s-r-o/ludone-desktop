@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AuthErrorScreen } from "./AuthErrorScreen.jsx";
 import {
   ArrowRightIcon,
   BrowserIcon,
@@ -29,7 +30,7 @@ const STEPS = ["Vítejte", "Přihlášení", "Oprávnění", "Hotovo"];
 export function Onboarding({ onAuthenticated, onComplete }) {
   const [step, setStep] = useState(0);
   const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState("");
+  const [authFailure, setAuthFailure] = useState("");
   const [permissionBusy, setPermissionBusy] = useState("");
   const [permissions, setPermissions] = useState({});
   const allGranted = useMemo(
@@ -39,14 +40,21 @@ export function Onboarding({ onAuthenticated, onComplete }) {
 
   async function beginAuth() {
     setAuthBusy(true);
-    setAuthError("");
+    setAuthFailure("");
     try {
       const result = await window.ludone.beginAuth();
-      if (!result?.ok) throw new Error("Přihlášení se nevrátilo do aplikace.");
+      if (!result?.ok) {
+        setAuthFailure(
+          typeof result?.duvod === "string" && result.duvod.length > 0
+            ? result.duvod
+            : "neznama",
+        );
+        return;
+      }
       onAuthenticated(result.user);
       setStep(2);
-    } catch (error) {
-      setAuthError(error.message);
+    } catch {
+      setAuthFailure("neznama");
     } finally {
       setAuthBusy(false);
     }
@@ -108,6 +116,10 @@ export function Onboarding({ onAuthenticated, onComplete }) {
         ? "Záznam obrazovky musí člověk zapnout ručně v Nastavení systému."
         : "macOS se na přístup k mikrofonu zatím nezeptal.",
     };
+  }
+
+  if (authFailure) {
+    return <AuthErrorScreen busy={authBusy} onRetry={beginAuth} reason={authFailure} />;
   }
 
   return (
@@ -172,7 +184,6 @@ export function Onboarding({ onAuthenticated, onComplete }) {
           >
             <BrowserIcon /> {authBusy ? "Čekám na prohlížeč…" : "Přihlásit v prohlížeči"}
           </button>
-          {authError && <p className="error-note" role="alert">{authError}</p>}
           <button type="button" className="text-button" onClick={() => setStep(0)}>Zpět</button>
         </section>
       )}
