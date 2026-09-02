@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("ludone", {
   }),
   beginAuth: () => ipcRenderer.invoke("auth:begin"),
   cancelAuth: () => ipcRenderer.invoke("auth:cancel"),
+  hasAuthSession: async () => (await ipcRenderer.invoke("auth:has-session")) === true,
   logout: () => ipcRenderer.invoke("auth:logout"),
   requestPermission: (permission) =>
     ipcRenderer.invoke("permission:request", permission),

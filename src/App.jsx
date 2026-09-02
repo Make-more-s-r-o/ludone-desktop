@@ -6,7 +6,6 @@ import { TrackingCard } from "./features/tracking/TrackingCard.jsx";
 import { queueFooterStatus } from "./lib/panel.js";
 
 const ONBOARDING_KEY = "ludone.prototype.onboarding-complete";
-const USER_KEY = "ludone.panel.authenticated-user";
 
 function normalizeUser(value) {
   const email = typeof value?.email === "string" ? value.email.trim() : "";
@@ -15,30 +14,47 @@ function normalizeUser(value) {
   return { name: name || email, email };
 }
 
-function readStoredUser() {
-  try {
-    return normalizeUser(JSON.parse(window.localStorage.getItem(USER_KEY)));
-  } catch {
-    return null;
-  }
-}
-
 export function App() {
   const runtime = window.ludone.runtime;
   const initiallyComplete = !runtime.resetOnboarding && window.localStorage.getItem(ONBOARDING_KEY) === "true";
   const [onboardingComplete, setOnboardingComplete] = useState(initiallyComplete);
-  const [user, setUser] = useState(() => (initiallyComplete ? readStoredUser() : null));
-  const [connectionVerified, setConnectionVerified] = useState(false);
+  const [user, setUser] = useState(null);
+  const [sessionExists, setSessionExists] = useState(null);
   const [recording, setRecording] = useState({ active: false });
   const [tracking, setTracking] = useState({ active: false });
   const [queueStatus, setQueueStatus] = useState(null);
+  const authSessionRequestId = useRef(0);
   const queueRequestId = useRef(0);
+
+  useEffect(() => {
+    const requestId = authSessionRequestId.current + 1;
+    authSessionRequestId.current = requestId;
+    const hasAuthSession = window.ludone.hasAuthSession;
+    if (typeof hasAuthSession !== "function") {
+      setSessionExists(false);
+      return undefined;
+    }
+
+    Promise.resolve()
+      .then(() => hasAuthSession())
+      .then((result) => {
+        if (requestId === authSessionRequestId.current) setSessionExists(result === true);
+      })
+      .catch(() => {
+        if (requestId === authSessionRequestId.current) setSessionExists(false);
+      });
+
+    return () => {
+      if (requestId === authSessionRequestId.current) authSessionRequestId.current += 1;
+    };
+  }, []);
 
   // Hlásíme FAKTA, ne stav. Co z nich lišta ukáže, rozhoduje hlavní proces — jinak by
   // po pádu tohohle okna zůstala ikona viset na tom, co jsme řekli naposledy.
   useEffect(() => {
-    window.ludone.reportTrayFacts({ signedIn: Boolean(user), tracking: tracking.active });
-  }, [user, tracking.active]);
+    if (typeof sessionExists !== "boolean") return;
+    window.ludone.reportTrayFacts({ signedIn: sessionExists, tracking: tracking.active });
+  }, [sessionExists, tracking.active]);
 
   const refreshQueueStatus = useCallback(async () => {
     const requestId = queueRequestId.current + 1;
@@ -81,11 +97,14 @@ export function App() {
   }, []);
 
   function rememberUser(nextUser) {
+    authSessionRequestId.current += 1;
+    setSessionExists(true);
     const normalizedUser = normalizeUser(nextUser);
-    if (!normalizedUser) return;
+    if (!normalizedUser) {
+      setUser(null);
+      return;
+    }
     setUser(normalizedUser);
-    setConnectionVerified(true);
-    window.localStorage.setItem(USER_KEY, JSON.stringify(normalizedUser));
   }
 
   function completeOnboarding() {
@@ -104,10 +123,10 @@ export function App() {
           <LuDoneMark size={22} variant="panel" />
           <span className="panel-identity__copy">
             <strong>LuDone</strong>
-            <small>
-              {user
-                ? `${user.name} · ${connectionVerified ? "připojeno" : "připojení neověřeno"}`
-                : "Připojení neověřeno"}
+            <small data-auth-state={sessionExists === null ? "checking" : sessionExists ? "signed-in" : "signed-out"}>
+              {sessionExists === true
+                ? (user ? `${user.name} · připojeno` : "Přihlášeno")
+                : (sessionExists === false ? "Nejsi připojený" : "")}
             </small>
           </span>
         </div>

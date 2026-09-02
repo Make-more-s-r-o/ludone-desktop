@@ -558,6 +558,8 @@ describe("odhlášení", () => {
       "refreshTray",
       "console",
       "authSessionCoordinator",
+      "authSessionGeneration",
+      "authLogoutsInFlight",
       `"use strict"; ${registration}`,
     )(
       requireModule,
@@ -568,6 +570,8 @@ describe("odhlášení", () => {
       refreshTray,
       logger,
       authSessionCoordinator,
+      0,
+      0,
     );
 
     expect(requireModule).toHaveBeenCalledWith("./auth.cjs");

@@ -32,11 +32,11 @@ function renderIdlePanel(storedUser = USER) {
 }
 
 async function renderInteractivePanel(listQueue, options = {}) {
-  const { onboardingComplete = true, ludone = {} } = options;
+  const { onboardingComplete = true, ludone = {}, storedUser = USER } = options;
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   if (onboardingComplete) {
     dom.window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
-    dom.window.localStorage.setItem("ludone.panel.authenticated-user", JSON.stringify(USER));
+    dom.window.localStorage.setItem("ludone.panel.authenticated-user", JSON.stringify(storedUser));
   }
   Object.defineProperty(dom.window, "ludone", {
     value: {
@@ -89,18 +89,93 @@ describe("schválený klidový panel", () => {
     expect(document.querySelector(".panel-close")).toBeNull();
   });
 
-  it("v hlavičce ukazuje LuDone, skutečné jméno a nepředstírá neověřené připojení", () => {
-    const document = renderIdlePanel();
-    const header = document.querySelector(".panel-header");
+  it("po startu ověří uloženou session a v hlavičce ukáže přihlášený stav", async () => {
+    const hasAuthSession = vi.fn().mockResolvedValue(true);
+    const reportTrayFacts = vi.fn();
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      ludone: { hasAuthSession, reportTrayFacts },
+    });
 
-    expect(header.textContent).toContain("LuDone");
-    expect(header.textContent).toContain("Dan Jirotka · připojení neověřeno");
-    expect(header.textContent).not.toContain("Dan Jirotka · připojeno");
-    expect(header.textContent).not.toContain("Připraveno");
-    expect(header.querySelector('svg[viewBox="0 0 22 22"]')).not.toBeNull();
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+          .toBe("signed-in");
+      });
+      const header = panel.document.querySelector(".panel-header");
+      expect(header.textContent).toContain("LuDone");
+      expect(header.textContent).not.toContain("Dan Jirotka");
+      expect(header.querySelector("small")?.textContent.trim()).not.toBe("");
+      expect(header.querySelector('svg[viewBox="0 0 22 22"]')).not.toBeNull();
+      expect(hasAuthSession).toHaveBeenCalledOnce();
+      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({ signedIn: true, tracking: false });
+    } finally {
+      await panel.cleanup();
+    }
   });
 
-  it("po právě úspěšném OAuth ukáže doslovný schválený stav připojení", async () => {
+  it("bez uložené session nezobrazí identitu z pouhé localStorage jako přihlášenou", async () => {
+    const reportTrayFacts = vi.fn();
+    const hasAuthSession = vi.fn().mockResolvedValue(false);
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      ludone: { hasAuthSession, reportTrayFacts },
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+          .toBe("signed-out");
+      });
+      expect(panel.document.querySelector(".panel-header")?.textContent).not.toContain("Dan Jirotka");
+      expect(panel.document.querySelector(".panel-header small")?.textContent.trim()).not.toBe("");
+      expect(hasAuthSession).toHaveBeenCalledOnce();
+      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({ signedIn: false, tracking: false });
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("přihlášený a nepřihlášený stav jsou viditelně odlišné bez vazby na formulaci", async () => {
+    const visibleState = async (hasSession) => {
+      const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+        ludone: { hasAuthSession: vi.fn().mockResolvedValue(hasSession) },
+      });
+      try {
+        await vi.waitFor(() => {
+          expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+            .toBe(hasSession ? "signed-in" : "signed-out");
+        });
+        return panel.document.querySelector(".panel-header small")?.textContent.trim();
+      } finally {
+        await panel.cleanup();
+      }
+    };
+
+    const signedInText = await visibleState(true);
+    const signedOutText = await visibleState(false);
+    expect(signedInText).toBeTruthy();
+    expect(signedOutText).toBeTruthy();
+    expect(signedInText).not.toBe(signedOutText);
+  });
+
+  it("při odmítnutém dotazu na session skončí viditelně jako nepřihlášený", async () => {
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      ludone: {
+        hasAuthSession: vi.fn().mockRejectedValue(new Error("Úložiště neodpovídá")),
+      },
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+          .toBe("signed-out");
+      });
+      expect(panel.document.querySelector(".panel-header small")?.textContent.trim()).not.toBe("");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("po právě úspěšném OAuth přepne hlavičku do přihlášeného stavu", async () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
       onboardingComplete: false,
       ludone: {
@@ -125,19 +200,89 @@ describe("schválený klidový panel", () => {
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Otevřít můj panel")));
 
-      expect(panel.document.querySelector(".panel-header")?.textContent)
-        .toContain("Dan Jirotka · připojeno");
+      expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+        .toBe("signed-in");
+      expect(panel.document.querySelector(".panel-header")?.textContent).toContain("Dan Jirotka");
     } finally {
       await panel.cleanup();
     }
   });
 
-  it("když server nezná jméno, v hlavičce bezpečně použije skutečný e-mail", () => {
-    const document = renderIdlePanel({ email: "dan@ludone.cz" });
+  it("úspěšnou session bez identity po OAuth nepovažuje za odhlášenou", async () => {
+    let finishSessionCheck;
+    const sessionCheck = new Promise((resolve) => { finishSessionCheck = resolve; });
+    const reportTrayFacts = vi.fn();
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      onboardingComplete: false,
+      ludone: {
+        beginAuth: vi.fn().mockResolvedValue({ ok: true, user: { name: null, email: null } }),
+        hasAuthSession: vi.fn(() => sessionCheck),
+        reportTrayFacts,
+        requestPermission: vi.fn().mockResolvedValue({ status: "granted", granted: true }),
+      },
+    });
+    const click = async (element) => React.act(async () => {
+      element.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+    });
 
-    expect(document.querySelector(".panel-header")?.textContent)
-      .toContain("dan@ludone.cz · připojení neověřeno");
-    expect(document.querySelector(".panel-header")?.textContent).not.toContain("undefined");
+    try {
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Začít")));
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Přihlásit v prohlížeči")));
+      for (const permissionButton of [...panel.document.querySelectorAll('[data-testid="permission-action"]')]) {
+        await click(permissionButton);
+      }
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Pokračovat")));
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Otevřít můj panel")));
+      finishSessionCheck(false);
+      await React.act(async () => Promise.resolve());
+
+      expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+        .toBe("signed-in");
+      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({ signedIn: true, tracking: false });
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("po právě úspěšném OAuth bez jména použije skutečný e-mail", async () => {
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      onboardingComplete: false,
+      ludone: {
+        beginAuth: vi.fn().mockResolvedValue({
+          ok: true,
+          user: { name: null, email: "dan@ludone.cz" },
+        }),
+        requestPermission: vi.fn().mockResolvedValue({ status: "granted", granted: true }),
+      },
+    });
+    const click = async (element) => React.act(async () => {
+      element.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+    });
+
+    try {
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Začít")));
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Přihlásit v prohlížeči")));
+      for (const permissionButton of [...panel.document.querySelectorAll('[data-testid="permission-action"]')]) {
+        await click(permissionButton);
+      }
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Pokračovat")));
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Otevřít můj panel")));
+
+      expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+        .toBe("signed-in");
+      expect(panel.document.querySelector(".panel-header")?.textContent).toContain("dan@ludone.cz");
+      expect(panel.document.querySelector(".panel-header")?.textContent).not.toContain("undefined");
+    } finally {
+      await panel.cleanup();
+    }
   });
 
   it("bez denních dat nevyrenderuje žádný souhrn ani náhradní nulu", () => {
