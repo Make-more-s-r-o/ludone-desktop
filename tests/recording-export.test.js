@@ -93,25 +93,43 @@ describe("živý stereo derivát", () => {
     const systemTrack = /** @type {MediaStreamTrack} */ (/** @type {unknown} */ ({
       id: "system",
     }));
+    const replacementSystemTrack = /** @type {MediaStreamTrack} */ (/** @type {unknown} */ ({
+      enabled: true,
+      id: "system-replacement",
+      kind: "audio",
+      muted: false,
+      readyState: "live",
+    }));
     const connections = [];
+    const sources = [];
     const destinationTrack = {
       kind: "audio",
       getSettings: () => ({ channelCount: 2, sampleRate: 48_000 }),
     };
-    const destination = {
+    const stereoDestination = {
       stream: { getAudioTracks: () => [destinationTrack] },
+    };
+    const systemDestination = {
+      stream: { getAudioTracks: () => [{ kind: "audio" }] },
     };
     const merger = { connect: vi.fn(), disconnect: vi.fn() };
     const context = {
       close: vi.fn(async () => undefined),
       createChannelMerger: vi.fn(() => merger),
-      createMediaStreamDestination: vi.fn(() => destination),
-      createMediaStreamSource: vi.fn((stream) => ({
-        connect(target, output, input) {
-          connections.push({ source: stream.getAudioTracks()[0].id, target, output, input });
-        },
-        disconnect: vi.fn(),
-      })),
+      createMediaStreamDestination: vi.fn()
+        .mockReturnValueOnce(stereoDestination)
+        .mockReturnValueOnce(systemDestination),
+      createMediaStreamSource: vi.fn((stream) => {
+        const source = {
+          id: stream.getAudioTracks()[0].id,
+          connect(target, output, input) {
+            connections.push({ source: source.id, target, output, input });
+          },
+          disconnect: vi.fn(),
+        };
+        sources.push(source);
+        return source;
+      }),
       resume: vi.fn(async () => undefined),
       state: "suspended",
     };
@@ -139,10 +157,33 @@ describe("živý stereo derivát", () => {
     expect(connections).toEqual([
       { source: "microphone", target: merger, output: 0, input: 0 },
       { source: "system", target: merger, output: 0, input: 1 },
+      {
+        source: "system",
+        target: systemDestination,
+        output: undefined,
+        input: undefined,
+      },
     ]);
-    expect(merger.connect).toHaveBeenCalledWith(destination);
-    expect(capture.stream).toBe(destination.stream);
+    expect(merger.connect).toHaveBeenCalledWith(stereoDestination);
+    expect(capture.stream).toBe(stereoDestination.stream);
+    expect(capture.systemStream).toBe(systemDestination.stream);
     expect(capture.format).toEqual({ channels: 2, sampleRate: 48_000 });
+
+    const stableSystemStream = capture.systemStream;
+    await capture.replaceSystemTrack(replacementSystemTrack);
+    expect(connections.slice(3)).toEqual([
+      { source: "system-replacement", target: merger, output: 0, input: 1 },
+      {
+        source: "system-replacement",
+        target: systemDestination,
+        output: undefined,
+        input: undefined,
+      },
+    ]);
+    expect(sources.find((source) => source.id === "system")?.disconnect).toHaveBeenCalledOnce();
+    expect(sources.find((source) => source.id === "microphone")?.disconnect).not.toHaveBeenCalled();
+    expect(capture.systemStream).toBe(stableSystemStream);
+
     await capture.close();
     expect(context.close).toHaveBeenCalledTimes(1);
   });

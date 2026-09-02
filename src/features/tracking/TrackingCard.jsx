@@ -2,9 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, TimerIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
 
-const PROJECTS = ["LuDone Desktop", "Web · klientská zóna", "Interní provoz"];
+const PROJECTS = [
+  "Make more Finanční řízení 2026",
+  "LuDone Desktop",
+  "Web · klientská zóna",
+  "Interní provoz",
+];
 
-export function TrackingCard({ onActivityChange, todaySummary = null, trayCommand = null }) {
+function formatCompactElapsed(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+export function TrackingCard({
+  compact = false,
+  onActivityChange,
+  todaySummary = null,
+  trayCommand = null,
+}) {
   const [project, setProject] = useState(PROJECTS[0]);
   const [description, setDescription] = useState("");
   const [active, setActive] = useState(false);
@@ -42,15 +58,53 @@ export function TrackingCard({ onActivityChange, todaySummary = null, trayComman
   return (
     <section
       className={`feature-card tracking-card${active ? " is-active" : " idle-feature-row"}${!active && lastMessage ? " has-notice" : ""}`}
+      data-activity-state={active ? "tracking" : "idle"}
+      data-layout={active && compact ? "compact" : "default"}
       data-testid={active ? undefined : "idle-action-row"}
       aria-label="LuTrack"
     >
-      {active ? (
+      {active && compact ? (
+        <div className="tracking-compact">
+          <div
+            className="activity-status activity-status--tracking"
+            data-testid="tracking-running-state"
+            role="status"
+          >
+            <span className="activity-status__dot" aria-hidden="true" />
+            <span>Měří se čas</span>
+            <span className="tracking-compact__time" data-panel-height-neutral="true">
+              {formatCompactElapsed(elapsed)}
+            </span>
+          </div>
+          <p className="tracking-compact__project" title={project}>{project}</p>
+          <div className="tracking-compact__actions">
+            <label className="tracking-compact__switch">
+              <span>Přepnout</span>
+              <select
+                value={project}
+                aria-label="Přepnout projekt"
+                onChange={(event) => setProject(event.target.value)}
+              >
+                {PROJECTS.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="tracking-compact__stop"
+              data-testid="tracking-stop"
+              aria-label="Zastavit LuTrack"
+              onClick={toggleTracking}
+            >
+              Stop
+            </button>
+          </div>
+        </div>
+      ) : active ? (
         <div className="feature-card__header">
           <span className="section-icon section-icon--tracking"><TimerIcon /></span>
           <div>
             <p className="eyebrow">LuTrack</p>
-            <h2>Časovač</h2>
+            <h2 data-testid="tracking-running-state">Časovač</h2>
           </div>
           <p className="tracking-time" aria-live="polite">{formatElapsed(elapsed)}</p>
         </div>
@@ -80,7 +134,7 @@ export function TrackingCard({ onActivityChange, todaySummary = null, trayComman
         </>
       )}
 
-      <div className="tracking-controls" hidden={!active}>
+      <div className="tracking-controls" hidden={!active || compact}>
         <label className="select-field">
           <span className="sr-only">Projekt</span>
           <select value={project} disabled={active} onChange={(event) => setProject(event.target.value)}>
@@ -91,6 +145,7 @@ export function TrackingCard({ onActivityChange, todaySummary = null, trayComman
         <button
           type="button"
           className={`track-toggle${active ? " track-toggle--active" : ""}`}
+          data-testid={active ? "tracking-stop" : undefined}
           role="switch"
           aria-checked={active}
           aria-label={active ? "Zastavit LuTrack" : "Spustit LuTrack"}
@@ -103,7 +158,7 @@ export function TrackingCard({ onActivityChange, todaySummary = null, trayComman
         </button>
       </div>
 
-      <label className="description-field" hidden={!active}>
+      <label className="description-field" hidden={!active || compact}>
         <span className="sr-only">Volitelný popis práce</span>
         <input
           value={description}

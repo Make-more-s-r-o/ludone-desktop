@@ -134,9 +134,14 @@ export function App() {
     );
   }
 
+  const bothActivitiesRunning = recording.active && tracking.active;
+
   return (
     <PanelContentHeightReporter>
-      <main className="panel window-surface">
+      <main
+        className="panel window-surface"
+        data-panel-state={bothActivitiesRunning ? "recording-and-tracking" : "single-or-idle"}
+      >
         <header className="panel-header">
           <div className="panel-identity">
             <LuDoneMark size={22} variant="panel" />
@@ -152,8 +157,16 @@ export function App() {
         </header>
 
         <div className="panel-scroll">
-          <RecordingCard onActivityChange={handleRecordingChange} trayCommand={trayCommand} />
-          <TrackingCard onActivityChange={handleTrackingChange} trayCommand={trayCommand} />
+          <RecordingCard
+            compact={bothActivitiesRunning}
+            onActivityChange={handleRecordingChange}
+            trayCommand={trayCommand}
+          />
+          <TrackingCard
+            compact={bothActivitiesRunning}
+            onActivityChange={handleTrackingChange}
+            trayCommand={trayCommand}
+          />
         </div>
 
         <footer className="panel-footer">
