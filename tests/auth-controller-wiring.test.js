@@ -1,7 +1,10 @@
 import { createRequire } from "node:module";
 import { EventEmitter } from "node:events";
 import { readFileSync } from "node:fs";
-import { describe, expect, it, vi } from "vitest";
+import { rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
 const { createAuthController: realCreateAuthController } = require("../electron/auth.cjs");
@@ -38,6 +41,11 @@ function functionSource(source, name) {
 const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
 const authSource = readFileSync(new URL("../electron/auth.cjs", import.meta.url), "utf8");
 const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");
+const AUTH_WIRING_APP_DATA = path.join(tmpdir(), `ludone-auth-wiring-${process.pid}`);
+
+afterAll(async () => {
+  await rm(AUTH_WIRING_APP_DATA, { recursive: true, force: true });
+});
 
 function compiledAuthWiring(createAuthController) {
   return Function(
@@ -50,7 +58,7 @@ function compiledAuthWiring(createAuthController) {
   )(createAuthController);
 }
 
-const fakeApp = { getPath: vi.fn(() => "/tmp/ludone-auth-wiring"), isPackaged: false };
+const fakeApp = { getPath: vi.fn(() => AUTH_WIRING_APP_DATA), isPackaged: false };
 const fakeSafeStorage = { isEncryptionAvailable: vi.fn(() => true) };
 
 function dependencies(overrides = {}) {
@@ -145,13 +153,20 @@ describe("zapojení skutečného OAuth controlleru", () => {
     "https://a:b@app.ludone.cz",
     "https://app.ludone.cz#x",
     "https://app.ludone.cz/cesta",
+    "https://app.ludone.cz:444",
     "https://jiny.example",
     "",
   ])("nedůvěryhodný origin %s selže bez controlleru", async (origin) => {
     const createController = vi.fn();
     const shell = { openExternal: vi.fn() };
     const handler = compiledAuthWiring(createController)(
-      dependencies({ env: { LUDONE_ORIGIN: origin }, shell }),
+      dependencies({
+        env: {
+          LUDONE_ORIGIN: origin,
+          LUDONE_OAUTH_CLIENT_ID: "klient-pro-neduveryhodny-origin",
+        },
+        shell,
+      }),
     );
 
     await expect(handler()).resolves.toEqual({ ok: false, duvod: "konfigurace" });
@@ -260,6 +275,7 @@ describe("zapojení skutečného OAuth controlleru", () => {
             authorization_endpoint: `${issuer}/api/mcp/oauth/authorize`,
             token_endpoint: `${issuer}/api/mcp/oauth/token`,
             registration_endpoint: `${issuer}/api/mcp/oauth/register`,
+            revocation_endpoint: `${issuer}/api/mcp/oauth/revoke`,
             code_challenge_methods_supported: ["S256"],
           }),
         };
@@ -287,6 +303,20 @@ describe("zapojení skutečného OAuth controlleru", () => {
     });
     expect(requestedPaths).toEqual(["/.well-known/oauth-authorization-server"]);
     expect(requestedPaths).not.toContain("/api/mcp/oauth/register");
+  });
+
+  it("skutečný preflight úložiště je zapojený do důvodu uloziste", async () => {
+    const fetchImpl = vi.fn();
+    const shell = { openExternal: vi.fn() };
+    const createController = (options) => realCreateAuthController({ ...options, fetchImpl });
+    const handler = compiledAuthWiring(createController)(dependencies({
+      safeStorage: { isEncryptionAvailable: vi.fn(() => false) },
+      shell,
+    }));
+
+    await expect(handler()).resolves.toEqual({ ok: false, duvod: "uloziste" });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(shell.openExternal).not.toHaveBeenCalled();
   });
 });
 

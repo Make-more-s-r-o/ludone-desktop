@@ -730,6 +730,9 @@ function resolveAuthIssuer(env) {
   ) {
     throw new Error("Adresa přihlášení musí být čistý HTTPS origin");
   }
+  if (!["app.ludone.cz", "labs.ludone.cz"].includes(issuer.host)) {
+    throw new Error("Adresa přihlášení míří na nepovoleného hostitele");
+  }
   return issuer.origin;
 }
 
