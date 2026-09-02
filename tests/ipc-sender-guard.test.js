@@ -154,6 +154,79 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     })).toBe(false);
   });
 
+  it("povolí panelu zachytávání obrazovky se systémovým zvukem hlášené jako prázdné mediaTypes", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(panel, "media", {
+      isMainFrame: true,
+      requestingUrl: trustedUrl,
+      mediaTypes: [],
+    })).toBe(true);
+  });
+
+  it("ponechá zakázanou kameru", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(panel, "media", {
+      isMainFrame: true,
+      requestingUrl: trustedUrl,
+      mediaTypes: ["video"],
+    })).toBe(false);
+  });
+
+  it("ponechá zakázanou kombinaci mikrofonu a kamery", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(panel, "media", {
+      isMainFrame: true,
+      requestingUrl: trustedUrl,
+      mediaTypes: ["audio", "video"],
+    })).toBe(false);
+  });
+
+  it("odmítne prázdné mediaTypes z nedůvěryhodné URL", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(panel, "media", {
+      isMainFrame: true,
+      requestingUrl: "https://utocnik.example/",
+      mediaTypes: [],
+    })).toBe(false);
+  });
+
+  it("odmítne prázdné mediaTypes od nedůvěryhodného odesílatele", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    const foreign = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(foreign, "media", {
+      isMainFrame: true,
+      requestingUrl: trustedUrl,
+      mediaTypes: [],
+    })).toBe(false);
+  });
+
+  it("ponechá povolený mikrofon", () => {
+    const panel = createWebContents();
+    const settings = createWebContents();
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+
+    expect(permissionGuard.isAllowedMediaPermission(panel, "media", {
+      isMainFrame: true,
+      requestingUrl: trustedUrl,
+      mediaTypes: ["audio"],
+    })).toBe(true);
+  });
+
   it("povolí panelu pouze žádost o zvuk", () => {
     const panel = createWebContents();
     const settings = createWebContents();
