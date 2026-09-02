@@ -75,24 +75,36 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 
 | ID | Funkce | Riziko | scope | delivery | exposure | verification |
 |---|---|---|---|---|---|---|
-| `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | approved | committed ¹ | disabled | tests-green |
+| `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | approved | **merged** | **labs** | tests-green |
 | `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | approved | no-code | disabled | unverified |
-| `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | approved | coded ² | disabled | unverified |
-| `DSK-F004` | Odhlášení s odvoláním na serveru | security | approved | no-code | disabled | unverified |
-| `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | no-code | disabled | unverified |
-| `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | approved | coded ³ | labs | unverified |
-| `DSK-F007` | Nahrávání dvou stop na disk | normal | approved | merged | labs | tests-green ⁴ |
+| `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | approved | **merged** | disabled ⁹ | unverified |
+| `DSK-F004` | Odhlášení s odvoláním na serveru | security | approved | **merged** | disabled ¹⁰ | tests-green |
+| `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | **merged** | disabled | tests-green |
+| `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | approved | **merged** | labs | unverified |
+| `DSK-F007` | Nahrávání dvou stop na disk | normal | approved | merged | labs | tests-green |
 | `DSK-F008` | Pojmenování nahrávky při zastavení | normal | approved | no-code | disabled | unverified |
-| `DSK-F009` | Odchozí fronta s opakováním | normal | approved | coded ⁵ | disabled | tests-green |
-| `DSK-F010` | Odeslání na server | rbac | **draft** ⁶ | no-code | disabled | unverified |
-| `DSK-F011` | Časovač: start, přepnutí projektu, stop | **money** | approved | no-code ⁷ | disabled | unverified |
-| `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ⁸ | disabled | unverified |
-| `DSK-F013` | Časovač přežije pád a restart | **money** | approved | no-code | disabled | unverified |
+| `DSK-F009` | Odchozí fronta s opakováním | normal | approved | **merged** | disabled ¹⁰ | tests-green |
+| `DSK-F010` | Odeslání na server | rbac | **draft** | no-code | disabled | unverified |
+| `DSK-F011` | Časovač: start, přepnutí projektu, stop | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
+| `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ¹¹ | disabled | unverified |
+| `DSK-F013` | Časovač přežije pád a restart | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F014` | Připomínky, když neběží časovač | normal | approved | no-code | disabled | unverified |
-| `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika | normal | approved | coded | labs | unverified |
+| `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika | normal | approved | **merged** | labs | unverified |
 | `DSK-F016` | Ikona v Docku jako volba | normal | approved | no-code | disabled | unverified |
+| `DSK-F017` | Mazání lokálních kopií po 7 dnech | normal | approved ¹² | **merged** | disabled | tests-green |
 
-**Poznámky — každá je změřená, ne odhadnutá (1. 9. 2026):**
+🔴 **Aktualizováno 2. 9. 2026 po sloučení celého stohu** (PR #2–#13). Dan schválil, že se
+stavové osy smějí udržovat, i když je zbytek specu zmrazený — zmrazení chrání POŽADAVKY
+(R1–R25, acceptance), ne sloupce o stavu (rozhodnutí BD-N30). Osy jsou podle masterplánu
+jediný zdroj pravdy o stavu; nechat je lhát je horší než je upravit.
+
+**Souhrn: 11 funkcí `merged`, ale jen 4 v `labs`.** Ten rozdíl je dnes to nejdůležitější
+číslo v celém projektu — most `preload.cjs` nabízí 23 funkcí a UI jich volá 10. Časová
+agenda, odhlášení i fronta jsou **postavené, otestované a nezapojené**.
+
+🔴 **`verified-live` má nula funkcí.** Aplikaci zatím nikdo neviděl běžet.
+
+**Poznámky — každá je změřená, ne odhadnutá:**
 
 ¹ Commit `ce2bea6` na větvi `fix/tray-prazdna-ikona`, **záměrně nemergováno** — je to user-visible
 implementace bez schváleného specu, tedy přesně to, co tenhle masterplán zakazuje. Brána volá
@@ -334,3 +346,18 @@ zelenou. Napříště musí najít **aspoň jeden očekávaný záznam** (`[reco
 tam není, výsledek je **⛔ NEMĚŘENO**, ne ✅. Grep, který nenajde ani kanárka, je rozbitý grep —
 ne důkaz čistoty.
 
+
+⁹ `DSK-F003` je mergnutá, ale **fail-closed na chybějící `LUDONE_OAUTH_CLIENT_ID`**
+(`main.cjs:939`). Bez ní se nedá projít ani první obrazovkou, takže `exposure` zůstává
+`disabled`. Co přesně založit → [`OAUTH-CO-ZALOZIT.md`](OAUTH-CO-ZALOZIT.md).
+
+¹⁰ Kód je v `main` a otestovaný, ale **žádná komponenta v `src/` ho nevolá** — změřeno
+`grep -rn "logout" src/` → 0 a totéž pro `startTracking`/`stopTracking`. Most je vystavený,
+volající chybí. Hlídá to `tests/zapojeni-odhlaseni.test.js`: dnes zelený, červený v sekundě,
+kdy volající přibude.
+
+¹¹ `DSK-F012` je zablokovaná rozhodnutím **BD-N28**: pravidlo 110 % patří na server, desktop
+ho jen přebírá. Nezadrátovat ani jednu variantu ze sporu `spec.md` R7 × `plan.md` B6.
+
+¹² `DSK-F017` je **nové ID přidělené 2. 9. 2026** — retence vznikla v B11 a v matici do té
+doby vůbec nebyla. Kód je hotový a otestovaný; zapojení do startu aplikace právě běží.
