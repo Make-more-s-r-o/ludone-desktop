@@ -500,7 +500,13 @@ describe("odhlášení", () => {
       reason: "offline",
     });
     const logout = vi.fn(async () => sentinel);
-    const updateTray = vi.fn();
+    // Po B3 hlavní proces stav lišty NENASTAVUJE — mění fakt a nechá ho odvodit.
+    // Vlastník nahrávky v `trackingOwners` je tu schválně: odhlášení ho nesmí smazat.
+    const appState = { signedIn: true, trackingOwners: new Set(["nahravka-1"]) };
+    // Zaznamenáváme fakt V OKAMŽIKU přepočtu. Bez toho by prošlo i pořadí
+    // `refreshTray(); appState.signedIn = false;`, kde lišta počítá ze zastaralého faktu.
+    const faktPriPrepoctu = [];
+    const refreshTray = vi.fn(() => faktPriPrepoctu.push(appState.signedIn));
     const app = {};
     const safeStorage = {};
     const logger = { error: vi.fn() };
@@ -516,7 +522,8 @@ describe("odhlášení", () => {
       "app",
       "safeStorage",
       "handleValidated",
-      "updateTray",
+      "appState",
+      "refreshTray",
       "console",
       "authSessionCoordinator",
       `"use strict"; ${registration}`,
@@ -525,7 +532,8 @@ describe("odhlášení", () => {
       app,
       safeStorage,
       handleValidated,
-      updateTray,
+      appState,
+      refreshTray,
       logger,
       authSessionCoordinator,
     );
@@ -541,7 +549,9 @@ describe("odhlášení", () => {
     const returned = await captured.handler();
     expect(returned).toBe(sentinel);
     expect(logout).toHaveBeenCalledOnce();
-    expect(updateTray).toHaveBeenCalledWith("signed-out");
+    expect(appState.signedIn, "odhlášení musí změnit FAKT, ne ikonu").toBe(false);
+    expect(refreshTray, "a nechat stav přepočítat").toHaveBeenCalledOnce();
+    expect(faktPriPrepoctu, "přepočet musí přijít AŽ PO změně faktu").toEqual([false]);
 
     const localFailure = Object.freeze({
       signedOutLocally: false,
@@ -549,8 +559,11 @@ describe("odhlášení", () => {
       reason: "local-delete-failed",
     });
     logout.mockResolvedValueOnce(localFailure);
+    appState.signedIn = true;
     expect(await captured.handler()).toBe(localFailure);
-    expect(updateTray).toHaveBeenCalledOnce();
+    expect(refreshTray, "neúspěšné místní odhlášení lištou nehýbe").toHaveBeenCalledOnce();
+    expect(appState.signedIn, "a fakt nechává být").toBe(true);
+    expect([...appState.trackingOwners], "nahrávka odhlášení nepřežila").toEqual(["nahravka-1"]);
   });
 });
 

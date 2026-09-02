@@ -961,7 +961,11 @@ handleValidated("auth:logout", ["panel"], async () => {
   const result = await logoutAuthController.logout();
   if (result.signedOutLocally) {
     try {
-      updateTray("signed-out");
+      // Hlavní proces po B3 stav lišty NENASTAVUJE, jen mění fakt a nechá ho odvodit.
+      // Kdyby se tu ikona přepsala natvrdo, přebila by běžící nahrávku a lišta by
+      // tvrdila „odhlášeno" nad session, která pořád píše na disk.
+      appState.signedIn = false;
+      refreshTray();
     } catch (error) {
       try {
         const message = error instanceof Error ? error.message : String(error);
