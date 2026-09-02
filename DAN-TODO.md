@@ -98,9 +98,14 @@ aktualizací, verzování. Podpis a notarizace jsou poslední krok, ne první.
 
 ---
 
-## 🔴 IKONA V LIŠTĚ — příčina nalezena, a není naše (2. 9. ve 21:35)
+## ✅ IKONA V LIŠTĚ — VYŘEŠENO A OVĚŘENO NAOSTRO (2. 9. ve 21:58)
 
-**Tvoje horní lišta je plná.** LuDone se do ní nevejde a macOS to nikde neohlásí.
+**Potvrzeno Danem:** po uvolnění jednoho místa v liště se ikona objevila a panel se otevřel.
+Diagnóza seděla — **lišta byla plná** a macOS to nikde neohlásil.
+
+✅ **První ✅ ověřeno naostro v tomhle modulu.** Zároveň tím Dan viděl běžet panel: značka
+LuDone, stav „Připojení neověřeno", řádek Nahrávání s tlačítkem Nahrát a patička „1 čeká ·
+Nastavení" — tedy schválený design, ne atrapa.
 
 ### Co jsem změřil, než jsem to prohlásil
 
