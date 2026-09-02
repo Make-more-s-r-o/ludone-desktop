@@ -293,6 +293,25 @@ describe("každá změna nahrávacího faktu lištu přepočítá", () => {
     expect(vyskytu("recordingSessions.delete(")).toBe(1);
     // Přiřazení finalizePromise chybělo v původním výčtu úplně.
     expect(vyskytu("recordingSession.finalizePromise = (async ()")).toBe(1);
+    // 🔴 A `preparation.cancelled` taky. `hasLiveRecording()` čte ČTYŘI fakta, ne dvě:
+    // kromě členství v obou mapách i zrušenou přípravu a rozběhnutou finalizaci. Kdyby
+    // přibylo druhé místo, které přípravu ruší bez přepočtu, počitadlo nad samotným
+    // členstvím by o tom mlčelo. Nález nezávislého review.
+    expect(vyskytu("preparation.cancelled = ")).toBe(1);
+  });
+
+  it("zrušení přípravy lištu přepočítá — jen až za smyčkou, a to schválně", () => {
+    // Tenhle případ ZÁMĚRNĚ není v okénkové kontrole výš: `preparation.cancelled = true`
+    // stojí na začátku `finalizeRecordingSessionsForOwner`, ale `refreshTray()` musí přijít
+    // až ZA smyčkou přes sessions — jinak by přepočet viděl stav, ve kterém část session
+    // ještě nemá přiřazenou finalizaci. Měříme proto, že obojí je v TÉŽE funkci a ve
+    // správném pořadí, ne že jsou vedle sebe.
+    const telo = functionSource(mainSource, "finalizeRecordingSessionsForOwner");
+    const zruseni = telo.indexOf("preparation.cancelled = ");
+    const prepocet = telo.lastIndexOf("refreshTray()");
+    expect(zruseni, "zrušení přípravy se ve funkci nenašlo").toBeGreaterThan(-1);
+    expect(prepocet, "přepočet se ve funkci nenašel").toBeGreaterThan(-1);
+    expect(prepocet).toBeGreaterThan(zruseni);
   });
 });
 
