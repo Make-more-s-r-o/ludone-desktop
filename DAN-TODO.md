@@ -970,3 +970,37 @@ app.ludone.cz to nepřepisuje
 
 **Zbývá tedy jediné tvoje rozhodnutí:** scope pro zápis (`mcp:upload`), viz
 [`PROMPT-SERVER-SESSION.md`](docs/changes/desktop-v1/PROMPT-SERVER-SESSION.md) §1.
+
+---
+
+## Po zjednodušení plánu zbyla jedna díra a dvě potvrzení (2. 9. 2026)
+
+Tvoje zjednodušení (nahrává prohlížeč, ne desktop) **odložilo scope u nahrávek** — ale
+neplatí to na všechno.
+
+### 🔴 Kudy půjde naměřený ČAS?
+
+Nahrávky nově chodí z prohlížeče. **Naměřený čas ale posílá desktop sám**, a ten se
+autorizovat musí. Takže:
+
+| varianta | důsledek |
+|---|---|
+| **A** odložit celou časovou agendu do fáze 2 | scope se neřeší teď; LuTrack zůstane nezapojený |
+| **B** udělat scope hned kvůli času | fáze 1 přestane být „bez nového práva" |
+| **C** čas taky přes prohlížeč | nesmysl — nikdo nebude ručně nahrávat záznam o dvou hodinách |
+
+**Doporučuju A.** Nahrávky jsou to, kvůli čemu aplikace vzniká; čas počká na fázi 2 a scope
+se udělá jednou pro obojí.
+
+### Dvě potvrzení (rozhodl běh, ne ty)
+
+1. **Plná kvóta = odmítnout nahrávání**, nikdy nemazat automaticky. Tiché smazání dat,
+   o která nikdo nepožádal, je horší než odmítnutá nahrávka.
+2. **Přepisová služba musí umět diarizaci a češtinu.** Bez toho je ze zápisu ze schůzky
+   jeden slepý text.
+
+### Co nikdo zatím neřešil: cena přepisu
+
+„Všechno na klik" cenu **odkládá, neruší**. U hodinové schůzky to nejsou drobné. Serverová
+session by ti měla přinést cenu za minutu u dvou tří služeb jako číslo — je to rozhodnutí
+o penězích, tedy tvoje.
