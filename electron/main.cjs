@@ -22,6 +22,7 @@ const {
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
 } = require("./auth.cjs");
+const { createOutboundQueueStore } = require("./queue.cjs");
 const {
   TRACKING_STATES,
   createTrackingStore,
@@ -32,6 +33,9 @@ const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
 const manifestModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "manifest.js")).href
+);
+const queueModulePromise = import(
+  pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "queue.js")).href
 );
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
@@ -801,10 +805,72 @@ handleValidated("recording:begin", ["panel"], (event) => createRecordingSession(
 handleValidated("recording:append", ["panel"], (event, sessionId, source, sequence, arrayBuffer) => (
   appendRecordingChunk(event, sessionId, source, sequence, arrayBuffer)
 ));
-handleValidated("recording:finish", ["panel"], (event, sessionId) => {
-  ownedRecordingSession(event, sessionId);
-  return finalizeRecordingSession(sessionId, "complete");
-});
+
+let outboundQueueStore;
+
+function queueKillswitches() {
+  return {
+    DESKTOP_UPLOAD_ENABLED: process.env.DESKTOP_UPLOAD_ENABLED,
+    DESKTOP_TIME_ENABLED: process.env.DESKTOP_TIME_ENABLED,
+  };
+}
+
+function unavailableQueueSend() {
+  const error = new Error("odesílací vrstva zatím neexistuje; fronta je pozastavená");
+  error.failureClass = "paused";
+  throw error;
+}
+
+function getOutboundQueueStore() {
+  if (!outboundQueueStore) {
+    outboundQueueStore = createOutboundQueueStore({
+      filePath: path.join(app.getPath("userData"), "queue", "outgoing.json"),
+      queueModulePromise,
+      send: unavailableQueueSend,
+    });
+  }
+  return outboundQueueStore;
+}
+
+function pumpOutboundQueue() {
+  return getOutboundQueueStore().pump(queueKillswitches()).then((result) => {
+    console.log(`[queue] ${result.reason ?? result.outcome}`);
+    return result;
+  }).catch((error) => {
+    console.error(`[queue] Pumpa selhala: ${error.stack || error.message}`);
+    return { outcome: "error", reason: error.message };
+  });
+}
+
+function finishRecordingAndEnqueue(event, sessionId) {
+  const recordingSession = ownedRecordingSession(event, sessionId);
+  return finalizeRecordingSession(sessionId, "complete").then(async (result) => {
+    try {
+      const queued = await getOutboundQueueStore().enqueueRecording({
+        manifest: recordingSession.manifest,
+        manifestPath: recordingSession.manifestPath,
+        trackPaths: Object.fromEntries(
+          [...recordingSession.tracks].map(([source, track]) => [source, track.filePath]),
+        ),
+      });
+      if (queued.added) {
+        console.log(`[queue] Zařazeno ${queued.item.clientRecordingId} (recording).`);
+      }
+    } catch (error) {
+      console.error(`[queue] Zařazení nahrávky selhalo: ${error.stack || error.message}`);
+    }
+    return result;
+  });
+}
+
+handleValidated("recording:finish", ["panel"], finishRecordingAndEnqueue);
+handleValidated("queue:list", ["panel", "settings"], () => getOutboundQueueStore().list());
+handleValidated("queue:retry", ["panel"], () => (
+  getOutboundQueueStore().retry(queueKillswitches()).then((result) => {
+    console.log(`[queue] ${result.reason ?? result.outcome}`);
+    return result;
+  })
+));
 
 const TRACKING_STORE_OWNER_ID = "main-process-timer";
 let trackingStore;
@@ -1083,6 +1149,7 @@ app.whenReady().then(() => {
   tray.on("click", togglePanel);
   refreshTray();
   createPanelWindow();
+  void pumpOutboundQueue();
   const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);
   if (IS_TEST_RUN && Number.isFinite(hardStop) && hardStop > 0) {
     setTimeout(() => {

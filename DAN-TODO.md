@@ -674,3 +674,41 @@ do té doby se přesných 110,0 % ani projekty nad hranicí nesmějí implemento
 „všechny alokace jsou přečerpané“ nemají sjednocené chování; `scripts/ui-smoke.mjs` na
 řádcích 224, 226, 234 a 338–342 očekává odstraňovaný `<select>`; preload nemá bezpečný
 `openExternal` pro odkaz z prázdného stavu. Tyto body se v zablokovaném běhu neměnily.
+---
+
+## ⚠️ Nálezy B7 — zapojení odchozí fronty (2. 9. 2026)
+
+Tyto body B7 nerozhoduje ani neopravuje mimo své vlastnictví:
+
+1. `src/lib/queue.js` je hlavní soubor B7, ale `docs/changes/desktop-v1/plan.md` §2b jej
+   ve výčtu souborů story neuvádí.
+2. Schválený artboard `design/canvas/Fronta.dc.html` říká „Vzdáno po 6 pokusech“, zatímco
+   kontrakt i `DEFAULT_RETRY_POLICY.maxAttempts` určují 5. B7 zachovává 5.
+3. R22 vyžaduje plný GUID v názvu souboru nebo sidecar, ale žádná story v plánu tuto změnu
+   nevlastní.
+4. Obnova položky, která po pádu zůstane ve stavu `odesila`, není v B7 ani v jiné story.
+5. Akceptační brána E5 původně neměřila `fsync` v `saveQueueAtomically`; B7 proto přidala
+   behaviorální unit test pořadí `write → fsync dat → rename → fsync adresáře`.
+6. E5 vůbec nehledá zapnutý `DESKTOP_TIME_ENABLED` a neměří jeho výchozí fail-closed hodnotu.
+7. `tests/ipc-sender-guard.test.js` drží ručně udržovaný uzavřený allowlist IPC kanálů,
+   který musí každá story s novým IPC rozšířit bez oslabení `toEqual`; plán to neříká.
+8. Vlastnictví B6 je rozporné: tabulka bloků ji vynechává, §2b jí nedává `main.cjs` ani
+   `preload.cjs`, ale vytěžené podklady je uvádějí jako sdílené. Souběh B6/B7 tím není doložený.
+9. Nahrávky uzavřené po pádu rendereru, zničení okna nebo navigaci jako `incomplete` se do
+   fronty nezařadí. B7 zařazuje jen explicitní `recording:finish`; je potřeba produktové rozhodnutí.
+10. Značka `⛔` má v plánu dva významy: skutečnou stopku B12 a vazbu na rozhodnutí u B6/B7/B9.
+11. Probouzení fronty přes `powerMonitor`/`net.isOnline()` a varovný stav ikony nemají vlastní
+    story. Bez nich se čekající fronta sama po návratu sítě neprobudí.
+12. Packet očekával B5 klíč `trackingId`, ale skutečný uzavřený úsek používá
+    `clientTimeEntryId`. Čistá logika B7 používá skutečný klíč a přijímá jej jako idempotency key.
+13. Okamžité zařazení uzavřeného času by vyžadovalo změnit B5 blok `runTrackingMutation`, který
+    §12 packetu B7 nepřiděluje. Navíc `resolveRecovered("zahodit")` vrací také `closed`, ale
+    s nulou minut a důvodem `zahozeno-clovekem`; není rozhodnuto, zda se smí odeslat.
+14. Mezi atomickým uložením uzavřeného času v B5 a zápisem do fronty může proces spadnout.
+    Opakovaný Stop je potom `noop`; chybí rozhodnutí a test startupové reconciliace `uzavrene`.
+15. Packet B7 říká, že pumpu smějí probudit jen start aplikace a `queue:retry`, ale jeho
+    kanárek K3 nad novým prázdným datovým adresářem vyžaduje po dokončení první nahrávky log
+    „odesílání je vypnuté“. Startupová pumpa v té chvíli už prázdnou frontu zpracovala, takže
+    obě podmínky současně splnit nejdou. B7 zachovává výslovné pravidlo dvou budíčků, takže
+    K3 v popsaném čerstvém scénáři nemůže projít; Dan musí potvrdit, zda přidat třetí budíček
+    po zařazení nahrávky, nebo změnit scénář K3.
