@@ -165,6 +165,53 @@ i když příčina je v systému — nový uživatel s plnou lištou usoudí, ž
 Zapsáno jako práce: po startu porovnat `tray.getBounds().x` s pásem stavových ikon a při
 podezření otevřít okno s vysvětlením místo tichého mlčení.
 
+---
+
+## 🛑 TVRDÉ BLOCKERY — přeskočeno, čeká na tebe (stav k 3. 9. 2026, 00:10)
+
+Obojí je **mimo autonomní schválení** (peníze, cizí účet, vzhled produktu). Běh je **přeskočil**
+a pokračoval na nezávislé práci; nic dalšího na nich nevisí.
+
+### B1 · Apple Developer Program — na koho zapsat
+
+**Přesný blocker:** bez zápisu neexistuje certifikát „Developer ID Application" ani notarizace.
+Release workflow je hotový a **záměrně selže před spuštěním builderu**, dokud nebude pět
+tajemství — takže se nepodepsaná verze nemůže omylem vydat.
+
+**Doporučená varianta: Organization (Make more s.r.o.).**
+Pod firemním nástrojem má být podepsaná firma, ne Dan osobně; certifikát pak přežije
+personální změny a jde přidat kolegy. **Mezi variantami se nepřechází** — Apple chce nový
+zápis a nové certifikáty, takže volba je jednorázová.
+
+⚠️ Podmínkou je **D-U-N-S číslo** firmy (zdarma, Apple má vlastní vyhledávač). Když ho
+Make more už má — u českých s.r.o. časté — je to stejně rychlé jako varianta na Dana.
+Když ne, počítej s několika dny až dvěma týdny; teprve to je důvod zvolit Individual.
+
+**Co doplnit po zápisu** do GitHub secrets: `MAC_CSC_LINK` · `MAC_CSC_KEY_PASSWORD` ·
+`APPLE_API_KEY_P8` · `APPLE_API_KEY_ID` · `APPLE_API_ISSUER`.
+
+**Co do té doby NEJDE:** automatické aktualizace (`electron-updater` ověřuje podpis)
+a trvalá oprávnění (mikrofon a záznam obrazovky se váží na podpis, po každé verzi znovu).
+Instalace jde: Nastavení systému → Soukromí a zabezpečení → „Přesto otevřít".
+
+### B2 · Barva hlavního tlačítka v onboardingu a nastavení
+
+**Přesný blocker:** aplikace má dvě akcentní barvy vedle sebe. Panel používá modrou
+`--panel-accent: oklch(0.72 0.14 268)`, onboarding, Nastavení a test záznamu zelenou
+`--green: oklch(0.5 0.17 145)` na **8 místech**. Změna je jednořádková v `src/styles.css`.
+
+🔴 **Oprava dřívějšího tvrzení běhu:** nejde o porušení schváleného návrhu. `nahled.html`
+je vyprávěcí dokument o rozhodnutích a **barvu hlavního tlačítka pro tyhle obrazovky vůbec
+nepředepisuje**. Je to vnitřní nesoulad, ne odchylka od zadání — proto to rozhoduje vkus,
+ne dokument.
+
+**Doporučená varianta: sjednotit na modrou.** Panel uživatel vidí denně, onboardingem projde
+jednou; zelená je v návrhu vedená jako `--ok-base`, tedy „v pořádku / hotovo", a obarvit jí
+běžnou akci ten význam smaže.
+
+Ukázka obou variant vedle sebe:
+`docs/changes/desktop-v1/progress/barva-tlacitka.html`
+
 ## 0. Noční běh je připravený — co k němu patří
 
 Briéf: [`docs/behy/2026-08-24-zaklad-a-fronta.md`](docs/behy/2026-08-24-zaklad-a-fronta.md).

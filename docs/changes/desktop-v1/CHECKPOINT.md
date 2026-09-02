@@ -48,3 +48,18 @@ hláška při plné liště · přibalená písma.
 - **Apple Developer** — na koho zapsat (Individual × firma; mezi nimi se nepřechází).
   Bez něj to jde, ale nepojedou automatické aktualizace ani trvalá oprávnění.
 - **Barva hlavního tlačítka** v onboardingu a nastavení.
+
+---
+
+## 🛑 PŘESKOČENÉ TVRDÉ BRÁNY (3. 9. 2026, 00:10)
+
+Běh je **nepřekročil ani neobešel** — přeskočil je a pokračoval po nezávislé větvi DAG.
+Plné znění včetně doporučených variant je v `DAN-TODO.md`, sekce „TVRDÉ BLOCKERY".
+
+| # | blocker | doporučení | co na něm viselo |
+|---|---|---|---|
+| **B1** | Apple Developer — na koho zapsat | **Organization** (firma), pokud má D-U-N-S; jinak Individual | podpis, notarizace, auto-update, trvalá oprávnění |
+| **B2** | barva hlavního tlačítka (8 míst) | **sjednotit na modrou** dle panelu | nic — jednořádková změna v `src/styles.css` |
+
+🔴 **Ani jeden neblokuje další vývoj.** Release workflow je hotový a fail-closed: bez pěti
+tajemství **selže před spuštěním builderu**, takže nepodepsaná verze nemůže odejít omylem.
