@@ -96,6 +96,42 @@ aplikaci po stažení odmítne slovy „je poškozená". Rozhodl jsi to postavit
 Do koupě se staví všechno, co na podpisu nezávisí: konfigurace `electron-builder`, kanál
 aktualizací, verzování. Podpis a notarizace jsou poslední krok, ne první.
 
+---
+
+## 🔴 IKONA V LIŠTĚ — příčina nalezena, a není naše (2. 9. ve 21:35)
+
+**Tvoje horní lišta je plná.** LuDone se do ní nevejde a macOS to nikde neohlásí.
+
+### Co jsem změřil, než jsem to prohlásil
+
+| měření | výsledek |
+|---|---|
+| obrázek ikony | `isEmpty=false`, 18×18, 427 B PNG, alfa 54 % krycích pixelů — **v pořádku** |
+| tvar ikony | vykreslený alfa kanál dává čitelnou bublinu s přeškrtnutím — **v pořádku** |
+| `tray.getBounds()` v běžící aplikaci | `{x:599, y:0, width:34, height:33}` — macOS tvrdí, že ji umístil |
+| lišta sejmutá před a po spuštění | **numericky identická** přes celou šířku, po 200px pásech |
+| text vedle ikony (`setTitle`) | rozměry narostly na 145 px, **text se taky nevykreslil** |
+| správce lišty (Bartender, Ice…) | žádný neběží |
+| počet displejů | jeden |
+| **klik na hlášené souřadnice** | trefil **`menu bar 1 of application process Orca`** |
+
+Ten poslední řádek to rozhoduje: na místě, kam macOS naši ikonu „dal", je ve skutečnosti
+**oblast aplikačního menu**, ne pás stavových ikon. Systém položku přijme, přidělí jí
+souřadnice, ohlásí nenulové rozměry — a **nevykreslí ji**, protože vpravo od výřezu už je
+obsazeno (napočítal jsem tam ~14 ikon).
+
+### Co s tím uděláš ty (5 sekund)
+
+**Ukonči jednu aplikaci v horní liště** — třeba Notion nebo přehrávač — a LuDone se objeví.
+Nebo si nainstaluj správce lišty (Ice je zdarma), který schované položky zpřístupní.
+
+### Co s tím uděláme my
+
+🔴 **Aplikace se dnes tváří, že běží v pořádku, i když ji uživatel nikde nevidí.** To je vada,
+i když příčina je v systému — nový uživatel s plnou lištou usoudí, že LuDone nefunguje.
+Zapsáno jako práce: po startu porovnat `tray.getBounds().x` s pásem stavových ikon a při
+podezření otevřít okno s vysvětlením místo tichého mlčení.
+
 ## 0. Noční běh je připravený — co k němu patří
 
 Briéf: [`docs/behy/2026-08-24-zaklad-a-fronta.md`](docs/behy/2026-08-24-zaklad-a-fronta.md).
