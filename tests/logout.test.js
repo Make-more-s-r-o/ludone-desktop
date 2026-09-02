@@ -545,3 +545,54 @@ describe("odhlášení", () => {
     expect(updateTray).toHaveBeenCalledOnce();
   });
 });
+
+describe("stav lišty po odhlášení — kontrola, která se ozve, až přistane B3", () => {
+  // 🔴 Tahle kontrola vznikla z nálezu nezávislého review a je záměrně napsaná tak,
+  // aby NEMOHLA ZESTÁRNOUT.
+  //
+  // Situace: `auth:logout` volá `updateTray("signed-out")`. Na TÉHLE větvi je to v pořádku —
+  // linie main→b4→b8→b9 story B3 neobsahuje, takže `updateTray` tu legitimně existuje.
+  // Jenže B3 (`decisions.md` O13, `specs/E3` §3) tu funkci **maže** a nahrazuje ji
+  // bezargumentovým `refreshTray()`; podmínka hotovo tam zní doslova
+  // „grep -n 'updateTray' electron/main.cjs nevrátí nic".
+  //
+  // Kdyby tu stála jen poznámka „až přistane B3, opravit", nikdo by ji nečetl — brána je
+  // zelená a poznámky se čtou, až když něco spadne. Proto se ptáme na SKUTEČNOST:
+  // dokud `refreshTray` v souboru není, je zelená a nahlas říká, co neměří; jakmile
+  // přistane, zčervená a řekne, co dopsat.
+  const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
+  const kodBezKomentaru = mainSource
+    .split("\n")
+    .map((radek) => (radek.trim().startsWith("//") ? "" : radek))
+    .join("\n");
+
+  function blokOdhlaseni() {
+    const zacatek = kodBezKomentaru.indexOf('handleValidated("auth:logout"');
+    expect(zacatek, "blok auth:logout se v main.cjs nenašel").toBeGreaterThan(-1);
+    return kodBezKomentaru.slice(zacatek, zacatek + 900);
+  }
+
+  const b3Pristala = kodBezKomentaru.includes("function refreshTray(");
+
+  it.runIf(!b3Pristala)("B3 tu zatím NENÍ — měříme jen, že se lišta po odhlášení vůbec přepne", () => {
+    // Co se tímhle VĚDOMĚ NEMĚŘÍ: že se použije `refreshTray()`. Na téhle větvi
+    // neexistuje, takže by to nešlo splnit ani kdyby chtěl.
+    expect(blokOdhlaseni()).toMatch(/updateTray\(|refreshTray\(/);
+    expect(kodBezKomentaru).toContain("function updateTray(");
+  });
+
+  it.runIf(b3Pristala)("B3 PŘISTÁLA — odhlášení musí hlásit fakt, ne nastavovat stav", () => {
+    // Až sem test dojde, znamená to, že se obě linie potkaly. Od té chvíle je
+    // `updateTray` zakázaný a odhlášení má nastavit fakt a nechat stav odvodit.
+    const blok = blokOdhlaseni();
+    expect(blok, "auth:logout pořád volá updateTray, které B3 ruší").not.toContain("updateTray(");
+    expect(blok).toContain("appState.signedIn = false");
+    expect(blok).toContain("refreshTray()");
+    expect(kodBezKomentaru, "updateTray má po B3 zmizet úplně").not.toContain("function updateTray(");
+  });
+
+  it("jedna z těch dvou větví vždycky běží", () => {
+    // Pojistka proti tomu, aby se obě podmínky minuly a nezměřilo se nic.
+    expect(typeof b3Pristala).toBe("boolean");
+  });
+});
