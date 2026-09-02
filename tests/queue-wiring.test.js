@@ -381,6 +381,16 @@ async function loadMain({
 const DAY_MS = 24 * 60 * 60 * 1_000;
 const PROJECT_A = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
 
+function stereoWebmBytes() {
+  return Buffer.concat([
+    Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+    Buffer.from("test-WebM-Opus-"),
+    Buffer.from("OpusHead", "ascii"),
+    Buffer.from([1, 2, 0, 0, 0x80, 0xbb, 0, 0, 0, 0, 0]),
+    Buffer.from("audio-payload"),
+  ]);
+}
+
 async function writeOldSentRecording(userDataPath) {
   const queuePath = path.join(userDataPath, "queue", "outgoing.json");
   const recordingsPath = path.join(userDataPath, "nahravky");
@@ -807,6 +817,25 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(preloadCode).toContain('ipcRenderer.invoke("queue:retry")');
   });
 
+  it("preload předá exportní časování a GUID na přesné IPC kanály", async () => {
+    const { api, invoke } = loadPreload({ ok: true });
+    const timing = {
+      startedAt: "2026-09-02T12:00:00.150Z",
+      endedAt: "2026-09-02T12:30:00.450Z",
+    };
+
+    await api.finishRecordingExport("session-1", { succeeded: true, timing });
+    await api.exportRecording("session-1");
+
+    expect(invoke).toHaveBeenNthCalledWith(
+      1,
+      "recording:finish-export",
+      "session-1",
+      { succeeded: true, timing },
+    );
+    expect(invoke).toHaveBeenNthCalledWith(2, "recording:export", "session-1");
+  });
+
   it("IPC fronty používá předepsané role odesílatele", () => {
     expect(mainCode).toContain('handleValidated("queue:list", ["panel", "settings"]');
     expect(mainCode).toContain('handleValidated("queue:retry", ["panel"]');
@@ -822,7 +851,16 @@ describe("produkční zapojení odchozí fronty", () => {
     const list = harness.ipcHandlers.get("queue:list");
 
     const { sessionId } = await begin(event);
-    await finish(event, sessionId);
+    await finish(event, sessionId, {
+      microphone: {
+        startedAt: "2026-09-02T12:00:00.100Z",
+        endedAt: "2026-09-02T12:00:01.100Z",
+      },
+      system: {
+        startedAt: "2026-09-02T12:00:00.125Z",
+        endedAt: "2026-09-02T12:00:01.125Z",
+      },
+    });
 
     expect(await list(event)).toEqual([
       expect.objectContaining({
@@ -832,6 +870,72 @@ describe("produkční zapojení odchozí fronty", () => {
         attempts: 0,
       }),
     ]);
+  });
+
+  it("uloží jeden stereo soubor, ponechá obě stopy a otevře labs URL s GUID", async () => {
+    const harness = await loadMain({ env: { LUDONE_ORIGIN: "https://labs.ludone.cz" } });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const begin = harness.ipcHandlers.get("recording:begin");
+    const append = harness.ipcHandlers.get("recording:append");
+    const finish = harness.ipcHandlers.get("recording:finish");
+    const finishExport = harness.ipcHandlers.get("recording:finish-export");
+    const exportRecording = harness.ipcHandlers.get("recording:export");
+    const microphoneTiming = {
+      startedAt: "2026-09-02T12:00:00.100Z",
+      endedAt: "2026-09-02T12:30:00.500Z",
+    };
+    const systemTiming = {
+      startedAt: "2026-09-02T12:00:00.125Z",
+      endedAt: "2026-09-02T12:30:00.525Z",
+    };
+
+    const { sessionId } = await begin(event);
+    await append(event, sessionId, "microphone", 0, Uint8Array.from([1, 2, 3]).buffer);
+    await append(event, sessionId, "system", 0, Uint8Array.from([4, 5]).buffer);
+    await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
+
+    // Dokončení originálů na stereo finalizaci nečeká.
+    const saved = await finish(event, sessionId, {
+      microphone: microphoneTiming,
+      system: systemTiming,
+    });
+    expect(saved.trackStartDeltaMs).toBe(25);
+    const pendingExport = exportRecording(event, sessionId);
+    await finishExport(event, sessionId, {
+      succeeded: true,
+      timing: {
+        startedAt: "2026-09-02T12:00:00.075Z",
+        endedAt: "2026-09-02T12:30:00.550Z",
+      },
+    });
+    const exported = await pendingExport;
+
+    expect(exported).toMatchObject({
+      ok: true,
+      clientRecordingId: sessionId,
+      format: { container: "WebM", codec: "Opus", channels: 2 },
+      trackStartDeltaMs: 25,
+    });
+    expect(harness.electron.shell.openExternal).toHaveBeenCalledWith(
+      "https://labs.ludone.cz/nahravky/nahrat"
+      + `?clientRecordingId=${sessionId}`
+      + "&startedAt=2026-09-02T12%3A00%3A00.100Z"
+      + "&endedAt=2026-09-02T12%3A30%3A00.525Z",
+    );
+    await expect(readFile(path.join(harness.userDataPath, exported.fileName)))
+      .resolves.toEqual(stereoWebmBytes());
+    await expect(readFile(path.join(
+      harness.userDataPath,
+      "nahravky",
+      saved.files.microphone.name,
+    ))).resolves.toEqual(Buffer.from([1, 2, 3]));
+    await expect(readFile(path.join(
+      harness.userDataPath,
+      "nahravky",
+      saved.files.system.name,
+    ))).resolves.toEqual(Buffer.from([4, 5]));
   });
 
   it("start aplikace zavolá pumpu fronty právě jednou", async () => {

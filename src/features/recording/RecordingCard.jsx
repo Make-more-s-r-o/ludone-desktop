@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MicIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
+import { createStereoCapture } from "../../lib/stereo-recording.js";
 
 const CAPTURE_TIMEOUT_MS = 15_000;
 const TRACK_UNMUTE_TIMEOUT_MS = 2_000;
@@ -148,6 +149,12 @@ function recorderOptions() {
   return undefined;
 }
 
+function recorderEventTimestamp(event) {
+  const monotonicTimestamp = window.performance?.timeOrigin + event.timeStamp;
+  const timestamp = Number.isFinite(monotonicTimestamp) ? monotonicTimestamp : Date.now();
+  return new Date(timestamp).toISOString();
+}
+
 function createPersistentRecorder(recorder, sessionId, source, onFailure) {
   let nextSequence = 0;
   let writeQueue = Promise.resolve();
@@ -156,6 +163,8 @@ function createPersistentRecorder(recorder, sessionId, source, onFailure) {
   let startSettled = false;
   let stoppedSettled = false;
   let startTimeoutId;
+  let startedAt = null;
+  let endedAt = null;
   let resolveStarted;
   let rejectStarted;
   let resolveStopped;
@@ -176,10 +185,11 @@ function createPersistentRecorder(recorder, sessionId, source, onFailure) {
     onFailure(failure);
   }
 
-  recorder.addEventListener("start", () => {
+  recorder.addEventListener("start", (event) => {
     window.clearTimeout(startTimeoutId);
     startSettled = true;
-    resolveStarted();
+    startedAt = recorderEventTimestamp(event);
+    resolveStarted(startedAt);
   }, { once: true });
   recorder.addEventListener("dataavailable", (event) => {
     if (event.data.size === 0) return;
@@ -193,9 +203,10 @@ function createPersistentRecorder(recorder, sessionId, source, onFailure) {
   recorder.addEventListener("error", (event) => {
     reportFailure(event.error || new Error(`${source}: MediaRecorder selhal`));
   });
-  recorder.addEventListener("stop", () => {
+  recorder.addEventListener("stop", (event) => {
     stoppedSettled = true;
-    resolveStopped();
+    endedAt = recorderEventTimestamp(event);
+    resolveStopped(endedAt);
   }, { once: true });
 
   return {
@@ -233,13 +244,17 @@ function createPersistentRecorder(recorder, sessionId, source, onFailure) {
       await writeQueue;
       if (failure) throw failure;
       if (stopError) throw stopError;
+      if (!startedAt || !endedAt) {
+        throw new Error(`${source}: chybí časová kotva startu nebo konce`);
+      }
+      return { startedAt, endedAt };
     },
   };
 }
 
 function savedMessage(result) {
   const { microphone, system } = result.files;
-  return `Uloženo místně: ${microphone.name} (${microphone.size} B) a ${system.name} (${system.size} B). Odeslání zůstává vypnuté.`;
+  return `Původní stopy zůstávají místně: ${microphone.name} (${microphone.size} B) a ${system.name} (${system.size} B).`;
 }
 
 export function RecordingCard({ onActivityChange, todaySummary = null }) {
@@ -249,6 +264,9 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
     labels: null,
   });
   const [notice, setNotice] = useState(null);
+  const [savedRecording, setSavedRecording] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
   const startInFlight = useRef(false);
   const runtimeRef = useRef(null);
   const isRecording = session.phase === "recording";
@@ -258,18 +276,41 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
     if (runtime.finishPromise) return runtime.finishPromise;
     runtime.closing = true;
     runtime.finishPromise = (async () => {
+      // Originální recordery dostanou stop jako první; stereo derivát je obalí
+      // na obou hranách. Jeho flush ale běží odděleně, takže uložení originálů
+      // na export nikdy nečeká.
       const recorderResults = runtime.recorders.map((persistentRecorder) => (
         persistentRecorder.stopAndFlush()
       ));
+      runtime.exportFinishPromise = runtime.exportRecorder.stopAndFlush()
+        .then((timing) => window.ludone.finishRecordingExport(runtime.sessionId, {
+          succeeded: true,
+          timing,
+        }))
+        .catch((error) => window.ludone.finishRecordingExport(runtime.sessionId, {
+          succeeded: false,
+          reason: describeError(error),
+        }).catch(() => undefined))
+        .finally(() => runtime.stereoCapture.close().catch(() => {}));
+
       setSession((current) => ({ ...current, phase: "stopping" }));
       const errors = initialError ? [initialError] : [];
-      for (const result of await Promise.allSettled(recorderResults)) {
+      const settledRecorders = await Promise.allSettled(recorderResults);
+      for (const result of settledRecorders) {
         if (result.status === "rejected") errors.push(result.reason);
       }
 
       let saved;
       try {
-        saved = await window.ludone.finishRecording(runtime.sessionId);
+        const [microphoneResult, systemResult] = settledRecorders;
+        const trackTimings = microphoneResult.status === "fulfilled"
+          && systemResult.status === "fulfilled"
+          ? {
+            microphone: microphoneResult.value,
+            system: systemResult.value,
+          }
+          : undefined;
+        saved = await window.ludone.finishRecording(runtime.sessionId, trackTimings);
       } catch (error) {
         errors.push(error);
       } finally {
@@ -284,12 +325,33 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
           type: "error",
           text: `Nahrávání bylo zastaveno kvůli chybě: ${describeError(errors[0])}.${savedSuffix}`,
         });
+        if (saved) setSavedRecording(saved);
       } else {
-        setNotice({ type: "success", text: savedMessage(saved) });
+        setNotice(null);
+        setSavedRecording(saved);
       }
       return saved;
     })();
     return runtime.finishPromise;
+  }
+
+  async function exportSavedRecording() {
+    if (!savedRecording || exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const result = await window.ludone.exportRecording(savedRecording.clientRecordingId);
+      if (!result?.ok) throw new Error(result?.message || "Export se nepodařil");
+      setSavedRecording(null);
+      setNotice({
+        type: "success",
+        text: `Soubor ${result.fileName} je uložený ve Stažených.`,
+      });
+    } catch (error) {
+      setExportError(describeError(error));
+    } finally {
+      setExporting(false);
+    }
   }
 
   function reportRuntimeFailure(error) {
@@ -301,13 +363,20 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
     if (startInFlight.current || runtimeRef.current || session.phase !== "idle") return;
     startInFlight.current = true;
     setNotice(null);
+    setSavedRecording(null);
+    setExportError(null);
     setSession({ phase: "checking", startedAt: null, labels: null });
     let capture;
     let runtime;
+    let stereoCapture;
 
     try {
       capture = await captureAudioSources();
       const options = recorderOptions();
+      stereoCapture = await createStereoCapture(
+        capture.microphoneTrack,
+        capture.systemTrack,
+      );
       const microphoneRecorder = new MediaRecorder(
         new MediaStream([capture.microphoneTrack]),
         options,
@@ -316,15 +385,33 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
         new MediaStream([capture.systemTrack]),
         options,
       );
+      const exportRecorder = new MediaRecorder(stereoCapture.stream, options);
       const persistence = await window.ludone.beginRecording();
       runtime = {
         sessionId: persistence.sessionId,
         streams: capture.streams,
         recorders: [],
+        exportRecorder: null,
+        exportFinishPromise: null,
+        exportStartedAt: null,
+        exportError: null,
+        stereoCapture,
         closing: false,
         finishPromise: null,
       };
       runtimeRef.current = runtime;
+      runtime.recorders = [
+        createPersistentRecorder(microphoneRecorder, runtime.sessionId, "microphone", reportRuntimeFailure),
+        createPersistentRecorder(systemRecorder, runtime.sessionId, "system", reportRuntimeFailure),
+      ];
+      runtime.exportRecorder = createPersistentRecorder(
+        exportRecorder,
+        runtime.sessionId,
+        "stereo",
+        (error) => {
+          runtime.exportError ??= error;
+        },
+      );
       for (const [track, label] of [
         [capture.microphoneTrack, "Mikrofonní stopa"],
         [capture.systemTrack, "Systémová stopa"],
@@ -341,11 +428,13 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
           throw new Error(`${label} přestala být dostupná těsně před startem`);
         }
       }
-      runtime.recorders = [
-        createPersistentRecorder(microphoneRecorder, runtime.sessionId, "microphone", reportRuntimeFailure),
-        createPersistentRecorder(systemRecorder, runtime.sessionId, "system", reportRuntimeFailure),
-      ];
-
+      // Stereo derivát startuje první a končí poslední. Obě originální stopy tak
+      // leží uvnitř jedné společné exportní časové osy bez dopočítaného ticha.
+      try {
+        runtime.exportStartedAt = await runtime.exportRecorder.start();
+      } catch (error) {
+        runtime.exportError = error;
+      }
       await Promise.all(runtime.recorders.map((persistentRecorder) => persistentRecorder.start()));
       if (runtime.closing) {
         await runtime.finishPromise;
@@ -364,6 +453,7 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
         await finishRuntime(runtime, error);
       } else {
         if (capture) stopStreams(capture.streams);
+        if (stereoCapture) await stereoCapture.close().catch(() => {});
         setSession({ phase: "idle", startedAt: null, labels: null });
         setNotice({
           type: "error",
@@ -397,14 +487,34 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
 
   return (
     <section
-      className={`feature-card recording-card${isRecording ? " is-active" : ""}${session.phase === "idle" ? " idle-feature-row" : ""}${session.phase === "idle" && notice ? " has-notice" : ""}`}
-      data-recording-phase={session.phase}
+      className={`feature-card recording-card${isRecording ? " is-active" : ""}${session.phase === "idle" && !savedRecording ? " idle-feature-row" : ""}${session.phase === "idle" && !savedRecording && notice ? " has-notice" : ""}${savedRecording ? " recording-card--saved" : ""}`}
+      data-recording-phase={savedRecording ? "saved" : session.phase}
       data-microphone-label={session.labels?.microphone ?? ""}
       data-system-label={session.labels?.system ?? ""}
-      data-testid={session.phase === "idle" ? "idle-action-row" : undefined}
+      data-testid={session.phase === "idle" && !savedRecording ? "idle-action-row" : undefined}
       aria-label="Nahrávání"
     >
-      {session.phase === "idle" ? (
+      {savedRecording ? (
+        <div className="recording-saved">
+          <div>
+            <h2>Nahrávka uložena</h2>
+            <small>{savedMessage(savedRecording)}</small>
+          </div>
+          {(exportError || notice?.type === "error") && (
+            <p className="recording-saved__error" role="alert">
+              {exportError || notice.text}
+            </p>
+          )}
+          <button
+            type="button"
+            className="button button--primary button--wide"
+            disabled={exporting}
+            onClick={() => exportSavedRecording()}
+          >
+            Uložit a odeslat
+          </button>
+        </div>
+      ) : session.phase === "idle" ? (
         <>
           <span className="idle-feature-row__icon"><MicIcon variant="idle" /></span>
           <span className="idle-feature-row__copy">
@@ -463,7 +573,7 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
             <VolumeIcon /> Obě stopy ověřeny
           </div>
           <button type="button" className="button button--stop button--wide" onClick={stop}>
-            <span className="stop-square" /> Zastavit nahrávání
+            <span className="stop-square" /> Ukončit a uložit
           </button>
         </div>
       )}
