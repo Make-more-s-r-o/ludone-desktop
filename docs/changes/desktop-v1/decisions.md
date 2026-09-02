@@ -499,3 +499,52 @@ zdroj pravdy o čase.
 říct „hodiny se pohnuly, kolik ti mám započítat". První je tiché, druhé je vidět.
 
 **Vratné:** je to chování jedné větve a jeho testy; žádná změna kontraktu ani úložiště.
+
+---
+
+## BD-N20 — `updateTray` v odhlášení: místo poznámky KONTROLA, která se sama ozve
+
+**Nález review:** `auth:logout` volá `updateTray("signed-out")` — přesně tu funkci, kterou
+O13 a `specs/E3` §3 přikazují smazat.
+
+**Ale na větvi `b9` je to v pořádku.** Linie `main → b4 → b8 → b9` story **B3 neobsahuje**,
+takže tam `updateTray` legitimně existuje. Problém vznikne **až při mergi obou linií**.
+
+### Proč jsem to neopravil „rovnou"
+
+Na `b9` **nejde napsat cílový tvar** — `refreshTray` ani `appState` tam neexistují. Zbývaly
+dvě možnosti a obě jsou špatné:
+
+| možnost | proč ne |
+|---|---|
+| poznámka „až přistane B3, opravit" | **nikdo ji nepřečte** — brána je zelená a poznámky se čtou, až když něco spadne |
+| přetáhnout B3 do `b9` | rozšíření rozsahu a druhý zapisovatel v cizí story |
+
+### Co jsem udělal místo toho
+
+**Kontrolu, která se ptá na SKUTEČNOST:** je `refreshTray` v `main.cjs`?
+
+- **není** → zelená, a nahlas **vypisuje, co vědomě neměří**,
+- **je** (tedy obě linie se potkaly) → **červená** s konkrétním pokynem: `auth:logout` má
+  nastavit `appState.signedIn = false` a zavolat `refreshTray()`, a `updateTray` má zmizet.
+
+🔴 **Ta brána nemůže zestárnout.** Ověřeno simulací: jakmile se `refreshTray` v souboru
+objeví, test spadne přesně na té asertaci. Je to tentýž vzor jako u ratchetu — podmínka,
+na kterou se musí někdo rozpomenout, je splněná náhodou.
+
+**Pro merge:** až se obě linie potkají, tenhle test **spadne schválně** a řekne co dopsat.
+Není to regrese, je to zabudovaná připomínka.
+
+## BD-N21 — osy v PR se hlásí proti ZMRAZENÉ MATICI, ne proti dojmu
+
+PR #9 tvrdil `delivery: no-code → pr-open` a `exposure: disabled`, jenže `spec.md` §3 ř. 92
+má `DSK-F015` na **`coded`** a **`labs`**. Rozpor byl **uvnitř téhož diffu** — `DAN-TODO.md`,
+který ten PR přidává, v bodě O-B11-10 sám píše *„Matice má F015 už na `labs`"*.
+
+Vykonavatel si toho tedy všiml a tělo PR přesto tvrdilo opak. **Opraveno v PR #9.**
+
+⚠️ **Otevřená otázka, kterou NEROZHODUJI** (O-B11-11): patří mazací mechanismus vůbec pod
+`DSK-F015` („Nastavení: účet, zvuk, záznamy, připomínky, diagnostika")? Ta funkce mazání
+nepopisuje. Buď se retence povede pod F015, nebo dostane vlastní `DSK-F017`. **Je to změna
+zmrazené matice, tedy Danovo rozhodnutí.** Doporučený default: vlastní ID, protože „Nastavení"
+je obrazovka, ne chování.
