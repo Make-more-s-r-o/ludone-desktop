@@ -1,3 +1,5 @@
+> 🔴 **Hledáš, kde pokračovat?** Bod obnovy je [`STAV-BEHU.md`](STAV-BEHU.md) — přesný první příkaz po resume, běžící worker handle, co je ověřené naostro.
+
 # Checkpoint nočního běhu
 
 **PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
