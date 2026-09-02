@@ -481,4 +481,33 @@ describe("dva chybějící kroky onboardingu", () => {
     expect(panel.videoTrack.stop).toHaveBeenCalled();
     expect(panel.audioContexts).toHaveLength(0);
   });
+
+  it("s němým zvukem pustí dál, ale Hotovo se nechlubí ověřením", async () => {
+    const panel = await renderOnboarding();
+    await navigateToRecordingTest(panel);
+
+    // Test se nespustil naostro — bez cesty ven by uživatel s rozbitým zvukem
+    // uvízl v onboardingu napořád a nikdy by se k panelu nedostal.
+    const skip = panel.document.querySelector('[data-testid="recording-test-skip"]');
+    expect(skip).not.toBeNull();
+    expect(skip.disabled).toBe(false);
+    await panel.click(skip);
+
+    const done = panel.document.querySelector(".done-step");
+    expect(done).not.toBeNull();
+    expect(done.dataset.recordingTestResult).not.toBe("passed");
+    expect(done.textContent).not.toContain("Oba kanály slyším");
+  });
+
+  it("po skutečně dokončeném testu Hotovo ověření přizná", async () => {
+    const panel = await renderOnboarding({
+      microphoneAmplitude: 0.25,
+      systemAmplitude: 0.25,
+    });
+    await enterRecordingTest(panel);
+    await panel.click(panel.document.querySelector('[data-testid="recording-test-continue"]'));
+
+    const done = panel.document.querySelector(".done-step");
+    expect(done.dataset.recordingTestResult).toBe("passed");
+  });
 });

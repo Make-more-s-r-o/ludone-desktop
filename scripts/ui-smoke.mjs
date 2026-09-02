@@ -342,6 +342,15 @@ try {
   }
   await assertPermissionActionsGranted(panel);
   await clickByText(panel, "Pokračovat");
+
+  // Test záznamu je nový povinný krok mezi oprávněními a Hotovo. V automatu není
+  // živý zvuk, takže se přes „Pokračovat“ nikdy neodemkne — bere se poctivá cesta
+  // ven, kterou pak „Hotovo“ přizná jako neověřenou. Kdyby ta cesta zmizela,
+  // uvízne tu i skutečný uživatel s rozbitým mikrofonem, ne jen tenhle skript.
+  await assertText(panel, "Test záznamu");
+  await screenshot(panel, "02a-onboarding-recording-test");
+  await clickByText(panel, "Pokračovat bez testu");
+
   await assertText(panel, "LuDone čeká");
   await screenshot(panel, "02-onboarding-done");
 

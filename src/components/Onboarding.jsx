@@ -402,6 +402,10 @@ export function Onboarding({ onAuthenticated, onComplete }) {
             setRecordingTestResult("passed");
             setStep(5);
           }}
+          onSkipped={() => {
+            setRecordingTestResult("skipped");
+            setStep(5);
+          }}
         />
       )}
 
@@ -414,7 +418,9 @@ export function Onboarding({ onAuthenticated, onComplete }) {
           <p className="eyebrow">Všechno je připravené</p>
           <h1>LuDone čeká<br />v horní liště.</h1>
           <p className="lead">
-            Oba kanály slyším. Panel najdeš pod ikonou v horní liště.
+            {recordingTestResult === "passed"
+              ? "Oba kanály slyším. Panel najdeš pod ikonou v horní liště."
+              : "Záznam jsme spolu nevyzkoušeli. Panel najdeš pod ikonou v horní liště; test si můžeš kdykoli pustit z Nastavení."}
           </p>
           <div className="tray-preview" aria-label="Ukázka stavů ikony v horní liště">
             <div><span className="tray-symbol tray-symbol--idle" /><small>Nečinná</small></div>

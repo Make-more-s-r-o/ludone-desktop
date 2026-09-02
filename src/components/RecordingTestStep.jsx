@@ -56,7 +56,7 @@ function LevelRow({ canvasRef, label, rowRef, signal, testId }) {
   );
 }
 
-export function RecordingTestStep({ onPassed, onRetry, sessionAttempt }) {
+export function RecordingTestStep({ onPassed, onRetry, sessionAttempt , onSkipped}) {
   const [captureState, setCaptureState] = useState("starting");
   const [labels, setLabels] = useState({
     microphone: "MacBook Pro — mikrofon",
@@ -254,6 +254,14 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt }) {
         onClick={onPassed}
       >
         Pokračovat
+      </button>
+      <button
+        type="button"
+        className="text-button"
+        data-testid="recording-test-skip"
+        onClick={onSkipped}
+      >
+        Pokračovat bez testu
       </button>
       <p className="recording-test-hint">Pokračovat půjde, až uslyším oba kanály.</p>
     </section>
