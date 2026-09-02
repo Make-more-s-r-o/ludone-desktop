@@ -211,18 +211,6 @@ async function assertPermissionActionsGranted(client) {
   observations.push({ check: "permissions-granted", value: state.granted });
 }
 
-async function clickFirstMeeting(client) {
-  const result = await client.evaluate(`(() => {
-    const control = document.querySelector('button[aria-label^="Nahrát schůzku"]');
-    if (!control || control.disabled) return false;
-    control.click();
-    return control.getAttribute("aria-label");
-  })()`);
-  if (!result) throw new Error("Tlačítko Nahrát u schůzky nebylo nalezeno.");
-  observations.push({ action: "click", target: result });
-  await delay(120);
-}
-
 async function assertTray(client, expected) {
   const actual = await waitFor(
     () => client.evaluate("window.ludone.getTrayState()"),
@@ -307,9 +295,7 @@ async function setSettings(client) {
   }
 
   const result = await client.evaluate(`(() => {
-    const auto = document.querySelector('[aria-label="Automaticky nahrávat schůzky z kalendáře"]');
     const ask = document.querySelector('[aria-label="Ptát se před nahráváním ostatních hovorů"]');
-    auto.click();
     ask.click();
     const select = document.querySelector('.settings-select select');
     select.value = ${JSON.stringify(NASTAVOVANA_RETENCE)};
@@ -319,11 +305,10 @@ async function setSettings(client) {
   if (!result) throw new Error("Nastavení nebylo možné změnit.");
   await delay(180);
   const values = await client.evaluate(`(() => ({
-    auto: document.querySelector('[aria-label="Automaticky nahrávat schůzky z kalendáře"]').getAttribute('aria-checked'),
     ask: document.querySelector('[aria-label="Ptát se před nahráváním ostatních hovorů"]').getAttribute('aria-checked'),
     retention: document.querySelector('.settings-select select').value,
   }))()`);
-  if (values.auto !== "true" || values.ask !== "false" || values.retention !== NASTAVOVANA_RETENCE) {
+  if (values.ask !== "false" || values.retention !== NASTAVOVANA_RETENCE) {
     throw new Error(`Nastavení má jiné hodnoty: ${JSON.stringify(values)}`);
   }
   observations.push({ action: "settings", ...values });
@@ -340,20 +325,6 @@ try {
       && !target.url.endsWith("#settings"),
     "hlavní panel",
   );
-
-  if (process.env.LUDONE_EXPECT_EMPTY_CALENDAR === "1") {
-    await assertText(panel, "Dnešek je volný.");
-    await assertText(panel, "Ideální chvíle dotáhnout věci bez dalšího hovoru.");
-    const eventRows = await panel.evaluate("document.querySelectorAll('.event-row').length");
-    if (eventRows !== 0) throw new Error(`Empty calendar obsahuje ${eventRows} řádků událostí.`);
-    await assertTray(panel, "idle");
-    await screenshot(panel, "10-empty-calendar");
-    const reportPath = path.join(outputDir, "empty-calendar-observations.json");
-    await writeFile(reportPath, `${JSON.stringify({ ok: true, observations }, null, 2)}\n`);
-    console.log(JSON.stringify({ ok: true, mode: "empty-calendar", checks: observations.length }, null, 2));
-    panel.close();
-    process.exit(0);
-  }
 
   await assertText(panel, "Rozhovory a čas.");
   await assertTray(panel, "signed-out");
@@ -375,17 +346,17 @@ try {
   await screenshot(panel, "02-onboarding-done");
 
   await clickByText(panel, "Otevřít můj panel");
-  await assertText(panel, "Co mě dnes čeká");
+  await assertText(panel, "Spustit nahrávání");
   await assertTray(panel, "idle");
   await verifyTrayToggle(panel);
   await screenshot(panel, "03-panel-idle");
 
-  await clickFirstMeeting(panel);
+  await clickByText(panel, "Spustit nahrávání");
   await delay(1150);
   await assertText(panel, "Obě stopy ověřeny");
   await assertText(panel, "00:00:01");
   await assertTray(panel, "recording");
-  await screenshot(panel, "04-meeting-recording");
+  await screenshot(panel, "04-recording");
 
   await clickByAria(panel, "Spustit LuTrack");
   await delay(1150);
@@ -439,7 +410,7 @@ try {
     "zavření nastavení",
   );
 
-  await assertText(panel, "Co mě dnes čeká");
+  await assertText(panel, "Spustit nahrávání");
   await assertTray(panel, "idle");
   await screenshot(panel, "09-panel-final");
 

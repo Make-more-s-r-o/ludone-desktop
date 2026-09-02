@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import {
   ArrowRightIcon,
   BrowserIcon,
-  CalendarIcon,
   CheckIcon,
   LuDoneMark,
   MicIcon,
+  TimerIcon,
   VolumeIcon,
 } from "./Icons.jsx";
 
@@ -134,13 +134,12 @@ export function Onboarding({ onAuthenticated, onComplete }) {
             <div className="welcome-visual__ring welcome-visual__ring--two" />
             <div className="welcome-visual__core"><LuDoneMark size={58} /></div>
             <span className="welcome-visual__node welcome-visual__node--mic"><MicIcon /></span>
-            <span className="welcome-visual__node welcome-visual__node--timer"><CalendarIcon /></span>
+            <span className="welcome-visual__node welcome-visual__node--timer"><TimerIcon /></span>
           </div>
           <p className="eyebrow">Spouštěč pro váš pracovní den</p>
           <h1>Rozhovory a čas.<br />Pěkně po ruce.</h1>
           <p className="lead">
-            LuDone žije v horní liště, připomene dnešní schůzky a nechá vás jedním klikem
-            nahrávat nebo měřit čas.
+            LuDone žije v horní liště a nechá vás jedním klikem nahrávat nebo měřit čas.
           </p>
           <button type="button" className="button button--primary button--wide" onClick={() => setStep(1)}>
             Začít <ArrowRightIcon />
@@ -231,8 +230,7 @@ export function Onboarding({ onAuthenticated, onComplete }) {
           <p className="eyebrow">Všechno je připravené</p>
           <h1>LuDone čeká<br />v horní liště.</h1>
           <p className="lead">
-            Odtud spustíte nahrávání, uvidíte dnešní schůzky a zapnete LuTrack. Bez zbytečného
-            přepínání oken.
+            Odtud spustíte nahrávání a zapnete LuTrack. Bez zbytečného přepínání oken.
           </p>
           <div className="tray-preview" aria-label="Ukázka stavů ikony v horní liště">
             <div><span className="tray-symbol tray-symbol--idle" /><small>Nečinná</small></div>

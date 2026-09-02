@@ -66,10 +66,10 @@ describe("rozhodnutí podle skutečného stavu oprávnění macOS", () => {
   });
 
   it("nepodporovaný typ oprávnění odmítne bez ohledu na stav", () => {
-    const result = decidePermissionResult("calendar", "granted");
+    const result = decidePermissionResult("camera", "granted");
 
     expect(result).toMatchObject({
-      permission: "calendar",
+      permission: "camera",
       status: "unknown",
       granted: false,
       nextAction: "none",

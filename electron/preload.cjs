@@ -2,7 +2,6 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("ludone", {
   runtime: Object.freeze({
-    emptyCalendar: process.env.LUDONE_EMPTY_CALENDAR === "1",
     resetOnboarding: process.env.LUDONE_RESET_ONBOARDING === "1",
   }),
   beginAuth: () => ipcRenderer.invoke("auth:begin"),

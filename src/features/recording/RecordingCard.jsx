@@ -242,19 +242,16 @@ function savedMessage(result) {
   return `Uloženo místně: ${microphone.name} (${microphone.size} B) a ${system.name} (${system.size} B). Odeslání zůstává vypnuté.`;
 }
 
-export function RecordingCard({ request, onActivityChange }) {
+export function RecordingCard({ onActivityChange }) {
   const [session, setSession] = useState({
     phase: "idle",
     startedAt: null,
-    context: null,
     labels: null,
   });
   const [notice, setNotice] = useState(null);
-  const handledRequest = useRef(null);
   const startInFlight = useRef(false);
   const runtimeRef = useRef(null);
   const isRecording = session.phase === "recording";
-  const isBusy = session.phase !== "idle";
   const elapsed = useElapsedTime(isRecording, session.startedAt);
 
   async function finishRuntime(runtime, initialError = null) {
@@ -278,7 +275,7 @@ export function RecordingCard({ request, onActivityChange }) {
       } finally {
         stopStreams(runtime.streams);
         if (runtimeRef.current === runtime) runtimeRef.current = null;
-        setSession({ phase: "idle", startedAt: null, context: null, labels: null });
+        setSession({ phase: "idle", startedAt: null, labels: null });
       }
 
       if (errors.length > 0) {
@@ -300,11 +297,11 @@ export function RecordingCard({ request, onActivityChange }) {
     if (runtime && !runtime.closing) void finishRuntime(runtime, error);
   }
 
-  async function start(context = null) {
+  async function start() {
     if (startInFlight.current || runtimeRef.current || session.phase !== "idle") return;
     startInFlight.current = true;
     setNotice(null);
-    setSession({ phase: "checking", startedAt: null, context, labels: null });
+    setSession({ phase: "checking", startedAt: null, labels: null });
     let capture;
     let runtime;
 
@@ -357,7 +354,6 @@ export function RecordingCard({ request, onActivityChange }) {
       setSession({
         phase: "recording",
         startedAt: Date.now(),
-        context,
         labels: {
           microphone: capture.microphoneTrack.label || "Mikrofon",
           system: capture.systemTrack.label || "Systémový zvuk",
@@ -368,7 +364,7 @@ export function RecordingCard({ request, onActivityChange }) {
         await finishRuntime(runtime, error);
       } else {
         if (capture) stopStreams(capture.streams);
-        setSession({ phase: "idle", startedAt: null, context: null, labels: null });
+        setSession({ phase: "idle", startedAt: null, labels: null });
         setNotice({
           type: "error",
           text: `Nahrávání se nespustilo: ${describeError(error)}. Opravte přístup k oběma stopám před schůzkou.`,
@@ -385,18 +381,10 @@ export function RecordingCard({ request, onActivityChange }) {
   }
 
   useEffect(() => {
-    if (!request || request.id === handledRequest.current) return;
-    handledRequest.current = request.id;
-    if (session.phase === "idle" && !startInFlight.current) void start(request.event);
-  }, [request, session.phase]);
-
-  useEffect(() => {
     onActivityChange({
       active: isRecording,
-      busy: isBusy,
-      context: session.context,
     });
-  }, [isBusy, isRecording, onActivityChange, session.context]);
+  }, [isRecording, onActivityChange]);
 
   const statusLabel = {
     idle: "Připraveno",
@@ -433,9 +421,7 @@ export function RecordingCard({ request, onActivityChange }) {
       {isRecording && (
         <div className="recording-live">
           <div>
-            <p className="live-context">
-              {session.context?.title ?? "Rychlá nahrávka"}
-            </p>
+            <p className="live-context">Rychlá nahrávka</p>
             <p className="elapsed" aria-live="polite">{formatElapsed(elapsed)}</p>
           </div>
           <div

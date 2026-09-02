@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import {
-  CalendarIcon,
   CheckIcon,
   CloseIcon,
   CloudIcon,
   LuDoneMark,
+  MicIcon,
   UserIcon,
   VolumeIcon,
 } from "./Icons.jsx";
@@ -12,14 +12,17 @@ import { Toggle } from "./Toggle.jsx";
 
 const STORAGE_KEY = "ludone.prototype.settings";
 const DEFAULTS = {
-  autoCalendar: false,
   askOther: true,
   retention: "7 dní po odeslání",
 };
 
 function loadSettings() {
   try {
-    return { ...DEFAULTS, ...JSON.parse(window.localStorage.getItem(STORAGE_KEY)) };
+    const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+    return {
+      askOther: stored.askOther ?? DEFAULTS.askOther,
+      retention: stored.retention ?? DEFAULTS.retention,
+    };
   } catch {
     return DEFAULTS;
   }
@@ -50,16 +53,8 @@ export function SettingsApp() {
       <div className="settings-content">
         <section className="settings-group" aria-labelledby="recording-settings-title">
           <div className="settings-group__heading">
-            <span><CalendarIcon /></span>
+            <span><MicIcon /></span>
             <div><p className="eyebrow">Doporučení</p><h2 id="recording-settings-title">Kdy nahrávat</h2></div>
-          </div>
-          <div className="settings-row">
-            <div><strong>Schůzky z kalendáře</strong><small>Spustit nahrávání automaticky</small></div>
-            <Toggle
-              checked={settings.autoCalendar}
-              onChange={(value) => update("autoCalendar", value)}
-              label="Automaticky nahrávat schůzky z kalendáře"
-            />
           </div>
           <div className="settings-row">
             <div><strong>Ostatní hovory</strong><small>Nejdřív se zeptat</small></div>

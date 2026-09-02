@@ -264,7 +264,6 @@ svg {
   height: 18px;
 }
 
-.section-heading,
 .feature-card__header,
 .settings-group__heading {
   display: flex;
@@ -380,94 +379,12 @@ svg {
   padding: 12px 13px 16px;
 }
 
-.agenda,
 .feature-card {
   flex: 0 0 auto;
   padding: 13px;
   border: 1px solid var(--border);
   border-radius: var(--radius-inset);
   background: var(--surface-elevated);
-}
-
-.agenda .section-heading {
-  margin-bottom: 11px;
-}
-
-.event-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.event-row {
-  display: grid;
-  min-height: 38px;
-  grid-template-columns: 39px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 7px;
-  padding: 4px 4px 4px 8px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: var(--card);
-}
-
-.event-row--active {
-  border-color: oklch(0.63 0.19 25 / 30%);
-  background: var(--danger-soft);
-}
-
-.event-row time {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-.event-row__title {
-  overflow: hidden;
-  font-size: 11.5px;
-  font-weight: 540;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.empty-state {
-  display: grid;
-  justify-items: center;
-  padding: 17px 12px 14px;
-  border-radius: 12px;
-  background: var(--card);
-  text-align: center;
-}
-
-.empty-state__orb {
-  display: inline-flex;
-  width: 38px;
-  height: 38px;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-  border-radius: 50%;
-  background: var(--green-soft);
-  color: var(--green-bright);
-}
-
-.empty-state__orb svg {
-  width: 18px;
-  height: 18px;
-}
-
-.empty-state p {
-  margin-bottom: 3px;
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.empty-state > span {
-  max-width: 230px;
-  color: var(--muted-foreground);
-  font-size: 10.5px;
-  line-height: 1.4;
 }
 
 .feature-card {
@@ -1345,7 +1262,6 @@ svg {
 
 @media (prefers-reduced-transparency: reduce) {
   .window-surface,
-  .agenda,
   .feature-card,
   .settings-group {
     background-color: var(--card);
