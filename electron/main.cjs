@@ -29,6 +29,7 @@ const {
   loadQueue,
   saveQueueAtomically,
 } = require("./queue.cjs");
+const { createRecordingUploadSend } = require("./upload-client.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
   TRACKING_STATES,
@@ -1417,10 +1418,25 @@ function queueKillswitches() {
   };
 }
 
-function unavailableQueueSend() {
-  const error = new Error("odesílací vrstva zatím neexistuje; fronta je pozastavená");
-  error.failureClass = "paused";
-  throw error;
+async function recordingUploadContext() {
+  const storedSession = await readStoredAuthSession();
+  if (storedSession === null) return null;
+  return {
+    accessToken: storedSession.accessToken,
+    companyTabidooId: storedSession.companyTabidooId
+      ?? storedSession.identity?.companyTabidooId,
+    deviceLabel: app.getName?.() ?? "LuDone Desktop",
+    issuer: storedSession.issuer,
+  };
+}
+
+function createQueueSend() {
+  return createRecordingUploadSend({
+    fetchImpl: (...args) => net.fetch(...args),
+    getUploadContext: recordingUploadContext,
+    logger: console,
+    origin: resolveAuthIssuer(process.env),
+  });
 }
 
 async function getOutboundQueueStore() {
@@ -1429,7 +1445,7 @@ async function getOutboundQueueStore() {
     outboundQueueStore = createOutboundQueueStore({
       filePath: outboundQueueFilePath(),
       queueModulePromise,
-      send: unavailableQueueSend,
+      send: createQueueSend(),
     });
   }
   return outboundQueueStore;
