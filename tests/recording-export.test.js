@@ -140,6 +140,38 @@ describe("export dokončené schůzky", () => {
     });
   });
 
+  it("odmítne stopy, které se v čase rozešly, místo tichého slepení", () => {
+    const rozesle = completeManifest();
+    rozesle.tracks.microphone.startedAt = "2026-09-02T12:00:02.100Z";
+    expect(() => recordingTimeline(rozesle, {
+      startedAt: "2026-09-02T12:00:00.090Z",
+      endedAt: "2026-09-02T13:00:00.170Z",
+    })).toThrow(/Rozdíl startů stop/);
+  });
+
+  it("odmítne stopy s nestejnou délkou, i když začaly společně", () => {
+    const nestejne = completeManifest();
+    nestejne.tracks.microphone.endedAt = "2026-09-02T13:00:02.120Z";
+    expect(() => recordingTimeline(nestejne, {
+      startedAt: "2026-09-02T12:00:00.090Z",
+      endedAt: "2026-09-02T13:00:02.200Z",
+    })).toThrow(/Rozdíl délek stop/);
+  });
+
+  it("odmítne stereo obal, který začal až po první stopě", () => {
+    expect(() => recordingTimeline(completeManifest(), {
+      startedAt: "2026-09-02T12:00:00.150Z",
+      endedAt: "2026-09-02T13:00:00.170Z",
+    })).toThrow(/nezačal spolehlivě/);
+  });
+
+  it("odmítne stereo obal, který skončil před poslední stopou", () => {
+    expect(() => recordingTimeline(completeManifest(), {
+      startedAt: "2026-09-02T12:00:00.090Z",
+      endedAt: "2026-09-02T13:00:00.150Z",
+    })).toThrow(/neskončil spolehlivě/);
+  });
+
   it("uloží jeden WebM/Opus soubor se dvěma kanály a otevře URL se správným GUID", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "ludone-export-test-"));
     roots.add(root);
