@@ -3,7 +3,7 @@
 **PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
 kontextem, musí pokračovat, aniž by se ptal. Zadání: [`BEH-NOC.md`](BEH-NOC.md).
 
-**Poslední zápis: 2. 9. 2026 — VLNA 6 UZAVŘENA, všechny opravitelné nálezy hotové.**
+**Poslední zápis: 2. 9. 2026 — CELÝ STOH JE V `main`. Devět stories, žádný otevřený PR.**
 
 🔴 **Režim od 23:15 (Dan): NEPTAT SE.** Bezpečné vratné defaulty rozhodni a zapiš do
 `decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
@@ -188,3 +188,55 @@ nejlevnější detektor toho, že se při rebase něco ztratilo.
 retence, tiché selhání zařazení) · zda retence patří pod `DSK-F015` · a `updateTray`
 v odhlášení, kde je ale **zabudovaná kontrola**, která spadne v okamžiku, kdy se obě
 linie potkají (BD-N20).
+
+---
+
+# ✅ SLOUČENO DO `main` — 2. 9. 2026
+
+**Devět stories v `main`, žádný otevřený PR, žádná zbylá větev ani worktree.**
+
+```
+lint EXIT=0 · typecheck EXIT=0 · test:unit EXIT=0
+19 souborů · 325 testů · 1 přeskočený
+```
+
+## Pořadí, ve kterém to šlo bezpečně
+
+Textové „MERGEABLE / CLEAN" u všech devíti PR **byla lež o použitelnosti**. Zkušební
+sloučení nanečisto ukázalo, že union obou linií **neprojde branami** — a to je jediný
+důvod, proč se to nesloučilo rozbité:
+
+| krok | co | doklad |
+|---|---|---|
+| 1 | B1 + celá linie přihlášení | 164 testů zeleně |
+| 2 | B3 + integrační oprava `auth:logout` | 201, sabotáže 3🔴:1🟢 |
+| 3 | B5 + rozřešení konfliktu (atrapa `auth:begin` pryč) | 268 |
+| 4 | B7, přebazovaná se **starou špičkou uvedenou výslovně** | 306 |
+| 5 | B11 | 325 |
+
+🔴 **Počty testů po každém kroku sedí na SOUČET** (202+67=269, 269+38=307, 307+19=326).
+Je to nejlevnější detektor toho, že se při rebase stohu nic neztratilo — a použil jsem ho
+u každého kroku.
+
+## Tři vady, které nemohl najít žádný per-PR review
+
+Vznikají teprve **souběhem** obou linií:
+
+1. `auth:logout` volal `updateTray()`, které B3 ruší → odhlásit se nešlo bez rozbité lišty.
+   **Našla to kontrola napsaná tak, aby nemohla zestárnout** — zelená, dokud B3 chybí,
+   červená v sekundě, kdy přistane.
+2. Linie časovače nesla **atrapu `auth:begin`** → dvojí registrace kanálu → výjimka
+   v Electronu **při startu**, tedy aplikace, která se neotevře.
+3. Inventura IPC kanálů četla **prózu jako kód** — potřetí za tenhle běh táž třída vady.
+
+## Co se ukázalo o slučování stohu
+
+🔴 **`gh pr merge` na stohovaný PR ho sloučí do RODIČE, ne do `main`** (BD-N22). Vypadá to
+jako úspěch: pět PR hlásí `MERGED`, seznam otevřených je prázdný, nic nezčervená — a přitom
+tři čtvrtiny práce na `main` nejsou. Jediné, co to odhalí, je `git merge-base --is-ancestor`.
+
+## Co zůstává na Danovi
+
+Beze změny proti nočnímu reportu: Screen Recording · statický OAuth client · spor o money
+pravidlo v B6 · účet `zasedacka@` pro B10 · tři díry v zapojení. Nově přibylo:
+**`orca-codex.sh` neumí pustit Codex ve worktree** (dnes dvakrát selhal, viz `DAN-TODO.md`).
