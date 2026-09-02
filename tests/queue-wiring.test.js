@@ -817,7 +817,7 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(preloadCode).toContain('ipcRenderer.invoke("queue:retry")');
   });
 
-  it("preload předá exportní časování a GUID na přesné IPC kanály", async () => {
+  it("pojmenování přes preload předá časování, GUID i název na přesné IPC kanály", async () => {
     const { api, invoke } = loadPreload({ ok: true });
     const timing = {
       startedAt: "2026-09-02T12:00:00.150Z",
@@ -825,7 +825,7 @@ describe("produkční zapojení odchozí fronty", () => {
     };
 
     await api.finishRecordingExport("session-1", { succeeded: true, timing });
-    await api.exportRecording("session-1");
+    await api.exportRecording("session-1", "Porada provozu");
 
     expect(invoke).toHaveBeenNthCalledWith(
       1,
@@ -833,7 +833,12 @@ describe("produkční zapojení odchozí fronty", () => {
       "session-1",
       { succeeded: true, timing },
     );
-    expect(invoke).toHaveBeenNthCalledWith(2, "recording:export", "session-1");
+    expect(invoke).toHaveBeenNthCalledWith(
+      2,
+      "recording:export",
+      "session-1",
+      "Porada provozu",
+    );
   });
 
   it("IPC fronty používá předepsané role odesílatele", () => {
@@ -872,7 +877,7 @@ describe("produkční zapojení odchozí fronty", () => {
     ]);
   });
 
-  it("uloží jeden stereo soubor, ponechá obě stopy a otevře labs URL s GUID", async () => {
+  it("pojmenování projde hlavním procesem do jednoho stereo souboru", async () => {
     const harness = await loadMain({ env: { LUDONE_ORIGIN: "https://labs.ludone.cz" } });
     await harness.runReady();
     const panelContents = harness.windows[0].webContents;
@@ -902,7 +907,7 @@ describe("produkční zapojení odchozí fronty", () => {
       system: systemTiming,
     });
     expect(saved.trackStartDeltaMs).toBe(25);
-    const pendingExport = exportRecording(event, sessionId);
+    const pendingExport = exportRecording(event, sessionId, "Porada / provozu: Q3");
     await finishExport(event, sessionId, {
       succeeded: true,
       timing: {
@@ -918,6 +923,13 @@ describe("produkční zapojení odchozí fronty", () => {
       format: { container: "WebM", codec: "Opus", channels: 2 },
       trackStartDeltaMs: 25,
     });
+    expect(exported.fileName).toContain("Porada-provozu-Q3");
+    expect(exported.fileName).not.toMatch(/[/:]/);
+    const exportLogs = harness.quietConsole.log.mock.calls
+      .map(([message]) => message)
+      .filter((message) => typeof message === "string" && message.startsWith("[recording-export]"));
+    expect(exportLogs).toEqual([expect.stringContaining(sessionId)]);
+    expect(exportLogs.join("\n")).not.toContain("Porada");
     expect(harness.electron.shell.openExternal).toHaveBeenCalledWith(
       "https://labs.ludone.cz/nahravky/nahrat"
       + `?clientRecordingId=${sessionId}`

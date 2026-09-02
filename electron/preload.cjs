@@ -25,8 +25,8 @@ contextBridge.exposeInMainWorld("ludone", {
     ipcRenderer.invoke("recording:finish", sessionId, trackTimings),
   finishRecordingExport: (sessionId, outcome) =>
     ipcRenderer.invoke("recording:finish-export", sessionId, outcome),
-  exportRecording: (clientRecordingId) =>
-    ipcRenderer.invoke("recording:export", clientRecordingId),
+  exportRecording: (clientRecordingId, recordingName) =>
+    ipcRenderer.invoke("recording:export", clientRecordingId, recordingName),
   listQueue: () => ipcRenderer.invoke("queue:list"),
   retryQueue: () => ipcRenderer.invoke("queue:retry"),
   startTracking: (payload) => ipcRenderer.invoke("tracking:start", payload),

@@ -62,6 +62,29 @@ function stereoWebmBytes(channelCount = 2) {
   ]);
 }
 
+async function exportFixture(recordingName) {
+  const root = await mkdtemp(path.join(tmpdir(), "ludone-export-name-test-"));
+  roots.add(root);
+  const downloadsDirectory = path.join(root, "downloads");
+  const stagePath = path.join(root, "schuzka-stereo.webm");
+  const { mkdir } = await import("node:fs/promises");
+  await mkdir(downloadsDirectory);
+  await writeFile(stagePath, stereoWebmBytes());
+  const result = await exportRecordingCopy({
+    downloadsDirectory,
+    manifest: completeManifest(),
+    openExternal: vi.fn(async () => undefined),
+    origin: "https://app.ludone.cz",
+    recordingName,
+    stagePath,
+    stereoTiming: {
+      startedAt: "2026-09-02T12:00:00.090Z",
+      endedAt: "2026-09-02T13:00:00.170Z",
+    },
+  });
+  return { downloadsDirectory, result };
+}
+
 describe("živý stereo derivát", () => {
   it("vede mikrofon výhradně vlevo a systémový zvuk výhradně vpravo", async () => {
     const microphoneTrack = /** @type {MediaStreamTrack} */ (/** @type {unknown} */ ({
@@ -126,6 +149,47 @@ describe("živý stereo derivát", () => {
 });
 
 describe("export dokončené schůzky", () => {
+  it("pojmenování sanitizuje lomítka, dvojtečku i tečky a zůstane ve Stažených", async () => {
+    const { downloadsDirectory, result } = await exportFixture(
+      "../../Klient: vývoj / Q3.. 🧪",
+    );
+
+    expect(path.dirname(result.filePath)).toBe(downloadsDirectory);
+    expect(result.fileName).toContain("Klient");
+    expect(result.fileName).toContain("🧪");
+    expect(result.fileName).not.toMatch(/[/:]/);
+    expect(result.fileName).not.toContain("..");
+    expect(result.fileName).toContain(CLIENT_RECORDING_ID);
+    await expect(stat(result.filePath)).resolves.toMatchObject({
+      size: stereoWebmBytes().length,
+    });
+  });
+
+  it("prázdné pojmenování nechá původní jméno s časem a GUID", async () => {
+    const { result } = await exportFixture("   ");
+
+    expect(result.fileName).toBe(
+      `LuDone-2026-09-02T12-00-00-100Z-${CLIENT_RECORDING_ID}.webm`,
+    );
+  });
+
+  it("dlouhé pojmenování ořízne na 40 znaků a soubor pořád uloží", async () => {
+    const { result } = await exportFixture("P".repeat(300));
+
+    expect(result.fileName).toBe(
+      `LuDone-2026-09-02T12-00-00-100Z-${"P".repeat(40)}-${CLIENT_RECORDING_ID}.webm`,
+    );
+    await expect(stat(result.filePath)).resolves.toMatchObject({
+      size: stereoWebmBytes().length,
+    });
+  });
+
+  it("pojmenování zachová složené emoji se ZWJ", async () => {
+    const { result } = await exportFixture("Rodinná porada 👨‍👩‍👧‍👦");
+
+    expect(result.fileName).toContain("Rodinná-porada-👨‍👩‍👧‍👦");
+  });
+
   it("změří oddělené starty z manifestu a ověří jejich společný stereo obal", () => {
     expect(recordingTimeline(completeManifest(), {
       startedAt: "2026-09-02T12:00:00.090Z",

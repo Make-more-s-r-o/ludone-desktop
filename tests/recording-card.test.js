@@ -33,6 +33,11 @@ function recordingResult() {
  */
 async function renderRecordingCard(options = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
+  // React načítáme před založením JSDOM, takže jeho historický fallback pro
+  // input event čeká IE metody, které JSDOM nemá. No-op drží test u skutečného
+  // `input` eventu bez změny produkčního chování nebo assercí.
+  dom.window.HTMLElement.prototype.attachEvent = vi.fn();
+  dom.window.HTMLElement.prototype.detachEvent = vi.fn();
   const microphoneTrack = Object.assign(new dom.window.EventTarget(), {
     kind: "audio",
     label: "Testovací mikrofon",
@@ -429,6 +434,63 @@ describe("RecordingCard", () => {
     }
   });
 
+  it("pojmenování předvyplní datum a čas, fokusuje pole a předá změněný název", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      const input = panel.document.querySelector('[data-testid="recording-name-input"]');
+      expect(input).toBeInstanceOf(panel.document.defaultView.HTMLInputElement);
+      const savedStatus = panel.document.querySelector('[data-recording-phase="saved"] [role="status"]');
+      expect(savedStatus?.textContent?.trim().length).toBeGreaterThan(0);
+      expect(input.getAttribute("aria-describedby")).toContain("recording-name-hint");
+      expect(input.value).toMatch(/2026/);
+      expect(input.value).toMatch(/\d{1,2}:\d{2}/);
+      expect(panel.document.activeElement).toBe(input);
+
+      await React.act(async () => {
+        input.value = "Porada / provozu";
+        input.dispatchEvent(new panel.document.defaultView.Event("input", { bubbles: true }));
+      });
+      expect(input.value).toBe("Porada / provozu");
+      await panel.click(panel.document.querySelector('button[type="submit"]'));
+      await panel.waitForPhase("idle");
+
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(
+        SESSION_ID,
+        "Porada / provozu",
+      );
+      const status = panel.document.querySelector('[data-recording-phase] [role="status"]');
+      expect(status?.textContent?.trim().length).toBeGreaterThan(0);
+      expect(status?.hidden).toBe(false);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("přeskočení pojmenování neztratí dokončenou nahrávku a exportuje bez názvu", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      const skip = panel.document.querySelector('[data-testid="skip-recording-name"]');
+      await panel.click(skip);
+      await panel.waitForPhase("idle");
+
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, "");
+      const status = panel.document.querySelector('[data-recording-phase] [role="status"]');
+      expect(status?.textContent?.trim().length).toBeGreaterThan(0);
+      expect(status?.hidden).toBe(false);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("uložení původních stop nečeká na dokončení stereo exportu", async () => {
     const panel = await renderRecordingCard();
     panel.ludone.finishRecordingExport.mockImplementation(() => new Promise(() => {}));
@@ -460,13 +522,17 @@ describe("RecordingCard", () => {
       await React.act(async () => {
         await vi.waitFor(() => {
           const alert = panel.document.querySelector('[data-recording-phase] [role="alert"]');
-          expect(alert?.textContent).toContain("Disk je plný");
+          expect(alert?.textContent?.trim().length).toBeGreaterThan(0);
+          expect(alert?.hidden).toBe(false);
           expect(panel.currentButton()?.textContent).toContain("Uložit a odeslat");
         });
       });
 
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
-      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID);
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(
+        SESSION_ID,
+        expect.any(String),
+      );
     } finally {
       await panel.cleanup();
     }

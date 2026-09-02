@@ -9,6 +9,8 @@ const outputDir = path.join(projectRoot, ".runtime", "smoke");
 const observations = [];
 const PERMISSION_ACTION_SELECTOR = '[data-testid="permission-action"]';
 const PERMISSION_GRANTED_SELECTOR = ".permission-row.is-granted";
+const RECORDING_NAME_SELECTOR = '[data-testid="recording-name-input"]';
+const SKIP_RECORDING_NAME_SELECTOR = '[data-testid="skip-recording-name"]';
 const EXPECTED_PERMISSION_COUNT = 2;
 
 await mkdir(outputDir, { recursive: true });
@@ -272,6 +274,68 @@ async function setPanelInputs(client) {
   await delay(120);
 }
 
+async function assertRecordingNaming(client) {
+  const state = await waitFor(
+    () => client.evaluate(`(() => {
+      const card = document.querySelector('[data-recording-phase="saved"]');
+      const input = document.querySelector(${JSON.stringify(RECORDING_NAME_SELECTOR)});
+      if (!card || !input) return null;
+      const state = {
+        focused: document.activeElement === input,
+        value: input.value,
+      };
+      return state.focused && state.value.trim().length > 0 ? state : null;
+    })()`),
+    "panel pojmenování nahrávky",
+  );
+  if (!state.focused || state.value.trim().length === 0) {
+    throw new Error(`Pojmenování není předvyplněné a fokusované: ${JSON.stringify(state)}`);
+  }
+  observations.push({ check: "recording-naming", ...state });
+}
+
+async function skipRecordingNaming(client) {
+  const clicked = await client.evaluate(`(() => {
+    const control = document.querySelector(${JSON.stringify(SKIP_RECORDING_NAME_SELECTOR)});
+    if (!control || control.disabled) return false;
+    control.click();
+    return true;
+  })()`);
+  if (!clicked) throw new Error("Přeskočení pojmenování nebylo dostupné.");
+  await waitFor(
+    () => client.evaluate("document.querySelector('[data-recording-phase=\"idle\"]') !== null"),
+    "přeskočení pojmenování",
+    20_000,
+  );
+  observations.push({ action: "skip-recording-name" });
+}
+
+async function submitRecordingName(client, value) {
+  const changed = await client.evaluate(`(() => {
+    const input = document.querySelector(${JSON.stringify(RECORDING_NAME_SELECTOR)});
+    if (!input) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(input, ${JSON.stringify(value)});
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return input.value === ${JSON.stringify(value)};
+  })()`);
+  if (!changed) throw new Error("Název nahrávky nešel změnit.");
+  await delay(120);
+  const submitted = await client.evaluate(`(() => {
+    const form = document.querySelector(${JSON.stringify(RECORDING_NAME_SELECTOR)})?.form;
+    if (!form) return false;
+    form.requestSubmit();
+    return true;
+  })()`);
+  if (!submitted) throw new Error("Název nahrávky nešel potvrdit.");
+  await waitFor(
+    () => client.evaluate("document.querySelector('[data-recording-phase=\"idle\"]') !== null"),
+    "potvrzení názvu nahrávky",
+    20_000,
+  );
+  observations.push({ action: "submit-recording-name", value });
+}
+
 // 🔴 Retenci schválně NASTAVUJEME NA JINOU hodnotu, než je výchozí. Když B11 změnila
 // default na „7 dní po odeslání", stala se dosavadní kontrola `retention === '7 dní'`
 // TAUTOLOGIÍ — platila i bez toho, že by kdokoli na cokoli klikl, takže o té obrazovce
@@ -373,7 +437,10 @@ try {
   await assertText(panel, "Stop");
   await screenshot(panel, "05-recording-and-tracking");
 
-  await clickByText(panel, "Zastavit nahrávání");
+  await clickByText(panel, "Ukončit a uložit");
+  await assertRecordingNaming(panel);
+  await screenshot(panel, "06-recording-naming");
+  await skipRecordingNaming(panel);
   await assertTray(panel, "tracking");
   await screenshot(panel, "06-tracking-only");
   await clickByAria(panel, "Zastavit LuTrack");
@@ -398,7 +465,9 @@ try {
   await delay(1100);
   await assertText(panel, "Rychlá nahrávka");
   await assertTray(panel, "recording");
-  await clickByText(panel, "Zastavit nahrávání");
+  await clickByText(panel, "Ukončit a uložit");
+  await assertRecordingNaming(panel);
+  await submitRecordingName(panel, "Porada provozu");
   await assertTray(panel, "idle");
 
   await clickByAria(panel, "Otevřít nastavení");
