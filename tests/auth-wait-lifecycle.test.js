@@ -1,9 +1,17 @@
 import { createRequire } from "node:module";
 import { EventEmitter } from "node:events";
-import { describe, expect, it, vi } from "vitest";
+import { rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
 const { createAuthController } = require("../electron/auth.cjs");
+const AUTH_TEST_APP_DATA = path.join(tmpdir(), `ludone-auth-wait-${process.pid}`);
+
+afterAll(async () => {
+  await rm(AUTH_TEST_APP_DATA, { recursive: true, force: true });
+});
 
 function jsonResult(value) {
   return {
@@ -45,6 +53,7 @@ function testController({ timeoutMs = 100 } = {}) {
         authorization_endpoint: `${issuer}/api/mcp/oauth/authorize`,
         token_endpoint: `${issuer}/api/mcp/oauth/token`,
         registration_endpoint: `${issuer}/api/mcp/oauth/register`,
+        revocation_endpoint: `${issuer}/api/mcp/oauth/revoke`,
         code_challenge_methods_supported: ["S256"],
       });
     }
@@ -58,9 +67,9 @@ function testController({ timeoutMs = 100 } = {}) {
     issuer,
     timeoutMs,
     fetchImpl,
-    app: { getPath: vi.fn(() => "/tmp/ludone-auth-test") },
+    app: { getPath: vi.fn(() => AUTH_TEST_APP_DATA) },
     loopbackServerFactory,
-    safeStorage: {},
+    safeStorage: { isEncryptionAvailable: vi.fn(() => true) },
     shell,
   });
   return { controller, shell };
