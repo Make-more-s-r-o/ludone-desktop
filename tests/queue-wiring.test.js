@@ -71,19 +71,36 @@ afterEach(async () => {
   temporaryRoots.clear();
 });
 
+/**
+ * @param {string} userDataPath
+ * @param {{
+ *   deferPanelLoad?: boolean,
+ *   deferSettingsRead?: boolean,
+ *   navigateDuringSettingsRead?: boolean,
+ *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
+ *   settingsReadError?: Error | null,
+ *   storedSettings?: string | null,
+ *   trayBounds?: {x: number, y: number, width: number, height: number} | Error,
+ * }} [options]
+ */
 function fakeElectron(userDataPath, {
   deferPanelLoad = false,
   deferSettingsRead = false,
   navigateDuringSettingsRead = false,
+  primaryWorkArea = { x: 0, y: 0, width: 1_440, height: 900 },
   storedSettings = null,
   settingsReadError = null,
+  trayBounds = { x: 0, y: 0, width: 0, height: 18 },
 } = {}) {
   const ipcHandlers = new Map();
   const ipcListeners = new Map();
+  const trays = [];
   const windows = [];
   let readyCallback;
   let nextWebContentsId = 1;
   let pendingPanelLoad;
+  let trayVisibilityCheck;
+  let trayVisibilityDelay;
   let reportSettingsReadStarted;
   const settingsReadStarted = new Promise((resolve) => {
     reportSettingsReadStarted = resolve;
@@ -97,6 +114,7 @@ function fakeElectron(userDataPath, {
       this.pageLoaded = false;
       this.destroyed = false;
       this.localStorage = new Map();
+      this.send = vi.fn();
       this.executeJavaScript = vi.fn(async (source) => {
         reportSettingsReadStarted(undefined);
         if (!this.pageLoaded) return null;
@@ -129,8 +147,12 @@ function fakeElectron(userDataPath, {
   class FakeBrowserWindow extends EventEmitter {
     constructor(options = {}) {
       super();
+      this.options = options;
       this.visible = false;
+      this.focused = false;
+      this.shownInactive = false;
       this.destroyed = false;
+      this.loadCalls = [];
       this.bounds = {
         x: 0,
         y: 0,
@@ -151,8 +173,11 @@ function fakeElectron(userDataPath, {
       windows.push(this);
     }
 
-    loadFile(filePath) {
-      this.webContents.mainFrame.url = pathToFileURL(filePath).toString();
+    loadFile(filePath, options = {}) {
+      this.loadCalls.push({ kind: "file", target: filePath, options });
+      const fileUrl = new URL(pathToFileURL(filePath));
+      if (options.hash) fileUrl.hash = options.hash;
+      this.webContents.mainFrame.url = fileUrl.toString();
       if (deferPanelLoad && windows[0] === this) {
         return new Promise((resolve, reject) => {
           pendingPanelLoad = {
@@ -168,21 +193,42 @@ function fakeElectron(userDataPath, {
       return Promise.resolve();
     }
 
+    loadURL(url) {
+      this.loadCalls.push({ kind: "url", target: url });
+      this.webContents.mainFrame.url = url;
+      this.webContents.finishLoad();
+      return Promise.resolve();
+    }
+
     isDestroyed() { return this.destroyed; }
     isVisible() { return this.visible; }
     show() { this.visible = true; }
+    showInactive() {
+      this.visible = true;
+      this.shownInactive = true;
+    }
     hide() { this.visible = false; }
-    focus() {}
+    focus() { this.focused = true; }
     close() { this.emit("closed"); }
     getBounds() { return { ...this.bounds }; }
     getSize() { return [this.bounds.width, this.bounds.height]; }
   }
 
   class FakeTray extends EventEmitter {
+    constructor() {
+      super();
+      this.popUpContextMenu = vi.fn();
+      this.setContextMenu = vi.fn();
+      trays.push(this);
+    }
+
     setTitle() {}
     setImage() {}
     setToolTip() {}
-    getBounds() { return { x: 0, y: 0, width: 18, height: 18 }; }
+    getBounds() {
+      if (trayBounds instanceof Error) throw trayBounds;
+      return { ...trayBounds };
+    }
   }
 
   const app = Object.assign(new EventEmitter(), {
@@ -210,6 +256,9 @@ function fakeElectron(userDataPath, {
       handle: vi.fn((channel, handler) => ipcHandlers.set(channel, handler)),
       on: vi.fn((channel, handler) => ipcListeners.set(channel, handler)),
     },
+    Menu: {
+      buildFromTemplate: vi.fn((template) => ({ template })),
+    },
     nativeImage: {
       createFromDataURL: vi.fn(() => ({ resize() { return this; } })),
       // Ikona lišty se od PNG opravy skládá z bufferů (běžné + retina rozlišení).
@@ -234,11 +283,12 @@ function fakeElectron(userDataPath, {
     },
     screen: Object.assign(new EventEmitter(), {
       getDisplayMatching: vi.fn(() => ({
-        workArea: { x: 0, y: 0, width: 1_440, height: 900 },
+        workArea: primaryWorkArea,
       })),
       getDisplayNearestPoint: vi.fn(() => ({
-        workArea: { x: 0, y: 0, width: 1_440, height: 900 },
+        workArea: primaryWorkArea,
       })),
+      getPrimaryDisplay: vi.fn(() => ({ workArea: primaryWorkArea })),
     }),
     session: {
       defaultSession: {
@@ -255,10 +305,21 @@ function fakeElectron(userDataPath, {
     Tray: FakeTray,
   };
 
+  function controlledSetTimeout(callback, delay, ...args) {
+    if (delay === 2_000) {
+      trayVisibilityDelay = delay;
+      trayVisibilityCheck = () => callback(...args);
+      return { unref: vi.fn() };
+    }
+    return globalThis.setTimeout(callback, delay, ...args);
+  }
+
   return {
+    controlledSetTimeout,
     electron,
     ipcHandlers,
     settingsReadStarted,
+    trays,
     windows,
     finishPanelLoad() {
       if (!pendingPanelLoad) throw new Error("Panel nemá čekající načtení");
@@ -284,6 +345,11 @@ function fakeElectron(userDataPath, {
       await readyCallback();
       await Promise.resolve();
     },
+    runTrayVisibilityCheck() {
+      if (!trayVisibilityCheck) throw new Error("Kontrola viditelnosti lišty nebyla naplánovaná");
+      return trayVisibilityCheck();
+    },
+    trayVisibilityDelay: () => trayVisibilityDelay,
   };
 }
 
@@ -297,8 +363,10 @@ function fakeElectron(userDataPath, {
  *   env?: Record<string, string | undefined>,
  *   loadQueue?: (...args: any[]) => Promise<any>,
  *   navigateDuringSettingsRead?: boolean,
+ *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
  *   settingsReadError?: Error | null,
  *   storedSettings?: string | null,
+ *   trayBounds?: {x: number, y: number, width: number, height: number} | Error,
  * }} [options]
  */
 async function loadMain({
@@ -310,8 +378,10 @@ async function loadMain({
   env = {},
   loadQueue,
   navigateDuringSettingsRead = false,
+  primaryWorkArea,
   settingsReadError = null,
   storedSettings = null,
+  trayBounds,
 } = {}) {
   const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-main-queue-test-"));
   temporaryRoots.add(userDataPath);
@@ -319,8 +389,10 @@ async function loadMain({
     deferPanelLoad,
     deferSettingsRead,
     navigateDuringSettingsRead,
+    primaryWorkArea,
     storedSettings,
     settingsReadError,
+    trayBounds,
   });
   const queueStoreModule = actualRequire("./queue.cjs");
   const retentionModule = actualRequire("./retention.cjs");
@@ -351,6 +423,7 @@ async function loadMain({
     "__dirname",
     "console",
     "process",
+    "setTimeout",
     "injectedManifestModulePromise",
     "injectedQueueModulePromise",
     `"use strict";\n${executableMainSource}`,
@@ -372,6 +445,7 @@ async function loadMain({
       },
       platform: process.platform,
     },
+    harness.controlledSetTimeout,
     import("../src/lib/manifest.js"),
     import("../src/lib/queue.js"),
   );
@@ -442,10 +516,13 @@ async function waitForQueuePump(harness) {
   });
 }
 
-/** @param {unknown} [invokeResult] */
+/** @param {unknown | ((...args: unknown[]) => unknown)} [invokeResult] */
 function loadPreload(invokeResult = true) {
   let exposedApi;
-  const invoke = vi.fn(async () => invokeResult);
+  const invoke = vi.fn(async (...args) => (
+    typeof invokeResult === "function" ? invokeResult(...args) : invokeResult
+  ));
+  const listeners = new Map();
   const evaluatePreload = Function(
     "require",
     `"use strict";\n${preloadSource}`,
@@ -459,10 +536,25 @@ function loadPreload(invokeResult = true) {
           exposedApi = api;
         },
       },
-      ipcRenderer: { invoke, send: vi.fn() },
+      ipcRenderer: {
+        invoke,
+        on: vi.fn((channel, listener) => listeners.set(channel, listener)),
+        removeListener: vi.fn((channel, listener) => {
+          if (listeners.get(channel) === listener) listeners.delete(channel);
+        }),
+        send: vi.fn(),
+      },
     };
   });
-  return { api: exposedApi, invoke };
+  return {
+    api: exposedApi,
+    emit(channel) {
+      const listener = listeners.get(channel);
+      if (!listener) throw new Error(`Preload neposlouchá kanál ${channel}`);
+      return listener({}, undefined);
+    },
+    invoke,
+  };
 }
 
 describe("zjištění uložené OAuth session", () => {
@@ -777,6 +869,217 @@ describe("výška panelu podle obsahu", () => {
     expect(() => api.setPanelContentHeight({ height: 240 })).toThrow(/výšk/i);
     expect(() => api.setPanelContentHeight(Number.POSITIVE_INFINITY)).toThrow(/výšk/i);
     expect(invoke).not.toHaveBeenCalled();
+  });
+});
+
+describe("viditelnost ikony a klikání na lištu", () => {
+  it("počká na ustálení a u pravděpodobně nevykreslené ikony ukáže varování bez fokusu", async () => {
+    const harness = await loadMain({
+      trayBounds: { x: 599, y: 0, width: 34, height: 33 },
+    });
+
+    await harness.runReady();
+
+    expect(harness.trayVisibilityDelay()).toBe(2_000);
+    expect(harness.windows).toHaveLength(1);
+
+    harness.runTrayVisibilityCheck();
+
+    expect(harness.windows).toHaveLength(2);
+    const warning = harness.windows[1];
+    expect(warning.options.show).toBe(false);
+    expect(warning.loadCalls).toEqual([
+      expect.objectContaining({
+        kind: "url",
+        target: expect.stringContaining("#tray-space-warning"),
+      }),
+    ]);
+
+    warning.emit("ready-to-show");
+
+    expect(warning.shownInactive).toBe(true);
+    expect(warning.focused).toBe(false);
+  });
+
+  it("varuje i těsně vlevo od přesné hranice 45 %", async () => {
+    const harness = await loadMain({
+      primaryWorkArea: { x: 0, y: 0, width: 100, height: 90 },
+      trayBounds: { x: 43.999, y: 0, width: 1, height: 18 },
+    });
+    await harness.runReady();
+
+    harness.runTrayVisibilityCheck();
+
+    expect(harness.windows).toHaveLength(2);
+  });
+
+  it.each([
+    ["ikona vpravo", { x: 1_300, y: 0, width: 18, height: 18 }],
+    ["přesně na konzervativní hranici", { x: 630, y: 0, width: 18, height: 18 }],
+    ["nulová šířka", { x: 599, y: 0, width: 0, height: 33 }],
+    ["nezjistitelné rozměry", new Error("macOS rozměry neposkytl")],
+  ])("u stavu %s mlčí", async (_label, trayBounds) => {
+    const harness = await loadMain({ trayBounds });
+    await harness.runReady();
+
+    harness.runTrayVisibilityCheck();
+
+    expect(harness.windows).toHaveLength(1);
+  });
+
+  it("varuje nejvýš jednou za spuštění i po zavření okna", async () => {
+    const harness = await loadMain({
+      trayBounds: { x: 599, y: 0, width: 34, height: 33 },
+    });
+    await harness.runReady();
+
+    harness.runTrayVisibilityCheck();
+    harness.windows[1].close();
+    harness.runTrayVisibilityCheck();
+
+    expect(harness.windows).toHaveLength(2);
+  });
+
+  it("pravý klik otevře schválené popup menu a panel nechá být", async () => {
+    const harness = await loadMain({
+      trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
+    });
+    await harness.runReady();
+    const panel = harness.windows[0];
+    const tray = harness.trays[0];
+
+    tray.emit("right-click");
+
+    expect(harness.electron.Menu.buildFromTemplate).toHaveBeenCalledOnce();
+    const template = harness.electron.Menu.buildFromTemplate.mock.calls[0][0];
+    expect(template.map((item) => item.type === "separator" ? "separator" : item.label)).toEqual([
+      "Ukončit nahrávání",
+      "Spustit LuTrack",
+      "separator",
+      "Otevřít panel",
+      "Otevřít LuDone v prohlížeči",
+      "separator",
+      "Nastavení…",
+      "O aplikaci",
+      "separator",
+      "Ukončit LuDone",
+    ]);
+    expect(template.map((item) => item.accelerator ?? null)).toEqual([
+      "Control+Option+R",
+      "Control+Option+T",
+      null,
+      "Control+Option+L",
+      null,
+      null,
+      "CommandOrControl+,",
+      null,
+      null,
+      "CommandOrControl+Q",
+    ]);
+    expect(tray.popUpContextMenu).toHaveBeenCalledExactlyOnceWith(
+      harness.electron.Menu.buildFromTemplate.mock.results[0].value,
+    );
+    expect(tray.setContextMenu).not.toHaveBeenCalled();
+    expect(panel.visible).toBe(false);
+    expect(panel.focused).toBe(false);
+  });
+
+  it("rychlé akce předá panelu jediným validovaným kanálem i před jeho odběrem", async () => {
+    const harness = await loadMain({
+      trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const tray = harness.trays[0];
+
+    tray.emit("right-click");
+    const template = harness.electron.Menu.buildFromTemplate.mock.calls[0][0];
+    template[1].click();
+    tray.emit("right-click");
+    harness.electron.Menu.buildFromTemplate.mock.calls[1][0][1].click();
+
+    expect(panelContents.send).toHaveBeenCalledTimes(2);
+    expect(panelContents.send).toHaveBeenNthCalledWith(1, "tray:command");
+    expect(panelContents.send).toHaveBeenNthCalledWith(2, "tray:command");
+    const takeCommand = harness.ipcHandlers.get("tray:command");
+    expect(takeCommand).toBeTypeOf("function");
+    expect(takeCommand(event)).toEqual(["start-tracking", "start-tracking"]);
+    expect(takeCommand(event)).toEqual([]);
+  });
+
+  it("čekající rychlou akci nepřenese do nové generace rendereru", async () => {
+    const harness = await loadMain({
+      trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const tray = harness.trays[0];
+
+    tray.emit("right-click");
+    harness.electron.Menu.buildFromTemplate.mock.calls[0][0][1].click();
+    panelContents.emit(
+      "did-start-navigation",
+      {},
+      "ludone://app/index.html",
+      false,
+      true,
+    );
+
+    const takeCommand = harness.ipcHandlers.get("tray:command");
+    expect(takeCommand(event)).toEqual([]);
+  });
+
+  it("preload po registraci vyzvedne i dříve čekající rychlé akce", async () => {
+    const responses = [
+      ["stop-recording", "start-tracking"],
+      [],
+    ];
+    const { api, emit, invoke } = loadPreload(() => responses.shift() ?? []);
+    let deliveryTurn = 0;
+    const deliveryTurns = [];
+    const listener = vi.fn((command) => {
+      deliveryTurns.push([command, deliveryTurn]);
+      setTimeout(() => {
+        deliveryTurn += 1;
+      }, 0);
+    });
+
+    const unsubscribe = api.onTrayCommand(listener);
+    await vi.waitFor(() => {
+      expect(listener.mock.calls).toEqual([
+        ["stop-recording"],
+        ["start-tracking"],
+      ]);
+    });
+    await emit("tray:command");
+
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenNthCalledWith(1, "tray:command");
+    expect(invoke).toHaveBeenNthCalledWith(2, "tray:command");
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(deliveryTurns).toEqual([
+      ["stop-recording", 0],
+      ["start-tracking", 1],
+    ]);
+    unsubscribe();
+  });
+
+  it("levý klik dál otevře a napozicuje panel, nikoli kontextové menu", async () => {
+    const harness = await loadMain({
+      trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
+    });
+    await harness.runReady();
+    const panel = harness.windows[0];
+    const tray = harness.trays[0];
+
+    tray.emit("click");
+
+    expect(panel.visible).toBe(true);
+    expect(panel.focused).toBe(true);
+    expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(1_066, 26, false);
+    expect(tray.popUpContextMenu).not.toHaveBeenCalled();
   });
 });
 

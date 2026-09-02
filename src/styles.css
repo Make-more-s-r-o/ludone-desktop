@@ -1123,6 +1123,45 @@ svg {
   line-height: 1.4;
 }
 
+.tray-space-warning.auth-error-panel.panel.window-surface {
+  gap: 15px;
+  padding: 48px 26px 22px;
+  border-radius: 0;
+}
+
+.tray-space-warning__heading {
+  -webkit-app-region: drag;
+}
+
+.tray-space-warning__mark {
+  color: var(--panel-accent);
+}
+
+.tray-space-warning__solutions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--panel-hair);
+  border-radius: 10px;
+  background: var(--panel-card);
+  color: var(--panel-text);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.tray-space-warning__solutions p {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 4px;
+}
+
+.tray-space-warning__solutions p::before {
+  color: var(--panel-accent);
+  content: "·";
+  font-weight: 700;
+}
+
 .onboarding {
   display: grid;
   grid-template-rows: 58px 3px minmax(0, 1fr);

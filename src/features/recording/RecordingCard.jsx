@@ -174,7 +174,7 @@ function savedRecordingMetadata(recording) {
   };
 }
 
-export function RecordingCard({ onActivityChange, todaySummary = null }) {
+export function RecordingCard({ onActivityChange, todaySummary = null, trayCommand = null }) {
   const [session, setSession] = useState({
     phase: "idle",
     startedAt: null,
@@ -186,6 +186,7 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
   const startInFlight = useRef(false);
+  const lastTrayCommandId = useRef(null);
   const runtimeRef = useRef(null);
   const isRecording = session.phase === "recording";
   const elapsed = useElapsedTime(isRecording, session.startedAt);
@@ -398,6 +399,12 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
     const runtime = runtimeRef.current;
     if (runtime && !runtime.closing) void finishRuntime(runtime);
   }
+
+  useEffect(() => {
+    if (!trayCommand || trayCommand.id === lastTrayCommandId.current) return;
+    lastTrayCommandId.current = trayCommand.id;
+    if (trayCommand.name === "stop-recording") stop();
+  }, [trayCommand]);
 
   useEffect(() => {
     onActivityChange({

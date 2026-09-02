@@ -24,8 +24,10 @@ export function App() {
   const [recording, setRecording] = useState({ active: false });
   const [tracking, setTracking] = useState({ active: false });
   const [queueStatus, setQueueStatus] = useState(null);
+  const [trayCommand, setTrayCommand] = useState(null);
   const authSessionRequestId = useRef(0);
   const queueRequestId = useRef(0);
+  const trayCommandId = useRef(0);
 
   useEffect(() => {
     const requestId = authSessionRequestId.current + 1;
@@ -56,6 +58,17 @@ export function App() {
     if (typeof sessionExists !== "boolean") return;
     window.ludone.reportTrayFacts({ signedIn: sessionExists, tracking: tracking.active });
   }, [sessionExists, tracking.active]);
+
+  useEffect(() => {
+    if (typeof window.ludone.onTrayCommand !== "function") return undefined;
+    return window.ludone.onTrayCommand((name) => {
+      // Během onboardingu nejsou akční karty namountované. Příkaz přesto
+      // spotřebujeme, ale neuchováváme: jinak by se provedl opožděně až po jeho dokončení.
+      if (!onboardingComplete) return;
+      trayCommandId.current += 1;
+      setTrayCommand({ id: trayCommandId.current, name });
+    });
+  }, [onboardingComplete]);
 
   const refreshQueueStatus = useCallback(async () => {
     const requestId = queueRequestId.current + 1;
@@ -139,8 +152,8 @@ export function App() {
         </header>
 
         <div className="panel-scroll">
-          <RecordingCard onActivityChange={handleRecordingChange} />
-          <TrackingCard onActivityChange={handleTrackingChange} />
+          <RecordingCard onActivityChange={handleRecordingChange} trayCommand={trayCommand} />
+          <TrackingCard onActivityChange={handleTrackingChange} trayCommand={trayCommand} />
         </div>
 
         <footer className="panel-footer">

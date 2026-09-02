@@ -327,6 +327,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "tracking:start",
       "tracking:stop",
       "tracking:switch-project",
+      "tray:command",
       "tray:get-state",
       "tray:report-facts",
     ].sort());

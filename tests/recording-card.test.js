@@ -210,8 +210,9 @@ async function renderRecordingCard(options = {}) {
 
   const root = createRoot(dom.window.document.querySelector("#root"));
   const onActivityChange = vi.fn();
+  let trayCommand = null;
   await React.act(async () => {
-    root.render(React.createElement(RecordingCard, { onActivityChange }));
+    root.render(React.createElement(RecordingCard, { onActivityChange, trayCommand }));
   });
 
   const phase = () => dom.window.document
@@ -232,6 +233,12 @@ async function renderRecordingCard(options = {}) {
     resolveCapture() {
       microphoneCapture.resolve(microphoneStream);
       displayCapture.resolve(displayStream);
+    },
+    async setTrayCommand(command) {
+      trayCommand = command;
+      await React.act(async () => {
+        root.render(React.createElement(RecordingCard, { onActivityChange, trayCommand }));
+      });
     },
     async click(element) {
       if (!element) throw new Error("Test očekával dostupné tlačítko");
@@ -367,6 +374,20 @@ describe("RecordingCard", () => {
         - Date.parse(trackTimings.system.startedAt),
       )).toBe(25);
       expect(panel.phase()).toBe("saved");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("příkaz z kontextového menu bezpečně dokončí rozepsanou session", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      await panel.setTrayCommand({ id: 1, name: "stop-recording" });
+      await panel.waitForPhase("saved");
+
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
     } finally {
       await panel.cleanup();
     }
