@@ -1,5 +1,37 @@
 # Co musí udělat Dan — LuDone Desktop
 
+## 🔴 PRVNÍ VĚC PO PROBUZENÍ — ikona v liště je pořád prázdná (nález 2. 9. ráno)
+
+**Aplikace po spuštění nemá v horní liště nic.** Není to nová vada, je to ta stará (V0), která
+**přežila celý noční běh** — protože jsem T1 v srpnu zmrazil kvůli procesu (implementace před
+schváleným specem) a po schválení ji **nikdo nerozmrazil**.
+
+Změřeno teď na `main`:
+
+```
+electron/main.cjs:288
+  const encoded = Buffer.from(traySvg(trayIconName(state))).toString("base64");
+  return nativeImage.createFromDataURL(`data:image/svg+xml;base64,${encoded}`)
+```
+
+Electron 37 **SVG nedekóduje** — změřeno v srpnu naostro: `isEmpty=true`,
+`size={width:0,height:0}`, `toPNG()` vrací 0 bajtů. `new Tray(prázdnýObrázek)` **nehodí výjimku**,
+takže se to nikde neprojeví jako chyba. V liště prostě není nic.
+
+**Oprava existuje a je hotová** — větev `fix/tray-prazdna-ikona` (`ce2bea6`): osm PNG souborů
+v `electron/ikony/` (`idle`, `recording`, `tracking`, `signed-out`, každý i `@2x`) plus brána,
+která volá produkční `trayImage()`, ne kopii logiky.
+
+⚠️ **Nemerguj to naslepo.** Ta větev je stará a `main` se od ní hodně rozešel (B3 mezitím
+přesunul autoritu stavu do hlavního procesu). Není to `git merge`, ale **přenesení osmi PNG
+a jedné funkce** do dnešního tvaru. Půl hodiny práce, ne pět minut.
+
+**Proč je to první položka:** je to jediná vada ze všech, kterou uživatel uvidí **dřív než
+cokoli jiného** — při prvním spuštění, ještě než se k čemukoli dostane.
+
+---
+
+
 Vzniklo 24. 8. 2026 z ultracode analýzy (9 agentů nad kódem, výzkumem a rozhodnutími).
 Tenhle soubor obsahuje **jen to, co za tebe nikdo jiný neudělá.** Všechno ostatní je v `PLAN.md`.
 
