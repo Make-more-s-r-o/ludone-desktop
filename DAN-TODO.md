@@ -1038,3 +1038,48 @@ pokud to nebude spolehlivé, fáze 1 pošle dva a serverová session to musí v�
 **Pořadí, které navrhuju:** napřed doladit zbývající obrazovky podle schváleného designu
 (chceš je vidět), pak stereo export a tlačítko — až bude jasné, jaký tvar souboru a URL
 serverová session určí.
+
+---
+
+## 🔴 ŽIVÝ NÁLEZ V PRODUKCI: `/uploads/**` nevyžaduje přihlášení (2. 9. 2026)
+
+**Netýká se desktopu.** Vyplynulo z adversariálního review plánu serverového modulu a je to
+**stav dnešní produkce**, ne vada něčeho nového.
+
+### Změřeno naostro proti `app.ludone.cz`, bez cizích dat
+
+```
+/inventory                          → HTTP 307 → /login    (vyžaduje přihlášení)
+/uploads/inventory/…/neexistuje.jpg → HTTP 404             (ŽÁDNÉ přihlášení)
+```
+
+**404 znamená, že se požadavek zpracoval** a jen nenašel soubor. Kdyby cesta vyžadovala
+přihlášení, vrátila by 307 na login jako stránka. Nevrátila.
+
+### Kde to je (ověřeno ve zdrojácích `ludone-app`)
+
+```
+src/proxy.ts:19                        "/uploads/" je v PUBLIC_PATHS
+src/proxy.ts:104                       matchuje se startsWith → bez session, bez RBAC
+src/app/uploads/[...path]/route.ts:43  jediná zakázaná předpona je "lufak"
+```
+
+⇒ **Fotky skladu jsou dnes čitelné bez účtu**, přestože jejich RBAC routa
+(`GET /api/inventory/photos`) je učebnicově zagatovaná: session → modul-gate → scope →
+`assertItemInScope`. Ochrana stojí jen na tom, že cestu nikdo nezná.
+
+⚠️ **Druhý dopad:** `route.ts:67` čte celý soubor do paměti a ignoruje `Range`. Několik
+paralelních requestů na velký soubor položí kontejner na 512 M — **a nepotřebuje k tomu účet.**
+
+### Co s tím
+
+**Oprava je jeden řádek**, ale doporučuju ji otočit: místo denylistu (`lufak`) udělat
+**allowlist** toho, co veřejné být SMÍ. Nový modul pak bude neveřejný z podstaty, ne dokud
+si někdo nevzpomene — což je přesně chyba, která se tu právě stala.
+
+🔴 **Rozhodni, kdo to opraví.** Serverová session to ví a plán si o to opře, ale je to
+**oprava stávající produkce**, ne součást nového modulu — a měla by jít dřív než nový modul,
+ne s ním.
+
+*Poznámka k důkazu: ověřeno neautentizovaným požadavkem na NEEXISTUJÍCÍ cestu. Že se stáhne
+skutečná fotka, jsem netestoval a netestoval bych — k prokázání díry to není potřeba.*
