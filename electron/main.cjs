@@ -2004,40 +2004,115 @@ const beginAuth = createAuthBeginHandler(createAuthController)({
   shell,
 });
 
-async function hasStoredAuthSession() {
+async function readStoredAuthSession() {
+  const generation = authSessionGeneration;
+  if (authLogoutsInFlight > 0) return null;
+
+  let encryptionAvailable;
   try {
-    const generation = authSessionGeneration;
-    if (authLogoutsInFlight > 0 || safeStorage?.isEncryptionAvailable?.() !== true) return false;
-    const encrypted = await fs.promises.readFile(tokenSessionFilePath(app));
+    encryptionAvailable = safeStorage?.isEncryptionAvailable?.() === true;
+  } catch {
+    throw new Error("Bezpečné úložiště identity není dostupné");
+  }
+  if (!encryptionAvailable) {
+    throw new Error("Bezpečné úložiště identity není dostupné");
+  }
+
+  let encrypted;
+  try {
+    encrypted = await fs.promises.readFile(tokenSessionFilePath(app));
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw new Error("Uloženou identitu se nepodařilo načíst");
+  }
+
+  let storedSession;
+  try {
     const sessionValue = safeStorage.decryptString(encrypted);
-    const storedSession = JSON.parse(sessionValue);
-    if (!storedSession || typeof storedSession !== "object" || Array.isArray(storedSession)) {
-      return false;
-    }
-    const hasAccessToken = typeof storedSession.accessToken === "string"
-      && storedSession.accessToken.length > 0;
-    const hasRefreshToken = typeof storedSession.refreshToken === "string"
-      && storedSession.refreshToken.length > 0;
-    const hasRequiredMetadata = [
-      storedSession.clientId,
-      storedSession.resource,
-      storedSession.scope,
-    ].every((value) => typeof value === "string" && value.length > 0);
+    storedSession = JSON.parse(sessionValue);
+  } catch {
+    throw new Error("Uloženou identitu se nepodařilo přečíst");
+  }
+  if (!storedSession || typeof storedSession !== "object" || Array.isArray(storedSession)) {
+    throw new Error("Uložená session identity má neplatný formát");
+  }
+  const hasAccessToken = typeof storedSession.accessToken === "string"
+    && storedSession.accessToken.length > 0;
+  const hasRefreshToken = typeof storedSession.refreshToken === "string"
+    && storedSession.refreshToken.length > 0;
+  const hasRequiredMetadata = [
+    storedSession.clientId,
+    storedSession.resource,
+    storedSession.scope,
+  ].every((value) => typeof value === "string" && value.length > 0);
+  let hasValidIssuer = false;
+  try {
     const issuer = new URL(storedSession.issuer);
-    const hasValidIssuer = issuer.protocol === "https:"
+    hasValidIssuer = issuer.protocol === "https:"
       && issuer.username === ""
       && issuer.password === ""
+      && issuer.pathname === "/"
       && issuer.search === ""
-      && issuer.hash === "";
-    return authLogoutsInFlight === 0
-      && generation === authSessionGeneration
-      && storedSession.v === 1
-      && hasRequiredMetadata
-      && hasValidIssuer
-      && (hasAccessToken || hasRefreshToken);
+      && issuer.hash === ""
+      && storedSession.issuer === issuer.origin;
+  } catch {
+    hasValidIssuer = false;
+  }
+  if (
+    authLogoutsInFlight > 0
+    || generation !== authSessionGeneration
+  ) {
+    return null;
+  }
+  if (
+    storedSession.v !== 1
+    || !hasRequiredMetadata
+    || !hasValidIssuer
+  ) {
+    throw new Error("Uložená session identity má neplatný formát");
+  }
+  if (!hasAccessToken && !hasRefreshToken) {
+    return null;
+  }
+  return storedSession;
+}
+
+async function hasStoredAuthSession() {
+  try {
+    return (await readStoredAuthSession()) !== null;
   } catch {
     return false;
   }
+}
+
+function normalizedIdentityPart(value) {
+  if (typeof value !== "string") return "";
+  const normalized = value.trim();
+  return /^(?:undefined|null)$/iu.test(normalized) ? "" : normalized;
+}
+
+async function readStoredAuthIdentity() {
+  if (authAttemptsInFlight > 0) {
+    throw new Error("Identitu právě ověřuje probíhající přihlášení");
+  }
+  const storedSession = await readStoredAuthSession();
+  if (storedSession === null) return null;
+  if (authAttemptsInFlight > 0) {
+    throw new Error("Identitu právě ověřuje probíhající přihlášení");
+  }
+
+  const configuredOrigin = resolveAuthIssuer(process.env);
+  if (storedSession.issuer !== configuredOrigin) return null;
+
+  const name = normalizedIdentityPart(storedSession.identity?.name);
+  const email = normalizedIdentityPart(storedSession.identity?.email);
+  if (!/^[^\s@]+@[^\s@]+$/u.test(email)) {
+    throw new Error("Uložená session neobsahuje ověřitelnou identitu");
+  }
+
+  // IPC projekce je záměrně nový objekt se dvěma poli. Session, tokeny ani interní ID
+  // se do rendereru Nastavení nesmějí dostat ani omylem přes spread.
+  return { name: name || null, email };
 }
 
 handleValidated("auth:has-session", ["panel"], async () => {
@@ -2047,6 +2122,10 @@ handleValidated("auth:has-session", ["panel"], async () => {
     return false;
   }
 });
+
+handleValidated("auth:identity", ["settings"], () => readStoredAuthIdentity());
+
+handleValidated("auth:origin", ["settings"], () => resolveAuthIssuer(process.env));
 
 handleValidated("auth:pending-url", ["panel"], () => pendingAuthorizationUrl);
 

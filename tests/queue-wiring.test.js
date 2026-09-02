@@ -589,6 +589,36 @@ function loadPreload(invokeResult = true) {
   };
 }
 
+function openSettingsAndCreateEvent(harness) {
+  const panelContents = harness.windows[0].webContents;
+  const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
+  const openSettings = harness.ipcListeners.get("settings:open");
+  expect(openSettings).toBeTypeOf("function");
+  openSettings(panelEvent);
+  const settingsContents = harness.windows[1]?.webContents;
+  expect(settingsContents).toBeTruthy();
+  return {
+    panelEvent,
+    settingsEvent: { sender: settingsContents, senderFrame: settingsContents.mainFrame },
+  };
+}
+
+function storedAuthSession({
+  identity = { name: "Ada Lovelace", email: "ada@ludone.cz" },
+  issuer = "https://app.ludone.cz",
+} = {}) {
+  return {
+    v: 1,
+    issuer,
+    clientId: "desktop-client",
+    resource: `${issuer}/api/mcp`,
+    scope: "mcp:read",
+    accessToken: "TAJNY-ACCESS-TOKEN",
+    refreshToken: "TAJNY-REFRESH-TOKEN",
+    identity,
+  };
+}
+
 describe("zjištění uložené OAuth session", () => {
   it("hlavní proces vrací pro chybějící, platnou a poškozenou session jen boolean", async () => {
     const harness = await loadMain();
@@ -788,6 +818,109 @@ describe("zjištění uložené OAuth session", () => {
     expect(untrustedResult).toBe(false);
     expect(JSON.stringify(untrustedResult)).not.toContain("TOKEN-Z-MAIN");
     expect(untrusted.invoke).toHaveBeenCalledExactlyOnceWith("auth:has-session");
+  });
+
+  it("kanál identity vrátí nastavení jen jméno a e-mail z platné šifrované session", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const identity = harness.ipcHandlers.get("auth:identity");
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession({ identity: { name: "  Ada Lovelace  ", email: " ada@ludone.cz " } }),
+    )));
+
+    expect(identity).toBeTypeOf("function");
+    await expect(identity(settingsEvent)).resolves.toEqual({
+      name: "Ada Lovelace",
+      email: "ada@ludone.cz",
+    });
+    const response = await identity(settingsEvent);
+    expect(Object.keys(response).sort()).toEqual(["email", "name"]);
+    expect(JSON.stringify(response)).not.toMatch(/TAJNY|accessToken|refreshToken|clientId/u);
+    expect(() => identity(panelEvent)).toThrow(/nedůvěryhodný odesílatel/);
+  });
+
+  it("kanál identity rozliší chybějící session, chybějící jméno a nečitelnou identitu", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const identity = harness.ipcHandlers.get("auth:identity");
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+
+    expect(identity).toBeTypeOf("function");
+    await expect(identity(settingsEvent)).resolves.toBeNull();
+
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...storedAuthSession(),
+      v: 2,
+    })));
+    await expect(identity(settingsEvent)).rejects.toThrow();
+
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify([])));
+    await expect(identity(settingsEvent)).rejects.toThrow();
+
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession({ identity: { name: null, email: "alice@example.cz" } }),
+    )));
+    await expect(identity(settingsEvent)).resolves.toEqual({
+      name: null,
+      email: "alice@example.cz",
+    });
+
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession({ identity: { name: "undefined", email: "alice@example.cz" } }),
+    )));
+    await expect(identity(settingsEvent)).resolves.toEqual({
+      name: null,
+      email: "alice@example.cz",
+    });
+
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession({ identity: { name: "Ada Lovelace", email: "neni-email" } }),
+    )));
+    await expect(identity(settingsEvent)).rejects.toThrow();
+
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession({ identity: null }),
+    )));
+    await expect(identity(settingsEvent)).rejects.toThrow();
+    await writeFile(tokenPath, Buffer.from("nečitelná session", "utf8"));
+    await expect(identity(settingsEvent)).rejects.toThrow();
+  });
+
+  it("origin vrací validovanou konfiguraci a identitu nespojí se session jiného originu", async () => {
+    const harness = await loadMain({ env: { LUDONE_ORIGIN: "https://labs.ludone.cz" } });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const identity = harness.ipcHandlers.get("auth:identity");
+    const origin = harness.ipcHandlers.get("auth:origin");
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession({ issuer: "https://app.ludone.cz" }),
+    )));
+
+    expect(origin).toBeTypeOf("function");
+    expect(origin(settingsEvent)).toBe("https://labs.ludone.cz");
+    await expect(identity(settingsEvent)).resolves.toBeNull();
+    expect(() => origin(panelEvent)).toThrow(/nedůvěryhodný odesílatel/);
+  });
+
+  it("preload předá identity a origin přes oddělené bezargumentové kanály", async () => {
+    const identityResponse = { name: null, email: "alice@example.cz" };
+    const { api, invoke } = loadPreload((channel) => (
+      channel === "auth:identity" ? identityResponse : "https://labs.ludone.cz"
+    ));
+
+    await expect(api.getAuthIdentity()).resolves.toBe(identityResponse);
+    await expect(api.getAuthOrigin()).resolves.toBe("https://labs.ludone.cz");
+    expect(invoke.mock.calls).toEqual([
+      ["auth:identity"],
+      ["auth:origin"],
+    ]);
   });
 });
 

@@ -2069,6 +2069,11 @@ svg {
   background: var(--card);
 }
 
+.account-card--signed-out,
+.account-card--unknown {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .connected {
   display: inline-flex;
   align-items: center;
@@ -2081,6 +2086,12 @@ svg {
 .connected svg {
   width: 13px;
   height: 13px;
+}
+
+.connection-state {
+  color: var(--muted-foreground);
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .destination-row {
