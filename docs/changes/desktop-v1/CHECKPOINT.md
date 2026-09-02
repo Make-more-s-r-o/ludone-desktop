@@ -38,3 +38,36 @@ Poslední zápis: **2. 9. 2026, 22:05**. Dan spí, běh pokračuje bez něj.
 ## Čeká na Dana
 
 - **Apple Developer** (ráno). Nic jiného.
+
+---
+
+## 🔴 CO JEŠTĚ DĚLÍ APLIKACI OD NÁVRHU (změřeno 2. 9. ve 22:30)
+
+Dan po prvním pohledu řekl, že aplikace „nevypadá dokonale". Měl pravdu a měřením se
+ukázalo proč. **Počítal jsem obrazovky, ne jejich věrnost.**
+
+### 1. ✅ Písma — vyřešeno v PR #32
+
+CSS předepisovalo `Instrument Sans` a `Public Sans`, ale **v repu nebyl jediný soubor
+písma**, v CSS žádný `@font-face` a v systému je uživatel nemá. Všechno se kreslilo
+náhradním systémovým písmem. Přibaleno lokálně (4 variabilní soubory, 92 kB, včetně
+`latin-ext` pro češtinu) + brána proti návratu.
+
+### 2. 🟡 Dvě palety vedle sebe — otevřená otázka na návrh
+
+| kde | co používá | odstín |
+|---|---|---|
+| panel (co Dan viděl) | `--panel-accent: oklch(0.72 0.14 268)` | **modrá — přesně dle návrhu** |
+| onboarding, nastavení, test záznamu | `.button--primary` → `--green: oklch(0.5 0.17 145)` | **zelená** |
+
+Panel je věrný. Zelená se drží na **8 místech** (Onboarding 5×, RecordingTestStep,
+Settings, RecordingCard).
+
+⚠️ **Nepřekresluju to od stolu.** Zelená `oklch(0.5 0.17 145)` v návrhu existuje — ale
+jako `--ok-base`, tedy „pozitivní/OK", ne jako barva hlavní akce. Jestli má být tlačítko
+„Začít" modré nebo zelené, patří ověřit proti `design/navrh/nahled.html`, ne odhadnout.
+
+### 3. Co naopak v pořádku JE
+
+Aplikace není chudší než návrh: `border-radius` 48× proti 46×, `box-shadow` 5× proti 2×,
+navíc přechody a animace, které návrh vůbec nemá.
