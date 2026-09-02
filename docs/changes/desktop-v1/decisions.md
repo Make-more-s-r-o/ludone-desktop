@@ -261,10 +261,11 @@ a to je záměr, ne nedodělek. Fail-closed je lepší než tiše zapojená zam�
 **Výchozí hodnota zůstává `https://app.ludone.cz`** podle E6 §11 — `spec.md` a `plan.md` jsou
 zmrazené a nebudu je za pochodu opravovat.
 
-⚠️ **Ale pozor, a patří to do reportu:** **všechna živá evidence v repu míří na `labs.ludone.cz`**
+⚠️ **Ale pozor, a patří to do reportu:** **všechna živá evidence v repu míří do labs prostředí**
 (`E7.sh:45-46`, `tests/oauth-state.test.js:45,51,54`). Proti `app.ludone.cz` **nikdy neproběhl
 celý OAuth tok** — jen discovery HTTP 200 z 24. 8. ⇒ **ověření naostro se musí spouštět
-s `LUDONE_ORIGIN=https://labs.ludone.cz`**, jinak se testuje adresa, kterou nikdo nezměřil.
+s `LUDONE_ORIGIN` nastaveným na HTTPS origin labs prostředí**, jinak se testuje adresa,
+kterou nikdo nezměřil.
 
 ### Kdo B8 vykonává
 
@@ -642,8 +643,9 @@ Dan: *„mysleme na to, aby fungovala aplikace i pro jiné instalace app.ludone 
 parametr, endpointy se dohledávají přes `/.well-known/oauth-authorization-server` a ověřuje
 se, že leží na stejném originu. Architektura tedy multi-tenant **už umí**.
 
-🔴 **Brání tomu jediná kontrola** — `main.cjs:970` má seznam `["app.ludone.cz",
-"labs.ludone.cz"]`. Nedá se jen smazat: brání odeslání tokenu na podvržený server.
+🔴 **Brání tomu jediná kontrola** — `main.cjs:970` má výslovný seznam dvou správcem
+schválených hostitelů pro produkční a labs prostředí. Nedá se jen smazat: brání odeslání
+tokenu na podvržený server. Přesné hodnoty jsou provozní konfigurace, ne veřejný kontrakt.
 
 Návrh a tři varianty jsou v [`OAUTH-CO-ZALOZIT.md`](OAUTH-CO-ZALOZIT.md) §3; doporučená je
 **B — origin zadá správce při instalaci**. Je to změna specu u `security` funkce, takže
@@ -825,14 +827,14 @@ hotová funkce**, jinak si někdo odklikne den práce, který se nikam nezapíš
 
 ### BD-N39 — nahrávky zatím na LOKÁLNÍ disk, cesta ale konfigurovatelná
 
-Dan: *„máme Hetzner storage koupený, tak jestli nepoužít ten pro uložení?"*
+Dan se ptal, zda pro uložení použít už zakoupené externí síťové úložiště.
 
 **Změřeno na hostu 2. 9. 2026:**
 
 ```
-/dev/sda1   301G celkem · 170G použito · 119G volných (59 %)
-Storage Box NENÍ připojený — žádný cifs/nfs mount, /mnt je prázdné
-LuFak ukládá do /opt/ludone-app/uploads na lokální disk
+Produkční disk: 301G celkem · 170G použito · 119G volných (59 %)
+Externí síťové úložiště NENÍ připojené
+LuFak ukládá do adresáře s nahranými soubory na lokálním disku serveru
 ```
 
 Hodinová schůzka = 80–240 MB (dvě stopy) ⇒ **119 GB ≈ 500–1500 hodin**, pro tým na rok.
@@ -844,7 +846,7 @@ způsoby selhání — výpadek mountu uprostřed streamovaného uploadu, jiná 
 pomalejší `fsync`. `E5` přitom stojí na atomických zápisech, které se na CIFS chovají jinak
 než na lokálním disku.
 
-**Kdy Storage Box zapojit:** při obsazenosti nad ~100 GB, **nebo dřív kvůli zálohám**
+**Kdy externí síťové úložiště zapojit:** při obsazenosti nad ~100 GB, **nebo dřív kvůli zálohám**
 odděleným od stroje. Záloha je lepší důvod než kapacita a měla by přijít první.
 
 ### BD-N40 — „vidět design brzo" se týká DESKTOPU, ne serveru
@@ -873,11 +875,11 @@ tedy falešný token v dokumentu o tom, jak tokeny neuniknout do logů. Žádné
 ani skutečné tokeny. Klientská OAuth ID jsou public client dle RFC 8252
 (`client_secret_hash=NULL`) a v repu navíc jen zkrácená.
 
-🔴 **Co pročištění NEVYŘEŠÍ:** zveřejněním se zpřístupní **celá historie**. Změřeno, co je
-v ní vidět: `labs.ludone.cz` (50×), `data.ludone.cz`, `/opt/ludone-uploads`,
-`/opt/ludone-uploads-prod`, `/opt/ludone-app`. Tedy **dva hostnames a tři cesty, nic víc** —
-žádné přihlašovací údaje. Znalost cesty přístup nedává a hostname bývá dohledatelný
-z veřejných certifikátových logů.
+🔴 **Co pročištění NEVYŘEŠÍ:** zveřejněním se zpřístupní **celá historie**. V historických
+commitech jsou dohledatelné dva interní hostname, tři konkrétní serverové cesty a další
+starší provozní identifikátory, ale žádné přihlašovací údaje. Úprava současných souborů
+historii nepřepíše. Znalost cesty přístup nedává a hostname bývají dohledatelné z veřejných
+certifikátových logů.
 
 Kdyby Dan chtěl nulovou stopu, existují jen invazivní cesty: přepsat historii
 (`git filter-repo`, rozbije všechny klony a otevřené PR), nebo založit nový veřejný

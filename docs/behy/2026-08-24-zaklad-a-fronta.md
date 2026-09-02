@@ -329,7 +329,7 @@ takové kritérium píšeš, hledej v **konkrétních cestách**, ne v celém st
 | **E4** | unit testy `manifest` zelené · mezi nimi test, že po simulovaném pádu **před prvním chunkem** manifest existuje se stavem `nedokonceno` |
 | **E5** | unit testy `queue` zelené · **a test s NENASTAVENÝM `DESKTOP_UPLOAD_ENABLED`**, který assertuje `toHaveBeenCalledTimes(0)` na odesílací vrstvě |
 | **E6** | unit testy `permissions` zelené · `grep -c "granted: true" electron/main.cjs` = **0** (atrapa je pryč) · test, že odmítnutý mikrofon nevrací `granted` |
-| **E7** | `curl -sf https://labs.ludone.cz/.well-known/oauth-authorization-server \| jq -e .registration_endpoint` — **ověřitelné naostro** · unit testy `pkce` a `oauth-state` zelené |
+| **E7** | `curl -sf "${LUDONE_ORIGIN:?nastav HTTPS origin labs prostředí}/.well-known/oauth-authorization-server" \| jq -e .registration_endpoint` — proměnná pro tento běh musí mířit do labs prostředí · **ověřitelné naostro** · unit testy `pkce` a `oauth-state` zelené |
 | **E8** | `docs/server-modul/` existuje · `datovy-model.md` obsahuje `recordings` · `autentizace.md` obsahuje `code_challenge_method` · `kontrakt-desktopu.md` obsahuje `DESKTOP_UPLOAD_ENABLED` · každý soubor má aspoň 40 řádků *(kontrola proti prázdné slupce)* |
 
 ### 🔴 E2: sabotáže jsou KROK, ne komentář

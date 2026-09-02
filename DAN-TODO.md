@@ -188,7 +188,7 @@ Rozhodnutí M1–M13 tam jsou vypsaná; **do `ROZHODNUTI.md` je zapíšu, až pl
 
 | # | Co | Proč to nejde za tebe |
 |---|---|---|
-| 🔴 **N1** | **Kam desktop píše hodiny** — přímo do Supabase pod RLS, nebo přes tenký endpoint na `app.ludone.cz`? | Supabase je hotová cesta a dědí celý řetěz do Tabidoo zadarmo, ale roznese přístupový klíč po noteboocích a přidá **třetího zapisovatele** do systému, kde jedinečnost běžícího timeru hlídá jen klient. Blokuje přihlašovací obrazovku, tvar položky fronty i zpracování chyb — postavily by se dvakrát |
+| 🔴 **N1** | **Kam desktop píše hodiny** — přímo do backendu LuTracku pod RLS, nebo přes tenký endpoint na `app.ludone.cz`? | Backend LuTracku je hotová cesta a dědí celý řetěz do Tabidoo zadarmo, ale roznese přístupový klíč po noteboocích a přidá **třetího zapisovatele** do systému, kde jedinečnost běžícího timeru hlídá jen klient. Blokuje přihlašovací obrazovku, tvar položky fronty i zpracování chyb — postavily by se dvakrát |
 | 🔴 **N2** | **Přesunout pravidla do DB, než se desktop připojí?** Parciální unikátní index na běžící timer a zákaz překryvů | Zásah do ostrého provozu 24 lidí. Bez toho musí spec výslovně popsat, jak se desktop zachová, když pravidla poruší jiný klient |
 | **N3** | **Zastaví se časovač, když skončí nahrávání?** | Produktová otázka o tom, jak lidé pracují. Návrh v `LuTrack.dc.html` říká NE a navrhuje nabídnout „Zastavit i měření času?" |
 | **Směr** | **Vyber jeden ze tří směrů panelu** | Bez toho se nedá zmrazit spec. Canvas: https://claude.ai/code/artifact/88609f77-b817-4d3f-99b6-1ea0af8f4f75 |
@@ -225,7 +225,7 @@ kontroly) — mimo jiné ta, co sype týdenní souhrny do Tabidoo, a ta, co zast
 
 Odpoledne 1. 9. ses přepnul na jiný Claude účet a tím zmizel přístup k projektu **„LuDone Přístroj
 Design System"** (`c5ee8498`), kde leží závazné zadání. Zálohoval jsem brief, kit README a barevné
-tokeny do `design/zadani/`. **Nezálohovalo se:** `SmerA/B/C.jsx`, tři referenční návrhy z VPS,
+tokeny do `design/zadani/`. **Nezálohovalo se:** `SmerA/B/C.jsx`, tři referenční návrhy,
 `porovnani-navrhu.html` a zbytek tokenů (písmo, tvar, pohyb, mezery). Až se přihlásíš zpět,
 stojí za to zálohu dotáhnout.
 
@@ -1018,13 +1018,14 @@ zvlášť, ať to nezapadne mezi zelené brány.
 
 Registrační `curl` se pustil dvakrát, takže vznikly **dva klienty**:
 
-| client_id | stav |
+| klient | stav |
 |---|---|
-| `ldmcp_oauth_client_prod_v1_Mti3tDvq…` | **používaný**, v `.env.local`, ověřený naostro (`authorize` → `HTTP 302`) |
-| `ldmcp_oauth_client_prod_v1_dgsYAL5m…` | **nepoužívaný sirotek** |
+| používaný klient | v `.env.local`, ověřený naostro (`authorize` → `HTTP 302`) |
+| druhý registrační záznam | **nepoužívaný sirotek** |
 
-Nic to nerozbíjí. Kdybys chtěl uklidit, jde to jen zásahem do `ludata.mcp_oauth_clients`
-(nastavit `revoked_at`) — admin obrazovka na správu klientů podle auditu neexistuje.
+Nic to nerozbíjí. Kdybys chtěl uklidit, je potřeba v serverové správě OAuth klientů
+nastavit osiřelému záznamu `revoked_at` — admin obrazovka na správu klientů podle auditu
+neexistuje. Přesné ID i tabulka jsou v neveřejné provozní dokumentaci.
 
 ⚠️ **Připomínka k limitu:** registrace má strop **20 pokusů za hodinu na IP**. Opakované
 spouštění toho `curl` ho vyčerpá — proto se client ID zakládá **jednou** a uloží.
@@ -1055,11 +1056,11 @@ příjem nahrávek.
 
 ## ✅ Nginx strop ZMĚŘEN — `E5` krok 1 už není blocker (2. 9. 2026)
 
-Nemusíš na host lézt. SSH funguje aliasem `hetzner-data` z `~/.ssh/config` a `app.ludone.cz`
-běží na tomtéž stroji jako `data.ludone.cz` (23.88.61.12).
+Nemusíš na host lézt. Přístupový alias, účet a adresa hostu jsou v neveřejné provozní
+dokumentaci.
 
 ```
-client_max_body_size 50m     ← /etc/nginx/nginx.conf:18, platí globálně
+client_max_body_size 50m     ← změřeno v efektivní globální konfiguraci nginx
 app.ludone.cz to nepřepisuje
 ```
 

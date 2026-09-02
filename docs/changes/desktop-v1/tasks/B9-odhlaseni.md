@@ -256,9 +256,11 @@ rozhodovat nesmí. Nesouhlasíš-li, **vrať otázku**.
 
 Návrh packetu tohle uváděl jako neověřené („necurloval jsem to"). **Změřeno, obojí odpovědělo:**
 
+Hodnoty originu v zachyceném výpisu jsou pro veřejnou dokumentaci redigované:
+
 ```
-$ curl -fsS https://labs.ludone.cz/.well-known/oauth-authorization-server
-  "revocation_endpoint": "https://labs.ludone.cz/api/mcp/oauth/revoke"
+$ curl -fsS "${LUDONE_ORIGIN:?nastav HTTPS origin ověřovaného prostředí}/.well-known/oauth-authorization-server"
+  "revocation_endpoint": "<origin ověřovaného prostředí>/api/mcp/oauth/revoke"
   "revocation_endpoint_auth_methods_supported": ["none","client_secret_post"]
   "token_endpoint_auth_methods_supported": ["none","client_secret_post"]
   "code_challenge_methods_supported": ["S256"]
@@ -565,11 +567,11 @@ do jednoho `try/catch` s návratem `reason: "offline"`, **test #3 by zezelenal s
 ```js
 const steps = [];
 const metadata = {
-  issuer: "https://labs.ludone.cz",
-  authorization_endpoint: "https://labs.ludone.cz/api/mcp/oauth/authorize",
-  token_endpoint: "https://labs.ludone.cz/api/mcp/oauth/token",
-  registration_endpoint: "https://labs.ludone.cz/api/mcp/oauth/register",
-  revocation_endpoint: "https://labs.ludone.cz/api/mcp/oauth/revoke",
+  issuer: "https://labs.example.test",
+  authorization_endpoint: "https://labs.example.test/api/mcp/oauth/authorize",
+  token_endpoint: "https://labs.example.test/api/mcp/oauth/token",
+  registration_endpoint: "https://labs.example.test/api/mcp/oauth/register",
+  revocation_endpoint: "https://labs.example.test/api/mcp/oauth/revoke",
   code_challenge_methods_supported: ["S256"],
 };
 const fetchImpl = async (url, init = {}) => {
@@ -1000,7 +1002,7 @@ F004 má v `spec.md:81` riziko **`security`**, takže diff je podle `plan.md:183
 
 **Ověření naostro, které packet nechal jako dohad**
 
-16. ✅ **`revocation_endpoint` v discovery ZMĚŘEN** — `curl` na `labs.ludone.cz` i `app.ludone.cz` vrací `…/api/mcp/oauth/revoke` a `revocation_endpoint_auth_methods_supported: ["none","client_secret_post"]`. Byla to největší neověřená domněnka packetu (a zároveň potvrzuje „bez client secretu" v D-B9-3).
+16. ✅ **`revocation_endpoint` v discovery ZMĚŘEN** — `curl` v labs prostředí i na `app.ludone.cz` vrací `…/api/mcp/oauth/revoke` a `revocation_endpoint_auth_methods_supported: ["none","client_secret_post"]`. Byla to největší neověřená domněnka packetu (a zároveň potvrzuje „bez client secretu" v D-B9-3).
 17. ✅ **Brány spuštěny:** lint 0, typecheck 0, test:unit 0 (**77 testů / 9 souborů**), E6 0, E7 0. Packet nespustil nic. Navíc: **E7 dnes NESKIPUJE** živé discovery, ačkoli to packet předpokládal — SKIP je tedy signál změny prostředí, ne normál.
 18. ✅ **Skener tajemství z `E7.sh:20` spuštěn nad zkušebním souborem.** Navržené hodnoty `"fake-refresh"` / `"fake-access"` i tělo `token_type_hint=refresh_token` **projdou**; realistické tokeny **padnou**. Varování packetu bylo správné — teď je i změřené.
 19. 🆕 **Nález: E7 nemá kanárka a vidí jen snake_case.** Skutečná session používá camelCase `refreshToken`, takže uniklý pravý token v camelCase by E7 **neodhalil**. Do `DAN-TODO.md`, není to soubor B9.

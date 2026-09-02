@@ -10,13 +10,32 @@ Desktopová aplikace nahraje dvě stopy jednoho sezení (mikrofon + systém, hod
 
 ### 1. 🔴 BLOKUJÍCÍ: změřit skutečný nginx strop a timeouty na hostu (dělá Dan/Claude přes SSH, NE Codex — nemá přístup k hostu)
 
-Konfigurace žije ve dvou místech a mohou se lišit: git kopie je v SOUSEDNÍM repu /Users/dan/Dev/ClaudeCode/LuDone/data-warehouse/server/nginx/ (nginx.conf ř.18 `client_max_body_size 50m` v http bloku; conf.d/19-app.conf = vhost app.ludone.cz, NEMÁ vlastní client_max_body_size, má `proxy_read_timeout 60s`, `proxy_buffering off`, `limit_req zone=app_prod burst=50 nodelay`; conf.d/09-app-prod-zone.conf = `rate=30r/s`), zatímco běžící konfigurace je v kontejneru makemore-nginx pod /opt/makemore-data/nginx/. deploy.sh scp-uje jen 17-labs.conf a ssl-labs.conf, takže 19-app.conf a nginx.conf se na host dostávají jinou cestou a mohou driftovat.
+Konfigurace žije ve dvou místech a mohou se lišit: verzovaná kopie je v soukromém
+serverovém repozitáři, zatímco pravdivá efektivní konfigurace běží v kontejneru reverse
+proxy. V naměřené kopii je `client_max_body_size 50m` v globálním bloku; vhost aplikace
+nemá vlastní limit, má `proxy_read_timeout 60s`, `proxy_buffering off` a produkční
+`limit_req` s `rate=30r/s` a `burst=50 nodelay`. Část konfigurace se nasazuje jinou
+cestou než hlavní deploy skript, takže obě kopie mohou driftovat.
+
+Před spuštěním příkazů nastav ve shellu podle neveřejné provozní dokumentace následující
+hodnoty; tento blok ověří, že žádná nechybí. Pokud k dokumentaci nemáš přístup, dál
+nepokračuj a vyžádej hodnoty od správce serveru:
+
+```sh
+: "${APP_SERVER_SSH:?nastav SSH cíl serveru aplikace}"
+: "${REVERSE_PROXY_CONTAINER:?nastav kontejner reverse proxy}"
+: "${APP_CONTAINER:?nastav kontejner aplikace}"
+: "${PROD_UPLOAD_DIR:?nastav adresář s nahranými soubory produkce}"
+: "${LABS_UPLOAD_DIR:?nastav adresář s nahranými soubory labs prostředí}"
+: "${CONTAINER_UPLOAD_DIR:?nastav upload root uvnitř kontejneru aplikace}"
+: "${LABS_ORIGIN:?nastav HTTPS origin labs prostředí}"
+```
 
 PŘESNÉ PŘÍKAZY (`nginx -T` vypíše efektivní konfiguraci VČETNĚ include — jediné pravdivé měřidlo):
 
-ssh root@23.88.61.12 'docker exec makemore-nginx nginx -v; docker exec makemore-nginx nginx -T 2>/dev/null | grep -nE "server_name|client_max_body_size|client_body_timeout|client_body_buffer_size|client_body_temp_path|proxy_request_buffering|proxy_read_timeout|proxy_send_timeout|send_timeout|limit_req"'
+ssh "$APP_SERVER_SSH" "docker exec '$REVERSE_PROXY_CONTAINER' nginx -v; docker exec '$REVERSE_PROXY_CONTAINER' nginx -T 2>/dev/null | grep -nE 'server_name|client_max_body_size|client_body_timeout|client_body_buffer_size|client_body_temp_path|proxy_request_buffering|proxy_read_timeout|proxy_send_timeout|send_timeout|limit_req'"
 
-ssh root@23.88.61.12 'df -h /opt/ludone-uploads-prod /opt/ludone-uploads /var/lib/docker; ls -la /opt/ludone-uploads-prod'
+ssh "$APP_SERVER_SSH" "df -h '$PROD_UPLOAD_DIR' '$LABS_UPLOAD_DIR'; ls -la '$PROD_UPLOAD_DIR'"
 
 OSTRÉ MĚŘENÍ stropu (nečíst, změřit — nginx uřízne tělo dřív, než dojde k aplikaci, takže i neexistující cesta rozliší strop od průchodu; 404 = nginx to pustil, 413 = uříznuto):
   head -c 12000000  /dev/urandom > /tmp/p12.bin
@@ -26,11 +45,11 @@ OSTRÉ MĚŘENÍ stropu (nečíst, změřit — nginx uřízne tělo dřív, ne�
 
 Výsledek zapsat do reportu jako naměřená čísla (client_max_body_size, proxy_read_timeout, client_body_timeout, request buffering on/off, volné místo). Návrh chunků 8 MiB je zvolený tak, aby prošel i pod nejpřísnějším realistickým stropem — měření slouží k potvrzení, ne k volbě velikosti.
 
-**Hotovo když:** V reportu jsou naměřené hodnoty client_max_body_size / proxy_read_timeout / client_body_timeout / proxy_request_buffering pro server_name app.ludone.cz z výstupu `nginx -T` na běžícím kontejneru, tři HTTP kódy z probe (12/60/140 MB) a volné místo na /opt/ludone-uploads-prod. Pokud změřený strop < 8 MiB, je založena změna 19-app.conf v repu data-warehouse; jinak se nginx NEMĚNÍ.
+**Hotovo když:** V reportu jsou naměřené hodnoty client_max_body_size / proxy_read_timeout / client_body_timeout / proxy_request_buffering pro server_name app.ludone.cz z výstupu `nginx -T` na běžícím kontejneru, tři HTTP kódy z probe (12/60/140 MB) a volné místo v produkčním adresáři s nahranými soubory na serveru. Pokud změřený strop < 8 MiB, je založena změna konfigurace aplikačního vhostu v soukromém serverovém repozitáři; jinak se nginx NEMĚNÍ.
 
 ### 2. DB: schéma `nahravky` — SQL migrace + rollback
 
-Vytvořit sql/200-nahravky-schema.sql a sql/200-rollback-nahravky-schema.sql (poslední obsazené číslo v sql/ je 199-lufak-chat-notifications.sql). Struktura a styl přesně dle sql/194-lufak-private-storage.sql: BEGIN; ... COMMIT;, `CREATE SCHEMA IF NOT EXISTS`, `DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;` u constraintů, GRANT blok přes `FOREACH role_name IN ARRAY ARRAY['ludata_user','ludone_prod_app']` s `CONTINUE WHEN NOT EXISTS (SELECT 1 FROM pg_roles ...)`.
+Vytvořit sql/200-nahravky-schema.sql a sql/200-rollback-nahravky-schema.sql (poslední obsazené číslo v sql/ je 199-lufak-chat-notifications.sql). Struktura a styl přesně dle sql/194-lufak-private-storage.sql: BEGIN; ... COMMIT;, `CREATE SCHEMA IF NOT EXISTS`, `DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;` u constraintů, GRANT blok přes `FOREACH role_name` nad stejnými aplikačními DB rolemi jako v referenční migraci s `CONTINUE WHEN NOT EXISTS (SELECT 1 FROM pg_roles ...)`.
 
 nahravky.sessions (kotva pro E7 kalendář, aby se pak nemuselo migrovat):
   id uuid PK DEFAULT gen_random_uuid(), title text, started_at timestamptz, ended_at timestamptz,
@@ -74,7 +93,7 @@ Indexy (všechny partial WHERE deleted_at IS NULL, jako v inventory i lufak):
   INDEX (company_tabidoo_id, created_at DESC) WHERE deleted_at IS NULL
   INDEX (state, created_at) WHERE deleted_at IS NULL AND state IN ('stored','failed')  -- fronta normalizace
 
-GRANT: USAGE ON SCHEMA nahravky + SELECT, INSERT, UPDATE na obě tabulky pro ludata_user a ludone_prod_app. 🔴 ŽÁDNÉ DELETE na recordings (soft-delete only); DELETE na upload_chunks POVOLIT — části se po finalizaci fyzicky mažou, nejsou to uživatelská data.
+GRANT: USAGE ON SCHEMA nahravky + SELECT, INSERT, UPDATE na obě tabulky pro všechny aplikační DB role vyjmenované v referenční migraci sql/194-lufak-private-storage.sql. 🔴 ŽÁDNÉ DELETE na recordings (soft-delete only); DELETE na upload_chunks POVOLIT — části se po finalizaci fyzicky mažou, nejsou to uživatelská data.
 
 Rollback soubor: DROP INDEX/TABLE v opačném pořadí + DROP SCHEMA nahravky (bez CASCADE, ať se pozná zbytek).
 
@@ -105,7 +124,10 @@ Vzor partial unique indexu s .where(sql`deleted_at IS NULL`) je v src/db/invento
 
 ### 4. Úložiště: streamová obdoba private-file-storage (NOVÝ soubor, LuFak se NESMÍ upravovat)
 
-Vytvořit src/lib/nahravky/private-recording-storage.ts. Vzor je /Users/dan/Dev/ClaudeCode/LuDone/ludone-app/src/lib/lufak/private-file-storage.ts — ale KOPÍRUJE se vzor, NE import: LuFak soubor je pod sabotážními branami (`pnpm lufak:sabotage`) a jeho úprava shodí cizí gates.
+Vytvořit src/lib/nahravky/private-recording-storage.ts. Vzor je
+`src/lib/lufak/private-file-storage.ts` v soukromém serverovém repozitáři — ale KOPÍRUJE
+se vzor, NE import: LuFak soubor je pod sabotážními branami (`pnpm lufak:sabotage`) a
+jeho úprava shodí cizí gates.
 
 PŘEVZÍT BEZE ZMĚNY (jen přepsat regex a limity):
   • STORAGE_KEY_PATTERN + parse/resolve dvojici → path-traversal guard: zákaz `\\`, `path.posix.normalize(key) !== key`, `resolved.startsWith(root + path.sep)` (LuFak ř. 168–195)
@@ -122,7 +144,12 @@ MUSÍ SE ROZŠÍŘIT (a proč):
   5. Přidat `openRecordingStream(storageKey, { start, end })` vracející ReadStream pro HTTP Range (přehrávání v prohlížeči v E9).
   6. Klíč a prefix: STORAGE_KEY_PATTERN = `^nahravky/<uuid>/<sha256>\\.(webm|ogg|m4a)$`.
 
-🔴 ROZHODNUTÍ K POTVRZENÍ (odchylka od zadání): zadání říká prefix `uploads/nahravky/`, jenže UPLOAD_DIR je už `/app/uploads` (Dockerfile, docker-compose.yml `UPLOAD_DIR=/app/uploads`), takže doslovné znění dá cestu `/app/uploads/uploads/nahravky/…` — dvojité `uploads` bez užitku. Sousedé používají jednoúrovňový prefix: `lufak/`, `inventory/`, `pos/`, `internal-invoicing/`, `odvody/`. Navrhuji `nahravky/` → `/app/uploads/nahravky/{recordingId}/{sha256}.webm`. Pokud Dan trvá na doslovném zadání, změní se jen regex a konstanta.
+🔴 ROZHODNUTÍ K POTVRZENÍ (odchylka od zadání): zadání říká prefix
+`uploads/nahravky/`, jenže `UPLOAD_DIR` už ukazuje na nakonfigurovaný upload root, takže
+doslovné znění vytvoří zbytečně dvojitý segment `uploads/uploads/`. Sousedé používají
+jednoúrovňové prefixy. Navrhuji storage key `nahravky/{recordingId}/{sha256}.webm`, tedy
+fyzicky `<UPLOAD_DIR>/nahravky/{recordingId}/{sha256}.webm`. Pokud Dan trvá na doslovném
+zadání, změní se jen regex a konstanta.
 
 🔴 Blob leží pod {recordingId}/, NE pod holým hashem — přesně jako LuFak `lufak/{documentId}/{sha}.pdf`. Dedup přes obsah napříč uživateli by znamenal, že druhý uživatel dostane cizí soubor.
 
@@ -176,7 +203,7 @@ Jak se pozná dokončení: klient považuje stopu za doručenou teprve po odpov�
 
 (a) Dockerfile: `RUN apk add --no-cache curl ffmpeg` (alpine balíček `ffmpeg` nese i `ffprobe`; +~90 MB image). Sidecar kontejner je zbytečná složitost.
 
-(b) KDE se spouští — NIKDY uvnitř HTTP handleru. `19-app.conf` má `proxy_read_timeout 60s`; synchronní remux hodinové stopy by u pomalého disku vrátil klientovi 504, i kdyby normalizace dopadla dobře. Dvě cesty, obě povinné:
+(b) KDE se spouští — NIKDY uvnitř HTTP handleru. Konfigurace aplikačního vhostu má `proxy_read_timeout 60s`; synchronní remux hodinové stopy by u pomalého disku vrátil klientovi 504, i kdyby normalizace dopadla dobře. Dvě cesty, obě povinné:
    • okamžitě po commitu finalizace: `void normalizeRecording(id).catch(...)` — odpověď klientovi už odešla
    • src/app/api/cron/nahravky-normalize/route.ts (vzor sousedů v src/app/api/cron/*, autorizace přes src/lib/cron-auth.ts, zápis do deploy/crontab.prod) — bere řádky `state='stored'` starší 5 minut. Bez toho by restart kontejneru uprostřed remuxu nechal stopu navždy bez délky.
 
@@ -192,7 +219,11 @@ Jak se pozná dokončení: klient považuje stopu za doručenou teprve po odpov�
 
 (e) 🔴 ORIGINÁL ZŮSTÁVÁ ARCHIVNÍ: `storage_key` se nikdy nepřepisuje ani nemaže. Selhání → state='failed' + normalize_error, originál je pořád stažitelný a přepis (E9) může jet z něj.
 
-(f) Killswitch src/lib/nahravky/flags.ts dle vzoru src/lib/lufak/flags.ts: `isNahravkyNormalizeEnabled()` = `(process.env.NAHRAVKY_NORMALIZE_ENABLED ?? "false") === "true"` (fail-closed) a `isNahravkyUploadEnabled()` (upload endpoint při OFF vrací 503 `storage_disabled, retryable:true`, jako LuFak ř. 82–88).
+(f) V `src/lib/nahravky/flags.ts` zavést podle vzoru `src/lib/lufak/flags.ts` dva
+samostatné serverové vypínače pro normalizaci a upload. Oba jsou fail-closed: zapne je
+jen explicitní hodnota `"true"`. Při vypnutém uploadu endpoint vrací 503
+`storage_disabled, retryable:true`, jako LuFak ř. 82–88. Přesné názvy serverových
+proměnných jsou provozní detail a určí soukromý serverový repozitář.
 
 **Hotovo když:** Nad reálnou 60min stopou z E0/E3: `ffprobe … <originál>` vrátí N/A nebo 0, `ffprobe … <normalizovaný>` vrátí hodnotu v rozmezí 3600 ± 2 s; a `ffmpeg -v error -i <orig> -map 0:a -c:a copy -f data - | shasum -a 256` == totéž nad normalizovaným (identický otisk syrových zvukových paketů).
 
@@ -229,12 +260,22 @@ DESKTOPOVÁ IDENTITA (D1, OAuth 2.1 + PKCE) — hranice E5/E6: endpoint musí p�
 
 ### 8. Infrastruktura hostu: adresáře uploads a práva
 
-deploy.sh ř. ~46 zakládá jen `mkdir -p /opt/ludone-uploads/{pos,internal-invoicing,odvody} && chown -R 1001:65533` — a to POUZE pro labs. Prod jede z /opt/ludone-uploads-prod (docker-compose.prod.yml) a ten se v žádném skriptu nezakládá. První prod upload by spadl na ENOENT/EACCES (v kontejneru běží uživatel `nextjs`, UID 1001).
-  • deploy.sh: doplnit `nahravky` do seznamu adresářů
-  • na hostu ručně jednou: `ssh root@23.88.61.12 'mkdir -p /opt/ludone-uploads-prod/nahravky /opt/ludone-uploads/nahravky && chown -R 1001:65533 /opt/ludone-uploads-prod/nahravky /opt/ludone-uploads/nahravky && df -h /opt/ludone-uploads-prod'`
-  • Kapacita: 2 stopy × ~60 MB × počet schůzek. Před spuštěním změřit volné místo (VPS už jednou měl plný disk — viz runbook tabidoo-dlt) a přidat alert, až volné místo klesne pod 20 %.
+`deploy.sh` dnes zakládá požadované podadresáře jen v adresáři s nahranými soubory
+labs prostředí. Produkční Compose připojuje samostatný adresář, který se v žádném
+skriptu nezakládá. První produkční upload by proto spadl na ENOENT/EACCES (v kontejneru
+běží uživatel `nextjs`, UID 1001).
+  • `deploy.sh`: doplnit `nahravky` do seznamu adresářů
+  • na hostu ručně jednou:
+    `ssh "$APP_SERVER_SSH" "mkdir -p '$PROD_UPLOAD_DIR/nahravky' '$LABS_UPLOAD_DIR/nahravky' && chown -R 1001:65533 '$PROD_UPLOAD_DIR/nahravky' '$LABS_UPLOAD_DIR/nahravky' && df -h '$PROD_UPLOAD_DIR'"`
+  • Kapacita: 2 stopy × ~60 MB × počet schůzek. Před spuštěním změřit volné místo
+    (server už jednou měl plný disk — viz soukromý provozní runbook) a přidat alert,
+    až volné místo klesne pod 20 %.
 
-**Hotovo když:** `ssh root@23.88.61.12 'ls -lan /opt/ludone-uploads-prod/nahravky /opt/ludone-uploads/nahravky'` ukáže vlastníka 1001 na obou, a testovací zápis z kontejneru (`docker exec makemore-ludone-app sh -c 'touch /app/uploads/nahravky/.probe && rm /app/uploads/nahravky/.probe'`) projde bez chyby.
+**Hotovo když:**
+`ssh "$APP_SERVER_SSH" "ls -lan '$PROD_UPLOAD_DIR/nahravky' '$LABS_UPLOAD_DIR/nahravky'"`
+ukáže vlastníka 1001 na obou a testovací zápis z aplikačního kontejneru
+`ssh "$APP_SERVER_SSH" "docker exec '$APP_CONTAINER' sh -c 'touch \"$CONTAINER_UPLOAD_DIR/nahravky/.probe\" && rm \"$CONTAINER_UPLOAD_DIR/nahravky/.probe\"'"`
+projde bez chyby.
 
 ### 9. Brány repa — aby to prošlo Test gate a prod deployem
 
@@ -243,9 +284,26 @@ deploy.sh ř. ~46 zakládá jen `mkdir -p /opt/ludone-uploads/{pos,internal-invo
 • `pnpm ds:gate:changed` — jen pokud vznikne .tsx (v E5 nemusí; UI je E9)
 • `pnpm test:unit` — testy vedle každého nového modulu, vzor src/app/api/lufak/uploads/route.test.ts
 • MCP surface: modul zatím MCP tooly nemá → do commit message přesně marker `[mcp-exempt:nahravky]` + důvod VEDLE markeru (AGENTS.md ř. 377 — volný text ZA dvojtečkou gate ignoruje)
-• 🔴 MIGRACE NA OBĚ DB PŘED MERGEM: `PGPASSWORD=… scripts/db-migrate.sh --db labs_app --host … --user … --env labs sql/200-nahravky-schema.sql sql/201-nahravky-module-policies.sql` a totéž `--db ludone_prod --user ludone_prod_app --env prod`. Fail-closed migration-ledger brána v .github/workflows/deploy-prod.yml běží PŘED buildem — nenamigrovaná sql/NNN prod deploy zastaví a produkce tiše zůstane na starším buildu.
+• 🔴 MIGRACE NA OBĚ DB PŘED MERGEM: názvy databází, hostitele a role načti z neveřejné
+  provozní konfigurace jako `LABS_DB`, `PROD_DB`, `DB_HOST`, `LABS_DB_USER` a
+  `PROD_DB_USER`. Nejdřív je fail-closed ověř a potom spusť oba příkazy; heslo předej
+  standardním neveřejným mechanismem:
 
-**Hotovo když:** `pnpm funkce:check && pnpm routes:table:check && pnpm test:unit` je zelené lokálně, required checks na PR jsou zelené, a `SELECT filename FROM ops.applied_migrations WHERE filename LIKE '200-%' OR filename LIKE '201-%'` vrací obě migrace na labs_app i na ludone_prod.
+  ```sh
+  : "${LABS_DB:?nastav databázi labs prostředí}"
+  : "${PROD_DB:?nastav produkční databázi}"
+  : "${DB_HOST:?nastav hostitele databáze}"
+  : "${LABS_DB_USER:?nastav aplikační DB roli labs prostředí}"
+  : "${PROD_DB_USER:?nastav produkční aplikační DB roli}"
+  scripts/db-migrate.sh --db "$LABS_DB" --host "$DB_HOST" --user "$LABS_DB_USER" --env labs sql/200-nahravky-schema.sql sql/201-nahravky-module-policies.sql
+  scripts/db-migrate.sh --db "$PROD_DB" --host "$DB_HOST" --user "$PROD_DB_USER" --env prod sql/200-nahravky-schema.sql sql/201-nahravky-module-policies.sql
+  ```
+
+  Fail-closed migration-ledger brána v `.github/workflows/deploy-prod.yml`
+  běží PŘED buildem — nenamigrovaná `sql/NNN` produkční deploy zastaví a produkce tiše
+  zůstane na starším buildu.
+
+**Hotovo když:** `pnpm funkce:check && pnpm routes:table:check && pnpm test:unit` je zelené lokálně, required checks na PR jsou zelené, a `SELECT filename FROM ops.applied_migrations WHERE filename LIKE '200-%' OR filename LIKE '201-%'` vrací obě migrace v labs i produkční databázi.
 
 ### 10. Ostré ověření druhým účtem (ne čtením kódu) + předání do E9/E6
 
@@ -255,31 +313,32 @@ Vytvořit e2e/nahravky-rbac.spec.ts. Persony jsou už naseedované: scripts/ds-m
   2. persona S modulem, ale company-scope jiné firmy → init s cizím companyTabidooId = 403 {code:"company_out_of_scope"}
   3. táž persona → PUT /api/nahravky/uploads/{cizí id}/casti/0 = 404 nebo 403 (nikdy 200/201)
   4. admin persona p0 → celý happy path 201/200
-Spuštění: `PLAYWRIGHT_BASE_URL=https://labs.ludone.cz TEST_USER_PASSWORD=… pnpm exec playwright test e2e/nahravky-rbac.spec.ts`
+Spuštění: `PLAYWRIGHT_BASE_URL="$LABS_ORIGIN" TEST_USER_PASSWORD=… pnpm exec playwright test e2e/nahravky-rbac.spec.ts`
 Předání: zapsat do reportu naměřenou délku z ffprobe, oba otisky zvuku, RSS z docker stats a čtyři HTTP kódy z RBAC testu — s označením ✅ ověřeno naostro. Kontrakt src/lib/nahravky/actor.ts poslat do worktree E6 hned, jak vznikne (ne až na konci).
 
-**Hotovo když:** Playwright report ukazuje 4/4 zelené případy proti labs.ludone.cz, běh je spuštěný pod DVĚMA různými účty (v logu jsou dvě různé e-mailové adresy person), a v reportu je vypsaný konkrétní HTTP kód a `code` z těla odpovědi pro každý DENY případ.
+**Hotovo když:** Playwright report ukazuje 4/4 zelené případy proti labs prostředí, běh je spuštěný pod DVĚMA různými účty (v logu jsou dvě různé e-mailové adresy person), a v reportu je vypsaný konkrétní HTTP kód a `code` z těla odpovědi pro každý DENY případ.
 
 ## Měřítko etapy
 
-Etapa je hotová, když tenhle sled projde na labs.ludone.cz a jeho výstupy jsou vypsané v reportu jako naměřená čísla (ne tvrzení):
+Etapa je hotová, když tenhle sled projde v labs prostředí určeném proměnnou
+`$LABS_ORIGIN` a jeho výstupy jsou vypsané v reportu jako naměřená čísla (ne tvrzení):
 
 1) Nahrání reálné 60min stopy z E0/E3 (nikoli generovaného ticha):
-   RID=$(curl -sS -X POST https://labs.ludone.cz/api/nahravky/uploads -H 'Content-Type: application/json' -b cookies.txt -d @init.json | jq -r .recordingId)
+   RID=$(curl -sS -X POST "${LABS_ORIGIN}/api/nahravky/uploads" -H 'Content-Type: application/json' -b cookies.txt -d @init.json | jq -r .recordingId)
    split -b 8388608 -d nahravka.webm part-
-   for f in part-*; do i=${f#part-}; curl -sS -X PUT "https://labs.ludone.cz/api/nahravky/uploads/$RID/casti/$((10#$i))" -b cookies.txt -H 'Content-Type: application/octet-stream' -H "X-Chunk-Sha256: $(shasum -a 256 $f | cut -d' ' -f1)" --data-binary @$f -o /dev/null -w "$i %{http_code}\n"; done
-   curl -sS -X POST "https://labs.ludone.cz/api/nahravky/uploads/$RID/dokoncit" -b cookies.txt -H 'Content-Type: application/json' -d "{\"chunkCount\":$(ls part-* | wc -l),\"sha256\":\"$(shasum -a 256 nahravka.webm | cut -d' ' -f1)\"}"
+   for f in part-*; do i=${f#part-}; curl -sS -X PUT "${LABS_ORIGIN}/api/nahravky/uploads/$RID/casti/$((10#$i))" -b cookies.txt -H 'Content-Type: application/octet-stream' -H "X-Chunk-Sha256: $(shasum -a 256 $f | cut -d' ' -f1)" --data-binary @$f -o /dev/null -w "$i %{http_code}\n"; done
+   curl -sS -X POST "${LABS_ORIGIN}/api/nahravky/uploads/$RID/dokoncit" -b cookies.txt -H 'Content-Type: application/json' -d "{\"chunkCount\":$(ls part-* | wc -l),\"sha256\":\"$(shasum -a 256 nahravka.webm | cut -d' ' -f1)\"}"
    ⇒ všechny části 200, finalize 201, `state` přejde na 'normalized' do 5 minut.
 
-2) Délka: ssh root@23.88.61.12 "docker exec makemore-ludone-app ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /app/uploads/<normalized_storage_key>" vrátí 3600 ± 2 s, zatímco totéž nad `storage_key` (originál) vrátí N/A nebo 0.
+2) Délka: `ssh "$APP_SERVER_SSH" "docker exec '$APP_CONTAINER' ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 '$CONTAINER_UPLOAD_DIR/<normalized_storage_key>'"` vrátí 3600 ± 2 s, zatímco totéž nad `storage_key` (originál) vrátí N/A nebo 0.
 
 3) Bitová shoda zvuku: `ffmpeg -v error -i <orig> -map 0:a -c:a copy -f data - | shasum -a 256` == `ffmpeg -v error -i <normalized> -map 0:a -c:a copy -f data - | shasum -a 256` (shodné otisky syrových zvukových paketů). Kontrolně `shasum -a 256` originálu na disku == `recordings.sha256` == hash spočítaný klientem.
 
 4) Idempotence: druhý běh bodu 1 se stejným clientUploadId vrátí týž recordingId s `idempotent: true` a `SELECT count(*) FROM nahravky.recordings WHERE session_id=… AND deleted_at IS NULL` = 2 (mic + system), ne 3 a víc.
 
-5) Paměť: během bodu 1 běží `ssh root@23.88.61.12 'docker stats --no-stream makemore-ludone-app'` každých 10 s — MEM USAGE nesmí vyskočit o velikost nahrávaného souboru (limit 512 M labs).
+5) Paměť: během bodu 1 běží `ssh "$APP_SERVER_SSH" "docker stats --no-stream '$APP_CONTAINER'"` každých 10 s — MEM USAGE nesmí vyskočit o velikost nahrávaného souboru (limit 512 M labs).
 
-6) 403 DRUHÝM ÚČTEM: `PLAYWRIGHT_BASE_URL=https://labs.ludone.cz TEST_USER_PASSWORD=… pnpm exec playwright test e2e/nahravky-rbac.spec.ts` — 4/4 zelené, v logu dvě různé persony, u obou DENY případů vypsaný HTTP 403 a `code` (`forbidden`, `company_out_of_scope`).
+6) 403 DRUHÝM ÚČTEM: `PLAYWRIGHT_BASE_URL="$LABS_ORIGIN" TEST_USER_PASSWORD=… pnpm exec playwright test e2e/nahravky-rbac.spec.ts` — 4/4 zelené, v logu dvě různé persony, u obou DENY případů vypsaný HTTP 403 a `code` (`forbidden`, `company_out_of_scope`).
 
 ## Dotčené soubory
 
@@ -305,7 +364,7 @@ Etapa je hotová, když tenhle sled projde na labs.ludone.cz a jeho výstupy jso
 - `deploy.sh (změna — doplnit `nahravky` do mkdir seznamu uploads adresářů)`
 - `deploy/crontab.prod (změna — spouštění /api/cron/nahravky-normalize)`
 - `docs/launch/INFRA-PLAN.md (změna — nový uploads podadresář + kapacita disku)`
-- `/Users/dan/Dev/ClaudeCode/LuDone/data-warehouse/server/nginx/conf.d/19-app.conf (změna POUZE pokud měření v kroku 1 ukáže strop < 8 MiB nebo příliš krátký client_body_timeout)`
+- `konfigurace aplikačního vhostu v soukromém serverovém repozitáři (změna POUZE pokud měření v kroku 1 ukáže strop < 8 MiB nebo příliš krátký client_body_timeout)`
 
 ## Pasti — co tuhle etapu shodí
 
@@ -313,17 +372,34 @@ Etapa je hotová, když tenhle sled projde na labs.ludone.cz a jeho výstupy jso
 - 🔴 Poslat upload přes Server Action — Next.js má na Server Actions default body limit 1 MB a v next.config.ts není zvednutý. Upload jde výhradně přes route handler s `runtime = "nodejs"`.
 - 🔴 Dedup přes obsah bez uživatele: unique index jen na `sha256` (místo `(uploaded_by, sha256)`) by druhému uživateli vrátil cizí recordingId a s ním přístup k cizí nahrávce — cross-company leak nahrané schůzky. Blob musí navíc ležet pod `{recordingId}/`, ne pod holým hashem (přesně proto má LuFak klíč `lufak/{documentId}/{sha}.pdf`).
 - 🔴 `size_bytes integer` opsané z inventory.item_attachments — u audia to projde, ale je to zbytečná mina se stropem 2 GB. `bigint`.
-- 🔴 Prod adresář /opt/ludone-uploads-prod/nahravky neexistuje: deploy.sh zakládá jen labs /opt/ludone-uploads/{pos,internal-invoicing,odvody}. První prod upload spadne na ENOENT/EACCES (kontejner běží jako UID 1001). Založit a chown 1001:65533 na OBOU cestách.
-- 🔴 Migrace jen na labs: fail-closed migration-ledger brána v deploy-prod.yml běží PŘED buildem, prod deploy zastaví a produkce tiše zůstane na starším buildu (do #monitoring přijde alert). scripts/db-migrate.sh na obě DB PŘED mergem.
+- 🔴 Produkční podadresář `nahravky` v adresáři s nahranými soubory neexistuje:
+  `deploy.sh` zakládá jiné podadresáře jen v labs prostředí. První produkční upload
+  spadne na ENOENT/EACCES (kontejner běží jako UID 1001). Založit a nastavit vlastníka
+  1001:65533 v OBOU prostředích.
+- 🔴 Migrace jen na labs: fail-closed migration-ledger brána v deploy-prod.yml běží PŘED buildem, prod deploy zastaví a produkce tiše zůstane na starším buildu (přijde provozní alert). scripts/db-migrate.sh na obě DB PŘED mergem.
 - 🔴 Seed modulu s `enabled_envs = ARRAY['prod']` napoprvé — modul se objeví na produkci dřív, než ho kdokoli viděl běžet. Seed jde jako ARRAY['labs'], promote je samostatné rozhodnutí.
-- 🔴 Číst nginx konfiguraci z gitu místo z hostu: deploy.sh scp-uje jen 17-labs.conf a ssl-labs.conf, takže 19-app.conf a nginx.conf se na host dostávají jinou cestou a mohou být rozejité. Jediné pravdivé měřidlo je `nginx -T` na běžícím kontejneru makemore-nginx.
-- nginx má `proxy_request_buffering` defaultně ON (19-app.conf ho nevypíná) → celé tělo se nejdřív ukládá do client_body_temp na disk a teprve pak jde do Node. U jednoprůchodového 120 MB uploadu to znamená dvojí zápis a riziko došlého místa; u 8 MiB chunků je to neškodné. Další důvod pro chunky.
-- `limit_req zone=app_prod rate=30r/s burst=50 nodelay` (09-app-prod-zone.conf): klient, který vystřelí části paralelně bez pauzy, dostane 503 od nginxu, ne od aplikace — a bude to vypadat jako pád uploadu. Části posílat sériově (max 2 souběžně) a na 503 exponenciální backoff.
-- 🔴 Spustit ffmpeg synchronně uvnitř POST /dokoncit — `proxy_read_timeout 60s` na 19-app.conf vrátí klientovi 504, i když normalizace dopadne dobře, a klient bude soubor posílat znovu. Normalizace vždy až PO odeslané odpovědi.
+- 🔴 Číst nginx konfiguraci z gitu místo z hostu: část souborů se nasazuje jinou cestou
+  než hlavní deploy skript a kopie mohou být rozejité. Jediné pravdivé měřidlo je
+  `nginx -T` na běžícím kontejneru reverse proxy.
+- nginx má `proxy_request_buffering` defaultně ON a aplikační vhost ho nevypíná → celé
+  tělo se nejdřív ukládá do `client_body_temp` na disk a teprve pak jde do Node. U
+  jednoprůchodového 120 MB uploadu to znamená dvojí zápis a riziko došlého místa; u
+  8 MiB chunků je to neškodné. Další důvod pro chunky.
+- Produkční `limit_req` má `rate=30r/s burst=50 nodelay`: klient, který vystřelí části
+  paralelně bez pauzy, dostane 503 od nginxu, ne od aplikace — a bude to vypadat jako
+  pád uploadu. Části posílat sériově (max 2 souběžně) a na 503 exponenciální backoff.
+- 🔴 Spustit ffmpeg synchronně uvnitř POST /dokoncit — `proxy_read_timeout 60s` vrátí
+  klientovi 504, i když normalizace dopadne dobře, a klient bude soubor posílat znovu.
+  Normalizace vždy až PO odeslané odpovědi.
 - `ffmpeg -c copy` bez `-map 0:a` může protáhnout do výstupu i jinou stopu → test bitové shody selže a bude to vypadat jako vada zvuku. Bez `-nostdin` navíc ffmpeg spuštěný z Node spolkne stdin procesu.
-- ffmpeg v Docker image NENÍ (runner stage má jen `apk add curl`) a v repu na něj není jediná zmínka → `spawn ENOENT`. Po přidání běží jako UID 1001, takže temp musí ležet pod /app/uploads (volume), ne v efemérním /tmp kontejneru.
+- ffmpeg v Docker image NENÍ (runner stage má jen `apk add curl`) a v repu na něj není
+  jediná zmínka → `spawn ENOENT`. Po přidání běží jako UID 1001, takže temp musí ležet
+  v nakonfigurovaném perzistentním upload volume, ne v efemérním dočasném adresáři
+  kontejneru.
 - Sáhnout do src/lib/lufak/private-file-storage.ts (např. „jen zvednu limit") — soubor je pod sabotážními branami `pnpm lufak:sabotage` a `scripts/check-lufak-quarantine-unreachable.mjs`; shodí to cizí gates. Nová vrstva je samostatný soubor.
-- `_incoming` bez úklidu zaplní disk VPS (už se to jednou stalo, viz runbook tabidoo-dlt). Cron mazání rozpracovaných uploadů starších 24 h je součást etapy, ne follow-up.
+- `_incoming` bez úklidu zaplní disk serveru (už se to jednou stalo, viz soukromý
+  provozní runbook). Cron mazání rozpracovaných uploadů starších 24 h je součást etapy,
+  ne follow-up.
 - Ověřit RBAC jen při INITU a u dalších requestů věřit recordingId — pak k cizí nahrávce stačí uhodnout UUID. Modul-gate i company-scope se kontrolují u KAŽDÉHO requestu, včetně chunku a GETu.
 - Napsat src/lib/nahravky/actor.ts ve dvou worktrees zároveň (E5 i E6) — je to jediný sdílený soubor souběžných etap. Kontrakt dohodnout jako první věc, jinak vzniknou dvě neslučitelné verze OAuth identity.
 - Nová routa bez `@funkce` anotace nebo bez regenerované tabulky rout shodí Test gate (`pnpm funkce:check`, `pnpm routes:table:check`), a chybějící marker `[mcp-exempt:nahravky]` v commit message shodí MCP surface bránu — volný text za dvojtečkou gate ignoruje.

@@ -50,8 +50,8 @@ Původní packet rozhodl (P1) o **nové** proměnné `LUDONE_ISSUER`. Revize v k
 | Zdroj | Co říká |
 |---|---|
 | `specs/E6-prihlaseni-a-fronta.md` §11 | „konstanta `LUDONE_ORIGIN` (default `https://app.ludone.cz`, **přebít jen proměnnou prostředí `LUDONE_ORIGIN`** pro labs)" + jediná funkce `apiFetch` pro každý odchozí požadavek |
-| `E7.sh:45-46` | jediná živá brána v repu curluje **`labs.ludone.cz`**, ne `app.ludone.cz` |
-| `tests/oauth-state.test.js:45,51,54` | jediné existující OAuth testy používají **`labs.ludone.cz`** |
+| `E7.sh:45-46` | jediná živá brána v repu dotazuje **labs prostředí**, ne `app.ludone.cz` |
+| `tests/oauth-state.test.js:45,51,54` | jediné existující OAuth testy používají **origin labs prostředí** |
 | `electron/main.cjs:683` | atrapa otevírá natvrdo `https://app.ludone.cz` |
 
 Zavést vedle `LUDONE_ORIGIN` druhou proměnnou pro **tentýž origin** je přesně to, co masterplán §9
@@ -794,7 +794,7 @@ B8 mění cestu, kterou `ui-smoke` proklikává ⇒ **musí se pustit ručně**,
 
 ⚠️ **Dvě věci o `E7.sh`, které původní packet přehlédl:**
 
-1. 🔴 **Živé discovery v `E7.sh:45-46` cílí na `labs.ludone.cz`, ne na `app.ludone.cz`.**
+1. 🔴 **Živé discovery v `E7.sh:45-46` cílí do labs prostředí, ne na `app.ludone.cz`.**
    Jediná síťová brána v repu tedy o výchozím issueru z P1 **neříká nic**. Přímo souvisí s Blokerem 2.
 2. `zkontroluj` na řádcích 39-40 pouští `npm run test:unit -- pkce` a `-- oauth-state`, tedy
    **filtrovaně**. Nový soubor `auth-controller-wiring` **E7 nespustí** — pokrývá ho až brána 3/7.
@@ -1039,7 +1039,7 @@ a **`design/canvas/Prihlaseni.dc.html`** (ten, který autor packetu přiznaně n
 - **Návrh přidání do `E7.sh` používal `\s` v `grep -E`.** Změřeno: zdejší `grep` je ugrep 7.8.4
   a matchne, GNU grep taky — **stock BSD grep ne** ⇒ trvale červená brána. Přepsáno na `[[:space:]]`
   (ověřeno, že matchne).
-- **`E7.sh` živě testuje `labs.ludone.cz`, ne `app.ludone.cz`** (řádek 46) a pouští jen filtrované
+- **`E7.sh` živě testuje labs prostředí, ne `app.ludone.cz`** (řádek 46) a pouští jen filtrované
   testy `pkce`/`oauth-state` (39-40) — nový soubor nespustí.
 - **`spec.md:253` má pro DSK-F003 přejímací scénář, který packet vynechal** — a který po B8 stále
   neprojde ze dvou nezávislých důvodů (panel důvod nezobrazuje; timeout je 5 min, ne 10).
@@ -1080,7 +1080,7 @@ a §2b řádek B8 · `plan.md` §3 sedm bodů DoD · masterplán §9 dvacet pol�
 ## Co packetu chybí ve spec/plan
 
 - 🛑 BLOKER 1 — registrace klienta. decisions.md:42 rozhodl STATICKOU registraci; auth.cjs:352 dělá dynamickou při každém begin(); cesta-uzivatele to změřila jako 429 po 20 přihlášeních z jedné NAT IP; E7.sh:47-51 dynamickou registraci navíc VYNUCUJE. Spec ani plán neříkají, odkud má B8 vzít clientId. Bez odpovědi B8 nasadí zamítnutou variantu.
-- 🛑 BLOKER 2 — jméno a výchozí hodnota proměnné pro issuer. specs/E6-prihlaseni-a-fronta.md §11 předepisuje LUDONE_ORIGIN (default https://app.ludone.cz); původní packet zavedl nový LUDONE_ISSUER. Zároveň všechna živá evidence v repu (E7.sh:46, tests/oauth-state.test.js:45,51,54) míří na labs.ludone.cz. Volba názvu i defaultu je změna kontraktu, kterou packet nesmí udělat sám.
+- 🛑 BLOKER 2 — jméno a výchozí hodnota proměnné pro issuer. specs/E6-prihlaseni-a-fronta.md §11 předepisuje LUDONE_ORIGIN (default https://app.ludone.cz); původní packet zavedl nový LUDONE_ISSUER. Zároveň všechna živá evidence v repu (E7.sh:46, tests/oauth-state.test.js:45,51,54) míří do labs prostředí. Volba názvu i defaultu je změna kontraktu, kterou packet nesmí udělat sám.
 - 🛑 P3 — kdo vlastní app.focus({steal:true}) + znovuotevření panelu. nahled.html:258 a cesta-uzivatele M09 to vyžadují, v main.cjs to neexistuje (grep = nula) a §12.2 to B8 zakazuje. Bez rozhodnutí nelze krok A5 živého scénáře považovat za kritérium B8.
 - Kdo napojí kód `duvod` na text v panelu. Onboarding.jsx:45 ho zahazuje a nahrazuje pevnou větou. plan.md §2 dává B4 jen 'časy 5↔10 min · panel nemizí · čekání má konec'. Bez vlastníka zůstává přejímací scénář spec.md:253 (DSK-F003 'panel řekne, že vypršelo') trvale nesplněný.
 - Má auth.cjs dostat strojově čitelné kódy chyb (error.code) místo mapování podle textu výjimky? Mapování podle textu tiše spadne na 'neznama', jakmile B4 znění vět změní. Editace auth.cjs je ale hřiště B4/B9.
@@ -1097,7 +1097,7 @@ Skeptik packet přečetl proti kódu, ale tohle zůstalo bez důkazu.
 
 - Nespustil jsem ani jednu bránu, jeden test ani build — zadání bylo přísně read-only. Všechny 'očekávané červené výpisy' v §13 a §14 jsou TVARY odvozené z formátu vitest a ze skutečného obsahu souborů, NE zachycený výstup běhu. Platí to i pro opravené znění S4. Implementátor musí zapsat, co uvidí on.
 - Neověřil jsem, že sabotáže S1–S8 skutečně zčervenají. Jsou odvozené z toho, co testy tvrdí, a doložit je musí implementátor naostro.
-- Neprovedl jsem žádný síťový požadavek. Tvrzení o discovery na app.ludone.cz i labs.ludone.cz (code_challenge_methods_supported ['S256'], scopes_supported ['mcp:read','mcp:draft'], otevřený registration_endpoint) přebírám z docs/server-modul/autentizace.md:6-16, kde jsou samy označené jako měření z 24. 8. 2026, ne jako potvrzený současný stav.
+- Neprovedl jsem žádný síťový požadavek. Tvrzení o discovery v produkčním i labs prostředí (code_challenge_methods_supported ['S256'], scopes_supported ['mcp:read','mcp:draft'], otevřený registration_endpoint) přebírám z docs/server-modul/autentizace.md:6-16, kde jsou samy označené jako měření z 24. 8. 2026, ne jako potvrzený současný stav.
 - Neověřil jsem chování createAuthController proti skutečnému serveru. Popis toku v §10 stojí na četbě electron/auth.cjs:325-418, ne na běhu. Zvlášť neověřeno: že normalizeIdentity (auth.cjs:224-232) najde name a email v odpovědi tokenu skutečného LuDone — DAN-TODO.md §3b bod 5 tvrdí opak.
 - Neověřil jsem přesný tvar, kterým Electron 37.3.1 obaluje odmítnutí z ipcMain.handle směrem k rendereru (očekává se prefix "Error invoking remote method 'auth:begin': …"). Závěr, že se technický text dostane do panelu, stojí na četbě Onboarding.jsx:49-50 (setAuthError(error.message)) a na obecné znalosti Electronu, ne na měření zde.
 - Neověřil jsem, že app.isPackaged je v Electronu 37.3.1 spolehlivě false při `npm start` a true v zabaleném buildu — jen jsem změřil, že se to slovo v repozitáři nevyskytuje ani jednou. Doporučená obrana v P2 na tom předpokladu stojí a musí ji doložit průchod B3.
