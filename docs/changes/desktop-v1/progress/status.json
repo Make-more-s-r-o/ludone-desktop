@@ -87,17 +87,17 @@
       "rozsah": "approved",
       "dodani": "merged",
       "vystaveni": "labs",
-      "overeni": "tests-green",
-      "dalsiKrok": "Dan spustí build, lidským okem potvrdí viditelnou ikonu a kliknutím ověří, že otevře panel."
+      "overeni": "verified-live",
+      "dalsiKrok": "Ověřeno naostro: po uvolnění místa v liště se ikona objevila a panel se otevřel. Nebyla vidět kvůli plné liště, ne kvůli vadě; aplikace to nově sama hlásí."
     },
     {
       "id": "DSK-F002",
       "nazev": "Kontextové menu na ikoně se zkratkami",
       "riziko": "normal",
       "rozsah": "approved",
-      "dodani": "no-code",
-      "vystaveni": "disabled",
-      "overeni": "unverified",
+      "dodani": "merged",
+      "vystaveni": "labs",
+      "overeni": "tests-green",
       "dalsiKrok": "Postavit pravé kliknutí, rychlé akce a klávesové zkratky podle schváleného návrhu."
     },
     {
@@ -155,9 +155,9 @@
       "nazev": "Pojmenování nahrávky při zastavení",
       "riziko": "normal",
       "rozsah": "approved",
-      "dodani": "no-code",
-      "vystaveni": "disabled",
-      "overeni": "unverified",
+      "dodani": "merged",
+      "vystaveni": "labs",
+      "overeni": "tests-green",
       "dalsiKrok": "Postavit předvyplněný, editovatelný název a uložit čas od–do zvlášť."
     },
     {
@@ -227,7 +227,7 @@
       "rozsah": "approved",
       "dodani": "merged",
       "vystaveni": "labs",
-      "overeni": "unverified",
+      "overeni": "tests-green",
       "dalsiKrok": "Napojit skutečné hodnoty, sladit zbývající obrazovky s návrhem a projít je ručně."
     },
     {
@@ -253,46 +253,24 @@
   ],
   "praveSeStavi": [
     {
-      "oznaceni": "PR #25",
-      "nazev": "Export schůzky do jednoho stereo souboru",
-      "stav": "Kód a lokální brány jsou připravené; PR čeká na CI.",
-      "overeni": "tests-green",
-      "poznamka": "Stereo derivát zatím nikdo neposlechl."
-    },
-    {
-      "oznaceni": "PR #26",
-      "nazev": "Onboarding: čekání na prohlížeč a test záznamu",
-      "stav": "Navazuje na PR #25 a čeká na CI.",
-      "overeni": "tests-green",
-      "poznamka": "Automatická zkouška není náhradou za živý mikrofon a systémový zvuk."
-    },
-    {
-      "oznaceni": "PR #27",
-      "nazev": "Adresa přihlášení na čekací obrazovce",
-      "stav": "Navazuje na PR #26 a čeká na CI.",
-      "overeni": "nemereno",
-      "poznamka": "Checkpoint dokládá zásah IPC brány, ale neobsahuje úplný doslovný výpis všech bran tohoto PR."
+      "oznaceni": "PR #37 (staví se)",
+      "nazev": "Odesílací vrstva fronty proti změřenému serverovému kontraktu",
+      "stav": "Klient se staví; killswitch DESKTOP_UPLOAD_ENABLED zůstává vypnutý a nic se neodesílá.",
+      "overeni": "unverified",
+      "poznamka": "Migrace na labs neběžely, endpointy nejsou živé. Stavíme, nezapojujeme."
     }
   ],
   "blockery": [
-    "GitHub Actions od 2. 9. 2026 15:57 nespouští joby kvůli platbě nebo spending limitu organizace. Bez zásahu Dana nejdou sloučit PR #25–#27.",
-    "Vyřazovací kritérium A6 nebylo ověřeno na skutečném hovoru Google Meet ani Teams s živým protějškem.",
-    "Opravenou ikonu v liště po PR #24 zatím nikdo lidským okem nepotvrdil.",
-    "Stereo export zatím nikdo neposlechl na skutečné nahrávce.",
-    "Výběr projektu DSK-F012 čeká na serverový kontrakt; pravidlo 110 % má rozhodovat server.",
-    "Automatický sync desktop → server je fáze 2; v této vlně zůstává výslovně vypnutý.",
-    "Aplikace ještě není ve všech stavech sladěná se schválenými 22 obrazovkami.",
-    "Chování odhlášení během nahrávání čeká na Danovo rozhodnutí; dnešní priorita stavu by mohla skrýt jediný indikátor běžícího mikrofonu.",
-    "Budoucí databázovou pojistku časovače blokuje nezměřený počet překrývajících se záznamů v živých datech.",
-    "Před dodáním týmu chybí P1/P2 pro podpis a oprávnění; teprve jejich výsledek rozhodne o Apple Developer Programu.",
-    "Serverový follow-up čeká na Danovo potvrzení chování při plné kvótě a požadavku, že přepis umí češtinu i rozlišení mluvčích."
+    "B1 · Apple Developer: rozhodnout Individual × Organization (mezi variantami se nepřechází). Bez účtu nejdou automatické aktualizace ani trvalá oprávnění. Doporučení: firma, pokud má D-U-N-S.",
+    "B2 · Barva hlavního tlačítka v onboardingu a Nastavení: dvě akcentní barvy vedle sebe. Doporučení: sjednotit na modrou dle panelu. Ukázka: progress/barva-tlacitka.html",
+    "B3 · Allowlist vydavatelů v main.cjs je zadrátovaný a brání jiným instalacím app.ludone. Bezpečnostní hranice — rozvolnit smí jen Dan.",
+    "Živé ověření: 504 zelených testů, ale ✅ má zatím jediná funkce. Soupis na 15 minut je v docs/changes/desktop-v1/OVERENI-NAOSTRO.md"
   ],
   "nemereno": [
-    "Skutečný Google Meet a Teams s živým protějškem.",
-    "Viditelnost opravené ikony v liště na Danově Macu.",
-    "Poslech a skutečné oddělení kanálů stereo exportu.",
-    "Audio a UI smoke vyžadující zabalenou aplikaci, GUI, zvuk a oprávnění macOS.",
-    "Úplné živé ověření jednotlivých funkcí; autoritativní matice má nula položek verified-live."
+    "Stereo export nikdo neposlechl — že jsou kanály oddělené, potvrdí až přehrání nahrávky.",
+    "Výpadek ostatního zvuku nikdo nevyvolal odpojením sluchátek.",
+    "Skutečné sestavení electron-builderu neproběhlo; ověřená je konfigurace, ne hotový DMG.",
+    "Odesílání na server: endpointy nejsou živé, klient se staví nezapojený."
   ],
   "zdroje": [
     {

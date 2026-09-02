@@ -445,17 +445,17 @@
       <p class="hero-lead">Tahle stránka schválně nerozpouští všechno do jednoho slova „hotovo“. Sloučený kód, zelený test a funkce ověřená člověkem jsou tři různé věci.</p>
       <div class="truth-grid" aria-label="Souhrn úrovní ověření">
         <article class="truth-card truth-live">
-          <strong>0</strong>
+          <strong>1</strong>
           <h2>✅ ověřeno naostro</h2>
-          <p>Celá funkce splnila živý scénář. Dílčí sondy se sem nepočítají. Podle matice: 0 z 17.</p>
+          <p>Celá funkce splnila živý scénář. Dílčí sondy se sem nepočítají. Podle matice: 1 z 17.</p>
         </article>
         <article class="truth-card truth-tests">
-          <strong>8</strong>
+          <strong>10</strong>
           <h2>🧪 zelené testy</h2>
           <p>Kód prošel automatem. Tohle samo o sobě není živé ověření.</p>
         </article>
         <article class="truth-card truth-unverified">
-          <strong>9</strong>
+          <strong>6</strong>
           <h2>⛔ neověřeno</h2>
           <p>Funkce je napsaná nebo plánovaná, ale potřebný běh nikdo nedoložil.</p>
           
@@ -565,13 +565,13 @@
         <div class="fact-grid">
           <article class="fact-card" data-live-fact="commit">
     <span class="fact-label">Poslední commit</span>
-    <strong>36232341 · 2. 9. 2026 21:28</strong>
+    <strong>d5176acc · 3. 9. 2026 00:16</strong>
     <p>Poslední commit v tomto worktree.</p>
     
   </article>
           <article class="fact-card" data-live-fact="test-count">
     <span class="fact-label">Počet unit testů</span>
-    <strong>446</strong>
+    <strong>510</strong>
     <p>Testů v posledním zeleném běhu npm run test:unit.</p>
     
   </article>
@@ -593,30 +593,14 @@
           <p class="section-lead">Checkpoint popisuje změny čekající na dokončení. Jejich automatické výsledky jsou oddělené od toho, co ještě musí vidět nebo slyšet člověk.</p>
         </div>
         <div class="build-grid">
-    <article class="build-card" data-verification="tests-green">
+    <article class="build-card" data-verification="unverified">
           <div class="card-topline">
-            <span class="feature-id">PR #25</span>
-            <span class="axis axis-tests">🧪 zelené testy</span>
+            <span class="feature-id">PR #37 (staví se)</span>
+            <span class="axis axis-unverified">⛔ neověřeno</span>
           </div>
-          <h3>Export schůzky do jednoho stereo souboru</h3>
-          <p>Kód a lokální brány jsou připravené; PR čeká na CI.</p>
-          <p class="card-note">Stereo derivát zatím nikdo neposlechl.</p>
-        </article><article class="build-card" data-verification="tests-green">
-          <div class="card-topline">
-            <span class="feature-id">PR #26</span>
-            <span class="axis axis-tests">🧪 zelené testy</span>
-          </div>
-          <h3>Onboarding: čekání na prohlížeč a test záznamu</h3>
-          <p>Navazuje na PR #25 a čeká na CI.</p>
-          <p class="card-note">Automatická zkouška není náhradou za živý mikrofon a systémový zvuk.</p>
-        </article><article class="build-card" data-verification="nemereno">
-          <div class="card-topline">
-            <span class="feature-id">PR #27</span>
-            <span class="axis axis-missing">neměřeno</span>
-          </div>
-          <h3>Adresa přihlášení na čekací obrazovce</h3>
-          <p>Navazuje na PR #26 a čeká na CI.</p>
-          <p class="card-note">Checkpoint dokládá zásah IPC brány, ale neobsahuje úplný doslovný výpis všech bran tohoto PR.</p>
+          <h3>Odesílací vrstva fronty proti změřenému serverovému kontraktu</h3>
+          <p>Klient se staví; killswitch DESKTOP_UPLOAD_ENABLED zůstává vypnutý a nic se neodesílá.</p>
+          <p class="card-note">Migrace na labs neběžely, endpointy nejsou živé. Stavíme, nezapojujeme.</p>
         </article>
   </div>
       </section>
@@ -643,10 +627,22 @@
         </tr>
       </thead>
       <tbody>
-        <tr data-feature-id="DSK-F001" data-verification="tests-green">
+        <tr data-feature-id="DSK-F001" data-verification="verified-live">
               <th scope="row">
                 <span class="feature-id">DSK-F001</span>
                 <span class="feature-name">Ikona v liště nese stav, klik otevře panel</span>
+                <span class="mobile-verification"><span class="axis axis-live">✅ ověřeno naostro</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
+              <td data-axis="overeni"><span class="axis axis-live">✅ ověřeno naostro</span></td>
+              <td class="next-step">Ověřeno naostro: po uvolnění místa v liště se ikona objevila a panel se otevřel. Nebyla vidět kvůli plné liště, ne kvůli vadě; aplikace to nově sama hlásí.</td>
+            </tr><tr data-feature-id="DSK-F002" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F002</span>
+                <span class="feature-name">Kontextové menu na ikoně se zkratkami</span>
                 <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
                 <span class="risk">Riziko: běžné</span>
               </th>
@@ -654,18 +650,6 @@
               <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
               <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
               <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
-              <td class="next-step">Dan spustí build, lidským okem potvrdí viditelnou ikonu a kliknutím ověří, že otevře panel.</td>
-            </tr><tr data-feature-id="DSK-F002" data-verification="unverified">
-              <th scope="row">
-                <span class="feature-id">DSK-F002</span>
-                <span class="feature-name">Kontextové menu na ikoně se zkratkami</span>
-                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
-                <span class="risk">Riziko: běžné</span>
-              </th>
-              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
-              <td data-axis="dodani"><span class="axis axis-none">bez kódu</span></td>
-              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
-              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
               <td class="next-step">Postavit pravé kliknutí, rychlé akce a klávesové zkratky podle schváleného návrhu.</td>
             </tr><tr data-feature-id="DSK-F003" data-verification="unverified">
               <th scope="row">
@@ -727,17 +711,17 @@
               <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
               <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
               <td class="next-step">Změřit skutečný Google Meet a Teams s živým protějškem; přehrávač afplay nestačí.</td>
-            </tr><tr data-feature-id="DSK-F008" data-verification="unverified">
+            </tr><tr data-feature-id="DSK-F008" data-verification="tests-green">
               <th scope="row">
                 <span class="feature-id">DSK-F008</span>
                 <span class="feature-name">Pojmenování nahrávky při zastavení</span>
-                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
                 <span class="risk">Riziko: běžné</span>
               </th>
               <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
-              <td data-axis="dodani"><span class="axis axis-none">bez kódu</span></td>
-              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
-              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
               <td class="next-step">Postavit předvyplněný, editovatelný název a uložit čas od–do zvlášť.</td>
             </tr><tr data-feature-id="DSK-F009" data-verification="tests-green">
               <th scope="row">
@@ -811,17 +795,17 @@
               <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
               <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
               <td class="next-step">Postavit volitelné dny a hodiny a ověřit, že připomínka nikdy neruší nahrávání.</td>
-            </tr><tr data-feature-id="DSK-F015" data-verification="unverified">
+            </tr><tr data-feature-id="DSK-F015" data-verification="tests-green">
               <th scope="row">
                 <span class="feature-id">DSK-F015</span>
                 <span class="feature-name">Nastavení účtu, zvuku, záznamů, připomínek a diagnostiky</span>
-                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
                 <span class="risk">Riziko: běžné</span>
               </th>
               <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
               <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
               <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
-              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
               <td class="next-step">Napojit skutečné hodnoty, sladit zbývající obrazovky s návrhem a projít je ručně.</td>
             </tr><tr data-feature-id="DSK-F016" data-verification="unverified">
               <th scope="row">
@@ -864,11 +848,11 @@
         <div class="attention-grid">
           <article class="attention-card attention-blockers">
             <h3>Blockery a stopky</h3>
-            <ul><li>GitHub Actions od 2. 9. 2026 15:57 nespouští joby kvůli platbě nebo spending limitu organizace. Bez zásahu Dana nejdou sloučit PR #25–#27.</li><li>Vyřazovací kritérium A6 nebylo ověřeno na skutečném hovoru Google Meet ani Teams s živým protějškem.</li><li>Opravenou ikonu v liště po PR #24 zatím nikdo lidským okem nepotvrdil.</li><li>Stereo export zatím nikdo neposlechl na skutečné nahrávce.</li><li>Výběr projektu DSK-F012 čeká na serverový kontrakt; pravidlo 110 % má rozhodovat server.</li><li>Automatický sync desktop → server je fáze 2; v této vlně zůstává výslovně vypnutý.</li><li>Aplikace ještě není ve všech stavech sladěná se schválenými 22 obrazovkami.</li><li>Chování odhlášení během nahrávání čeká na Danovo rozhodnutí; dnešní priorita stavu by mohla skrýt jediný indikátor běžícího mikrofonu.</li><li>Budoucí databázovou pojistku časovače blokuje nezměřený počet překrývajících se záznamů v živých datech.</li><li>Před dodáním týmu chybí P1/P2 pro podpis a oprávnění; teprve jejich výsledek rozhodne o Apple Developer Programu.</li><li>Serverový follow-up čeká na Danovo potvrzení chování při plné kvótě a požadavku, že přepis umí češtinu i rozlišení mluvčích.</li></ul>
+            <ul><li>B1 · Apple Developer: rozhodnout Individual × Organization (mezi variantami se nepřechází). Bez účtu nejdou automatické aktualizace ani trvalá oprávnění. Doporučení: firma, pokud má D-U-N-S.</li><li>B2 · Barva hlavního tlačítka v onboardingu a Nastavení: dvě akcentní barvy vedle sebe. Doporučení: sjednotit na modrou dle panelu. Ukázka: progress/barva-tlacitka.html</li><li>B3 · Allowlist vydavatelů v main.cjs je zadrátovaný a brání jiným instalacím app.ludone. Bezpečnostní hranice — rozvolnit smí jen Dan.</li><li>Živé ověření: 504 zelených testů, ale ✅ má zatím jediná funkce. Soupis na 15 minut je v docs/changes/desktop-v1/OVERENI-NAOSTRO.md</li></ul>
           </article>
           <article class="attention-card attention-unseen">
             <h3>Ještě nikdo nedoložil</h3>
-            <ul><li>Skutečný Google Meet a Teams s živým protějškem.</li><li>Viditelnost opravené ikony v liště na Danově Macu.</li><li>Poslech a skutečné oddělení kanálů stereo exportu.</li><li>Audio a UI smoke vyžadující zabalenou aplikaci, GUI, zvuk a oprávnění macOS.</li><li>Úplné živé ověření jednotlivých funkcí; autoritativní matice má nula položek verified-live.</li></ul>
+            <ul><li>Stereo export nikdo neposlechl — že jsou kanály oddělené, potvrdí až přehrání nahrávky.</li><li>Výpadek ostatního zvuku nikdo nevyvolal odpojením sluchátek.</li><li>Skutečné sestavení electron-builderu neproběhlo; ověřená je konfigurace, ne hotový DMG.</li><li>Odesílání na server: endpointy nejsou živé, klient se staví nezapojený.</li></ul>
           </article>
         </div>
       </section>
