@@ -560,7 +560,7 @@ Sandbox i síťová klec zůstávají — `-s workspace-write` visí na `codex e
 **Doporučený default:** do `orca-codex.sh` přidat do názvu logu ještě PID nebo náhodný přípon
 (`codex-<ts>-$$.log`). Do té doby: **mezi dvěma starty počkej vteřinu, nebo si log pojmenuj sám.**
 
-### BD-N13 — dva nálezy z adversariálního review, které noční běh NEOPRAVIL
+### ~~BD-N13~~ — dva nálezy z adversariálního review · ✅ OBA OPRAVENY (2. 9., vlna 5)
 
 Review tří otevřených PR (4 čočky, 52 agentů, každý nález ověřen dvěma nezávislými skeptiky)
 vrátilo **9 potvrzených nálezů z 24**. Sedm je opravených v příslušných PR; tyhle dva ne,
@@ -588,7 +588,7 @@ přesně ten způsob, jak se do brány zanese chyba.
 je fail-open, že se `abort` posluchač připojuje pozdě, a že oprava B1 vzorkuje stav jen jednou.
 Ověřovací kolo tedy dělalo svou práci oběma směry, ne jen potvrzovací.
 
-### BD-N14 — 🔴 B9 NENÍ bezpečnostně dokončená pro souběžné přihlášení
+### ~~BD-N14~~ — B9 nebyla bezpečnostně dokončená · ✅ VYŘEŠENO v PR #10 (B9b)
 
 Vykonavatel B9 si udělal vlastní bezpečnostní průchod a **sám oznámil**, že diff nelze označit
 za hotový. To je přesně to chování, které od něj chceme — a proto to nezastírám.
@@ -621,3 +621,24 @@ napsal `premisaPlatila: false` a rozdíl vypsal — takže se nic nerozbilo.
 **Ponaučení:** u stohovaných větví nestačí napsat „tyhle story jsou hotové". Musí se napsat,
 **KTERÉ jsou v TOMHLE stromě** — jinak vykonavatel hledá kód, který tam z principu není,
 a v horším případě si ho dopíše podruhé.
+
+### ✅ Vlna 5 uzavřela BD-N13 i BD-N14 — co se změnilo
+
+**BD-N13 bod 1** (test čítače přihlášení měřil rozhodnutí, ne zapojení) — opraveno na `b4`.
+Nová kontrola porovnává **parametry funkce s klíči, které jí volající skutečně předává**, takže
+chytí obojí: když volající pole vypustí, i když funkce dostane parametr, který jí nikdo neposílá.
+Obě sabotáže padají právě na ní.
+
+**BD-N13 bod 2** (počítadlo mutací hlídalo dvě fakta ze čtyř) — opraveno na `b3`. Doplněno
+o `preparation.cancelled` a přibyl **test pořadí**: přepočet musí stát **za** smyčkou, protože
+před ní by viděl stav, kde část session ještě nemá přiřazenou finalizaci.
+
+**BD-N14** (race `auth:begin` × `auth:logout`, chybějící deadliny, zbylé dočasné soubory) —
+vyřešeno v **PR #10**. Fail-closed zámek, při souběhu vyhrává odhlášení; deadliny 5 s na
+discovery i revoke s pravdivým `serverRevoked: false` při timeoutu; úklid tempů podle striktního
+UUIDv4 vzoru, který nechá `oauth.enc` i cizí soubory být.
+
+🔴 **Co tím NEZMIZELO:** živé chování proti serveru je pořád **⛔ neověřené** a bude, dokud
+nebude `LUDONE_OAUTH_CLIENT_ID`. Deadliny 5 s jsou **inženýrská volba, ne měření** — vykonavatel
+to sám takhle označil. A zůstává přiznaný okrajový případ: při exotické chybě `chmod`/`fsync`
+po úspěšném `rename` může souběh poslat revokaci dvakrát (idempotentní, fail-closed).
