@@ -822,3 +822,40 @@ desktopu, když má být rozhodnutí opačným směrem.
 ⚠️ **Důsledek, který stojí za pojmenování:** LuTrack v panelu tak zůstane funkční jen lokálně
 a naměřený čas nikam neodejde. To je vědomý stav, ne nedodělek — ale **nesmí vypadat jako
 hotová funkce**, jinak si někdo odklikne den práce, který se nikam nezapíše.
+
+### BD-N39 — nahrávky zatím na LOKÁLNÍ disk, cesta ale konfigurovatelná
+
+Dan: *„máme Hetzner storage koupený, tak jestli nepoužít ten pro uložení?"*
+
+**Změřeno na hostu 2. 9. 2026:**
+
+```
+/dev/sda1   301G celkem · 170G použito · 119G volných (59 %)
+Storage Box NENÍ připojený — žádný cifs/nfs mount, /mnt je prázdné
+LuFak ukládá do /opt/ludone-app/uploads na lokální disk
+```
+
+Hodinová schůzka = 80–240 MB (dvě stopy) ⇒ **119 GB ≈ 500–1500 hodin**, pro tým na rok.
+
+**Rozhodnutí: začít lokálně, cestu k úložišti udělat konfigurovatelnou.**
+
+Důvod není pohodlí, ale **počet věcí, které se ladí naráz**: síťové úložiště přidává nové
+způsoby selhání — výpadek mountu uprostřed streamovaného uploadu, jiná sémantika `rename`,
+pomalejší `fsync`. `E5` přitom stojí na atomických zápisech, které se na CIFS chovají jinak
+než na lokálním disku.
+
+**Kdy Storage Box zapojit:** při obsazenosti nad ~100 GB, **nebo dřív kvůli zálohám**
+odděleným od stroje. Záloha je lepší důvod než kapacita a měla by přijít první.
+
+### BD-N40 — „vidět design brzo" se týká DESKTOPU, ne serveru
+
+Dan upřesnil: *„ten design jsem myslel pro tebe. Té desktop app."*
+
+Schválený návrh má **22 obrazovek**; postavené a sladěné jsou **čtyři** (klidový panel,
+oprávnění, nahrávání, nastavení). Nesladěné zůstávají zejména: **onboarding**, stav
+**„nahrává se" s měřáky stop**, **výběr projektu** a **chybové obrazovky**
+(přihlášení vypršelo · účet nemá přístup · bez sítě).
+
+⇒ Další práce na desktopu je **sladit zbývající obrazovky se schváleným návrhem**, ne přidávat
+funkce. Serverová session dostala krok 0 „design napřed" pro svůj vlastní modul — to platí dál
+a s tímhle se to neplete.
