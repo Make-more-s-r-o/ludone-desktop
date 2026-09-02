@@ -731,3 +731,69 @@ Když `duvod` skončí jako `neznama`, dnes se surová zpráva **zahodí** — u
 
 **Návrh:** nezařaditelnou chybu logovat (název třídy + zpráva), ale **bez autorizačního kódu
 a bez tokenu**. Zapsáno jako práce, ne rozhodnutí — čeká na volnou frontu.
+
+---
+
+## Danova rozhodnutí o serverové straně — 2. 9. 2026 odpoledne
+
+### BD-N34 — nahrávání ve DVOU FÁZÍCH; scope se odkládá, neruší
+
+Dan: *„drag and drop vem zpět. Prostě 2 možnosti… Preferoval bych tlačítko nahrát /
+automatický sync s serverem."* a *„zvol nejjednodušší cestu."*
+
+🔴 **Zjištění, které tenhle rozhovor odhalil:** „tlačítko nahrát" původně znamenalo, že
+nahrává DESKTOP — a ten se musí autorizovat. Token s `mcp:read` právo zápisu nedává, takže
+by se scope vrátil zpátky, přestože ho Dan chtěl zrušit.
+
+**Řešení, které scope nepotřebuje:**
+
+| fáze | jak | právo |
+|---|---|---|
+| **1 (teď)** | tlačítko v panelu **uloží schůzku jako jeden soubor do Stažených** a otevře nahrávací stránku app.ludone; nahrává **prohlížeč** pod běžnou session | **žádné nové** |
+| **1b** | drag & drop téhož souboru do app.ludone | žádné nové |
+| **2 (později)** | automatický sync desktop → server, **defaultně vypnutý** | **teprve tady** scope pro zápis |
+
+**Proč takhle:** fáze 1 je funkčně to, co Dan chce („po schůzce klik a je to na serveru"),
+nevyžaduje ani nový scope, ani změnu souhlasové obrazovky, ani přeregistraci klienta. Scope
+se tím **neruší, jen odkládá na okamžik, kdy ho poprvé opravdu potřebujeme.**
+
+⚠️ **Web musí umět nahrát JAKÝKOLI zvukový soubor**, ne jen ten z desktopu — Dan výslovně
+zmínil nahrávku z telefonu. Je to tentýž endpoint, jen jiný zdroj.
+
+### BD-N35 — musí být poznat, KDO mluvil
+
+Dan: *„Určitě by mělo být poznat, kdo přesně mluvil. Když bude víc lidí atp."*
+
+Dvě různé věci, obě potřeba:
+
+1. **Dva kanály v jednom souboru** (mikrofon vlevo, systém vpravo) — zadarmo oddělí
+   „já" × „druhá strana". Desktop je nahrává odděleně už dnes, stačí je nemixovat do mono.
+2. **Diarizace u přepisu** — rozdělení podle hlasu, když je na druhé straně víc lidí.
+   To kanály neumí; musí to umět **přepisová služba**.
+
+🔴 **Z toho plyne kritérium pro výběr přepisové služby: musí umět diarizaci a češtinu.**
+Bez toho je ze zápisu ze schůzky jeden slepý text a ztrácí většinu hodnoty.
+
+### BD-N36 — místo se hlídá kvótou, ne mazáním za zády
+
+Dan: *„postavil bych prostě možnosti v nastavení modulu… bude se počítat třeba místo, které
+bude dedikované těm zápisům, přes které by se nemělo jít, aby na serveru nebyly kraviny."*
+
+- Retence a limity **jsou volby v nastavení modulu**, ne konstanty v kódu.
+- Sleduje se **obsazené místo** proti vyhrazené kvótě.
+- **Zvuk a přepis se počítají zvlášť** — přepis zabírá kilobajty, zvuk stovky megabajtů.
+
+🔴 **Výchozí chování při plné kvótě (rozhodl běh, ne Dan — potvrdit):** nové nahrávání se
+**odmítne se srozumitelnou hláškou**, nic se nesmaže automaticky. Tiché smazání dat, o která
+uživatel nepožádal, je horší než odmítnutá nahrávka.
+
+### BD-N37 — všechny kroky nad nahrávkou jsou na kliknutí
+
+Dan: *„všechno na klik."*
+
+Nahrávka po nahrání jen leží. Teprve klik **Přepsat** vyrobí text; **Shrnout** a **Přeložit**
+jsou další samostatné kroky. Nic se neplatí za schůzky, které nikdo neotevře.
+
+⚠️ Dan k tomu dodal: *„když agent načte, tak jemu stačí transkript a může si udělat shrnutí
+sám."* ⇒ MCP potřebuje **nástroj na čtení přepisu** (spadá pod stávající `mcp:read`),
+a shrnutí na serveru je pak volba pro člověka, ne povinný krok.
