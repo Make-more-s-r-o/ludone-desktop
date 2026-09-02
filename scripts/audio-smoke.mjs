@@ -342,7 +342,7 @@ async function runRecording(mode) {
       )
       : Promise.resolve({ error: null });
     await delay(5_000);
-    await clickButton(client, "Zastavit nahrávání");
+    await clickButton(client, "Ukončit a uložit");
     const actualRecordingMs = Date.now() - actualStartedAt;
     const playbackResult = await playback;
     if (playbackResult.error) throw playbackResult.error;

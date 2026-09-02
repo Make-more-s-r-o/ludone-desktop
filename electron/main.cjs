@@ -1273,7 +1273,7 @@ async function waitForRecordingExportStage(exportStage) {
   return Promise.race([exportStage.ready, timeout]).finally(() => clearTimeout(timeoutId));
 }
 
-async function exportCompletedRecording(event, clientRecordingId) {
+async function exportCompletedRecording(event, clientRecordingId, recordingName) {
   const exportStage = ownedRecordingExportStage(event, clientRecordingId);
   try {
     const ready = await waitForRecordingExportStage(exportStage);
@@ -1287,13 +1287,14 @@ async function exportCompletedRecording(event, clientRecordingId) {
       manifest,
       openExternal: (url) => shell.openExternal(url),
       origin: resolveAuthIssuer(process.env),
+      recordingName,
       stagePath: exportStage.track.filePath,
       stereoTiming: exportStage.timing,
     });
     await fs.promises.unlink(exportStage.track.filePath).catch(() => {});
     recordingExportStages.delete(clientRecordingId);
     console.log(
-      `[recording-export] Uloženo ${result.fileName}; rozdíl startů ${result.trackStartDeltaMs} ms.`,
+      `[recording-export] Uloženo ${result.clientRecordingId}; rozdíl startů ${result.trackStartDeltaMs} ms.`,
     );
     return {
       ok: true,

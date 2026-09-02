@@ -129,6 +129,51 @@ function savedMessage(result) {
   return `Původní stopy zůstávají místně: ${microphone.name} (${microphone.size} B) a ${system.name} (${system.size} B).`;
 }
 
+function recordingDate(value, options) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  return new Intl.DateTimeFormat("cs-CZ", options).format(date);
+}
+
+function suggestedRecordingName(startedAt) {
+  const date = recordingDate(startedAt, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const time = recordingDate(startedAt, { hour: "2-digit", minute: "2-digit" });
+  return date && time ? `${date}, ${time}` : "";
+}
+
+function durationLabel(startedAt, endedAt) {
+  const durationMs = Date.parse(endedAt) - Date.parse(startedAt);
+  const minutes = Number.isFinite(durationMs) ? Math.max(1, Math.round(durationMs / 60_000)) : 0;
+  if (minutes === 1) return "1 minuta";
+  if (minutes >= 2 && minutes <= 4) return `${minutes} minuty`;
+  return `${minutes} minut`;
+}
+
+function sizeLabel(files) {
+  const bytes = Object.values(files ?? {}).reduce((total, file) => (
+    total + (Number.isFinite(file?.size) ? file.size : 0)
+  ), 0);
+  if (bytes < 1_024) return `${bytes} B`;
+  if (bytes < 1_024 * 1_024) return `${Math.round(bytes / 1_024)} kB`;
+  return `${new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 1 }).format(
+    bytes / (1_024 * 1_024),
+  )} MB`;
+}
+
+function savedRecordingMetadata(recording) {
+  const date = recordingDate(recording.startedAt, { day: "numeric", month: "long" });
+  const startedAt = recordingDate(recording.startedAt, { hour: "2-digit", minute: "2-digit" });
+  const endedAt = recordingDate(recording.endedAt, { hour: "2-digit", minute: "2-digit" });
+  return {
+    interval: `${date}, ${startedAt}–${endedAt}`,
+    summary: `${durationLabel(recording.startedAt, recording.endedAt)} · ${sizeLabel(recording.files)}`,
+  };
+}
+
 export function RecordingCard({ onActivityChange, todaySummary = null }) {
   const [session, setSession] = useState({
     phase: "idle",
@@ -137,6 +182,7 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
   });
   const [notice, setNotice] = useState(null);
   const [savedRecording, setSavedRecording] = useState(null);
+  const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
   const startInFlight = useRef(false);
@@ -197,24 +243,34 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
           type: "error",
           text: `Nahrávání bylo zastaveno kvůli chybě: ${describeError(errors[0])}.${savedSuffix}`,
         });
-        if (saved) setSavedRecording(saved);
+        if (saved) {
+          setRecordingName(suggestedRecordingName(saved.startedAt));
+          setSavedRecording(saved);
+        }
       } else {
         setNotice(null);
-        setSavedRecording(saved);
+        if (saved) {
+          setRecordingName(suggestedRecordingName(saved.startedAt));
+          setSavedRecording(saved);
+        }
       }
       return saved;
     })();
     return runtime.finishPromise;
   }
 
-  async function exportSavedRecording() {
+  async function exportSavedRecording(name = recordingName) {
     if (!savedRecording || exporting) return;
     setExporting(true);
     setExportError(null);
     try {
-      const result = await window.ludone.exportRecording(savedRecording.clientRecordingId);
+      const result = await window.ludone.exportRecording(
+        savedRecording.clientRecordingId,
+        name,
+      );
       if (!result?.ok) throw new Error(result?.message || "Export se nepodařil");
       setSavedRecording(null);
+      setRecordingName("");
       setNotice({
         type: "success",
         text: `Soubor ${result.fileName} je uložený ve Stažených.`,
@@ -236,6 +292,7 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
     startInFlight.current = true;
     setNotice(null);
     setSavedRecording(null);
+    setRecordingName("");
     setExportError(null);
     setSession({ phase: "checking", startedAt: null, labels: null });
     let capture;
@@ -356,6 +413,7 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
     recording: "Nahrává",
     stopping: "Ukládám",
   }[session.phase];
+  const savedMetadata = savedRecording ? savedRecordingMetadata(savedRecording) : null;
 
   return (
     <section
@@ -367,25 +425,62 @@ export function RecordingCard({ onActivityChange, todaySummary = null }) {
       aria-label="Nahrávání"
     >
       {savedRecording ? (
-        <div className="recording-saved">
-          <div>
+        <form
+          className="recording-saved"
+          aria-busy={exporting}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void exportSavedRecording();
+          }}
+        >
+          <div role="status" aria-live="polite">
             <h2>Nahrávka uložena</h2>
-            <small>{savedMessage(savedRecording)}</small>
           </div>
+          <div className="recording-saved__meta">
+            <small>{savedMetadata.interval}</small>
+            <small>{savedMetadata.summary}</small>
+          </div>
+          <label className="sr-only" htmlFor="recording-name">Název nahrávky</label>
+          <input
+            id="recording-name"
+            className="recording-saved__name"
+            data-testid="recording-name-input"
+            name="recordingName"
+            type="text"
+            value={recordingName}
+            autoFocus
+            aria-describedby="recording-name-hint"
+            aria-errormessage={exportError || notice?.type === "error"
+              ? "recording-name-error"
+              : undefined}
+            aria-invalid={Boolean(exportError || notice?.type === "error")}
+            onInput={(event) => setRecordingName(event.currentTarget.value)}
+          />
+          <small id="recording-name-hint" className="recording-saved__hint">
+            Můžeš přepsat teď nebo později v LuDone.
+          </small>
           {(exportError || notice?.type === "error") && (
-            <p className="recording-saved__error" role="alert">
+            <p id="recording-name-error" className="recording-saved__error" role="alert">
               {exportError || notice.text}
             </p>
           )}
           <button
-            type="button"
+            type="submit"
             className="button button--primary button--wide"
             disabled={exporting}
-            onClick={() => exportSavedRecording()}
           >
             Uložit a odeslat
           </button>
-        </div>
+          <button
+            type="button"
+            className="recording-saved__skip"
+            data-testid="skip-recording-name"
+            disabled={exporting}
+            onClick={() => exportSavedRecording("")}
+          >
+            Přeskočit
+          </button>
+        </form>
       ) : session.phase === "idle" ? (
         <>
           <span className="idle-feature-row__icon"><MicIcon variant="idle" /></span>

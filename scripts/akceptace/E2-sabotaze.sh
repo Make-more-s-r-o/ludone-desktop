@@ -90,12 +90,12 @@ echo "=== sabotáž b: přejmenované tlačítko ==="
 ui_cil="src/features/recording/RecordingCard.jsx"
 over_cisty_cil "$ui_cil" || exit 1
 zelena_brana "ui-smoke před mutací" /tmp/e2-sabotaz-b-pred.log spust_ui_branu || exit 1
-perl -0pi -e 's/Zastavit nahrávání/E2_SABOTAZ_STOP_NAHRAVANI/g' "$ui_cil"
-if [[ "$(grep -c 'E2_SABOTAZ_STOP_NAHRAVANI' "$ui_cil")" -le 0 ]]; then
+perl -0pi -e 's/Ukončit a uložit/E2_SABOTAZ_UKONCIT_A_ULOZIT/g' "$ui_cil"
+if [[ "$(grep -c 'E2_SABOTAZ_UKONCIT_A_ULOZIT' "$ui_cil")" -le 0 ]]; then
   echo "STOP  sabotáž b minula cíl"
   exit 1
 fi
-if ! cervena_brana "přejmenované tlačítko Zastavit nahrávání" /tmp/e2-sabotaz-b-cervena.log \
+if ! cervena_brana "přejmenované tlačítko Ukončit a uložit" /tmp/e2-sabotaz-b-cervena.log \
   spust_ui_branu; then
   git checkout HEAD -- "$ui_cil"
   exit 1

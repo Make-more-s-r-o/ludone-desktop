@@ -7,6 +7,8 @@ const WEBM_MAGIC = Buffer.from([0x1a, 0x45, 0xdf, 0xa3]);
 const HEADER_READ_BYTES = 64 * 1024;
 const MAX_STEREO_BOUNDARY_LAG_MS = 1_000;
 const MAX_TRACK_TIMING_DELTA_MS = 1_000;
+const MAX_RECORDING_NAME_CHARACTERS = 40;
+const CONTROL_OR_FORMAT_CHARACTER = /[\p{Cc}\p{Cf}]/u;
 
 function requiredTimestamp(value, field) {
   const timestamp = typeof value === "string" ? Date.parse(value) : Number.NaN;
@@ -119,9 +121,37 @@ function buildRecordingUploadUrl(origin, metadata = {}) {
   return url.href;
 }
 
-function exportFileName(clientRecordingId, startedAt) {
+function sanitizeRecordingName(value) {
+  if (value === undefined || value === null) return "";
+  if (typeof value !== "string") {
+    throw new TypeError("Název nahrávky musí být text");
+  }
+
+  const normalized = Array.from(value.normalize("NFKC"), (character) => {
+    // ZWJ drží složené emoji pohromadě. Ostatní neviditelné řídicí a
+    // formátovací znaky nahrazujeme, protože mohou klamat směrem zobrazení.
+    if (character === "\u200D") return character;
+    return CONTROL_OR_FORMAT_CHARACTER.test(character) ? "-" : character;
+  }).join("")
+    // Tečky měníme také: tím se `..` nemůže stát segmentem cesty ani po ořezu.
+    .replace(/[<>:"/\\|?*.]+/gu, "-")
+    .replace(/\s+/gu, "-")
+    .replace(/-+/gu, "-")
+    .replace(/^-+|-+$/gu, "");
+
+  // Čtyřicet Unicode code pointů zabere nejvýš 160 B. I s prefixem, časem,
+  // plným GUID a příponou tak komponenta zůstane pod běžným limitem 255 B.
+  return Array.from(normalized)
+    .slice(0, MAX_RECORDING_NAME_CHARACTERS)
+    .join("")
+    .replace(/-+$/u, "");
+}
+
+function exportFileName(clientRecordingId, startedAt, recordingName) {
   const safeStartedAt = startedAt.replace(/[:.]/g, "-");
-  return `LuDone-${safeStartedAt}-${clientRecordingId}.webm`;
+  const safeRecordingName = sanitizeRecordingName(recordingName);
+  const nameSegment = safeRecordingName ? `${safeRecordingName}-` : "";
+  return `LuDone-${safeStartedAt}-${nameSegment}${clientRecordingId}.webm`;
 }
 
 async function readHeader(filePath) {
@@ -165,13 +195,18 @@ async function exportRecordingCopy({
   manifest: manifestValue,
   openExternal,
   origin,
+  recordingName = "",
   stagePath,
   stereoTiming,
 }) {
   const manifest = requiredManifest(manifestValue);
   const timeline = recordingTimeline(manifest, stereoTiming);
   const format = inspectOpusWebm(await readHeader(stagePath));
-  const fileName = exportFileName(manifest.clientRecordingId, timeline.startedAt);
+  const fileName = exportFileName(
+    manifest.clientRecordingId,
+    timeline.startedAt,
+    recordingName,
+  );
   const downloadsRoot = path.resolve(downloadsDirectory);
   const filePath = path.join(downloadsRoot, fileName);
   if (path.dirname(filePath) !== downloadsRoot) {
@@ -216,4 +251,5 @@ module.exports = {
   exportRecordingCopy,
   inspectOpusWebm,
   recordingTimeline,
+  sanitizeRecordingName,
 };
