@@ -88,7 +88,35 @@ Dva hostnames a tři cesty, **žádné přihlašovací údaje** (gitleaks nad 20
 nález je falešný token v ukázce). Doporučení: přijmout — nulová stopa by stála přepsání
 historie a rozbití otevřených PR.
 
-### 2. Koupit Apple Developer (99 USD/rok)
+### 2. Apple Developer (99 USD/rok) — ODLOŽENO, zatím to jde i bez něj
+
+**Dan 2. 9. večer: „zkus to bez toho zatím."** Platí — pro interní zkoušení to stačí.
+Zbývá rozhodnout **na koho zapsat** (Dan odpověď odložil):
+
+| | Individual (na Dana) | Organization (na Make more s.r.o.) |
+|---|---|---|
+| podepsán pod aplikací | „Dan Jirotka" | **firma** |
+| co navíc | jen Apple ID | **D-U-N-S číslo** (zdarma, Apple má vyhledávač; firma ho možná už má) |
+| jak dlouho | často týž den | D-U-N-S dny až 2 týdny |
+| komu patří certifikát | Danovi | firmě, přežije personální změny |
+
+🔴 **Mezi variantami se nepřechází** — Apple chce nový zápis a nové certifikáty.
+
+### Co znamená „zatím bez podpisu" (změřeno na Danově macOS 26.4)
+
+**Instalace:** starý obchvat pravý klik → Otevřít **Apple v macOS 15 odstranil**. Dnes:
+aplikace se odmítne otevřít → **Nastavení systému → Soukromí a zabezpečení → „Přesto
+otevřít"** → potvrdit heslem. Jednou na instalaci. Průchozí, ale ne hezké.
+
+**🔴 Co bez podpisu NEBUDE fungovat:**
+1. **Automatické aktualizace** — `electron-updater` ověřuje podpis staženého balíčku
+   a bez něj aktualizaci odmítne. Každá nová verze = ruční stažení.
+2. **Trvalá oprávnění** — mikrofon a záznam obrazovky se váží na podpis, takže po každé
+   nové verzi je uživatel nejspíš bude povolovat znovu. U aplikace, která jinak mlčky
+   nahraje ticho, je to nepříjemná kombinace.
+
+⇒ **Na interní zkoušení ano, na rozdání lidem ne.** Balení se staví tak, že se podpis
+zapne pouhou přítomností proměnných prostředí — až účet bude, nic se nepřepisuje.
 
 Bez něj **nejde podpis ani automatické aktualizace** — macOS nepodepsanou a nenotarizovanou
 aplikaci po stažení odmítne slovy „je poškozená". Rozhodl jsi to postavit pořádně (BD-N42).
