@@ -737,3 +737,25 @@ se nemažou a neznámá volba znamená „Nemazat“.
 | **O-B11-11** | Patří mazací mechanismus pod DSK-F015, nebo má vzniknout DSK-F017? | Funkční matice samostatnou retenci nemá. |
 | **O-B11-12** | Má B11 zavést guard, že cesty stop musí ležet pod adresářem nahrávek, a jeho test? | Bez něj může podvržená položka fronty ukázat na cizí soubor; jde o nové bezpečnostní pravidlo mimo zmrazený plán. |
 | **O-B11-13** | Kdo opraví `ui-smoke`, aby po změně výchozí hodnoty neměřil tautologii? | Má nejdřív ověřit výchozí stav a potom nastavit jinou hodnotu, například „30 dní po odeslání“. Starší zápisy o onboardingu a oprávnění tento nový problém nepokrývají. |
+
+---
+
+## `orca-codex.sh` neumí ve dvou pokusech pustit Codex ve worktree (2. 9. 2026)
+
+Delegace mechaniky na Codex dnes **dvakrát selhala** a práci nakonec udělal Claude.
+
+| pokus | jak spuštěno | výsledek |
+|---|---|---|
+| 1 | `orca-codex.sh start "<úkol>" "<prompt>"` z kořene hlavního checkoutu | job běžel, ale zápis odmítl sandbox: `patch rejected: writing outside of the project` |
+| 2 | totéž zevnitř worktree + selektor `worktree` | **panel se vůbec nezaložil**, po 2 minutách timeout, žádný log ani proces |
+
+**Proč to stojí za tvůj čas:** tvoje pravidlo je „mechanika primárně Codex". Dokud tohle
+neprojde, každá taková práce spadne zpátky na Claude a jde z Claude limitu — tedy přesně
+z toho, co delegace měla šetřit.
+
+**Co ověřit:** jak `orca-codex.sh` předat kořen worktree, aby ho sandbox `workspace-write`
+uznal. Kandidáti: `codex exec -C <cesta>`, nebo `orca terminal create --worktree path:<cesta>`
+s explicitní cestou v `--command`.
+
+**Doporučený default do té doby:** delegovat Codexu jen práci v **hlavním checkoutu**,
+a ve worktree ji dělat Claude.
