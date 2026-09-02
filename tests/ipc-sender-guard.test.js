@@ -307,6 +307,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "auth:cancel",
       "auth:has-session",
       "auth:logout",
+      "auth:pending-url",
       "panel:hide",
       "panel:set-content-height",
       "permission:request",

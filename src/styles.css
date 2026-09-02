@@ -1207,6 +1207,27 @@ svg {
   line-height: 1;
 }
 
+.auth-waiting-address {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Adresa je dlouhá a nesmí panel roztáhnout — láme se uvnitř, ne do šířky okna. */
+.auth-waiting-address code {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--muted, rgba(127, 127, 127, 0.12));
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
 .auth-waiting-actions {
   display: flex;
   width: 100%;

@@ -1484,6 +1484,7 @@ function createAuthBeginHandler(createController) {
     env,
     isTestRun,
     logger,
+    publishAuthorizationUrl,
     safeStorage,
     shell,
   }) {
@@ -1574,6 +1575,10 @@ function createAuthBeginHandler(createController) {
           shell,
         });
         const attempt = await controller.start();
+        // Čekací obrazovka potřebuje URL, dokud pokus běží — když se prohlížeč neotevře,
+        // je to jediná cesta uživatele dál. Po skončení pokusu MUSÍ zmizet: stará URL
+        // už nikam nevede a otevřít ji podruhé znamená přihlášení, které nikdo nečeká.
+        publishAuthorizationUrl?.(attempt.authorizationUrl ?? null);
         const cancel = () => attempt.cancel();
         if (signal?.aborted) {
           cancel();
@@ -1591,6 +1596,7 @@ function createAuthBeginHandler(createController) {
           return { ok: true, user: { name, email } };
         } finally {
           signal?.removeEventListener?.("abort", cancel);
+          publishAuthorizationUrl?.(null);
         }
       } catch (error) {
         const message = authErrorMessage(error);
@@ -1625,12 +1631,18 @@ function createAuthBeginHandler(createController) {
 }
 
 const authSessionCoordinator = createAuthSessionCoordinator();
+// Drží se jen po dobu běžícího pokusu; `beginAuth` ji sám nuluje ve svém finally.
+let pendingAuthorizationUrl = null;
+
 const beginAuth = createAuthBeginHandler(createAuthController)({
   app,
   coordinator: authSessionCoordinator,
   env: process.env,
   isTestRun: IS_TEST_RUN,
   logger: console,
+  publishAuthorizationUrl: (url) => {
+    pendingAuthorizationUrl = typeof url === "string" && url.length > 0 ? url : null;
+  },
   safeStorage,
   shell,
 });
@@ -1678,6 +1690,8 @@ handleValidated("auth:has-session", ["panel"], async () => {
     return false;
   }
 });
+
+handleValidated("auth:pending-url", ["panel"], () => pendingAuthorizationUrl);
 
 handleValidated("auth:begin", ["panel"], async () => {
   const attempt = new AbortController();

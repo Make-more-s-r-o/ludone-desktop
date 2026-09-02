@@ -38,6 +38,7 @@ function audioSamples(amplitude, target) {
  *   cancelAuth?: ReturnType<typeof vi.fn>,
  *   deferDisplayCapture?: boolean,
  *   microphoneAmplitude?: number,
+ *   pendingAuthUrl?: import("vitest").Mock,
  *   rejectFirstDisplayCapture?: boolean,
  *   systemAmplitude?: number,
  * }} [options]
@@ -49,6 +50,7 @@ async function renderOnboarding(options = {}) {
       user: { name: "Testovací uživatel", email: "test@ludone.cz" },
     }),
     cancelAuth = vi.fn().mockResolvedValue({ ok: true, cancelled: 1 }),
+    pendingAuthUrl = vi.fn().mockResolvedValue(null),
     deferDisplayCapture = false,
     microphoneAmplitude = 0,
     rejectFirstDisplayCapture = false,
@@ -175,11 +177,17 @@ async function renderOnboarding(options = {}) {
     value: FakeAudioContext,
   });
 
+  const clipboardWrites = [];
+  Object.defineProperty(dom.window.navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: vi.fn(async (text) => { clipboardWrites.push(text); }) },
+  });
   Object.defineProperty(dom.window, "ludone", {
     configurable: true,
     value: {
       beginAuth,
       cancelAuth,
+      pendingAuthUrl,
       requestPermission: vi.fn().mockResolvedValue({
         granted: true,
         status: "granted",
@@ -215,6 +223,7 @@ async function renderOnboarding(options = {}) {
     audioContexts,
     beginAuth,
     cancelAuth,
+    clipboardWrites,
     document: dom.window.document,
     getDisplayMedia,
     getUserMedia,
@@ -509,5 +518,26 @@ describe("dva chybějící kroky onboardingu", () => {
 
     const done = panel.document.querySelector(".done-step");
     expect(done.dataset.recordingTestResult).toBe("passed");
+  });
+
+  it("na čekací obrazovce ukáže adresu, kterou lze zkopírovat, když se prohlížeč neotevřel", async () => {
+    const url = "https://app.ludone.cz/api/mcp/oauth/authorize?state=abc&code_challenge=xyz";
+    const panel = await renderOnboarding({
+      beginAuth: vi.fn(() => new Promise(() => {})),
+      pendingAuthUrl: vi.fn().mockResolvedValue(url),
+    });
+    await enterAuthentication(panel);
+    await panel.click(panel.document.querySelector(".auth-step .button--wide"));
+
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[data-testid="auth-waiting-url"]')?.textContent)
+        .toContain("app.ludone.cz");
+    });
+
+    // Adresa je jediná cesta dál, když se prohlížeč sám neotevře — proto musí jít zkopírovat.
+    const copy = panel.document.querySelector('[data-testid="auth-waiting-copy"]');
+    expect(copy).not.toBeNull();
+    await panel.click(copy);
+    expect(panel.clipboardWrites).toContain(url);
   });
 });
