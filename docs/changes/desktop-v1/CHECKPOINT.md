@@ -63,3 +63,16 @@ Plné znění včetně doporučených variant je v `DAN-TODO.md`, sekce „TVRD�
 
 🔴 **Ani jeden neblokuje další vývoj.** Release workflow je hotový a fail-closed: bez pěti
 tajemství **selže před spuštěním builderu**, takže nepodepsaná verze nemůže odejít omylem.
+
+## Noc 2./3. 9. — co přibylo po půlnoci
+
+- **PR #36** Nastavení ukazuje skutečný účet (byla tam atrapa „Daniel Novák").
+- **PR #37** odesílací vrstva fronty proti změřenému serverovému kontraktu.
+  🔴 **Nezapojená**: killswitch `false`, nic se neodesílá, endpointy nejsou živé.
+- `main`: **535 passed | 6 skipped (541)**, nula otevřených PR, čistý strom.
+
+### Nový blocker B4 — a je vážnější než ostatní
+
+Desktop se k upload routám **nepřihlásí**: server je autentizuje browser session, desktop má
+OAuth Bearer s MCP audience. Odesílání tedy nejde zapnout ani po nasazení migrací.
+Předáno serverové session; detail v `DAN-TODO.md`.

@@ -252,6 +252,25 @@ CLI 0.149.1) · Orca orchestrace zapnutá · OAuth server LuDone živý s dynami
 | **2** | **Kolik hodin audia měsíčně** zbude, až zmizí krabička od Plaudu | Jedno číslo. Určuje volbu přepisu, cenu za hodinu češtiny a jestli je v ní rozlišení mluvčích. Jde do dokumentace (etapa E8) |
 | **3** | **Právní rámec** — souhlas účastníků a retence | Není to kód, je to hodina rozhovoru. Ale musí být **dřív, než vznikne první ostrá nahrávka** — pak už nahrávky existují a mažou se hůř, než by nevznikaly |
 
+
+### B4 · Odesílání na server nejde zapnout — autentizace se nepotkává
+
+**Přesný blocker:** serverové upload routy autentizují **browser session (cookie)**, desktop
+má **OAuth Bearer token s MCP audience a scopy** `mcp:read` / `mcp:draft`. Ta dvě se nesejdou —
+první požadavek skončí na `session_missing` bez ohledu na kvalitu klienta. Scope pro **zápis
+vůbec neexistuje** (změřila serverová session dřív).
+
+Druhá díra: init očekává **`companyTabidooId`**, pro který desktop nemá zdroj — z přihlášení
+dostane e-mail a nic víc.
+
+**Řeší to serverová strana, ne my** — poslal jsem jim obojí i s tím, co naše strana umí
+(Bearer u každého požadavku, cookie nemáme a mít nebudeme). Doporučení: `companyTabidooId`
+odvodit na serveru z identity; vazbu uživatel→firma zná on, desktop ne.
+
+**Do té doby:** klient je hotový a otestovaný (PR #37, 535 testů), killswitch
+`DESKTOP_UPLOAD_ENABLED` zůstává `false`, nic se neodesílá. **Není co zapínat** — chybí čím
+se přihlásit, ne kód.
+
 ---
 
 ## 0a. 🔴 ROZHODOVACÍ BALÍK — deset otázek, jeden průchod
