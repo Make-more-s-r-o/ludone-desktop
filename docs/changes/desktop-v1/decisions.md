@@ -460,3 +460,42 @@ necommitnutou práci ve stromě**, včetně mé vlastní.
 
 **Doloženo obojím směrem:** po commitu proběhly tytéž dvě sabotáže bez potíží a poměr vyšel
 3 červené : 1 zelená.
+
+---
+
+## BD-N19 — skok hodin zpět: neházet, ale ZEPTAT SE (koordinátor, 2. 9. 2026)
+
+Nález z adversariálního review, **změřený sondou**: délka úseku se počítá z nástěnných hodin.
+Když se čas pohne zpět (korekce NTP po probuzení se špatnou RTC, ruční přenastavení),
+`stop()` i `switchProject()` spadnou na výjimce a **časovač zůstane ve stavu `bezi`**.
+Restart nepomůže — po něm je záznam `ceka-na-potvrzeni` a větev `ukoncit` chce současně
+`endedAt >= startedAt` **a** `endedAt <= now()`, což při pozadu jdoucích hodinách nejde splnit.
+**Průchozí je jediné rozhodnutí: `zahodit`, které zapíše nula minut.**
+
+⇒ Uživatel, kterému stroj odpoledne opraví čas, má na výběr **nezastavit časovač vůbec**,
+nebo **přijít o celou naměřenou práci**. To je přesně to, co R21 zakazuje slovy *„nikdy tiše
+nesmazat ani tiše nezapočítat"*.
+
+### Rozhodnutí: minimální oprava, ne plně monotónní čas
+
+Review doporučuje měřit monotónně (`process.hrtime.bigint()`). **Volím minimální variantu**
+a tady je důvod, proč to není zlevnění:
+
+🔴 **Monotónní zdroj RESTART PROCESU NEPŘEŽIJE.** `hrtime` se počítá od startu procesu, takže
+u časovače, jehož celý smysl je přežít pád a restart, je stejně nutná **kotva na nástěnný čas**
+uložená na disk. Monotónní hodiny by tedy problém neodstranily, jen posunuly — a přidaly druhý
+zdroj pravdy o čase.
+
+**Co se udělá místo toho:**
+
+1. **Skok zpět NEHÁZÍ výjimku.** `endedAt` se ořízne na `max(startedAt, floor(now))`.
+2. **Anomálie se ZAPÍŠE do úseku** — ne jako poznámka, ale jako pole, ze kterého se pozná,
+   že naměřená délka je nedůvěryhodná.
+3. **Úsek jde do `ceka-na-potvrzeni`** a rozhodne člověk. Nesmí se tiše započítat nula,
+   ani tiše započítat nesmyslná délka.
+4. **`ukoncit` přijme `endedAt >= startedAt`** i tehdy, když nástěnné hodiny jdou pozadu.
+
+**Proč zrovna tahle hranice:** ztratit hodinu práce a tvrdit „nula minut" je horší selhání než
+říct „hodiny se pohnuly, kolik ti mám započítat". První je tiché, druhé je vidět.
+
+**Vratné:** je to chování jedné větve a jeho testy; žádná změna kontraktu ani úložiště.
