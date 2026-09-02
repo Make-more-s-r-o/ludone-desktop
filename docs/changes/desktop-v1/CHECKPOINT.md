@@ -288,3 +288,49 @@ odděluje 🧪 „zelené testy" od ✅ „ověřeno naostro" — dnes se ta hra
 🔴 **Nespouštěj druhý Codex job nad `main.cjs`, dokud první neskončí.** Všechna zbývající
 práce v něm sahá do stejného souboru; dva zapisovatelé si vyrobí konflikty při rebase.
 Jeden worktree = jeden zapisovatel platí, ale tady je omezení tvrdší: jeden SOUBOR = jeden job.
+
+---
+
+# ✅ PRVNÍ `verified-live` — retence, 2. 9. 2026
+
+**`DSK-F017` je první funkce v projektu, kterou někdo viděl doopravdy fungovat.** Ne zelený
+test — skutečný běh nad skutečnými soubory:
+
+```
+fronta: 10 dní stará položka state=odeslano, obě stopy na disku
+[SONDA] politika= "7 dní po odeslání"     ← přečteno ze skutečného rendereru
+PŘED:  stara-mic.webm  stara-sys.webm
+PO:    (prázdno — total 0)
+fronta: {"schemaVersion":1,"items":[]}
+```
+
+Mergnuto v PR #15. `main` má **349 testů**.
+
+## Proč to skoro nevyšlo
+
+Codex zapojení napsal se zelenými branami a `+11 testy`. **Review nad diffem zjistilo, že by
+retence nikdy nic nesmazala** — politika se četla z rendereru dřív, než se stihl načíst.
+Sonda v Electronu to ukázala doslova: `IHNED_PO_LOADFILE: {"vysledek": null}`.
+
+⇒ Zelený, zapojený a **mrtvý** kód. Přesně ta třída, kterou tenhle projekt honí celý běh.
+
+## 🔴 Poučení o MĚŘENÍ, ne o kódu
+
+Než se podařilo pořídit ten důkaz, **čtyřikrát po sobě byl špatně testovací záznam** — a pokaždé
+to vypadalo jako vada v implementaci:
+
+| co bylo špatně | co to vyžaduje |
+|---|---|
+| `sentAt` jako číslo | **ISO řetězec** — `canonicalTimestampMs` číslo odmítne |
+| ISO s mikrosekundami | přesně **milisekundy** — porovnává se round-trip přes `toISOString()` |
+| jen stopa `microphone` | `trackFiles` chce **obě** (`microphone` i `system`) |
+| fronta v `<kořen>/queue` | `LUDONE_DATA_DIR` mapuje `userData` na **`<kořen>/user-data`** |
+
+**Třikrát jsem byl krok od nahlášení vady, která neexistovala.** Napřed ověř fixture, teprve
+pak obviň implementaci — a když „nic se nestalo", je to stejně často chyba měření jako kódu.
+
+## Otevřený dluh z téhle story
+
+⚠️ Hlavní proces bere politiku mazání souborů **z rendereru**. Fail-closed to drží bezpečné,
+ale směr závislosti je opačný, než jak B3 a B5 postavily zbytek (fakta patří hlavnímu procesu).
+Až vznikne nastavení v hlavním procesu, přesunout.
