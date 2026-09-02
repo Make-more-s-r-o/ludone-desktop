@@ -859,3 +859,39 @@ oprávnění, nahrávání, nastavení). Nesladěné zůstávají zejména: **on
 ⇒ Další práce na desktopu je **sladit zbývající obrazovky se schváleným návrhem**, ne přidávat
 funkce. Serverová session dostala krok 0 „design napřed" pro svůj vlastní modul — to platí dál
 a s tímhle se to neplete.
+
+## BD-N41 — Repozitář půjde na public, docs se předtím pročistí (Dan, 2. 9. 2026)
+
+Dan zvolil **„public, ale docs napřed pročistit"**. Důvod: Actions jsou u veřejných
+repozitářů zdarma a bez limitu minut, a **GitHub Releases** je rovnou distribuční kanál
+i feed pro aktualizace. Alternativy odmítnuty: privátní repo znamená platit Actions
+a distribuovat jinudy, „public rovnou" by zveřejnilo vnitřní dokumentaci beze změny.
+
+**Podklad k rozhodnutí (měřeno, ne odhadnuto):** `gitleaks` projel 204 commitů a našel
+**jediný nález** — `access_token = "ya29.TESTOVACI"` v `sekce-navrhy/audit-redaction.md`,
+tedy falešný token v dokumentu o tom, jak tokeny neuniknout do logů. Žádné klíče, hesla
+ani skutečné tokeny. Klientská OAuth ID jsou public client dle RFC 8252
+(`client_secret_hash=NULL`) a v repu navíc jen zkrácená.
+
+🔴 **Co pročištění NEVYŘEŠÍ:** zveřejněním se zpřístupní **celá historie**. Změřeno, co je
+v ní vidět: `labs.ludone.cz` (50×), `data.ludone.cz`, `/opt/ludone-uploads`,
+`/opt/ludone-uploads-prod`, `/opt/ludone-app`. Tedy **dva hostnames a tři cesty, nic víc** —
+žádné přihlašovací údaje. Znalost cesty přístup nedává a hostname bývá dohledatelný
+z veřejných certifikátových logů.
+
+Kdyby Dan chtěl nulovou stopu, existují jen invazivní cesty: přepsat historii
+(`git filter-repo`, rozbije všechny klony a otevřené PR), nebo založit nový veřejný
+repozitář se slitou historií. Obojí stojí historii; doporučení je **přijmout to**.
+
+## BD-N42 — Aktualizace přes electron-updater s podepsanou aplikací (Dan, 2. 9. 2026)
+
+Dan kupuje **Apple Developer účet** a chce to postavit pořádně: `electron-builder`
++ `electron-updater` + notarizace, feed na GitHub Releases.
+
+Dnešní stav změřen: v repu **není** electron-builder ani electron-updater, jen vlastní
+`scripts/package-mac.mjs`. Bez podpisu a notarizace macOS staženou aplikaci odmítne
+hlášením „je poškozená“ a automatické aktualizace nejdou udělat bezpečně — proto ten účet
+není luxus, ale podmínka.
+
+🛑 **Nákup účtu je Danova stopka** (peníze + účet u Applu). Do té doby se staví všechno,
+co na podpisu nezávisí: konfigurace electron-builderu, kanál aktualizací, verzování.
