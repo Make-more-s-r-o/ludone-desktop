@@ -1097,50 +1097,16 @@ serverová session určí.
 
 ---
 
-## 🔴 ŽIVÝ NÁLEZ V PRODUKCI: `/uploads/**` nevyžaduje přihlášení (2. 9. 2026)
+## ✅ VYŘEŠENO: `/uploads/**` na produkci (2. 9. 2026)
 
-**Netýká se desktopu.** Vyplynulo z adversariálního review plánu serverového modulu a je to
-**stav dnešní produkce**, ne vada něčeho nového.
+Nález i oprava patří serverové straně (`ludone-app`), ne desktopu — proto je tady jen odkaz.
+Zavřeno allowlistem; Dan vědomě ponechal tři prefixy veřejné. Detail vede serverová session
+ve svém repozitáři.
 
-### Změřeno naostro proti `app.ludone.cz`, bez cizích dat
-
-```
-/inventory                          → HTTP 307 → /login    (vyžaduje přihlášení)
-/uploads/inventory/…/neexistuje.jpg → HTTP 404             (ŽÁDNÉ přihlášení)
-```
-
-**404 znamená, že se požadavek zpracoval** a jen nenašel soubor. Kdyby cesta vyžadovala
-přihlášení, vrátila by 307 na login jako stránka. Nevrátila.
-
-### Kde to je (ověřeno ve zdrojácích `ludone-app`)
-
-```
-src/proxy.ts:19                        "/uploads/" je v PUBLIC_PATHS
-src/proxy.ts:104                       matchuje se startsWith → bez session, bez RBAC
-src/app/uploads/[...path]/route.ts:43  jediná zakázaná předpona je "lufak"
-```
-
-⇒ **Fotky skladu jsou dnes čitelné bez účtu**, přestože jejich RBAC routa
-(`GET /api/inventory/photos`) je učebnicově zagatovaná: session → modul-gate → scope →
-`assertItemInScope`. Ochrana stojí jen na tom, že cestu nikdo nezná.
-
-⚠️ **Druhý dopad:** `route.ts:67` čte celý soubor do paměti a ignoruje `Range`. Několik
-paralelních requestů na velký soubor položí kontejner na 512 M — **a nepotřebuje k tomu účet.**
-
-### Co s tím
-
-**Oprava je jeden řádek**, ale doporučuju ji otočit: místo denylistu (`lufak`) udělat
-**allowlist** toho, co veřejné být SMÍ. Nový modul pak bude neveřejný z podstaty, ne dokud
-si někdo nevzpomene — což je přesně chyba, která se tu právě stala.
-
-🔴 **Rozhodni, kdo to opraví.** Serverová session to ví a plán si o to opře, ale je to
-**oprava stávající produkce**, ne součást nového modulu — a měla by jít dřív než nový modul,
-ne s ním.
-
-*Poznámka k důkazu: ověřeno neautentizovaným požadavkem na NEEXISTUJÍCÍ cestu. Že se stáhne
-skutečná fotka, jsem netestoval a netestoval bych — k prokázání díry to není potřeba.*
-
----
+🔴 **Otevřený follow-up (návrh serverové session):** ty tři prefixy servírovat vlastní routou
+se session gate místo veřejného prefixu. U dvou z nich na ně nikdo prohlížečovou URL nestaví,
+u třetího už existuje správná token routa. Odhad jedno odpoledne. Přínos není jen kosmetický —
+zmizí URL, které platí navždy, nejdou odvolat a nikdo neloguje, kdo je použil.
 
 ## Mezera: odebrání retina ikony (`@2x`) nikdo nechytí (2. 9. 2026)
 
