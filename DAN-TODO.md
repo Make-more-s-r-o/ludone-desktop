@@ -642,3 +642,35 @@ UUIDv4 vzoru, který nechá `oauth.enc` i cizí soubory být.
 nebude `LUDONE_OAUTH_CLIENT_ID`. Deadliny 5 s jsou **inženýrská volba, ne měření** — vykonavatel
 to sám takhle označil. A zůstává přiznaný okrajový případ: při exotické chybě `chmod`/`fsync`
 po úspěšném `rename` může souběh poslat revokaci dvakrát (idempotentní, fail-closed).
+---
+
+## 🔴 B6 — výběr projektu blokuje chybějící stav vypínače v rendereru
+
+Předpoklad o dokončené B5 platí jen zčásti: `electron/tracking.cjs` existuje a preload
+vystavuje `tracking:start`, `tracking:switch-project`, `tracking:stop` a
+`tracking:get-state`. Hodnota `DESKTOP_TIME_ENABLED` ale zůstává jen v hlavním procesu;
+`tracking:get-state` vrací samotný perzistentní stav časovače a renderer z něj nepozná,
+zda je časová agenda zapnutá.
+
+**B6 proto nepokračovala do produkčního kódu.** Bez změny v `electron/main.cjs` nebo
+`electron/preload.cjs`, které B6 podle pracovního výkladu vlastnictví nevlastní, by musela
+buď nabízet projekty i při vypnutém flagu, nebo zůstat trvale fail-closed a nenabídnout nic.
+Obě varianty porušují R18 a předepsanou pozitivní kontrolu. Doporučený default pro vlastníka
+B5: vystavit rendereru jen neměnnou informaci, zda je časová agenda zapnutá; neposílat tím
+žádná další data ani business pravidla.
+
+**Rozpor vlastnictví OQ-5:** `docs/changes/desktop-v1/plan.md:170` a
+`podklady-vytezene.md:172` připisují B6 zásahy do `main.cjs`/`preload.cjs`, zatímco
+`plan.md:147` a tabulka vlastnictví bloků B6 žádný takový blok nedávají. Tento běh použil
+bezpečnější druhý výklad a do obou souborů nesáhl.
+
+**Money hranice OQ-2:** aktuální zadání výslovně říká, že se smějí nabízet jen projekty
+s platnou alokací a čerpáním **pod 110 %**. To je pro tento běh nadřazené pracovní rozhodnutí,
+ale zmrazený `spec.md` R7 stále říká „nad 110 % je zašedlý a s důvodem“ a `plan.md:147`
+říká, že přečerpaný projekt v nabídce není. Dan určí, které zmrazené texty se mají sjednotit;
+do té doby se přesných 110,0 % ani projekty nad hranicí nesmějí implementovat odhadem.
+
+**Další známé návaznosti B6:** prázdný stav nemá schválený artboard; nulová alokace a stav
+„všechny alokace jsou přečerpané“ nemají sjednocené chování; `scripts/ui-smoke.mjs` na
+řádcích 224, 226, 234 a 338–342 očekává odstraňovaný `<select>`; preload nemá bezpečný
+`openExternal` pro odkaz z prázdného stavu. Tyto body se v zablokovaném běhu neměnily.
