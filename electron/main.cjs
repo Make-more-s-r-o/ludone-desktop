@@ -45,6 +45,8 @@ const queueModulePromise = import(
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
 const PANEL_HEIGHT = 792;
+const PANEL_LOAD_TIMEOUT_MS = 5_000;
+const RETENTION_READ_TIMEOUT_MS = 1_000;
 const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
 const RECORDING_TRACKS = new Map([
   ["microphone", "mikrofon"],
@@ -384,8 +386,45 @@ function positionPanel() {
   panelWindow.setPosition(x, y, false);
 }
 
+function waitForPanelPromise(window, webContents, promise, {
+  failureReason,
+  timeoutMs,
+  timeoutReason,
+}) {
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer;
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      window.removeListener("closed", onClosed);
+      webContents.removeListener("destroyed", onDestroyed);
+      resolve(result);
+    };
+    const onClosed = () => finish({ succeeded: false, reason: "okno bylo zavřeno" });
+    const onDestroyed = () => finish({ succeeded: false, reason: "renderer byl zničen" });
+
+    window.once("closed", onClosed);
+    webContents.once("destroyed", onDestroyed);
+    timer = setTimeout(() => {
+      finish({ succeeded: false, reason: timeoutReason });
+    }, timeoutMs);
+    timer.unref?.();
+
+    Promise.resolve(promise).then(
+      (value) => finish({ succeeded: true, value }),
+      (error) => finish({ succeeded: false, error, reason: failureReason }),
+    );
+    if (window.isDestroyed() || webContents.isDestroyed()) {
+      finish({ succeeded: false, reason: "okno nebo renderer už neexistuje" });
+    }
+  });
+}
+
 function createPanelWindow() {
-  panelWindow = new BrowserWindow({
+  const createdPanelWindow = new BrowserWindow({
     width: PANEL_WIDTH,
     height: PANEL_HEIGHT,
     minWidth: PANEL_WIDTH,
@@ -411,9 +450,20 @@ function createPanelWindow() {
       sandbox: true,
     },
   });
+  panelWindow = createdPanelWindow;
 
-  const panelContents = panelWindow.webContents;
-  panelWindow.loadFile(path.join(DIST_ROOT, "index.html"));
+  const panelContents = createdPanelWindow.webContents;
+  let loadPromise;
+  try {
+    loadPromise = createdPanelWindow.loadFile(path.join(DIST_ROOT, "index.html"));
+  } catch (error) {
+    loadPromise = Promise.reject(error);
+  }
+  const readyForRetention = waitForPanelPromise(createdPanelWindow, panelContents, loadPromise, {
+    failureReason: "načtení selhalo",
+    timeoutMs: PANEL_LOAD_TIMEOUT_MS,
+    timeoutReason: `načtení překročilo ${PANEL_LOAD_TIMEOUT_MS} ms`,
+  });
   panelContents.on("render-process-gone", (_event, details) => {
     console.error(`[recording] Renderer skončil: ${JSON.stringify(details)}`);
     forgetOwnerActivity(panelContents.id, "pád rendereru");
@@ -451,6 +501,7 @@ function createPanelWindow() {
       panelWindow.hide();
     }
   });
+  return { readyForRetention, webContents: panelContents, window: createdPanelWindow };
 }
 
 function createSettingsWindow() {
@@ -824,12 +875,48 @@ function outboundQueueFilePath() {
   return path.join(app.getPath("userData"), "queue", "outgoing.json");
 }
 
-async function readRetentionPolicy() {
+async function readRetentionPolicy(panelStartup) {
   try {
-    const serialized = await panelWindow?.webContents.executeJavaScript(
-      `window.localStorage.getItem(${JSON.stringify(RETENTION_STORAGE_KEY)})`,
-      true,
+    const loadResult = await panelStartup.readyForRetention;
+    if (!loadResult.succeeded) {
+      const detail = loadResult.error?.message || loadResult.reason;
+      console.warn(`[retention] Panel není připraven; data zůstávají zachována: ${detail}`);
+      return undefined;
+    }
+    const webContents = panelStartup.webContents;
+    if (!isTrustedWebContents(webContents)) {
+      console.warn("[retention] Renderer není důvěryhodný; data zůstávají zachována.");
+      return undefined;
+    }
+    let readPromise;
+    try {
+      readPromise = webContents.executeJavaScript(
+        `window.localStorage.getItem(${JSON.stringify(RETENTION_STORAGE_KEY)})`,
+        true,
+      );
+    } catch (error) {
+      readPromise = Promise.reject(error);
+    }
+    const readResult = await waitForPanelPromise(
+      panelStartup.window,
+      webContents,
+      readPromise,
+      {
+        failureReason: "čtení nastavení selhalo",
+        timeoutMs: RETENTION_READ_TIMEOUT_MS,
+        timeoutReason: `čtení nastavení překročilo ${RETENTION_READ_TIMEOUT_MS} ms`,
+      },
     );
+    if (!readResult.succeeded) {
+      const detail = readResult.error?.message || readResult.reason;
+      console.warn(`[retention] Nastavení nelze přečíst; data zůstávají zachována: ${detail}`);
+      return undefined;
+    }
+    if (!isTrustedWebContents(webContents)) {
+      console.warn("[retention] Renderer během čtení změnil dokument; data zůstávají zachována.");
+      return undefined;
+    }
+    const serialized = readResult.value;
     if (typeof serialized !== "string") return undefined;
     const settings = JSON.parse(serialized);
     if (
@@ -848,11 +935,11 @@ async function readRetentionPolicy() {
   }
 }
 
-async function applyOutboundQueueRetention() {
+async function applyOutboundQueueRetention(panelStartup) {
   try {
     const filePath = outboundQueueFilePath();
     const queue = await loadQueue(filePath);
-    const policy = await readRetentionPolicy();
+    const policy = await readRetentionPolicy(panelStartup);
     const result = await applyRetention({ queue, policy, now: Date.now() });
     if (result.deletedItems.length > 0) {
       await saveQueueAtomically(filePath, { ...queue, items: result.keptItems });
@@ -1232,8 +1319,8 @@ app.whenReady().then(async () => {
   tray.setTitle("");
   tray.on("click", togglePanel);
   refreshTray();
-  createPanelWindow();
-  await applyOutboundQueueRetention();
+  const panelStartup = createPanelWindow();
+  await applyOutboundQueueRetention(panelStartup);
   markOutboundQueueRetentionReady();
   void pumpOutboundQueue();
   const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);

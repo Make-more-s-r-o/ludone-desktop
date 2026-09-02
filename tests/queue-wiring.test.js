@@ -61,40 +61,76 @@ const mainFilename = fileURLToPath(mainUrl);
 const mainDirectory = path.dirname(mainFilename);
 const actualRequire = createRequire(mainUrl);
 const temporaryRoots = new Set();
+const RETENTION_STORAGE_KEY = "ludone.prototype.settings";
 
 afterEach(async () => {
+  vi.useRealTimers();
   await Promise.all([...temporaryRoots].map((root) => (
     rm(root, { recursive: true, force: true })
   )));
   temporaryRoots.clear();
 });
 
-function fakeElectron(userDataPath, { storedSettings = null, settingsReadError = null } = {}) {
+function fakeElectron(userDataPath, {
+  deferPanelLoad = false,
+  deferSettingsRead = false,
+  navigateDuringSettingsRead = false,
+  storedSettings = null,
+  settingsReadError = null,
+} = {}) {
   const ipcHandlers = new Map();
   const ipcListeners = new Map();
   const windows = [];
   let readyCallback;
   let nextWebContentsId = 1;
+  let pendingPanelLoad;
+  let reportSettingsReadStarted;
+  const settingsReadStarted = new Promise((resolve) => {
+    reportSettingsReadStarted = resolve;
+  });
 
   class FakeWebContents extends EventEmitter {
     constructor(id) {
       super();
       this.id = id;
       this.mainFrame = { url: "ludone://app/index.html" };
-      this.executeJavaScript = vi.fn(async () => {
+      this.pageLoaded = false;
+      this.destroyed = false;
+      this.localStorage = new Map();
+      this.executeJavaScript = vi.fn(async (source) => {
+        reportSettingsReadStarted(undefined);
+        if (!this.pageLoaded) return null;
         if (settingsReadError) throw settingsReadError;
-        return storedSettings;
+        const expectedSource = `window.localStorage.getItem(${JSON.stringify(RETENTION_STORAGE_KEY)})`;
+        if (source !== expectedSource) throw new Error(`Neočekávaný skript rendereru: ${source}`);
+        if (navigateDuringSettingsRead) this.mainFrame.url = "https://neduveryhodny.example/";
+        if (deferSettingsRead) return new Promise(() => {});
+        return this.localStorage.get(RETENTION_STORAGE_KEY) ?? null;
       });
     }
 
+    finishLoad() {
+      if (storedSettings !== null) {
+        this.localStorage.set(RETENTION_STORAGE_KEY, storedSettings);
+      }
+      this.pageLoaded = true;
+      this.emit("did-finish-load");
+    }
+
+    destroy() {
+      this.destroyed = true;
+      this.emit("destroyed");
+    }
+
     getURL() { return this.mainFrame.url; }
-    isDestroyed() { return false; }
+    isDestroyed() { return this.destroyed; }
   }
 
   class FakeBrowserWindow extends EventEmitter {
     constructor() {
       super();
       this.visible = false;
+      this.destroyed = false;
       const contents = new FakeWebContents(nextWebContentsId);
       nextWebContentsId += 1;
       this.webContents = contents;
@@ -103,10 +139,22 @@ function fakeElectron(userDataPath, { storedSettings = null, settingsReadError =
 
     loadFile(filePath) {
       this.webContents.mainFrame.url = pathToFileURL(filePath).toString();
+      if (deferPanelLoad && windows[0] === this) {
+        return new Promise((resolve, reject) => {
+          pendingPanelLoad = {
+            finish: () => {
+              this.webContents.finishLoad();
+              resolve(undefined);
+            },
+            reject,
+          };
+        });
+      }
+      this.webContents.finishLoad();
       return Promise.resolve();
     }
 
-    isDestroyed() { return false; }
+    isDestroyed() { return this.destroyed; }
     isVisible() { return this.visible; }
     show() { this.visible = true; }
     hide() { this.visible = false; }
@@ -178,7 +226,27 @@ function fakeElectron(userDataPath, { storedSettings = null, settingsReadError =
   return {
     electron,
     ipcHandlers,
+    settingsReadStarted,
     windows,
+    finishPanelLoad() {
+      if (!pendingPanelLoad) throw new Error("Panel nemá čekající načtení");
+      pendingPanelLoad.finish();
+      pendingPanelLoad = undefined;
+    },
+    failPanelLoad(error) {
+      if (!pendingPanelLoad) throw new Error("Panel nemá čekající načtení");
+      pendingPanelLoad.reject(error);
+      pendingPanelLoad = undefined;
+    },
+    closePanelBeforeLoad() {
+      if (!pendingPanelLoad) throw new Error("Panel nemá čekající načtení");
+      windows[0].destroyed = true;
+      windows[0].emit("closed");
+    },
+    destroyPanelRendererBeforeLoad() {
+      if (!pendingPanelLoad) throw new Error("Panel nemá čekající načtení");
+      windows[0].webContents.destroy();
+    },
     async runReady() {
       if (!readyCallback) throw new Error("main.cjs nezaregistroval app.whenReady callback");
       await readyCallback();
@@ -191,7 +259,11 @@ function fakeElectron(userDataPath, { storedSettings = null, settingsReadError =
  * @param {{
  *   applyRetention?: (...args: any[]) => Promise<any>,
  *   createOutboundQueueStore?: (...args: any[]) => any,
+ *   deferPanelLoad?: boolean,
+ *   deferSettingsRead?: boolean,
  *   env?: Record<string, string | undefined>,
+ *   loadQueue?: (...args: any[]) => Promise<any>,
+ *   navigateDuringSettingsRead?: boolean,
  *   settingsReadError?: Error | null,
  *   storedSettings?: string | null,
  * }} [options]
@@ -199,19 +271,33 @@ function fakeElectron(userDataPath, { storedSettings = null, settingsReadError =
 async function loadMain({
   applyRetention,
   createOutboundQueueStore,
+  deferPanelLoad = false,
+  deferSettingsRead = false,
   env = {},
+  loadQueue,
+  navigateDuringSettingsRead = false,
   settingsReadError = null,
   storedSettings = null,
 } = {}) {
   const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-main-queue-test-"));
   temporaryRoots.add(userDataPath);
-  const harness = fakeElectron(userDataPath, { storedSettings, settingsReadError });
+  const harness = fakeElectron(userDataPath, {
+    deferPanelLoad,
+    deferSettingsRead,
+    navigateDuringSettingsRead,
+    storedSettings,
+    settingsReadError,
+  });
   const queueStoreModule = actualRequire("./queue.cjs");
   const retentionModule = actualRequire("./retention.cjs");
   const injectedRequire = (specifier) => {
     if (specifier === "electron") return harness.electron;
-    if (specifier === "./queue.cjs" && createOutboundQueueStore) {
-      return { ...queueStoreModule, createOutboundQueueStore };
+    if (specifier === "./queue.cjs" && (createOutboundQueueStore || loadQueue)) {
+      return {
+        ...queueStoreModule,
+        ...(createOutboundQueueStore ? { createOutboundQueueStore } : {}),
+        ...(loadQueue ? { loadQueue } : {}),
+      };
     }
     if (specifier === "./retention.cjs" && applyRetention) {
       return { ...retentionModule, applyRetention };
@@ -488,6 +574,125 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(await fileExists(fixture.systemPath)).toBe(false);
     await expect(readFile(fixture.queuePath, "utf8").then(JSON.parse))
       .resolves.toEqual({ schemaVersion: 1, items: [] });
+  });
+
+  it("při startu čeká s retenčním čtením na skutečné dokončení loadFile", async () => {
+    let storedQueue;
+    const loadQueue = vi.fn(async () => storedQueue);
+    const harness = await loadMain({
+      deferPanelLoad: true,
+      loadQueue,
+      storedSettings: JSON.stringify({ retention: "7 dní po odeslání" }),
+    });
+    const fixture = await writeOldSentRecording(harness.userDataPath);
+    storedQueue = JSON.parse(await readFile(fixture.queuePath, "utf8"));
+    vi.useFakeTimers();
+
+    const ready = harness.runReady();
+    await vi.advanceTimersByTimeAsync(4_999);
+
+    const executeJavaScript = harness.windows[0].webContents.executeJavaScript;
+    expect(harness.windows[0].webContents.pageLoaded).toBe(false);
+    expect(executeJavaScript).not.toHaveBeenCalled();
+
+    harness.finishPanelLoad();
+    await ready;
+    vi.useRealTimers();
+    await waitForQueuePump(harness);
+
+    expect(executeJavaScript).toHaveBeenCalledOnce();
+    expect(await fileExists(fixture.microphonePath)).toBe(false);
+    expect(await fileExists(fixture.systemPath)).toBe(false);
+  });
+
+  it.each([
+    ["chybě načtení", (harness) => harness.failPanelLoad(new Error("did-fail-load"))],
+    ["zavření okna", (harness) => harness.closePanelBeforeLoad()],
+    ["zničení rendereru", (harness) => harness.destroyPanelRendererBeforeLoad()],
+  ])("při %s pokračuje start bez čtení a bez mazání", async (_label, endLoad) => {
+    const harness = await loadMain({
+      deferPanelLoad: true,
+      storedSettings: JSON.stringify({ retention: "7 dní po odeslání" }),
+    });
+    const fixture = await writeOldSentRecording(harness.userDataPath);
+
+    const ready = harness.runReady();
+    endLoad(harness);
+    await expect(ready).resolves.toBeUndefined();
+    await waitForQueuePump(harness);
+
+    expect(harness.windows[0].webContents.executeJavaScript).not.toHaveBeenCalled();
+    expect(await fileExists(fixture.microphonePath)).toBe(true);
+    expect(await fileExists(fixture.systemPath)).toBe(true);
+    await expect(readFile(fixture.queuePath, "utf8").then(JSON.parse))
+      .resolves.toMatchObject({ items: [expect.objectContaining({ state: "odeslano" })] });
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+  });
+
+  it("po pěti sekundách ukončí čekání na nenačtené okno fail-closed", async () => {
+    const harness = await loadMain({
+      deferPanelLoad: true,
+      storedSettings: JSON.stringify({ retention: "7 dní po odeslání" }),
+    });
+    const fixture = await writeOldSentRecording(harness.userDataPath);
+    vi.useFakeTimers();
+
+    const ready = harness.runReady();
+    await vi.advanceTimersByTimeAsync(5_000);
+    await expect(ready).resolves.toBeUndefined();
+    vi.useRealTimers();
+    await waitForQueuePump(harness);
+
+    expect(harness.windows[0].webContents.executeJavaScript).not.toHaveBeenCalled();
+    expect(await fileExists(fixture.microphonePath)).toBe(true);
+    expect(await fileExists(fixture.systemPath)).toBe(true);
+    await expect(readFile(fixture.queuePath, "utf8").then(JSON.parse))
+      .resolves.toMatchObject({ items: [expect.objectContaining({ state: "odeslano" })] });
+    expect(harness.quietConsole.warn).toHaveBeenCalledWith(
+      expect.stringContaining("načtení překročilo 5000 ms"),
+    );
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+  });
+
+  it("po jedné sekundě ukončí neodpovídající čtení rendereru fail-closed", async () => {
+    const harness = await loadMain({
+      deferSettingsRead: true,
+      storedSettings: JSON.stringify({ retention: "7 dní po odeslání" }),
+    });
+    const fixture = await writeOldSentRecording(harness.userDataPath);
+    vi.useFakeTimers();
+
+    const ready = harness.runReady();
+    await harness.settingsReadStarted;
+    await vi.advanceTimersByTimeAsync(1_000);
+    await expect(ready).resolves.toBeUndefined();
+    vi.useRealTimers();
+    await waitForQueuePump(harness);
+
+    expect(await fileExists(fixture.microphonePath)).toBe(true);
+    expect(await fileExists(fixture.systemPath)).toBe(true);
+    expect(harness.quietConsole.warn).toHaveBeenCalledWith(
+      expect.stringContaining("čtení nastavení překročilo 1000 ms"),
+    );
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+  });
+
+  it("po změně dokumentu během čtení zachová data fail-closed", async () => {
+    const harness = await loadMain({
+      navigateDuringSettingsRead: true,
+      storedSettings: JSON.stringify({ retention: "7 dní po odeslání" }),
+    });
+    const fixture = await writeOldSentRecording(harness.userDataPath);
+
+    await expect(harness.runReady()).resolves.toBeUndefined();
+    await waitForQueuePump(harness);
+
+    expect(harness.windows[0].webContents.executeJavaScript).toHaveBeenCalledOnce();
+    expect(await fileExists(fixture.microphonePath)).toBe(true);
+    expect(await fileExists(fixture.systemPath)).toBe(true);
+    expect(harness.quietConsole.warn).toHaveBeenCalledWith(
+      expect.stringContaining("během čtení změnil dokument"),
+    );
   });
 
   it.each([
