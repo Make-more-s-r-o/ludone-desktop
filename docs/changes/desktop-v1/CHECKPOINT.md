@@ -3,7 +3,7 @@
 **PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
 kontextem, musí pokračovat, aniž by se ptal. Zadání: [`BEH-NOC.md`](BEH-NOC.md).
 
-**Poslední zápis: 2. 9. 2026 — VLNA 5, po druhém review.**
+**Poslední zápis: 2. 9. 2026 — VLNA 6 UZAVŘENA, všechny opravitelné nálezy hotové.**
 
 🔴 **Režim od 23:15 (Dan): NEPTAT SE.** Bezpečné vratné defaulty rozhodni a zapiš do
 `decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
@@ -12,7 +12,7 @@ práce. Mechanika Codex, Claude koordinace a review.
 
 ---
 
-## Vlna `5` — po obnovení limitů
+## Vlna `6` — uzavřena
 
 | Story | PR | CI | Testy (měřil jsem já, před rourou) | Stav |
 |---|---|---|---|---|
@@ -33,7 +33,7 @@ práce. Mechanika Codex, Claude koordinace a review.
 
 | Co | Log | Konec |
 |---|---|---|
-| Codex **B5c** skok hodin zpět | `/tmp/beh-noc/b5c-codex.log` | hlídač na pozadí |
+| — | — | **žádné, všechny joby doběhly** |
 
 🔴 Log bez pohybu 20 min = mrtvý job. Práce bývá na disku — `git status` ve worktree.
 🔴 **Po doběhnutí COMMITNI HNED**, teprve pak brány a sabotáže.
@@ -149,3 +149,42 @@ Když nesedí, něco se při slučování ztratilo a je to vidět dřív než v 
 | **čas se nikdy nedostane do fronty** (`enqueueTimeEntry` nemá volajícího) | zapojení nemá vlastníka; B5 ani B7 ho podle §12 nevlastní |
 | **retenční modul nikdo nevolá** | totéž; PR #9 to sám přiznává |
 | **selhání zařazení do fronty se jen zaloguje** | potřebuje reconciliaci na startu — návrh, ne oprava |
+
+---
+
+## Vlna 6 — měřidla, která četla text, teď spouštějí kód
+
+Posledních pět nálezů review byla jedna třída: **testy měřící TEXT místo CHOVÁNÍ.**
+
+| nález | co se nespouštělo | co se spouští teď |
+|---|---|---|
+| 9 | přepočet lišty po změně časovače | vyříznuté `runTrackingMutation` + `syncTrackingTray` nad řízenou mutací |
+| 10 | produkční čtení `DESKTOP_TIME_ENABLED` | `getTrackingStore` nad izolovaným `process.env` |
+| 11 | trvanlivost zápisu `casovac.json` | `start → commit → writeStateAtomically` nad async `fs`, **sled událostí** |
+| 12 | že nahrávka skutečně skončí ve frontě | celý `main.cjs` s podstrčeným Electronem, reálná session přes IPC, čtení přes `queue:list` |
+| 13 | produkční čtení obou vypínačů fronty | spuštěné `queueKillswitches()`, včetně **nenastaveného** stavu |
+
+**Sabotáže u obou:** b5 2🔴:1🟢 · b7 3🔴:1🟢. **Produkční kód beze změny** — měnily se jen
+vlastněné testovací soubory.
+
+🔴 **Obě povinně zelené sabotáže vkládaly KOMENTÁŘ, který vypadá jako deklarace.** Tenhle
+běh na tom dvakrát uklouzl, pokaždé v opačném směru (jednou test padal na zmínku v komentáři,
+podruhé kvůli zmínce v komentáři prošel) — teď je to doložené z obou stran.
+
+## Konečný stav stohu
+
+```
+main ─┬─ b1 (#2)
+      ├─ b3 (#4, 114) ─ b5 (#6, 181) ─ b7 (#7, 219) ─ b11 (#9, 238)
+      └─ b4 (#3,  87) ─ b8 (#5, 131) ─ b9 (#8, 165) ─ b9b (#10, 179)
+```
+
+🔴 **Čísla musí sedět na součet.** Po každém slučování jsem je kontroloval — je to
+nejlevnější detektor toho, že se při rebase něco ztratilo.
+
+## Z 15 nálezů review: 10 opraveno, 5 čeká na Dana
+
+**Čeká, protože to nejde rozhodnout za něj:** tři díry v zapojení (čas do fronty, volání
+retence, tiché selhání zařazení) · zda retence patří pod `DSK-F015` · a `updateTray`
+v odhlášení, kde je ale **zabudovaná kontrola**, která spadne v okamžiku, kdy se obě
+linie potkají (BD-N20).
