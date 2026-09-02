@@ -242,7 +242,7 @@ function savedMessage(result) {
   return `Uloženo místně: ${microphone.name} (${microphone.size} B) a ${system.name} (${system.size} B). Odeslání zůstává vypnuté.`;
 }
 
-export function RecordingCard({ onActivityChange }) {
+export function RecordingCard({ onActivityChange, todaySummary = null }) {
   const [session, setSession] = useState({
     phase: "idle",
     startedAt: null,
@@ -382,9 +382,11 @@ export function RecordingCard({ onActivityChange }) {
 
   useEffect(() => {
     onActivityChange({
-      active: isRecording,
+      // Příprava i ukládání jsou aktivní fáze. `idle` se nahlásí až poté, co
+      // finishRecording doběhne a hlavní proces stihne položku zařadit do fronty.
+      active: session.phase !== "idle",
     });
-  }, [isRecording, onActivityChange]);
+  }, [onActivityChange, session.phase]);
 
   const statusLabel = {
     idle: "Připraveno",
@@ -395,21 +397,51 @@ export function RecordingCard({ onActivityChange }) {
 
   return (
     <section
-      className={`feature-card recording-card${isRecording ? " is-active" : ""}`}
+      className={`feature-card recording-card${isRecording ? " is-active" : ""}${session.phase === "idle" ? " idle-feature-row" : ""}${session.phase === "idle" && notice ? " has-notice" : ""}`}
       data-recording-phase={session.phase}
       data-microphone-label={session.labels?.microphone ?? ""}
       data-system-label={session.labels?.system ?? ""}
+      data-testid={session.phase === "idle" ? "idle-action-row" : undefined}
+      aria-label="Nahrávání"
     >
-      <div className="feature-card__header">
-        <span className="section-icon section-icon--recording"><MicIcon /></span>
-        <div>
-          <p className="eyebrow">Zachytit rozhovor</p>
-          <h2>Nahrávání</h2>
+      {session.phase === "idle" ? (
+        <>
+          <span className="idle-feature-row__icon"><MicIcon variant="idle" /></span>
+          <span className="idle-feature-row__copy">
+            <strong>Nahrávání</strong>
+            {notice ? (
+              <small
+                className={`idle-feature-row__notice idle-feature-row__notice--${notice.type}`}
+                role={notice.type === "error" ? "alert" : "status"}
+              >
+                {notice.text}
+              </small>
+            ) : todaySummary && (
+              <small data-testid="recording-daily-summary">{todaySummary}</small>
+            )}
+          </span>
+          <button
+            type="button"
+            className="idle-feature-row__action"
+            aria-label="Spustit nahrávání"
+            onClick={() => start()}
+          >
+            <span aria-hidden="true">Nahrát</span>
+            <span className="sr-only">Spustit nahrávání</span>
+          </button>
+        </>
+      ) : (
+        <div className="feature-card__header">
+          <span className="section-icon section-icon--recording"><MicIcon /></span>
+          <div>
+            <p className="eyebrow">Zachytit rozhovor</p>
+            <h2>Nahrávání</h2>
+          </div>
+          <span className={`status-chip${isRecording ? " status-chip--active" : ""}`}>
+            {statusLabel}
+          </span>
         </div>
-        <span className={`status-chip${isRecording ? " status-chip--active" : ""}`}>
-          {statusLabel}
-        </span>
-      </div>
+      )}
 
       {session.phase === "checking" && (
         <div className="recording-progress" role="status">
@@ -443,22 +475,6 @@ export function RecordingCard({ onActivityChange }) {
         </div>
       )}
 
-      {session.phase === "idle" && (
-        <>
-          <button
-            type="button"
-            className="button button--primary button--wide recording-start"
-            onClick={() => start()}
-          >
-            <span className="record-dot" /> Spustit nahrávání
-          </button>
-          {notice && (
-            <p className={notice.type === "error" ? "error-note" : "inline-note"} role={notice.type === "error" ? "alert" : "status"}>
-              {notice.text}
-            </p>
-          )}
-        </>
-      )}
     </section>
   );
 }

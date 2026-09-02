@@ -317,78 +317,209 @@ svg {
 
 /* Main panel */
 
-.panel {
+.panel.window-surface {
+  --panel-page: oklch(0.185 0.012 262);
+  --panel-card: oklch(0.235 0.012 262);
+  --panel-raised: oklch(0.265 0.012 262);
+  --panel-sunken: oklch(0.16 0.012 262);
+  --panel-hair: oklch(0.305 0.013 262);
+  --panel-subtle: oklch(0.585 0.014 262);
+  --panel-muted: oklch(0.715 0.012 262);
+  --panel-text: oklch(0.925 0.005 262);
+  --panel-strong: oklch(0.975 0.003 262);
+  --panel-accent: oklch(0.72 0.14 268);
+  --panel-accent-soft: color-mix(in oklab, var(--panel-accent) 16%, transparent);
+  --panel-accent-border: color-mix(in oklab, var(--panel-accent) 40%, transparent);
+  --panel-ok: oklch(0.78 0.11 178);
+  --panel-wait: oklch(0.8 0.13 76);
+  --panel-bad: oklch(0.75 0.14 34);
+  --background: var(--panel-page);
+  --foreground: var(--panel-text);
+  --card: var(--panel-card);
+  --surface-elevated: var(--panel-card);
+  --surface-elevated-2: var(--panel-raised);
+  --muted-foreground: var(--panel-muted);
+  --subtle-foreground: var(--panel-subtle);
+  --border: var(--panel-hair);
+  --border-strong: var(--panel-hair);
+  --input: var(--panel-hair);
+  --ring: var(--panel-accent);
+  --green: var(--panel-ok);
+  --green-bright: var(--panel-ok);
+  --green-soft: color-mix(in oklab, var(--panel-ok) 12%, transparent);
+  --green-border: color-mix(in oklab, var(--panel-ok) 34%, transparent);
+  --danger: var(--panel-bad);
+  --danger-soft: color-mix(in oklab, var(--panel-bad) 12%, transparent);
+  --mark-ink: var(--panel-page);
   display: grid;
-  grid-template-rows: 56px minmax(0, 1fr) 64px;
+  grid-template-rows: 52px minmax(0, 1fr) 34px;
+  border-color: var(--panel-hair);
+  background: var(--panel-page);
+  color: var(--panel-text);
+  font-family: "Public Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  box-shadow: 0 12px 40px -18px rgb(0 0 0 / 70%);
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px 10px 15px;
-  border-bottom: 1px solid var(--border);
+  padding: 0 14px;
+  border-bottom: 1px solid var(--panel-hair);
+  background: var(--panel-card);
   -webkit-app-region: drag;
 }
 
-.panel-header .brand-lockup {
-  margin-right: auto;
-}
-
-.global-status {
+.panel-identity {
   display: flex;
+  min-width: 0;
   align-items: center;
-  gap: 6px;
-  color: var(--muted-foreground);
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.02em;
+  gap: 10px;
 }
 
-.global-status > span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--muted-foreground);
+.panel-identity > svg {
+  color: var(--panel-accent);
 }
 
-.global-status--recording {
-  color: oklch(0.78 0.12 25);
+.panel-identity__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
-.global-status--recording > span {
-  background: var(--danger);
+.panel-identity__copy strong {
+  color: var(--panel-strong);
+  font-family: "Instrument Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.55;
 }
 
-.global-status--tracking,
-.global-status--idle {
-  color: var(--green-bright);
-}
-
-.global-status--tracking > span,
-.global-status--idle > span {
-  background: var(--green-bright);
+.panel-identity__copy small {
+  overflow: hidden;
+  color: var(--panel-subtle);
+  font-size: 10.5px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .panel-scroll {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: 12px;
+  gap: 11px;
   overflow-y: auto;
-  padding: 12px 13px 16px;
+  padding: 14px;
 }
 
 .feature-card {
   flex: 0 0 auto;
   padding: 13px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-inset);
-  background: var(--surface-elevated);
+  border: 1px solid var(--panel-hair);
+  border-radius: 14px;
+  background: var(--panel-card);
+  transition: border-color 200ms ease, background 200ms ease;
 }
 
-.feature-card {
-  transition: border-color 200ms ease, background 200ms ease;
+.feature-card.idle-feature-row {
+  display: flex;
+  height: 56px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 10px;
+}
+
+.idle-feature-row__icon {
+  display: inline-flex;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: var(--panel-subtle);
+}
+
+.idle-feature-row__icon svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 2;
+}
+
+.idle-feature-row__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.idle-feature-row__copy strong {
+  overflow: hidden;
+  color: var(--panel-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.55;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idle-feature-row__copy small {
+  overflow: hidden;
+  color: var(--panel-subtle);
+  font-size: 10.5px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feature-card.idle-feature-row.has-notice {
+  height: auto;
+  min-height: 56px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.idle-feature-row.has-notice .idle-feature-row__copy small {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.idle-feature-row__notice--error {
+  color: var(--panel-bad) !important;
+}
+
+.idle-feature-row__action {
+  display: inline-flex;
+  height: 28px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--panel-accent-soft);
+  color: var(--panel-accent);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.55;
+  -webkit-app-region: no-drag;
+}
+
+.idle-feature-row__action:hover {
+  background: color-mix(in oklab, var(--panel-accent) 23%, transparent);
+}
+
+.idle-feature-row__action:focus-visible {
+  outline-color: var(--panel-accent);
+}
+
+.tracking-card [hidden] {
+  display: none !important;
 }
 
 .recording-card.is-active {
@@ -608,36 +739,64 @@ svg {
 .panel-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 9px 13px;
-  border-top: 1px solid var(--border);
-  background: var(--card);
+  gap: 8px;
+  padding: 0 14px;
+  border-top: 1px solid var(--panel-hair);
+  background: var(--panel-card);
+  color: var(--panel-subtle);
+  font-size: 10.5px;
 }
 
-.account-summary,
-.account-summary > span:last-child {
+.queue-status {
   display: flex;
   align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
-.account-summary {
-  gap: 9px;
+.queue-status > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.account-summary > span:last-child {
-  flex-direction: column;
-  align-items: flex-start;
+.queue-status__dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--panel-subtle);
 }
 
-.account-summary strong {
-  font-size: 11px;
-  line-height: 1.3;
+.queue-status--ok .queue-status__dot {
+  background: var(--panel-ok);
 }
 
-.account-summary small {
-  color: var(--muted-foreground);
-  font-size: 9.5px;
-  line-height: 1.3;
+.queue-status--waiting .queue-status__dot {
+  background: var(--panel-wait);
+}
+
+.queue-status--error .queue-status__dot {
+  background: var(--panel-bad);
+}
+
+.panel-settings-button {
+  height: 28px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--panel-subtle);
+  font-size: 10.5px;
+  -webkit-app-region: no-drag;
+}
+
+.panel-settings-button:hover {
+  color: var(--panel-text);
+}
+
+.panel-settings-button:focus-visible {
+  outline-color: var(--panel-accent);
 }
 
 .avatar {
