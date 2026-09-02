@@ -10,7 +10,22 @@ const baseProps = {
   "aria-hidden": true,
 };
 
-export function LuDoneMark({ size = 28 }) {
+export function LuDoneMark({ size = 28, variant = "default" }) {
+  if (variant === "panel") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <rect width="22" height="22" rx="6" fill="currentColor" />
+        <path
+          d="M4 18 10 6l4 8 6-5"
+          transform="translate(4.5 4.5) scale(.5416667)"
+          stroke="var(--mark-ink, #171717)"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
   return (
     <svg
       width={size}
@@ -37,7 +52,16 @@ export function LuDoneMark({ size = 28 }) {
   );
 }
 
-export function MicIcon() {
+export function MicIcon({ variant = "default" }) {
+  if (variant === "idle") {
+    return (
+      <svg {...baseProps} strokeLinejoin={undefined}>
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" />
+      </svg>
+    );
+  }
+
   return (
     <svg {...baseProps}>
       <rect x="9" y="3" width="6" height="11" rx="3" />
@@ -46,7 +70,16 @@ export function MicIcon() {
   );
 }
 
-export function TimerIcon() {
+export function TimerIcon({ variant = "default" }) {
+  if (variant === "idle") {
+    return (
+      <svg {...baseProps} strokeLinejoin={undefined}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </svg>
+    );
+  }
+
   return (
     <svg {...baseProps}>
       <circle cx="12" cy="13" r="8" />
