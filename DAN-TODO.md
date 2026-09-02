@@ -871,3 +871,20 @@ Změřeno sabotáží při odstraňování kalendáře: přejmenování `start()
 
 Karta nahrávání je přitom hlavní funkce aplikace. Není to věc žádné běžící story — hlásím
 zvlášť, ať to nezapadne mezi zelené brány.
+
+---
+
+## Drobnost: v DB zůstal druhý, nepoužívaný OAuth klient (2. 9. 2026)
+
+Registrační `curl` se pustil dvakrát, takže vznikly **dva klienty**:
+
+| client_id | stav |
+|---|---|
+| `ldmcp_oauth_client_prod_v1_Mti3tDvq…` | **používaný**, v `.env.local`, ověřený naostro (`authorize` → `HTTP 302`) |
+| `ldmcp_oauth_client_prod_v1_dgsYAL5m…` | **nepoužívaný sirotek** |
+
+Nic to nerozbíjí. Kdybys chtěl uklidit, jde to jen zásahem do `ludata.mcp_oauth_clients`
+(nastavit `revoked_at`) — admin obrazovka na správu klientů podle auditu neexistuje.
+
+⚠️ **Připomínka k limitu:** registrace má strop **20 pokusů za hodinu na IP**. Opakované
+spouštění toho `curl` ho vyčerpá — proto se client ID zakládá **jednou** a uloží.
