@@ -823,3 +823,24 @@ originu a **všemi endpointy na tomtéž originu**.
 `main.cjs:970` má seznam dvou povolených hostitelů; instalace jiného klienta se odmítne.
 Doporučení: origin zadá správce při instalaci, s viditelným potvrzením, komu se přihlašuje.
 **A client ID musí být uložené v páru s originem** — jedna globální proměnná multi-tenant neuveze.
+
+---
+
+## Námět: macOS má užší oprávnění „Jen záznam systémového zvuku" (2. 9. 2026)
+
+Na Danově snímku Systémových nastavení je vedle „Záznam obrazovky a systémového zvuku"
+i samostatná sekce **„Jen záznam systémového zvuku"** (mají ji tam Notion, Orca, Plaud).
+
+**Proč to stojí za prověření:** aplikace dnes žádá o plné nahrávání obrazovky, přestože
+obraz vůbec nepotřebuje — bere si ze streamu jen zvukovou stopu. Schválený design to sám
+přiznává: *„macOS tomu říká nahrávání obrazovky, ale obraz se neukládá."* Užší oprávnění by
+znamenalo, že si aplikace **o obraz nikdy neřekne** — méně vysvětlování kolegům a menší
+plocha důvěry.
+
+**Není to na teď** a nic neblokuje. Ověřit: od které verze macOS to je, jestli to Electron
+umí vyžádat (`systemPreferences` / `getDisplayMedia` s audio-only), a jestli tím nepřijdeme
+o něco, co dnes funguje.
+
+**Změřeno u toho i tohle:** oprávnění pro binárku, ze které se dnes spouští, jsou v pořádku
+(`mikrofon: granted`, `obrazovka: granted`). Chyba „systémový zvuk: Permission denied"
+tedy **není o oprávnění** a hledá se v kódu panelu. Apple Developer účet kvůli ní kupovat netřeba.
