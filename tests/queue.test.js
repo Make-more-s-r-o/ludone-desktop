@@ -24,6 +24,95 @@ const { createOutboundQueueStore, loadQueue, saveQueueAtomically } = queueStore;
 const ORIGINAL_UPLOAD_SETTING = process.env.DESKTOP_UPLOAD_ENABLED;
 const ORIGINAL_TIME_SETTING = process.env.DESKTOP_TIME_ENABLED;
 const ENABLED_SETTING = ["tr", "ue"].join("");
+const mainSource = fs.readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
+
+function sourceCodeMask(source) {
+  let state = "code";
+  let mask = "";
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    const next = source[index + 1];
+    if (state === "code") {
+      if (character === "/" && next === "/") {
+        mask += "  ";
+        index += 1;
+        state = "line-comment";
+      } else if (character === "/" && next === "*") {
+        mask += "  ";
+        index += 1;
+        state = "block-comment";
+      } else if (character === "'" || character === '"' || character === "`") {
+        mask += " ";
+        state = character;
+      } else {
+        mask += character;
+      }
+      continue;
+    }
+
+    if (state === "line-comment") {
+      mask += character === "\n" || character === "\r" ? character : " ";
+      if (character === "\n" || character === "\r") state = "code";
+      continue;
+    }
+
+    if (state === "block-comment") {
+      if (character === "*" && next === "/") {
+        mask += "  ";
+        index += 1;
+        state = "code";
+      } else {
+        mask += character === "\n" || character === "\r" ? character : " ";
+      }
+      continue;
+    }
+
+    if (character === "\\") {
+      mask += " ";
+      if (next !== undefined) {
+        mask += next === "\n" || next === "\r" ? next : " ";
+        index += 1;
+      }
+    } else if (character === state) {
+      mask += " ";
+      state = "code";
+    } else {
+      mask += character === "\n" || character === "\r" ? character : " ";
+    }
+  }
+
+  return mask;
+}
+
+function functionDeclarationSource(source, name) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const codeMask = sourceCodeMask(source);
+  const declarations = [...codeMask.matchAll(new RegExp(
+    `^function\\s+${escapedName}\\s*\\(`,
+    "gm",
+  ))];
+  if (declarations.length !== 1) {
+    throw new Error(`Funkce ${name} musí mít právě jednu deklaraci, nalezeno ${declarations.length}`);
+  }
+
+  const start = declarations[0].index;
+  const openingBrace = codeMask.indexOf("{", start);
+  let depth = 0;
+  for (let index = openingBrace; index < codeMask.length; index += 1) {
+    if (codeMask[index] === "{") depth += 1;
+    if (codeMask[index] === "}") depth -= 1;
+    if (depth === 0) return source.slice(start, index + 1);
+  }
+  throw new Error(`Funkce ${name} nemá uzavřené tělo`);
+}
+
+const readProductionQueueKillswitches = Function(
+  "process",
+  `"use strict";
+  ${functionDeclarationSource(mainSource, "queueKillswitches")}
+  return queueKillswitches();`,
+);
 
 afterEach(() => {
   if (ORIGINAL_UPLOAD_SETTING === undefined) delete process.env.DESKTOP_UPLOAD_ENABLED;
@@ -102,6 +191,114 @@ function killswitches(upload = process.env.DESKTOP_UPLOAD_ENABLED, time = proces
     DESKTOP_TIME_ENABLED: time,
   };
 }
+
+const PRODUCTION_KILLSWITCH_CASES = [
+  {
+    label: "nenastavený vypínač nahrávek zůstane disabled",
+    environmentName: "DESKTOP_UPLOAD_ENABLED",
+    queueFactory: oneItemQueue,
+    value: undefined,
+    expectedOutcome: "disabled",
+    expectedCalls: 0,
+  },
+  {
+    label: "false ve vypínači nahrávek zůstane disabled",
+    environmentName: "DESKTOP_UPLOAD_ENABLED",
+    queueFactory: oneItemQueue,
+    value: "false",
+    expectedOutcome: "disabled",
+    expectedCalls: 0,
+  },
+  {
+    label: "nepřesné TRUE vypínač nahrávek nezapne",
+    environmentName: "DESKTOP_UPLOAD_ENABLED",
+    queueFactory: oneItemQueue,
+    value: "TRUE",
+    expectedOutcome: "disabled",
+    expectedCalls: 0,
+  },
+  {
+    label: "přesný řetězec true zapne nahrávky",
+    environmentName: "DESKTOP_UPLOAD_ENABLED",
+    queueFactory: oneItemQueue,
+    value: ENABLED_SETTING,
+    expectedOutcome: "sent",
+    expectedCalls: 1,
+  },
+  {
+    label: "produkčně zapnutý časový vypínač nepovolí nahrávku",
+    environmentName: "DESKTOP_TIME_ENABLED",
+    queueFactory: oneItemQueue,
+    value: ENABLED_SETTING,
+    expectedOutcome: "disabled",
+    expectedCalls: 0,
+  },
+  {
+    label: "nenastavený vypínač času zůstane disabled",
+    environmentName: "DESKTOP_TIME_ENABLED",
+    queueFactory: oneTimeItemQueue,
+    value: undefined,
+    expectedOutcome: "disabled",
+    expectedCalls: 0,
+  },
+  {
+    label: "false ve vypínači času zůstane disabled",
+    environmentName: "DESKTOP_TIME_ENABLED",
+    queueFactory: oneTimeItemQueue,
+    value: "false",
+    expectedOutcome: "disabled",
+    expectedCalls: 0,
+  },
+  {
+    label: "nepřesné TRUE vypínač času nezapne",
+    environmentName: "DESKTOP_TIME_ENABLED",
+    queueFactory: oneTimeItemQueue,
+    value: "TRUE",
+    expectedOutcome: "disabled",
+    expectedCalls: 0,
+  },
+  {
+    label: "přesný řetězec true zapne čas",
+    environmentName: "DESKTOP_TIME_ENABLED",
+    queueFactory: oneTimeItemQueue,
+    value: ENABLED_SETTING,
+    expectedOutcome: "sent",
+    expectedCalls: 1,
+  },
+  {
+    label: "produkčně zapnutý vypínač nahrávek nepovolí čas",
+    environmentName: "DESKTOP_UPLOAD_ENABLED",
+    queueFactory: oneTimeItemQueue,
+    value: ENABLED_SETTING,
+    expectedOutcome: "disabled",
+    expectedCalls: 0,
+  },
+];
+
+describe("produkční čtení killswitchů", () => {
+  it.each(PRODUCTION_KILLSWITCH_CASES)("$label", async ({
+    environmentName,
+    queueFactory,
+    value,
+    expectedOutcome,
+    expectedCalls,
+  }) => {
+    delete process.env.DESKTOP_UPLOAD_ENABLED;
+    delete process.env.DESKTOP_TIME_ENABLED;
+    if (value !== undefined) process.env[environmentName] = value;
+    const send = vi.fn().mockResolvedValue(undefined);
+
+    const result = await processNext(
+      queueFactory(),
+      readProductionQueueKillswitches(process),
+      send,
+      { now: 1_777_000_001_000 },
+    );
+
+    expect(result.outcome).toBe(expectedOutcome);
+    expect(send).toHaveBeenCalledTimes(expectedCalls);
+  });
+});
 
 describe("killswitch odchozí fronty", () => {
   it("s nenastaveným DESKTOP_UPLOAD_ENABLED záměrně nic neodešle", async () => {
