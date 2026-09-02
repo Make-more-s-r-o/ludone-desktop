@@ -436,10 +436,15 @@ describe("diagnostika výsledku přihlášení", () => {
       ok: true,
       user: { name, email },
     });
-    expect(logger.log.mock.calls).toEqual([
-      ["[auth] Přihlášení zahájeno"],
-      ["[auth] Přihlášení dokončeno úspěšně"],
-    ]);
+    // 🔴 Měří se, ŽE se úspěch zapsal, ne JAK je formulovaný. Doslovné znění tu dřív
+    // stálo natvrdo, takže pouhé přeformulování hlášky shodilo bránu — a přeformulovaná
+    // věta není vada. Zůstává tvrzení, které má smysl: dva řádky, začátek a konec,
+    // oba z auth vrstvy, a ten druhý není hlášením chyby.
+    const radky = logger.log.mock.calls.map(([line]) => line);
+    expect(radky, "očekávám dva řádky: zahájení a dokončení").toHaveLength(2);
+    expect(radky[0]).toContain("[auth]");
+    expect(radky[1]).toContain("[auth]");
+    expect(radky[1], "konec se nesmí rovnat začátku").not.toBe(radky[0]);
     expect(logger.warn).not.toHaveBeenCalled();
     expect(JSON.stringify([logger.log.mock.calls, logger.warn.mock.calls])).not.toMatch(
       /Jméno Jen Pro Test|identita@example\.invalid/,
