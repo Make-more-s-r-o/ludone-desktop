@@ -31,6 +31,9 @@ v `DAN-TODO.md`.
 | PR **#26** — onboarding: čekání na prohlížeč + test záznamu | ✅ hotový, **naskládaný na #25**, čeká na CI |
 | worktree `desktop-export` | ⚠️ drží větev k PR #25 |
 | PR **#27** — adresa přihlášení na čekací obrazovce | ✅ hotový, **naskládaný na #26**, čeká na CI |
+| PR **#28** — CI 20× levnější (Linux místo macOS, konec dvojích běhů) | ✅ hotový, **přímo na `main`**, nezávislý na stohu |
+| Codex — pojmenování schůzky | ⚙ běží, worktree `desktop-pojmenovani` |
+| Codex — stránka o stavu vývoje pro Dana | ⚙ běží, worktree `desktop-progress` |
 | worktree `desktop-onboarding` | ⚠️ drží větev k PR #26 |
 | worktree `desktop-authurl` | ⚠️ drží větev k PR #27 |
 
@@ -152,6 +155,28 @@ v `electron/retention.cjs` vyžaduje **znak po znaku shodu s `toISOString()`**. 
 ani `+00:00` místo `Z` neprojdou. Kdyby server vracel `sentAt` v jiném tvaru, retence
 položku vyhodnotí jako neodeslanou a **nikdy nesmaže nahrávky z disku** — tiše, bez chyby.
 Až se fronta k serveru napojí, tohle je první věc k ověření naostro.
+
+---
+
+## Kolik ze schváleného designu stojí (změřeno 2. 9. večer)
+
+**18 z 21** obrazovek (22. je serverová obrazovka souhlasu, ne naše) — ale **na vršku stohu**.
+🔴 **V `main` jich stojí 16**, protože #25/#26/#27 kvůli billingu nepřistály. „Hotovo"
+a „v produktu" je teď rozdíl tří PR; při hlášení stavu tenhle rozdíl VŽDY uveď.
+
+Chybí: **kontextové menu lišty** (pravý klik) · **konec nahrávky a pojmenování** (staví se) ·
+**výpadek ostatního zvuku**.
+
+## Co se změřilo o CI (a proč je PR #28)
+
+- `runs-on: macos-latest` u brány, která nedělá nic macOS-specifického → **10× dražší**
+  runner zbytečně. Oba smoke kroky jsou v CI **vypnuté** přes `if: ${{ false }}`.
+- `on: push` bez omezení větví + `on: pull_request` → **každý push se měřil dvakrát**.
+- ⚠️ **Oprava mého dřívějšího tvrzení:** psal jsem, že rozbitý `ui-smoke` „shodí CI".
+  Neshodí — v CI se nespouští. Ta oprava byla stejně správná (je to ruční checkpoint
+  na Macu), ale důsledek jsem nadsadil.
+- Naše vlastní běhy měly účtováno **0 minut**, takže limit organizace vyčerpalo něco jiného
+  než tenhle repozitář, nebo neprošla platba.
 
 ## První příkazy po probuzení
 

@@ -19,7 +19,15 @@ Lokálně mám `lint=0`, `typecheck=0`, `build=0` a **426 zelených testů** —
 v CI je přesně `lint && typecheck && test:unit`, tedy totéž. Chybí jen razítko z CI, ne práce.
 🔴 **Nemergoval jsem to** — merge s červenými checky by bylo obcházení brány.
 
-Až billing spravíš, stačí `gh run rerun` na posledním běhu #25; nic se nemusí dělat znovu.
+Až billing spravíš, stačí `gh run rerun` na posledním běhu; nic se nemusí dělat znovu.
+
+**Než zaplatíš, mrkni na PR #28** — snižuje naši spotřebu Actions ~20× (runner Linux místo
+macOS, který je 10× dražší a nic macOS-specifického tam neběží; a konec dvojích běhů
+z `push` + `pull_request`). Možná zjistíš, že limit stačí i bez navyšování.
+
+**Varianty, kdyby se ti platit nechtělo:** vlastní runner na tvém Macu (zdarma, a jen tak
+půjdou někdy spustit smoke testy, na které GitHubí runner nemá zvuk ani oprávnění), nebo
+zveřejnit repo (Actions zdarma — ale je to firemní kód, nedoporučuju).
 
 ---
 
