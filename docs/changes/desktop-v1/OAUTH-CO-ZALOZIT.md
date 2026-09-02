@@ -114,16 +114,59 @@ ID musí být uložené **spolu s originem**, jako dvojice.
 
 **To je změna specu, ne implementační detail** (F003 je `security`), takže ji nedělám sám.
 
-## 4. Co potřebuju od tebe, seřazeno
+## 4. ✅ JEDEN PŘÍKAZ — audit doběhl, takhle se klient založí
 
-1. **Client ID** se stabilní hodnotou pro `https://app.ludone.cz`. Jak přesně ho v tomhle
-   systému založit ručně, **zjišťuje běžící Codex audit** — dokud nedoběhne, nic nezakládej.
+Audit serveru (2. 9. 2026) zjistil, že **admin UI ani seed skript pro OAuth klienty
+neexistuje**. Jediné dvě cesty do tabulky `ludata.mcp_oauth_clients` jsou dynamická
+registrace (DCR) a CIMD.
+
+**Nejčistší podporovaný postup: udělat DCR JEDNOU ručně a vrácené ID si uložit.**
+
+```bash
+curl --fail-with-body \
+  -H 'Content-Type: application/json' \
+  --data '{
+    "client_name": "LuDone Desktop",
+    "token_endpoint_auth_method": "none",
+    "redirect_uris": ["http://127.0.0.1/callback"],
+    "scope": "mcp:read"
+  }' \
+  https://app.ludone.cz/api/mcp/oauth/register
+```
+
+Odpověď `201` obsahuje **trvalé `client_id`**; veřejný klient secret nedostane.
+
+🔴 **`scope` se MUSÍ uvést.** Bez něj DCR zaregistruje `mcp:read mcp:draft`, tedy víc práv,
+než desktop potřebuje.
+
+🔴 **Registruj `http://127.0.0.1/callback`, ne `localhost`.** Audit ověřil, že
+`127.0.0.1`, `localhost` a `[::1]` **nejsou vzájemně zaměnitelné** — a desktop používá
+doslova `127.0.0.1`. (Opravuje to moje dřívější rada registrovat obojí.)
+
+### Proč ne dynamickou registraci pokaždé
+
+**Změřený limit: 20 registrací za hodinu na jednu IP**, klíč `oauth_dcr:<X-Real-IP>`,
+pevné okno. Kancelář za jednou NAT adresou ho vyčerpá — rozhodnutí BD-N6 bylo správné
+a teď je doložené číslem, ne odhadem.
 2. ~~Potvrdit, že server ignoruje port~~ — ✅ **hotovo, změřeno v kódu serveru.**
 3. **Rozhodnout multi-tenant A/B/C.** Doporučuju B; do té doby zůstává seznam dvou hostů.
 
-⚠️ **Podezření, které audit ověřuje:** server nabízí jen `mcp:read` a `mcp:draft`. Pokud
-neexistuje scope pro **odesílání** nahrávek a naměřeného času, je to skutečný blocker pro
-`DSK-F010` — a znamená to serverovou práci, ne desktopovou.
+## 🔴 POTVRZENO: scope pro ODESÍLÁNÍ NEEXISTUJE
+
+Server zná **pouze `mcp:read` a `mcp:draft`**. Ani jeden neumožňuje nahrát soubor nebo
+zapsat naměřený čas.
+
+⇒ **`DSK-F010` (odeslání na server) je blokovaná na SERVERU, ne na desktopu.** Musí vzniknout
+nový scope a endpointy, které nahrávku a časový záznam přijmou. Do té doby může desktop
+frontu jen plnit, ne vyprazdňovat — a to je přesně stav, ve kterém dnes je.
+
+⚠️ Audit našel i nesoulad: `mcp:read` **není doslova jen čtení** — dovolí i tři mutace
+(mimo jiné odeslat support report), ale obrazovka souhlasu mluví jen o čtení. To je věc
+`ludone-app`, ne desktopu; hlásím to jako nález.
+
+✅ **Naše odhlášení je v pořádku.** Audit varuje, že odvolání access tokenu není odhlášení,
+protože refresh token přežije. `electron/auth.cjs:531–538` posílá k odvolání **refresh token**,
+když ho má — B9 to udělala správně.
 
 ## 5. Co udělám hned, jak přijde client ID
 
