@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import {
   mkdir,
@@ -451,5 +452,36 @@ describe("retence 7 dní", () => {
       null,
       null,
     ]);
+  });
+});
+
+describe("ui-smoke nastavuje retenci na hodnotu, která v nabídce existuje", () => {
+  // Levný statický kanárek. `ui-smoke` potřebuje GUI a v CI ani v sandboxu neběží, takže
+  // překlep v názvu volby by se projevil až u člověka — a zmateně: select by tiše zůstal
+  // na původní hodnotě a test by spadl na „jiné hodnoty" místo na „takovou volbu neznám".
+  const uiSmoke = readFileSync(new URL("../scripts/ui-smoke.mjs", import.meta.url), "utf8");
+  const settings = readFileSync(new URL("../src/components/Settings.jsx", import.meta.url), "utf8");
+
+  const volby = [...settings.matchAll(/<option>([^<]+)<\/option>/g)].map((m) => m[1]);
+
+  it.each([
+    ["OCEKAVANA_VYCHOZI_RETENCE"],
+    ["NASTAVOVANA_RETENCE"],
+  ])("%s je jedna z nabízených voleb", (jmeno) => {
+    const nalez = new RegExp(`const ${jmeno} = "([^"]+)"`).exec(uiSmoke);
+    expect(nalez, `konstanta ${jmeno} se v ui-smoke.mjs nenašla`).not.toBeNull();
+    expect(volby).toContain(nalez[1]);
+  });
+
+  it("nastavovaná hodnota se LIŠÍ od výchozí, jinak by kontrola byla tautologie", () => {
+    const vychozi = /const OCEKAVANA_VYCHOZI_RETENCE = "([^"]+)"/.exec(uiSmoke)[1];
+    const nastavovana = /const NASTAVOVANA_RETENCE = "([^"]+)"/.exec(uiSmoke)[1];
+    expect(nastavovana).not.toBe(vychozi);
+  });
+
+  it("očekávaná výchozí hodnota sedí s tou v Settings.jsx", () => {
+    const vychoziVUi = /const OCEKAVANA_VYCHOZI_RETENCE = "([^"]+)"/.exec(uiSmoke)[1];
+    const vychoziVKodu = /retention: "([^"]+)"/.exec(settings)[1];
+    expect(vychoziVUi).toBe(vychoziVKodu);
   });
 });

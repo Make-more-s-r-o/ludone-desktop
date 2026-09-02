@@ -284,14 +284,35 @@ async function setPanelInputs(client) {
   await delay(120);
 }
 
+// 🔴 Retenci schválně NASTAVUJEME NA JINOU hodnotu, než je výchozí. Když B11 změnila
+// default na „7 dní po odeslání", stala se dosavadní kontrola `retention === '7 dní'`
+// TAUTOLOGIÍ — platila i bez toho, že by kdokoli na cokoli klikl, takže o té obrazovce
+// přestala říkat cokoli. Nález nezávislého review.
+//
+// Nově se proto měří DVĚ věci: že výchozí stav je opravdu výchozí, a že se JINÁ volba
+// prokazatelně propsala. Kdyby se default zase změnil, spadne první kontrola a někdo
+// se na to podívá — místo aby test tiše přestal měřit.
+const OCEKAVANA_VYCHOZI_RETENCE = "7 dní po odeslání";
+const NASTAVOVANA_RETENCE = "30 dní po odeslání";
+
 async function setSettings(client) {
+  const vychozi = await client.evaluate(
+    "document.querySelector('.settings-select select').value",
+  );
+  if (vychozi !== OCEKAVANA_VYCHOZI_RETENCE) {
+    throw new Error(
+      `Výchozí retence je „${vychozi}", čekal jsem „${OCEKAVANA_VYCHOZI_RETENCE}". `
+      + "Buď se změnil default, nebo se obrazovka nenačetla — obojí je nález.",
+    );
+  }
+
   const result = await client.evaluate(`(() => {
     const auto = document.querySelector('[aria-label="Automaticky nahrávat schůzky z kalendáře"]');
     const ask = document.querySelector('[aria-label="Ptát se před nahráváním ostatních hovorů"]');
     auto.click();
     ask.click();
     const select = document.querySelector('.settings-select select');
-    select.value = '7 dní po odeslání';
+    select.value = ${JSON.stringify(NASTAVOVANA_RETENCE)};
     select.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   })()`);
@@ -302,7 +323,7 @@ async function setSettings(client) {
     ask: document.querySelector('[aria-label="Ptát se před nahráváním ostatních hovorů"]').getAttribute('aria-checked'),
     retention: document.querySelector('.settings-select select').value,
   }))()`);
-  if (values.auto !== "true" || values.ask !== "false" || values.retention !== "7 dní po odeslání") {
+  if (values.auto !== "true" || values.ask !== "false" || values.retention !== NASTAVOVANA_RETENCE) {
     throw new Error(`Nastavení má jiné hodnoty: ${JSON.stringify(values)}`);
   }
   observations.push({ action: "settings", ...values });
