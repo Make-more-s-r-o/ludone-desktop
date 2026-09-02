@@ -30,6 +30,31 @@ na jeho straně, napiš ji a předej.
 Dan plán zjednodušil. **Nový scope se v první fázi NESTAVÍ.** Rozhodnutí BD-N34 až BD-N37
 v `decisions.md`, tady je jejich shrnutí.
 
+### 🔴 KROK 0 — DESIGN NAPŘED, a Dan ho chce vidět BRZO
+
+Dan (2. 9.): *„chtěl bych vidět ten design brzo."*
+
+Stavíš **novou uživatelskou plochu** v app.ludone — seznam nahrávek, detail s přepisem,
+nastavení modulu. Masterplán pro user-visible věci vyžaduje **design approval gate PŘED
+implementací**, takže tohle není zdržení, je to pořadí.
+
+**Co Danovi ukázat, a co nejdřív:**
+
+| obrazovka | proč je důležitá |
+|---|---|
+| **seznam nahrávek** | první, co člověk uvidí; je tam obsazené místo proti kvótě |
+| **nahrání souboru** | tlačítko i drag & drop, plus stav probíhajícího uploadu |
+| **detail nahrávky** | přehrání, tlačítko **Přepsat**, a po přepisu text s rozlišením mluvčích |
+| **nastavení modulu** | retence, kvóta, přepínač automatického nahrávání (výchozí VYPNUTO) |
+| **stavy** | prázdný seznam · nahrávání běží · přepis běží · přepis selhal · kvóta plná |
+
+⚠️ **Neukazuj mu jen „hlavní" obrazovku.** Tenhle projekt už jednou zaplatil za to, že se
+chybové a prázdné stavy odbyly — schválený desktopový design jich má proto v matici jedenáct.
+
+🔴 **Design systém je daný**, nevymýšlej vlastní: načti skill `ludone-design-skills:ludone-design-system`
+a pro seznam a karty `ludone-design-skills:ludone-data-display`. Pro nový modul je šablona
+v `ludone-module-template`. **Použij je, ať to nevypadá jako cizí těleso v aplikaci.**
+
 ### Fáze 1 — nahrává PROHLÍŽEČ, ne desktop. Žádné nové právo.
 
 | krok | kdo |
