@@ -31,9 +31,11 @@ export function App() {
     tracking: "LuTrack běží",
   }[trayState];
 
+  // Hlásíme FAKTA, ne stav. Co z nich lišta ukáže, rozhoduje hlavní proces — jinak by
+  // po pádu tohohle okna zůstala ikona viset na tom, co jsme řekli naposledy.
   useEffect(() => {
-    window.ludone.setTrayState(trayState);
-  }, [trayState]);
+    window.ludone.reportTrayFacts({ signedIn: Boolean(user), tracking: tracking.active });
+  }, [user, tracking.active]);
 
   const handleRecordingChange = useCallback((nextRecording) => {
     setRecording(nextRecording);

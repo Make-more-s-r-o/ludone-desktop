@@ -43,6 +43,7 @@ let tray;
 let panelWindow;
 let settingsWindow;
 let trayState = "signed-out";
+let trayApplied = false;
 let isQuitting = false;
 
 protocol.registerSchemesAsPrivileged([
@@ -268,17 +269,90 @@ function trayImage(state) {
     .resize({ width: 18, height: 18 });
 }
 
-function updateTray(nextState) {
-  trayState = trayIconName(nextState);
+const TRAY_LABELS = {
+  "signed-out": "LuDone · nepřihlášeno",
+  idle: "LuDone · připraveno",
+  recording: "LuDone · nahrává",
+  tracking: "LuDone · LuTrack běží",
+};
+
+// 🔴 Jediný zdroj pravdy o tom, co lišta ukazuje. Renderer sem hlásí FAKTA, stav z nich
+// odvozuje hlavní proces — proto tahle funkce nebere argument. Dokud stav posílal renderer,
+// přežil jeho pád i jeho omyl: spadlé okno nechalo ikonu viset na „nahrává“ donekonečna.
+const appState = {
+  signedIn: false,
+  trackingOwners: new Set(),
+};
+
+// Nahrávání běží, dokud je aspoň jedna příprava nezrušená nebo aspoň jedna session
+// bez rozběhnuté finalizace. Obojí drží hlavní proces sám, takže se na to nikoho neptáme.
+function hasLiveRecording() {
+  for (const preparation of recordingOwnersPreparing.values()) {
+    if (!preparation.cancelled) return true;
+  }
+  for (const recordingSession of recordingSessions.values()) {
+    if (!recordingSession.finalizePromise) return true;
+  }
+  return false;
+}
+
+// Čistá funkce schválně — je to jediný způsob, jak tohle rozhodnutí otestovat bez GUI
+// (viz tests/tray-authority.test.js). Stejný důvod jako u shouldHidePanelOnBlur.
+function deriveTrayState({ signedIn, recording, tracking }) {
+  if (!signedIn) return "signed-out";
+  // Nahrávání má přednost před časovačem: zabírá mikrofon a je to ten stav, jehož
+  // přehlédnutí stojí nahrávku. Pátý stav „recording-tracking“ zatím NEEXISTUJE —
+  // jeho ikony patří do zmrazené T1 (viz DAN-TODO.md, BD-N5).
+  if (recording) return "recording";
+  if (tracking) return "tracking";
+  return "idle";
+}
+
+function refreshTray() {
+  const recording = hasLiveRecording();
+  const tracking = appState.trackingOwners.size > 0;
+  const next = trayIconName(deriveTrayState({
+    signedIn: appState.signedIn,
+    recording,
+    tracking,
+  }));
+  // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při
+  // startu obojí rovná „signed-out“, funkce skončí předčasně a popisek se nenastaví NIKDY.
+  if (next === trayState && trayApplied) return;
+  trayState = next;
+  console.log(
+    `[tray] ${new Date().toISOString()} stav=${trayState} nahrávání=${recording} `
+    + `lutrack=${tracking} přihlášen=${appState.signedIn}`,
+  );
   if (!tray) return;
-  const labels = {
-    "signed-out": "LuDone · nepřihlášeno",
-    idle: "LuDone · připraveno",
-    recording: "LuDone · nahrává",
-    tracking: "LuDone · LuTrack běží",
-  };
   tray.setImage(trayImage(trayState));
-  tray.setToolTip(labels[trayState]);
+  tray.setToolTip(TRAY_LABELS[trayState]);
+  trayApplied = true;
+}
+
+// Renderer sem hlásí FAKTA, která zatím zná jen on — jestli je někdo přihlášený a jestli
+// běží časovač. Stav z nich odvozuje hlavní proces, takže se sem nikdy nesmí dostat jméno
+// ikony. To je celý rozdíl proti smazanému `tray:set-state`: ten posílal ROZHODNUTÍ.
+//
+// Až přistane B5 (časovač do hlavního procesu) a B8 (skutečné přihlášení), budou obě fakta
+// pocházet přímo z hlavního procesu a tenhle kanál se zúží nebo zmizí.
+// 🔴 Přijímá PRÁVĚ dva klíče a PRÁVĚ boolean. Volnější kontrola by z tohohle kanálu udělala
+// `tray:set-state` pod novým jménem: `{ tracking: "tracking" }` protlačí doslovné jméno ikony
+// a `{}` tiše přepíše přihlášení na false. Neplatný obsah proto NIC nemění — fail-closed,
+// protože zapomenout fakt je horší než ho neaktualizovat.
+const REPORTED_FACT_KEYS = ["signedIn", "tracking"];
+
+function applyReportedFacts(ownerId, facts) {
+  if (!facts || typeof facts !== "object" || Array.isArray(facts)) return false;
+  const klice = Object.keys(facts);
+  if (klice.length !== REPORTED_FACT_KEYS.length) return false;
+  if (!REPORTED_FACT_KEYS.every((klic) => typeof facts[klic] === "boolean")) return false;
+
+  appState.signedIn = facts.signedIn;
+  if (facts.tracking) appState.trackingOwners.add(ownerId);
+  else appState.trackingOwners.delete(ownerId);
+  refreshTray();
+  return true;
 }
 
 function positionPanel() {
@@ -327,14 +401,14 @@ function createPanelWindow() {
   panelWindow.loadFile(path.join(DIST_ROOT, "index.html"));
   panelContents.on("render-process-gone", (_event, details) => {
     console.error(`[recording] Renderer skončil: ${JSON.stringify(details)}`);
-    finalizeRecordingSessionsForOwner(panelContents.id, "pád rendereru");
+    forgetOwnerActivity(panelContents.id, "pád rendereru");
   });
   panelContents.once("destroyed", () => {
-    finalizeRecordingSessionsForOwner(panelContents.id, "zničení okna");
+    forgetOwnerActivity(panelContents.id, "zničení okna");
   });
   panelContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
     if (isMainFrame) {
-      finalizeRecordingSessionsForOwner(panelContents.id, "navigace nebo reload");
+      forgetOwnerActivity(panelContents.id, "navigace nebo reload");
     }
   });
   panelWindow.once("ready-to-show", () => {
@@ -486,6 +560,7 @@ async function createRecordingSession(event) {
   }
   const preparation = { cancelled: false };
   recordingOwnersPreparing.set(ownerId, preparation);
+  refreshTray();
   const tracks = new Map();
   let manifestWasWritten = false;
   try {
@@ -536,6 +611,7 @@ async function createRecordingSession(event) {
     };
     event.sender.once("destroyed", recordingSession.destroyedListener);
     recordingSessions.set(sessionId, recordingSession);
+    refreshTray();
     console.log(`[recording] Připraveny oddělené soubory s prefixem ${prefix}.`);
     return { sessionId, startedAt: recordingSession.startedAt };
   } catch (error) {
@@ -547,6 +623,7 @@ async function createRecordingSession(event) {
   } finally {
     if (recordingOwnersPreparing.get(ownerId) === preparation) {
       recordingOwnersPreparing.delete(ownerId);
+      refreshTray();
     }
   }
 }
@@ -603,6 +680,8 @@ async function finalizeRecordingSession(sessionId, finalState) {
   if (!recordingSession) throw new Error("Neznámá nahrávací session");
   if (recordingSession.finalizePromise) return recordingSession.finalizePromise;
 
+  // Přiřazení `finalizePromise` je okamžik, kdy session přestává být živé nahrávání.
+  // `refreshTray()` musí přijít až ZA ním, jinak by ještě viděl starý stav.
   recordingSession.finalizePromise = (async () => {
     const files = {};
     const closedAt = new Date().toISOString();
@@ -653,6 +732,7 @@ async function finalizeRecordingSession(sessionId, finalState) {
     }
 
     recordingSessions.delete(sessionId);
+    refreshTray();
     if (!recordingSession.owner.isDestroyed()) {
       recordingSession.owner.removeListener("destroyed", recordingSession.destroyedListener);
     }
@@ -660,6 +740,7 @@ async function finalizeRecordingSession(sessionId, finalState) {
     console.log(`[recording] Uloženo: mikrofon ${files.microphone.size} B, systém ${files.system.size} B.`);
     return { startedAt: recordingSession.startedAt, files };
   })();
+  refreshTray();
   return recordingSession.finalizePromise;
 }
 
@@ -674,9 +755,30 @@ function finalizeRecordingSessionsForOwner(ownerId, reason) {
       console.error(`[recording] Uzavření po události „${reason}“ selhalo: ${error.stack || error.message}`);
     });
   }
+  // Synchronně: přiřazení finalizePromise proběhlo před návratem z volání výš, takže
+  // hasLiveRecording() už tady vrací false, aniž bychom čekali na zápis na disk.
+  refreshTray();
 }
 
-onValidated("tray:set-state", ["panel"], (_event, state) => updateTray(state));
+// Okno zmizelo — zapomeň na všechno, co k němu patřilo. `appState.signedIn` se přitom
+// NEMĚNÍ: pád okna nikoho neodhlásil, takže cílový stav je `idle`, ne `signed-out`.
+//
+// ⚠️ Ale bez příkras: hlavní proces se dnes o přihlášení dozvídá JEN z reportu rendereru.
+// Když renderer spadne dřív, než první report pošle, zůstane `signedIn` na false a lišta
+// ukáže `signed-out`. Skutečné vlastnictví session přijde s B8, který zapojí auth controller;
+// do té doby je tohle chování popsané správně jen PO prvním reportu. Nepiš sem, že session
+// vlastní main — zatím ji nevlastní.
+function forgetOwnerActivity(ownerId, reason) {
+  finalizeRecordingSessionsForOwner(ownerId, reason);
+  appState.trackingOwners.delete(ownerId);
+  refreshTray();
+}
+
+onValidated("tray:report-facts", ["panel"], (event, facts) => {
+  if (!applyReportedFacts(event.sender.id, facts)) {
+    console.warn("[tray] Odmítnut neplatný report faktů; předchozí stav zachován.");
+  }
+});
 handleValidated("tray:get-state", ["panel", "settings"], () => trayState);
 handleValidated("test:click-tray", ["panel"], () => {
   if (!IS_TEST_RUN || !tray || !panelWindow) return { allowed: false, visible: false };
@@ -859,7 +961,11 @@ handleValidated("auth:logout", ["panel"], async () => {
   const result = await logoutAuthController.logout();
   if (result.signedOutLocally) {
     try {
-      updateTray("signed-out");
+      // Hlavní proces po B3 stav lišty NENASTAVUJE, jen mění fakt a nechá ho odvodit.
+      // Kdyby se tu ikona přepsala natvrdo, přebila by běžící nahrávku a lišta by
+      // tvrdila „odhlášeno" nad session, která pořád píše na disk.
+      appState.signedIn = false;
+      refreshTray();
     } catch (error) {
       try {
         const message = error instanceof Error ? error.message : String(error);
@@ -909,7 +1015,7 @@ app.whenReady().then(() => {
   tray = new Tray(trayImage(trayState));
   tray.setTitle("");
   tray.on("click", togglePanel);
-  updateTray(trayState);
+  refreshTray();
   createPanelWindow();
   const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);
   if (IS_TEST_RUN && Number.isFinite(hardStop) && hardStop > 0) {

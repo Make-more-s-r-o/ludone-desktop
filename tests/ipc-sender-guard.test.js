@@ -226,7 +226,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "test:click-tray",
       "test:quit",
       "tray:get-state",
-      "tray:set-state",
+      "tray:report-facts",
     ].sort());
     expect(registrations.filter(({ registration }) => registration.startsWith("ipcMain."))).toEqual([]);
     expect(functionSource(mainSource, "handleValidated")).toContain("requireTrustedSender");

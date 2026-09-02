@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld("ludone", {
   getTrayState: () => ipcRenderer.invoke("tray:get-state"),
   testClickTray: () => ipcRenderer.invoke("test:click-tray"),
   testQuit: () => ipcRenderer.invoke("test:quit"),
-  setTrayState: (state) => ipcRenderer.send("tray:set-state", state),
+  reportTrayFacts: (facts) => ipcRenderer.send("tray:report-facts", facts),
   hidePanel: () => ipcRenderer.send("panel:hide"),
   openSettings: () => ipcRenderer.send("settings:open"),
   closeSettings: () => ipcRenderer.send("settings:close"),
