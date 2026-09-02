@@ -37,16 +37,6 @@ export function LuDoneMark({ size = 28 }) {
   );
 }
 
-export function CalendarIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="M6 3v3M18 3v3M4 9h16" />
-      <rect x="4" y="5" width="16" height="16" rx="3" />
-      <path d="M8 13h3M14 13h2M8 17h2" />
-    </svg>
-  );
-}
-
 export function MicIcon() {
   return (
     <svg {...baseProps}>

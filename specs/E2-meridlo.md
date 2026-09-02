@@ -268,12 +268,11 @@ async function clickElement(client, label, locator) {
 ```
 Tři klíčové rozdíly proti dnešku: `scrollIntoView` PŘED čtením rect (layout je po něm synchronně platný), kontrola viewportu a hlavně `elementFromPoint` — bez ní by nová brána měřila stejně málo jako stará.
 
-Lokátory pro tři dnešní varianty (předávají se jako řetězec výrazu):
+Lokátory pro dvě dnešní varianty (předávají se jako řetězec výrazu):
  • podle textu: `[...document.querySelectorAll("button")].find(b => b.textContent.replace(/\s+/g," ").trim().includes(<JSON text>) && !b.disabled)`
  • podle aria: `document.querySelector('[aria-label="<label>"]')`
- • první schůzka: `document.querySelector('button[aria-label^="Nahrát schůzku"]')`
 
-Přepsat i `setSettings` (241-263): `auto.click()` a `ask.click()` → `clickElement(...)` s aria-label „Automaticky nahrávat schůzky z kalendáře" a „Ptát se před nahráváním ostatních hovorů". `<select>` (retence, projekt v LuTracku) zůstává programový `value` + `dispatchEvent(new Event("change"))` — nativní rozbalovací nabídka macOS není přes CDP dosažitelná; přidat k tomu komentář, aby to nikdo omylem „neopravil".
+Přepsat i `setSettings` (241-263): `ask.click()` → `clickElement(...)` s aria-label „Ptát se před nahráváním ostatních hovorů". `<select>` (retence, projekt v LuTracku) zůstává programový `value` + `dispatchEvent(new Event("change"))` — nativní rozbalovací nabídka macOS není přes CDP dosažitelná; přidat k tomu komentář, aby to nikdo omylem „neopravil".
 
 Coordinate space: CDP `Input.dispatchMouseEvent` bere CSS pixely top-level rámce, `getBoundingClientRect` vrací totéž. Panel má pevných 366×792, žádný zoom, žádné iframy — přepočet netřeba.
 
@@ -291,13 +290,12 @@ Vytvořit `scripts/electron-app.mjs` a přesunout do něj kód, který dnes exis
 `ui-smoke.mjs` pak aplikaci spustí sám s prostředím:
  `LUDONE_E2E=1` (jinak `panelWindow.on("blur")` panel schová a CDP klikání ho odrovná — main.cjs:220),
  `LUDONE_RESET_ONBOARDING=1` (scénář začíná na „Rozhovory a čas.", tj. od onboardingu),
- `LUDONE_E2E_HARD_STOP_MS=120000`, `LUDONE_DATA_DIR=<čerstvý adresář pod .runtime/>`,
- a pro prázdný kalendář navíc `LUDONE_EMPTY_CALENDAR=1` + `LUDONE_EXPECT_EMPTY_CALENDAR=1`.
+ `LUDONE_E2E_HARD_STOP_MS=120000`, `LUDONE_DATA_DIR=<čerstvý adresář pod .runtime/>`.
 Na konci `window.ludone.testQuit()` + `waitForExit` (vzor audio-smoke 362-366). Port zjišťovat přes `freePort()`, ne pevných 9333 — dva souběžné běhy si jinak lezou do zelí. `LUDONE_DEBUG_PORT` ponechat jako override pro ruční ladění.
 
 Duplicitu je nutné odstranit i proto, že jinak by E2 opravil `preserve-caught-error` nebo klikání jen v jedné z kopií.
 
-**Hotovo když:** `npm run test:ui` a `npm run test:ui:empty` běží z čistého stroje bez jakékoli přípravy a po sobě uklidí (žádný zbylý proces Electron: `pgrep -f 'LuDone Desktop'` nic nevrátí).
+**Hotovo když:** `npm run test:ui` běží z čistého stroje bez jakékoli přípravy a po sobě uklidí (žádný zbylý proces Electron: `pgrep -f 'LuDone Desktop'` nic nevrátí).
 
 ### 10. Rozdělení bran: rychlá smyčka × checkpoint
 
@@ -313,12 +311,11 @@ Duplicitu je nutné odstranit i proto, že jinak by E2 opravil `preserve-caught-
 "package:mac":  "npm run build && node scripts/package-mac.mjs",
 "test:gate":    "vitest run --config vitest.gate.config.js",
 "test:ui":      "node scripts/ui-smoke.mjs",
-"test:ui:empty":"LUDONE_EMPTY_CALENDAR=1 LUDONE_EXPECT_EMPTY_CALENDAR=1 node scripts/ui-smoke.mjs",
 "test:audio":   "node scripts/audio-smoke.mjs",
-"verify:full":  "npm run verify && npm run test:gate && npm run package:mac && npm run test:ui && npm run test:ui:empty && npm run test:audio"
+"verify:full":  "npm run verify && npm run test:gate && npm run package:mac && npm run test:ui && npm run test:audio"
 ```
 RYCHLÁ SMYČKA = `npm run verify`. Pořadí od nejlevnějšího: lint 1,0 s + typecheck 0,30 s + unit ~6 s (z toho 0,12 s vlastní testy) + build 0,85 s ≈ **8 s** (naměřeno). Pouští se po každé změně, i uvnitř Codex běhu.
-CHECKPOINT = `npm run verify:full`. Přidává test:gate (~3 s), package:mac (~10 s) a tři e2e běhy Electronu (ui-smoke ~40 s, ui-smoke:empty ~15 s, audio-smoke ~25 s při jednom pokusu, až ~55 s při opakování tichého běhu) ≈ **2–3 minuty**. Pouští se před commitem a před předáním etapy.
+CHECKPOINT = `npm run verify:full`. Přidává test:gate (~3 s), package:mac (~10 s) a dva e2e běhy Electronu (ui-smoke ~40 s, audio-smoke ~25 s při jednom pokusu, až ~55 s při opakování tichého běhu) ≈ **2 minuty**. Pouští se před commitem a před předáním etapy.
 
 `test:audio` zůstává pod stávajícím jménem, ať se nerozbijí dosavadní zvyklosti a zadání.
 
@@ -390,7 +387,7 @@ Do `MERIDLO.md` napsat i tabulku naměřených hodnot z kroku 6 a jednu větu, k
 
 ## Měřítko etapy
 
-Etapa je hotová, když na Danově Macu projde zelený `npm run verify:full` (rychlá smyčka + brána nad brány + zabalení + ui-smoke + ui-smoke:empty + audio-smoke) A ZÁROVEŇ všechny tři umělé regrese z kroku 12 jsou v MERIDLO.md doložené dvojicí červený/zelený výstup. Spustitelně:
+Etapa je hotová, když na Danově Macu projde zelený `npm run verify:full` (rychlá smyčka + brána nad brány + zabalení + ui-smoke + audio-smoke) A ZÁROVEŇ všechny tři umělé regrese z kroku 12 jsou v MERIDLO.md doložené dvojicí červený/zelený výstup. Spustitelně:
 
   cd <worktree> && npm ci
   npm run verify        # < 15 s, kód 0, bez výstupu z lintu a tsc
@@ -427,7 +424,7 @@ Kontrolní čísla, která musí sedět (naměřeno předem na skutečném kódu
 - `NOVÉ — test/fixtures/ticho-znecistene-system.webm (50 107 B, −33,8 dB — doklad vady staré brány)`
 - `NOVÉ — .github/workflows/ci.yml`
 - `NOVÉ — MERIDLO.md (důkaz, že měřidlo měří)`
-- `ZMĚNA — package.json (scripts lint/typecheck/test:unit/test:gate/test:ui/test:ui:empty/verify/verify:full + devDependencies)`
+- `ZMĚNA — package.json (scripts lint/typecheck/test:unit/test:gate/test:ui/verify/verify:full + devDependencies)`
 - `ZMĚNA — package-lock.json`
 - `ZMĚNA — scripts/audio-smoke.mjs (smazat poměr bajtů ř. 402-426, doplnit smyčku pokusů + korelační brány, { cause }, freePort typy)`
 - `ZMĚNA — scripts/ui-smoke.mjs (clickElement přes Input.dispatchMouseEvent, vlastní spuštění aplikace, { cause })`

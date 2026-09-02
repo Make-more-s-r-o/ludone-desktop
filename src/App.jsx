@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { CloseIcon, LuDoneMark, SettingsIcon } from "./components/Icons.jsx";
-import { TodayAgenda } from "./features/calendar/TodayAgenda.jsx";
 import { RecordingCard } from "./features/recording/RecordingCard.jsx";
 import { TrackingCard } from "./features/tracking/TrackingCard.jsx";
 
@@ -13,9 +12,8 @@ export function App() {
   const initiallyComplete = !runtime.resetOnboarding && window.localStorage.getItem(ONBOARDING_KEY) === "true";
   const [onboardingComplete, setOnboardingComplete] = useState(initiallyComplete);
   const [user, setUser] = useState(initiallyComplete ? DEFAULT_USER : null);
-  const [recording, setRecording] = useState({ active: false, busy: false, context: null });
+  const [recording, setRecording] = useState({ active: false });
   const [tracking, setTracking] = useState({ active: false });
-  const [recordingRequest, setRecordingRequest] = useState(null);
 
   const trayState = useMemo(() => {
     if (!user) return "signed-out";
@@ -45,10 +43,6 @@ export function App() {
     setTracking(nextTracking);
   }, []);
 
-  function requestMeetingRecording(event) {
-    setRecordingRequest({ id: `${event.id}-${Date.now()}`, event });
-  }
-
   function completeOnboarding() {
     window.localStorage.setItem(ONBOARDING_KEY, "true");
     setUser((current) => current ?? DEFAULT_USER);
@@ -77,14 +71,7 @@ export function App() {
       </header>
 
       <div className="panel-scroll">
-        <TodayAgenda
-          empty={runtime.emptyCalendar}
-          recordingActive={recording.active}
-          recordingBusy={recording.busy}
-          recordingContext={recording.context}
-          onRecord={requestMeetingRecording}
-        />
-        <RecordingCard request={recordingRequest} onActivityChange={handleRecordingChange} />
+        <RecordingCard onActivityChange={handleRecordingChange} />
         <TrackingCard onActivityChange={handleTrackingChange} />
       </div>
 
