@@ -3,16 +3,20 @@ import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
+import { App } from "../src/App.jsx";
+// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { RecordingCard } from "../src/features/recording/RecordingCard.jsx";
 
 const SESSION_ID = "session-test-1";
 
 function deferred() {
   let resolve;
-  const promise = new Promise((promiseResolve) => {
+  let reject;
+  const promise = new Promise((promiseResolve, promiseReject) => {
     resolve = promiseResolve;
+    reject = promiseReject;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 }
 
 function recordingResult() {
@@ -29,7 +33,12 @@ function recordingResult() {
 }
 
 /**
- * @param {{ deferCapture?: boolean, displayError?: Error | DOMException }} [options]
+ * @param {{
+ *   deferCapture?: boolean,
+ *   deferRecovery?: boolean,
+ *   displayError?: Error | DOMException,
+ *   renderApp?: boolean,
+ * }} [options]
  */
 async function renderRecordingCard(options = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
@@ -54,6 +63,14 @@ async function renderRecordingCard(options = {}) {
     muted: false,
     stop: vi.fn(),
   });
+  const replacementSystemTrack = Object.assign(new dom.window.EventTarget(), {
+    kind: "audio",
+    label: "Obnovený systémový zvuk",
+    readyState: "live",
+    enabled: true,
+    muted: false,
+    stop: vi.fn(),
+  });
   const videoTrack = Object.assign(new dom.window.EventTarget(), {
     kind: "video",
     label: "Testovací obraz",
@@ -71,6 +88,15 @@ async function renderRecordingCard(options = {}) {
     stop: vi.fn(),
     getSettings: () => ({ channelCount: 2, sampleRate: 48_000 }),
   });
+  const systemOutputTrack = Object.assign(new dom.window.EventTarget(), {
+    kind: "audio",
+    label: "Stabilní systémový zvuk",
+    readyState: "live",
+    enabled: true,
+    muted: false,
+    stop: vi.fn(),
+    getSettings: () => ({ channelCount: 2, sampleRate: 48_000 }),
+  });
   const microphoneStream = {
     getTracks: () => [microphoneTrack],
     getAudioTracks: () => [microphoneTrack],
@@ -81,14 +107,34 @@ async function renderRecordingCard(options = {}) {
     getAudioTracks: () => [systemTrack],
     getVideoTracks: () => [videoTrack],
   };
+  const replacementVideoTrack = Object.assign(new dom.window.EventTarget(), {
+    kind: "video",
+    label: "Obnovený testovací obraz",
+    readyState: "live",
+    enabled: true,
+    muted: false,
+    stop: vi.fn(),
+  });
+  const replacementDisplayStream = {
+    getTracks: () => [replacementSystemTrack, replacementVideoTrack],
+    getAudioTracks: () => [replacementSystemTrack],
+    getVideoTracks: () => [replacementVideoTrack],
+  };
   const microphoneCapture = deferred();
   const displayCapture = deferred();
+  const recoveryCapture = deferred();
   const getUserMedia = vi.fn(() => (
     options.deferCapture ? microphoneCapture.promise : Promise.resolve(microphoneStream)
   ));
+  let displayCaptureCount = 0;
   const getDisplayMedia = vi.fn(() => {
+    displayCaptureCount += 1;
     if (options.displayError) return Promise.reject(options.displayError);
-    return options.deferCapture ? displayCapture.promise : Promise.resolve(displayStream);
+    if (displayCaptureCount === 1) {
+      return options.deferCapture ? displayCapture.promise : Promise.resolve(displayStream);
+    }
+    if (options.deferRecovery) return recoveryCapture.promise;
+    return Promise.resolve(replacementDisplayStream);
   });
   Object.defineProperty(dom.window.navigator, "mediaDevices", {
     configurable: true,
@@ -108,6 +154,11 @@ async function renderRecordingCard(options = {}) {
       ok: true,
       fileName: `LuDone-${SESSION_ID}.webm`,
     }),
+    hasAuthSession: vi.fn().mockResolvedValue(true),
+    listQueue: vi.fn().mockResolvedValue([]),
+    openSettings: vi.fn(),
+    reportTrayFacts: vi.fn(),
+    runtime: { resetOnboarding: false },
   };
   Object.defineProperty(dom.window, "ludone", { value: ludone });
 
@@ -165,10 +216,14 @@ async function renderRecordingCard(options = {}) {
     }
   }
 
+  const audioContexts = [];
   class FakeAudioContext {
     constructor() {
+      this.destinationCount = 0;
       this.sampleRate = 48_000;
       this.state = "running";
+      this.close = vi.fn(async () => undefined);
+      audioContexts.push(this);
     }
 
     createMediaStreamSource() {
@@ -180,16 +235,14 @@ async function renderRecordingCard(options = {}) {
     }
 
     createMediaStreamDestination() {
+      const outputTrack = this.destinationCount === 0 ? stereoTrack : systemOutputTrack;
+      this.destinationCount += 1;
       return {
-        stream: new FakeMediaStream([stereoTrack]),
+        stream: new FakeMediaStream([outputTrack]),
         channelCount: 2,
         channelCountMode: "explicit",
         channelInterpretation: "speakers",
       };
-    }
-
-    close() {
-      return Promise.resolve();
     }
 
     resume() {
@@ -211,8 +264,13 @@ async function renderRecordingCard(options = {}) {
   const root = createRoot(dom.window.document.querySelector("#root"));
   const onActivityChange = vi.fn();
   let trayCommand = null;
+  if (options.renderApp) {
+    dom.window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
+  }
   await React.act(async () => {
-    root.render(React.createElement(RecordingCard, { onActivityChange, trayCommand }));
+    root.render(options.renderApp
+      ? React.createElement(App)
+      : React.createElement(RecordingCard, { onActivityChange, trayCommand }));
   });
 
   const phase = () => dom.window.document
@@ -226,7 +284,10 @@ async function renderRecordingCard(options = {}) {
     getDisplayMedia,
     ludone,
     recorders,
+    audioContexts,
     microphoneTrack,
+    replacementSystemTrack,
+    systemOutputTrack,
     systemTrack,
     phase,
     currentButton,
@@ -237,8 +298,13 @@ async function renderRecordingCard(options = {}) {
     async setTrayCommand(command) {
       trayCommand = command;
       await React.act(async () => {
-        root.render(React.createElement(RecordingCard, { onActivityChange, trayCommand }));
+        root.render(options.renderApp
+          ? React.createElement(App)
+          : React.createElement(RecordingCard, { onActivityChange, trayCommand }));
       });
+    },
+    rejectRecovery(error) {
+      recoveryCapture.reject(error);
     },
     async click(element) {
       if (!element) throw new Error("Test očekával dostupné tlačítko");
@@ -402,7 +468,7 @@ describe("RecordingCard", () => {
         (recorder) => recorder.stream.getTracks()[0] === panel.microphoneTrack,
       );
       const systemRecorder = panel.recorders.find(
-        (recorder) => recorder.stream.getTracks()[0] === panel.systemTrack,
+        (recorder) => recorder.stream.getTracks()[0] === panel.systemOutputTrack,
       );
       const microphoneData = new ArrayBuffer(4);
       const systemData = new ArrayBuffer(6);
@@ -523,6 +589,7 @@ describe("RecordingCard", () => {
       expect(panel.phase()).toBe("saved");
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
       expect(panel.ludone.finishRecordingExport).toHaveBeenCalledTimes(1);
+      expect(panel.audioContexts[0].close).toHaveBeenCalledTimes(1);
       expect(panel.currentButton()?.textContent).toContain("Uložit a odeslat");
     } finally {
       await panel.cleanup();
@@ -554,6 +621,212 @@ describe("RecordingCard", () => {
         SESSION_ID,
         expect.any(String),
       );
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("definitivní konec systémové stopy okamžitě zobrazí výpadek", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      await React.act(async () => {
+        panel.systemTrack.readyState = "ended";
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
+        await Promise.resolve();
+      });
+
+      const card = panel.document.querySelector('[aria-label="Nahrávání"]');
+      const outage = panel.document.querySelector('[data-testid="system-audio-outage"]');
+      expect(card?.getAttribute("data-recording-phase")).toBe("recording");
+      expect(card?.getAttribute("data-system-audio-state")).toBe("lost");
+      expect(outage).not.toBeNull();
+      expect(outage?.getAttribute("role")).toBe("alert");
+      expect(outage?.hidden).toBe(false);
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("krátké ztišení pod dvě sekundy nehlásí ztrátu stopy", async () => {
+    vi.useFakeTimers();
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      await React.act(async () => {
+        panel.systemTrack.muted = true;
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("mute"));
+        await vi.advanceTimersByTimeAsync(1_999);
+      });
+
+      let card = panel.document.querySelector('[aria-label="Nahrávání"]');
+      expect(card?.getAttribute("data-recording-phase")).toBe("recording");
+      expect(card?.getAttribute("data-system-audio-state")).toBe("live");
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).toBeNull();
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+
+      await React.act(async () => {
+        panel.systemTrack.muted = false;
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("unmute"));
+        await vi.advanceTimersByTimeAsync(2_000);
+      });
+
+      card = panel.document.querySelector('[aria-label="Nahrávání"]');
+      expect(card?.getAttribute("data-recording-phase")).toBe("recording");
+      expect(card?.getAttribute("data-system-audio-state")).toBe("live");
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).toBeNull();
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+    } finally {
+      await panel.cleanup();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("po potvrzeném výpadku mikrofon pokračuje a nahrávku lze uložit", async () => {
+    vi.useFakeTimers();
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      await React.act(async () => {
+        panel.systemTrack.muted = true;
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("mute"));
+        await vi.advanceTimersByTimeAsync(2_000);
+      });
+
+      expect(panel.phase()).toBe("recording");
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).not.toBeNull();
+      expect(panel.recorders[0].state).toBe("recording");
+      expect(panel.recorders[1].state).toBe("recording");
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+
+      await panel.click(panel.document.querySelector('[data-testid="degraded-recording-stop"]'));
+      await React.act(async () => Promise.resolve());
+
+      expect(panel.phase()).toBe("saved");
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+    } finally {
+      await panel.cleanup();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("úspěšné obnovení vrátí systémovou stopu bez restartu nahrávání", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      await React.act(async () => {
+        panel.systemTrack.readyState = "ended";
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
+        await Promise.resolve();
+      });
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).not.toBeNull();
+
+      await panel.click(panel.document.querySelector('[data-testid="retry-system-audio"]'));
+      await React.act(async () => Promise.resolve());
+
+      const card = panel.document.querySelector('[aria-label="Nahrávání"]');
+      expect(card?.getAttribute("data-recording-phase")).toBe("recording");
+      expect(card?.getAttribute("data-system-audio-state")).toBe("live");
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).toBeNull();
+      expect(panel.getDisplayMedia).toHaveBeenCalledTimes(2);
+      expect(panel.recorders).toHaveLength(3);
+      expect(panel.ludone.beginRecording).toHaveBeenCalledTimes(1);
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+      expect(panel.microphoneTrack.stop).not.toHaveBeenCalled();
+
+      await React.act(async () => {
+        panel.replacementSystemTrack.readyState = "ended";
+        panel.replacementSystemTrack.dispatchEvent(
+          new panel.document.defaultView.Event("ended"),
+        );
+        await Promise.resolve();
+      });
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).not.toBeNull();
+
+      await panel.click(panel.document.querySelector('[data-testid="degraded-recording-stop"]'));
+      await panel.waitForPhase("saved");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("samoobnovená původní stopa zůstane živá i po neúspěšném ručním pokusu", async () => {
+    vi.useFakeTimers();
+    const panel = await renderRecordingCard({ deferRecovery: true });
+
+    try {
+      await startRecording(panel);
+      await React.act(async () => {
+        panel.systemTrack.muted = true;
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("mute"));
+        await vi.advanceTimersByTimeAsync(2_000);
+      });
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).not.toBeNull();
+
+      await panel.click(panel.document.querySelector('[data-testid="retry-system-audio"]'));
+      await React.act(async () => {
+        panel.systemTrack.muted = false;
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("unmute"));
+        await Promise.resolve();
+      });
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).toBeNull();
+
+      await React.act(async () => {
+        panel.rejectRecovery(new DOMException("Výběr zrušen", "NotAllowedError"));
+        await Promise.resolve();
+      });
+
+      const card = panel.document.querySelector('[aria-label="Nahrávání"]');
+      expect(card?.getAttribute("data-system-audio-state")).toBe("live");
+      expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).toBeNull();
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+
+      await stopRecording(panel);
+    } finally {
+      await panel.cleanup();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("App při souběhu ponechá obě aktivní karty čitelné a samostatně ovladatelné", async () => {
+    const panel = await renderRecordingCard({ renderApp: true });
+
+    try {
+      await startRecording(panel);
+      await panel.click(panel.document.querySelector('[aria-label="Spustit LuTrack"]'));
+      await React.act(async () => Promise.resolve());
+
+      const scroll = panel.document.querySelector(".panel-scroll");
+      const recordingState = panel.document.querySelector('[data-testid="recording-running-state"]');
+      const trackingState = panel.document.querySelector('[data-testid="tracking-running-state"]');
+      const recordingCard = recordingState?.closest('[aria-label="Nahrávání"]');
+      const trackingCard = trackingState?.closest('[aria-label="LuTrack"]');
+
+      expect(recordingState?.hidden).toBe(false);
+      expect(trackingState?.hidden).toBe(false);
+      expect(recordingCard?.parentElement).toBe(scroll);
+      expect(trackingCard?.parentElement).toBe(scroll);
+      expect(recordingCard?.getAttribute("data-layout")).toBe("compact");
+      expect(trackingCard?.getAttribute("data-layout")).toBe("compact");
+      expect(recordingCard?.querySelector('[data-testid="recording-source-microphone"]')).not.toBeNull();
+      expect(recordingCard?.querySelector('[data-testid="recording-source-system"]')).not.toBeNull();
+      expect(recordingCard?.querySelector('[data-testid="recording-stop"]')).not.toBeNull();
+      expect(trackingCard?.querySelector('[data-testid="tracking-stop"]')).not.toBeNull();
+
+      await panel.click(trackingCard?.querySelector('[data-testid="tracking-stop"]'));
+      expect(panel.phase()).toBe("recording");
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+      expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
+
+      await stopRecording(panel);
     } finally {
       await panel.cleanup();
     }

@@ -26,6 +26,7 @@ export async function createStereoCapture(
   let microphoneSource;
   let systemSource;
   let merger;
+  let systemDestination;
   try {
     if (context.state === "suspended") await context.resume();
     microphoneSource = context.createMediaStreamSource(
@@ -36,12 +37,17 @@ export async function createStereoCapture(
     );
     merger = context.createChannelMerger(2);
     const destination = context.createMediaStreamDestination();
+    systemDestination = context.createMediaStreamDestination();
     destination.channelCount = 2;
     destination.channelCountMode = "explicit";
     destination.channelInterpretation = "speakers";
+    systemDestination.channelCount = 2;
+    systemDestination.channelCountMode = "explicit";
+    systemDestination.channelInterpretation = "speakers";
 
     microphoneSource.connect(merger, 0, 0);
     systemSource.connect(merger, 0, 1);
+    systemSource.connect(systemDestination);
     merger.connect(destination);
 
     const outputTracks = destination.stream.getAudioTracks();
@@ -52,15 +58,48 @@ export async function createStereoCapture(
     if (Number.isFinite(settings.channelCount) && settings.channelCount !== 2) {
       throw new Error(`Stereo derivát má ${settings.channelCount} kanálů místo dvou`);
     }
+    if (systemDestination.stream.getAudioTracks().length !== 1) {
+      throw new Error("Stabilní systémová větev neposkytla právě jednu zvukovou stopu");
+    }
 
     let closed = false;
     return {
       stream: destination.stream,
+      // MediaRecorder této stopy zůstává po celou session stejný. Když fyzická
+      // systémová stopa skončí, destination dál zapisuje ticho a lze ji přepojit.
+      systemStream: systemDestination.stream,
       format: {
         channels: 2,
         sampleRate: Number.isFinite(settings.sampleRate)
           ? settings.sampleRate
           : context.sampleRate,
+      },
+      async replaceSystemTrack(nextTrack) {
+        if (closed) throw new Error("Zvukovou větev po uzavření nelze obnovit");
+        if (
+          nextTrack?.kind !== "audio"
+          || nextTrack.readyState !== "live"
+          || !nextTrack.enabled
+          || nextTrack.muted
+        ) {
+          throw new Error("Nová systémová stopa není živá a dostupná");
+        }
+        if (context.state === "suspended") await context.resume();
+        if (closed) throw new Error("Zvukovou větev po uzavření nelze obnovit");
+
+        const nextSource = context.createMediaStreamSource(
+          new MediaStreamConstructor([nextTrack]),
+        );
+        try {
+          nextSource.connect(merger, 0, 1);
+          nextSource.connect(systemDestination);
+        } catch (error) {
+          nextSource.disconnect();
+          throw error;
+        }
+        const previousSource = systemSource;
+        systemSource = nextSource;
+        previousSource.disconnect();
       },
       async close() {
         if (closed) return;

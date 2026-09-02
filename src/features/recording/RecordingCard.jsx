@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { MicIcon, VolumeIcon } from "../../components/Icons.jsx";
+import { MicIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
-import { captureAudioSources, stopStreams } from "../../lib/audio-levels.js";
+import {
+  captureAudioSources,
+  captureSystemAudioSource,
+  stopStreams,
+} from "../../lib/audio-levels.js";
 import { createStereoCapture } from "../../lib/stereo-recording.js";
+import { watchSystemAudioTrack } from "./system-audio-health.js";
 
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
 const RECORDING_TIMESLICE_MS = 1_000;
@@ -153,6 +158,15 @@ function durationLabel(startedAt, endedAt) {
   return `${minutes} minut`;
 }
 
+function formatRecordingElapsed(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+  const minutePart = String(minutes).padStart(2, "0");
+  const secondPart = String(seconds).padStart(2, "0");
+  return hours > 0 ? `${hours}:${minutePart}:${secondPart}` : `${minutePart}:${secondPart}`;
+}
+
 function sizeLabel(files) {
   const bytes = Object.values(files ?? {}).reduce((total, file) => (
     total + (Number.isFinite(file?.size) ? file.size : 0)
@@ -174,42 +188,63 @@ function savedRecordingMetadata(recording) {
   };
 }
 
-export function RecordingCard({ onActivityChange, todaySummary = null, trayCommand = null }) {
+export function RecordingCard({
+  compact = false,
+  onActivityChange,
+  todaySummary = null,
+  trayCommand = null,
+}) {
   const [session, setSession] = useState({
     phase: "idle",
     startedAt: null,
     labels: null,
+    systemAudioState: "inactive",
   });
   const [notice, setNotice] = useState(null);
   const [savedRecording, setSavedRecording] = useState(null);
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
+  const [recoveringSystemAudio, setRecoveringSystemAudio] = useState(false);
   const startInFlight = useRef(false);
   const lastTrayCommandId = useRef(null);
   const runtimeRef = useRef(null);
   const isRecording = session.phase === "recording";
+  const systemAudioLost = isRecording && session.systemAudioState === "lost";
   const elapsed = useElapsedTime(isRecording, session.startedAt);
 
   async function finishRuntime(runtime, initialError = null) {
     if (runtime.finishPromise) return runtime.finishPromise;
     runtime.closing = true;
+    runtime.recoveryController?.abort();
+    runtime.recoveryController = null;
+    runtime.cleanupTrackListeners?.();
+    runtime.cleanupTrackListeners = null;
+    setRecoveringSystemAudio(false);
     runtime.finishPromise = (async () => {
-      // Originální recordery dostanou stop jako první; stereo derivát je obalí
-      // na obou hranách. Jeho flush ale běží odděleně, takže uložení originálů
+      // Oddělené recordery dostanou stop jako první; stereo derivát je obalí
+      // na obou hranách. Jeho flush ale běží odděleně, takže uložení stop
       // na export nikdy nečeká.
       const recorderResults = runtime.recorders.map((persistentRecorder) => (
         persistentRecorder.stopAndFlush()
       ));
       runtime.exportFinishPromise = runtime.exportRecorder.stopAndFlush()
-        .then((timing) => window.ludone.finishRecordingExport(runtime.sessionId, {
-          succeeded: true,
-          timing,
-        }))
-        .catch((error) => window.ludone.finishRecordingExport(runtime.sessionId, {
-          succeeded: false,
-          reason: describeError(error),
-        }).catch(() => undefined))
+        .then(async (timing) => {
+          // Graf už po flushi nevyrábí žádná další data. Zavřeme ho před IPC,
+          // aby visící hlavní proces nedržel AudioContext a jeho stopy při životě.
+          await runtime.stereoCapture.close().catch(() => {});
+          return window.ludone.finishRecordingExport(runtime.sessionId, {
+            succeeded: true,
+            timing,
+          });
+        })
+        .catch(async (error) => {
+          await runtime.stereoCapture.close().catch(() => {});
+          return window.ludone.finishRecordingExport(runtime.sessionId, {
+            succeeded: false,
+            reason: describeError(error),
+          }).catch(() => undefined);
+        })
         .finally(() => runtime.stereoCapture.close().catch(() => {}));
 
       setSession((current) => ({ ...current, phase: "stopping" }));
@@ -235,7 +270,12 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
       } finally {
         stopStreams(runtime.streams);
         if (runtimeRef.current === runtime) runtimeRef.current = null;
-        setSession({ phase: "idle", startedAt: null, labels: null });
+        setSession({
+          phase: "idle",
+          startedAt: null,
+          labels: null,
+          systemAudioState: "inactive",
+        });
       }
 
       if (errors.length > 0) {
@@ -288,6 +328,79 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
     if (runtime && !runtime.closing) void finishRuntime(runtime, error);
   }
 
+  function setRuntimeSystemAudioState(runtime, nextState) {
+    runtime.systemAudioLost = nextState === "lost";
+    if (runtimeRef.current !== runtime || runtime.closing) return;
+    setSession((current) => (
+      current.phase === "recording"
+        ? { ...current, systemAudioState: nextState }
+        : current
+    ));
+  }
+
+  function watchRuntimeSystemTrack(runtime, track) {
+    runtime.unwatchSystemTrack?.();
+    runtime.unwatchSystemTrack = watchSystemAudioTrack(track, {
+      onLost: () => setRuntimeSystemAudioState(runtime, "lost"),
+      onRecovered: () => setRuntimeSystemAudioState(runtime, "live"),
+    });
+  }
+
+  function isTrackAvailable(track) {
+    return track?.readyState === "live" && track.enabled && !track.muted;
+  }
+
+  async function recoverSystemAudio() {
+    const runtime = runtimeRef.current;
+    if (!runtime || runtime.closing || runtime.recoveryController) return;
+
+    const controller = new window.AbortController();
+    runtime.recoveryController = controller;
+    setRecoveringSystemAudio(true);
+    let replacement = null;
+    let adopted = false;
+
+    try {
+      replacement = await captureSystemAudioSource({ signal: controller.signal });
+      if (runtimeRef.current !== runtime || runtime.closing) {
+        stopStreams([replacement.systemStream]);
+        return;
+      }
+
+      await runtime.stereoCapture.replaceSystemTrack(replacement.systemTrack);
+      if (runtimeRef.current !== runtime || runtime.closing) {
+        stopStreams([replacement.systemStream]);
+        return;
+      }
+
+      const previousSystemStream = runtime.systemStream;
+      runtime.unwatchSystemTrack?.();
+      runtime.systemStream = replacement.systemStream;
+      runtime.systemTrack = replacement.systemTrack;
+      runtime.streams = runtime.streams
+        .filter((stream) => stream !== previousSystemStream)
+        .concat(replacement.systemStream);
+      runtime.systemAudioLost = false;
+      setRuntimeSystemAudioState(runtime, "live");
+      watchRuntimeSystemTrack(runtime, replacement.systemTrack);
+      adopted = true;
+      stopStreams([previousSystemStream]);
+    } catch (error) {
+      if (replacement && !adopted) stopStreams([replacement.systemStream]);
+      if (error?.name !== "AbortError") {
+        // Původní stopa se mohla během otevřeného dialogu sama odmutovat.
+        // Neúspěch náhradního výběru ji proto nesmí přepsat zpět na „ztracená“.
+        setRuntimeSystemAudioState(
+          runtime,
+          isTrackAvailable(runtime.systemTrack) ? "live" : "lost",
+        );
+      }
+    } finally {
+      if (runtime.recoveryController === controller) runtime.recoveryController = null;
+      if (runtimeRef.current === runtime && !runtime.closing) setRecoveringSystemAudio(false);
+    }
+  }
+
   async function start() {
     if (startInFlight.current || runtimeRef.current || session.phase !== "idle") return;
     startInFlight.current = true;
@@ -295,7 +408,12 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
     setSavedRecording(null);
     setRecordingName("");
     setExportError(null);
-    setSession({ phase: "checking", startedAt: null, labels: null });
+    setSession({
+      phase: "checking",
+      startedAt: null,
+      labels: null,
+      systemAudioState: "live",
+    });
     let capture;
     let runtime;
     let stereoCapture;
@@ -311,10 +429,7 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
         new MediaStream([capture.microphoneTrack]),
         options,
       );
-      const systemRecorder = new MediaRecorder(
-        new MediaStream([capture.systemTrack]),
-        options,
-      );
+      const systemRecorder = new MediaRecorder(stereoCapture.systemStream, options);
       const exportRecorder = new MediaRecorder(stereoCapture.stream, options);
       const persistence = await window.ludone.beginRecording();
       runtime = {
@@ -326,6 +441,12 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
         exportStartedAt: null,
         exportError: null,
         stereoCapture,
+        systemAudioLost: false,
+        systemStream: capture.systemStream,
+        systemTrack: capture.systemTrack,
+        unwatchSystemTrack: null,
+        recoveryController: null,
+        cleanupTrackListeners: null,
         closing: false,
         finishPromise: null,
       };
@@ -349,16 +470,30 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
         if (track.readyState !== "live" || !track.enabled || track.muted) {
           throw new Error(`${label} přestala být dostupná během přípravy`);
         }
-        const reportUnavailable = () => {
-          if (!runtime.closing) reportRuntimeFailure(new Error(`${label} neočekávaně přestala dodávat zvuk`));
-        };
-        track.addEventListener("ended", reportUnavailable, { once: true });
-        track.addEventListener("mute", reportUnavailable, { once: true });
-        if (track.readyState !== "live" || !track.enabled || track.muted) {
-          throw new Error(`${label} přestala být dostupná těsně před startem`);
-        }
       }
-      // Stereo derivát startuje první a končí poslední. Obě originální stopy tak
+
+      const reportMicrophoneUnavailable = () => {
+        if (!runtime.closing) {
+          reportRuntimeFailure(new Error("Mikrofonní stopa neočekávaně přestala dodávat zvuk"));
+        }
+      };
+      capture.microphoneTrack.addEventListener("ended", reportMicrophoneUnavailable, { once: true });
+      capture.microphoneTrack.addEventListener("mute", reportMicrophoneUnavailable, { once: true });
+      watchRuntimeSystemTrack(runtime, capture.systemTrack);
+      runtime.cleanupTrackListeners = () => {
+        capture.microphoneTrack.removeEventListener("ended", reportMicrophoneUnavailable);
+        capture.microphoneTrack.removeEventListener("mute", reportMicrophoneUnavailable);
+        runtime.unwatchSystemTrack?.();
+        runtime.unwatchSystemTrack = null;
+      };
+      if (
+        capture.microphoneTrack.readyState !== "live"
+        || !capture.microphoneTrack.enabled
+        || capture.microphoneTrack.muted
+      ) {
+        throw new Error("Mikrofonní stopa přestala být dostupná těsně před startem");
+      }
+      // Stereo derivát startuje první a končí poslední. Obě oddělené stopy tak
       // leží uvnitř jedné společné exportní časové osy bez dopočítaného ticha.
       try {
         runtime.exportStartedAt = await runtime.exportRecorder.start();
@@ -377,6 +512,7 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
           microphone: capture.microphoneTrack.label || "Mikrofon",
           system: capture.systemTrack.label || "Systémový zvuk",
         },
+        systemAudioState: runtime.systemAudioLost ? "lost" : "live",
       });
     } catch (error) {
       if (runtime) {
@@ -384,7 +520,12 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
       } else {
         if (capture) stopStreams(capture.streams);
         if (stereoCapture) await stereoCapture.close().catch(() => {});
-        setSession({ phase: "idle", startedAt: null, labels: null });
+        setSession({
+          phase: "idle",
+          startedAt: null,
+          labels: null,
+          systemAudioState: "inactive",
+        });
         setNotice({
           type: "error",
           text: `Nahrávání se nespustilo: ${describeError(error)}. Opravte přístup k oběma stopám před schůzkou.`,
@@ -400,6 +541,12 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
     if (runtime && !runtime.closing) void finishRuntime(runtime);
   }
 
+  useEffect(() => () => {
+    const runtime = runtimeRef.current;
+    runtime?.recoveryController?.abort();
+    runtime?.cleanupTrackListeners?.();
+  }, []);
+
   useEffect(() => {
     if (!trayCommand || trayCommand.id === lastTrayCommandId.current) return;
     lastTrayCommandId.current = trayCommand.id;
@@ -411,21 +558,25 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
       // Příprava i ukládání jsou aktivní fáze. `idle` se nahlásí až poté, co
       // finishRecording doběhne a hlavní proces stihne položku zařadit do fronty.
       active: session.phase !== "idle",
+      systemAudioState: session.systemAudioState,
     });
-  }, [onActivityChange, session.phase]);
+  }, [onActivityChange, session.phase, session.systemAudioState]);
 
   const statusLabel = {
     idle: "Připraveno",
     checking: "Kontrola",
-    recording: "Nahrává",
     stopping: "Ukládám",
   }[session.phase];
   const savedMetadata = savedRecording ? savedRecordingMetadata(savedRecording) : null;
 
   return (
     <section
-      className={`feature-card recording-card${isRecording ? " is-active" : ""}${session.phase === "idle" && !savedRecording ? " idle-feature-row" : ""}${session.phase === "idle" && !savedRecording && notice ? " has-notice" : ""}${savedRecording ? " recording-card--saved" : ""}`}
+      className={`feature-card recording-card${isRecording ? " is-active" : ""}${systemAudioLost ? " is-degraded" : ""}${session.phase === "idle" && !savedRecording ? " idle-feature-row" : ""}${session.phase === "idle" && !savedRecording && notice ? " has-notice" : ""}${savedRecording ? " recording-card--saved" : ""}`}
       data-recording-phase={savedRecording ? "saved" : session.phase}
+      data-system-audio-state={isRecording
+        ? (recoveringSystemAudio ? "recovering" : session.systemAudioState)
+        : "inactive"}
+      data-layout={compact && isRecording ? "compact" : "default"}
       data-microphone-label={session.labels?.microphone ?? ""}
       data-system-label={session.labels?.system ?? ""}
       data-testid={session.phase === "idle" && !savedRecording ? "idle-action-row" : undefined}
@@ -514,18 +665,16 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
             <span className="sr-only">Spustit nahrávání</span>
           </button>
         </>
-      ) : (
+      ) : !isRecording ? (
         <div className="feature-card__header">
           <span className="section-icon section-icon--recording"><MicIcon /></span>
           <div>
             <p className="eyebrow">Zachytit rozhovor</p>
             <h2>Nahrávání</h2>
           </div>
-          <span className={`status-chip${isRecording ? " status-chip--active" : ""}`}>
-            {statusLabel}
-          </span>
+          <span className="status-chip">{statusLabel}</span>
         </div>
-      )}
+      ) : null}
 
       {session.phase === "checking" && (
         <div className="recording-progress" role="status">
@@ -535,20 +684,102 @@ export function RecordingCard({ onActivityChange, todaySummary = null, trayComma
       )}
 
       {isRecording && (
-        <div className="recording-live">
-          <div>
-            <p className="live-context">Rychlá nahrávka</p>
-            <p className="elapsed" aria-live="polite">{formatElapsed(elapsed)}</p>
-          </div>
+        <div className="recording-running">
           <div
-            className="source-line"
-            title={`Mikrofon: ${session.labels.microphone} · systém: ${session.labels.system}`}
+            className={`activity-status activity-status--recording${systemAudioLost ? " is-degraded" : ""}`}
+            data-testid="recording-running-state"
+            role="status"
           >
-            <VolumeIcon /> Obě stopy ověřeny
+            <span className="activity-status__dot" aria-hidden="true" />
+            <span>{systemAudioLost ? "Nahrává se omezeně" : "Nahrává se"}</span>
           </div>
-          <button type="button" className="button button--stop button--wide" onClick={stop}>
-            <span className="stop-square" /> Ukončit a uložit
-          </button>
+          <span className="sr-only" aria-hidden="true">Rychlá nahrávka</span>
+
+          <p
+            className="elapsed"
+            data-panel-height-neutral="true"
+            aria-live="polite"
+          >
+            {formatRecordingElapsed(elapsed)}
+          </p>
+          <span className="sr-only" aria-hidden="true">{formatElapsed(elapsed)}</span>
+
+          <div
+            className="recording-source"
+            data-panel-height-neutral="true"
+            data-source-state="live"
+            data-testid="recording-source-microphone"
+            title={`Mikrofon: ${session.labels.microphone}`}
+          >
+            <span className="recording-source__label">Mikrofon</span>
+            <span className="recording-source__meter" aria-hidden="true">
+              <span className="recording-source__fill" />
+            </span>
+            {systemAudioLost && <span className="recording-source__pill is-live">ok</span>}
+          </div>
+
+          <div
+            className="recording-source"
+            data-panel-height-neutral="true"
+            data-source-state={systemAudioLost ? "lost" : "live"}
+            data-testid="recording-source-system"
+            title={`Ostatní zvuk: ${session.labels.system}`}
+          >
+            <span className="recording-source__label">Ostatní zvuk</span>
+            <span className="recording-source__meter" aria-hidden="true">
+              <span className="recording-source__fill" />
+            </span>
+            {systemAudioLost && <span className="recording-source__pill is-lost">ticho</span>}
+          </div>
+          {!systemAudioLost && (
+            <span className="sr-only" aria-hidden="true">Obě stopy ověřeny</span>
+          )}
+
+          {systemAudioLost ? (
+            <>
+              <div
+                className="recording-outage"
+                data-testid="system-audio-outage"
+                role="alert"
+                aria-atomic="true"
+              >
+                <span>
+                  <strong>Druhá strana hovoru se nenahrává.</strong>{" "}
+                  Tvůj hlas ano. Pokračovat můžeš, ale ze schůzky bude jen půlka.
+                </span>
+              </div>
+              <div className="recording-outage__actions">
+                <button
+                  type="button"
+                  className="recording-outage__continue"
+                  data-testid="retry-system-audio"
+                  aria-busy={recoveringSystemAudio}
+                  aria-label="Pokračovat – pokusit se obnovit ostatní zvuk"
+                  disabled={recoveringSystemAudio}
+                  onClick={() => recoverSystemAudio()}
+                >
+                  Pokračovat
+                </button>
+                <button
+                  type="button"
+                  className="recording-outage__stop"
+                  data-testid="degraded-recording-stop"
+                  onClick={stop}
+                >
+                  Ukončit
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="recording-running__stop"
+              data-testid="recording-stop"
+              onClick={stop}
+            >
+              Ukončit a uložit
+            </button>
+          )}
         </div>
       )}
 

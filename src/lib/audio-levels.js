@@ -79,6 +79,42 @@ async function checkedAudioTrack(stream, label) {
   return track;
 }
 
+/**
+ * Znovu získá jen systémovou stopu. Volá se z uživatelského gesta při obnově
+ * výpadku; žádný nový IPC kanál k tomu není potřeba.
+ *
+ * @param {{ signal?: AbortSignal }} [options]
+ */
+export async function captureSystemAudioSource({ signal } = {}) {
+  if (!window.isSecureContext || !navigator.mediaDevices?.getDisplayMedia) {
+    throw new Error("Stránka nemá zabezpečený přístup k systémovému zvuku");
+  }
+  if (signal?.aborted) throw captureAbortedError();
+
+  let stream = null;
+  const stopOnAbort = () => {
+    if (stream) stopStreams([stream]);
+  };
+  signal?.addEventListener("abort", stopOnAbort, { once: true });
+
+  try {
+    stream = await captureWithTimeout(
+      navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }),
+      "Systémový zvuk",
+    );
+    if (signal?.aborted) throw captureAbortedError();
+    for (const videoTrack of stream.getVideoTracks()) videoTrack.stop();
+    const systemTrack = await checkedAudioTrack(stream, "Systémový zvuk");
+    if (signal?.aborted) throw captureAbortedError();
+    return { systemStream: stream, systemTrack };
+  } catch (error) {
+    if (stream) stopStreams([stream]);
+    throw error;
+  } finally {
+    signal?.removeEventListener("abort", stopOnAbort);
+  }
+}
+
 /** @param {{ signal?: AbortSignal }} [options] */
 export async function captureAudioSources({ signal } = {}) {
   if (
