@@ -52,12 +52,16 @@ bude fáze 1 ověřená naostro.
 ⚠️ Audit našel, že `mcp:read` už dnes dovoluje tři mutace, ale obrazovka souhlasu mluví jen
 o čtení. Až na scope dojde, je to příležitost ten rozpor srovnat.
 
-### 2. Příjem naměřeného času — malý, ale money cesta
+### 2. ⏸️ Naměřený čas — NESTAVĚJ TO
 
-⚠️ **Pozor: čas jde jinou cestou než nahrávky.** Nahrávky nově chodí z prohlížeče (fáze 1),
-ale **naměřený čas posílá desktop sám** — a ten se autorizovat musí. Buď to odlož spolu
-s fází 2, nebo to Danovi vysvětli a nech ho rozhodnout. **Nepředpokládej, že to projde
-pod `mcp:read`.**
+🔴 **Rozhodnutí BD-N38: LuTrack je mimo rozsah téhle práce.** Nedělej pro něj endpoint,
+schéma ani migraci.
+
+A až na něj dojde: **tvar dat určí `ludone-app`, ne desktop.** Desktop se přizpůsobí.
+Neber tedy tvar z `ludone-desktop/src/lib/queue.js` jako kontrakt — je to jen popis toho,
+co desktop dnes umí.
+
+*(Zbytek sekce ponechán jako kontext, ne jako zadání.)*
 
 `E5` řeší **jen nahrávky**; čas v něm nepadne ani jednou. Desktop ho přitom do fronty
 už zařazuje.

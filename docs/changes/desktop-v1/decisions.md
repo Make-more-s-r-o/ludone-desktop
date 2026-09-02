@@ -797,3 +797,28 @@ jsou další samostatné kroky. Nic se neplatí za schůzky, které nikdo neotev
 ⚠️ Dan k tomu dodal: *„když agent načte, tak jemu stačí transkript a může si udělat shrnutí
 sám."* ⇒ MCP potřebuje **nástroj na čtení přepisu** (spadá pod stávající `mcp:read`),
 a shrnutí na serveru je pak volba pro člověka, ne povinný krok.
+
+### BD-N38 — LuTrack se na serveru NEŘEŠÍ; kontrakt určí APLIKACE, desktop se přizpůsobí
+
+Dan: *„ten LuTrack bych zatím neřešil na serveru, až časem. LuTrack bych udělal naopak, že
+to vymyslí app, a desktop se pak přizpůsobí."*
+
+**Dvě věci najednou, a ta druhá je důležitější:**
+
+1. **Odklad.** Časová agenda vypadává z rozsahu serverové práce. Zůstávají jen nahrávky.
+2. 🔴 **Obrácené vlastnictví.** Tvar časového záznamu **určí `ludone-app`**, ne desktop.
+
+**Co to ruší z dřívějška:** v `SERVER-CO-POSTAVIT.md` stálo, že tvar položky `time-entry`
+je *„zmrazený, spolehni se na něj"*. **To po tomhle rozhodnutí NEPLATÍ** — byl to popis toho,
+co desktop dnes umí, ne závazný kontrakt. Opraveno, aby serverová session nestavěla podle
+desktopu, když má být rozhodnutí opačným směrem.
+
+**Co to znamená pro desktop:**
+- `enqueueTimeEntry` a jeho tvar **zůstávají jako dnes** — nic se nemaže, jen se to zatím
+  nikam neodesílá. Fronta časové položky přijímá a drží.
+- Až aplikace kontrakt určí, desktop se **přizpůsobí jí**, ne naopak.
+- Tím padá i otázka „kudy se autorizuje čas" — odkládá se spolu s celou agendou do fáze 2.
+
+⚠️ **Důsledek, který stojí za pojmenování:** LuTrack v panelu tak zůstane funkční jen lokálně
+a naměřený čas nikam neodejde. To je vědomý stav, ne nedodělek — ale **nesmí vypadat jako
+hotová funkce**, jinak si někdo odklikne den práce, který se nikam nezapíše.

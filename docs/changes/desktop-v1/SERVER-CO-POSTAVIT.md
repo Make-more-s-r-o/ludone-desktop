@@ -13,7 +13,7 @@ a jedna se ještě vůbec nezačala.**
 | **Příjem nahrávky** | ✅ **specifikováno**, 329 řádků, 10 kroků | [`specs/E5-server-prijem.md`](../../../specs/E5-server-prijem.md) |
 | **Tvar dat, která desktop pošle** | ✅ **hotový a zmrazený** — `schemaVersion: 1` | níž v §2 |
 | **Jak se desktop autentizuje** | 🔴 **NEVYŘEŠENO** — chybí scope | níž v §3 |
-| **Příjem naměřeného času** | 🔴 **nespecifikováno vůbec** | níž v §4 |
+| **Příjem naměřeného času** | ⏸️ **MIMO ROZSAH** — odloženo, kontrakt určí aplikace (BD-N38) | níž v §4 |
 
 ---
 
@@ -89,7 +89,20 @@ token — a s ním nemá právo odeslat vůbec nic. Proto může frontu jen plni
 `mcp:read` dovoluje tři mutace, ale obrazovka souhlasu mluví jen o čtení — text a skutečnost
 se rozcházejí. Při přidávání scope je to dobrá příležitost to srovnat.
 
-## 4. 🔴 NEZAČATO: příjem naměřeného času
+## 4. ⏸️ ODLOŽENO: příjem naměřeného času — a kontrakt určí APLIKACE
+
+🔴 **Rozhodnutí BD-N38 (2. 9. odpoledne): LuTrack se na serveru zatím NEŘEŠÍ.**
+A až na něj dojde, **tvar dat určí `ludone-app`, ne desktop.**
+
+⚠️ **Oprava dřívějšího tvrzení v tomhle dokumentu:** §2 psalo, že tvar `time-entry` je
+„zmrazený, spolehni se na něj". **Neplatí.** Byl to popis toho, co desktop dnes umí, ne
+závazný kontrakt — a Dan rozhodl, že směr má být opačný.
+
+Zbytek téhle sekce je tedy **jen popis současného stavu desktopu**, ne zadání. Neřiď se jím.
+
+---
+
+### (původní popis, už není zadáním)
 
 `E5` řeší **jen nahrávky** — slovo LuTrack ani „časový záznam" v něm nepadne ani jednou
 (změřeno: 0 výskytů).
