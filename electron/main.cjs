@@ -17,7 +17,11 @@ const { createHash, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { fileURLToPath, pathToFileURL } = require("node:url");
-const { createAuthController, createPermissionRequestHandler } = require("./auth.cjs");
+const {
+  createAuthController,
+  createAuthSessionCoordinator,
+  createPermissionRequestHandler,
+} = require("./auth.cjs");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
@@ -737,7 +741,15 @@ function resolveAuthIssuer(env) {
 }
 
 function createAuthBeginHandler(createController) {
-  return function configureAuthBegin({ app, env, isTestRun, logger, safeStorage, shell }) {
+  return function configureAuthBegin({
+    app,
+    coordinator,
+    env,
+    isTestRun,
+    logger,
+    safeStorage,
+    shell,
+  }) {
     return async function beginAuth({ signal } = {}) {
       if (isTestRun && app?.isPackaged !== true) {
         return {
@@ -751,7 +763,14 @@ function createAuthBeginHandler(createController) {
         const clientId = resolveAuthClientId(env);
 
         logger?.log?.("[auth] Přihlášení zahájeno");
-        const controller = createController({ issuer, clientId, app, safeStorage, shell });
+        const controller = createController({
+          issuer,
+          clientId,
+          app,
+          coordinator,
+          safeStorage,
+          shell,
+        });
         const attempt = await controller.start();
         const cancel = () => attempt.cancel();
         if (signal?.aborted) {
@@ -800,8 +819,10 @@ function createAuthBeginHandler(createController) {
   };
 }
 
+const authSessionCoordinator = createAuthSessionCoordinator();
 const beginAuth = createAuthBeginHandler(createAuthController)({
   app,
+  coordinator: authSessionCoordinator,
   env: process.env,
   isTestRun: IS_TEST_RUN,
   logger: console,
@@ -828,7 +849,12 @@ handleValidated(AUTH_CANCEL_CHANNEL, ["panel"], () => {
 });
 
 const { createLogoutController } = require("./auth.cjs");
-const logoutAuthController = createLogoutController({ app, safeStorage, logger: console });
+const logoutAuthController = createLogoutController({
+  app,
+  coordinator: authSessionCoordinator,
+  safeStorage,
+  logger: console,
+});
 handleValidated("auth:logout", ["panel"], async () => {
   const result = await logoutAuthController.logout();
   if (result.signedOutLocally) {
