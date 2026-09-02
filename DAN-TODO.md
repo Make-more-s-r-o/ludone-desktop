@@ -376,7 +376,16 @@ ručního zásahu), ne na kalendářní datum.
 - **Podklady z Claude Designu** — `/design-login` umíš spustit jen ty. Schválený návrh je
   kompletní lokálně; chybí jen tokeny mimo barvy (písmo, tvar, pohyb, mezery). **Až úplně
   nakonec**, jak jsi řekl.
-  🔴 **Ale pozor — artefakty v Claude Designu už pro tenhle účet NEEXISTUJÍ. Ani jeden.**
+  ⚠️ **OPRAVA 2. 9. ráno: včerejší věta „artefakty jsou pryč" byla přestřelená.**
+  Změřeno teď: MCP `claude-design` se připojí, ale volání vrací `needs_design_scopes`
+  — *„This token doesn't include Claude Design access. Run /design-login and retry."*
+  **Token nemá právo, což není totéž jako smazaný artefakt.** Ta hlášky o ukončeném
+  sledování („no such artifact for this account") vypadá stejně v obou případech.
+  **Nejdřív spusť `/design-login`**, teprve pak se dá říct, jestli se něco ztratilo.
+  Rozdíl je velký: přihlásit se je minuta, vytvořit design znovu je den.
+
+  Původní (zřejmě nadsazený) zápis z 1. 9.:
+  🔴 **Artefakty v Claude Designu už pro tenhle účet NEEXISTUJÍ. Ani jeden.**
   Přišla dvě oznámení, že sledování skončilo: „Přístroj LuDone" (`88609f77-…`) ve 22:0x
   a „Přístroj — startovací čára" (`638ea0b2-…`) ve 23:0x. Obojí nenalezeno (smazané, nebo
   nesdílené s tímhle účtem po přepnutí). **Nejde tedy o jeden ztracený artefakt, ale o celou
