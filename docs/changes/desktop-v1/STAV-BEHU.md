@@ -1,164 +1,96 @@
 # STAV BĚHU — bod obnovy
 
-**Zapsáno 2. 9. 2026, 12:0x, před vyčerpáním Claude limitu.**
-Tenhle soubor je psaný pro někoho s **prázdným kontextem**. Konverzace neexistuje, repozitář ano.
+**Přepsáno 2. 9. 2026 odpoledne. Psáno pro někoho s PRÁZDNÝM kontextem.**
 
 ---
 
-## ✅ AKTUALIZOVÁNO 12:2x — job doběhl, PR #19 MERGNUTÝ, nic neběží
+## 🔴 PRVNÍ AKCE PO RESUME — ikona v liště je NEVIDITELNÁ, oprava leží hotová
 
-**Worktree `desktop-zvuk` i větev `orca/desktop-zvuk` jsou smazané. WIP commit `e0f82a2`
-už neexistuje — byl to týž obsah, dotažený a mergnutý jako #19.**
+**Dan hlásí: „ikonu v horní liště nevidím."** Příčina je ZMĚŘENÁ, ne odhadnutá:
 
-`main` má **378 testů**, nula worktrees, nula otevřených PR, nula běžících jobů.
+```
+Electron nativeImage z SVG →  {"prazdna":true, "velikost":{"width":0,"height":0}, "bajtuPNG":0}
+```
 
-### První akce po resume je teď JINÁ
+SVG se na macOS v liště nevykreslí vůbec. **Oprava existuje a je hotová** — nahrazuje SVG
+ověřenými PNG:
 
-Není co dokončovat. Vezmi další položku ze seznamu „Otevřené na desktopu" níž — doporučené
-pořadí: **pokrytí `RecordingCard`** (dnes nemá žádné, změřeno sabotáží). Delegace na Codex:
-`codex exec -C <nový worktree> -s workspace-write` ve viditelném Orca panelu.
+```
+větev:  fix/tray-prazdna-ikona
+commit: ce2bea6  "Keep LuDone visible with verified PNG tray icons"
+mění:   electron/main.cjs (−31/+18) · electron/ikony/*.png (nové) · package.json
+        · tests/tray-image-electron.js (test běžící ve skutečném Electronu)
+```
 
-🔴 **A dřív než cokoli pustíš, načti skill `codex-delegace-orchestrace`** — po resume ta
-znalost v kontextu chybí, na rozdíl od téhle session.
+**Proč se to nemergovalo:** v době vzniku to byla user-visible změna bez schváleného designu,
+což masterplán zakazoval. **Design byl schválen 1. 9., ten důvod padl.**
 
----
-
-## Původní pokyn (už neplatí, ponechán pro doložení postupu)
+### Postup
 
 ```bash
 cd /Users/dan/Dev/ClaudeCode/ludone-desktop
-pgrep -f "codex exec -C .*desktop-zvuk" | wc -l          # 0 = doběhl, >0 = ještě píše
-git -C ~/orca/workspaces/ludone-desktop/desktop-zvuk status --porcelain
+git worktree add -b orca/desktop-ikona ~/orca/workspaces/ludone-desktop/desktop-ikona origin/main
+cd ~/orca/workspaces/ludone-desktop/desktop-ikona
+ln -sfn /Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules node_modules
+git cherry-pick ce2bea6          # může chtít rozřešit konflikt v main.cjs
+npm run lint && npm run typecheck && npm run test:unit
 ```
 
-**Když je 0 a strom má změny** → Codex doběhl a jeho práce je NECOMMITNUTÁ. Udělej v tomhle
-pořadí, bez přeskakování:
+🔴 **Sabotáž, která tu MUSÍ proběhnout:** vrátit SVG cestu a ověřit, že
+`tests/tray-image-electron.js` zčervená. Test, který nepozná prázdnou ikonu, je bezcenný —
+právě proto, že se tahle vada rok schovávala za zelené testy.
 
-```bash
-cd ~/orca/workspaces/ludone-desktop/desktop-zvuk
-git add -A && git commit -m "Let screen capture through the media permission gate"
-npm run lint && npm run typecheck && npm run test:unit     # brány PŘED rourou
-git fetch origin && git rebase origin/main
-```
-Pak přečti diff, spusť sabotáže (níž), otevři PR, počkej na zelenou CI, mergni, ukliď worktree.
-
-🔴 **Na větvi `orca/desktop-zvuk` je na originu WIP commit `e0f82a2` — NEMERGOVAT.**
-Vznikl jako záloha uprostřed psaní, když docházel limit: brány neproběhly, sabotáže neproběhly,
-diff nikdo nečetl. Je to pojistka proti ztrátě, ne hotová práce. Po resume nad ním normálně
-pokračuj (Codex do stromu píše dál) a **teprve pak** brány, sabotáže a PR.
-
-**Když je >0** → job běží dál, nech ho. Mrtvý je až tehdy, když se jeho log
-`/tmp/beh-noc/zvuk.log` nehýbe **20 minut** — status ani počet procesů nejsou důkaz.
+🔴 **A ověření naostro:** spustit aplikaci a **podívat se na lištu**. Tuhle vadu nezachytí
+žádný headless test; je vidět jen očima.
 
 ---
 
-## Cíl běhu
+## Stav k tomuhle okamžiku
 
-Postavit LuDone Desktop podle masterplánu: menu-bar aplikace, která nahrává schůzky
-a měří čas, s frontou odesílající na `app.ludone.cz`. Zadání: `BEH-NOC.md`, stav funkcí
-`spec.md` §3, rozhodnutí `decisions.md`.
-
-## Hotovo a v `main` (vše mergnuté, `main` = `a5ce4cf`)
+`main` = **411 testů**, nula worktrees, nula otevřených PR, čistý strom.
 
 | PR | co |
 |---|---|
-| #2–#11 | noční běh: lišta, přihlášení, časovač, fronta, retence, odhlášení |
-| #12 | brána na tři latentní vady odhlášení |
-| #13 | oprava bezpečnostní brány odhlášení (hlídala prázdný adresář) |
-| #14 | odstraněn kalendář zrušený na approval gate + brána proti návratu |
-| #15 | zapojena retence a zařazení času do fronty |
-| #16 | přihlášení nepadá na chybějícím jménu |
-| #17 | z logu je poznat, jak přihlášení dopadlo |
-| #18 | klidový panel sladěn se schváleným designem |
+| #14–#18 | kalendář pryč · zapojení retence a času · přihlášení · logování · panel podle designu |
+| #19 | systémový zvuk (kontrola oprávnění odmítala prázdné `mediaTypes`) |
+| #20 | pokrytí `RecordingCard` (mělo 0 testů) |
+| #21 | panel po restartu nelže o přihlášení |
+| #22 | tři chybové obrazovky, které panel dřív spolkl |
+| #23 | **panel má výšku podle obsahu** (323 px místo napevno 792) |
 
-**`main`: 372 testů, 6 přeskočených. Nula otevřených PR.**
+## ✅ Ověřeno naostro (jen tyhle tři)
 
-## ✅ Ověřeno naostro (jediné dvě funkce s `verified-live`)
+1. **Retence** — 10 dní stará odeslaná nahrávka smazána skutečným během.
+2. **Přihlášení** — token v `~/Library/Application Support/cz.ludone.desktop/auth/oauth.enc`.
+3. **Výška panelu** — okno 366×323 proti obsahu 323 px, vyfoceno.
 
-1. **Retence `DSK-F017`** — 10 dní stará odeslaná nahrávka smazána skutečným během aplikace.
-2. **Přihlášení `DSK-F003`** — Dan potvrdil souhlas, token vznikl:
-   `~/Library/Application Support/cz.ludone.desktop/auth/oauth.enc` (483 B, práva 0600).
+🔴 **Všechno ostatní je 🧪 zelené testy.**
 
-🔴 **Všechno ostatní je jen 🧪 zelené testy.** Nikdo to neviděl fungovat.
+## Co zbývá na desktopu, po ikoně
 
-## Rozdělaná práce — JEDEN worktree, JEDEN job
+1. **Stereo export + tlačítko „nahrát na app.ludone"** — BD-N34 je rozhodnutí, které desktop
+   NEUMÍ. ⚠️ Mikrofon a systém jsou dva nezávislé `MediaRecorder`y a mohou driftovat;
+   sloučení vyžaduje zarovnání a může selhat. Serverová session to ví.
+2. Chybí fontové soubory Public Sans / Instrument Sans → systémový fallback.
+3. Zbývající obrazovky ze schválených 22 (onboarding, „nahrává se" s měřáky, výběr projektu).
 
-| | |
-|---|---|
-| **worktree** | `~/orca/workspaces/ludone-desktop/desktop-zvuk` |
-| **větev** | `orca/desktop-zvuk` (z `origin/main`) |
-| **Orca panel** | `term_9a67eaac-4343-471d-ac9f-927248a75cd2` — „⚙ Codex: systémový zvuk nikdy nemohl fungovat" |
-| **log** | `/tmp/beh-noc/zvuk.log` |
-| **zadání** | `/tmp/beh-noc/codex-zvuk.txt` |
-| **rozdělané** | `electron/main.cjs`, `tests/ipc-sender-guard.test.js` |
+## Serverová strana — jiná session, nezasahovat
 
-⚠️ `git worktree list` ukazuje 2 — hlavní checkout a `desktop-zvuk`. Nic jiného viset nemá.
+`ludone-app`, session si vede vlastní plán v `orca/nahravky-v1`. Kontrakt domluvený:
+URL `/nahravky/nahrat?clientRecordingId=…`, všechny parametry volitelné, **fáze 1 nahrává
+prohlížeč** (žádný nový OAuth scope). LuTrack je z jejich rozsahu VENKU (BD-N38) a jeho
+kontrakt určí aplikace.
 
-### Co ten job opravuje — příčina je ZMĚŘENÁ
+⚠️ Běží jim PR na `/uploads/` allowlist. **Dan řekl, že veřejné PDF nabídky jsou ZÁMĚR** —
+rozsah allowlistu si potvrzují přímo s ním, my do toho nezasahujeme.
 
-Nahrávání systémového zvuku vždycky selže `NotAllowedError: Permission denied`, přestože
-macOS oprávnění jsou v pořádku (`getMediaAccessStatus("screen") === "granted"`).
+## Pravidla, která tenhle běh zaplatil
 
-Sondou v běžící aplikaci změřeno, že pro `getDisplayMedia({video:true,audio:true})` dorazí do
-`isAllowedMediaPermission` (`electron/main.cjs:145`) tohle:
-
-```json
-{"permission":"media","url":"file:///…/dist/index.html","mediaTypes":[]}
-```
-
-A kontrola vyžaduje `mediaTypes.length === 1 && mediaTypes[0] === "audio"` → prázdné pole
-neprojde → odmítnuto **dřív, než se zavolá `setDisplayMediaRequestHandler`** (doloženo tím,
-že sonda v tom handleru nikdy nevypsala ani řádek).
-
-⚠️ Větev `if (permission === "display-capture") return true;` (ř. 155) se **nikdy neuplatní** —
-Electron posílá `media`, ne `display-capture`.
-
-### Sabotáže, které na tom PR musí proběhnout
-
-Je to **bezpečnostní** kontrola, takže sabotáže musí dokázat, že se neuvolnilo víc, než mělo:
-
-| sabotáž | očekávání |
-|---|---|
-| `mediaTypes: ["video"]` projde | 🔴 kamera musí zůstat zakázaná |
-| `mediaTypes: ["audio","video"]` projde | 🔴 |
-| nedůvěryhodná URL s `mediaTypes: []` projde | 🔴 |
-| obejít `requireTrustedSender` | 🔴 |
-| komentář zmiňující `display-capture` | 🟢 povinně zelená |
-
-## 🔴 Blockers — všechny na SERVERU, žádný na desktopu
-
-| co | dopad |
-|---|---|
-| **chybí OAuth scope pro zápis** | server zná jen `mcp:read` a `mcp:draft`; desktop může frontu jen plnit, ne vyprazdňovat → `DSK-F010` stojí |
-| **server nevrací jméno uživatele** | `ludone_ping` dá jen e-mail; panel proto píše „připojení neověřeno" |
-| **nginx strop neznámý** | `E5` krok 1, měří se přes SSH — umí to jen Dan |
-| **příjem času nespecifikován** | `E5` řeší jen nahrávky |
-
-Předávací dokument pro serverovou stranu: [`SERVER-CO-POSTAVIT.md`](SERVER-CO-POSTAVIT.md).
-
-## Otevřené na desktopu (neblokuje, pořadí podle hodnoty)
-
-1. **`RecordingCard` nemá unit pokrytí vůbec** — změřeno sabotáží: přejmenování `start()`
-   prošlo zeleně.
-2. **Panel je vizuálně prázdný uprostřed** — okno má pevných 366×792, obsah se po sladění
-   s designem zkrátil. Výška je v `electron/main.cjs`.
-3. **Živý OAuth stav nejde po restartu ověřit** bez nového getteru v `electron/**`.
-4. Chybí fontové soubory Public Sans / Instrument Sans → systémový fallback.
-
-## Konfigurace, kterou po resume potřebuješ
-
-- `.env.local` (mimo git, ověřeno `git check-ignore`) drží
-  `LUDONE_OAUTH_CLIENT_ID=ldmcp_oauth_client_prod_v1_Mti3tDvq…` — **ověřený, používaný**.
-  Druhý klient (`…dgsYAL5m…`) je nepoužívaný sirotek, viz `DAN-TODO.md`.
-- 🔴 **`LUDONE_DATA_DIR` přesměruje `userData`, `sessionData`, `cache`, `crashDumps`, `temp` —
-  ale NE `appData`.** Token proto vždy leží ve skutečném `~/Library/Application Support/cz.ludone.desktop/`.
-  Kdo ho hledá v testovacím adresáři, nenajde ho a bude si myslet, že přihlášení selhalo.
-
-## Pravidla, která tenhle běh zaplatil a nemá se od nich ustupovat
-
-- **Jeden SOUBOR = jeden job**, ne jen jeden worktree. Tři úkoly do `main.cjs` = konflikty při rebase.
-- **Codex ve worktree needituje git** — `codex exec -C <worktree> -s workspace-write`,
-  a commit dělá orchestrátor HNED po doběhnutí, dřív než cokoli jiného.
-- **Zelené testy nejsou ověření.** Tenhle den našel tři vady, které 331 zelených testů přehlédlo.
-- 🔴 **Napřed ověř měřidlo, teprve pak obviň kód.** Čtyřikrát za den vypadala moje chybná
-  příprava testu jako vada v implementaci.
+- **Zelené testy nejsou ověření.** Dnešek našel čtyři vady, které stovky zelených testů přehlédly.
+- 🔴 **Napřed ověř měřidlo, teprve pak obviň kód.** Pětkrát za den vypadala moje chybná
+  příprava jako vada v implementaci.
+- **Ochrana, která vypadá funkčně, se nemusí nikdy vykonat** — `if (permission === "display-capture")`
+  se neuplatnilo nikdy, protože Electron posílá `media`.
+- **Jeden hotspot soubor = jeden Codex job**, ne jen jeden worktree.
+- **„Nechráněné" a „nechtěné" nejsou totéž** — než něco eskaluješ jako bezpečnostní nález,
+  zjisti, co má být veřejné. Dnes mě to stálo Danův čas.
