@@ -80,14 +80,22 @@ function createController(app, safeStorage, fetchImpl, logger = fakeLogger()) {
 
 async function inTemporaryAppData(run) {
   const appData = await mkdtemp(path.join(tmpdir(), "ludone-logout-"));
+  // 🔴 Produkce má DVA různé stromy a tenhle harness dřív znal jen jeden.
+  // `app.setName("LuDone Desktop")` (main.cjs:210) posouvá `userData` na
+  // `<appData>/LuDone Desktop`, kam B5/B7 ukládají časovač, frontu a nahrávky —
+  // zatímco token leží v `<appData>/cz.ludone.desktop/auth`. Sourozenci, ne potomci.
+  // Dokud harness na `userData` házel výjimku, nešlo změřit, jestli úklid při odhlášení
+  // nesahá na data druhé linie.
+  const userData = path.join(appData, "LuDone Desktop");
   const app = {
     getPath(name) {
-      if (name !== "appData") throw new Error(`Neočekávaná Electron cesta: ${name}`);
-      return appData;
+      if (name === "appData") return appData;
+      if (name === "userData") return userData;
+      throw new Error(`Neočekávaná Electron cesta: ${name}`);
     },
   };
   try {
-    return await run({ app, appData });
+    return await run({ app, appData, userData });
   } finally {
     await rm(appData, { recursive: true, force: true });
   }
@@ -443,23 +451,39 @@ describe("odhlášení", () => {
   });
 
   it("nesmaže nic jiného v jmenném prostoru aplikace", async () => {
-    await inTemporaryAppData(async ({ app, appData }) => {
+    await inTemporaryAppData(async ({ app, appData, userData }) => {
       const safeStorage = fakeSafeStorage();
       const { blobPath } = await writeSession(app, safeStorage);
-      const namespace = path.join(appData, "cz.ludone.desktop");
-      const queuePath = path.join(namespace, "queue", "outgoing.json");
-      const recordingPath = path.join(namespace, "nahravky", "x.bin");
+      // 🔴 Atrapy patří tam, kde produkce data OPRAVDU má. Dřív ležely pod
+      // `cz.ludone.desktop/{queue,nahravky}`, což je cesta, kterou nikdo nepoužívá —
+      // brána tak hlídala prázdný adresář a úklid skutečné fronty, časovače i nahrávek
+      // by prošel zeleně. Cesty jsou opsané z main.cjs:584, :827 a :882.
+      const queuePath = path.join(userData, "queue", "outgoing.json");
+      const casovacPath = path.join(userData, "cas", "casovac.json");
+      const recordingPath = path.join(userData, "nahravky", "x.webm");
       await saveQueueAtomically(queuePath, { schemaVersion: 1, items: [] });
+      await mkdir(path.dirname(casovacPath), { recursive: true });
+      await writeFile(casovacPath, Buffer.from('{"aktualni":null}', "utf8"));
       await mkdir(path.dirname(recordingPath), { recursive: true });
       await writeFile(recordingPath, Buffer.from("firemní-data", "utf8"));
-      const before = await fileSnapshot(namespace);
 
-      expect(before.has("auth/oauth.enc")).toBe(true);
+      const before = await fileSnapshot(appData);
+
+      // Pojistka: kdyby se atrapy položily vedle, snímek by je neobsahoval a test by
+      // „nic nesmazáno" potvrdil nad prázdnem. Proto se jejich přítomnost tvrdí zvlášť.
+      expect(before.has(path.join("cz.ludone.desktop", "auth", "oauth.enc"))).toBe(true);
+      expect(before.has(path.join("LuDone Desktop", "queue", "outgoing.json"))).toBe(true);
+      expect(before.has(path.join("LuDone Desktop", "cas", "casovac.json"))).toBe(true);
+      expect(before.has(path.join("LuDone Desktop", "nahravky", "x.webm"))).toBe(true);
+
       await createController(app, safeStorage, successfulFetch()).logout();
-      const after = await fileSnapshot(namespace);
+      const after = await fileSnapshot(appData);
 
       const removed = [...before.keys()].filter((file) => !after.has(file));
-      expect(removed).toEqual(["auth/oauth.enc"]);
+      expect(
+        removed,
+        "odhlášení smí odebrat JEN token — cokoli dalšího je ztráta nahrávek nebo naměřeného času",
+      ).toEqual([path.join("cz.ludone.desktop", "auth", "oauth.enc")]);
       for (const [file, contents] of after) {
         expect(contents).toEqual(before.get(file));
       }
@@ -468,7 +492,15 @@ describe("odhlášení", () => {
   });
 
   it("auth modul o frontě neví", () => {
-    expect(authSource).not.toMatch(/queue|fronta|outgoing/i);
+    // 🔴 Měří se KÓD, ne próza. Bez tohohle kroku shodí bránu obyčejný komentář,
+    // který o frontě jen MLUVÍ — a to je falešná červená: nutí člověka přeformulovat
+    // poznámku místo aby opravil kód. Odstraňují se jen CELOŘÁDKOVÉ komentáře; kdo maže
+    // každé `//`, rozřízne i URL uvnitř řetězce.
+    const authBezKomentaru = authSource
+      .split("\n")
+      .map((radek) => (radek.trim().startsWith("//") ? "" : radek))
+      .join("\n");
+    expect(authBezKomentaru).not.toMatch(/queue|fronta|outgoing/i);
   });
 
   it("IPC vrací výsledek beze změny a preload nevynáší token", async () => {
