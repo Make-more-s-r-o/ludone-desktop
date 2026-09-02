@@ -12,11 +12,18 @@ permissions:
 
 jobs:
   gates:
-    # Runner macOS se účtuje 10× dráž než Linux a tahle brána na něm nic
-    # macOS-specifického nedělá: lint, typecheck, vitest a Vite build jedou
-    # na Linuxu stejně. Oba smoke kroky níž jsou v CI vypnuté (`if: false`),
-    # protože potřebují GUI, zvuk a oprávnění — ty pouští člověk na svém Macu.
-    runs-on: ubuntu-latest
+    # Vlastní runner na Danově Macu. Placené minuty GitHubu nespotřebovává vůbec,
+    # takže brána běží i při zastaveném billingu organizace.
+    #
+    # 🔴 Cena té volby: když je Mac vypnutý, job ČEKÁ ve frontě, nespadne. Návrat
+    # na hostovaný runner je jednořádkový (`runs-on: ubuntu-latest`) a vyplatí se
+    # ve chvíli, kdy billing zase poběží — Linux je pro tuhle bránu dost, nic
+    # macOS-specifického tu neběží.
+    #
+    # Bonus, který hostovaný runner nikdy mít nebude: oba smoke kroky níž potřebují
+    # GUI, zvuk a oprávnění Záznam obrazovky. Na skutečném Macu je jednou zapnout
+    # půjde; na runneru GitHubu ne, proto jsou dnes `if: false`.
+    runs-on: [self-hosted, macos]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
