@@ -24,6 +24,11 @@ git fetch origin && git rebase origin/main
 ```
 Pak přečti diff, spusť sabotáže (níž), otevři PR, počkej na zelenou CI, mergni, ukliď worktree.
 
+🔴 **Na větvi `orca/desktop-zvuk` je na originu WIP commit `e0f82a2` — NEMERGOVAT.**
+Vznikl jako záloha uprostřed psaní, když docházel limit: brány neproběhly, sabotáže neproběhly,
+diff nikdo nečetl. Je to pojistka proti ztrátě, ne hotová práce. Po resume nad ním normálně
+pokračuj (Codex do stromu píše dál) a **teprve pak** brány, sabotáže a PR.
+
 **Když je >0** → job běží dál, nech ho. Mrtvý je až tehdy, když se jeho log
 `/tmp/beh-noc/zvuk.log` nehýbe **20 minut** — status ani počet procesů nejsou důkaz.
 
