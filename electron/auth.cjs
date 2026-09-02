@@ -6,7 +6,11 @@ const { pathToFileURL } = require("node:url");
 
 const LOOPBACK_HOST = "127.0.0.1";
 const CALLBACK_PATH = "/callback";
-const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
+const SERVER_PENDING_TTL_MS = 10 * 60 * 1000;
+// Rezerva kryje plánování event loopu a doběh síťové odpovědi na hraně serverového TTL;
+// bez ní mohou oba časovače vypršet prakticky současně a desktop zavřít port jako první.
+const AUTH_TIMEOUT_RESERVE_MS = 30 * 1000;
+const DEFAULT_TIMEOUT_MS = SERVER_PENDING_TTL_MS + AUTH_TIMEOUT_RESERVE_MS;
 const TOKEN_DIRECTORY = "auth";
 const TOKEN_FILE = "oauth.enc";
 const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
@@ -59,6 +63,14 @@ function validatedMcpScope(value) {
     throw new Error("E7 smí žádat jen MCP scopy; scope pro odesílání není dostupný");
   }
   return requested.join(" ");
+}
+
+function resolveAuthTimeout(value) {
+  const timeoutMs = value ?? DEFAULT_TIMEOUT_MS;
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new TypeError("Časový limit přihlášení musí být kladné konečné číslo");
+  }
+  return timeoutMs;
 }
 
 async function jsonResponse(fetchImpl, url, options, label) {
@@ -114,7 +126,12 @@ function sendBrowserResponse(response, statusCode, message) {
   response.end(body);
 }
 
-async function createLoopbackListener(expectedState, verifyState, timeoutMs) {
+async function createLoopbackListener(
+  expectedState,
+  verifyState,
+  timeoutMs,
+  createServer = http.createServer,
+) {
   let settled = false;
   let server;
   let timer;
@@ -131,7 +148,17 @@ async function createLoopbackListener(expectedState, verifyState, timeoutMs) {
     if (server?.listening) server.close();
   };
 
-  server = http.createServer((request, response) => {
+  const rejectPending = (error) => {
+    if (settled) return false;
+    settled = true;
+    close();
+    rejectCode(error);
+    return true;
+  };
+
+  const cancel = () => rejectPending(new Error("Přihlášení bylo zrušeno"));
+
+  server = createServer((request, response) => {
     const address = server.address();
     const expectedHost = `${LOOPBACK_HOST}:${address.port}`;
     if (request.method !== "GET" || request.headers.host !== expectedHost) {
@@ -177,23 +204,17 @@ async function createLoopbackListener(expectedState, verifyState, timeoutMs) {
   });
 
   server.on("error", (error) => {
-    if (!settled) {
-      settled = true;
-      rejectCode(error);
-    }
-    close();
+    rejectPending(error);
   });
 
   timer = setTimeout(() => {
-    if (settled) return;
-    settled = true;
-    close();
-    rejectCode(new Error("Přihlášení se v časovém limitu nevrátilo"));
-  }, timeoutMs);
+    rejectPending(new Error("Přihlášení se v časovém limitu nevrátilo"));
+  }, resolveAuthTimeout(timeoutMs));
   timer.unref?.();
 
   const port = server.address().port;
   return {
+    cancel,
     close,
     codePromise,
     redirectUri: `http://${LOOPBACK_HOST}:${port}${CALLBACK_PATH}`,
@@ -327,7 +348,7 @@ function createAuthController(options) {
   const scope = validatedMcpScope(options.scope ?? "mcp:read");
   const expectedResource = `${issuer}/api/mcp`;
   const resource = options.resource ?? expectedResource;
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const timeoutMs = resolveAuthTimeout(options.timeoutMs);
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   const randomSource = options.randomSource ?? randomBytes;
   const { app, safeStorage, shell } = options;
@@ -340,80 +361,110 @@ function createAuthController(options) {
     throw new Error("E7 se smí autorizovat jen k MCP resource issueru");
   }
 
-  return {
-    async begin() {
+  async function start() {
+    let listener;
+    try {
       const oauth = await loadOauthLogic();
       const endpoints = await discoverEndpoints(fetchImpl, issuer);
       const pkce = oauth.createPkce(randomSource);
       const state = oauth.generateState(randomSource);
-      const listener = await createLoopbackListener(state, oauth.verifyState, timeoutMs);
+      listener = await createLoopbackListener(
+        state,
+        oauth.verifyState,
+        timeoutMs,
+        options.loopbackServerFactory,
+      );
 
-      try {
-        const clientId = options.clientId ?? await registerPublicClient(
-          fetchImpl,
-          endpoints.registrationEndpoint,
-          listener.redirectUri,
-          scope,
-        );
-        const authorizationUrl = oauth.buildAuthorizationUrl({
-          authorizationEndpoint: endpoints.authorizationEndpoint,
-          clientId,
-          redirectUri: listener.redirectUri,
-          scope,
-          state,
-          codeChallenge: pkce.codeChallenge,
-          resource,
-        });
-        trustedRemoteEndpoint(authorizationUrl.href, issuer, "Autorizační URL");
-        await shell.openExternal(authorizationUrl.href);
+      const clientId = options.clientId ?? await registerPublicClient(
+        fetchImpl,
+        endpoints.registrationEndpoint,
+        listener.redirectUri,
+        scope,
+      );
+      const authorizationUrl = oauth.buildAuthorizationUrl({
+        authorizationEndpoint: endpoints.authorizationEndpoint,
+        clientId,
+        redirectUri: listener.redirectUri,
+        scope,
+        state,
+        codeChallenge: pkce.codeChallenge,
+        resource,
+      });
+      trustedRemoteEndpoint(authorizationUrl.href, issuer, "Autorizační URL");
+      await shell.openExternal(authorizationUrl.href);
 
-        const code = await listener.codePromise;
-        const tokenBody = oauth.buildTokenRequestBody({
-          code,
-          codeVerifier: pkce.codeVerifier,
-          redirectUri: listener.redirectUri,
-          clientId,
-          resource,
-        });
-        const tokenResponse = await jsonResponse(fetchImpl, endpoints.tokenEndpoint, {
-          method: "POST",
-          headers: {
-            accept: "application/json",
-            "content-type": "application/x-www-form-urlencoded",
-          },
-          redirect: "error",
-          body: tokenBody.toString(),
-        }, "Výměna autorizačního kódu");
-        const accessToken = requiredString(tokenResponse.access_token, "access_token");
-        const identity = await resolveUserIdentity(
-          options,
-          fetchImpl,
-          accessToken,
-          tokenResponse,
-          issuer,
-        );
-        const expiresIn = Number(tokenResponse.expires_in);
+      const result = (async () => {
+        try {
+          const code = await listener.codePromise;
+          const tokenBody = oauth.buildTokenRequestBody({
+            code,
+            codeVerifier: pkce.codeVerifier,
+            redirectUri: listener.redirectUri,
+            clientId,
+            resource,
+          });
+          const tokenResponse = await jsonResponse(fetchImpl, endpoints.tokenEndpoint, {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              "content-type": "application/x-www-form-urlencoded",
+            },
+            redirect: "error",
+            body: tokenBody.toString(),
+          }, "Výměna autorizačního kódu");
+          const accessToken = requiredString(tokenResponse.access_token, "access_token");
+          const identity = await resolveUserIdentity(
+            options,
+            fetchImpl,
+            accessToken,
+            tokenResponse,
+            issuer,
+          );
+          const expiresIn = Number(tokenResponse.expires_in);
 
-        await persistEncryptedSession(app, safeStorage, {
-          v: 1,
-          issuer,
-          clientId,
-          resource,
-          scope,
-          accessToken,
-          refreshToken: typeof tokenResponse.refresh_token === "string"
-            ? tokenResponse.refresh_token
-            : null,
-          tokenType: typeof tokenResponse.token_type === "string" ? tokenResponse.token_type : "Bearer",
-          accessExpiresAt: Number.isFinite(expiresIn) ? Date.now() + expiresIn * 1000 : null,
-          identity,
-        });
+          await persistEncryptedSession(app, safeStorage, {
+            v: 1,
+            issuer,
+            clientId,
+            resource,
+            scope,
+            accessToken,
+            refreshToken: typeof tokenResponse.refresh_token === "string"
+              ? tokenResponse.refresh_token
+              : null,
+            tokenType: typeof tokenResponse.token_type === "string" ? tokenResponse.token_type : "Bearer",
+            accessExpiresAt: Number.isFinite(expiresIn) ? Date.now() + expiresIn * 1000 : null,
+            identity,
+          });
+          return { ok: true, user: identity };
+        } finally {
+          listener.close();
+        }
+      })();
+      // Odmítnutí má vždy pozorovatele i v krátkém okně mezi návratem start() a
+      // připojením rendereru; původní promise zůstává odmítnutá pro jeho await.
+      result.catch(() => {});
 
-        return { ok: true, user: identity };
-      } finally {
-        listener.close();
+      return Object.freeze({
+        authorizationUrl: authorizationUrl.href,
+        cancel: listener.cancel,
+        result,
+      });
+    } catch (error) {
+      if (listener) {
+        listener.cancel();
+        await listener.codePromise.catch(() => {});
       }
+      throw error;
+    }
+  }
+
+  return {
+    async begin() {
+      const attempt = await start();
+      return attempt.result;
     },
+    start,
   };
 }
 
@@ -499,8 +550,10 @@ function createPermissionRequestHandler({ systemPreferences, shell, logger = con
 }
 
 module.exports = {
+  DEFAULT_TIMEOUT_MS,
   createAuthController,
   createPermissionRequestHandler,
   decidePermissionResult,
+  resolveAuthTimeout,
   tokenStorageDirectory,
 };

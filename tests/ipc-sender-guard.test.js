@@ -184,12 +184,37 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
   });
 
   it("všechny IPC kanály z produkčního kódu registruje přes validační wrapper", () => {
-    const registrations = [...mainSource.matchAll(
-      /\b(ipcMain\.(?:on|handle)|(?:on|handle)Validated)\(\s*["']([^"']+)["']/g,
-    )].map((match) => ({ registration: match[1], channel: match[2] }));
+    // 🔴 Jméno kanálu NEMUSÍ být řetězcový literál. Dokud tenhle výraz uměl jen literál,
+    // byl kanál registrovaný konstantou pro inventuru NEVIDITELNÝ — a inventura je jediné
+    // měřidlo, které hlídá, že se nikdo nezaregistruje syrovým ipcMain bez ověření
+    // odesílatele. Doloženo nezávislým review: `handleValidated(AUTH_CANCEL_CHANNEL, …)`
+    // do seznamu nespadl a dvanáctipoložkový výčet prošel beze změny.
+    // Definice obou wrapperů obsahují jedinou POVOLENOU syrovou registraci
+    // (`ipcMain.handle(channel, …)` uvnitř `handleValidated`). Že jdou přes
+    // `requireTrustedSender`, hlídají samostatné asserce níž — z inventury je proto
+    // vyřízneme, jinak by se hlásily jako kanál, jehož jméno neumíme rozluštit.
+    const zdrojBezWrapperu = [
+      functionSource(mainSource, "handleValidated"),
+      functionSource(mainSource, "onValidated"),
+    ].reduce((text, telo) => text.replace(telo, ""), mainSource);
+
+    const konstanty = Object.fromEntries(
+      [...mainSource.matchAll(/^const\s+([A-Z0-9_]+)\s*=\s*["']([^"']+)["'];/gm)]
+        .map((m) => [m[1], m[2]]),
+    );
+    const registrations = [...zdrojBezWrapperu.matchAll(
+      /\b(ipcMain\.(?:on|handle)|(?:on|handle)Validated)\(\s*(?:["']([^"']+)["']|([A-Za-z_$][\w$]*))/g,
+    )].map((match) => {
+      const channel = match[2] ?? konstanty[match[3]];
+      // Kanál pojmenovaný něčím, co neumíme rozluštit, je NÁLEZ, ne důvod ho přeskočit.
+      expect(channel, `kanál registrovaný výrazem, který neumím rozluštit: ${match[3]}`)
+        .toBeTruthy();
+      return { registration: match[1], channel };
+    });
 
     expect(registrations.map(({ channel }) => channel).sort()).toEqual([
       "auth:begin",
+      "auth:cancel",
       "panel:hide",
       "permission:request",
       "recording:append",
