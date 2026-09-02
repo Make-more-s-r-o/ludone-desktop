@@ -3,7 +3,7 @@
 **PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
 kontextem, musí pokračovat, aniž by se ptal. Zadání: [`BEH-NOC.md`](BEH-NOC.md).
 
-**Poslední zápis: 2. 9. 2026, 02:45 — BĚH UKONČEN.**
+**Poslední zápis: 2. 9. 2026 — VLNA 5 po obnovení limitů.**
 
 🔴 **Režim od 23:15 (Dan): NEPTAT SE.** Bezpečné vratné defaulty rozhodni a zapiš do
 `decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
@@ -12,7 +12,7 @@ práce. Mechanika Codex, Claude koordinace a review.
 
 ---
 
-## Vlna `4 / 4` — DOKONČENO
+## Vlna `5` — po obnovení limitů
 
 | Story | PR | CI | Testy (měřil jsem já, před rourou) | Stav |
 |---|---|---|---|---|
@@ -33,7 +33,8 @@ práce. Mechanika Codex, Claude koordinace a review.
 
 | Co | Log | Konec |
 |---|---|---|
-| — | — | **žádné, všechny joby doběhly** |
+| Codex **B9b** bezpečnost odhlášení | `/tmp/beh-noc/b9b-codex.log` | hlídač na pozadí |
+| Workflow **review druhé vlny** | 5 čoček nad b5/b7/b8/b9/b11 | task `ws42r5dai`, ozve se samo |
 
 🔴 Log bez pohybu 20 min = mrtvý job. Práce bývá na disku — `git status` ve worktree.
 🔴 **Po doběhnutí COMMITNI HNED**, teprve pak brány a sabotáže.
@@ -98,6 +99,17 @@ Všechno je jedna třída: **brána, která nic nenajde, není zelená — je ne
 
 ## Další krok
 
-**Běh je u konce.** Osm PR (#2–#9), sedm se zeleným CI, nic nemergováno.
-Ráno: rozhodnout čtyři otázky z „Čeká na Dana", pak merge zdola nahoru podle stohu
-(b1, b3, b4 → main; pak b5, b8; pak b7, b9; nakonec b11).
+**Vlna 5 (po obnovení limitů):**
+
+1. ✅ **BD-N13 bod 2 opraven** — počítadlo mutací hlídalo dvě fakta ze čtyř; doplněno
+   o `preparation.cancelled` + test pořadí (přepočet musí být ZA smyčkou). Stoh přebasován,
+   b5 161 · b7 187 · b11 202 testů, vše zelené.
+2. ✅ **Skill `codex-delegace-orchestrace` rozšířen** o pět nových doložených pastí
+   (+129 řádků, snapshot `.bak-*` před editem).
+3. 🔄 **B9b** — zámek přes přihlášení i odhlášení, deadliny, úklid dočasných souborů.
+   Rozhodnutí revidované v BD-N16.
+4. 🔄 **Review druhé vlny** — pět čoček nad b5/b7/b8/b9/b11, které první kolo nevidělo.
+5. ⏳ **BD-N13 bod 1 čeká** na doběhnutí B9b — je na `b4`, nad kterou B9b staví.
+
+**Až bude hotovo:** merge zdola nahoru (b1, b3, b4 → main; pak b5, b8; pak b7, b9;
+nakonec b11 a b9b). **Merge je Danovo rozhodnutí** — masterplán M4 ruší „dotáhni to sám".
