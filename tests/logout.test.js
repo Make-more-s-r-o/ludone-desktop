@@ -454,8 +454,6 @@ describe("odhlášení", () => {
     await inTemporaryAppData(async ({ app, appData, userData }) => {
       const safeStorage = fakeSafeStorage();
       const { blobPath } = await writeSession(app, safeStorage);
-      const namespace = path.join(appData, "cz.ludone.desktop");
-
       // 🔴 Atrapy patří tam, kde produkce data OPRAVDU má. Dřív ležely pod
       // `cz.ludone.desktop/{queue,nahravky}`, což je cesta, kterou nikdo nepoužívá —
       // brána tak hlídala prázdný adresář a úklid skutečné fronty, časovače i nahrávek
@@ -494,7 +492,15 @@ describe("odhlášení", () => {
   });
 
   it("auth modul o frontě neví", () => {
-    expect(authSource).not.toMatch(/queue|fronta|outgoing/i);
+    // 🔴 Měří se KÓD, ne próza. Bez tohohle kroku shodí bránu obyčejný komentář,
+    // který o frontě jen MLUVÍ — a to je falešná červená: nutí člověka přeformulovat
+    // poznámku místo aby opravil kód. Odstraňují se jen CELOŘÁDKOVÉ komentáře; kdo maže
+    // každé `//`, rozřízne i URL uvnitř řetězce.
+    const authBezKomentaru = authSource
+      .split("\n")
+      .map((radek) => (radek.trim().startsWith("//") ? "" : radek))
+      .join("\n");
+    expect(authBezKomentaru).not.toMatch(/queue|fronta|outgoing/i);
   });
 
   it("IPC vrací výsledek beze změny a preload nevynáší token", async () => {
