@@ -888,3 +888,25 @@ Nic to nerozbíjí. Kdybys chtěl uklidit, jde to jen zásahem do `ludata.mcp_oa
 
 ⚠️ **Připomínka k limitu:** registrace má strop **20 pokusů za hodinu na IP**. Opakované
 spouštění toho `curl` ho vyčerpá — proto se client ID zakládá **jednou** a uloží.
+
+---
+
+## Serverová strana: předávací specifikace hotová (2. 9. 2026)
+
+[`docs/changes/desktop-v1/SERVER-CO-POSTAVIT.md`](docs/changes/desktop-v1/SERVER-CO-POSTAVIT.md)
+
+**Ze tří čtvrtin je to hotové a stabilní.** Příjem nahrávek má 329řádkový spec (`E5`), tvar
+dat z desktopu je zmrazený (`schemaVersion: 1`).
+
+🔴 **Dvě věci brání začít:**
+1. **Chybí OAuth scope pro zápis.** Server zná jen `mcp:read` a `mcp:draft`; ani jeden
+   neumožňuje nahrát soubor ani zapsat čas. Doporučuju nový `mcp:upload`. **Rozhodnout dřív
+   než psát endpointy** — jinak nebude čím se k nim přihlásit.
+2. **Příjem naměřeného času není specifikovaný vůbec** — `E5` řeší jen nahrávky (0 zmínek
+   o LuTracku). Desktop přitom čas do fronty už zařazuje (PR #15).
+
+⚠️ A jedna věc, kterou umíš změřit jen ty: **`E5` krok 1 je blokující** — skutečný nginx strop
+a timeouty na hostu přes SSH. Hodinové audio má 40–120 MB na stopu a stopy jsou dvě.
+
+**Doporučené pořadí:** scope → nginx měření → **příjem času** (malý, ověří celý řetěz) →
+příjem nahrávek.
