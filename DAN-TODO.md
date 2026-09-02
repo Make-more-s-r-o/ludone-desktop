@@ -1083,3 +1083,15 @@ ne s ním.
 
 *Poznámka k důkazu: ověřeno neautentizovaným požadavkem na NEEXISTUJÍCÍ cestu. Že se stáhne
 skutečná fotka, jsem netestoval a netestoval bych — k prokázání díry to není potřeba.*
+
+---
+
+## Mezera: odebrání retina ikony (`@2x`) nikdo nechytí (2. 9. 2026)
+
+Změřeno sabotáží při opravě neviditelné ikony (PR #24): odstranění `addRepresentation`
+s `@2x` variantou prošlo **`411 passed`**.
+
+⇒ Kdyby to někdo odstranil, ikona bude na retina displeji **rozmazaná** a žádná brána
+nezakřičí. Není to blocker — ikona bude vidět — ale je to měřidlo, které nic neměří.
+
+**Levná oprava:** test, který ověří, že se pro každý stav registruje i `@2x` reprezentace.
