@@ -692,3 +692,42 @@ překreslení panelu podle designu, protože až tehdy budou souhrny čím napln
 ⚠️ **Poučení do procesu:** masterplán velí porovnávat diff proti schválenému designu. U hlavního
 procesu se to dělalo, **u vzhledu panelu ne** — a nikdo si toho nevšiml, dokud aplikaci někdo
 nespustil. Zelené testy tuhle třídu vady nezachytí ani náhodou.
+
+### BD-N32 — přihlášení se nesmí zahodit kvůli chybějícímu jménu
+
+**Nález z PRVNÍHO živého přihlášení, 2. 9. 2026.** Dan potvrdil souhlas, server vydal token —
+a desktop celé přihlášení zahodil včetně odvolání tokenu. Doslovně:
+
+```
+[auth] Přihlášení zahájeno
+[SONDA] surova chyba: Error | LuDone nevrátilo úplnou identitu uživatele
+[auth] Přihlášení skončilo: {"ok":false,"duvod":"neznama"}
+```
+
+**Příčina, změřená proti skutečnému serveru:**
+
+| co se čeká | co server dává |
+|---|---|
+| `normalizeIdentity` chce **jméno i e-mail** (`auth.cjs:263`) | token endpoint vrací **jen** `access_token`, `token_type`, `expires_in`, `refresh_token`, `scope` |
+| bez `identityEndpoint` se čte z tokenové odpovědi | discovery **nemá `userinfo_endpoint`** |
+| — | `ludone_ping` vrací **jen e-mail**, jméno nezná nikdo |
+
+🔴 **Úspěšné přihlášení se rušilo kvůli zobrazovanému jménu.** Přihlášení je bezpečnostní
+akce, popisek u avatara ne — ta nepřiměřenost je vada sama o sobě, nezávisle na tom, odkud
+jméno vzít.
+
+**Danovo rozhodnutí: obojí.** Desktop přestane přihlášení zahazovat (běží na Codexu),
+požadavek na jméno ze serveru jde do `DAN-TODO.md`.
+
+⚠️ **Nešlo to najít jinak než spuštěním.** Všech 331 testů bylo zelených; testy si identitu
+podstrkovaly, protože skutečný tvar odpovědi nikdo neviděl. Tohle je ta hranice mezi
+🧪 „zelené testy" a ✅ „ověřeno naostro", kvůli které ji masterplán drží.
+
+### BD-N33 — klasifikátor chyb musí surovou chybu ZALOGOVAT
+
+Když `duvod` skončí jako `neznama`, dnes se surová zpráva **zahodí** — uživatel dostane
+„neznámá chyba" a vývojář taky. Kvůli tomu se muselo do produkčního kódu dočasně vložit
+`console.error`, aby se vůbec zjistilo, co se stalo.
+
+**Návrh:** nezařaditelnou chybu logovat (název třídy + zpráva), ale **bez autorizačního kódu
+a bez tokenu**. Zapsáno jako práce, ne rozhodnutí — čeká na volnou frontu.

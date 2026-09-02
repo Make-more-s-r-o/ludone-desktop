@@ -844,3 +844,30 @@ o něco, co dnes funguje.
 **Změřeno u toho i tohle:** oprávnění pro binárku, ze které se dnes spouští, jsou v pořádku
 (`mikrofon: granted`, `obrazovka: granted`). Chyba „systémový zvuk: Permission denied"
 tedy **není o oprávnění** a hledá se v kódu panelu. Apple Developer účet kvůli ní kupovat netřeba.
+
+---
+
+## Pro server: `ludone_ping` (nebo `userinfo`) potřebuje vracet i JMÉNO (2. 9. 2026)
+
+Vyplynulo z prvního živého přihlášení. Desktop dnes nemá **odkud vzít jméno uživatele**:
+
+- token endpoint vrací jen OAuth pole, žádnou identitu;
+- discovery nemá `userinfo_endpoint`;
+- `ludone_ping` vrací pouze `user` = e-mail (`ludone-app/src/mcp/tools/ping.ts:70`).
+
+Schválený design má přitom na obrazovce „Přihlášeno" **Jméno · E-mail · Zařízení**.
+
+**Desktop je odblokovaný** (chybějící jméno už přihlášení nezahodí), ale dokud jméno nepřijde,
+ukáže místo něj e-mail. Až server jméno začne vracet, desktop ho zobrazí bez další práce.
+
+**Nejmenší zásah:** přidat do odpovědi `ludone_ping` jméno přihlášeného uživatele.
+
+---
+
+## `RecordingCard` nemá unit pokrytí vůbec (2. 9. 2026)
+
+Změřeno sabotáží při odstraňování kalendáře: přejmenování `start()` v
+`src/features/recording/RecordingCard.jsx` prošlo **`328 passed`** a čistým lintem.
+
+Karta nahrávání je přitom hlavní funkce aplikace. Není to věc žádné běžící story — hlásím
+zvlášť, ať to nezapadne mezi zelené brány.
