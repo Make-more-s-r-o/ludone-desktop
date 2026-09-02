@@ -400,3 +400,40 @@ B6 zůstává **nezapočatá**. **B11 (retence) na ní nezávisí** — visí na
 `podklady-vytezene.md:172` připisují B6 zásahy do `main.cjs`/`preload.cjs`, zatímco tabulka
 vlastnictví v `plan.md:147` jí žádný takový blok nedává. Vykonavatel zvolil **bezpečnější**
 výklad a do obou souborů nesáhl. To je přesně to chování, které od něj chceme.
+
+---
+
+## BD-N16 — reviduju vlastní odložení B9b (koordinátor, 2. 9. 2026, po obnovení limitů)
+
+V BD-N14 jsem napsal, že B9b *„se musí dělat až s možností ověřit to naostro"*. **Reviduju to
+a stavím ji teď.** Změna rozhodnutí patří do záznamu stejně jako to původní.
+
+**Proč to původní bylo příliš opatrné:** spletl jsem si dvě různé věci — *„ověřit, že ta race
+nastane naostro"* a *„ověřit, že oprava funguje"*. To druhé jde bez serveru:
+
+| oprava | čím se dá změřit bez sítě |
+|---|---|
+| jeden zámek přes přihlášení i odhlášení | řízené pořadí volání, obě pořadí |
+| deadline na discovery a revoke | falešné časovače (`vi.useFakeTimers()`) |
+| úklid zbylých `.oauth.enc.*.tmp` | dočasný adresář přes `mkdtemp` |
+
+**Skutečný důvod odložení byl limit a hodina, ne technická překážka.** Obojí pominulo.
+
+🔴 **Co se tím NEMĚNÍ:** živé chování proti serveru zůstává **⛔ neověřené**. Zelené testy jsou
+🧪. A pořád platí, že bez `LUDONE_OAUTH_CLIENT_ID` se přihlášení naostro ani nepokusí.
+
+**Fail-closed směr, který jsem určil:** když se přihlášení a odhlášení sejdou, **vyhrává
+odhlášení**. Kdo klikl na odhlásit, nesmí skončit přihlášený — ani když přihlášení doběhne
+o chvíli později. Opačná volba by znamenala, že se uživatel po odhlášení tiše vrátí do session,
+což je horší selhání než zbytečné odhlášení.
+
+## BD-N17 — dva neopravené nálezy review: jeden hotov, druhý čeká na doběhnutí B9b
+
+**BD-N13 bod 2 (počítadlo mutací) je HOTOVÝ.** `hasLiveRecording()` čte čtyři fakta, počitadlo
+hlídalo dvě. Doplněno o `preparation.cancelled` a přibyl **test pořadí**: přepočet musí stát
+za smyčkou, ne před ní, protože před ní by viděl stav, kde část session ještě nemá přiřazenou
+finalizaci. Ověřeno sabotáží — přesunutí přepočtu před smyčku test chytí.
+
+**BD-N13 bod 1 (test čítače přihlášení měří rozhodnutí, ne zapojení) ČEKÁ.** Je na větvi `b4`,
+nad kterou právě staví B9b. Sáhnout na `b4` teď by znamenalo přebasovat `b8`, `b9` i běžící
+`b9b` — tedy pracovat pod rukama běžícímu jobu. **Udělá se hned po jeho doběhnutí.**
