@@ -31,6 +31,22 @@ await access(appBundle);
 await access(glassSound);
 await mkdir(proofRoot, { recursive: true });
 
+async function findAppExecutable(bundlePath) {
+  const executableDirectory = path.join(bundlePath, "Contents", "MacOS");
+  for (const executableName of ["LuDone Desktop", "Electron"]) {
+    const executablePath = path.join(executableDirectory, executableName);
+    try {
+      await access(executablePath);
+      return executablePath;
+    } catch {
+      // Starý lokální balík měl jméno Electron; nový electron-builder používá productName.
+    }
+  }
+  throw new Error(`V ${executableDirectory} chybí spustitelný soubor LuDone Desktop`);
+}
+
+const appExecutable = await findAppExecutable(appBundle);
+
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
@@ -261,7 +277,7 @@ async function runRecording(mode) {
     `--remote-debugging-port=${port}`,
   ];
   const child = directLaunch
-    ? spawn(path.join(appBundle, "Contents", "MacOS", "Electron"), directArguments, {
+    ? spawn(appExecutable, directArguments, {
       cwd: projectRoot,
       env: {
         ...process.env,

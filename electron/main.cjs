@@ -195,6 +195,8 @@ function isTrustedPanelFrame(frame) {
 function handleValidated(channel, allowedKinds, handler) {
   ipcMain.handle(channel, (event, ...args) => {
     requireTrustedSender(event, allowedKinds);
+    if (isQuitting) throw new Error("IPC odmítnuto: aplikace se ukončuje");
+    noteUpdateRelevantActivity(channel);
     return handler(event, ...args);
   });
 }
@@ -203,6 +205,8 @@ function onValidated(channel, allowedKinds, handler) {
   ipcMain.on(channel, (event, ...args) => {
     try {
       requireTrustedSender(event, allowedKinds);
+      if (isQuitting) throw new Error("IPC odmítnuto: aplikace se ukončuje");
+      noteUpdateRelevantActivity(channel);
       return handler(event, ...args);
     } catch (error) {
       console.error(`[ipc] Odmítnuto ${channel}: ${error.message}`);
@@ -1614,6 +1618,177 @@ handleValidated("tracking:resolve-recovered", ["panel"], (_event, payload) => (
   runTrackingMutation("resolveRecovered", payload)
 ));
 
+// Automatické aktualizace jsou schválně uzavřené v jednom bloku. Updater se načítá až
+// v zabalené aplikaci, takže vývoj, unit testy ani GUI měřidla nemohou sáhnout na síť.
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1_000;
+const UPDATE_INSTALL_RETRY_MS = 30_000;
+let autoUpdateClient;
+let updateCheckInFlight = false;
+let updateInstallAttemptInFlight = false;
+let updateInstallCommitted = false;
+let downloadedUpdatePending = false;
+let updateInstallRetryTimer;
+let updateRelevantActivityGeneration = 0;
+
+function noteUpdateRelevantActivity(channel) {
+  if (
+    channel === "tray:report-facts"
+    || channel.startsWith("recording:")
+    || (channel.startsWith("tracking:") && channel !== "tracking:get-state")
+  ) {
+    updateRelevantActivityGeneration += 1;
+  }
+}
+
+function updateBlockingActivityIsRunning() {
+  // Session zůstává v mapě až do fsync a zápisu manifestu; následné zařazení chrání
+  // serializační bariéra fronty níž. `hasLiveRecording` během finalizace už vrací false.
+  return recordingOwnersPreparing.size > 0
+    || recordingSessions.size > 0
+    || [...recordingExportStages.values()].some((stage) => stage.result === null)
+    || appState.trackingOwners.size > 0;
+}
+
+function ensureUpdateInstallRetry() {
+  if (updateInstallRetryTimer) return;
+  updateInstallRetryTimer = setInterval(() => {
+    void tryInstallDownloadedUpdate();
+  }, UPDATE_INSTALL_RETRY_MS);
+  updateInstallRetryTimer.unref?.();
+}
+
+function clearUpdateInstallRetry() {
+  if (!updateInstallRetryTimer) return;
+  clearInterval(updateInstallRetryTimer);
+  updateInstallRetryTimer = undefined;
+}
+
+async function updateRestartIsSafe() {
+  if (updateBlockingActivityIsRunning()) return false;
+  const observedActivityGeneration = updateRelevantActivityGeneration;
+
+  try {
+    // Perzistentní LuTrack se musí načíst dřív, než prohlásíme aplikaci za neaktivní.
+    const store = await getReadyTrackingStore();
+    // `load()` je zároveň bariéra interní fronty start/stop/switch a vrací stav z disku.
+    await store.load();
+    syncTrackingTray(store);
+  } catch (error) {
+    console.error(
+      `[updater] Stav LuTracku nelze ověřit; restart se odkládá: ${error.message}`,
+    );
+    return false;
+  }
+  if (
+    updateBlockingActivityIsRunning()
+    || updateRelevantActivityGeneration !== observedActivityGeneration
+  ) return false;
+
+  try {
+    // `list()` je serializační bariéra: počká i na právě dokončované zařazení nahrávky.
+    await (await getOutboundQueueStore()).list();
+  } catch (error) {
+    console.error(`[updater] Frontu nelze ověřit; restart se odkládá: ${error.message}`);
+    return false;
+  }
+  return !updateBlockingActivityIsRunning()
+    && updateRelevantActivityGeneration === observedActivityGeneration;
+}
+
+async function tryInstallDownloadedUpdate() {
+  if (
+    !downloadedUpdatePending
+    || updateInstallAttemptInFlight
+    || updateInstallCommitted
+    || !autoUpdateClient
+  ) return;
+
+  updateInstallAttemptInFlight = true;
+  try {
+    if (!(await updateRestartIsSafe())) return;
+    updateInstallCommitted = true;
+    downloadedUpdatePending = false;
+    clearUpdateInstallRetry();
+    console.log("[updater] Stažená aktualizace se instaluje; aplikace se restartuje.");
+    // electron-updater zavírá okna ještě před Electron událostí before-quit. Flag proto
+    // nastavujeme sami a IPC od této chvíle nepřijme novou nahrávku ani LuTrack.
+    isQuitting = true;
+    autoUpdateClient.quitAndInstall(false, true);
+  } catch (error) {
+    isQuitting = false;
+    updateInstallCommitted = false;
+    downloadedUpdatePending = true;
+    ensureUpdateInstallRetry();
+    console.error(`[updater] Instalaci nelze spustit; zkusím ji později: ${error.message}`);
+  } finally {
+    updateInstallAttemptInFlight = false;
+  }
+}
+
+async function checkForApplicationUpdate() {
+  if (!autoUpdateClient || updateCheckInFlight) return;
+  updateCheckInFlight = true;
+  try {
+    const result = await autoUpdateClient.checkForUpdates();
+    await result?.downloadPromise;
+  } catch (error) {
+    console.error(`[updater] Kontrola aktualizace selhala: ${error.message}`);
+  } finally {
+    updateCheckInFlight = false;
+  }
+}
+
+async function initializeAutoUpdates() {
+  if (IS_TEST_RUN) {
+    console.log("[updater] V E2E běhu jsou automatické aktualizace vypnuté.");
+    return;
+  }
+  if (!app.isPackaged) {
+    console.log("[updater] Ve vývojovém běhu jsou automatické aktualizace vypnuté.");
+    return;
+  }
+
+  try {
+    ({ autoUpdater: autoUpdateClient } = require("electron-updater"));
+  } catch (error) {
+    console.error(`[updater] Modul se nepodařilo načíst: ${error.message}`);
+    return;
+  }
+
+  autoUpdateClient.autoDownload = true;
+  // Aktualizaci nikdy nenecháme vynutit při quit události mimo naši kontrolu aktivity.
+  autoUpdateClient.autoInstallOnAppQuit = false;
+  autoUpdateClient.on("update-downloaded", (info) => {
+    const version = typeof info?.version === "string" ? info.version : "neznámá";
+    console.log(`[updater] Verze ${version} je stažená; čekám na bezpečný restart.`);
+    downloadedUpdatePending = true;
+    ensureUpdateInstallRetry();
+    void tryInstallDownloadedUpdate();
+  });
+  autoUpdateClient.on("error", (error) => {
+    console.error(`[updater] Chyba aktualizace: ${error?.message || "neznámá chyba"}`);
+    if (updateInstallCommitted) {
+      updateInstallCommitted = false;
+      downloadedUpdatePending = true;
+      isQuitting = false;
+      ensureUpdateInstallRetry();
+    }
+  });
+
+  void checkForApplicationUpdate();
+  const checkTimer = setInterval(() => {
+    void checkForApplicationUpdate();
+  }, UPDATE_CHECK_INTERVAL_MS);
+  checkTimer.unref?.();
+
+  try {
+    await getReadyTrackingStore();
+  } catch (error) {
+    // Kontroly a stažení smějí pokračovat, jen bezpečnostní brána restart nepovolí.
+    console.error(`[updater] Stav LuTracku se při startu nenačetl: ${error.message}`);
+  }
+}
+
 // 🔴 Identifikátor klienta se NEUHODNE a nezadrátuje. Musí odpovídat záznamu, který někdo
 // založil na serveru — a ten zatím neexistuje. Zadrátovaná hodnota by se serveru nesešla
 // a přihlášení by spadlo na nesrozumitelnou serverovou chybu místo na srozumitelné
@@ -1970,6 +2145,7 @@ app.whenReady().then(async () => {
   await applyOutboundQueueRetention(panelStartup);
   markOutboundQueueRetentionReady();
   void pumpOutboundQueue();
+  await initializeAutoUpdates();
   const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);
   if (IS_TEST_RUN && Number.isFinite(hardStop) && hardStop > 0) {
     setTimeout(() => {
