@@ -437,3 +437,26 @@ finalizaci. Ověřeno sabotáží — přesunutí přepočtu před smyčku test 
 **BD-N13 bod 1 (test čítače přihlášení měří rozhodnutí, ne zapojení) ČEKÁ.** Je na větvi `b4`,
 nad kterou právě staví B9b. Sáhnout na `b4` teď by znamenalo přebasovat `b8`, `b9` i běžící
 `b9b` — tedy pracovat pod rukama běžícímu jobu. **Udělá se hned po jeho doběhnutí.**
+
+---
+
+## BD-N18 — sabotoval jsem nad necommitnutou prací a smazal si vlastní opravu
+
+**Stalo se mi to, přestože to mám jako pravidlo ve vlastním skillu.** Zapisuju to, protože
+tichá chyba, kterou nikdo nepojmenuje, se zopakuje.
+
+**Průběh:** opravil jsem tautologickou kontrolu v `ui-smoke.mjs`, **necommitl** ji a rovnou
+spustil sabotážní kolo. Každá iterace končí `git checkout HEAD -- <soubor>` — a protože moje
+oprava v `HEAD` nebyla, **první úklid ji smazal**. Další dvě sabotáže pak hlásily
+„KOTVA NESEDÍ", protože hledaly text, který už v souboru nebyl, a strom zůstal po kole
+**červený** se čtyřmi padajícími testy.
+
+🔴 **Nejzrádnější na tom je, že to vypadá jako nález.** „Sabotáž nedopadla" a čtyři červené
+testy se snadno přečtou jako vada kódu. Byla to vada postupu.
+
+**Co to potvrzuje:** pravidlo *„první akce po každém `--write` běhu je `git add -A && git
+commit`, teprve pak brány a sabotáže"* neplatí jen pro **Codexovu** práci. Platí pro **jakoukoli
+necommitnutou práci ve stromě**, včetně mé vlastní.
+
+**Doloženo obojím směrem:** po commitu proběhly tytéž dvě sabotáže bez potíží a poměr vyšel
+3 červené : 1 zelená.
