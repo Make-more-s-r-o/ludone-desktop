@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { LuDoneMark } from "./components/Icons.jsx";
+import { PanelContentHeightReporter } from "./components/PanelContentHeightReporter.jsx";
 import { RecordingCard } from "./features/recording/RecordingCard.jsx";
 import { TrackingCard } from "./features/tracking/TrackingCard.jsx";
 import { queueFooterStatus } from "./lib/panel.js";
@@ -113,50 +114,56 @@ export function App() {
   }
 
   if (!onboardingComplete) {
-    return <Onboarding onAuthenticated={rememberUser} onComplete={completeOnboarding} />;
+    return (
+      <PanelContentHeightReporter>
+        <Onboarding onAuthenticated={rememberUser} onComplete={completeOnboarding} />
+      </PanelContentHeightReporter>
+    );
   }
 
   return (
-    <main className="panel window-surface">
-      <header className="panel-header">
-        <div className="panel-identity">
-          <LuDoneMark size={22} variant="panel" />
-          <span className="panel-identity__copy">
-            <strong>LuDone</strong>
-            <small data-auth-state={sessionExists === null ? "checking" : sessionExists ? "signed-in" : "signed-out"}>
-              {sessionExists === true
-                ? (user ? `${user.name} · připojeno` : "Přihlášeno")
-                : (sessionExists === false ? "Nejsi připojený" : "")}
-            </small>
-          </span>
-        </div>
-      </header>
-
-      <div className="panel-scroll">
-        <RecordingCard onActivityChange={handleRecordingChange} />
-        <TrackingCard onActivityChange={handleTrackingChange} />
-      </div>
-
-      <footer className="panel-footer">
-        {queueStatus && (
-          <div
-            className={`queue-status queue-status--${queueStatus.tone}`}
-            data-testid="queue-status"
-            role="status"
-          >
-            <span className="queue-status__dot" aria-hidden="true" />
-            <span>{queueStatus.text}</span>
+    <PanelContentHeightReporter>
+      <main className="panel window-surface">
+        <header className="panel-header">
+          <div className="panel-identity">
+            <LuDoneMark size={22} variant="panel" />
+            <span className="panel-identity__copy">
+              <strong>LuDone</strong>
+              <small data-auth-state={sessionExists === null ? "checking" : sessionExists ? "signed-in" : "signed-out"}>
+                {sessionExists === true
+                  ? (user ? `${user.name} · připojeno` : "Přihlášeno")
+                  : (sessionExists === false ? "Nejsi připojený" : "")}
+              </small>
+            </span>
           </div>
-        )}
-        <button
-          type="button"
-          className="panel-settings-button"
-          aria-label="Otevřít nastavení"
-          onClick={() => window.ludone.openSettings()}
-        >
-          Nastavení
-        </button>
-      </footer>
-    </main>
+        </header>
+
+        <div className="panel-scroll">
+          <RecordingCard onActivityChange={handleRecordingChange} />
+          <TrackingCard onActivityChange={handleTrackingChange} />
+        </div>
+
+        <footer className="panel-footer">
+          {queueStatus && (
+            <div
+              className={`queue-status queue-status--${queueStatus.tone}`}
+              data-testid="queue-status"
+              role="status"
+            >
+              <span className="queue-status__dot" aria-hidden="true" />
+              <span>{queueStatus.text}</span>
+            </div>
+          )}
+          <button
+            type="button"
+            className="panel-settings-button"
+            aria-label="Otevřít nastavení"
+            onClick={() => window.ludone.openSettings()}
+          >
+            Nastavení
+          </button>
+        </footer>
+      </main>
+    </PanelContentHeightReporter>
   );
 }

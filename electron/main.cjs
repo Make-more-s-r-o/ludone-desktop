@@ -45,7 +45,8 @@ const queueModulePromise = import(
 );
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
-const PANEL_HEIGHT = 792;
+const PANEL_MIN_HEIGHT = 180;
+const PANEL_SCREEN_MARGIN = 8;
 const PANEL_LOAD_TIMEOUT_MS = 5_000;
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
@@ -59,6 +60,7 @@ const recordingOwnersPreparing = new Map();
 
 let tray;
 let panelWindow;
+let panelContentHeight = PANEL_MIN_HEIGHT;
 let settingsWindow;
 let trayState = "signed-out";
 let trayApplied = false;
@@ -380,18 +382,76 @@ function applyReportedFacts(ownerId, facts) {
   return true;
 }
 
-function positionPanel() {
-  if (!panelWindow || !tray) return;
+function panelPlacement() {
+  if (!tray) return null;
   const trayBounds = tray.getBounds();
-  const display = screen.getDisplayNearestPoint({ x: trayBounds.x, y: trayBounds.y });
+  const display = screen.getDisplayMatching(trayBounds);
   const workArea = display.workArea;
   const proposedX = Math.round(trayBounds.x + trayBounds.width / 2 - PANEL_WIDTH / 2);
   const x = Math.max(
-    workArea.x + 8,
-    Math.min(proposedX, workArea.x + workArea.width - PANEL_WIDTH - 8),
+    workArea.x + PANEL_SCREEN_MARGIN,
+    Math.min(
+      proposedX,
+      workArea.x + workArea.width - PANEL_WIDTH - PANEL_SCREEN_MARGIN,
+    ),
   );
-  const y = Math.max(workArea.y + 8, trayBounds.y + trayBounds.height + 8);
-  panelWindow.setPosition(x, y, false);
+  const y = Math.max(
+    workArea.y + PANEL_SCREEN_MARGIN,
+    trayBounds.y + trayBounds.height + PANEL_SCREEN_MARGIN,
+  );
+  const maximumHeight = Math.max(
+    1,
+    Math.floor(
+      workArea.y + workArea.height - PANEL_SCREEN_MARGIN - y,
+    ),
+  );
+  return { maximumHeight, x, y };
+}
+
+function constrainedPanelHeight(reportedHeight, maximumHeight) {
+  // Na běžném monitoru platí minimum 180 bodů. Kdyby pracovní plocha byla
+  // výjimečně menší, má přednost tvrdý bezpečnostní strop obrazovky.
+  const minimumHeight = Math.min(PANEL_MIN_HEIGHT, maximumHeight);
+  return Math.min(
+    Math.max(Math.ceil(reportedHeight), minimumHeight),
+    maximumHeight,
+  );
+}
+
+function positionPanel() {
+  if (!panelWindow) return;
+  const placement = panelPlacement();
+  if (!placement) return;
+  const nextHeight = constrainedPanelHeight(panelContentHeight, placement.maximumHeight);
+  const [, currentHeight] = panelWindow.getSize();
+  if (currentHeight !== nextHeight) {
+    panelWindow.setSize(PANEL_WIDTH, nextHeight, false);
+  }
+  panelWindow.setPosition(placement.x, placement.y, false);
+}
+
+function setPanelContentHeight(reportedHeight) {
+  if (typeof reportedHeight !== "number" || !Number.isFinite(reportedHeight)) {
+    throw new TypeError("Výška obsahu panelu musí být konečné číslo");
+  }
+  if (!panelWindow || panelWindow.isDestroyed()) {
+    throw new Error("Výšku nelze změnit bez živého panelu");
+  }
+  const placement = panelPlacement();
+  if (!placement) throw new Error("Výšku nelze změnit bez ikony v liště");
+
+  // Přirozenou výšku uchováváme i po clampu. Při přesunu ikony na jiný monitor
+  // ji positionPanel znovu omezí podle nové pracovní plochy, případně obnoví.
+  panelContentHeight = reportedHeight;
+  const nextHeight = constrainedPanelHeight(reportedHeight, placement.maximumHeight);
+  const [, currentHeight] = panelWindow.getSize();
+  if (currentHeight === nextHeight) return nextHeight;
+
+  panelWindow.setSize(PANEL_WIDTH, nextHeight, false);
+  // Změna rozměru nesmí spoléhat na původní souřadnice. Tímto znovu používáme
+  // jedinou autoritu pro přilepení panelu pod ikonu v liště.
+  positionPanel();
+  return nextHeight;
 }
 
 function waitForPanelPromise(window, webContents, promise, {
@@ -434,11 +494,9 @@ function waitForPanelPromise(window, webContents, promise, {
 function createPanelWindow() {
   const createdPanelWindow = new BrowserWindow({
     width: PANEL_WIDTH,
-    height: PANEL_HEIGHT,
+    height: PANEL_MIN_HEIGHT,
     minWidth: PANEL_WIDTH,
     maxWidth: PANEL_WIDTH,
-    minHeight: PANEL_HEIGHT,
-    maxHeight: PANEL_HEIGHT,
     show: false,
     frame: false,
     transparent: false,
@@ -863,6 +921,12 @@ handleValidated("test:click-tray", ["panel"], () => {
   return { allowed: true, visible: panelWindow.isVisible() };
 });
 onValidated("panel:hide", ["panel"], () => panelWindow?.hide());
+handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extraPayload) => {
+  if (extraPayload.length > 0) {
+    throw new TypeError("Výškový kanál přijímá právě jednu číselnou výšku");
+  }
+  return setPanelContentHeight(height);
+});
 onValidated("settings:open", ["panel"], () => createSettingsWindow());
 onValidated("settings:close", ["settings"], () => settingsWindow?.close());
 handleValidated("recording:begin", ["panel"], (event) => createRecordingSession(event));
@@ -1446,6 +1510,9 @@ app.whenReady().then(async () => {
   tray.on("click", togglePanel);
   refreshTray();
   const panelStartup = createPanelWindow();
+  // Otevřený panel nesmí po změně rozlišení, pracovního prostoru ani monitoru
+  // zůstat přes okraj. positionPanel zároveň znovu uplatní uloženou výšku obsahu.
+  screen.on("display-metrics-changed", positionPanel);
   await applyOutboundQueueRetention(panelStartup);
   markOutboundQueueRetentionReady();
   void pumpOutboundQueue();

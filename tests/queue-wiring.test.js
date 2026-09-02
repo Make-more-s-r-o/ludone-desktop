@@ -127,10 +127,24 @@ function fakeElectron(userDataPath, {
   }
 
   class FakeBrowserWindow extends EventEmitter {
-    constructor() {
+    constructor(options = {}) {
       super();
       this.visible = false;
       this.destroyed = false;
+      this.bounds = {
+        x: 0,
+        y: 0,
+        width: options.width ?? 0,
+        height: options.height ?? 0,
+      };
+      this.setPosition = vi.fn((x, y) => {
+        this.bounds.x = x;
+        this.bounds.y = y;
+      });
+      this.setSize = vi.fn((width, height) => {
+        this.bounds.width = width;
+        this.bounds.height = height;
+      });
       const contents = new FakeWebContents(nextWebContentsId);
       nextWebContentsId += 1;
       this.webContents = contents;
@@ -160,7 +174,8 @@ function fakeElectron(userDataPath, {
     hide() { this.visible = false; }
     focus() {}
     close() { this.emit("closed"); }
-    setPosition() {}
+    getBounds() { return { ...this.bounds }; }
+    getSize() { return [this.bounds.width, this.bounds.height]; }
   }
 
   class FakeTray extends EventEmitter {
@@ -208,11 +223,14 @@ function fakeElectron(userDataPath, {
       encryptString: vi.fn((value) => Buffer.from(value, "utf8")),
       isEncryptionAvailable: vi.fn(() => true),
     },
-    screen: {
+    screen: Object.assign(new EventEmitter(), {
+      getDisplayMatching: vi.fn(() => ({
+        workArea: { x: 0, y: 0, width: 1_440, height: 900 },
+      })),
       getDisplayNearestPoint: vi.fn(() => ({
         workArea: { x: 0, y: 0, width: 1_440, height: 900 },
       })),
-    },
+    }),
     session: {
       defaultSession: {
         setDisplayMediaRequestHandler: vi.fn(),
@@ -627,6 +645,119 @@ describe("zjištění uložené OAuth session", () => {
     expect(untrustedResult).toBe(false);
     expect(JSON.stringify(untrustedResult)).not.toContain("TOKEN-Z-MAIN");
     expect(untrusted.invoke).toHaveBeenCalledExactlyOnceWith("auth:has-session");
+  });
+});
+
+describe("výška panelu podle obsahu", () => {
+  async function resizeHarness() {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panel = harness.windows[0];
+    const panelContents = panel.webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const resize = harness.ipcHandlers.get("panel:set-content-height");
+    expect(resize).toBeTypeOf("function");
+    return { event, harness, panel, resize };
+  }
+
+  it("výšku pod rozumným minimem ořízne na 180 bodů a šířku nechá 366", async () => {
+    const { event, panel, resize } = await resizeHarness();
+
+    await resize(event, 260);
+    panel.setSize.mockClear();
+    const appliedHeight = await resize(event, 40);
+
+    expect(appliedHeight).toBe(180);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(366, 180, false);
+    expect(panel.getSize()).toEqual([366, 180]);
+  });
+
+  it("výšku nad monitorem ořízne pod spodní hranu pracovní plochy", async () => {
+    const { event, harness, panel, resize } = await resizeHarness();
+    const display = { workArea: { x: 0, y: 24, width: 1_200, height: 600 } };
+    harness.electron.screen.getDisplayMatching.mockReturnValue(display);
+    harness.electron.screen.getDisplayNearestPoint.mockReturnValue(display);
+
+    const appliedHeight = await resize(event, 5_000);
+    const bounds = panel.getBounds();
+
+    expect(appliedHeight).toBe(584);
+    expect(bounds).toEqual({ x: 8, y: 32, width: 366, height: 584 });
+    expect(bounds.y + bounds.height).toBe(616);
+  });
+
+  it("po skutečné změně výšky panel znovu přilepí pod ikonu", async () => {
+    const { event, panel, resize } = await resizeHarness();
+
+    await resize(event, 320);
+
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(366, 320, false);
+    expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
+    expect(panel.setSize.mock.invocationCallOrder[0])
+      .toBeLessThan(panel.setPosition.mock.invocationCallOrder[0]);
+  });
+
+  it("po změně parametrů monitoru hned omezí a pak obnoví přirozenou výšku", async () => {
+    const { event, harness, panel, resize } = await resizeHarness();
+    const highDisplay = { workArea: { x: 0, y: 0, width: 1_440, height: 900 } };
+    const lowDisplay = { workArea: { x: 0, y: 0, width: 1_200, height: 400 } };
+    harness.electron.screen.getDisplayMatching.mockReturnValue(highDisplay);
+    await resize(event, 700);
+    panel.setSize.mockClear();
+    panel.setPosition.mockClear();
+
+    harness.electron.screen.getDisplayMatching.mockReturnValue(lowDisplay);
+    harness.electron.screen.emit("display-metrics-changed");
+
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(366, 366, false);
+    expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
+    expect(panel.setSize.mock.invocationCallOrder[0])
+      .toBeLessThan(panel.setPosition.mock.invocationCallOrder[0]);
+    panel.setSize.mockClear();
+    panel.setPosition.mockClear();
+
+    harness.electron.screen.getDisplayMatching.mockReturnValue(highDisplay);
+    harness.electron.screen.emit("display-metrics-changed");
+
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(366, 700, false);
+    expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
+  });
+
+  it("stejná výška podruhé nespustí další změnu ani přepozicování", async () => {
+    const { event, panel, resize } = await resizeHarness();
+
+    await resize(event, 320);
+    await resize(event, 320);
+
+    expect(panel.setSize).toHaveBeenCalledTimes(1);
+    expect(panel.setPosition).toHaveBeenCalledTimes(1);
+  });
+
+  it("kanál přijme právě jednu konečnou číselnou výšku", async () => {
+    const { event, resize } = await resizeHarness();
+
+    await expect(Promise.resolve().then(() => resize(event, "320"))).rejects.toThrow(/výšk/i);
+    await expect(Promise.resolve().then(() => resize(event, { height: 320 })))
+      .rejects.toThrow(/výšk/i);
+    await expect(Promise.resolve().then(() => resize(event, Number.POSITIVE_INFINITY)))
+      .rejects.toThrow(/výšk/i);
+    await expect(Promise.resolve().then(() => resize(event, 320, 321)))
+      .rejects.toThrow(/výšk/i);
+  });
+
+  it("preload posílá hlavnímu procesu pouze číslo", async () => {
+    const { api, invoke } = loadPreload(240);
+
+    await expect(api.setPanelContentHeight(240)).resolves.toBe(240);
+    expect(invoke).toHaveBeenCalledExactlyOnceWith("panel:set-content-height", 240);
+  });
+
+  it("preload nečíselnou výšku do IPC vůbec neodešle", () => {
+    const { api, invoke } = loadPreload();
+
+    expect(() => api.setPanelContentHeight({ height: 240 })).toThrow(/výšk/i);
+    expect(() => api.setPanelContentHeight(Number.POSITIVE_INFINITY)).toThrow(/výšk/i);
+    expect(invoke).not.toHaveBeenCalled();
   });
 });
 

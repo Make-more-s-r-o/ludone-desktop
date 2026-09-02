@@ -131,6 +131,11 @@ svg {
   box-shadow: var(--shadow);
 }
 
+.panel-content-height-reporter {
+  width: 100%;
+  height: 100%;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -991,6 +996,7 @@ svg {
   min-height: 0;
   flex-direction: column;
   align-items: center;
+  overflow-y: auto;
   padding: 34px 28px 25px;
   text-align: center;
 }
@@ -1241,7 +1247,7 @@ svg {
 }
 
 .done-step {
-  justify-content: center;
+  justify-content: safe center;
   padding-bottom: 35px;
 }
 
