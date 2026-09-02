@@ -5,10 +5,65 @@
   "description": "Klikatelná kostra menu-bar spouštěče LuDone Desktop",
   "main": "electron/main.cjs",
   "type": "module",
+  "build": {
+    "appId": "cz.ludone.desktop",
+    "productName": "LuDone Desktop",
+    "asar": false,
+    "allowMissingDependencies": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "package.json",
+      "dist/**/*",
+      "electron/**/*",
+      "src/lib/**/*",
+      "src/pisma/**/*"
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "mac": {
+      "hardenedRuntime": true,
+      "notarize": true,
+      "entitlements": "scripts/entitlements.mac.plist",
+      "entitlementsInherit": "scripts/entitlements.mac.plist",
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSMicrophoneUsageDescription": "LuDone potřebuje mikrofon pro oddělenou nahrávku vašeho hlasu.",
+        "NSAudioCaptureUsageDescription": "LuDone zachytává zvuk z ostatních aplikací, aby v nahrávce schůzky byla slyšet i druhá strana."
+      }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Make-more-s-r-o",
+        "repo": "ludone-desktop",
+        "private": false,
+        "releaseType": "release"
+      }
+    ]
+  },
   "scripts": {
     "build": "vite build",
     "start": "electron .",
     "package:mac": "npm run build && node scripts/package-mac.mjs",
+    "release:mac": "npm run build && node scripts/package-mac.mjs --publish always",
     "progress": "node scripts/desktop-progress.mjs",
     "test:audio": "node scripts/audio-smoke.mjs",
     "lint": "eslint .",
@@ -20,6 +75,7 @@
     "hooks:install": "git config core.hooksPath .githooks && echo \"Hooky zapnuté (.githooks). Vypnutí: git config --unset core.hooksPath\""
   },
   "dependencies": {
+    "electron-updater": "6.8.9",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },
@@ -27,6 +83,7 @@
     "@eslint/js": "^9.39.5",
     "@vitest/coverage-v8": "^3.2.7",
     "electron": "37.3.1",
+    "electron-builder": "26.15.3",
     "eslint": "^9.39.5",
     "globals": "^17.11.0",
     "jsdom": "^29.1.1",

@@ -75,6 +75,7 @@ afterEach(async () => {
  * @param {string} userDataPath
  * @param {{
  *   deferPanelLoad?: boolean,
+ *   isPackaged?: boolean,
  *   deferSettingsRead?: boolean,
  *   navigateDuringSettingsRead?: boolean,
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
@@ -86,6 +87,7 @@ afterEach(async () => {
 function fakeElectron(userDataPath, {
   deferPanelLoad = false,
   deferSettingsRead = false,
+  isPackaged = false,
   navigateDuringSettingsRead = false,
   primaryWorkArea = { x: 0, y: 0, width: 1_440, height: 900 },
   storedSettings = null,
@@ -209,7 +211,14 @@ function fakeElectron(userDataPath, {
     }
     hide() { this.visible = false; }
     focus() { this.focused = true; }
-    close() { this.emit("closed"); }
+    close() {
+      let prevented = false;
+      this.emit("close", { preventDefault: () => { prevented = true; } });
+      if (prevented) return;
+      this.destroyed = true;
+      this.webContents.destroy();
+      this.emit("closed");
+    }
     getBounds() { return { ...this.bounds }; }
     getSize() { return [this.bounds.width, this.bounds.height]; }
   }
@@ -235,6 +244,7 @@ function fakeElectron(userDataPath, {
     commandLine: { appendSwitch: vi.fn() },
     dock: { hide: vi.fn() },
     getPath: vi.fn(() => userDataPath),
+    isPackaged,
     quit: vi.fn(),
     requestSingleInstanceLock: vi.fn(() => true),
     setAppLogsPath: vi.fn(),
@@ -318,6 +328,7 @@ function fakeElectron(userDataPath, {
     controlledSetTimeout,
     electron,
     ipcHandlers,
+    ipcListeners,
     settingsReadStarted,
     trays,
     windows,
@@ -356,11 +367,14 @@ function fakeElectron(userDataPath, {
 /**
  * @param {{
  *   applyRetention?: (...args: any[]) => Promise<any>,
+ *   autoUpdater?: EventEmitter & Record<string, any>,
  *   createLogoutController?: (...args: any[]) => any,
  *   createOutboundQueueStore?: (...args: any[]) => any,
+ *   createTrackingStore?: (...args: any[]) => any,
  *   deferPanelLoad?: boolean,
  *   deferSettingsRead?: boolean,
  *   env?: Record<string, string | undefined>,
+ *   isPackaged?: boolean,
  *   loadQueue?: (...args: any[]) => Promise<any>,
  *   navigateDuringSettingsRead?: boolean,
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
@@ -371,11 +385,14 @@ function fakeElectron(userDataPath, {
  */
 async function loadMain({
   applyRetention,
+  autoUpdater,
   createLogoutController,
   createOutboundQueueStore,
+  createTrackingStore,
   deferPanelLoad = false,
   deferSettingsRead = false,
   env = {},
+  isPackaged = false,
   loadQueue,
   navigateDuringSettingsRead = false,
   primaryWorkArea,
@@ -388,6 +405,7 @@ async function loadMain({
   const harness = fakeElectron(userDataPath, {
     deferPanelLoad,
     deferSettingsRead,
+    isPackaged,
     navigateDuringSettingsRead,
     primaryWorkArea,
     storedSettings,
@@ -396,8 +414,10 @@ async function loadMain({
   });
   const queueStoreModule = actualRequire("./queue.cjs");
   const retentionModule = actualRequire("./retention.cjs");
+  const trackingModule = actualRequire("./tracking.cjs");
   const injectedRequire = (specifier) => {
     if (specifier === "electron") return harness.electron;
+    if (specifier === "electron-updater" && autoUpdater) return { autoUpdater };
     if (specifier === "./auth.cjs" && createLogoutController) {
       return { ...actualRequire("./auth.cjs"), createLogoutController };
     }
@@ -410,6 +430,9 @@ async function loadMain({
     }
     if (specifier === "./retention.cjs" && applyRetention) {
       return { ...retentionModule, applyRetention };
+    }
+    if (specifier === "./tracking.cjs" && createTrackingStore) {
+      return { ...trackingModule, createTrackingStore };
     }
     return actualRequire(specifier);
   };
@@ -450,6 +473,15 @@ async function loadMain({
     import("../src/lib/queue.js"),
   );
   return { ...harness, quietConsole, userDataPath };
+}
+
+function fakeAutoUpdater() {
+  return Object.assign(new EventEmitter(), {
+    autoDownload: false,
+    autoInstallOnAppQuit: true,
+    checkForUpdates: vi.fn(async () => ({ updateInfo: null })),
+    quitAndInstall: vi.fn(),
+  });
 }
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
@@ -1576,5 +1608,399 @@ describe("produkční zapojení odchozí fronty", () => {
 
     expect(storeWasOpenedDuringRetention).toBe(false);
     expect(list).toHaveBeenCalledOnce();
+  });
+});
+
+describe("produkční zapojení automatických aktualizací", () => {
+  it("zkontroluje vydání po startu a znovu po šesti hodinách", async () => {
+    vi.useFakeTimers();
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+
+    await harness.runReady();
+
+    expect(autoUpdater.autoDownload).toBe(true);
+    expect(autoUpdater.autoInstallOnAppQuit).toBe(false);
+    expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1_000);
+    expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(2);
+  });
+
+  it("běžící nahrávání odloží restart a po celém dokončení jej uplatní", async () => {
+    vi.useFakeTimers();
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const begin = harness.ipcHandlers.get("recording:begin");
+    const finish = harness.ipcHandlers.get("recording:finish");
+    const finishExport = harness.ipcHandlers.get("recording:finish-export");
+    const { sessionId } = await begin(event);
+
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+    await vi.advanceTimersByTimeAsync(90_000);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    const finishing = finish(event, sessionId, {
+      microphone: {
+        startedAt: "2026-09-02T12:00:00.100Z",
+        endedAt: "2026-09-02T12:00:01.100Z",
+      },
+      system: {
+        startedAt: "2026-09-02T12:00:00.125Z",
+        endedAt: "2026-09-02T12:00:01.125Z",
+      },
+    });
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    await Promise.all([
+      finishing,
+      finishExport(event, sessionId, { succeeded: false }),
+    ]);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1));
+  });
+
+  it("běžící LuTrack odloží restart a po zastavení jej uplatní", async () => {
+    vi.useFakeTimers();
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({
+      autoUpdater,
+      env: { DESKTOP_TIME_ENABLED: "true" },
+      isPackaged: true,
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const startTracking = harness.ipcHandlers.get("tracking:start");
+    const stopTracking = harness.ipcHandlers.get("tracking:stop");
+
+    await startTracking(event, { projectId: PROJECT_A, note: null });
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+    await vi.advanceTimersByTimeAsync(90_000);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    await stopTracking(event);
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1));
+  });
+
+  it("odloží restart i pro LuTrack hlášený současným panelem", async () => {
+    vi.useFakeTimers();
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+
+    reportFacts(event, { signedIn: true, tracking: true });
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+    await vi.advanceTimersByTimeAsync(90_000);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    reportFacts(event, { signedIn: true, tracking: false });
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
+  });
+
+  it("počká i na právě zapisovaný start LuTracku", async () => {
+    vi.useFakeTimers();
+    let enterStart;
+    let releaseStart;
+    const startEntered = new Promise((resolve) => { enterStart = resolve; });
+    const startReleased = new Promise((resolve) => { releaseStart = resolve; });
+    let state = { schemaVersion: 1, aktualni: null, uzavrene: [] };
+    /** @type {Promise<any>} */
+    let queue = Promise.resolve();
+    const enqueue = (operation) => {
+      const result = queue.then(operation);
+      queue = result.catch(() => {});
+      return result;
+    };
+    const trackingStore = {
+      getState: () => structuredClone(state),
+      load: () => enqueue(async () => structuredClone(state)),
+      start: () => enqueue(async () => {
+        enterStart();
+        await startReleased;
+        const entry = {
+          clientTimeEntryId: "98e55275-b912-447c-a0de-417b1860f9d9",
+          projectId: PROJECT_A,
+          startedAt: "2026-09-02T12:00:00.000Z",
+          startedAtRaw: "2026-09-02T12:00:01.000Z",
+          processStartedAt: "2026-09-02T11:59:00.000Z",
+          note: null,
+          state: "bezi",
+        };
+        state = { ...state, aktualni: entry };
+        return { outcome: "started", entry, closed: null };
+      }),
+      stop: () => enqueue(async () => {
+        const closed = {
+          clientTimeEntryId: state.aktualni.clientTimeEntryId,
+          projectId: state.aktualni.projectId,
+          startedAt: state.aktualni.startedAt,
+          endedAt: "2026-09-02T12:01:00.000Z",
+          state: "uzavreno",
+          closedReason: "stop",
+          minutes: 1,
+        };
+        state = { ...state, aktualni: null, uzavrene: [closed] };
+        return { outcome: "stopped", entry: null, closed };
+      }),
+      switchProject: vi.fn(),
+      resolveRecovered: vi.fn(),
+    };
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({
+      autoUpdater,
+      createTrackingStore: () => trackingStore,
+      env: { DESKTOP_TIME_ENABLED: "true" },
+      isPackaged: true,
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const startTracking = harness.ipcHandlers.get("tracking:start");
+    const stopTracking = harness.ipcHandlers.get("tracking:stop");
+
+    const starting = startTracking(event, { projectId: PROJECT_A, note: null });
+    await startEntered;
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    releaseStart();
+    await starting;
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    await stopTracking(event);
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
+  });
+
+  it("nepřehlédne LuTrack spuštěný až během kontroly odchozí fronty", async () => {
+    vi.useFakeTimers();
+    let reportListStarted;
+    let releaseList;
+    let reportListFinished;
+    let reportTrackingStarted;
+    let releaseTrackingStart;
+    const listStarted = new Promise((resolve) => { reportListStarted = resolve; });
+    const listReleased = new Promise((resolve) => { releaseList = resolve; });
+    const listFinished = new Promise((resolve) => { reportListFinished = resolve; });
+    const trackingStarted = new Promise((resolve) => { reportTrackingStarted = resolve; });
+    const trackingStartReleased = new Promise((resolve) => { releaseTrackingStart = resolve; });
+    let blockNextList = false;
+    let state = { schemaVersion: 1, aktualni: null, uzavrene: [] };
+    const list = vi.fn(async () => {
+      if (!blockNextList) return [];
+      blockNextList = false;
+      reportListStarted();
+      await listReleased;
+      reportListFinished();
+      return [];
+    });
+    const createOutboundQueueStore = vi.fn(() => ({
+      enqueueRecording: vi.fn(),
+      enqueueTimeEntry: vi.fn(),
+      list,
+      pump: vi.fn(async () => ({ outcome: "idle" })),
+      retry: vi.fn(),
+    }));
+    const trackingStore = {
+      getState: () => structuredClone(state),
+      load: vi.fn(async () => structuredClone(state)),
+      start: vi.fn(async () => {
+        reportTrackingStarted();
+        await trackingStartReleased;
+        const entry = {
+          clientTimeEntryId: "38e55275-b912-447c-a0de-417b1860f9d9",
+          projectId: PROJECT_A,
+          startedAt: "2026-09-02T12:00:00.000Z",
+          startedAtRaw: "2026-09-02T12:00:01.000Z",
+          processStartedAt: "2026-09-02T11:59:00.000Z",
+          note: null,
+          state: "bezi",
+        };
+        state = { ...state, aktualni: entry };
+        return { outcome: "started", entry, closed: null };
+      }),
+      stop: vi.fn(async () => {
+        state = { ...state, aktualni: null };
+        return { outcome: "stopped", entry: null, closed: null };
+      }),
+      switchProject: vi.fn(),
+      resolveRecovered: vi.fn(),
+    };
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({
+      autoUpdater,
+      createOutboundQueueStore,
+      createTrackingStore: () => trackingStore,
+      isPackaged: true,
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const startTracking = harness.ipcHandlers.get("tracking:start");
+    const stopTracking = harness.ipcHandlers.get("tracking:stop");
+
+    blockNextList = true;
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+    await listStarted;
+    const starting = startTracking(event, { projectId: PROJECT_A, note: null });
+    await trackingStarted;
+    releaseList();
+    await listFinished;
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    releaseTrackingStart();
+    await starting;
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    await stopTracking(event);
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
+  });
+
+  it("čeká po finalizaci nahrávky na serializační bariéru fronty", async () => {
+    vi.useFakeTimers();
+    let reportEnqueueStarted;
+    let releaseEnqueue;
+    const enqueueStarted = new Promise((resolve) => { reportEnqueueStarted = resolve; });
+    const enqueueReleased = new Promise((resolve) => { releaseEnqueue = resolve; });
+    /** @type {Promise<any>} */
+    let queue = Promise.resolve();
+    const enqueueRecording = vi.fn(() => {
+      const result = queue.then(async () => {
+        reportEnqueueStarted();
+        await enqueueReleased;
+        return {
+          added: true,
+          item: { clientRecordingId: "fronta-test" },
+        };
+      });
+      queue = result.catch(() => {});
+      return result;
+    });
+    const list = vi.fn(() => queue.then(() => []));
+    const createOutboundQueueStore = vi.fn(() => ({
+      enqueueRecording,
+      enqueueTimeEntry: vi.fn(),
+      list,
+      pump: vi.fn(async () => ({ outcome: "idle" })),
+      retry: vi.fn(),
+    }));
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, createOutboundQueueStore, isPackaged: true });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const begin = harness.ipcHandlers.get("recording:begin");
+    const finish = harness.ipcHandlers.get("recording:finish");
+    const finishExport = harness.ipcHandlers.get("recording:finish-export");
+    const { sessionId } = await begin(event);
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+
+    const finishing = finish(event, sessionId, {
+      microphone: {
+        startedAt: "2026-09-02T12:00:00.100Z",
+        endedAt: "2026-09-02T12:00:01.100Z",
+      },
+      system: {
+        startedAt: "2026-09-02T12:00:00.125Z",
+        endedAt: "2026-09-02T12:00:01.125Z",
+      },
+    });
+    await Promise.all([
+      enqueueStarted,
+      finishExport(event, sessionId, { succeeded: false }),
+    ]);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    releaseEnqueue();
+    await finishing;
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
+    expect(list).toHaveBeenCalled();
+  });
+
+  it("bez aktivity uplatní staženou aktualizaci právě jednou", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1));
+  });
+
+  it("při předání instalace dovolí zavřít panel a nepřijme novou aktivitu", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const begin = harness.ipcHandlers.get("recording:begin");
+
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
+
+    expect(() => begin(event)).toThrow(/ukončuje/);
+    harness.windows[0].close();
+    expect(harness.windows[0].isDestroyed()).toBe(true);
+  });
+
+  it("ošetří odmítnutí downloadPromise bez nezachycené chyby", async () => {
+    let rejectDownload;
+    const downloadPromise = new Promise((_resolve, reject) => { rejectDownload = reject; });
+    const autoUpdater = fakeAutoUpdater();
+    autoUpdater.checkForUpdates.mockResolvedValue(/** @type {any} */ ({ downloadPromise }));
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+
+    rejectDownload(new Error("síťový test"));
+
+    await vi.waitFor(() => {
+      expect(harness.quietConsole.error).toHaveBeenCalledWith(
+        expect.stringContaining("síťový test"),
+      );
+    });
+  });
+
+  it("po asynchronní chybě instalace bezpečně dovolí další pokus", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
+    autoUpdater.emit("error", new Error("nativní instalace selhala"));
+    autoUpdater.emit("update-downloaded", { version: "0.1.1" });
+
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(2));
+  });
+
+  it("v zabaleném E2E běhu updater vůbec nespustí", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({
+      autoUpdater,
+      env: { LUDONE_E2E: "1" },
+      isPackaged: true,
+    });
+
+    await harness.runReady();
+
+    expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled();
+    expect(autoUpdater.listenerCount("update-downloaded")).toBe(0);
   });
 });

@@ -48,12 +48,16 @@ vypis_assert_chunku() {
 }
 
 spust_ui_branu() {
-  local data_root app_pid exit_code
+  local data_root app_executable app_pid exit_code
   data_root="$(mktemp -d /tmp/ludone-e2-ui.XXXXXX)" || return 1
   npm run package:mac || { rm -rf "$data_root"; return 1; }
+  app_executable="release/LuDone Desktop.app/Contents/MacOS/LuDone Desktop"
+  if [[ ! -x "$app_executable" ]]; then
+    app_executable="release/LuDone Desktop.app/Contents/MacOS/Electron"
+  fi
   env LUDONE_E2E=1 LUDONE_RESET_ONBOARDING=1 \
     LUDONE_E2E_HARD_STOP_MS=120000 LUDONE_DATA_DIR="$data_root" \
-    "release/LuDone Desktop.app/Contents/MacOS/Electron" \
+    "$app_executable" \
     --remote-debugging-port=9333 > "$data_root/application.log" 2>&1 &
   app_pid=$!
   node scripts/ui-smoke.mjs
