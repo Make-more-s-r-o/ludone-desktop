@@ -22,7 +22,12 @@ const {
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
 } = require("./auth.cjs");
-const { createOutboundQueueStore } = require("./queue.cjs");
+const {
+  createOutboundQueueStore,
+  loadQueue,
+  saveQueueAtomically,
+} = require("./queue.cjs");
+const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
   TRACKING_STATES,
   createTrackingStore,
@@ -807,6 +812,60 @@ handleValidated("recording:append", ["panel"], (event, sessionId, source, sequen
 ));
 
 let outboundQueueStore;
+let markOutboundQueueRetentionReady = () => {};
+const outboundQueueRetentionReady = new Promise((resolve) => {
+  markOutboundQueueRetentionReady = resolve;
+});
+
+const RETENTION_STORAGE_KEY = "ludone.prototype.settings";
+const KNOWN_RETENTION_POLICIES = new Set(Object.values(RETENTION_POLICIES));
+
+function outboundQueueFilePath() {
+  return path.join(app.getPath("userData"), "queue", "outgoing.json");
+}
+
+async function readRetentionPolicy() {
+  try {
+    const serialized = await panelWindow?.webContents.executeJavaScript(
+      `window.localStorage.getItem(${JSON.stringify(RETENTION_STORAGE_KEY)})`,
+      true,
+    );
+    if (typeof serialized !== "string") return undefined;
+    const settings = JSON.parse(serialized);
+    if (
+      !settings
+      || typeof settings !== "object"
+      || Array.isArray(settings)
+      || !Object.prototype.hasOwnProperty.call(settings, "retention")
+      || !KNOWN_RETENTION_POLICIES.has(settings.retention)
+    ) {
+      return undefined;
+    }
+    return settings.retention;
+  } catch (error) {
+    console.warn(`[retention] Nastavení nelze přečíst; data zůstávají zachována: ${error.message}`);
+    return undefined;
+  }
+}
+
+async function applyOutboundQueueRetention() {
+  try {
+    const filePath = outboundQueueFilePath();
+    const queue = await loadQueue(filePath);
+    const policy = await readRetentionPolicy();
+    const result = await applyRetention({ queue, policy, now: Date.now() });
+    if (result.deletedItems.length > 0) {
+      await saveQueueAtomically(filePath, { ...queue, items: result.keptItems });
+    }
+    if (result.errors.length > 0) {
+      console.error(`[retention] Některé soubory nešlo odstranit: ${JSON.stringify(result.errors)}`);
+    }
+    return result;
+  } catch (error) {
+    console.error(`[retention] Úklid selhal; start pokračuje: ${error.stack || error.message}`);
+    return { deletedFiles: [], deletedItems: [], keptItems: [], errors: [error] };
+  }
+}
 
 function queueKillswitches() {
   return {
@@ -821,10 +880,11 @@ function unavailableQueueSend() {
   throw error;
 }
 
-function getOutboundQueueStore() {
+async function getOutboundQueueStore() {
+  await outboundQueueRetentionReady;
   if (!outboundQueueStore) {
     outboundQueueStore = createOutboundQueueStore({
-      filePath: path.join(app.getPath("userData"), "queue", "outgoing.json"),
+      filePath: outboundQueueFilePath(),
       queueModulePromise,
       send: unavailableQueueSend,
     });
@@ -832,21 +892,24 @@ function getOutboundQueueStore() {
   return outboundQueueStore;
 }
 
-function pumpOutboundQueue() {
-  return getOutboundQueueStore().pump(queueKillswitches()).then((result) => {
+async function pumpOutboundQueue() {
+  try {
+    const store = await getOutboundQueueStore();
+    const result = await store.pump(queueKillswitches());
     console.log(`[queue] ${result.reason ?? result.outcome}`);
     return result;
-  }).catch((error) => {
+  } catch (error) {
     console.error(`[queue] Pumpa selhala: ${error.stack || error.message}`);
     return { outcome: "error", reason: error.message };
-  });
+  }
 }
 
 function finishRecordingAndEnqueue(event, sessionId) {
   const recordingSession = ownedRecordingSession(event, sessionId);
   return finalizeRecordingSession(sessionId, "complete").then(async (result) => {
     try {
-      const queued = await getOutboundQueueStore().enqueueRecording({
+      const store = await getOutboundQueueStore();
+      const queued = await store.enqueueRecording({
         manifest: recordingSession.manifest,
         manifestPath: recordingSession.manifestPath,
         trackPaths: Object.fromEntries(
@@ -864,13 +927,14 @@ function finishRecordingAndEnqueue(event, sessionId) {
 }
 
 handleValidated("recording:finish", ["panel"], finishRecordingAndEnqueue);
-handleValidated("queue:list", ["panel", "settings"], () => getOutboundQueueStore().list());
-handleValidated("queue:retry", ["panel"], () => (
-  getOutboundQueueStore().retry(queueKillswitches()).then((result) => {
-    console.log(`[queue] ${result.reason ?? result.outcome}`);
-    return result;
-  })
+handleValidated("queue:list", ["panel", "settings"], async () => (
+  (await getOutboundQueueStore()).list()
 ));
+handleValidated("queue:retry", ["panel"], async () => {
+  const result = await (await getOutboundQueueStore()).retry(queueKillswitches());
+  console.log(`[queue] ${result.reason ?? result.outcome}`);
+  return result;
+});
 
 const TRACKING_STORE_OWNER_ID = "main-process-timer";
 let trackingStore;
@@ -911,6 +975,26 @@ async function runTrackingMutation(method, payload) {
   const store = await getReadyTrackingStore();
   const result = await store[method](payload);
   syncTrackingTray(store);
+  if (
+    process.env.DESKTOP_TIME_ENABLED === "true"
+    && result.closed
+    && result.closed.closedReason !== "zahozeno-clovekem"
+  ) {
+    try {
+      const store = await getOutboundQueueStore();
+      const queued = await store.enqueueTimeEntry({
+        clientTimeEntryId: result.closed.clientTimeEntryId,
+        projectId: result.closed.projectId,
+        startedAt: result.closed.startedAt,
+        endedAt: result.closed.endedAt,
+      });
+      if (queued.added) {
+        console.log(`[queue] Zařazeno ${queued.item.clientRecordingId} (time).`);
+      }
+    } catch (error) {
+      console.error(`[queue] Zařazení času selhalo: ${error.stack || error.message}`);
+    }
+  }
   return result;
 }
 
@@ -1140,7 +1224,7 @@ app.on("second-instance", () => {
   }
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   registerAppProtocol();
   installMediaHandlers();
   if (process.platform === "darwin") app.dock.hide();
@@ -1149,6 +1233,8 @@ app.whenReady().then(() => {
   tray.on("click", togglePanel);
   refreshTray();
   createPanelWindow();
+  await applyOutboundQueueRetention();
+  markOutboundQueueRetentionReady();
   void pumpOutboundQueue();
   const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);
   if (IS_TEST_RUN && Number.isFinite(hardStop) && hardStop > 0) {

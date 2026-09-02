@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { readFileSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -69,7 +69,7 @@ afterEach(async () => {
   temporaryRoots.clear();
 });
 
-function fakeElectron(userDataPath) {
+function fakeElectron(userDataPath, { storedSettings = null, settingsReadError = null } = {}) {
   const ipcHandlers = new Map();
   const ipcListeners = new Map();
   const windows = [];
@@ -81,6 +81,10 @@ function fakeElectron(userDataPath) {
       super();
       this.id = id;
       this.mainFrame = { url: "ludone://app/index.html" };
+      this.executeJavaScript = vi.fn(async () => {
+        if (settingsReadError) throw settingsReadError;
+        return storedSettings;
+      });
     }
 
     getURL() { return this.mainFrame.url; }
@@ -184,17 +188,33 @@ function fakeElectron(userDataPath) {
 }
 
 /**
- * @param {{ createOutboundQueueStore?: (...args: any[]) => any }} [options]
+ * @param {{
+ *   applyRetention?: (...args: any[]) => Promise<any>,
+ *   createOutboundQueueStore?: (...args: any[]) => any,
+ *   env?: Record<string, string | undefined>,
+ *   settingsReadError?: Error | null,
+ *   storedSettings?: string | null,
+ * }} [options]
  */
-async function loadMain({ createOutboundQueueStore } = {}) {
+async function loadMain({
+  applyRetention,
+  createOutboundQueueStore,
+  env = {},
+  settingsReadError = null,
+  storedSettings = null,
+} = {}) {
   const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-main-queue-test-"));
   temporaryRoots.add(userDataPath);
-  const harness = fakeElectron(userDataPath);
+  const harness = fakeElectron(userDataPath, { storedSettings, settingsReadError });
   const queueStoreModule = actualRequire("./queue.cjs");
+  const retentionModule = actualRequire("./retention.cjs");
   const injectedRequire = (specifier) => {
     if (specifier === "electron") return harness.electron;
     if (specifier === "./queue.cjs" && createOutboundQueueStore) {
       return { ...queueStoreModule, createOutboundQueueStore };
+    }
+    if (specifier === "./retention.cjs" && applyRetention) {
+      return { ...retentionModule, applyRetention };
     }
     return actualRequire(specifier);
   };
@@ -219,11 +239,74 @@ async function loadMain({ createOutboundQueueStore } = {}) {
     mainFilename,
     mainDirectory,
     quietConsole,
-    { env: { ...process.env, LUDONE_DATA_DIR: undefined }, platform: process.platform },
+    {
+      env: {
+        ...process.env,
+        DESKTOP_TIME_ENABLED: undefined,
+        DESKTOP_UPLOAD_ENABLED: undefined,
+        LUDONE_DATA_DIR: undefined,
+        ...env,
+      },
+      platform: process.platform,
+    },
     import("../src/lib/manifest.js"),
     import("../src/lib/queue.js"),
   );
-  return { ...harness, userDataPath };
+  return { ...harness, quietConsole, userDataPath };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1_000;
+const PROJECT_A = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+
+async function writeOldSentRecording(userDataPath) {
+  const queuePath = path.join(userDataPath, "queue", "outgoing.json");
+  const recordingsPath = path.join(userDataPath, "nahravky");
+  const microphonePath = path.join(recordingsPath, "stara-mikrofon.webm");
+  const systemPath = path.join(recordingsPath, "stara-system.webm");
+  await mkdir(path.dirname(queuePath), { recursive: true });
+  await mkdir(recordingsPath, { recursive: true });
+  await Promise.all([
+    writeFile(microphonePath, "mikrofon"),
+    writeFile(systemPath, "system"),
+  ]);
+  await writeFile(queuePath, JSON.stringify({
+    schemaVersion: 1,
+    items: [{
+      attempts: 1,
+      clientRecordingId: "8241f325-a970-4f36-a2e4-9b7812e4ae24",
+      enqueuedAt: new Date(Date.now() - 9 * DAY_MS).toISOString(),
+      kind: "recording",
+      lastFailureReason: null,
+      manifestPath: path.join(recordingsPath, "stara.manifest.json"),
+      nextAttemptAt: null,
+      sentAt: new Date(Date.now() - 8 * DAY_MS).toISOString(),
+      server: {
+        recordingId: "server-recording",
+        uploadedBytes: { microphone: 8, system: 6 },
+      },
+      state: "odeslano",
+      tracks: { microphone: microphonePath, system: systemPath },
+    }],
+  }));
+  return { microphonePath, queuePath, systemPath };
+}
+
+async function fileExists(filePath) {
+  try {
+    await readFile(filePath);
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+async function waitForQueuePump(harness) {
+  await vi.waitFor(() => {
+    expect(harness.quietConsole.log.mock.calls.some(
+      ([message]) => typeof message === "string" && message.startsWith("[queue] "),
+    )).toBe(true);
+  });
 }
 
 describe("produkční zapojení odchozí fronty", () => {
@@ -304,5 +387,195 @@ describe("produkční zapojení odchozí fronty", () => {
     await harness.runReady();
     expect(createOutboundQueueStore).toHaveBeenCalledTimes(1);
     expect(pump).toHaveBeenCalledTimes(1);
+  });
+
+  it("po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam", async () => {
+    let harness;
+    let stateSeenDuringEnqueue;
+    const queueStoreModule = actualRequire("./queue.cjs");
+    const enqueueTimeEntry = vi.fn();
+    const createOutboundQueueStore = vi.fn((deps) => {
+      const store = queueStoreModule.createOutboundQueueStore(deps);
+      enqueueTimeEntry.mockImplementation(async (entry) => {
+        stateSeenDuringEnqueue = JSON.parse(readFileSync(
+          path.join(harness.userDataPath, "cas", "casovac.json"),
+          "utf8",
+        ));
+        return store.enqueueTimeEntry(entry);
+      });
+      return { ...store, enqueueTimeEntry };
+    });
+    harness = await loadMain({
+      createOutboundQueueStore,
+      env: { DESKTOP_TIME_ENABLED: "true" },
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+
+    const started = await harness.ipcHandlers.get("tracking:start")(event, {
+      projectId: PROJECT_A,
+      note: "Fakturovatelná práce",
+    });
+    const stopped = await harness.ipcHandlers.get("tracking:stop")(event);
+
+    expect(stopped.outcome).toBe("stopped");
+    expect(stateSeenDuringEnqueue).toMatchObject({
+      aktualni: null,
+      uzavrene: [expect.objectContaining({
+        clientTimeEntryId: started.entry.clientTimeEntryId,
+        state: "uzavreno",
+      })],
+    });
+    expect(enqueueTimeEntry).toHaveBeenCalledExactlyOnceWith({
+      clientTimeEntryId: started.entry.clientTimeEntryId,
+      projectId: PROJECT_A,
+      startedAt: stopped.closed.startedAt,
+      endedAt: stopped.closed.endedAt,
+    });
+    await expect(harness.ipcHandlers.get("queue:list")(event)).resolves.toEqual([
+      expect.objectContaining({
+        attempts: 0,
+        id: started.entry.clientTimeEntryId,
+        kind: "time",
+        state: "ceka",
+      }),
+    ]);
+  });
+
+  it.each([undefined, "false", "1"])(
+    "při DESKTOP_TIME_ENABLED=%s nezařadí žádný časový záznam",
+    async (timeEnabled) => {
+      const enqueueTimeEntry = vi.fn();
+      const createOutboundQueueStore = vi.fn(() => ({
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry,
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(),
+      }));
+      const harness = await loadMain({
+        createOutboundQueueStore,
+        env: { DESKTOP_TIME_ENABLED: timeEnabled },
+      });
+      await harness.runReady();
+      const panelContents = harness.windows[0].webContents;
+      const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+
+      await expect(harness.ipcHandlers.get("tracking:start")(event, {
+        projectId: PROJECT_A,
+      })).resolves.toMatchObject({ outcome: "disabled" });
+      await expect(harness.ipcHandlers.get("tracking:stop")(event))
+        .resolves.toMatchObject({ outcome: "disabled" });
+      expect(enqueueTimeEntry).not.toHaveBeenCalled();
+    },
+  );
+
+  it("při startu použije uložený sedmidenní výběr a odstraní starou odeslanou kopii", async () => {
+    const harness = await loadMain({
+      storedSettings: JSON.stringify({ retention: "7 dní po odeslání" }),
+    });
+    const fixture = await writeOldSentRecording(harness.userDataPath);
+
+    await harness.runReady();
+    await waitForQueuePump(harness);
+
+    expect(harness.windows[0].webContents.executeJavaScript).toHaveBeenCalledWith(
+      'window.localStorage.getItem("ludone.prototype.settings")',
+      true,
+    );
+    expect(await fileExists(fixture.microphonePath)).toBe(false);
+    expect(await fileExists(fixture.systemPath)).toBe(false);
+    await expect(readFile(fixture.queuePath, "utf8").then(JSON.parse))
+      .resolves.toEqual({ schemaVersion: 1, items: [] });
+  });
+
+  it.each([
+    ["chybějící", null, null],
+    ["nečitelná", "{poškozený-json", null],
+    ["nedostupná", null, new Error("localStorage není dostupné")],
+    ["neznámá", JSON.stringify({ retention: "Smazat bez ptaní" }), null],
+  ])("%s politika retence nesmaže žádná data", async (_label, storedSettings, settingsReadError) => {
+    const harness = await loadMain({ storedSettings, settingsReadError });
+    const fixture = await writeOldSentRecording(harness.userDataPath);
+
+    await expect(harness.runReady()).resolves.toBeUndefined();
+    await waitForQueuePump(harness);
+
+    await expect(readFile(fixture.microphonePath, "utf8")).resolves.toBe("mikrofon");
+    await expect(readFile(fixture.systemPath, "utf8")).resolves.toBe("system");
+    await expect(readFile(fixture.queuePath, "utf8").then(JSON.parse))
+      .resolves.toMatchObject({ items: [expect.objectContaining({ state: "odeslano" })] });
+  });
+
+  it("selhání načtení retenční fronty nezastaví start ani její pumpu", async () => {
+    const pump = vi.fn(async () => ({ outcome: "idle" }));
+    const createOutboundQueueStore = vi.fn(() => ({
+      enqueueRecording: vi.fn(),
+      enqueueTimeEntry: vi.fn(),
+      list: vi.fn(),
+      pump,
+      retry: vi.fn(),
+    }));
+    const harness = await loadMain({
+      createOutboundQueueStore,
+      storedSettings: JSON.stringify({ retention: "7 dní po odeslání" }),
+    });
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    await mkdir(path.dirname(queuePath), { recursive: true });
+    await writeFile(queuePath, "{neplatná-fronta");
+
+    await expect(harness.runReady()).resolves.toBeUndefined();
+    await waitForQueuePump(harness);
+
+    expect(pump).toHaveBeenCalledOnce();
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      expect.stringContaining("[retention]"),
+    );
+  });
+
+  it("store fronty se nezpřístupní, dokud startupová retence nedokončí zápis", async () => {
+    let releaseRetention;
+    let reportRetentionStarted;
+    const retentionStarted = new Promise((resolve) => { reportRetentionStarted = resolve; });
+    const retentionReleased = new Promise((resolve) => { releaseRetention = resolve; });
+    const applyRetention = vi.fn(async ({ queue }) => {
+      reportRetentionStarted();
+      await retentionReleased;
+      return {
+        deletedFiles: [],
+        deletedItems: [],
+        errors: [],
+        keptItems: queue.items,
+      };
+    });
+    const list = vi.fn(async () => []);
+    const createOutboundQueueStore = vi.fn(() => ({
+      enqueueRecording: vi.fn(),
+      enqueueTimeEntry: vi.fn(),
+      list,
+      pump: vi.fn(async () => ({ outcome: "idle" })),
+      retry: vi.fn(),
+    }));
+    const harness = await loadMain({
+      applyRetention,
+      createOutboundQueueStore,
+      storedSettings: JSON.stringify({ retention: "7 dní po odeslání" }),
+    });
+
+    const ready = harness.runReady();
+    await retentionStarted;
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const queuedList = harness.ipcHandlers.get("queue:list")(event);
+    await Promise.resolve();
+    const storeWasOpenedDuringRetention = createOutboundQueueStore.mock.calls.length > 0;
+    releaseRetention();
+    await Promise.all([ready, queuedList]);
+    await waitForQueuePump(harness);
+
+    expect(storeWasOpenedDuringRetention).toBe(false);
+    expect(list).toHaveBeenCalledOnce();
   });
 });
