@@ -27,6 +27,7 @@ const ENTRY_ID_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const ENTRY_ID_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const PROCESS_A = "2026-09-01T06:20:11.004Z";
 const PROCESS_B = "2026-09-01T12:00:00.000Z";
+const CLOCK_ROLLBACK_ANOMALY = "wall-clock-moved-backward";
 const temporaryRoots = [];
 
 async function temporaryFile() {
@@ -153,6 +154,98 @@ describe("start a ořez času", () => {
 });
 
 describe("stop a přepnutí projektu", () => {
+  it("skok hodin zpět při stop uloží nulový kandidát s anomálií a ponechá ho k rozhodnutí", async () => {
+    const filePath = await temporaryFile();
+    let current = Date.parse("2026-09-01T08:55:47.312Z");
+    const store = storeFor(filePath, { now: () => current });
+    const started = await store.start({ projectId: GUID_A });
+    current = Date.parse("2026-09-01T08:55:30.000Z");
+
+    const result = await store.stop();
+    const pendingOnDisk = await onDisk(filePath);
+    expect(result).toMatchObject({
+      outcome: "pending",
+      entry: {
+        clientTimeEntryId: started.entry.clientTimeEntryId,
+        state: TRACKING_STATES.PENDING,
+        endedAt: started.entry.startedAt,
+        minutes: 0,
+        clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+      },
+      closed: null,
+    });
+    expect(pendingOnDisk.aktualni).toEqual(result.entry);
+    expect(pendingOnDisk.uzavrene, "nula se před rozhodnutím nesmí tiše započítat")
+      .toHaveLength(0);
+
+    const resolved = await store.resolveRecovered({
+      decision: "ukoncit",
+      endedAt: "2026-09-01T09:10:00.000Z",
+    });
+    expect(resolved.closed).toMatchObject({
+      minutes: 15,
+      clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+    });
+    expect((await onDisk(filePath)).uzavrene[0]).toEqual(resolved.closed);
+  });
+
+  it("historická anomálie po srovnání hodin nepovolí skutečně budoucí konec", async () => {
+    const filePath = await temporaryFile();
+    let current = Date.parse("2026-09-01T08:55:47.312Z");
+    const store = storeFor(filePath, { now: () => current });
+    await store.start({ projectId: GUID_A });
+    current = Date.parse("2026-09-01T07:30:00.000Z");
+    await store.stop();
+
+    current = Date.parse("2026-09-01T10:00:00.000Z");
+    await expect(store.resolveRecovered({
+      decision: "ukoncit",
+      endedAt: "2026-09-01T11:00:00.000Z",
+    })).rejects.toThrow("endedAt nesmí být v budoucnosti");
+    expect((await onDisk(filePath)).aktualni.state).toBe(TRACKING_STATES.PENDING);
+  });
+
+  it("skok hodin zpět při přepnutí nechá starý projekt čekat a nový tiše nespustí", async () => {
+    const filePath = await temporaryFile();
+    let current = Date.parse("2026-09-01T08:55:47.312Z");
+    const store = storeFor(filePath, { now: () => current });
+    const started = await store.start({ projectId: GUID_A });
+    current = Date.parse("2026-09-01T07:30:00.000Z");
+
+    const result = await store.switchProject({ projectId: GUID_B });
+    const saved = await onDisk(filePath);
+    expect(result).toMatchObject({
+      outcome: "pending",
+      entry: {
+        clientTimeEntryId: started.entry.clientTimeEntryId,
+        projectId: GUID_A,
+        state: TRACKING_STATES.PENDING,
+        endedAt: started.entry.startedAt,
+        minutes: 0,
+        clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+      },
+      closed: null,
+    });
+    expect(saved.aktualni).toEqual(result.entry);
+    expect(saved.uzavrene).toHaveLength(0);
+    expect(JSON.stringify(saved)).not.toContain(GUID_B);
+  });
+
+  it("normální běh se zastaví jako dřív a žádnou anomálii nezapíše", async () => {
+    const filePath = await temporaryFile();
+    let current = Date.parse("2026-09-01T08:55:59.000Z");
+    const store = storeFor(filePath, { now: () => current });
+    await store.start({ projectId: GUID_A });
+    current = Date.parse("2026-09-01T09:56:01.000Z");
+
+    const result = await store.stop();
+    const saved = await onDisk(filePath);
+    expect(result).toMatchObject({ outcome: "stopped", closed: { minutes: 61 } });
+    expect(result.closed).not.toHaveProperty("clockAnomaly");
+    expect(saved.uzavrene[0]).not.toHaveProperty("clockAnomaly");
+    expect(saved.aktualni).toBeNull();
+  });
+
   it("stop uloží uzavřený úsek na disk", async () => {
     const filePath = await temporaryFile();
     const store = storeFor(filePath);
@@ -177,6 +270,10 @@ describe("stop a přepnutí projektu", () => {
     expect(result.closed.endedAt).toBe(result.entry.startedAt);
     expect(result.entry.clientTimeEntryId).not.toBe(result.closed.clientTimeEntryId);
     expect(saved.uzavrene[0].projectId).toBe(GUID_A);
+    expect(result.closed).not.toHaveProperty("clockAnomaly");
+    expect(result.entry).not.toHaveProperty("clockAnomaly");
+    expect(saved.uzavrene[0]).not.toHaveProperty("clockAnomaly");
+    expect(saved.aktualni).not.toHaveProperty("clockAnomaly");
     expect(saved.aktualni.projectId).toBe(GUID_B);
     expect(saved.aktualni.state).toBe(TRACKING_STATES.RUNNING);
   });
@@ -190,6 +287,128 @@ describe("stop a přepnutí projektu", () => {
 });
 
 describe("obnova po pádu", () => {
+  it("ukončí obnovený úsek i když jsou nástěnné hodiny před jeho začátkem", async () => {
+    const filePath = await temporaryFile();
+    const first = storeFor(filePath);
+    await first.start({ projectId: GUID_A });
+    const second = storeFor(filePath, {
+      processStartedAt: PROCESS_B,
+      now: () => Date.parse("2026-09-01T07:00:00.000Z"),
+    });
+
+    const recovered = await second.load();
+    expect(recovered.aktualni).toMatchObject({
+      state: TRACKING_STATES.PENDING,
+      endedAt: "2026-09-01T08:55:00.000Z",
+      minutes: 0,
+      clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+    });
+    expect((await onDisk(filePath)).aktualni).toEqual(recovered.aktualni);
+    const resolved = await second.resolveRecovered({
+      decision: "ukoncit",
+      endedAt: "2026-09-01T09:30:00.000Z",
+    });
+    expect(resolved.closed).toMatchObject({
+      minutes: 35,
+      state: TRACKING_STATES.CLOSED,
+      clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+    });
+    expect((await onDisk(filePath)).uzavrene[0]).toEqual(resolved.closed);
+  });
+
+  it("anomálii vzniklou až po načtení přenese rozhodnutí do uzavřeného úseku", async () => {
+    const filePath = await temporaryFile();
+    await storeFor(filePath).start({ projectId: GUID_A });
+    let current = Date.parse("2026-09-01T10:00:00.000Z");
+    const second = storeFor(filePath, {
+      processStartedAt: PROCESS_B,
+      now: () => current,
+    });
+    const recovered = await second.load();
+    expect(recovered.aktualni).not.toHaveProperty("clockAnomaly");
+
+    current = Date.parse("2026-09-01T08:55:30.000Z");
+    await expect(second.resolveRecovered({
+      decision: "ukoncit",
+      endedAt: "2026-09-01T08:54:00.000Z",
+    })).rejects.toThrow("endedAt nesmí být dřív než startedAt");
+    expect((await onDisk(filePath)).aktualni).toMatchObject({
+      endedAt: "2026-09-01T08:55:00.000Z",
+      minutes: 0,
+      clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+    });
+
+    current = Date.parse("2026-09-01T10:00:00.000Z");
+    const resolved = await second.resolveRecovered({
+      decision: "ukoncit",
+      endedAt: "2026-09-01T09:30:00.000Z",
+    });
+    expect(resolved.closed).toMatchObject({
+      minutes: 35,
+      clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+    });
+    expect((await onDisk(filePath)).uzavrene[0]).toEqual(resolved.closed);
+  });
+
+  it("pokračování zachová anomálii a další stop ji tiše nezapočítá", async () => {
+    const filePath = await temporaryFile();
+    let current = Date.parse("2026-09-01T08:55:47.312Z");
+    const store = storeFor(filePath, { now: () => current });
+    await store.start({ projectId: GUID_A });
+    current = Date.parse("2026-09-01T07:30:00.000Z");
+    await store.stop();
+
+    const continued = await store.resolveRecovered({ decision: "pokracovat" });
+    expect(continued.entry).toMatchObject({
+      state: TRACKING_STATES.RUNNING,
+      clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+    });
+    expect(continued.entry).not.toHaveProperty("endedAt");
+    expect(continued.entry).not.toHaveProperty("minutes");
+
+    current = Date.parse("2026-09-01T10:00:00.000Z");
+    const stoppedAgain = await store.stop();
+    expect(stoppedAgain).toMatchObject({
+      outcome: "pending",
+      entry: {
+        state: TRACKING_STATES.PENDING,
+        minutes: 65,
+        clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+      },
+      closed: null,
+    });
+    const saved = await onDisk(filePath);
+    expect(saved.aktualni).toEqual(stoppedAgain.entry);
+    expect(saved.uzavrene).toHaveLength(0);
+  });
+
+  it("opakované načtení nepřepíše už uložený pending kandidát", async () => {
+    const filePath = await temporaryFile();
+    let current = Date.parse("2026-09-01T08:55:47.312Z");
+    const first = storeFor(filePath, { now: () => current });
+    await first.start({ projectId: GUID_A });
+    current = Date.parse("2026-09-01T07:30:00.000Z");
+    await first.stop();
+    await first.resolveRecovered({ decision: "pokracovat" });
+    current = Date.parse("2026-09-01T10:00:00.000Z");
+    await first.stop();
+    const pendingBeforeReload = await onDisk(filePath);
+    expect(pendingBeforeReload.aktualni).toMatchObject({
+      endedAt: "2026-09-01T10:00:00.000Z",
+      minutes: 65,
+      clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+    });
+
+    current = Date.parse("2026-09-01T07:00:00.000Z");
+    const second = storeFor(filePath, {
+      processStartedAt: PROCESS_B,
+      now: () => current,
+    });
+    const reloaded = await second.load();
+    expect(reloaded).toEqual(pendingBeforeReload);
+    expect(await onDisk(filePath)).toEqual(pendingBeforeReload);
+  });
+
   it("po restartu procesu zachová klíč i začátek a čeká na rozhodnutí", async () => {
     const filePath = await temporaryFile();
     const first = storeFor(filePath);
@@ -239,6 +458,23 @@ describe("obnova po pádu", () => {
     await writeFile(filePath, JSON.stringify({
       schemaVersion: 1,
       aktualni: { state: TRACKING_STATES.RUNNING },
+      uzavrene: [],
+    }), "utf8");
+    await expect(storeFor(filePath).load())
+      .rejects.toThrow("soubor časovače neodpovídá schématu v1");
+
+    await writeFile(filePath, JSON.stringify({
+      schemaVersion: 1,
+      aktualni: {
+        clientTimeEntryId: ENTRY_ID_A,
+        projectId: GUID_A,
+        startedAt: "2026-09-01T08:55:00.000Z",
+        startedAtRaw: "2026-09-01T08:55:47.312Z",
+        processStartedAt: PROCESS_A,
+        note: null,
+        state: TRACKING_STATES.PENDING,
+        clockAnomaly: CLOCK_ROLLBACK_ANOMALY,
+      },
       uzavrene: [],
     }), "utf8");
     await expect(storeFor(filePath).load())
@@ -490,5 +726,26 @@ describe("R22: klíč proti duplikaci musí být jedinečný i BEZ podstrčenéh
     expect(prvniKlic).toBeTruthy();
     expect(druhyKlic).toBeTruthy();
     expect(druhyKlic).not.toBe(prvniKlic);
+  });
+});
+
+describe("produkční výchozí hodnota času", () => {
+  it("bez now override použije Date.now a nevymyslí anomálii", async () => {
+    const filePath = await temporaryFile();
+    const before = Date.now();
+    const store = createTrackingStore({
+      filePath,
+      timeEnabled: "true",
+      log: () => {},
+    });
+
+    const result = await store.start({ projectId: GUID_A });
+    const after = Date.now();
+    const startedAtRaw = Date.parse(result.entry.startedAtRaw);
+    expect(startedAtRaw).toBeGreaterThanOrEqual(before);
+    expect(startedAtRaw).toBeLessThanOrEqual(after);
+    expect(result.entry.startedAt).toBe(floorToMinute(result.entry.startedAtRaw));
+    expect(result.entry).not.toHaveProperty("clockAnomaly");
+    expect((await onDisk(filePath)).aktualni).not.toHaveProperty("clockAnomaly");
   });
 });

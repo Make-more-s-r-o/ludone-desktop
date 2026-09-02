@@ -10,6 +10,7 @@ const TRACKING_STATES = Object.freeze({
 });
 const TIME_DISABLED_REASON = "měření času je vypnuté";
 const TRACKING_SAVED_LOG_PREFIX = "[tracking] Uloženo:";
+const WALL_CLOCK_MOVED_BACKWARD = "wall-clock-moved-backward";
 const PROJECT_GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const RECOVERY_DECISIONS = new Set(["pokracovat", "ukoncit", "zahodit"]);
 const CLOSED_REASONS = new Set([
@@ -86,6 +87,35 @@ function isCurrentEntry(entry) {
   if (floorToMinute(entry.startedAt) !== entry.startedAt) return false;
   if (Date.parse(entry.startedAtRaw) < Date.parse(entry.startedAt)) return false;
   if (entry.note !== null && typeof entry.note !== "string") return false;
+  if (entry.clockAnomaly !== undefined && entry.clockAnomaly !== WALL_CLOCK_MOVED_BACKWARD) {
+    return false;
+  }
+
+  const hasEndedAt = Object.prototype.hasOwnProperty.call(entry, "endedAt");
+  const hasMinutes = Object.prototype.hasOwnProperty.call(entry, "minutes");
+  if (hasEndedAt !== hasMinutes) return false;
+  if (
+    entry.state === TRACKING_STATES.PENDING
+    && entry.clockAnomaly === WALL_CLOCK_MOVED_BACKWARD
+    && !hasEndedAt
+  ) {
+    return false;
+  }
+  if (hasEndedAt) {
+    if (entry.state !== TRACKING_STATES.PENDING) return false;
+    if (entry.clockAnomaly !== WALL_CLOCK_MOVED_BACKWARD) return false;
+    if (!isCanonicalIso(entry.endedAt) || floorToMinute(entry.endedAt) !== entry.endedAt) {
+      return false;
+    }
+    const expectedMinutes = (Date.parse(entry.endedAt) - Date.parse(entry.startedAt)) / 60_000;
+    if (
+      !Number.isSafeInteger(entry.minutes)
+      || entry.minutes < 0
+      || entry.minutes !== expectedMinutes
+    ) {
+      return false;
+    }
+  }
   return entry.state === TRACKING_STATES.RUNNING || entry.state === TRACKING_STATES.PENDING;
 }
 
@@ -98,6 +128,7 @@ function isClosedEntry(entry) {
   const expectedMinutes = (Date.parse(entry.endedAt) - Date.parse(entry.startedAt)) / 60_000;
   return entry.state === TRACKING_STATES.CLOSED
     && CLOSED_REASONS.has(entry.closedReason)
+    && (entry.clockAnomaly === undefined || entry.clockAnomaly === WALL_CLOCK_MOVED_BACKWARD)
     && Number.isSafeInteger(entry.minutes)
     && entry.minutes >= 0
     && entry.minutes === expectedMinutes;
@@ -122,6 +153,30 @@ function operationResult(outcome, { entry = null, closed = null, reason = null }
   return { outcome, entry: copy(entry), closed: copy(closed), reason };
 }
 
+function observedEndBoundary(entry, nowValue) {
+  const startedAtMilliseconds = timestampMilliseconds(entry.startedAt, "startedAt");
+  const startedAtRawMilliseconds = timestampMilliseconds(entry.startedAtRaw, "startedAtRaw");
+  const observedNowMilliseconds = timestampMilliseconds(nowValue, "endedAt");
+  const observedEndedAt = floorToMinute(nowValue);
+  const observedEndedAtMilliseconds = timestampMilliseconds(observedEndedAt, "endedAt");
+  return {
+    endedAt: new Date(Math.max(startedAtMilliseconds, observedEndedAtMilliseconds)).toISOString(),
+    movedBackward: observedNowMilliseconds < startedAtRawMilliseconds,
+  };
+}
+
+function pendingClockAnomalyEntry(entry, endedAt) {
+  const startedAtMilliseconds = timestampMilliseconds(entry.startedAt, "startedAt");
+  const endedAtMilliseconds = timestampMilliseconds(endedAt, "endedAt");
+  return {
+    ...entry,
+    endedAt,
+    minutes: (endedAtMilliseconds - startedAtMilliseconds) / 60_000,
+    state: TRACKING_STATES.PENDING,
+    clockAnomaly: WALL_CLOCK_MOVED_BACKWARD,
+  };
+}
+
 function closedEntry(entry, endedAt, closedReason, forcedMinutes) {
   const startMilliseconds = timestampMilliseconds(entry.startedAt, "startedAt");
   const endMilliseconds = timestampMilliseconds(endedAt, "endedAt");
@@ -132,7 +187,7 @@ function closedEntry(entry, endedAt, closedReason, forcedMinutes) {
   if (!Number.isSafeInteger(minutes) || minutes < 0) {
     throw new TypeError("minutes nesmí být záporné ani necelé");
   }
-  return {
+  const closed = {
     clientTimeEntryId: entry.clientTimeEntryId,
     projectId: entry.projectId,
     startedAt: entry.startedAt,
@@ -141,6 +196,10 @@ function closedEntry(entry, endedAt, closedReason, forcedMinutes) {
     state: TRACKING_STATES.CLOSED,
     closedReason,
   };
+  if (entry.clockAnomaly === WALL_CLOCK_MOVED_BACKWARD) {
+    closed.clockAnomaly = WALL_CLOCK_MOVED_BACKWARD;
+  }
+  return closed;
 }
 
 /** Atomický zápis: temp soubor, fsync dat, rename a fsync adresáře. */
@@ -231,13 +290,36 @@ function createTrackingStore(deps) {
 
   async function loadCurrentState() {
     const loadedState = await readState();
-    if (
-      loadedState.aktualni?.state === TRACKING_STATES.RUNNING
-      && loadedState.aktualni.processStartedAt !== processStartedAt
-    ) {
+    const currentEntry = loadedState.aktualni;
+    if (currentEntry) {
+      const boundary = observedEndBoundary(currentEntry, now());
+      if (
+        currentEntry.state === TRACKING_STATES.PENDING
+        && currentEntry.clockAnomaly === WALL_CLOCK_MOVED_BACKWARD
+      ) {
+        state = loadedState;
+        loaded = true;
+        return state;
+      }
+      const restarted = currentEntry.state === TRACKING_STATES.RUNNING
+        && currentEntry.processStartedAt !== processStartedAt;
+      const clockMovedBackward = boundary.movedBackward;
+      if (!restarted && !clockMovedBackward) {
+        state = loadedState;
+        loaded = true;
+        return state;
+      }
+
+      let pendingEntry = { ...currentEntry, state: TRACKING_STATES.PENDING };
+      if (
+        clockMovedBackward
+        || currentEntry.clockAnomaly === WALL_CLOCK_MOVED_BACKWARD
+      ) {
+        pendingEntry = pendingClockAnomalyEntry(currentEntry, boundary.endedAt);
+      }
       const recoveredState = {
         ...loadedState,
-        aktualni: { ...loadedState.aktualni, state: TRACKING_STATES.PENDING },
+        aktualni: pendingEntry,
       };
       await commit(recoveredState);
       return state;
@@ -300,8 +382,17 @@ function createTrackingStore(deps) {
       }
 
       const boundaryRaw = new Date(now()).toISOString();
-      const boundary = floorToMinute(boundaryRaw);
-      const closed = closedEntry(state.aktualni, boundary, "switch");
+      const boundary = observedEndBoundary(state.aktualni, boundaryRaw);
+      if (
+        boundary.movedBackward
+        || state.aktualni.clockAnomaly === WALL_CLOCK_MOVED_BACKWARD
+      ) {
+        const entry = pendingClockAnomalyEntry(state.aktualni, boundary.endedAt);
+        await commit({ ...state, aktualni: entry });
+        return operationResult("pending", { entry });
+      }
+
+      const closed = closedEntry(state.aktualni, boundary.endedAt, "switch");
       const clientTimeEntryId = newId();
       if (typeof clientTimeEntryId !== "string" || !PROJECT_GUID_PATTERN.test(clientTimeEntryId)) {
         throw new TypeError("newId musí vrátit neprázdný UUID");
@@ -309,7 +400,7 @@ function createTrackingStore(deps) {
       const entry = {
         clientTimeEntryId,
         projectId,
-        startedAt: boundary,
+        startedAt: boundary.endedAt,
         startedAtRaw: boundaryRaw,
         processStartedAt,
         note: null,
@@ -332,8 +423,17 @@ function createTrackingStore(deps) {
         return operationResult("noop", { entry: state.aktualni });
       }
 
-      const endedAt = floorToMinute(now());
-      const closed = closedEntry(state.aktualni, endedAt, "stop");
+      const boundary = observedEndBoundary(state.aktualni, now());
+      if (
+        boundary.movedBackward
+        || state.aktualni.clockAnomaly === WALL_CLOCK_MOVED_BACKWARD
+      ) {
+        const entry = pendingClockAnomalyEntry(state.aktualni, boundary.endedAt);
+        await commit({ ...state, aktualni: entry });
+        return operationResult("pending", { entry });
+      }
+
+      const closed = closedEntry(state.aktualni, boundary.endedAt, "stop");
       await commit({
         ...state,
         aktualni: null,
@@ -355,12 +455,25 @@ function createTrackingStore(deps) {
         return operationResult("noop", { entry: state.aktualni });
       }
 
+      const wallClockNow = now();
+      const boundary = observedEndBoundary(state.aktualni, wallClockNow);
+      let currentEntry = state.aktualni;
+      if (
+        boundary.movedBackward
+        && currentEntry.clockAnomaly !== WALL_CLOCK_MOVED_BACKWARD
+      ) {
+        currentEntry = pendingClockAnomalyEntry(currentEntry, boundary.endedAt);
+        await commit({ ...state, aktualni: currentEntry });
+      }
+
       if (decision === "pokracovat") {
         const entry = {
-          ...state.aktualni,
+          ...currentEntry,
           processStartedAt,
           state: TRACKING_STATES.RUNNING,
         };
+        delete entry.endedAt;
+        delete entry.minutes;
         await commit({ ...state, aktualni: entry });
         return operationResult("resolved", { entry });
       }
@@ -368,22 +481,23 @@ function createTrackingStore(deps) {
       let closed;
       if (decision === "ukoncit") {
         const endedAtMilliseconds = requireIsoTimestamp(endedAt, "endedAt");
-        const startedAtMilliseconds = timestampMilliseconds(state.aktualni.startedAt, "startedAt");
+        const startedAtMilliseconds = timestampMilliseconds(currentEntry.startedAt, "startedAt");
         if (endedAtMilliseconds < startedAtMilliseconds) {
           throw new TypeError("endedAt nesmí být dřív než startedAt");
         }
-        if (endedAtMilliseconds > now()) {
+        const clockMovedBackward = boundary.movedBackward;
+        if (endedAtMilliseconds > wallClockNow && !clockMovedBackward) {
           throw new TypeError("endedAt nesmí být v budoucnosti");
         }
         closed = closedEntry(
-          state.aktualni,
+          currentEntry,
           floorToMinute(endedAtMilliseconds),
           "potvrzeno-po-obnove",
         );
       } else {
         closed = closedEntry(
-          state.aktualni,
-          state.aktualni.startedAt,
+          currentEntry,
+          currentEntry.startedAt,
           "zahozeno-clovekem",
           0,
         );
