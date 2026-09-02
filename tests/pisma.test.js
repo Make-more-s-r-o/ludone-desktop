@@ -6,9 +6,17 @@ import { describe, expect, it } from "vitest";
 const korenStylu = path.dirname(fileURLToPath(new URL("../src/styles.css", import.meta.url)));
 const styly = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
-/** Vytáhne z CSS všechny deklarace @font-face jako objekty. */
+/**
+ * Vytáhne z CSS deklarace @font-face jako objekty.
+ *
+ * 🔴 Komentáře se odstraňují PŘED hledáním. Bez toho brala tahle brána zakomentovaný
+ * blok jako platnou deklaraci — takže by šla obejít tím, že se skutečná písma
+ * zakomentují a vedle nich zůstane komentář, který vypadá správně. Nepřišlo se na to
+ * přemýšlením, ale sabotáží: „povinně zelená" zčervenala.
+ */
 function deklarace() {
-  return [...styly.matchAll(/@font-face\s*\{([^}]*)\}/g)].map(([, telo]) => ({
+  const bezKomentaru = styly.replace(/\/\*[\s\S]*?\*\//g, "");
+  return [...bezKomentaru.matchAll(/@font-face\s*\{([^}]*)\}/g)].map(([, telo]) => ({
     rodina: telo.match(/font-family:\s*"([^"]+)"/)?.[1],
     vaha: telo.match(/font-weight:\s*([^;]+)/)?.[1]?.trim(),
     soubor: telo.match(/url\("\.\/([^"]+)"\)/)?.[1],
