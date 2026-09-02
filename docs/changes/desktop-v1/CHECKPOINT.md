@@ -73,6 +73,29 @@ Skill říká „commitni Codexovu práci, než začneš sabotovat". Chybí tam 
 
 ---
 
+---
+
+## 🔴 ČEKÁ KOLIZE CEST — NIC NEMAŽ, JEN PŘEJMENUJ
+
+Dvě větve nezávisle vytvořily **`src/lib/stereo-recording.js`**, ale s jiným obsahem:
+
+| větev | co v tom souboru je |
+|---|---|
+| `orca/desktop-export` (PR #25) | `createStereoCapture` — slévá mikrofon+systém do jedné stereo stopy k NAHRÁVÁNÍ |
+| `orca/desktop-onboarding` | `captureAudioSources`, `rmsToPercent`, `createStereoLevelSession` — MĚŘENÍ ÚROVNÍ |
+
+**Nejsou to duplicity, jsou to dvě různé věci na jedné cestě.** Vzniklo mou chybou v zadání:
+odkázal jsem Codexe na ten soubor jako na vzor, jenže on na `main` neexistuje (žije jen
+ve větvi PR #25), takže si ho Codex poctivě napsal sám.
+
+🔴 **Ani jednu implementaci nemaž.** Rozřešení při konsolidaci onboardingu:
+
+1. přejmenuj onboardingovou verzi na **`src/lib/audio-levels.js`** a oprav importy,
+2. rebasuj `orca/desktop-onboarding` na **`orca/desktop-export`**, NE na `main`
+   (PR #25 ještě neležel v main kvůli CI) → PR #26 se tím naskládá na #25,
+3. 🔴 u naskládaných PR pozor: `gh pr merge` slučuje do **rodiče**, ne do `main`.
+   Až CI ožije, merguj #25 první, pak #26 přesměruj na `main`.
+
 ## První příkazy po probuzení
 
 ```bash
