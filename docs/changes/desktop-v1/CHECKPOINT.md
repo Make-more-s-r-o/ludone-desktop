@@ -135,6 +135,24 @@ Brána inventury IPC (`tests/ipc-sender-guard.test.js`) se ozvala **naostro běh
 nový kanál ji shodil dřív, než jsem ho stihl dopsat do seznamu. Není to tedy jen teoreticky
 sabotovatelná kontrola — reálně zastavila neúplnou práci.
 
+---
+
+## Ze serverové session (2. 9. večer)
+
+- **Modul Nahrávky je mimo allowlist `/uploads/**`** — allowlist je `["pos","offers",
+  "inventory","comgate-automatch"]`, výčtem, Danovo rozhodnutí. Pro desktop **správně**:
+  na soubor nikdy neodkazujeme URL, nahrávací stránka `/nahravky/nahrat` tím dotčená není.
+- Schéma a streamové úložiště Nahrávek hotové; výchozí viditelnost se opravuje z `company`
+  na `private` (Danovo rozhodnutí).
+- Naše tři nálezy z review přijaté: kvóta bez rezervace → advisory-lock; velikost
+  normalizované kopie **ve schématu vůbec nebyla**, přibývá sloupec.
+
+🔴 **Poslali jsme jim varování, které platí i pro nás:** `canonicalTimestampMs`
+v `electron/retention.cjs` vyžaduje **znak po znaku shodu s `toISOString()`**. Mikrosekundy
+ani `+00:00` místo `Z` neprojdou. Kdyby server vracel `sentAt` v jiném tvaru, retence
+položku vyhodnotí jako neodeslanou a **nikdy nesmaže nahrávky z disku** — tiše, bez chyby.
+Až se fronta k serveru napojí, tohle je první věc k ověření naostro.
+
 ## První příkazy po probuzení
 
 ```bash
