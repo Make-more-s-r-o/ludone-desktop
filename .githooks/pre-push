@@ -1,0 +1,10 @@
+#!/bin/sh
+# Nepustí ven práci, která neprojde branami. Nahrazuje to, co dělalo CI při každém pushi.
+# Instalace: npm run hooks:install   ·   Obejití (jen vědomě): git push --no-verify
+echo "→ brány před pushem (lint · typecheck · testy)"
+npm run gates || {
+  echo ""
+  echo "🔴 Brány spadly — push zastaven."
+  echo "   Oprav VADU, ne měřidlo. Vědomé obejití: git push --no-verify"
+  exit 1
+}

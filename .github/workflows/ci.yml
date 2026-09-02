@@ -1,7 +1,10 @@
 name: CI
 
 on:
+  # Bez omezení větví se každý push do větve s PR změřil DVAKRÁT — jednou jako
+  # `push`, podruhé jako `pull_request`. Půlka běhů byla zbytečná.
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -9,7 +12,15 @@ permissions:
 
 jobs:
   gates:
-    runs-on: macos-latest
+    # Repozitář je veřejný, takže hostované runnery jsou zdarma a bez limitu minut.
+    # Linux je pro tuhle bránu dost — nic macOS-specifického tu neběží a macOS runner
+    # se účtuje 10× dráž, kdyby se repozitář někdy vrátil do privátního režimu.
+    #
+    # Záloha: na Danově Macu je registrovaný vlastní runner se štítky `self-hosted, macos`.
+    # Přepnutí je jednořádkové a hodí se, kdyby hostované runnery vypadly — nebo až se
+    # jednou zapnou oba smoke kroky níž, které potřebují GUI, zvuk a oprávnění Záznam
+    # obrazovky. Ty runner GitHubu nikdy mít nebude, proto jsou dnes `if: false`.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
