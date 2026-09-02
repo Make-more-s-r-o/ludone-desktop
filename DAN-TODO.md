@@ -47,7 +47,32 @@ udělá ✅.
 
 ## 🔴 DVĚ VĚCI OD TEBE (rozhodnuto 2. 9. večer)
 
-### 1. Přepnout repo na public — tím billing GitHubu odpadne úplně
+### 1. 🛑 PŘEPNUTÍ NA PUBLIC ZASTAVENO — nový nález (2. 9. ve 21:15)
+
+**Nepřepínej to, dokud si nepřečteš tohle.** Rozhodnutí BD-N41 platí v záměru, ale změnil se
+podklad: serverová session upozornila na věc, kterou jsem sám neměřil, a měla pravdu.
+
+**V `DAN-TODO.md` (ř. 1075–1108) je podrobný popis toho, že `/uploads/**` na produkci
+nevyžaduje přihlášení** — konkrétní cesty, `PUBLIC_PATHS` v `src/proxy.ts:19`, číslo řádku
+s jedinou zakázanou předponou. Ty tři veřejné prefixy jsi schválil vědomě, takže to **není
+díra**; ale zveřejnit k tomu návod je jiná věc než mít to tak. A netýká se to desktopu,
+ale `ludone-app`.
+
+🔴 **Pročištění souborů to NEVYŘEŠÍ.** V historii je `/uploads/` **15×** a historie je
+u veřejného repa veřejná taky.
+
+**Varianty (rozhodni ráno, na noc to nemá vliv):**
+
+| | co to je | cena |
+|---|---|---|
+| **A** | zůstat privátní, spravit billing | peníze; ale PR #28 sráží spotřebu ~20×, možná limit stačí |
+| **B** | přepsat historii (`git filter-repo`) a pak public | rozbije 4 otevřené PR a všechny klony |
+| **C** | nový veřejný repozitář se slitou historií | čisté, ale ztratí 226 commitů provenience |
+| **D** | public i s tím | ⚠️ nedoporučuju — je to cizí systém, ne jen náš |
+
+**Na noční práci to nemá vliv** — stavím a skládám PR bez ohledu na to; merge počká na ráno.
+
+### 1b. Původní zadání (platí, až se rozhodne výš)
 
 Rozhodl jsi „public, ale docs napřed pročistit" (BD-N41). Pročištění běží; **až ti ho ukážu,
 přepni to.** U veřejných repozitářů jsou Actions zdarma a bez limitu minut, a **GitHub
