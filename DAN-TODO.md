@@ -253,24 +253,34 @@ CLI 0.149.1) · Orca orchestrace zapnutá · OAuth server LuDone živý s dynami
 | **3** | **Právní rámec** — souhlas účastníků a retence | Není to kód, je to hodina rozhovoru. Ale musí být **dřív, než vznikne první ostrá nahrávka** — pak už nahrávky existují a mažou se hůř, než by nevznikaly |
 
 
-### B4 · Odesílání na server nejde zapnout — autentizace se nepotkává
+### ✅ B4 ZRUŠEN — nebyl to blocker, byla to hranice fází (oprava, 3. 9. 02:20)
 
-**Přesný blocker:** serverové upload routy autentizují **browser session (cookie)**, desktop
-má **OAuth Bearer token s MCP audience a scopy** `mcp:read` / `mcp:draft`. Ta dvě se nesejdou —
-první požadavek skončí na `session_missing` bez ohledu na kvalitu klienta. Scope pro **zápis
-vůbec neexistuje** (změřila serverová session dřív).
+**Mýlil jsem se.** Zapsal jsem, že „desktop se k upload routám nepřihlásí, autentizace se
+nepotkává". Serverová session mě opravila a **měla pravdu — je to moje vlastní rozhodnutí
+BD-N34**, které jsem si neověřil, než jsem z toho udělal blocker:
 
-Druhá díra: init očekává **`companyTabidooId`**, pro který desktop nemá zdroj — z přihlášení
-dostane e-mail a nic víc.
+| fáze | jak | právo |
+|---|---|---|
+| **1 (teď)** | tlačítko uloží soubor do Stažených a otevře nahrávací stránku; **nahrává prohlížeč pod běžnou session** | **žádné nové** |
+| **2 (později)** | automatický sync desktop → server | **teprve tady** scope pro zápis |
 
-**Řeší to serverová strana, ne my** — poslal jsem jim obojí i s tím, co naše strana umí
-(Bearer u každého požadavku, cookie nemáme a mít nebudeme). Doporučení: `companyTabidooId`
-odvodit na serveru z identity; vazbu uživatel→firma zná on, desktop ne.
+Cookie session na těch routách je tedy **správná odpověď pro fázi 1**, ne mezera. Desktopový
+Bearer token tam nikdy chodit neměl.
 
-**Do té doby:** klient je hotový a otestovaný (PR #37, 535 testů), killswitch
-`DESKTOP_UPLOAD_ENABLED` zůstává `false`, nic se neodesílá. **Není co zapínat** — chybí čím
-se přihlásit, ne kód.
+**Co to znamená prakticky:** nic není rozbité a nic nečeká. Klient, který jsem v noci postavil
+(PR #37), je **klient pro fázi 2** — hotový, otestovaný, vypnutý. Až se fáze 2 otevře, je
+připravený; do té doby je `DESKTOP_UPLOAD_ENABLED=false` správný stav, ne nedodělek.
 
+⚠️ **Jedna věc na potom, ať se nezapomene:** až na scope pro zápis dojde, **nesmí se rozšířit
+`mcp:draft`**. Ten dnes znamená „připrav návrh ke schválení"; nahrávání souborů pod něj
+nepatří a souhlasová obrazovka by pak říkala něco jiného než pravdu. Bude to **nový scope
+s vlastní větou** na té obrazovce. (Upozornila na to serverová session.)
+
+**Co z původního nálezu platilo:** `companyTabidooId` desktop opravdu nemá odkud vzít.
+Serverová session to opravuje na své straně (rozhodnutí D20): jedna firma v rozsahu → dosadí
+ji server sám; víc firem → vybírá člověk; **admin bez omezení vybírá vždy**, protože „odvodit"
+by u něj znamenalo hádat — a špatná firma je špatně zaúčtované místo v kvótě a špatná
+viditelnost.
 ---
 
 ## 0a. 🔴 ROZHODOVACÍ BALÍK — deset otázek, jeden průchod

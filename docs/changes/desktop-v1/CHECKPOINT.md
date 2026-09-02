@@ -76,3 +76,15 @@ tajemství **selže před spuštěním builderu**, takže nepodepsaná verze nem
 Desktop se k upload routám **nepřihlásí**: server je autentizuje browser session, desktop má
 OAuth Bearer s MCP audience. Odesílání tedy nejde zapnout ani po nasazení migrací.
 Předáno serverové session; detail v `DAN-TODO.md`.
+
+### 🔴 Oprava: B4 nebyl blocker
+
+Zapsal jsem „autentizace se nepotkává" jako blocker. **Byla to hranice fází, ne mezera** —
+BD-N34 (moje vlastní rozhodnutí) říká, že ve fázi 1 nahrává **prohlížeč pod běžnou session**
+a desktop jen uloží soubor a otevře stránku. Cookie session je tedy správně.
+
+PR #37 je **klient pro fázi 2**: hotový, otestovaný, vypnutý. `DESKTOP_UPLOAD_ENABLED=false`
+je správný stav, ne nedodělek. Detail a poznámka o scope v `DAN-TODO.md`.
+
+⇒ Poučení: **než z něčeho udělám blocker, ověřím to proti vlastním zapsaným rozhodnutím.**
+Tohle jsem měl najít sám v `decisions.md`, ne od kolegů.
