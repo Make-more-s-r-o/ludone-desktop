@@ -47,7 +47,7 @@ co se nestihlo odeslat, odejde po probuzení samo.
 | Systém | Jak se ho to týká |
 |---|---|
 | **app.ludone.cz** | Přihlášení (OAuth 2.1 + PKCE, loopback). Cílové místo pro nahrávky. Archiv, přepisy a hledání zůstávají tady |
-| **LuTrack / Supabase** | Časové záznamy. 🔴 **Money-path** — hodiny tečou týdenním souhrnem do Tabidoo a přes sklad do mzdových nákladů projektů v HR, táborech, rozpočtech a CFO |
+| **LuTrack / jeho backend** | Časové záznamy. 🔴 **Money-path** — hodiny tečou týdenním souhrnem do Tabidoo a přes sklad do mzdových nákladů projektů v HR, táborech, rozpočtech a CFO |
 | **Tabidoo** | Nepřímo, přes souhrny z LuTracku. Desktop do něj **nikdy nezapisuje přímo** |
 | **macOS** | Oprávnění na mikrofon a systémový zvuk, ikona v liště, oznámení, podpis a rozvoz |
 

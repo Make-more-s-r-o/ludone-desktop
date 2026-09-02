@@ -1,6 +1,6 @@
 # Zadání pro serverovou session (ludone-app)
 
-**Napsala desktopová session `b1210d54-d06e-4182-93cd-9c5550b8c2d4` dne 2. 9. 2026.**
+**Napsala desktopová session dne 2. 9. 2026.**
 Když něco nesedí nebo potřebuješ doplnit kontext o desktopové straně, **zeptej se jí** —
 běží ve stejné Orce a zná celou historii včetně měření, která jsou tu citovaná.
 
@@ -160,35 +160,39 @@ Nejmenší zásah: přidat jméno do odpovědi `ludone_ping`.
 
 ## ✅ Změřeno za tebe — nemusíš to zjišťovat znovu
 
-**SSH funguje**, alias v `~/.ssh/config`:
+**SSH přístup byl ověřen.** Konkrétní cíl, účet a názvy kontejnerů patří do neveřejné
+provozní dokumentace. Před přeověřením načti z ní:
 
 ```bash
-ssh hetzner-data     # 23.88.61.12, root
+: "${APP_SERVER_SSH:?nastav SSH cíl serveru aplikace}"
+: "${REVERSE_PROXY_CONTAINER:?nastav název kontejneru reverse proxy}"
 ```
 
-`app.ludone.cz` i `data.ludone.cz` běží **na tomtéž stroji**. Reverse proxy je kontejner
-`makemore-nginx` (nginx 1.29.5, image `nginx:alpine`).
+Reverse proxy identifikovaná proměnnou `$REVERSE_PROXY_CONTAINER` je zdrojem efektivní
+konfigurace pro následující měření.
 
 🔴 **Strop nahrávání (E5 krok 1, změřeno 2. 9. 2026):**
 
 ```
-client_max_body_size 50m        ← /etc/nginx/nginx.conf:18, platí GLOBÁLNĚ
-app.ludone.cz to NEPŘEPISUJE    ← /etc/nginx/conf.d/09-app-prod-zone.conf nemá vlastní limit
-labs                            ← /etc/nginx/conf.d/10-data-hub.conf
+client_max_body_size 50m        ← efektivní globální konfigurace
+app.ludone.cz to NEPŘEPISUJE    ← produkční vhost nemá vlastní limit
+labs prostředí                  ← samostatný vhost
 ```
 
 Příkaz, kterým si to přeověříš:
 
 ```bash
-ssh hetzner-data 'docker exec makemore-nginx grep -rn "client_max_body_size\|proxy_read_timeout\|proxy_request_buffering" /etc/nginx/'
+ssh "$APP_SERVER_SSH" "docker exec '$REVERSE_PROXY_CONTAINER' nginx -T 2>/dev/null" \
+  | grep -nE "server_name|client_max_body_size|proxy_read_timeout|proxy_request_buffering"
 ```
 
 ⇒ **Hodinová stopa má 40–120 MB, strop je 50 MB.** Upload v jednom kuse spadne. Buď drž
 kousky bezpečně pod 50 MB, nebo pro ten jeden endpoint limit zvyš — a pak **změř, že to
 platí**, ne že to je v konfiguraci.
 
-⚠️ Sousední konfigurace už streamovaný upload řeší (`21-supabase.conf:58`
-`proxy_request_buffering off`). Podívej se tam, než budeš vymýšlet vlastní.
+⚠️ Sousední interní vhost konfigurace už streamovaný upload řeší
+(`proxy_request_buffering off`). Najdi ji v neveřejné provozní dokumentaci a použij
+ji jako vzor.
 
 ## Jak pracovat
 

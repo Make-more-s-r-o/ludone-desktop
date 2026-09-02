@@ -3,7 +3,7 @@
 ## Co je a není dnes pokryté
 
 Rozhodnutí D1 určuje OAuth 2.1 s PKCE a loopback redirectem.
-Discovery bylo 24. 8. 2026 ověřeno s HTTP 200 na `labs.ludone.cz` i `app.ludone.cz`.
+Discovery bylo 24. 8. 2026 ověřeno s HTTP 200 v labs prostředí i na `app.ludone.cz`.
 Pokus o nové ověření příkazem `curl -sf` v omezeném běhu 25. 8. 2026 skončil
 kódem 6 (DNS), proto následující hodnoty označujeme jako měření z 24. 8., ne jako
 nově potvrzený stav.

@@ -73,10 +73,10 @@ zeleně a 77 testů projde — jenže:
 ### 🔴 Časovač je money-path
 
 LuTrack **není modul `ludone-app`** (tam je 54řádkový placeholder). Je to samostatná PWA na
-`ludone.cz/time-tracking` a **Supabase je celý backend** — identita, data, práva, business pravidla
+`ludone.cz/time-tracking` s vlastním backendem pro identitu, data, práva a business pravidla
 i 27 edge funkcí sypajících do Tabidoo.
 
-Hodiny tečou přes **týdenní agregát** do Tabidoo (`sptWorkReportHours`) a přes sklad zpátky do
+Hodiny tečou přes **interní týdenní agregát** do Tabidoo a přes sklad zpátky do
 `ludone-app`, kde jsou zdrojem pravdy o mzdových nákladech projektů v HR, táborech, rozpočtech i CFO.
 
 ⚠️ **Duplicitní zápis času se neprojeví jako viditelný duplikát — tiše navýší hodiny.** Proto musí
@@ -134,7 +134,7 @@ Dan přepnul Claude účet. Tím zmizel přístup k projektu **„LuDone Příst
 A/B1/B2/C. Zmizely i oba artefakty vydané ten den.
 
 **Zálohováno do `design/zadani/`** (brief, kit README, barevné tokeny). Nezálohovalo se:
-`SmerA/B/C.jsx`, tři referenční návrhy z VPS, `porovnani-navrhu.html`, zbytek tokenů
+`SmerA/B/C.jsx`, tři referenční návrhy, `porovnani-navrhu.html`, zbytek tokenů
 (písmo, tvar, pohyb, mezery).
 
 **Dan se večer přihlásí zpět.** Až se tak stane, stojí za to dotáhnout zbytek zálohy.
@@ -162,7 +162,7 @@ Tři směry panelu 366×792, klikací (chipy nad artboardem přepínají stav), 
 ## Co dělat dál
 
 1. **Vybrat směr panelu** — bez toho se nedá zmrazit spec.
-2. **Rozhodnout N1: kam desktop píše hodiny** — přímo do Supabase pod RLS (hotová cesta, ale
+2. **Rozhodnout N1: kam desktop píše hodiny** — přímo do backendu LuTracku pod RLS (hotová cesta, ale
    roznese klíč po noteboocích a přidá třetího zapisovatele tam, kde jedinečnost hlídá jen klient),
    nebo přes tenký endpoint na `app.ludone.cz`. Blokuje přihlašovací obrazovku, tvar položky fronty
    i zpracování chyb.

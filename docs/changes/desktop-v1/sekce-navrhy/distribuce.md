@@ -96,7 +96,7 @@ Co musí být hotové:
 
 ### 5.6 Co nesmí do veřejného repozitáře
 
-Zveřejnění odkrývá **celou historii**, ne jen poslední stav — co tam jednou bylo, tam zůstane. Nikdy: Developer ID `.p12` a jeho heslo · app-specific password nebo App Store Connect API klíč pro notarizaci · `GH_TOKEN` · klíč pro přepis (rozhodnutí A3 ho stejně přesouvá do správy v `app.ludone.cz`, ne do kódu) · jakékoli tokeny do Tabidoo, Supabase a skladu · **zvukové vzorky a testovací nahrávky se skutečnými hlasy** · jména, e-maily a názvy schůzek v testovacích datech, fixtures i snímcích obrazovky · bezpečnostní nálezy `C4` (rozhodnutí M13 je drží mimo git — to platí dál).
+Zveřejnění odkrývá **celou historii**, ne jen poslední stav — co tam jednou bylo, tam zůstane. Nikdy: Developer ID `.p12` a jeho heslo · app-specific password nebo App Store Connect API klíč pro notarizaci · `GH_TOKEN` · klíč pro přepis (rozhodnutí A3 ho stejně přesouvá do správy v `app.ludone.cz`, ne do kódu) · jakékoli tokeny do Tabidoo, backendu LuTracku a skladu · **zvukové vzorky a testovací nahrávky se skutečnými hlasy** · jména, e-maily a názvy schůzek v testovacích datech, fixtures i snímcích obrazovky · bezpečnostní nálezy `C4` (rozhodnutí M13 je drží mimo git — to platí dál).
 
 Naopak problém **nejsou**: OAuth client id (veřejný klient s PKCE nemá tajemství), bundle id, TCC texty, ani doména `app.ludone.cz`.
 

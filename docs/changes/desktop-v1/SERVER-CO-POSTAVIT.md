@@ -26,18 +26,19 @@ druhým účtem.
 
 **Tuhle část neotvírej znovu** — je promyšlená a odpovídá tomu, co desktop dělá.
 
-✅ **Krok 1 UŽ NENÍ BLOCKER — změřeno 2. 9. 2026.** SSH funguje aliasem `hetzner-data`
-(`~/.ssh/config`), `app.ludone.cz` běží na tomtéž stroji, proxy je kontejner `makemore-nginx`.
+✅ **Krok 1 UŽ NENÍ BLOCKER — změřeno 2. 9. 2026.** SSH přístup funguje;
+konkrétní cíl, účet a název kontejneru proxy jsou v neveřejné provozní dokumentaci.
+Měření proběhlo na stroji obsluhujícím `app.ludone.cz`.
 
 ```
-client_max_body_size 50m        ← /etc/nginx/nginx.conf:18, GLOBÁLNĚ
-app.ludone.cz to NEPŘEPISUJE    ← 09-app-prod-zone.conf nemá vlastní limit
+client_max_body_size 50m        ← efektivní globální konfigurace
+app.ludone.cz to NEPŘEPISUJE    ← produkční vhost nemá vlastní limit
 ```
 
 🔴 **Hodinová stopa má 40–120 MB, strop je 50 MB.** Upload v jednom kuse spadne. Buď drž
 kousky pod 50 MB, nebo pro ten endpoint limit zvyš — a **změř, že to platí**, ne že to je
-v konfiguraci. Sousední `21-supabase.conf:58` už streamovaný upload řeší
-(`proxy_request_buffering off`).
+v konfiguraci. Sousední interní vhost už streamovaný upload řeší
+(`proxy_request_buffering off`); jeho umístění je v neveřejné provozní dokumentaci.
 
 ## 2. Tvar dat: zmrazený, spolehni se na něj
 

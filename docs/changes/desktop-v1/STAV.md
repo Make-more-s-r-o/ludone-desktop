@@ -37,8 +37,8 @@ manifestu) a jedno nevratné (R24 zvuk ze schůzek nikdy do gitu).
 
 ## 🔴 Pořadí, které určil Dan
 
-**Design je POSLEDNÍ.** Dostažení zbylých podkladů z Claude Designu (`SmerA/B/C.jsx`, reference
-z VPS, tokeny písma/tvaru/pohybu/mezer, ikony a loga) se dělá **až na konci**, ne teď.
+**Design je POSLEDNÍ.** Dostažení zbylých podkladů z Claude Designu (`SmerA/B/C.jsx`, referenční
+návrhy, tokeny písma/tvaru/pohybu/mezer, ikony a loga) se dělá **až na konci**, ne teď.
 
 Blokuje to autorizace — po přepnutí Claude účtu `DesignSync` vyžaduje `/design-login`, který
 musí spustit Dan. **Nic to nezdržuje:** schválený návrh je kompletní v `design/navrh/`

@@ -84,10 +84,11 @@ umí — jedna kontrola to ale zakazuje.**
 **Dobrá zpráva:** v `auth.cjs` **není zadrátovaná ani jedna adresa serveru**. Issuer je
 parametr a endpointy se dohledávají. To je přesně tvar, který multi-tenant potřebuje.
 
-**Špatná zpráva** — `main.cjs:970`:
+**Špatná zpráva** — `main.cjs:970`. Následující ukázka používá symbolické názvy;
+přesné dva hostitele určuje neveřejná konfigurace nasazení:
 
 ```js
-if (!["app.ludone.cz", "labs.ludone.cz"].includes(issuer.host)) {
+if (![PRODUCTION_HOST, LABS_HOST].includes(issuer.host)) {
   throw new Error("Adresa přihlášení míří na nepovoleného hostitele");
 }
 ```

@@ -130,7 +130,12 @@ const rejectPending = (error) => {
 
 **Scénář selhání:** Ověřeno spuštěním (probe-issuer.mjs, funkce vytažené ze skutečného main.cjs stejnou metodou jako v testu). resolveAuthIssuer({LUDONE_ORIGIN:'https://ludone-login.attacker.tld'}) vrátí 'https://ludone-login.attacker.tld' bez výjimky, a s PŘÍTOMNÝM clientId proběhne celé přihlášení: controller se vytvoří s issuerem 'https://jiny.example' a handler vrátí {ok:true}. Naostro: kdokoli, kdo umí ovlivnit prostředí aplikace (LaunchAgent, wrapper skript, upravená .plist, spuštění z terminálu s exportem), přesměruje celý OAuth tok na svůj server — shell.openExternal otevře uživateli útočníkovu přihlašovací stránku, uživatel do ní napíše firemní heslo a token se vymění u útočníka. Recenzent, který se po
 
-**Náprava:** Do resolveAuthIssuer přidat allowlist hostitelů — dnes stačí app.ludone.cz a labs.ludone.cz (BD-N7 obě adresy jmenuje) — a všechno ostatní odmítnout s důvodem konfigurace. V testu opravit režii: env skládat jako { ...výchozí, LUDONE_ORIGIN: origin }, aby clientId zůstal přítomný, a k případu s cizím hostitelem přidat protějšek, který dokládá, že povolený hostitel projde. Jinak zůstane nefunkční br
+**Náprava:** Do resolveAuthIssuer přidat allowlist hostitelů — dnes stačí dva správcem
+schválené hostitele, produkční a labs — a všechno ostatní odmítnout s důvodem konfigurace.
+Přesné hodnoty bere nasazení z neveřejné konfigurace. V testu opravit režii: env skládat
+jako { ...výchozí, LUDONE_ORIGIN: origin }, aby clientId zůstal přítomný, a k případu s
+cizím hostitelem přidat protějšek, který dokládá, že povolený hostitel projde. Jinak
+zůstane nefunkční brána.
 
 ---
 
