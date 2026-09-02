@@ -1014,3 +1014,27 @@ se udělá jednou pro obojí.
 „Všechno na klik" cenu **odkládá, neruší**. U hodinové schůzky to nejsou drobné. Serverová
 session by ti měla přinést cenu za minutu u dvou tří služeb jako číslo — je to rozhodnutí
 o penězích, tedy tvoje.
+
+---
+
+## 🔴 BD-N34 vyžaduje práci na desktopu, která NEEXISTUJE (odhaleno 2. 9.)
+
+Serverová session se zeptala na tvar souboru a odhalila, že **rozhodnutí BD-N34 jsem zapsal
+jako plán, ale desktop ho neumí.** Chybí:
+
+1. **Export schůzky do JEDNOHO stereo souboru** (mikrofon vlevo, systém vpravo).
+2. **Tlačítko**, které ho uloží do Stažených a otevře nahrávací stránku app.ludone.
+
+⚠️ **Riziko, které jsem dřív nezmínil:** mikrofon a systém jsou dnes **dva nezávislé
+`MediaRecorder`y**, které startují s malým rozdílem a můžou se během schůzky rozejít.
+Sloučení do jedné stereo stopy vyžaduje **zarovnání** a může selhat. Zkusíme jeden soubor;
+pokud to nebude spolehlivé, fáze 1 pošle dva a serverová session to musí vědět předem.
+
+**Co desktop o schůzce ví (změřeno v `src/lib/manifest.js`):**
+`clientRecordingId` · `createdAt` · `closedAt` · `state` · velikosti a hashe stop.
+🔴 **Žádný název, zařízení, účastníci ani projekt.** Pojmenování je `DSK-F008`, pořád `no-code`.
+⇒ V první fázi se název zadá ve webovém formuláři.
+
+**Pořadí, které navrhuju:** napřed doladit zbývající obrazovky podle schváleného designu
+(chceš je vidět), pak stereo export a tlačítko — až bude jasné, jaký tvar souboru a URL
+serverová session určí.
