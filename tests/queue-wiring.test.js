@@ -370,6 +370,7 @@ function fakeElectron(userDataPath, {
  *   autoUpdater?: EventEmitter & Record<string, any>,
  *   createLogoutController?: (...args: any[]) => any,
  *   createOutboundQueueStore?: (...args: any[]) => any,
+ *   createRecordingUploadSend?: (...args: any[]) => any,
  *   createTrackingStore?: (...args: any[]) => any,
  *   deferPanelLoad?: boolean,
  *   deferSettingsRead?: boolean,
@@ -388,6 +389,7 @@ async function loadMain({
   autoUpdater,
   createLogoutController,
   createOutboundQueueStore,
+  createRecordingUploadSend,
   createTrackingStore,
   deferPanelLoad = false,
   deferSettingsRead = false,
@@ -426,6 +428,12 @@ async function loadMain({
         ...queueStoreModule,
         ...(createOutboundQueueStore ? { createOutboundQueueStore } : {}),
         ...(loadQueue ? { loadQueue } : {}),
+      };
+    }
+    if (specifier === "./upload-client.cjs" && createRecordingUploadSend) {
+      return {
+        ...actualRequire("./upload-client.cjs"),
+        createRecordingUploadSend,
       };
     }
     if (specifier === "./retention.cjs" && applyRetention) {
@@ -1274,10 +1282,44 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(queueStoreCode).toContain("queueModule.processNext");
   });
 
-  it("produkční odesílací vrstva je pouze pauza a nevolá server", () => {
-    const unavailableSend = functionSource(mainCode, "unavailableQueueSend");
-    expect(unavailableSend).toContain('failureClass = "paused"');
-    expect(unavailableSend).not.toMatch(/fetch|https?:\/\//);
+  it("produkční send je upload klient, ale vypnutý killswitch jej nespustí", async () => {
+    const uploadSend = vi.fn();
+    const createRecordingUploadSend = vi.fn(() => uploadSend);
+    const harness = await loadMain({
+      createRecordingUploadSend,
+      env: { DESKTOP_UPLOAD_ENABLED: "false" },
+    });
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    await mkdir(path.dirname(queuePath), { recursive: true });
+    await writeFile(queuePath, JSON.stringify({
+      schemaVersion: 1,
+      items: [{
+        attempts: 0,
+        clientRecordingId: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+        enqueuedAt: "2026-09-03T08:30:00.000Z",
+        kind: "recording",
+        lastFailureReason: null,
+        manifestPath: "/nahravky/schuzka.manifest.json",
+        nextAttemptAt: null,
+        sentAt: null,
+        server: { recordingId: null, uploadedBytes: { microphone: 0, system: 0 } },
+        state: "ceka",
+        tracks: {
+          microphone: "/nahravky/schuzka-microphone.webm",
+          system: "/nahravky/schuzka-system.webm",
+        },
+      }],
+    }));
+
+    await harness.runReady();
+
+    expect(createRecordingUploadSend).toHaveBeenCalledWith(expect.objectContaining({
+      fetchImpl: expect.any(Function),
+      getUploadContext: expect.any(Function),
+      origin: "https://app.ludone.cz",
+    }));
+    expect(uploadSend).not.toHaveBeenCalled();
+    expect(harness.electron.net.fetch).not.toHaveBeenCalled();
   });
 
   it("preload vystavuje oba validační kanály fronty", () => {
