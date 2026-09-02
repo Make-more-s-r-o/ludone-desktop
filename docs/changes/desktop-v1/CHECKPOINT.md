@@ -26,10 +26,11 @@ v `DAN-TODO.md`.
 
 | co | stav |
 |---|---|
-| `main` | `e4c09cd`, čistý, **422 testů** |
+| `main` | čistý, **411 passed + 6 skipped = 417** |
 | PR **#25** — export schůzky do jednoho souboru | ✅ hotový, brány lokálně zelené, **čeká na CI** |
-| Codex — onboarding (2 chybějící kroky) | ⚙ běží, worktree `desktop-onboarding` |
-| worktree `desktop-export` | ⚠️ **NEuklizený schválně** — drží větev k PR #25 |
+| PR **#26** — onboarding: čekání na prohlížeč + test záznamu | ✅ hotový, **naskládaný na #25**, čeká na CI |
+| worktree `desktop-export` | ⚠️ drží větev k PR #25 |
+| worktree `desktop-onboarding` | ⚠️ drží větev k PR #26 |
 
 ## PR #25 — co v něm je a proč je dobrý
 
@@ -75,7 +76,7 @@ Skill říká „commitni Codexovu práci, než začneš sabotovat". Chybí tam 
 
 ---
 
-## 🔴 ČEKÁ KOLIZE CEST — NIC NEMAŽ, JEN PŘEJMENUJ
+## ✅ VYŘEŠENO — kolize cest (ponecháno jako záznam)
 
 Dvě větve nezávisle vytvořily **`src/lib/stereo-recording.js`**, ale s jiným obsahem:
 
@@ -88,13 +89,32 @@ Dvě větve nezávisle vytvořily **`src/lib/stereo-recording.js`**, ale s jiný
 odkázal jsem Codexe na ten soubor jako na vzor, jenže on na `main` neexistuje (žije jen
 ve větvi PR #25), takže si ho Codex poctivě napsal sám.
 
-🔴 **Ani jednu implementaci nemaž.** Rozřešení při konsolidaci onboardingu:
+Vyřešeno takto (hotovo, jen pro pochopení historie):
 
 1. přejmenuj onboardingovou verzi na **`src/lib/audio-levels.js`** a oprav importy,
 2. rebasuj `orca/desktop-onboarding` na **`orca/desktop-export`**, NE na `main`
    (PR #25 ještě neležel v main kvůli CI) → PR #26 se tím naskládá na #25,
 3. 🔴 u naskládaných PR pozor: `gh pr merge` slučuje do **rodiče**, ne do `main`.
    Až CI ožije, merguj #25 první, pak #26 přesměruj na `main`.
+
+---
+
+## PR #26 — a vada, kterou našla až přejímka
+
+Codexova verze **neměla ze čtvrtého kroku (test záznamu) žádnou cestu ven** — `Pokračovat`
+zůstávalo zablokované, dokud nejsou slyšet oba kanály. Uživatel s rozbitým mikrofonem by
+v onboardingu **uvízl napořád**.
+
+Doplněno „Pokračovat bez testu"; `Hotovo` to pak **přizná** místo věty „Oba kanály slyším".
+Kvůli témuž bylo nutné dorovnat `scripts/ui-smoke.mjs` — v automatu není živý zvuk.
+
+Sabotáže 3🔴 : 1🟢 proběhly, počet testů 443 před i po (ta kontrola je tu dnes podruhé
+k něčemu dobrá). Brány: `lint=0` `typecheck=0` `build=0`, **437 passed | 6 skipped**.
+
+🔴 **Zbývající blocker PR #26:** čekací obrazovka neumí ukázat autorizační URL ani
+„Kopírovat", jak chce schválený návrh — `preload` vystavuje jen `beginAuth`/`cancelAuth`.
+Dotažení je samostatný PR s novým IPC kanálem (kanál smí nést jen URL, a musí do inventury
+v `tests/ipc-sender-guard.test.js`).
 
 ## První příkazy po probuzení
 
