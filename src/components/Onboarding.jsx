@@ -56,6 +56,8 @@ export function Onboarding({ onAuthenticated, onComplete }) {
   const [authBusy, setAuthBusy] = useState(false);
   const [authDeadline, setAuthDeadline] = useState(0);
   const [authFailure, setAuthFailure] = useState("");
+  // Adresa se drží jen po dobu čekání; hlavní proces ji po skončení pokusu sám zahodí.
+  const [authUrl, setAuthUrl] = useState("");
   const [authSecondsRemaining, setAuthSecondsRemaining] = useState(AUTH_WAIT_SECONDS);
   const [authWaitingActionBusy, setAuthWaitingActionBusy] = useState(false);
   const [permissionBusy, setPermissionBusy] = useState("");
@@ -88,6 +90,22 @@ export function Onboarding({ onAuthenticated, onComplete }) {
     const timer = window.setInterval(updateCountdown, 1_000);
     return () => window.clearInterval(timer);
   }, [authBusy, authDeadline, step]);
+
+  useEffect(() => {
+    if (step !== 2) {
+      setAuthUrl("");
+      return undefined;
+    }
+    let current = true;
+    // Adresu si vyžádá renderer sám: hlavní proces nemá do panelu cestu, kterou by
+    // ji poslal, a `beginAuth` se vrátí až na konci celého pokusu — tedy pozdě.
+    void Promise.resolve(window.ludone?.pendingAuthUrl?.())
+      .then((url) => {
+        if (current && typeof url === "string" && url.length > 0) setAuthUrl(url);
+      })
+      .catch(() => {});
+    return () => { current = false; };
+  }, [step]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -324,6 +342,21 @@ export function Onboarding({ onAuthenticated, onComplete }) {
           >
             {formatCountdown(authSecondsRemaining)}
           </time>
+          {authUrl && (
+            <div className="auth-waiting-address">
+              <code data-testid="auth-waiting-url">{authUrl}</code>
+              <button
+                type="button"
+                className="text-button"
+                data-testid="auth-waiting-copy"
+                onClick={() => {
+                  void navigator.clipboard?.writeText?.(authUrl).catch(() => {});
+                }}
+              >
+                Kopírovat
+              </button>
+            </div>
+          )}
           <div className="auth-waiting-actions">
             <button
               type="button"

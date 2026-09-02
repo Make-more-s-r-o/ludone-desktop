@@ -539,3 +539,35 @@ describe("diagnostika výsledku přihlášení", () => {
     );
   });
 });
+
+describe("URL přihlášení pro čekací obrazovku", () => {
+  it("zveřejní autorizační URL hned po startu a po dokončení ji odebere", async () => {
+    const published = [];
+    const handler = compiledAuthWiring(successfulController([]))(
+      dependencies({ publishAuthorizationUrl: (url) => published.push(url) }),
+    );
+
+    await expect(handler()).resolves.toMatchObject({ ok: true });
+    expect(published[0]).toMatch(/\/api\/mcp\/oauth\/authorize$/);
+    expect(published.at(-1)).toBeNull();
+  });
+
+  it("odebere URL i po neúspěchu — viset po skončení pokusu nesmí", async () => {
+    const published = [];
+    const failing = () => ({
+      async start() {
+        return {
+          authorizationUrl: "https://app.ludone.cz/api/mcp/oauth/authorize",
+          cancel: vi.fn(),
+          result: Promise.reject(new Error("access_denied")),
+        };
+      },
+    });
+    const handler = compiledAuthWiring(failing)(
+      dependencies({ publishAuthorizationUrl: (url) => published.push(url) }),
+    );
+
+    await expect(handler()).resolves.toMatchObject({ ok: false, duvod: "odmitnuto" });
+    expect(published.at(-1)).toBeNull();
+  });
+});
