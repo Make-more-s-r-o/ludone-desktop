@@ -1,394 +1,109 @@
-> 🔴 **Hledáš, kde pokračovat?** Bod obnovy je [`STAV-BEHU.md`](STAV-BEHU.md) — přesný první příkaz po resume, běžící worker handle, co je ověřené naostro.
+# CHECKPOINT — LuDone Desktop, noční běh
 
-# Checkpoint nočního běhu
-
-**PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
-kontextem, musí pokračovat, aniž by se ptal. Zadání: [`BEH-NOC.md`](BEH-NOC.md).
-
-**Poslední zápis: 2. 9. 2026 odpoledne — PRVNÍ ŽIVÉ SPUŠTĚNÍ a první živé přihlášení.**
-
-🔴 **Režim od 23:15 (Dan): NEPTAT SE.** Bezpečné vratné defaulty rozhodni a zapiš do
-`decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
-přeskoč **jen dotčený task**, zapiš blocker, jeď dál. Celý běh nezastavuj, dokud je bezpečná
-práce. Mechanika Codex, Claude koordinace a review.
+Poslední zápis: **2. 9. 2026, 16:1x**. Píše se pro někoho s prázdným kontextem.
 
 ---
 
-## Vlna `6` — uzavřena
+## 🔴 BĚH JE ZABLOKOVANÝ ZVENČÍ — CI se nespustí
 
-| Story | PR | CI | Testy (měřil jsem já, před rourou) | Stav |
-|---|---|---|---|---|
-| **B1** `ui-smoke` | [#2](https://github.com/Make-more-s-r-o/ludone-desktop/pull/2) | 🟢 | 77/77 | hotovo |
-| **B4** tři vady přihlášení | [#3](https://github.com/Make-more-s-r-o/ludone-desktop/pull/3) | 🟢 | 86/86 | hotovo, **P0 z review opraveno** |
-| **B3** autorita tray | [#4](https://github.com/Make-more-s-r-o/ludone-desktop/pull/4) | 🟢 | 113/113 | hotovo, **3 kola oprav** |
-| **B8** zapojit auth | [#5](https://github.com/Make-more-s-r-o/ludone-desktop/pull/5) *(nad b4)* | 🟢 | 117/117 | hotovo |
-| **B5** časovač do main | [#6](https://github.com/Make-more-s-r-o/ludone-desktop/pull/6) *(nad b3)* | ⏳ | 159/159 | hotovo |
-| **B7** fronta | [#7](https://github.com/Make-more-s-r-o/ludone-desktop/pull/7) *(nad b5)* | ⏳ | 186/186 (26 nových) | hotovo |
-| **B9** odhlášení | [#8](https://github.com/Make-more-s-r-o/ludone-desktop/pull/8) *(nad b8)* | ⏳ | 134/134 (17 nových) | hotovo, 🔴 **race NEOPRAVENA**, BD-N14 |
-| **B6** výběr projektu | — | — | — | 🛑 **STOP**, viz BD-N12 |
-| **B10** sdílené zařízení | — | — | — | 🛑 **návrh napsán**, stavba čeká na Dana |
-| **B11** retence | [#9](https://github.com/Make-more-s-r-o/ludone-desktop/pull/9) *(nad b7)* | ⏳ | 201/201 (13+2 nových) | hotovo |
+GitHub Actions od **2. 9. 15:57** odmítá spustit job:
 
-🔴 **Žádná netvrdí `verified-live`.** Vše je 🧪, ne ✅.
+> The job was not started because recent account payments have failed or your spending
+> limit needs to be increased.
 
-## Běží
+Změřeno: 14:30 běh na `main` ještě prošel, v 15:57 už ne. Ověřeno dvěma běhy — trvalé.
 
-| Co | Log | Konec |
-|---|---|---|
-| — | — | **žádné, všechny joby doběhly** |
+**Důsledek: nic se nedá mergnout**, protože merge vyžaduje zelené required checks.
+Merge s červenými checky by bylo obcházení brány, což je zakázané. Práce se proto
+hromadí v otevřených PR — to je správný stav, ne zapomenutá věc.
 
-🔴 Log bez pohybu 20 min = mrtvý job. Práce bývá na disku — `git status` ve worktree.
-🔴 **Po doběhnutí COMMITNI HNED**, teprve pak brány a sabotáže.
-🔴 **Celý stoh je srovnaný** (02:10): b4 nad main, b8 nad b4, b9 nad b8; b5 nad b3, b7 nad b5,
-b11 nad b7. Po převzetí B11 ji přebasovat na aktuální b7.
-🔴 **Při rebase stohu uveď STAROU špičku výslovně** (`git rebase --onto <nova> <stara-spicka>`)
-— po přebasování rodiče už jeho stará špička není předkem a `merge-base` vrátí bod, ze kterého
-se přehraje i cizí commit. Konflikt „add/add" v testech bývá „oba přidali blok na konec"
-⇒ nechat OBĚ sady.
-
-## 🛑 Zastavené s blockerem (jen dotčený task, běh jede dál)
-
-| Co | Proč | Kde |
-|---|---|---|
-| **B6** | `spec.md` R7 („nad 110 % **zašedlý**") a `plan.md:147` („**není v nabídce**") si odporují — **money pravidlo, hard gate** | BD-N12 |
-| **B10** | přiřazení nahrávky člověku je **RBAC**, a nikdo neověřil, že účet `zasedacka@` existuje | `B10-navrh-sdilene-zarizeni.md` |
-| **B2** | 377 odkazů, `LUDONE_E2E` obsahuje `E2`, markery v produkčním kódu | BD-N1 |
-| **B12** | živá DB 24 lidí | `BEH-NOC.md` |
-| **B13** kalendář | design ho ruší, `ui-smoke` ho vyžaduje — user-visible změna bez packetu | O14 |
-| pátý stav tray | ikony ve **zmrazené T1** | BD-N5 |
-
-## Čeká na Dana
-
-1. 🔴 **Oprávnění Nahrávání obrazovky** pro `release/LuDone Desktop.app` — bez něj `ui-smoke`
-   nedojede do zelené a sabotáže zvukové brány nedoběhnou.
-2. 🔴 **Statický OAuth klient na serveru** → `LUDONE_OAUTH_CLIENT_ID`. Bez něj se přihlášení
-   naostro **ani nepokusí** — záměr BD-N6.
-3. **B6:** který zmrazený text vyhrává (doporučuju `spec.md` R7).
-4. **B10:** existuje `zasedacka@makemore.cz`? A volný text, nebo výběr ze seznamu?
-
-## Rozhodnutí koordinátora (všechna v `decisions.md`)
-
-BD-N6 statická registrace fail-closed · BD-N7 `LUDONE_ORIGIN` · BD-N8 kontrakt
-`tray:report-facts` (dočasný) · BD-N10 `LUDONE_OAUTH_CLIENT_ID` · BD-N11 kolize logů
-`orca-codex.sh` · BD-N12 B6 stop · BD-N13 dva neopravené nálezy review
-
-## Worktrees
-
-`desktop-b1/b3/b4/b5/b8` = větve otevřených PR · `desktop-b6` = zastavená · `desktop-b7/b9`
-= Codex píše. Všechny mají `node_modules` jako **symlink**.
-🔴 **V hlavním checkoutu NIKDY `git add -A`** — je v něm i souběžná session.
-
-## 🔴 Co se tenhle běh naučil (nejcennější výstup noci)
-
-Všechno je jedna třída: **brána, která nic nenajde, není zelená — je nezměřená.**
-
-1. **„Umí to rozhodnout správně" ≠ „zeptá se toho někdo?"** B3: správné odvození, 92 zelených
-   testů, a lišta by nahrávání neukázala nikdy. Testy chování si obsluhu volaly samy.
-2. **Kritérium „nic se nestalo" má víc příčin.** B1: `disabled === 2` procházelo i tehdy,
-   když systém oprávnění **odepřel** (`granted:0, disabled:2`).
-3. **Spouští test produkční cestu, nebo tu podstrčenou?** B5: konstantní klíč proti duplikaci
-   — dvakrát vykázaný čas — prošel 158 testy, protože se produkční generátor nikdy nespustil.
-4. 🔴 **Strukturální test MUSÍ odstranit komentáře.** Dvakrát za noc: jednou padal na zmínku
-   v komentáři, podruhé kvůli zmínce v komentáři **prošel** — kanárek měřil vlastní větu
-   „`refreshTray()` musí přijít až ZA ním" místo skutečného volání.
-5. **Inventura, která zná jen literál, oslepne u konstanty.** B4 zavedla první kanál
-   pojmenovaný konstantou a bezpečnostní brána ztichla přesně tam, kde dostala co hlídat.
-6. **Vykonavatel si vymyslí hodnotu, když ji nemá kde vzít** — a přizná to v téže odpovědi.
-   Uhodnutý `clientId` **není fail-closed**.
-7. **Klasifikátor chyb se nesmí chytat jmen proměnných.** `ReferenceError:
-   resolveAuthClientId…` se hlásil jako „konfigurace", tedy vada kódu jako vada nastavení.
-
-## Další krok
-
-**Vlna 5 (po obnovení limitů):**
-
-1. ✅ **BD-N13 bod 2 opraven** — počítadlo mutací hlídalo dvě fakta ze čtyř; doplněno
-   o `preparation.cancelled` + test pořadí (přepočet musí být ZA smyčkou). Stoh přebasován,
-   b5 161 · b7 187 · b11 202 testů, vše zelené.
-2. ✅ **Skill `codex-delegace-orchestrace` rozšířen** o pět nových doložených pastí
-   (+129 řádků, snapshot `.bak-*` před editem).
-3. 🔄 **B9b** — zámek přes přihlášení i odhlášení, deadliny, úklid dočasných souborů.
-   Rozhodnutí revidované v BD-N16.
-4. 🔄 **Review druhé vlny** — pět čoček nad b5/b7/b8/b9/b11, které první kolo nevidělo.
-5. ⏳ **BD-N13 bod 1 čeká** na doběhnutí B9b — je na `b4`, nad kterou B9b staví.
-
-**Až bude hotovo:** merge zdola nahoru (b1, b3, b4 → main; pak b5, b8; pak b7, b9;
-nakonec b11 a b9b). **Merge je Danovo rozhodnutí** — masterplán M4 ruší „dotáhni to sám".
+**Odblokuje to jen Dan** (billing = peníze + cizí účet → stopka). Je to první položka
+v `DAN-TODO.md`.
 
 ---
 
-## Vlna 5, druhá půlka — co udělalo adversariální review druhé vlny
+## Kde to stojí
 
-**55 agentů, 15 potvrzených nálezů z 25**, deset skeptici vyvrátili. Vše v
-[`review-2-nalezy.md`](review-2-nalezy.md), včetně vyvrácených a s důvodem.
-
-### ✅ Opraveno
-
-| nález | kde | doloženo |
-|---|---|---|
-| 🔴 **`cancel()` byl po doručení kódu no-op** — uživatel klikl Zrušit a **skončil přihlášený s tokeny na disku** | `b8` → PR #5 | ověřeno reviewerem **spuštěním**; sabotáž `6 failed` |
-| 🔴 **`resolveAuthIssuer` neověřoval hostitele** — prošel libovolný čistý HTTPS origin | `b8` → PR #5 | test dá cizímu originu **platný `clientId`** a stejně čeká odmítnutí |
-| 🔴 **úložiště se ověřovalo až PO výměně tokenu** | `b8` → PR #5 | preflight s `fsync` **před** `openExternal`; sabotáž `9 failed` |
-| **tautologická kontrola retence v `ui-smoke`** | `b11` → PR #9 | 4 sabotáže, statický kanárek na volby |
-| **test čítače přihlášení měřil rozhodnutí, ne zapojení** | `b4` → PR #3 | porovnává parametry funkce s klíči volajícího |
-| **počítadlo mutací hlídalo 2 fakta ze 4** | `b3` → PR #4 | + test pořadí přepočtu vůči smyčce |
-
-### Stoh po dvou konfliktech v `auth.cjs`
-
-Obě strany si přepsaly vrstvu úložiště a měly **neslučitelné signatury**. Rebase rozjel
-orchestrátor, přeeditování dostal Codex s **výčtem invariantů**, dokončení a měření zase
-orchestrátor. Výsledek ověřen **měřením, ne tvrzením**:
-
-`b4 → b8 (131) → b9 (148) → b9b (162)` · `b3 (114) → b5 (161) → b7 (187) → b11 (206)`
-
-🔴 **Čísla testů musí po slučování SEDĚT na součet** — 135 + 13 = 148 a 148 + 14 = 162.
-Když nesedí, něco se při slučování ztratilo a je to vidět dřív než v provozu.
-
-### 🛑 Nálezy, které NEJDOU opravit bez Dana
-
-| co | proč |
+| co | stav |
 |---|---|
-| **čas se nikdy nedostane do fronty** (`enqueueTimeEntry` nemá volajícího) | zapojení nemá vlastníka; B5 ani B7 ho podle §12 nevlastní |
-| **retenční modul nikdo nevolá** | totéž; PR #9 to sám přiznává |
-| **selhání zařazení do fronty se jen zaloguje** | potřebuje reconciliaci na startu — návrh, ne oprava |
+| `main` | `e4c09cd`, čistý, **422 testů** |
+| PR **#25** — export schůzky do jednoho souboru | ✅ hotový, brány lokálně zelené, **čeká na CI** |
+| Codex — onboarding (2 chybějící kroky) | ⚙ běží, worktree `desktop-onboarding` |
+| worktree `desktop-export` | ⚠️ **NEuklizený schválně** — drží větev k PR #25 |
 
----
+## PR #25 — co v něm je a proč je dobrý
 
-## Vlna 6 — měřidla, která četla text, teď spouštějí kód
+Zadání znělo „slep dvě stopy do jednoho souboru se dvěma kanály" a varovalo, že se dva
+nezávislé `MediaRecorder`y během hodinové schůzky rozejdou.
 
-Posledních pět nálezů review byla jedna třída: **testy měřící TEXT místo CHOVÁNÍ.**
+**Codex to nevyřešil, on to odstranil:** mikrofon a systém jdou do jednoho Web Audio grafu
+(`createChannelMerger(2)`, mikrofon vlevo, systém vpravo) a nahrává je **jediný rekordér**.
+Jeden rekordér = jedny hodiny ⇒ drift nemá kde vzniknout. Původní dvě stopy zůstávají
+na disku, export je kopie.
 
-| nález | co se nespouštělo | co se spouští teď |
+🔴 **Kontrakt zůstal nevyplněný** — Codexův job umřel (log stál 46 minut) dřív, než ho
+dopsal. Naměřený rozdíl startů tedy **od něj nemáme**; architekturu jsem posoudil sám
+z diffu. Kdo na to naváže: `rozdilStartu` v `/tmp/beh-noc/export.log` je jen šablona.
+
+### Sabotáže — a nález, který z nich vypadl
+
+| # | co jsem odstranil | výsledek |
 |---|---|---|
-| 9 | přepočet lišty po změně časovače | vyříznuté `runTrackingMutation` + `syncTrackingTray` nad řízenou mutací |
-| 10 | produkční čtení `DESKTOP_TIME_ENABLED` | `getTrackingStore` nad izolovaným `process.env` |
-| 11 | trvanlivost zápisu `casovac.json` | `start → commit → writeStateAtomically` nad async `fs`, **sled událostí** |
-| 12 | že nahrávka skutečně skončí ve frontě | celý `main.cjs` s podstrčeným Electronem, reálná session přes IPC, čtení přes `queue:list` |
-| 13 | produkční čtení obou vypínačů fronty | spuštěné `queueKillswitches()`, včetně **nenastaveného** stavu |
+| S1 | kontrola dvou kanálů v hlavičce Opus | 🔴 správně červená |
+| S2 | systém sveden do levého kanálu | 🔴 správně červená |
+| S3 | strážce rozdílu startů stop | 🟢 **ZELENÁ = nález** |
+| S4 | komentář, který vypadá jako kód | 🟢 podle očekávání |
+| S5 | strážce rozdílu délek stop | 🔴 po dozbrojení |
+| S6 | obě hranice stereo obalu | 🔴 po dozbrojení (2 testy) |
 
-**Sabotáže u obou:** b5 2🔴:1🟢 · b7 3🔴:1🟢. **Produkční kód beze změny** — měnily se jen
-vlastněné testovací soubory.
+**Celá rodina časových bran šla odstranit, aniž si toho jediný test všiml.** Doplněny
+čtyři testy (`tests/recording-export.test.js`), po nich S3, S5 i S6 červenají ze správného
+důvodu. To je ta hodnota sabotážního kola — brána bez testu je jen komentář.
 
-🔴 **Obě povinně zelené sabotáže vkládaly KOMENTÁŘ, který vypadá jako deklarace.** Tenhle
-běh na tom dvakrát uklouzl, pokaždé v opačném směru (jednou test padal na zmínku v komentáři,
-podruhé kvůli zmínce v komentáři prošel) — teď je to doložené z obou stran.
+## 🔴 Past, do které jsem si sám spadl (ať do ní nespadne nástupce)
 
-## Konečný stav stohu
+Přidal jsem ty čtyři testy a **nezacommitoval je**, pak jsem pustil další sabotáž, která
+končí `git checkout -- .` — a testy zmizely. Poznal jsem to jen podle toho, že celkový
+počet spadl zpátky na 428.
 
-```
-main ─┬─ b1 (#2)
-      ├─ b3 (#4, 114) ─ b5 (#6, 181) ─ b7 (#7, 219) ─ b11 (#9, 238)
-      └─ b4 (#3,  87) ─ b8 (#5, 131) ─ b9 (#8, 165) ─ b9b (#10, 179)
-```
+Skill říká „commitni Codexovu práci, než začneš sabotovat". Chybí tam druhá půlka:
+**commitni i to, co jsi přidal ty.** `git checkout -- .` nerozlišuje autora.
 
-🔴 **Čísla musí sedět na součet.** Po každém slučování jsem je kontroloval — je to
-nejlevnější detektor toho, že se při rebase něco ztratilo.
-
-## Z 15 nálezů review: 10 opraveno, 5 čeká na Dana
-
-**Čeká, protože to nejde rozhodnout za něj:** tři díry v zapojení (čas do fronty, volání
-retence, tiché selhání zařazení) · zda retence patří pod `DSK-F015` · a `updateTray`
-v odhlášení, kde je ale **zabudovaná kontrola**, která spadne v okamžiku, kdy se obě
-linie potkají (BD-N20).
+⇒ Kontrola po každé sabotážní smyčce: **souhlasí celkový počet testů s tím před ní?**
 
 ---
 
-# ✅ SLOUČENO DO `main` — 2. 9. 2026
+## První příkazy po probuzení
 
-**Devět stories v `main`, žádný otevřený PR, žádná zbylá větev ani worktree.**
-
-```
-lint EXIT=0 · typecheck EXIT=0 · test:unit EXIT=0
-19 souborů · 325 testů · 1 přeskočený
-```
-
-## Pořadí, ve kterém to šlo bezpečně
-
-Textové „MERGEABLE / CLEAN" u všech devíti PR **byla lež o použitelnosti**. Zkušební
-sloučení nanečisto ukázalo, že union obou linií **neprojde branami** — a to je jediný
-důvod, proč se to nesloučilo rozbité:
-
-| krok | co | doklad |
-|---|---|---|
-| 1 | B1 + celá linie přihlášení | 164 testů zeleně |
-| 2 | B3 + integrační oprava `auth:logout` | 201, sabotáže 3🔴:1🟢 |
-| 3 | B5 + rozřešení konfliktu (atrapa `auth:begin` pryč) | 268 |
-| 4 | B7, přebazovaná se **starou špičkou uvedenou výslovně** | 306 |
-| 5 | B11 | 325 |
-
-🔴 **Počty testů po každém kroku sedí na SOUČET** (202+67=269, 269+38=307, 307+19=326).
-Je to nejlevnější detektor toho, že se při rebase stohu nic neztratilo — a použil jsem ho
-u každého kroku.
-
-## Tři vady, které nemohl najít žádný per-PR review
-
-Vznikají teprve **souběhem** obou linií:
-
-1. `auth:logout` volal `updateTray()`, které B3 ruší → odhlásit se nešlo bez rozbité lišty.
-   **Našla to kontrola napsaná tak, aby nemohla zestárnout** — zelená, dokud B3 chybí,
-   červená v sekundě, kdy přistane.
-2. Linie časovače nesla **atrapu `auth:begin`** → dvojí registrace kanálu → výjimka
-   v Electronu **při startu**, tedy aplikace, která se neotevře.
-3. Inventura IPC kanálů četla **prózu jako kód** — potřetí za tenhle běh táž třída vady.
-
-## Co se ukázalo o slučování stohu
-
-🔴 **`gh pr merge` na stohovaný PR ho sloučí do RODIČE, ne do `main`** (BD-N22). Vypadá to
-jako úspěch: pět PR hlásí `MERGED`, seznam otevřených je prázdný, nic nezčervená — a přitom
-tři čtvrtiny práce na `main` nejsou. Jediné, co to odhalí, je `git merge-base --is-ancestor`.
-
-## Co zůstává na Danovi
-
-Beze změny proti nočnímu reportu: Screen Recording · statický OAuth client · spor o money
-pravidlo v B6 · účet `zasedacka@` pro B10 · tři díry v zapojení. Nově přibylo:
-**`orca-codex.sh` neumí pustit Codex ve worktree** (dnes dvakrát selhal, viz `DAN-TODO.md`).
-
----
-
-# ✅ APLIKACE POPRVÉ BĚŽELA — 2. 9. 2026
-
-**A okamžitě to našlo tři vady, které 331 zelených testů přehlédlo.** To je dnešní hlavní
-výsledek, ne řádky kódu.
-
-## Co se stalo, v pořadí
-
-1. **Aplikace spuštěna** (`npm run build && npm start`) — ikona v liště, panel se načetl.
-2. **Dan si ji otevřel** a hned viděl kalendář, který sám zrušil na approval gate.
-3. **Client ID založen** jedním `curl` (DCR) a uložen mimo git.
-4. **Dan se poprvé přihlásil naostro** — a přihlášení se zahodilo.
-
-## Tři vady, které našlo jen spuštění
-
-| # | vada | proč to testy nechytily |
-|---|---|---|
-| 1 | **zrušený kalendář byl pořád v UI** | odstranění funkce nemá přirozené měřidlo — vrácení `TodayAgenda.jsx` prošlo `328 passed` a čistým lintem |
-| 2 | **přihlášení se zahodilo kvůli chybějícímu JMÉNU** | testy si identitu podstrkovaly; skutečný tvar odpovědi serveru nikdo neviděl |
-| 3 | **retence by nikdy nic nesmazala** | politika se čte z rendereru dřív, než se stihne načíst; harness hodnotu podstrčil |
-
-🔴 **Všechny tři jsou téže povahy: test měřil to, co si sám připravil.** Masterplán proto
-odděluje 🧪 „zelené testy" od ✅ „ověřeno naostro" — dnes se ta hranice poprvé vyplatila.
-
-## Stav
-
-- **`main`: 331 testů**, kalendář odstraněn (PR #14) i s bránou proti návratu.
-- **Client ID**: `ldmcp_oauth_client_prod_v1_…` v `.env.local` (mimo git, ověřeno `git check-ignore`).
-- **Rozhodnutí BD-N28 až BD-N33** zapsaná.
-- **Běží dva Codex panely**: oprava retence (čte se moc brzo) a oprava identity
-  (přihlášení nesmí padat na chybějícím jménu).
-
-## Co brání dokončení
-
-| co | kde |
-|---|---|
-| server nevrací **jméno uživatele** | `ludone-app`, `ludone_ping` — zapsáno v `DAN-TODO.md` |
-| **scope pro odesílání neexistuje** | `ludone-app`; blokuje `DSK-F010` |
-| panel **neodpovídá schválenému designu** | Danovo rozhodnutí: sladit až po zapojení (BD-N31) |
-| `RecordingCard` **nemá unit pokrytí** | změřeno sabotáží, zapsáno |
-
-## Pravidlo pro pokračovatele
-
-🔴 **Nespouštěj druhý Codex job nad `main.cjs`, dokud první neskončí.** Všechna zbývající
-práce v něm sahá do stejného souboru; dva zapisovatelé si vyrobí konflikty při rebase.
-Jeden worktree = jeden zapisovatel platí, ale tady je omezení tvrdší: jeden SOUBOR = jeden job.
-
----
-
-# ✅ PRVNÍ `verified-live` — retence, 2. 9. 2026
-
-**`DSK-F017` je první funkce v projektu, kterou někdo viděl doopravdy fungovat.** Ne zelený
-test — skutečný běh nad skutečnými soubory:
-
-```
-fronta: 10 dní stará položka state=odeslano, obě stopy na disku
-[SONDA] politika= "7 dní po odeslání"     ← přečteno ze skutečného rendereru
-PŘED:  stara-mic.webm  stara-sys.webm
-PO:    (prázdno — total 0)
-fronta: {"schemaVersion":1,"items":[]}
+```bash
+cd /Users/dan/Dev/ClaudeCode/ludone-desktop
+gh run list --limit 3            # jede zase CI? kdyz ano, gh run rerun na #25
+N=$(pgrep -f 'codex exec -C .*desktop-onboarding'|wc -l|tr -d ' ')
+AGE=$(( $(date +%s) - $(stat -f %m /tmp/beh-noc/onboarding.log) ))
+echo "codex: $N procesu, log pred ${AGE}s"
 ```
 
-Mergnuto v PR #15. `main` má **349 testů**.
+🔴 **Log, který stojí přes 20 minut, znamená mrtvý job bez ohledu na počet procesů.**
+Dnes to tak bylo: 2 živé procesy, log 46 minut starý, a práce přitom hotová na disku.
+Postup je pak vždycky stejný: zabít **jen svůj** job (`pkill -f "codex exec -C <cesta>"`,
+nikdy holé `pkill -f codex` — to sedí i na Danovu desktopovou aplikaci ChatGPT),
+`git add -A && git commit` HNED, teprve pak brány.
 
-## Proč to skoro nevyšlo
+V kontraktu onboardingu hledej **`nemyVstup`** a **`blockery`**: když si Codex nevystačil
+bez nového IPC kanálu, měl to napsat jako blocker a krok postavit bez něj.
 
-Codex zapojení napsal se zelenými branami a `+11 testy`. **Review nad diffem zjistilo, že by
-retence nikdy nic nesmazala** — politika se četla z rendereru dřív, než se stihl načíst.
-Sonda v Electronu to ukázala doslova: `IHNED_PO_LOADFILE: {"vysledek": null}`.
+## Co čeká na Dana
 
-⇒ Zelený, zapojený a **mrtvý** kód. Přesně ta třída, kterou tenhle projekt honí celý běh.
+1. **Billing GitHubu** — bez toho se nic nemerguje (výš).
+2. **Spustit aplikaci a podívat se na ikonu v liště** — oprava je v `main` (PR #24),
+   ale nikdo ji neviděl běžet.
+3. Chování při plné kvótě (odmítnout, nikdy nemazat samo) a že přepis musí umět
+   diarizaci a češtinu.
 
-## 🔴 Poučení o MĚŘENÍ, ne o kódu
+## Co je ⛔ neověřeno
 
-Než se podařilo pořídit ten důkaz, **čtyřikrát po sobě byl špatně testovací záznam** — a pokaždé
-to vypadalo jako vada v implementaci:
-
-| co bylo špatně | co to vyžaduje |
-|---|---|
-| `sentAt` jako číslo | **ISO řetězec** — `canonicalTimestampMs` číslo odmítne |
-| ISO s mikrosekundami | přesně **milisekundy** — porovnává se round-trip přes `toISOString()` |
-| jen stopa `microphone` | `trackFiles` chce **obě** (`microphone` i `system`) |
-| fronta v `<kořen>/queue` | `LUDONE_DATA_DIR` mapuje `userData` na **`<kořen>/user-data`** |
-
-**Třikrát jsem byl krok od nahlášení vady, která neexistovala.** Napřed ověř fixture, teprve
-pak obviň implementaci — a když „nic se nestalo", je to stejně často chyba měření jako kódu.
-
-## Otevřený dluh z téhle story
-
-⚠️ Hlavní proces bere politiku mazání souborů **z rendereru**. Fail-closed to drží bezpečné,
-ale směr závislosti je opačný, než jak B3 a B5 postavily zbytek (fakta patří hlavnímu procesu).
-Až vznikne nastavení v hlavním procesu, přesunout.
-
----
-
-# ✅ VŠECHNO ZAPOJENÉ A SLADĚNÉ — 2. 9. 2026 odpoledne
-
-**`main` má 372 testů, nula otevřených PR, nula worktrees, nula zombie procesů.**
-
-| PR | co |
-|---|---|
-| **#14** | odstraněn kalendář zrušený na approval gate + brána proti návratu |
-| **#15** | zapojena retence a zařazení času · ✅ **retence ověřená naostro** |
-| **#16** | přihlášení nepadá na chybějícím jménu · ✅ **přihlášení ověřené naostro** |
-| **#17** | z logu je poznat, jak přihlášení dopadlo, bez úniku tajemství |
-| **#18** | klidový panel sladěn se schváleným designem |
-
-## Dvě funkce mají `verification: verified-live`
-
-1. **`DSK-F017` retence** — 10 dní stará odeslaná nahrávka smazána skutečným během
-2. **`DSK-F003` přihlášení** — token v `~/Library/Application Support/cz.ludone.desktop/auth/oauth.enc`
-
-## Co blokuje zbytek, a je to VŠECHNO na serveru
-
-| co | proč |
-|---|---|
-| **chybí scope pro zápis** | server zná jen `mcp:read` a `mcp:draft`; desktop může frontu plnit, ne vyprazdňovat |
-| **server nevrací jméno** | panel proto píše „připojení neověřeno" |
-| **nginx strop neznámý** | `E5` krok 1, měří se přes SSH — umí to jen Dan |
-| **příjem času nespecifikován** | `E5` řeší jen nahrávky |
-
-Předávací dokument: [`SERVER-CO-POSTAVIT.md`](SERVER-CO-POSTAVIT.md).
-
-## Otevřené na straně desktopu (nic z toho neblokuje)
-
-- `RecordingCard` **nemá unit pokrytí** — změřeno sabotáží
-- **vada `systémový zvuk: Permission denied`** — oprávnění jsou v pořádku, chyba je v kódu panelu
-- **živý OAuth stav** nejde po restartu ověřit bez getteru v `electron/**`
-- **panel je vizuálně prázdný uprostřed** — pevná výška okna 366×792 vs. zeštíhlený obsah
-- chybí fontové soubory Public Sans / Instrument Sans
-
----
-
-# ✅ PR #19 — systémový zvuk nikdy nemohl fungovat (2. 9. 2026)
-
-Poslední vada, kterou bylo vidět na obrazovce. `getDisplayMedia` dorazí do kontroly oprávnění
-jako `permission: "media"` s **prázdným `mediaTypes: []`**, a kontrola vyžadovala pole s právě
-jednou položkou `"audio"` → odmítnuto **dřív, než se zavolal handler pro zachytávání obrazovky**.
-
-⚠️ **V kódu stála větev `if (permission === "display-capture") return true;`, která se nikdy
-neuplatní** — Electron posílá `media`. Ochrana, která vypadala funkčně a skutečnou cestu
-odmítala o řádek níž. **Čtením kódu nenajitelné**; našlo to až spuštění a dvě sondy.
-
-Sabotáže 3🔴:1🟢, všechny tři červené bezpečnostní (pustit video · obejít URL kontrolu ·
-obejít ověření odesílatele). `main`: **378 testů**.
-
-⛔ **Neověřeno naostro** — že se zvuk opravdu nahraje, uvidí až člověk, který spustí nahrávání
-a poslechne si výsledek.
+- **Stereo derivát nikdo neslyšel.** Že jsou kanály v hotovém souboru opravdu oddělené,
+  potvrdí až přehrání skutečné nahrávky.
+- `npm run test:audio` **nejde pustit lokálně** — chce zabalenou `.app` v `release/`.
+  Je to ruční checkpoint na Macu, v sandboxu se nedožene.
+- `ui-smoke` v sandboxu pouštět nesmím (mantinel běhu).

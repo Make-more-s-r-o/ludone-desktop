@@ -1,42 +1,37 @@
 # Co musí udělat Dan — LuDone Desktop
 
-## 🔴 PRVNÍ VĚC PO PROBUZENÍ — ikona v liště je pořád prázdná (nález 2. 9. ráno)
+## 🔴 PRVNÍ VĚC PO PROBUZENÍ — GitHub Actions nám zastavil CI (změřeno 2. 9. v 15:57)
 
-**Aplikace po spuštění nemá v horní liště nic.** Není to nová vada, je to ta stará (V0), která
-**přežila celý noční běh** — protože jsem T1 v srpnu zmrazil kvůli procesu (implementace před
-schváleným specem) a po schválení ji **nikdo nerozmrazil**.
+**Žádný PR se nedá zelený a tím pádem se nedá nic mergnout.** Není to vada v kódu —
+brána se vůbec nespustí. GitHub k tomu říká doslova:
 
-Změřeno teď na `main`:
+> The job was not started because recent account payments have failed or your spending
+> limit needs to be increased. Please check the 'Billing & plans' section in your settings
 
-```
-electron/main.cjs:288
-  const encoded = Buffer.from(traySvg(trayIconName(state))).toString("base64");
-  return nativeImage.createFromDataURL(`data:image/svg+xml;base64,${encoded}`)
-```
+Změřený předěl: **14:30 běh na `main` ještě prošel, v 15:57 už se nespustil.** Zopakoval
+jsem to dvakrát, pokaždé stejně — trvalé, ne výpadek.
 
-Electron 37 **SVG nedekóduje** — změřeno v srpnu naostro: `isEmpty=true`,
-`size={width:0,height:0}`, `toPNG()` vrací 0 bajtů. `new Tray(prázdnýObrázek)` **nehodí výjimku**,
-takže se to nikde neprojeví jako chyba. V liště prostě není nic.
+**Co s tím musíš udělat ty:** Billing & plans na GitHubu (Make-more-s-r-o) — buď dorovnat
+platbu, nebo zvednout spending limit. Je to peníze a cizí účet, takže na to nesahám.
 
-**Oprava existuje a je hotová** — větev `fix/tray-prazdna-ikona` (`ce2bea6`): osm PNG souborů
-v `electron/ikony/` (`idle`, `recording`, `tracking`, `signed-out`, každý i `@2x`) plus brána,
-která volá produkční `trayImage()`, ne kopii logiky.
+**Co to blokuje:** PR **#25** (export schůzky do jednoho souboru) je hotový a čeká otevřený.
+Lokálně mám `lint=0`, `typecheck=0`, `build=0` a **426 zelených testů** — a `npm run gates`
+v CI je přesně `lint && typecheck && test:unit`, tedy totéž. Chybí jen razítko z CI, ne práce.
+🔴 **Nemergoval jsem to** — merge s červenými checky by bylo obcházení brány.
 
-⚠️ **Nemerguj to naslepo.** Ta větev je stará a `main` se od ní hodně rozešel (B3 mezitím
-přesunul autoritu stavu do hlavního procesu). Není to `git merge`, ale **přenesení osmi PNG
-a jedné funkce** do dnešního tvaru. Půl hodiny práce, ne pět minut.
-
-**Proč je to první položka:** je to jediná vada ze všech, kterou uživatel uvidí **dřív než
-cokoli jiného** — při prvním spuštění, ještě než se k čemukoli dostane.
+Až billing spravíš, stačí `gh run rerun` na posledním běhu #25; nic se nemusí dělat znovu.
 
 ---
 
+## ✅ VYŘEŠENO 2. 9. — ikona v liště (bývalá první položka)
 
-Vzniklo 24. 8. 2026 z ultracode analýzy (9 agentů nad kódem, výzkumem a rozhodnutími).
-Tenhle soubor obsahuje **jen to, co za tebe nikdo jiný neudělá.** Všechno ostatní je v `PLAN.md`.
+Prázdná ikona v horní liště je **opravená a v `main`** (PR #24, commit `51d1b5b`): osm PNG
+souborů v `electron/ikony/` a `nativeImage.createFromBuffer` místo SVG, které Electron 37
+nedekóduje.
 
-Pravidlo: agent smí tvrdit, že něco funguje, jen když to změřil. Nic z tohoto seznamu
-se změřit nedá bez tebe — druhé zařízení, sluchátka, restart Macu, peníze, právní rozhodnutí.
+⚠️ **Pořád to ale nikdo neviděl běžet.** Ty jsi mi psal „ikonu v horní liště nevidím" —
+potřebuju od tebe potvrzení, že je po téhle opravě vidět. To je jediná věc, která z 🧪
+udělá ✅.
 
 ---
 
