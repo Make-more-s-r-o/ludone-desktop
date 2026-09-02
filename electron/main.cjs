@@ -4,6 +4,7 @@ const {
   desktopCapturer,
   Tray,
   ipcMain,
+  Menu,
   nativeImage,
   net,
   protocol,
@@ -52,6 +53,8 @@ const PANEL_WIDTH = 366;
 const PANEL_MIN_HEIGHT = 180;
 const PANEL_SCREEN_MARGIN = 8;
 const PANEL_LOAD_TIMEOUT_MS = 5_000;
+const TRAY_SETTLE_DELAY_MS = 2_000;
+const TRAY_COMMAND_CHANNEL = "tray:command";
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
 const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
@@ -68,9 +71,13 @@ let tray;
 let panelWindow;
 let panelContentHeight = PANEL_MIN_HEIGHT;
 let settingsWindow;
+let traySpaceWarningWindow;
 let trayState = "signed-out";
 let trayApplied = false;
+let traySpaceWarningShown = false;
+let trayVisibilityTimer;
 let isQuitting = false;
+const pendingTrayCommands = [];
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -350,6 +357,83 @@ function refreshTray() {
   trayApplied = true;
 }
 
+function trayIsProbablyOutsideStatusArea(bounds, workArea) {
+  if (!bounds || !workArea) return false;
+  if (!Number.isFinite(bounds.x) || !Number.isFinite(bounds.width)) return false;
+  if (!Number.isFinite(workArea.width) || workArea.width <= 0 || bounds.width <= 0) return false;
+
+  // Stavové ikony bydlí v pravé části lišty. Souřadnice končící už před 45 % šířky
+  // primární pracovní plochy odpovídá pozorovanému přidělení do levé oblasti aplikačního
+  // menu, kde macOS položku přijme, ale nenakreslí. Práh je úmyslně konzervativní:
+  // falešné varování u viditelné ikony je horší než mlčení při nejistotě.
+  return bounds.x + bounds.width < workArea.width * 0.45;
+}
+
+function createTraySpaceWarningWindow() {
+  const createdWarningWindow = new BrowserWindow({
+    width: 420,
+    height: 280,
+    minWidth: 420,
+    maxWidth: 420,
+    minHeight: 280,
+    maxHeight: 280,
+    show: false,
+    backgroundColor: "#2f3034",
+    resizable: false,
+    fullscreenable: false,
+    maximizable: false,
+    minimizable: false,
+    title: "LuDone běží",
+    titleBarStyle: "hiddenInset",
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  traySpaceWarningWindow = createdWarningWindow;
+  createdWarningWindow.once("ready-to-show", () => {
+    if (!createdWarningWindow.isDestroyed()) createdWarningWindow.showInactive();
+  });
+  createdWarningWindow.on("closed", () => {
+    if (traySpaceWarningWindow === createdWarningWindow) traySpaceWarningWindow = undefined;
+  });
+  void createdWarningWindow
+    .loadURL("ludone://tray-warning/index.html#tray-space-warning")
+    .catch((error) => {
+      console.error(`[tray] Vysvětlující okno se nepodařilo načíst: ${error.message}`);
+      if (!createdWarningWindow.isDestroyed()) createdWarningWindow.close();
+    });
+}
+
+function checkTrayVisibilityAfterStartup() {
+  if (traySpaceWarningShown || isQuitting || !tray) return;
+
+  let probablyOutsideStatusArea;
+  try {
+    const bounds = tray.getBounds();
+    const workArea = screen.getPrimaryDisplay()?.workArea;
+    probablyOutsideStatusArea = trayIsProbablyOutsideStatusArea(bounds, workArea);
+  } catch {
+    return;
+  }
+  if (!probablyOutsideStatusArea) return;
+
+  // Nastavujeme před vytvořením okna: ani selhání vykreslení nesmí uživatele zasypat
+  // opakovanými pokusy během jediného spuštění.
+  traySpaceWarningShown = true;
+  try {
+    createTraySpaceWarningWindow();
+  } catch (error) {
+    console.error(`[tray] Vysvětlující okno se nepodařilo vytvořit: ${error.message}`);
+  }
+}
+
+function scheduleTrayVisibilityCheck() {
+  trayVisibilityTimer = setTimeout(checkTrayVisibilityAfterStartup, TRAY_SETTLE_DELAY_MS);
+  trayVisibilityTimer.unref?.();
+}
+
 // Renderer sem hlásí FAKTA, která zatím zná jen on — jestli je někdo přihlášený a jestli
 // běží časovač. Stav z nich odvozuje hlavní proces, takže se sem nikdy nesmí dostat jméno
 // ikony. To je celý rozdíl proti smazanému `tray:set-state`: ten posílal ROZHODNUTÍ.
@@ -525,16 +609,21 @@ function createPanelWindow() {
   });
   panelContents.on("render-process-gone", (_event, details) => {
     console.error(`[recording] Renderer skončil: ${JSON.stringify(details)}`);
+    pendingTrayCommands.length = 0;
     forgetOwnerActivity(panelContents.id, "pád rendereru");
   });
   panelContents.on("render-process-gone", () => {
     if (trackingStore) handleRendererGone(trackingStore, {});
   });
   panelContents.once("destroyed", () => {
+    pendingTrayCommands.length = 0;
     forgetOwnerActivity(panelContents.id, "zničení okna");
   });
   panelContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
     if (isMainFrame) {
+      // Rychlá akce patří dokumentu, který byl aktivní při kliknutí. Zejména
+      // staré „Ukončit nahrávání“ se nesmí po reloadu aplikovat na novou session.
+      pendingTrayCommands.length = 0;
       forgetOwnerActivity(panelContents.id, "navigace nebo reload");
     }
   });
@@ -603,15 +692,99 @@ function createSettingsWindow() {
   });
 }
 
+function showPanel() {
+  if (!panelWindow || panelWindow.isDestroyed()) return;
+  positionPanel();
+  panelWindow.show();
+  panelWindow.focus();
+}
+
 function togglePanel() {
   if (!panelWindow) return;
   if (panelWindow.isVisible()) {
     panelWindow.hide();
   } else {
-    positionPanel();
-    panelWindow.show();
-    panelWindow.focus();
+    showPanel();
   }
+}
+
+function queueTrayCommand(command) {
+  if (!panelWindow || panelWindow.isDestroyed() || panelWindow.webContents.isDestroyed()) {
+    return false;
+  }
+  pendingTrayCommands.push(command);
+  try {
+    // Událost pouze probudí preload. Samotný příkaz si renderer vyzvedne přes
+    // validovaný handle níž, takže ho nemůže podvrhnout jiné okno.
+    panelWindow.webContents.send(TRAY_COMMAND_CHANNEL);
+    return true;
+  } catch (error) {
+    pendingTrayCommands.pop();
+    console.error(`[tray] Rychlou akci se nepodařilo předat panelu: ${error.message}`);
+    return false;
+  }
+}
+
+function openLuDoneInBrowser() {
+  let origin;
+  try {
+    origin = resolveAuthIssuer(process.env);
+  } catch (error) {
+    console.error(`[tray] LuDone nelze otevřít: ${error.message}`);
+    return;
+  }
+  void Promise.resolve(shell.openExternal(origin)).catch((error) => {
+    console.error(`[tray] LuDone nelze otevřít: ${error.message}`);
+  });
+}
+
+function trayContextMenuTemplate() {
+  return [
+    {
+      label: "Ukončit nahrávání",
+      accelerator: "Control+Option+R",
+      enabled: hasLiveRecording(),
+      click: () => queueTrayCommand("stop-recording"),
+    },
+    {
+      label: "Spustit LuTrack",
+      accelerator: "Control+Option+T",
+      enabled: appState.trackingOwners.size === 0,
+      click: () => queueTrayCommand("start-tracking"),
+    },
+    { type: "separator" },
+    {
+      label: "Otevřít panel",
+      accelerator: "Control+Option+L",
+      click: showPanel,
+    },
+    {
+      label: "Otevřít LuDone v prohlížeči",
+      click: openLuDoneInBrowser,
+    },
+    { type: "separator" },
+    {
+      label: "Nastavení…",
+      accelerator: "CommandOrControl+,",
+      click: createSettingsWindow,
+    },
+    {
+      label: "O aplikaci",
+      click: () => app.showAboutPanel(),
+    },
+    { type: "separator" },
+    {
+      label: "Ukončit LuDone",
+      accelerator: "CommandOrControl+Q",
+      click: () => app.quit(),
+    },
+  ];
+}
+
+function showTrayContextMenu() {
+  if (!tray) return;
+  const menu = Menu.buildFromTemplate(trayContextMenuTemplate());
+  tray.popUpContextMenu(menu);
 }
 
 function installMediaHandlers() {
@@ -1110,6 +1283,14 @@ onValidated("tray:report-facts", ["panel"], (event, facts) => {
   }
 });
 handleValidated("tray:get-state", ["panel", "settings"], () => trayState);
+handleValidated(TRAY_COMMAND_CHANNEL, ["panel"], (_event, ...extraPayload) => {
+  if (extraPayload.length > 0) {
+    throw new TypeError("Kanál rychlé akce nepřijímá data z rendereru");
+  }
+  // Jedna atomická dávka uchová pořadí a umožní nově načtenému preloadu
+  // vyzvednout i události, jejichž probouzecí zpráva přišla před registrací listeneru.
+  return pendingTrayCommands.splice(0);
+});
 handleValidated("test:click-tray", ["panel"], () => {
   if (!IS_TEST_RUN || !tray || !panelWindow) return { allowed: false, visible: false };
   tray.emit("click");
@@ -1769,11 +1950,7 @@ handleValidated("test:quit", ["panel"], (event) => {
 });
 
 app.on("second-instance", () => {
-  if (panelWindow) {
-    positionPanel();
-    panelWindow.show();
-    panelWindow.focus();
-  }
+  showPanel();
 });
 
 app.whenReady().then(async () => {
@@ -1783,6 +1960,8 @@ app.whenReady().then(async () => {
   tray = new Tray(trayImage(trayState));
   tray.setTitle("");
   tray.on("click", togglePanel);
+  tray.on("right-click", showTrayContextMenu);
+  scheduleTrayVisibilityCheck();
   refreshTray();
   const panelStartup = createPanelWindow();
   // Otevřený panel nesmí po změně rozlišení, pracovního prostoru ani monitoru
@@ -1806,6 +1985,8 @@ app.on("activate", () => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  clearTimeout(trayVisibilityTimer);
+  trayVisibilityTimer = undefined;
 });
 
 app.on("window-all-closed", () => {

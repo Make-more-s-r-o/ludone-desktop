@@ -569,6 +569,71 @@ describe("schválený klidový panel", () => {
     }
   });
 
+  it("příkaz z kontextového menu spustí LuTrack bez otevírání panelové akce", async () => {
+    let deliverCommand;
+    const unsubscribe = vi.fn();
+    const onTrayCommand = vi.fn((listener) => {
+      deliverCommand = listener;
+      return unsubscribe;
+    });
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      ludone: {
+        hasAuthSession: vi.fn().mockResolvedValue(true),
+        onTrayCommand,
+      },
+    });
+
+    try {
+      await React.act(async () => deliverCommand("start-tracking"));
+
+      expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).not.toBeNull();
+      expect(onTrayCommand).toHaveBeenCalledOnce();
+    } finally {
+      await panel.cleanup();
+    }
+    expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+
+  it("rychlou akci přijatou během onboardingu později samovolně nespustí", async () => {
+    let deliverCommand;
+    const onTrayCommand = vi.fn((listener) => {
+      deliverCommand = listener;
+      return vi.fn();
+    });
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      onboardingComplete: false,
+      ludone: {
+        beginAuth: vi.fn().mockResolvedValue({ ok: true, user: USER }),
+        onTrayCommand,
+        requestPermission: vi.fn().mockResolvedValue({ status: "granted", granted: true }),
+      },
+    });
+    const click = async (element) => React.act(async () => {
+      element.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+    });
+
+    try {
+      await React.act(async () => deliverCommand("start-tracking"));
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Začít")));
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Přihlásit v prohlížeči")));
+      for (const permissionButton of [...panel.document.querySelectorAll('[data-testid="permission-action"]')]) {
+        await click(permissionButton);
+      }
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Pokračovat")));
+      await continueThroughRecordingTest(panel, click);
+      await click([...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Otevřít můj panel")));
+
+      expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
+      expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).toBeNull();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("chybu startu nahrávání neskrývá před vidícím uživatelem", async () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
 

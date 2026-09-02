@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, TimerIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
 
 const PROJECTS = ["LuDone Desktop", "Web · klientská zóna", "Interní provoz"];
 
-export function TrackingCard({ onActivityChange, todaySummary = null }) {
+export function TrackingCard({ onActivityChange, todaySummary = null, trayCommand = null }) {
   const [project, setProject] = useState(PROJECTS[0]);
   const [description, setDescription] = useState("");
   const [active, setActive] = useState(false);
   const [startedAt, setStartedAt] = useState(null);
   const [lastMessage, setLastMessage] = useState("");
+  const lastTrayCommandId = useRef(null);
   const elapsed = useElapsedTime(active, startedAt);
 
   function toggleTracking() {
@@ -27,6 +28,16 @@ export function TrackingCard({ onActivityChange, todaySummary = null }) {
   useEffect(() => {
     onActivityChange({ active, project, description });
   }, [active, description, onActivityChange, project]);
+
+  useEffect(() => {
+    if (!trayCommand || trayCommand.id === lastTrayCommandId.current) return;
+    lastTrayCommandId.current = trayCommand.id;
+    if (trayCommand.name === "start-tracking" && !active) {
+      setLastMessage("");
+      setStartedAt(Date.now());
+      setActive(true);
+    }
+  }, [active, trayCommand]);
 
   return (
     <section
