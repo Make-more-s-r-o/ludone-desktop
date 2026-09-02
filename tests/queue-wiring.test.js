@@ -203,6 +203,11 @@ function fakeElectron(userDataPath, {
       handle: vi.fn(),
       registerSchemesAsPrivileged: vi.fn(),
     },
+    safeStorage: {
+      decryptString: vi.fn((encrypted) => encrypted.toString("utf8")),
+      encryptString: vi.fn((value) => Buffer.from(value, "utf8")),
+      isEncryptionAvailable: vi.fn(() => true),
+    },
     screen: {
       getDisplayNearestPoint: vi.fn(() => ({
         workArea: { x: 0, y: 0, width: 1_440, height: 900 },
@@ -258,6 +263,7 @@ function fakeElectron(userDataPath, {
 /**
  * @param {{
  *   applyRetention?: (...args: any[]) => Promise<any>,
+ *   createLogoutController?: (...args: any[]) => any,
  *   createOutboundQueueStore?: (...args: any[]) => any,
  *   deferPanelLoad?: boolean,
  *   deferSettingsRead?: boolean,
@@ -270,6 +276,7 @@ function fakeElectron(userDataPath, {
  */
 async function loadMain({
   applyRetention,
+  createLogoutController,
   createOutboundQueueStore,
   deferPanelLoad = false,
   deferSettingsRead = false,
@@ -292,6 +299,9 @@ async function loadMain({
   const retentionModule = actualRequire("./retention.cjs");
   const injectedRequire = (specifier) => {
     if (specifier === "electron") return harness.electron;
+    if (specifier === "./auth.cjs" && createLogoutController) {
+      return { ...actualRequire("./auth.cjs"), createLogoutController };
+    }
     if (specifier === "./queue.cjs" && (createOutboundQueueStore || loadQueue)) {
       return {
         ...queueStoreModule,
@@ -394,6 +404,231 @@ async function waitForQueuePump(harness) {
     )).toBe(true);
   });
 }
+
+/** @param {unknown} [invokeResult] */
+function loadPreload(invokeResult = true) {
+  let exposedApi;
+  const invoke = vi.fn(async () => invokeResult);
+  const evaluatePreload = Function(
+    "require",
+    `"use strict";\n${preloadSource}`,
+  );
+  evaluatePreload((specifier) => {
+    if (specifier !== "electron") throw new Error(`Neočekávaný preload modul: ${specifier}`);
+    return {
+      contextBridge: {
+        exposeInMainWorld(name, api) {
+          if (name !== "ludone") throw new Error(`Neočekávaný název mostu: ${name}`);
+          exposedApi = api;
+        },
+      },
+      ipcRenderer: { invoke, send: vi.fn() },
+    };
+  });
+  return { api: exposedApi, invoke };
+}
+
+describe("zjištění uložené OAuth session", () => {
+  it("hlavní proces vrací pro chybějící, platnou a poškozenou session jen boolean", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const hasSession = harness.ipcHandlers.get("auth:has-session");
+
+    expect(hasSession).toBeTypeOf("function");
+
+    const missing = await hasSession(event);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    const completeMetadata = {
+      v: 1,
+      issuer: "https://app.ludone.cz",
+      clientId: "desktop-client",
+      resource: "https://app.ludone.cz/api/mcp",
+      scope: "mcp:read",
+    };
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...completeMetadata,
+      accessToken: "TAJNY-ACCESS-TOKEN",
+    })));
+    const accessTokenOnly = await hasSession(event);
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...completeMetadata,
+      refreshToken: "TAJNY-REFRESH-TOKEN",
+    })));
+    const refreshTokenOnly = await hasSession(event);
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...completeMetadata,
+      accessToken: "",
+      refreshToken: "",
+    })));
+    const withoutToken = await hasSession(event);
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      v: 1,
+      issuer: "https://app.ludone.cz",
+      accessToken: "TOKEN-BEZ-METADAT",
+    })));
+    const withoutMetadata = await hasSession(event);
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...completeMetadata,
+      issuer: "http://app.ludone.cz",
+      accessToken: "TOKEN-OD-NEPLATNEHO-ISSUERA",
+    })));
+    const invalidIssuer = await hasSession(event);
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...completeMetadata,
+      v: 2,
+      accessToken: "TOKEN-NEZNAME-VERZE",
+    })));
+    const unknownVersion = await hasSession(event);
+    await writeFile(tokenPath, Buffer.from("poškozený blob", "utf8"));
+    const damaged = await hasSession(event);
+
+    const results = [
+      missing,
+      accessTokenOnly,
+      refreshTokenOnly,
+      withoutToken,
+      withoutMetadata,
+      invalidIssuer,
+      unknownVersion,
+      damaged,
+    ];
+    expect(results).toEqual([false, true, true, false, false, false, false, false]);
+    expect(results
+      .every((value) => typeof value === "boolean")).toBe(true);
+    expect(JSON.stringify(results)).not.toContain("TAJNY");
+  });
+
+  it("při nedostupném bezpečném úložišti selže zavřeně", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const hasSession = harness.ipcHandlers.get("auth:has-session");
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      v: 1,
+      issuer: "https://app.ludone.cz",
+      clientId: "desktop-client",
+      resource: "https://app.ludone.cz/api/mcp",
+      scope: "mcp:read",
+      accessToken: "TOKEN-V-NEDOSTUPNEM-ULOZISTI",
+    })));
+    harness.electron.safeStorage.isEncryptionAvailable.mockReturnValue(false);
+    await expect(hasSession(event)).resolves.toBe(false);
+
+    harness.electron.safeStorage.isEncryptionAvailable.mockImplementation(() => {
+      throw new Error("Keychain není dostupný");
+    });
+
+    expect(hasSession).toBeTypeOf("function");
+    await expect(hasSession(event)).resolves.toBe(false);
+  });
+
+  it("kanál odmítne jiné okno stejným validačním wrapperem jako ostatní", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const hasSession = harness.ipcHandlers.get("auth:has-session");
+    const foreignContents = {
+      getURL: () => "https://utocnik.example/",
+      isDestroyed: () => false,
+      mainFrame: {},
+    };
+
+    expect(hasSession).toBeTypeOf("function");
+    expect(() => hasSession({ sender: foreignContents, senderFrame: foreignContents.mainFrame }))
+      .toThrow(/nedůvěryhodný odesílatel/);
+  });
+
+  it("během souběžného odhlášení nikdy nevrátí zastaralé true", async () => {
+    let finishLogout;
+    const logoutPending = new Promise((resolve) => { finishLogout = resolve; });
+    const createLogoutController = vi.fn(() => ({ logout: () => logoutPending }));
+    const harness = await loadMain({ createLogoutController });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      v: 1,
+      issuer: "https://app.ludone.cz",
+      clientId: "desktop-client",
+      resource: "https://app.ludone.cz/api/mcp",
+      scope: "mcp:read",
+      accessToken: "TOKEN-PRED-ODHLASENIM",
+    })));
+
+    const logout = harness.ipcHandlers.get("auth:logout")(event);
+    await expect(harness.ipcHandlers.get("auth:has-session")(event)).resolves.toBe(false);
+    finishLogout({ signedOutLocally: false, serverRevoked: false, reason: "offline" });
+    await logout;
+    await expect(harness.ipcHandlers.get("auth:has-session")(event)).resolves.toBe(true);
+  });
+
+  it("rozpracované čtení po dokončeném odhlášení nevrátí zastaralé true", async () => {
+    const createLogoutController = vi.fn(() => ({
+      logout: vi.fn(async () => ({
+        signedOutLocally: false,
+        serverRevoked: false,
+        reason: "offline",
+      })),
+    }));
+    const harness = await loadMain({ createLogoutController });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      v: 1,
+      issuer: "https://app.ludone.cz",
+      clientId: "desktop-client",
+      resource: "https://app.ludone.cz/api/mcp",
+      scope: "mcp:read",
+      accessToken: "TOKEN-PRED-ODHLASENIM",
+    })));
+
+    let reportReadStarted;
+    let releaseRead;
+    const readStarted = new Promise((resolve) => { reportReadStarted = resolve; });
+    const readReleased = new Promise((resolve) => { releaseRead = resolve; });
+    const encryptedSession = await readFile(tokenPath);
+    const fsPromises = actualRequire("node:fs").promises;
+    const readSpy = vi.spyOn(fsPromises, "readFile").mockImplementation(async (filePath) => {
+      if (filePath !== tokenPath) throw new Error(`Neočekávané čtení: ${filePath}`);
+      reportReadStarted();
+      await readReleased;
+      return encryptedSession;
+    });
+
+    try {
+      const sessionResult = harness.ipcHandlers.get("auth:has-session")(event);
+      await readStarted;
+      await harness.ipcHandlers.get("auth:logout")(event);
+      releaseRead();
+      await expect(sessionResult).resolves.toBe(false);
+    } finally {
+      releaseRead();
+      readSpy.mockRestore();
+    }
+  });
+
+  it("preload volá getter bez argumentů a odpověď nijak nerozšiřuje", async () => {
+    const { api, invoke } = loadPreload();
+    const untrusted = loadPreload({ accessToken: "TOKEN-Z-MAIN" });
+
+    await expect(api.hasAuthSession()).resolves.toBe(true);
+    expect(invoke).toHaveBeenCalledExactlyOnceWith("auth:has-session");
+    const untrustedResult = await untrusted.api.hasAuthSession();
+    expect(untrustedResult).toBe(false);
+    expect(JSON.stringify(untrustedResult)).not.toContain("TOKEN-Z-MAIN");
+    expect(untrusted.invoke).toHaveBeenCalledExactlyOnceWith("auth:has-session");
+  });
+});
 
 describe("produkční zapojení odchozí fronty", () => {
   it("hlavní proces načítá modul fronty ze src/lib", () => {

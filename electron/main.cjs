@@ -21,6 +21,7 @@ const {
   createAuthController,
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
+  tokenSessionFilePath,
 } = require("./auth.cjs");
 const {
   createOutboundQueueStore,
@@ -266,6 +267,8 @@ let permissionPromptsInFlight = 0;
 // Pokusy evidujeme čítačem, protože dvě souběžná přihlášení mohou skončit v jiném
 // pořadí; boolean by panel uvolnil už při dokončení prvního z nich.
 let authAttemptsInFlight = 0;
+let authLogoutsInFlight = 0;
+let authSessionGeneration = 0;
 const activeAuthAttempts = new Set();
 const AUTH_CANCEL_CHANNEL = "auth:cancel";
 
@@ -1308,6 +1311,50 @@ const beginAuth = createAuthBeginHandler(createAuthController)({
   shell,
 });
 
+async function hasStoredAuthSession() {
+  try {
+    const generation = authSessionGeneration;
+    if (authLogoutsInFlight > 0 || safeStorage?.isEncryptionAvailable?.() !== true) return false;
+    const encrypted = await fs.promises.readFile(tokenSessionFilePath(app));
+    const sessionValue = safeStorage.decryptString(encrypted);
+    const storedSession = JSON.parse(sessionValue);
+    if (!storedSession || typeof storedSession !== "object" || Array.isArray(storedSession)) {
+      return false;
+    }
+    const hasAccessToken = typeof storedSession.accessToken === "string"
+      && storedSession.accessToken.length > 0;
+    const hasRefreshToken = typeof storedSession.refreshToken === "string"
+      && storedSession.refreshToken.length > 0;
+    const hasRequiredMetadata = [
+      storedSession.clientId,
+      storedSession.resource,
+      storedSession.scope,
+    ].every((value) => typeof value === "string" && value.length > 0);
+    const issuer = new URL(storedSession.issuer);
+    const hasValidIssuer = issuer.protocol === "https:"
+      && issuer.username === ""
+      && issuer.password === ""
+      && issuer.search === ""
+      && issuer.hash === "";
+    return authLogoutsInFlight === 0
+      && generation === authSessionGeneration
+      && storedSession.v === 1
+      && hasRequiredMetadata
+      && hasValidIssuer
+      && (hasAccessToken || hasRefreshToken);
+  } catch {
+    return false;
+  }
+}
+
+handleValidated("auth:has-session", ["panel"], async () => {
+  try {
+    return (await hasStoredAuthSession()) === true;
+  } catch {
+    return false;
+  }
+});
+
 handleValidated("auth:begin", ["panel"], async () => {
   const attempt = new AbortController();
   activeAuthAttempts.add(attempt);
@@ -1334,24 +1381,30 @@ const logoutAuthController = createLogoutController({
   logger: console,
 });
 handleValidated("auth:logout", ["panel"], async () => {
-  const result = await logoutAuthController.logout();
-  if (result.signedOutLocally) {
-    try {
-      // Hlavní proces po B3 stav lišty NENASTAVUJE, jen mění fakt a nechá ho odvodit.
-      // Kdyby se tu ikona přepsala natvrdo, přebila by běžící nahrávku a lišta by
-      // tvrdila „odhlášeno" nad session, která pořád píše na disk.
-      appState.signedIn = false;
-      refreshTray();
-    } catch (error) {
+  authSessionGeneration += 1;
+  authLogoutsInFlight += 1;
+  try {
+    const result = await logoutAuthController.logout();
+    if (result.signedOutLocally) {
       try {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(`[auth] Stav ikony po odhlášení se nepodařilo změnit: ${message}`);
-      } catch {
-        // Diagnostika stavu ikony nesmí změnit hodnotový výsledek odhlášení.
+        // Hlavní proces po B3 stav lišty NENASTAVUJE, jen mění fakt a nechá ho odvodit.
+        // Kdyby se tu ikona přepsala natvrdo, přebila by běžící nahrávku a lišta by
+        // tvrdila „odhlášeno" nad session, která pořád píše na disk.
+        appState.signedIn = false;
+        refreshTray();
+      } catch (error) {
+        try {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error(`[auth] Stav ikony po odhlášení se nepodařilo změnit: ${message}`);
+        } catch {
+          // Diagnostika stavu ikony nesmí změnit hodnotový výsledek odhlášení.
+        }
       }
     }
+    return result;
+  } finally {
+    authLogoutsInFlight -= 1;
   }
-  return result;
 });
 
 const requestPermission = createPermissionRequestHandler({ systemPreferences, shell });
