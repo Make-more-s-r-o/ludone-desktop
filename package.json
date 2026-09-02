@@ -9,6 +9,7 @@
     "build": "vite build",
     "start": "electron .",
     "package:mac": "npm run build && node scripts/package-mac.mjs",
+    "progress": "node scripts/desktop-progress.mjs",
     "test:audio": "node scripts/audio-smoke.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p jsconfig.json",

@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>LuDone Desktop — stav vývoje</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: oklch(0.185 0.012 262);
+      --card: oklch(0.235 0.012 262);
+      --raised: oklch(0.265 0.012 262);
+      --sunken: oklch(0.16 0.012 262);
+      --hair: oklch(0.305 0.013 262);
+      --subtle: oklch(0.66 0.012 262);
+      --muted: oklch(0.75 0.01 262);
+      --text: oklch(0.925 0.005 262);
+      --strong: oklch(0.975 0.003 262);
+      --accent: oklch(0.72 0.14 268);
+      --accent-t: color-mix(in oklab, var(--accent) 15%, transparent);
+      --accent-r: color-mix(in oklab, var(--accent) 38%, transparent);
+      --ok: oklch(0.78 0.11 178);
+      --ok-t: color-mix(in oklab, var(--ok) 12%, transparent);
+      --ok-r: color-mix(in oklab, var(--ok) 34%, transparent);
+      --wait: oklch(0.8 0.13 76);
+      --wait-t: color-mix(in oklab, var(--wait) 13%, transparent);
+      --wait-r: color-mix(in oklab, var(--wait) 34%, transparent);
+      --bad: oklch(0.75 0.14 34);
+      --bad-t: color-mix(in oklab, var(--bad) 12%, transparent);
+      --bad-r: color-mix(in oklab, var(--bad) 34%, transparent);
+      --shadow: rgb(0 0 0 / 32%);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        color-scheme: light;
+        --page: oklch(0.975 0.005 85);
+        --card: oklch(0.998 0.002 85);
+        --raised: oklch(0.955 0.006 85);
+        --sunken: oklch(0.935 0.007 85);
+        --hair: oklch(0.86 0.01 262);
+        --subtle: oklch(0.49 0.018 262);
+        --muted: oklch(0.4 0.017 262);
+        --text: oklch(0.27 0.017 262);
+        --strong: oklch(0.19 0.018 262);
+        --accent: oklch(0.49 0.17 268);
+        --ok: oklch(0.45 0.12 178);
+        --wait: oklch(0.51 0.13 76);
+        --bad: oklch(0.53 0.17 34);
+        --shadow: rgb(44 45 54 / 12%);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --page: oklch(0.185 0.012 262);
+      --card: oklch(0.235 0.012 262);
+      --raised: oklch(0.265 0.012 262);
+      --sunken: oklch(0.16 0.012 262);
+      --hair: oklch(0.305 0.013 262);
+      --subtle: oklch(0.66 0.012 262);
+      --muted: oklch(0.75 0.01 262);
+      --text: oklch(0.925 0.005 262);
+      --strong: oklch(0.975 0.003 262);
+      --accent: oklch(0.72 0.14 268);
+      --ok: oklch(0.78 0.11 178);
+      --wait: oklch(0.8 0.13 76);
+      --bad: oklch(0.75 0.14 34);
+      --shadow: rgb(0 0 0 / 32%);
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --page: oklch(0.975 0.005 85);
+      --card: oklch(0.998 0.002 85);
+      --raised: oklch(0.955 0.006 85);
+      --sunken: oklch(0.935 0.007 85);
+      --hair: oklch(0.86 0.01 262);
+      --subtle: oklch(0.49 0.018 262);
+      --muted: oklch(0.4 0.017 262);
+      --text: oklch(0.27 0.017 262);
+      --strong: oklch(0.19 0.018 262);
+      --accent: oklch(0.49 0.17 268);
+      --ok: oklch(0.45 0.12 178);
+      --wait: oklch(0.51 0.13 76);
+      --bad: oklch(0.53 0.17 34);
+      --shadow: rgb(44 45 54 / 12%);
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--page); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
+      font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-underline-offset: 0.2em; }
+    a:hover { color: var(--strong); }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--strong);
+      font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+    }
+    p { margin: 0; }
+    ul { margin: 0; padding-left: 1.2rem; }
+    li + li { margin-top: 0.45rem; }
+    code {
+      padding: 0.08em 0.34em;
+      border: 1px solid var(--hair);
+      border-radius: 4px;
+      background: var(--sunken);
+      color: var(--strong);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.88em;
+    }
+    .skip-link {
+      position: fixed;
+      z-index: 20;
+      top: 10px;
+      left: 10px;
+      translate: 0 -150%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--strong);
+      color: var(--page);
+    }
+    .skip-link:focus { translate: 0; }
+    .wrap { width: min(1340px, calc(100% - 56px)); margin: 0 auto; }
+    .topbar {
+      display: flex;
+      min-height: 64px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border-bottom: 1px solid var(--hair);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--strong); font-weight: 650; }
+    .brand-mark {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--page);
+      font-weight: 800;
+    }
+    .theme-toggle {
+      min-height: 40px;
+      padding: 0 13px;
+      border: 1px solid var(--hair);
+      border-radius: 10px;
+      background: var(--card);
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .hero { padding: 64px 0 42px; }
+    .eyebrow {
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    h1 { max-width: 18ch; font-size: clamp(38px, 6vw, 72px); font-weight: 750; line-height: 1.02; }
+    .hero-lead { max-width: 72ch; margin-top: 18px; color: var(--muted); font-size: 18px; }
+    .hero-meta { margin-top: 16px; color: var(--subtle); font-size: 12px; }
+    .truth-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .truth-card {
+      min-height: 144px;
+      padding: 18px;
+      border: 1px solid var(--hair);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 0 14px 38px -28px var(--shadow);
+    }
+    .truth-card strong { display: block; color: var(--strong); font-size: 36px; line-height: 1; }
+    .truth-card h2 { margin-top: 12px; font-size: 16px; }
+    .truth-card p { margin-top: 6px; color: var(--subtle); font-size: 12px; }
+    .truth-live { border-color: var(--ok-r); background: var(--ok-t); }
+    .truth-live h2 { color: var(--ok); }
+    .truth-tests { border-color: var(--accent-r); background: var(--accent-t); }
+    .truth-tests h2 { color: var(--accent); }
+    .truth-unverified { border-color: var(--bad-r); background: var(--bad-t); }
+    .truth-unverified h2 { color: var(--bad); }
+    .summary-footnote { display: block; margin-top: 10px; color: var(--wait); font-size: 12px; }
+    section { padding: 44px 0; border-top: 1px solid var(--hair); }
+    .section-head { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1.1fr); gap: 38px; }
+    h2 { font-size: 26px; font-weight: 650; }
+    .section-lead { max-width: 76ch; color: var(--muted); font-size: 15.5px; }
+    .story-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 26px; }
+    .story-card, .fact-card, .build-card, .attention-card {
+      padding: 18px;
+      border: 1px solid var(--hair);
+      border-radius: 14px;
+      background: var(--card);
+    }
+    .story-card h3, .build-card h3, .attention-card h3 { font-size: 17px; }
+    .story-card p, .story-card ul, .build-card p, .attention-card ul { margin-top: 10px; color: var(--muted); }
+    .story-target { border-color: var(--accent-r); }
+    .story-out { background: var(--sunken); }
+    .story-deferred { border-color: var(--wait-r); background: var(--wait-t); }
+    .design-note {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid var(--accent-r);
+      border-radius: 12px;
+      background: var(--accent-t);
+      color: var(--muted);
+    }
+    .design-note strong { color: var(--strong); }
+    .current-phase {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2px 16px;
+      align-items: baseline;
+      margin-top: 26px;
+      padding: 14px 16px;
+      border: 1px solid var(--accent-r);
+      border-radius: 12px;
+      background: var(--accent-t);
+    }
+    .current-phase span {
+      color: var(--accent);
+      font-size: 10.5px;
+      font-weight: 750;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    .current-phase strong {
+      color: var(--strong);
+      font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 17px;
+    }
+    .current-phase p { grid-column: 2; color: var(--muted); font-size: 12px; }
+    .lifecycle {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(132px, 1fr));
+      gap: 9px;
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+      overflow-x: auto;
+      scrollbar-color: var(--hair) transparent;
+    }
+    .phase {
+      position: relative;
+      min-height: 184px;
+      padding: 14px;
+      border: 1px solid var(--hair);
+      border-radius: 12px;
+      background: var(--card);
+    }
+    .phase-number { color: var(--subtle); font: 700 11px/1 ui-monospace, monospace; }
+    .phase-state {
+      display: block;
+      margin-top: 20px;
+      color: var(--subtle);
+      font-size: 10px;
+      font-weight: 750;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    .phase h3 { margin-top: 5px; font-size: 15px; }
+    .phase p { margin-top: 8px; color: var(--subtle); font-size: 11.5px; line-height: 1.45; }
+    .phase-uzavreno { border-color: var(--accent-r); }
+    .phase-uzavreno .phase-state { color: var(--accent); }
+    .phase-aktualni { border-color: var(--accent); background: var(--accent-t); box-shadow: inset 0 3px 0 var(--accent); }
+    .phase-aktualni .phase-state, .phase-aktualni h3 { color: var(--accent); }
+    .phase-ceka { background: var(--sunken); }
+    .fact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 26px; }
+    .fact-card { min-height: 150px; }
+    .fact-card .fact-label {
+      display: block;
+      color: var(--subtle);
+      font-size: 10.5px;
+      font-weight: 750;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    .fact-card strong { display: block; margin-top: 12px; color: var(--strong); font-size: clamp(21px, 3vw, 31px); line-height: 1.1; }
+    .fact-card p { margin-top: 9px; color: var(--subtle); font-size: 12px; }
+    .fact-unmeasured { border-color: var(--wait-r); background: var(--wait-t); }
+    .fact-unmeasured strong { color: var(--wait); font-size: 25px; }
+    .pr-list { margin-top: 12px; color: var(--muted); font-size: 12px; }
+    .build-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 26px; }
+    .build-card { min-height: 220px; }
+    .card-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .build-card h3 { margin-top: 16px; }
+    .build-card .card-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hair); color: var(--subtle); font-size: 12px; }
+    .feature-id { color: var(--accent); font: 700 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .table-shell { margin-top: 26px; overflow-x: auto; border: 1px solid var(--hair); border-radius: 14px; background: var(--card); }
+    caption {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    table { width: 100%; min-width: 1110px; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 14px 12px; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; }
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--sunken);
+      color: var(--subtle);
+      font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    tbody tr[data-verification="verified-live"] { box-shadow: inset 4px 0 0 var(--ok); }
+    tbody tr[data-verification="tests-green"] { box-shadow: inset 4px 0 0 var(--accent); }
+    tbody tr[data-verification="unverified"] { box-shadow: inset 4px 0 0 var(--bad); }
+    tbody tr[data-verification="missing"] { box-shadow: inset 4px 0 0 var(--wait); }
+    tbody tr:hover { background: var(--raised); }
+    tbody th { width: 265px; padding-left: 18px; font-weight: 400; }
+    .feature-name { display: block; margin-top: 7px; color: var(--strong); font-size: 14px; font-weight: 650; line-height: 1.35; }
+    .mobile-verification { display: none; margin-top: 9px; }
+    .risk { display: block; margin-top: 7px; color: var(--subtle); font-size: 10.5px; }
+    .axis {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 8px;
+      border: 1px solid var(--hair);
+      border-radius: 6px;
+      background: var(--sunken);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+    .axis-live { border-color: var(--ok-r); background: var(--ok-t); color: var(--ok); }
+    .axis-tests, .axis-active, .axis-approved, .axis-merged { border-color: var(--accent-r); background: var(--accent-t); color: var(--accent); }
+    .axis-unverified, .axis-rejected { border-color: var(--bad-r); background: var(--bad-t); color: var(--bad); }
+    .axis-missing, .axis-draft { border-color: var(--wait-r); background: var(--wait-t); color: var(--wait); }
+    .axis-production { border-color: var(--hair); color: var(--text); }
+    .next-step { width: 290px; color: var(--muted); font-size: 12px; }
+    .attention-grid { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 16px; margin-top: 26px; }
+    .attention-blockers { border-color: var(--bad-r); background: var(--bad-t); }
+    .attention-unseen { border-color: var(--wait-r); background: var(--wait-t); }
+    .attention-card ul { padding-left: 1.1rem; }
+    .attention-card li { padding-left: 0.2rem; }
+    .source-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; padding: 36px 0 70px; border-top: 1px solid var(--hair); }
+    .source-footer h2 { font-size: 18px; }
+    .source-footer p, .source-list { margin-top: 10px; color: var(--subtle); font-size: 12px; }
+    .missing-value { color: var(--wait); font-weight: 650; }
+    .empty-state { display: flex; gap: 12px; margin-top: 24px; padding: 18px; border: 1px solid var(--wait-r); border-radius: 14px; background: var(--wait-t); }
+    .empty-state strong { color: var(--wait); }
+
+    @media (max-width: 900px) {
+      .truth-grid, .story-grid, .fact-grid, .build-grid { grid-template-columns: 1fr; }
+      .section-head, .attention-grid, .source-footer { grid-template-columns: 1fr; }
+      .truth-card, .fact-card, .build-card { min-height: 0; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 28px, 1340px); }
+      .hero { padding-top: 44px; }
+      h1 { font-size: 39px; }
+      section { padding: 36px 0; }
+      .design-note { align-items: flex-start; flex-direction: column; }
+      .current-phase { grid-template-columns: 1fr; }
+      .current-phase p { grid-column: 1; margin-top: 5px; }
+      .lifecycle { grid-template-columns: 1fr; overflow-x: visible; }
+      .phase { min-height: 0; }
+      .mobile-verification { display: block; }
+    }
+    @media print {
+      :root, :root[data-theme="dark"], :root[data-theme="light"] {
+        color-scheme: light;
+        --page: #ffffff;
+        --card: #ffffff;
+        --raised: #f5f5f7;
+        --sunken: #f0f0f3;
+        --hair: #d6d6dc;
+        --subtle: #555963;
+        --muted: #3e424b;
+        --text: #292c33;
+        --strong: #17191e;
+        --accent: #4d55b8;
+        --ok: #237e69;
+        --wait: #8a6100;
+        --bad: #a53f32;
+        --shadow: transparent;
+      }
+      html, body { background: var(--page); color: var(--text); }
+      .theme-toggle, .skip-link { display: none; }
+      .wrap { width: 100%; }
+      section, .truth-card, .story-card, .fact-card, .build-card, .attention-card { break-inside: avoid; }
+      .table-shell { overflow: visible; break-inside: auto; }
+      table { min-width: 0; table-layout: fixed; font-size: 9px; }
+      th, td { padding: 6px 5px; }
+      .next-step { width: auto; }
+      tbody tr { break-inside: avoid; }
+      a { color: inherit; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">L</span>LuDone Desktop</div>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Přepnout vzhled">Změnit vzhled</button>
+    </div>
+
+    <header class="hero">
+      <p class="eyebrow">Stav vývoje · podklady k 2. 9. 2026</p>
+      <h1>Co už má kód, co se staví a co ještě nikdo neviděl běžet.</h1>
+      <p class="hero-lead">Tahle stránka schválně nerozpouští všechno do jednoho slova „hotovo“. Sloučený kód, zelený test a funkce ověřená člověkem jsou tři různé věci.</p>
+      <div class="truth-grid" aria-label="Souhrn úrovní ověření">
+        <article class="truth-card truth-live">
+          <strong>0</strong>
+          <h2>✅ ověřeno naostro</h2>
+          <p>Celá funkce splnila živý scénář. Dílčí sondy se sem nepočítají. Podle matice: 0 z 17.</p>
+        </article>
+        <article class="truth-card truth-tests">
+          <strong>8</strong>
+          <h2>🧪 zelené testy</h2>
+          <p>Kód prošel automatem. Tohle samo o sobě není živé ověření.</p>
+        </article>
+        <article class="truth-card truth-unverified">
+          <strong>9</strong>
+          <h2>⛔ neověřeno</h2>
+          <p>Funkce je napsaná nebo plánovaná, ale potřebný běh nikdo nedoložil.</p>
+          
+        </article>
+      </div>
+    </header>
+
+    <main id="obsah">
+      <section aria-labelledby="co-vznika">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">01 · Smysl</p>
+            <h2 id="co-vznika">Co vzniká</h2>
+          </div>
+          <p class="section-lead">Desktop je spouštěč se dvěma agendami, ne nový archiv ani druhá webová aplikace.</p>
+        </div>
+        <div class="story-grid">
+          <article class="story-card">
+            <h3>Problém</h3>
+            <p>Dan nechce dál platit paušál za Plaud ani používat jeho neměnné, osekané funkce; nahrávky navíc končí u něj místo u týmu. Kvůli LuTracku musí lidé přepínat do prohlížeče a zapomenuté hodiny pak ve výkazu chybějí.</p>
+          </article>
+          <article class="story-card story-target">
+            <h3>Cílový výsledek</h3>
+            <p>Macová aplikace v horní liště spustí nahrávání schůzky a měření času. Zvuk nejdřív bezpečně uloží na disk; archiv, přepis a další práce se záznamem zůstávají ve webovém LuDone.</p>
+          </article>
+          <article class="story-card story-out">
+            <h3>Vědomě mimo rozsah</h3>
+            <ul><li>Archiv, přepisy, hledání, grafy a přehledy uvnitř desktopové aplikace.</li><li>Management a administrace LuTracku v desktopu.</li><li>Kalendář a sekce Dnešní schůzky.</li><li>Seznam účastníků schůzky.</li><li>Mobilní aplikace.</li><li>Serverová implementace příjmu nahrávek v této změně.</li><li>MCP nástroje v desktopu.</li></ul>
+          </article>
+          <article class="story-card story-deferred">
+            <h3>Odloženo, ne zrušeno</h3>
+            <ul><li>Automatický sync desktop → server je fáze 2. Není zrušený, ale v této vlně zůstává výslovně vypnutý.</li></ul>
+          </article>
+        </div>
+        <div class="design-note">
+          <span><strong>22 obrazovek je schválených.</strong> Se skutečnou aplikací jsou zatím sladěné 4.</span>
+          <span>Zbývající obrazovky se mají sladit až po zapojení skutečných dat, aby nevznikly další přesvědčivé atrapy.</span>
+        </div>
+      </section>
+
+      <section aria-labelledby="kde-jsme">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">02 · Životní cyklus</p>
+            <h2 id="kde-jsme">Kde právě jsme</h2>
+          </div>
+          <p class="section-lead">Záměr, návrh, schválení a plán jsou uzavřené. Stavba pokračuje, ale tři navazující PR čekají na obnovení CI. Kontrola dílčích změn probíhá průběžně; ověření celé aplikace a dodání týmu ještě nenastalo.</p>
+        </div>
+        <div class="current-phase">
+    <span>Aktuální fáze</span>
+    <strong>Stavba</strong>
+    <p>Kód základních cest je v main; export a dva kroky onboardingu čekají ve stohu PR.</p>
+  </div>
+  <ol class="lifecycle" aria-label="Kroky životního cyklu od záměru po dodání">
+    <li class="phase phase-uzavreno">
+          <span class="phase-number" aria-hidden="true">01</span>
+          <span class="phase-state">uzavřeno</span>
+          <h3>Záměr</h3>
+          <p>Je rozhodnuté, proč vlastní aplikace vzniká a koho má zbavit Plaudu.</p>
+        </li><li class="phase phase-uzavreno">
+          <span class="phase-number" aria-hidden="true">02</span>
+          <span class="phase-state">uzavřeno</span>
+          <h3>Návrh</h3>
+          <p>Je popsaný panel se dvěma agendami a cesta prvním spuštěním.</p>
+        </li><li class="phase phase-uzavreno">
+          <span class="phase-number" aria-hidden="true">03</span>
+          <span class="phase-state">uzavřeno</span>
+          <h3>Schválení</h3>
+          <p>Dan 1. 9. 2026 schválil sadu 22 obrazovek.</p>
+        </li><li class="phase phase-uzavreno">
+          <span class="phase-number" aria-hidden="true">04</span>
+          <span class="phase-state">uzavřeno</span>
+          <h3>Plán</h3>
+          <p>Specifikace chování je zmrazená; stavové osy se smějí průběžně zpřesňovat.</p>
+        </li><li class="phase phase-aktualni" aria-current="step">
+          <span class="phase-number" aria-hidden="true">05</span>
+          <span class="phase-state">právě teď</span>
+          <h3>Stavba</h3>
+          <p>Kód základních cest je v main; export a dva kroky onboardingu čekají ve stohu PR.</p>
+        </li><li class="phase phase-ceka">
+          <span class="phase-number" aria-hidden="true">06</span>
+          <span class="phase-state">čeká</span>
+          <h3>Kontrola</h3>
+          <p>Dílčí review a sabotáže běží, ale blokované CI zatím nedalo aktuálním PR razítko.</p>
+        </li><li class="phase phase-ceka">
+          <span class="phase-number" aria-hidden="true">07</span>
+          <span class="phase-state">čeká</span>
+          <h3>Ověření</h3>
+          <p>Nula funkcí má ve zmrazené matici stav verified-live.</p>
+        </li><li class="phase phase-ceka">
+          <span class="phase-number" aria-hidden="true">08</span>
+          <span class="phase-state">čeká</span>
+          <h3>Dodáno</h3>
+          <p>Podepsaný build zatím není v rukou týmu.</p>
+        </li>
+  </ol>
+      </section>
+
+      <section aria-labelledby="ziva-fakta">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">03 · Bez ručního přepisování</p>
+            <h2 id="ziva-fakta">Živá fakta z repozitáře</h2>
+          </div>
+          <p class="section-lead">Generátor je při každém běhu znovu změří. Když příkaz chybí, selže nebo nevrátí čitelný údaj, stránka ukáže „neměřeno“.</p>
+        </div>
+        <div class="fact-grid">
+          <article class="fact-card" data-live-fact="commit">
+    <span class="fact-label">Poslední commit</span>
+    <strong>36232341 · 2. 9. 2026 21:28</strong>
+    <p>Poslední commit v tomto worktree.</p>
+    
+  </article>
+          <article class="fact-card" data-live-fact="test-count">
+    <span class="fact-label">Počet unit testů</span>
+    <strong>446</strong>
+    <p>Testů v posledním zeleném běhu npm run test:unit.</p>
+    
+  </article>
+          <article class="fact-card" data-live-fact="open-prs">
+    <span class="fact-label">Otevřená PR</span>
+    <strong>0</strong>
+    <p>Otevřená PR podle gh pr list.</p>
+    
+  </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="co-se-stavi">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">04 · Rozpracováno</p>
+            <h2 id="co-se-stavi">Co se právě staví</h2>
+          </div>
+          <p class="section-lead">Checkpoint popisuje změny čekající na dokončení. Jejich automatické výsledky jsou oddělené od toho, co ještě musí vidět nebo slyšet člověk.</p>
+        </div>
+        <div class="build-grid">
+    <article class="build-card" data-verification="tests-green">
+          <div class="card-topline">
+            <span class="feature-id">PR #25</span>
+            <span class="axis axis-tests">🧪 zelené testy</span>
+          </div>
+          <h3>Export schůzky do jednoho stereo souboru</h3>
+          <p>Kód a lokální brány jsou připravené; PR čeká na CI.</p>
+          <p class="card-note">Stereo derivát zatím nikdo neposlechl.</p>
+        </article><article class="build-card" data-verification="tests-green">
+          <div class="card-topline">
+            <span class="feature-id">PR #26</span>
+            <span class="axis axis-tests">🧪 zelené testy</span>
+          </div>
+          <h3>Onboarding: čekání na prohlížeč a test záznamu</h3>
+          <p>Navazuje na PR #25 a čeká na CI.</p>
+          <p class="card-note">Automatická zkouška není náhradou za živý mikrofon a systémový zvuk.</p>
+        </article><article class="build-card" data-verification="nemereno">
+          <div class="card-topline">
+            <span class="feature-id">PR #27</span>
+            <span class="axis axis-missing">neměřeno</span>
+          </div>
+          <h3>Adresa přihlášení na čekací obrazovce</h3>
+          <p>Navazuje na PR #26 a čeká na CI.</p>
+          <p class="card-note">Checkpoint dokládá zásah IPC brány, ale neobsahuje úplný doslovný výpis všech bran tohoto PR.</p>
+        </article>
+  </div>
+      </section>
+
+      <section aria-labelledby="funkce">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">05 · Funkční matice</p>
+            <h2 id="funkce">17 funkcí, čtyři nezávislé osy</h2>
+          </div>
+          <p class="section-lead"><strong>Rozsah</strong> říká, zda funkci chceme. <strong>Dodání</strong>, kde leží kód. <strong>Vystavení</strong>, zda se k ní člověk dostane. Teprve <strong>ověření</strong> říká, jestli ji někdo viděl fungovat.</p>
+        </div>
+        <div class="table-shell" role="region" tabindex="0" aria-label="Tabulka funkcí; na úzké obrazovce ji lze posouvat do stran">
+    <table>
+      <caption>Funkce LuDone Desktop a jejich stav ve čtyřech nezávislých osách</caption>
+      <thead>
+        <tr>
+          <th scope="col">Funkce</th>
+          <th scope="col">Rozsah</th>
+          <th scope="col">Dodání</th>
+          <th scope="col">Vystavení</th>
+          <th scope="col">Ověření</th>
+          <th scope="col">Další pravdivý krok</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-feature-id="DSK-F001" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F001</span>
+                <span class="feature-name">Ikona v liště nese stav, klik otevře panel</span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
+              <td class="next-step">Dan spustí build, lidským okem potvrdí viditelnou ikonu a kliknutím ověří, že otevře panel.</td>
+            </tr><tr data-feature-id="DSK-F002" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F002</span>
+                <span class="feature-name">Kontextové menu na ikoně se zkratkami</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-none">bez kódu</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">Postavit pravé kliknutí, rychlé akce a klávesové zkratky podle schváleného návrhu.</td>
+            </tr><tr data-feature-id="DSK-F003" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F003</span>
+                <span class="feature-name">Přihlášení OAuth 2.1 + PKCE přes prohlížeč</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: bezpečnost</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">Dokončit a živě projít celý tok v panelu proti skutečnému LuDone, včetně návratu z prohlížeče.</td>
+            </tr><tr data-feature-id="DSK-F004" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F004</span>
+                <span class="feature-name">Odhlášení s odvoláním přístupu na serveru</span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
+                <span class="risk">Riziko: bezpečnost</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
+              <td class="next-step">Dan nejdřív rozhodne, zda odhlášení běžící nahrávku ukončí, nebo odmítne; pak lze zapojit UI a živě ověřit odvolání.</td>
+            </tr><tr data-feature-id="DSK-F005" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F005</span>
+                <span class="feature-name">Jednovláknová obnova přihlášení</span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
+                <span class="risk">Riziko: bezpečnost</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
+              <td class="next-step">Zapojit ji do používané cesty a vyvolat obnovu nad skutečně vypršelou session.</td>
+            </tr><tr data-feature-id="DSK-F006" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F006</span>
+                <span class="feature-name">Oprávnění mikrofonu a systémového zvuku se zkouškou</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">Projít onboarding na Macu se skutečnými oprávněními, zvukem a restartem vyžadovaným platformou.</td>
+            </tr><tr data-feature-id="DSK-F007" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F007</span>
+                <span class="feature-name">Nahrávání mikrofonu a ostatního zvuku na disk</span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
+              <td class="next-step">Změřit skutečný Google Meet a Teams s živým protějškem; přehrávač afplay nestačí.</td>
+            </tr><tr data-feature-id="DSK-F008" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F008</span>
+                <span class="feature-name">Pojmenování nahrávky při zastavení</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-none">bez kódu</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">Postavit předvyplněný, editovatelný název a uložit čas od–do zvlášť.</td>
+            </tr><tr data-feature-id="DSK-F009" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F009</span>
+                <span class="feature-name">Odchozí fronta s opakováním</span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
+              <td class="next-step">Zapojit frontu do skutečného toku a nechat ji viditelně reagovat na návrat sítě.</td>
+            </tr><tr data-feature-id="DSK-F010" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F010</span>
+                <span class="feature-name">Odeslání nahrávky na server</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: přístupová práva</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-draft">návrh</span></td>
+              <td data-axis="dodani"><span class="axis axis-none">bez kódu</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">V první fázi dokončit ruční export do Stažených a nahrání přes web; automatický sync přijde později.</td>
+            </tr><tr data-feature-id="DSK-F011" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F011</span>
+                <span class="feature-name">Časovač: start, přepnutí projektu a stop</span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
+                <span class="risk">Riziko: peníze</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
+              <td class="next-step">Po serverovém kontraktu zapojit skutečný výběr projektu; lokální čas nesmí vypadat jako odeslaný.</td>
+            </tr><tr data-feature-id="DSK-F012" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F012</span>
+                <span class="feature-name">Výběr projektu z platných alokací</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: peníze</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-none">bez kódu</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">Počkat na kontrakt z app.ludone.cz; pravidlo 110 % rozhoduje server a desktop ho nesmí hádat.</td>
+            </tr><tr data-feature-id="DSK-F013" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F013</span>
+                <span class="feature-name">Časovač přežije pád a restart</span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
+                <span class="risk">Riziko: peníze</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
+              <td class="next-step">Zapojit časovač do panelu a na běžícím procesu ověřit pád rendereru i návrat po restartu.</td>
+            </tr><tr data-feature-id="DSK-F014" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F014</span>
+                <span class="feature-name">Připomínky, když neběží časovač</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-none">bez kódu</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">Postavit volitelné dny a hodiny a ověřit, že připomínka nikdy neruší nahrávání.</td>
+            </tr><tr data-feature-id="DSK-F015" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F015</span>
+                <span class="feature-name">Nastavení účtu, zvuku, záznamů, připomínek a diagnostiky</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-active">jen ze zdrojáku</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">Napojit skutečné hodnoty, sladit zbývající obrazovky s návrhem a projít je ručně.</td>
+            </tr><tr data-feature-id="DSK-F016" data-verification="unverified">
+              <th scope="row">
+                <span class="feature-id">DSK-F016</span>
+                <span class="feature-name">Ikona v Docku jako volba</span>
+                <span class="mobile-verification"><span class="axis axis-unverified">⛔ neověřeno</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-none">bez kódu</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-unverified">⛔ neověřeno</span></td>
+              <td class="next-step">Přidat výchozí vypnutou volbu do Nastavení a ověřit oba režimy na Macu.</td>
+            </tr><tr data-feature-id="DSK-F017" data-verification="tests-green">
+              <th scope="row">
+                <span class="feature-id">DSK-F017</span>
+                <span class="feature-name">Mazání lokálních kopií sedm dní po odeslání</span>
+                <span class="mobile-verification"><span class="axis axis-tests">🧪 zelené testy</span></span>
+                <span class="risk">Riziko: běžné</span>
+              </th>
+              <td data-axis="rozsah"><span class="axis axis-approved">schváleno</span></td>
+              <td data-axis="dodani"><span class="axis axis-merged">sloučeno</span></td>
+              <td data-axis="vystaveni"><span class="axis axis-none">vypnuto</span></td>
+              <td data-axis="overeni"><span class="axis axis-tests">🧪 zelené testy</span></td>
+              <td class="next-step">Zapojit retenci do startu aplikace a ověřit ji na skutečně odeslaných kopiích; neodeslané se nemažou.</td>
+            </tr>
+      </tbody>
+    </table>
+  </div>
+      </section>
+
+      <section aria-labelledby="pozornost">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">06 · Co nepřehlédnout</p>
+            <h2 id="pozornost">Co brání pokračování a co zůstává neměřené</h2>
+          </div>
+          <p class="section-lead">Tohle jsou místa, kde by zelená barva vytvořila falešnou jistotu. Proto zůstávají nahlas viditelná.</p>
+        </div>
+        <div class="attention-grid">
+          <article class="attention-card attention-blockers">
+            <h3>Blockery a stopky</h3>
+            <ul><li>GitHub Actions od 2. 9. 2026 15:57 nespouští joby kvůli platbě nebo spending limitu organizace. Bez zásahu Dana nejdou sloučit PR #25–#27.</li><li>Vyřazovací kritérium A6 nebylo ověřeno na skutečném hovoru Google Meet ani Teams s živým protějškem.</li><li>Opravenou ikonu v liště po PR #24 zatím nikdo lidským okem nepotvrdil.</li><li>Stereo export zatím nikdo neposlechl na skutečné nahrávce.</li><li>Výběr projektu DSK-F012 čeká na serverový kontrakt; pravidlo 110 % má rozhodovat server.</li><li>Automatický sync desktop → server je fáze 2; v této vlně zůstává výslovně vypnutý.</li><li>Aplikace ještě není ve všech stavech sladěná se schválenými 22 obrazovkami.</li><li>Chování odhlášení během nahrávání čeká na Danovo rozhodnutí; dnešní priorita stavu by mohla skrýt jediný indikátor běžícího mikrofonu.</li><li>Budoucí databázovou pojistku časovače blokuje nezměřený počet překrývajících se záznamů v živých datech.</li><li>Před dodáním týmu chybí P1/P2 pro podpis a oprávnění; teprve jejich výsledek rozhodne o Apple Developer Programu.</li><li>Serverový follow-up čeká na Danovo potvrzení chování při plné kvótě a požadavku, že přepis umí češtinu i rozlišení mluvčích.</li></ul>
+          </article>
+          <article class="attention-card attention-unseen">
+            <h3>Ještě nikdo nedoložil</h3>
+            <ul><li>Skutečný Google Meet a Teams s živým protějškem.</li><li>Viditelnost opravené ikony v liště na Danově Macu.</li><li>Poslech a skutečné oddělení kanálů stereo exportu.</li><li>Audio a UI smoke vyžadující zabalenou aplikaci, GUI, zvuk a oprávnění macOS.</li><li>Úplné živé ověření jednotlivých funkcí; autoritativní matice má nula položek verified-live.</li></ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="source-footer">
+      <div>
+        <h2>Zdroj pravdy</h2>
+        <p>Ručně se upravuje <code>status.json</code>. Tento soubor je vygenerovaný a ručně se neupravuje. Všechna data už jsou uvnitř stránky, takže funguje i při otevření přes <code>file://</code>.</p>
+      </div>
+      <div>
+        <h2>Podklady pro ruční stav</h2>
+        <ul class="source-list">
+    <li><a href="../CHECKPOINT.md">Aktuální checkpoint</a></li><li><a href="../spec.md">Zmrazená specifikace a funkční matice</a></li><li><a href="../decisions.md">Rozhodnutí BD-* a M*</a></li><li><a href="../../../../DAN-TODO.md">Co čeká na Dana</a></li><li><a href="../../../../design/approved.json">Schválených 22 obrazovek</a></li>
+  </ul>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var button = document.querySelector("[data-theme-toggle]");
+      if (!button) return;
+      var media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+      function isDark() {
+        var selected = document.documentElement.getAttribute("data-theme");
+        return selected ? selected === "dark" : Boolean(media && media.matches);
+      }
+      function updateButton() {
+        var dark = isDark();
+        button.setAttribute("aria-label", dark ? "Přepnout na světlý vzhled" : "Přepnout na tmavý vzhled");
+        button.textContent = dark ? "Světlý vzhled" : "Tmavý vzhled";
+      }
+      button.addEventListener("click", function () {
+        document.documentElement.setAttribute("data-theme", isDark() ? "light" : "dark");
+        updateButton();
+      });
+      if (media && media.addEventListener) {
+        media.addEventListener("change", function () {
+          if (!document.documentElement.hasAttribute("data-theme")) updateButton();
+        });
+      }
+      updateButton();
+    }());
+  </script>
+</body>
+</html>

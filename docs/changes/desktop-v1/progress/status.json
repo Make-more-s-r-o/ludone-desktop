@@ -1,0 +1,319 @@
+{
+  "projekt": {
+    "id": "desktop-v1",
+    "nazev": "LuDone Desktop",
+    "aktualizovano": "2026-09-02",
+    "problem": "Dan nechce dál platit paušál za Plaud ani používat jeho neměnné, osekané funkce; nahrávky navíc končí u něj místo u týmu. Kvůli LuTracku musí lidé přepínat do prohlížeče a zapomenuté hodiny pak ve výkazu chybějí.",
+    "cil": "Macová aplikace v horní liště spustí nahrávání schůzky a měření času. Zvuk nejdřív bezpečně uloží na disk; archiv, přepis a další práce se záznamem zůstávají ve webovém LuDone.",
+    "mimoRozsah": [
+      "Archiv, přepisy, hledání, grafy a přehledy uvnitř desktopové aplikace.",
+      "Management a administrace LuTracku v desktopu.",
+      "Kalendář a sekce Dnešní schůzky.",
+      "Seznam účastníků schůzky.",
+      "Mobilní aplikace.",
+      "Serverová implementace příjmu nahrávek v této změně.",
+      "MCP nástroje v desktopu."
+    ],
+    "odlozeno": [
+      "Automatický sync desktop → server je fáze 2. Není zrušený, ale v této vlně zůstává výslovně vypnutý."
+    ]
+  },
+  "zivotniCyklus": {
+    "aktualni": "stavba",
+    "poznamka": "Záměr, návrh, schválení a plán jsou uzavřené. Stavba pokračuje, ale tři navazující PR čekají na obnovení CI. Kontrola dílčích změn probíhá průběžně; ověření celé aplikace a dodání týmu ještě nenastalo.",
+    "kroky": [
+      {
+        "id": "zamer",
+        "nazev": "Záměr",
+        "stav": "uzavreno",
+        "detail": "Je rozhodnuté, proč vlastní aplikace vzniká a koho má zbavit Plaudu."
+      },
+      {
+        "id": "navrh",
+        "nazev": "Návrh",
+        "stav": "uzavreno",
+        "detail": "Je popsaný panel se dvěma agendami a cesta prvním spuštěním."
+      },
+      {
+        "id": "schvaleni",
+        "nazev": "Schválení",
+        "stav": "uzavreno",
+        "detail": "Dan 1. 9. 2026 schválil sadu 22 obrazovek."
+      },
+      {
+        "id": "plan",
+        "nazev": "Plán",
+        "stav": "uzavreno",
+        "detail": "Specifikace chování je zmrazená; stavové osy se smějí průběžně zpřesňovat."
+      },
+      {
+        "id": "stavba",
+        "nazev": "Stavba",
+        "stav": "aktualni",
+        "detail": "Kód základních cest je v main; export a dva kroky onboardingu čekají ve stohu PR."
+      },
+      {
+        "id": "kontrola",
+        "nazev": "Kontrola",
+        "stav": "ceka",
+        "detail": "Dílčí review a sabotáže běží, ale blokované CI zatím nedalo aktuálním PR razítko."
+      },
+      {
+        "id": "overeni",
+        "nazev": "Ověření",
+        "stav": "ceka",
+        "detail": "Nula funkcí má ve zmrazené matici stav verified-live."
+      },
+      {
+        "id": "dodano",
+        "nazev": "Dodáno",
+        "stav": "ceka",
+        "detail": "Podepsaný build zatím není v rukou týmu."
+      }
+    ]
+  },
+  "design": {
+    "schvalenoObrazovek": 22,
+    "sladenoObrazovek": 4,
+    "schvalenoKym": "Dan",
+    "schvalenoDne": "2026-09-01",
+    "poznamka": "Zbývající obrazovky se mají sladit až po zapojení skutečných dat, aby nevznikly další přesvědčivé atrapy."
+  },
+  "funkce": [
+    {
+      "id": "DSK-F001",
+      "nazev": "Ikona v liště nese stav, klik otevře panel",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "labs",
+      "overeni": "tests-green",
+      "dalsiKrok": "Dan spustí build, lidským okem potvrdí viditelnou ikonu a kliknutím ověří, že otevře panel."
+    },
+    {
+      "id": "DSK-F002",
+      "nazev": "Kontextové menu na ikoně se zkratkami",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "no-code",
+      "vystaveni": "disabled",
+      "overeni": "unverified",
+      "dalsiKrok": "Postavit pravé kliknutí, rychlé akce a klávesové zkratky podle schváleného návrhu."
+    },
+    {
+      "id": "DSK-F003",
+      "nazev": "Přihlášení OAuth 2.1 + PKCE přes prohlížeč",
+      "riziko": "security",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "disabled",
+      "overeni": "unverified",
+      "dalsiKrok": "Dokončit a živě projít celý tok v panelu proti skutečnému LuDone, včetně návratu z prohlížeče."
+    },
+    {
+      "id": "DSK-F004",
+      "nazev": "Odhlášení s odvoláním přístupu na serveru",
+      "riziko": "security",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "disabled",
+      "overeni": "tests-green",
+      "dalsiKrok": "Dan nejdřív rozhodne, zda odhlášení běžící nahrávku ukončí, nebo odmítne; pak lze zapojit UI a živě ověřit odvolání."
+    },
+    {
+      "id": "DSK-F005",
+      "nazev": "Jednovláknová obnova přihlášení",
+      "riziko": "security",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "disabled",
+      "overeni": "tests-green",
+      "dalsiKrok": "Zapojit ji do používané cesty a vyvolat obnovu nad skutečně vypršelou session."
+    },
+    {
+      "id": "DSK-F006",
+      "nazev": "Oprávnění mikrofonu a systémového zvuku se zkouškou",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "labs",
+      "overeni": "unverified",
+      "dalsiKrok": "Projít onboarding na Macu se skutečnými oprávněními, zvukem a restartem vyžadovaným platformou."
+    },
+    {
+      "id": "DSK-F007",
+      "nazev": "Nahrávání mikrofonu a ostatního zvuku na disk",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "labs",
+      "overeni": "tests-green",
+      "dalsiKrok": "Změřit skutečný Google Meet a Teams s živým protějškem; přehrávač afplay nestačí."
+    },
+    {
+      "id": "DSK-F008",
+      "nazev": "Pojmenování nahrávky při zastavení",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "no-code",
+      "vystaveni": "disabled",
+      "overeni": "unverified",
+      "dalsiKrok": "Postavit předvyplněný, editovatelný název a uložit čas od–do zvlášť."
+    },
+    {
+      "id": "DSK-F009",
+      "nazev": "Odchozí fronta s opakováním",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "disabled",
+      "overeni": "tests-green",
+      "dalsiKrok": "Zapojit frontu do skutečného toku a nechat ji viditelně reagovat na návrat sítě."
+    },
+    {
+      "id": "DSK-F010",
+      "nazev": "Odeslání nahrávky na server",
+      "riziko": "rbac",
+      "rozsah": "draft",
+      "dodani": "no-code",
+      "vystaveni": "disabled",
+      "overeni": "unverified",
+      "dalsiKrok": "V první fázi dokončit ruční export do Stažených a nahrání přes web; automatický sync přijde později."
+    },
+    {
+      "id": "DSK-F011",
+      "nazev": "Časovač: start, přepnutí projektu a stop",
+      "riziko": "money",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "disabled",
+      "overeni": "tests-green",
+      "dalsiKrok": "Po serverovém kontraktu zapojit skutečný výběr projektu; lokální čas nesmí vypadat jako odeslaný."
+    },
+    {
+      "id": "DSK-F012",
+      "nazev": "Výběr projektu z platných alokací",
+      "riziko": "money",
+      "rozsah": "approved",
+      "dodani": "no-code",
+      "vystaveni": "disabled",
+      "overeni": "unverified",
+      "dalsiKrok": "Počkat na kontrakt z app.ludone.cz; pravidlo 110 % rozhoduje server a desktop ho nesmí hádat."
+    },
+    {
+      "id": "DSK-F013",
+      "nazev": "Časovač přežije pád a restart",
+      "riziko": "money",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "disabled",
+      "overeni": "tests-green",
+      "dalsiKrok": "Zapojit časovač do panelu a na běžícím procesu ověřit pád rendereru i návrat po restartu."
+    },
+    {
+      "id": "DSK-F014",
+      "nazev": "Připomínky, když neběží časovač",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "no-code",
+      "vystaveni": "disabled",
+      "overeni": "unverified",
+      "dalsiKrok": "Postavit volitelné dny a hodiny a ověřit, že připomínka nikdy neruší nahrávání."
+    },
+    {
+      "id": "DSK-F015",
+      "nazev": "Nastavení účtu, zvuku, záznamů, připomínek a diagnostiky",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "labs",
+      "overeni": "unverified",
+      "dalsiKrok": "Napojit skutečné hodnoty, sladit zbývající obrazovky s návrhem a projít je ručně."
+    },
+    {
+      "id": "DSK-F016",
+      "nazev": "Ikona v Docku jako volba",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "no-code",
+      "vystaveni": "disabled",
+      "overeni": "unverified",
+      "dalsiKrok": "Přidat výchozí vypnutou volbu do Nastavení a ověřit oba režimy na Macu."
+    },
+    {
+      "id": "DSK-F017",
+      "nazev": "Mazání lokálních kopií sedm dní po odeslání",
+      "riziko": "normal",
+      "rozsah": "approved",
+      "dodani": "merged",
+      "vystaveni": "disabled",
+      "overeni": "tests-green",
+      "dalsiKrok": "Zapojit retenci do startu aplikace a ověřit ji na skutečně odeslaných kopiích; neodeslané se nemažou."
+    }
+  ],
+  "praveSeStavi": [
+    {
+      "oznaceni": "PR #25",
+      "nazev": "Export schůzky do jednoho stereo souboru",
+      "stav": "Kód a lokální brány jsou připravené; PR čeká na CI.",
+      "overeni": "tests-green",
+      "poznamka": "Stereo derivát zatím nikdo neposlechl."
+    },
+    {
+      "oznaceni": "PR #26",
+      "nazev": "Onboarding: čekání na prohlížeč a test záznamu",
+      "stav": "Navazuje na PR #25 a čeká na CI.",
+      "overeni": "tests-green",
+      "poznamka": "Automatická zkouška není náhradou za živý mikrofon a systémový zvuk."
+    },
+    {
+      "oznaceni": "PR #27",
+      "nazev": "Adresa přihlášení na čekací obrazovce",
+      "stav": "Navazuje na PR #26 a čeká na CI.",
+      "overeni": "nemereno",
+      "poznamka": "Checkpoint dokládá zásah IPC brány, ale neobsahuje úplný doslovný výpis všech bran tohoto PR."
+    }
+  ],
+  "blockery": [
+    "GitHub Actions od 2. 9. 2026 15:57 nespouští joby kvůli platbě nebo spending limitu organizace. Bez zásahu Dana nejdou sloučit PR #25–#27.",
+    "Vyřazovací kritérium A6 nebylo ověřeno na skutečném hovoru Google Meet ani Teams s živým protějškem.",
+    "Opravenou ikonu v liště po PR #24 zatím nikdo lidským okem nepotvrdil.",
+    "Stereo export zatím nikdo neposlechl na skutečné nahrávce.",
+    "Výběr projektu DSK-F012 čeká na serverový kontrakt; pravidlo 110 % má rozhodovat server.",
+    "Automatický sync desktop → server je fáze 2; v této vlně zůstává výslovně vypnutý.",
+    "Aplikace ještě není ve všech stavech sladěná se schválenými 22 obrazovkami.",
+    "Chování odhlášení během nahrávání čeká na Danovo rozhodnutí; dnešní priorita stavu by mohla skrýt jediný indikátor běžícího mikrofonu.",
+    "Budoucí databázovou pojistku časovače blokuje nezměřený počet překrývajících se záznamů v živých datech.",
+    "Před dodáním týmu chybí P1/P2 pro podpis a oprávnění; teprve jejich výsledek rozhodne o Apple Developer Programu.",
+    "Serverový follow-up čeká na Danovo potvrzení chování při plné kvótě a požadavku, že přepis umí češtinu i rozlišení mluvčích."
+  ],
+  "nemereno": [
+    "Skutečný Google Meet a Teams s živým protějškem.",
+    "Viditelnost opravené ikony v liště na Danově Macu.",
+    "Poslech a skutečné oddělení kanálů stereo exportu.",
+    "Audio a UI smoke vyžadující zabalenou aplikaci, GUI, zvuk a oprávnění macOS.",
+    "Úplné živé ověření jednotlivých funkcí; autoritativní matice má nula položek verified-live."
+  ],
+  "zdroje": [
+    {
+      "nazev": "Aktuální checkpoint",
+      "cesta": "../CHECKPOINT.md"
+    },
+    {
+      "nazev": "Zmrazená specifikace a funkční matice",
+      "cesta": "../spec.md"
+    },
+    {
+      "nazev": "Rozhodnutí BD-* a M*",
+      "cesta": "../decisions.md"
+    },
+    {
+      "nazev": "Co čeká na Dana",
+      "cesta": "../../../../DAN-TODO.md"
+    },
+    {
+      "nazev": "Schválených 22 obrazovek",
+      "cesta": "../../../../design/approved.json"
+    }
+  ]
+}
