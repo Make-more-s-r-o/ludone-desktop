@@ -791,3 +791,35 @@ hard gate. Přeskočeno, běh pokračoval na tom, co na tom nezávisí.
 0 výskytů v `src/`). Hlídá to `tests/zapojeni-odhlaseni.test.js` — jakmile někdo tlačítko
 zapojí, brána zčervená a připomene tohle rozhodnutí i další dvě věci (časovač poběží dál
 a panel odhlášení tiše vrátí zpět).
+
+---
+
+## OAuth + Apple Developer — co udělat (2. 9. 2026, na Danův dotaz)
+
+**Pořadí je důležité:** client ID odblokuje první živý běh aplikace, podpis až distribuci.
+
+### 1. OAuth klient — TEĎ, blokuje všechno ostatní
+Detail v [`docs/changes/desktop-v1/OAUTH-CO-ZALOZIT.md`](docs/changes/desktop-v1/OAUTH-CO-ZALOZIT.md).
+Zkráceně: **nový** public/native klient bez secretu · PKCE `S256` povinné · grants
+`authorization_code` + `refresh_token` · redirect `http://127.0.0.1/callback` a `http://[::1]/callback`
+· scope `mcp:read`.
+
+🔴 **Port v redirectu je náhodný** — server musí u loopbacku ignorovat port (RFC 8252 §7.3).
+Jinak to spadne na `redirect_uri_mismatch` až v prohlížeči. `localhost` nepoužívat.
+
+🔴 Server musí vystavit `/.well-known/oauth-authorization-server` s issuerem přesně rovným
+originu a **všemi endpointy na tomtéž originu**.
+
+**Pak pošli client ID** — uloží se mimo git.
+
+### 2. Apple Developer účet (99 USD/rok) — kup, ale až po client ID
+- **Distribuce:** bez podpisu a notarizace dostane každý kolega Gatekeeper varování.
+- **Méně zjevné:** macOS váže Nahrávání obrazovky a mikrofon na **podpis binárky**. Nepodepsaná
+  aplikace mění otisk při každém rebuildu, takže se povolení resetují — to je přesně ten opruz,
+  co dnes drží `ui-smoke`.
+- **Není to dnešní blocker:** bez client ID se aplikace nedostane přes první obrazovku.
+
+### 3. Multi-tenant — rozhodnout, až bude čas (BD-N29)
+`main.cjs:970` má seznam dvou povolených hostitelů; instalace jiného klienta se odmítne.
+Doporučení: origin zadá správce při instalaci, s viditelným potvrzením, komu se přihlašuje.
+**A client ID musí být uložené v páru s originem** — jedna globální proměnná multi-tenant neuveze.
