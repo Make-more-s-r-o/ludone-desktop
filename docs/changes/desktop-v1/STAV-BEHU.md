@@ -4,7 +4,59 @@
 
 ---
 
-## 🔴 PRVNÍ AKCE PO RESUME — ikona v liště je NEVIDITELNÁ, oprava leží hotová
+## ✅ IKONA OPRAVENA (PR #24) — tahle sekce už NEPLATÍ, ponechána pro doložení
+
+Ikona i výška panelu jsou mergnuté. `main` = **411 testů**.
+
+---
+
+## 🔴 PRVNÍ AKCE PO RESUME
+
+```bash
+cd /Users/dan/Dev/ClaudeCode/ludone-desktop
+pgrep -f "codex exec -C .*desktop-export" | wc -l     # 0 = doběhl, >0 = ještě píše
+git -C ~/orca/workspaces/ludone-desktop/desktop-export status --porcelain
+```
+
+**Když 0 a strom má změny** → práce je NECOMMITNUTÁ, commituj HNED, teprve pak brány:
+
+```bash
+cd ~/orca/workspaces/ludone-desktop/desktop-export
+git add -A && git commit -m "Export the meeting as one file and offer to upload it"
+npm run lint && npm run typecheck && npm run test:unit
+git fetch origin && git rebase origin/main
+```
+
+Pak diff, sabotáže, PR, merge, úklid worktree.
+
+### Co ten job staví — a co u něj MUSÍŠ zkontrolovat
+
+Export schůzky do **jednoho souboru se dvěma kanály** (mikrofon vlevo, systém vpravo)
+do Stažených + tlačítko, které otevře
+`https://app.ludone.cz/nahravky/nahrat?clientRecordingId=…&startedAt=…&endedAt=…`
+(adresa musí být konfigurovatelná labs × produkce).
+
+🔴 **V jeho odpovědi hledej pole `rozdilStartu` a `blockery`.** Mikrofon a systém jsou dva
+nezávislé `MediaRecorder`y a mohou se během hodinové schůzky rozejít. **Když napsal, že to
+nejde spolehlivě zarovnat, NEMERGUJ a jdi za Danem** — máme domluvenou záložní cestu
+(posílat dvě stopy zvlášť) a serverová session s ní počítá (jejich model unese víc nahrávek
+k jednomu sezení bez migrace).
+
+**Tiché slepení rozejitých stop je horší než přiznaný problém**: vzniklo by audio, kde se
+druhá strana ozývá o vteřinu jinde, a nikdo by nevěděl proč.
+
+### Sabotáže, které na tom PR musí proběhnout
+
+| sabotáž | očekávání |
+|---|---|
+| export selže → nahrávka se přesto ztratí | 🔴 |
+| kanály se smíchají do mono | 🔴 |
+| adresa serveru zadrátovaná napevno | 🔴 |
+| komentář o dvou kanálech | 🟢 povinně zelená |
+
+---
+
+## (historie) Ikona v liště byla NEVIDITELNÁ
 
 **Dan hlásí: „ikonu v horní liště nevidím."** Příčina je ZMĚŘENÁ, ne odhadnutá:
 
