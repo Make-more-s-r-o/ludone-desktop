@@ -25,21 +25,39 @@ Desktop je **hotový a čeká**: fronta se plní, ale nemá kam odesílat.
 🔴 **Desktopový repozitář je pro tebe JEN KE ČTENÍ.** Neupravuj v něm nic; když najdeš vadu
 na jeho straně, napiš ji a předej.
 
-## Čtyři úkoly, v tomhle pořadí
+## 🔴 ZADÁNÍ SE 2. 9. ODPOLEDNE ZMĚNILO — čti tohle, ne starší verzi
 
-### 1. Scope pro zápis — **čeká na Danovo rozhodnutí, zeptej se ho hned na začátku**
+Dan plán zjednodušil. **Nový scope se v první fázi NESTAVÍ.** Rozhodnutí BD-N34 až BD-N37
+v `decisions.md`, tady je jejich shrnutí.
 
-Server dnes zná jen `mcp:read` a `mcp:draft`. **Ani jeden neumožňuje nahrát soubor ani
-zapsat čas**, takže desktop může frontu jen plnit.
+### Fáze 1 — nahrává PROHLÍŽEČ, ne desktop. Žádné nové právo.
 
-Doporučení desktopové session: **nový scope `mcp:upload`**. Důvod není technický — je to
-věta na souhlasové obrazovce. Rozšířit `mcp:draft` by znamenalo tiše rozšířit práva beze
-změny textu, který uživatel odsouhlasil.
+| krok | kdo |
+|---|---|
+| po schůzce klik v panelu → schůzka se uloží jako **jeden soubor do Stažených** a otevře se nahrávací stránka | desktop *(jiná session)* |
+| člověk soubor nahraje na app.ludone (nebo ho tam přetáhne) | **prohlížeč, běžná session cookie** |
 
-⚠️ Audit našel, že **`mcp:read` už dnes dovoluje tři mutace**, ale obrazovka souhlasu mluví
-jen o čtení. Při přidávání scope je to příležitost ten rozpor srovnat — **nabídni to Danovi.**
+⇒ **Upload endpoint autentizuješ stejně jako každou jinou stránku aplikace.** Žádný OAuth
+scope, žádná změna souhlasové obrazovky, žádná přeregistrace klienta.
+
+🔴 **Web musí přijmout JAKÝKOLI zvukový soubor**, ne jen ten z desktopu — Dan výslovně chce
+nahrát i nahrávku z telefonu a nechat ji přepsat. Je to tentýž endpoint, jen jiný zdroj.
+
+### Fáze 2 — automatický sync, defaultně VYPNUTÝ
+
+Teprve tady desktop nahrává sám a **teprve tady vzniká potřeba scope pro zápis**
+(doporučení: `mcp:upload`, ne rozšiřovat `mcp:draft`). **Nestav to teď** — postav to, až
+bude fáze 1 ověřená naostro.
+
+⚠️ Audit našel, že `mcp:read` už dnes dovoluje tři mutace, ale obrazovka souhlasu mluví jen
+o čtení. Až na scope dojde, je to příležitost ten rozpor srovnat.
 
 ### 2. Příjem naměřeného času — malý, ale money cesta
+
+⚠️ **Pozor: čas jde jinou cestou než nahrávky.** Nahrávky nově chodí z prohlížeče (fáze 1),
+ale **naměřený čas posílá desktop sám** — a ten se autorizovat musí. Buď to odlož spolu
+s fází 2, nebo to Danovi vysvětli a nech ho rozhodnout. **Nepředpokládej, že to projde
+pod `mcp:read`.**
 
 `E5` řeší **jen nahrávky**; čas v něm nepadne ani jednou. Desktop ho přitom do fronty
 už zařazuje.
@@ -73,7 +91,35 @@ upload (4 routy) · ffmpeg remux · RBAC default-deny · adresáře a práva · 
 🔴 **`E5` krok 1 označuje měření nginx stropu jako blokující. UŽ JE ZMĚŘENÝ** — viz níž.
 Nezdržuj se tím, jen si to přeověř.
 
-### 4. Jméno uživatele v identitě
+### 4. Přepis, shrnutí, překlad — VŠE AŽ NA KLIKNUTÍ
+
+Nahraná nahrávka jen leží. Teprve klik **Přepsat** vyrobí text; **Shrnout** a **Přeložit**
+jsou další samostatné, volitelné kroky. Nic se neplatí za schůzky, které nikdo neotevře.
+
+🔴 **Kritérium pro výběr přepisové služby: musí umět DIARIZACI a ČEŠTINU.** Dan to řekl
+výslovně: *„určitě by mělo být poznat, kdo přesně mluvil, když bude víc lidí."* Bez diarizace
+je ze zápisu ze schůzky jeden slepý text a ztrácí většinu hodnoty.
+
+⚠️ Desktop posílá **jeden soubor se dvěma kanály** (mikrofon vlevo, systém vpravo). To
+zadarmo oddělí „já" × „druhá strana"; víc lidí na druhé straně rozdělí až diarizace.
+**Nemixuj kanály do mono při příjmu** — ztratil bys informaci, kterou nikdo jiný nedodá.
+
+**MCP potřebuje nástroj na ČTENÍ přepisu** (spadá pod stávající `mcp:read`). Dan: *„když
+agent načte, jemu stačí transkript a může si udělat shrnutí sám."* Shrnutí na serveru je
+tedy volba pro člověka, ne povinný krok.
+
+### 5. Kvóta na místo — nastavení modulu, ne konstanty
+
+Dan: *„postavil bych možnosti v nastavení modulu, kde si každý zvolí a bude se počítat místo,
+které bude dedikované těm zápisům."*
+
+- Retence i limity jsou **volby v nastavení**, ne čísla v kódu.
+- **Zvuk a přepis se počítají zvlášť** — přepis kilobajty, zvuk stovky megabajtů.
+- 🔴 **Při plné kvótě nové nahrávání ODMÍTNI se srozumitelnou hláškou. Nikdy nemaž
+  automaticky.** Tiché smazání dat, o která uživatel nepožádal, je horší než odmítnutá
+  nahrávka. *(Rozhodl běh, ne Dan — nech si to potvrdit.)*
+
+### 6. Jméno uživatele v identitě
 
 `ludone_ping` vrací jen e-mail (`src/mcp/tools/ping.ts:70`). Desktop kvůli tomu píše v panelu
 „připojení neověřeno" a na obrazovce „Přihlášeno" nemá co zobrazit — schválený design tam má
