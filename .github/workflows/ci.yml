@@ -1,7 +1,10 @@
 name: CI
 
 on:
+  # Bez omezení větví se každý push do větve s PR změřil DVAKRÁT — jednou jako
+  # `push`, podruhé jako `pull_request`. Půlka běhů byla zbytečná.
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -9,7 +12,11 @@ permissions:
 
 jobs:
   gates:
-    runs-on: macos-latest
+    # Runner macOS se účtuje 10× dráž než Linux a tahle brána na něm nic
+    # macOS-specifického nedělá: lint, typecheck, vitest a Vite build jedou
+    # na Linuxu stejně. Oba smoke kroky níž jsou v CI vypnuté (`if: false`),
+    # protože potřebují GUI, zvuk a oprávnění — ty pouští člověk na svém Macu.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
