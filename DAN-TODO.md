@@ -43,6 +43,34 @@ udělá ✅.
 
 ---
 
+---
+
+## 🔴 DVĚ VĚCI OD TEBE (rozhodnuto 2. 9. večer)
+
+### 1. Přepnout repo na public — tím billing GitHubu odpadne úplně
+
+Rozhodl jsi „public, ale docs napřed pročistit" (BD-N41). Pročištění běží; **až ti ho ukážu,
+přepni to.** U veřejných repozitářů jsou Actions zdarma a bez limitu minut, a **GitHub
+Releases** je rovnou distribuční kanál i feed pro aktualizace.
+
+```
+gh repo edit Make-more-s-r-o/ludone-desktop --visibility public --accept-visibility-change-consequences
+```
+
+🔴 **Zveřejní se i celá historie**, ne jen současné soubory. Změřeno, co v ní je:
+`labs.ludone.cz`, `data.ludone.cz`, `/opt/ludone-uploads{,-prod}`, `/opt/ludone-app`.
+Dva hostnames a tři cesty, **žádné přihlašovací údaje** (gitleaks nad 204 commity: jediný
+nález je falešný token v ukázce). Doporučení: přijmout — nulová stopa by stála přepsání
+historie a rozbití otevřených PR.
+
+### 2. Koupit Apple Developer (99 USD/rok)
+
+Bez něj **nejde podpis ani automatické aktualizace** — macOS nepodepsanou a nenotarizovanou
+aplikaci po stažení odmítne slovy „je poškozená". Rozhodl jsi to postavit pořádně (BD-N42).
+
+Do koupě se staví všechno, co na podpisu nezávisí: konfigurace `electron-builder`, kanál
+aktualizací, verzování. Podpis a notarizace jsou poslední krok, ne první.
+
 ## 0. Noční běh je připravený — co k němu patří
 
 Briéf: [`docs/behy/2026-08-24-zaklad-a-fronta.md`](docs/behy/2026-08-24-zaklad-a-fronta.md).
