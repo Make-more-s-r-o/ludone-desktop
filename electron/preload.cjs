@@ -1,5 +1,12 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+function setPanelContentHeight(height) {
+  if (typeof height !== "number" || !Number.isFinite(height)) {
+    throw new TypeError("Výška obsahu panelu musí být konečné číslo");
+  }
+  return ipcRenderer.invoke("panel:set-content-height", height);
+}
+
 contextBridge.exposeInMainWorld("ludone", {
   runtime: Object.freeze({
     resetOnboarding: process.env.LUDONE_RESET_ONBOARDING === "1",
@@ -26,6 +33,7 @@ contextBridge.exposeInMainWorld("ludone", {
   getTrayState: () => ipcRenderer.invoke("tray:get-state"),
   testClickTray: () => ipcRenderer.invoke("test:click-tray"),
   testQuit: () => ipcRenderer.invoke("test:quit"),
+  setPanelContentHeight,
   reportTrayFacts: (facts) => ipcRenderer.send("tray:report-facts", facts),
   hidePanel: () => ipcRenderer.send("panel:hide"),
   openSettings: () => ipcRenderer.send("settings:open"),

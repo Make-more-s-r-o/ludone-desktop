@@ -32,7 +32,12 @@ function renderIdlePanel(storedUser = USER) {
 }
 
 async function renderInteractivePanel(listQueue, options = {}) {
-  const { onboardingComplete = true, ludone = {}, storedUser = USER } = options;
+  const {
+    configureWindow = () => {},
+    onboardingComplete = true,
+    ludone = {},
+    storedUser = USER,
+  } = options;
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   if (onboardingComplete) {
     dom.window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
@@ -47,6 +52,7 @@ async function renderInteractivePanel(listQueue, options = {}) {
       ...ludone,
     },
   });
+  configureWindow(dom.window);
 
   vi.stubGlobal("React", React);
   vi.stubGlobal("window", dom.window);
@@ -340,6 +346,80 @@ describe("schválený klidový panel", () => {
       });
       expect(listQueue).toHaveBeenCalledTimes(1);
     } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("opakované změření stejného renderu nespustí smyčku změn výšky", async () => {
+    const animationFrames = [];
+    const setPanelContentHeight = vi.fn().mockResolvedValue(240);
+    let measuredHeight = 240;
+    let measurementCount = 0;
+    let originalRect;
+    let scrollContainer;
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      configureWindow(domWindow) {
+        originalRect = domWindow.HTMLElement.prototype.getBoundingClientRect;
+        domWindow.requestAnimationFrame = (callback) => {
+          animationFrames.push(callback);
+          return animationFrames.length;
+        };
+        domWindow.cancelAnimationFrame = vi.fn();
+        domWindow.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+          if (
+            this.matches(".window-surface")
+            && this.style.height === "auto"
+            && this.style.maxHeight === "none"
+          ) {
+            measurementCount += 1;
+            // Chromium může při dočasném auto-height oříznout scroll na začátek.
+            if (scrollContainer) scrollContainer.scrollTop = 0;
+            return { ...originalRect.call(this), height: measuredHeight };
+          }
+          return originalRect.call(this);
+        };
+      },
+      ludone: { hasAuthSession: vi.fn().mockResolvedValue(true), setPanelContentHeight },
+    });
+    const domWindow = panel.document.defaultView;
+    scrollContainer = panel.document.querySelector(".panel-scroll");
+    const flushMeasurements = async () => {
+      await React.act(async () => {
+        await Promise.resolve();
+        while (animationFrames.length > 0) animationFrames.shift()();
+        await Promise.resolve();
+        while (animationFrames.length > 0) animationFrames.shift()();
+      });
+    };
+
+    try {
+      scrollContainer.scrollTop = 37;
+      await flushMeasurements();
+      expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(240);
+      expect(scrollContainer.scrollTop).toBe(37);
+
+      const start = panel.document.querySelector('[aria-label="Spustit LuTrack"]');
+      scrollContainer.scrollTop = 51;
+      await React.act(async () => {
+        start.dispatchEvent(new domWindow.MouseEvent("click", { bubbles: true }));
+      });
+      await flushMeasurements();
+
+      expect(measurementCount).toBeGreaterThan(1);
+      expect(setPanelContentHeight).toHaveBeenCalledTimes(1);
+      expect(scrollContainer.scrollTop).toBe(51);
+
+      measuredHeight = 310;
+      const stop = panel.document.querySelector('[aria-label="Zastavit LuTrack"]');
+      await React.act(async () => {
+        stop.dispatchEvent(new domWindow.MouseEvent("click", { bubbles: true }));
+      });
+      await flushMeasurements();
+
+      expect(setPanelContentHeight).toHaveBeenCalledTimes(2);
+      expect(setPanelContentHeight).toHaveBeenLastCalledWith(310);
+    } finally {
+      domWindow.HTMLElement.prototype.getBoundingClientRect = originalRect;
       await panel.cleanup();
     }
   });
