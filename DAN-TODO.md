@@ -921,3 +921,20 @@ a timeouty na hostu přes SSH. Hodinové audio má 40–120 MB na stopu a stopy 
 
 **Doporučené pořadí:** scope → nginx měření → **příjem času** (malý, ověří celý řetěz) →
 příjem nahrávek.
+
+---
+
+## ✅ Nginx strop ZMĚŘEN — `E5` krok 1 už není blocker (2. 9. 2026)
+
+Nemusíš na host lézt. SSH funguje aliasem `hetzner-data` z `~/.ssh/config` a `app.ludone.cz`
+běží na tomtéž stroji jako `data.ludone.cz` (23.88.61.12).
+
+```
+client_max_body_size 50m     ← /etc/nginx/nginx.conf:18, platí globálně
+app.ludone.cz to nepřepisuje
+```
+
+🔴 **Hodinová stopa má 40–120 MB, strop 50 MB** — upload v jednom kuse spadne.
+
+**Zbývá tedy jediné tvoje rozhodnutí:** scope pro zápis (`mcp:upload`), viz
+[`PROMPT-SERVER-SESSION.md`](docs/changes/desktop-v1/PROMPT-SERVER-SESSION.md) §1.

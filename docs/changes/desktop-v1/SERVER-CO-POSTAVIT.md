@@ -26,9 +26,18 @@ druhým účtem.
 
 **Tuhle část neotvírej znovu** — je promyšlená a odpovídá tomu, co desktop dělá.
 
-🔴 **Ale má v sobě blokující krok, který umíš udělat jen ty:** krok 1 je *„změřit skutečný
-nginx strop a timeouty na hostu přes SSH"*. Dokud to nezměříš, celý chunked kontrakt stojí
-na odhadu. Hodinové audio má 40–120 MB na stopu, stopy jsou dvě.
+✅ **Krok 1 UŽ NENÍ BLOCKER — změřeno 2. 9. 2026.** SSH funguje aliasem `hetzner-data`
+(`~/.ssh/config`), `app.ludone.cz` běží na tomtéž stroji, proxy je kontejner `makemore-nginx`.
+
+```
+client_max_body_size 50m        ← /etc/nginx/nginx.conf:18, GLOBÁLNĚ
+app.ludone.cz to NEPŘEPISUJE    ← 09-app-prod-zone.conf nemá vlastní limit
+```
+
+🔴 **Hodinová stopa má 40–120 MB, strop je 50 MB.** Upload v jednom kuse spadne. Buď drž
+kousky pod 50 MB, nebo pro ten endpoint limit zvyš — a **změř, že to platí**, ne že to je
+v konfiguraci. Sousední `21-supabase.conf:58` už streamovaný upload řeší
+(`proxy_request_buffering off`).
 
 ## 2. Tvar dat: zmrazený, spolehni se na něj
 
