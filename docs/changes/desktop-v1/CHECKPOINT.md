@@ -3,7 +3,7 @@
 **PŘEPISUJE se po každé vlně, neroste.** Pojistka proti compaction: kdo to čte s prázdným
 kontextem, musí pokračovat, aniž by se ptal. Zadání: [`BEH-NOC.md`](BEH-NOC.md).
 
-**Poslední zápis: 2. 9. 2026 — CELÝ STOH JE V `main`. Devět stories, žádný otevřený PR.**
+**Poslední zápis: 2. 9. 2026 odpoledne — PRVNÍ ŽIVÉ SPUŠTĚNÍ a první živé přihlášení.**
 
 🔴 **Režim od 23:15 (Dan): NEPTAT SE.** Bezpečné vratné defaulty rozhodni a zapiš do
 `decisions.md`. Hard gate (produkce, DB, Tabidoo, killswitch, money/RBAC/design) fail-closed:
@@ -240,3 +240,51 @@ tři čtvrtiny práce na `main` nejsou. Jediné, co to odhalí, je `git merge-ba
 Beze změny proti nočnímu reportu: Screen Recording · statický OAuth client · spor o money
 pravidlo v B6 · účet `zasedacka@` pro B10 · tři díry v zapojení. Nově přibylo:
 **`orca-codex.sh` neumí pustit Codex ve worktree** (dnes dvakrát selhal, viz `DAN-TODO.md`).
+
+---
+
+# ✅ APLIKACE POPRVÉ BĚŽELA — 2. 9. 2026
+
+**A okamžitě to našlo tři vady, které 331 zelených testů přehlédlo.** To je dnešní hlavní
+výsledek, ne řádky kódu.
+
+## Co se stalo, v pořadí
+
+1. **Aplikace spuštěna** (`npm run build && npm start`) — ikona v liště, panel se načetl.
+2. **Dan si ji otevřel** a hned viděl kalendář, který sám zrušil na approval gate.
+3. **Client ID založen** jedním `curl` (DCR) a uložen mimo git.
+4. **Dan se poprvé přihlásil naostro** — a přihlášení se zahodilo.
+
+## Tři vady, které našlo jen spuštění
+
+| # | vada | proč to testy nechytily |
+|---|---|---|
+| 1 | **zrušený kalendář byl pořád v UI** | odstranění funkce nemá přirozené měřidlo — vrácení `TodayAgenda.jsx` prošlo `328 passed` a čistým lintem |
+| 2 | **přihlášení se zahodilo kvůli chybějícímu JMÉNU** | testy si identitu podstrkovaly; skutečný tvar odpovědi serveru nikdo neviděl |
+| 3 | **retence by nikdy nic nesmazala** | politika se čte z rendereru dřív, než se stihne načíst; harness hodnotu podstrčil |
+
+🔴 **Všechny tři jsou téže povahy: test měřil to, co si sám připravil.** Masterplán proto
+odděluje 🧪 „zelené testy" od ✅ „ověřeno naostro" — dnes se ta hranice poprvé vyplatila.
+
+## Stav
+
+- **`main`: 331 testů**, kalendář odstraněn (PR #14) i s bránou proti návratu.
+- **Client ID**: `ldmcp_oauth_client_prod_v1_…` v `.env.local` (mimo git, ověřeno `git check-ignore`).
+- **Rozhodnutí BD-N28 až BD-N33** zapsaná.
+- **Běží dva Codex panely**: oprava retence (čte se moc brzo) a oprava identity
+  (přihlášení nesmí padat na chybějícím jménu).
+
+## Co brání dokončení
+
+| co | kde |
+|---|---|
+| server nevrací **jméno uživatele** | `ludone-app`, `ludone_ping` — zapsáno v `DAN-TODO.md` |
+| **scope pro odesílání neexistuje** | `ludone-app`; blokuje `DSK-F010` |
+| panel **neodpovídá schválenému designu** | Danovo rozhodnutí: sladit až po zapojení (BD-N31) |
+| `RecordingCard` **nemá unit pokrytí** | změřeno sabotáží, zapsáno |
+
+## Pravidlo pro pokračovatele
+
+🔴 **Nespouštěj druhý Codex job nad `main.cjs`, dokud první neskončí.** Všechna zbývající
+práce v něm sahá do stejného souboru; dva zapisovatelé si vyrobí konflikty při rebase.
+Jeden worktree = jeden zapisovatel platí, ale tady je omezení tvrdší: jeden SOUBOR = jeden job.
