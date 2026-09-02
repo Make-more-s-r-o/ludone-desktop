@@ -658,3 +658,37 @@ neuveze — client ID musí být uložené **v páru s originem**.
 Dan schválil. Zmrazení chrání **požadavky** (R1–R25, acceptance scénáře), ne stavové
 sloupce. Matice `spec.md` §3 byla od 1. 9. neaktuální a tvrdila `no-code` u funkcí, které
 jsou mergnuté — masterplán přitom osy označuje za jediný zdroj pravdy o stavu.
+
+### BD-N31 — panel se schválenému designu NEODPOVÍDÁ; sladí se AŽ po zapojení
+
+**Zjištěno 2. 9. 2026 spuštěním aplikace a srovnáním se schváleným náhledem** — nikoli
+čtením kódu. Dan se podíval sám a rozdílu si všiml dřív, než jsem ho stihl nahlásit.
+
+Schválený design má u klidového panelu jedinou hlavní větu: **„Panel má dvě věci a nic
+jiného."** Skutečnost má tři a obě karty jsou výrazně těžší, než návrh předepisuje.
+
+| | schválený design | běží dnes |
+|---|---|---|
+| kalendář | `explicitlyCut` — „ruší se" | 🔴 je tam (odstraňuje Codex) |
+| hlavička | `LuDone · Dan Jirotka · připojeno` | odznak „Připraveno" |
+| Nahrávání | řádek + souhrn `Dnes 2 nahrávky · 1h 12m` | velká karta s chybovým textem |
+| LuTrack | řádek + souhrn `Dnes vykázáno 3h 05m` | karta s výběrem projektu a popisem |
+| patička | 🔴 `Vše odesláno · 13:58` + Nastavení | jméno uživatele + ozubené kolo |
+| měřáky stop | schválený nový prvek DS | ⛔ neexistuje |
+
+🔴 **Nejcennější zjištění není vzhled, ale patička.** `Vše odesláno · 13:58` je **jediné
+místo v celém designu, kde je vidět odchozí fronta**. Fronta je postavená a otestovaná, ale
+neměla kde se zobrazit — teď víme proč: design jí dal domov a implementace ho nepostavila.
+
+**Danovo rozhodnutí: sladit AŽ PO zapojení.** Důvod, který rozhodl: design počítá se souhrny
+(„Dnes 2 nahrávky", „Vše odesláno"), a to jsou **data, která zatím nikdo nepočítá**. Překreslit
+panel teď by znamenalo vyrobit další atrapy — a atrapa, která vypadá hotově, je nejnebezpečnější
+druh rozdělané práce. Tenhle projekt už jednu takovou má: časovač, který sám přiznává
+„uložení do LuTracku je ukázkové".
+
+**Co z toho plyne pro pořadí prací:** zapojení (časovač, fronta, odhlášení) → teprve pak
+překreslení panelu podle designu, protože až tehdy budou souhrny čím naplnit.
+
+⚠️ **Poučení do procesu:** masterplán velí porovnávat diff proti schválenému designu. U hlavního
+procesu se to dělalo, **u vzhledu panelu ne** — a nikdo si toho nevšiml, dokud aplikaci někdo
+nespustil. Zelené testy tuhle třídu vady nezachytí ani náhodou.
