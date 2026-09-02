@@ -1,5 +1,10 @@
 # OAuth: co přesně založit v app.ludone
 
+> 🔴 **AKTUALIZOVÁNO 2. 9. 2026 po ŽIVÉM MĚŘENÍ.** Původní verze tohohle dokumentu vznikla
+> jen ze čtení desktopového kódu a **dvě její obavy se ukázaly jako bezpředmětné**. Opravené
+> pasáže jsou označené. Poučení do procesu: než napíšu člověku úkol, mám se podívat i na
+> **druhou stranu rozhraní** — ne jen na tu svoji.
+
 **Pro Dana, 2. 9. 2026.** Ptal ses „dej mi vědět, co mám založit, už OAuth mám nějak na
 ludone app, můžu rozšířit, nebo nový" — a přidal jsi požadavek, aby aplikace fungovala
 i pro **jiné instalace app.ludone pro jiné klienty**.
@@ -10,6 +15,11 @@ a `electron/main.cjs` ve stavu `main` k 2. 9. 2026.
 ---
 
 ## Krátká odpověď
+
+🔴 **NENÍ to Google Console.** `app.ludone.cz` **sám je OAuth server** — tentýž, přes který
+se ke tvému MCP konektoru přihlašuje Claude. Kód je v `LuDone/ludone-app`, `src/mcp/oauth/`.
+Ověřeno živým dotazem 2. 9. 2026: discovery vrací `HTTP 200`, `S256`, scopy `mcp:read`
+a `mcp:draft`, a nabízí i registrační endpoint.
 
 **Založ NOVÝ klient, nerozšiřuj stávající.** Desktop je *veřejný* klient (native app) bez
 tajemství — nesmí sdílet registraci s webem, který tajemství má. Kdyby sdílely, únik
@@ -28,14 +38,14 @@ z desktopu by kompromitoval i web.
 | **scope** | `mcp:read` | `auth.cjs:915`; `validatedMcpScope` pustí **jen MCP scopy** |
 | **resource** | `https://<origin>/api/mcp` | `auth.cjs:916` |
 
-### 🔴 Redirect URI: port je NÁHODNÝ, nedá se předem zapsat
+### ✅ Redirect URI: port je náhodný, ale server to UŽ ŘEŠÍ
 
 `server.listen(0, "127.0.0.1")` (`auth.cjs:220`) říká systému „dej mi jakýkoli volný port".
 Port se tedy při každém přihlášení liší a **nelze ho zaregistrovat napevno**.
 
-Server proto musí u loopback redirectů porovnávat **schéma, hostitele a cestu, ale port
-ignorovat** — přesně jak to předepisuje RFC 8252 §7.3 pro nativní aplikace. Většina
-knihoven to umí zapnout; když to tvoje neumí, je to blocker, ne detail.
+✅ **Změřeno v `ludone-app/src/mcp/oauth/dcr.ts:108–119`: server port u loopbacku odstraňuje
+u obou stran, než je porovná.** Registrace `http://127.0.0.1/callback` proto sedne na jakýkoli
+port. Původně jsem to psal jako riziko a blocker — **není to ani jedno**.
 
 Zaregistruj obojí, ať pokryješ obě smyčky:
 
@@ -44,8 +54,9 @@ http://127.0.0.1/callback
 http://[::1]/callback
 ```
 
-⚠️ **`localhost` nestačí a nepoužívej ho** — kód porovnává doslova `127.0.0.1`
-(`auth.cjs:7`), a `localhost` se navíc může přeložit na cizí rozhraní.
+✅ Server uznává `localhost`, `127.0.0.1` i `[::1]` (`dcr.ts:80–87`), a `http` pouští
+**jen** u loopbacku (`dcr.ts:102`). Desktop sám používá doslova `127.0.0.1` (`auth.cjs:7`),
+takže stačí registrovat ten.
 
 ## 2. Co musí server vystavit, jinak přihlášení nezačne
 
@@ -105,12 +116,14 @@ ID musí být uložené **spolu s originem**, jako dvojice.
 
 ## 4. Co potřebuju od tebe, seřazeno
 
-1. **Client ID** z nové registrace pro `https://app.ludone.cz`. Pošli do chatu, uložím ho
-   mimo git — secrets do repa nepatří.
-   *(Client ID sám o sobě tajemství není, ale nechci ho zabetonovat do zdrojáku.)*
-2. **Potvrdit, že server u loopback redirectů ignoruje port.** Bez toho přihlášení
-   spadne na `redirect_uri_mismatch` — a to až v prohlížeči, tedy nejhůř čitelně.
+1. **Client ID** se stabilní hodnotou pro `https://app.ludone.cz`. Jak přesně ho v tomhle
+   systému založit ručně, **zjišťuje běžící Codex audit** — dokud nedoběhne, nic nezakládej.
+2. ~~Potvrdit, že server ignoruje port~~ — ✅ **hotovo, změřeno v kódu serveru.**
 3. **Rozhodnout multi-tenant A/B/C.** Doporučuju B; do té doby zůstává seznam dvou hostů.
+
+⚠️ **Podezření, které audit ověřuje:** server nabízí jen `mcp:read` a `mcp:draft`. Pokud
+neexistuje scope pro **odesílání** nahrávek a naměřeného času, je to skutečný blocker pro
+`DSK-F010` — a znamená to serverovou práci, ne desktopovou.
 
 ## 5. Co udělám hned, jak přijde client ID
 
