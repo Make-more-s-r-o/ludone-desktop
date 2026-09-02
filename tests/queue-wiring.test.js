@@ -75,6 +75,7 @@ afterEach(async () => {
  * @param {string} userDataPath
  * @param {{
  *   deferPanelLoad?: boolean,
+ *   isPackaged?: boolean,
  *   deferSettingsRead?: boolean,
  *   navigateDuringSettingsRead?: boolean,
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
