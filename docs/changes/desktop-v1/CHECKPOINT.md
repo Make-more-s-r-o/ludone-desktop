@@ -30,7 +30,9 @@ v `DAN-TODO.md`.
 | PR **#25** — export schůzky do jednoho souboru | ✅ hotový, brány lokálně zelené, **čeká na CI** |
 | PR **#26** — onboarding: čekání na prohlížeč + test záznamu | ✅ hotový, **naskládaný na #25**, čeká na CI |
 | worktree `desktop-export` | ⚠️ drží větev k PR #25 |
+| PR **#27** — adresa přihlášení na čekací obrazovce | ✅ hotový, **naskládaný na #26**, čeká na CI |
 | worktree `desktop-onboarding` | ⚠️ drží větev k PR #26 |
+| worktree `desktop-authurl` | ⚠️ drží větev k PR #27 |
 
 ## PR #25 — co v něm je a proč je dobrý
 
@@ -111,10 +113,27 @@ Kvůli témuž bylo nutné dorovnat `scripts/ui-smoke.mjs` — v automatu není 
 Sabotáže 3🔴 : 1🟢 proběhly, počet testů 443 před i po (ta kontrola je tu dnes podruhé
 k něčemu dobrá). Brány: `lint=0` `typecheck=0` `build=0`, **437 passed | 6 skipped**.
 
-🔴 **Zbývající blocker PR #26:** čekací obrazovka neumí ukázat autorizační URL ani
-„Kopírovat", jak chce schválený návrh — `preload` vystavuje jen `beginAuth`/`cancelAuth`.
-Dotažení je samostatný PR s novým IPC kanálem (kanál smí nést jen URL, a musí do inventury
-v `tests/ipc-sender-guard.test.js`).
+✅ **Blocker PR #26 je zavřený v PR #27** — nový kanál `auth:pending-url`, adresa žije jen
+po dobu pokusu a `beginAuth` ji nuluje ve `finally`.
+
+---
+
+## 🔴 STOH TŘÍ PR — MERGUJ ODSPODU
+
+```
+main ← #25 (export)  ← #26 (onboarding)  ← #27 (adresa přihlášení)
+```
+
+Až CI ožije: **#25 → #26 → #27, v tomhle pořadí.** `gh pr merge` slučuje do **rodiče**,
+ne do `main` — po každém mergi přesměruj základ dalšího PR (`gh pr edit <n> --base main`),
+jinak ti „MERGED" oznámí něco, co v `main` vůbec není. Tahle past už jednou v tomhle
+projektu spolkla celý stoh.
+
+## Co PR #27 dokládá o branách
+
+Brána inventury IPC (`tests/ipc-sender-guard.test.js`) se ozvala **naostro během vývoje**:
+nový kanál ji shodil dřív, než jsem ho stihl dopsat do seznamu. Není to tedy jen teoreticky
+sabotovatelná kontrola — reálně zastavila neúplnou práci.
 
 ## První příkazy po probuzení
 
