@@ -1,143 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { MicIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
+import { captureAudioSources, stopStreams } from "../../lib/audio-levels.js";
 import { createStereoCapture } from "../../lib/stereo-recording.js";
 
-const CAPTURE_TIMEOUT_MS = 15_000;
-const TRACK_UNMUTE_TIMEOUT_MS = 2_000;
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
 const RECORDING_TIMESLICE_MS = 1_000;
 
 function describeError(error) {
   if (!error) return "neznámá chyba";
   return error.message || String(error);
-}
-
-function stopStreams(streams) {
-  for (const stream of streams) {
-    for (const track of stream.getTracks()) track.stop();
-  }
-}
-
-function captureWithTimeout(capturePromise, label) {
-  let timedOut = false;
-  let timeoutId;
-  const guardedCapture = capturePromise.then((stream) => {
-    if (timedOut) {
-      stopStreams([stream]);
-      throw new DOMException(`${label} se vrátil až po timeoutu`, "TimeoutError");
-    }
-    return stream;
-  });
-  const timeout = new Promise((_resolve, reject) => {
-    timeoutId = window.setTimeout(() => {
-      timedOut = true;
-      reject(new DOMException(
-        `${label} nevrátil stream do ${CAPTURE_TIMEOUT_MS / 1_000} sekund`,
-        "TimeoutError",
-      ));
-    }, CAPTURE_TIMEOUT_MS);
-  });
-  return Promise.race([guardedCapture, timeout]).finally(() => window.clearTimeout(timeoutId));
-}
-
-function waitUntilUnmuted(track, label) {
-  if (!track.muted) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const cleanup = () => {
-      window.clearTimeout(timeoutId);
-      track.removeEventListener("unmute", handleUnmute);
-      track.removeEventListener("ended", handleEnded);
-    };
-    const handleUnmute = () => {
-      cleanup();
-      resolve();
-    };
-    const handleEnded = () => {
-      cleanup();
-      reject(new Error(`${label} skončila ještě před začátkem nahrávání`));
-    };
-    const timeoutId = window.setTimeout(() => {
-      cleanup();
-      reject(new Error(`${label} zůstává ztišená`));
-    }, TRACK_UNMUTE_TIMEOUT_MS);
-    track.addEventListener("unmute", handleUnmute, { once: true });
-    track.addEventListener("ended", handleEnded, { once: true });
-    if (!track.muted) handleUnmute();
-    else if (track.readyState === "ended") handleEnded();
-  });
-}
-
-async function checkedAudioTrack(stream, label) {
-  const tracks = stream.getAudioTracks();
-  if (tracks.length !== 1) {
-    throw new Error(`${label} neposkytla právě jednu audio stopu (nalezeno ${tracks.length})`);
-  }
-  const [track] = tracks;
-  if (track.kind !== "audio" || track.readyState !== "live" || !track.enabled) {
-    throw new Error(`${label} neposkytla živou a povolenou audio stopu`);
-  }
-  await waitUntilUnmuted(track, label);
-  if (track.readyState !== "live" || !track.enabled || track.muted) {
-    throw new Error(`${label} není před startem použitelná`);
-  }
-  return track;
-}
-
-async function captureAudioSources() {
-  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !navigator.mediaDevices?.getDisplayMedia) {
-    throw new Error("Stránka nemá zabezpečený přístup k audio zařízením");
-  }
-
-  const microphonePromise = captureWithTimeout(navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: false,
-      noiseSuppression: false,
-      autoGainControl: false,
-    },
-    video: false,
-  }), "Mikrofon");
-  const displayPromise = captureWithTimeout(
-    navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }),
-    "Systémový zvuk",
-  ).then((stream) => {
-    for (const videoTrack of stream.getVideoTracks()) videoTrack.stop();
-    return stream;
-  });
-
-  const [microphoneResult, displayResult] = await Promise.allSettled([
-    microphonePromise,
-    displayPromise,
-  ]);
-  const acquiredStreams = [microphoneResult, displayResult]
-    .filter((result) => result.status === "fulfilled")
-    .map((result) => result.value);
-  if (microphoneResult.status === "rejected" || displayResult.status === "rejected") {
-    stopStreams(acquiredStreams);
-    const failures = [];
-    if (microphoneResult.status === "rejected") {
-      failures.push(`mikrofon: ${describeError(microphoneResult.reason)}`);
-    }
-    if (displayResult.status === "rejected") {
-      failures.push(`systémový zvuk: ${describeError(displayResult.reason)}`);
-    }
-    throw new Error(failures.join("; "));
-  }
-
-  try {
-    const [microphoneTrack, systemTrack] = await Promise.all([
-      checkedAudioTrack(microphoneResult.value, "Mikrofon"),
-      checkedAudioTrack(displayResult.value, "Systémový zvuk"),
-    ]);
-    return {
-      streams: acquiredStreams,
-      microphoneTrack,
-      systemTrack,
-    };
-  } catch (error) {
-    stopStreams(acquiredStreams);
-    throw error;
-  }
 }
 
 function recorderOptions() {

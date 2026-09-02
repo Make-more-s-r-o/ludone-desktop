@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthErrorScreen } from "./AuthErrorScreen.jsx";
+import { RecordingTestStep } from "./RecordingTestStep.jsx";
+import { createStereoLevelSession } from "../lib/audio-levels.js";
 import {
   ArrowRightIcon,
   BrowserIcon,
@@ -25,24 +27,91 @@ const PERMISSIONS = [
   },
 ];
 
-const STEPS = ["Vítejte", "Přihlášení", "Oprávnění", "Hotovo"];
+const STEPS = [
+  "Vítejte",
+  "Přihlášení",
+  "Čekání na prohlížeč",
+  "Oprávnění",
+  "Test záznamu",
+  "Hotovo",
+];
+
+const AUTH_WAIT_SECONDS = 10 * 60;
+
+function formatCountdown(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function cancelAuthQuietly() {
+  try {
+    void Promise.resolve(window.ludone.cancelAuth()).catch(() => {});
+  } catch {
+    // Při zavírání rendereru už může být preload most nedostupný.
+  }
+}
 
 export function Onboarding({ onAuthenticated, onComplete }) {
   const [step, setStep] = useState(0);
   const [authBusy, setAuthBusy] = useState(false);
+  const [authDeadline, setAuthDeadline] = useState(0);
   const [authFailure, setAuthFailure] = useState("");
+  const [authSecondsRemaining, setAuthSecondsRemaining] = useState(AUTH_WAIT_SECONDS);
+  const [authWaitingActionBusy, setAuthWaitingActionBusy] = useState(false);
   const [permissionBusy, setPermissionBusy] = useState("");
   const [permissions, setPermissions] = useState({});
+  const [recordingTestResult, setRecordingTestResult] = useState("not-run");
+  const [recordingTestSession, setRecordingTestSession] = useState(null);
+  const authAttemptRef = useRef(0);
+  const authBusyRef = useRef(false);
+  const mountedRef = useRef(true);
+  const recordingTestStartedRef = useRef(false);
   const allGranted = useMemo(
     () => PERMISSIONS.every((permission) => permissions[permission.id]?.status === "granted"),
     [permissions],
   );
 
+  useEffect(() => {
+    if (step !== 2 || !authBusy) return undefined;
+    let expired = false;
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((authDeadline - Date.now()) / 1_000));
+      setAuthSecondsRemaining(remaining);
+      if (remaining !== 0 || expired) return;
+      expired = true;
+      authAttemptRef.current += 1;
+      authBusyRef.current = false;
+      setAuthBusy(false);
+      setAuthFailure("vyprselo");
+      cancelAuthQuietly();
+    };
+    const timer = window.setInterval(updateCountdown, 1_000);
+    return () => window.clearInterval(timer);
+  }, [authBusy, authDeadline, step]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      authAttemptRef.current += 1;
+      if (!authBusyRef.current) return;
+      authBusyRef.current = false;
+      cancelAuthQuietly();
+    };
+  }, []);
+
   async function beginAuth() {
+    const attemptId = authAttemptRef.current + 1;
+    authAttemptRef.current = attemptId;
+    authBusyRef.current = true;
     setAuthBusy(true);
     setAuthFailure("");
+    setAuthDeadline(Date.now() + (AUTH_WAIT_SECONDS * 1_000));
+    setAuthSecondsRemaining(AUTH_WAIT_SECONDS);
+    setStep(2);
     try {
       const result = await window.ludone.beginAuth();
+      if (authAttemptRef.current !== attemptId) return;
       if (!result?.ok) {
         setAuthFailure(
           typeof result?.duvod === "string" && result.duvod.length > 0
@@ -52,12 +121,64 @@ export function Onboarding({ onAuthenticated, onComplete }) {
         return;
       }
       onAuthenticated(result.user);
-      setStep(2);
+      setStep(3);
     } catch {
+      if (authAttemptRef.current !== attemptId) return;
       setAuthFailure("neznama");
     } finally {
-      setAuthBusy(false);
+      if (authAttemptRef.current === attemptId) {
+        authBusyRef.current = false;
+        setAuthBusy(false);
+      }
     }
+  }
+
+  async function leaveAuthWaiting(retry) {
+    if (authWaitingActionBusy) return;
+    const actionId = authAttemptRef.current + 1;
+    authAttemptRef.current = actionId;
+    setAuthWaitingActionBusy(true);
+    let shouldRetry = false;
+    try {
+      await window.ludone.cancelAuth();
+      if (!mountedRef.current || authAttemptRef.current !== actionId) return;
+      authBusyRef.current = false;
+      shouldRetry = retry;
+      if (!retry) {
+        setAuthBusy(false);
+        setStep(1);
+      }
+    } catch {
+      if (!mountedRef.current || authAttemptRef.current !== actionId) return;
+      authBusyRef.current = false;
+      setAuthFailure("neznama");
+      setAuthBusy(false);
+    } finally {
+      if (mountedRef.current && authAttemptRef.current === actionId) {
+        setAuthWaitingActionBusy(false);
+      }
+    }
+    if (shouldRetry && mountedRef.current && authAttemptRef.current === actionId) {
+      void beginAuth();
+    }
+  }
+
+  function enterRecordingTest() {
+    if (recordingTestStartedRef.current) return;
+    recordingTestStartedRef.current = true;
+    setRecordingTestResult("not-run");
+    // Volání začíná přímo v click handleru, aby getDisplayMedia zachovalo
+    // uživatelskou aktivaci. Komponenta pak převezme hotový promise i cleanup.
+    startRecordingTestAttempt();
+    setStep(4);
+  }
+
+  function startRecordingTestAttempt() {
+    const controller = new AbortController();
+    setRecordingTestSession({
+      cancel: () => controller.abort(),
+      promise: createStereoLevelSession({ signal: controller.signal }),
+    });
   }
 
   async function grantPermission(id) {
@@ -189,6 +310,44 @@ export function Onboarding({ onAuthenticated, onComplete }) {
       )}
 
       {step === 2 && (
+        <section
+          className="onboarding__content auth-waiting-step"
+          data-auth-waiting-state="waiting"
+          data-testid="auth-waiting-screen"
+          role="status"
+        >
+          <div className="auth-waiting-spinner" aria-hidden="true" />
+          <h1>Čekám na prohlížeč</h1>
+          <time
+            className="auth-waiting-countdown"
+            data-testid="auth-waiting-countdown"
+          >
+            {formatCountdown(authSecondsRemaining)}
+          </time>
+          <div className="auth-waiting-actions">
+            <button
+              type="button"
+              className="button button--primary button--wide"
+              data-testid="auth-waiting-retry"
+              disabled={authWaitingActionBusy}
+              onClick={() => leaveAuthWaiting(true)}
+            >
+              Zkusit znovu
+            </button>
+            <button
+              type="button"
+              className="button button--wide"
+              data-testid="auth-waiting-cancel"
+              disabled={authWaitingActionBusy}
+              onClick={() => leaveAuthWaiting(false)}
+            >
+              Zrušit
+            </button>
+          </div>
+        </section>
+      )}
+
+      {step === 3 && (
         <section className="onboarding__content permission-step">
           <div className="onboarding-icon"><MicIcon /></div>
           <p className="eyebrow">Dvě srozumitelná oprávnění</p>
@@ -228,20 +387,40 @@ export function Onboarding({ onAuthenticated, onComplete }) {
             type="button"
             className="button button--primary button--wide"
             disabled={!allGranted}
-            onClick={() => setStep(3)}
+            onClick={enterRecordingTest}
           >
             Pokračovat <ArrowRightIcon />
           </button>
         </section>
       )}
 
-      {step === 3 && (
-        <section className="onboarding__content done-step">
+      {step === 4 && recordingTestSession && (
+        <RecordingTestStep
+          sessionAttempt={recordingTestSession}
+          onRetry={startRecordingTestAttempt}
+          onPassed={() => {
+            setRecordingTestResult("passed");
+            setStep(5);
+          }}
+          onSkipped={() => {
+            setRecordingTestResult("skipped");
+            setStep(5);
+          }}
+        />
+      )}
+
+      {step === 5 && (
+        <section
+          className="onboarding__content done-step"
+          data-recording-test-result={recordingTestResult}
+        >
           <div className="done-check"><CheckIcon /></div>
           <p className="eyebrow">Všechno je připravené</p>
           <h1>LuDone čeká<br />v horní liště.</h1>
           <p className="lead">
-            Odtud spustíte nahrávání a zapnete LuTrack. Bez zbytečného přepínání oken.
+            {recordingTestResult === "passed"
+              ? "Oba kanály slyším. Panel najdeš pod ikonou v horní liště."
+              : "Záznam jsme spolu nevyzkoušeli. Panel najdeš pod ikonou v horní liště; test si můžeš kdykoli pustit z Nastavení."}
           </p>
           <div className="tray-preview" aria-label="Ukázka stavů ikony v horní liště">
             <div><span className="tray-symbol tray-symbol--idle" /><small>Nečinná</small></div>

@@ -8,6 +8,104 @@ import { App } from "../src/App.jsx";
 import { queueFooterStatus } from "../src/lib/panel.js";
 
 const USER = { name: "Dan Jirotka", email: "dan@ludone.cz" };
+const onboardingAudioFrames = new WeakMap();
+
+function installPassingOnboardingAudio(view) {
+  const frames = new Map();
+  let nextFrameId = 1;
+  onboardingAudioFrames.set(view, frames);
+  view.requestAnimationFrame = (callback) => {
+    const id = nextFrameId;
+    nextFrameId += 1;
+    frames.set(id, callback);
+    return id;
+  };
+  view.cancelAnimationFrame = (id) => frames.delete(id);
+  const microphoneTrack = Object.assign(new view.EventTarget(), {
+    enabled: true,
+    kind: "audio",
+    label: "Testovací mikrofon",
+    muted: false,
+    readyState: "live",
+    stop: vi.fn(),
+  });
+  const systemTrack = Object.assign(new view.EventTarget(), {
+    enabled: true,
+    kind: "audio",
+    label: "Testovací systémový zvuk",
+    muted: false,
+    readyState: "live",
+    stop: vi.fn(),
+  });
+  const videoTrack = Object.assign(new view.EventTarget(), {
+    enabled: true,
+    kind: "video",
+    label: "Testovací obraz",
+    muted: false,
+    readyState: "live",
+    stop: vi.fn(),
+  });
+  const microphoneStream = {
+    getAudioTracks: () => [microphoneTrack],
+    getTracks: () => [microphoneTrack],
+    getVideoTracks: () => [],
+  };
+  const systemStream = {
+    getAudioTracks: () => [systemTrack],
+    getTracks: () => [systemTrack, videoTrack],
+    getVideoTracks: () => [videoTrack],
+  };
+  Object.defineProperty(view.navigator, "mediaDevices", {
+    configurable: true,
+    value: {
+      getDisplayMedia: vi.fn().mockResolvedValue(systemStream),
+      getUserMedia: vi.fn().mockResolvedValue(microphoneStream),
+    },
+  });
+  Object.defineProperty(view, "isSecureContext", { configurable: true, value: true });
+  view.HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+    clearRect: vi.fn(),
+    fillRect: vi.fn(),
+    fillStyle: "",
+  }));
+
+  class PassingAudioContext {
+    constructor() {
+      this.destination = {};
+      this.state = "running";
+    }
+
+    close() {
+      this.state = "closed";
+      return Promise.resolve();
+    }
+
+    createAnalyser() {
+      return {
+        fftSize: 0,
+        smoothingTimeConstant: 0,
+        disconnect: vi.fn(),
+        getFloatTimeDomainData(target) {
+          for (let index = 0; index < target.length; index += 1) {
+            target[index] = index % 2 === 0 ? 0.25 : -0.25;
+          }
+        },
+      };
+    }
+
+    createMediaStreamSource() {
+      return { connect: vi.fn(), disconnect: vi.fn() };
+    }
+
+    resume() {
+      return Promise.resolve();
+    }
+  }
+  Object.defineProperty(view, "AudioContext", {
+    configurable: true,
+    value: PassingAudioContext,
+  });
+}
 
 /** @param {{ name?: string, email?: string }} [storedUser] */
 function renderIdlePanel(storedUser = USER) {
@@ -52,6 +150,7 @@ async function renderInteractivePanel(listQueue, options = {}) {
       ...ludone,
     },
   });
+  installPassingOnboardingAudio(dom.window);
   configureWindow(dom.window);
 
   vi.stubGlobal("React", React);
@@ -60,6 +159,7 @@ async function renderInteractivePanel(listQueue, options = {}) {
   vi.stubGlobal("navigator", dom.window.navigator);
   vi.stubGlobal("Node", dom.window.Node);
   vi.stubGlobal("HTMLElement", dom.window.HTMLElement);
+  vi.stubGlobal("AudioContext", dom.window.AudioContext);
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
 
   const root = createRoot(dom.window.document.querySelector("#root"));
@@ -75,6 +175,22 @@ async function renderInteractivePanel(listQueue, options = {}) {
       vi.unstubAllGlobals();
     },
   };
+}
+
+async function continueThroughRecordingTest(panel, click) {
+  const continueButton = panel.document.querySelector('[data-testid="recording-test-continue"]');
+  const frames = onboardingAudioFrames.get(panel.document.defaultView);
+  for (let attempt = 0; attempt < 10 && continueButton?.disabled; attempt += 1) {
+    await React.act(async () => Promise.resolve());
+    const next = frames?.entries().next().value;
+    if (next) {
+      const [id, callback] = next;
+      frames.delete(id);
+      await React.act(async () => callback(panel.document.defaultView.performance.now()));
+    }
+  }
+  expect(continueButton?.disabled).toBe(false);
+  await click(continueButton);
 }
 
 describe("schválený klidový panel", () => {
@@ -203,6 +319,7 @@ describe("schválený klidový panel", () => {
       }
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Pokračovat")));
+      await continueThroughRecordingTest(panel, click);
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Otevřít můj panel")));
 
@@ -241,6 +358,7 @@ describe("schválený klidový panel", () => {
       }
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Pokračovat")));
+      await continueThroughRecordingTest(panel, click);
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Otevřít můj panel")));
       finishSessionCheck(false);
@@ -279,6 +397,7 @@ describe("schválený klidový panel", () => {
       }
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Pokračovat")));
+      await continueThroughRecordingTest(panel, click);
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Otevřít můj panel")));
 

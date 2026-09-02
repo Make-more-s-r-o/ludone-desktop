@@ -1004,7 +1004,7 @@ svg {
 
 .step-track {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 3px;
   padding: 0 16px;
 }
@@ -1183,6 +1183,42 @@ svg {
   background: var(--border-strong);
 }
 
+.auth-waiting-step {
+  justify-content: safe center;
+  gap: 18px;
+  padding-bottom: 34px;
+}
+
+.auth-waiting-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border-strong);
+  border-top-color: var(--green-bright);
+  border-radius: 50%;
+  animation: auth-waiting-spin 900ms linear infinite;
+}
+
+.auth-waiting-countdown {
+  width: 5ch;
+  color: var(--muted-foreground);
+  font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.auth-waiting-actions {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@keyframes auth-waiting-spin {
+  to { transform: rotate(1turn); }
+}
+
 .text-button {
   margin-top: 12px;
   padding: 5px 10px;
@@ -1272,6 +1308,97 @@ svg {
 .permission-row .button svg {
   width: 14px;
   height: 14px;
+}
+
+.recording-test-step {
+  padding-top: 30px;
+}
+
+.recording-test-step h1 {
+  font-size: 22px;
+}
+
+.recording-test-levels {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 13px;
+  margin-top: 28px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-elevated);
+}
+
+.recording-test-level {
+  display: grid;
+  min-height: 24px;
+  grid-template-columns: 76px minmax(0, 1fr) 54px;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.recording-test-level__label {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.recording-test-level__meter {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--muted);
+}
+
+.recording-test-level__meter canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.recording-test-level__status {
+  justify-self: stretch;
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: var(--surface-elevated-2);
+  color: var(--muted-foreground);
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.recording-test-level__status.is-live {
+  background: var(--green-soft);
+  color: var(--green-bright);
+}
+
+.recording-test-device {
+  width: 100%;
+  min-height: 38px;
+  padding: 11px;
+  margin: 12px 0 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-elevated);
+  color: var(--muted-foreground);
+  font-size: 11px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recording-test-step > .button--wide + .button--wide {
+  margin-top: 8px;
+}
+
+.recording-test-hint {
+  margin-top: 10px;
+  color: var(--subtle-foreground);
+  font-size: 9.5px;
+  line-height: 1.4;
 }
 
 .done-step {
