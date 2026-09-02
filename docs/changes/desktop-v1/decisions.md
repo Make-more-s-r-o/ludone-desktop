@@ -548,3 +548,62 @@ Vykonavatel si toho tedy všiml a tělo PR přesto tvrdilo opak. **Opraveno v PR
 nepopisuje. Buď se retence povede pod F015, nebo dostane vlastní `DSK-F017`. **Je to změna
 zmrazené matice, tedy Danovo rozhodnutí.** Doporučený default: vlastní ID, protože „Nastavení"
 je obrazovka, ne chování.
+
+---
+
+## Sloučení stohu do main — 2. 9. 2026
+
+### BD-N22 — 🔴 `gh pr merge` na stohovaný PR ho sloučí do RODIČE, ne do `main`
+
+Sloučil jsem #2, #3, #5, #8, #10 jedním během. Výsledek: **#5 skončil v `orca/desktop-b4`,
+#8 v `b8` a #10 v `b9`.** Na `main` dojely jen B1 a B4; B8, B9 a B9b zůstaly o patro níž.
+
+**Proč:** GitHub přesměruje potomka na `main` až ve chvíli, kdy se base větev po mergi
+**smaže**. Bez `--delete-branch` se PR sloučí přesně tam, kam míří — do rodiče.
+
+**Zákeřné je, že to vypadá jako úspěch.** Všech pět hlásilo `MERGED`, `gh pr list` byl prázdný
+a nic nezčervenalo. Odhalilo to až ověření `git merge-base --is-ancestor <větev> origin/main`.
+
+**Náprava:** větve se po fast-forwardech vršily, takže `b9` obsahovala celou linii. Ověřil
+jsem to **porovnáním obsahu, ne rodokmenu** — `git diff --stat` proti ověřenému zelenému
+pokusu byl prázdný — a dovezl to jedním PR #11.
+
+**Pravidlo napříště:** stoh se merguje **odspodu a po jednom**, s ověřením `is-ancestor` po
+každém kroku. Nebo se všechny PR napřed přesměrují na `main` (`gh pr edit <n> --base main`).
+
+### BD-N23 — atrapa `auth:begin` z linie časovače se při slučování zahazuje
+
+Obě linie vkládaly blok na totéž místo v `main.cjs`; strana časovače nesla starý
+`handleValidated("auth:begin", …)` s `LUDONE_OPEN_AUTH_BROWSER`, který linie přihlášení
+nahradila skutečným handlerem. **Naivní „vezmi obě strany" by kanál zaregistrovala dvakrát**
+a `ipcMain.handle` na to v Electronu vyhodí výjimku **při startu** — aplikace by se neotevřela.
+
+### BD-N24 — test odhlášení se nepřemluvil, ale zesílil
+
+`auth:logout` po B3 mění fakt a nechá stav odvodit. Test proto zaznamenává hodnotu faktu
+**v okamžiku přepočtu**, takže neprojde ani obrácené pořadí. Bez toho by sabotáž (c)
+prošla zeleně — změřeno.
+
+### BD-N25 — inventura IPC kanálů čte kód, ne prózu
+
+Povinně zelená sabotáž (komentář vypadající jako registrace) **zčervenala**. Inventura teď
+odstraňuje **celořádkové** komentáře — schválně jen ty: kdo maže každé `//`, rozřízne
+i `"https://app.ludone.cz"` uvnitř řetězce. Přibyla asserce, která duplicitní kanál
+**pojmenuje**; o dvacet minut později si na sebe vydělala při rebase B7.
+
+### BD-N26 — delegace na Codex dnes dvakrát selhala, práci jsem udělal sám
+
+První pokus spadl na hranici sandboxu (`patch rejected: writing outside of the project` —
+`orca-codex.sh` ho pustil v kořeni hlavního checkoutu, ne ve worktree), druhý pokus se
+selektorem `worktree` **vůbec nezaložil panel** a po dvou minutách vypršel.
+
+Podle vlastního pravidla („dostupnost není preference") jsem to **řekl nahlas a udělal sám**
+místo třetího pokusu. Zbývá zjistit, jak `orca-codex.sh` předat kořen worktree — zapsáno
+v `DAN-TODO.md`.
+
+### BD-N27 — oprava vlastního tvrzení v PR #6
+
+Napsal jsem tam, že mezeru „odebrání importu nechytí unit testy" zavře `queue-wiring` v B7.
+**Změřeno na přebazované B7: nezavře** — `306 passed`, stejně zeleno. Modul se načte, ale
+`TRACKING_STATES` se čte až uvnitř funkcí, které ten test nevolá. Jediné měřidlo té vady
+zůstává `lint`. Bylo to napsané jako předpoklad, ne jako měření; PR #6 je opravený.
