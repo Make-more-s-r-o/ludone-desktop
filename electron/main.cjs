@@ -156,7 +156,12 @@ function isAllowedMediaPermission(webContents, permission, details) {
   if (permission !== "media") return false;
 
   if (Array.isArray(details.mediaTypes)) {
-    return details.mediaTypes.length === 1 && details.mediaTypes[0] === "audio";
+    // Electron hlásí getDisplayMedia se systémovým zvukem jako `media` s prázdným
+    // mediaTypes. Tohle povolení samo nic nezachytí: navazující
+    // setDisplayMediaRequestHandler znovu ověří důvěryhodný rám panelu a vrátí
+    // výhradně obrazovku s audio: "loopback". Jde tedy o dvě nezávislé brány.
+    return details.mediaTypes.length === 0
+      || (details.mediaTypes.length === 1 && details.mediaTypes[0] === "audio");
   }
   return details.mediaType === "audio";
 }
