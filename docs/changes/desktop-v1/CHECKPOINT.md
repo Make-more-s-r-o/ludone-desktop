@@ -334,3 +334,41 @@ pak obviň implementaci — a když „nic se nestalo", je to stejně často chy
 ⚠️ Hlavní proces bere politiku mazání souborů **z rendereru**. Fail-closed to drží bezpečné,
 ale směr závislosti je opačný, než jak B3 a B5 postavily zbytek (fakta patří hlavnímu procesu).
 Až vznikne nastavení v hlavním procesu, přesunout.
+
+---
+
+# ✅ VŠECHNO ZAPOJENÉ A SLADĚNÉ — 2. 9. 2026 odpoledne
+
+**`main` má 372 testů, nula otevřených PR, nula worktrees, nula zombie procesů.**
+
+| PR | co |
+|---|---|
+| **#14** | odstraněn kalendář zrušený na approval gate + brána proti návratu |
+| **#15** | zapojena retence a zařazení času · ✅ **retence ověřená naostro** |
+| **#16** | přihlášení nepadá na chybějícím jménu · ✅ **přihlášení ověřené naostro** |
+| **#17** | z logu je poznat, jak přihlášení dopadlo, bez úniku tajemství |
+| **#18** | klidový panel sladěn se schváleným designem |
+
+## Dvě funkce mají `verification: verified-live`
+
+1. **`DSK-F017` retence** — 10 dní stará odeslaná nahrávka smazána skutečným během
+2. **`DSK-F003` přihlášení** — token v `~/Library/Application Support/cz.ludone.desktop/auth/oauth.enc`
+
+## Co blokuje zbytek, a je to VŠECHNO na serveru
+
+| co | proč |
+|---|---|
+| **chybí scope pro zápis** | server zná jen `mcp:read` a `mcp:draft`; desktop může frontu plnit, ne vyprazdňovat |
+| **server nevrací jméno** | panel proto píše „připojení neověřeno" |
+| **nginx strop neznámý** | `E5` krok 1, měří se přes SSH — umí to jen Dan |
+| **příjem času nespecifikován** | `E5` řeší jen nahrávky |
+
+Předávací dokument: [`SERVER-CO-POSTAVIT.md`](SERVER-CO-POSTAVIT.md).
+
+## Otevřené na straně desktopu (nic z toho neblokuje)
+
+- `RecordingCard` **nemá unit pokrytí** — změřeno sabotáží
+- **vada `systémový zvuk: Permission denied`** — oprávnění jsou v pořádku, chyba je v kódu panelu
+- **živý OAuth stav** nejde po restartu ověřit bez getteru v `electron/**`
+- **panel je vizuálně prázdný uprostřed** — pevná výška okna 366×792 vs. zeštíhlený obsah
+- chybí fontové soubory Public Sans / Instrument Sans
