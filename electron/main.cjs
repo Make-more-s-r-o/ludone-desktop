@@ -22,7 +22,12 @@ const {
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
 } = require("./auth.cjs");
-const { createOutboundQueueStore } = require("./queue.cjs");
+const {
+  createOutboundQueueStore,
+  loadQueue,
+  saveQueueAtomically,
+} = require("./queue.cjs");
+const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
   TRACKING_STATES,
   createTrackingStore,
@@ -40,6 +45,8 @@ const queueModulePromise = import(
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
 const PANEL_HEIGHT = 792;
+const PANEL_LOAD_TIMEOUT_MS = 5_000;
+const RETENTION_READ_TIMEOUT_MS = 1_000;
 const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
 const RECORDING_TRACKS = new Map([
   ["microphone", "mikrofon"],
@@ -379,8 +386,45 @@ function positionPanel() {
   panelWindow.setPosition(x, y, false);
 }
 
+function waitForPanelPromise(window, webContents, promise, {
+  failureReason,
+  timeoutMs,
+  timeoutReason,
+}) {
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer;
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      window.removeListener("closed", onClosed);
+      webContents.removeListener("destroyed", onDestroyed);
+      resolve(result);
+    };
+    const onClosed = () => finish({ succeeded: false, reason: "okno bylo zavřeno" });
+    const onDestroyed = () => finish({ succeeded: false, reason: "renderer byl zničen" });
+
+    window.once("closed", onClosed);
+    webContents.once("destroyed", onDestroyed);
+    timer = setTimeout(() => {
+      finish({ succeeded: false, reason: timeoutReason });
+    }, timeoutMs);
+    timer.unref?.();
+
+    Promise.resolve(promise).then(
+      (value) => finish({ succeeded: true, value }),
+      (error) => finish({ succeeded: false, error, reason: failureReason }),
+    );
+    if (window.isDestroyed() || webContents.isDestroyed()) {
+      finish({ succeeded: false, reason: "okno nebo renderer už neexistuje" });
+    }
+  });
+}
+
 function createPanelWindow() {
-  panelWindow = new BrowserWindow({
+  const createdPanelWindow = new BrowserWindow({
     width: PANEL_WIDTH,
     height: PANEL_HEIGHT,
     minWidth: PANEL_WIDTH,
@@ -406,9 +450,20 @@ function createPanelWindow() {
       sandbox: true,
     },
   });
+  panelWindow = createdPanelWindow;
 
-  const panelContents = panelWindow.webContents;
-  panelWindow.loadFile(path.join(DIST_ROOT, "index.html"));
+  const panelContents = createdPanelWindow.webContents;
+  let loadPromise;
+  try {
+    loadPromise = createdPanelWindow.loadFile(path.join(DIST_ROOT, "index.html"));
+  } catch (error) {
+    loadPromise = Promise.reject(error);
+  }
+  const readyForRetention = waitForPanelPromise(createdPanelWindow, panelContents, loadPromise, {
+    failureReason: "načtení selhalo",
+    timeoutMs: PANEL_LOAD_TIMEOUT_MS,
+    timeoutReason: `načtení překročilo ${PANEL_LOAD_TIMEOUT_MS} ms`,
+  });
   panelContents.on("render-process-gone", (_event, details) => {
     console.error(`[recording] Renderer skončil: ${JSON.stringify(details)}`);
     forgetOwnerActivity(panelContents.id, "pád rendereru");
@@ -446,6 +501,7 @@ function createPanelWindow() {
       panelWindow.hide();
     }
   });
+  return { readyForRetention, webContents: panelContents, window: createdPanelWindow };
 }
 
 function createSettingsWindow() {
@@ -807,6 +863,96 @@ handleValidated("recording:append", ["panel"], (event, sessionId, source, sequen
 ));
 
 let outboundQueueStore;
+let markOutboundQueueRetentionReady = () => {};
+const outboundQueueRetentionReady = new Promise((resolve) => {
+  markOutboundQueueRetentionReady = resolve;
+});
+
+const RETENTION_STORAGE_KEY = "ludone.prototype.settings";
+const KNOWN_RETENTION_POLICIES = new Set(Object.values(RETENTION_POLICIES));
+
+function outboundQueueFilePath() {
+  return path.join(app.getPath("userData"), "queue", "outgoing.json");
+}
+
+async function readRetentionPolicy(panelStartup) {
+  try {
+    const loadResult = await panelStartup.readyForRetention;
+    if (!loadResult.succeeded) {
+      const detail = loadResult.error?.message || loadResult.reason;
+      console.warn(`[retention] Panel není připraven; data zůstávají zachována: ${detail}`);
+      return undefined;
+    }
+    const webContents = panelStartup.webContents;
+    if (!isTrustedWebContents(webContents)) {
+      console.warn("[retention] Renderer není důvěryhodný; data zůstávají zachována.");
+      return undefined;
+    }
+    let readPromise;
+    try {
+      readPromise = webContents.executeJavaScript(
+        `window.localStorage.getItem(${JSON.stringify(RETENTION_STORAGE_KEY)})`,
+        true,
+      );
+    } catch (error) {
+      readPromise = Promise.reject(error);
+    }
+    const readResult = await waitForPanelPromise(
+      panelStartup.window,
+      webContents,
+      readPromise,
+      {
+        failureReason: "čtení nastavení selhalo",
+        timeoutMs: RETENTION_READ_TIMEOUT_MS,
+        timeoutReason: `čtení nastavení překročilo ${RETENTION_READ_TIMEOUT_MS} ms`,
+      },
+    );
+    if (!readResult.succeeded) {
+      const detail = readResult.error?.message || readResult.reason;
+      console.warn(`[retention] Nastavení nelze přečíst; data zůstávají zachována: ${detail}`);
+      return undefined;
+    }
+    if (!isTrustedWebContents(webContents)) {
+      console.warn("[retention] Renderer během čtení změnil dokument; data zůstávají zachována.");
+      return undefined;
+    }
+    const serialized = readResult.value;
+    if (typeof serialized !== "string") return undefined;
+    const settings = JSON.parse(serialized);
+    if (
+      !settings
+      || typeof settings !== "object"
+      || Array.isArray(settings)
+      || !Object.prototype.hasOwnProperty.call(settings, "retention")
+      || !KNOWN_RETENTION_POLICIES.has(settings.retention)
+    ) {
+      return undefined;
+    }
+    return settings.retention;
+  } catch (error) {
+    console.warn(`[retention] Nastavení nelze přečíst; data zůstávají zachována: ${error.message}`);
+    return undefined;
+  }
+}
+
+async function applyOutboundQueueRetention(panelStartup) {
+  try {
+    const filePath = outboundQueueFilePath();
+    const queue = await loadQueue(filePath);
+    const policy = await readRetentionPolicy(panelStartup);
+    const result = await applyRetention({ queue, policy, now: Date.now() });
+    if (result.deletedItems.length > 0) {
+      await saveQueueAtomically(filePath, { ...queue, items: result.keptItems });
+    }
+    if (result.errors.length > 0) {
+      console.error(`[retention] Některé soubory nešlo odstranit: ${JSON.stringify(result.errors)}`);
+    }
+    return result;
+  } catch (error) {
+    console.error(`[retention] Úklid selhal; start pokračuje: ${error.stack || error.message}`);
+    return { deletedFiles: [], deletedItems: [], keptItems: [], errors: [error] };
+  }
+}
 
 function queueKillswitches() {
   return {
@@ -821,10 +967,11 @@ function unavailableQueueSend() {
   throw error;
 }
 
-function getOutboundQueueStore() {
+async function getOutboundQueueStore() {
+  await outboundQueueRetentionReady;
   if (!outboundQueueStore) {
     outboundQueueStore = createOutboundQueueStore({
-      filePath: path.join(app.getPath("userData"), "queue", "outgoing.json"),
+      filePath: outboundQueueFilePath(),
       queueModulePromise,
       send: unavailableQueueSend,
     });
@@ -832,21 +979,24 @@ function getOutboundQueueStore() {
   return outboundQueueStore;
 }
 
-function pumpOutboundQueue() {
-  return getOutboundQueueStore().pump(queueKillswitches()).then((result) => {
+async function pumpOutboundQueue() {
+  try {
+    const store = await getOutboundQueueStore();
+    const result = await store.pump(queueKillswitches());
     console.log(`[queue] ${result.reason ?? result.outcome}`);
     return result;
-  }).catch((error) => {
+  } catch (error) {
     console.error(`[queue] Pumpa selhala: ${error.stack || error.message}`);
     return { outcome: "error", reason: error.message };
-  });
+  }
 }
 
 function finishRecordingAndEnqueue(event, sessionId) {
   const recordingSession = ownedRecordingSession(event, sessionId);
   return finalizeRecordingSession(sessionId, "complete").then(async (result) => {
     try {
-      const queued = await getOutboundQueueStore().enqueueRecording({
+      const store = await getOutboundQueueStore();
+      const queued = await store.enqueueRecording({
         manifest: recordingSession.manifest,
         manifestPath: recordingSession.manifestPath,
         trackPaths: Object.fromEntries(
@@ -864,13 +1014,14 @@ function finishRecordingAndEnqueue(event, sessionId) {
 }
 
 handleValidated("recording:finish", ["panel"], finishRecordingAndEnqueue);
-handleValidated("queue:list", ["panel", "settings"], () => getOutboundQueueStore().list());
-handleValidated("queue:retry", ["panel"], () => (
-  getOutboundQueueStore().retry(queueKillswitches()).then((result) => {
-    console.log(`[queue] ${result.reason ?? result.outcome}`);
-    return result;
-  })
+handleValidated("queue:list", ["panel", "settings"], async () => (
+  (await getOutboundQueueStore()).list()
 ));
+handleValidated("queue:retry", ["panel"], async () => {
+  const result = await (await getOutboundQueueStore()).retry(queueKillswitches());
+  console.log(`[queue] ${result.reason ?? result.outcome}`);
+  return result;
+});
 
 const TRACKING_STORE_OWNER_ID = "main-process-timer";
 let trackingStore;
@@ -911,6 +1062,26 @@ async function runTrackingMutation(method, payload) {
   const store = await getReadyTrackingStore();
   const result = await store[method](payload);
   syncTrackingTray(store);
+  if (
+    process.env.DESKTOP_TIME_ENABLED === "true"
+    && result.closed
+    && result.closed.closedReason !== "zahozeno-clovekem"
+  ) {
+    try {
+      const store = await getOutboundQueueStore();
+      const queued = await store.enqueueTimeEntry({
+        clientTimeEntryId: result.closed.clientTimeEntryId,
+        projectId: result.closed.projectId,
+        startedAt: result.closed.startedAt,
+        endedAt: result.closed.endedAt,
+      });
+      if (queued.added) {
+        console.log(`[queue] Zařazeno ${queued.item.clientRecordingId} (time).`);
+      }
+    } catch (error) {
+      console.error(`[queue] Zařazení času selhalo: ${error.stack || error.message}`);
+    }
+  }
   return result;
 }
 
@@ -1140,7 +1311,7 @@ app.on("second-instance", () => {
   }
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   registerAppProtocol();
   installMediaHandlers();
   if (process.platform === "darwin") app.dock.hide();
@@ -1148,7 +1319,9 @@ app.whenReady().then(() => {
   tray.setTitle("");
   tray.on("click", togglePanel);
   refreshTray();
-  createPanelWindow();
+  const panelStartup = createPanelWindow();
+  await applyOutboundQueueRetention(panelStartup);
+  markOutboundQueueRetentionReady();
   void pumpOutboundQueue();
   const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);
   if (IS_TEST_RUN && Number.isFinite(hardStop) && hardStop > 0) {
