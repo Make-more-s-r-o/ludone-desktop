@@ -3,7 +3,12 @@
 **Rozsah:** 5 nezávislých hledačů + 12 skeptiků (2 na každý vážný nález) nad `main` poté,
 co se v něm poprvé potkaly obě linie stories.
 
-**Výsledek: 16 nálezů, 0 potvrzených.** Všech devět ověřovaných nálezů skeptici vyvrátili.
+**Výsledek: 16 nálezů, 10 postoupilo k ověření, 1 POTVRZEN oběma skeptiky, 9 vyvráceno.**
+
+🔴 **Oprava dřívějšího zápisu:** tenhle dokument nejdřív tvrdil „0 potvrzených". Bylo to
+napsané z rozečteného journalu ve chvíli, kdy doběhlo devět verdiktů — všechny vyvracející.
+Běh pokračoval a desátý nález oběma skeptikům **obstál**. Závěr o „nula potvrzených" byl
+tedy předčasný, ne chybný v měření: chyběla mu polovina dat.
 
 🔴 **A přesto je tohle nejcennější review z celého projektu** — protože důvod vyvrácení je
 sám o sobě nález.
@@ -58,3 +63,40 @@ v `src/App.jsx` probudilo všechny tři. Trojka je doložená **chováním** —
   přeměřil sám; teprve pak jsem na něm stavěl.
 - Jeden agent nahlásil **provozní nález**: v pracovním stromu souběžně mutoval jiný agent.
   Sdílený strom je pro sabotážní kolo špatné místo — platí i pro recenzenty, nejen pro Codex.
+
+---
+
+## Potvrzený nález: brána, která hlídala prázdný adresář
+
+**`tests/logout.test.js:449` — „odhlášení nesmaže nic jiného" měřilo cestu, kterou produkce
+nepoužívá.** Opraveno v PR #13.
+
+B9 psala tu bránu v době, kdy fronta ani časovač na disku neexistovaly, a položila atrapy pod
+`<appData>/cz.ludone.desktop/{queue,nahravky}`. B5 a B7 pak uložily skutečná data pod
+`app.getPath("userData")` — kvůli `app.setName("LuDone Desktop")` je to **sourozenecký strom**,
+ne potomek. Snímek procházel jen `cz.ludone.desktop`, takže do produkčních dat neviděl.
+
+**Proč to není akademické:** `sekce-navrhy/journeys-ia.md:142` má v návrhu Nastavení připravenou
+položku „Odhlásit a smazat moje data před odinstalací" — tedy přesně tu story, která by ten
+úklid do odhlašovací cesty přidala. Bez opravy by smazání fronty, naměřeného času i všech
+nahrávek prošlo **všemi branami zeleně**.
+
+🔴 **Oba skeptici nález nejen potvrdili, ale ZESÍLILI.** Předkladatelova sabotáž byla
+vykonstruovaná (počítala cestu přes dvojité `path.dirname`); skeptici ji nahradili dvěma
+běžnými implementacemi ve stylu tohohle repa a obě prošly zeleně. Adversariální kolo tu
+posloužilo jako zlepšovák důkazu, ne jen jako filtr.
+
+## Chyba v mém postupu, která málem nechala bránu slepou
+
+První kolo sabotáží jsem vložil do **jiné funkce** (`auth.cjs:503`), než jakou test spouští
+(`:789`). Test zčervenal — jenže padal na **lexikální bráně**, protože moje sabotáž obsahovala
+slovo `queue`. Vypadalo to jako doklad, že opravená brána funguje.
+
+⇒ **„Něco padá" není doklad. Doklad je „padá TENHLE test a z TOHOTO důvodu".** Kdybych se
+spokojil s prvním výsledkem, zůstala by brána slepá a měl bych na to zelený papír.
+
+## Čtvrtá próza za jeden běh
+
+Brána „auth modul o frontě neví" se chytala i **komentářů** — falešná červená, která nutí
+přeformulovat poznámku místo opravy kódu. Stejná léčba jako u předchozích tří: odstranit
+celořádkové komentáře, a jen je.
