@@ -5,7 +5,25 @@ Tenhle soubor je psaný pro někoho s **prázdným kontextem**. Konverzace neexi
 
 ---
 
-## 🔴 PRVNÍ AKCE PO RESUME — přesně tohle, nic jiného
+## ✅ AKTUALIZOVÁNO 12:2x — job doběhl, PR #19 MERGNUTÝ, nic neběží
+
+**Worktree `desktop-zvuk` i větev `orca/desktop-zvuk` jsou smazané. WIP commit `e0f82a2`
+už neexistuje — byl to týž obsah, dotažený a mergnutý jako #19.**
+
+`main` má **378 testů**, nula worktrees, nula otevřených PR, nula běžících jobů.
+
+### První akce po resume je teď JINÁ
+
+Není co dokončovat. Vezmi další položku ze seznamu „Otevřené na desktopu" níž — doporučené
+pořadí: **pokrytí `RecordingCard`** (dnes nemá žádné, změřeno sabotáží). Delegace na Codex:
+`codex exec -C <nový worktree> -s workspace-write` ve viditelném Orca panelu.
+
+🔴 **A dřív než cokoli pustíš, načti skill `codex-delegace-orchestrace`** — po resume ta
+znalost v kontextu chybí, na rozdíl od téhle session.
+
+---
+
+## Původní pokyn (už neplatí, ponechán pro doložení postupu)
 
 ```bash
 cd /Users/dan/Dev/ClaudeCode/ludone-desktop

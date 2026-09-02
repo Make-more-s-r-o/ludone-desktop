@@ -374,3 +374,21 @@ Předávací dokument: [`SERVER-CO-POSTAVIT.md`](SERVER-CO-POSTAVIT.md).
 - **živý OAuth stav** nejde po restartu ověřit bez getteru v `electron/**`
 - **panel je vizuálně prázdný uprostřed** — pevná výška okna 366×792 vs. zeštíhlený obsah
 - chybí fontové soubory Public Sans / Instrument Sans
+
+---
+
+# ✅ PR #19 — systémový zvuk nikdy nemohl fungovat (2. 9. 2026)
+
+Poslední vada, kterou bylo vidět na obrazovce. `getDisplayMedia` dorazí do kontroly oprávnění
+jako `permission: "media"` s **prázdným `mediaTypes: []`**, a kontrola vyžadovala pole s právě
+jednou položkou `"audio"` → odmítnuto **dřív, než se zavolal handler pro zachytávání obrazovky**.
+
+⚠️ **V kódu stála větev `if (permission === "display-capture") return true;`, která se nikdy
+neuplatní** — Electron posílá `media`. Ochrana, která vypadala funkčně a skutečnou cestu
+odmítala o řádek níž. **Čtením kódu nenajitelné**; našlo to až spuštění a dvě sondy.
+
+Sabotáže 3🔴:1🟢, všechny tři červené bezpečnostní (pustit video · obejít URL kontrolu ·
+obejít ověření odesílatele). `main`: **378 testů**.
+
+⛔ **Neověřeno naostro** — že se zvuk opravdu nahraje, uvidí až člověk, který spustí nahrávání
+a poslechne si výsledek.
