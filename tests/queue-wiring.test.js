@@ -212,6 +212,15 @@ function fakeElectron(userDataPath, {
     },
     nativeImage: {
       createFromDataURL: vi.fn(() => ({ resize() { return this; } })),
+      // Ikona lišty se od PNG opravy skládá z bufferů (běžné + retina rozlišení).
+      // Stub musí umět totéž co produkce, jinak testy padají na chybějící metodě —
+      // a to není nález o kódu, jen o harnessu.
+      createFromBuffer: vi.fn(() => ({
+        addRepresentation() { return this; },
+        isEmpty: () => false,
+        resize() { return this; },
+        setTemplateImage() { return this; },
+      })),
     },
     net: { fetch: vi.fn() },
     protocol: {
