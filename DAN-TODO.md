@@ -376,10 +376,12 @@ ručního zásahu), ne na kalendářní datum.
 - **Podklady z Claude Designu** — `/design-login` umíš spustit jen ty. Schválený návrh je
   kompletní lokálně; chybí jen tokeny mimo barvy (písmo, tvar, pohyb, mezery). **Až úplně
   nakonec**, jak jsi řekl.
-  🔴 **Ale pozor — artefakt „Přístroj LuDone" už pro tenhle účet NEEXISTUJE.** Přišlo to
-  1. 9. ve 22:0x jako oznámení, že sledování skončilo: artifact `88609f77-…` nenalezen
-  (smazaný, nebo nesdílený s tímhle účtem). **Takže to nebude „stažení", ale vytvoření
-  znovu** — a tokeny mimo barvy se odtamtud už vzít nedají.
+  🔴 **Ale pozor — artefakty v Claude Designu už pro tenhle účet NEEXISTUJÍ. Ani jeden.**
+  Přišla dvě oznámení, že sledování skončilo: „Přístroj LuDone" (`88609f77-…`) ve 22:0x
+  a „Přístroj — startovací čára" (`638ea0b2-…`) ve 23:0x. Obojí nenalezeno (smazané, nebo
+  nesdílené s tímhle účtem po přepnutí). **Nejde tedy o jeden ztracený artefakt, ale o celou
+  sadu** — takže to nebude „stažení", ale **vytvoření znovu**, a tokeny mimo barvy se
+  odtamtud vzít nedají vůbec.
   ⚠️ Praktický důsledek: buď je dopíšeme z artboardů ručně (jsou lokálně v `design/navrh/`),
   nebo se design systém založí nanovo. Rozhodni, až na to dojde — **nic to teď neblokuje.**
 
