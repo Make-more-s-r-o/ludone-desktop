@@ -607,3 +607,54 @@ Napsal jsem tam, že mezeru „odebrání importu nechytí unit testy" zavře `q
 **Změřeno na přebazované B7: nezavře** — `306 passed`, stejně zeleno. Modul se načte, ale
 `TRACKING_STATES` se čte až uvnitř funkcí, které ten test nevolá. Jediné měřidlo té vady
 zůstává `lint`. Bylo to napsané jako předpoklad, ne jako měření; PR #6 je opravený.
+
+---
+
+## Danova rozhodnutí 2. 9. 2026 (u počítače, dotazem)
+
+### BD-N28 — pravidlo 110 % patří na SERVER, ne do desktopu; B6 není priorita
+
+Dan: *„časovač. priorita není. toto nastavení by se mělo udělat v app.ludone a aplikace ho
+pouze přebírá. Alespoň tak si představuju, že půjde nastavit. Neumím teď říct, musíme na to
+být připravení, ale není priorita."*
+
+**Co to mění:** spor `spec.md` R7 („zašedlý a s důvodem") × `plan.md` B6 („není v nabídce")
+se **neřeší volbou jedné z těch dvou vět**. Obě popisují chování, které má určit **server**.
+Desktop pravidlo **nevyhodnocuje, přebírá ho**.
+
+**Důsledky pro implementaci, až na B6 dojde:**
+- 🔴 **Nezadrátovat ani jednu variantu.** Hranice 110 % ani způsob zobrazení nepatří do
+  desktopu jako konstanta.
+- Desktop dostane od serveru u každého projektu **rozhodnutí a důvod**, ne surová čísla
+  k porovnání. Money pravidlo se nesmí počítat na dvou místech.
+- **Fail-closed:** když server rozhodnutí nepošle, projekt se **nenabídne**. Nabídnout
+  projekt, o kterém nevíme, jestli smí, je horší než nenabídnout nic.
+
+**Stav:** B6 zůstává zablokovaná, **nově ale vědomě a s určeným směrem**, ne kvůli sporu
+dvou dokumentů. S ní čeká i zapojení F011/F012/F013 — časovač bez výběru projektu nemá
+co nabídnout.
+
+### BD-N29 — aplikace musí umět i instalace jiných klientů
+
+Dan: *„mysleme na to, aby fungovala aplikace i pro jiné instalace app.ludone pro jiné klienty."*
+
+**Změřeno:** `electron/auth.cjs` **nemá zadrátovanou žádnou adresu serveru** — issuer je
+parametr, endpointy se dohledávají přes `/.well-known/oauth-authorization-server` a ověřuje
+se, že leží na stejném originu. Architektura tedy multi-tenant **už umí**.
+
+🔴 **Brání tomu jediná kontrola** — `main.cjs:970` má seznam `["app.ludone.cz",
+"labs.ludone.cz"]`. Nedá se jen smazat: brání odeslání tokenu na podvržený server.
+
+Návrh a tři varianty jsou v [`OAUTH-CO-ZALOZIT.md`](OAUTH-CO-ZALOZIT.md) §3; doporučená je
+**B — origin zadá správce při instalaci**. Je to změna specu u `security` funkce, takže
+čeká na Dana.
+
+**Druhý důsledek, který se snadno přehlédne:** každá instalace má vlastní OAuth server,
+tedy **vlastní client ID**. Jedna globální proměnná `LUDONE_OAUTH_CLIENT_ID` multi-tenant
+neuveze — client ID musí být uložené **v páru s originem**.
+
+### BD-N30 — stavové osy v matici se smějí aktualizovat, zbytek specu zůstává zmrazený
+
+Dan schválil. Zmrazení chrání **požadavky** (R1–R25, acceptance scénáře), ne stavové
+sloupce. Matice `spec.md` §3 byla od 1. 9. neaktuální a tvrdila `no-code` u funkcí, které
+jsou mergnuté — masterplán přitom osy označuje za jediný zdroj pravdy o stavu.
