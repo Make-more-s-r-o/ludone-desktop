@@ -12,14 +12,22 @@ const SERVER_PENDING_TTL_MS = 10 * 60 * 1000;
 const AUTH_TIMEOUT_RESERVE_MS = 30 * 1000;
 const DEFAULT_TIMEOUT_MS = SERVER_PENDING_TTL_MS + AUTH_TIMEOUT_RESERVE_MS;
 const REVOKE_TIMEOUT_MS = 5 * 1000;
+// Discovery je malý JSON dokument. Pět sekund ponechá prostor pomalému spojení,
+// ale nedovolí, aby lokální odhlášení čekalo na server bez konce.
+const LOGOUT_DISCOVERY_DEADLINE_MS = 5_000;
+// Revokace je malý formulářový POST. Stejný strop omezuje celé síťové čekání
+// odhlášení přibližně na deset sekund, než se pokračuje lokálním smazáním.
+const LOGOUT_REVOKE_DEADLINE_MS = 5_000;
 const TOKEN_DIRECTORY = "auth";
 const TOKEN_FILE = "oauth.enc";
+const TOKEN_TEMP_FILE_PATTERN = /^\.oauth\.enc\.[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.tmp$/;
 const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const MCP_SCOPES = new Set(["mcp:read", "mcp:draft"]);
 
 let oauthLogicPromise;
 let tokenStorageTransaction = Promise.resolve();
+const tokenStorageInitializations = new WeakMap();
 
 function loadOauthLogic() {
   if (!oauthLogicPromise) {
@@ -290,6 +298,31 @@ async function syncDirectory(directory) {
   }
 }
 
+async function runWithDeadline(operation, timeoutMs, label) {
+  const abortController = new AbortController();
+  let timer;
+  const deadline = new Promise((_resolve, reject) => {
+    timer = setTimeout(() => {
+      const error = new Error(`${label} timed out`);
+      error.name = "TimeoutError";
+      // Vlastní chyba se zařadí dřív než případné synchronní odmítnutí po abortu,
+      // aby se timeout vždy přeložil jako nepotvrzená síťová operace.
+      reject(error);
+      abortController.abort(error);
+    }, timeoutMs);
+    timer.unref?.();
+  });
+
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => operation(abortController.signal)),
+      deadline,
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function isPathInside(parent, candidate) {
   const relative = path.relative(parent, candidate);
   return relative === ""
@@ -336,6 +369,51 @@ function assertEncryptionAvailable(safeStorage) {
   }
 }
 
+async function removeOrphanedTokenTemps(storage) {
+  const { directory } = storage;
+  let entries;
+  try {
+    entries = await fs.promises.readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+
+  let removed = false;
+  let firstError;
+  for (const entry of entries) {
+    if (!entry.isFile() || !TOKEN_TEMP_FILE_PATTERN.test(entry.name)) continue;
+    try {
+      await fs.promises.unlink(path.join(directory, entry.name));
+      removed = true;
+    } catch (error) {
+      if (error?.code !== "ENOENT" && !firstError) firstError = error;
+    }
+  }
+  if (removed) {
+    try {
+      await syncDirectory(directory);
+    } catch (error) {
+      firstError ??= error;
+    }
+  }
+  if (firstError) throw firstError;
+}
+
+function initializeTokenStorage(app, storage = tokenStorageLocation(app)) {
+  const existing = tokenStorageInitializations.get(app);
+  if (existing) return existing;
+
+  const initialization = removeOrphanedTokenTemps(storage);
+  tokenStorageInitializations.set(app, initialization);
+  initialization.catch(() => {
+    if (tokenStorageInitializations.get(app) === initialization) {
+      tokenStorageInitializations.delete(app);
+    }
+  });
+  return initialization;
+}
+
 async function prepareTokenStorage(app, safeStorage) {
   assertEncryptionAvailable(safeStorage);
 
@@ -360,6 +438,7 @@ async function prepareTokenStorage(app, safeStorage) {
       { cause },
     );
   }
+  await initializeTokenStorage(app, storage);
   return storage;
 }
 
@@ -550,30 +629,17 @@ function storedTokenResponse(session) {
   };
 }
 
-async function fetchWithLogoutTimeout(fetchImpl, url, options) {
-  const abortController = new AbortController();
-  let timeout;
-  const deadline = new Promise((_, reject) => {
-    timeout = setTimeout(() => {
-      abortController.abort();
-      reject(new Error("OAuth discovery pro odhlášení překročilo časový limit"));
-    }, REVOKE_TIMEOUT_MS);
-    timeout.unref?.();
-  });
-  try {
-    return await Promise.race([
-      Promise.resolve().then(() => fetchImpl(url, {
-        ...options,
-        signal: abortController.signal,
-      })),
-      deadline,
-    ]);
-  } finally {
-    clearTimeout(timeout);
+function sessionTokenForRevocation(session) {
+  const tokenResponse = storedTokenResponse(session);
+  if (!tokenResponse) return null;
+  if (tokenResponse.refresh_token) {
+    return { token: tokenResponse.refresh_token, tokenTypeHint: "refresh_token" };
   }
+  return { token: tokenResponse.access_token, tokenTypeHint: "access_token" };
 }
 
 function discoveryFailureReason(error) {
+  if (error instanceof Error && error.name === "TimeoutError") return "timeout";
   const message = error instanceof Error ? error.message : String(error);
   const status = message.match(/\bHTTP\s+(\d{3})\b/);
   if (status) return `http-${status[1]}`;
@@ -594,18 +660,78 @@ function logLogoutResult(logger, result) {
 }
 
 async function storageForLogout(app, safeStorage) {
+  const fallbackStorage = tokenStorageLocation(app);
+  let tokenStorageInitialized = true;
   try {
-    return await prepareTokenStorage(app, safeStorage);
+    await initializeTokenStorage(app, fallbackStorage);
+  } catch {
+    tokenStorageInitialized = false;
+  }
+
+  try {
+    const storage = await prepareTokenStorage(app, safeStorage);
+    return { storage, tokenStorageInitialized };
   } catch {
     // I při nedostupném šifrování musí jít existující lokální blob bezpečně odstranit.
-    return tokenStorageLocation(app);
+    return { storage: fallbackStorage, tokenStorageInitialized };
+  }
+}
+
+function logDiscardedLoginResult(logger, result) {
+  const message = `[auth] Souběžné přihlášení zahozeno: server=${result.serverRevoked}, reason=${result.reason}`;
+  try {
+    if (result.serverRevoked) logger?.log?.(message);
+    else logger?.warn?.(message);
+  } catch {
+    // Selhání diagnostiky nesmí změnit fail-closed výsledek souběhu.
+  }
+}
+
+async function revokeSelectedToken({
+  clientId,
+  fetchImpl,
+  revocationEndpoint,
+  selectedToken,
+}) {
+  if (!revocationEndpoint) {
+    return { serverRevoked: false, reason: "no-revocation-endpoint" };
+  }
+
+  const body = new URLSearchParams({
+    client_id: clientId,
+    token: selectedToken.token,
+    token_type_hint: selectedToken.tokenTypeHint,
+  });
+  try {
+    const response = await runWithDeadline(
+      (signal) => fetchImpl(revocationEndpoint, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        redirect: "error",
+        body: body.toString(),
+        signal,
+      }),
+      LOGOUT_REVOKE_DEADLINE_MS,
+      "OAuth revoke",
+    );
+    const serverRevoked = response?.ok === true;
+    const status = Number.isInteger(response?.status) ? response.status : 0;
+    return {
+      serverRevoked,
+      reason: serverRevoked ? null : `http-${status}`,
+    };
+  } catch (error) {
+    return {
+      serverRevoked: false,
+      reason: error instanceof Error && error.name === "TimeoutError" ? "timeout" : "offline",
+    };
   }
 }
 
 async function logoutEncryptedSession({ app, safeStorage, fetchImpl, logger }) {
   let result;
   try {
-    const storage = await storageForLogout(app, safeStorage);
+    const { storage, tokenStorageInitialized } = await storageForLogout(app, safeStorage);
     result = await withTokenStorageTransaction(async () => {
       let encrypted;
       let session;
@@ -618,9 +744,9 @@ async function logoutEncryptedSession({ app, safeStorage, fetchImpl, logger }) {
         reason = "unreadable-session";
       }
 
-      const tokenResponse = storedTokenResponse(session);
+      const selectedToken = sessionTokenForRevocation(session);
       let serverRevoked = false;
-      if (tokenResponse) {
+      if (selectedToken) {
         let issuer;
         let clientId;
         try {
@@ -633,27 +759,25 @@ async function logoutEncryptedSession({ app, safeStorage, fetchImpl, logger }) {
         if (issuer && clientId) {
           let endpoints;
           try {
-            endpoints = await discoverEndpoints(
-              (url, options) => fetchWithLogoutTimeout(fetchImpl, url, options),
-              issuer,
+            endpoints = await runWithDeadline(
+              (signal) => discoverEndpoints(
+                (url, init = {}) => fetchImpl(url, { ...init, signal }),
+                issuer,
+              ),
+              LOGOUT_DISCOVERY_DEADLINE_MS,
+              "OAuth discovery",
             );
           } catch (error) {
             reason = discoveryFailureReason(error);
           }
 
           if (endpoints?.revocationEndpoint) {
-            try {
-              await revokeIssuedTokens(
-                fetchImpl,
-                endpoints.revocationEndpoint,
-                clientId,
-                tokenResponse,
-              );
-              serverRevoked = true;
-              reason = null;
-            } catch (error) {
-              reason = discoveryFailureReason(error);
-            }
+            ({ serverRevoked, reason } = await revokeSelectedToken({
+              clientId,
+              fetchImpl,
+              revocationEndpoint: endpoints.revocationEndpoint,
+              selectedToken,
+            }));
           } else if (endpoints) {
             reason = "no-revocation-endpoint";
           }
@@ -665,6 +789,10 @@ async function logoutEncryptedSession({ app, safeStorage, fetchImpl, logger }) {
         await removeEncryptedSession(storage);
         signedOutLocally = true;
       } catch {
+        reason = "local-delete-failed";
+      }
+      if (!tokenStorageInitialized) {
+        signedOutLocally = false;
         reason = "local-delete-failed";
       }
       return { signedOutLocally, serverRevoked, reason };
@@ -680,9 +808,89 @@ async function logoutEncryptedSession({ app, safeStorage, fetchImpl, logger }) {
   return result;
 }
 
+function createAuthSessionCoordinator() {
+  let tail = Promise.resolve();
+  let logoutGeneration = 0;
+  let pendingLogouts = 0;
+
+  function serialize(operation) {
+    const result = tail.then(operation, operation);
+    tail = result.then(() => undefined, () => undefined);
+    return result;
+  }
+
+  function logoutWon(ticket) {
+    return ticket.startedDuringLogout
+      || ticket.generation !== logoutGeneration
+      || pendingLogouts > 0;
+  }
+
+  return Object.freeze({
+    captureLoginTicket() {
+      return Object.freeze({
+        generation: logoutGeneration,
+        startedDuringLogout: pendingLogouts > 0,
+      });
+    },
+    commitLogin(ticket, persist, discard) {
+      return serialize(async () => {
+        if (logoutWon(ticket)) {
+          try {
+            await discard();
+          } catch {
+            // Ani selhání best-effort revokace nesmí čerstvý token uložit lokálně.
+          }
+          throw new Error("Přihlášení bylo zrušeno souběžným odhlášením");
+        }
+        try {
+          await persist();
+        } catch (error) {
+          if (!logoutWon(ticket)) throw error;
+          try {
+            await discard();
+          } catch {
+            // Po chybě zápisu nemusí mít zařazený logout token na disku;
+            // revokace z paměti je proto nutný best-effort fail-closed krok.
+          }
+          throw new Error("Přihlášení bylo zrušeno souběžným odhlášením");
+        }
+        if (logoutWon(ticket)) {
+          // Token už může být na disku. Zařazené odhlášení jej proto odvolá a smaže
+          // právě jednou; login pouze nesmí oznámit úspěch.
+          throw new Error("Přihlášení bylo zrušeno souběžným odhlášením");
+        }
+        return undefined;
+      });
+    },
+    runLogout(operation) {
+      logoutGeneration += 1;
+      pendingLogouts += 1;
+      return serialize(async () => {
+        try {
+          return await operation();
+        } finally {
+          pendingLogouts -= 1;
+        }
+      });
+    },
+  });
+}
+
+function resolvedAuthSessionCoordinator(value) {
+  const coordinator = value ?? createAuthSessionCoordinator();
+  if (
+    typeof coordinator.captureLoginTicket !== "function"
+    || typeof coordinator.commitLogin !== "function"
+    || typeof coordinator.runLogout !== "function"
+  ) {
+    throw new TypeError("Chybí sdílený koordinátor přihlášení a odhlášení");
+  }
+  return coordinator;
+}
+
 /**
  * Vytvoří úzký controller odhlášení bez závislosti na konfiguraci nového přihlášení.
- * @param {{app: any, safeStorage: any, fetchImpl?: any, logger?: any}} options
+ * @param {{app: any, safeStorage: any, coordinator?: any, fetchImpl?: any, logger?: any}} options
  */
 function createLogoutController(options) {
   const {
@@ -691,13 +899,14 @@ function createLogoutController(options) {
     fetchImpl = globalThis.fetch,
     logger = console,
   } = options;
+  const coordinator = resolvedAuthSessionCoordinator(options.coordinator);
   return Object.freeze({
-    logout: () => logoutEncryptedSession({
+    logout: () => coordinator.runLogout(() => logoutEncryptedSession({
       app,
       safeStorage,
       fetchImpl,
       logger,
-    }),
+    })),
   });
 }
 
@@ -710,6 +919,7 @@ function createAuthController(options) {
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   const randomSource = options.randomSource ?? randomBytes;
   const { app, safeStorage, shell } = options;
+  const coordinator = resolvedAuthSessionCoordinator(options.coordinator);
 
   if (typeof fetchImpl !== "function") throw new TypeError("Chybí fetch implementace");
   if (!app?.getPath || !safeStorage || !shell?.openExternal) {
@@ -720,6 +930,7 @@ function createAuthController(options) {
   }
 
   async function start() {
+    const loginTicket = coordinator.captureLoginTicket();
     let listener;
     try {
       const storage = await prepareTokenStorage(app, safeStorage);
@@ -776,6 +987,7 @@ function createAuthController(options) {
             body: tokenBody.toString(),
           }, "Výměna autorizačního kódu");
           let rollbackStarted = false;
+          let sessionPersisted = false;
           try {
             const accessToken = requiredString(tokenResponse.access_token, "access_token");
             const identity = await resolveUserIdentity(
@@ -787,61 +999,82 @@ function createAuthController(options) {
             );
             const expiresIn = Number(tokenResponse.expires_in);
 
-            await withTokenStorageTransaction(async () => {
-              const previousSession = await readEncryptedSession(storage);
-              try {
-                await persistEncryptedSession(safeStorage, {
-                  v: 1,
-                  issuer,
-                  clientId,
-                  resource,
-                  scope,
-                  accessToken,
-                  refreshToken: typeof tokenResponse.refresh_token === "string"
-                    ? tokenResponse.refresh_token
-                    : null,
-                  tokenType: typeof tokenResponse.token_type === "string" ? tokenResponse.token_type : "Bearer",
-                  accessExpiresAt: Number.isFinite(expiresIn) ? Date.now() + expiresIn * 1000 : null,
-                  identity,
-                }, storage);
-              } catch (error) {
-                rollbackStarted = true;
-                try {
-                  await rollbackIssuedSession(
-                    fetchImpl,
-                    endpoints.revocationEndpoint,
-                    clientId,
-                    tokenResponse,
-                    storage,
-                    previousSession,
-                  );
-                } catch (cleanupError) {
-                  throw rollbackFailure(error, cleanupError, listener.isCancelled());
-                }
-                throw listener.isCancelled() ? cancelledAuthError() : error;
-              }
+            const encryptedSession = {
+              v: 1,
+              issuer,
+              clientId,
+              resource,
+              scope,
+              accessToken,
+              refreshToken: typeof tokenResponse.refresh_token === "string"
+                ? tokenResponse.refresh_token
+                : null,
+              tokenType: typeof tokenResponse.token_type === "string" ? tokenResponse.token_type : "Bearer",
+              accessExpiresAt: Number.isFinite(expiresIn) ? Date.now() + expiresIn * 1000 : null,
+              identity,
+            };
+            await coordinator.commitLogin(
+              loginTicket,
+              async () => {
+                await withTokenStorageTransaction(async () => {
+                  const previousSession = await readEncryptedSession(storage);
+                  try {
+                    await persistEncryptedSession(safeStorage, encryptedSession, storage);
+                  } catch (error) {
+                    rollbackStarted = true;
+                    try {
+                      await rollbackIssuedSession(
+                        fetchImpl,
+                        endpoints.revocationEndpoint,
+                        clientId,
+                        tokenResponse,
+                        storage,
+                        previousSession,
+                      );
+                    } catch (cleanupError) {
+                      throw rollbackFailure(error, cleanupError, listener.isCancelled());
+                    }
+                    throw listener.isCancelled() ? cancelledAuthError() : error;
+                  }
 
-              if (listener.isCancelled()) {
+                  if (listener.isCancelled()) {
+                    rollbackStarted = true;
+                    const cancellation = cancelledAuthError();
+                    try {
+                      await rollbackIssuedSession(
+                        fetchImpl,
+                        endpoints.revocationEndpoint,
+                        clientId,
+                        tokenResponse,
+                        storage,
+                        previousSession,
+                      );
+                    } catch (cleanupError) {
+                      throw rollbackFailure(cancellation, cleanupError, true);
+                    }
+                    throw cancellation;
+                  }
+                });
+                sessionPersisted = true;
+              },
+              async () => {
+                if (rollbackStarted || sessionPersisted) return;
                 rollbackStarted = true;
-                const cancellation = cancelledAuthError();
-                try {
-                  await rollbackIssuedSession(
-                    fetchImpl,
-                    endpoints.revocationEndpoint,
+                const selectedToken = sessionTokenForRevocation(encryptedSession);
+                const revocation = selectedToken
+                  ? await revokeSelectedToken({
                     clientId,
-                    tokenResponse,
-                    storage,
-                    previousSession,
-                  );
-                } catch (cleanupError) {
-                  throw rollbackFailure(cancellation, cleanupError, true);
-                }
-                throw cancellation;
-              }
-            });
+                    fetchImpl,
+                    revocationEndpoint: endpoints.revocationEndpoint,
+                    selectedToken,
+                  })
+                  : { serverRevoked: false, reason: "no-token" };
+                logDiscardedLoginResult(options.logger ?? console, revocation);
+              },
+            );
             return { ok: true, user: identity };
           } catch (error) {
-            if (!rollbackStarted) {
+            if (!rollbackStarted && !sessionPersisted) {
               rollbackStarted = true;
               try {
                 await revokeIssuedTokens(
@@ -887,12 +1120,12 @@ function createAuthController(options) {
       return attempt.result;
     },
     async logout() {
-      return logoutEncryptedSession({
+      return coordinator.runLogout(() => logoutEncryptedSession({
         app,
         safeStorage,
         fetchImpl,
         logger: options.logger ?? console,
-      });
+      }));
     },
     start,
   };
@@ -981,11 +1214,15 @@ function createPermissionRequestHandler({ systemPreferences, shell, logger = con
 
 module.exports = {
   DEFAULT_TIMEOUT_MS,
+  LOGOUT_DISCOVERY_DEADLINE_MS,
+  LOGOUT_REVOKE_DEADLINE_MS,
   createAuthController,
+  createAuthSessionCoordinator,
   createLogoutController,
   createPermissionRequestHandler,
   decidePermissionResult,
   discoverEndpoints,
+  initializeTokenStorage,
   resolveAuthTimeout,
   tokenSessionFilePath,
   tokenStorageDirectory,

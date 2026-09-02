@@ -7,7 +7,10 @@ import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
-const { createAuthController: realCreateAuthController } = require("../electron/auth.cjs");
+const {
+  createAuthController: realCreateAuthController,
+  createAuthSessionCoordinator,
+} = require("../electron/auth.cjs");
 
 function functionSource(source, name) {
   const start = source.indexOf(`function ${name}(`);
@@ -60,10 +63,12 @@ function compiledAuthWiring(createAuthController) {
 
 const fakeApp = { getPath: vi.fn(() => AUTH_WIRING_APP_DATA), isPackaged: false };
 const fakeSafeStorage = { isEncryptionAvailable: vi.fn(() => true) };
+const fakeCoordinator = createAuthSessionCoordinator();
 
 function dependencies(overrides = {}) {
   return {
     app: fakeApp,
+    coordinator: fakeCoordinator,
     // Platný clientId je v základu, aby testy měřily zapojení. Jeho NEPŘÍTOMNOST
     // má vlastní test níž — je to fail-closed cesta z rozhodnutí BD-N6.
     env: { LUDONE_OAUTH_CLIENT_ID: "klient-z-konfigurace" },
@@ -111,6 +116,12 @@ class FakeLoopbackServer extends EventEmitter {
 }
 
 describe("zapojení skutečného OAuth controlleru", () => {
+  it("main vytvoří jediný koordinátor a předá ho loginu i logoutu", () => {
+    expect(mainSource.match(/const authSessionCoordinator = createAuthSessionCoordinator\(\);/g))
+      .toHaveLength(1);
+    expect(mainSource.match(/coordinator: authSessionCoordinator/g)).toHaveLength(2);
+  });
+
   it("KANÁREK: auth:begin zůstává za handleValidated jen pro panel", () => {
     expect(mainSource).toMatch(/handleValidated\(\s*"auth:begin",\s*\["panel"\]/);
   });
@@ -142,6 +153,7 @@ describe("zapojení skutečného OAuth controlleru", () => {
     });
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({ issuer, clientId, app: fakeApp, safeStorage: fakeSafeStorage });
+    expect(calls[0].coordinator).toBe(fakeCoordinator);
     expect(calls[0].timeoutMs).toBeUndefined();
     expect(calls[0].scope).toBeUndefined();
     expect(calls[0].resource).toBeUndefined();

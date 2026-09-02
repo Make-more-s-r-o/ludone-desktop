@@ -504,6 +504,7 @@ describe("odhlášení", () => {
     const app = {};
     const safeStorage = {};
     const logger = { error: vi.fn() };
+    const authSessionCoordinator = {};
     const createLogoutController = vi.fn(() => ({ logout }));
     const requireModule = vi.fn(() => ({ createLogoutController }));
     const captured = {};
@@ -517,6 +518,7 @@ describe("odhlášení", () => {
       "handleValidated",
       "updateTray",
       "console",
+      "authSessionCoordinator",
       `"use strict"; ${registration}`,
     )(
       requireModule,
@@ -525,10 +527,16 @@ describe("odhlášení", () => {
       handleValidated,
       updateTray,
       logger,
+      authSessionCoordinator,
     );
 
     expect(requireModule).toHaveBeenCalledWith("./auth.cjs");
-    expect(createLogoutController).toHaveBeenCalledWith({ app, safeStorage, logger });
+    expect(createLogoutController).toHaveBeenCalledWith({
+      app,
+      coordinator: authSessionCoordinator,
+      safeStorage,
+      logger,
+    });
     expect(captured).toMatchObject({ channel: "auth:logout", allowedKinds: ["panel"] });
     const returned = await captured.handler();
     expect(returned).toBe(sentinel);
