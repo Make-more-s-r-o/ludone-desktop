@@ -77,7 +77,17 @@ export function PanelContentHeightReporter({ children }) {
       }
     };
 
-    const scheduleMeasurement = () => {
+    const scheduleMeasurement = (mutations = []) => {
+      const onlyLevelUpdates = mutations.length > 0 && mutations.every((mutation) => {
+        if (mutation.type !== "attributes" && mutation.type !== "characterData") return false;
+        const element = mutation.target instanceof window.Element
+          ? mutation.target
+          : mutation.target.parentElement;
+        return element?.closest("[data-panel-height-neutral]");
+      });
+      // Živý audio měřák mění jen pixely canvasu a bezvýškové stavové atributy.
+      // Tyto změny nesmí rozběhnout měření layoutu v každém animation frame.
+      if (onlyLevelUpdates) return;
       if (animationFrame !== null) return;
       animationFrame = window.requestAnimationFrame(measure);
     };
