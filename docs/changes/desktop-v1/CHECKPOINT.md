@@ -1,146 +1,104 @@
 # CHECKPOINT — LuDone Desktop
 
-Poslední zápis: **2. 9. 2026, 23:20**. Dan spí, běh pokračuje bez něj.
-
-## 🎉 CELÝ SCHVÁLENÝ DESIGN STOJÍ
-
-**21 z 21 desktopových obrazovek je v `main`** (22. je serverová obrazovka souhlasu, ne naše).
-Poslední tři dorazily dnes v noci: kontextové menu lišty, výpadek ostatního zvuku, běží obojí.
-
-| | |
-|---|---|
-| `main` | **473 passed \| 6 skipped (479)**, čistý |
-| otevřené PR | **0** — #25 až #34 smergované |
-| CI | ✅ zelené, repozitář veřejný, hostované runnery zdarma |
-| záložní runner | `danuv-mac`, registrovaný; cizí PR vyžadují schválení |
-
-## ✅ Ověřeno naostro (Dan to viděl běžet)
-
-- **Ikona v liště funguje.** Nebyla vidět proto, že Danova lišta byla plná. `getBounds()`
-  přitom celou dobu hlásil nenulové rozměry — spor rozhodl až klik na hlášené souřadnice,
-  který trefil aplikační menu. Z toho vznikl PR #33: aplikace už v takové situaci nemlčí.
-- **Panel se otevře a odpovídá návrhu** — značka, stav přihlášení, řádek Nahrávání, patička.
-- **`npm run gates:clean`** — brány nad čistým klonem, spuštěno a zelené.
-- **Vlastní GitHub runner** na Danově Macu — job na něm proběhl zeleně.
-
-## 🧪 Postaveno, ale nikdo to neviděl běžet
-
-Prakticky všechno ostatní: export do stereo souboru · pojmenování schůzky · onboarding
-včetně testu záznamu · adresa přihlášení · výpadek ostatního zvuku · kontextové menu ·
-hláška při plné liště · přibalená písma.
-
-## Rozdělaná práce
-
-- **`orca/desktop-baleni`** — electron-builder + electron-updater. Job běžel při psaní
-  tohohle zápisu; po doběhnutí commitnout, brány, sabotáže, PR.
-
-## Co zbývá
-
-1. Dotáhnout balení (běží).
-2. 🟡 **Barva hlavního tlačítka** — panel má modrou dle návrhu, onboarding a nastavení
-   zelenou na 8 místech. Rozhodnutí pro Dana, ne pro mě.
-3. Podpis a notarizace — až bude Apple Developer.
-4. Ruční ověření na Macu: plná lišta, výpadek zvuku odpojením sluchátek, přehrání
-   stereo exportu.
-
-## Čeká na Dana
-
-- **Apple Developer** — na koho zapsat (Individual × firma; mezi nimi se nepřechází).
-  Bez něj to jde, ale nepojedou automatické aktualizace ani trvalá oprávnění.
-- **Barva hlavního tlačítka** v onboardingu a nastavení.
+Poslední zápis: **3. 9. 2026, 10:40**. Psáno pro někoho s **prázdným kontextem** — konverzaci
+sežere compaction, tenhle soubor ne.
 
 ---
 
-## 🛑 PŘESKOČENÉ TVRDÉ BRÁNY (3. 9. 2026, 00:10)
+## Stav jednou větou
 
-Běh je **nepřekročil ani neobešel** — přeskočil je a pokračoval po nezávislé větvi DAG.
-Plné znění včetně doporučených variant je v `DAN-TODO.md`, sekce „TVRDÉ BLOCKERY".
+Aplikace je **postavená celá**, ale **ověřená naostro skoro vůbec**. Chybí Danova rozhodnutí
+a patnáct minut jeho času u počítače.
 
-| # | blocker | doporučení | co na něm viselo |
-|---|---|---|---|
-| **B1** | Apple Developer — na koho zapsat | **Organization** (firma), pokud má D-U-N-S; jinak Individual | podpis, notarizace, auto-update, trvalá oprávnění |
-| **B2** | barva hlavního tlačítka (8 míst) | **sjednotit na modrou** dle panelu | nic — jednořádková změna v `src/styles.css` |
+| | |
+|---|---|
+| `main` | `924d477`, **589 passed \| 6 skipped (595)**, čistý strom |
+| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · Codex procesy **0** |
+| design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
+| repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
+| CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
 
-🔴 **Ani jeden neblokuje další vývoj.** Release workflow je hotový a fail-closed: bez pěti
-tajemství **selže před spuštěním builderu**, takže nepodepsaná verze nemůže odejít omylem.
+## 🔴 První příkazy po probuzení
 
-## Noc 2./3. 9. — co přibylo po půlnoci
+```bash
+cd /Users/dan/Dev/ClaudeCode/ludone-desktop
+git fetch -q origin && git status --porcelain      # musí být prázdné
+gh pr list                                          # musí být prázdné
+gh api repos/Make-more-s-r-o/ludone-desktop/actions/runners --jq '.runners[].status'
+```
 
-- **PR #36** Nastavení ukazuje skutečný účet (byla tam atrapa „Daniel Novák").
-- **PR #37** odesílací vrstva fronty proti změřenému serverovému kontraktu.
-  🔴 **Nezapojená**: killswitch `false`, nic se neodesílá, endpointy nejsou živé.
-- `main`: **535 passed | 6 skipped (541)**, nula otevřených PR, čistý strom.
+⚠️ **Runner musí být `online`.** Repozitář je privátní, takže hostované minuty Actions jsou
+vyčerpané a **brána běží výhradně na Danově Macu**. Když je Mac vypnutý, job **čeká ve frontě**
+místo aby spadl — nevypadá to jako chyba, ale nic se nezměří.
+Návrat na hostovaný runner je jednořádkový: `runs-on: ubuntu-latest` v `.github/workflows/ci.yml`.
 
-### Nový blocker B4 — a je vážnější než ostatní
+---
 
-Desktop se k upload routám **nepřihlásí**: server je autentizuje browser session, desktop má
-OAuth Bearer s MCP audience. Odesílání tedy nejde zapnout ani po nasazení migrací.
-Předáno serverové session; detail v `DAN-TODO.md`.
+## ✅ Co je ověřeno naostro (člověk to viděl běžet)
 
-### 🔴 Oprava: B4 nebyl blocker
+- **Ikona v liště funguje.** Nebyla vidět, protože Danova lišta byla plná — ne kvůli vadě.
+  `tray.getBounds()` přitom celou dobu hlásil nenulové rozměry; spor rozhodl až klik na
+  hlášené souřadnice, který trefil aplikační menu.
+- **Panel se otevře a odpovídá schválenému návrhu.**
+- **`npm run gates:clean`** — brány nad čistým klonem, spuštěno a zelené.
+- **Vlastní GitHub runner** — job na něm proběhl zeleně.
 
-Zapsal jsem „autentizace se nepotkává" jako blocker. **Byla to hranice fází, ne mezera** —
-BD-N34 (moje vlastní rozhodnutí) říká, že ve fázi 1 nahrává **prohlížeč pod běžnou session**
-a desktop jen uloží soubor a otevře stránku. Cookie session je tedy správně.
+## 🧪 Co je postavené, ale nikdo to neviděl běžet
 
-PR #37 je **klient pro fázi 2**: hotový, otestovaný, vypnutý. `DESKTOP_UPLOAD_ENABLED=false`
-je správný stav, ne nedodělek. Detail a poznámka o scope v `DAN-TODO.md`.
+Prakticky všechno ostatní: stereo export · pojmenování schůzky · onboarding s testem záznamu ·
+adresa přihlášení · výpadek ostatního zvuku · kontextové menu · hláška při plné liště ·
+přibalená písma · balení a aktualizace · odesílací klient (vypnutý) · obnova při startu.
 
-⇒ Poučení: **než z něčeho udělám blocker, ověřím to proti vlastním zapsaným rozhodnutím.**
-Tohle jsem měl najít sám v `decisions.md`, ne od kolegů.
+🔴 **Nejcennější věc, kterou může Dan udělat:** `docs/changes/desktop-v1/OVERENI-NAOSTRO.md`,
+šest bodů na 15 minut. Body 1 a 2 (přehrát stereo nahrávku, odpojit sluchátka během nahrávání)
+jsou vady, které se **projeví jen tichem**.
 
-## Noc dokončena — adversariální kolo nad celou nocí (PR #38)
+---
 
-Po smergování třinácti PR jsem pustil **review celé noční práce naráz**, protože každý PR
-byl recenzovaný zvlášť a pod časovým tlakem. Našlo **tři vady v interakcích** a všechny tři
-jsem si ověřil v kódu, než jsem na ně sáhl:
+## 🛑 Co čeká na Dana — nic z toho běh rozhodnout nesmí
 
-1. 🔴 **„Ukončit LuDone" zahodilo běžící nahrávku.** Vada z PR #33 (mého vlastního, z téže
-   noci). Opraveno jedinou bránou v `before-quit` — platí pro menu, `Cmd+Q`, Dock i systémové
-   ukončení — s lhůtou 15 s, aby aplikace šla vždycky vypnout.
-2. **Aktualizace restartovala přes nepotvrzené pojmenování** a sebrala název i export.
-3. **Adresa přihlášení se nezobrazila, když dorazila pozdě** (vada z mého PR #27).
+Plné znění s doporučeními je v **`DAN-TODO.md`**, tady jen výčet:
 
-`main`: **548 passed | 6 skipped (554)**, nula PR, nula worktrees, nula větví, čistý strom.
+| # | co | doporučení |
+|---|---|---|
+| **expozice** | popisy tří produkčních vad `ludone-app` byly ~10 h ve veřejném repu | **A — opravit ty vady** (jediné, co odstraní důvod, ne stopu) |
+| **B5** | Electron **37.3.1**, opravy až v **39.8.10**; context-isolation bypass se nás týká | upgradovat na 39.8.10 **se živým ověřením**, ne rovnou na 44 |
+| **B1** | Apple Developer — Individual × Organization (nepřechází se) | firma, pokud má D-U-N-S |
+| **B2** | barva hlavního tlačítka: panel modrý, onboarding zelený | sjednotit na modrou; ukázka `progress/barva-tlacitka.html` |
+| **B3** | allowlist vydavatelů v `main.cjs` brání jiným instalacím | uzavřený výčet, ale z konfigurace instalace |
 
-## Fronta práce po ránu 3. 9. (pořadí je záměrné)
+---
 
-1. ⚙ **běží** — šest cest ke ztrátě nahrávky (worktree `desktop-ztrata`). Až doběhne:
-   commit, brány, sabotáže, PR, merge.
-2. **Retence maže bez kontroly, kde ten soubor leží.** Ověřeno: `validateQueue`
-   (`electron/queue.cjs`) kontroluje jen obal fronty — `schemaVersion` a že `items` je pole.
-   Obsah položek ne, takže `trackFiles` může být cokoli. `retention.cjs:119` pak volá
-   `unlink` na tu cestu **bez kontroly, že leží v adresáři nahrávek**.
-   🔴 Nejde jen o útočníka (ten by potřeboval zápis do `userData`, tedy už mít účet) —
-   **chrání to i před nehodou**: poškozený zápis fronty by nechal mazat nesmyslné cesty.
-   Vzor opravy už v repu je: export používá `path.dirname(filePath) !== downloadsRoot`.
-   ⚠️ Nelze dělat souběžně s bodem 1 — oba sahají na `retention.cjs`.
-3. Chyby souborového systému jdou syrové do UI i logu (`main.cjs:1537`) — mohou nést
-   absolutní cesty a název schůzky. Nízká závažnost, ale je to únik do míst, kde být nemá.
-4. `scripts/schuzka-mereni.mjs` zapisuje nezredigovaný název schůzky a absolutní cesty
-   do souborů určených k verzování.
+## Zbylá práce, kterou běh může udělat sám
 
-**Čeká na Dana** (vše v `DAN-TODO.md`): expozice A/B/C · B5 Electron · B1 Apple Developer ·
-B2 barva tlačítka · B3 allowlist · 15 minut ověření naostro.
-
-## Fronta práce — aktualizováno 3. 9. dopoledne
-
-1. ⏳ **PR #40** (šest cest ke ztrátě nahrávky, 589 testů) — čeká na bránu.
-   🔴 **CI běží na vlastním runneru `danuv-mac`**, protože repozitář je zase privátní
-   a hostované minuty jsou vyčerpané. Byl to předvídatelný důsledek návratu na privátní;
-   přepnutí jsem ale udělal až po prvním červeném běhu, ne rovnou.
-   ⚠️ Cena: **když je Danův Mac vypnutý, job čeká ve frontě**, nespadne.
-
-2. **Syrové chyby souborového systému jdou do UI i logu** (`electron/main.cjs:1537`).
-   `error.message` putuje do hlášky pro uživatele, `error.stack` do logu — a systémová
-   chyba (`ENOSPC`, `EACCES`) nese **absolutní cestu, v níž je i název schůzky**.
+1. **Syrové chyby souborového systému jdou do UI i logu** — `electron/main.cjs`, funkce
+   `exportCompletedRecording`, větev `catch`: `error.message` jde do hlášky uživateli
+   a `error.stack` do logu. Systémová chyba (`ENOSPC`, `EACCES`) nese **absolutní cestu,
+   ve které je i název schůzky**.
    **Změřeno, co už hlídá test:** název schůzky v logu ano (`queue-wiring.test.js:1442`),
    **cestu ani hlášku pro uživatele nehlídá nic**.
-   *Návrh opravy:* rozlišit vlastní vyhozené chyby (nesou bezpečné české věty) od
-   systémových podle `error.code` a ty nahradit obecnou hláškou podle kódu.
-   ⚠️ **Až po #40** — `main.cjs` je jeho hlavní soubor, paralelní větev by kolidovala.
+   *Návrh:* rozlišit vlastní vyhozené chyby (nesou bezpečné české věty) od systémových
+   podle `error.code` a ty nahradit obecnou hláškou podle kódu.
 
-3. ✅ **Hotovo:** únik absolutních cest a názvů v `dukazy/` (na `main`).
+2. Po ruce už není nic dalšího doloženého. **Nevymýšlet práci** — dvě adversariální kola
+   (interakce, bezpečnost, ztráta dat) proběhla a jejich nálezy jsou vyřešené.
 
-**Čeká na Dana** (`DAN-TODO.md`): expozice A/B/C · B5 Electron (7 verzí pozadu) ·
-B1 Apple Developer · B2 barva tlačítka · B3 allowlist · 15 minut ověření naostro.
+---
+
+## 🔴 Pravidla, která tenhle běh zaplatil vlastní kůží
+
+- **Commituj PŘED sabotáží.** `git checkout -- .` nerozlišuje autora; **čtyřikrát** to
+  smazalo právě napsaný test. Signál: `nothing to commit` po skutečné práci, nebo klesnuvší
+  celkový počet testů.
+- **Po každé mutaci ověř `grep -c`, že opravdu nastala.** Neproběhlá sabotáž je **nezměřeno**,
+  ne zelená — a vypadá stejně jako obrana, která drží.
+- **Zelená po sabotáži má tři příčiny:** slabý test · minutá sabotáž · invariant drží něco
+  jiného. Jen první je nález.
+- **Fixture ověř dřív, než obviníš kód.** Test bez `recordingsDirectory` odmítne všechno
+  a projde, aniž cokoli měří.
+- **Než z něčeho uděláš blocker, projdi `decisions.md`.** Jednou tam byl označen za vadu
+  stav, který byl v našem vlastním rozhodnutí navržený.
+- **Merguj jen při `CLEAN` a aspoň jedné položce kontrol.** `UNSTABLE` s prázdným seznamem
+  není slabší zelená, je to nezměřeno.
+- **Před zveřejněním repozitáře patří adversariální kolo PŘED, ne po.** Hledá se
+  trojí: tajemství · infrastruktura · **popisy cizích slabin**.

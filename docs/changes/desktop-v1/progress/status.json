@@ -253,17 +253,19 @@
   ],
   "praveSeStavi": [],
   "blockery": [
-    "B1 · Apple Developer: rozhodnout Individual × Organization (mezi variantami se nepřechází). Bez účtu nejdou automatické aktualizace ani trvalá oprávnění. Doporučení: firma, pokud má D-U-N-S.",
-    "B2 · Barva hlavního tlačítka v onboardingu a Nastavení: dvě akcentní barvy vedle sebe. Doporučení: sjednotit na modrou dle panelu. Ukázka: progress/barva-tlacitka.html",
-    "B3 · Allowlist vydavatelů v main.cjs je zadrátovaný a brání jiným instalacím app.ludone. Bezpečnostní hranice — rozvolnit smí jen Dan.",
-    "Živé ověření: 548 zelených testů, ale ✅ mají zatím tři položky. Soupis na 15 minut je v docs/changes/desktop-v1/OVERENI-NAOSTRO.md"
+    "Expozice: popisy tří produkčních vad ludone-app byly ~10 h ve veřejném repu. Repozitář vrácen na privátní, detaily z HEAD odstraněny. Rozhodnutí A/B/C na Danovi — doporučení A (opravit ty vady).",
+    "B5 · Electron 37.3.1, opravy až v 39.8.10; context-isolation bypass se nás týká přímo. Upgrade jen se živým ověřením — testy si Electron podstrkují.",
+    "B1 · Apple Developer: Individual × Organization, mezi variantami se nepřechází. Doporučení: firma, pokud má D-U-N-S.",
+    "B2 · Barva hlavního tlačítka: panel modrý, onboarding zelený. Ukázka: progress/barva-tlacitka.html",
+    "B3 · Allowlist vydavatelů brání jiným instalacím app.ludone. Bezpečnostní hranice — rozhoduje Dan.",
+    "Živé ověření: 589 zelených testů, ✅ mají čtyři položky. Soupis na 15 minut: docs/changes/desktop-v1/OVERENI-NAOSTRO.md"
   ],
   "nemereno": [
-    "Stereo export nikdo neposlechl — že jsou kanály oddělené, potvrdí až přehrání nahrávky.",
+    "Stereo export nikdo neposlechl — oddělení kanálů potvrdí až přehrání nahrávky.",
     "Výpadek ostatního zvuku nikdo nevyvolal odpojením sluchátek.",
-    "Ukončení aplikace během nahrávání nikdo nezkusil naostro (nově ošetřeno, PR #38).",
+    "Ukončení aplikace během nahrávání a obnova po pádu nikdo nezkusil naostro (ošetřeno v PR #38 a #40).",
     "Skutečné sestavení electron-builderu neproběhlo; ověřená je konfigurace, ne hotový DMG.",
-    "Odesílání na server: klient fáze 2 je hotový a vypnutý, endpointy nejsou živé."
+    "Odesílání na server: klient fáze 2 hotový a vypnutý, endpointy nejsou živé."
   ],
   "zdroje": [
     {
