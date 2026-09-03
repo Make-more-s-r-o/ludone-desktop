@@ -28,6 +28,7 @@ const {
 } = require("./auth.cjs");
 const {
   createOutboundQueueStore,
+  deriveQueueOwnerFingerprint,
   loadQueue,
   recoverOrphanedRecordings,
   saveQueueAtomically,
@@ -38,6 +39,7 @@ const {
   AUTH_ORIGINS,
   createAuthOriginStore,
   createDockVisibilityStore,
+  createQueueOwnerSecretStore,
 } = require("./settings.cjs");
 const {
   TRACKING_STATES,
@@ -350,6 +352,13 @@ const dockVisibilityStore = createDockVisibilityStore({
 });
 const authOriginStore = createAuthOriginStore({
   filePath: path.join(app.getPath("userData"), "nastaveni", "prostredi.json"),
+  log: (message) => console.warn(message),
+});
+// Tajemství pro otisk vlastníka fronty leží MIMO frontu schválně: kdo získá kopii
+// `outgoing.json`, nesmí z ní vyčíst, komu nahrávky patří. Bez tajemství by stačilo
+// vyzkoušet e-maily kolegů.
+const queueOwnerSecretStore = createQueueOwnerSecretStore({
+  filePath: path.join(app.getPath("userData"), "nastaveni", "fronta-vlastnik.json"),
   log: (message) => console.warn(message),
 });
 let dockVisibilityTransition = Promise.resolve();
@@ -1218,6 +1227,9 @@ async function createRecordingSession(event, sources) {
   let exportTrack;
   let manifestWasWritten = false;
   try {
+    // Vlastník je snapshot ze začátku nahrávání. Pozdější přihlášení nesmí
+    // anonymně pořízenou nahrávku automaticky přivlastnit prvnímu účtu.
+    const ownerFingerprint = await readCurrentQueueOwnerFingerprint();
     const timestamp = startedAt.toISOString().replace(/[:.]/g, "-");
     const sessionId = randomUUID();
     const prefix = `${timestamp}-${sessionId.slice(0, 8)}`;
@@ -1257,6 +1269,7 @@ async function createRecordingSession(event, sources) {
       sessionId,
       ownerId,
       owner: event.sender,
+      ownerFingerprint,
       startedAt: startedAt.toISOString(),
       tracks,
       manifest,
@@ -1855,7 +1868,22 @@ async function recordingUploadContext() {
       ?? storedSession.identity?.companyTabidooId,
     deviceLabel: app.getName?.() ?? "LuDone Desktop",
     issuer: storedSession.issuer,
+    ownerFingerprint: deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get()),
   };
+}
+
+async function readCurrentQueueOwnerFingerprint() {
+  try {
+    const storedSession = await readStoredAuthSession();
+    if (storedSession === null || storedSession.issuer !== resolveCurrentAuthIssuer()) {
+      return null;
+    }
+    return deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
+  } catch {
+    // Chybějící nebo neověřitelná identita nesmí zmařit lokální nahrávání.
+    // Explicitní null ji bezpečně ponechá čekat na budoucí potvrzení člověka.
+    return null;
+  }
 }
 
 function createQueueSend() {
@@ -2049,6 +2077,7 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
       const queued = await store.enqueueRecording({
         manifest: recordingSession.manifest,
         manifestPath: recordingSession.manifestPath,
+        ownerFingerprint: recordingSession.ownerFingerprint,
         trackPaths: Object.fromEntries(
           [...recordingSession.tracks].map(([source, track]) => [source, track.filePath]),
         ),

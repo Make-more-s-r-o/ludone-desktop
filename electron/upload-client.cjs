@@ -11,12 +11,16 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const SAFE_SERVER_CODE_PATTERN = /^[a-z][a-z0-9_]{0,63}$/u;
+const QUEUE_OWNER_FINGERPRINT_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const COMPLETE_UPLOAD_STATES = new Set(["normalized", "stored"]);
 
 const PAUSED_CODES = new Set([
   "quota_exceeded",
+  "queue_owner_mismatch",
+  "queue_owner_unknown",
   "session_missing",
   "session_not_found",
+  "session_owner_unknown",
   "storage_disabled",
 ]);
 const PERMANENT_CODES = new Set([
@@ -310,13 +314,46 @@ async function preflightRecording(item) {
   return Object.freeze({ clientRecordingId, manifest, tracks: Object.freeze(tracks) });
 }
 
-function normalizedContext(context, manifest, expectedOrigin) {
+function normalizedOwnerFingerprint(value) {
+  return typeof value === "string" && QUEUE_OWNER_FINGERPRINT_PATTERN.test(value)
+    ? value
+    : null;
+}
+
+function requireMatchingQueueOwner(item, context) {
+  const itemOwner = normalizedOwnerFingerprint(item?.ownerFingerprint);
+  if (itemOwner === null) {
+    throw localError(
+      "queue_owner_unknown",
+      "Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem",
+      "paused",
+    );
+  }
+  const sessionOwner = normalizedOwnerFingerprint(context?.ownerFingerprint);
+  if (sessionOwner === null) {
+    throw localError(
+      "session_owner_unknown",
+      "Identitu aktuálního přihlášení nelze ověřit",
+      "paused",
+    );
+  }
+  if (sessionOwner !== itemOwner) {
+    throw localError(
+      "queue_owner_mismatch",
+      "Nahrávka patří jinému účtu",
+      "paused",
+    );
+  }
+}
+
+function normalizedContext(context, manifest, expectedOrigin, item) {
   if (!isPlainObject(context) || safeString(context.accessToken) === "") {
     throw localError("session_missing", "Pro upload chybí přihlášení", "paused");
   }
   if (context.issuer !== undefined && context.issuer !== expectedOrigin) {
     throw localError("session_not_found", "Přihlášení patří jinému serveru", "paused");
   }
+  requireMatchingQueueOwner(item, context);
   const companyTabidooId = safeString(context.companyTabidooId)
     || safeString(manifest.companyTabidooId);
   if (!COMPANY_ID_PATTERN.test(companyTabidooId)) {
@@ -600,7 +637,7 @@ function createRecordingUploadSend({
     } catch {
       throw localError("session_missing", "Přihlášení pro upload nelze načíst", "paused");
     }
-    const context = normalizedContext(rawContext, recording.manifest, uploadOrigin);
+    const context = normalizedContext(rawContext, recording.manifest, uploadOrigin, item);
     const request = createRequester({
       accessToken: context.accessToken,
       fetchImpl,

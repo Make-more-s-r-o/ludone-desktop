@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import fs from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -23,6 +23,7 @@ import {
 
 const {
   createOutboundQueueStore,
+  deriveQueueOwnerFingerprint,
   loadQueue,
   recoverOrphanedRecordings,
   saveQueueAtomically,
@@ -193,6 +194,130 @@ function microphoneOnlyRecording(
 function oneItemQueue(clientRecordingId) {
   return enqueueRecording(createQueue(), recording(clientRecordingId), 1_777_000_000_000).queue;
 }
+
+describe("vlastník nahrávky v perzistentní frontě", () => {
+  it("ukládá jen stabilní doménově oddělený SHA-256 otisk, ne čitelnou identitu", () => {
+    const session = {
+      issuer: "https://app.ludone.cz",
+      identity: { name: "Ada Lovelace", email: "  Ada@LuDone.CZ  " },
+    };
+    const TAJEMSTVI_VLASTNIKA = Buffer.alloc(32, 7);
+
+    const fingerprint = deriveQueueOwnerFingerprint(session, TAJEMSTVI_VLASTNIKA);
+    const sameIdentity = deriveQueueOwnerFingerprint({
+      issuer: "https://app.ludone.cz",
+      identity: { email: "Ada@ludone.cz" },
+    }, TAJEMSTVI_VLASTNIKA);
+    const otherIssuer = deriveQueueOwnerFingerprint({
+      issuer: "https://labs.ludone.cz",
+      identity: { email: "Ada@ludone.cz" },
+    }, TAJEMSTVI_VLASTNIKA);
+    const expectedFingerprint = `sha256:${createHmac("sha256", TAJEMSTVI_VLASTNIKA)
+      .update(JSON.stringify([
+        "cz.ludone.desktop",
+        "queue-owner",
+        "v1",
+        "https://app.ludone.cz",
+        "email",
+        "Ada@ludone.cz",
+      ]), "utf8")
+      .digest("hex")}`;
+
+    expect(fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(fingerprint).toBe(expectedFingerprint);
+    expect(sameIdentity).toBe(fingerprint);
+    expect(otherIssuer).not.toBe(fingerprint);
+    expect(JSON.stringify({ fingerprint })).not.toMatch(/Ada|ludone\.cz@/iu);
+  });
+
+  it("bez tajemství se otisk NEODVODÍ — musí vyjít null", () => {
+    // 🔴 Fail-closed. Kdyby se při nedostupném tajemství vrátil nesolený sha256, ochrana
+    // by tiše zeslábla na to, co jde uhodnout ze seznamu firemních e-mailů — a vypadala
+    // by přitom stejně. Null se překládá na „vlastník neznámý", tedy pauzu.
+    const session = {
+      issuer: "https://app.ludone.cz",
+      identity: { email: "ada@ludone.cz" },
+    };
+
+    expect(deriveQueueOwnerFingerprint(session, undefined)).toBeNull();
+    expect(deriveQueueOwnerFingerprint(session, null)).toBeNull();
+    expect(
+      deriveQueueOwnerFingerprint(session, Buffer.alloc(31, 7)),
+      "krátké tajemství je horší než žádné — vypadá jako ochrana",
+    ).toBeNull();
+    expect(deriveQueueOwnerFingerprint(session, "nejsem buffer")).toBeNull();
+  });
+
+  it("produkční store přidá otisk k dvoustopé i jednostopé položce", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-owner-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const ownerFingerprint = `sha256:${"a".repeat(64)}`;
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      await store.enqueueRecording({ ...recording(), ownerFingerprint });
+      await store.enqueueRecording({
+        ...microphoneOnlyRecording("3d4e7b61-e3d4-483c-94cc-a512454f6976"),
+        ownerFingerprint,
+      });
+
+      const saved = await loadQueue(queuePath);
+      expect(saved.items.map((item) => item.ownerFingerprint)).toEqual([
+        ownerFingerprint,
+        ownerFingerprint,
+      ]);
+      expect(JSON.stringify(saved)).not.toMatch(/Ada|@ludone\.cz/iu);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("anonymní enqueue zapíše null a pozdější opakování jej nepřivlastní", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-ownerless-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      const first = await store.enqueueRecording(recording());
+      const second = await store.enqueueRecording({
+        ...recording(),
+        ownerFingerprint: `sha256:${"b".repeat(64)}`,
+      });
+
+      expect(first.added).toBe(true);
+      expect(second.added).toBe(false);
+      expect((await loadQueue(queuePath)).items[0]).toMatchObject({ ownerFingerprint: null });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("starou položku schématu v1 bez pole vlastníka načte beze ztráty jako neznámou", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-owner-migration-"));
+    const queuePath = path.join(directory, "outgoing.json");
+    const legacyQueue = oneItemQueue();
+    delete legacyQueue.items[0].ownerFingerprint;
+    await fs.promises.writeFile(queuePath, JSON.stringify(legacyQueue));
+
+    try {
+      const loaded = await loadQueue(queuePath);
+      expect(loaded).toEqual({
+        ...legacyQueue,
+        items: [{ ...legacyQueue.items[0], ownerFingerprint: null }],
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+});
 
 async function writeRecoverableRecording(
   recordingsDirectory,
@@ -803,9 +928,13 @@ describe("stavový automat fronty", () => {
   });
 
   it("pohled pro renderer neobsahuje absolutní cesty ani manifest", () => {
-    const view = reduceQueueForRenderer(oneItemQueue());
+    const queue = oneItemQueue();
+    const ownerFingerprint = `sha256:${"a".repeat(64)}`;
+    queue.items[0].ownerFingerprint = ownerFingerprint;
+    const view = reduceQueueForRenderer(queue);
     expect(JSON.stringify(view)).not.toContain("/nahravky/");
     expect(JSON.stringify(view)).not.toContain("manifestPath");
+    expect(JSON.stringify(view)).not.toContain(ownerFingerprint);
     expect(view[0]).toEqual({
       id: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
       kind: QUEUE_ITEM_KINDS.RECORDING,
@@ -818,14 +947,17 @@ describe("stavový automat fronty", () => {
 });
 
 describe("trvalé uložení fronty", () => {
-  it("uložená a po restartu načtená fronta je stejná", async () => {
+  it("po restartu zachová data a doplní neznámého vlastníka", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-restart-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");
     const queue = oneItemQueue();
     try {
       await saveQueueAtomically(queuePath, queue);
       const afterRestart = await loadQueue(queuePath);
-      expect(afterRestart).toEqual(queue);
+      expect(afterRestart).toEqual({
+        ...queue,
+        items: queue.items.map((item) => ({ ...item, ownerFingerprint: null })),
+      });
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -892,6 +1024,7 @@ describe("obnova osiřelých nahrávek", () => {
       })).resolves.toMatchObject({ recovered: 1, skipped: 0 });
       const [item] = (await loadQueue(queuePath)).items;
       expect(item.manifestPath).toBe(fixture.manifestPath);
+      expect(item.ownerFingerprint).toBeNull();
       expect(Object.keys(item.tracks)).toEqual(["microphone"]);
     } finally {
       await rm(directory, { recursive: true, force: true });

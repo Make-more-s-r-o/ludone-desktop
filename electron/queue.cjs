@@ -1,6 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { createHash, randomUUID } = require("node:crypto");
+const { createHash, createHmac, randomUUID } = require("node:crypto");
 
 const QUEUE_SCHEMA_VERSION = 1;
 const RECOVERABLE_MANIFEST_STATES = new Set(["complete", "incomplete"]);
@@ -8,6 +8,12 @@ const RECOVERY_HASH_BUFFER_BYTES = 1024 * 1024;
 const RECOVERY_MANIFEST_MAX_BYTES = 1024 * 1024;
 const RECOVERY_TRACK_MAX_BYTES = 512 * 1024 * 1024;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const QUEUE_OWNER_FINGERPRINT_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const QUEUE_OWNER_FINGERPRINT_DOMAIN = Object.freeze([
+  "cz.ludone.desktop",
+  "queue-owner",
+  "v1",
+]);
 
 function emptyQueue() {
   return { schemaVersion: QUEUE_SCHEMA_VERSION, items: [] };
@@ -23,7 +29,96 @@ function validateQueue(queue) {
   ) {
     throw new TypeError("soubor fronty neodpovídá schématu v1");
   }
-  return queue;
+  let changed = false;
+  const items = queue.items.map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item) || item.kind === "time") {
+      return item;
+    }
+    const ownerFingerprint = normalizeQueueOwnerFingerprint(item.ownerFingerprint);
+    if (
+      Object.prototype.hasOwnProperty.call(item, "ownerFingerprint")
+      && item.ownerFingerprint === ownerFingerprint
+    ) {
+      return item;
+    }
+    changed = true;
+    return { ...item, ownerFingerprint };
+  });
+  return changed ? { ...queue, items } : queue;
+}
+
+function normalizeQueueOwnerFingerprint(value) {
+  return typeof value === "string" && QUEUE_OWNER_FINGERPRINT_PATTERN.test(value)
+    ? value
+    : null;
+}
+
+function canonicalQueueOwnerEmail(value) {
+  if (typeof value !== "string") return null;
+  const email = value.trim().normalize("NFC");
+  const separator = email.lastIndexOf("@");
+  if (
+    separator <= 0
+    || separator === email.length - 1
+    || /\s/u.test(email)
+    || email.indexOf("@") !== separator
+  ) {
+    return null;
+  }
+  const localPart = email.slice(0, separator);
+  const domain = email.slice(separator + 1).toLocaleLowerCase("en-US");
+  return `${localPart}@${domain}`;
+}
+
+/**
+ * Jednosměrný otisk váže člověka i issuer. Jméno, e-mail ani token se do
+ * outgoing.json nikdy neukládají; tokeny navíc expirují nebo rotují.
+ */
+// 🔴 `secret` je POVINNÝ a bez něj se vrací null. Materiál bez tajemství by šlo
+// slovníkově uhodnout ze známých firemních e-mailů — otisk by pak neskrýval nic.
+// Null se překládá na „vlastník neznámý", tedy pauzu; nikdy na slabší otisk.
+function deriveQueueOwnerFingerprint(session, secret) {
+  if (!Buffer.isBuffer(secret) || secret.length < 32) return null;
+  if (!session || typeof session !== "object" || Array.isArray(session)) return null;
+  const email = canonicalQueueOwnerEmail(session.identity?.email);
+  if (email === null) return null;
+
+  let issuer;
+  try {
+    const candidate = new URL(session.issuer);
+    if (
+      candidate.protocol !== "https:"
+      || candidate.username !== ""
+      || candidate.password !== ""
+      || candidate.pathname !== "/"
+      || candidate.search !== ""
+      || candidate.hash !== ""
+    ) {
+      return null;
+    }
+    issuer = candidate.origin;
+  } catch {
+    return null;
+  }
+
+  const material = JSON.stringify([
+    ...QUEUE_OWNER_FINGERPRINT_DOMAIN,
+    issuer,
+    "email",
+    email,
+  ]);
+  const digest = createHmac("sha256", secret).update(material, "utf8").digest("hex");
+  return `sha256:${digest}`;
+}
+
+function addOwnerToNewRecording(result, ownerFingerprint) {
+  if (!result.added) return result;
+  const item = { ...result.item, ownerFingerprint };
+  const itemIndex = result.queue.items.findIndex((candidate) => candidate === result.item);
+  if (itemIndex < 0) throw new Error("Nová položka fronty nebyla nalezena");
+  const items = [...result.queue.items];
+  items[itemIndex] = item;
+  return { ...result, item, queue: { ...result.queue, items } };
 }
 
 function requiredObject(value, field) {
@@ -46,7 +141,7 @@ function microphoneOnlyRecording(recording) {
 }
 
 function enqueueMicrophoneOnlyRecording(queue, recording, now = Date.now()) {
-  validateQueue(queue);
+  queue = validateQueue(queue);
   requiredObject(recording, "recording");
   const manifest = normalizeMicrophoneOnlyManifest(recording.manifest);
   const manifestPath = requiredNonEmptyString(recording.manifestPath, "manifestPath");
@@ -117,7 +212,7 @@ async function loadQueue(filePath) {
 
 /** Atomický zápis ve stejném adresáři: temp soubor, fsync a rename. */
 async function saveQueueAtomically(filePath, queue) {
-  validateQueue(queue);
+  queue = validateQueue(queue);
   const directory = path.dirname(filePath);
   await fs.promises.mkdir(directory, { recursive: true, mode: 0o700 });
   const temporaryPath = path.join(
@@ -648,9 +743,13 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     return serialize(async () => {
       const queueModule = await loadQueueModule();
       const queue = await ensureLoaded();
-      const result = microphoneOnlyRecording(recording)
+      const enqueued = microphoneOnlyRecording(recording)
         ? enqueueMicrophoneOnlyRecording(queue, recording)
         : queueModule.enqueueRecording(queue, recording);
+      const result = addOwnerToNewRecording(
+        enqueued,
+        normalizeQueueOwnerFingerprint(recording?.ownerFingerprint),
+      );
       if (result.added) await commit(result.queue);
       return result;
     });
@@ -710,6 +809,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
 
 module.exports = {
   createOutboundQueueStore,
+  deriveQueueOwnerFingerprint,
   loadQueue,
   recoverOrphanedRecordings,
   saveQueueAtomically,

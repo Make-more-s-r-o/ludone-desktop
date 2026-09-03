@@ -78,6 +78,18 @@ afterEach(async () => {
   temporaryRoots.clear();
 });
 
+// Otisk vlastníka je od 3. 9. 2026 HMAC s tajemstvím per instalace — bez něj by šlo
+// slovníkově uhodnout, komu nahrávka patří. Test si proto musí sáhnout po TÉMŽE
+// tajemství, které si hlavní proces vyrobil, ne odvozovat z holého e-mailu.
+function otiskVlastnika(harness, session) {
+  const cesta = path.join(harness.userDataPath, "nastaveni", "fronta-vlastnik.json");
+  const ulozene = JSON.parse(readFileSync(cesta, "utf8"));
+  return actualRequire("./queue.cjs").deriveQueueOwnerFingerprint(
+    session,
+    Buffer.from(ulozene.secret, "base64"),
+  );
+}
+
 /**
  * @param {string} userDataPath
  * @param {{
@@ -2508,6 +2520,84 @@ describe("produkční zapojení odchozí fronty", () => {
     ]);
   });
 
+  it("vlastník nahrávky se otiskne ze session při jejím začátku bez čitelného e-mailu", async () => {
+    const harness = await loadMain();
+    const session = {
+      ...storedAuthSession({
+        identity: { name: "Ada Lovelace", email: "Ada@LuDone.CZ" },
+      }),
+      accessExpiresAt: Date.now() + 60_000,
+    };
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(
+      tokenPath,
+      harness.electron.safeStorage.encryptString(JSON.stringify(session)),
+    );
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+
+    const started = await harness.ipcHandlers.get("recording:begin")(event);
+    const endedAt = new Date(Date.parse(started.startedAt) + 1_000).toISOString();
+    await harness.ipcHandlers.get("recording:finish")(
+      event,
+      started.sessionId,
+      {
+        microphone: { startedAt: started.startedAt, endedAt },
+        system: { startedAt: started.startedAt, endedAt },
+      },
+    );
+
+    const serialized = await readFile(
+      path.join(harness.userDataPath, "queue", "outgoing.json"),
+      "utf8",
+    );
+    const queue = JSON.parse(serialized);
+    expect(queue.items).toHaveLength(1);
+    expect(queue.items[0].ownerFingerprint).toBe(
+      otiskVlastnika(harness, session),
+    );
+    expect(serialized).not.toContain("Ada@LuDone.CZ");
+    expect(serialized).not.toContain("Ada Lovelace");
+  });
+
+  it("odhlášeně začatou nahrávku nepřivlastní session, která vznikne před dokončením", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const started = await harness.ipcHandlers.get("recording:begin")(event);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() + 60_000,
+    })));
+
+    await harness.ipcHandlers.get("recording:finish")(
+      event,
+      started.sessionId,
+      {
+        microphone: {
+          startedAt: started.startedAt,
+          endedAt: new Date(Date.parse(started.startedAt) + 1_000).toISOString(),
+        },
+        system: {
+          startedAt: started.startedAt,
+          endedAt: new Date(Date.parse(started.startedAt) + 1_000).toISOString(),
+        },
+      },
+    );
+
+    const queue = JSON.parse(await readFile(
+      path.join(harness.userDataPath, "queue", "outgoing.json"),
+      "utf8",
+    ));
+    expect(queue.items).toHaveLength(1);
+    expect(queue.items[0].ownerFingerprint).toBeNull();
+  });
+
   it("jednostopá session vytvoří jen mikrofonní originál, projde frontou i exportem", async () => {
     const harness = await loadMain();
     await harness.runReady();
@@ -2857,9 +2947,14 @@ describe("produkční zapojení odchozí fronty", () => {
       ...storedAuthSession(),
       accessExpiresAt: Date.now() + 60_000,
     })));
-    await expect(getUploadContext()).resolves.toMatchObject({
+    // 🔴 Kontext se musí dočkat DŘÍV, než sáhneme po tajemství: vzniká až při prvním
+    // odvození otisku. Objekt uvnitř `toMatchObject` se vyhodnocuje okamžitě, takže
+    // vložený `otiskVlastnika(...)` by hledal soubor, který ještě neexistuje.
+    const kontext = await getUploadContext();
+    expect(kontext).toMatchObject({
       accessToken: "TAJNY-ACCESS-TOKEN",
       issuer: "https://app.ludone.cz",
+      ownerFingerprint: otiskVlastnika(harness, storedAuthSession()),
     });
   });
 
