@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SettingsApp } from "../src/components/Settings.jsx";
 
 const ORIGIN = "https://labs.ludone.cz";
+const PRODUCTION_ORIGIN = "https://app.ludone.cz";
 const DIAGNOSTICS = Object.freeze({
   version: "9.8.7",
   architecture: "Apple Silicon",
@@ -28,6 +29,7 @@ function deferred() {
 }
 
 async function renderSettings({
+  confirmEnvironmentChange = () => true,
   deviceName = () => Promise.resolve("MacBook-Pro-Dan"),
   diagnostics = () => Promise.resolve(DIAGNOSTICS),
   dockVisible = () => Promise.resolve(false),
@@ -39,6 +41,7 @@ async function renderSettings({
   logout = () => Promise.resolve({ signedOutLocally: true, serverRevoked: true, reason: null }),
   openAtLogin = () => Promise.resolve(true),
   origin = () => Promise.resolve(ORIGIN),
+  setAuthOrigin = (value) => Promise.resolve(value),
   setDockVisible = (value) => Promise.resolve(value),
   setOpenAtLogin = (value) => Promise.resolve(value),
 } = {}) {
@@ -58,6 +61,7 @@ async function renderSettings({
     getOpenAtLogin: vi.fn(openAtLogin),
     exportDiagnostics: vi.fn(exportDiagnostics),
     logout: vi.fn(logout),
+    setAuthOrigin: vi.fn(setAuthOrigin),
     setDockVisible: vi.fn(setDockVisible),
     setOpenAtLogin: vi.fn(setOpenAtLogin),
   };
@@ -68,6 +72,10 @@ async function renderSettings({
   Object.defineProperty(dom.window, "ludone", {
     configurable: true,
     value: ludone,
+  });
+  Object.defineProperty(dom.window, "confirm", {
+    configurable: true,
+    value: vi.fn(confirmEnvironmentChange),
   });
 
   vi.stubGlobal("React", React);
@@ -186,7 +194,7 @@ describe("čtyři části Nastavení", () => {
     }
   });
 
-  it("v Účtu ukáže zařízení a prostředí jen ke čtení a umí odhlásit tento Mac", async () => {
+  it("v Účtu ukáže zařízení, dvě pevná prostředí a umí odhlásit tento Mac", async () => {
     const settings = await renderSettings();
     try {
       await expectAccountState(settings, "signed-in");
@@ -195,9 +203,24 @@ describe("čtyři části Nastavení", () => {
           .toBe("MacBook-Pro-Dan");
       });
       expect(settings.document.querySelector('[data-testid="settings-environment"]')?.textContent)
-        .toBe("labs");
-      expect(settings.document.querySelector('[data-testid="settings-environment"] input')).toBeNull();
-      expect(settings.document.querySelector('[data-testid="settings-environment"] button')).toBeNull();
+        .toContain("labs");
+      const environmentSelect = settings.document.querySelector(
+        'select[data-testid="settings-environment"]',
+      );
+      expect(environmentSelect?.value).toBe(ORIGIN);
+      expect([...environmentSelect.options].map(({ textContent, value }) => ({
+        label: textContent.trim(),
+        value,
+      }))).toEqual([
+        { label: "produkce · app.ludone.cz", value: PRODUCTION_ORIGIN },
+        { label: "labs · labs.ludone.cz", value: ORIGIN },
+      ]);
+      expect(settings.document.body.textContent).toContain(
+        "Na produkci modul nahrávek schválně není. Na labs ho uvidí jen admin.",
+      );
+      expect(settings.document.body.textContent).toContain(
+        "Prostředí se během dne často aktualizuje.",
+      );
 
       const logoutButton = [...settings.document.querySelectorAll("button")]
         .find((button) => button.textContent.trim() === "Odhlásit tento Mac");
@@ -208,6 +231,103 @@ describe("čtyři části Nastavení", () => {
       });
       expect(settings.ludone.logout).toHaveBeenCalledOnce();
       expect(settings.ludone.logout.mock.calls[0]).toHaveLength(0);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("přepnutí na labs nejdřív potvrdí a odhlásí, teprve potom změní origin", async () => {
+    const order = [];
+    const settings = await renderSettings({
+      origin: () => Promise.resolve(PRODUCTION_ORIGIN),
+      logout: async () => {
+        order.push("auth:logout");
+        return { signedOutLocally: true, serverRevoked: true, reason: null };
+      },
+      setAuthOrigin: async (origin) => {
+        order.push(`auth:set-origin:${origin}`);
+        return origin;
+      },
+    });
+    try {
+      await expectAccountState(settings, "signed-in");
+      const select = settings.document.querySelector('select[data-testid="settings-environment"]');
+      await vi.waitFor(() => expect(select?.value).toBe(PRODUCTION_ORIGIN));
+
+      await React.act(async () => {
+        select.value = ORIGIN;
+        select.dispatchEvent(new settings.document.defaultView.Event("change", { bubbles: true }));
+        await Promise.resolve();
+      });
+
+      expect(settings.document.defaultView.confirm).toHaveBeenCalledOnce();
+      expect(settings.document.defaultView.confirm.mock.calls[0][0]).toMatch(
+        /Přepnout na labs[\s\S]*odhlásí z tohoto Macu[\s\S]*znovu přihlásit/u,
+      );
+      await vi.waitFor(() => expect(settings.ludone.setAuthOrigin).toHaveBeenCalledOnce());
+      expect(order).toEqual([
+        "auth:logout",
+        `auth:set-origin:${ORIGIN}`,
+      ]);
+      expect(settings.ludone.logout.mock.calls[0]).toHaveLength(0);
+      expect(settings.ludone.setAuthOrigin).toHaveBeenCalledExactlyOnceWith(ORIGIN);
+      expect(select.value).toBe(ORIGIN);
+      expect(settings.document.querySelector('[data-testid="settings-destination"]')?.dataset.origin)
+        .toBe(ORIGIN);
+      expect(settings.document.querySelector('[data-testid="settings-account"]')?.dataset.authState)
+        .toBe("signed-out");
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("bez potvrzení prostředí nezmění a ani neodhlásí", async () => {
+    const settings = await renderSettings({
+      confirmEnvironmentChange: () => false,
+      origin: () => Promise.resolve(PRODUCTION_ORIGIN),
+    });
+    try {
+      const select = settings.document.querySelector('select[data-testid="settings-environment"]');
+      await vi.waitFor(() => expect(select?.value).toBe(PRODUCTION_ORIGIN));
+
+      await React.act(async () => {
+        select.value = ORIGIN;
+        select.dispatchEvent(new settings.document.defaultView.Event("change", { bubbles: true }));
+        await Promise.resolve();
+      });
+
+      expect(settings.document.defaultView.confirm).toHaveBeenCalledOnce();
+      expect(settings.ludone.logout).not.toHaveBeenCalled();
+      expect(settings.ludone.setAuthOrigin).not.toHaveBeenCalled();
+      expect(select.value).toBe(PRODUCTION_ORIGIN);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("neúspěšné lokální odhlášení nepřepne prostředí", async () => {
+    const settings = await renderSettings({
+      origin: () => Promise.resolve(PRODUCTION_ORIGIN),
+      logout: () => Promise.resolve({
+        signedOutLocally: false,
+        serverRevoked: false,
+        reason: "recording-active",
+      }),
+    });
+    try {
+      const select = settings.document.querySelector('select[data-testid="settings-environment"]');
+      await vi.waitFor(() => expect(select?.value).toBe(PRODUCTION_ORIGIN));
+
+      await React.act(async () => {
+        select.value = ORIGIN;
+        select.dispatchEvent(new settings.document.defaultView.Event("change", { bubbles: true }));
+        await Promise.resolve();
+      });
+
+      await vi.waitFor(() => expect(settings.ludone.logout).toHaveBeenCalledOnce());
+      expect(settings.ludone.setAuthOrigin).not.toHaveBeenCalled();
+      expect(select.value).toBe(PRODUCTION_ORIGIN);
+      expect(settings.document.body.textContent).toContain("Nejdřív ukonči nahrávání.");
     } finally {
       await settings.cleanup();
     }

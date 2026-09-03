@@ -70,3 +70,49 @@ describe("perzistence viditelnosti Docku", () => {
     expect(store.get()).toBe(false);
   });
 });
+
+describe("perzistence prostředí LuDone", () => {
+  const PRODUCTION_ORIGIN = "https://app.ludone.cz";
+  const LABS_ORIGIN = "https://labs.ludone.cz";
+
+  it("atomický zápis přežije novou instanci hlavního procesu", async () => {
+    const { createAuthOriginStore } = loadSettingsModule();
+    const filePath = await temporarySettingsPath();
+    const firstProcess = createAuthOriginStore({ filePath, log: vi.fn() });
+
+    expect(firstProcess.get()).toBe(PRODUCTION_ORIGIN);
+    await expect(firstProcess.set(LABS_ORIGIN)).resolves.toBe(LABS_ORIGIN);
+
+    const secondProcess = createAuthOriginStore({ filePath, log: vi.fn() });
+    expect(secondProcess.get()).toBe(LABS_ORIGIN);
+    expect(JSON.parse(await readFile(filePath, "utf8"))).toEqual({
+      schemaVersion: 1,
+      authOrigin: LABS_ORIGIN,
+    });
+    expect((await stat(filePath)).mode & 0o777).toBe(0o600);
+    expect(await readdir(path.dirname(filePath))).toEqual(["aplikace.json"]);
+  });
+
+  it.each([
+    "https://utocnik.example",
+    "http://labs.ludone.cz",
+    "https://labs.ludone.cz/",
+    "labs.ludone.cz",
+    "",
+    42,
+    null,
+  ])("cizí hodnotu %j odmítne a ponechá poslední prostředí", async (foreignOrigin) => {
+    const { createAuthOriginStore } = loadSettingsModule();
+    const filePath = await temporarySettingsPath();
+    const store = createAuthOriginStore({ filePath, log: vi.fn() });
+    await store.set(LABS_ORIGIN);
+
+    await expect(Promise.resolve().then(() => store.set(foreignOrigin)))
+      .rejects.toThrow(/prostředí|origin/u);
+    expect(store.get()).toBe(LABS_ORIGIN);
+    expect(JSON.parse(await readFile(filePath, "utf8"))).toEqual({
+      schemaVersion: 1,
+      authOrigin: LABS_ORIGIN,
+    });
+  });
+});
