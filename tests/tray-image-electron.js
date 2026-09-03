@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, nativeImage } from "electron";
+import { app, nativeImage, nativeTheme } from "electron";
 
 function functionSource(source, name) {
   const start = source.indexOf(`function ${name}(`);
@@ -28,37 +28,45 @@ const production = Function(
   "fs",
   "path",
   "nativeImage",
+  "nativeTheme",
   "__dirname",
   `"use strict";
   ${mainSource.includes("function traySvg(") ? functionSource(mainSource, "traySvg") : ""}
   ${functionSource(mainSource, "trayIconName")}
+  ${functionSource(mainSource, "currentTrayIconTheme")}
   ${functionSource(mainSource, "trayImage")}
   return { trayIconName, trayImage };`,
-)(fs, path, nativeImage, mainDirectory);
+)(fs, path, nativeImage, nativeTheme, mainDirectory);
 
 let failures = 0;
 
-for (const state of production.trayIconName()) {
-  try {
-    const image = production.trayImage(state);
-    const size = image.getSize();
-    const pngLength = image.toPNG().length;
-    const measurement = `MEASURE ${state}: isEmpty=${image.isEmpty()} getSize=${size.width}x${size.height} toPNG.length=${pngLength}`;
-    outputLines.push(measurement);
-    console.log(measurement);
+for (const theme of ["dark", "light"]) {
+  for (const state of production.trayIconName()) {
+    try {
+      const image = production.trayImage(state, theme);
+      const size = image.getSize();
+      const pngLength = image.toPNG().length;
+      const measurement = `MEASURE ${theme}-${state}: isEmpty=${image.isEmpty()} `
+        + `template=${image.isTemplateImage} getSize=${size.width}x${size.height} `
+        + `toPNG.length=${pngLength}`;
+      outputLines.push(measurement);
+      console.log(measurement);
 
-    assert.equal(image.isEmpty(), false, "isEmpty() musí vrátit false");
-    assert.ok(size.width > 0, "šířka musí být větší než nula");
-    assert.ok(size.height > 0, "výška musí být větší než nula");
-    assert.ok(pngLength > 0, "toPNG() musí vrátit data");
-    const line = `PASS ${state}: isEmpty=false getSize=${size.width}x${size.height} toPNG.length=${pngLength}`;
-    outputLines.push(line);
-    console.log(line);
-  } catch (error) {
-    failures += 1;
-    const line = `FAIL ${state}: ${error.message}`;
-    outputLines.push(line);
-    console.error(line);
+      assert.equal(image.isEmpty(), false, "isEmpty() musí vrátit false");
+      assert.equal(image.isTemplateImage, false, "barevná ikona nesmí být template image");
+      assert.ok(size.width > 0, "šířka musí být větší než nula");
+      assert.ok(size.height > 0, "výška musí být větší než nula");
+      assert.ok(pngLength > 0, "toPNG() musí vrátit data");
+      const line = `PASS ${theme}-${state}: isEmpty=false template=false `
+        + `getSize=${size.width}x${size.height} toPNG.length=${pngLength}`;
+      outputLines.push(line);
+      console.log(line);
+    } catch (error) {
+      failures += 1;
+      const line = `FAIL ${theme}-${state}: ${error.message}`;
+      outputLines.push(line);
+      console.error(line);
+    }
   }
 }
 

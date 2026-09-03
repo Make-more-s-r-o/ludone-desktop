@@ -83,6 +83,7 @@ afterEach(async () => {
  *   navigateDuringSettingsRead?: boolean,
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
  *   settingsReadError?: Error | null,
+ *   shouldUseDarkColors?: boolean,
  *   storedSettings?: string | null,
  *   trayBounds?: {x: number, y: number, width: number, height: number} | Error,
  * }} [options]
@@ -93,12 +94,14 @@ function fakeElectron(userDataPath, {
   isPackaged = false,
   navigateDuringSettingsRead = false,
   primaryWorkArea = { x: 0, y: 0, width: 1_440, height: 900 },
+  shouldUseDarkColors = true,
   storedSettings = null,
   settingsReadError = null,
   trayBounds = { x: 0, y: 0, width: 0, height: 18 },
 } = {}) {
   const ipcHandlers = new Map();
   const ipcListeners = new Map();
+  const nativeImages = [];
   const trays = [];
   const windows = [];
   let readyCallback;
@@ -228,8 +231,9 @@ function fakeElectron(userDataPath, {
   }
 
   class FakeTray extends EventEmitter {
-    constructor() {
+    constructor(initialImage) {
       super();
+      this.initialImage = initialImage;
       this.popUpContextMenu = vi.fn();
       this.setContextMenu = vi.fn();
       this.setImage = vi.fn();
@@ -262,6 +266,10 @@ function fakeElectron(userDataPath, {
     })),
   });
 
+  const nativeTheme = Object.assign(new EventEmitter(), {
+    shouldUseDarkColors,
+  });
+
   const electron = {
     app,
     BrowserWindow: FakeBrowserWindow,
@@ -278,13 +286,23 @@ function fakeElectron(userDataPath, {
       // Ikona lišty se od PNG opravy skládá z bufferů (běžné + retina rozlišení).
       // Stub musí umět totéž co produkce, jinak testy padají na chybějící metodě —
       // a to není nález o kódu, jen o harnessu.
-      createFromBuffer: vi.fn(() => ({
-        addRepresentation() { return this; },
-        isEmpty: () => false,
-        resize() { return this; },
-        setTemplateImage() { return this; },
-      })),
+      createFromBuffer: vi.fn((buffer) => {
+        const image = {
+          sourceBytes: Buffer.from(buffer),
+          retinaBytes: null,
+          addRepresentation({ buffer: retinaBuffer }) {
+            this.retinaBytes = Buffer.from(retinaBuffer);
+            return this;
+          },
+          isEmpty: () => false,
+          resize() { return this; },
+          setTemplateImage: vi.fn(),
+        };
+        nativeImages.push(image);
+        return image;
+      }),
     },
+    nativeTheme,
     net: { fetch: vi.fn() },
     protocol: {
       handle: vi.fn(),
@@ -346,6 +364,7 @@ function fakeElectron(userDataPath, {
     electron,
     ipcHandlers,
     ipcListeners,
+    nativeImages,
     settingsReadStarted,
     trays,
     windows,
@@ -380,6 +399,10 @@ function fakeElectron(userDataPath, {
     runTrayTitleInterval() {
       for (const { args, callback } of trayTitleIntervals.values()) callback(...args);
     },
+    setShouldUseDarkColors(value) {
+      nativeTheme.shouldUseDarkColors = value;
+      nativeTheme.emit("updated");
+    },
     trayTitleIntervalCount: () => trayTitleIntervals.size,
     trayVisibilityDelay: () => trayVisibilityDelay,
   };
@@ -403,6 +426,7 @@ function fakeElectron(userDataPath, {
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
  *   recoverOrphanedRecordings?: (...args: any[]) => Promise<any>,
  *   settingsReadError?: Error | null,
+ *   shouldUseDarkColors?: boolean,
  *   storedSettings?: string | null,
  *   trayBounds?: {x: number, y: number, width: number, height: number} | Error,
  * }} [options]
@@ -424,6 +448,7 @@ async function loadMain({
   primaryWorkArea,
   recoverOrphanedRecordings,
   settingsReadError = null,
+  shouldUseDarkColors = true,
   storedSettings = null,
   trayBounds,
 } = {}) {
@@ -435,6 +460,7 @@ async function loadMain({
     isPackaged,
     navigateDuringSettingsRead,
     primaryWorkArea,
+    shouldUseDarkColors,
     storedSettings,
     settingsReadError,
     trayBounds,
@@ -1185,6 +1211,60 @@ describe("výška panelu podle obsahu", () => {
     expect(() => api.setPanelContentHeight({ height: 240 })).toThrow(/výšk/i);
     expect(() => api.setPanelContentHeight(Number.POSITIVE_INFINITY)).toThrow(/výšk/i);
     expect(invoke).not.toHaveBeenCalled();
+  });
+});
+
+describe("barevné varianty ikony podle motivu lišty", () => {
+  it("za běhu přepne tmavou a světlou sadu a při návratu obnoví původní bajty", async () => {
+    const harness = await loadMain({ shouldUseDarkColors: true });
+    await harness.runReady();
+    const tray = harness.trays[0];
+    const darkImage = tray.setImage.mock.calls.at(-1)?.[0];
+    const callsAfterStart = tray.setImage.mock.calls.length;
+    const ocekavanaTmava = readFileSync(path.join(
+      mainDirectory,
+      "ikony",
+      "dark-signed-out.png",
+    ));
+    const ocekavanaSvetla = readFileSync(path.join(
+      mainDirectory,
+      "ikony",
+      "light-signed-out.png",
+    ));
+
+    expect(darkImage.sourceBytes.equals(ocekavanaTmava)).toBe(true);
+
+    harness.setShouldUseDarkColors(true);
+    expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart);
+
+    harness.setShouldUseDarkColors(false);
+
+    expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart + 1);
+    const lightImage = tray.setImage.mock.calls.at(-1)[0];
+    expect(lightImage.sourceBytes.equals(ocekavanaSvetla)).toBe(true);
+    expect(lightImage.sourceBytes.equals(darkImage.sourceBytes)).toBe(false);
+    expect(lightImage.retinaBytes.equals(darkImage.retinaBytes)).toBe(false);
+
+    harness.setShouldUseDarkColors(true);
+
+    expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart + 2);
+    const darkImageAgain = tray.setImage.mock.calls.at(-1)[0];
+    expect(darkImageAgain.sourceBytes.equals(darkImage.sourceBytes)).toBe(true);
+    expect(darkImageAgain.retinaBytes.equals(darkImage.retinaBytes)).toBe(true);
+  });
+
+  it("barevné obrázky nejsou macOS template images", async () => {
+    const harness = await loadMain({ shouldUseDarkColors: true });
+    await harness.runReady();
+
+    const appliedImages = [
+      harness.trays[0].initialImage,
+      ...harness.trays[0].setImage.mock.calls.map(([image]) => image),
+    ];
+    expect(appliedImages.length).toBeGreaterThan(0);
+    for (const image of appliedImages) {
+      expect(image.setTemplateImage).not.toHaveBeenCalled();
+    }
   });
 });
 

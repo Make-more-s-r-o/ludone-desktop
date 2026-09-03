@@ -6,6 +6,7 @@ const {
   ipcMain,
   Menu,
   nativeImage,
+  nativeTheme,
   net,
   protocol,
   safeStorage,
@@ -95,6 +96,7 @@ let settingsWindow;
 let traySpaceWarningWindow;
 let trayState = "signed-out";
 let trayApplied = false;
+let trayThemeApplied;
 let trayTitleApplied;
 let trayTitleTimer;
 let trayTitleUpdatesStopped = false;
@@ -281,7 +283,7 @@ if (!gotSingleInstanceLock) {
 }
 
 function trayIconName(state) {
-  const names = ["signed-out", "idle", "recording", "tracking"];
+  const names = ["signed-out", "idle", "recording", "tracking", "recording-tracking"];
   // Brána čte seznam bez druhého výčtu; nový stav se tak přidává na jediné místo.
   if (arguments.length === 0) return [...names];
   return names.includes(state) ? state : "signed-out";
@@ -316,11 +318,17 @@ function shouldHidePanelOnBlur({
   return true;
 }
 
-function trayImage(state) {
+function currentTrayIconTheme() {
+  return nativeTheme.shouldUseDarkColors ? "dark" : "light";
+}
+
+function trayImage(state, theme = currentTrayIconTheme()) {
   const iconName = trayIconName(state);
   const iconDirectory = path.join(__dirname, "ikony");
-  const imageBuffer = fs.readFileSync(path.join(iconDirectory, `${iconName}.png`));
-  const retinaBuffer = fs.readFileSync(path.join(iconDirectory, `${iconName}@2x.png`));
+  const iconTheme = theme === "light" ? "light" : "dark";
+  const fileName = `${iconTheme}-${iconName}`;
+  const imageBuffer = fs.readFileSync(path.join(iconDirectory, `${fileName}.png`));
+  const retinaBuffer = fs.readFileSync(path.join(iconDirectory, `${fileName}@2x.png`));
   const image = nativeImage.createFromBuffer(imageBuffer, { scaleFactor: 1 });
   const retinaImage = nativeImage.createFromBuffer(retinaBuffer, { scaleFactor: 1 });
 
@@ -329,7 +337,6 @@ function trayImage(state) {
   }
 
   image.addRepresentation({ scaleFactor: 2, buffer: retinaBuffer });
-  image.setTemplateImage(true);
   return image;
 }
 
@@ -338,6 +345,7 @@ const TRAY_LABELS = {
   idle: "LuDone · připraveno",
   recording: "LuDone · nahrává",
   tracking: "LuDone · LuTrack běží",
+  "recording-tracking": "LuDone · nahrává + LuTrack běží",
 };
 
 // 🔴 Jediný zdroj pravdy o tom, co lišta ukazuje. Renderer sem hlásí FAKTA, stav z nich
@@ -365,9 +373,8 @@ function hasLiveRecording() {
 // (viz tests/tray-authority.test.js). Stejný důvod jako u shouldHidePanelOnBlur.
 function deriveTrayState({ signedIn, recording, tracking }) {
   if (!signedIn) return "signed-out";
-  // Nahrávání má přednost před časovačem: zabírá mikrofon a je to ten stav, jehož
-  // přehlédnutí stojí nahrávku. Pátý stav „recording-tracking“ zatím NEEXISTUJE —
-  // jeho ikony patří do zmrazené T1 (viz DAN-TODO.md, BD-N5).
+  // Nahrávání zůstává při souběhu hlavní agendou, LuTrack ukazuje odznak.
+  if (recording && tracking) return "recording-tracking";
   if (recording) return "recording";
   if (tracking) return "tracking";
   return "idle";
@@ -457,6 +464,7 @@ function stopTrayTitleUpdates() {
 function refreshTray() {
   const recording = hasLiveRecording();
   const tracking = appState.trackingOwners.size > 0;
+  const theme = currentTrayIconTheme();
   const next = trayIconName(deriveTrayState({
     signedIn: appState.signedIn,
     recording,
@@ -464,16 +472,17 @@ function refreshTray() {
   }));
   // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při
   // startu obojí rovná „signed-out“, funkce skončí předčasně a popisek se nenastaví NIKDY.
-  if (next !== trayState || !trayApplied) {
+  if (next !== trayState || theme !== trayThemeApplied || !trayApplied) {
     trayState = next;
     console.log(
       `[tray] ${new Date().toISOString()} stav=${trayState} nahrávání=${recording} `
       + `lutrack=${tracking} přihlášen=${appState.signedIn}`,
     );
     if (tray) {
-      tray.setImage(trayImage(trayState));
+      tray.setImage(trayImage(trayState, theme));
       tray.setToolTip(TRAY_LABELS[trayState]);
       trayApplied = true;
+      trayThemeApplied = theme;
     }
   }
   refreshTrayTitle();
@@ -2754,7 +2763,8 @@ app.whenReady().then(async () => {
   registerAppProtocol();
   installMediaHandlers();
   if (process.platform === "darwin") app.dock.hide();
-  tray = new Tray(trayImage(trayState));
+  tray = new Tray(trayImage(trayState, currentTrayIconTheme()));
+  nativeTheme.on("updated", refreshTray);
   tray.on("click", togglePanel);
   tray.on("right-click", showTrayContextMenu);
   scheduleTrayVisibilityCheck();

@@ -136,6 +136,7 @@ function trayHarness({
     "trayImage",
     "TRAY_LABELS",
     "tray",
+    "currentTrayIconTheme",
     "refreshTrayTitle",
     "finalizeRecordingSession",
     "finalizeRecordingExportStage",
@@ -143,6 +144,7 @@ function trayHarness({
     `"use strict";
      let trayState = "signed-out";
      let trayApplied = false;
+     let trayThemeApplied;
      const applied = [];
      ${functionSource(mainCodeWithoutComments, "hasLiveRecording")}
      ${functionSource(mainCodeWithoutComments, "deriveTrayState")}
@@ -177,8 +179,15 @@ function trayHarness({
       { signedIn, trackingOwners: new Set(trackingOwners) },
       trayIconName,
       (state) => `obrazek:${state}`,
-      { "signed-out": "L·odhlášeno", idle: "L·připraveno", recording: "L·nahrává", tracking: "L·lutrack" },
+      {
+        "signed-out": "L·odhlášeno",
+        idle: "L·připraveno",
+        recording: "L·nahrává",
+        tracking: "L·lutrack",
+        "recording-tracking": "L·nahrává+lutrack",
+      },
       { setImage: (value) => images.push(value), setToolTip: (value) => tooltips.push(value) },
+      () => "dark",
       () => {},
       // Atrapa je až TADY, o patro níž. Kdyby stála za finalizeRecordingSessionsForOwner,
       // neprovedl by se produkční řádek, který ruší rozdělanou přípravu — a test by měřil
@@ -199,6 +208,7 @@ describe("autorita stavu tray ikony", () => {
     ["idle", "idle"],
     ["recording", "recording"],
     ["tracking", "tracking"],
+    ["recording-tracking", "recording-tracking"],
     ["neznámý stav", "signed-out"],
   ])("mapuje stav %s na ikonu %s", (state, expectedIcon) => {
     expect(trayIconName(state)).toBe(expectedIcon);
@@ -246,8 +256,11 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     [{ signedIn: true, trackingOwners: [1] }, "tracking"],
     [{ signedIn: true, preparing: [[1, { cancelled: false }]] }, "recording"],
     [{ signedIn: true, sessions: [["s", { ownerId: 1 }]] }, "recording"],
-    // Nahrávání má přednost před časovačem.
-    [{ signedIn: true, trackingOwners: [1], preparing: [[1, { cancelled: false }]] }, "recording"],
+    // Souběh se neztratí: nahrávání zůstává hlavní agenda a LuTrack odznak.
+    [
+      { signedIn: true, trackingOwners: [1], preparing: [[1, { cancelled: false }]] },
+      "recording-tracking",
+    ],
     // Zrušená příprava a doběhnutá session se za nahrávání NEPOČÍTAJÍ.
     [{ signedIn: true, preparing: [[1, { cancelled: true }]] }, "idle"],
     [{ signedIn: true, sessions: [["s", { ownerId: 1, finalizePromise: Promise.resolve() }]] }, "idle"],
@@ -255,6 +268,20 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     const harness = trayHarness(input);
     harness.refreshTray();
     expect(harness.getTrayState()).toBe(expected);
+  });
+
+  it("při souběhu spojí fakt LuTracku se skutečným nahráváním z hlavního procesu", () => {
+    const harness = trayHarness({
+      signedIn: true,
+      preparing: [[7, { cancelled: false }]],
+    });
+    harness.refreshTray();
+    expect(harness.getTrayState()).toBe("recording");
+
+    expect(harness.applyReportedFacts(7, { signedIn: true, tracking: true })).toBe(true);
+    expect(harness.getTrayState()).toBe("recording-tracking");
+    expect(harness.images.at(-1)).toBe("obrazek:recording-tracking");
+    expect(harness.tooltips.at(-1)).toBe("L·nahrává+lutrack");
   });
 });
 
@@ -266,7 +293,7 @@ describe("pád rendereru", () => {
       preparing: [[7, { cancelled: false }]],
     });
     harness.refreshTray();
-    expect(harness.getTrayState()).toBe("recording");
+    expect(harness.getTrayState()).toBe("recording-tracking");
 
     harness.forgetOwnerActivity(7, "pád rendereru");
 
