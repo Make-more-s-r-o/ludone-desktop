@@ -7,6 +7,30 @@
 
 
 
+
+## 🔴 SLEPÁ ULIČKA PO ODHLÁŠENÍ — a doporučil jsem ti do ní vlézt
+
+**Když se odhlásíš nebo přepneš prostředí, do aplikace se už nepřihlásíš.** Panel napíše
+„Nejsi připojený" a **nenabídne nic**.
+
+**Okamžitá záchrana, kdyby ses zasekl:**
+```bash
+LUDONE_RESET_ONBOARDING=1 npm start
+```
+
+**Proč to tak je** (ověřeno v kódu, ne odhad):
+- `src/App.jsx:21` — příznak dokončeného onboardingu se čte z `localStorage` a **nic ho nemaže**
+- `src/App.jsx:153` — po dokončení se **onboarding už nikdy nevykreslí**
+- `src/components/Onboarding.jsx:174` — a to je **jediné produkční místo** s `beginAuth()`
+- `src/App.jsx:33` — session se zjišťuje **jen při mountu**, takže panel po odhlášení
+  ještě chvíli tvrdí „Přihlášeno"
+
+🔴 **Zavedly to moje dnešní PR:** #51 zpřístupnil odhlášení v Nastavení, #52 přidal tutéž
+slepou uličku k přepnutí prostředí. **A přepnutí na labs jsem ti sám doporučil.**
+
+**Našlo to adversariální kolo nad dneškem, ne já** — a je to už počtvrté dnes, co vadu
+v mé práci našel někdo jiný. Oprava běží.
+
 ## ✅ LABS UŽ PŘEPNEŠ (PR #52) — a 🔴 jedna moje dnešní regrese
 
 **Nastavení → Účet → Prostředí → labs.** Přepnutí tě odhlásí (musí — token patří jednomu
