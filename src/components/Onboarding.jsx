@@ -319,7 +319,9 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   }
 
   return (
-    <main className="onboarding window-surface">
+    <main
+      className={`onboarding${reauthenticate ? " onboarding--reauthenticate" : ""} window-surface`}
+    >
       <div className="onboarding__topbar">
         <div className="brand-lockup"><LuDoneMark size={30} /><span>LuDone</span></div>
         {!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}

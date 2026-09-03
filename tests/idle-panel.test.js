@@ -1,5 +1,6 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
@@ -8,6 +9,161 @@ import { queueFooterStatus } from "../src/lib/panel.js";
 
 const USER = { name: "Dan Jirotka", email: "dan@ludone.cz" };
 const onboardingAudioFrames = new WeakMap();
+const RENDERER_STYLES = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+
+const ONBOARDING_CONTENT_HEIGHTS = {
+  // JSDOM nemá layout engine. Vkládáme proto jen deterministickou intrinsic výšku
+  // obsahu; rozmístění do řádků a měřený report se dál odvozují ze skutečného CSS a DOM.
+  "auth-step": 276,
+  "auth-waiting-step": 342,
+  "permission-step": 408,
+  "welcome-step": 430,
+};
+
+function installOnboardingGeometry(view) {
+  const style = view.document.createElement("style");
+  style.textContent = RENDERER_STYLES;
+  view.document.head.append(style);
+
+  const frames = new Map();
+  let nextFrameId = 1;
+  view.requestAnimationFrame = (callback) => {
+    const id = nextFrameId;
+    nextFrameId += 1;
+    frames.set(id, callback);
+    return id;
+  };
+  view.cancelAnimationFrame = (id) => frames.delete(id);
+
+  const originalRect = view.HTMLElement.prototype.getBoundingClientRect;
+  const naturalHeight = (element) => {
+    if (element.classList.contains("onboarding__topbar")) return 58;
+    if (element.classList.contains("step-track")) return 3;
+    for (const [className, height] of Object.entries(ONBOARDING_CONTENT_HEIGHTS)) {
+      if (element.classList.contains(className)) return height;
+    }
+    return 0;
+  };
+  const layoutFor = (surface) => {
+    const tracks = view.getComputedStyle(surface).gridTemplateRows
+      .match(/minmax\([^)]*\)|-?\d+(?:\.\d+)?px/g) || [];
+    const placements = new Map();
+    const occupiedRows = new Set();
+    let nextAutoRow = 0;
+
+    for (const child of surface.children) {
+      const explicitRow = Number.parseInt(view.getComputedStyle(child).gridRowStart, 10);
+      let row = Number.isInteger(explicitRow) && explicitRow > 0 ? explicitRow - 1 : null;
+      if (row === null) {
+        while (occupiedRows.has(nextAutoRow)) nextAutoRow += 1;
+        row = nextAutoRow;
+        nextAutoRow += 1;
+      }
+      placements.set(child, row);
+      occupiedRows.add(row);
+    }
+
+    const rowHeights = tracks.map((track, row) => {
+      const fixedHeight = track.endsWith("px") ? Number.parseFloat(track) : null;
+      if (fixedHeight !== null) return fixedHeight;
+      return Math.max(0, ...[...placements.entries()]
+        .filter(([, childRow]) => childRow === row)
+        .map(([child]) => naturalHeight(child)));
+    });
+    // JSDOM neumí dopočítat šířku shorthand borderu s CSS proměnnou; Chromium ano.
+    const borderTop = Number.parseFloat(view.getComputedStyle(surface).borderTopWidth) || 1;
+    const borderBottom = Number.parseFloat(view.getComputedStyle(surface).borderBottomWidth) || 1;
+    return { borderBottom, borderTop, placements, rowHeights };
+  };
+  const contentMetrics = (content) => {
+    const surface = content.closest(".onboarding.window-surface");
+    if (!surface) return null;
+    const layout = layoutFor(surface);
+    const row = layout.placements.get(content);
+    if (!Number.isInteger(row)) return null;
+    const top = layout.borderTop + layout.rowHeights
+      .slice(0, row)
+      .reduce((sum, height) => sum + height, 0);
+    const scrollHeight = naturalHeight(content);
+    return {
+      clientHeight: layout.rowHeights[row] || 0,
+      requiredPanelHeight: top + scrollHeight + layout.borderBottom,
+      scrollHeight,
+      top,
+    };
+  };
+
+  Object.defineProperty(view.HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    get() {
+      if (this.matches(".onboarding__content")) {
+        return contentMetrics(this)?.clientHeight || 0;
+      }
+      return 0;
+    },
+  });
+  Object.defineProperty(view.HTMLElement.prototype, "scrollHeight", {
+    configurable: true,
+    get() {
+      if (this.matches(".onboarding__content")) return naturalHeight(this);
+      return 0;
+    },
+  });
+  view.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+    if (
+      this.matches(".onboarding.window-surface")
+      && this.style.height === "auto"
+      && this.style.maxHeight === "none"
+    ) {
+      const layout = layoutFor(this);
+      const height = layout.borderTop
+        + layout.rowHeights.reduce((sum, rowHeight) => sum + rowHeight, 0)
+        + layout.borderBottom;
+      return new view.DOMRect(0, 0, 366, height);
+    }
+    if (this.matches(".onboarding__content")) {
+      const metrics = contentMetrics(this);
+      return new view.DOMRect(0, metrics?.top || 0, 366, metrics?.clientHeight || 0);
+    }
+    if (this.matches(".auth-step > .button--wide")) {
+      const content = this.closest(".onboarding__content");
+      const metrics = contentMetrics(content);
+      const bottom = (metrics?.top || 0) + (metrics?.scrollHeight || 0) - 25;
+      const height = Number.parseFloat(view.getComputedStyle(this).minHeight) || 46;
+      return new view.DOMRect(28, bottom - height, 310, height);
+    }
+    return originalRect.call(this);
+  };
+
+  return {
+    async flush() {
+      await React.act(async () => {
+        await Promise.resolve();
+        while (frames.size > 0) {
+          const callbacks = [...frames.values()];
+          frames.clear();
+          callbacks.forEach((callback) => callback(view.performance.now()));
+          await Promise.resolve();
+        }
+      });
+    },
+    state(surface, reportHeight) {
+      const content = surface.querySelector(".onboarding__content");
+      const button = content?.querySelector(":scope > .button--wide");
+      const metrics = content ? contentMetrics(content) : null;
+      const reportedHeight = reportHeight.mock.lastCall?.[0] || 0;
+      return {
+        buttonFits: Boolean(button) && button.getBoundingClientRect().bottom <= reportedHeight,
+        clientHeight: content?.clientHeight || 0,
+        contentFits: (content?.scrollHeight || 0) <= (content?.clientHeight || 0),
+        reportCoversContent: reportedHeight === metrics?.requiredPanelHeight,
+        reportedHeight,
+        requiredPanelHeight: metrics?.requiredPanelHeight || 0,
+        scrollHeight: content?.scrollHeight || 0,
+      };
+    },
+  };
+}
 
 function installPassingOnboardingAudio(view) {
   const frames = new Map();
@@ -534,6 +690,121 @@ describe("schválený klidový panel", () => {
     } finally {
       await panel?.cleanup();
       vi.useRealTimers();
+    }
+  });
+
+  it("znovupřihlášení nahlásí výšku celého obsahu včetně tlačítka", async () => {
+    const setPanelContentHeight = vi.fn().mockResolvedValue(undefined);
+    let geometry;
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      configureWindow(domWindow) {
+        geometry = installOnboardingGeometry(domWindow);
+      },
+      ludone: {
+        hasAuthSession: vi.fn().mockResolvedValue(false),
+        setPanelContentHeight,
+      },
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
+          .toBe("Nejsi připojený");
+      });
+      await geometry.flush();
+
+      expect(geometry.state(
+        panel.document.querySelector(".onboarding.window-surface"),
+        setPanelContentHeight,
+      )).toEqual({
+        buttonFits: true,
+        clientHeight: 276,
+        contentFits: true,
+        reportCoversContent: true,
+        reportedHeight: 336,
+        requiredPanelHeight: 336,
+        scrollHeight: 276,
+      });
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("běžný onboarding si zachová původní třířádkovou výšku bez přetečení", async () => {
+    const setPanelContentHeight = vi.fn().mockResolvedValue(undefined);
+    let geometry;
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      configureWindow(domWindow) {
+        geometry = installOnboardingGeometry(domWindow);
+      },
+      onboardingComplete: false,
+      ludone: { setPanelContentHeight },
+    });
+
+    try {
+      await geometry.flush();
+
+      expect(geometry.state(
+        panel.document.querySelector(".onboarding.window-surface"),
+        setPanelContentHeight,
+      )).toEqual({
+        buttonFits: true,
+        clientHeight: 430,
+        contentFits: true,
+        reportCoversContent: true,
+        reportedHeight: 493,
+        requiredPanelHeight: 493,
+        scrollHeight: 430,
+      });
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("po přepnutí přihlašovacího stavu přepočítá nahlášenou výšku", async () => {
+    const setPanelContentHeight = vi.fn().mockResolvedValue(undefined);
+    const beginAuth = vi.fn(() => new Promise(() => {}));
+    let geometry;
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      configureWindow(domWindow) {
+        geometry = installOnboardingGeometry(domWindow);
+      },
+      ludone: {
+        beginAuth,
+        cancelAuth: vi.fn().mockResolvedValue(undefined),
+        hasAuthSession: vi.fn().mockResolvedValue(false),
+        setPanelContentHeight,
+      },
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
+          .toBe("Nejsi připojený");
+      });
+      await geometry.flush();
+
+      const login = [...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Přihlásit v prohlížeči"));
+      await React.act(async () => {
+        login.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+      await geometry.flush();
+
+      expect(beginAuth).toHaveBeenCalledOnce();
+      expect(setPanelContentHeight.mock.calls.map(([height]) => height)).toEqual([336, 402]);
+      expect(geometry.state(
+        panel.document.querySelector(".onboarding.window-surface"),
+        setPanelContentHeight,
+      )).toMatchObject({
+        clientHeight: 342,
+        contentFits: true,
+        reportCoversContent: true,
+        reportedHeight: 402,
+        scrollHeight: 342,
+      });
+    } finally {
+      await panel.cleanup();
     }
   });
 

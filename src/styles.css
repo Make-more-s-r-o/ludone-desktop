@@ -1404,6 +1404,10 @@ svg {
   background: var(--card);
 }
 
+.onboarding--reauthenticate {
+  grid-template-rows: 58px minmax(0, 1fr);
+}
+
 .onboarding__topbar,
 .settings-header {
   display: flex;
