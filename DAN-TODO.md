@@ -6,6 +6,52 @@
 
 
 
+
+## ✅ LABS UŽ PŘEPNEŠ (PR #52) — a 🔴 jedna moje dnešní regrese
+
+**Nastavení → Účet → Prostředí → labs.** Přepnutí tě odhlásí (musí — token patří jednomu
+prostředí a jinak by panel ukazoval odsud a odesílal tamhle, obojí s odpovědí 200).
+Volba přežije restart. Na produkci modul nahrávek **schválně není**, na labs ho uvidíš
+**jen jako admin** — obojí potvrzeno serverovou session měřením.
+
+### 🔴 Co jsem dnes sám rozbil: „Nahrává se omezeně" nefunguje
+
+PR #48 (dopoledne) povolil dokončit onboarding **jen s mikrofonem** — návrh to chce
+(`nahled.html:351`: *„Můžeš povolit jen mikrofon. Časovač poběží a nahrávka bude
+jednostopá"*). **Jenže nahrávání to dnes neumí.**
+
+Změřeno: `src/lib/audio-levels.js`, `captureAudioSources()` — když selže **kterýkoli**
+ze dvou zdrojů, vyhodí chybu. Manifest i fronta vyžadují **právě dvě stopy**. Tlačítko
+Nahrát přitom **žádnou bránu na oprávnění nemá**.
+
+⇒ Kdo povolí jen mikrofon, projde onboardingem se slibem „Nahrává se omezeně" a **nahrávání
+mu selže úplně**. Časovač funguje.
+
+**Před PR #48 byl takový člověk zablokovaný v onboardingu** — takže to není zhoršení proti
+včerejšku, ale **slib, který neplatí.** Varianty:
+
+| | co to znamená |
+|---|---|
+| **A — dostavět jednostopé nahrávání** *(doporučuju)* | návrh to chce; práce v rendereru, manifestu i frontě (dnes všechny čekají dvě stopy) |
+| **B — změnit text** | rychlé, ale je to odchylka od schváleného návrhu, takže rozhodnutí tvoje |
+| **C — vrátit blokaci** | zase zavře časovač lidem bez systémového zvuku, což byl původní nález |
+
+### 🛑 Blocker od offline úlohy — proto ji NEDODĚLALA
+
+Návrh u obrazovky „Bez sítě" slibuje *„Nahrávat a měřit čas můžeš dál — uloží se to na disk
+a odešle později."* Úloha to změřila a **zastavila se místo hádání** (tak jsem to zadal):
+
+- 🟢 fronta anonymní nahrávku **přijme a zachová** — naměřeno `state="ceka"`, `attempts=0`,
+  `networkCalls=0`, tedy nic se neztratí,
+- 🔴 **ale položka nemá vlastníka ani firmu** a leží ve společném `outgoing.json`.
+  Po přihlášení uploader použije **právě aktuální session** — nahrávka pořízená
+  odhlášeně by se tedy mohla odeslat **pod cizím účtem**,
+- 🔴 a server vyžaduje `companyTabidooId`, které odhlášená položka nemá.
+
+⇒ Slib „odešle se později" je dnes **nepravdivý** a to je horší než chybějící funkce.
+Souvisí to s variantou A výš — bez jednostopého nahrávání a vlastníka u položky fronty
+nemá smysl to stavět.
+
 ## 🔴 NASTAVENÍ NENÍ SLADĚNÉ S NÁVRHEM (Dan to našel 3. 9., snímkem)
 
 Návrh (`design/navrh/nahled.html:520–600`) říká doslova **„Čtyři části"** — okno se
