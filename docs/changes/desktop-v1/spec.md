@@ -89,9 +89,16 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 | `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ¹¹ | disabled | unverified |
 | `DSK-F013` | Časovač přežije pád a restart | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F014` | Připomínky, když neběží časovač | normal | approved | no-code | disabled | unverified |
-| `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika | normal | approved | **merged** | labs | unverified |
+| `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika ¹³ | normal | approved | **merged** | labs | unverified |
 | `DSK-F016` | Ikona v Docku jako volba | normal | approved | no-code | disabled | unverified |
 | `DSK-F017` | Mazání lokálních kopií po 7 dnech | normal | approved ¹² | **merged** | disabled | tests-green |
+
+¹³ **Upřesněno 3. 9. 2026.** Název funkce vyjmenovává pět částí, ale `merged` neplatilo
+pro všechny. **Diagnostika do 3. 9. neexistovala vůbec** — dostavěna PR #51 spolu s přestavbou
+Nastavení na čtyři záložky podle návrhu (Účet · Zvuk · Záznamy · Diagnostika).
+🔴 **Připomínky se vědomě NESTAVÍ** (rozhodnutí BD-N43: „nastavení patří na server, aplikace
+ho pouze přebírá"), takže `merged` u téhle funkce znamená **čtyři části z pěti**.
+Osa se opravuje podle BD-N30 — zmrazení chrání požadavky, ne sloupce o stavu.
 
 🔴 **Aktualizováno 2. 9. 2026 po sloučení celého stohu** (PR #2–#13). Dan schválil, že se
 stavové osy smějí udržovat, i když je zbytek specu zmrazený — zmrazení chrání POŽADAVKY
