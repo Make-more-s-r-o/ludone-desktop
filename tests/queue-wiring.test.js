@@ -4337,7 +4337,7 @@ describe("bezpečné ukončení aplikace", () => {
     );
   });
 
-  it("neúspěšnou stereo finalizaci neprohlásí za čisté ukončení", async () => {
+  it("neúspěšnou stereo finalizaci během quitu ukáže a čeká na výslovné potvrzení", async () => {
     const harness = await loadMain();
     await harness.runReady();
     const panelContents = harness.windows[0].webContents;
@@ -4347,7 +4347,7 @@ describe("bezpečné ukončení aplikace", () => {
     harness.electron.app.emit("before-quit", quitEvent);
     expect(harness.ipcHandlers.get("tray:command")(event)).toEqual(["stop-recording"]);
 
-    await Promise.all([
+    const [, exportResult] = await Promise.all([
       harness.ipcHandlers.get("recording:finish")(event, sessionId, {
         microphone: {
           startedAt: "2026-09-02T12:00:00.100Z",
@@ -4364,13 +4364,61 @@ describe("bezpečné ukončení aplikace", () => {
       }),
     ]);
 
-    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    expect(exportResult).toMatchObject({
+      ok: false,
+      quitConfirmationRequired: true,
+    });
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    expect(harness.windows[0].isVisible()).toBe(true);
     expect(harness.quietConsole.error).toHaveBeenCalledWith(
-      expect.stringMatching(/\[quit\].*stereo.*vynucené/u),
+      expect.stringMatching(/\[quit\].*stereo.*opakované potvrzení/u),
     );
     expect(harness.quietConsole.log).not.toHaveBeenCalledWith(
       expect.stringContaining("čistě zastavené a zapsané"),
     );
+
+    await expect(harness.ipcHandlers.get("queue:list")(event)).resolves.toEqual([
+      expect.objectContaining({ id: sessionId, kind: "recording", state: "ceka" }),
+    ]);
+    const recordingDirectory = path.join(harness.userDataPath, "nahravky");
+    const recordingFiles = await readdir(recordingDirectory);
+    expect(recordingFiles.filter((name) => name.endsWith(".webm"))).toHaveLength(2);
+
+    await expect(harness.ipcHandlers.get("recording:confirm-export-failure")(
+      event,
+      sessionId,
+    )).resolves.toEqual({ confirmed: true });
+    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+  });
+
+  it("neúspěšná stereo finalizace mimo quit zachová dosavadní chování", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const { sessionId } = await harness.ipcHandlers.get("recording:begin")(event);
+
+    await harness.ipcHandlers.get("recording:finish")(event, sessionId, {
+      microphone: {
+        startedAt: "2026-09-02T12:00:00.100Z",
+        endedAt: "2026-09-02T12:00:01.100Z",
+      },
+      system: {
+        startedAt: "2026-09-02T12:00:00.125Z",
+        endedAt: "2026-09-02T12:00:01.125Z",
+      },
+    });
+    const result = await harness.ipcHandlers.get("recording:finish-export")(event, sessionId, {
+      succeeded: false,
+      reason: "Testovací pád stereo převodu",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      message: "Dvoukanálový export se nepodařilo připravit. Původní dvě stopy zůstaly uložené.",
+    });
+    expect(harness.windows[0].isVisible()).toBe(false);
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
   });
 
   it("chyba stereo exportu nesmí přerušit dosud běžící zápis fronty", async () => {

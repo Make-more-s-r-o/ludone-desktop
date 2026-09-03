@@ -40,6 +40,7 @@ const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží
  *   deferCapture?: boolean,
  *   deferRecovery?: boolean,
  *   displayError?: Error | DOMException,
+ *   finishRecordingExportResult?: Record<string, unknown>,
  *   microphoneError?: Error | DOMException,
  *   renderApp?: boolean,
  * }} [options]
@@ -163,7 +164,10 @@ async function renderRecordingCard(options = {}) {
       if (!trackTimings?.system) delete result.files.system;
       return Promise.resolve(result);
     }),
-    finishRecordingExport: vi.fn().mockResolvedValue({ ok: true }),
+    finishRecordingExport: vi.fn().mockResolvedValue(
+      options.finishRecordingExportResult ?? { ok: true },
+    ),
+    confirmRecordingExportFailure: vi.fn().mockResolvedValue({ confirmed: true }),
     exportRecording: vi.fn().mockResolvedValue({
       ok: true,
       fileName: `LuDone-${SESSION_ID}.webm`,
@@ -725,6 +729,67 @@ describe("RecordingCard", () => {
         SESSION_ID,
         expect.any(String),
       );
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("při selhání přípravy exportu během quitu ukáže následek a ukončí až po potvrzení", async () => {
+    const panel = await renderRecordingCard({
+      finishRecordingExportResult: {
+        ok: false,
+        message: "Dvoukanálový export se nepodařilo připravit. Původní dvě stopy zůstaly uložené.",
+        quitConfirmationRequired: true,
+      },
+    });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await React.act(async () => {
+        await vi.waitFor(() => {
+          const alert = panel.document.querySelector('[data-testid="quit-export-failure"]');
+          expect(alert?.getAttribute("role")).toBe("alert");
+          expect(alert?.textContent).toContain("Původní dvě stopy zůstaly uložené");
+          expect(alert?.textContent).toContain(
+            "dvoukanálový soubor už z aplikace nevyexportujete",
+          );
+        });
+      });
+
+      expect(panel.ludone.confirmRecordingExportFailure).not.toHaveBeenCalled();
+      const confirmButton = panel.document.querySelector(
+        '[data-testid="confirm-quit-after-export-failure"]',
+      );
+      expect(confirmButton?.textContent).toContain("Ukončit LuDone");
+      await panel.click(confirmButton);
+      expect(panel.ludone.confirmRecordingExportFailure).toHaveBeenCalledExactlyOnceWith(
+        SESSION_ID,
+      );
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("selhání přípravy exportu mimo quit nezmění obrazovku uložené nahrávky", async () => {
+    const panel = await renderRecordingCard({
+      finishRecordingExportResult: {
+        ok: false,
+        message: "Dvoukanálový export se nepodařilo připravit. Původní dvě stopy zůstaly uložené.",
+      },
+    });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await React.act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(panel.phase()).toBe("saved");
+      expect(panel.document.querySelector('[data-testid="quit-export-failure"]')).toBeNull();
+      expect(panel.currentButton()?.textContent).toContain("Uložit a odeslat");
+      expect(panel.ludone.confirmRecordingExportFailure).not.toHaveBeenCalled();
     } finally {
       await panel.cleanup();
     }
