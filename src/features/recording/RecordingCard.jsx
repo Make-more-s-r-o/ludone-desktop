@@ -7,6 +7,11 @@ import {
   stopStreams,
 } from "../../lib/audio-levels.js";
 import { createStereoCapture } from "../../lib/stereo-recording.js";
+import { createMicrophoneOnlyExportCapture } from "./microphone-only-capture.js";
+import {
+  MICROPHONE_ONLY_TEXT,
+  MICROPHONE_REQUIRED_TEXT,
+} from "./recording-copy.js";
 import { watchSystemAudioTrack } from "./system-audio-health.js";
 
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
@@ -87,6 +92,7 @@ function createPersistentRecorder(recorder, sessionId, source, onFailure) {
   }, { once: true });
 
   return {
+    source,
     recorder,
     start() {
       startTimeoutId = window.setTimeout(() => {
@@ -131,6 +137,9 @@ function createPersistentRecorder(recorder, sessionId, source, onFailure) {
 
 function savedMessage(result) {
   const { microphone, system } = result.files;
+  if (!system) {
+    return `Původní stopa zůstává místně: ${microphone.name} (${microphone.size} B).`;
+  }
   return `Původní stopy zůstávají místně: ${microphone.name} (${microphone.size} B) a ${system.name} (${system.size} B).`;
 }
 
@@ -196,6 +205,7 @@ export function RecordingCard({
 }) {
   const [session, setSession] = useState({
     phase: "idle",
+    recordingMode: null,
     startedAt: null,
     labels: null,
     systemAudioState: "inactive",
@@ -211,6 +221,7 @@ export function RecordingCard({
   const lastTrayCommandId = useRef(null);
   const runtimeRef = useRef(null);
   const isRecording = session.phase === "recording";
+  const microphoneOnly = session.recordingMode === "microphone-only";
   const systemAudioLost = isRecording && session.systemAudioState === "lost";
   const elapsed = useElapsedTime(isRecording, session.startedAt);
 

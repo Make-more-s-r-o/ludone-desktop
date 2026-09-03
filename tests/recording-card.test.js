@@ -32,12 +32,15 @@ function recordingResult() {
   };
 }
 
+const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží a nahrávka bude jednostopá — jen se dozvíš, že chybí druhá strana.";
+
 /**
  * @param {{
  *   deferBegin?: boolean,
  *   deferCapture?: boolean,
  *   deferRecovery?: boolean,
  *   displayError?: Error | DOMException,
+ *   microphoneError?: Error | DOMException,
  *   renderApp?: boolean,
  * }} [options]
  */
@@ -125,9 +128,10 @@ async function renderRecordingCard(options = {}) {
   const displayCapture = deferred();
   const recoveryCapture = deferred();
   const beginRecordingAttempt = deferred();
-  const getUserMedia = vi.fn(() => (
-    options.deferCapture ? microphoneCapture.promise : Promise.resolve(microphoneStream)
-  ));
+  const getUserMedia = vi.fn(() => {
+    if (options.microphoneError) return Promise.reject(options.microphoneError);
+    return options.deferCapture ? microphoneCapture.promise : Promise.resolve(microphoneStream);
+  });
   let displayCaptureCount = 0;
   const getDisplayMedia = vi.fn(() => {
     displayCaptureCount += 1;
@@ -154,7 +158,11 @@ async function renderRecordingCard(options = {}) {
         : Promise.resolve({ sessionId: SESSION_ID })
     )),
     appendRecordingChunk: vi.fn().mockResolvedValue({ sequence: 0, bytes: 4 }),
-    finishRecording: vi.fn().mockResolvedValue(recordingResult()),
+    finishRecording: vi.fn((_sessionId, trackTimings) => {
+      const result = recordingResult();
+      if (!trackTimings?.system) delete result.files.system;
+      return Promise.resolve(result);
+    }),
     finishRecordingExport: vi.fn().mockResolvedValue({ ok: true }),
     exportRecording: vi.fn().mockResolvedValue({
       ok: true,
@@ -225,6 +233,7 @@ async function renderRecordingCard(options = {}) {
   const audioContexts = [];
   class FakeAudioContext {
     constructor() {
+      this.connections = [];
       this.destinationCount = 0;
       this.sampleRate = 48_000;
       this.state = "running";
@@ -232,12 +241,19 @@ async function renderRecordingCard(options = {}) {
       audioContexts.push(this);
     }
 
-    createMediaStreamSource() {
-      return { connect: vi.fn(), disconnect: vi.fn() };
+    createMediaStreamSource(stream) {
+      const [track] = stream.getAudioTracks();
+      return {
+        connect: vi.fn((target, output, input) => {
+          this.connections.push({ input, output, target, track });
+        }),
+        disconnect: vi.fn(),
+      };
     }
 
     createChannelMerger() {
-      return { connect: vi.fn(), disconnect: vi.fn() };
+      this.merger = { connect: vi.fn(), disconnect: vi.fn() };
+      return this.merger;
     }
 
     createMediaStreamDestination() {
@@ -362,6 +378,7 @@ describe("RecordingCard", () => {
       expect(panel.getDisplayMedia).toHaveBeenCalledWith(expect.objectContaining({
         audio: expect.anything(),
       }));
+      expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone", "system"]);
       expect(panel.recorders).toHaveLength(3);
 
       await stopRecording(panel);
@@ -370,25 +387,77 @@ describe("RecordingCard", () => {
     }
   });
 
-  it("odmítnutí systémového zvuku ukáže jako chybu a vrátí se do klidu", async () => {
+  it("jen s mikrofonem nahrává dál a varuje před spuštěním i během nahrávání", async () => {
     const denied = new DOMException("Přístup zamítnut", "NotAllowedError");
-    const panel = await renderRecordingCard({ displayError: denied });
+    const panel = await renderRecordingCard({
+      deferCapture: true,
+      displayError: denied,
+    });
+
+    try {
+      await panel.click(panel.currentButton());
+      await React.act(async () => {
+        await vi.waitFor(() => {
+          expect(panel.phase()).toBe("checking");
+          expect(panel.document.body.textContent).toContain(MICROPHONE_ONLY_TEXT);
+        });
+        panel.resolveCapture();
+      });
+      await panel.waitForPhase("recording");
+
+      const card = panel.document.querySelector('[aria-label="Nahrávání"]');
+      expect(card?.getAttribute("data-system-audio-state")).toBe("unavailable");
+      expect(card?.textContent).toContain(MICROPHONE_ONLY_TEXT);
+      expect(card?.textContent).toContain("Nahrává se omezeně");
+      expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone"]);
+      expect(panel.recorders).toHaveLength(2);
+      expect(panel.audioContexts).toHaveLength(1);
+      expect(panel.audioContexts[0].connections).toEqual([
+        expect.objectContaining({
+          input: 0,
+          output: 0,
+          target: panel.audioContexts[0].merger,
+          track: panel.microphoneTrack,
+        }),
+      ]);
+
+      await stopRecording(panel);
+      expect(panel.ludone.finishRecording).toHaveBeenCalledWith(
+        SESSION_ID,
+        {
+          microphone: expect.objectContaining({
+            startedAt: expect.any(String),
+            endedAt: expect.any(String),
+          }),
+        },
+      );
+      expect(panel.ludone.appendRecordingChunk.mock.calls.some(([, source]) => (
+        source === "system"
+      ))).toBe(false);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("bez mikrofonu nahrávání nespustí a řekne proč", async () => {
+    const denied = new DOMException("Přístup k mikrofonu zamítnut", "NotAllowedError");
+    const panel = await renderRecordingCard({ microphoneError: denied });
 
     try {
       await panel.click(panel.currentButton());
       await React.act(async () => {
         await vi.waitFor(() => {
           const alert = panel.document.querySelector('[data-recording-phase] [role="alert"]');
-          expect(alert).not.toBeNull();
-          expect(alert?.textContent?.trim().length).toBeGreaterThan(0);
-          expect(alert?.hidden).toBe(false);
+          expect(alert?.textContent).toContain("Tvůj hlas. Bez něj nenahraješ nic.");
         });
       });
 
       expect(panel.phase()).toBe("idle");
-      expect(panel.document.querySelector('[data-recording-phase="recording"]')).toBeNull();
       expect(panel.ludone.beginRecording).not.toHaveBeenCalled();
-      expect(panel.microphoneTrack.stop).toHaveBeenCalledTimes(1);
+      expect(panel.getUserMedia).toHaveBeenCalledTimes(1);
+      expect(panel.getDisplayMedia).toHaveBeenCalledTimes(1);
+      const alert = panel.document.querySelector('[data-recording-phase] [role="alert"]');
+      expect(alert?.textContent).toContain("Tvůj hlas. Bez něj nenahraješ nic.");
     } finally {
       await panel.cleanup();
     }
