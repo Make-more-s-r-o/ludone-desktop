@@ -8,14 +8,21 @@ function setPanelContentHeight(height) {
 }
 
 function getBooleanSetting(channel) {
-  return ipcRenderer.invoke(channel).then((value) => value === true);
+  return ipcRenderer.invoke(channel).then(requireBooleanSettingResponse);
+}
+
+function requireBooleanSettingResponse(value) {
+  if (typeof value !== "boolean") {
+    throw new TypeError("Hlavní proces nevrátil boolean systémového nastavení");
+  }
+  return value;
 }
 
 function setBooleanSetting(channel, value) {
   if (typeof value !== "boolean") {
     throw new TypeError("Systémové nastavení musí být boolean");
   }
-  return ipcRenderer.invoke(channel, value).then((result) => result === true);
+  return ipcRenderer.invoke(channel, value).then(requireBooleanSettingResponse);
 }
 
 function onTrayCommand(callback) {

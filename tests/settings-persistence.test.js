@@ -47,6 +47,14 @@ describe("perzistence viditelnosti Docku", () => {
     });
     expect((await stat(filePath)).mode & 0o777).toBe(0o600);
     expect(await readdir(path.dirname(filePath))).toEqual(["aplikace.json"]);
+
+    await expect(secondProcess.set(false)).resolves.toBe(false);
+    const thirdProcess = createDockVisibilityStore({ filePath, log: vi.fn() });
+    expect(thirdProcess.get()).toBe(false);
+    expect(JSON.parse(await readFile(filePath, "utf8"))).toEqual({
+      schemaVersion: 1,
+      dockVisible: false,
+    });
   });
 
   it("poškozený nebo typově neplatný soubor nezapne Dock a setter přijme jen boolean", async () => {

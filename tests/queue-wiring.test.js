@@ -842,7 +842,9 @@ describe("zapojení systémových nastavení", () => {
     const createDockVisibilityStore = vi.fn(() => store);
     const harness = await loadMain({ createDockVisibilityStore });
 
-    await harness.runReady();
+    const ready = harness.runReady();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(store.get).toHaveBeenCalledOnce();
     expect(harness.electron.app.dock.show).toHaveBeenCalledOnce();
@@ -850,6 +852,7 @@ describe("zapojení systémových nastavení", () => {
     expect(harness.startupEvents.indexOf("dock:show")).toBeLessThan(
       harness.startupEvents.indexOf("window:create"),
     );
+    await ready;
   });
 
   it("vypnutý Dock zachová dnešní chování a skryje jej před prvním oknem", async () => {
@@ -871,7 +874,9 @@ describe("zapojení systémových nastavení", () => {
     const harness = await loadMain({ createDockVisibilityStore: () => store });
     await harness.runReady();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const getDockVisible = harness.ipcHandlers.get("settings:get-dock-visible");
     const setDockVisible = harness.ipcHandlers.get("settings:set-dock-visible");
+    expect(getDockVisible).toBeTypeOf("function");
     expect(setDockVisible).toBeTypeOf("function");
     harness.electron.app.dock.show.mockClear();
     harness.electron.app.dock.hide.mockClear();
@@ -879,10 +884,12 @@ describe("zapojení systémových nastavení", () => {
     await expect(setDockVisible(settingsEvent, true)).resolves.toBe(true);
     expect(store.set).toHaveBeenLastCalledWith(true);
     expect(harness.electron.app.dock.show).toHaveBeenCalledOnce();
+    expect(getDockVisible(settingsEvent)).toBe(true);
 
     await expect(setDockVisible(settingsEvent, false)).resolves.toBe(false);
     expect(store.set).toHaveBeenLastCalledWith(false);
     expect(harness.electron.app.dock.hide).toHaveBeenCalledOnce();
+    expect(getDockVisible(settingsEvent)).toBe(false);
   });
 
   it("uložený Dock přežije nový hlavní proces a platí už při jeho startu", async () => {
@@ -932,6 +939,11 @@ describe("zapojení systémových nastavení", () => {
     await nextProcess.runReady();
     const nextEvent = openSettingsAndCreateEvent(nextProcess).settingsEvent;
     expect(nextProcess.ipcHandlers.get("settings:get-open-at-login")(nextEvent)).toBe(true);
+    expect(nextProcess.ipcHandlers.get("settings:set-open-at-login")(nextEvent, false)).toBe(false);
+    expect(nextProcess.electron.app.setLoginItemSettings).toHaveBeenLastCalledWith({
+      openAtLogin: false,
+    });
+    expect(nextProcess.ipcHandlers.get("settings:get-open-at-login")(nextEvent)).toBe(false);
   });
 
   it("nové IPC kanály odmítnou jiný payload než právě jeden boolean", async () => {
@@ -977,10 +989,12 @@ describe("zapojení systémových nastavení", () => {
 
   it("preload mapuje čtyři metody na přesné kanály a setter pustí jen boolean", async () => {
     const preload = loadPreload((channel, value) => (
-      channel.startsWith("settings:set-") ? value : false
+      channel.startsWith("settings:set-")
+        ? value
+        : channel === "settings:get-dock-visible"
     ));
 
-    await expect(preload.api.getDockVisible()).resolves.toBe(false);
+    await expect(preload.api.getDockVisible()).resolves.toBe(true);
     await expect(preload.api.setDockVisible(true)).resolves.toBe(true);
     await expect(preload.api.getOpenAtLogin()).resolves.toBe(false);
     await expect(preload.api.setOpenAtLogin(false)).resolves.toBe(false);
@@ -994,6 +1008,13 @@ describe("zapojení systémových nastavení", () => {
     expect(() => preload.api.setDockVisible("true")).toThrow(/boolean/u);
     expect(() => preload.api.setOpenAtLogin(1)).toThrow(/boolean/u);
     expect(preload.invoke).toHaveBeenCalledTimes(4);
+  });
+
+  it("preload odmítne porušení boolean kontraktu v odpovědi hlavního procesu", async () => {
+    const preload = loadPreload("false");
+
+    await expect(preload.api.getDockVisible()).rejects.toThrow(/boolean/u);
+    await expect(preload.api.setDockVisible(true)).rejects.toThrow(/boolean/u);
   });
 });
 

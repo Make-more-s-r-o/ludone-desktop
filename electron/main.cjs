@@ -263,10 +263,10 @@ function requireBooleanPayload(channel, value, extraPayload) {
   }
 }
 
-async function applyDockVisibility(dockVisible) {
+function applyDockVisibility(dockVisible) {
   if (process.platform !== "darwin") return dockVisible;
   if (dockVisible) {
-    await app.dock.show();
+    return Promise.resolve(app.dock.show()).then(() => dockVisible);
   } else {
     app.dock.hide();
   }
