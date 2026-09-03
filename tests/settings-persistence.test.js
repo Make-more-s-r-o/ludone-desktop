@@ -11,10 +11,10 @@ function loadSettingsModule() {
   return require("../electron/settings.cjs");
 }
 
-async function temporarySettingsPath() {
+async function temporarySettingsPath(fileName = "aplikace.json") {
   const root = await mkdtemp(path.join(tmpdir(), "ludone-settings-test-"));
   temporaryRoots.add(root);
-  return path.join(root, "nastaveni", "aplikace.json");
+  return path.join(root, "nastaveni", fileName);
 }
 
 afterEach(async () => {
@@ -77,7 +77,7 @@ describe("perzistence prostředí LuDone", () => {
 
   it("atomický zápis přežije novou instanci hlavního procesu", async () => {
     const { createAuthOriginStore } = loadSettingsModule();
-    const filePath = await temporarySettingsPath();
+    const filePath = await temporarySettingsPath("prostredi.json");
     const firstProcess = createAuthOriginStore({ filePath, log: vi.fn() });
 
     expect(firstProcess.get()).toBe(PRODUCTION_ORIGIN);
@@ -90,7 +90,7 @@ describe("perzistence prostředí LuDone", () => {
       authOrigin: LABS_ORIGIN,
     });
     expect((await stat(filePath)).mode & 0o777).toBe(0o600);
-    expect(await readdir(path.dirname(filePath))).toEqual(["aplikace.json"]);
+    expect(await readdir(path.dirname(filePath))).toEqual(["prostredi.json"]);
   });
 
   it.each([
@@ -103,7 +103,7 @@ describe("perzistence prostředí LuDone", () => {
     null,
   ])("cizí hodnotu %j odmítne a ponechá poslední prostředí", async (foreignOrigin) => {
     const { createAuthOriginStore } = loadSettingsModule();
-    const filePath = await temporarySettingsPath();
+    const filePath = await temporarySettingsPath("prostredi.json");
     const store = createAuthOriginStore({ filePath, log: vi.fn() });
     await store.set(LABS_ORIGIN);
 

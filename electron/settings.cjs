@@ -3,6 +3,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const SCHEMA_VERSION = 1;
+const DEFAULT_AUTH_ORIGIN = "https://app.ludone.cz";
+const AUTH_ORIGINS = Object.freeze([
+  DEFAULT_AUTH_ORIGIN,
+  "https://labs.ludone.cz",
+]);
 
 function report(log, message) {
   try {
@@ -41,7 +46,7 @@ function readDockVisibility(filePath, log) {
   }
 }
 
-function saveDockVisibility(filePath, dockVisible, log) {
+function saveSettingsAtomically(filePath, value, log) {
   const directory = path.dirname(filePath);
   const temporaryPath = path.join(
     directory,
@@ -52,10 +57,7 @@ function saveDockVisibility(filePath, dockVisible, log) {
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   try {
     fileDescriptor = fs.openSync(temporaryPath, "wx", 0o600);
-    fs.writeFileSync(fileDescriptor, `${JSON.stringify({
-      schemaVersion: SCHEMA_VERSION,
-      dockVisible,
-    })}\n`, "utf8");
+    fs.writeFileSync(fileDescriptor, `${JSON.stringify(value)}\n`, "utf8");
     fs.fsyncSync(fileDescriptor);
     fs.closeSync(fileDescriptor);
     fileDescriptor = undefined;
@@ -83,6 +85,13 @@ function saveDockVisibility(filePath, dockVisible, log) {
     closeIgnoringErrors(directoryDescriptor);
     report(log, `[settings] Nelze potvrdit zápis adresáře nastavení: ${error.message}`);
   }
+}
+
+function saveDockVisibility(filePath, dockVisible, log) {
+  saveSettingsAtomically(filePath, {
+    schemaVersion: SCHEMA_VERSION,
+    dockVisible,
+  }, log);
 }
 
 /**
@@ -114,6 +123,66 @@ function createDockVisibilityStore({ filePath, log = console.warn } = {}) {
   });
 }
 
+function isKnownAuthOrigin(value) {
+  return typeof value === "string" && AUTH_ORIGINS.includes(value);
+}
+
+function readAuthOrigin(filePath, log) {
+  try {
+    const stored = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    if (
+      !stored
+      || Array.isArray(stored)
+      || stored.schemaVersion !== SCHEMA_VERSION
+      || !isKnownAuthOrigin(stored.authOrigin)
+    ) {
+      throw new TypeError("Soubor prostředí nemá platné schéma");
+    }
+    return stored.authOrigin;
+  } catch (error) {
+    if (error?.code !== "ENOENT") {
+      report(
+        log,
+        `[settings] Prostředí nelze načíst, používám produkci: ${error.message}`,
+      );
+    }
+    return DEFAULT_AUTH_ORIGIN;
+  }
+}
+
+/**
+ * @param {{filePath?: unknown, log?: unknown}} [options]
+ */
+function createAuthOriginStore({ filePath, log = console.warn } = {}) {
+  if (typeof filePath !== "string" || filePath.length === 0) {
+    throw new TypeError("Nastavení prostředí vyžaduje cestu k souboru");
+  }
+  if (typeof log !== "function") {
+    throw new TypeError("Logger nastavení prostředí musí být funkce");
+  }
+
+  let authOrigin = readAuthOrigin(filePath, log);
+  return Object.freeze({
+    get() {
+      return authOrigin;
+    },
+    async set(nextValue) {
+      if (!isKnownAuthOrigin(nextValue)) {
+        throw new TypeError("Hodnota prostředí musí být jeden ze dvou známých originů");
+      }
+      saveSettingsAtomically(filePath, {
+        schemaVersion: SCHEMA_VERSION,
+        authOrigin: nextValue,
+      }, log);
+      authOrigin = nextValue;
+      return authOrigin;
+    },
+  });
+}
+
 module.exports = {
+  AUTH_ORIGINS,
+  DEFAULT_AUTH_ORIGIN,
+  createAuthOriginStore,
   createDockVisibilityStore,
 };

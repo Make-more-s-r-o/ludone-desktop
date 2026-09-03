@@ -21,6 +21,10 @@ const SETTINGS_TABS = Object.freeze([
   { id: "recordings", label: "Záznamy" },
   { id: "diagnostics", label: "Diagnostika" },
 ]);
+const AUTH_ENVIRONMENTS = Object.freeze([
+  { label: "produkce · app.ludone.cz", name: "produkce", origin: "https://app.ludone.cz" },
+  { label: "labs · labs.ludone.cz", name: "labs", origin: "https://labs.ludone.cz" },
+]);
 
 const PERMISSION_LABELS = Object.freeze({
   denied: "Nepovoleno",
@@ -30,15 +34,12 @@ const PERMISSION_LABELS = Object.freeze({
   unknown: "Stav není známý",
 });
 
-function environmentForOrigin(origin) {
-  try {
-    const hostname = new URL(origin).hostname;
-    if (hostname === "app.ludone.cz") return "produkce";
-    if (hostname === "labs.ludone.cz") return "labs";
-  } catch {
-    // Neplatný nebo chybějící origin se níž zobrazí jako neznámý, nikdy se nehádá.
-  }
-  return "Není známo";
+function logoutFailureMessage(reason) {
+  const messages = {
+    "recording-active": "Nejdřív ukonči nahrávání.",
+    "tracking-active": "Nejdřív zastav LuTrack.",
+  };
+  return messages[reason] ?? "Odhlášení se nepodařilo.";
 }
 
 function permissionView(value) {
@@ -231,6 +232,7 @@ export function SettingsApp() {
   const [diagnostics, setDiagnostics] = useState({ state: "loading", value: null });
   const [exportState, setExportState] = useState({ state: "idle", fileName: null });
   const [logoutState, setLogoutState] = useState({ state: "idle", message: "" });
+  const [environmentState, setEnvironmentState] = useState({ state: "idle", message: "" });
   const dock = useSystemBooleanSetting("getDockVisible", "setDockVisible");
   const login = useSystemBooleanSetting("getOpenAtLogin", "setOpenAtLogin");
   const update = (key, value) => {
@@ -391,7 +393,11 @@ export function SettingsApp() {
   };
 
   const logoutThisMac = async () => {
-    if (logoutState.state === "busy" || typeof window.ludone?.logout !== "function") return;
+    if (
+      logoutState.state === "busy"
+      || environmentState.state === "busy"
+      || typeof window.ludone?.logout !== "function"
+    ) return;
     setLogoutState({ state: "busy", message: "" });
     try {
       const result = await window.ludone.logout();
@@ -400,16 +406,62 @@ export function SettingsApp() {
         setLogoutState({ state: "done", message: "Tento Mac je odhlášený." });
         return;
       }
-      const messages = {
-        "recording-active": "Nejdřív ukonči nahrávání.",
-        "tracking-active": "Nejdřív zastav LuTrack.",
-      };
       setLogoutState({
         state: "error",
-        message: messages[result?.reason] ?? "Odhlášení se nepodařilo.",
+        message: logoutFailureMessage(result?.reason),
       });
     } catch {
       setLogoutState({ state: "error", message: "Odhlášení se nepodařilo." });
+    }
+  };
+
+  const changeEnvironment = async (nextOrigin) => {
+    const nextEnvironment = AUTH_ENVIRONMENTS.find(({ origin }) => origin === nextOrigin);
+    if (
+      !nextEnvironment
+      || nextOrigin === destination.origin
+      || environmentState.state === "busy"
+    ) return;
+
+    const confirmed = window.confirm(
+      `Přepnout na ${nextEnvironment.name}?\n\n`
+      + "Přepnutí tě odhlásí z tohoto Macu. Potom se budeš muset znovu přihlásit.",
+    );
+    if (!confirmed) return;
+
+    const logout = window.ludone?.logout;
+    const setAuthOrigin = window.ludone?.setAuthOrigin;
+    if (typeof logout !== "function" || typeof setAuthOrigin !== "function") {
+      setEnvironmentState({ state: "error", message: "Prostředí se nepodařilo změnit." });
+      return;
+    }
+
+    setEnvironmentState({ state: "busy", message: "Odhlašuji a přepínám…" });
+    try {
+      const logoutResult = await logout();
+      if (logoutResult?.signedOutLocally !== true) {
+        setEnvironmentState({
+          state: "error",
+          message: logoutFailureMessage(logoutResult?.reason),
+        });
+        return;
+      }
+
+      setAccount({ state: "signed-out", identity: null });
+      const storedOrigin = await setAuthOrigin(nextOrigin);
+      const storedEnvironment = AUTH_ENVIRONMENTS.find(({ origin }) => origin === storedOrigin);
+      if (!storedEnvironment) throw new TypeError("Hlavní proces vrátil neznámé prostředí");
+      setDestination({ state: "resolved", origin: storedOrigin });
+      setLogoutState({ state: "idle", message: "" });
+      setEnvironmentState({
+        state: "done",
+        message: `Prostředí změněno na ${storedEnvironment.name}. Tento Mac je odhlášený.`,
+      });
+    } catch {
+      setEnvironmentState({
+        state: "error",
+        message: "Tento Mac je odhlášený, ale prostředí se nepodařilo změnit.",
+      });
     }
   };
 
@@ -522,10 +574,24 @@ export function SettingsApp() {
                   </strong>
                 </div>
                 <div className="settings-fact-row">
-                  <small>Prostředí</small>
-                  <strong data-testid="settings-environment">
-                    {destination.origin ? environmentForOrigin(destination.origin) : "Není známo"}
-                  </strong>
+                  <small><label htmlFor="settings-environment">Prostředí</label></small>
+                  <select
+                    id="settings-environment"
+                    data-testid="settings-environment"
+                    aria-label="Prostředí LuDone"
+                    value={destination.origin ?? ""}
+                    disabled={destination.state !== "resolved" || environmentState.state === "busy"}
+                    onChange={(event) => void changeEnvironment(event.target.value)}
+                  >
+                    {destination.origin === null && (
+                      <option value="" disabled>Není známo</option>
+                    )}
+                    {AUTH_ENVIRONMENTS.map((environment) => (
+                      <option key={environment.origin} value={environment.origin}>
+                        {environment.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <span
@@ -537,6 +603,10 @@ export function SettingsApp() {
                 {signedIn ? "Přihlášen" : (account.state === "signed-out" ? "Odhlášen" : "Stav neznámý")}
               </span>
             </div>
+            <p className="settings-hint" data-testid="settings-environment-explanation">
+              Na produkci modul nahrávek schválně není. Na labs ho uvidí jen admin.
+              {" "}Prostředí se během dne často aktualizuje.
+            </p>
             <div
               className="destination-row"
               data-testid="settings-destination"
@@ -553,7 +623,11 @@ export function SettingsApp() {
               <button
                 type="button"
                 className="button button--small"
-                disabled={!signedIn || logoutState.state === "busy"}
+                disabled={
+                  !signedIn
+                  || logoutState.state === "busy"
+                  || environmentState.state === "busy"
+                }
                 onClick={logoutThisMac}
               >
                 {logoutState.state === "busy" ? "Odhlašuji…" : "Odhlásit tento Mac"}
@@ -563,6 +637,15 @@ export function SettingsApp() {
             {logoutState.message && (
               <p className={`settings-feedback settings-feedback--${logoutState.state}`} role="status">
                 {logoutState.message}
+              </p>
+            )}
+            {environmentState.message && (
+              <p
+                className={`settings-feedback settings-feedback--${environmentState.state}`}
+                data-testid="settings-environment-feedback"
+                role="status"
+              >
+                {environmentState.message}
               </p>
             )}
             <div className="settings-divider" />

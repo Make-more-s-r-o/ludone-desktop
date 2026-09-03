@@ -29,7 +29,7 @@ function deferred() {
 }
 
 async function renderSettings({
-  confirmEnvironmentChange = () => true,
+  confirmEnvironmentChange = /** @type {() => boolean} */ (() => true),
   deviceName = () => Promise.resolve("MacBook-Pro-Dan"),
   diagnostics = () => Promise.resolve(DIAGNOSTICS),
   dockVisible = () => Promise.resolve(false),
