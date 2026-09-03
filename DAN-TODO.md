@@ -333,6 +333,36 @@ nedodá.
 Dobrá zpráva k rozsahu: strop „30 minut na diarizaci" byl odvozený špatně — celá hodinová
 schůzka se vejde do jednoho požadavku, dělení na kusy tedy nebude potřeba.
 
+### B5 · Electron je 7 verzí pozadu a jedna z vad se nás týká přímo
+
+**Změřeno 3. 9.:** běžíme na **37.3.1**, nejnovější je **44.1.1**. Dependabot hlásí
+**7 vysokých rad** pro Electron. Prošel jsem je proti našemu kódu, ať se nerozhoduje podle
+počtu, ale podle dopadu:
+
+| rada | týká se nás? |
+|---|---|
+| **Context isolation bypass** (`Function.prototype.bind`) | 🔴 **ANO.** Na `contextIsolation` stojí celá hranice mezi rendererem a hlavním procesem — tedy náš bezpečnostní model |
+| custom protocol se `supportFetchAPI` bez `corsEnabled` | ✅ ne — `corsEnabled: true` máme |
+| sandboxed iframe · offscreen okno · PowerMonitor | ✅ ne — nepoužíváme (0 výskytů) |
+| WebContents fullscreen / pointer-lock callbacky | 🟡 slabě — oprávnění řešíme |
+
+Všechny jsou opravené nejpozději v **39.8.10**.
+
+🔴 **Proč jsem upgrade neudělal sám**, přestože „dotáhni to sám" jinak platí:
+
+**Naše testy si Electron podstrkují.** Zůstaly by zelené, i kdyby skutečný runtime přestal
+fungovat — to je přesně ta past, kterou tenhle modul zná: *zelené testy nejsou ověření*.
+A ověřeno naostro máme zatím jen tři věci. Vyměnit runtime celé aplikace v takovém stavu
+znamená, že rozbití poznáš **až ty**, ne já.
+
+**Doporučení:** upgradovat, ale **v samostatném kroku s živým ověřením** — projít
+`OVERENI-NAOSTRO.md` na nové verzi. Cíl bych volil **39.8.10** (nejmenší skok, který uzavře
+všech sedm rad), ne rovnou 44 — sedm major verzí naráz je zbytečné riziko, když jde
+o bezpečnostní dluh, ne o novou funkci.
+
+⚠️ Zbylé rady (`vite`, `extract-zip`) jsou **opravdu jen vývojové** a do hotové aplikace se
+nedodávají — na rozdíl od Electronu, u kterého je štítek `scope=development` zavádějící.
+
 ## 0. Noční běh je připravený — co k němu patří
 
 Briéf: [`docs/behy/2026-08-24-zaklad-a-fronta.md`](docs/behy/2026-08-24-zaklad-a-fronta.md).
