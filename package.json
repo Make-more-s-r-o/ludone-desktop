@@ -67,6 +67,7 @@
     "package:mac": "npm run build && node scripts/package-mac.mjs",
     "release:mac": "npm run build && node scripts/package-mac.mjs --publish always",
     "progress": "node scripts/desktop-progress.mjs",
+    "vzorky": "electron scripts/vzorky-exportu.mjs",
     "test:audio": "node scripts/audio-smoke.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p jsconfig.json",
