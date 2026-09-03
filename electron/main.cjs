@@ -477,9 +477,15 @@ function hasLiveRecording() {
 function hasLiveSystemAudioLoss() {
   for (const ownerId of appState.systemAudioLostOwners) {
     const preparation = recordingOwnersPreparing.get(ownerId);
-    if (preparation && !preparation.cancelled) return true;
+    if (preparation && !preparation.cancelled && preparation.sources?.includes("system")) {
+      return true;
+    }
     for (const recordingSession of recordingSessions.values()) {
-      if (recordingSession.ownerId === ownerId && !recordingSession.finalizePromise) return true;
+      if (
+        recordingSession.ownerId === ownerId
+        && !recordingSession.finalizePromise
+        && recordingSession.tracks?.has("system")
+      ) return true;
     }
   }
   return false;
@@ -723,12 +729,13 @@ function scheduleTrayVisibilityCheck() {
   trayVisibilityTimer.unref?.();
 }
 
-// Renderer sem hlásí FAKTA, která zatím zná jen on — jestli je někdo přihlášený a jestli
-// běží časovač. Stav z nich odvozuje hlavní proces, takže se sem nikdy nesmí dostat jméno
-// ikony. To je celý rozdíl proti smazanému `tray:set-state`: ten posílal ROZHODNUTÍ.
+// Renderer sem hlásí FAKTA, která zná jen on: dnes přihlášení a časovač, a trvale také
+// výpadek systémového zvuku, protože zachytávaný stream žije v rendereru. Stav z nich
+// odvozuje hlavní proces, takže se sem nikdy nesmí dostat jméno ikony. To je celý rozdíl
+// proti smazanému `tray:set-state`: ten posílal ROZHODNUTÍ.
 //
-// Až přistane B5 (časovač do hlavního procesu) a B8 (skutečné přihlášení), budou obě fakta
-// pocházet přímo z hlavního procesu a tenhle kanál se zúží nebo zmizí.
+// Až přistane B5 (časovač do hlavního procesu) a B8 (skutečné přihlášení), první dvě fakta
+// přejdou přímo do hlavního procesu. Úzký boolean o zvuku v kanálu zůstane.
 // 🔴 Přijímá PRÁVĚ tři klíče a PRÁVĚ boolean. Volnější kontrola by z tohohle kanálu udělala
 // `tray:set-state` pod novým jménem: `{ tracking: "tracking" }` protlačí doslovné jméno ikony
 // a `{}` tiše přepíše přihlášení na false. Neplatný obsah proto NIC nemění — fail-closed,
@@ -1297,7 +1304,11 @@ async function createRecordingSession(event, sources) {
   // rendereru nesmí nové nahrávání označit jako porouchané před prvním reportem.
   appState.systemAudioLostOwners.delete(ownerId);
   const startedAt = new Date();
-  const preparation = { cancelled: false, startedAt: startedAt.toISOString() };
+  const preparation = {
+    cancelled: false,
+    sources: [...sources],
+    startedAt: startedAt.toISOString(),
+  };
   recordingOwnersPreparing.set(ownerId, preparation);
   refreshTray();
   const tracks = new Map();
@@ -3517,7 +3528,11 @@ app.whenReady().then(async () => {
   // Otevřený panel nesmí po změně rozlišení, pracovního prostoru ani monitoru
   // zůstat přes okraj. positionPanel zároveň znovu uplatní uloženou výšku obsahu.
   screen.on("display-metrics-changed", positionPanel);
-  await applyOutboundQueueRetention(panelStartup);
+  const retentionResult = await applyOutboundQueueRetention(panelStartup);
+  // Retence právě načetla autoritativní persistovanou frontu a případně ji atomicky
+  // zúžila. Její výsledný snapshot proto můžeme ukázat bez další store operace, která
+  // by obešla bariéru obnovy osiřelých nahrávek.
+  updateOutboundQueueTrayFact(retentionResult.keptItems);
   markOutboundQueueRetentionReady();
   void recoverOutboundRecordings()
     .catch(() => {

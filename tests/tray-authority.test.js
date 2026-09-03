@@ -277,7 +277,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     [
       {
         signedIn: true,
-        preparing: [[1, { cancelled: false }]],
+        preparing: [[1, { cancelled: false, sources: ["microphone", "system"] }]],
         systemAudioLostOwners: [1],
       },
       "recording-audio-lost",
@@ -293,7 +293,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
       {
         signedIn: true,
         trackingOwners: [1],
-        preparing: [[1, { cancelled: false }]],
+        preparing: [[1, { cancelled: false, sources: ["microphone", "system"] }]],
         queueWaitingCount: 2,
         systemAudioLostOwners: [1],
       },
@@ -382,8 +382,8 @@ describe("pád rendereru", () => {
     const harness = trayHarness({
       signedIn: true,
       sessions: [
-        ["padla", { ownerId: 7 }],
-        ["ziva", { ownerId: 9 }],
+        ["padla", { ownerId: 7, tracks: new Map([["system", {}]]) }],
+        ["ziva", { ownerId: 9, tracks: new Map([["system", {}]]) }],
       ],
       systemAudioLostOwners: [7],
     });
@@ -544,7 +544,7 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
   it("výpadek přijme jen jako boolean, neplatný report stav nezmění a obnova vrátí nahrávání", () => {
     const harness = trayHarness({
       signedIn: true,
-      preparing: [[1, { cancelled: false }]],
+      preparing: [[1, { cancelled: false, sources: ["microphone", "system"] }]],
     });
     harness.refreshTray();
     expect(harness.getTrayState()).toBe("recording");

@@ -2494,6 +2494,30 @@ describe("průběžný titulek lišty", () => {
     }
   });
 
+  it("boolean výpadku nevytvoří systémovou stopu v nahrávání jen s mikrofonem", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+    const getTrayState = harness.ipcHandlers.get("tray:get-state");
+
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
+    const recording = await harness.ipcHandlers.get("recording:begin")(event, ["microphone"]);
+    try {
+      reportFacts(event, { signedIn: true, systemAudioLost: true, tracking: false });
+      expect(getTrayState(event)).toBe("recording");
+    } finally {
+      await harness.ipcHandlers.get("recording:finish")(
+        event,
+        recording.sessionId,
+        { microphone: {
+          startedAt: recording.startedAt,
+          endedAt: new Date(Date.parse(recording.startedAt) + 1_000).toISOString(),
+        } },
+      );
+    }
+  });
+
   it("při LuTracku ukazuje čas od náběžné hrany faktu z dnešního rendereru", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(startTime);
@@ -2861,6 +2885,31 @@ describe("produkční zapojení odchozí fronty", () => {
       expect.objectContaining({ id: started.sessionId, state: "ceka" }),
     ]);
     expect(getTrayState(event)).toBe("queue-waiting");
+  });
+
+  it("persistovanou čekající frontu ukáže už před dlouhou obnovou při startu", async () => {
+    const applyRetention = vi.fn(async () => ({
+      deletedFiles: [],
+      deletedItems: [],
+      errors: [],
+      keptItems: [{ state: "ceka" }],
+    }));
+    const harness = await loadMain({
+      applyRetention,
+      recoverOrphanedRecordings: () => new Promise(() => {}),
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+
+    harness.ipcListeners.get("tray:report-facts")(event, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: false,
+    });
+
+    expect(applyRetention).toHaveBeenCalledOnce();
+    expect(harness.ipcHandlers.get("tray:get-state")(event)).toBe("queue-waiting");
   });
 
   it("vlastník nahrávky se otiskne ze session při jejím začátku bez čitelného e-mailu", async () => {
