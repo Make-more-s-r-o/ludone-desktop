@@ -251,26 +251,19 @@
       "dalsiKrok": "Zapojit retenci do startu aplikace a ověřit ji na skutečně odeslaných kopiích; neodeslané se nemažou."
     }
   ],
-  "praveSeStavi": [
-    {
-      "oznaceni": "PR #37 (staví se)",
-      "nazev": "Odesílací vrstva fronty proti změřenému serverovému kontraktu",
-      "stav": "Klient se staví; killswitch DESKTOP_UPLOAD_ENABLED zůstává vypnutý a nic se neodesílá.",
-      "overeni": "unverified",
-      "poznamka": "Migrace na labs neběžely, endpointy nejsou živé. Stavíme, nezapojujeme."
-    }
-  ],
+  "praveSeStavi": [],
   "blockery": [
     "B1 · Apple Developer: rozhodnout Individual × Organization (mezi variantami se nepřechází). Bez účtu nejdou automatické aktualizace ani trvalá oprávnění. Doporučení: firma, pokud má D-U-N-S.",
     "B2 · Barva hlavního tlačítka v onboardingu a Nastavení: dvě akcentní barvy vedle sebe. Doporučení: sjednotit na modrou dle panelu. Ukázka: progress/barva-tlacitka.html",
     "B3 · Allowlist vydavatelů v main.cjs je zadrátovaný a brání jiným instalacím app.ludone. Bezpečnostní hranice — rozvolnit smí jen Dan.",
-    "Živé ověření: 504 zelených testů, ale ✅ má zatím jediná funkce. Soupis na 15 minut je v docs/changes/desktop-v1/OVERENI-NAOSTRO.md"
+    "Živé ověření: 548 zelených testů, ale ✅ mají zatím tři položky. Soupis na 15 minut je v docs/changes/desktop-v1/OVERENI-NAOSTRO.md"
   ],
   "nemereno": [
     "Stereo export nikdo neposlechl — že jsou kanály oddělené, potvrdí až přehrání nahrávky.",
     "Výpadek ostatního zvuku nikdo nevyvolal odpojením sluchátek.",
+    "Ukončení aplikace během nahrávání nikdo nezkusil naostro (nově ošetřeno, PR #38).",
     "Skutečné sestavení electron-builderu neproběhlo; ověřená je konfigurace, ne hotový DMG.",
-    "Odesílání na server: endpointy nejsou živé, klient se staví nezapojený."
+    "Odesílání na server: klient fáze 2 je hotový a vypnutý, endpointy nejsou živé."
   ],
   "zdroje": [
     {

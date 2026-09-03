@@ -88,3 +88,17 @@ je správný stav, ne nedodělek. Detail a poznámka o scope v `DAN-TODO.md`.
 
 ⇒ Poučení: **než z něčeho udělám blocker, ověřím to proti vlastním zapsaným rozhodnutím.**
 Tohle jsem měl najít sám v `decisions.md`, ne od kolegů.
+
+## Noc dokončena — adversariální kolo nad celou nocí (PR #38)
+
+Po smergování třinácti PR jsem pustil **review celé noční práce naráz**, protože každý PR
+byl recenzovaný zvlášť a pod časovým tlakem. Našlo **tři vady v interakcích** a všechny tři
+jsem si ověřil v kódu, než jsem na ně sáhl:
+
+1. 🔴 **„Ukončit LuDone" zahodilo běžící nahrávku.** Vada z PR #33 (mého vlastního, z téže
+   noci). Opraveno jedinou bránou v `before-quit` — platí pro menu, `Cmd+Q`, Dock i systémové
+   ukončení — s lhůtou 15 s, aby aplikace šla vždycky vypnout.
+2. **Aktualizace restartovala přes nepotvrzené pojmenování** a sebrala název i export.
+3. **Adresa přihlášení se nezobrazila, když dorazila pozdě** (vada z mého PR #27).
+
+`main`: **548 passed | 6 skipped (554)**, nula PR, nula worktrees, nula větví, čistý strom.
