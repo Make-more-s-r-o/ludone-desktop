@@ -3,6 +3,36 @@
 
 
 
+
+## ✅ ROZHODNUTO DANEM 3. 9. dopoledne — čtyři body uzavřeny
+
+| # | rozhodnutí | co s tím dělám |
+|---|---|---|
+| **T1 ikona** | *„prostě tak jak bylo v mockupu grafickém"* → **rozmrazeno celé** | běží: barva + odznak + pátý stav |
+| **Expozice** | *„nikdo to nestáhl."* → **ponecháno, neotvírá se** | doměřeno níž |
+| **B5 Electron** | **upgradovat teď** 37.3.1 → 39.8.10 | běží |
+| **B3 adresa** | *„zprovoznit ten labs, teď mě odkazuje na app a tam ten modul není ještě"* | domlouvám se serverovou session |
+
+### Doměření k expozici — Danovo tvrzení SEDÍ
+
+Změřeno přes GitHub traffic API 3. 9.:
+
+- **0 zobrazení stránky repozitáře, 0 unikátních návštěvníků**
+- **0 forků · 0 hvězd · 0 sledujících**
+- klony: 337 / 22 unikátních (1.–2. 9.) — vysvětlitelné **naší vlastní CI**
+  (self-hosted runner + `npm run gates:clean` klonují taky)
+
+⚠️ **Co vyloučit nejde:** anonymní `git clone` bez otevření stránky. Ten ale předpokládá,
+že někdo tu adresu znal. **Rozhodnutí je Danovo a dál se neotvírá.**
+
+### 🔴 Co z B3 zbývá — čeká na serverovou session, ne na Dana
+
+Desktop má povolené `app.ludone.cz` **i** `labs.ludone.cz`, ale **výchozí je natvrdo
+produkce a není jak přepnout** (`electron/main.cjs`, `resolveAuthIssuer`). Navrhl jsem
+přepínač prostředí v Nastavení, který při přepnutí **odhlásí** (jinak by panel ukazoval
+jedno prostředí a odesílal do druhého). Čekám na potvrzení, že na labs modul nahrávek
+opravdu běží — přepínač vedoucí na mrtvou adresu vypadá jako naše vada.
+
 ## 🔴 ROZHODNUTÍ, KTERÉ POTŘEBUJU: rozmrazit T1 (ikona v liště)?
 
 Schválený návrh (`design/navrh/Lista.dc.html`) předepisuje u ikony v liště **osm stavů**,
