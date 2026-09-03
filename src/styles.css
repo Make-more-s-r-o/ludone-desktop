@@ -1719,6 +1719,18 @@ svg {
   height: 14px;
 }
 
+.permission-mode-note {
+  width: 100%;
+  padding: 9px 10px;
+  margin: -9px 0 16px;
+  border: 1px solid var(--panel-wait);
+  border-radius: 10px;
+  color: var(--panel-wait);
+  font-size: 9.5px;
+  line-height: 1.4;
+  text-align: left;
+}
+
 .recording-test-step {
   padding-top: 30px;
 }
@@ -1822,8 +1834,15 @@ svg {
   align-items: center;
   justify-content: center;
   margin-bottom: 29px;
-  border: 1px solid color-mix(in oklab, var(--panel-ok) 34%, transparent);
+  border: 1px solid color-mix(in oklab, var(--panel-wait) 34%, transparent);
   border-radius: 30px;
+  background: color-mix(in oklab, var(--panel-wait) 12%, transparent);
+  color: var(--panel-wait);
+  box-shadow: inset 0 0 0 12px color-mix(in oklab, var(--panel-wait) 12%, transparent);
+}
+
+.done-step[data-verification-state="both"] .done-check {
+  border-color: color-mix(in oklab, var(--panel-ok) 34%, transparent);
   background: color-mix(in oklab, var(--panel-ok) 12%, transparent);
   color: var(--panel-ok);
   box-shadow: inset 0 0 0 12px color-mix(in oklab, var(--panel-ok) 12%, transparent);

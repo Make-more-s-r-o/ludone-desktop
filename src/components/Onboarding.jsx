@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AuthErrorScreen } from "./AuthErrorScreen.jsx";
 import { RecordingTestStep } from "./RecordingTestStep.jsx";
 import { createStereoLevelSession } from "../lib/audio-levels.js";
@@ -38,6 +38,29 @@ const STEPS = [
 
 const AUTH_WAIT_SECONDS = 10 * 60;
 const AUTH_URL_POLL_INTERVAL_MS = 250;
+const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží a nahrávka bude jednostopá — jen se dozvíš, že chybí druhá strana.";
+
+function completionCopy(recordingTestResult) {
+  if (recordingTestResult === "passed") {
+    return {
+      detail: "Oba kanály slyším. Panel najdeš pod ikonou v horní liště.",
+      title: "Připraveno",
+      verificationState: "both",
+    };
+  }
+  if (recordingTestResult === "microphone-only") {
+    return {
+      detail: MICROPHONE_ONLY_TEXT,
+      title: "Nahrává se omezeně",
+      verificationState: "microphone-only",
+    };
+  }
+  return {
+    detail: "Bez ní se nedá tvrdit, že to funguje.",
+    title: "Neověřeno",
+    verificationState: "unverified",
+  };
+}
 
 function formatCountdown(seconds) {
   const minutes = Math.floor(seconds / 60);
@@ -70,10 +93,9 @@ export function Onboarding({ onAuthenticated, onComplete }) {
   const authBusyRef = useRef(false);
   const mountedRef = useRef(true);
   const recordingTestStartedRef = useRef(false);
-  const allGranted = useMemo(
-    () => PERMISSIONS.every((permission) => permissions[permission.id]?.status === "granted"),
-    [permissions],
-  );
+  const microphoneGranted = permissions.microphone?.status === "granted";
+  const systemAudioGranted = permissions["system-audio"]?.status === "granted";
+  const completion = completionCopy(recordingTestResult);
 
   useEffect(() => {
     if (step !== 2 || !authBusy) return undefined;
@@ -215,6 +237,16 @@ export function Onboarding({ onAuthenticated, onComplete }) {
     // uživatelskou aktivaci. Komponenta pak převezme hotový promise i cleanup.
     startRecordingTestAttempt();
     setStep(4);
+  }
+
+  function continueFromPermissions() {
+    if (!microphoneGranted) return;
+    if (systemAudioGranted) {
+      enterRecordingTest();
+      return;
+    }
+    setRecordingTestResult("microphone-only");
+    setStep(5);
   }
 
   function startRecordingTestAttempt() {
@@ -419,6 +451,7 @@ export function Onboarding({ onAuthenticated, onComplete }) {
               return (
                 <div
                   className={`permission-row${state.granted ? " is-granted" : ""}`}
+                  data-permission-id={permission.id}
                   key={permission.id}
                   role={state.alert ? "alert" : undefined}
                 >
@@ -442,11 +475,20 @@ export function Onboarding({ onAuthenticated, onComplete }) {
               );
             })}
           </div>
+          {microphoneGranted && !systemAudioGranted && (
+            <p
+              className="permission-mode-note"
+              data-testid="microphone-only-note"
+              role="status"
+            >
+              {MICROPHONE_ONLY_TEXT}
+            </p>
+          )}
           <button
             type="button"
             className="button button--primary button--wide"
-            disabled={!allGranted}
-            onClick={enterRecordingTest}
+            disabled={!microphoneGranted || Boolean(permissionBusy)}
+            onClick={continueFromPermissions}
           >
             Pokračovat <ArrowRightIcon />
           </button>
@@ -461,8 +503,8 @@ export function Onboarding({ onAuthenticated, onComplete }) {
             setRecordingTestResult("passed");
             setStep(5);
           }}
-          onSkipped={() => {
-            setRecordingTestResult("skipped");
+          onSkipped={(result) => {
+            setRecordingTestResult(result);
             setStep(5);
           }}
         />
@@ -472,15 +514,16 @@ export function Onboarding({ onAuthenticated, onComplete }) {
         <section
           className="onboarding__content done-step"
           data-recording-test-result={recordingTestResult}
+          data-verification-state={completion.verificationState}
         >
-          <div className="done-check"><CheckIcon /></div>
-          <p className="eyebrow">Všechno je připravené</p>
+          <div className="done-check">
+            {completion.verificationState === "both"
+              ? <CheckIcon />
+              : completion.verificationState === "microphone-only" ? <MicIcon /> : <VolumeIcon />}
+          </div>
+          <p className="eyebrow">{completion.title}</p>
           <h1>LuDone čeká<br />v horní liště.</h1>
-          <p className="lead">
-            {recordingTestResult === "passed"
-              ? "Oba kanály slyším. Panel najdeš pod ikonou v horní liště."
-              : "Záznam jsme spolu nevyzkoušeli. Panel najdeš pod ikonou v horní liště; test si můžeš kdykoli pustit z Nastavení."}
-          </p>
+          <p className="lead">{completion.detail}</p>
           <div className="tray-preview" aria-label="Ukázka stavů ikony v horní liště">
             <div><span className="tray-symbol tray-symbol--idle" /><small>Nečinná</small></div>
             <div><span className="tray-symbol tray-symbol--recording" /><small>Nahrává</small></div>

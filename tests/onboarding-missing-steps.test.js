@@ -40,6 +40,7 @@ function audioSamples(amplitude, target) {
  *   microphoneAmplitude?: number,
  *   pendingAuthUrl?: import("vitest").Mock,
  *   rejectFirstDisplayCapture?: boolean,
+ *   requestPermission?: ReturnType<typeof vi.fn>,
  *   systemAmplitude?: number,
  * }} [options]
  */
@@ -54,6 +55,10 @@ async function renderOnboarding(options = {}) {
     deferDisplayCapture = false,
     microphoneAmplitude = 0,
     rejectFirstDisplayCapture = false,
+    requestPermission = vi.fn().mockResolvedValue({
+      granted: true,
+      status: "granted",
+    }),
     systemAmplitude = 0,
   } = options;
   const dom = new JSDOM('<div id="root"></div>', {
@@ -188,10 +193,7 @@ async function renderOnboarding(options = {}) {
       beginAuth,
       cancelAuth,
       pendingAuthUrl,
-      requestPermission: vi.fn().mockResolvedValue({
-        granted: true,
-        status: "granted",
-      }),
+      requestPermission,
     },
   });
 
@@ -228,6 +230,7 @@ async function renderOnboarding(options = {}) {
     getDisplayMedia,
     getUserMedia,
     microphoneTrack,
+    requestPermission,
     resolveDisplayCapture: () => displayCapture.resolve(systemStream),
     systemTrack,
     videoTrack,
@@ -261,12 +264,16 @@ async function enterAuthentication(panel) {
   await panel.click(panel.document.querySelector(".welcome-step .button--wide"));
 }
 
-async function navigateToRecordingTest(panel) {
+async function navigateToPermissions(panel) {
   await enterAuthentication(panel);
   await panel.click(panel.document.querySelector(".auth-step .button--wide"));
   await vi.waitFor(() => {
     expect(panel.document.querySelector(".permission-step")).not.toBeNull();
   });
+}
+
+async function navigateToRecordingTest(panel) {
+  await navigateToPermissions(panel);
   for (const button of [...panel.document.querySelectorAll('[data-testid="permission-action"]')]) {
     await panel.click(button);
   }
@@ -491,24 +498,76 @@ describe("dva chybějící kroky onboardingu", () => {
     expect(panel.audioContexts).toHaveLength(0);
   });
 
-  it("s němým zvukem pustí dál, ale Hotovo se nechlubí ověřením", async () => {
+  it("s povoleným mikrofonem pustí dál do jednostopého režimu", async () => {
+    const requestPermission = vi.fn(async (permission) => (
+      permission === "microphone"
+        ? { granted: true, status: "granted" }
+        : { granted: false, status: "denied", nextAction: "open-settings" }
+    ));
+    const panel = await renderOnboarding({ requestPermission });
+    await navigateToPermissions(panel);
+    for (const button of [...panel.document.querySelectorAll('[data-testid="permission-action"]')]) {
+      await panel.click(button);
+    }
+
+    const permissionStep = panel.document.querySelector(".permission-step");
+    const continueButton = permissionStep.querySelector(":scope > .button--wide");
+    expect(continueButton.disabled).toBe(false);
+    expect(permissionStep.textContent).toContain(
+      "Můžeš povolit jen mikrofon. Časovač poběží a nahrávka bude jednostopá — jen se dozvíš, že chybí druhá strana.",
+    );
+    await panel.click(continueButton);
+
+    const done = panel.document.querySelector(".done-step");
+    expect(done).not.toBeNull();
+    expect(done.dataset.verificationState).toBe("microphone-only");
+    expect(done.textContent).toContain("nahrávka bude jednostopá");
+    expect(done.textContent).not.toMatch(/Připraveno|Všechno je připravené/);
+    expect(panel.getUserMedia).not.toHaveBeenCalled();
+    expect(panel.getDisplayMedia).not.toHaveBeenCalled();
+  });
+
+  it("přeskočený test označí závěr jako neověřený", async () => {
     const panel = await renderOnboarding();
     await navigateToRecordingTest(panel);
 
-    // Test se nespustil naostro — bez cesty ven by uživatel s rozbitým zvukem
-    // uvízl v onboardingu napořád a nikdy by se k panelu nedostal.
     const skip = panel.document.querySelector('[data-testid="recording-test-skip"]');
     expect(skip).not.toBeNull();
     expect(skip.disabled).toBe(false);
+    expect(panel.document.querySelector(".recording-test-hint")?.textContent)
+      .toBe("Bez ní se nedá tvrdit, že to funguje.");
     await panel.click(skip);
 
     const done = panel.document.querySelector(".done-step");
     expect(done).not.toBeNull();
-    expect(done.dataset.recordingTestResult).not.toBe("passed");
-    expect(done.textContent).not.toContain("Oba kanály slyším");
+    expect(done.dataset.recordingTestResult).toBe("skipped");
+    expect(done.dataset.verificationState).toBe("unverified");
+    expect(done.textContent).toContain("Neověřeno");
+    expect(done.textContent).toContain("Bez ní se nedá tvrdit, že to funguje.");
+    expect(done.textContent).not.toMatch(/Připraveno|Všechno je připravené/);
   });
 
-  it("po skutečně dokončeném testu Hotovo ověření přizná", async () => {
+  it("neúspěšný test označí závěr jako neověřený", async () => {
+    const panel = await renderOnboarding({ rejectFirstDisplayCapture: true });
+    await navigateToRecordingTest(panel);
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[data-testid="recording-test-screen"]')
+        ?.dataset.recordingTestState).toBe("error");
+    });
+    expect(panel.document.querySelector(".recording-test-hint")?.textContent)
+      .toBe("Bez ní se nedá tvrdit, že to funguje.");
+    await panel.click(panel.document.querySelector('[data-testid="recording-test-skip"]'));
+
+    const done = panel.document.querySelector(".done-step");
+    expect(done).not.toBeNull();
+    expect(done.dataset.recordingTestResult).toBe("failed");
+    expect(done.dataset.verificationState).toBe("unverified");
+    expect(done.textContent).toContain("Neověřeno");
+    expect(done.textContent).toContain("Bez ní se nedá tvrdit, že to funguje.");
+    expect(done.textContent).not.toMatch(/Připraveno|Všechno je připravené/);
+  });
+
+  it("až po úspěšném testu obou kanálů ukáže Připraveno", async () => {
     const panel = await renderOnboarding({
       microphoneAmplitude: 0.25,
       systemAmplitude: 0.25,
@@ -518,6 +577,11 @@ describe("dva chybějící kroky onboardingu", () => {
 
     const done = panel.document.querySelector(".done-step");
     expect(done.dataset.recordingTestResult).toBe("passed");
+    expect(done.dataset.verificationState).toBe("both");
+    expect(done.textContent).toContain("Připraveno");
+    expect(done.textContent).toContain(
+      "Oba kanály slyším. Panel najdeš pod ikonou v horní liště.",
+    );
   });
 
   it("na čekací obrazovce ukáže adresu, kterou lze zkopírovat, když se prohlížeč neotevřel", async () => {
