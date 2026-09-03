@@ -20,6 +20,12 @@ export const QUEUE_STATES = Object.freeze({
 
 export const UPLOAD_DISABLED_REASON = "odesílání je vypnuté";
 
+const LEGACY_HUMAN_ACTION_FAILURE_REASONS = new Set([
+  "Nahrávka patří jinému účtu",
+  "Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem",
+  "Identitu aktuálního přihlášení nelze ověřit",
+]);
+
 export const DEFAULT_RETRY_POLICY = Object.freeze({
   baseDelayMs: 30_000,
   maxDelayMs: 6 * 60 * 60 * 1_000,
@@ -136,23 +142,13 @@ function failureRequiresHumanAction(error) {
 }
 
 function storedFailureRequiresHumanAction(item) {
-  if (item.requiresHumanAction === true) return true;
+  if (Object.prototype.hasOwnProperty.call(item, "requiresHumanAction")) {
+    return item.requiresHumanAction === true;
+  }
   if (failureCodeRequiresHumanAction(item.lastFailureReason)) return true;
-  if (typeof item.lastFailureReason !== "string") return false;
-
-  // Krátká migrace položek uložených před strukturovaným příznakem. Tehdejší
-  // schéma ukládalo pouze českou error.message; nové položky na textu nezávisí.
-  const reason = item.lastFailureReason.normalize("NFC").toLocaleLowerCase("cs-CZ");
-  const unconfirmedOwner = reason.includes("vlastník") && reason.includes("potvrzen");
-  const differentAccount = reason.includes("nahrávka") && reason.includes("jinému účtu");
-  const unverifiedSession = reason.includes("identitu") && reason.includes("přihlášení");
-  return unconfirmedOwner || differentAccount || unverifiedSession;
-}
-
-function withoutHumanActionRequirement(item) {
-  const result = { ...item };
-  delete result.requiresHumanAction;
-  return result;
+  // Přesná jednorázová migrace položek, které starší schéma uložilo jen jako
+  // českou error.message. Nové výsledky vždy nesou explicitní boolean.
+  return LEGACY_HUMAN_ACTION_FAILURE_REASONS.has(item.lastFailureReason);
 }
 
 function replaceItem(queue, index, item) {
@@ -375,11 +371,12 @@ export async function processNext(queue, killswitches, send, options = {}) {
   }
 
   const policy = normalizeRetryPolicy(options.retryPolicy);
-  const sendingItem = withoutHumanActionRequirement({
+  const sendingItem = {
     ...queue.items[index],
     attempts: queue.items[index].attempts + 1,
+    requiresHumanAction: false,
     state: QUEUE_STATES.SENDING,
-  });
+  };
   const sendingQueue = replaceItem(queue, index, sendingItem);
 
   try {
@@ -421,8 +418,8 @@ export async function processNext(queue, killswitches, send, options = {}) {
         attempts: originalItem.attempts,
         lastFailureReason: errorReason(error),
         nextAttemptAt: originalItem.nextAttemptAt,
+        requiresHumanAction: failureRequiresHumanAction(error),
         state: QUEUE_STATES.WAITING,
-        ...(failureRequiresHumanAction(error) ? { requiresHumanAction: true } : {}),
       };
       return {
         item: pausedItem,
