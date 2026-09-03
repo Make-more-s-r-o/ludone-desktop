@@ -2556,6 +2556,35 @@ describe("soukromí chyb stereo exportu", () => {
     });
   });
 
+  it("odmítnutý souběžný export nesmí uvolnit ten první", async () => {
+    // Než přibyl `claimedExport`, blok `finally` běžel i pro volání, které si export NIKDY
+    // nezabralo — druhý pokus tedy vyhodil „už probíhá" a cestou ven shodil příznak
+    // a uvolnil odkládací plochu tomu PRVNÍMU, který zrovna zapisoval. Uživatel by přišel
+    // o hotový soubor kvůli vlastnímu druhému kliknutí.
+    const harness = await loadMain();
+    const {
+      event,
+      exportRecording,
+      finishExport,
+      sessionId,
+    } = await prepareRecordingExport(harness, { finishStereo: false });
+
+    const prvniExport = exportRecording(event, sessionId, "První pokus");
+    const druhyVysledek = await exportRecording(event, sessionId, "Druhý pokus");
+    expect(druhyVysledek.ok).toBe(false);
+
+    await finishExport(event, sessionId, {
+      succeeded: true,
+      timing: {
+        startedAt: "2026-09-03T08:00:00.075Z",
+        endedAt: "2026-09-03T08:30:00.150Z",
+      },
+    });
+    const prvniVysledek = await prvniExport;
+
+    expect(prvniVysledek.ok).toBe(true);
+  });
+
   it("každá vrácená hláška končí ujištěním o zachovaných stopách", async () => {
     const harness = await loadMain();
     harness.electron.shell.openExternal.mockRejectedValueOnce(
