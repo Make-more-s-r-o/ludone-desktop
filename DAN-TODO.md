@@ -4,6 +4,35 @@
 
 
 
+
+## 🔍 AUDIT PROTI SCHVÁLENÉMU NÁVRHU (3. 9.) — devět odchylek s citacemi
+
+Pustil jsem čtecí audit, protože jsi **dvakrát měl konkrétní pravdu** tam, kde jsem tvrdil
+hotovo (čas v liště, glyf ikony). Chtěl jsem zbytek najít dřív než ty. Našel devět odchylek;
+každá má citaci z návrhu **i** z kódu. **Dvě jsem namátkou ověřil — audit nehalucinuje.**
+
+### Řeší se hned
+
+| závažnost | co | stav |
+|---|---|---|
+| vysoká | onboarding **vyžaduje obě oprávnění**, návrh povoluje režim jen s mikrofonem | běží |
+| vysoká | test záznamu jde **přeskočit** a aplikace pak tvrdí „Všechno je připravené" | běží |
+| střední | z lišty **nejde zastavit časovač** — položka je při běhu zašedlá | běží |
+| střední | při souběhu chybí **druhý údaj** vedle ikony | běží |
+
+### 🛑 Zbývá — a část potřebuje tvé slovo
+
+| závažnost | co | proč to nejde hned |
+|---|---|---|
+| vysoká | **celá obrazovka Diagnostika chybí** (verze, oprávnění, spojení, fronta, export) | schválená, ale nikdy nepostavená — je to samostatný kus práce |
+| vysoká | **chybí přepínač „Zobrazovat i ikonu v Docku"** — `main.cjs` Dock vždy skryje | 🔴 **tohle je přesně tvůj problém z 2. 9.**, kdy ti ikona zmizela za plnou lištou; návrh na to má schválenou záchranu a my ji nepostavili |
+| vysoká | offline obrazovka slibuje „nahrávat a měřit můžeš dál", ale v nedokončeném onboardingu to nejde | vyžaduje rozhodnutí, co smí běžet před dokončením onboardingu |
+| vysoká/střední | tři stavy lišty: **výpadek zvuku** · čeká fronta · bez spojení | vyžadují rozšíření `REPORTED_FACT_KEYS`, tedy zásah do kontraktu, který hlídá 53 testů |
+
+🔴 **Nejzávažnější z nedodělaných je „výpadek ostatního zvuku" v liště** — návrh u něj píše
+doslova *„je to právě chvíle, kdy je panel zavřený"*. Se zavřeným panelem se dnes nedozvíš,
+že se druhá strana hovoru přestala nahrávat.
+
 ## ✅ ROZHODNUTO DANEM 3. 9. dopoledne — čtyři body uzavřeny
 
 | # | rozhodnutí | co s tím dělám |
