@@ -68,7 +68,7 @@ macOS je pak vykreslí správně na jakékoli liště a jsou to stavy, které Da
 Barvu si nechat u aktivních stavů (`recording`, `tracking`), kde nese význam a kde jsou
 korálová i tyrkysová středně tmavé, takže se čtou na obou pozadích.
 
-### 3 · „15 čeká" v patičce **nejde kliknout**
+### ✅ 3 · „15 čeká" — OPRAVENO, PR #65
 
 Počet ve frontě je jen text. Uživatel vidí číslo a **nemá kam jít**.
 

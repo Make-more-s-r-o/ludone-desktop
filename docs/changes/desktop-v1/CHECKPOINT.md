@@ -12,8 +12,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `fea2841`, **731 passed \| 3 skipped (734)**, čistý strom, **Electron 39.8.10** | 3 skipped (719)**, čistý strom, **Electron 39.8.10** | 3 skipped (708)**, čistý strom, **Electron 39.8.10** | 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
-| otevřené PR | **0** · worktrees **0** · mergnuto 3. 9.: **#41–#57 (20 PR)** |
+| `main` | `f4affa1`, **794 passed \| 3 skipped (797)**, čistý strom, **Electron 39.8.10** | 3 skipped (734)**, čistý strom, **Electron 39.8.10** | 3 skipped (719)**, čistý strom, **Electron 39.8.10** | 3 skipped (708)**, čistý strom, **Electron 39.8.10** | 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
+| otevřené PR | **0** · worktrees **0** · mergnuto 3. 9.: **#41–#65 (29 PR)** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
@@ -102,6 +102,25 @@ přiřadit ji prvnímu přihlášenému by zopakovalo přesně tu vadu, kvůli k
 Tajemství leží **mimo frontu** (`nastaveni/fronta-vlastnik.json`, 0600), takže útočník
 s kopií `outgoing.json` ho nemá. **Fail-closed:** bez tajemství se otisk neodvodí a položka
 zůstane čekat; nikdy se nespadne zpátky na slabší variantu.
+
+
+## ✅ VŠECHNY TŘI DANOVY VEČERNÍ NÁLEZY OPRAVENÉ
+
+| co | PR | co bylo špatně |
+|---|---|---|
+| **měřáky se nehýbaly** | #63 | pruh byl **dekorace** — `width: 100%` natvrdo; **lhal**, ukazoval plno i při tichu |
+| **ikona nebyla vidět** | #64 | `shouldUseDarkColors` popisuje **aplikaci**, ne **lištu**; PR #47 zahodil šablonové ikony |
+| **„15 čeká" nešlo kliknout** | #65 | počet bez akce; PR #57 navíc přidal stav „čeká na potvrzení", který nebylo kde potvrdit |
+
+🔴 **Všechny tři prošly přes 758–788 zelených testů.** Společná příčina: testy ověřovaly,
+že prvek **existuje**, ne že **funguje**. Tlačítko v DOM bylo a nešlo vidět; měřák
+existoval a neměřil; počet se zobrazoval a nikam nevedl.
+
+⇒ **Nové testy proto měří chování:** nahlášená výška proti skutečné · pohyb pruhu při
+změně amplitudy (>40 bodů) · vyvolání retry, ne jen změna textu.
+
+🛑 **Zbývá jediné rozhodnutí pro Dana:** barevné ikony propadají kontrastem na **světlé**
+liště (korálová 2,35 : 1, tyrkysová 1,91 : 1). Tři varianty v `DAN-TODO.md`.
 
 ## 🛑 ZBÝVÁ — a většina čeká na někoho jiného
 
