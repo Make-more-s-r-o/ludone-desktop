@@ -112,10 +112,27 @@ function recordingTimeline(manifestValue, stereoTiming) {
   };
 }
 
-// Server názvy delší než 200 znaků zahazuje CELÉ, ne po částech — poslat delší
-// tedy znamená přijít o název úplně. Ořezáváme proto my, po znacích (ne bajtech),
-// aby se emoji nerozpůlilo.
-const MAX_UPLOAD_NAME_CHARACTERS = 200;
+// 🔴 Server názvy nad limit zahazuje CELÉ, ne po částech — poslat delší tedy znamená
+// přijít o název úplně, bez chyby a bez hlášky. Ořezáváme proto my.
+//
+// Limit je 200 **UTF-16 jednotek** (serverové `.length`), ne 200 znaků. To není totéž:
+// emoji je surrogate pair, tedy dvě jednotky na jeden znak, takže 200 emoji = 400 jednotek
+// a server by je zahodil všechny. Zjištěno 3. 9. 2026 měřením proti serverovému `handoff.ts`;
+// obě strany si přitom myslely, že jejich limity sedí.
+//
+// Ořezávat rovnou podle `.length` by ale rozpůlilo emoji uprostřed páru. Bereme proto
+// znaky po jednom a sčítáme jejich SKUTEČNOU délku v jednotkách — nikdy nepřekročíme
+// limit a nikdy nerozřízneme znak.
+const MAX_UPLOAD_NAME_UTF16_UNITS = 200;
+
+function orezNaJednotky(text, limit) {
+  let vysledek = "";
+  for (const znak of text) {
+    if (vysledek.length + znak.length > limit) break;
+    vysledek += znak;
+  }
+  return vysledek;
+}
 
 function buildRecordingUploadUrl(origin, metadata = {}) {
   const url = new URL("/nahravky/nahrat", origin);
@@ -129,7 +146,8 @@ function buildRecordingUploadUrl(origin, metadata = {}) {
   // chybějící a prázdný nemusí řešit stejně.
   const nazev = typeof metadata.nazev === "string" ? metadata.nazev.trim() : "";
   if (nazev.length > 0) {
-    url.searchParams.set("nazev", [...nazev].slice(0, MAX_UPLOAD_NAME_CHARACTERS).join(""));
+    const orezany = orezNaJednotky(nazev, MAX_UPLOAD_NAME_UTF16_UNITS);
+    if (orezany.length > 0) url.searchParams.set("nazev", orezany);
   }
   return url.href;
 }
