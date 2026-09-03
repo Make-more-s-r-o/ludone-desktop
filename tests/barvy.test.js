@@ -16,21 +16,25 @@ describe("schválená barevná paleta", () => {
     // Komentáře jsou odstraněné před každým hledáním, aby zakomentovaná deklarace
     // nemohla bránu ani falešně shodit, ani falešně zazelenat.
     const zakazanaZelena = [
-      ...stylyBezKomentaru.matchAll(/oklch\([^)]*?\s145(?:\s*\/[^)]*)?\)/gi),
+      ...stylyBezKomentaru.matchAll(
+        /oklch\([^)]*?\s145(?:\.0+)?(?:deg)?(?=\s*(?:\/|\)))[^)]*\)/gi,
+      ),
     ].map(([barva]) => barva);
     expect(
       zakazanaZelena,
       "schválený návrh neobsahuje zelený odstín 145",
     ).toEqual([]);
 
-    for (const deklarace of SEMANTICKE_BARVY) {
-      expect(stylyBezKomentaru, `v CSS chybí přesná deklarace ${deklarace}`).toContain(deklarace);
-    }
-
-    const root = stylyBezKomentaru.match(/:root\s*\{([^}]*)\}/)?.[1];
+    const rootBloky = [...stylyBezKomentaru.matchAll(/:root\s*\{([^}]*)\}/g)];
+    expect(rootBloky, "v CSS musí být právě jeden blok :root").toHaveLength(1);
+    const root = rootBloky[0]?.[1];
     expect(root, "v CSS chybí blok :root").toBeDefined();
     for (const deklarace of SEMANTICKE_BARVY) {
       expect(root, `${deklarace} musí být definovaná v :root`).toContain(deklarace);
+      const nazev = deklarace.slice(0, deklarace.indexOf(":"));
+      const bezpecnyNazev = nazev.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const definice = [...stylyBezKomentaru.matchAll(new RegExp(`${bezpecnyNazev}\\s*:`, "g"))];
+      expect(definice, `${nazev} nesmí přepsat druhá definice`).toHaveLength(1);
     }
   });
 });
