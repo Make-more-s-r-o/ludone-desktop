@@ -61,6 +61,7 @@
   },
   "scripts": {
     "build": "vite build",
+    "ikony": "node scripts/tray-ikony.mjs",
     "start": "electron .",
     "package:mac": "npm run build && node scripts/package-mac.mjs",
     "release:mac": "npm run build && node scripts/package-mac.mjs --publish always",
