@@ -370,7 +370,15 @@ if (!gotSingleInstanceLock) {
 }
 
 function trayIconName(state) {
-  const names = ["signed-out", "idle", "recording", "tracking", "recording-tracking"];
+  const names = [
+    "signed-out",
+    "idle",
+    "recording",
+    "tracking",
+    "recording-tracking",
+    "queue-waiting",
+    "recording-audio-lost",
+  ];
   // Brána čte seznam bez druhého výčtu; nový stav se tak přidává na jediné místo.
   if (arguments.length === 0) return [...names];
   return names.includes(state) ? state : "signed-out";
@@ -435,6 +443,8 @@ const TRAY_LABELS = {
   recording: "LuDone · nahrává",
   tracking: "LuDone · LuTrack běží",
   "recording-tracking": "LuDone · nahrává + LuTrack běží",
+  "queue-waiting": "LuDone · čeká na odeslání",
+  "recording-audio-lost": "LuDone · výpadek systémového zvuku",
 };
 
 // 🔴 Jediný zdroj pravdy o tom, co lišta ukazuje. Renderer sem hlásí FAKTA, stav z nich
@@ -442,7 +452,9 @@ const TRAY_LABELS = {
 // přežil jeho pád i jeho omyl: spadlé okno nechalo ikonu viset na „nahrává“ donekonečna.
 const appState = {
   acceptRendererSignIn: true,
+  outboundQueueWaitingCount: 0,
   signedIn: false,
+  systemAudioLostOwners: new Set(),
   trackingOwners: new Set(),
   trackingStartedAtByOwner: new Map(),
 };
@@ -459,6 +471,20 @@ function hasLiveRecording() {
   return false;
 }
 
+// Výpadek smí ovlivnit lištu jen tehdy, když stejný renderer skutečně vlastní
+// nahrávání, které hlavní proces pořád eviduje jako živé. Samotným booleanem tak
+// renderer nevykouzlí nahrávací stav ani nezhorší cizí session.
+function hasLiveSystemAudioLoss() {
+  for (const ownerId of appState.systemAudioLostOwners) {
+    const preparation = recordingOwnersPreparing.get(ownerId);
+    if (preparation && !preparation.cancelled) return true;
+    for (const recordingSession of recordingSessions.values()) {
+      if (recordingSession.ownerId === ownerId && !recordingSession.finalizePromise) return true;
+    }
+  }
+  return false;
+}
+
 function hasRecordingExportInFlight() {
   for (const exportStage of recordingExportStages.values()) {
     if (exportStage.exportInFlight) return true;
@@ -468,12 +494,17 @@ function hasRecordingExportInFlight() {
 
 // Čistá funkce schválně — je to jediný způsob, jak tohle rozhodnutí otestovat bez GUI
 // (viz tests/tray-authority.test.js). Stejný důvod jako u shouldHidePanelOnBlur.
-function deriveTrayState({ signedIn, recording, tracking }) {
+function deriveTrayState({ queueWaiting, recording, signedIn, systemAudioLost, tracking }) {
   if (!signedIn) return "signed-out";
+  // Výpadek je zhoršená varianta nahrávání. Nahrávání dál zůstává hlavní agendou,
+  // ale červený odznak má přednost před méně závažným odznakem LuTracku.
+  if (recording && systemAudioLost) return "recording-audio-lost";
   // Nahrávání zůstává při souběhu hlavní agendou, LuTrack ukazuje odznak.
   if (recording && tracking) return "recording-tracking";
   if (recording) return "recording";
   if (tracking) return "tracking";
+  // Fronta je pozadí: upozorní jen tehdy, když neběží žádná hlavní agenda.
+  if (queueWaiting) return "queue-waiting";
   return "idle";
 }
 
@@ -585,11 +616,15 @@ function stopTrayTitleUpdates() {
 
 function refreshTray() {
   const recording = hasLiveRecording();
+  const systemAudioLost = hasLiveSystemAudioLoss();
   const tracking = appState.trackingOwners.size > 0;
+  const queueWaiting = appState.outboundQueueWaitingCount > 0;
   const theme = currentTrayIconTheme();
   const next = trayIconName(deriveTrayState({
-    signedIn: appState.signedIn,
+    queueWaiting,
     recording,
+    signedIn: appState.signedIn,
+    systemAudioLost,
     tracking,
   }));
   // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při
@@ -598,7 +633,8 @@ function refreshTray() {
     trayState = next;
     console.log(
       `[tray] ${new Date().toISOString()} stav=${trayState} nahrávání=${recording} `
-      + `lutrack=${tracking} přihlášen=${appState.signedIn}`,
+      + `výpadekZvuku=${systemAudioLost} lutrack=${tracking} `
+      + `fronta=${appState.outboundQueueWaitingCount} přihlášen=${appState.signedIn}`,
     );
     if (tray) {
       tray.setImage(trayImage(trayState, theme));
@@ -693,11 +729,11 @@ function scheduleTrayVisibilityCheck() {
 //
 // Až přistane B5 (časovač do hlavního procesu) a B8 (skutečné přihlášení), budou obě fakta
 // pocházet přímo z hlavního procesu a tenhle kanál se zúží nebo zmizí.
-// 🔴 Přijímá PRÁVĚ dva klíče a PRÁVĚ boolean. Volnější kontrola by z tohohle kanálu udělala
+// 🔴 Přijímá PRÁVĚ tři klíče a PRÁVĚ boolean. Volnější kontrola by z tohohle kanálu udělala
 // `tray:set-state` pod novým jménem: `{ tracking: "tracking" }` protlačí doslovné jméno ikony
 // a `{}` tiše přepíše přihlášení na false. Neplatný obsah proto NIC nemění — fail-closed,
 // protože zapomenout fakt je horší než ho neaktualizovat.
-const REPORTED_FACT_KEYS = ["signedIn", "tracking"];
+const REPORTED_FACT_KEYS = ["signedIn", "tracking", "systemAudioLost"];
 
 function applyReportedFacts(ownerId, facts) {
   if (!facts || typeof facts !== "object" || Array.isArray(facts)) return false;
@@ -721,6 +757,11 @@ function applyReportedFacts(ownerId, facts) {
   } else {
     appState.trackingOwners.delete(ownerId);
     trackingStartedAtByOwner.delete(ownerId);
+  }
+  if (facts.systemAudioLost) {
+    appState.systemAudioLostOwners.add(ownerId);
+  } else {
+    appState.systemAudioLostOwners.delete(ownerId);
   }
   refreshTray();
   return true;
@@ -1252,6 +1293,9 @@ async function createRecordingSession(event, sources) {
   ))) {
     throw new Error("V tomto okně už jedna nahrávací session běží");
   }
+  // Nová session začíná se zdravou cestou; případný fakt z předchozí generace
+  // rendereru nesmí nové nahrávání označit jako porouchané před prvním reportem.
+  appState.systemAudioLostOwners.delete(ownerId);
   const startedAt = new Date();
   const preparation = { cancelled: false, startedAt: startedAt.toISOString() };
   recordingOwnersPreparing.set(ownerId, preparation);
@@ -1677,6 +1721,9 @@ function finalizeRecordingSessionsForOwner(ownerId, reason) {
 // do té doby je tohle chování popsané správně jen PO prvním reportu. Nepiš sem, že session
 // vlastní main — zatím ji nevlastní.
 function forgetOwnerActivity(ownerId, reason) {
+  // Smazat před finalizací: ta sama volá refreshTray a nesmí přenést výpadek
+  // z padlého rendereru na jinou souběžně živou session.
+  appState.systemAudioLostOwners.delete(ownerId);
   finalizeRecordingSessionsForOwner(ownerId, reason);
   appState.trackingOwners.delete(ownerId);
   appState.trackingStartedAtByOwner?.delete(ownerId);
@@ -1798,6 +1845,26 @@ const KNOWN_RETENTION_POLICIES = new Set(Object.values(RETENTION_POLICIES));
 
 function outboundQueueFilePath() {
   return path.join(app.getPath("userData"), "queue", "outgoing.json");
+}
+
+// Store vrací podle operace buď přímo redukované položky (`list`), položky
+// v `items` (`retry`), nebo plnou frontu v `queue.items` (`enqueue`/`pump`).
+// Všechny tři tvary vznikají v hlavním procesu; renderer počet nikdy nehlásí.
+function outboundQueueItemsFromResult(result) {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.items)) return result.items;
+  if (Array.isArray(result?.queue?.items)) return result.queue.items;
+  return null;
+}
+
+function updateOutboundQueueTrayFact(result) {
+  const items = outboundQueueItemsFromResult(result);
+  if (items === null) return false;
+  const waitingCount = items.filter((item) => item?.state === "ceka").length;
+  if (waitingCount === appState.outboundQueueWaitingCount) return true;
+  appState.outboundQueueWaitingCount = waitingCount;
+  refreshTray();
+  return true;
 }
 
 async function readRetentionPolicy(panelStartup) {
@@ -1984,6 +2051,7 @@ async function pumpOutboundQueue() {
   try {
     const store = await getOutboundQueueStore();
     const result = await store.pump(queueKillswitches());
+    updateOutboundQueueTrayFact(result);
     console.log(`[queue] ${result.reason ?? result.outcome}`);
     return result;
   } catch (error) {
@@ -2124,6 +2192,7 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
           [...recordingSession.tracks].map(([source, track]) => [source, track.filePath]),
         ),
       });
+      updateOutboundQueueTrayFact(queued);
       if (queued.added) {
         console.log(`[queue] Zařazeno ${queued.item.clientRecordingId} (recording).`);
       }
@@ -2197,11 +2266,14 @@ handleValidated("recording:confirm-export-failure", ["panel"], async (
 handleValidated("recording:export", ["panel"], exportCompletedRecording);
 handleValidated("queue:list", ["panel", "settings"], async () => {
   await waitForOutboundQueueRecovery();
-  return (await getOutboundQueueStore()).list();
+  const items = await (await getOutboundQueueStore()).list();
+  updateOutboundQueueTrayFact(items);
+  return items;
 });
 handleValidated("queue:retry", ["panel"], async () => {
   await waitForOutboundQueueRecovery();
   const result = await (await getOutboundQueueStore()).retry(queueKillswitches());
+  updateOutboundQueueTrayFact(result);
   console.log(`[queue] ${result.reason ?? result.outcome}`);
   return result;
 });
@@ -2219,7 +2291,8 @@ async function readDiagnosticsQueueItems() {
     await waitForOutboundQueueRecovery();
     // list() je serializační bariéra. Teprve po ní čteme atomický soubor, aby
     // poslední potvrzené sentAt ani čerstvé položky nezůstaly jen v rozpracované operaci.
-    await (await getOutboundQueueStore()).list();
+    const reducedItems = await (await getOutboundQueueStore()).list();
+    updateOutboundQueueTrayFact(reducedItems);
     const queue = await loadQueue(outboundQueueFilePath());
     return Array.isArray(queue.items) ? queue.items : null;
   } catch {
@@ -2313,6 +2386,7 @@ async function runTrackingMutation(method, payload) {
         startedAt: result.closed.startedAt,
         endedAt: result.closed.endedAt,
       });
+      updateOutboundQueueTrayFact(queued);
       if (queued.added) {
         console.log(`[queue] Zařazeno ${queued.item.clientRecordingId} (time).`);
       }

@@ -980,32 +980,29 @@ describe("RecordingCard", () => {
 
     try {
       await startRecording(panel);
-      await React.act(async () => {
-        await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
-          signedIn: true,
-          systemAudioLost: false,
-          tracking: false,
-        }));
-      });
+      await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+        signedIn: true,
+        systemAudioLost: false,
+        tracking: false,
+      }));
 
       await React.act(async () => {
         panel.systemTrack.readyState = "ended";
         panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
-        await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
-          signedIn: true,
-          systemAudioLost: true,
-          tracking: false,
-        }));
+        await Promise.resolve();
       });
+      await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+        signedIn: true,
+        systemAudioLost: true,
+        tracking: false,
+      }));
 
       await panel.click(panel.document.querySelector('[data-testid="retry-system-audio"]'));
-      await React.act(async () => {
-        await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
-          signedIn: true,
-          systemAudioLost: false,
-          tracking: false,
-        }));
-      });
+      await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+        signedIn: true,
+        systemAudioLost: false,
+        tracking: false,
+      }));
 
       await stopRecording(panel);
     } finally {

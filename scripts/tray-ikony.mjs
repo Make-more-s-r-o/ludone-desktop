@@ -17,8 +17,18 @@ const SIRKA_OBRYSU_ODZNAKU = 1.5;
 const SIRKA_PRSTYNKU = 1.8;
 const POLOMER_PRSTYNKU_ODZNAKU = 1.9;
 const SIRKA_PRSTYNKU_ODZNAKU = 1.2;
+const CEKAJICI_TECKY = [[17.45, 18.5], [20.55, 18.5]];
+const POLOMER_CEKAJICI_TECKY = 1.05;
 const PRESKRTNUTI = [[4, 20], [20, 4]];
-const STAVY = ["signed-out", "idle", "recording", "tracking", "recording-tracking"];
+const STAVY = [
+  "signed-out",
+  "idle",
+  "recording",
+  "tracking",
+  "recording-tracking",
+  "queue-waiting",
+  "recording-audio-lost",
+];
 const MOTIVY = ["dark", "light"];
 const VELIKOSTI = [
   { rozmer: 18, pripona: "" },
@@ -33,6 +43,7 @@ const PALETY = {
     text: "oklch(0.925 0.005 262)",
     bad: "oklch(0.75 0.14 34)",
     ok: "oklch(0.78 0.11 178)",
+    wait: "oklch(0.8 0.13 76)",
     listaPozadi: "oklch(0.12 0.01 262)",
   },
   light: {
@@ -40,6 +51,7 @@ const PALETY = {
     text: "oklch(0.245 0.019 266)",
     bad: "oklch(0.5 0.15 32)",
     ok: "oklch(0.46 0.1 178)",
+    wait: "oklch(0.52 0.12 70)",
     listaPozadi: "oklch(0.92 0.005 85)",
   },
 };
@@ -144,8 +156,15 @@ function barvyStavu(motiv, stav) {
     recording: "bad",
     tracking: "ok",
     "recording-tracking": "bad",
+    "queue-waiting": "wait",
+    "recording-audio-lost": "wait",
   }[stav];
-  const odznakToken = stav === "recording-tracking" ? "ok" : "bad";
+  const odznakToken = {
+    recording: "bad",
+    "recording-tracking": "ok",
+    "queue-waiting": "wait",
+    "recording-audio-lost": "bad",
+  }[stav] ?? "bad";
   return {
     hlavni: oklchNaRgb(paleta[hlavniToken]),
     odznak: oklchNaRgb(paleta[odznakToken]),
@@ -172,10 +191,13 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
   const bodX = (x + 0.5) * velikostPixelu;
   const bodY = (y + 0.5) * velikostPixelu;
   const barvy = barvyStavu(motiv, stav);
+  // U výpadku končí pulz před posledním úsekem. Stav je díky tomu rozeznatelný
+  // i bez barvy, přesto zůstává věrný návrhovému glyfu a odznaku.
+  const pulzBody = stav === "recording-audio-lost" ? PULZ.slice(0, 3) : PULZ;
   const pulz = krytiLomeneCary(
     bodX,
     bodY,
-    PULZ,
+    pulzBody,
     SIRKA_PULZU,
     velikostPixelu,
   );
@@ -201,7 +223,12 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
   }
 
   let pixel = prekryj([0, 0, 0, 0], barvy.hlavni, hlavniKryti);
-  if (stav === "recording" || stav === "recording-tracking") {
+  if ([
+    "recording",
+    "recording-tracking",
+    "queue-waiting",
+    "recording-audio-lost",
+  ].includes(stav)) {
     // Barevné kolečko má v souřadnicích návrhu poloměr 2,5. Obrys široký 1,5
     // kreslíme vně, aby nezmenšil čitelnou barevnou část odznaku.
     const obrys = krytiPrstynku(
@@ -212,15 +239,9 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
       SIRKA_OBRYSU_ODZNAKU,
       velikostPixelu,
     );
-    const odznak = stav === "recording"
-      ? krytiKruhu(
-        bodX,
-        bodY,
-        STRED_ODZNAKU,
-        POLOMER_ODZNAKU,
-        velikostPixelu,
-      )
-      : krytiPrstynku(
+    let odznak;
+    if (stav === "recording-tracking") {
+      odznak = krytiPrstynku(
         bodX,
         bodY,
         STRED_ODZNAKU,
@@ -228,9 +249,21 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
         SIRKA_PRSTYNKU_ODZNAKU,
         velikostPixelu,
       );
+    } else if (stav === "queue-waiting") {
+      odznak = sjednoceniKryti(...CEKAJICI_TECKY.map((stred) => (
+        krytiKruhu(bodX, bodY, stred, POLOMER_CEKAJICI_TECKY, velikostPixelu)
+      )));
+    } else {
+      odznak = krytiKruhu(
+        bodX,
+        bodY,
+        STRED_ODZNAKU,
+        POLOMER_ODZNAKU,
+        velikostPixelu,
+      );
+    }
     pixel = prekryj(pixel, barvy.obrys, obrys);
-    // Prstýnek souběhu zachovává tvarové označení měření času. Souběh je tak
-    // od samotného nahrávání rozeznatelný i bez barvy.
+    // Prstýnek souběhu a dvě tečky fronty zachovávají význam i bez barvy.
     pixel = prekryj(pixel, barvy.odznak, odznak);
   }
 

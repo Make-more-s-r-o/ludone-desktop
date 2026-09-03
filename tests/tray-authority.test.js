@@ -142,6 +142,8 @@ function trayHarness({
     "refreshTrayTitle",
     "finalizeRecordingSession",
     "finalizeRecordingExportStage",
+    "maybeCompleteDeferredQuit",
+    "tryInstallDownloadedUpdate",
     "REPORTED_FACT_KEYS",
     `"use strict";
      let trayState = "signed-out";
@@ -149,6 +151,7 @@ function trayHarness({
      let trayThemeApplied;
      const applied = [];
      ${functionSource(mainCodeWithoutComments, "hasLiveRecording")}
+     ${functionSource(mainCodeWithoutComments, "hasLiveSystemAudioLoss")}
      ${functionSource(mainCodeWithoutComments, "deriveTrayState")}
      ${functionSource(mainCodeWithoutComments, "refreshTray")}
      ${functionSource(mainCodeWithoutComments, "finalizeRecordingSessionsForOwner")}
@@ -206,6 +209,8 @@ function trayHarness({
         return Promise.resolve({ files: { microphone: { size: 0 }, system: { size: 0 } } });
       },
       () => Promise.resolve(),
+      () => {},
+      () => {},
       reportedFactKeys,
     ),
   };
@@ -268,6 +273,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     [{ signedIn: true, preparing: [[1, { cancelled: false }]] }, "recording"],
     [{ signedIn: true, sessions: [["s", { ownerId: 1 }]] }, "recording"],
     [{ signedIn: true, queueWaitingCount: 1 }, "queue-waiting"],
+    [{ signedIn: true, systemAudioLostOwners: [1] }, "idle"],
     [
       {
         signedIn: true,

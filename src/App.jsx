@@ -22,7 +22,7 @@ export function App() {
   const [onboardingComplete, setOnboardingComplete] = useState(initiallyComplete);
   const [user, setUser] = useState(null);
   const [sessionExists, setSessionExists] = useState(null);
-  const [recording, setRecording] = useState({ active: false });
+  const [recording, setRecording] = useState({ active: false, systemAudioState: "inactive" });
   const [tracking, setTracking] = useState({ active: false });
   const [queueStatus, setQueueStatus] = useState(null);
   const [trayCommand, setTrayCommand] = useState(null);
@@ -88,8 +88,14 @@ export function App() {
   // po pádu tohohle okna zůstala ikona viset na tom, co jsme řekli naposledy.
   useEffect(() => {
     if (typeof sessionExists !== "boolean") return;
-    window.ludone.reportTrayFacts({ signedIn: sessionExists, tracking: tracking.active });
-  }, [sessionExists, tracking.active]);
+    window.ludone.reportTrayFacts({
+      signedIn: sessionExists,
+      // Zvukový stream žije jen v rendereru. Posíláme úzký boolean; jméno stavu
+      // i ověření, že opravdu běží nahrávání, zůstává hlavnímu procesu.
+      systemAudioLost: recording.active && recording.systemAudioState === "lost",
+      tracking: tracking.active,
+    });
+  }, [recording.active, recording.systemAudioState, sessionExists, tracking.active]);
 
   useEffect(() => {
     if (typeof window.ludone.onTrayCommand !== "function") return undefined;
