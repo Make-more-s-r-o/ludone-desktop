@@ -396,6 +396,7 @@ function fakeElectron(userDataPath, {
  *   deferPanelLoad?: boolean,
  *   deferSettingsRead?: boolean,
  *   env?: Record<string, string | undefined>,
+ *   exportRecordingCopy?: (...args: any[]) => Promise<any>,
  *   isPackaged?: boolean,
  *   loadQueue?: (...args: any[]) => Promise<any>,
  *   navigateDuringSettingsRead?: boolean,
@@ -416,6 +417,7 @@ async function loadMain({
   deferPanelLoad = false,
   deferSettingsRead = false,
   env = {},
+  exportRecordingCopy,
   isPackaged = false,
   loadQueue,
   navigateDuringSettingsRead = false,
@@ -461,6 +463,12 @@ async function loadMain({
       return {
         ...actualRequire("./upload-client.cjs"),
         createRecordingUploadSend,
+      };
+    }
+    if (specifier === "./recording-export.cjs" && exportRecordingCopy) {
+      return {
+        ...actualRequire("./recording-export.cjs"),
+        exportRecordingCopy,
       };
     }
     if (specifier === "./retention.cjs" && applyRetention) {
@@ -534,6 +542,44 @@ function stereoWebmBytes() {
     Buffer.from([1, 2, 0, 0, 0x80, 0xbb, 0, 0, 0, 0, 0]),
     Buffer.from("audio-payload"),
   ]);
+}
+
+async function prepareRecordingExport(harness, { finishStereo = true } = {}) {
+  await harness.runReady();
+  const panelContents = harness.windows[0].webContents;
+  const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+  const begin = harness.ipcHandlers.get("recording:begin");
+  const append = harness.ipcHandlers.get("recording:append");
+  const finish = harness.ipcHandlers.get("recording:finish");
+  const finishExport = harness.ipcHandlers.get("recording:finish-export");
+  const exportRecording = harness.ipcHandlers.get("recording:export");
+  const { sessionId } = await begin(event);
+
+  await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
+  await finish(event, sessionId, {
+    microphone: {
+      startedAt: "2026-09-03T08:00:00.100Z",
+      endedAt: "2026-09-03T08:30:00.100Z",
+    },
+    system: {
+      startedAt: "2026-09-03T08:00:00.125Z",
+      endedAt: "2026-09-03T08:30:00.125Z",
+    },
+  });
+  if (finishStereo) {
+    await finishExport(event, sessionId, {
+      succeeded: true,
+      timing: {
+        startedAt: "2026-09-03T08:00:00.075Z",
+        endedAt: "2026-09-03T08:30:00.150Z",
+      },
+    });
+  }
+  return { event, exportRecording, finishExport, sessionId };
+}
+
+function systemExportError(code, message) {
+  return Object.assign(new Error(message), { code });
 }
 
 async function writeStartupRecoveryFixture(userDataPath) {
@@ -2444,6 +2490,82 @@ describe("produkční zapojení odchozí fronty", () => {
 
     expect(storeWasOpenedDuringRetention).toBe(false);
     expect(list).toHaveBeenCalledOnce();
+  });
+});
+
+describe("soukromí chyb stereo exportu", () => {
+  it("systémová chyba s cestou neukáže v panelu cestu, příponu ani název schůzky", async () => {
+    const rawMessage = "ENOSPC: no space left on device, open "
+      + "'/Users/dan/Downloads/LuDone-2026-09-03-Pohovor-Novak.webm'";
+    const exportRecordingCopy = vi.fn().mockRejectedValue(
+      systemExportError("ENOSPC", rawMessage),
+    );
+    const harness = await loadMain({ exportRecordingCopy });
+    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+
+    const result = await exportRecording(event, sessionId, "Pohovor Novak");
+
+    expect(result).toMatchObject({ ok: false, recordingExported: false });
+    expect(result.message).toBe(
+      "Na disku není dost volného místa. Uvolněte místo a zkuste export znovu. "
+      + "Původní dvě stopy zůstaly uložené.",
+    );
+    for (const forbidden of ["/Users/", ".webm", "Pohovor-Novak"]) {
+      expect(result.message).not.toContain(forbidden);
+    }
+  });
+
+  it("vlastní chyba o probíhajícím exportu projde beze změny", async () => {
+    const harness = await loadMain();
+    const {
+      event,
+      exportRecording,
+      finishExport,
+      sessionId,
+    } = await prepareRecordingExport(harness, { finishStereo: false });
+    const firstExport = exportRecording(event, sessionId, "První pokus");
+
+    try {
+      const secondResult = await exportRecording(event, sessionId, "Druhý pokus");
+      expect(secondResult.message).toBe(
+        "Stereo export už probíhá Původní dvě stopy zůstaly uložené.",
+      );
+    } finally {
+      await finishExport(event, sessionId, { succeeded: false });
+      await firstExport;
+    }
+  });
+
+  it("každá vrácená hláška končí ujištěním o zachovaných stopách", async () => {
+    const harness = await loadMain();
+    harness.electron.shell.openExternal.mockRejectedValueOnce(
+      new Error("Prohlížeč se nepodařilo otevřít"),
+    );
+    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+
+    const result = await exportRecording(event, sessionId, "Pohovor Novak");
+
+    expect(result).toMatchObject({ ok: false, recordingExported: true });
+    expect(result.message).toMatch(/Původní dvě stopy zůstaly uložené\.$/u);
+  });
+
+  it("do logu zapíše jen kód systémové chyby, nikdy její syrovou zprávu", async () => {
+    const rawMessage = "EACCES: permission denied, copyfile "
+      + "'/Users/dan/Downloads/LuDone-2026-09-03-Pohovor-Novak.webm'";
+    const exportRecordingCopy = vi.fn().mockRejectedValue(
+      systemExportError("EACCES", rawMessage),
+    );
+    const harness = await loadMain({ exportRecordingCopy });
+    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+
+    await exportRecording(event, sessionId, "Pohovor Novak");
+
+    const errorLog = JSON.stringify(harness.quietConsole.error.mock.calls);
+    expect(errorLog).toContain("EACCES");
+    expect(errorLog).not.toContain(rawMessage);
+    expect(errorLog).not.toContain("/Users/");
+    expect(errorLog).not.toContain(".webm");
+    expect(errorLog).not.toContain("Pohovor-Novak");
   });
 });
 

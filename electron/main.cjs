@@ -62,6 +62,21 @@ const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
 const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
 const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
+const RECORDING_EXPORT_TRACKS_PRESERVED = "Původní dvě stopy zůstaly uložené.";
+const RECORDING_EXPORT_GENERIC_ERROR = "Export se nepodařilo dokončit. Zkuste export znovu.";
+const RECORDING_EXPORT_SYSTEM_ERRORS = new Map([
+  ["ENOSPC", "Na disku není dost volného místa. Uvolněte místo a zkuste export znovu."],
+  ["EDQUOT", "Na disku není dost volného místa. Uvolněte místo a zkuste export znovu."],
+  [
+    "EACCES",
+    "Chybí oprávnění k uložení do složky Stažené. Zkontrolujte oprávnění a zkuste export znovu.",
+  ],
+  [
+    "EPERM",
+    "Chybí oprávnění k uložení do složky Stažené. Zkontrolujte oprávnění a zkuste export znovu.",
+  ],
+  ["ENOENT", "Soubor potřebný k exportu už není dostupný. Zkuste export znovu."],
+]);
 const RECORDING_TRACKS = new Map([
   ["microphone", "mikrofon"],
   ["system", "system"],
@@ -88,6 +103,13 @@ let trayVisibilityTimer;
 let isQuitting = false;
 let deferredQuitRequest;
 const pendingTrayCommands = [];
+
+class RecordingExportUserError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "RecordingExportUserError";
+  }
+}
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -1672,19 +1694,44 @@ async function waitForRecordingExportStage(exportStage) {
   return Promise.race([exportStage.ready, timeout]).finally(() => clearTimeout(timeoutId));
 }
 
+function recordingExportSystemCode(error) {
+  const code = error && typeof error === "object" ? error.code : null;
+  return typeof code === "string" && /^[A-Z][A-Z0-9_]*$/u.test(code) ? code : null;
+}
+
+function recordingExportFailureMessage(error) {
+  const detail = error instanceof RecordingExportUserError
+    ? error.message
+    : RECORDING_EXPORT_SYSTEM_ERRORS.get(recordingExportSystemCode(error))
+      ?? RECORDING_EXPORT_GENERIC_ERROR;
+  return `${detail} ${RECORDING_EXPORT_TRACKS_PRESERVED}`;
+}
+
+function logRecordingExportFailure(error) {
+  const code = recordingExportSystemCode(error);
+  const codeDetail = code ? ` (kód ${code})` : "";
+  console.error(
+    `[recording-export] Export selhal${codeDetail}; původní stopy zůstaly uložené.`,
+  );
+}
+
 async function exportCompletedRecording(event, clientRecordingId, recordingName) {
   const exportStage = ownedRecordingExportStage(event, clientRecordingId);
-  if (exportStage.releaseRequested) {
-    throw new Error("Stereo export už není dostupný");
-  }
-  if (exportStage.exportInFlight) throw new Error("Stereo export už probíhá");
-  exportStage.exportInFlight = true;
+  let claimedExport = false;
   try {
+    if (exportStage.releaseRequested) {
+      throw new RecordingExportUserError("Stereo export už není dostupný");
+    }
+    if (exportStage.exportInFlight) {
+      throw new RecordingExportUserError("Stereo export už probíhá");
+    }
+    exportStage.exportInFlight = true;
+    claimedExport = true;
     const ready = await waitForRecordingExportStage(exportStage);
     if (!ready.ok) return ready;
     const manifest = JSON.parse(await fs.promises.readFile(exportStage.manifestPath, "utf8"));
     if (manifest.clientRecordingId !== clientRecordingId) {
-      throw new Error("Identifikátor exportu nesouhlasí s manifestem");
+      throw new RecordingExportUserError("Identifikátor exportu nesouhlasí s manifestem");
     }
     const result = await exportRecordingCopy({
       downloadsDirectory: app.getPath("downloads"),
@@ -1716,19 +1763,22 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
         ok: false,
         recordingExported: true,
         fileName: error.fileName,
-        message: "Soubor je uložený ve Stažených, ale nahrávací stránku se nepodařilo otevřít.",
+        message: "Soubor je uložený ve Stažených, ale nahrávací stránku se nepodařilo otevřít. "
+          + RECORDING_EXPORT_TRACKS_PRESERVED,
       };
     }
     // Systémová chyba může obsahovat cílovou cestu odvozenou z názvu schůzky.
-    console.error("[recording-export] Export selhal; původní stopy zůstaly uložené.");
+    logRecordingExportFailure(error);
     return {
       ok: false,
       recordingExported: false,
-      message: `${error.message || "Export selhal"} Původní dvě stopy zůstaly uložené.`,
+      message: recordingExportFailureMessage(error),
     };
   } finally {
-    exportStage.exportInFlight = false;
-    completeRecordingExportStageRelease(exportStage);
+    if (claimedExport) {
+      exportStage.exportInFlight = false;
+      completeRecordingExportStageRelease(exportStage);
+    }
   }
 }
 
