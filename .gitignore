@@ -33,6 +33,9 @@ dukazy/**/.DS_Store
 # schůzce, vznikne v `dukazy/` nahrávka s hlasem cizí protistrany. Do gitu nesmí: z historie
 # se nemaže a Dan zvažuje repozitář zveřejnit. Do `dukazy/` patří `vysledek.json` a `README.md`.
 dukazy/**/*.m4a
+# 🔴 A pozor i na TEXT: `--nazev` se stane součástí cesty `dukazy/<nazev>-<stopa>/`,
+# tedy i názvu commitnutého adresáře. Skutečný název schůzky sem proto nepatří —
+# použij popisek měření („meet-overeni-2026-09-01"), ne jméno klienta.
 dukazy/**/*.wav
 dukazy/**/*.mp3
 dukazy/**/*.opus

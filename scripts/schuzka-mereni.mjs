@@ -326,10 +326,15 @@ await mkdir(slozka, { recursive: true });
 await copyFile(args.system, path.join(slozka, `system${path.extname(args.system) || ".webm"}`));
 await copyFile(args.mikrofon, path.join(slozka, `mikrofon${path.extname(args.mikrofon) || ".webm"}`));
 
+// Do `dukazy/` se commituje (viz .gitignore) a Dan zvažuje repozitář zveřejnit.
+// Absolutní cesty nesou domovský adresář uživatele, takže se zapisuje jen jméno
+// souboru — k doložení měření stačí, k identifikaci stroje ne.
+const bezCesty = (p) => path.basename(String(p ?? ""));
+
 const zaznam = {
   nazev,
   kdy: new Date().toISOString(),
-  vstupy: { system: args.system, mikrofon: args.mikrofon },
+  vstupy: { system: bezCesty(args.system), mikrofon: bezCesty(args.mikrofon) },
   metoda: {
     popis: "Detekce řeči v obou stopách zvlášť; hledají se úseky, kdy mikrofon mlčí a systémová stopa má řeč.",
     duvod: "Bez referenčního signálu nelze korelovat. Úsek, kdy mluví jen systémová stopa, může nést pouze protistranu.",
