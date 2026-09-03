@@ -8,11 +8,11 @@ neřiď se jím.
 
 | | |
 |---|---|
-| `main` | `512e77e`, **716 passed \| 3 skipped (719)** |
+| `main` | `fea2841`, **731 passed \| 3 skipped (734)** |
 | brány | `npm run gates` = lint · typecheck · test:unit · **preskocene** |
 | otevřené PR | 0 · worktrees 0 · větve `orca/*` 0 |
 | Electron | **39.8.10**, minimum macOS 12 deklarované |
-| dnes mergnuto | **19 PR (#41–#56)** |
+| dnes mergnuto | **20 PR (#41–#57)** |
 | ověřeno naostro | 3 funkce, z toho 🔴 **stereo separace kanálů** (Dan přehrál soubor) |
 
 ## První příkazy po probuzení
@@ -41,7 +41,7 @@ Ráno musí platit:
 
 | # | etapa | akceptační kritérium | kdo |
 |---|---|---|---|
-| **0** | 🔴 **pozastavená nahrávka nesmí vypadat jako čekající** | v panelu se pozná „patří jinému účtu" od „čeká na odeslání" | Codex |
+| ~~0~~ | ✅ **HOTOVO 3. 9. ve 19:40, PR #57** — patička dělí „čeká" a „čeká na potvrzení" | | |
 | 1 | **Adversariální kolo nad dneškem** | seznam nálezů s `soubor:řádek`, každý ověřený | Codex (čtecí) |
 | 2 | opravy potvrzených nálezů | sabotáž na každý | Codex + Claude konsolidace |
 | 3 | **tři stavy lišty** (fronta · výpadek zvuku · bez spojení) | stav se v liště pozná; kontrakt faktů rozšířen vědomě | Codex |
@@ -66,7 +66,7 @@ vedlejší úloha**, ne já — hledat vlastní chyby je levnější než je rá
 kontrakt se nerozšiřuje vůbec. Rozšířit ho smíš jen tam, kde autoritou opravdu je renderer —
 a v PR to zdůvodni. Návrh k tomu říká: *„je to právě chvíle, kdy je panel zavřený"*.
 
-## 🔴 ETAPA 0 — vada z dneška, kterou našla až serverová session
+## ✅ ETAPA 0 JE HOTOVÁ (PR #57) — ponecháno jako doklad, co se řešilo
 
 `src/lib/panel.js`, `queueFooterStatus()` počítá položky **jen podle `state`**
 (`ceka` · `odesila` · `odeslano` · `selhalo`). Jenže PR #56 zavedl pauzy s důvody
@@ -76,7 +76,14 @@ zůstávají ve stavu **`ceka`**.
 ⇒ **„Nahrávka patří jinému účtu" vypadá v panelu úplně stejně jako „čeká na odeslání".**
 Uživatel se nikdy nedozví, že se ta nahrávka neodešle, dokud něco neudělá.
 
-`reason` z `pump()` existuje (`electron/queue.cjs:801`), do panelu se ale nedostane.
+`reason` z `pump()` existuje (`electron/queue.cjs:801`), do panelu se ale nedostal.
+
+**Vyřešeno:** patička dělí `1 čeká · 1 čeká na potvrzení`. Klasifikace je na **jediném místě**
+(`failureCodeRequiresHumanAction`) a je **fail-closed** pro celou rodinu `*_owner_*` — nový
+vlastnický důvod je raději vidět zbytečně než schovaný mezi čekajícími.
+
+🔴 **Zbývá:** obrazovka, kde nahrávku bez vlastníka někdo **potvrdí a odešle**. Dnes ji jen
+poctivě vidí, ale nemá s ní co dělat. To je etapa 4.
 
 ⚠️ **Návrh pro tenhle stav text NEMÁ** — má jen „čeká fronta". Použij nejbližší formulaci
 z návrhu, **nevymýšlej nový slovník**, a do PR napiš, co jsi použil a proč. Když by to
