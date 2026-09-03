@@ -112,11 +112,24 @@ function recordingTimeline(manifestValue, stereoTiming) {
   };
 }
 
+// Server názvy delší než 200 znaků zahazuje CELÉ, ne po částech — poslat delší
+// tedy znamená přijít o název úplně. Ořezáváme proto my, po znacích (ne bajtech),
+// aby se emoji nerozpůlilo.
+const MAX_UPLOAD_NAME_CHARACTERS = 200;
+
 function buildRecordingUploadUrl(origin, metadata = {}) {
   const url = new URL("/nahravky/nahrat", origin);
   for (const key of ["clientRecordingId", "startedAt", "endedAt"]) {
     const value = metadata[key];
     if (typeof value === "string" && value.length > 0) url.searchParams.set(key, value);
+  }
+
+  // Do jména souboru jde sanitizovaná podoba („Porada-provozu"), do formuláře ale
+  // patří to, co člověk opravdu napsal. Prázdný parametr neposíláme vůbec — server
+  // chybějící a prázdný nemusí řešit stejně.
+  const nazev = typeof metadata.nazev === "string" ? metadata.nazev.trim() : "";
+  if (nazev.length > 0) {
+    url.searchParams.set("nazev", [...nazev].slice(0, MAX_UPLOAD_NAME_CHARACTERS).join(""));
   }
   return url.href;
 }
@@ -217,6 +230,7 @@ async function exportRecordingCopy({
     clientRecordingId: manifest.clientRecordingId,
     startedAt: timeline.startedAt,
     endedAt: timeline.endedAt,
+    nazev: recordingName,
   });
   try {
     await openExternal(uploadUrl);

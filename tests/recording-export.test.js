@@ -70,10 +70,11 @@ async function exportFixture(recordingName) {
   const { mkdir } = await import("node:fs/promises");
   await mkdir(downloadsDirectory);
   await writeFile(stagePath, stereoWebmBytes());
+  const openExternal = vi.fn(async () => undefined);
   const result = await exportRecordingCopy({
     downloadsDirectory,
     manifest: completeManifest(),
-    openExternal: vi.fn(async () => undefined),
+    openExternal,
     origin: "https://app.ludone.cz",
     recordingName,
     stagePath,
@@ -82,7 +83,7 @@ async function exportFixture(recordingName) {
       endedAt: "2026-09-02T13:00:00.170Z",
     },
   });
-  return { downloadsDirectory, result };
+  return { downloadsDirectory, openExternal, result };
 }
 
 describe("živý stereo derivát", () => {
@@ -382,5 +383,54 @@ describe("export dokončené schůzky", () => {
 
   it("odmítne mono staging místo tichého vydávání za stereo", () => {
     expect(() => inspectOpusWebm(stereoWebmBytes(1))).toThrow(/dva kanály/);
+  });
+});
+
+describe("předávka názvu do nahrávací stránky", () => {
+  it("pošle název jako čitelný text, ne jako jméno souboru", () => {
+    const url = new URL(buildRecordingUploadUrl("https://app.ludone.cz", {
+      clientRecordingId: CLIENT_RECORDING_ID,
+      startedAt: MICROPHONE_STARTED_AT,
+      endedAt: SYSTEM_ENDED_AT,
+      nazev: "Porada provozu",
+    }));
+    // Do jména souboru jde „Porada-provozu"; do formuláře patří to, co člověk napsal.
+    expect(url.searchParams.get("nazev")).toBe("Porada provozu");
+    expect(url.searchParams.get("nazev")).not.toContain("-");
+    expect(url.searchParams.get("nazev")).not.toMatch(/\.webm$/u);
+  });
+
+  it("bez názvu parametr vůbec nepřidá", () => {
+    // Server prázdný ani chybějící parametr neřeší stejně; radši ho neposílat.
+    const url = new URL(buildRecordingUploadUrl("https://app.ludone.cz", {
+      clientRecordingId: CLIENT_RECORDING_ID,
+      startedAt: MICROPHONE_STARTED_AT,
+      endedAt: SYSTEM_ENDED_AT,
+      nazev: "",
+    }));
+    expect(url.searchParams.has("nazev")).toBe(false);
+  });
+
+  it("dlouhý název ořízne pod serverový limit 200 znaků", () => {
+    // Server názvy delší než 200 znaků zahazuje — celý, ne po částech.
+    // Poslat delší tedy znamená přijít o název úplně.
+    const url = new URL(buildRecordingUploadUrl("https://app.ludone.cz", {
+      clientRecordingId: CLIENT_RECORDING_ID,
+      startedAt: MICROPHONE_STARTED_AT,
+      endedAt: SYSTEM_ENDED_AT,
+      nazev: "Ř".repeat(400),
+    }));
+    expect([...url.searchParams.get("nazev")].length).toBeLessThanOrEqual(200);
+  });
+
+  it("export předá do URL jméno, které zadal člověk", async () => {
+    const { openExternal } = await exportFixture("Porada provozu");
+
+    expect(openExternal).toHaveBeenCalledOnce();
+    const [prvniVolani] = /** @type {any[][]} */ (openExternal.mock.calls);
+    const predana = new URL(String(prvniVolani[0]));
+    expect(predana.searchParams.get("nazev")).toBe("Porada provozu");
+    // Jméno souboru se sanitizuje kvůli disku; do formuláře patří původní text.
+    expect(predana.searchParams.get("nazev")).not.toContain("-");
   });
 });

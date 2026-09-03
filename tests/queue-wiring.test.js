@@ -1444,7 +1444,10 @@ describe("produkční zapojení odchozí fronty", () => {
       "https://labs.ludone.cz/nahravky/nahrat"
       + `?clientRecordingId=${sessionId}`
       + "&startedAt=2026-09-02T12%3A00%3A00.100Z"
-      + "&endedAt=2026-09-02T12%3A30%3A00.525Z",
+      + "&endedAt=2026-09-02T12%3A30%3A00.525Z"
+      // Název jde do formuláře v podobě, kterou napsal člověk — do jména souboru
+      // se sanitizuje zvlášť. Serverová strana ho čte od PR LudoneApp#1120.
+      + "&nazev=Porada+%2F+provozu%3A+Q3",
     );
     await expect(readFile(path.join(harness.userDataPath, exported.fileName)))
       .resolves.toEqual(stereoWebmBytes());
