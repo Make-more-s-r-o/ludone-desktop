@@ -944,6 +944,83 @@ describe("stavový automat fronty", () => {
       lastFailureReason: null,
     });
   });
+
+  it.each([
+    "Nahrávka patří jinému účtu",
+    "Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem",
+    "Identitu aktuálního přihlášení nelze ověřit",
+  ])("rozpozná už uložený vlastnický důvod bez nového příznaku: %s", (lastFailureReason) => {
+    const queue = oneItemQueue();
+    queue.items[0] = {
+      ...queue.items[0],
+      lastFailureReason,
+      ownerFingerprint: `sha256:${"a".repeat(64)}`,
+    };
+
+    expect(reduceQueueForRenderer(queue)[0]).toMatchObject({ requiresHumanAction: true });
+  });
+
+  it("libovolná jiná pauza se slovem owner nepatří bez výslovného kontraktu člověku", async () => {
+    const result = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => {
+        throw Object.assign(new Error("dočasně nedostupný vlastník databáze"), {
+          code: "database_owner_unavailable",
+          failureClass: FAILURE_CLASSES.PAUSED,
+        });
+      },
+    );
+
+    expect(result.queue.items[0]).toHaveProperty("requiresHumanAction", false);
+    expect(reduceQueueForRenderer(result.queue)[0]).not.toHaveProperty("requiresHumanAction");
+  });
+
+  it.each([
+    "Vlastník databáze je potvrzen, ale server není dostupný",
+    "Identitu zařízení se po přihlášení nepodařilo načíst",
+    "Nahrávka se kvůli síti nepřiřadila jinému účtu",
+  ])("volná podobnost historické zprávy nevytvoří lidský zásah: %s", (lastFailureReason) => {
+    const queue = oneItemQueue();
+    queue.items[0] = { ...queue.items[0], lastFailureReason };
+
+    expect(reduceQueueForRenderer(queue)[0]).not.toHaveProperty("requiresHumanAction");
+  });
+
+  it("nový pokus odstraní požadavek na člověka po běžné pauze i po úspěchu", async () => {
+    const ownerPaused = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => {
+        throw Object.assign(new Error("Nahrávka patří jinému účtu"), {
+          code: "queue_owner_mismatch",
+          failureClass: FAILURE_CLASSES.PAUSED,
+        });
+      },
+    );
+    const sessionMissing = await processNext(
+      ownerPaused.queue,
+      killswitches(ENABLED_SETTING),
+      async () => {
+        throw Object.assign(new Error("Pro upload chybí přihlášení"), {
+          code: "session_missing",
+          failureClass: FAILURE_CLASSES.PAUSED,
+        });
+      },
+    );
+    const sent = await processNext(
+      ownerPaused.queue,
+      killswitches(ENABLED_SETTING),
+      async () => undefined,
+    );
+
+    expect(sessionMissing.queue.items[0]).toHaveProperty("requiresHumanAction", false);
+    expect(sent.queue.items[0]).toHaveProperty("requiresHumanAction", false);
+    expect(reduceQueueForRenderer(sessionMissing.queue)[0])
+      .not.toHaveProperty("requiresHumanAction");
+    expect(reduceQueueForRenderer(sent.queue)[0])
+      .not.toHaveProperty("requiresHumanAction");
+  });
 });
 
 describe("trvalé uložení fronty", () => {

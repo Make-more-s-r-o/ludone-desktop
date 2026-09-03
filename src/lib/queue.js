@@ -118,10 +118,35 @@ function errorFailureClass(error) {
   return FAILURE_CLASSES.RETRYABLE;
 }
 
+function failureCodeRequiresHumanAction(code) {
+  if (typeof code !== "string") return false;
+  const [source, subject, reason, ...extra] = code.split("_");
+  if (extra.length > 0 || subject !== "owner") return false;
+  return (
+    source === "queue" && (reason === "mismatch" || reason === "unknown")
+  ) || (
+    source === "session" && reason === "unknown"
+  );
+}
+
 function failureRequiresHumanAction(error) {
-  // Konkrétní kódy vlastní upload klient. Společný segment `owner` dovoluje
-  // frontě předat význam rendereru bez druhého, časem rozcházejícího se seznamu.
-  return typeof error?.code === "string" && error.code.includes("_owner_");
+  // Konkrétní kódy vlastní upload klient. Fronta jejich společný kontrakt
+  // vyhodnotí jednou a rendereru pošle už jen význam, ne druhý seznam kódů.
+  return failureCodeRequiresHumanAction(error?.code);
+}
+
+function storedFailureRequiresHumanAction(item) {
+  if (item.requiresHumanAction === true) return true;
+  if (failureCodeRequiresHumanAction(item.lastFailureReason)) return true;
+  if (typeof item.lastFailureReason !== "string") return false;
+
+  // Krátká migrace položek uložených před strukturovaným příznakem. Tehdejší
+  // schéma ukládalo pouze českou error.message; nové položky na textu nezávisí.
+  const reason = item.lastFailureReason.normalize("NFC").toLocaleLowerCase("cs-CZ");
+  const unconfirmedOwner = reason.includes("vlastník") && reason.includes("potvrzen");
+  const differentAccount = reason.includes("nahrávka") && reason.includes("jinému účtu");
+  const unverifiedSession = reason.includes("identitu") && reason.includes("přihlášení");
+  return unconfirmedOwner || differentAccount || unverifiedSession;
 }
 
 function withoutHumanActionRequirement(item) {
@@ -269,7 +294,11 @@ export function reduceQueueForRenderer(queue) {
     attempts: item.attempts,
     nextAttemptAt: item.nextAttemptAt,
     lastFailureReason: item.lastFailureReason,
-    ...(item.requiresHumanAction === true ? { requiresHumanAction: true } : {}),
+    ...(
+      item.state === QUEUE_STATES.WAITING && storedFailureRequiresHumanAction(item)
+        ? { requiresHumanAction: true }
+        : {}
+    ),
   }));
 }
 

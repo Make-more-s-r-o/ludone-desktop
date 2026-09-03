@@ -450,7 +450,7 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("načte stav patičky ze skutečného listQueue mostu", async () => {
+  it("samé běžné čekající položky zobrazí jako dnes", async () => {
     const listQueue = vi.fn().mockResolvedValue([
       { state: "ceka" },
       { state: "ceka" },
@@ -461,7 +461,7 @@ describe("schválený klidový panel", () => {
     try {
       await vi.waitFor(() => {
         expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toContain("2 čekají");
+          .toBe("2 čekají");
       });
       expect(listQueue).toHaveBeenCalledTimes(1);
     } finally {
@@ -479,11 +479,24 @@ describe("schválený klidový panel", () => {
     try {
       await vi.waitFor(() => {
         expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toContain("1 čeká · 1 čeká na přihlášení");
+          .toBe("1 čeká · 1 čeká na potvrzení");
       });
       const status = panel.document.querySelector('[data-testid="queue-status"]');
       expect(status).not.toBeNull();
       expect(status.textContent).not.toContain("2 čekají");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("prázdnou frontu zobrazí jako Vše odesláno", async () => {
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("Vše odesláno");
+      });
     } finally {
       await panel.cleanup();
     }

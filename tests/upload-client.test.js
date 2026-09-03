@@ -197,7 +197,7 @@ describe("vlastník nahrávky před uploadem", () => {
     expect(result.queue.items).toHaveLength(1);
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(queueFooterStatus(reduceQueueForRenderer(result.queue))).toEqual({
-      text: "1 čeká na přihlášení",
+      text: "1 čeká na potvrzení",
       tone: "waiting",
     });
   });
@@ -228,12 +228,12 @@ describe("vlastník nahrávky před uploadem", () => {
     expect(result.queue.items).toHaveLength(1);
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(queueFooterStatus(reduceQueueForRenderer(result.queue))).toEqual({
-      text: "1 čeká na přihlášení",
+      text: "1 čeká na potvrzení",
       tone: "waiting",
     });
   });
 
-  it("neověřená identita session je vidět jako čekání na přihlášení", async () => {
+  it("neověřená identita session je vidět jako čekání na potvrzení", async () => {
     const fixture = await recordingFixture();
     const fetchImpl = vi.fn();
     const { send } = createSend(fetchImpl, createLogger(), {
@@ -256,7 +256,7 @@ describe("vlastník nahrávky před uploadem", () => {
     });
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(queueFooterStatus(reduceQueueForRenderer(result.queue))).toEqual({
-      text: "1 čeká na přihlášení",
+      text: "1 čeká na potvrzení",
       tone: "waiting",
     });
   });

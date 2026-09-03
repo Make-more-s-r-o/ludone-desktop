@@ -34,7 +34,7 @@ export function queueFooterStatus(items) {
   if (counts.odesila > 0) parts.push("Odesílá se");
   if (counts.ceka > 0) parts.push(waitingLabel(counts.ceka));
   if (counts.requiresHumanAction > 0) {
-    parts.push(`${waitingLabel(counts.requiresHumanAction)} na přihlášení`);
+    parts.push(`${waitingLabel(counts.requiresHumanAction)} na potvrzení`);
   }
   if (counts.selhalo > 0) parts.push(`${counts.selhalo} selhalo`);
 
