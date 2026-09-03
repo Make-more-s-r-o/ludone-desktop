@@ -33,6 +33,7 @@ const {
 } = require("./queue.cjs");
 const { createRecordingUploadSend } = require("./upload-client.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
+const { createDockVisibilityStore } = require("./settings.cjs");
 const {
   TRACKING_STATES,
   createTrackingStore,
@@ -250,6 +251,55 @@ function onValidated(channel, allowedKinds, handler) {
   });
 }
 
+function requireNoPayload(channel, extraPayload) {
+  if (extraPayload.length > 0) {
+    throw new TypeError(`Kanál ${channel} nepřijímá payload`);
+  }
+}
+
+function requireBooleanPayload(channel, value, extraPayload) {
+  if (typeof value !== "boolean" || extraPayload.length > 0) {
+    throw new TypeError(`Kanál ${channel} přijímá právě jeden boolean`);
+  }
+}
+
+function applyDockVisibility(dockVisible) {
+  if (process.platform !== "darwin") return dockVisible;
+  if (dockVisible) {
+    return Promise.resolve(app.dock.show()).then(() => dockVisible);
+  } else {
+    app.dock.hide();
+    // Electron ignoruje hide() méně než sekundu po show(). Accessory policy je
+    // okamžitá pojistka pro rychlé přepnutí a odpovídá výchozímu LSUIElement režimu.
+    app.setActivationPolicy("accessory");
+  }
+  return dockVisible;
+}
+
+function queueDockVisibility(dockVisible, { persist = false } = {}) {
+  const transition = dockVisibilityTransition.then(async () => {
+    if (!persist) return applyDockVisibility(dockVisible);
+
+    const previousValue = dockVisibilityStore.get();
+    await dockVisibilityStore.set(dockVisible);
+    try {
+      return await applyDockVisibility(dockVisible);
+    } catch (error) {
+      try {
+        await dockVisibilityStore.set(previousValue);
+        await applyDockVisibility(previousValue);
+      } catch (rollbackError) {
+        console.error(`[settings] Návrat nastavení Docku selhal: ${rollbackError.message}`);
+      }
+      throw error;
+    }
+  });
+  // Další změna musí navázat i po chybě předchozího nativního volání. Serializace
+  // zároveň brání tomu, aby pomalejší show přebilo novější hide.
+  dockVisibilityTransition = transition.catch(() => undefined);
+  return transition;
+}
+
 function configureWritablePaths() {
   const requestedRoot = process.env.LUDONE_DATA_DIR;
   if (!requestedRoot) return;
@@ -276,6 +326,14 @@ function configureWritablePaths() {
 configureWritablePaths();
 app.setName("LuDone Desktop");
 app.commandLine.appendSwitch("disable-breakpad");
+
+// Dock musí znát svou hodnotu ještě před existencí rendereru. Synchronní konstrukce
+// načte jediný boolean z hlavního procesu; renderer je jen projekce tohoto stavu.
+const dockVisibilityStore = createDockVisibilityStore({
+  filePath: path.join(app.getPath("userData"), "nastaveni", "aplikace.json"),
+  log: (message) => console.warn(message),
+});
+let dockVisibilityTransition = Promise.resolve();
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
@@ -1515,6 +1573,33 @@ handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extra
 });
 onValidated("settings:open", ["panel"], () => createSettingsWindow());
 onValidated("settings:close", ["settings"], () => settingsWindow?.close());
+handleValidated("settings:get-dock-visible", ["settings"], (_event, ...extraPayload) => {
+  requireNoPayload("settings:get-dock-visible", extraPayload);
+  return dockVisibilityStore.get();
+});
+handleValidated(
+  "settings:set-dock-visible",
+  ["settings"],
+  (_event, dockVisible, ...extraPayload) => {
+    requireBooleanPayload("settings:set-dock-visible", dockVisible, extraPayload);
+    return queueDockVisibility(dockVisible, { persist: true });
+  },
+);
+handleValidated("settings:get-open-at-login", ["settings"], (_event, ...extraPayload) => {
+  requireNoPayload("settings:get-open-at-login", extraPayload);
+  return app.getLoginItemSettings().openAtLogin === true;
+});
+handleValidated(
+  "settings:set-open-at-login",
+  ["settings"],
+  (_event, openAtLogin, ...extraPayload) => {
+    requireBooleanPayload("settings:set-open-at-login", openAtLogin, extraPayload);
+    app.setLoginItemSettings({ openAtLogin });
+    // Nativní setter vrací void a může selhat bez JS výjimky. Renderer proto dostane
+    // skutečný stav po zápisu, nikoli jen zopakovanou žádost.
+    return app.getLoginItemSettings().openAtLogin === true;
+  },
+);
 handleValidated("recording:begin", ["panel"], async (event) => {
   ensureNewActivityIsAllowed("nahrávání");
   await waitForOutboundQueueRecovery();
@@ -2786,9 +2871,21 @@ app.on("second-instance", () => {
 });
 
 app.whenReady().then(async () => {
+  try {
+    const dockVisibleAtStartup = dockVisibilityStore.get();
+    if (dockVisibleAtStartup) {
+      await queueDockVisibility(true);
+    } else {
+      // hide() je synchronní. Nevkládáme před vytvoření panelu zbytečný mikroúkol;
+      // show() je naopak Promise a výš se na něj kvůli pořadí čeká.
+      void applyDockVisibility(false);
+    }
+  } catch (error) {
+    // Selhání nativního Dock API nesmí připravit uživatele i o ikonu v liště.
+    console.error(`[settings] Viditelnost Docku se při startu nepodařila uplatnit: ${error.message}`);
+  }
   registerAppProtocol();
   installMediaHandlers();
-  if (process.platform === "darwin") app.dock.hide();
   tray = new Tray(trayImage(trayState, currentTrayIconTheme()));
   nativeTheme.on("updated", refreshTray);
   tray.on("click", togglePanel);
@@ -2818,7 +2915,11 @@ app.whenReady().then(async () => {
 });
 
 app.on("activate", () => {
-  if (!panelWindow) createPanelWindow();
+  if (!panelWindow || panelWindow.isDestroyed()) {
+    createPanelWindow();
+  } else {
+    showPanel();
+  }
 });
 
 app.on("before-quit", (event) => {

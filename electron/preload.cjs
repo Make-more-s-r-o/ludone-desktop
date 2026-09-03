@@ -7,6 +7,24 @@ function setPanelContentHeight(height) {
   return ipcRenderer.invoke("panel:set-content-height", height);
 }
 
+function getBooleanSetting(channel) {
+  return ipcRenderer.invoke(channel).then(requireBooleanSettingResponse);
+}
+
+function requireBooleanSettingResponse(value) {
+  if (typeof value !== "boolean") {
+    throw new TypeError("Hlavní proces nevrátil boolean systémového nastavení");
+  }
+  return value;
+}
+
+function setBooleanSetting(channel, value) {
+  if (typeof value !== "boolean") {
+    throw new TypeError("Systémové nastavení musí být boolean");
+  }
+  return ipcRenderer.invoke(channel, value).then(requireBooleanSettingResponse);
+}
+
 function onTrayCommand(callback) {
   if (typeof callback !== "function") {
     throw new TypeError("Odběratel rychlé akce musí být funkce");
@@ -74,6 +92,10 @@ contextBridge.exposeInMainWorld("ludone", {
   getAuthIdentity: () => ipcRenderer.invoke("auth:identity"),
   getAuthOrigin: () => ipcRenderer.invoke("auth:origin"),
   logout: () => ipcRenderer.invoke("auth:logout"),
+  getDockVisible: () => getBooleanSetting("settings:get-dock-visible"),
+  setDockVisible: (value) => setBooleanSetting("settings:set-dock-visible", value),
+  getOpenAtLogin: () => getBooleanSetting("settings:get-open-at-login"),
+  setOpenAtLogin: (value) => setBooleanSetting("settings:set-open-at-login", value),
   requestPermission: (permission) =>
     ipcRenderer.invoke("permission:request", permission),
   beginRecording: () => ipcRenderer.invoke("recording:begin"),

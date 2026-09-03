@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CheckIcon,
   CloseIcon,
@@ -55,10 +55,62 @@ function loadSettings() {
   }
 }
 
+function useSystemBooleanSetting(getterName, setterName) {
+  const [state, setState] = useState({ value: false, loaded: false, busy: false });
+  const active = useRef(false);
+
+  useEffect(() => {
+    active.current = true;
+    const getter = window.ludone?.[getterName];
+    const setter = window.ludone?.[setterName];
+    if (typeof getter !== "function" || typeof setter !== "function") {
+      return () => { active.current = false; };
+    }
+
+    Promise.resolve()
+      .then(() => getter())
+      .then((value) => {
+        if (!active.current || typeof value !== "boolean") return;
+        setState({ value, loaded: true, busy: false });
+      })
+      .catch(() => {
+        if (active.current) setState({ value: false, loaded: false, busy: false });
+      });
+
+    return () => { active.current = false; };
+  }, [getterName, setterName]);
+
+  const update = (nextValue) => {
+    if (!state.loaded || state.busy || typeof nextValue !== "boolean") return;
+    const setter = window.ludone?.[setterName];
+    if (typeof setter !== "function") return;
+    const previousValue = state.value;
+    setState({ value: nextValue, loaded: true, busy: true });
+    Promise.resolve()
+      .then(() => setter(nextValue))
+      .then((storedValue) => {
+        if (!active.current) return;
+        if (typeof storedValue !== "boolean") {
+          throw new TypeError("Hlavní proces nevrátil boolean systémového nastavení");
+        }
+        setState({ value: storedValue, loaded: true, busy: false });
+      })
+      .catch(() => {
+        if (active.current) {
+          setState({ value: previousValue, loaded: true, busy: false });
+        }
+      });
+  };
+
+  return { ...state, update };
+}
+
 export function SettingsApp() {
   const [settings, setSettings] = useState(loadSettings);
   const [account, setAccount] = useState({ state: "unknown", identity: null });
   const [destination, setDestination] = useState({ state: "unknown", origin: null });
+  const dock = useSystemBooleanSetting("getDockVisible", "setDockVisible");
+  const login = useSystemBooleanSetting("getOpenAtLogin", "setOpenAtLogin");
   const update = (key, value) => {
     const nextSettings = { ...settings, [key]: value };
     setSettings(nextSettings);
@@ -228,6 +280,27 @@ export function SettingsApp() {
               <small>Cílový prostor</small>
               <strong>{destination.origin ?? "Adresa není známá"}</strong>
             </span>
+          </div>
+          <div className="settings-row">
+            <div>
+              <strong>Zobrazovat i ikonu v Docku</strong>
+              <small>Zapni, když se ti ikona v liště schovává za notch nebo za jinou aplikaci.</small>
+            </div>
+            <Toggle
+              checked={dock.value}
+              disabled={!dock.loaded || dock.busy}
+              onChange={dock.update}
+              label="Zobrazovat i ikonu v Docku"
+            />
+          </div>
+          <div className="settings-row">
+            <div><strong>Spouštět po přihlášení do systému</strong></div>
+            <Toggle
+              checked={login.value}
+              disabled={!login.loaded || login.busy}
+              onChange={login.update}
+              label="Spouštět po přihlášení do systému"
+            />
           </div>
         </section>
       </div>
