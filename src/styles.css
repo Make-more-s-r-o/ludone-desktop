@@ -54,24 +54,40 @@
   font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --background: oklch(0.16 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.2 0 0);
-  --surface-elevated: oklch(0.22 0 0);
-  --surface-elevated-2: oklch(0.26 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --subtle-foreground: oklch(1 0 0 / 45%);
-  --border: oklch(1 0 0 / 10%);
-  --border-strong: oklch(1 0 0 / 20%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --green: oklch(0.5 0.17 145);
-  --green-bright: oklch(0.7 0.18 145);
-  --green-soft: oklch(0.5 0.17 145 / 15%);
-  --green-border: oklch(0.7 0.18 145 / 35%);
-  --danger: oklch(0.63 0.19 25);
-  --danger-soft: oklch(0.63 0.19 25 / 13%);
+  --panel-page: oklch(0.185 0.012 262);
+  --panel-card: oklch(0.235 0.012 262);
+  --panel-raised: oklch(0.265 0.012 262);
+  --panel-sunken: oklch(0.16 0.012 262);
+  --panel-hair: oklch(0.305 0.013 262);
+  --panel-subtle: oklch(0.585 0.014 262);
+  --panel-muted: oklch(0.715 0.012 262);
+  --panel-text: oklch(0.925 0.005 262);
+  --panel-strong: oklch(0.975 0.003 262);
+  --panel-accent: oklch(0.72 0.14 268);
+  --panel-accent-soft: color-mix(in oklab, var(--panel-accent) 16%, transparent);
+  --panel-accent-border: color-mix(in oklab, var(--panel-accent) 40%, transparent);
+  --panel-ok: oklch(0.78 0.11 178);
+  --panel-wait: oklch(0.8 0.13 76);
+  --panel-bad: oklch(0.75 0.14 34);
+  --background: var(--panel-page);
+  --foreground: var(--panel-text);
+  --card: var(--panel-card);
+  --surface-elevated: var(--panel-card);
+  --surface-elevated-2: var(--panel-raised);
+  --muted: var(--panel-raised);
+  --muted-foreground: var(--panel-muted);
+  --subtle-foreground: var(--panel-subtle);
+  --border: var(--panel-hair);
+  --border-strong: var(--panel-hair);
+  --input: var(--panel-hair);
+  --ring: var(--panel-accent);
+  --green: var(--panel-ok);
+  --green-bright: var(--panel-ok);
+  --green-soft: color-mix(in oklab, var(--panel-ok) 12%, transparent);
+  --green-border: color-mix(in oklab, var(--panel-ok) 34%, transparent);
+  --danger: var(--panel-bad);
+  --danger-soft: color-mix(in oklab, var(--panel-bad) 12%, transparent);
+  --mark-ink: var(--panel-page);
   --shadow: 0 8px 32px rgb(0 0 0 / 40%);
   --radius-window: 26px;
   --radius-inset: 18px;
@@ -119,7 +135,7 @@ input:disabled {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--green-bright);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -225,7 +241,7 @@ svg {
 }
 
 .brand-lockup svg {
-  color: var(--green-bright);
+  color: var(--panel-accent);
 }
 
 .button {
@@ -260,14 +276,14 @@ svg {
 }
 
 .button--primary {
-  border-color: var(--green);
-  background: var(--green);
-  color: white;
+  border-color: var(--panel-accent);
+  background: var(--panel-accent);
+  color: var(--mark-ink);
 }
 
 .button--primary:not(:disabled):hover {
-  border-color: oklch(0.55 0.17 145);
-  background: oklch(0.55 0.17 145);
+  border-color: var(--panel-accent);
+  background: var(--panel-accent);
 }
 
 .button--wide {
@@ -283,14 +299,14 @@ svg {
 }
 
 .button--stop {
-  border-color: oklch(0.63 0.19 25 / 35%);
+  border-color: color-mix(in oklab, var(--panel-bad) 35%, transparent);
   background: var(--danger-soft);
-  color: oklch(0.78 0.12 25);
+  color: var(--panel-bad);
 }
 
 .button--stop:not(:disabled):hover {
-  border-color: oklch(0.63 0.19 25 / 55%);
-  background: oklch(0.63 0.19 25 / 19%);
+  border-color: color-mix(in oklab, var(--panel-bad) 55%, transparent);
+  background: color-mix(in oklab, var(--panel-bad) 19%, transparent);
 }
 
 .icon-button {
@@ -348,9 +364,9 @@ svg {
 }
 
 .section-icon--recording {
-  border-color: oklch(0.63 0.19 25 / 22%);
+  border-color: color-mix(in oklab, var(--panel-bad) 22%, transparent);
   background: var(--danger-soft);
-  color: oklch(0.75 0.13 25);
+  color: var(--panel-bad);
 }
 
 .section-icon--tracking {
@@ -368,45 +384,12 @@ svg {
 }
 
 .error-note {
-  color: oklch(0.75 0.13 25);
+  color: var(--panel-bad);
 }
 
 /* Main panel */
 
 .panel.window-surface {
-  --panel-page: oklch(0.185 0.012 262);
-  --panel-card: oklch(0.235 0.012 262);
-  --panel-raised: oklch(0.265 0.012 262);
-  --panel-sunken: oklch(0.16 0.012 262);
-  --panel-hair: oklch(0.305 0.013 262);
-  --panel-subtle: oklch(0.585 0.014 262);
-  --panel-muted: oklch(0.715 0.012 262);
-  --panel-text: oklch(0.925 0.005 262);
-  --panel-strong: oklch(0.975 0.003 262);
-  --panel-accent: oklch(0.72 0.14 268);
-  --panel-accent-soft: color-mix(in oklab, var(--panel-accent) 16%, transparent);
-  --panel-accent-border: color-mix(in oklab, var(--panel-accent) 40%, transparent);
-  --panel-ok: oklch(0.78 0.11 178);
-  --panel-wait: oklch(0.8 0.13 76);
-  --panel-bad: oklch(0.75 0.14 34);
-  --background: var(--panel-page);
-  --foreground: var(--panel-text);
-  --card: var(--panel-card);
-  --surface-elevated: var(--panel-card);
-  --surface-elevated-2: var(--panel-raised);
-  --muted-foreground: var(--panel-muted);
-  --subtle-foreground: var(--panel-subtle);
-  --border: var(--panel-hair);
-  --border-strong: var(--panel-hair);
-  --input: var(--panel-hair);
-  --ring: var(--panel-accent);
-  --green: var(--panel-ok);
-  --green-bright: var(--panel-ok);
-  --green-soft: color-mix(in oklab, var(--panel-ok) 12%, transparent);
-  --green-border: color-mix(in oklab, var(--panel-ok) 34%, transparent);
-  --danger: var(--panel-bad);
-  --danger-soft: color-mix(in oklab, var(--panel-bad) 12%, transparent);
-  --mark-ink: var(--panel-page);
   display: grid;
   grid-template-rows: 52px minmax(0, 1fr) 34px;
   border-color: var(--panel-hair);
@@ -948,9 +931,9 @@ svg {
 }
 
 .status-chip--active {
-  border-color: oklch(0.63 0.19 25 / 30%);
+  border-color: color-mix(in oklab, var(--panel-bad) 30%, transparent);
   background: var(--danger-soft);
-  color: oklch(0.78 0.12 25);
+  color: var(--panel-bad);
 }
 
 .recording-start {
@@ -1102,14 +1085,14 @@ svg {
 }
 
 .track-toggle--active {
-  border-color: var(--green);
-  background: var(--green);
-  color: white;
+  border-color: var(--panel-ok);
+  background: var(--panel-ok);
+  color: var(--mark-ink);
 }
 
 .track-toggle--active .track-toggle__thumb {
-  background: white;
-  color: var(--green);
+  background: var(--mark-ink);
+  color: var(--panel-ok);
 }
 
 .play-triangle {
@@ -1421,7 +1404,7 @@ svg {
 }
 
 .step-track span.is-complete {
-  background: var(--green);
+  background: var(--panel-accent);
 }
 
 .onboarding__content {
@@ -1466,8 +1449,8 @@ svg {
 
 .welcome-visual__ring--two {
   inset: 48px;
-  border-color: var(--green-border);
-  background: var(--green-soft);
+  border-color: var(--panel-accent-border);
+  background: var(--panel-accent-soft);
 }
 
 .welcome-visual__core {
@@ -1476,7 +1459,7 @@ svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--green-bright);
+  color: var(--panel-accent);
 }
 
 .welcome-visual__node {
@@ -1501,19 +1484,19 @@ svg {
 .welcome-visual__node--mic {
   top: 18px;
   right: 5px;
-  color: oklch(0.78 0.12 25);
+  color: var(--panel-bad);
 }
 
 .welcome-visual__node--timer {
   bottom: 9px;
   left: 1px;
-  color: var(--green-bright);
+  color: var(--panel-ok);
 }
 
 .privacy-note {
   max-width: 270px;
   margin-top: 11px;
-  color: var(--subtle-foreground);
+  color: var(--panel-muted);
   font-size: 9.5px;
   line-height: 1.4;
 }
@@ -1525,10 +1508,10 @@ svg {
   align-items: center;
   justify-content: center;
   margin: 24px 0 23px;
-  border: 1px solid var(--green-border);
+  border: 1px solid var(--panel-accent-border);
   border-radius: 18px;
-  background: var(--green-soft);
-  color: var(--green-bright);
+  background: var(--panel-accent-soft);
+  color: var(--panel-accent);
 }
 
 .onboarding-icon svg {
@@ -1560,7 +1543,7 @@ svg {
   justify-content: center;
   border-radius: 8px;
   background: var(--surface-elevated-2);
-  color: var(--green-bright);
+  color: var(--panel-accent);
   font-size: 11px;
   font-weight: 750;
 }
@@ -1598,7 +1581,7 @@ svg {
   width: 48px;
   height: 48px;
   border: 3px solid var(--border-strong);
-  border-top-color: var(--green-bright);
+  border-top-color: var(--panel-accent);
   border-radius: 50%;
   animation: auth-waiting-spin 900ms linear infinite;
 }
@@ -1688,7 +1671,7 @@ svg {
 }
 
 .permission-row.is-granted {
-  border-color: var(--green-border);
+  border-color: color-mix(in oklab, var(--panel-ok) 34%, transparent);
 }
 
 .permission-row__icon {
@@ -1703,8 +1686,8 @@ svg {
 }
 
 .permission-row.is-granted .permission-row__icon {
-  background: var(--green-soft);
-  color: var(--green-bright);
+  background: color-mix(in oklab, var(--panel-ok) 12%, transparent);
+  color: var(--panel-ok);
 }
 
 .permission-row__icon svg {
@@ -1796,8 +1779,8 @@ svg {
 }
 
 .recording-test-level__status.is-live {
-  background: var(--green-soft);
-  color: var(--green-bright);
+  background: color-mix(in oklab, var(--panel-ok) 12%, transparent);
+  color: var(--panel-ok);
 }
 
 .recording-test-device {
@@ -1822,7 +1805,7 @@ svg {
 
 .recording-test-hint {
   margin-top: 10px;
-  color: var(--subtle-foreground);
+  color: var(--panel-muted);
   font-size: 9.5px;
   line-height: 1.4;
 }
@@ -1839,11 +1822,11 @@ svg {
   align-items: center;
   justify-content: center;
   margin-bottom: 29px;
-  border: 1px solid var(--green-border);
+  border: 1px solid color-mix(in oklab, var(--panel-ok) 34%, transparent);
   border-radius: 30px;
-  background: var(--green-soft);
-  color: var(--green-bright);
-  box-shadow: inset 0 0 0 12px oklch(0.5 0.17 145 / 7%);
+  background: color-mix(in oklab, var(--panel-ok) 12%, transparent);
+  color: var(--panel-ok);
+  box-shadow: inset 0 0 0 12px color-mix(in oklab, var(--panel-ok) 12%, transparent);
 }
 
 .done-check svg {
@@ -1895,20 +1878,20 @@ svg {
 }
 
 .tray-symbol--recording {
-  border-color: var(--green);
-  background: var(--green);
+  border-color: var(--panel-bad);
+  background: var(--panel-bad);
 }
 
 .tray-symbol--recording::after {
   position: absolute;
   inset: 4px 6px;
   border-radius: 3px;
-  background: white;
+  background: var(--mark-ink);
   content: "";
 }
 
 .tray-symbol--tracking {
-  border-color: var(--green-bright);
+  border-color: var(--panel-ok);
 }
 
 .tray-symbol--tracking::before,
@@ -1919,7 +1902,7 @@ svg {
   width: 5px;
   height: 2px;
   border-radius: 1px;
-  background: var(--green-bright);
+  background: var(--panel-ok);
   content: "";
   transform-origin: 1px center;
 }
@@ -1965,7 +1948,7 @@ svg {
 }
 
 .settings-group__heading > span {
-  color: var(--green-bright);
+  color: var(--panel-accent);
 }
 
 .settings-row,
@@ -2032,12 +2015,12 @@ svg {
 }
 
 .toggle[aria-checked="true"] {
-  border-color: var(--green);
-  background: var(--green);
+  border-color: var(--panel-accent);
+  background: var(--panel-accent);
 }
 
 .toggle[aria-checked="true"] .toggle__thumb {
-  background: white;
+  background: var(--mark-ink);
   transform: translateX(16px);
 }
 
@@ -2053,7 +2036,7 @@ svg {
 
 .settings-hint {
   margin: 8px 8px 0;
-  color: var(--subtle-foreground);
+  color: var(--panel-muted);
   font-size: 9px;
   line-height: 1.4;
 }
@@ -2078,7 +2061,7 @@ svg {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--green-bright);
+  color: var(--panel-ok);
   font-size: 9px;
   font-weight: 700;
 }
@@ -2103,7 +2086,7 @@ svg {
   width: 20px;
   height: 20px;
   margin: 0 7px;
-  color: var(--green-bright);
+  color: var(--panel-accent);
 }
 
 .settings-footer {
@@ -2125,7 +2108,7 @@ svg {
 .settings-footer > span svg {
   width: 14px;
   height: 14px;
-  color: var(--green-bright);
+  color: var(--panel-ok);
 }
 
 .settings-footer .button {

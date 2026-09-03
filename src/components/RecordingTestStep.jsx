@@ -105,8 +105,8 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt , onSkippe
         if (!meterColorsRef.current) {
           const styles = window.getComputedStyle(document.documentElement);
           meterColorsRef.current = {
-            live: styles.getPropertyValue("--green-bright").trim() || "#34a853",
-            silent: styles.getPropertyValue("--muted-foreground").trim() || "#888888",
+            live: styles.getPropertyValue("--panel-ok").trim() || "oklch(0.78 0.11 178)",
+            silent: styles.getPropertyValue("--panel-muted").trim() || "oklch(0.715 0.012 262)",
           };
         }
         for (const [name, refs] of [
