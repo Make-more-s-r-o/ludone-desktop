@@ -251,6 +251,30 @@ zpřístupní ta nastavení, by znamenalo vymyslet si vlastní úložiště a pa
 ⚠️ Poznámku jsem **nepsal do `spec.md`** — je zmrazený. (Napsal jsem ji tam omylem a hned
 vrátil.)
 
+### 📌 Serverová strana je hotová a v main (3. 9. ráno) — a jeden nález mění váhu našeho exportu
+
+Serverová session dokončila modul Nahrávek: schéma, obnovitelný upload po částech,
+normalizace, přehrávání, přepis, obrazovky, MCP tooly. **SQL migrace 265–267 běžely na OBOU
+databázích**, obě jsou identické. Modul je admin-only a labs-only.
+
+🔴 **Změřili naostro, že `gemini-3.5-transcribe` NEUMÍ rozlišit mluvčí vůbec** — vrací jeden
+souvislý blok, nula časů, nula jmenovek. A jeho vlastní pole `diarization: true` v klidu
+přijme a nic nezmění. Diarizaci umí až obecný model, a ne každý: `gemini-3.1-pro-preview`
+rozlišil čtyři mluvčí, kdežto `gemini-3.5-flash` vrátil na deset minut zvuku **jediný bajt
+s bezchybnou HTTP odpovědí**.
+
+**Proč to má dopad na desktop:** tvoje nahrávky z Plaudu jsou **mono**, takže u nich musí
+rozlišení mluvčích zvládnout model sám — a to je podle měření nespolehlivé. **Náš stereo
+export (mikrofon vlevo, systém vpravo) je tedy jediný TVRDÝ zdroj informace, kdo mluvil.**
+Ne heuristika, ne odhad modelu.
+
+⇒ Praktický důsledek: u exportu se nevyplatí dělat kompromisy a **stojí za to ho ověřit
+naostro co nejdřív** (bod 1 v `OVERENI-NAOSTRO.md`). Je to ta část, kterou nikdo jiný
+nedodá.
+
+Dobrá zpráva k rozsahu: strop „30 minut na diarizaci" byl odvozený špatně — celá hodinová
+schůzka se vejde do jednoho požadavku, dělení na kusy tedy nebude potřeba.
+
 ## 0. Noční běh je připravený — co k němu patří
 
 Briéf: [`docs/behy/2026-08-24-zaklad-a-fronta.md`](docs/behy/2026-08-24-zaklad-a-fronta.md).
