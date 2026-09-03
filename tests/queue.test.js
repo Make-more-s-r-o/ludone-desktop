@@ -230,6 +230,24 @@ describe("vlastník nahrávky v perzistentní frontě", () => {
     expect(JSON.stringify({ fingerprint })).not.toMatch(/Ada|ludone\.cz@/iu);
   });
 
+  it("bez tajemství se otisk NEODVODÍ — musí vyjít null", () => {
+    // 🔴 Fail-closed. Kdyby se při nedostupném tajemství vrátil nesolený sha256, ochrana
+    // by tiše zeslábla na to, co jde uhodnout ze seznamu firemních e-mailů — a vypadala
+    // by přitom stejně. Null se překládá na „vlastník neznámý", tedy pauzu.
+    const session = {
+      issuer: "https://app.ludone.cz",
+      identity: { email: "ada@ludone.cz" },
+    };
+
+    expect(deriveQueueOwnerFingerprint(session, undefined)).toBeNull();
+    expect(deriveQueueOwnerFingerprint(session, null)).toBeNull();
+    expect(
+      deriveQueueOwnerFingerprint(session, Buffer.alloc(31, 7)),
+      "krátké tajemství je horší než žádné — vypadá jako ochrana",
+    ).toBeNull();
+    expect(deriveQueueOwnerFingerprint(session, "nejsem buffer")).toBeNull();
+  });
+
   it("produkční store přidá otisk k dvoustopé i jednostopé položce", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-owner-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");
