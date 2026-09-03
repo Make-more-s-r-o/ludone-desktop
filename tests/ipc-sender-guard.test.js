@@ -18,6 +18,9 @@ function functionSource(source, name) {
 }
 
 const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
+const reportedFactKeys = Function(
+  `"use strict"; ${/const REPORTED_FACT_KEYS = \[[^\]]*\];/.exec(mainSource)[0]}; return REPORTED_FACT_KEYS;`,
+)();
 const distRoot = path.resolve(fileURLToPath(new URL("../dist", import.meta.url)));
 const trustedUrl = pathToFileURL(path.join(distRoot, "index.html")).toString();
 const createGuard = Function(
@@ -348,5 +351,15 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     expect(functionSource(mainSource, "onValidated")).toContain("requireTrustedSender");
     expect(functionSource(mainSource, "installMediaHandlers")).toContain("isAllowedMediaPermission");
     expect(functionSource(mainSource, "installMediaHandlers")).toContain("isTrustedPanelFrame");
+  });
+
+  it("inventarizuje přesně tři boolean fakta přijímaná tray kanálem", () => {
+    // Nový fakt není nový IPC kanál. Patří ale do bezpečnostní inventury stejné hranice:
+    // renderer smí hlásit jen tyto skutečnosti, nikdy jméno ikony ani volný objekt.
+    expect([...reportedFactKeys].sort()).toEqual([
+      "signedIn",
+      "systemAudioLost",
+      "tracking",
+    ]);
   });
 });
