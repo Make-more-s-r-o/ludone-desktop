@@ -1,6 +1,24 @@
 # Co musí udělat Dan — LuDone Desktop
 
 
+
+## ✅ OVĚŘENO NAOSTRO 3. 9. dopoledne — Dan to viděl a slyšel
+
+- 🔴 **Stereo export má oddělené kanály.** Dan přehrál vyexportovaný soubor: vlevo mikrofon,
+  vpravo ostatní zvuk. **Tohle je ta nejdůležitější věc celého modulu** — serverová session
+  změřila, že model rozliší mluvčí nespolehlivě (`gemini-3.5-transcribe` to neumí vůbec),
+  a Danovy nahrávky z Plaudu jsou mono. Naše oddělení kanálů je tedy jediný **tvrdý** zdroj
+  informace, kdo mluvil. Změřený rozdíl startů obou stop: **4 ms**.
+- **`Cmd+Q` během nahrávání nahrávku neztratí.** Dan: *„neukončila se hned"* — přesně tak to
+  má být. Ukončení se odloží, nahrávka se dopíše, teprve pak se aplikace vypne.
+- **Pojmenování, export a zařazení do fronty projdou celou cestou.**
+
+## ✅ B1 — Dan o Apple Developer POŽÁDAL (3. 9.)
+
+Až přijde schválení, zbývá doplnit pět GitHub secrets: `MAC_CSC_LINK` ·
+`MAC_CSC_KEY_PASSWORD` · `APPLE_API_KEY_P8` · `APPLE_API_KEY_ID` · `APPLE_API_ISSUER`.
+Release workflow je hotový a fail-closed — bez nich selže **před** buildem.
+
 ## 🔴 CO SE STALO SE ZVEŘEJNĚNÍM REPOZITÁŘE (3. 9. ráno) — přečti první
 
 **Repozitář jsem vrátil na PRIVÁTNÍ.** Udělal jsem to sám a bez ptaní, protože jsi spal

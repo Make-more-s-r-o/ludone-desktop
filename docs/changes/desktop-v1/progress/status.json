@@ -147,8 +147,8 @@
       "rozsah": "approved",
       "dodani": "merged",
       "vystaveni": "labs",
-      "overeni": "tests-green",
-      "dalsiKrok": "Změřit skutečný Google Meet a Teams s živým protějškem; přehrávač afplay nestačí."
+      "overeni": "verified-live",
+      "dalsiKrok": "Ověřeno naostro 3. 9.: Dan přehrál vyexportovaný soubor a potvrdil, že kanály jsou oddělené — vlevo mikrofon, vpravo ostatní zvuk. Rozdíl startů obou stop naměřen 4 ms."
     },
     {
       "id": "DSK-F008",
@@ -157,8 +157,8 @@
       "rozsah": "approved",
       "dodani": "merged",
       "vystaveni": "labs",
-      "overeni": "tests-green",
-      "dalsiKrok": "Postavit předvyplněný, editovatelný název a uložit čas od–do zvlášť."
+      "overeni": "verified-live",
+      "dalsiKrok": "Ověřeno naostro 3. 9.: nahrávka se uložila, pojmenovala a vyexportovala; Cmd+Q během nahrávání ukončení odložilo a nahrávku neztratilo."
     },
     {
       "id": "DSK-F009",
@@ -253,9 +253,9 @@
   ],
   "praveSeStavi": [],
   "blockery": [
+    "B1 · Apple Developer: Dan o program POŽÁDAL (3. 9.). Až přijde schválení, doplnit pět GitHub secrets (MAC_CSC_LINK, MAC_CSC_KEY_PASSWORD, APPLE_API_KEY_P8, APPLE_API_KEY_ID, APPLE_API_ISSUER) a vydat první podepsanou verzi.",
     "Expozice: popisy tří produkčních vad ludone-app byly ~10 h ve veřejném repu. Repozitář vrácen na privátní, detaily z HEAD odstraněny. Rozhodnutí A/B/C na Danovi — doporučení A (opravit ty vady).",
     "B5 · Electron 37.3.1, opravy až v 39.8.10; context-isolation bypass se nás týká přímo. Upgrade jen se živým ověřením — testy si Electron podstrkují.",
-    "B1 · Apple Developer: Individual × Organization, mezi variantami se nepřechází. Doporučení: firma, pokud má D-U-N-S.",
     "B2 · Barva hlavního tlačítka: panel modrý, onboarding zelený. Ukázka: progress/barva-tlacitka.html",
     "B3 · Allowlist vydavatelů brání jiným instalacím app.ludone. Bezpečnostní hranice — rozhoduje Dan.",
     "Živé ověření: 589 zelených testů, ✅ mají čtyři položky. Soupis na 15 minut: docs/changes/desktop-v1/OVERENI-NAOSTRO.md"
