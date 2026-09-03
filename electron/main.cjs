@@ -388,6 +388,18 @@ function formatElapsed(totalSeconds) {
   return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
 }
 
+// Dva plné časy by v úzké liště zabraly 19 znaků. Při souběhu proto každý údaj
+// držíme na nejvýš pěti: do hodiny MM:SS, potom HhMM a po 99 hodinách 99h+.
+function formatCompactTrayElapsed(totalSeconds) {
+  const normalizedSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(normalizedSeconds / 3600);
+  const minutes = Math.floor((normalizedSeconds % 3600) / 60);
+  if (hours >= 100) return "99h+";
+  if (hours > 0) return `${hours}h${String(minutes).padStart(2, "0")}`;
+  const seconds = normalizedSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function timestampMilliseconds(value) {
   const milliseconds = typeof value === "number" ? value : Date.parse(value);
   return Number.isFinite(milliseconds) ? milliseconds : null;
@@ -418,12 +430,23 @@ function oldestTrackingStartedAt() {
 }
 
 function currentTrayTitle() {
-  // Sdílené místo má jediný údaj. Nahrávání má stejnou prioritu jako tray ikona:
-  // aktivní mikrofon je bezpečnostně důležitější a přehlédnutí stojí celou nahrávku.
   const recordingStartedAt = oldestLiveRecordingStartedAt();
-  const startedAt = recordingStartedAt ?? oldestTrackingStartedAt();
+  const trackingStartedAt = oldestTrackingStartedAt();
+  if (recordingStartedAt === null && trackingStartedAt === null) return "";
+
+  const now = Date.now();
+  const elapsedSeconds = (startedAt) => (
+    Math.max(0, Math.floor((now - startedAt) / 1_000))
+  );
+  if (recordingStartedAt !== null && trackingStartedAt !== null) {
+    // Nahrávání je hlavní agenda stejně jako u ikony, proto zůstává první.
+    return `${formatCompactTrayElapsed(elapsedSeconds(recordingStartedAt))}`
+      + ` · ${formatCompactTrayElapsed(elapsedSeconds(trackingStartedAt))}`;
+  }
+
+  const startedAt = recordingStartedAt ?? trackingStartedAt;
   if (startedAt === null) return "";
-  return formatElapsed(Math.max(0, Math.floor((Date.now() - startedAt) / 1_000)));
+  return formatElapsed(elapsedSeconds(startedAt));
 }
 
 function clearTrayTitleTimer() {
@@ -879,6 +902,7 @@ function openLuDoneInBrowser() {
 }
 
 function trayContextMenuTemplate() {
+  const tracking = appState.trackingOwners.size > 0;
   return [
     {
       label: "Ukončit nahrávání",
@@ -887,10 +911,10 @@ function trayContextMenuTemplate() {
       click: () => queueTrayCommand("stop-recording"),
     },
     {
-      label: "Spustit LuTrack",
+      label: tracking ? "Zastavit měření času" : "Spustit LuTrack",
       accelerator: "Control+Option+T",
-      enabled: appState.trackingOwners.size === 0,
-      click: () => queueTrayCommand("start-tracking"),
+      enabled: true,
+      click: () => queueTrayCommand(tracking ? "stop-tracking" : "start-tracking"),
     },
     { type: "separator" },
     {
