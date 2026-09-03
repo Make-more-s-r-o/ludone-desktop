@@ -8,7 +8,7 @@
 
 
 
-## 🔴 SLEPÁ ULIČKA PO ODHLÁŠENÍ — a doporučil jsem ti do ní vlézt
+## ✅ SLEPÁ ULIČKA PO ODHLÁŠENÍ — OPRAVENO (PR #58), můžeš přepínat
 
 **Když se odhlásíš nebo přepneš prostředí, do aplikace se už nepřihlásíš.** Panel napíše
 „Nejsi připojený" a **nenabídne nic**.
@@ -29,7 +29,12 @@ LUDONE_RESET_ONBOARDING=1 npm start
 slepou uličku k přepnutí prostředí. **A přepnutí na labs jsem ti sám doporučil.**
 
 **Našlo to adversariální kolo nad dneškem, ne já** — a je to už počtvrté dnes, co vadu
-v mé práci našel někdo jiný. Oprava běží.
+v mé práci našel někdo jiný.
+
+✅ **Opraveno PR #58:** panel při chybějící session ukáže **jen přihlašovací krok**
+(oprávnění ani test záznamu se neopakují) a o odhlášení se dozví **bez restartu**.
+Text je neutrální „Přihlásit v prohlížeči", protože po přepnutí na labs by
+„Přihlásit přes app.ludone.cz" lhalo. **Přepínat prostředí už můžeš.**
 
 ## ✅ LABS UŽ PŘEPNEŠ (PR #52) — a 🔴 jedna moje dnešní regrese
 
