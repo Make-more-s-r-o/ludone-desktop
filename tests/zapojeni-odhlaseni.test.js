@@ -98,19 +98,19 @@ describe("odhlášení: co musí platit, jakmile ho někdo zapojí", () => {
   });
 
   it.runIf(odhlaseniZapojeno)(
-    "ZAPOJENO — odhlášení musí zastavit běžící časovač",
+    "ZAPOJENO — odhlášení nesmí proběhnout nad běžícím časovačem",
     () => {
-      // Bez toho běží časovač dál a naměřené minuty zdědí další přihlášený člověk.
-      // To je money cesta: naměřený čas se vykazuje.
+      // Dokud Dan nerozhodne, zda má odhlášení časovač samo zastavit, bezpečný
+      // výchozí stav je akci odmítnout. Minuty tak nepřejdou na další účet.
       expect(
         blokOdhlaseni,
-        "auth:logout nesahá na časovač — naměřené minuty přejdou na dalšího přihlášeného",
-      ).toMatch(/tracking|Tracking/);
+        "auth:logout nehlídá běžící časovač — naměřené minuty mohou přejít na další účet",
+      ).toContain("trackingWorkBlocksQuit()");
     },
   );
 
   it.runIf(odhlaseniZapojeno)(
-    "ZAPOJENO — odhlášení nesmí nechat běžet nahrávku pod zhasnutou ikonou",
+    "ZAPOJENO — odhlášení nesmí proběhnout nad běžící nahrávkou",
     () => {
       // `deriveTrayState` dává `signed-out` přednost před `recording` (tak to má B3
       // předepsané). Jakmile jde odhlásit se za běhu, zhasne tím JEDINÝ indikátor toho,
@@ -118,7 +118,7 @@ describe("odhlášení: co musí platit, jakmile ho někdo zapojí", () => {
       expect(
         blokOdhlaseni,
         "auth:logout nesahá na běžící nahrávku, přitom jí zhasne ikonu",
-      ).toMatch(/recording|Recording/);
+      ).toContain("hasLiveRecording()");
     },
   );
 
@@ -132,7 +132,11 @@ describe("odhlášení: co musí platit, jakmile ho někdo zapojí", () => {
       const zdrojFaktu = telo(kod, "applyReportedFacts");
       expect(zdrojFaktu, "applyReportedFacts se v main.cjs nenašla").not.toBe("");
 
-      const appState = { signedIn: false, trackingOwners: new Set() };
+      const appState = {
+        acceptRendererSignIn: false,
+        signedIn: false,
+        trackingOwners: new Set(),
+      };
       const refreshTray = vi.fn();
       const applyReportedFacts = Function(
         "appState",
