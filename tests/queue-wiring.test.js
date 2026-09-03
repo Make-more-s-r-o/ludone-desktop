@@ -1221,11 +1221,27 @@ describe("barevné varianty ikony podle motivu lišty", () => {
     const tray = harness.trays[0];
     const darkImage = tray.setImage.mock.calls.at(-1)?.[0];
     const callsAfterStart = tray.setImage.mock.calls.length;
+    const ocekavanaTmava = readFileSync(path.join(
+      mainDirectory,
+      "ikony",
+      "dark-signed-out.png",
+    ));
+    const ocekavanaSvetla = readFileSync(path.join(
+      mainDirectory,
+      "ikony",
+      "light-signed-out.png",
+    ));
+
+    expect(darkImage.sourceBytes.equals(ocekavanaTmava)).toBe(true);
+
+    harness.setShouldUseDarkColors(true);
+    expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart);
 
     harness.setShouldUseDarkColors(false);
 
     expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart + 1);
     const lightImage = tray.setImage.mock.calls.at(-1)[0];
+    expect(lightImage.sourceBytes.equals(ocekavanaSvetla)).toBe(true);
     expect(lightImage.sourceBytes.equals(darkImage.sourceBytes)).toBe(false);
     expect(lightImage.retinaBytes.equals(darkImage.retinaBytes)).toBe(false);
 

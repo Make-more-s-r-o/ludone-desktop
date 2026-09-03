@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -129,8 +130,21 @@ function hash(soubor) {
   return createHash("sha256").update(readFileSync(soubor)).digest("hex");
 }
 
+function hashAlfy(soubor) {
+  const { rgba } = dekodujPng(soubor);
+  const alfa = Buffer.alloc(rgba.length / 4);
+  for (let index = 0; index < alfa.length; index += 1) alfa[index] = rgba[index * 4 + 3];
+  return createHash("sha256").update(alfa).digest("hex");
+}
+
 describe("ikony v liště", () => {
-  it("všech dvacet souborů existuje a má podpis PNG", () => {
+  it("adresář obsahuje právě dvacet očekávaných PNG s platným podpisem", () => {
+    const ocekavane = MOTIVY.flatMap((motiv) => STAVY.flatMap((stav) => (
+      VARIANTY.map((varianta) => `${motiv}-${stav}${varianta}.png`)
+    ))).sort();
+    const skutecne = readdirSync(ADRESAR_IKON).filter((nazev) => nazev.endsWith(".png")).sort();
+    expect(skutecne).toEqual(ocekavane);
+
     for (const motiv of MOTIVY) {
       for (const stav of STAVY) {
         for (const varianta of VARIANTY) {
@@ -147,9 +161,13 @@ describe("ikony v liště", () => {
       for (const stav of STAVY) {
         const zaklad = rozmeryPng(cestaIkony(ADRESAR_IKON, motiv, stav));
         const retina = rozmeryPng(cestaIkony(ADRESAR_IKON, motiv, stav, "@2x"));
+        expect(zaklad, `${motiv}-${stav} nemá rozměr 18 × 18`).toEqual({
+          width: 18,
+          height: 18,
+        });
         expect(retina, `${motiv}-${stav}@2x nemá dvojnásobné rozměry`).toEqual({
-          width: zaklad.width * 2,
-          height: zaklad.height * 2,
+          width: 36,
+          height: 36,
         });
       }
     }
@@ -163,6 +181,14 @@ describe("ikony v liště", () => {
         ));
         expect(new Set(hashe).size, `Stavy ${motiv} ${varianta || "1x"} nejsou odlišné`)
           .toBe(STAVY.length);
+
+        const hasheAlfy = STAVY.map((stav) => (
+          hashAlfy(cestaIkony(ADRESAR_IKON, motiv, stav, varianta))
+        ));
+        expect(
+          new Set(hasheAlfy).size,
+          `Stavy ${motiv} ${varianta || "1x"} závisejí jen na barvě`,
+        ).toBe(STAVY.length);
       }
     }
   });
@@ -172,28 +198,32 @@ describe("ikony v liště", () => {
 
     for (const motiv of MOTIVY) {
       const barvy = BARVY[motiv];
-      for (const stav of ["signed-out", "idle", "recording", "tracking"]) {
-        const obrazek = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, stav));
-        expect(obsahujeBarvu(obrazek, barvy[stav]), `${motiv}-${stav} nemá barvu z návrhu`)
-          .toBe(true);
+      for (const varianta of VARIANTY) {
+        for (const stav of ["signed-out", "idle", "recording", "tracking"]) {
+          const obrazek = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, stav, varianta));
+          const popis = `${motiv}-${stav}${varianta}`;
+          expect(obsahujeBarvu(obrazek, barvy[stav]), `${popis} nemá barvu z návrhu`)
+            .toBe(true);
+        }
+        const soubeh = dekodujPng(
+          cestaIkony(ADRESAR_IKON, motiv, "recording-tracking", varianta),
+        );
+        expect(obsahujeBarvu(soubeh, barvy.recording)).toBe(true);
+        expect(obsahujeBarvu(soubeh, barvy.tracking)).toBe(true);
       }
-      const soubeh = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, "recording-tracking"));
-      const soubehRetina = dekodujPng(
-        cestaIkony(ADRESAR_IKON, motiv, "recording-tracking", "@2x"),
-      );
-      expect(obsahujeBarvu(soubeh, barvy.recording)).toBe(true);
-      expect(obsahujeBarvu(soubehRetina, barvy.tracking)).toBe(true);
     }
   });
 
   it("nahrávání i souběh mají vpravo dole odznak s oddělujícím obrysem", () => {
     for (const motiv of MOTIVY) {
       const barvy = BARVY[motiv];
-      const idle = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, "idle"));
-      const recording = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, "recording"));
-      const tracking = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, "tracking"));
-      const soubeh = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, "recording-tracking"));
-      const stred = [14, 13];
+      const idle = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, "idle", "@2x"));
+      const recording = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, "recording", "@2x"));
+      const tracking = dekodujPng(cestaIkony(ADRESAR_IKON, motiv, "tracking", "@2x"));
+      const soubeh = dekodujPng(
+        cestaIkony(ADRESAR_IKON, motiv, "recording-tracking", "@2x"),
+      );
+      const stred = [28, 27];
       const idleStred = idle.pixel(...stred);
       const recordingStred = recording.pixel(...stred);
       const trackingStred = tracking.pixel(...stred);
@@ -201,14 +231,20 @@ describe("ikony v liště", () => {
 
       expect(idleStred[3]).toBeLessThan(32);
       expect(recordingStred[3]).toBeGreaterThan(192);
-      expect(soubehStred[3]).toBeGreaterThan(192);
+      expect(soubehStred[3]).toBeLessThan(32);
       expect(trackingStred[3]).toBeLessThan(recordingStred[3]);
       expect(obsahujeBarvu(recording, barvy.lista)).toBe(true);
       expect(obsahujeBarvu(soubeh, barvy.lista)).toBe(true);
+      expect(obsahujeBarvu(recording, barvy.recording)).toBe(true);
+      expect(obsahujeBarvu(soubeh, barvy.tracking)).toBe(true);
+      expect(recording.pixel(31, 27)).toEqual([...barvy.recording, 255]);
+      expect(soubeh.pixel(31, 27)).toEqual([...barvy.tracking, 255]);
+      expect(recording.pixel(33, 27)).toEqual([...barvy.lista, 255]);
+      expect(soubeh.pixel(33, 27)).toEqual([...barvy.lista, 255]);
+      expect(recording.pixel(35, 27)[3]).toBe(0);
+      expect(soubeh.pixel(35, 27)[3]).toBe(0);
       expect(barevnaVzdalenost(recordingStred, barvy.recording))
         .toBeLessThan(barevnaVzdalenost(recordingStred, barvy.tracking));
-      expect(barevnaVzdalenost(soubehStred, barvy.tracking))
-        .toBeLessThan(barevnaVzdalenost(soubehStred, barvy.recording));
     }
   });
 

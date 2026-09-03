@@ -15,6 +15,8 @@ const STRED_ODZNAKU = [19, 18.5];
 const POLOMER_ODZNAKU = 2.5;
 const SIRKA_OBRYSU_ODZNAKU = 1.5;
 const SIRKA_PRSTYNKU = 1.8;
+const POLOMER_PRSTYNKU_ODZNAKU = 1.9;
+const SIRKA_PRSTYNKU_ODZNAKU = 1.2;
 const PRESKRTNUTI = [[4, 20], [20, 4]];
 const STAVY = ["signed-out", "idle", "recording", "tracking", "recording-tracking"];
 const MOTIVY = ["dark", "light"];
@@ -200,22 +202,36 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
 
   let pixel = prekryj([0, 0, 0, 0], barvy.hlavni, hlavniKryti);
   if (stav === "recording" || stav === "recording-tracking") {
-    const vnejsiKruh = krytiKruhu(
+    // Barevné kolečko má v souřadnicích návrhu poloměr 2,5. Obrys široký 1,5
+    // kreslíme vně, aby nezmenšil čitelnou barevnou část odznaku.
+    const obrys = krytiPrstynku(
       bodX,
       bodY,
       STRED_ODZNAKU,
-      POLOMER_ODZNAKU,
+      POLOMER_ODZNAKU + SIRKA_OBRYSU_ODZNAKU / 2,
+      SIRKA_OBRYSU_ODZNAKU,
       velikostPixelu,
     );
-    const vnitrniKruh = krytiKruhu(
-      bodX,
-      bodY,
-      STRED_ODZNAKU,
-      POLOMER_ODZNAKU - SIRKA_OBRYSU_ODZNAKU,
-      velikostPixelu,
-    );
-    pixel = prekryj(pixel, barvy.obrys, vnejsiKruh);
-    pixel = prekryj(pixel, barvy.odznak, vnitrniKruh);
+    const odznak = stav === "recording"
+      ? krytiKruhu(
+        bodX,
+        bodY,
+        STRED_ODZNAKU,
+        POLOMER_ODZNAKU,
+        velikostPixelu,
+      )
+      : krytiPrstynku(
+        bodX,
+        bodY,
+        STRED_ODZNAKU,
+        POLOMER_PRSTYNKU_ODZNAKU,
+        SIRKA_PRSTYNKU_ODZNAKU,
+        velikostPixelu,
+      );
+    pixel = prekryj(pixel, barvy.obrys, obrys);
+    // Prstýnek souběhu zachovává tvarové označení měření času. Souběh je tak
+    // od samotného nahrávání rozeznatelný i bez barvy.
+    pixel = prekryj(pixel, barvy.odznak, odznak);
   }
 
   return [
