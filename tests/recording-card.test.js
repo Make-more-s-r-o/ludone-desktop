@@ -10,7 +10,11 @@ import { RecordingCard } from "../src/features/recording/RecordingCard.jsx";
 
 const SESSION_ID = "session-test-1";
 
-function measuredMeterPercent(fill) {
+function liveMeterWidthPercent(fill) {
+  const meterRule = [...(fill?.ownerDocument.styleSheets ?? [])]
+    .flatMap((sheet) => [...sheet.cssRules])
+    .find((rule) => rule.selectorText === ".audio-level-meter__fill");
+  if (meterRule?.style.width !== "var(--audio-level-measured, 0%)") return Number.NaN;
   return Number.parseFloat(
     fill?.style.getPropertyValue("--audio-level-measured") ?? "NaN",
   );
@@ -459,18 +463,22 @@ describe("RecordingCard", () => {
       const systemFill = panel.document.querySelector(
         '[data-testid="recording-source-system"] .recording-source__fill',
       );
-      const quietMicrophone = measuredMeterPercent(microphoneFill);
-      const quietSystem = measuredMeterPercent(systemFill);
+      expect(panel.document.defaultView.getComputedStyle(microphoneFill).width)
+        .toBe("var(--audio-level-measured, 0%)");
+      expect(panel.document.defaultView.getComputedStyle(systemFill).width)
+        .toBe("var(--audio-level-measured, 0%)");
+      const quietMicrophone = liveMeterWidthPercent(microphoneFill);
+      const quietSystem = liveMeterWidthPercent(systemFill);
 
       panel.setLevelAmplitudes({ microphone: 0.25, system: 0 });
       await panel.sampleLevels();
-      const loudMicrophone = measuredMeterPercent(microphoneFill);
-      const systemDuringLoudMicrophone = measuredMeterPercent(systemFill);
+      const loudMicrophone = liveMeterWidthPercent(microphoneFill);
+      const systemDuringLoudMicrophone = liveMeterWidthPercent(systemFill);
 
       panel.setLevelAmplitudes({ microphone: 0, system: 0.25 });
       await panel.sampleLevels();
-      const microphoneDuringLoudSystem = measuredMeterPercent(microphoneFill);
-      const loudSystem = measuredMeterPercent(systemFill);
+      const microphoneDuringLoudSystem = liveMeterWidthPercent(microphoneFill);
+      const loudSystem = liveMeterWidthPercent(systemFill);
 
       expect(loudMicrophone - quietMicrophone).toBeGreaterThan(40);
       expect(loudSystem - quietSystem).toBeGreaterThan(40);
@@ -530,7 +538,7 @@ describe("RecordingCard", () => {
       const microphoneFill = panel.document.querySelector(
         '[data-testid="recording-source-microphone"] .recording-source__fill',
       );
-      expect(measuredMeterPercent(microphoneFill)).toBeGreaterThan(40);
+      expect(liveMeterWidthPercent(microphoneFill)).toBeGreaterThan(40);
 
       panel.failNextLevelRead("microphone");
       await panel.sampleLevels();
@@ -545,7 +553,7 @@ describe("RecordingCard", () => {
       await panel.sampleLevels();
       expect(microphoneFill.closest(".audio-level-meter")?.dataset.measurementState)
         .toBe("measured");
-      expect(measuredMeterPercent(microphoneFill)).toBeGreaterThan(40);
+      expect(liveMeterWidthPercent(microphoneFill)).toBeGreaterThan(40);
 
       await stopRecording(panel);
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
@@ -604,12 +612,23 @@ describe("RecordingCard", () => {
       const systemFill = card?.querySelector(
         '[data-testid="recording-source-system"] .recording-source__fill',
       );
+      const microphoneFill = card?.querySelector(
+        '[data-testid="recording-source-microphone"] .recording-source__fill',
+      );
+      expect(liveMeterWidthPercent(microphoneFill)).toBeGreaterThan(40);
+      expect(microphoneFill.closest(".audio-level-meter")?.dataset.measurementState)
+        .toBe("measured");
       expect(Number.parseFloat(
         panel.document.defaultView.getComputedStyle(systemFill).width,
       )).toBe(2);
+      expect(systemFill.closest(".audio-level-meter")?.dataset.measurementState)
+        .toBe("unavailable");
       expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone"]);
       expect(panel.recorders).toHaveLength(2);
       expect(panel.audioContexts).toHaveLength(1);
+      expect(panel.audioContexts[0].analysers.map(({ track }) => track)).toEqual([
+        panel.recorders[0].stream.getAudioTracks()[0],
+      ]);
       expect(panel.audioContexts[0].connections).toEqual([
         expect.objectContaining({
           input: 0,
@@ -1123,13 +1142,16 @@ describe("RecordingCard", () => {
       expect(panel.ludone.beginRecording).toHaveBeenCalledTimes(1);
       expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
       expect(panel.microphoneTrack.stop).not.toHaveBeenCalled();
+      expect(panel.audioContexts).toHaveLength(1);
       await panel.sampleLevels();
+      const microphoneFill = card?.querySelector(
+        '[data-testid="recording-source-microphone"] .recording-source__fill',
+      );
       const restoredSystemFill = card?.querySelector(
         '[data-testid="recording-source-system"] .recording-source__fill',
       );
-      expect(Number.parseFloat(
-        panel.document.defaultView.getComputedStyle(restoredSystemFill).width,
-      )).toBeGreaterThan(40);
+      expect(liveMeterWidthPercent(microphoneFill)).toBeLessThanOrEqual(5);
+      expect(liveMeterWidthPercent(restoredSystemFill)).toBeGreaterThan(40);
 
       await React.act(async () => {
         panel.replacementSystemTrack.readyState = "ended";
@@ -1138,7 +1160,11 @@ describe("RecordingCard", () => {
         );
         await Promise.resolve();
       });
+      await panel.sampleLevels();
       expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).not.toBeNull();
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(restoredSystemFill).width,
+      )).toBe(2);
 
       await panel.click(panel.document.querySelector('[data-testid="degraded-recording-stop"]'));
       await panel.waitForPhase("saved");

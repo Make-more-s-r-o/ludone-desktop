@@ -1821,6 +1821,10 @@ svg {
   background: var(--panel-ok);
 }
 
+.recording-test-level__meter[data-measurement-state="unavailable"] .audio-level-meter__fill {
+  background: var(--panel-wait);
+}
+
 .recording-test-level__status {
   justify-self: stretch;
   padding: 3px 5px;

@@ -617,7 +617,7 @@ export function RecordingCard({
         if (capture) stopStreams(capture.streams);
         levelMonitor?.dispose();
         if (exportCapture) await exportCapture.close().catch(() => {});
-        else if (sharedAudioContext?.context.state !== "closed") {
+        else if (sharedAudioContext && sharedAudioContext.context.state !== "closed") {
           await sharedAudioContext.context.close().catch(() => {});
         }
         setSession({
@@ -661,7 +661,7 @@ export function RecordingCard({
 
     const presentLevel = (fill, label, level, sourceState = "live") => {
       const sourceIsLive = sourceState === "live";
-      const measurementState = sourceIsLive && level.measured === false
+      const measurementState = level.measured === false
         ? "unavailable"
         : "measured";
       const measuredPercent = sourceIsLive ? level.percent : 0;
@@ -673,9 +673,12 @@ export function RecordingCard({
       if (row.dataset.levelMonitorState !== measurementState) {
         row.dataset.levelMonitorState = measurementState;
       }
-      const accessibleLevel = measurementState === "unavailable"
+      const accessibleLevel = {
+        lost: `${label}: stopa ztracena`,
+        unavailable: `${label}: stopa nedostupná`,
+      }[sourceState] ?? (measurementState === "unavailable"
         ? `${label}: měřidlo nedostupné`
-        : `${label}: ${percent} %`;
+        : `${label}: ${percent} %`);
       if (row.getAttribute("aria-label") !== accessibleLevel) {
         row.setAttribute("aria-label", accessibleLevel);
       }

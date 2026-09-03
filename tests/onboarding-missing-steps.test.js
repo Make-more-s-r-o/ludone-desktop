@@ -373,10 +373,12 @@ describe("dva chybějící kroky onboardingu", () => {
     expect(Number(microphone?.dataset.level)).toBe(0);
     expect(Number(system?.dataset.level)).toBeGreaterThan(0);
     expect(Number.parseFloat(
-      microphone?.querySelector(".audio-level-meter__fill")?.style.width ?? "NaN",
+      microphone?.querySelector(".audio-level-meter__fill")?.style
+        .getPropertyValue("--audio-level-measured") ?? "NaN",
     )).toBe(0);
     expect(Number.parseFloat(
-      system?.querySelector(".audio-level-meter__fill")?.style.width ?? "NaN",
+      system?.querySelector(".audio-level-meter__fill")?.style
+        .getPropertyValue("--audio-level-measured") ?? "NaN",
     )).toBeGreaterThan(40);
     expect(panel.document.querySelector('[data-testid="recording-test-continue"]')?.disabled)
       .toBe(true);
@@ -398,10 +400,12 @@ describe("dva chybějící kroky onboardingu", () => {
     expect(Number(microphone?.dataset.level)).toBeGreaterThan(0);
     expect(Number(system?.dataset.level)).toBe(0);
     expect(Number.parseFloat(
-      microphone?.querySelector(".audio-level-meter__fill")?.style.width ?? "NaN",
+      microphone?.querySelector(".audio-level-meter__fill")?.style
+        .getPropertyValue("--audio-level-measured") ?? "NaN",
     )).toBeGreaterThan(40);
     expect(Number.parseFloat(
-      system?.querySelector(".audio-level-meter__fill")?.style.width ?? "NaN",
+      system?.querySelector(".audio-level-meter__fill")?.style
+        .getPropertyValue("--audio-level-measured") ?? "NaN",
     )).toBe(0);
     expect(panel.document.querySelector('[data-testid="recording-test-continue"]')?.disabled)
       .toBe(true);
