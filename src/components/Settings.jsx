@@ -15,6 +15,123 @@ const DEFAULTS = {
   askOther: true,
   retention: "7 dní po odeslání",
 };
+const SETTINGS_TABS = Object.freeze([
+  { id: "account", label: "Účet" },
+  { id: "audio", label: "Zvuk" },
+  { id: "recordings", label: "Záznamy" },
+  { id: "diagnostics", label: "Diagnostika" },
+]);
+
+const PERMISSION_LABELS = Object.freeze({
+  denied: "Nepovoleno",
+  granted: "Povoleno",
+  "not-determined": "Zatím neurčeno",
+  restricted: "Omezeno systémem",
+  unknown: "Stav není známý",
+});
+
+function environmentForOrigin(origin) {
+  try {
+    const hostname = new URL(origin).hostname;
+    if (hostname === "app.ludone.cz") return "produkce";
+    if (hostname === "labs.ludone.cz") return "labs";
+  } catch {
+    // Neplatný nebo chybějící origin se níž zobrazí jako neznámý, nikdy se nehádá.
+  }
+  return "Není známo";
+}
+
+function permissionView(value) {
+  const status = typeof value?.status === "string" && PERMISSION_LABELS[value.status]
+    ? value.status
+    : "unknown";
+  return { status, label: PERMISSION_LABELS[status] };
+}
+
+function isSafeCount(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function localDateTime(iso) {
+  const date = new Date(iso);
+  const day = new Intl.DateTimeFormat("cs-CZ", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  }).format(date);
+  const time = new Intl.DateTimeFormat("cs-CZ", {
+    hour: "2-digit",
+    hour12: false,
+    minute: "2-digit",
+  }).format(date);
+  return `${day} v ${time}`;
+}
+
+function normalizeDiagnostics(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const rawVersion = typeof value.version === "string" ? value.version.trim() : "";
+  const version = /^\d{1,9}\.\d{1,9}\.\d{1,9}(?:-[0-9A-Za-z.-]{1,32})?(?:\+[0-9A-Za-z.-]{1,32})?$/u
+    .test(rawVersion) && rawVersion.length <= 64
+    ? rawVersion
+    : "Neznámá";
+  const architecture = ["Apple Silicon", "Intel"].includes(value.architecture)
+    ? value.architecture
+    : "Neznámá";
+  const queueAvailable = value.queue?.available === true
+    && isSafeCount(value.queue?.waiting)
+    && isSafeCount(value.queue?.sending)
+    && isSafeCount(value.queue?.failed);
+  const rawLastSuccessfulAt = value.serverConnection?.lastSuccessfulAt;
+  const parsedLastSuccessfulAt = typeof rawLastSuccessfulAt === "string"
+    ? new Date(rawLastSuccessfulAt)
+    : null;
+  const lastSuccessfulAt = parsedLastSuccessfulAt
+    && Number.isFinite(parsedLastSuccessfulAt.getTime())
+    && parsedLastSuccessfulAt.toISOString() === rawLastSuccessfulAt
+    && parsedLastSuccessfulAt.getTime() <= Date.now()
+    ? rawLastSuccessfulAt
+    : null;
+
+  return {
+    version,
+    architecture,
+    permissions: {
+      microphone: permissionView(value.permissions?.microphone),
+      systemAudio: permissionView(value.permissions?.systemAudio),
+    },
+    serverConnection: lastSuccessfulAt && value.serverConnection?.status === "last-success"
+      ? {
+          status: "last-success",
+          lastSuccessfulAt,
+          label: `Poslední potvrzené odeslání: ${localDateTime(lastSuccessfulAt)}`,
+        }
+      : {
+          status: "unknown",
+          lastSuccessfulAt: null,
+          label: "Zatím bez zaznamenaného úspěšného volání",
+        },
+    queue: {
+      available: queueAvailable,
+      waiting: queueAvailable ? value.queue.waiting : 0,
+      sending: queueAvailable ? value.queue.sending : 0,
+      failed: queueAvailable ? value.queue.failed : 0,
+    },
+  };
+}
+
+function queueStatusText(queue) {
+  if (!queue?.available) return "Stav fronty není dostupný";
+  const parts = [];
+  if (queue.waiting > 0) parts.push(`${queue.waiting} ${queue.waiting === 1 ? "čeká" : "čekají"}`);
+  if (queue.sending > 0) parts.push(`${queue.sending} ${queue.sending === 1 ? "se odesílá" : "se odesílají"}`);
+  if (queue.failed > 0) parts.push(`${queue.failed} ${queue.failed === 1 ? "selhala" : "selhaly"}`);
+  return parts.length > 0 ? parts.join(" · ") : "Nic nečeká";
+}
+
+function safeExportFileName(value) {
+  if (typeof value !== "string") return null;
+  return /^ludone-diagnostika-[0-9-]+\.txt$/u.test(value) ? value : null;
+}
 
 function normalizeIdentityPart(value) {
   if (typeof value !== "string") return "";
@@ -106,9 +223,14 @@ function useSystemBooleanSetting(getterName, setterName) {
 }
 
 export function SettingsApp() {
+  const [activeTab, setActiveTab] = useState("account");
   const [settings, setSettings] = useState(loadSettings);
   const [account, setAccount] = useState({ state: "unknown", identity: null });
   const [destination, setDestination] = useState({ state: "unknown", origin: null });
+  const [device, setDevice] = useState({ state: "unknown", name: null });
+  const [diagnostics, setDiagnostics] = useState({ state: "loading", value: null });
+  const [exportState, setExportState] = useState({ state: "idle", fileName: null });
+  const [logoutState, setLogoutState] = useState({ state: "idle", message: "" });
   const dock = useSystemBooleanSetting("getDockVisible", "setDockVisible");
   const login = useSystemBooleanSetting("getOpenAtLogin", "setOpenAtLogin");
   const update = (key, value) => {
@@ -183,7 +305,138 @@ export function SettingsApp() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const getDeviceName = window.ludone?.getDeviceName;
+    if (typeof getDeviceName !== "function") return () => { active = false; };
+
+    Promise.resolve()
+      .then(() => getDeviceName())
+      .then((value) => {
+        if (!active) return;
+        const name = typeof value === "string" ? value.trim() : "";
+        setDevice(name
+          ? { state: "resolved", name }
+          : { state: "unknown", name: null });
+      })
+      .catch(() => {
+        if (active) setDevice({ state: "unknown", name: null });
+      });
+
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let requestId = 0;
+    if (activeTab !== "recordings" && activeTab !== "diagnostics") {
+      return () => { active = false; };
+    }
+    const getDiagnostics = window.ludone?.getDiagnostics;
+    if (typeof getDiagnostics !== "function") {
+      setDiagnostics({ state: "unknown", value: null });
+      return () => { active = false; };
+    }
+
+    const refreshDiagnostics = () => {
+      requestId += 1;
+      const currentRequestId = requestId;
+      setDiagnostics((current) => (
+        current.value ? current : { state: "loading", value: null }
+      ));
+      Promise.resolve()
+        .then(() => getDiagnostics())
+        .then((value) => {
+          if (!active || currentRequestId !== requestId) return;
+          const normalized = normalizeDiagnostics(value);
+          setDiagnostics(normalized
+            ? { state: "ready", value: normalized }
+            : { state: "unknown", value: null });
+        })
+        .catch(() => {
+          if (active && currentRequestId === requestId) {
+            setDiagnostics({ state: "unknown", value: null });
+          }
+        });
+    };
+    const refreshVisibleDiagnostics = () => {
+      if (document.visibilityState === "visible") refreshDiagnostics();
+    };
+
+    window.addEventListener("focus", refreshDiagnostics);
+    document.addEventListener("visibilitychange", refreshVisibleDiagnostics);
+    refreshDiagnostics();
+
+    return () => {
+      active = false;
+      requestId += 1;
+      window.removeEventListener("focus", refreshDiagnostics);
+      document.removeEventListener("visibilitychange", refreshVisibleDiagnostics);
+    };
+  }, [activeTab]);
+
+  const selectRelativeTab = (event, currentIndex) => {
+    let nextIndex;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % SETTINGS_TABS.length;
+    else if (event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + SETTINGS_TABS.length) % SETTINGS_TABS.length;
+    } else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = SETTINGS_TABS.length - 1;
+    else return;
+
+    event.preventDefault();
+    const nextTab = SETTINGS_TABS[nextIndex];
+    setActiveTab(nextTab.id);
+    document.getElementById(`settings-tab-${nextTab.id}`)?.focus();
+  };
+
+  const logoutThisMac = async () => {
+    if (logoutState.state === "busy" || typeof window.ludone?.logout !== "function") return;
+    setLogoutState({ state: "busy", message: "" });
+    try {
+      const result = await window.ludone.logout();
+      if (result?.signedOutLocally === true) {
+        setAccount({ state: "signed-out", identity: null });
+        setLogoutState({ state: "done", message: "Tento Mac je odhlášený." });
+        return;
+      }
+      const messages = {
+        "recording-active": "Nejdřív ukonči nahrávání.",
+        "tracking-active": "Nejdřív zastav LuTrack.",
+      };
+      setLogoutState({
+        state: "error",
+        message: messages[result?.reason] ?? "Odhlášení se nepodařilo.",
+      });
+    } catch {
+      setLogoutState({ state: "error", message: "Odhlášení se nepodařilo." });
+    }
+  };
+
+  const exportDiagnostics = async () => {
+    if (
+      exportState.state === "busy"
+      || typeof window.ludone?.exportDiagnostics !== "function"
+    ) return;
+    setExportState({ state: "busy", fileName: null });
+    try {
+      // Bez argumentu schválně: snapshot znovu sestaví hlavní proces. Renderer tak
+      // do souboru nemůže přimíchat identitu, token, název schůzky ani cestu.
+      const result = await window.ludone.exportDiagnostics();
+      const fileName = result?.ok === true ? safeExportFileName(result.fileName) : null;
+      setExportState(fileName
+        ? { state: "done", fileName }
+        : { state: "error", fileName: null });
+    } catch {
+      setExportState({ state: "error", fileName: null });
+    }
+  };
+
   const signedIn = account.state === "signed-in" && account.identity;
+  const diagnosticValues = diagnostics.value;
+  const queueText = diagnostics.state === "loading"
+    ? "Načítám stav fronty…"
+    : queueStatusText(diagnosticValues?.queue);
 
   return (
     <main className="settings-window window-surface">
@@ -199,109 +452,311 @@ export function SettingsApp() {
         </button>
       </header>
 
+      <nav className="settings-tabs" role="tablist" aria-label="Části nastavení">
+        {SETTINGS_TABS.map((tab, index) => (
+          <button
+            key={tab.id}
+            type="button"
+            id={`settings-tab-${tab.id}`}
+            className="settings-tab"
+            role="tab"
+            aria-controls={`settings-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id}
+            tabIndex={activeTab === tab.id ? 0 : -1}
+            onClick={() => setActiveTab(tab.id)}
+            onKeyDown={(event) => selectRelativeTab(event, index)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
       <div className="settings-content">
-        <section className="settings-group" aria-labelledby="recording-settings-title">
-          <div className="settings-group__heading">
-            <span><MicIcon /></span>
-            <div><p className="eyebrow">Doporučení</p><h2 id="recording-settings-title">Kdy nahrávat</h2></div>
-          </div>
-          <div className="settings-row">
-            <div><strong>Ostatní hovory</strong><small>Nejdřív se zeptat</small></div>
-            <Toggle
-              checked={settings.askOther}
-              onChange={(value) => update("askOther", value)}
-              label="Ptát se před nahráváním ostatních hovorů"
-            />
-          </div>
-        </section>
-
-        <section className="settings-group" aria-labelledby="audio-settings-title">
-          <div className="settings-group__heading">
-            <span><VolumeIcon /></span>
-            <div><p className="eyebrow">Lokální soubory</p><h2 id="audio-settings-title">Co se děje se zvukem</h2></div>
-          </div>
-          <label className="settings-select">
-            <span><strong>Ponechat na tomto Macu</strong><small>Po odeslání do LuDone</small></span>
-            <select value={settings.retention} onChange={(event) => update("retention", event.target.value)}>
-              <option>Ihned smazat</option>
-              <option>24 hodin po odeslání</option>
-              <option>7 dní po odeslání</option>
-              <option>30 dní po odeslání</option>
-              <option>Nemazat</option>
-            </select>
-          </label>
-          <p className="settings-hint">V prototypu se žádný zvukový soubor nevytváří ani nemaže.</p>
-        </section>
-
-        <section className="settings-group" aria-labelledby="account-settings-title">
-          <div className="settings-group__heading">
-            <span><UserIcon /></span>
-            <div><p className="eyebrow">Účet a připojení</p><h2 id="account-settings-title">Kam data míří</h2></div>
-          </div>
-          <div
-            className={`account-card account-card--${account.state}`}
-            data-testid="settings-account"
-            data-auth-state={account.state}
-          >
-            {signedIn && (
-              <div className="avatar" data-testid="settings-avatar">
-                {identityAvatar(account.identity)}
-              </div>
-            )}
-            <div>
-              {signedIn ? (
-                <>
-                  <strong data-testid="settings-identity-name">{account.identity.name}</strong>
-                  {account.identity.hasName && (
-                    <small data-testid="settings-identity-email">{account.identity.email}</small>
-                  )}
-                </>
-              ) : (
-                <strong>{account.state === "signed-out" ? "Nikdo není přihlášený" : "Identita není známá"}</strong>
-              )}
+        <section
+          id="settings-panel-account"
+          className="settings-tab-panel"
+          role="tabpanel"
+          aria-labelledby="settings-tab-account"
+          hidden={activeTab !== "account"}
+        >
+          <section className="settings-group" aria-labelledby="account-settings-title">
+            <div className="settings-group__heading">
+              <span><UserIcon /></span>
+              <div><p className="eyebrow">Účet</p><h2 id="account-settings-title">Tento Mac</h2></div>
             </div>
-            <span
-              className={signedIn ? "connected" : "connection-state"}
-              data-testid="settings-account-status"
-              role="status"
+            <div
+              className={`account-card account-card--${account.state}`}
+              data-testid="settings-account"
+              data-auth-state={account.state}
             >
-              {signedIn && <CheckIcon />}
-              {signedIn ? "Připojeno" : (account.state === "signed-out" ? "Nepřipojeno" : "Stav neznámý")}
-            </span>
-          </div>
-          <div
-            className="destination-row"
-            data-testid="settings-destination"
-            data-destination-state={destination.state}
-            data-origin={destination.origin ?? undefined}
-          >
-            <CloudIcon />
-            <span>
-              <small>Cílový prostor</small>
-              <strong>{destination.origin ?? "Adresa není známá"}</strong>
-            </span>
-          </div>
-          <div className="settings-row">
-            <div>
-              <strong>Zobrazovat i ikonu v Docku</strong>
-              <small>Zapni, když se ti ikona v liště schovává za notch nebo za jinou aplikaci.</small>
+              {signedIn && (
+                <div className="avatar" data-testid="settings-avatar" aria-hidden="true">
+                  {identityAvatar(account.identity)}
+                </div>
+              )}
+              <div className="account-card__facts">
+                <div className="settings-fact-row">
+                  <small>Přihlášen</small>
+                  {signedIn ? (
+                    <strong data-testid="settings-identity-name">{account.identity.name}</strong>
+                  ) : (
+                    <strong>
+                      {account.state === "signed-out" ? "Nikdo" : "Identita není známá"}
+                    </strong>
+                  )}
+                </div>
+                <div className="settings-fact-row">
+                  <small>E-mail</small>
+                  <strong
+                    data-testid={signedIn && account.identity.hasName
+                      ? "settings-identity-email"
+                      : undefined}
+                  >
+                    {signedIn ? account.identity.email : "—"}
+                  </strong>
+                </div>
+                <div className="settings-fact-row">
+                  <small>Zařízení</small>
+                  <strong data-testid="settings-device">
+                    {device.name ?? "Název zařízení není známý"}
+                  </strong>
+                </div>
+                <div className="settings-fact-row">
+                  <small>Prostředí</small>
+                  <strong data-testid="settings-environment">
+                    {destination.origin ? environmentForOrigin(destination.origin) : "Není známo"}
+                  </strong>
+                </div>
+              </div>
+              <span
+                className={signedIn ? "connected" : "connection-state"}
+                data-testid="settings-account-status"
+                role="status"
+              >
+                {signedIn && <CheckIcon />}
+                {signedIn ? "Přihlášen" : (account.state === "signed-out" ? "Odhlášen" : "Stav neznámý")}
+              </span>
             </div>
-            <Toggle
-              checked={dock.value}
-              disabled={!dock.loaded || dock.busy}
-              onChange={dock.update}
-              label="Zobrazovat i ikonu v Docku"
-            />
-          </div>
-          <div className="settings-row">
-            <div><strong>Spouštět po přihlášení do systému</strong></div>
-            <Toggle
-              checked={login.value}
-              disabled={!login.loaded || login.busy}
-              onChange={login.update}
-              label="Spouštět po přihlášení do systému"
-            />
-          </div>
+            <div
+              className="destination-row"
+              data-testid="settings-destination"
+              data-destination-state={destination.state}
+              data-origin={destination.origin ?? undefined}
+            >
+              <CloudIcon />
+              <span>
+                <small>Cílový prostor</small>
+                <strong>{destination.origin ?? "Adresa není známá"}</strong>
+              </span>
+            </div>
+            <div className="settings-action-row">
+              <button
+                type="button"
+                className="button button--small"
+                disabled={!signedIn || logoutState.state === "busy"}
+                onClick={logoutThisMac}
+              >
+                {logoutState.state === "busy" ? "Odhlašuji…" : "Odhlásit tento Mac"}
+              </button>
+              <small>Fronta zůstane a odešle se po dalším přihlášení.</small>
+            </div>
+            {logoutState.message && (
+              <p className={`settings-feedback settings-feedback--${logoutState.state}`} role="status">
+                {logoutState.message}
+              </p>
+            )}
+            <div className="settings-divider" />
+            <div className="settings-row">
+              <div>
+                <strong>Zobrazovat i ikonu v Docku</strong>
+                <small>Zapni, když se ti ikona v liště schovává za notch nebo za jinou aplikaci.</small>
+              </div>
+              <Toggle
+                checked={dock.value}
+                disabled={!dock.loaded || dock.busy}
+                onChange={dock.update}
+                label="Zobrazovat i ikonu v Docku"
+              />
+            </div>
+            <div className="settings-row">
+              <div><strong>Spouštět po přihlášení do systému</strong></div>
+              <Toggle
+                checked={login.value}
+                disabled={!login.loaded || login.busy}
+                onChange={login.update}
+                label="Spouštět po přihlášení do systému"
+              />
+            </div>
+          </section>
+        </section>
+
+        <section
+          id="settings-panel-audio"
+          className="settings-tab-panel"
+          role="tabpanel"
+          aria-labelledby="settings-tab-audio"
+          hidden={activeTab !== "audio"}
+        >
+          <section className="settings-group" aria-labelledby="recording-settings-title">
+            <div className="settings-group__heading">
+              <span><MicIcon /></span>
+              <div>
+                <p className="eyebrow">Doporučení</p>
+                <h2 id="recording-settings-title">Kdy nahrávat</h2>
+              </div>
+            </div>
+            <div className="settings-row">
+              <div><strong>Ostatní hovory</strong><small>Nejdřív se zeptat</small></div>
+              <Toggle
+                checked={settings.askOther}
+                onChange={(value) => update("askOther", value)}
+                label="Ptát se před nahráváním ostatních hovorů"
+              />
+            </div>
+          </section>
+
+          <section className="settings-group" aria-labelledby="audio-settings-title">
+            <div className="settings-group__heading">
+              <span><VolumeIcon /></span>
+              <div>
+                <p className="eyebrow">Dvě oddělené stopy</p>
+                <h2 id="audio-settings-title">Co se děje se zvukem</h2>
+              </div>
+            </div>
+            <div className="settings-row settings-row--static">
+              <div><strong>Mikrofon</strong><small>Tvůj hlas se ukládá samostatně.</small></div>
+            </div>
+            <div className="settings-row settings-row--static">
+              <div>
+                <strong>Ostatní zvuk</strong>
+                <small>Je-li povolený, hlasy z hovoru se ukládají do druhé stopy.</small>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section
+          id="settings-panel-recordings"
+          className="settings-tab-panel"
+          role="tabpanel"
+          aria-labelledby="settings-tab-recordings"
+          hidden={activeTab !== "recordings"}
+        >
+          <section className="settings-group" aria-labelledby="recordings-settings-title">
+            <div className="settings-group__heading">
+              <span><CloudIcon /></span>
+              <div>
+                <p className="eyebrow">Lokální soubory</p>
+                <h2 id="recordings-settings-title">Záznamy</h2>
+              </div>
+            </div>
+            <label className="settings-select">
+              <span><strong>Ponechat na tomto Macu</strong><small>Po odeslání do LuDone</small></span>
+              <select value={settings.retention} onChange={(event) => update("retention", event.target.value)}>
+                <option>Ihned smazat</option>
+                <option>24 hodin po odeslání</option>
+                <option>7 dní po odeslání</option>
+                <option>30 dní po odeslání</option>
+                <option>Nemazat</option>
+              </select>
+            </label>
+            <p className="settings-hint">Neodeslané záznamy se automaticky nemažou.</p>
+            <div className="settings-row settings-row--static" data-testid="settings-queue-summary">
+              <div><strong>Fronta</strong><small>{queueText}</small></div>
+            </div>
+          </section>
+        </section>
+
+        <section
+          id="settings-panel-diagnostics"
+          className="settings-tab-panel"
+          role="tabpanel"
+          aria-labelledby="settings-tab-diagnostics"
+          hidden={activeTab !== "diagnostics"}
+        >
+          <section className="settings-group" aria-labelledby="diagnostics-settings-title">
+            <div className="settings-group__heading">
+              <span><CloudIcon /></span>
+              <div>
+                <p className="eyebrow">Podpora</p>
+                <h2 id="diagnostics-settings-title">Diagnostika</h2>
+              </div>
+            </div>
+            <p className="settings-diagnostics-intro">
+              Když něco nefunguje, tohle pošleš. Bez zvuku, bez tokenu, bez názvů schůzek.
+            </p>
+            <div className="diagnostics-card">
+              <div className="settings-fact-row">
+                <small>Verze</small>
+                <strong data-testid="diagnostics-version">
+                  {diagnosticValues?.version ?? "Stav není známý"}
+                </strong>
+              </div>
+              <div className="settings-fact-row">
+                <small>Architektura</small>
+                <strong data-testid="diagnostics-architecture">
+                  {diagnosticValues?.architecture ?? "Stav není známý"}
+                </strong>
+              </div>
+              <div className="settings-fact-row">
+                <small>Mikrofon</small>
+                <strong
+                  className="diagnostics-status"
+                  data-testid="diagnostics-microphone"
+                  data-status={diagnosticValues?.permissions.microphone.status ?? "unknown"}
+                >
+                  {diagnosticValues?.permissions.microphone.label ?? "Stav není známý"}
+                </strong>
+              </div>
+              <div className="settings-fact-row">
+                <small>Ostatní zvuk</small>
+                <strong
+                  className="diagnostics-status"
+                  data-testid="diagnostics-system-audio"
+                  data-status={diagnosticValues?.permissions.systemAudio.status ?? "unknown"}
+                >
+                  {diagnosticValues?.permissions.systemAudio.label ?? "Stav není známý"}
+                </strong>
+              </div>
+              <div className="settings-fact-row">
+                <small>Spojení se serverem</small>
+                <strong
+                  data-testid="diagnostics-server"
+                  data-status={diagnosticValues?.serverConnection.status ?? "unknown"}
+                >
+                  {diagnosticValues?.serverConnection.label ?? "Stav není známý"}
+                </strong>
+              </div>
+              <div className="settings-fact-row">
+                <small>Fronta</small>
+                <strong data-testid="diagnostics-queue">{queueText}</strong>
+              </div>
+            </div>
+            <div className="settings-action-row settings-action-row--export">
+              <button
+                type="button"
+                className="button button--small"
+                disabled={exportState.state === "busy"}
+                onClick={exportDiagnostics}
+              >
+                {exportState.state === "busy" ? "Exportuji…" : "Exportovat diagnostiku"}
+              </button>
+              <small>
+                Textový soubor do Stažených. Nikdy neobsahuje zvuk, přihlašovací údaje,
+                tokeny, názvy schůzek ani cesty k souborům.
+              </small>
+            </div>
+            {exportState.state === "done" && (
+              <p className="settings-feedback settings-feedback--done" role="status">
+                Uloženo do Stažených: {exportState.fileName}
+              </p>
+            )}
+            {exportState.state === "error" && (
+              <p className="settings-feedback settings-feedback--error" role="status">
+                Diagnostiku se nepodařilo uložit.
+              </p>
+            )}
+          </section>
         </section>
       </div>
 

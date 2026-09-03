@@ -515,7 +515,9 @@ describe("odhlášení", () => {
     expect(registration).toContain(
       'const { createLogoutController } = require("./auth.cjs");',
     );
-    expect(registration).toContain('handleValidated("auth:logout", ["panel"]');
+    expect(registration).toContain('handleValidated("auth:logout", ["panel", "settings"]');
+    expect(registration).toContain("hasLiveRecording()");
+    expect(registration).toContain("trackingWorkBlocksQuit()");
     expect(registration).toContain("logoutAuthController.logout()");
     expect(registration).toContain("return result");
     expect(registration).not.toMatch(/\b(?:accessToken|refreshToken|clientId|identity|token)\b|\.{3}/);
@@ -534,7 +536,11 @@ describe("odhlášení", () => {
     const logout = vi.fn(async () => sentinel);
     // Po B3 hlavní proces stav lišty NENASTAVUJE — mění fakt a nechá ho odvodit.
     // Vlastník nahrávky v `trackingOwners` je tu schválně: odhlášení ho nesmí smazat.
-    const appState = { signedIn: true, trackingOwners: new Set(["nahravka-1"]) };
+    const appState = {
+      acceptRendererSignIn: true,
+      signedIn: true,
+      trackingOwners: new Set(["nahravka-1"]),
+    };
     // Zaznamenáváme fakt V OKAMŽIKU přepočtu. Bez toho by prošlo i pořadí
     // `refreshTray(); appState.signedIn = false;`, kde lišta počítá ze zastaralého faktu.
     const faktPriPrepoctu = [];
@@ -544,6 +550,8 @@ describe("odhlášení", () => {
     const logger = { error: vi.fn() };
     const authSessionCoordinator = {};
     const createLogoutController = vi.fn(() => ({ logout }));
+    const hasLiveRecording = vi.fn(() => false);
+    const trackingWorkBlocksQuit = vi.fn(() => false);
     const requireModule = vi.fn(() => ({ createLogoutController }));
     const captured = {};
     const handleValidated = (channel, allowedKinds, handler) => {
@@ -560,6 +568,8 @@ describe("odhlášení", () => {
       "authSessionCoordinator",
       "authSessionGeneration",
       "authLogoutsInFlight",
+      "hasLiveRecording",
+      "trackingWorkBlocksQuit",
       `"use strict"; ${registration}`,
     )(
       requireModule,
@@ -572,6 +582,8 @@ describe("odhlášení", () => {
       authSessionCoordinator,
       0,
       0,
+      hasLiveRecording,
+      trackingWorkBlocksQuit,
     );
 
     expect(requireModule).toHaveBeenCalledWith("./auth.cjs");
@@ -581,11 +593,32 @@ describe("odhlášení", () => {
       safeStorage,
       logger,
     });
-    expect(captured).toMatchObject({ channel: "auth:logout", allowedKinds: ["panel"] });
+    expect(captured).toMatchObject({
+      channel: "auth:logout",
+      allowedKinds: ["panel", "settings"],
+    });
+
+    hasLiveRecording.mockReturnValueOnce(true);
+    await expect(captured.handler()).resolves.toEqual({
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "recording-active",
+    });
+    expect(logout).not.toHaveBeenCalled();
+
+    trackingWorkBlocksQuit.mockReturnValueOnce(true);
+    await expect(captured.handler()).resolves.toEqual({
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "tracking-active",
+    });
+    expect(logout).not.toHaveBeenCalled();
+
     const returned = await captured.handler();
     expect(returned).toBe(sentinel);
     expect(logout).toHaveBeenCalledOnce();
     expect(appState.signedIn, "odhlášení musí změnit FAKT, ne ikonu").toBe(false);
+    expect(appState.acceptRendererSignIn).toBe(false);
     expect(refreshTray, "a nechat stav přepočítat").toHaveBeenCalledOnce();
     expect(faktPriPrepoctu, "přepočet musí přijít AŽ PO změně faktu").toEqual([false]);
 
