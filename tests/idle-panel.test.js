@@ -12,6 +12,8 @@ const onboardingAudioFrames = new WeakMap();
 const RENDERER_STYLES = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 const ONBOARDING_CONTENT_HEIGHTS = {
+  // JSDOM nemá layout engine. Vkládáme proto jen deterministickou intrinsic výšku
+  // obsahu; rozmístění do řádků a měřený report se dál odvozují ze skutečného CSS a DOM.
   "auth-step": 276,
   "auth-waiting-step": 342,
   "permission-step": 408,
@@ -127,7 +129,8 @@ function installOnboardingGeometry(view) {
       const content = this.closest(".onboarding__content");
       const metrics = contentMetrics(content);
       const bottom = (metrics?.top || 0) + (metrics?.scrollHeight || 0) - 25;
-      return new view.DOMRect(28, bottom - 40, 310, 40);
+      const height = Number.parseFloat(view.getComputedStyle(this).minHeight) || 46;
+      return new view.DOMRect(28, bottom - height, 310, height);
     }
     return originalRect.call(this);
   };
@@ -150,7 +153,7 @@ function installOnboardingGeometry(view) {
       const metrics = content ? contentMetrics(content) : null;
       const reportedHeight = reportHeight.mock.lastCall?.[0] || 0;
       return {
-        buttonFits: !button || button.getBoundingClientRect().bottom <= reportedHeight,
+        buttonFits: Boolean(button) && button.getBoundingClientRect().bottom <= reportedHeight,
         clientHeight: content?.clientHeight || 0,
         contentFits: (content?.scrollHeight || 0) <= (content?.clientHeight || 0),
         reportCoversContent: reportedHeight === metrics?.requiredPanelHeight,
