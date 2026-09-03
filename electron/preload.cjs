@@ -31,7 +31,11 @@ function onTrayCommand(callback) {
         for (let index = 0; index < commands.length; index += 1) {
           const command = commands[index];
           if (!active) return;
-          if (command === "stop-recording" || command === "start-tracking") {
+          if (
+            command === "stop-recording"
+            || command === "start-tracking"
+            || command === "stop-tracking"
+          ) {
             callback(command);
             // Každý příkaz dostane vlastní event-loop tah. React by jinak víc
             // synchronních setState sloučil a komponenty by viděly jen poslední akci.

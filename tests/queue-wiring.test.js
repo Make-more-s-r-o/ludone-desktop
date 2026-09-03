@@ -1372,12 +1372,43 @@ describe("viditelnost ikony a klikání na lištu", () => {
       null,
       "CommandOrControl+Q",
     ]);
+    expect(template[1].enabled).toBe(true);
     expect(tray.popUpContextMenu).toHaveBeenCalledExactlyOnceWith(
       harness.electron.Menu.buildFromTemplate.mock.results[0].value,
     );
     expect(tray.setContextMenu).not.toHaveBeenCalled();
     expect(panel.visible).toBe(false);
     expect(panel.focused).toBe(false);
+  });
+
+  it("běžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů", async () => {
+    const harness = await loadMain({
+      env: { DESKTOP_TIME_ENABLED: "true" },
+      trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const tray = harness.trays[0];
+
+    await harness.ipcHandlers.get("tracking:start")(event, { projectId: PROJECT_A });
+    tray.emit("right-click");
+
+    const template = harness.electron.Menu.buildFromTemplate.mock.calls[0][0];
+    expect(template[1]).toMatchObject({
+      label: "Zastavit měření času",
+      accelerator: "Control+Option+T",
+      enabled: true,
+    });
+    expect(template.map((item) => item.label)).not.toContain("Spustit LuTrack");
+
+    template[1].click();
+
+    expect(panelContents.send).toHaveBeenCalledExactlyOnceWith("tray:command");
+    const takeCommand = harness.ipcHandlers.get("tray:command");
+    expect(takeCommand).toBeTypeOf("function");
+    expect(takeCommand(event)).toEqual(["stop-tracking"]);
+    expect(takeCommand(event)).toEqual([]);
   });
 
   it("rychlé akce předá panelu jediným validovaným kanálem i před jeho odběrem", async () => {
@@ -1429,7 +1460,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
 
   it("preload po registraci vyzvedne i dříve čekající rychlé akce", async () => {
     const responses = [
-      ["stop-recording", "start-tracking"],
+      ["stop-recording", "start-tracking", "stop-tracking"],
       [],
     ];
     const { api, emit, invoke } = loadPreload(() => responses.shift() ?? []);
@@ -1447,6 +1478,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
       expect(listener.mock.calls).toEqual([
         ["stop-recording"],
         ["start-tracking"],
+        ["stop-tracking"],
       ]);
     });
     await emit("tray:command");
@@ -1454,10 +1486,11 @@ describe("viditelnost ikony a klikání na lištu", () => {
     expect(invoke).toHaveBeenCalledTimes(2);
     expect(invoke).toHaveBeenNthCalledWith(1, "tray:command");
     expect(invoke).toHaveBeenNthCalledWith(2, "tray:command");
-    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenCalledTimes(3);
     expect(deliveryTurns).toEqual([
       ["stop-recording", 0],
       ["start-tracking", 1],
+      ["stop-tracking", 2],
     ]);
     unsubscribe();
   });
@@ -1583,7 +1616,7 @@ describe("průběžný titulek lišty", () => {
     reportFacts(event, { signedIn: true, tracking: false });
   });
 
-  it("při souběhu ukazuje čas nahrávání a po jeho konci pokračující čas LuTracku", async () => {
+  it("při souběhu ukazuje oba časy a po konci nahrávání jediný čas LuTracku", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(startTime);
     const harness = await loadMain();
@@ -1599,7 +1632,7 @@ describe("průběžný titulek lišty", () => {
     vi.setSystemTime(startTime + 35_000);
     harness.runTrayTitleInterval();
     expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
-      formatElapsed(5),
+      "00:05 · 00:35",
       { fontType: "monospacedDigit" },
     );
 
@@ -1611,6 +1644,44 @@ describe("průběžný titulek lišty", () => {
     expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
       formatElapsed(35),
       { fontType: "monospacedDigit" },
+    );
+    reportFacts(event, { signedIn: true, tracking: false });
+  });
+
+  it("dlouhý souběh zůstane jednoznačný a nepřekročí třináct znaků", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+
+    reportFacts(event, { signedIn: true, tracking: true });
+    vi.setSystemTime(startTime + 60 * 60 * 1_000);
+    const recording = await harness.ipcHandlers.get("recording:begin")(event);
+
+    vi.setSystemTime(startTime + 2 * 60 * 60 * 1_000);
+    harness.runTrayTitleInterval();
+    const titleWithSingleDigitHours = harness.trays[0].setTitle.mock.lastCall?.[0];
+    expect(titleWithSingleDigitHours).toBe("01h00 · 02h00");
+    expect(titleWithSingleDigitHours).toHaveLength(13);
+
+    vi.setSystemTime(startTime + 13 * 60 * 60 * 1_000);
+    harness.runTrayTitleInterval();
+    const titleUnderHundredHours = harness.trays[0].setTitle.mock.lastCall?.[0];
+    expect(titleUnderHundredHours).toBe("12h00 · 13h00");
+    expect(titleUnderHundredHours).toHaveLength(13);
+
+    vi.setSystemTime(startTime + 102 * 60 * 60 * 1_000);
+    harness.runTrayTitleInterval();
+    const cappedTitle = harness.trays[0].setTitle.mock.lastCall?.[0];
+    expect(cappedTitle).toBe("100h+ · 100h+");
+    expect(cappedTitle).toHaveLength(13);
+
+    await harness.ipcHandlers.get("recording:finish")(
+      event,
+      recording.sessionId,
+      completedTrackTimings(recording.startedAt, 101 * 60 * 60 * 1_000),
     );
     reportFacts(event, { signedIn: true, tracking: false });
   });
