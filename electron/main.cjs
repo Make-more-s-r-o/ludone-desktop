@@ -109,7 +109,7 @@ let settingsWindow;
 let traySpaceWarningWindow;
 let trayState = "signed-out";
 let trayApplied = false;
-let trayThemeApplied;
+let trayVariantApplied;
 let trayTitleApplied;
 let trayTitleTimer;
 let trayTitleUpdatesStopped = false;
@@ -416,13 +416,24 @@ function shouldHidePanelOnBlur({
 }
 
 function currentTrayIconTheme() {
+  // nativeTheme popisuje vzhled aplikace, nikdy skutečné pozadí systémové lišty.
+  // Používáme ho proto jen pro návrhové varianty barevných aktivních stavů.
   return nativeTheme.shouldUseDarkColors ? "dark" : "light";
+}
+
+function trayIconVariant(state, theme = currentTrayIconTheme()) {
+  const iconName = trayIconName(state);
+  if (["signed-out", "idle", "queue-waiting"].includes(iconName)) return "template";
+  return theme === "light" ? "light" : "dark";
 }
 
 function trayImage(state, theme = currentTrayIconTheme()) {
   const iconName = trayIconName(state);
   const iconDirectory = path.join(__dirname, "ikony");
-  const iconTheme = theme === "light" ? "light" : "dark";
+  const iconVariant = trayIconVariant(iconName, theme);
+  // U šablony rozhoduje výhradně alfa; jednu kanonickou sadu proto používáme v obou
+  // motivech. Tím změna vzhledu aplikace zbytečně nepřekreslí systémově tónovanou ikonu.
+  const iconTheme = iconVariant === "template" ? "dark" : iconVariant;
   const fileName = `${iconTheme}-${iconName}`;
   const imageBuffer = fs.readFileSync(path.join(iconDirectory, `${fileName}.png`));
   const retinaBuffer = fs.readFileSync(path.join(iconDirectory, `${fileName}@2x.png`));
@@ -434,6 +445,7 @@ function trayImage(state, theme = currentTrayIconTheme()) {
   }
 
   image.addRepresentation({ scaleFactor: 2, buffer: retinaBuffer });
+  if (iconVariant === "template") image.setTemplateImage(true);
   return image;
 }
 
@@ -625,7 +637,6 @@ function refreshTray() {
   const systemAudioLost = hasLiveSystemAudioLoss();
   const tracking = appState.trackingOwners.size > 0;
   const queueWaiting = appState.outboundQueueWaitingCount > 0;
-  const theme = currentTrayIconTheme();
   const next = trayIconName(deriveTrayState({
     queueWaiting,
     recording,
@@ -633,9 +644,10 @@ function refreshTray() {
     systemAudioLost,
     tracking,
   }));
+  const iconVariant = trayIconVariant(next);
   // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při
   // startu obojí rovná „signed-out“, funkce skončí předčasně a popisek se nenastaví NIKDY.
-  if (next !== trayState || theme !== trayThemeApplied || !trayApplied) {
+  if (next !== trayState || iconVariant !== trayVariantApplied || !trayApplied) {
     trayState = next;
     console.log(
       `[tray] ${new Date().toISOString()} stav=${trayState} nahrávání=${recording} `
@@ -643,10 +655,10 @@ function refreshTray() {
       + `fronta=${appState.outboundQueueWaitingCount} přihlášen=${appState.signedIn}`,
     );
     if (tray) {
-      tray.setImage(trayImage(trayState, theme));
+      tray.setImage(trayImage(trayState, iconVariant));
       tray.setToolTip(TRAY_LABELS[trayState]);
       trayApplied = true;
-      trayThemeApplied = theme;
+      trayVariantApplied = iconVariant;
     }
   }
   refreshTrayTitle();

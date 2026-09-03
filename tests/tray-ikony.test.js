@@ -149,6 +149,11 @@ function hashAlfy(soubor) {
   return createHash("sha256").update(alfa).digest("hex");
 }
 
+function alfa(soubor) {
+  const { rgba } = dekodujPng(soubor);
+  return Buffer.from(rgba.filter((_hodnota, index) => index % 4 === 3));
+}
+
 describe("ikony v liště", () => {
   it("adresář obsahuje právě dvacet osm očekávaných PNG s platným podpisem", () => {
     const ocekavane = MOTIVY.flatMap((motiv) => STAVY.flatMap((stav) => (
@@ -203,6 +208,45 @@ describe("ikony v liště", () => {
         ).toBe(STAVY.length);
       }
     }
+  });
+
+  it("šablonové stavy mají neprázdnou, částečně průhlednou a na motivu nezávislou alfu", () => {
+    for (const stav of ["signed-out", "idle", "queue-waiting"]) {
+      for (const varianta of VARIANTY) {
+        const tmava = alfa(cestaIkony(ADRESAR_IKON, "dark", stav, varianta));
+        const svetla = alfa(cestaIkony(ADRESAR_IKON, "light", stav, varianta));
+        expect(tmava.equals(svetla), `${stav}${varianta} mění alfa masku podle motivu`)
+          .toBe(true);
+        expect(tmava.some((hodnota) => hodnota > 0), `${stav}${varianta} má prázdnou alfu`)
+          .toBe(true);
+        expect(tmava.some((hodnota) => hodnota === 0), `${stav}${varianta} nemá průhledné okolí`)
+          .toBe(true);
+      }
+    }
+  });
+
+  it("stavové tvary zachovávají přeškrtnutí, tečku, prstýnek, dvojtečku i přerušený pulz", () => {
+    const obrazky = Object.fromEntries(STAVY.map((stav) => [
+      stav,
+      dekodujPng(cestaIkony(ADRESAR_IKON, "dark", stav, "@2x")),
+    ]));
+    const kryti = (stav, x, y) => obrazky[stav].pixel(x, y)[3];
+
+    // Přeškrtnutí přidává tah mimo samotný pulz.
+    expect(kryti("signed-out", 30, 4)).toBeGreaterThan(128);
+    expect(kryti("idle", 30, 4)).toBe(0);
+    // Nahrávání má plnou tečku, čas a souběh průhledný střed prstýnku.
+    expect(kryti("recording", 28, 27)).toBeGreaterThan(192);
+    expect(kryti("tracking", 28, 27)).toBeLessThan(32);
+    expect(kryti("recording-tracking", 28, 27)).toBeLessThan(32);
+    // Čekající fronta má dvě oddělená plná jádra a průhlednou mezeru.
+    expect(kryti("queue-waiting", 26, 27)).toBeGreaterThan(192);
+    expect(kryti("queue-waiting", 28, 27)).toBeLessThan(32);
+    expect(kryti("queue-waiting", 31, 27)).toBeGreaterThan(192);
+    // Při ztrátě zvuku schází poslední úsek pulzu, odznak ale zůstává plný.
+    expect(kryti("recording", 29, 15)).toBeGreaterThan(192);
+    expect(kryti("recording-audio-lost", 29, 15)).toBe(0);
+    expect(kryti("recording-audio-lost", 28, 27)).toBeGreaterThan(192);
   });
 
   it("používá doslovné OKLCH barvy a převod se propíše do viditelných pixelů", () => {

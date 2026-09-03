@@ -320,6 +320,7 @@ function fakeElectron(userDataPath, {
       // a to není nález o kódu, jen o harnessu.
       createFromBuffer: vi.fn((buffer) => {
         const image = {
+          templateImage: false,
           sourceBytes: Buffer.from(buffer),
           retinaBytes: null,
           addRepresentation({ buffer: retinaBuffer }) {
@@ -327,8 +328,11 @@ function fakeElectron(userDataPath, {
             return this;
           },
           isEmpty: () => false,
+          isTemplateImage() { return this.templateImage; },
           resize() { return this; },
-          setTemplateImage: vi.fn(),
+          setTemplateImage: vi.fn(function setTemplateImage(value) {
+            this.templateImage = value;
+          }),
         };
         nativeImages.push(image);
         return image;
@@ -2104,25 +2108,60 @@ describe("výška panelu podle obsahu", () => {
   });
 });
 
-describe("barevné varianty ikony podle motivu lišty", () => {
-  it("za běhu přepne tmavou a světlou sadu a při návratu obnoví původní bajty", async () => {
+describe("šablonové a barevné varianty ikony v liště", () => {
+  it("neutrální stav použije šablonový obraz a při změně motivu ho nepřepíná", async () => {
     const harness = await loadMain({ shouldUseDarkColors: true });
     await harness.runReady();
     const tray = harness.trays[0];
+    const image = tray.setImage.mock.calls.at(-1)?.[0];
+    const callsAfterStart = tray.setImage.mock.calls.length;
+
+    expect(image.setTemplateImage).toHaveBeenCalledExactlyOnceWith(true);
+    expect(image.isTemplateImage()).toBe(true);
+
+    harness.setShouldUseDarkColors(false);
+
+    expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart);
+  });
+
+  it("u aktivního stavu přepne tmavou a světlou sadu a zachová očekávané bajty", async () => {
+    const harness = await loadMain({ shouldUseDarkColors: true });
+    await harness.runReady();
+    const tray = harness.trays[0];
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    harness.ipcListeners.get("tray:report-facts")(event, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: true,
+    });
     const darkImage = tray.setImage.mock.calls.at(-1)?.[0];
     const callsAfterStart = tray.setImage.mock.calls.length;
     const ocekavanaTmava = readFileSync(path.join(
       mainDirectory,
       "ikony",
-      "dark-signed-out.png",
+      "dark-tracking.png",
+    ));
+    const ocekavanaTmavaRetina = readFileSync(path.join(
+      mainDirectory,
+      "ikony",
+      "dark-tracking@2x.png",
     ));
     const ocekavanaSvetla = readFileSync(path.join(
       mainDirectory,
       "ikony",
-      "light-signed-out.png",
+      "light-tracking.png",
+    ));
+    const ocekavanaSvetlaRetina = readFileSync(path.join(
+      mainDirectory,
+      "ikony",
+      "light-tracking@2x.png",
     ));
 
     expect(darkImage.sourceBytes.equals(ocekavanaTmava)).toBe(true);
+    expect(darkImage.retinaBytes.equals(ocekavanaTmavaRetina)).toBe(true);
+    expect(darkImage.setTemplateImage).not.toHaveBeenCalled();
+    expect(darkImage.isTemplateImage()).toBe(false);
 
     harness.setShouldUseDarkColors(true);
     expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart);
@@ -2132,8 +2171,11 @@ describe("barevné varianty ikony podle motivu lišty", () => {
     expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart + 1);
     const lightImage = tray.setImage.mock.calls.at(-1)[0];
     expect(lightImage.sourceBytes.equals(ocekavanaSvetla)).toBe(true);
+    expect(lightImage.retinaBytes.equals(ocekavanaSvetlaRetina)).toBe(true);
     expect(lightImage.sourceBytes.equals(darkImage.sourceBytes)).toBe(false);
     expect(lightImage.retinaBytes.equals(darkImage.retinaBytes)).toBe(false);
+    expect(lightImage.setTemplateImage).not.toHaveBeenCalled();
+    expect(lightImage.isTemplateImage()).toBe(false);
 
     harness.setShouldUseDarkColors(true);
 
@@ -2141,20 +2183,29 @@ describe("barevné varianty ikony podle motivu lišty", () => {
     const darkImageAgain = tray.setImage.mock.calls.at(-1)[0];
     expect(darkImageAgain.sourceBytes.equals(darkImage.sourceBytes)).toBe(true);
     expect(darkImageAgain.retinaBytes.equals(darkImage.retinaBytes)).toBe(true);
+    expect(darkImageAgain.setTemplateImage).not.toHaveBeenCalled();
+    expect(darkImageAgain.isTemplateImage()).toBe(false);
   });
 
-  it("barevné obrázky nejsou macOS template images", async () => {
+  it("aktivní obrázky nejsou macOS template images", async () => {
     const harness = await loadMain({ shouldUseDarkColors: true });
     await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    harness.ipcListeners.get("tray:report-facts")(event, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: true,
+    });
 
-    const appliedImages = [
-      harness.trays[0].initialImage,
-      ...harness.trays[0].setImage.mock.calls.map(([image]) => image),
-    ];
-    expect(appliedImages.length).toBeGreaterThan(0);
-    for (const image of appliedImages) {
-      expect(image.setTemplateImage).not.toHaveBeenCalled();
-    }
+    const activeImage = harness.trays[0].setImage.mock.calls.at(-1)?.[0];
+    expect(activeImage.sourceBytes.equals(readFileSync(path.join(
+      mainDirectory,
+      "ikony",
+      "dark-tracking.png",
+    )))).toBe(true);
+    expect(activeImage.setTemplateImage).not.toHaveBeenCalled();
+    expect(activeImage.isTemplateImage()).toBe(false);
   });
 });
 
