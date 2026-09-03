@@ -30,16 +30,17 @@ export function App() {
   const queueRequestId = useRef(0);
   const trayCommandId = useRef(0);
 
-  useEffect(() => {
+  const refreshAuthSession = useCallback(() => {
     const requestId = authSessionRequestId.current + 1;
     authSessionRequestId.current = requestId;
+    setSessionExists(null);
     const hasAuthSession = window.ludone.hasAuthSession;
     if (typeof hasAuthSession !== "function") {
       setSessionExists(false);
-      return undefined;
+      return;
     }
 
-    Promise.resolve()
+    void Promise.resolve()
       .then(() => hasAuthSession())
       .then((result) => {
         if (requestId === authSessionRequestId.current) setSessionExists(result === true);
@@ -47,11 +48,37 @@ export function App() {
       .catch(() => {
         if (requestId === authSessionRequestId.current) setSessionExists(false);
       });
+  }, []);
+
+  useEffect(() => {
+    refreshAuthSession();
 
     return () => {
-      if (requestId === authSessionRequestId.current) authSessionRequestId.current += 1;
+      authSessionRequestId.current += 1;
     };
-  }, []);
+  }, [refreshAuthSession]);
+
+  useEffect(() => {
+    // Po autoritativním odhlášení posluchače odpojíme. Návrat fokusu z OAuth
+    // prohlížeče pak nemůže rozpracované přihlášení předčasně odmountovat a zrušit.
+    if (sessionExists === false) return undefined;
+
+    const refreshWhenFocused = () => refreshAuthSession();
+    const refreshWhenShown = () => {
+      if (document.visibilityState === "visible") refreshAuthSession();
+    };
+    const unsubscribe = typeof window.ludone.onAuthSessionChanged === "function"
+      ? window.ludone.onAuthSessionChanged(refreshAuthSession)
+      : undefined;
+
+    window.addEventListener("focus", refreshWhenFocused);
+    document.addEventListener("visibilitychange", refreshWhenShown);
+    return () => {
+      window.removeEventListener("focus", refreshWhenFocused);
+      document.removeEventListener("visibilitychange", refreshWhenShown);
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, [refreshAuthSession, sessionExists]);
 
   // Hlásíme FAKTA, ne stav. Co z nich lišta ukáže, rozhoduje hlavní proces — jinak by
   // po pádu tohohle okna zůstala ikona viset na tom, co jsme řekli naposledy.
@@ -153,6 +180,14 @@ export function App() {
     return (
       <PanelContentHeightReporter>
         <Onboarding onAuthenticated={rememberUser} onComplete={completeOnboarding} />
+      </PanelContentHeightReporter>
+    );
+  }
+
+  if (sessionExists === false) {
+    return (
+      <PanelContentHeightReporter>
+        <Onboarding reauthenticate onAuthenticated={rememberUser} />
       </PanelContentHeightReporter>
     );
   }

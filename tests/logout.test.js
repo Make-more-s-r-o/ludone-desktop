@@ -552,6 +552,7 @@ describe("odhlášení", () => {
     const createLogoutController = vi.fn(() => ({ logout }));
     const hasLiveRecording = vi.fn(() => false);
     const trackingWorkBlocksQuit = vi.fn(() => false);
+    const notifyPanelAuthSessionChanged = vi.fn();
     const requireModule = vi.fn(() => ({ createLogoutController }));
     const captured = {};
     const handleValidated = (channel, allowedKinds, handler) => {
@@ -571,6 +572,7 @@ describe("odhlášení", () => {
       "authOriginChangeInFlight",
       "hasLiveRecording",
       "trackingWorkBlocksQuit",
+      "notifyPanelAuthSessionChanged",
       `"use strict"; ${registration}`,
     )(
       requireModule,
@@ -586,6 +588,7 @@ describe("odhlášení", () => {
       false,
       hasLiveRecording,
       trackingWorkBlocksQuit,
+      notifyPanelAuthSessionChanged,
     );
 
     expect(requireModule).toHaveBeenCalledWith("./auth.cjs");
@@ -622,6 +625,7 @@ describe("odhlášení", () => {
     expect(appState.signedIn, "odhlášení musí změnit FAKT, ne ikonu").toBe(false);
     expect(appState.acceptRendererSignIn).toBe(false);
     expect(refreshTray, "a nechat stav přepočítat").toHaveBeenCalledOnce();
+    expect(notifyPanelAuthSessionChanged).toHaveBeenCalledOnce();
     expect(faktPriPrepoctu, "přepočet musí přijít AŽ PO změně faktu").toEqual([false]);
 
     const localFailure = Object.freeze({
@@ -633,6 +637,7 @@ describe("odhlášení", () => {
     appState.signedIn = true;
     expect(await captured.handler()).toBe(localFailure);
     expect(refreshTray, "neúspěšné místní odhlášení lištou nehýbe").toHaveBeenCalledOnce();
+    expect(notifyPanelAuthSessionChanged).toHaveBeenCalledOnce();
     expect(appState.signedIn, "a fakt nechává být").toBe(true);
     expect([...appState.trackingOwners], "nahrávka odhlášení nepřežila").toEqual(["nahravka-1"]);
   });

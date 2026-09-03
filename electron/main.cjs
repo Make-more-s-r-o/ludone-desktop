@@ -70,6 +70,7 @@ const PANEL_LOAD_TIMEOUT_MS = 5_000;
 const TRAY_SETTLE_DELAY_MS = 2_000;
 const TRAY_TITLE_INTERVAL_MS = 1_000;
 const TRAY_COMMAND_CHANNEL = "tray:command";
+const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
 const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
@@ -987,6 +988,18 @@ function queueTrayCommand(command) {
     pendingTrayCommands.pop();
     console.error(`[tray] Rychlou akci se nepodařilo předat panelu: ${error.message}`);
     return false;
+  }
+}
+
+function notifyPanelAuthSessionChanged() {
+  const panelContents = panelWindow?.webContents;
+  if (!panelContents || panelContents.isDestroyed()) return;
+  try {
+    // Událost nenese stav ani identitu. Jen probudí panel, který si pravdu znovu
+    // vyžádá přes tentýž validovaný kanál.
+    panelContents.send(AUTH_SESSION_STATUS_CHANNEL);
+  } catch (error) {
+    console.error(`[auth] Změnu přihlášení se nepodařilo předat panelu: ${error.message}`);
   }
 }
 
@@ -2978,7 +2991,7 @@ async function readStoredAuthIdentity() {
   return { name: name || null, email };
 }
 
-handleValidated("auth:has-session", ["panel"], async () => {
+handleValidated(AUTH_SESSION_STATUS_CHANNEL, ["panel"], async () => {
   try {
     return (await hasStoredAuthSession()) === true;
   } catch {
@@ -3146,6 +3159,7 @@ handleValidated("auth:logout", ["panel", "settings"], async () => {
           // Diagnostika stavu ikony nesmí změnit hodnotový výsledek odhlášení.
         }
       }
+      notifyPanelAuthSessionChanged();
     }
     return result;
   } finally {

@@ -1260,6 +1260,48 @@ describe("zjištění uložené OAuth session", () => {
     expect(untrusted.invoke).toHaveBeenCalledExactlyOnceWith("auth:has-session");
   });
 
+  it("úspěšné místní odhlášení probudí panel, neúspěšné nic neposílá", async () => {
+    let logoutResult = {
+      signedOutLocally: true,
+      serverRevoked: true,
+      reason: null,
+    };
+    const logout = vi.fn(async () => logoutResult);
+    const harness = await loadMain({
+      createLogoutController: vi.fn(() => ({ logout })),
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    panelContents.send.mockClear();
+
+    await expect(harness.ipcHandlers.get("auth:logout")(event))
+      .resolves.toMatchObject({ signedOutLocally: true });
+    expect(panelContents.send).toHaveBeenCalledExactlyOnceWith("auth:has-session");
+
+    logoutResult = {
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "local-delete-failed",
+    };
+    await expect(harness.ipcHandlers.get("auth:logout")(event))
+      .resolves.toMatchObject({ signedOutLocally: false });
+    expect(panelContents.send).toHaveBeenCalledOnce();
+  });
+
+  it("preload předá bezdatové probuzení a po odhlášení odběratele jej odstraní", () => {
+    const { api, emit } = loadPreload();
+    const subscriber = vi.fn();
+
+    const unsubscribe = api.onAuthSessionChanged(subscriber);
+    emit("auth:has-session");
+    expect(subscriber).toHaveBeenCalledExactlyOnceWith();
+
+    unsubscribe();
+    expect(() => emit("auth:has-session")).toThrow(/neposlouchá kanál/u);
+    expect(subscriber).toHaveBeenCalledOnce();
+  });
+
   it("kanál identity vrátí nastavení jen jméno a e-mail z platné šifrované session", async () => {
     const harness = await loadMain();
     await harness.runReady();

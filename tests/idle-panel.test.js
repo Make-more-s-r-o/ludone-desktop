@@ -143,6 +143,7 @@ async function renderInteractivePanel(listQueue, options = {}) {
   }
   Object.defineProperty(dom.window, "ludone", {
     value: {
+      hasAuthSession: vi.fn().mockResolvedValue(true),
       listQueue,
       openSettings: vi.fn(),
       reportTrayFacts: vi.fn(),
@@ -244,11 +245,11 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
-          .toBe("signed-out");
+        expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
+          .toBe("Nejsi připojený");
       });
-      expect(panel.document.querySelector(".panel-header")?.textContent).not.toContain("Dan Jirotka");
-      expect(panel.document.querySelector(".panel-header small")?.textContent.trim()).not.toBe("");
+      expect(panel.document.body.textContent).not.toContain("Dan Jirotka");
+      expect(panel.document.body.textContent).toContain("Přihlásit přes app.ludone.cz");
       expect(hasAuthSession).toHaveBeenCalledOnce();
       expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({ signedIn: false, tracking: false });
     } finally {
@@ -262,11 +263,18 @@ describe("schválený klidový panel", () => {
         ludone: { hasAuthSession: vi.fn().mockResolvedValue(hasSession) },
       });
       try {
+        if (hasSession) {
+          await vi.waitFor(() => {
+            expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+              .toBe("signed-in");
+          });
+          return panel.document.querySelector(".panel-header small")?.textContent.trim();
+        }
         await vi.waitFor(() => {
-          expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
-            .toBe(hasSession ? "signed-in" : "signed-out");
+          expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
+            .toBe("Nejsi připojený");
         });
-        return panel.document.querySelector(".panel-header small")?.textContent.trim();
+        return panel.document.querySelector(".auth-step h1")?.textContent.trim();
       } finally {
         await panel.cleanup();
       }
@@ -288,10 +296,10 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
-          .toBe("signed-out");
+        expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
+          .toBe("Nejsi připojený");
       });
-      expect(panel.document.querySelector(".panel-header small")?.textContent.trim()).not.toBe("");
+      expect(panel.document.body.textContent).toContain("Přihlásit přes app.ludone.cz");
     } finally {
       await panel.cleanup();
     }
