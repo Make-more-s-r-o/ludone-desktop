@@ -230,7 +230,7 @@ describe("schválený klidový panel", () => {
           .toBe("Nejsi připojený");
       });
       expect(panel.document.body.textContent).not.toContain("Dan Jirotka");
-      expect(panel.document.body.textContent).toContain("Přihlásit přes app.ludone.cz");
+      expect(panel.document.body.textContent).toContain("Přihlásit v prohlížeči");
       expect(hasAuthSession).toHaveBeenCalledOnce();
       expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({ signedIn: false, tracking: false });
     } finally {
@@ -280,7 +280,7 @@ describe("schválený klidový panel", () => {
         expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
           .toBe("Nejsi připojený");
       });
-      expect(panel.document.body.textContent).toContain("Přihlásit přes app.ludone.cz");
+      expect(panel.document.body.textContent).toContain("Přihlásit v prohlížeči");
     } finally {
       await panel.cleanup();
     }

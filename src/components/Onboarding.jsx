@@ -390,7 +390,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
           >
             <BrowserIcon /> {authBusy
               ? "Čekám na prohlížeč…"
-              : (reauthenticate ? "Přihlásit přes app.ludone.cz" : "Přihlásit v prohlížeči")}
+              : "Přihlásit v prohlížeči"}
           </button>
           {!reauthenticate && (
             <button type="button" className="text-button" onClick={() => setStep(0)}>Zpět</button>

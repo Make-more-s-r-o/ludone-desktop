@@ -102,6 +102,10 @@ export function App() {
     });
   }, []);
 
+  useEffect(() => {
+    if (sessionExists !== true) setTrayCommand(null);
+  }, [sessionExists]);
+
   const refreshQueueStatus = useCallback(async () => {
     const requestId = queueRequestId.current + 1;
     queueRequestId.current = requestId;

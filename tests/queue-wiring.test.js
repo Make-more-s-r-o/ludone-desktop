@@ -445,6 +445,7 @@ function fakeElectron(userDataPath, {
  * @param {{
  *   applyRetention?: (...args: any[]) => Promise<any>,
  *   autoUpdater?: EventEmitter & Record<string, any>,
+ *   createAuthOriginStore?: (...args: any[]) => any,
  *   createDockVisibilityStore?: (...args: any[]) => any,
  *   createLogoutController?: (...args: any[]) => any,
  *   createOutboundQueueStore?: (...args: any[]) => any,
@@ -471,6 +472,7 @@ function fakeElectron(userDataPath, {
 async function loadMain({
   applyRetention,
   autoUpdater,
+  createAuthOriginStore,
   createDockVisibilityStore,
   createLogoutController,
   createOutboundQueueStore,
@@ -517,8 +519,12 @@ async function loadMain({
     if (specifier === "./auth.cjs" && createLogoutController) {
       return { ...actualRequire("./auth.cjs"), createLogoutController };
     }
-    if (specifier === "./settings.cjs" && createDockVisibilityStore) {
-      return { ...actualRequire("./settings.cjs"), createDockVisibilityStore };
+    if (specifier === "./settings.cjs" && (createAuthOriginStore || createDockVisibilityStore)) {
+      return {
+        ...actualRequire("./settings.cjs"),
+        ...(createAuthOriginStore ? { createAuthOriginStore } : {}),
+        ...(createDockVisibilityStore ? { createDockVisibilityStore } : {}),
+      };
     }
     if (
       specifier === "./queue.cjs"
@@ -1324,6 +1330,50 @@ describe("zjištění uložené OAuth session", () => {
     expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
       .toBe("https://app.ludone.cz");
     await expect(harness.ipcHandlers.get("auth:has-session")(panelEvent)).resolves.toBe(true);
+  });
+
+  it("po lokálním odhlášení a chybě zápisu originu vrátí pravdivý stav a probudí panel", async () => {
+    const originStore = {
+      get: vi.fn(() => "https://app.ludone.cz"),
+      set: vi.fn(async () => { throw new Error("disk obsahuje soukromou cestu"); }),
+    };
+    const createLogoutController = vi.fn(({ app }) => ({
+      logout: vi.fn(async () => {
+        await rm(actualRequire("./auth.cjs").tokenSessionFilePath(app), { force: true });
+        return { signedOutLocally: true, serverRevoked: true, reason: null };
+      }),
+    }));
+    const harness = await loadMain({
+      createAuthOriginStore: vi.fn(() => originStore),
+      createLogoutController,
+    });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession(),
+    )));
+    const panelContents = harness.windows[0].webContents;
+    panelContents.send.mockClear();
+
+    await expect(harness.ipcHandlers.get("auth:switch-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    )).resolves.toEqual({
+      signedOutLocally: true,
+      serverRevoked: true,
+      reason: null,
+      origin: null,
+    });
+    expect(originStore.set).toHaveBeenCalledExactlyOnceWith("https://labs.ludone.cz");
+    await expect(harness.ipcHandlers.get("auth:has-session")(panelEvent)).resolves.toBe(false);
+    expect(panelContents.send.mock.calls).toEqual([
+      ["auth:has-session"],
+      ["auth:has-session"],
+    ]);
+    expect(JSON.stringify(harness.quietConsole.error.mock.calls))
+      .not.toContain("soukromou cestu");
   });
 
   it("rozpracované čtení po neúspěšném odhlášení vrátí stabilní true", async () => {

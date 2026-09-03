@@ -202,7 +202,7 @@ describe("návrat do aplikace po ztrátě session", () => {
     expect(panel.document.querySelector(".step-count")).toBeNull();
     expect(panel.document.querySelector(".step-track")).toBeNull();
     expect(buttonWithText(panel.document, "Zpět")).toBeUndefined();
-    const loginButton = buttonWithText(panel.document, "Přihlásit přes app.ludone.cz");
+    const loginButton = buttonWithText(panel.document, "Přihlásit v prohlížeči");
     expect(loginButton, "odhlášený panel nemá cestu k přihlášení").toBeDefined();
 
     await click(loginButton, panel.view);
@@ -264,7 +264,36 @@ describe("návrat do aplikace po ztrátě session", () => {
       panel.emitTrayCommand("start-tracking");
       await Promise.resolve();
     });
-    await click(buttonWithText(panel.document, "Přihlásit přes app.ludone.cz"), panel.view);
+    await click(buttonWithText(panel.document, "Přihlásit v prohlížeči"), panel.view);
+    await waitForSignedIn(panel);
+
+    expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
+    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
+  });
+
+  it("starý příkaz z lišty se po odhlášení a novém přihlášení neopakuje", async () => {
+    const panel = await renderWindows({
+      beginAuthResult: { ok: true, user: USER },
+      initialSession: true,
+      withSettings: true,
+    });
+    await waitForSignedIn(panel);
+
+    await React.act(async () => {
+      panel.emitTrayCommand("start-tracking");
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).not.toBeNull();
+    });
+    await click(panel.document.querySelector('[aria-label="Zastavit LuTrack"]'), panel.view);
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
+    });
+
+    await click(buttonWithText(panel.document, "Odhlásit tento Mac"), panel.view);
+    await waitForReauthentication(panel);
+    await click(buttonWithText(panel.document, "Přihlásit v prohlížeči"), panel.view);
     await waitForSignedIn(panel);
 
     expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
@@ -279,7 +308,7 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForReauthentication(panel);
     expect(panel.ludone.hasAuthSession).toHaveBeenCalledOnce();
 
-    await click(buttonWithText(panel.document, "Přihlásit přes app.ludone.cz"), panel.view);
+    await click(buttonWithText(panel.document, "Přihlásit v prohlížeči"), panel.view);
     await vi.waitFor(() => {
       expect(panel.document.querySelector('[data-testid="auth-waiting-screen"]')).not.toBeNull();
     });
@@ -306,7 +335,7 @@ describe("návrat do aplikace po ztrátě session", () => {
     });
     await waitForReauthentication(panel);
 
-    await click(buttonWithText(panel.document, "Přihlásit přes app.ludone.cz"), panel.view);
+    await click(buttonWithText(panel.document, "Přihlásit v prohlížeči"), panel.view);
     await waitForSignedIn(panel);
 
     expect([...panel.document.querySelectorAll('[data-testid="idle-action-row"] strong')]
