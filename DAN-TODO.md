@@ -235,6 +235,22 @@ Rozhodnout musíš ty, protože je to bezpečnostní hranice a zároveň produkt
 jestli a jak podporujeme víc instalací.
 
 
+### 📌 DSK-F014 (Připomínky) — vědomě nestaveno, ne zapomenuto
+
+`spec.md` vede `DSK-F014` jako `approved` a rozhodnutí **M20** ho chce. Ale ty jsi ho
+2. 9. odsunul: *„hele, časovač. priorita není. toto nastavení by se měl udělat v app.ludone
+a aplikace ho pouze přebírá."*
+
+🔴 **To rozhodnutí do dnešní noci nikde nestálo** — žilo jen v konverzaci. Kdokoli by si
+přečetl spec, tu funkci logicky postaví a půjde proti tobě, aniž by to tušil. Zapsáno jako
+**BD-N43** v `decisions.md`.
+
+Stav `no-code` + `disabled` je proto **správný**, ne nedodělek. Postavit to dřív, než server
+zpřístupní ta nastavení, by znamenalo vymyslet si vlastní úložiště a pak ho zahodit.
+
+⚠️ Poznámku jsem **nepsal do `spec.md`** — je zmrazený. (Napsal jsem ji tam omylem a hned
+vrátil.)
+
 ## 0. Noční běh je připravený — co k němu patří
 
 Briéf: [`docs/behy/2026-08-24-zaklad-a-fronta.md`](docs/behy/2026-08-24-zaklad-a-fronta.md).
