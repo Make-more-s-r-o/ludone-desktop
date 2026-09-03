@@ -153,6 +153,16 @@ function storedFailureRequiresHumanAction(item) {
   return LEGACY_HUMAN_ACTION_FAILURE_REASONS.has(item.lastFailureReason);
 }
 
+/**
+ * Jediná klasifikace položek, které bez rozhodnutí člověka nesmějí do dalšího
+ * pokusu. Používá ji projekce, automatická pumpa i ruční retry, aby se jejich
+ * význam nemohl mezi vrstvami rozejít.
+ */
+export function queueItemRequiresHumanAction(item) {
+  requireObject(item, "item");
+  return item.state === QUEUE_STATES.WAITING && storedFailureRequiresHumanAction(item);
+}
+
 function replaceItem(queue, index, item) {
   const items = [...queue.items];
   items[index] = item;
@@ -293,7 +303,12 @@ export function reduceQueueForRenderer(queue) {
     nextAttemptAt: item.nextAttemptAt,
     lastFailureReason: item.lastFailureReason,
     ...(
-      item.state === QUEUE_STATES.WAITING && storedFailureRequiresHumanAction(item)
+      Number.isSafeInteger(item.sizeBytes) && item.sizeBytes >= 0
+        ? { sizeBytes: item.sizeBytes }
+        : {}
+    ),
+    ...(
+      queueItemRequiresHumanAction(item)
         ? { requiresHumanAction: true }
         : {}
     ),
@@ -354,6 +369,9 @@ export async function processNext(queue, killswitches, send, options = {}) {
   const waitingItems = queue.items
     .map((item, index) => ({ item, index }))
     .filter(({ item }) => item.state === QUEUE_STATES.WAITING);
+  const automaticWaitingItems = waitingItems.filter(
+    ({ item }) => !queueItemRequiresHumanAction(item),
+  );
   const isEnabled = (item) => {
     try {
       return killswitches[killswitchNameForKind(item.kind)] === "true";
@@ -361,12 +379,12 @@ export async function processNext(queue, killswitches, send, options = {}) {
       return false;
     }
   };
-  const readyEnabled = waitingItems.find(({ item }) => (
+  const readyEnabled = automaticWaitingItems.find(({ item }) => (
     isEnabled(item) && (item.nextAttemptAt === null || item.nextAttemptAt <= now)
   ));
   const index = readyEnabled?.index ?? -1;
   if (index === -1) {
-    if (waitingItems.some(({ item }) => !isEnabled(item))) {
+    if (automaticWaitingItems.some(({ item }) => !isEnabled(item))) {
       return { item: null, outcome: "disabled", queue, reason: UPLOAD_DISABLED_REASON };
     }
     return { item: null, outcome: "idle", queue, reason: "žádná položka není připravená" };

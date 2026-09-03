@@ -688,6 +688,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
 
   let currentQueue;
   let loaded = false;
+  const recordingsDirectory = path.join(path.dirname(path.dirname(path.resolve(filePath))), "nahravky");
   /** @type {Promise<unknown>} */
   let operations = Promise.resolve();
 
@@ -708,6 +709,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       "enqueueRecording",
       "enqueueTimeEntry",
       "processNext",
+      "queueItemRequiresHumanAction",
       "reduceQueueForRenderer",
     ]) {
       if (typeof queueModule[name] !== "function") {
@@ -715,6 +717,42 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       }
     }
     return queueModule;
+  }
+
+  async function recordingSizeBytes(item) {
+    if ((item.kind ?? "recording") !== "recording") return null;
+    const trackPaths = Object.values(item.tracks ?? {});
+    if (trackPaths.length === 0 || trackPaths.some(
+      (trackPath) => typeof trackPath !== "string" || trackPath.length === 0,
+    )) {
+      return null;
+    }
+    let total = 0;
+    try {
+      for (const trackPath of trackPaths) {
+        const resolvedTrackPath = path.resolve(trackPath);
+        if (path.dirname(resolvedTrackPath) !== recordingsDirectory) return null;
+        // lstat záměrně nenásleduje symlink. Projekce smí ukázat jen velikost
+        // skutečných zvukových souborů, nikdy údaj o cizím cíli podvržené cesty.
+        const stats = await fs.promises.lstat(resolvedTrackPath);
+        if (!stats.isFile() || !Number.isSafeInteger(stats.size) || stats.size < 0) return null;
+        total += stats.size;
+        if (!Number.isSafeInteger(total)) return null;
+      }
+    } catch {
+      // Chybějící nebo nečitelnou stopu nevydáváme za nulovou. Renderer údaj
+      // prostě nedostane a nic neodhaduje.
+      return null;
+    }
+    return total;
+  }
+
+  async function reduceForRenderer(queueModule, queue) {
+    const items = await Promise.all(queue.items.map(async (item) => {
+      const sizeBytes = await recordingSizeBytes(item);
+      return sizeBytes === null ? item : { ...item, sizeBytes };
+    }));
+    return queueModule.reduceQueueForRenderer({ ...queue, items });
   }
 
   async function ensureLoaded() {
@@ -779,7 +817,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
   function list() {
     return serialize(async () => {
       const queueModule = await loadQueueModule();
-      return queueModule.reduceQueueForRenderer(await ensureLoaded());
+      return reduceForRenderer(queueModule, await ensureLoaded());
     });
   }
 
@@ -789,7 +827,13 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       const queue = await ensureLoaded();
       let changed = false;
       const items = queue.items.map((item) => {
-        if (item.state !== "ceka" || item.nextAttemptAt === null) return item;
+        if (
+          item.state !== "ceka"
+          || item.nextAttemptAt === null
+          || queueModule.queueItemRequiresHumanAction(item)
+        ) {
+          return item;
+        }
         changed = true;
         return { ...item, nextAttemptAt: null };
       });
@@ -799,7 +843,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       return {
         outcome: result.outcome,
         reason: result.reason,
-        items: queueModule.reduceQueueForRenderer(currentQueue),
+        items: await reduceForRenderer(queueModule, currentQueue),
       };
     });
   }

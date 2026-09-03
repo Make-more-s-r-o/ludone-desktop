@@ -3,8 +3,9 @@ import { Onboarding } from "./components/Onboarding.jsx";
 import { LuDoneMark } from "./components/Icons.jsx";
 import { PanelContentHeightReporter } from "./components/PanelContentHeightReporter.jsx";
 import { RecordingCard } from "./features/recording/RecordingCard.jsx";
+import { QueueCard } from "./features/queue/QueueCard.jsx";
 import { TrackingCard } from "./features/tracking/TrackingCard.jsx";
-import { queueFooterStatus } from "./lib/panel.js";
+import { queueFooterStatus, queuePanelSummary } from "./lib/panel.js";
 
 const ONBOARDING_KEY = "ludone.prototype.onboarding-complete";
 const QUEUE_REFRESH_INTERVAL_MS = 1_000;
@@ -24,7 +25,8 @@ export function App() {
   const [sessionExists, setSessionExists] = useState(null);
   const [recording, setRecording] = useState({ active: false, systemAudioState: "inactive" });
   const [tracking, setTracking] = useState({ active: false });
-  const [queueStatus, setQueueStatus] = useState(null);
+  const [queueSnapshot, setQueueSnapshot] = useState({ items: null, status: null });
+  const [queueExpanded, setQueueExpanded] = useState(false);
   const [trayCommand, setTrayCommand] = useState(null);
   const authSessionRequestId = useRef(0);
   const queueRequestId = useRef(0);
@@ -112,20 +114,40 @@ export function App() {
     if (sessionExists !== true) setTrayCommand(null);
   }, [sessionExists]);
 
+  const applyQueueItems = useCallback((items) => {
+    const status = queueFooterStatus(items);
+    const detailsAvailable = queuePanelSummary(items) !== null;
+    setQueueSnapshot({ items: status ? items : null, status });
+    if (!detailsAvailable) setQueueExpanded(false);
+  }, []);
+
   const refreshQueueStatus = useCallback(async () => {
     const requestId = queueRequestId.current + 1;
     queueRequestId.current = requestId;
     if (typeof window.ludone.listQueue !== "function") {
-      if (requestId === queueRequestId.current) setQueueStatus(null);
+      if (requestId === queueRequestId.current) {
+        applyQueueItems(null);
+      }
       return;
     }
     try {
-      const nextStatus = queueFooterStatus(await window.ludone.listQueue());
-      if (requestId === queueRequestId.current) setQueueStatus(nextStatus);
+      const items = await window.ludone.listQueue();
+      if (requestId === queueRequestId.current) {
+        applyQueueItems(items);
+      }
     } catch {
-      if (requestId === queueRequestId.current) setQueueStatus(null);
+      if (requestId === queueRequestId.current) {
+        applyQueueItems(null);
+      }
     }
-  }, []);
+  }, [applyQueueItems]);
+
+  const retryQueueNow = useCallback(async () => {
+    if (typeof window.ludone.retryQueue !== "function") return;
+    const result = await window.ludone.retryQueue();
+    if (Array.isArray(result?.items)) applyQueueItems(result.items);
+    await refreshQueueStatus();
+  }, [applyQueueItems, refreshQueueStatus]);
 
   useEffect(() => {
     const refreshWhenShown = () => {
@@ -228,11 +250,15 @@ export function App() {
   }
 
   const bothActivitiesRunning = recording.active && tracking.active;
+  const queueStatus = queueSnapshot.status;
+  const queueDetailsAvailable = queuePanelSummary(queueSnapshot.items) !== null;
+  const queueScreenVisible = queueExpanded && queueDetailsAvailable;
 
   return (
     <PanelContentHeightReporter>
       <main
         className="panel window-surface"
+        data-panel-view={queueScreenVisible ? "queue" : "main"}
         data-panel-state={bothActivitiesRunning ? "recording-and-tracking" : "single-or-idle"}
       >
         <header className="panel-header">
@@ -248,6 +274,12 @@ export function App() {
         </header>
 
         <div className="panel-scroll">
+          {queueScreenVisible && (
+            <QueueCard
+              items={queueSnapshot.items}
+              onRetry={typeof window.ludone.retryQueue === "function" ? retryQueueNow : undefined}
+            />
+          )}
           <RecordingCard
             compact={bothActivitiesRunning}
             onActivityChange={handleRecordingChange}
@@ -261,7 +293,20 @@ export function App() {
         </div>
 
         <footer className="panel-footer">
-          {queueStatus && (
+          {queueStatus && queueDetailsAvailable && (
+            <button
+              type="button"
+              className={`queue-status queue-status--button queue-status--${queueStatus.tone}`}
+              data-testid="queue-status"
+              aria-controls="queue-screen"
+              aria-expanded={queueScreenVisible}
+              onClick={() => setQueueExpanded((expanded) => !expanded)}
+            >
+              <span className="queue-status__dot" aria-hidden="true" />
+              <span role="status">{queueStatus.text}</span>
+            </button>
+          )}
+          {queueStatus && !queueDetailsAvailable && (
             <div
               className={`queue-status queue-status--${queueStatus.tone}`}
               data-testid="queue-status"
