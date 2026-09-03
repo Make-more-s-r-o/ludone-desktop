@@ -27,6 +27,7 @@ const {
 const {
   createOutboundQueueStore,
   loadQueue,
+  recoverOrphanedRecordings,
   saveQueueAtomically,
 } = require("./queue.cjs");
 const { createRecordingUploadSend } = require("./upload-client.cjs");
@@ -984,9 +985,15 @@ async function createRecordingSession(event) {
       owner: event.sender,
       track: exportTrack,
       manifestPath,
+      exportInFlight: false,
       finalizePromise: null,
+      finalizationSettled: false,
       destroyedListener: null,
+      ownerGone: false,
+      preserveFileRequested: false,
       ready: exportReady,
+      recordingFinishSucceeded: false,
+      releaseRequested: false,
       resolveReady: resolveExportReady,
       result: null,
       timing: null,
@@ -998,10 +1005,8 @@ async function createRecordingSession(event) {
     };
     event.sender.once("destroyed", recordingSession.destroyedListener);
     exportStage.destroyedListener = () => {
-      void finalizeRecordingExportStage(sessionId, {
-        succeeded: false,
-        reason: "Okno nahrávání skončilo před dokončením exportu",
-      });
+      exportStage.ownerGone = true;
+      requestRecordingExportStageRelease(exportStage, { preserveFile: true });
     };
     event.sender.once("destroyed", exportStage.destroyedListener);
     recordingSessions.set(sessionId, recordingSession);
@@ -1095,7 +1100,38 @@ async function recordingFileHeader(filePath) {
   }
 }
 
-async function finalizeRecordingExportStage(sessionId, outcome) {
+function completeRecordingExportStageRelease(exportStage) {
+  if (
+    !exportStage.releaseRequested
+    || !exportStage.finalizationSettled
+    || exportStage.exportInFlight
+    || recordingExportStages.get(exportStage.sessionId) !== exportStage
+  ) return;
+  recordingExportStages.delete(exportStage.sessionId);
+  refreshTray();
+  void maybeCompleteDeferredQuit();
+  void tryInstallDownloadedUpdate();
+}
+
+function requestRecordingExportStageRelease(exportStage, { preserveFile = false } = {}) {
+  if (recordingExportStages.get(exportStage.sessionId) !== exportStage) return;
+  exportStage.releaseRequested = true;
+  if (preserveFile) exportStage.preserveFileRequested = true;
+  const settlement = exportStage.finalizePromise ?? finalizeRecordingExportStage(
+    exportStage.sessionId,
+    { succeeded: false, reason: "Vlastník stereo exportu už není dostupný" },
+    { preserveFile },
+  );
+  void Promise.resolve(settlement).then(
+    () => completeRecordingExportStageRelease(exportStage),
+    () => {
+      console.error("[recording-export] Uzavření opuštěného exportu selhalo; soubor zůstává zachovaný.");
+    },
+  );
+  completeRecordingExportStageRelease(exportStage);
+}
+
+async function finalizeRecordingExportStage(sessionId, outcome, { preserveFile = false } = {}) {
   const exportStage = recordingExportStages.get(sessionId);
   if (!exportStage) return { ok: false, message: "Stereo export už není dostupný" };
   if (exportStage.finalizePromise) return exportStage.finalizePromise;
@@ -1136,7 +1172,9 @@ async function finalizeRecordingExportStage(sessionId, outcome) {
     }
 
     if (firstError) {
-      await fs.promises.unlink(exportStage.track.filePath).catch(() => {});
+      if (!preserveFile && !exportStage.preserveFileRequested) {
+        await fs.promises.unlink(exportStage.track.filePath).catch(() => {});
+      }
       exportStage.result = {
         ok: false,
         message: "Dvoukanálový export se nepodařilo připravit; původní dvě stopy zůstaly uložené.",
@@ -1150,7 +1188,10 @@ async function finalizeRecordingExportStage(sessionId, outcome) {
     }
     exportStage.resolveReady(exportStage.result);
     return exportStage.result;
-  })();
+  })().finally(() => {
+    exportStage.finalizationSettled = true;
+    completeRecordingExportStageRelease(exportStage);
+  });
   return exportStage.finalizePromise;
 }
 
@@ -1258,14 +1299,15 @@ function finalizeRecordingSessionsForOwner(ownerId, reason) {
       console.warn(`[recording] Session uzavřena po události „${reason}“: mikrofon ${result.files.microphone.size} B, systém ${result.files.system.size} B.`);
     }).catch((error) => {
       console.error(`[recording] Uzavření po události „${reason}“ selhalo: ${error.stack || error.message}`);
+    }).finally(() => {
+      void maybeCompleteDeferredQuit();
+      void tryInstallDownloadedUpdate();
     });
   }
   for (const exportStage of recordingExportStages.values()) {
     if (exportStage.ownerId !== ownerId) continue;
-    void finalizeRecordingExportStage(exportStage.sessionId, {
-      succeeded: false,
-      reason: `Nahrávání skončilo událostí ${reason}`,
-    });
+    exportStage.ownerGone = true;
+    requestRecordingExportStageRelease(exportStage, { preserveFile: true });
   }
   // Synchronně: přiřazení finalizePromise proběhlo před návratem z volání výš, takže
   // hasLiveRecording() už tady vrací false, aniž bychom čekali na zápis na disk.
@@ -1316,7 +1358,9 @@ handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extra
 });
 onValidated("settings:open", ["panel"], () => createSettingsWindow());
 onValidated("settings:close", ["settings"], () => settingsWindow?.close());
-handleValidated("recording:begin", ["panel"], (event) => {
+handleValidated("recording:begin", ["panel"], async (event) => {
+  ensureNewActivityIsAllowed("nahrávání");
+  await waitForOutboundQueueRecovery();
   ensureNewActivityIsAllowed("nahrávání");
   return createRecordingSession(event);
 });
@@ -1324,13 +1368,14 @@ handleValidated("recording:append", ["panel"], (event, sessionId, source, sequen
   appendRecordingChunk(event, sessionId, source, sequence, arrayBuffer)
 ));
 handleValidated("recording:finish-export", ["panel"], async (event, sessionId, outcome) => {
-  ownedRecordingExportStage(event, sessionId);
+  const exportStage = ownedRecordingExportStage(event, sessionId);
   try {
     const result = await finalizeRecordingExportStage(sessionId, outcome);
     if (!result?.ok) {
       noteDeferredQuitFailure(
         `Příprava stereo exportu selhala: ${result?.message || "neznámý výsledek"}`,
       );
+      requestRecordingExportStageRelease(exportStage);
     }
     return result;
   } finally {
@@ -1339,6 +1384,10 @@ handleValidated("recording:finish-export", ["panel"], async (event, sessionId, o
 });
 
 let outboundQueueStore;
+let markOutboundQueueRecoveryReady = () => {};
+const outboundQueueRecoveryReady = new Promise((resolve) => {
+  markOutboundQueueRecoveryReady = resolve;
+});
 let markOutboundQueueRetentionReady = () => {};
 const outboundQueueRetentionReady = new Promise((resolve) => {
   markOutboundQueueRetentionReady = resolve;
@@ -1416,17 +1465,27 @@ async function applyOutboundQueueRetention(panelStartup) {
     const filePath = outboundQueueFilePath();
     const queue = await loadQueue(filePath);
     const policy = await readRetentionPolicy(panelStartup);
-    const result = await applyRetention({ queue, policy, now: Date.now() });
+    const result = await applyRetention({
+      queue,
+      policy,
+      now: Date.now(),
+      recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
+    });
     if (result.deletedItems.length > 0) {
       await saveQueueAtomically(filePath, { ...queue, items: result.keptItems });
     }
     if (result.errors.length > 0) {
-      console.error(`[retention] Některé soubory nešlo odstranit: ${JSON.stringify(result.errors)}`);
+      console.error(`[retention] Některé soubory nešlo bezpečně odstranit: ${result.errors.length}.`);
     }
     return result;
-  } catch (error) {
-    console.error(`[retention] Úklid selhal; start pokračuje: ${error.stack || error.message}`);
-    return { deletedFiles: [], deletedItems: [], keptItems: [], errors: [error] };
+  } catch {
+    console.error("[retention] Úklid selhal; start pokračuje a data zůstávají zachována.");
+    return {
+      deletedFiles: [],
+      deletedItems: [],
+      keptItems: [],
+      errors: [{ code: "RETENTION_FAILED" }],
+    };
   }
 }
 
@@ -1440,6 +1499,10 @@ function queueKillswitches() {
 async function recordingUploadContext() {
   const storedSession = await readStoredAuthSession();
   if (storedSession === null) return null;
+  if (
+    !Number.isFinite(storedSession.accessExpiresAt)
+    || storedSession.accessExpiresAt <= Date.now()
+  ) return null;
   return {
     accessToken: storedSession.accessToken,
     companyTabidooId: storedSession.companyTabidooId
@@ -1470,6 +1533,23 @@ async function getOutboundQueueStore() {
   return outboundQueueStore;
 }
 
+async function waitForOutboundQueueRecovery() {
+  await outboundQueueRecoveryReady;
+}
+
+async function recoverOutboundRecordings() {
+  const result = await recoverOrphanedRecordings({
+    logger: console,
+    manifestModulePromise,
+    queueStore: await getOutboundQueueStore(),
+    recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
+  });
+  if (result.recovered > 0) {
+    console.log(`[queue] Při startu obnoveno nahrávek: ${result.recovered}.`);
+  }
+  return result;
+}
+
 async function pumpOutboundQueue() {
   try {
     const store = await getOutboundQueueStore();
@@ -1495,6 +1575,11 @@ async function waitForRecordingExportStage(exportStage) {
 
 async function exportCompletedRecording(event, clientRecordingId, recordingName) {
   const exportStage = ownedRecordingExportStage(event, clientRecordingId);
+  if (exportStage.releaseRequested) {
+    throw new Error("Stereo export už není dostupný");
+  }
+  if (exportStage.exportInFlight) throw new Error("Stereo export už probíhá");
+  exportStage.exportInFlight = true;
   try {
     const ready = await waitForRecordingExportStage(exportStage);
     if (!ready.ok) return ready;
@@ -1513,6 +1598,7 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
     });
     await fs.promises.unlink(exportStage.track.filePath).catch(() => {});
     recordingExportStages.delete(clientRecordingId);
+    void maybeCompleteDeferredQuit();
     console.log(
       `[recording-export] Uloženo ${result.clientRecordingId}; rozdíl startů ${result.trackStartDeltaMs} ms.`,
     );
@@ -1534,19 +1620,36 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
         message: "Soubor je uložený ve Stažených, ale nahrávací stránku se nepodařilo otevřít.",
       };
     }
-    console.error(`[recording-export] Export selhal: ${error.stack || error.message}`);
+    // Systémová chyba může obsahovat cílovou cestu odvozenou z názvu schůzky.
+    console.error("[recording-export] Export selhal; původní stopy zůstaly uložené.");
     return {
       ok: false,
       recordingExported: false,
       message: `${error.message || "Export selhal"} Původní dvě stopy zůstaly uložené.`,
     };
+  } finally {
+    exportStage.exportInFlight = false;
+    completeRecordingExportStageRelease(exportStage);
   }
 }
 
-function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
+async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
   const recordingSession = ownedRecordingSession(event, sessionId);
   recordingCompletionsInFlight.add(sessionId);
-  return finalizeRecordingSession(sessionId, "complete", trackTimings).then(async (result) => {
+  try {
+    let result;
+    try {
+      result = await finalizeRecordingSession(sessionId, "complete", trackTimings);
+    } catch (error) {
+      noteDeferredQuitFailure(`Čistá finalizace nahrávky selhala: ${error.message}`);
+      showPanel();
+      const exportStage = recordingExportStages.get(sessionId);
+      if (exportStage) {
+        requestRecordingExportStageRelease(exportStage, { preserveFile: true });
+      }
+      throw error;
+    }
+
     try {
       const store = await getOutboundQueueStore();
       const queued = await store.enqueueRecording({
@@ -1559,28 +1662,39 @@ function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
       if (queued.added) {
         console.log(`[queue] Zařazeno ${queued.item.clientRecordingId} (recording).`);
       }
+      const exportStage = recordingExportStages.get(sessionId);
+      if (exportStage) exportStage.recordingFinishSucceeded = true;
     } catch (error) {
       console.error(`[queue] Zařazení nahrávky selhalo: ${error.stack || error.message}`);
-      noteDeferredQuitFailure(`Lokální zařazení nahrávky selhalo: ${error.message}`);
+      const exportStage = recordingExportStages.get(sessionId);
+      noteDeferredQuitFailure(
+        `Lokální zařazení nahrávky selhalo: ${error.message}`,
+        { requiresUserConfirmation: true },
+      );
+      showPanel();
+      if (exportStage) {
+        requestRecordingExportStageRelease(exportStage, { preserveFile: true });
+      }
+      throw error;
     }
     return result;
-  }).catch((error) => {
-    noteDeferredQuitFailure(`Čistá finalizace nahrávky selhala: ${error.message}`);
-    throw error;
-  }).finally(() => {
+  } finally {
     // Quit smí pokračovat až po dokončení manifestu i lokálního enqueue. Samostatná
     // evidence kryje mezeru, kdy už session zmizela z mapy, ale enqueue ještě běží.
     recordingCompletionsInFlight.delete(sessionId);
     void maybeCompleteDeferredQuit();
-  });
+    void tryInstallDownloadedUpdate();
+  }
 }
 
 handleValidated("recording:finish", ["panel"], finishRecordingAndEnqueue);
 handleValidated("recording:export", ["panel"], exportCompletedRecording);
-handleValidated("queue:list", ["panel", "settings"], async () => (
-  (await getOutboundQueueStore()).list()
-));
+handleValidated("queue:list", ["panel", "settings"], async () => {
+  await waitForOutboundQueueRecovery();
+  return (await getOutboundQueueStore()).list();
+});
 handleValidated("queue:retry", ["panel"], async () => {
+  await waitForOutboundQueueRecovery();
   const result = await (await getOutboundQueueStore()).retry(queueKillswitches());
   console.log(`[queue] ${result.reason ?? result.outcome}`);
   return result;
@@ -1658,11 +1772,19 @@ function trackTrackingMutation(promise, method) {
   return trackedMutation.promise;
 }
 
-function recordingWorkBlocksQuit() {
+function recordingInterruptionIsBlocked() {
   return recordingOwnersPreparing.size > 0
     || recordingSessions.size > 0
     || recordingCompletionsInFlight.size > 0
-    || [...recordingExportStages.values()].some((stage) => stage.result === null);
+    || recordingExportStages.size > 0;
+}
+
+function recordingExportAwaitsUserDecision() {
+  return [...recordingExportStages.values()].some((stage) => (
+    stage.recordingFinishSucceeded
+    && !stage.releaseRequested
+    && !stage.ownerGone
+  ));
 }
 
 function trackingWorkBlocksQuit() {
@@ -1670,22 +1792,30 @@ function trackingWorkBlocksQuit() {
 }
 
 function quitActivitySnapshot() {
-  const pendingExports = [...recordingExportStages.values()]
-    .filter((stage) => stage.result === null).length;
+  const pendingExports = recordingExportStages.size;
   return `přípravy=${recordingOwnersPreparing.size}, session=${recordingSessions.size}, `
     + `dokončení=${recordingCompletionsInFlight.size}, finalizace-exportu=${pendingExports}, `
     + `mutace-lutrack=${trackingMutationsInFlight.size}, lutrack=${appState.trackingOwners.size}`;
 }
 
-function noteDeferredQuitFailure(reason) {
+function noteDeferredQuitFailure(reason, { requiresUserConfirmation = false } = {}) {
   const request = deferredQuitRequest;
-  if (!request || request.committed || request.failureReason) return;
-  request.failureReason = reason;
+  if (!request || request.committed) return;
+  const isNewFailure = !request.failureReason;
+  if (isNewFailure) request.failureReason = reason;
+  const upgradesConfirmation = requiresUserConfirmation && !request.userConfirmationRequired;
+  if (upgradesConfirmation) {
+    request.userConfirmationRequired = true;
+    console.error(`[quit] ${reason}; ukončení čeká na opakované potvrzení uživatele.`);
+    showPanel();
+    return;
+  }
+  if (!isNewFailure) return;
   console.error(`[quit] ${reason}; po dokončení zbývající práce se aplikace přesto ukončí.`);
 }
 
 function ensureNewActivityIsAllowed(activity) {
-  if (!deferredQuitRequest || deferredQuitRequest.committed) return;
+  if (!isQuitting && (!deferredQuitRequest || deferredQuitRequest.committed)) return;
   throw new Error(`Aplikace se ukončuje; nové ${activity} už nelze spustit`);
 }
 
@@ -1714,7 +1844,8 @@ async function maybeCompleteDeferredQuit() {
     commitDeferredQuit({ forced: true, reason: request.failureReason });
     return;
   }
-  if (recordingWorkBlocksQuit() || trackingMutationsInFlight.size > 0) return;
+  if (request.userConfirmationRequired) return;
+  if (recordingInterruptionIsBlocked() || trackingMutationsInFlight.size > 0) return;
   if (request.failureReason) {
     commitDeferredQuit({ forced: true, reason: request.failureReason });
     return;
@@ -1735,7 +1866,7 @@ async function maybeCompleteDeferredQuit() {
     if (deferredQuitRequest !== request || request.committed) return;
     if (
       !request.trackingSettled
-      || recordingWorkBlocksQuit()
+      || recordingInterruptionIsBlocked()
       || trackingMutationsInFlight.size > 0
     ) return;
     if (appState.trackingOwners.size > 0) {
@@ -1759,7 +1890,7 @@ async function maybeCompleteDeferredQuit() {
 
 function beginDeferredQuit() {
   if (deferredQuitRequest) return;
-  const hasRecording = recordingWorkBlocksQuit();
+  const hasRecording = recordingInterruptionIsBlocked();
   const hasTracking = trackingWorkBlocksQuit();
   const request = {
     committed: false,
@@ -1768,6 +1899,7 @@ function beginDeferredQuit() {
     recordingStopDeliveryFailed: false,
     timeoutId: undefined,
     trackingSettled: !hasTracking,
+    userConfirmationRequired: false,
   };
   deferredQuitRequest = request;
 
@@ -1775,6 +1907,10 @@ function beginDeferredQuit() {
   // fsyncnuté, takže zbývá flush, hash, manifest a lokální enqueue; po této lhůtě
   // je důležitější nezamknout uživatele v aplikaci a quit se hlasitě vynutí.
   request.timeoutId = setTimeout(() => {
+    if (request.userConfirmationRequired || recordingExportAwaitsUserDecision()) {
+      console.warn("[quit] Ukončení zůstává odložené, dokud uživatel nerozhodne o uložené nahrávce.");
+      return;
+    }
     commitDeferredQuit({
       forced: true,
       reason: `Čisté zastavení se nedokončilo do ${GRACEFUL_QUIT_TIMEOUT_MS} ms`,
@@ -1872,9 +2008,7 @@ function updateBlockingActivityIsRunning() {
   // Session zůstává v mapě až do fsync a zápisu manifestu; následné zařazení chrání
   // serializační bariéra fronty níž. Export stage se smaže až po potvrzeném
   // `recording:export`, takže zahrnuje i uloženou nahrávku čekající na pojmenování.
-  return recordingOwnersPreparing.size > 0
-    || recordingSessions.size > 0
-    || recordingExportStages.size > 0
+  return recordingInterruptionIsBlocked()
     || appState.trackingOwners.size > 0;
 }
 
@@ -1893,6 +2027,7 @@ function clearUpdateInstallRetry() {
 }
 
 async function updateRestartIsSafe() {
+  await waitForOutboundQueueRecovery();
   if (updateBlockingActivityIsRunning()) return false;
   const observedActivityGeneration = updateRelevantActivityGeneration;
 
@@ -2375,12 +2510,17 @@ handleValidated("auth:begin", ["panel"], async () => {
   const attempt = new AbortController();
   activeAuthAttempts.add(attempt);
   authAttemptsInFlight += 1;
+  let result;
   try {
-    return await beginAuth({ signal: attempt.signal });
+    result = await beginAuth({ signal: attempt.signal });
   } finally {
     authAttemptsInFlight -= 1;
     activeAuthAttempts.delete(attempt);
   }
+  if (result?.ok === true) {
+    void waitForOutboundQueueRecovery().then(() => pumpOutboundQueue());
+  }
+  return result;
 });
 
 handleValidated(AUTH_CANCEL_CHANNEL, ["panel"], () => {
@@ -2465,7 +2605,12 @@ app.whenReady().then(async () => {
   screen.on("display-metrics-changed", positionPanel);
   await applyOutboundQueueRetention(panelStartup);
   markOutboundQueueRetentionReady();
-  void pumpOutboundQueue();
+  void recoverOutboundRecordings()
+    .catch(() => {
+      console.error("[queue] Obnova nahrávek neočekávaně selhala; start pokračuje.");
+    })
+    .finally(markOutboundQueueRecoveryReady)
+    .then(() => pumpOutboundQueue());
   await initializeAutoUpdates();
   const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);
   if (IS_TEST_RUN && Number.isFinite(hardStop) && hardStop > 0) {
@@ -2486,7 +2631,15 @@ app.on("before-quit", (event) => {
   // Jediná brána platí pro menu, Cmd+Q, Dock i systémové ukončení. Při druhém
   // before-quit po našem vlastním app.quit() už Electron nezastavujeme.
   if (isQuitting || deferredQuitRequest?.committed) return;
-  if (!recordingWorkBlocksQuit() && !trackingWorkBlocksQuit()) {
+  if (deferredQuitRequest?.userConfirmationRequired) {
+    event.preventDefault();
+    commitDeferredQuit({
+      forced: true,
+      reason: "Uživatel po zobrazení chyby ukončení výslovně zopakoval",
+    });
+    return;
+  }
+  if (!recordingInterruptionIsBlocked() && !trackingWorkBlocksQuit()) {
     isQuitting = true;
     return;
   }
