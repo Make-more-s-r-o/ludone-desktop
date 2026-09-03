@@ -897,3 +897,28 @@ není luxus, ale podmínka.
 
 🛑 **Nákup účtu je Danova stopka** (peníze + účet u Applu). Do té doby se staví všechno,
 co na podpisu nezávisí: konfigurace electron-builderu, kanál aktualizací, verzování.
+
+### BD-N43 — Připomínky (DSK-F014) se zatím NESTAVÍ; nastavení patří na server
+
+Dan, 2. 9. 2026 v konverzaci: *„hele, časovač. priorita není. toto nastavení by se měl
+udělat v app.ludone a aplikace ho pouze přebírá… není priorita."*
+
+🔴 **Tohle rozhodnutí do dneška nikde nestálo** — žilo jen v chatu. Zapisuje se proto, že
+`spec.md` má `DSK-F014` jako `approved` a rozhodnutí **M20** ho výslovně chce („Připomínky
+ve zvolené dny a hodiny, když neběží časovač. Nikdy během nahrávání"). Kdokoli, kdo si
+přečte jen spec, tu funkci logicky postaví — a půjde proti Danovi, aniž by to tušil.
+
+**Co platí:**
+
+| | |
+|---|---|
+| M20 (chtěná funkce) | **platí dál**, neruší se |
+| priorita | **nízká** — Dan ji výslovně odsunul |
+| kde bydlí nastavení | **v app.ludone**, desktop ho jen přebírá |
+| stav dnes | `no-code` · `disabled` — a je to **správný stav**, ne nedodělek |
+
+**Důsledek pro pořadí prací:** dokud server nemá, odkud to nastavení vzít, nemá desktopová
+implementace o co se opřít. Postavit ji dřív by znamenalo vymyslet si vlastní úložiště
+nastavení a pak ho zahodit — přesně ten druh práce, který se dělá dvakrát.
+
+⇒ **Nestavět, dokud Dan neřekne jinak nebo dokud server nezpřístupní ta nastavení.**

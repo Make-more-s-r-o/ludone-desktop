@@ -88,7 +88,7 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 | `DSK-F011` | Časovač: start, přepnutí projektu, stop | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ¹¹ | disabled | unverified |
 | `DSK-F013` | Časovač přežije pád a restart | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
-| `DSK-F014` | Připomínky, když neběží časovač | normal | approved | no-code | disabled | unverified |
+| `DSK-F014` | Připomínky, když neběží časovač | normal | approved | no-code | disabled | unverified |  <!-- Vědomě nestaveno: BD-N43. Dan funkci odsunul a nastavení má bydlet v app.ludone. -->
 | `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika | normal | approved | **merged** | labs | unverified |
 | `DSK-F016` | Ikona v Docku jako volba | normal | approved | no-code | disabled | unverified |
 | `DSK-F017` | Mazání lokálních kopií po 7 dnech | normal | approved ¹² | **merged** | disabled | tests-green |
