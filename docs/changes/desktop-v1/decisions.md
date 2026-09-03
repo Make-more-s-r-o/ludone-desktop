@@ -854,7 +854,14 @@ odděleným od stroje. Záloha je lepší důvod než kapacita a měla by přij�
 Dan upřesnil: *„ten design jsem myslel pro tebe. Té desktop app."*
 
 Schválený návrh má **22 obrazovek**; postavené a sladěné jsou **čtyři** (klidový panel,
-oprávnění, nahrávání, nastavení). Nesladěné zůstávají zejména: **onboarding**, stav
+oprávnění, nahrávání, nastavení).
+
+> 🔴 **OPRAVA 3. 9. 2026: „nastavení" v té čtveřici NEPLATÍ.** Dan poslal snímek a měl
+> pravdu. Změřeno proti `design/navrh/nahled.html:520–600`: návrh chce **čtyři záložky**
+> (Účet · Zvuk · Záznamy · Diagnostika), my máme **jednu rolovací stránku se třemi sekcemi**.
+> Chybí navíc řádky **Zařízení** a **Prostředí**, oba přepínače (Dock, start po přihlášení)
+> a **celá záložka Diagnostika**. `spec.md` přitom vede `DSK-F015` jako **merged**.
+> Sladěné obrazovky jsou tedy **tři**, ne čtyři. Nesladěné zůstávají zejména: **onboarding**, stav
 **„nahrává se" s měřáky stop**, **výběr projektu** a **chybové obrazovky**
 (přihlášení vypršelo · účet nemá přístup · bez sítě).
 

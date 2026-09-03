@@ -5,6 +5,31 @@
 
 
 
+
+## 🔴 NASTAVENÍ NENÍ SLADĚNÉ S NÁVRHEM (Dan to našel 3. 9., snímkem)
+
+Návrh (`design/navrh/nahled.html:520–600`) říká doslova **„Čtyři části"** — okno se
+záložkami **Účet · Zvuk · Záznamy · Diagnostika**. Máme **jednu rolovací stránku
+se třemi sekcemi**.
+
+**Chybí:** řádek **Zařízení** · řádek **Prostředí** · přepínač **ikony v Docku** ·
+přepínač **spouštění po přihlášení** · **celá záložka Diagnostika** (verze a build,
+architektura, stav mikrofonu a ostatního zvuku, spojení se serverem, fronta,
+**Exportovat diagnostiku**).
+
+🔴 **Dva naše vlastní záznamy tvrdily opak a jsou opravené:**
+- `decisions.md` BD-N40 psalo, že nastavení je sladěné. Není.
+- `spec.md` vede `DSK-F015` („Nastavení: účet, zvuk, záznamy, připomínky, diagnostika")
+  jako **merged**, ačkoli diagnostika neexistuje. 🔴 `spec.md` je **ZMRAZENÝ**, takže ho
+  neopravuju sám — **je to chyba ve zmrazeném dokumentu a patří tobě.**
+
+🟢 **Dobrá zpráva:** řádek **„Prostředí — produkce"** je ve schváleném návrhu, takže
+přepínač labs × produkce, který chceš, má schválené místo a nemusí se vymýšlet.
+
+**Co běží:** oba přepínače (Dock, start po přihlášení) — obojí návrh má.
+**Co následuje:** přestavba Nastavení na čtyři záložky včetně Diagnostiky a Prostředí.
+Nečekám na tvůj souhlas, protože jsi dvakrát řekl „podle schváleného mockupu".
+
 ## 🔍 AUDIT PROTI SCHVÁLENÉMU NÁVRHU (3. 9.) — devět odchylek s citacemi
 
 Pustil jsem čtecí audit, protože jsi **dvakrát měl konkrétní pravdu** tam, kde jsem tvrdil
