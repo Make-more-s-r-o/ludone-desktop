@@ -467,6 +467,9 @@ describe("retence 7 dní", () => {
     try {
       const result = await applyRetention({
         queue: podvrzena,
+        // 🔴 Bez kořene retence odmítne úplně všechno a test by procházel, aniž by
+        // cokoli měřil. Tahle jediná řádka rozhoduje, jestli je to důkaz nebo divadlo.
+        recordingsDirectory: temporaryDirectory,
         policy: RETENTION_POLICIES.DNI_7,
         now: NOW,
       });
