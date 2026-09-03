@@ -594,6 +594,44 @@ describe("schválený klidový panel", () => {
     expect(unsubscribe).toHaveBeenCalledOnce();
   });
 
+  it("příkaz z kontextového menu LuTrack i ZASTAVÍ, nejen spustí", async () => {
+    // 🔴 Položka „Zastavit měření času" posílá `stop-tracking`. Testy hlavního procesu
+    // ověří, že se příkaz odeslal — ale ne, že na něj někdo zareagoval. Bez obsluhy
+    // v rendereru by se položka tvářila funkčně a nedělala nic. Proto se to musí měřit
+    // TADY, na straně, která příkaz přijímá.
+    let deliverCommand;
+    const onTrayCommand = vi.fn((listener) => {
+      deliverCommand = listener;
+      return vi.fn();
+    });
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      ludone: {
+        hasAuthSession: vi.fn().mockResolvedValue(true),
+        onTrayCommand,
+      },
+    });
+
+    try {
+      await React.act(async () => deliverCommand("start-tracking"));
+      expect(
+        panel.document.querySelector('[aria-label="Zastavit LuTrack"]'),
+        "LuTrack se měl rozeběhnout",
+      ).not.toBeNull();
+
+      await React.act(async () => deliverCommand("stop-tracking"));
+      expect(
+        panel.document.querySelector('[aria-label="Zastavit LuTrack"]'),
+        "po stop-tracking už LuTrack nesmí běžet",
+      ).toBeNull();
+      expect(
+        panel.document.querySelector('[aria-label="Spustit LuTrack"]'),
+        "má být zpátky nabídka spuštění",
+      ).not.toBeNull();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("rychlou akci přijatou během onboardingu později samovolně nespustí", async () => {
     let deliverCommand;
     const onTrayCommand = vi.fn((listener) => {

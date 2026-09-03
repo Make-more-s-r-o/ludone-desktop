@@ -53,6 +53,15 @@ export function TrackingCard({
       setStartedAt(Date.now());
       setActive(true);
     }
+    // Bez téhle větve by položka „Zastavit měření času" v kontextovém menu poslala
+    // příkaz, který nikdo nezpracuje — tlačítko by se tvářilo funkčně a nedělalo nic.
+    // Testy hlavního procesu to nechytnou: ověřují, že se příkaz ODESLAL, ne že někdo
+    // zareagoval. Zjištěno 3. 9. 2026 při konsolidaci.
+    if (trayCommand.name === "stop-tracking" && active) {
+      setActive(false);
+      setStartedAt(null);
+      setLastMessage("Čas zastaven · uložení do LuTracku je ukázkové.");
+    }
   }, [active, trayCommand]);
 
   return (
