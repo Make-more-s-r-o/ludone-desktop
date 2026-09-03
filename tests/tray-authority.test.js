@@ -154,6 +154,7 @@ function trayHarness({
     "finalizeRecordingExportStage",
     "maybeCompleteDeferredQuit",
     "tryInstallDownloadedUpdate",
+    "authSessionTransitionPromise",
     "REPORTED_FACT_KEYS",
     `"use strict";
      let trayState = "signed-out";
@@ -223,6 +224,7 @@ function trayHarness({
       () => Promise.resolve(),
       () => {},
       () => {},
+      null,
       reportedFactKeys,
     ),
   };

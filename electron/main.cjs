@@ -774,6 +774,7 @@ function applyReportedFacts(ownerId, facts) {
     facts.panelActionsAvailable
     && facts.signedIn
     && appState.acceptRendererSignIn !== false
+    && authSessionTransitionPromise === null
   ) {
     panelActionOwners.add(ownerId);
   } else {
@@ -1112,6 +1113,12 @@ function openLuDoneInBrowser() {
   });
 }
 
+function canStartTrackingFromTray() {
+  return authSessionTransitionPromise === null
+    && appState.signedIn
+    && appState.panelActionOwners.size > 0;
+}
+
 function trayContextMenuTemplate() {
   const tracking = appState.trackingOwners.size > 0;
   return [
@@ -1124,8 +1131,16 @@ function trayContextMenuTemplate() {
     {
       label: tracking ? "Zastavit měření času" : "Spustit LuTrack",
       accelerator: "Control+Option+T",
-      enabled: tracking || (appState.signedIn && appState.panelActionOwners.size > 0),
-      click: () => queueTrayCommand(tracking ? "stop-tracking" : "start-tracking"),
+      enabled: tracking || canStartTrackingFromTray(),
+      click: () => {
+        // Menu může zůstat chvíli otevřené přes změnu session nebo reload panelu.
+        // Zastaralou nabídku nepředáme neexistující kartě; ukážeme aktuální stav panelu.
+        if (!tracking && !canStartTrackingFromTray()) {
+          showPanel();
+          return;
+        }
+        queueTrayCommand(tracking ? "stop-tracking" : "start-tracking");
+      },
     },
     { type: "separator" },
     {

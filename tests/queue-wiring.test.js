@@ -2372,6 +2372,70 @@ describe("viditelnost ikony a klikání na lištu", () => {
     expect(panel.focused).toBe(false);
   });
 
+  it("opožděný report během změny session rychlou akci neoživí", async () => {
+    let finishLogout;
+    let markLogoutStarted;
+    const logoutStarted = new Promise((resolve) => { markLogoutStarted = resolve; });
+    const logoutResult = {
+      reason: "offline",
+      serverRevoked: false,
+      signedOutLocally: false,
+    };
+    const createLogoutController = vi.fn(() => ({
+      logout: vi.fn(() => {
+        markLogoutStarted();
+        return new Promise((resolve) => { finishLogout = resolve; });
+      }),
+    }));
+    const harness = await loadMain({
+      createLogoutController,
+      trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
+    });
+    await harness.runReady();
+    const panel = harness.windows[0];
+    const panelContents = panel.webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+    const tray = harness.trays[0];
+    const trackingItem = () => harness.electron.Menu.buildFromTemplate.mock.lastCall[0][1];
+    const readyFacts = {
+      panelActionsAvailable: true,
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: false,
+    };
+
+    reportFacts(event, readyFacts);
+    tray.emit("right-click");
+    const previouslyEnabledItem = trackingItem();
+    expect(previouslyEnabledItem.enabled).toBe(true);
+
+    const logout = harness.ipcHandlers.get("auth:logout")(event);
+    try {
+      await logoutStarted;
+      reportFacts(event, readyFacts);
+      tray.emit("right-click");
+      expect(trackingItem().enabled).toBe(false);
+
+      previouslyEnabledItem.click();
+      expect(harness.ipcHandlers.get("tray:command")(event)).toEqual([]);
+      expect(panel.visible).toBe(true);
+      expect(panel.focused).toBe(true);
+
+      finishLogout(logoutResult);
+      await expect(logout).resolves.toEqual(logoutResult);
+      tray.emit("right-click");
+      expect(trackingItem().enabled).toBe(false);
+
+      reportFacts(event, readyFacts);
+      tray.emit("right-click");
+      expect(trackingItem().enabled).toBe(true);
+    } finally {
+      finishLogout?.(logoutResult);
+      await logout;
+    }
+  });
+
   it("běžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů", async () => {
     const harness = await loadMain({
       env: { DESKTOP_TIME_ENABLED: "true" },
@@ -2410,6 +2474,13 @@ describe("viditelnost ikony a klikání na lištu", () => {
     const panelContents = harness.windows[0].webContents;
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const tray = harness.trays[0];
+
+    harness.ipcListeners.get("tray:report-facts")(event, {
+      panelActionsAvailable: true,
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: false,
+    });
 
     tray.emit("right-click");
     const template = harness.electron.Menu.buildFromTemplate.mock.calls[0][0];

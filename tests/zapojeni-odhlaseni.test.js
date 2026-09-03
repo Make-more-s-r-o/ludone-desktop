@@ -170,11 +170,13 @@ describe("odhlášení: co musí platit, jakmile ho někdo zapojí", () => {
       const applyReportedFacts = Function(
         "appState",
         "refreshTray",
+        "authSessionTransitionPromise",
         "REPORTED_FACT_KEYS",
         `"use strict"; ${zdrojFaktu}; return applyReportedFacts;`,
       )(
         appState,
         refreshTray,
+        null,
         ["panelActionsAvailable", "signedIn", "tracking", "systemAudioLost"],
       );
 
