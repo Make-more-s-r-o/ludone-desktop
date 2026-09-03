@@ -1,0 +1,8 @@
+{
+  "celkem": 4,
+  "podleSouboru": {
+    "tests/kalendar-zrusen.test.js": 1,
+    "tests/logout.test.js": 1,
+    "tests/zapojeni-odhlaseni.test.js": 2
+  }
+}

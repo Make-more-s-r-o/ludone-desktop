@@ -25,8 +25,10 @@ describe("manifest automatických bran", () => {
   });
 
   it("spouští gates v závazném pořadí", () => {
+    // Pořadí je závazné a mění se VĚDOMĚ. `preskocene` je poslední schválně: potřebuje
+    // doběhnuté testy, aby mohl spočítat, kolik jich usnulo.
     expect(packageManifest.scripts.gates).toBe(
-      "npm run lint && npm run typecheck && npm run test:unit",
+      "npm run lint && npm run typecheck && npm run test:unit && npm run preskocene",
     );
   });
 });
