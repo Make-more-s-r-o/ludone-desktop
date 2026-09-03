@@ -12,8 +12,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `f4affa1`, **794 passed \| 3 skipped (797)**, čistý strom, **Electron 39.8.10** | 3 skipped (734)**, čistý strom, **Electron 39.8.10** | 3 skipped (719)**, čistý strom, **Electron 39.8.10** | 3 skipped (708)**, čistý strom, **Electron 39.8.10** | 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
-| otevřené PR | **0** · worktrees **0** · mergnuto 3. 9.: **#41–#65 (29 PR)** |
+| `main` | `0b0e727`, **800 passed \| 3 skipped (803)**, čistý strom, **Electron 39.8.10** | 3 skipped (797)**, čistý strom, **Electron 39.8.10** | 3 skipped (734)**, čistý strom, **Electron 39.8.10** | 3 skipped (719)**, čistý strom, **Electron 39.8.10** | 3 skipped (708)**, čistý strom, **Electron 39.8.10** | 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
+| otevřené PR | **0** · worktrees **0** · mergnuto 3./4. 9.: **#41–#66 (30 PR)** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
@@ -121,6 +121,23 @@ změně amplitudy (>40 bodů) · vyvolání retry, ne jen změna textu.
 
 🛑 **Zbývá jediné rozhodnutí pro Dana:** barevné ikony propadají kontrastem na **světlé**
 liště (korálová 2,35 : 1, tyrkysová 1,91 : 1). Tři varianty v `DAN-TODO.md`.
+
+
+## 🔎 AUDIT ÚPLNOSTI — recept, který se osvědčil a stojí za zopakování
+
+Dan našel večer **tři vady za dvacet minut** tím, že se na aplikaci **podíval**. Všechny
+prošly stovkami zelených testů. Pustil jsem proto audit, který se ptá **jeho třemi
+otázkami**, a našel **tři další** — z toho jednu vážnou, starou hodinu.
+
+| otázka | co hledá | co našla |
+|---|---|---|
+| **vejde se to?** | pevné mřížky, `overflow: hidden` bez scrollu, podmíněně vypnuté prvky | tlačítka „Uložit a odeslat" **pod hranou panelu** |
+| **měří to?** | prvek, co vypadá jako ukazatel a hodnotu nedostává | onboarding **neobnovil oprávnění** po návratu ze systému |
+| **vede to někam?** | číslo nebo hláška o problému bez akce | „Spustit LuTrack" z lišty se **tiše zahodilo** |
+
+⇒ **Tenhle audit pouštět po každém větším bloku UI práce.** Zadání je v
+`/tmp/beh-noc/codex-uplnost.txt`; podstatné je, že do něj patří **konkrétní příklady
+už nalezených vad** — bez nich hledá obecně a najde míň.
 
 ## 🛑 ZBÝVÁ — a většina čeká na někoho jiného
 

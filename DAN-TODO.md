@@ -12,7 +12,7 @@
 
 
 
-## 🔍 AUDIT ÚPLNOSTI UI — tři další nálezy (v noci 3./4. 9., oprava běží)
+## ✅ AUDIT ÚPLNOSTI UI — tři nálezy, VŠECHNY OPRAVENÉ (PR #66)
 
 Po tvých třech večerních nálezech jsem pustil audit, který se ptá **tvýma očima**:
 *vejde se to · měří to · vede to někam*. Našel tři další.
