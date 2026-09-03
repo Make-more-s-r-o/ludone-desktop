@@ -437,7 +437,6 @@ export function RecordingCard({
       setRuntimeSystemAudioState(runtime, "live");
       watchRuntimeSystemTrack(runtime, replacement.systemTrack);
       adopted = true;
-      runtime.levelMonitor?.replaceSource("system", replacement.systemStream);
       stopStreams([previousSystemStream]);
     } catch (error) {
       if (replacement && !adopted) stopStreams([replacement.systemStream]);
@@ -494,16 +493,14 @@ export function RecordingCard({
         : null;
       exportCapture = stereoCapture
         ?? await createMicrophoneOnlyExportCapture(capture.microphoneTrack, audioDependencies);
-      levelMonitor = createAudioLevelMonitor(sharedAudioContext.context);
-      levelMonitor.replaceSource("microphone", capture.microphoneStream);
-      if (capture.systemStream) levelMonitor.replaceSource("system", capture.systemStream);
-      const microphoneRecorder = new MediaRecorder(
-        new MediaStream([capture.microphoneTrack]),
-        options,
-      );
+      const microphoneRecordingStream = new MediaStream([capture.microphoneTrack]);
+      const microphoneRecorder = new MediaRecorder(microphoneRecordingStream, options);
       const systemRecorder = hasSystemAudio
         ? new MediaRecorder(stereoCapture.systemStream, options)
         : null;
+      levelMonitor = createAudioLevelMonitor(sharedAudioContext.context);
+      levelMonitor.replaceSource("microphone", microphoneRecordingStream);
+      if (systemRecorder) levelMonitor.replaceSource("system", stereoCapture.systemStream);
       const exportRecorder = new MediaRecorder(exportCapture.stream, options);
       const sources = hasSystemAudio ? ["microphone", "system"] : ["microphone"];
       const persistence = await window.ludone.beginRecording(sources);
@@ -662,13 +659,23 @@ export function RecordingCard({
     let disposed = false;
     let animationFrame = null;
 
-    const presentLevel = (fill, label, measuredPercent, displayedPercent = measuredPercent) => {
-      updateAudioLevelMeter(fill, displayedPercent);
+    const presentLevel = (fill, label, level, sourceState = "live") => {
+      const sourceIsLive = sourceState === "live";
+      const measurementState = sourceIsLive && level.measured === false
+        ? "unavailable"
+        : "measured";
+      const measuredPercent = sourceIsLive ? level.percent : 0;
+      updateAudioLevelMeter(fill, measuredPercent, measurementState);
       const row = fill?.closest(".recording-source");
       if (!row) return;
       const percent = String(measuredPercent);
       if (row.dataset.level !== percent) row.dataset.level = percent;
-      const accessibleLevel = `${label}: ${percent} %`;
+      if (row.dataset.levelMonitorState !== measurementState) {
+        row.dataset.levelMonitorState = measurementState;
+      }
+      const accessibleLevel = measurementState === "unavailable"
+        ? `${label}: měřidlo nedostupné`
+        : `${label}: ${percent} %`;
       if (row.getAttribute("aria-label") !== accessibleLevel) {
         row.setAttribute("aria-label", accessibleLevel);
       }
@@ -678,19 +685,33 @@ export function RecordingCard({
       if (disposed) return;
       const runtime = runtimeRef.current;
       if (!runtime || runtime.closing) return;
-      const levels = runtime.levelMonitor?.readLevels() ?? {
-        microphone: { percent: 0 },
-        system: { percent: 0 },
-      };
-      presentLevel(microphoneMeterRef.current, "Mikrofon", levels.microphone.percent);
-      const systemIsLive = session.systemAudioState === "live";
-      presentLevel(
-        systemMeterRef.current,
-        "Ostatní zvuk",
-        systemIsLive ? levels.system.percent : 0,
-        systemIsLive ? levels.system.percent : 2,
-      );
-      animationFrame = window.requestAnimationFrame(sample);
+      try {
+        const levels = runtime.levelMonitor?.readLevels() ?? {
+          microphone: { measured: false, percent: 0 },
+          system: { measured: false, percent: 0 },
+        };
+        presentLevel(microphoneMeterRef.current, "Mikrofon", levels.microphone);
+        presentLevel(
+          systemMeterRef.current,
+          "Ostatní zvuk",
+          levels.system,
+          session.systemAudioState,
+        );
+      } catch {
+        presentLevel(
+          microphoneMeterRef.current,
+          "Mikrofon",
+          { measured: false, percent: 0 },
+        );
+        presentLevel(
+          systemMeterRef.current,
+          "Ostatní zvuk",
+          { measured: false, percent: 0 },
+          session.systemAudioState,
+        );
+      } finally {
+        if (!disposed) animationFrame = window.requestAnimationFrame(sample);
+      }
     };
 
     animationFrame = window.requestAnimationFrame(sample);

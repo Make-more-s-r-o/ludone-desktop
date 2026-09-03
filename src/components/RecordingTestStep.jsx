@@ -116,25 +116,35 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
           const row = refs.row.current;
           if (row) {
             const percent = String(level.percent);
-            const accessibleLevel = `${refs.label}: ${percent} %`;
+            const measurementState = level.measured === false ? "unavailable" : "measured";
+            const accessibleLevel = measurementState === "unavailable"
+              ? `${refs.label}: měřidlo nedostupné`
+              : `${refs.label}: ${percent} %`;
             if (row.dataset.level !== percent) row.dataset.level = percent;
+            if (row.dataset.levelMonitorState !== measurementState) {
+              row.dataset.levelMonitorState = measurementState;
+            }
             if (row.getAttribute("aria-label") !== accessibleLevel) {
               row.setAttribute("aria-label", accessibleLevel);
             }
           }
-          updateAudioLevelMeter(refs.meter.current, level.percent);
+          updateAudioLevelMeter(
+            refs.meter.current,
+            level.percent,
+            level.measured === false ? "unavailable" : "measured",
+          );
         }
         const current = signalsRef.current;
         const microphone = nextSignal(
           current.microphone,
           levels.microphone.rms,
-          levels.microphone.available,
+          levels.microphone.available && levels.microphone.measured,
           now >= suppressMicrophoneUntilRef.current,
         );
         const system = nextSignal(
           current.system,
           levels.system.rms,
-          levels.system.available,
+          levels.system.available && levels.system.measured,
         );
         signalsRef.current = { microphone, system };
         if (
@@ -145,7 +155,12 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
         ) {
           setSignals(signalsRef.current);
         }
-        if (!levels.microphone.available || !levels.system.available) {
+        if (
+          !levels.microphone.available
+          || !levels.microphone.measured
+          || !levels.system.available
+          || !levels.system.measured
+        ) {
           setCaptureState("error");
           void session.close().catch(() => {});
           return;
@@ -155,8 +170,8 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
       animationFrame = window.requestAnimationFrame(sample);
     }).catch(() => {
       if (disposed) return;
-      updateAudioLevelMeter(microphoneMeterRef.current, 0);
-      updateAudioLevelMeter(systemMeterRef.current, 0);
+      updateAudioLevelMeter(microphoneMeterRef.current, 0, "unavailable");
+      updateAudioLevelMeter(systemMeterRef.current, 0, "unavailable");
       setCaptureState("error");
       signalsRef.current = {
         microphone: { heard: false, liveFrames: 0, state: "silent" },
