@@ -52,6 +52,12 @@ function completeManifest() {
   };
 }
 
+function microphoneOnlyManifest() {
+  const manifest = completeManifest();
+  delete manifest.tracks.system;
+  return manifest;
+}
+
 function stereoWebmBytes(channelCount = 2) {
   return Buffer.concat([
     Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
@@ -246,6 +252,20 @@ describe("export dokončené schůzky", () => {
     });
   });
 
+  it("u jednostopy nepředstírá porovnání s neexistující systémovou stopou", () => {
+    expect(recordingTimeline(microphoneOnlyManifest(), {
+      startedAt: "2026-09-02T12:00:00.090Z",
+      endedAt: "2026-09-02T13:00:00.170Z",
+    })).toEqual({
+      startedAt: MICROPHONE_STARTED_AT,
+      endedAt: MICROPHONE_ENDED_AT,
+      stereoStartedAt: "2026-09-02T12:00:00.090Z",
+      stereoEndedAt: "2026-09-02T13:00:00.170Z",
+      trackStartDeltaMs: null,
+      trackDurationDeltaMs: null,
+    });
+  });
+
   it("odmítne stopy, které se v čase rozešly, místo tichého slepení", () => {
     const rozesle = completeManifest();
     rozesle.tracks.microphone.startedAt = "2026-09-02T12:00:02.100Z";
@@ -325,6 +345,44 @@ describe("export dokončené schůzky", () => {
     );
     await expect(stat(microphonePath)).resolves.toMatchObject({ size: 8 });
     await expect(stat(systemPath)).resolves.toMatchObject({ size: 6 });
+  });
+
+  it("jednostopu předá jako dvoukanálový soubor s mikrofonem vlevo a tichem vpravo", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "ludone-export-microphone-only-test-"));
+    roots.add(root);
+    const downloadsDirectory = path.join(root, "downloads");
+    const stagePath = path.join(root, "schuzka-microphone-only-stereo.webm");
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(downloadsDirectory);
+    await writeFile(stagePath, stereoWebmBytes());
+    const openExternal = vi.fn(async () => undefined);
+
+    const result = await exportRecordingCopy({
+      downloadsDirectory,
+      manifest: microphoneOnlyManifest(),
+      openExternal,
+      origin: "https://app.ludone.cz",
+      stagePath,
+      stereoTiming: {
+        startedAt: "2026-09-02T12:00:00.090Z",
+        endedAt: "2026-09-02T13:00:00.170Z",
+      },
+    });
+
+    expect(result).toMatchObject({
+      format: { channels: 2, codec: "Opus", container: "WebM" },
+      startedAt: MICROPHONE_STARTED_AT,
+      endedAt: MICROPHONE_ENDED_AT,
+      trackStartDeltaMs: null,
+      trackDurationDeltaMs: null,
+    });
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+    expect(openExternal).toHaveBeenCalledWith(
+      "https://app.ludone.cz/nahravky/nahrat"
+      + `?clientRecordingId=${CLIENT_RECORDING_ID}`
+      + "&startedAt=2026-09-02T12%3A00%3A00.100Z"
+      + "&endedAt=2026-09-02T13%3A00%3A00.120Z",
+    );
   });
 
   it("při selhání otevření ponechá původní obě stopy i exportovanou kopii", async () => {

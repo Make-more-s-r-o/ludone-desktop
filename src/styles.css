@@ -647,7 +647,8 @@ svg {
   transition: width 160ms ease;
 }
 
-.recording-source[data-source-state="lost"] .recording-source__fill {
+.recording-source[data-source-state="lost"] .recording-source__fill,
+.recording-source[data-source-state="unavailable"] .recording-source__fill {
   width: 2%;
   background: var(--panel-wait);
 }
@@ -685,6 +686,16 @@ svg {
 
 .recording-outage strong {
   color: var(--panel-strong);
+}
+
+.recording-mode-note {
+  padding: 10px 11px;
+  border: 1px solid color-mix(in oklab, var(--panel-wait) 32%, transparent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--panel-wait) 14%, transparent);
+  color: var(--panel-muted);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .recording-outage__actions,

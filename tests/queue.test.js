@@ -163,6 +163,33 @@ function recording(clientRecordingId = "9e586e55-d688-43f1-8a80-a3d61e754f3e") {
   };
 }
 
+function microphoneOnlyRecording(
+  clientRecordingId = "6a47ca7f-77c7-4133-bc47-d813c2a1a874",
+) {
+  const startedAt = "2026-09-03T08:00:00.000Z";
+  const endedAt = "2026-09-03T08:30:00.000Z";
+  return {
+    manifest: {
+      schemaVersion: 1,
+      clientRecordingId,
+      createdAt: startedAt,
+      closedAt: endedAt,
+      state: "complete",
+      tracks: {
+        microphone: {
+          fileName: "session-microphone.webm",
+          startedAt,
+          endedAt,
+          sizeBytes: 120,
+          sha256: "a".repeat(64),
+        },
+      },
+    },
+    manifestPath: `/nahravky/${clientRecordingId}.manifest.json`,
+    trackPaths: { microphone: "/nahravky/session-microphone.webm" },
+  };
+}
+
 function oneItemQueue(clientRecordingId) {
   return enqueueRecording(createQueue(), recording(clientRecordingId), 1_777_000_000_000).queue;
 }
@@ -212,6 +239,26 @@ async function writeRecoverableRecording(
     fs.promises.writeFile(trackPaths.system, systemBytes),
   ]);
   return { manifest, manifestPath, trackPaths };
+}
+
+async function writeRecoverableMicrophoneOnlyRecording(recordingsDirectory) {
+  const recordingValue = microphoneOnlyRecording();
+  const microphoneBytes = Buffer.from("mikrofon");
+  recordingValue.manifest.tracks.microphone.sizeBytes = microphoneBytes.byteLength;
+  recordingValue.manifest.tracks.microphone.sha256 = createHash("sha256")
+    .update(microphoneBytes)
+    .digest("hex");
+  recordingValue.manifestPath = path.join(recordingsDirectory, "jednostopa.manifest.json");
+  recordingValue.trackPaths.microphone = path.join(
+    recordingsDirectory,
+    recordingValue.manifest.tracks.microphone.fileName,
+  );
+  await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+  await Promise.all([
+    fs.promises.writeFile(recordingValue.manifestPath, JSON.stringify(recordingValue.manifest)),
+    fs.promises.writeFile(recordingValue.trackPaths.microphone, microphoneBytes),
+  ]);
+  return recordingValue;
 }
 
 function timeEntry(clientTimeEntryId = "7c1f9ab3-1a84-47b3-91eb-7cd4c13f86d8") {
@@ -523,6 +570,29 @@ describe("stavový automat fronty", () => {
     expect(second.queue.items).toHaveLength(1);
   });
 
+  it("produkční store zařadí jednostopu pravdivě a idempotentně", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-microphone-only-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      const first = await store.enqueueRecording(microphoneOnlyRecording());
+      const second = await store.enqueueRecording(microphoneOnlyRecording());
+
+      expect(first.added).toBe(true);
+      expect(second.added).toBe(false);
+      const [item] = (await loadQueue(queuePath)).items;
+      expect(item.tracks).toEqual({ microphone: "/nahravky/session-microphone.webm" });
+      expect(item.server.uploadedBytes).toEqual({ microphone: 0 });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("shodné ID jiné položky nesmí předstírat idempotentní obnovu nahrávky", () => {
     const clientRecordingId = recording().manifest.clientRecordingId;
     const time = enqueueTimeEntry(
@@ -802,6 +872,32 @@ describe("trvalé uložení fronty", () => {
 });
 
 describe("obnova osiřelých nahrávek", () => {
+  it("obnoví dokončenou jednostopu bez vymyšleného systémového souboru", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-one-track-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableMicrophoneOnlyRecording(recordingsDirectory);
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      await expect(recoverOrphanedRecordings({
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      })).resolves.toMatchObject({ recovered: 1, skipped: 0 });
+      const [item] = (await loadQueue(queuePath)).items;
+      expect(item.manifestPath).toBe(fixture.manifestPath);
+      expect(Object.keys(item.tracks)).toEqual(["microphone"]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("dvojí obnova nevytvoří dvě položky", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-idempotent-"));
     const recordingsDirectory = path.join(directory, "nahravky");

@@ -117,7 +117,7 @@ contextBridge.exposeInMainWorld("ludone", {
   exportDiagnostics: () => ipcRenderer.invoke("diagnostics:export"),
   requestPermission: (permission) =>
     ipcRenderer.invoke("permission:request", permission),
-  beginRecording: () => ipcRenderer.invoke("recording:begin"),
+  beginRecording: (sources) => ipcRenderer.invoke("recording:begin", sources),
   appendRecordingChunk: (sessionId, source, sequence, arrayBuffer) =>
     ipcRenderer.invoke("recording:append", sessionId, source, sequence, arrayBuffer),
   finishRecording: (sessionId, trackTimings) =>

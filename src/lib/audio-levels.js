@@ -120,9 +120,8 @@ export async function captureAudioSources({ signal } = {}) {
   if (
     !window.isSecureContext
     || !navigator.mediaDevices?.getUserMedia
-    || !navigator.mediaDevices?.getDisplayMedia
   ) {
-    throw new Error("Stránka nemá zabezpečený přístup k audio zařízením");
+    throw new Error("Stránka nemá zabezpečený přístup k mikrofonu");
   }
   if (signal?.aborted) throw captureAbortedError();
 
@@ -146,13 +145,15 @@ export async function captureAudioSources({ signal } = {}) {
     },
     video: false,
   }), "Mikrofon"));
-  const displayPromise = rememberStream(captureWithTimeout(
-    navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }),
-    "Systémový zvuk",
-  ).then((stream) => {
-    for (const videoTrack of stream.getVideoTracks()) videoTrack.stop();
-    return stream;
-  }));
+  const displayPromise = navigator.mediaDevices.getDisplayMedia
+    ? rememberStream(captureWithTimeout(
+      navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }),
+      "Systémový zvuk",
+    ).then((stream) => {
+      for (const videoTrack of stream.getVideoTracks()) videoTrack.stop();
+      return stream;
+    }))
+    : Promise.reject(new Error("Systémový zvuk není v tomto prostředí dostupný"));
 
   const [microphoneResult, displayResult] = await Promise.allSettled([
     microphonePromise,
@@ -163,24 +164,30 @@ export async function captureAudioSources({ signal } = {}) {
     stopAcquiredStreams();
     throw captureAbortedError();
   }
-  if (microphoneResult.status === "rejected" || displayResult.status === "rejected") {
+  if (microphoneResult.status === "rejected") {
     signal?.removeEventListener("abort", stopAcquiredStreams);
     stopStreams(acquiredStreams);
-    const failures = [];
-    if (microphoneResult.status === "rejected") {
-      failures.push(`mikrofon: ${microphoneResult.reason?.message || microphoneResult.reason}`);
-    }
-    if (displayResult.status === "rejected") {
-      failures.push(`systémový zvuk: ${displayResult.reason?.message || displayResult.reason}`);
-    }
-    throw new Error(failures.join("; "));
+    throw new Error(`mikrofon: ${microphoneResult.reason?.message || microphoneResult.reason}`);
   }
 
   try {
-    const [microphoneTrack, systemTrack] = await Promise.all([
-      checkedAudioTrack(microphoneResult.value, "Mikrofon"),
-      checkedAudioTrack(displayResult.value, "Systémový zvuk"),
-    ]);
+    const microphoneTrack = await checkedAudioTrack(microphoneResult.value, "Mikrofon");
+    let systemAudioError = displayResult.status === "rejected"
+      ? displayResult.reason
+      : null;
+    let systemStream = null;
+    let systemTrack = null;
+    if (displayResult.status === "fulfilled") {
+      try {
+        systemTrack = await checkedAudioTrack(displayResult.value, "Systémový zvuk");
+        systemStream = displayResult.value;
+      } catch (error) {
+        systemAudioError = error;
+        stopStreams([displayResult.value]);
+        const rejectedStreamIndex = acquiredStreams.indexOf(displayResult.value);
+        if (rejectedStreamIndex >= 0) acquiredStreams.splice(rejectedStreamIndex, 1);
+      }
+    }
     signal?.removeEventListener("abort", stopAcquiredStreams);
     if (signal?.aborted) {
       stopAcquiredStreams();
@@ -190,7 +197,8 @@ export async function captureAudioSources({ signal } = {}) {
       streams: acquiredStreams,
       microphoneStream: microphoneResult.value,
       microphoneTrack,
-      systemStream: displayResult.value,
+      systemAudioError,
+      systemStream,
       systemTrack,
     };
   } catch (error) {
@@ -229,6 +237,12 @@ function createLevelChannel(context, stream) {
 /** @param {{ signal?: AbortSignal }} [options] */
 export async function createStereoLevelSession({ signal } = {}) {
   const capture = await captureAudioSources({ signal });
+  if (!capture.systemStream || !capture.systemTrack) {
+    stopStreams(capture.streams);
+    throw capture.systemAudioError instanceof Error
+      ? capture.systemAudioError
+      : new Error("Systémový zvuk není pro zkoušku dostupný");
+  }
   let context;
   const stopSetup = () => {
     stopStreams(capture.streams);

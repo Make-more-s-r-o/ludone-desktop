@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AuthErrorScreen } from "./AuthErrorScreen.jsx";
 import { RecordingTestStep } from "./RecordingTestStep.jsx";
 import { createStereoLevelSession } from "../lib/audio-levels.js";
+import { MICROPHONE_ONLY_TEXT } from "../features/recording/recording-copy.js";
 import {
   ArrowRightIcon,
   BrowserIcon,
@@ -38,8 +39,6 @@ const STEPS = [
 
 const AUTH_WAIT_SECONDS = 10 * 60;
 const AUTH_URL_POLL_INTERVAL_MS = 250;
-const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží a nahrávka bude jednostopá — jen se dozvíš, že chybí druhá strana.";
-
 function completionCopy(recordingTestResult) {
   if (recordingTestResult === "passed") {
     return {

@@ -2464,6 +2464,14 @@ describe("produkční zapojení odchozí fronty", () => {
     );
   });
 
+  it("preload předá hlavnímu procesu přesný seznam vznikajících stop", async () => {
+    const { api, invoke } = loadPreload({ sessionId: "session-1" });
+
+    await api.beginRecording(["microphone"]);
+
+    expect(invoke).toHaveBeenCalledWith("recording:begin", ["microphone"]);
+  });
+
   it("IPC fronty používá předepsané role odesílatele", () => {
     expect(mainCode).toContain('handleValidated("queue:list", ["panel", "settings"]');
     expect(mainCode).toContain('handleValidated("queue:retry", ["panel"]');
@@ -2498,6 +2506,89 @@ describe("produkční zapojení odchozí fronty", () => {
         attempts: 0,
       }),
     ]);
+  });
+
+  it("jednostopá session vytvoří jen mikrofonní originál, projde frontou i exportem", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const begin = harness.ipcHandlers.get("recording:begin");
+    const append = harness.ipcHandlers.get("recording:append");
+    const finish = harness.ipcHandlers.get("recording:finish");
+    const finishExport = harness.ipcHandlers.get("recording:finish-export");
+    const exportRecording = harness.ipcHandlers.get("recording:export");
+    const list = harness.ipcHandlers.get("queue:list");
+    const microphoneTiming = {
+      startedAt: "2026-09-03T12:00:00.100Z",
+      endedAt: "2026-09-03T12:30:00.500Z",
+    };
+
+    const { sessionId } = await begin(event, ["microphone"]);
+    await append(event, sessionId, "microphone", 0, Uint8Array.from([1, 2, 3]).buffer);
+    await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
+    const saved = await finish(event, sessionId, { microphone: microphoneTiming });
+
+    expect(saved).toMatchObject({
+      clientRecordingId: sessionId,
+      trackStartDeltaMs: null,
+      files: { microphone: { size: 3 } },
+    });
+    expect(Object.keys(saved.files)).toEqual(["microphone"]);
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const recordingFiles = await readdir(recordingsDirectory);
+    expect(recordingFiles.filter((name) => name.endsWith(".webm"))).toEqual([
+      saved.files.microphone.name,
+    ]);
+    const manifestName = recordingFiles.find((name) => name.endsWith(".manifest.json"));
+    const manifest = JSON.parse(await readFile(
+      path.join(recordingsDirectory, manifestName),
+      "utf8",
+    ));
+    expect(manifest.state).toBe("complete");
+    expect(Object.keys(manifest.tracks)).toEqual(["microphone"]);
+
+    const queue = JSON.parse(await readFile(
+      path.join(harness.userDataPath, "queue", "outgoing.json"),
+      "utf8",
+    ));
+    expect(queue.items).toHaveLength(1);
+    expect(Object.keys(queue.items[0].tracks)).toEqual(["microphone"]);
+    expect(queue.items[0].server.uploadedBytes).toEqual({ microphone: 0 });
+    await expect(list(event)).resolves.toEqual([
+      expect.objectContaining({ id: sessionId, kind: "recording", state: "ceka" }),
+    ]);
+
+    const pendingExport = exportRecording(event, sessionId, "Jednostopá porada");
+    await finishExport(event, sessionId, {
+      succeeded: true,
+      timing: {
+        startedAt: "2026-09-03T12:00:00.075Z",
+        endedAt: "2026-09-03T12:30:00.550Z",
+      },
+    });
+    await expect(pendingExport).resolves.toMatchObject({
+      ok: true,
+      clientRecordingId: sessionId,
+      format: { container: "WebM", codec: "Opus", channels: 2 },
+      trackStartDeltaMs: null,
+      trackDurationDeltaMs: null,
+    });
+  });
+
+  it.each([
+    { sources: [], label: "prázdnou session" },
+    { sources: ["system"], label: "session bez mikrofonu" },
+    { sources: ["microphone", "camera"], label: "neznámý zdroj" },
+  ])("odmítne $label ještě před vytvořením souborů", async ({ sources }) => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+
+    await expect(harness.ipcHandlers.get("recording:begin")(event, sources))
+      .rejects.toThrow(/mikrofon|zdroj/u);
+    expect(await fileExists(path.join(harness.userDataPath, "nahravky"))).toBe(false);
   });
 
   it("selhání zápisu fronty není rendereru hlášeno jako úspěch", async () => {
