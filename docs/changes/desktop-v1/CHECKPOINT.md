@@ -122,3 +122,25 @@ jsem si ověřil v kódu, než jsem na ně sáhl:
 
 **Čeká na Dana** (vše v `DAN-TODO.md`): expozice A/B/C · B5 Electron · B1 Apple Developer ·
 B2 barva tlačítka · B3 allowlist · 15 minut ověření naostro.
+
+## Fronta práce — aktualizováno 3. 9. dopoledne
+
+1. ⏳ **PR #40** (šest cest ke ztrátě nahrávky, 589 testů) — čeká na bránu.
+   🔴 **CI běží na vlastním runneru `danuv-mac`**, protože repozitář je zase privátní
+   a hostované minuty jsou vyčerpané. Byl to předvídatelný důsledek návratu na privátní;
+   přepnutí jsem ale udělal až po prvním červeném běhu, ne rovnou.
+   ⚠️ Cena: **když je Danův Mac vypnutý, job čeká ve frontě**, nespadne.
+
+2. **Syrové chyby souborového systému jdou do UI i logu** (`electron/main.cjs:1537`).
+   `error.message` putuje do hlášky pro uživatele, `error.stack` do logu — a systémová
+   chyba (`ENOSPC`, `EACCES`) nese **absolutní cestu, v níž je i název schůzky**.
+   **Změřeno, co už hlídá test:** název schůzky v logu ano (`queue-wiring.test.js:1442`),
+   **cestu ani hlášku pro uživatele nehlídá nic**.
+   *Návrh opravy:* rozlišit vlastní vyhozené chyby (nesou bezpečné české věty) od
+   systémových podle `error.code` a ty nahradit obecnou hláškou podle kódu.
+   ⚠️ **Až po #40** — `main.cjs` je jeho hlavní soubor, paralelní větev by kolidovala.
+
+3. ✅ **Hotovo:** únik absolutních cest a názvů v `dukazy/` (na `main`).
+
+**Čeká na Dana** (`DAN-TODO.md`): expozice A/B/C · B5 Electron (7 verzí pozadu) ·
+B1 Apple Developer · B2 barva tlačítka · B3 allowlist · 15 minut ověření naostro.
