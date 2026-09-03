@@ -102,3 +102,23 @@ jsem si ověřil v kódu, než jsem na ně sáhl:
 3. **Adresa přihlášení se nezobrazila, když dorazila pozdě** (vada z mého PR #27).
 
 `main`: **548 passed | 6 skipped (554)**, nula PR, nula worktrees, nula větví, čistý strom.
+
+## Fronta práce po ránu 3. 9. (pořadí je záměrné)
+
+1. ⚙ **běží** — šest cest ke ztrátě nahrávky (worktree `desktop-ztrata`). Až doběhne:
+   commit, brány, sabotáže, PR, merge.
+2. **Retence maže bez kontroly, kde ten soubor leží.** Ověřeno: `validateQueue`
+   (`electron/queue.cjs`) kontroluje jen obal fronty — `schemaVersion` a že `items` je pole.
+   Obsah položek ne, takže `trackFiles` může být cokoli. `retention.cjs:119` pak volá
+   `unlink` na tu cestu **bez kontroly, že leží v adresáři nahrávek**.
+   🔴 Nejde jen o útočníka (ten by potřeboval zápis do `userData`, tedy už mít účet) —
+   **chrání to i před nehodou**: poškozený zápis fronty by nechal mazat nesmyslné cesty.
+   Vzor opravy už v repu je: export používá `path.dirname(filePath) !== downloadsRoot`.
+   ⚠️ Nelze dělat souběžně s bodem 1 — oba sahají na `retention.cjs`.
+3. Chyby souborového systému jdou syrové do UI i logu (`main.cjs:1537`) — mohou nést
+   absolutní cesty a název schůzky. Nízká závažnost, ale je to únik do míst, kde být nemá.
+4. `scripts/schuzka-mereni.mjs` zapisuje nezredigovaný název schůzky a absolutní cesty
+   do souborů určených k verzování.
+
+**Čeká na Dana** (vše v `DAN-TODO.md`): expozice A/B/C · B5 Electron · B1 Apple Developer ·
+B2 barva tlačítka · B3 allowlist · 15 minut ověření naostro.
