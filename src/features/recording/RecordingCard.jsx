@@ -2,11 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { MicIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
 import {
+  createAudioLevelMonitor,
+  createSharedAudioContext,
   captureAudioSources,
   captureSystemAudioSource,
   stopStreams,
 } from "../../lib/audio-levels.js";
 import { createStereoCapture } from "../../lib/stereo-recording.js";
+import {
+  AudioLevelMeter,
+  updateAudioLevelMeter,
+} from "./AudioLevelMeter.jsx";
 import { createMicrophoneOnlyExportCapture } from "./microphone-only-capture.js";
 import {
   MICROPHONE_ONLY_TEXT,
@@ -221,10 +227,13 @@ export function RecordingCard({
   const startInFlight = useRef(false);
   const stopRequestedDuringStart = useRef(false);
   const lastTrayCommandId = useRef(null);
+  const microphoneMeterRef = useRef(null);
   const runtimeRef = useRef(null);
+  const systemMeterRef = useRef(null);
   const isRecording = session.phase === "recording";
   const microphoneOnly = session.recordingMode === "microphone-only";
   const systemAudioLost = isRecording && session.systemAudioState === "lost";
+  const systemSourceState = microphoneOnly ? "unavailable" : (systemAudioLost ? "lost" : "live");
   const elapsed = useElapsedTime(isRecording, session.startedAt);
 
   async function finishRuntime(runtime, initialError = null) {
@@ -234,6 +243,8 @@ export function RecordingCard({
     runtime.recoveryController = null;
     runtime.cleanupTrackListeners?.();
     runtime.cleanupTrackListeners = null;
+    runtime.levelMonitor?.dispose();
+    runtime.levelMonitor = null;
     setRecoveringSystemAudio(false);
     runtime.finishPromise = (async () => {
       // Oddělené recordery dostanou stop jako první; exportní derivát je obalí
@@ -463,24 +474,33 @@ export function RecordingCard({
     let runtime;
     let stereoCapture;
     let exportCapture;
+    let levelMonitor;
+    let sharedAudioContext;
 
     try {
       capture = await captureAudioSources();
       const options = recorderOptions();
       const hasSystemAudio = Boolean(capture.systemStream && capture.systemTrack);
       const recordingMode = hasSystemAudio ? "two-track" : "microphone-only";
+      sharedAudioContext = createSharedAudioContext();
+      const audioDependencies = { AudioContext: sharedAudioContext.AudioContext };
       stereoCapture = hasSystemAudio
-        ? await createStereoCapture(capture.microphoneTrack, capture.systemTrack)
+        ? await createStereoCapture(
+          capture.microphoneTrack,
+          capture.systemTrack,
+          audioDependencies,
+        )
         : null;
       exportCapture = stereoCapture
-        ?? await createMicrophoneOnlyExportCapture(capture.microphoneTrack);
-      const microphoneRecorder = new MediaRecorder(
-        new MediaStream([capture.microphoneTrack]),
-        options,
-      );
+        ?? await createMicrophoneOnlyExportCapture(capture.microphoneTrack, audioDependencies);
+      const microphoneRecordingStream = new MediaStream([capture.microphoneTrack]);
+      const microphoneRecorder = new MediaRecorder(microphoneRecordingStream, options);
       const systemRecorder = hasSystemAudio
         ? new MediaRecorder(stereoCapture.systemStream, options)
         : null;
+      levelMonitor = createAudioLevelMonitor(sharedAudioContext.context);
+      levelMonitor.replaceSource("microphone", microphoneRecordingStream);
+      if (systemRecorder) levelMonitor.replaceSource("system", stereoCapture.systemStream);
       const exportRecorder = new MediaRecorder(exportCapture.stream, options);
       const sources = hasSystemAudio ? ["microphone", "system"] : ["microphone"];
       const persistence = await window.ludone.beginRecording(sources);
@@ -495,6 +515,7 @@ export function RecordingCard({
         exportError: null,
         exportCapture,
         stereoCapture,
+        levelMonitor,
         systemAudioLost: false,
         systemStream: capture.systemStream,
         systemTrack: capture.systemTrack,
@@ -594,7 +615,11 @@ export function RecordingCard({
         await finishRuntime(runtime, error);
       } else {
         if (capture) stopStreams(capture.streams);
+        levelMonitor?.dispose();
         if (exportCapture) await exportCapture.close().catch(() => {});
+        else if (sharedAudioContext && sharedAudioContext.context.state !== "closed") {
+          await sharedAudioContext.context.close().catch(() => {});
+        }
         setSession({
           phase: "idle",
           recordingMode: null,
@@ -626,7 +651,78 @@ export function RecordingCard({
     const runtime = runtimeRef.current;
     runtime?.recoveryController?.abort();
     runtime?.cleanupTrackListeners?.();
+    runtime?.levelMonitor?.dispose();
   }, []);
+
+  useEffect(() => {
+    if (!isRecording) return undefined;
+    let disposed = false;
+    let animationFrame = null;
+
+    const presentLevel = (fill, label, level, sourceState = "live") => {
+      const sourceIsLive = sourceState === "live";
+      const measurementState = level.measured === false
+        ? "unavailable"
+        : "measured";
+      const measuredPercent = sourceIsLive ? level.percent : 0;
+      updateAudioLevelMeter(fill, measuredPercent, measurementState);
+      const row = fill?.closest(".recording-source");
+      if (!row) return;
+      const percent = String(measuredPercent);
+      if (row.dataset.level !== percent) row.dataset.level = percent;
+      if (row.dataset.levelMonitorState !== measurementState) {
+        row.dataset.levelMonitorState = measurementState;
+      }
+      const accessibleLevel = {
+        lost: `${label}: stopa ztracena`,
+        unavailable: `${label}: stopa nedostupná`,
+      }[sourceState] ?? (measurementState === "unavailable"
+        ? `${label}: měřidlo nedostupné`
+        : `${label}: ${percent} %`);
+      if (row.getAttribute("aria-label") !== accessibleLevel) {
+        row.setAttribute("aria-label", accessibleLevel);
+      }
+    };
+
+    const sample = () => {
+      if (disposed) return;
+      const runtime = runtimeRef.current;
+      if (!runtime || runtime.closing) return;
+      try {
+        const levels = runtime.levelMonitor?.readLevels() ?? {
+          microphone: { measured: false, percent: 0 },
+          system: { measured: false, percent: 0 },
+        };
+        presentLevel(microphoneMeterRef.current, "Mikrofon", levels.microphone);
+        presentLevel(
+          systemMeterRef.current,
+          "Ostatní zvuk",
+          levels.system,
+          session.systemAudioState,
+        );
+      } catch {
+        presentLevel(
+          microphoneMeterRef.current,
+          "Mikrofon",
+          { measured: false, percent: 0 },
+        );
+        presentLevel(
+          systemMeterRef.current,
+          "Ostatní zvuk",
+          { measured: false, percent: 0 },
+          session.systemAudioState,
+        );
+      } finally {
+        if (!disposed) animationFrame = window.requestAnimationFrame(sample);
+      }
+    };
+
+    animationFrame = window.requestAnimationFrame(sample);
+    return () => {
+      disposed = true;
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [isRecording, session.systemAudioState]);
 
   useEffect(() => {
     if (!trayCommand || trayCommand.id === lastTrayCommandId.current) return;
@@ -818,9 +914,12 @@ export function RecordingCard({
             title={`Mikrofon: ${session.labels.microphone}`}
           >
             <span className="recording-source__label">Mikrofon</span>
-            <span className="recording-source__meter" aria-hidden="true">
-              <span className="recording-source__fill" />
-            </span>
+            <AudioLevelMeter
+              className="recording-source__meter"
+              fillClassName="recording-source__fill"
+              ref={microphoneMeterRef}
+              state="live"
+            />
             {(systemAudioLost || microphoneOnly) && (
               <span className="recording-source__pill is-live">ok</span>
             )}
@@ -829,14 +928,17 @@ export function RecordingCard({
           <div
             className="recording-source"
             data-panel-height-neutral="true"
-            data-source-state={microphoneOnly ? "unavailable" : (systemAudioLost ? "lost" : "live")}
+            data-source-state={systemSourceState}
             data-testid="recording-source-system"
             title={microphoneOnly ? "Ostatní zvuk není dostupný" : `Ostatní zvuk: ${session.labels.system}`}
           >
             <span className="recording-source__label">Ostatní zvuk</span>
-            <span className="recording-source__meter" aria-hidden="true">
-              <span className="recording-source__fill" />
-            </span>
+            <AudioLevelMeter
+              className="recording-source__meter"
+              fillClassName="recording-source__fill"
+              ref={systemMeterRef}
+              state={systemSourceState}
+            />
             {(systemAudioLost || microphoneOnly) && (
               <span className="recording-source__pill is-lost">ticho</span>
             )}

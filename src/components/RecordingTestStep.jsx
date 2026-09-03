@@ -3,6 +3,10 @@ import {
   LIVE_RMS_THRESHOLD,
   SILENT_RMS_THRESHOLD,
 } from "../lib/audio-levels.js";
+import {
+  AudioLevelMeter,
+  updateAudioLevelMeter,
+} from "../features/recording/AudioLevelMeter.jsx";
 
 const LIVE_CONFIRMATION_FRAMES = 6;
 const INITIAL_SIGNAL = Object.freeze({ heard: false, liveFrames: 0, state: "checking" });
@@ -27,16 +31,7 @@ function nextSignal(previous, rms, available, allowCertification = true) {
   };
 }
 
-function drawLevel(canvas, percent, isLive, colors) {
-  if (!canvas) return;
-  const context = canvas.getContext("2d");
-  if (!context) return;
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = isLive ? colors.live : colors.silent;
-  context.fillRect(0, 0, Math.round(canvas.width * (percent / 100)), canvas.height);
-}
-
-function LevelRow({ canvasRef, label, rowRef, signal, testId }) {
+function LevelRow({ label, meterRef, rowRef, signal, testId }) {
   return (
     <div
       className="recording-test-level"
@@ -46,9 +41,11 @@ function LevelRow({ canvasRef, label, rowRef, signal, testId }) {
       ref={rowRef}
     >
       <span className="recording-test-level__label">{label}</span>
-      <span className="recording-test-level__meter" aria-hidden="true">
-        <canvas ref={canvasRef} width="180" height="8" />
-      </span>
+      <AudioLevelMeter
+        className="recording-test-level__meter"
+        ref={meterRef}
+        state={signal.state}
+      />
       <span className={`recording-test-level__status is-${signal.state}`}>
         {signal.state === "live" ? "slyším" : "ticho"}
       </span>
@@ -66,13 +63,12 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
     microphone: INITIAL_SIGNAL,
     system: INITIAL_SIGNAL,
   });
-  const microphoneCanvasRef = useRef(null);
+  const microphoneMeterRef = useRef(null);
   const microphoneRowRef = useRef(null);
-  const meterColorsRef = useRef(null);
   const sessionRef = useRef(null);
   const signalsRef = useRef(initialSignals());
   const suppressMicrophoneUntilRef = useRef(0);
-  const systemCanvasRef = useRef(null);
+  const systemMeterRef = useRef(null);
   const systemRowRef = useRef(null);
 
   useEffect(() => {
@@ -82,6 +78,8 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
     sessionRef.current = null;
     signalsRef.current = freshSignals;
     suppressMicrophoneUntilRef.current = 0;
+    updateAudioLevelMeter(microphoneMeterRef.current, 0);
+    updateAudioLevelMeter(systemMeterRef.current, 0);
     setCaptureState("starting");
     setLabels({
       microphone: "MacBook Pro — mikrofon",
@@ -102,21 +100,14 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
         if (disposed) return;
         const levels = session.readLevels();
         const now = window.performance.now();
-        if (!meterColorsRef.current) {
-          const styles = window.getComputedStyle(document.documentElement);
-          meterColorsRef.current = {
-            live: styles.getPropertyValue("--panel-ok").trim() || "oklch(0.78 0.11 178)",
-            silent: styles.getPropertyValue("--panel-muted").trim() || "oklch(0.715 0.012 262)",
-          };
-        }
         for (const [name, refs] of [
           ["microphone", {
-            canvas: microphoneCanvasRef,
+            meter: microphoneMeterRef,
             label: "Mikrofon",
             row: microphoneRowRef,
           }],
           ["system", {
-            canvas: systemCanvasRef,
+            meter: systemMeterRef,
             label: "Ostatní zvuk",
             row: systemRowRef,
           }],
@@ -125,30 +116,35 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
           const row = refs.row.current;
           if (row) {
             const percent = String(level.percent);
-            const accessibleLevel = `${refs.label}: ${percent} %`;
+            const measurementState = level.measured === false ? "unavailable" : "measured";
+            const accessibleLevel = measurementState === "unavailable"
+              ? `${refs.label}: měřidlo nedostupné`
+              : `${refs.label}: ${percent} %`;
             if (row.dataset.level !== percent) row.dataset.level = percent;
+            if (row.dataset.levelMonitorState !== measurementState) {
+              row.dataset.levelMonitorState = measurementState;
+            }
             if (row.getAttribute("aria-label") !== accessibleLevel) {
               row.setAttribute("aria-label", accessibleLevel);
             }
           }
-          drawLevel(
-            refs.canvas.current,
+          updateAudioLevelMeter(
+            refs.meter.current,
             level.percent,
-            level.available && level.rms >= LIVE_RMS_THRESHOLD,
-            meterColorsRef.current,
+            level.measured === false ? "unavailable" : "measured",
           );
         }
         const current = signalsRef.current;
         const microphone = nextSignal(
           current.microphone,
           levels.microphone.rms,
-          levels.microphone.available,
+          levels.microphone.available && levels.microphone.measured,
           now >= suppressMicrophoneUntilRef.current,
         );
         const system = nextSignal(
           current.system,
           levels.system.rms,
-          levels.system.available,
+          levels.system.available && levels.system.measured,
         );
         signalsRef.current = { microphone, system };
         if (
@@ -159,7 +155,12 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
         ) {
           setSignals(signalsRef.current);
         }
-        if (!levels.microphone.available || !levels.system.available) {
+        if (
+          !levels.microphone.available
+          || !levels.microphone.measured
+          || !levels.system.available
+          || !levels.system.measured
+        ) {
           setCaptureState("error");
           void session.close().catch(() => {});
           return;
@@ -169,6 +170,8 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
       animationFrame = window.requestAnimationFrame(sample);
     }).catch(() => {
       if (disposed) return;
+      updateAudioLevelMeter(microphoneMeterRef.current, 0, "unavailable");
+      updateAudioLevelMeter(systemMeterRef.current, 0, "unavailable");
       setCaptureState("error");
       signalsRef.current = {
         microphone: { heard: false, liveFrames: 0, state: "silent" },
@@ -211,15 +214,15 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
 
       <div className="recording-test-levels">
         <LevelRow
-          canvasRef={microphoneCanvasRef}
           label="Mikrofon"
+          meterRef={microphoneMeterRef}
           rowRef={microphoneRowRef}
           signal={signals.microphone}
           testId="recording-level-microphone"
         />
         <LevelRow
-          canvasRef={systemCanvasRef}
           label="Ostatní zvuk"
+          meterRef={systemMeterRef}
           rowRef={systemRowRef}
           signal={signals.system}
           testId="recording-level-system"

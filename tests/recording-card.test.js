@@ -1,5 +1,6 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
@@ -8,6 +9,16 @@ import { App } from "../src/App.jsx";
 import { RecordingCard } from "../src/features/recording/RecordingCard.jsx";
 
 const SESSION_ID = "session-test-1";
+
+function liveMeterWidthPercent(fill) {
+  const meterRule = [...(fill?.ownerDocument.styleSheets ?? [])]
+    .flatMap((sheet) => [...sheet.cssRules])
+    .find((rule) => rule.selectorText === ".audio-level-meter__fill");
+  if (meterRule?.style.width !== "var(--audio-level-measured, 0%)") return Number.NaN;
+  return Number.parseFloat(
+    fill?.style.getPropertyValue("--audio-level-measured") ?? "NaN",
+  );
+}
 
 function deferred() {
   let resolve;
@@ -36,6 +47,7 @@ const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží
 
 /**
  * @param {{
+ *   analyserError?: Error,
  *   deferBegin?: boolean,
  *   deferCapture?: boolean,
  *   deferRecovery?: boolean,
@@ -47,6 +59,9 @@ const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží
  */
 async function renderRecordingCard(options = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
+  const styles = dom.window.document.createElement("style");
+  styles.textContent = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  dom.window.document.head.append(styles);
   // React načítáme před založením JSDOM, takže jeho historický fallback pro
   // input event čeká IE metody, které JSDOM nemá. No-op drží test u skutečného
   // `input` eventu bez změny produkčního chování nebo assercí.
@@ -152,6 +167,27 @@ async function renderRecordingCard(options = {}) {
     value: true,
   });
 
+  const animationFrames = new Map();
+  let nextAnimationFrameId = 1;
+  dom.window.requestAnimationFrame = vi.fn((callback) => {
+    const id = nextAnimationFrameId;
+    nextAnimationFrameId += 1;
+    animationFrames.set(id, callback);
+    return id;
+  });
+  dom.window.cancelAnimationFrame = vi.fn((id) => {
+    animationFrames.delete(id);
+  });
+
+  const levelAmplitudes = {
+    microphone: 0,
+    system: 0,
+  };
+  const levelReadFailures = {
+    microphone: 0,
+    system: 0,
+  };
+
   const ludone = {
     beginRecording: vi.fn(() => (
       options.deferBegin
@@ -237,6 +273,7 @@ async function renderRecordingCard(options = {}) {
   const audioContexts = [];
   class FakeAudioContext {
     constructor() {
+      this.analysers = [];
       this.connections = [];
       this.destinationCount = 0;
       this.sampleRate = 48_000;
@@ -249,10 +286,39 @@ async function renderRecordingCard(options = {}) {
       const [track] = stream.getAudioTracks();
       return {
         connect: vi.fn((target, output, input) => {
+          if (typeof target?.getFloatTimeDomainData === "function") {
+            target.track = track;
+            return;
+          }
           this.connections.push({ input, output, target, track });
         }),
         disconnect: vi.fn(),
       };
+    }
+
+    createAnalyser() {
+      if (options.analyserError) throw options.analyserError;
+      const analyser = {
+        fftSize: 0,
+        smoothingTimeConstant: 0,
+        track: null,
+        disconnect: vi.fn(),
+        getFloatTimeDomainData: vi.fn(function getFloatTimeDomainData(target) {
+          const source = this.track === microphoneTrack
+            ? "microphone"
+            : (this.track === systemOutputTrack ? "system" : null);
+          if (source && levelReadFailures[source] > 0) {
+            levelReadFailures[source] -= 1;
+            throw new Error(`${source}: čtení analyzátoru selhalo`);
+          }
+          const amplitude = source ? levelAmplitudes[source] : 0;
+          for (let index = 0; index < target.length; index += 1) {
+            target[index] = index % 2 === 0 ? amplitude : -amplitude;
+          }
+        }),
+      };
+      this.analysers.push(analyser);
+      return analyser;
     }
 
     createChannelMerger() {
@@ -317,6 +383,21 @@ async function renderRecordingCard(options = {}) {
     systemTrack,
     phase,
     currentButton,
+    async sampleLevels() {
+      await React.act(async () => {
+        const pendingFrames = [...animationFrames.values()];
+        animationFrames.clear();
+        for (const callback of pendingFrames) callback(dom.window.performance.now());
+        await Promise.resolve();
+      });
+    },
+    setLevelAmplitudes({ microphone, system }) {
+      levelAmplitudes.microphone = microphone;
+      levelAmplitudes.system = system;
+    },
+    failNextLevelRead(source) {
+      levelReadFailures[source] += 1;
+    },
     resolveBeginRecording() {
       beginRecordingAttempt.resolve({ sessionId: SESSION_ID });
     },
@@ -368,6 +449,119 @@ async function stopRecording(panel) {
 }
 
 describe("RecordingCard", () => {
+  it("za běhu mění oba pruhy podle ticha a hlasitého vstupu", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0, system: 0 });
+      await panel.sampleLevels();
+
+      const microphoneFill = panel.document.querySelector(
+        '[data-testid="recording-source-microphone"] .recording-source__fill',
+      );
+      const systemFill = panel.document.querySelector(
+        '[data-testid="recording-source-system"] .recording-source__fill',
+      );
+      expect(panel.document.defaultView.getComputedStyle(microphoneFill).width)
+        .toBe("var(--audio-level-measured, 0%)");
+      expect(panel.document.defaultView.getComputedStyle(systemFill).width)
+        .toBe("var(--audio-level-measured, 0%)");
+      const quietMicrophone = liveMeterWidthPercent(microphoneFill);
+      const quietSystem = liveMeterWidthPercent(systemFill);
+
+      panel.setLevelAmplitudes({ microphone: 0.25, system: 0 });
+      await panel.sampleLevels();
+      const loudMicrophone = liveMeterWidthPercent(microphoneFill);
+      const systemDuringLoudMicrophone = liveMeterWidthPercent(systemFill);
+
+      panel.setLevelAmplitudes({ microphone: 0, system: 0.25 });
+      await panel.sampleLevels();
+      const microphoneDuringLoudSystem = liveMeterWidthPercent(microphoneFill);
+      const loudSystem = liveMeterWidthPercent(systemFill);
+
+      expect(loudMicrophone - quietMicrophone).toBeGreaterThan(40);
+      expect(loudSystem - quietSystem).toBeGreaterThan(40);
+      expect(systemDuringLoudMicrophone).toBeLessThanOrEqual(5);
+      expect(microphoneDuringLoudSystem).toBeLessThanOrEqual(5);
+      expect(quietMicrophone).toBeLessThanOrEqual(5);
+      expect(quietSystem).toBeLessThanOrEqual(5);
+      expect(panel.audioContexts).toHaveLength(1);
+      expect(panel.audioContexts[0].analysers.map(({ track }) => track)).toEqual([
+        panel.recorders[0].stream.getAudioTracks()[0],
+        panel.recorders[1].stream.getAudioTracks()[0],
+      ]);
+
+      await stopRecording(panel);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("selhání měřidla nezasáhne do nahrávání ani uložení stop", async () => {
+    const panel = await renderRecordingCard({
+      analyserError: new Error("Analyser není dostupný"),
+    });
+
+    try {
+      await startRecording(panel);
+      await panel.sampleLevels();
+
+      expect(panel.phase()).toBe("recording");
+      expect(panel.audioContexts).toHaveLength(1);
+      expect(panel.recorders).toHaveLength(3);
+      expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone", "system"]);
+      for (const meter of panel.document.querySelectorAll(".audio-level-meter")) {
+        expect(meter.dataset.measurementState).toBe("unavailable");
+        expect(Number.parseFloat(
+          panel.document.defaultView.getComputedStyle(
+            meter.querySelector(".audio-level-meter__fill"),
+          ).width,
+        )).toBe(2);
+      }
+
+      await stopRecording(panel);
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+      expect(panel.phase()).toBe("saved");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("chyba při čtení měřidlo nenechá zamrzlé a nahrávání pokračuje", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0.25, system: 0 });
+      await panel.sampleLevels();
+      const microphoneFill = panel.document.querySelector(
+        '[data-testid="recording-source-microphone"] .recording-source__fill',
+      );
+      expect(liveMeterWidthPercent(microphoneFill)).toBeGreaterThan(40);
+
+      panel.failNextLevelRead("microphone");
+      await panel.sampleLevels();
+      expect(microphoneFill.closest(".audio-level-meter")?.dataset.measurementState)
+        .toBe("unavailable");
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(microphoneFill).width,
+      )).toBe(2);
+      expect(panel.phase()).toBe("recording");
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+
+      await panel.sampleLevels();
+      expect(microphoneFill.closest(".audio-level-meter")?.dataset.measurementState)
+        .toBe("measured");
+      expect(liveMeterWidthPercent(microphoneFill)).toBeGreaterThan(40);
+
+      await stopRecording(panel);
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("při spuštění požádá o mikrofon i systémový zvuk", async () => {
     const panel = await renderRecordingCard();
 
@@ -408,14 +602,33 @@ describe("RecordingCard", () => {
         panel.resolveCapture();
       });
       await panel.waitForPhase("recording");
+      panel.setLevelAmplitudes({ microphone: 0.25, system: 0.25 });
+      await panel.sampleLevels();
 
       const card = panel.document.querySelector('[aria-label="Nahrávání"]');
       expect(card?.getAttribute("data-system-audio-state")).toBe("unavailable");
       expect(card?.textContent).toContain(MICROPHONE_ONLY_TEXT);
       expect(card?.textContent).toContain("Nahrává se omezeně");
+      const systemFill = card?.querySelector(
+        '[data-testid="recording-source-system"] .recording-source__fill',
+      );
+      const microphoneFill = card?.querySelector(
+        '[data-testid="recording-source-microphone"] .recording-source__fill',
+      );
+      expect(liveMeterWidthPercent(microphoneFill)).toBeGreaterThan(40);
+      expect(microphoneFill.closest(".audio-level-meter")?.dataset.measurementState)
+        .toBe("measured");
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(systemFill).width,
+      )).toBe(2);
+      expect(systemFill.closest(".audio-level-meter")?.dataset.measurementState)
+        .toBe("unavailable");
       expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone"]);
       expect(panel.recorders).toHaveLength(2);
       expect(panel.audioContexts).toHaveLength(1);
+      expect(panel.audioContexts[0].analysers.map(({ track }) => track)).toEqual([
+        panel.recorders[0].stream.getAudioTracks()[0],
+      ]);
       expect(panel.audioContexts[0].connections).toEqual([
         expect.objectContaining({
           input: 0,
@@ -810,11 +1023,14 @@ describe("RecordingCard", () => {
 
     try {
       await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0, system: 0.25 });
+      await panel.sampleLevels();
       await React.act(async () => {
         panel.systemTrack.readyState = "ended";
         panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
         await Promise.resolve();
       });
+      await panel.sampleLevels();
 
       const card = panel.document.querySelector('[aria-label="Nahrávání"]');
       const outage = panel.document.querySelector('[data-testid="system-audio-outage"]');
@@ -823,6 +1039,12 @@ describe("RecordingCard", () => {
       expect(outage).not.toBeNull();
       expect(outage?.getAttribute("role")).toBe("alert");
       expect(outage?.hidden).toBe(false);
+      const systemFill = card?.querySelector(
+        '[data-testid="recording-source-system"] .recording-source__fill',
+      );
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(systemFill).width,
+      )).toBe(2);
       expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
     } finally {
       await panel.cleanup();
@@ -900,6 +1122,7 @@ describe("RecordingCard", () => {
 
     try {
       await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0, system: 0.25 });
       await React.act(async () => {
         panel.systemTrack.readyState = "ended";
         panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
@@ -919,6 +1142,16 @@ describe("RecordingCard", () => {
       expect(panel.ludone.beginRecording).toHaveBeenCalledTimes(1);
       expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
       expect(panel.microphoneTrack.stop).not.toHaveBeenCalled();
+      expect(panel.audioContexts).toHaveLength(1);
+      await panel.sampleLevels();
+      const microphoneFill = card?.querySelector(
+        '[data-testid="recording-source-microphone"] .recording-source__fill',
+      );
+      const restoredSystemFill = card?.querySelector(
+        '[data-testid="recording-source-system"] .recording-source__fill',
+      );
+      expect(liveMeterWidthPercent(microphoneFill)).toBeLessThanOrEqual(5);
+      expect(liveMeterWidthPercent(restoredSystemFill)).toBeGreaterThan(40);
 
       await React.act(async () => {
         panel.replacementSystemTrack.readyState = "ended";
@@ -927,7 +1160,11 @@ describe("RecordingCard", () => {
         );
         await Promise.resolve();
       });
+      await panel.sampleLevels();
       expect(panel.document.querySelector('[data-testid="system-audio-outage"]')).not.toBeNull();
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(restoredSystemFill).width,
+      )).toBe(2);
 
       await panel.click(panel.document.querySelector('[data-testid="degraded-recording-stop"]'));
       await panel.waitForPhase("saved");

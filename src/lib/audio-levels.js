@@ -222,15 +222,162 @@ function readRms(analyser, buffer) {
 }
 
 function createLevelChannel(context, stream) {
-  const source = context.createMediaStreamSource(stream);
-  const analyser = context.createAnalyser();
-  analyser.fftSize = 256;
-  analyser.smoothingTimeConstant = 0.65;
-  source.connect(analyser);
+  const tracks = stream.getAudioTracks();
+  if (tracks.length !== 1) {
+    throw new Error(`Zvukový měřák očekával jednu stopu, nalezeno ${tracks.length}`);
+  }
+  let source;
+  let analyser;
+  try {
+    source = context.createMediaStreamSource(stream);
+    analyser = context.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.65;
+    source.connect(analyser);
+    return {
+      analyser,
+      buffer: new Float32Array(analyser.fftSize),
+      source,
+      track: tracks[0],
+    };
+  } catch (error) {
+    disconnectLevelChannel({ analyser, source });
+    throw error;
+  }
+}
+
+function disconnectLevelChannel(channel) {
+  if (!channel) return;
+  try {
+    channel.source?.disconnect();
+  } catch {
+    // Odpojený měřák nesmí ovlivnit nahrávací graf.
+  }
+  try {
+    channel.analyser?.disconnect();
+  } catch {
+    // Odpojený měřák nesmí ovlivnit nahrávací graf.
+  }
+}
+
+function readLevelChannel(channel) {
+  if (!channel) {
+    return {
+      available: false,
+      measured: false,
+      percent: 0,
+      rms: 0,
+    };
+  }
+  const available = Boolean(
+    channel.track.readyState === "live"
+    && channel.track.enabled
+    && !channel.track.muted,
+  );
+  if (!available) {
+    return {
+      available: false,
+      measured: true,
+      percent: 0,
+      rms: 0,
+    };
+  }
+  try {
+    const rms = readRms(channel.analyser, channel.buffer);
+    return {
+      available: true,
+      measured: true,
+      percent: rmsToPercent(rms),
+      rms,
+    };
+  } catch {
+    return {
+      available: true,
+      measured: false,
+      percent: 0,
+      rms: 0,
+    };
+  }
+}
+
+/**
+ * Pasivní čtečka úrovně nad již existujícím Web Audio contextem. Její uzly
+ * nejsou zapojené do destination, takže nemění žádnou ukládanou stopu.
+ *
+ * @param {AudioContext} context
+ */
+export function createAudioLevelMonitor(context) {
+  const channels = {
+    microphone: null,
+    system: null,
+  };
+  let disposed = false;
+
   return {
-    analyser,
-    buffer: new Float32Array(analyser.fftSize),
-    source,
+    /**
+     * Přepnutí je best-effort: selhání měřidla nesmí shodit nahrávání.
+     *
+     * @param {"microphone" | "system"} name
+     * @param {MediaStream} stream
+     */
+    replaceSource(name, stream) {
+      if (disposed) return false;
+      let nextChannel;
+      try {
+        nextChannel = createLevelChannel(context, stream);
+      } catch {
+        return false;
+      }
+      const previousChannel = channels[name];
+      channels[name] = nextChannel;
+      disconnectLevelChannel(previousChannel);
+      return true;
+    },
+    /** @param {"microphone" | "system"} name */
+    clearSource(name) {
+      const previousChannel = channels[name];
+      channels[name] = null;
+      disconnectLevelChannel(previousChannel);
+    },
+    readLevels() {
+      return {
+        microphone: readLevelChannel(channels.microphone),
+        system: readLevelChannel(channels.system),
+      };
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      disconnectLevelChannel(channels.microphone);
+      disconnectLevelChannel(channels.system);
+      channels.microphone = null;
+      channels.system = null;
+    },
+  };
+}
+
+/**
+ * Založí jediný context a konstruktor, který jej předá existujícímu
+ * nahrávacímu grafu přes jeho dependency-injection šev.
+ */
+export function createSharedAudioContext() {
+  const browserGlobals = /** @type {typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext,
+  }} */ (globalThis);
+  const AudioContextConstructor = browserGlobals.AudioContext
+    ?? browserGlobals.webkitAudioContext;
+  if (!AudioContextConstructor) {
+    throw new Error("Pro nahrávání a zvukový měřák není dostupné Web Audio");
+  }
+  const context = new AudioContextConstructor();
+  function SharedAudioContext() {
+    return context;
+  }
+  return {
+    context,
+    AudioContext: /** @type {typeof AudioContext} */ (
+      /** @type {unknown} */ (SharedAudioContext)
+    ),
   };
 }
 
@@ -244,7 +391,9 @@ export async function createStereoLevelSession({ signal } = {}) {
       : new Error("Systémový zvuk není pro zkoušku dostupný");
   }
   let context;
+  let levelMonitor;
   const stopSetup = () => {
+    levelMonitor?.dispose();
     stopStreams(capture.streams);
     if (context && context.state !== "closed") void context.close().catch(() => {});
   };
@@ -256,8 +405,13 @@ export async function createStereoLevelSession({ signal } = {}) {
       await context.resume().catch(() => {});
     }
     if (signal?.aborted) throw captureAbortedError();
-    const microphone = createLevelChannel(context, capture.microphoneStream);
-    const system = createLevelChannel(context, capture.systemStream);
+    levelMonitor = createAudioLevelMonitor(context);
+    if (
+      !levelMonitor.replaceSource("microphone", capture.microphoneStream)
+      || !levelMonitor.replaceSource("system", capture.systemStream)
+    ) {
+      throw new Error("Zvukové měřáky se nepodařilo připojit");
+    }
     const activeTones = new Set();
     let closePromise = null;
     let session;
@@ -277,28 +431,7 @@ export async function createStereoLevelSession({ signal } = {}) {
         system: capture.systemTrack.label || "Ostatní zvuk",
       },
       readLevels() {
-        const microphoneAvailable = capture.microphoneTrack.readyState === "live"
-          && capture.microphoneTrack.enabled
-          && !capture.microphoneTrack.muted;
-        const systemAvailable = capture.systemTrack.readyState === "live"
-          && capture.systemTrack.enabled
-          && !capture.systemTrack.muted;
-        const microphoneRms = microphoneAvailable
-          ? readRms(microphone.analyser, microphone.buffer)
-          : 0;
-        const systemRms = systemAvailable ? readRms(system.analyser, system.buffer) : 0;
-        return {
-          microphone: {
-            available: microphoneAvailable,
-            percent: rmsToPercent(microphoneRms),
-            rms: microphoneRms,
-          },
-          system: {
-            available: systemAvailable,
-            percent: rmsToPercent(systemRms),
-            rms: systemRms,
-          },
-        };
+        return levelMonitor.readLevels();
       },
       async playTestSound() {
         if (closePromise) return;
@@ -321,10 +454,7 @@ export async function createStereoLevelSession({ signal } = {}) {
         closePromise = (async () => {
           signal?.removeEventListener("abort", closeOnAbort);
           for (const tone of [...activeTones]) cleanupTone(tone);
-          microphone.source.disconnect();
-          microphone.analyser.disconnect();
-          system.source.disconnect();
-          system.analyser.disconnect();
+          levelMonitor.dispose();
           stopStreams(capture.streams);
           if (context.state !== "closed") await context.close();
         })();
@@ -340,6 +470,7 @@ export async function createStereoLevelSession({ signal } = {}) {
     return session;
   } catch (error) {
     signal?.removeEventListener("abort", stopSetup);
+    levelMonitor?.dispose();
     stopStreams(capture.streams);
     if (context && context.state !== "closed") await context.close().catch(() => {});
     throw error;
