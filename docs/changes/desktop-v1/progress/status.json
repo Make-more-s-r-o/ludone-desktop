@@ -88,7 +88,7 @@
       "dodani": "merged",
       "vystaveni": "labs",
       "overeni": "verified-live",
-      "dalsiKrok": "Ikona překreslena glyfem ze schváleného návrhu (PR #44) — pulz M4 18 L10 6 L14 14 L20 9, generovaný skriptem npm run ikony, ne binárka. Čas nahrávání vedle ikony hotov (PR #41). Barva, odznak a pátý stav zůstávají ve zmrazeném T1 — rozhodnutí čeká na Dana."
+      "dalsiKrok": "T1 rozmrazen a hotov (PR #47): barevné ikony pro tmavou i světlou lištu, pátý stav „nahrává + měří\" s odznakem, přepínání podle nativeTheme. Zbývají tři stavy z návrhu — čeká fronta, výpadek zvuku, bez spojení — které vyžadují fakty, jež hlavní proces nemá."
     },
     {
       "id": "DSK-F002",

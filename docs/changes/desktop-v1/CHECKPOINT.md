@@ -12,11 +12,43 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `15da2da`, **607 passed \| 6 skipped (613)**, čistý strom |
-| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3. 9.: **#41 #42 #43 #44** |
+| `main` | `a610fba`, **620 passed \| 6 skipped (626)**, čistý strom, **Electron 39.8.10** |
+| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3. 9.: **#41–#47** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
+
+
+## ✅ HOTOVO 3. 9. — sedm PR (#41–#47)
+
+| PR | co |
+|---|---|
+| #41 | čas nahrávání vedle ikony v liště |
+| #42 | únik cest a názvů schůzek do chybových hlášek + latentní vada souběžného exportu |
+| #43 | barvy sjednoceny na schválenou paletu (onboarding a Nastavení je dědily špatně) |
+| #44 | ikona lišty překreslena glyfem z návrhu, generátor `npm run ikony` |
+| #45 | Electron 37.3.1 → **39.8.10** + deklarované minimum macOS 12 |
+| #46 | ořez názvu předávky podle **UTF-16 jednotek**, ne znaků (interop chyba se serverem) |
+| #47 | **T1 rozmrazen**: barevná ikona pro obě lišty + pátý stav „nahrává + měří" |
+
+🔴 **Tři poznatky, které tenhle den zaplatil** (a jsou v memory):
+- **Čtvrtá příčina zelené sabotáže:** data na kulaté hranici, kde správná i vadná
+  implementace dávají totéž. Léčba: lichá data, hodnoty těsně vedle prahu.
+- **Úspěšná odpověď kanálu není důkaz o obsahu** — `openExternal` uspěje i u 404;
+  `307 na /login` vrací i neexistující routa. Ověřuj proti ZNÁMÉ neexistující adrese.
+- 🔴 **Codex v sandboxu nemá síť.** `npm install` mu selže na `ENOTFOUND`, ale
+  `package.json` a lockfile se aktualizují — **zelené brány pak běží nad STAROU
+  závislostí**. U každého upgradu balíčku si závislost doinstaluj a brány pusť SÁM.
+
+## 🛑 Zbývá — a nic z toho není samostatná práce
+
+1. **Tři stavy lišty z návrhu** (čeká fronta · výpadek zvuku · bez spojení) — vyžadují
+   rozšíření `REPORTED_FACT_KEYS`, tedy zásah do kontraktu, který hlídá 53 testů.
+   Nedělat bez měření, co má být zdrojem každého faktu.
+2. **Přepínač prostředí labs × produkce** — zadání hotové, serverová session potvrdila
+   všechna fakta. **Dynamickou registraci klienta už umíme** (`registerPublicClient`),
+   takže přepnutí = jiný origin + odhlášení. Připraveno k postavení.
+3. `DSK-F012` výběr projektu — čeká na kontrakt fáze 2 (money, nehádat).
 
 ## 🔴 První příkazy po probuzení
 
