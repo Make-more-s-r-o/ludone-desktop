@@ -8,6 +8,21 @@
 
 
 
+
+## 🔴 OBRAZOVKA ZNOVUPŘIHLÁŠENÍ JE ROZBITÁ (moje PR #58, našel Dan snímkem)
+
+Text „Nejsi připojený" je **uříznutý v půlce písmen**, ikona taky, a **tlačítko k přihlášení
+není vidět vůbec**. Obrazovka, která měla opravit „nejde se přihlásit zpátky", tedy sama
+nejde použít — je to horší než původní vada.
+
+🔴 **750 zelených testů to nechytlo**, protože měřily **přítomnost prvků, ne rozměry**.
+Tlačítko v DOM je; jen ho není vidět. Oprava má proto v zadání tvrdou podmínku, že test
+musí ověřovat, že se **nahlášená výška rovná skutečné výšce obsahu**.
+
+**Návrh na potom:** projít všechny obrazovky **vizuálně** — ne jestli existují, ale jestli
+jsou celé vidět. Dnešek ukázal, že je to jiná otázka než „jsou testy zelené", a Dan měl
+dnes pravdu čtyřikrát po sobě (barvy · ikona · Nastavení · tahle obrazovka).
+
 ## ✅ SLEPÁ ULIČKA PO ODHLÁŠENÍ — OPRAVENO (PR #58), můžeš přepínat
 
 **Když se odhlásíš nebo přepneš prostředí, do aplikace se už nepřihlásíš.** Panel napíše
