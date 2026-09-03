@@ -12,8 +12,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `5753262`, **654 passed \| 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
-| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3. 9.: **#41–#51** |
+| `main` | `432270a`, **705 passed \| 3 skipped (708)**, čistý strom, **Electron 39.8.10** | 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
+| otevřené PR | **0** · worktrees **0** · mergnuto 3. 9.: **#41–#55 (18 PR)** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
@@ -62,6 +62,33 @@ Přibylo: **Zařízení** · **Prostředí** (jen ke čtení) · přepínač **i
 který Dan chce — serverová session potvrdila, že labs žije, modul tam je (`enabled_envs =
 {labs}` na obou DB, tedy na produkci schválně ne), Danův účet je tam admin a dynamickou
 registraci klienta už umíme. **Zbývá jen přepnutí + odhlášení.**
+
+
+## 🔴 TŘI VĚCI, KTERÉ TENHLE DEN NAUČIL O BRANÁCH
+
+1. **Brána, která visí na detekci zapojení, je fail-open.** `it.runIf(odhlaseniZapojeno)`
+   porazil obyčejný refaktor (`const logout = window.ludone?.logout` místo přímého volání) —
+   funkce fungovala dál, ale **dva strážci tiše usnuli**. Oprava detekce nestačila; správné
+   bylo **podmínku odebrat celou**, protože invariant byl o hlavním procesu.
+2. **Assertion nad celým souborem skoro nic neměří.** `expect(kod).toContain("process.env.
+   DESKTOP_TIME_ENABLED")` procházelo, i když ho `getTrackingStore` přestal číst — ten
+   řetězec je v `main.cjs` na třech místech. Řešení: vyříznout blok funkce.
+3. **Baseline musí být změřený stav, ne stav, jaký zrovna byl.** Nastavil jsem `preskocene`
+   baseline na 4 bez auditu; jeden z těch čtyř uspával strážce R18. Po auditu **3**,
+   každý pojmenovaný.
+
+⇒ Vznikla z toho brána **`npm run preskocene`** (v `gates` i v CI): když přibude přeskočený
+test, gates spadnou. Ověřeno tím, že jsem na ni pustil přesně tu dnešní regresi — chytla ji.
+
+## ⚠️ CO ZPOMALILO BĚH (a jak to poznat příště)
+
+Codexova úloha „vypadala zamrzle" 36 minut. **Nebyla to vada Codexu:** `uptime` ukázal
+**load average 143**, protože Spotlight indexoval `node_modules` z deseti worktree
+založených během dne (`fileproviderd` 100 %, osm `mdworker_shared`).
+
+🔴 **Než z nehybného logu usoudíš na mrtvý job, spusť `uptime`.** Práce byla přitom hotová
+na disku — převzal jsem ji, brány spustil sám a diff přečetl bez opory o Codexovo hlášení,
+protože výstupní kontrakt nedopsal. Založena značka `~/orca/workspaces/.metadata_never_index`.
 
 ## 🛑 Zbývá — a nic z toho není samostatná práce
 
