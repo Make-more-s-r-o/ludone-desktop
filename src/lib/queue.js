@@ -124,15 +124,17 @@ function errorFailureClass(error) {
   return FAILURE_CLASSES.RETRYABLE;
 }
 
+// 🔴 FAIL-CLOSED pro celou rodinu `*_owner_*`. Původní verze vyjmenovávala konkrétní
+// důvody (`mismatch`, `unknown`), takže nový kód — třeba `queue_owner_revoked` — by se
+// tiše zařadil mezi obyčejné čekající. A přesně to je vada, kvůli které tahle funkce
+// vznikla: položka, která se sama nikdy neodešle, vypadala jako položka, která čeká
+// na odeslání. Nový důvod o vlastnictví má být raději vidět zbytečně než schovaný.
 function failureCodeRequiresHumanAction(code) {
   if (typeof code !== "string") return false;
   const [source, subject, reason, ...extra] = code.split("_");
   if (extra.length > 0 || subject !== "owner") return false;
-  return (
-    source === "queue" && (reason === "mismatch" || reason === "unknown")
-  ) || (
-    source === "session" && reason === "unknown"
-  );
+  if (typeof reason !== "string" || reason.length === 0) return false;
+  return source === "queue" || source === "session";
 }
 
 function failureRequiresHumanAction(error) {

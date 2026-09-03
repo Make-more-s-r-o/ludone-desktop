@@ -945,6 +945,29 @@ describe("stavový automat fronty", () => {
     });
   });
 
+  it.each(["queue_owner_revoked", "session_owner_expired"])(
+    "NEZNÁMÝ vlastnický důvod se bere jako čekající na člověka: %s",
+    async (code) => {
+      // 🔴 FAIL-CLOSED. Původní verze vyjmenovávala jen `mismatch` a `unknown`, takže nový
+      // vlastnický důvod by se tiše zařadil mezi obyčejné čekající — a vrátila by se přesně
+      // ta vada, kvůli které klasifikace vznikla: položka, která se sama nikdy neodešle,
+      // vypadala jako položka, která čeká na odeslání. Radši zbytečně vidět než schované.
+      const result = await processNext(
+        oneItemQueue(),
+        killswitches(ENABLED_SETTING),
+        async () => {
+          throw Object.assign(new Error("nový vlastnický důvod"), {
+            code,
+            failureClass: FAILURE_CLASSES.PAUSED,
+          });
+        },
+      );
+
+      expect(result.outcome).toBe("paused");
+      expect(result.queue.items[0]).toHaveProperty("requiresHumanAction", true);
+    },
+  );
+
   it.each([
     "Nahrávka patří jinému účtu",
     "Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem",
