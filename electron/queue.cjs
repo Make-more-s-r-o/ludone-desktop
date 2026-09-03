@@ -26,6 +26,84 @@ function validateQueue(queue) {
   return queue;
 }
 
+function requiredObject(value, field) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError(`${field} musí být objekt`);
+  }
+  return value;
+}
+
+function requiredNonEmptyString(value, field) {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new TypeError(`${field} musí být neprázdný řetězec`);
+  }
+  return value;
+}
+
+function microphoneOnlyRecording(recording) {
+  const trackKinds = Object.keys(recording?.manifest?.tracks ?? {});
+  return trackKinds.length === 1 && trackKinds[0] === "microphone";
+}
+
+function enqueueMicrophoneOnlyRecording(queue, recording, now = Date.now()) {
+  validateQueue(queue);
+  requiredObject(recording, "recording");
+  const manifest = normalizeMicrophoneOnlyManifest(recording.manifest);
+  const manifestPath = requiredNonEmptyString(recording.manifestPath, "manifestPath");
+  const sourceManifestPath = recording.sourceManifestPath === undefined
+    ? manifestPath
+    : requiredNonEmptyString(recording.sourceManifestPath, "sourceManifestPath");
+  if (
+    recording.recoveredIncomplete !== undefined
+    && typeof recording.recoveredIncomplete !== "boolean"
+  ) {
+    throw new TypeError("recoveredIncomplete musí být boolean");
+  }
+  const recoveredIncomplete = recording.recoveredIncomplete === true;
+  const trackPaths = requiredObject(recording.trackPaths, "trackPaths");
+  if (Object.keys(trackPaths).length !== 1 || !trackPaths.microphone) {
+    throw new TypeError("jednostopé trackPaths musí obsahovat právě stopu microphone");
+  }
+  const normalizedTracks = {
+    microphone: requiredNonEmptyString(trackPaths.microphone, "trackPaths.microphone"),
+  };
+  const existing = queue.items.find(
+    (item) => item.clientRecordingId === manifest.clientRecordingId,
+  );
+  if (existing) {
+    const sameRecording = existing.kind === "recording"
+      && (existing.sourceManifestPath ?? existing.manifestPath) === sourceManifestPath
+      && existing.manifestPath === manifestPath
+      && existing.tracks?.microphone === normalizedTracks.microphone
+      && Object.keys(existing.tracks ?? {}).length === 1
+      && (existing.recoveredIncomplete === true) === recoveredIncomplete;
+    if (sameRecording) return { added: false, item: existing, queue };
+    throw new Error("Kolize clientRecordingId s jinou položkou fronty");
+  }
+  const enqueuedAt = new Date(now);
+  if (!Number.isFinite(enqueuedAt.getTime())) throw new TypeError("now musí být platný čas");
+  const item = {
+    attempts: 0,
+    clientRecordingId: manifest.clientRecordingId,
+    enqueuedAt: enqueuedAt.toISOString(),
+    kind: "recording",
+    lastFailureReason: null,
+    manifestPath,
+    nextAttemptAt: null,
+    ...(recoveredIncomplete ? { recoveredIncomplete: true } : {}),
+    sentAt: null,
+    server: { recordingId: null, uploadedBytes: { microphone: 0 } },
+    state: "ceka",
+    ...(sourceManifestPath !== manifestPath ? { sourceManifestPath } : {}),
+    tracks: normalizedTracks,
+  };
+  return {
+    added: true,
+    item,
+    queue: { ...queue, items: [...queue.items, item] },
+  };
+}
+
 /** Načte frontu; neexistující soubor znamená dosud prázdnou frontu. */
 async function loadQueue(filePath) {
   try {
@@ -105,6 +183,59 @@ function canonicalIsoTimestamp(value, field, { nullable = true } = {}) {
     throw new TypeError(`${field} nemá platný ISO čas`);
   }
   return value;
+}
+
+function normalizeMicrophoneOnlyManifest(parsed) {
+  requiredObject(parsed, "manifest");
+  if (parsed.schemaVersion !== 1) {
+    throw new TypeError("jednostopý manifest musí mít schemaVersion 1");
+  }
+  if (!RECOVERABLE_MANIFEST_STATES.has(parsed.state)) {
+    throw new TypeError("jednostopý manifest musí být complete nebo incomplete");
+  }
+  const sourceTrack = requiredObject(parsed.tracks?.microphone, "tracks.microphone");
+  if (Object.keys(parsed.tracks ?? {}).length !== 1) {
+    throw new TypeError("jednostopý manifest musí obsahovat právě stopu microphone");
+  }
+  if (!Number.isSafeInteger(sourceTrack.sizeBytes) || sourceTrack.sizeBytes < 0) {
+    throw new TypeError("tracks.microphone.sizeBytes musí být nezáporné celé číslo");
+  }
+  if (sourceTrack.sha256 !== null && !/^[a-f0-9]{64}$/u.test(sourceTrack.sha256)) {
+    throw new TypeError("tracks.microphone.sha256 musí být SHA-256 nebo null");
+  }
+  const manifest = {
+    schemaVersion: 1,
+    clientRecordingId: requiredNonEmptyString(parsed.clientRecordingId, "clientRecordingId"),
+    createdAt: canonicalIsoTimestamp(parsed.createdAt, "createdAt", { nullable: false }),
+    closedAt: canonicalIsoTimestamp(parsed.closedAt, "closedAt"),
+    state: parsed.state,
+    tracks: {
+      microphone: {
+        endedAt: canonicalIsoTimestamp(sourceTrack.endedAt, "tracks.microphone.endedAt"),
+        fileName: requiredNonEmptyString(sourceTrack.fileName, "tracks.microphone.fileName"),
+        sha256: sourceTrack.sha256,
+        sizeBytes: sourceTrack.sizeBytes,
+        startedAt: canonicalIsoTimestamp(
+          sourceTrack.startedAt,
+          "tracks.microphone.startedAt",
+        ),
+      },
+    },
+  };
+  if (manifest.state === "complete" && manifest.closedAt === null) {
+    throw new TypeError("complete manifest musí mít closedAt");
+  }
+  return manifest;
+}
+
+function recoverableTrackSources(manifest) {
+  const sources = Object.keys(requiredObject(manifest.tracks, "tracks")).sort();
+  const valid = sources.length >= 1
+    && sources.length <= 2
+    && sources[0] === "microphone"
+    && sources.every((source) => source === "microphone" || source === "system");
+  if (!valid) throw new TypeError("manifest nemá podporovaný seznam stop");
+  return sources;
 }
 
 function sameFileStats(left, right) {
@@ -188,7 +319,7 @@ function validateManifestIdentityAndTimes(manifest) {
   }
   canonicalIsoTimestamp(manifest.createdAt, "createdAt", { nullable: false });
   canonicalIsoTimestamp(manifest.closedAt, "closedAt");
-  for (const source of ["microphone", "system"]) {
+  for (const source of recoverableTrackSources(manifest)) {
     canonicalIsoTimestamp(manifest.tracks[source].startedAt, `${source}.startedAt`);
     canonicalIsoTimestamp(manifest.tracks[source].endedAt, `${source}.endedAt`);
   }
@@ -198,12 +329,11 @@ function completedAtForRecovery(manifest, inspectedTracks) {
   const knownTimes = [
     manifest.createdAt,
     manifest.closedAt,
-    manifest.tracks.microphone.endedAt,
-    manifest.tracks.system.endedAt,
+    ...Object.values(manifest.tracks).map(({ endedAt }) => endedAt),
   ]
     .filter((value) => value !== null)
     .map((value) => Date.parse(value));
-  knownTimes.push(inspectedTracks.microphone.mtimeMs, inspectedTracks.system.mtimeMs);
+  knownTimes.push(...Object.values(inspectedTracks).map(({ mtimeMs }) => mtimeMs));
   return new Date(Math.max(...knownTimes)).toISOString();
 }
 
@@ -246,22 +376,29 @@ async function prepareRecoveredRecording({
   if (parsed?.schemaVersion !== 1 || !RECOVERABLE_MANIFEST_STATES.has(parsed?.state)) {
     throw new TypeError("manifest nemá obnovitelný stav nebo verzi");
   }
-  const manifest = createManifest(parsed, parsed.state);
+  const parsedSources = recoverableTrackSources(parsed);
+  const manifest = parsedSources.length === 1
+    ? normalizeMicrophoneOnlyManifest(parsed)
+    : createManifest(parsed, parsed.state);
+  const sources = recoverableTrackSources(manifest);
   validateManifestIdentityAndTimes(manifest);
-  if (manifest.tracks.microphone.fileName === manifest.tracks.system.fileName) {
+  if (
+    sources.length === 2
+    && manifest.tracks.microphone.fileName === manifest.tracks.system.fileName
+  ) {
     throw new TypeError("obě stopy nesmějí být tentýž soubor");
   }
-  const trackPaths = Object.fromEntries(["microphone", "system"].map((source) => [
+  const trackPaths = Object.fromEntries(sources.map((source) => [
     source,
     recoveredTrackPath(recordingsDirectory, manifest.tracks[source].fileName),
   ]));
   const inspectedTracks = Object.fromEntries(await Promise.all(
-    ["microphone", "system"].map(async (source) => [
+    sources.map(async (source) => [
       source,
       await inspectStableTrack(trackPaths[source]),
     ]),
   ));
-  for (const source of ["microphone", "system"]) {
+  for (const source of sources) {
     assertDeclaredTrackMatches(manifest, source, inspectedTracks[source]);
   }
 
@@ -283,18 +420,25 @@ async function prepareRecoveredRecording({
   }
 
   const closedAt = completedAtForRecovery(manifest, inspectedTracks);
-  const uploadManifest = createManifest({
+  const completedMetadata = {
     clientRecordingId: manifest.clientRecordingId,
     closedAt,
     createdAt: manifest.createdAt,
-    tracks: Object.fromEntries(["microphone", "system"].map((source) => [source, {
+    tracks: Object.fromEntries(sources.map((source) => [source, {
       ...manifest.tracks[source],
       endedAt: manifest.tracks[source].endedAt ?? closedAt,
       sha256: inspectedTracks[source].sha256,
       sizeBytes: inspectedTracks[source].sizeBytes,
       startedAt: manifest.tracks[source].startedAt ?? manifest.createdAt,
     }])),
-  }, "complete");
+  };
+  const uploadManifest = sources.length === 1
+    ? normalizeMicrophoneOnlyManifest({
+      schemaVersion: 1,
+      ...completedMetadata,
+      state: "complete",
+    })
+    : createManifest(completedMetadata, "complete");
   const uploadManifestPath = `${manifestPath}.recovered-upload-v1.json`;
   try {
     const existingRaw = JSON.parse(await readStableRegularFile(
@@ -308,7 +452,8 @@ async function prepareRecoveredRecording({
     ) {
       throw new Error("existující obnovovací sidecar má jiný obsah");
     }
-    createManifest(existingRaw, existingRaw.state);
+    if (sources.length === 1) normalizeMicrophoneOnlyManifest(existingRaw);
+    else createManifest(existingRaw, existingRaw.state);
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
     await writeManifestAtomically(uploadManifestPath, uploadManifest);
@@ -502,7 +647,10 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
   function enqueueRecording(recording) {
     return serialize(async () => {
       const queueModule = await loadQueueModule();
-      const result = queueModule.enqueueRecording(await ensureLoaded(), recording);
+      const queue = await ensureLoaded();
+      const result = microphoneOnlyRecording(recording)
+        ? enqueueMicrophoneOnlyRecording(queue, recording)
+        : queueModule.enqueueRecording(queue, recording);
       if (result.added) await commit(result.queue);
       return result;
     });

@@ -234,8 +234,8 @@ export function RecordingCard({
     runtime.cleanupTrackListeners = null;
     setRecoveringSystemAudio(false);
     runtime.finishPromise = (async () => {
-      // Oddělené recordery dostanou stop jako první; stereo derivát je obalí
-      // na obou hranách. Jeho flush ale běží odděleně, takže uložení stop
+      // Oddělené recordery dostanou stop jako první; exportní derivát je obalí
+      // na obou hranách. Jeho flush ale běží odděleně, takže uložení originálů
       // na export nikdy nečeká.
       const recorderResults = runtime.recorders.map((persistentRecorder) => (
         persistentRecorder.stopAndFlush()
@@ -244,20 +244,20 @@ export function RecordingCard({
         .then(async (timing) => {
           // Graf už po flushi nevyrábí žádná další data. Zavřeme ho před IPC,
           // aby visící hlavní proces nedržel AudioContext a jeho stopy při životě.
-          await runtime.stereoCapture.close().catch(() => {});
+          await runtime.exportCapture.close().catch(() => {});
           return window.ludone.finishRecordingExport(runtime.sessionId, {
             succeeded: true,
             timing,
           });
         })
         .catch(async (error) => {
-          await runtime.stereoCapture.close().catch(() => {});
+          await runtime.exportCapture.close().catch(() => {});
           return window.ludone.finishRecordingExport(runtime.sessionId, {
             succeeded: false,
             reason: describeError(error),
           }).catch(() => undefined);
         })
-        .finally(() => runtime.stereoCapture.close().catch(() => {}));
+        .finally(() => runtime.exportCapture.close().catch(() => {}));
 
       setSession((current) => ({ ...current, phase: "stopping" }));
       const errors = initialError ? [initialError] : [];
@@ -268,13 +268,12 @@ export function RecordingCard({
 
       let saved;
       try {
-        const [microphoneResult, systemResult] = settledRecorders;
-        const trackTimings = microphoneResult.status === "fulfilled"
-          && systemResult.status === "fulfilled"
-          ? {
-            microphone: microphoneResult.value,
-            system: systemResult.value,
-          }
+        const allRecordersFinished = settledRecorders.every(({ status }) => status === "fulfilled");
+        const trackTimings = allRecordersFinished
+          ? Object.fromEntries(settledRecorders.map((result, index) => [
+            runtime.recorders[index].source,
+            result.value,
+          ]))
           : undefined;
         saved = await window.ludone.finishRecording(runtime.sessionId, trackTimings);
       } catch (error) {
@@ -284,6 +283,7 @@ export function RecordingCard({
         if (runtimeRef.current === runtime) runtimeRef.current = null;
         setSession({
           phase: "idle",
+          recordingMode: null,
           startedAt: null,
           labels: null,
           systemAudioState: "inactive",
@@ -423,36 +423,46 @@ export function RecordingCard({
     setExportError(null);
     setSession({
       phase: "checking",
+      recordingMode: null,
       startedAt: null,
       labels: null,
-      systemAudioState: "live",
+      systemAudioState: "inactive",
     });
     let capture;
     let runtime;
     let stereoCapture;
+    let exportCapture;
 
     try {
       capture = await captureAudioSources();
       const options = recorderOptions();
-      stereoCapture = await createStereoCapture(
-        capture.microphoneTrack,
-        capture.systemTrack,
-      );
+      const hasSystemAudio = Boolean(capture.systemStream && capture.systemTrack);
+      const recordingMode = hasSystemAudio ? "two-track" : "microphone-only";
+      stereoCapture = hasSystemAudio
+        ? await createStereoCapture(capture.microphoneTrack, capture.systemTrack)
+        : null;
+      exportCapture = stereoCapture
+        ?? await createMicrophoneOnlyExportCapture(capture.microphoneTrack);
       const microphoneRecorder = new MediaRecorder(
         new MediaStream([capture.microphoneTrack]),
         options,
       );
-      const systemRecorder = new MediaRecorder(stereoCapture.systemStream, options);
-      const exportRecorder = new MediaRecorder(stereoCapture.stream, options);
-      const persistence = await window.ludone.beginRecording();
+      const systemRecorder = hasSystemAudio
+        ? new MediaRecorder(stereoCapture.systemStream, options)
+        : null;
+      const exportRecorder = new MediaRecorder(exportCapture.stream, options);
+      const sources = hasSystemAudio ? ["microphone", "system"] : ["microphone"];
+      const persistence = await window.ludone.beginRecording(sources);
       runtime = {
         sessionId: persistence.sessionId,
+        recordingMode,
         streams: capture.streams,
         recorders: [],
         exportRecorder: null,
         exportFinishPromise: null,
         exportStartedAt: null,
         exportError: null,
+        exportCapture,
         stereoCapture,
         systemAudioLost: false,
         systemStream: capture.systemStream,
@@ -467,7 +477,14 @@ export function RecordingCard({
       runtimeRef.current = runtime;
       runtime.recorders = [
         createPersistentRecorder(microphoneRecorder, runtime.sessionId, "microphone", reportRuntimeFailure),
-        createPersistentRecorder(systemRecorder, runtime.sessionId, "system", reportRuntimeFailure),
+        ...(systemRecorder
+          ? [createPersistentRecorder(
+            systemRecorder,
+            runtime.sessionId,
+            "system",
+            reportRuntimeFailure,
+          )]
+          : []),
       ];
       runtime.exportRecorder = createPersistentRecorder(
         exportRecorder,
@@ -477,10 +494,11 @@ export function RecordingCard({
           runtime.exportError ??= error;
         },
       );
-      for (const [track, label] of [
-        [capture.microphoneTrack, "Mikrofonní stopa"],
-        [capture.systemTrack, "Systémová stopa"],
-      ]) {
+      const requiredTracks = [[capture.microphoneTrack, "Mikrofonní stopa"]];
+      if (capture.systemTrack) {
+        requiredTracks.push([capture.systemTrack, "Systémová stopa"]);
+      }
+      for (const [track, label] of requiredTracks) {
         if (track.readyState !== "live" || !track.enabled || track.muted) {
           throw new Error(`${label} přestala být dostupná během přípravy`);
         }
@@ -493,7 +511,7 @@ export function RecordingCard({
       };
       capture.microphoneTrack.addEventListener("ended", reportMicrophoneUnavailable, { once: true });
       capture.microphoneTrack.addEventListener("mute", reportMicrophoneUnavailable, { once: true });
-      watchRuntimeSystemTrack(runtime, capture.systemTrack);
+      if (capture.systemTrack) watchRuntimeSystemTrack(runtime, capture.systemTrack);
       runtime.cleanupTrackListeners = () => {
         capture.microphoneTrack.removeEventListener("ended", reportMicrophoneUnavailable);
         capture.microphoneTrack.removeEventListener("mute", reportMicrophoneUnavailable);
@@ -530,28 +548,32 @@ export function RecordingCard({
       }
       setSession({
         phase: "recording",
+        recordingMode,
         startedAt: Date.now(),
         labels: {
           microphone: capture.microphoneTrack.label || "Mikrofon",
-          system: capture.systemTrack.label || "Systémový zvuk",
+          system: capture.systemTrack?.label || null,
         },
-        systemAudioState: runtime.systemAudioLost ? "lost" : "live",
+        systemAudioState: hasSystemAudio
+          ? (runtime.systemAudioLost ? "lost" : "live")
+          : "unavailable",
       });
     } catch (error) {
       if (runtime) {
         await finishRuntime(runtime, error);
       } else {
         if (capture) stopStreams(capture.streams);
-        if (stereoCapture) await stereoCapture.close().catch(() => {});
+        if (exportCapture) await exportCapture.close().catch(() => {});
         setSession({
           phase: "idle",
+          recordingMode: null,
           startedAt: null,
           labels: null,
           systemAudioState: "inactive",
         });
         setNotice({
           type: "error",
-          text: `Nahrávání se nespustilo: ${describeError(error)}. Opravte přístup k oběma stopám před schůzkou.`,
+          text: `Nahrávání se nespustilo. ${MICROPHONE_REQUIRED_TEXT} ${describeError(error)}.`,
         });
       }
     } finally {
@@ -599,8 +621,9 @@ export function RecordingCard({
 
   return (
     <section
-      className={`feature-card recording-card${isRecording ? " is-active" : ""}${systemAudioLost ? " is-degraded" : ""}${session.phase === "idle" && !savedRecording ? " idle-feature-row" : ""}${session.phase === "idle" && !savedRecording && notice ? " has-notice" : ""}${savedRecording ? " recording-card--saved" : ""}`}
+      className={`feature-card recording-card${isRecording ? " is-active" : ""}${systemAudioLost || microphoneOnly ? " is-degraded" : ""}${session.phase === "idle" && !savedRecording ? " idle-feature-row" : ""}${session.phase === "idle" && !savedRecording && notice ? " has-notice" : ""}${savedRecording ? " recording-card--saved" : ""}`}
       data-recording-phase={savedRecording ? "saved" : session.phase}
+      data-recording-mode={session.recordingMode ?? "inactive"}
       data-system-audio-state={isRecording
         ? (recoveringSystemAudio ? "recovering" : session.systemAudioState)
         : "inactive"}
@@ -707,19 +730,19 @@ export function RecordingCard({
       {session.phase === "checking" && (
         <div className="recording-progress" role="status">
           <p>Kontroluji mikrofon i systémový zvuk…</p>
-          <small>Nahrávání a čas se spustí až po ověření obou živých stop.</small>
+          <small>{MICROPHONE_ONLY_TEXT}</small>
         </div>
       )}
 
       {isRecording && (
         <div className="recording-running">
           <div
-            className={`activity-status activity-status--recording${systemAudioLost ? " is-degraded" : ""}`}
+            className={`activity-status activity-status--recording${systemAudioLost || microphoneOnly ? " is-degraded" : ""}`}
             data-testid="recording-running-state"
             role="status"
           >
             <span className="activity-status__dot" aria-hidden="true" />
-            <span>{systemAudioLost ? "Nahrává se omezeně" : "Nahrává se"}</span>
+            <span>{systemAudioLost || microphoneOnly ? "Nahrává se omezeně" : "Nahrává se"}</span>
           </div>
           <span className="sr-only" aria-hidden="true">Rychlá nahrávka</span>
 
@@ -743,24 +766,34 @@ export function RecordingCard({
             <span className="recording-source__meter" aria-hidden="true">
               <span className="recording-source__fill" />
             </span>
-            {systemAudioLost && <span className="recording-source__pill is-live">ok</span>}
+            {(systemAudioLost || microphoneOnly) && (
+              <span className="recording-source__pill is-live">ok</span>
+            )}
           </div>
 
           <div
             className="recording-source"
             data-panel-height-neutral="true"
-            data-source-state={systemAudioLost ? "lost" : "live"}
+            data-source-state={microphoneOnly ? "unavailable" : (systemAudioLost ? "lost" : "live")}
             data-testid="recording-source-system"
-            title={`Ostatní zvuk: ${session.labels.system}`}
+            title={microphoneOnly ? "Ostatní zvuk není dostupný" : `Ostatní zvuk: ${session.labels.system}`}
           >
             <span className="recording-source__label">Ostatní zvuk</span>
             <span className="recording-source__meter" aria-hidden="true">
               <span className="recording-source__fill" />
             </span>
-            {systemAudioLost && <span className="recording-source__pill is-lost">ticho</span>}
+            {(systemAudioLost || microphoneOnly) && (
+              <span className="recording-source__pill is-lost">ticho</span>
+            )}
           </div>
-          {!systemAudioLost && (
+          {!systemAudioLost && !microphoneOnly && (
             <span className="sr-only" aria-hidden="true">Obě stopy ověřeny</span>
+          )}
+
+          {microphoneOnly && (
+            <div className="recording-mode-note" role="status" aria-atomic="true">
+              {MICROPHONE_ONLY_TEXT}
+            </div>
           )}
 
           {systemAudioLost ? (
@@ -813,7 +846,7 @@ export function RecordingCard({
 
       {session.phase === "stopping" && (
         <div className="recording-progress" role="status">
-          <p>Dokončuji obě nahrávky…</p>
+          <p>{microphoneOnly ? "Dokončuji nahrávku…" : "Dokončuji obě nahrávky…"}</p>
           <small>Čekám na poslední timeslice a potvrzení zápisu na disk.</small>
         </div>
       )}

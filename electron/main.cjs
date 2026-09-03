@@ -73,6 +73,7 @@ const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
 const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
 const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
 const RECORDING_EXPORT_TRACKS_PRESERVED = "Původní dvě stopy zůstaly uložené.";
+const RECORDING_EXPORT_MICROPHONE_PRESERVED = "Původní mikrofonní stopa zůstala uložená.";
 const RECORDING_EXPORT_GENERIC_ERROR = "Export se nepodařilo dokončit. Zkuste export znovu.";
 const RECORDING_EXPORT_SYSTEM_ERRORS = new Map([
   ["ENOSPC", "Na disku není dost volného místa. Uvolněte místo a zkuste export znovu."],
@@ -1154,6 +1155,42 @@ function recordingManifestTracks(
   }]));
 }
 
+function normalizeRecordingSources(value) {
+  if (value === undefined) return [...RECORDING_TRACKS.keys()];
+  if (!Array.isArray(value)) throw new TypeError("Seznam zdrojů nahrávání musí být pole");
+  const requested = new Set();
+  for (const source of value) {
+    if (!RECORDING_TRACKS.has(source)) {
+      throw new TypeError(`Neznámý zdroj nahrávání: ${String(source)}`);
+    }
+    if (requested.has(source)) {
+      throw new TypeError(`Zdroj nahrávání ${source} je uveden dvakrát`);
+    }
+    requested.add(source);
+  }
+  if (!requested.has("microphone")) {
+    throw new TypeError("Bez mikrofonu nelze nahrávání spustit");
+  }
+  return [...RECORDING_TRACKS.keys()].filter((source) => requested.has(source));
+}
+
+function createMicrophoneOnlyManifest(metadata, state) {
+  return {
+    schemaVersion: 1,
+    clientRecordingId: metadata.clientRecordingId,
+    createdAt: metadata.createdAt,
+    closedAt: metadata.closedAt,
+    state,
+    tracks: { microphone: metadata.tracks.microphone },
+  };
+}
+
+function recordingTracksPreservedMessage(recording) {
+  return recording?.tracks?.size === 1
+    ? RECORDING_EXPORT_MICROPHONE_PRESERVED
+    : RECORDING_EXPORT_TRACKS_PRESERVED;
+}
+
 function completedRecordingTimeline(tracks) {
   const timings = tracks instanceof Map ? [...tracks.values()] : Object.values(tracks);
   const starts = timings.map(({ startedAt }) => Date.parse(startedAt));
@@ -1161,11 +1198,11 @@ function completedRecordingTimeline(tracks) {
   return {
     startedAt: new Date(Math.min(...starts)).toISOString(),
     endedAt: new Date(Math.max(...ends)).toISOString(),
-    trackStartDeltaMs: Math.abs(starts[0] - starts[1]),
+    trackStartDeltaMs: starts.length === 2 ? Math.abs(starts[0] - starts[1]) : null,
   };
 }
 
-async function createRecordingSession(event) {
+async function createRecordingSession(event, sources) {
   requireTrustedRecordingSender(event);
   const ownerId = event.sender.id;
   if (recordingOwnersPreparing.has(ownerId) || [...recordingSessions.values()].some((activeSession) => (
@@ -1187,7 +1224,7 @@ async function createRecordingSession(event) {
     const recordingsDirectory = path.join(app.getPath("userData"), "nahravky");
     await fs.promises.mkdir(recordingsDirectory, { recursive: true, mode: 0o700 });
 
-    for (const source of RECORDING_TRACKS.keys()) {
+    for (const source of sources) {
       tracks.set(source, await openRecordingTrack(recordingsDirectory, prefix, source));
     }
     exportTrack = await openRecordingExportStage(prefix);
@@ -1197,14 +1234,20 @@ async function createRecordingSession(event) {
 
     const manifestPath = path.join(recordingsDirectory, `${prefix}.manifest.json`);
     const { createManifest, transitionManifest, writeManifestAtomically } = await manifestModulePromise;
-    const manifest = createManifest({
+    const manifestMetadata = {
       clientRecordingId: sessionId,
       createdAt: startedAt.toISOString(),
       closedAt: null,
       tracks: recordingManifestTracks(tracks, null, startedAt.toISOString()),
-    }, "recording");
+    };
+    const manifest = sources.length === 1
+      ? createMicrophoneOnlyManifest(manifestMetadata, "recording")
+      : createManifest(manifestMetadata, "recording");
     // Recovery kopie musí existovat dřív, než session ID dostane renderer a může poslat první chunk.
-    await writeManifestAtomically(manifestPath, transitionManifest(manifest, "incomplete"));
+    const recoveryManifest = sources.length === 1
+      ? createMicrophoneOnlyManifest(manifestMetadata, "incomplete")
+      : transitionManifest(manifest, "incomplete");
+    await writeManifestAtomically(manifestPath, recoveryManifest);
     manifestWasWritten = true;
     if (preparation.cancelled || event.sender.isDestroyed()) {
       throw new Error("Příprava nahrávání byla zrušena po zápisu obnovovacího manifestu");
@@ -1243,6 +1286,7 @@ async function createRecordingSession(event) {
       resolveReady: resolveExportReady,
       result: null,
       timing: null,
+      tracks,
     };
     recordingSession.destroyedListener = () => {
       void finalizeRecordingSession(sessionId, "incomplete").catch((error) => {
@@ -1258,7 +1302,10 @@ async function createRecordingSession(event) {
     recordingSessions.set(sessionId, recordingSession);
     recordingExportStages.set(sessionId, exportStage);
     refreshTray();
-    console.log(`[recording] Připraveny oddělené soubory s prefixem ${prefix}.`);
+    const preparationMessage = sources.length === 1
+      ? "Připraven mikrofonní soubor"
+      : "Připraveny oddělené soubory";
+    console.log(`[recording] ${preparationMessage} s prefixem ${prefix}.`);
     return { sessionId, startedAt: recordingSession.startedAt };
   } catch (error) {
     await Promise.allSettled([...tracks.values()].map(async (track) => {
@@ -1423,7 +1470,7 @@ async function finalizeRecordingExportStage(sessionId, outcome, { preserveFile =
       }
       exportStage.result = {
         ok: false,
-        message: `Dvoukanálový export se nepodařilo připravit. ${RECORDING_EXPORT_TRACKS_PRESERVED}`,
+        message: `Dvoukanálový export se nepodařilo připravit. ${recordingTracksPreservedMessage(exportStage)}`,
       };
     } else {
       exportStage.timing = timing;
@@ -1459,7 +1506,7 @@ async function finalizeRecordingSession(sessionId, finalState, trackTimings = nu
     let completionTimingError = null;
     if (finalState === "complete") {
       try {
-        for (const source of RECORDING_TRACKS.keys()) {
+        for (const source of recordingSession.tracks.keys()) {
           recordingTrackTiming(trackTimings, source, recordingSession.startedAt, closedAt);
         }
       } catch (error) {
@@ -1500,7 +1547,9 @@ async function finalizeRecordingSession(sessionId, finalState, trackTimings = nu
     if (!firstError) {
       try {
         const { transitionManifest, writeManifestAtomically } = await manifestModulePromise;
-        finalManifest = transitionManifest(recordingSession.manifest, stateToWrite, {
+        const finalMetadata = {
+          clientRecordingId: recordingSession.sessionId,
+          createdAt: recordingSession.startedAt,
           closedAt,
           tracks: recordingManifestTracks(
             recordingSession.tracks,
@@ -1509,7 +1558,10 @@ async function finalizeRecordingSession(sessionId, finalState, trackTimings = nu
             closedAt,
             files,
           ),
-        });
+        };
+        finalManifest = recordingSession.tracks.size === 1
+          ? createMicrophoneOnlyManifest(finalMetadata, stateToWrite)
+          : transitionManifest(recordingSession.manifest, stateToWrite, finalMetadata);
         await writeManifestAtomically(recordingSession.manifestPath, finalManifest);
         recordingSession.manifest = finalManifest;
       } catch (error) {
@@ -1524,7 +1576,10 @@ async function finalizeRecordingSession(sessionId, finalState, trackTimings = nu
     }
     if (firstError) throw firstError;
     if (completionTimingError) throw completionTimingError;
-    console.log(`[recording] Uloženo: mikrofon ${files.microphone.size} B, systém ${files.system.size} B.`);
+    const sizes = recordingSession.tracks.size === 1
+      ? `mikrofon ${files.microphone.size} B`
+      : `mikrofon ${files.microphone.size} B, systém ${files.system.size} B`;
+    console.log(`[recording] Uloženo: ${sizes}.`);
     const timeline = completedRecordingTimeline(finalManifest.tracks);
     return {
       clientRecordingId: recordingSession.sessionId,
@@ -1542,7 +1597,10 @@ function finalizeRecordingSessionsForOwner(ownerId, reason) {
   for (const recordingSession of recordingSessions.values()) {
     if (recordingSession.ownerId !== ownerId) continue;
     void finalizeRecordingSession(recordingSession.sessionId, "incomplete").then((result) => {
-      console.warn(`[recording] Session uzavřena po události „${reason}“: mikrofon ${result.files.microphone.size} B, systém ${result.files.system.size} B.`);
+      const sizes = result.files.system
+        ? `mikrofon ${result.files.microphone.size} B, systém ${result.files.system.size} B`
+        : `mikrofon ${result.files.microphone.size} B`;
+      console.warn(`[recording] Session uzavřena po události „${reason}“: ${sizes}.`);
     }).catch((error) => {
       console.error(`[recording] Uzavření po události „${reason}“ selhalo: ${error.stack || error.message}`);
     }).finally(() => {
@@ -1641,11 +1699,15 @@ handleValidated(
     return app.getLoginItemSettings().openAtLogin === true;
   },
 );
-handleValidated("recording:begin", ["panel"], async (event) => {
+handleValidated("recording:begin", ["panel"], async (event, sources, ...extraPayload) => {
+  if (extraPayload.length > 0) {
+    throw new TypeError("Kanál recording:begin přijímá nejvýše jeden seznam zdrojů");
+  }
+  const normalizedSources = normalizeRecordingSources(sources);
   ensureNewActivityIsAllowed("nahrávání");
   await waitForOutboundQueueRecovery();
   ensureNewActivityIsAllowed("nahrávání");
-  return createRecordingSession(event);
+  return createRecordingSession(event, normalizedSources);
 });
 handleValidated("recording:append", ["panel"], (event, sessionId, source, sequence, arrayBuffer) => (
   appendRecordingChunk(event, sessionId, source, sequence, arrayBuffer)
@@ -1877,12 +1939,12 @@ function recordingExportSystemCode(error) {
   return typeof code === "string" && /^[A-Z][A-Z0-9_]*$/u.test(code) ? code : null;
 }
 
-function recordingExportFailureMessage(error) {
+function recordingExportFailureMessage(error, exportStage) {
   const detail = error instanceof RecordingExportUserError
     ? error.message
     : RECORDING_EXPORT_SYSTEM_ERRORS.get(recordingExportSystemCode(error))
       ?? RECORDING_EXPORT_GENERIC_ERROR;
-  return `${detail} ${RECORDING_EXPORT_TRACKS_PRESERVED}`;
+  return `${detail} ${recordingTracksPreservedMessage(exportStage)}`;
 }
 
 function logRecordingExportFailure(error) {
@@ -1926,9 +1988,10 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
     await fs.promises.unlink(exportStage.track.filePath).catch(() => {});
     recordingExportStages.delete(clientRecordingId);
     void maybeCompleteDeferredQuit();
-    console.log(
-      `[recording-export] Uloženo ${result.clientRecordingId}; rozdíl startů ${result.trackStartDeltaMs} ms.`,
-    );
+    const timingDetail = result.trackStartDeltaMs === null
+      ? "jednostopý režim bez porovnání stop"
+      : `rozdíl startů ${result.trackStartDeltaMs} ms`;
+    console.log(`[recording-export] Uloženo ${result.clientRecordingId}; ${timingDetail}.`);
     return {
       ok: true,
       clientRecordingId: result.clientRecordingId,
@@ -1937,6 +2000,7 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
       startedAt: result.startedAt,
       endedAt: result.endedAt,
       trackStartDeltaMs: result.trackStartDeltaMs,
+      trackDurationDeltaMs: result.trackDurationDeltaMs,
     };
   } catch (error) {
     if (error?.recordingExported === true) {
@@ -1945,7 +2009,7 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
         recordingExported: true,
         fileName: error.fileName,
         message: "Soubor je uložený ve Stažených, ale nahrávací stránku se nepodařilo otevřít. "
-          + RECORDING_EXPORT_TRACKS_PRESERVED,
+          + recordingTracksPreservedMessage(exportStage),
       };
     }
     // Systémová chyba může obsahovat cílovou cestu odvozenou z názvu schůzky.
@@ -1953,7 +2017,7 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
     return {
       ok: false,
       recordingExported: false,
-      message: recordingExportFailureMessage(error),
+      message: recordingExportFailureMessage(error, exportStage),
     };
   } finally {
     if (claimedExport) {

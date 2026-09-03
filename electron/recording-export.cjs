@@ -28,8 +28,15 @@ function requiredManifest(manifest) {
   if (typeof manifest.clientRecordingId !== "string" || manifest.clientRecordingId.length === 0) {
     throw new TypeError("Manifest nemá clientRecordingId");
   }
-  if (!manifest.tracks?.microphone || !manifest.tracks?.system) {
-    throw new TypeError("Manifest nemá obě původní stopy");
+  if (!manifest.tracks?.microphone) {
+    throw new TypeError("Manifest nemá povinnou mikrofonní stopu");
+  }
+  const trackKinds = Object.keys(manifest.tracks).sort();
+  if (
+    trackKinds.length > 2
+    || trackKinds.some((kind) => kind !== "microphone" && kind !== "system")
+  ) {
+    throw new TypeError("Manifest obsahuje neznámou původní stopu");
   }
   return manifest;
 }
@@ -58,33 +65,40 @@ function recordingTimeline(manifestValue, stereoTiming) {
     manifest.tracks.microphone.startedAt,
     "tracks.microphone.startedAt",
   );
-  const systemStartedAt = requiredTimestamp(
-    manifest.tracks.system.startedAt,
-    "tracks.system.startedAt",
-  );
   const microphoneEndedAt = requiredTimestamp(
     manifest.tracks.microphone.endedAt,
     "tracks.microphone.endedAt",
   );
-  const systemEndedAt = requiredTimestamp(
-    manifest.tracks.system.endedAt,
-    "tracks.system.endedAt",
-  );
+  const systemStartedAt = manifest.tracks.system
+    ? requiredTimestamp(manifest.tracks.system.startedAt, "tracks.system.startedAt")
+    : null;
+  const systemEndedAt = manifest.tracks.system
+    ? requiredTimestamp(manifest.tracks.system.endedAt, "tracks.system.endedAt")
+    : null;
   const stereoStartedAt = requiredTimestamp(stereoTiming?.startedAt, "stereo.startedAt");
   const stereoEndedAt = requiredTimestamp(stereoTiming?.endedAt, "stereo.endedAt");
 
   const microphoneStartMs = Date.parse(microphoneStartedAt);
-  const systemStartMs = Date.parse(systemStartedAt);
   const microphoneEndMs = Date.parse(microphoneEndedAt);
-  const systemEndMs = Date.parse(systemEndedAt);
+  const systemStartMs = systemStartedAt === null ? null : Date.parse(systemStartedAt);
+  const systemEndMs = systemEndedAt === null ? null : Date.parse(systemEndedAt);
   const stereoStartMs = Date.parse(stereoStartedAt);
   const stereoEndMs = Date.parse(stereoEndedAt);
-  const firstTrackStartMs = Math.min(microphoneStartMs, systemStartMs);
-  const lastTrackEndMs = Math.max(microphoneEndMs, systemEndMs);
-  const trackStartDeltaMs = Math.abs(microphoneStartMs - systemStartMs);
-  const trackDurationDeltaMs = Math.abs(
-    (microphoneEndMs - microphoneStartMs) - (systemEndMs - systemStartMs),
-  );
+  const hasSystemTrack = systemStartMs !== null && systemEndMs !== null;
+  const firstTrackStartMs = hasSystemTrack
+    ? Math.min(microphoneStartMs, systemStartMs)
+    : microphoneStartMs;
+  const lastTrackEndMs = hasSystemTrack
+    ? Math.max(microphoneEndMs, systemEndMs)
+    : microphoneEndMs;
+  const trackStartDeltaMs = hasSystemTrack
+    ? Math.abs(microphoneStartMs - systemStartMs)
+    : null;
+  const trackDurationDeltaMs = hasSystemTrack
+    ? Math.abs(
+      (microphoneEndMs - microphoneStartMs) - (systemEndMs - systemStartMs),
+    )
+    : null;
 
   // Stereo recorder se spouští první a zastavuje poslední. Musí proto obalit
   // obě originální stopy; při nejistotě se nic neposouvá ani nedoplňuje tichem.
@@ -95,16 +109,20 @@ function recordingTimeline(manifestValue, stereoTiming) {
     throw new Error("Stereo derivát neskončil spolehlivě po obou stopách");
   }
   if (stereoEndMs <= stereoStartMs) throw new Error("Stereo derivát má neplatnou délku");
-  if (trackStartDeltaMs > MAX_TRACK_TIMING_DELTA_MS) {
+  if (hasSystemTrack && trackStartDeltaMs > MAX_TRACK_TIMING_DELTA_MS) {
     throw new Error(`Rozdíl startů stop ${trackStartDeltaMs} ms překročil bezpečný limit`);
   }
-  if (trackDurationDeltaMs > MAX_TRACK_TIMING_DELTA_MS) {
+  if (hasSystemTrack && trackDurationDeltaMs > MAX_TRACK_TIMING_DELTA_MS) {
     throw new Error(`Rozdíl délek stop ${trackDurationDeltaMs} ms překročil bezpečný limit`);
   }
 
   return {
-    startedAt: microphoneStartMs <= systemStartMs ? microphoneStartedAt : systemStartedAt,
-    endedAt: microphoneEndMs >= systemEndMs ? microphoneEndedAt : systemEndedAt,
+    startedAt: !hasSystemTrack || microphoneStartMs <= systemStartMs
+      ? microphoneStartedAt
+      : systemStartedAt,
+    endedAt: !hasSystemTrack || microphoneEndMs >= systemEndMs
+      ? microphoneEndedAt
+      : systemEndedAt,
     stereoStartedAt,
     stereoEndedAt,
     trackStartDeltaMs,
@@ -274,6 +292,7 @@ async function exportRecordingCopy({
     stereoStartedAt: timeline.stereoStartedAt,
     stereoEndedAt: timeline.stereoEndedAt,
     trackStartDeltaMs: timeline.trackStartDeltaMs,
+    trackDurationDeltaMs: timeline.trackDurationDeltaMs,
     uploadUrl,
   };
 }
