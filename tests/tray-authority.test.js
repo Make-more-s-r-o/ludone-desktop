@@ -117,6 +117,15 @@ const trayIconName = Function(
   `"use strict"; ${functionSource(mainCodeWithoutComments, "trayIconName")}; return trayIconName;`,
 )();
 
+const trayIconVariant = Function(
+  "nativeTheme",
+  "trayIconName",
+  `"use strict";
+   ${functionSource(mainCodeWithoutComments, "currentTrayIconTheme")}
+   ${functionSource(mainCodeWithoutComments, "trayIconVariant")}
+   return trayIconVariant;`,
+)({ shouldUseDarkColors: true }, trayIconName);
+
 // Hlavní proces se nedá načíst bez Electronu, tak si z něj vyřízneme rozhodovací funkce
 // a spustíme je nad podstrčeným stavem. Testuje se tím SKUTEČNÝ produkční kód, ne jeho
 // kopie — kdyby se `main.cjs` změnil, změní se i to, co tady běží.
@@ -135,6 +144,7 @@ function trayHarness({
     "recordingExportStages",
     "appState",
     "trayIconName",
+    "trayIconVariant",
     "trayImage",
     "TRAY_LABELS",
     "tray",
@@ -148,7 +158,7 @@ function trayHarness({
     `"use strict";
      let trayState = "signed-out";
      let trayApplied = false;
-     let trayThemeApplied;
+     let trayVariantApplied;
      const applied = [];
      ${functionSource(mainCodeWithoutComments, "hasLiveRecording")}
      ${functionSource(mainCodeWithoutComments, "hasLiveSystemAudioLoss")}
@@ -188,6 +198,7 @@ function trayHarness({
         trackingOwners: new Set(trackingOwners),
       },
       trayIconName,
+      trayIconVariant,
       (state) => `obrazek:${state}`,
       {
         "signed-out": "L·odhlášeno",
@@ -239,6 +250,19 @@ describe("autorita stavu tray ikony", () => {
   // místo přesunutí, bylo by to oslabení brány.
   it("uložený stav lišty používá stejné čisté mapování", () => {
     expect(functionSource(mainCodeWithoutComments, "refreshTray")).toContain("trayIconName(");
+  });
+
+  it.each([
+    ["signed-out", "template", "template"],
+    ["idle", "template", "template"],
+    ["queue-waiting", "template", "template"],
+    ["recording", "dark", "light"],
+    ["tracking", "dark", "light"],
+    ["recording-tracking", "dark", "light"],
+    ["recording-audio-lost", "dark", "light"],
+  ])("volí pro %s variantu %s/%s", (state, darkExpected, lightExpected) => {
+    expect(trayIconVariant(state, "dark")).toBe(darkExpected);
+    expect(trayIconVariant(state, "light")).toBe(lightExpected);
   });
 });
 
