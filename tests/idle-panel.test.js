@@ -1,6 +1,5 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
@@ -107,28 +106,6 @@ function installPassingOnboardingAudio(view) {
   });
 }
 
-/** @param {{ name?: string, email?: string }} [storedUser] */
-function renderIdlePanel(storedUser = USER) {
-  vi.stubGlobal("React", React);
-  vi.stubGlobal("window", {
-    localStorage: {
-      getItem(key) {
-        if (key === "ludone.prototype.onboarding-complete") return "true";
-        if (key === "ludone.panel.authenticated-user") return JSON.stringify(storedUser);
-        return null;
-      },
-    },
-    ludone: { runtime: { resetOnboarding: false } },
-  });
-
-  try {
-    const html = renderToStaticMarkup(React.createElement(App));
-    return new JSDOM(html).window.document;
-  } finally {
-    vi.unstubAllGlobals();
-  }
-}
-
 async function renderInteractivePanel(listQueue, options = {}) {
   const {
     configureWindow = () => {},
@@ -195,21 +172,25 @@ async function continueThroughRecordingTest(panel, click) {
 }
 
 describe("schválený klidový panel", () => {
-  it("obsahuje právě dva sbalené akční řádky a žádnou třetí agendu", () => {
-    const document = renderIdlePanel();
-    const content = [...document.querySelector(".panel-scroll").children];
-    const rows = [...document.querySelectorAll('[data-testid="idle-action-row"]')];
+  it("obsahuje právě dva sbalené akční řádky a žádnou třetí agendu", async () => {
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
+    try {
+      const content = [...panel.document.querySelector(".panel-scroll").children];
+      const rows = [...panel.document.querySelectorAll('[data-testid="idle-action-row"]')];
 
-    expect(content).toHaveLength(2);
-    expect(content).toEqual(rows);
-    expect(rows).toHaveLength(2);
-    expect(rows.map((row) => row.querySelector("strong")?.textContent)).toEqual([
-      "Nahrávání",
-      "LuTrack",
-    ]);
-    expect(document.querySelector(".global-status")).toBeNull();
-    expect(document.querySelector(".account-summary")).toBeNull();
-    expect(document.querySelector(".panel-close")).toBeNull();
+      expect(content).toHaveLength(2);
+      expect(content).toEqual(rows);
+      expect(rows).toHaveLength(2);
+      expect(rows.map((row) => row.querySelector("strong")?.textContent)).toEqual([
+        "Nahrávání",
+        "LuTrack",
+      ]);
+      expect(panel.document.querySelector(".global-status")).toBeNull();
+      expect(panel.document.querySelector(".account-summary")).toBeNull();
+      expect(panel.document.querySelector(".panel-close")).toBeNull();
+    } finally {
+      await panel.cleanup();
+    }
   });
 
   it("po startu ověří uloženou session a v hlavičce ukáže přihlášený stav", async () => {
@@ -418,40 +399,45 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("bez denních dat nevyrenderuje žádný souhrn ani náhradní nulu", () => {
-    const document = renderIdlePanel();
-
-    expect(document.querySelector('[data-testid="recording-daily-summary"]')).toBeNull();
-    expect(document.querySelector('[data-testid="tracking-daily-summary"]')).toBeNull();
-    expect(document.querySelectorAll(".idle-feature-row__copy small")).toHaveLength(0);
-    expect(document.querySelector(".panel-scroll").textContent).not.toContain("Dnes");
+  it("bez denních dat nevyrenderuje žádný souhrn ani náhradní nulu", async () => {
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
+    try {
+      expect(panel.document.querySelector('[data-testid="recording-daily-summary"]')).toBeNull();
+      expect(panel.document.querySelector('[data-testid="tracking-daily-summary"]')).toBeNull();
+      expect(panel.document.querySelectorAll(".idle-feature-row__copy small")).toHaveLength(0);
+      expect(panel.document.querySelector(".panel-scroll").textContent).not.toContain("Dnes");
+    } finally {
+      await panel.cleanup();
+    }
   });
 
-  it("má textové Nastavení a zachovává kontrakt selektorů ui-smoke", () => {
-    const document = renderIdlePanel();
-    const recordingButton = document.querySelector('[aria-label="Spustit nahrávání"]');
-    const trackingButton = document.querySelector('[aria-label="Spustit LuTrack"]');
-    const project = document.querySelector(".tracking-card select");
-    const description = document.querySelector(".tracking-card input");
-    const settings = document.querySelector('[aria-label="Otevřít nastavení"]');
+  it("má textové Nastavení a zachovává kontrakt selektorů ui-smoke", async () => {
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
+    try {
+      const recordingButton = panel.document.querySelector('[aria-label="Spustit nahrávání"]');
+      const trackingButton = panel.document.querySelector('[aria-label="Spustit LuTrack"]');
+      const project = panel.document.querySelector(".tracking-card select");
+      const description = panel.document.querySelector(".tracking-card input");
+      const settings = panel.document.querySelector('[aria-label="Otevřít nastavení"]');
 
-    expect(recordingButton.querySelector('[aria-hidden="true"]').textContent).toBe("Nahrát");
-    expect(recordingButton.textContent).toContain("Spustit nahrávání");
-    expect(trackingButton.textContent).toBe("Spustit");
-    expect(trackingButton.getAttribute("role")).toBe("switch");
-    expect(project.closest(".tracking-controls").hidden).toBe(true);
-    expect(description.closest(".description-field").hidden).toBe(true);
-    expect(settings.textContent).toBe("Nastavení");
+      expect(recordingButton.querySelector('[aria-hidden="true"]').textContent).toBe("Nahrát");
+      expect(recordingButton.textContent).toContain("Spustit nahrávání");
+      expect(trackingButton.textContent).toBe("Spustit");
+      expect(trackingButton.getAttribute("role")).toBe("switch");
+      expect(project.closest(".tracking-controls").hidden).toBe(true);
+      expect(description.closest(".description-field").hidden).toBe(true);
+      expect(settings.textContent).toBe("Nastavení");
+    } finally {
+      await panel.cleanup();
+    }
   });
 
   it("dokud fronta nevrátí ověřená data, patička její souhrn vynechá", async () => {
-    const document = renderIdlePanel();
     const interactivePanel = await renderInteractivePanel(undefined);
 
     try {
       expect(queueFooterStatus(undefined)).toBeNull();
       expect(queueFooterStatus([{ state: "neznamy" }])).toBeNull();
-      expect(document.querySelector('[data-testid="queue-status"]')).toBeNull();
       expect(interactivePanel.document.querySelector('[data-testid="queue-status"]')).toBeNull();
     } finally {
       await interactivePanel.cleanup();

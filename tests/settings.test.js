@@ -42,6 +42,12 @@ async function renderSettings({
   openAtLogin = () => Promise.resolve(true),
   origin = () => Promise.resolve(ORIGIN),
   setAuthOrigin = (value) => Promise.resolve(value),
+  switchAuthOrigin = /** @type {undefined | ((value: string) => Promise<{
+    signedOutLocally: boolean,
+    serverRevoked: boolean,
+    reason: string | null,
+    origin: string | null,
+  }>)} */ (undefined),
   setDockVisible = (value) => Promise.resolve(value),
   setOpenAtLogin = (value) => Promise.resolve(value),
 } = {}) {
@@ -50,6 +56,14 @@ async function renderSettings({
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
   };
+  const logoutMock = vi.fn(logout);
+  const setAuthOriginMock = vi.fn(setAuthOrigin);
+  const switchAuthOriginImplementation = switchAuthOrigin ?? (async (value) => {
+    const result = await logoutMock();
+    if (result?.signedOutLocally !== true) return { ...result, origin: null };
+    const effectiveOrigin = await setAuthOriginMock(value);
+    return { ...result, origin: effectiveOrigin };
+  });
   const ludone = {
     beginAuth: vi.fn(),
     closeSettings: vi.fn(),
@@ -60,8 +74,9 @@ async function renderSettings({
     getDockVisible: vi.fn(dockVisible),
     getOpenAtLogin: vi.fn(openAtLogin),
     exportDiagnostics: vi.fn(exportDiagnostics),
-    logout: vi.fn(logout),
-    setAuthOrigin: vi.fn(setAuthOrigin),
+    logout: logoutMock,
+    setAuthOrigin: setAuthOriginMock,
+    switchAuthOrigin: vi.fn(switchAuthOriginImplementation),
     setDockVisible: vi.fn(setDockVisible),
     setOpenAtLogin: vi.fn(setOpenAtLogin),
   };
@@ -278,6 +293,38 @@ describe("čtyři části Nastavení", () => {
         .toBe(ORIGIN);
       expect(settings.document.querySelector('[data-testid="settings-account"]')?.dataset.authState)
         .toBe("signed-out");
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("produkční přepnutí používá jedinou atomickou operaci", async () => {
+    const switchAuthOrigin = vi.fn(async (origin) => ({
+      signedOutLocally: true,
+      serverRevoked: true,
+      reason: null,
+      origin,
+    }));
+    const settings = await renderSettings({
+      origin: () => Promise.resolve(PRODUCTION_ORIGIN),
+      switchAuthOrigin,
+    });
+    try {
+      const select = settings.document.querySelector('select[data-testid="settings-environment"]');
+      await vi.waitFor(() => expect(select?.value).toBe(PRODUCTION_ORIGIN));
+
+      await React.act(async () => {
+        select.value = ORIGIN;
+        select.dispatchEvent(new settings.document.defaultView.Event("change", { bubbles: true }));
+        await Promise.resolve();
+      });
+
+      await vi.waitFor(() => {
+        expect(settings.ludone.switchAuthOrigin).toHaveBeenCalledExactlyOnceWith(ORIGIN);
+      });
+      expect(settings.ludone.logout).not.toHaveBeenCalled();
+      expect(settings.ludone.setAuthOrigin).not.toHaveBeenCalled();
+      expect(select.value).toBe(ORIGIN);
     } finally {
       await settings.cleanup();
     }

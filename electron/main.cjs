@@ -388,6 +388,7 @@ let authAttemptsInFlight = 0;
 let authLogoutsInFlight = 0;
 let authOriginChangeInFlight = false;
 let authSessionGeneration = 0;
+let authSessionTransitionPromise = null;
 const activeAuthAttempts = new Set();
 const AUTH_CANCEL_CHANNEL = "auth:cancel";
 
@@ -1000,6 +1001,25 @@ function notifyPanelAuthSessionChanged() {
     panelContents.send(AUTH_SESSION_STATUS_CHANNEL);
   } catch (error) {
     console.error(`[auth] Změnu přihlášení se nepodařilo předat panelu: ${error.message}`);
+  }
+}
+
+async function runAuthSessionTransition(operation) {
+  if (authSessionTransitionPromise !== null) {
+    throw new Error("Jiná změna přihlášení už probíhá");
+  }
+  let finishTransition;
+  const transition = new Promise((resolve) => {
+    finishTransition = resolve;
+  });
+  authSessionTransitionPromise = transition;
+  notifyPanelAuthSessionChanged();
+  try {
+    return await operation();
+  } finally {
+    if (authSessionTransitionPromise === transition) authSessionTransitionPromise = null;
+    finishTransition();
+    notifyPanelAuthSessionChanged();
   }
 }
 
@@ -2955,9 +2975,27 @@ async function readStoredAuthSession() {
 
 async function hasStoredAuthSession() {
   try {
-    return (await readStoredAuthSession()) !== null;
+    const storedSession = await readStoredAuthSession();
+    return storedSession !== null && storedSession.issuer === resolveCurrentAuthIssuer();
   } catch {
     return false;
+  }
+}
+
+async function hasStableStoredAuthSession() {
+  for (;;) {
+    const transition = authSessionTransitionPromise;
+    if (transition !== null) {
+      await transition;
+      continue;
+    }
+    const generation = authSessionGeneration;
+    const result = await hasStoredAuthSession();
+    if (
+      authSessionTransitionPromise !== null
+      || generation !== authSessionGeneration
+    ) continue;
+    return result;
   }
 }
 
@@ -2991,12 +3029,9 @@ async function readStoredAuthIdentity() {
   return { name: name || null, email };
 }
 
-handleValidated(AUTH_SESSION_STATUS_CHANNEL, ["panel"], async () => {
-  try {
-    return (await hasStoredAuthSession()) === true;
-  } catch {
-    return false;
-  }
+handleValidated(AUTH_SESSION_STATUS_CHANNEL, ["panel"], async (_event, ...extraPayload) => {
+  requireNoPayload(AUTH_SESSION_STATUS_CHANNEL, extraPayload);
+  return (await hasStableStoredAuthSession()) === true;
 });
 
 handleValidated("auth:identity", ["settings"], () => readStoredAuthIdentity());
@@ -3006,7 +3041,7 @@ handleValidated("auth:origin", ["settings"], (_event, ...extraPayload) => {
   return resolveCurrentAuthIssuer();
 });
 
-function requireIdleAuthOriginChange() {
+function requireIdleAuthOriginChange({ allowSignedIn = false } = {}) {
   if (hasLiveRecording()) {
     throw new Error("Prostředí nelze změnit během nahrávání");
   }
@@ -3019,7 +3054,11 @@ function requireIdleAuthOriginChange() {
   if (outboundQueueSendsInFlight > 0) {
     throw new Error("Prostředí nelze změnit během odesílání fronty");
   }
-  if (authAttemptsInFlight > 0 || authLogoutsInFlight > 0 || appState.signedIn) {
+  if (
+    authAttemptsInFlight > 0
+    || authLogoutsInFlight > 0
+    || (!allowSignedIn && appState.signedIn)
+  ) {
     throw new Error("Před změnou prostředí je nutné dokončit přihlášení a odhlásit tento Mac");
   }
 }
@@ -3114,17 +3153,8 @@ const logoutAuthController = createLogoutController({
   safeStorage,
   logger: console,
 });
-handleValidated("auth:logout", ["panel", "settings"], async () => {
-  if (authOriginChangeInFlight) {
-    return {
-      signedOutLocally: false,
-      serverRevoked: false,
-      reason: "environment-change-active",
-    };
-  }
-  // Není rozhodnuto, zda má odhlášení aktivní agendy samo ukončovat. Do té doby
-  // je bezpečný výchozí stav akci odmítnout: nahrávka nezůstane běžet pod
-  // odhlášenou ikonou a minuty LuTracku nepřejdou na další účet.
+
+function blockedAuthLogoutResult() {
   if (hasLiveRecording()) {
     return {
       signedOutLocally: false,
@@ -3139,6 +3169,10 @@ handleValidated("auth:logout", ["panel", "settings"], async () => {
       reason: "tracking-active",
     };
   }
+  return null;
+}
+
+async function executeAuthLogout() {
   authSessionGeneration += 1;
   authLogoutsInFlight += 1;
   try {
@@ -3159,12 +3193,76 @@ handleValidated("auth:logout", ["panel", "settings"], async () => {
           // Diagnostika stavu ikony nesmí změnit hodnotový výsledek odhlášení.
         }
       }
-      notifyPanelAuthSessionChanged();
     }
     return result;
   } finally {
     authLogoutsInFlight -= 1;
   }
+}
+
+function authOriginSwitchResponse(logoutResult, origin) {
+  return {
+    signedOutLocally: logoutResult?.signedOutLocally === true,
+    serverRevoked: logoutResult?.serverRevoked === true,
+    reason: typeof logoutResult?.reason === "string" ? logoutResult.reason : null,
+    origin,
+  };
+}
+
+handleValidated("auth:switch-origin", ["settings"], async (_event, authOrigin, ...extraPayload) => {
+  requireAuthOriginPayload("auth:switch-origin", authOrigin, extraPayload);
+  if (authOriginChangeInFlight) {
+    throw new Error("Změna prostředí už probíhá");
+  }
+  const blocked = blockedAuthLogoutResult();
+  if (blocked !== null) return authOriginSwitchResponse(blocked, resolveCurrentAuthIssuer());
+  requireIdleAuthOriginChange({ allowSignedIn: true });
+
+  return runAuthSessionTransition(async () => {
+    authOriginChangeInFlight = true;
+    try {
+      const logoutResult = await executeAuthLogout();
+      if (logoutResult?.signedOutLocally !== true) {
+        return authOriginSwitchResponse(logoutResult, resolveCurrentAuthIssuer());
+      }
+
+      try {
+        requireIdleAuthOriginChange();
+        const generation = authSessionGeneration;
+        const storedSession = await readStoredAuthSession();
+        if (generation !== authSessionGeneration) {
+          throw new Error("Během změny prostředí se změnil stav odhlášení");
+        }
+        if (storedSession !== null) {
+          throw new Error("Odhlášení neodstranilo uloženou session");
+        }
+        await authOriginStore.set(authOrigin);
+        return authOriginSwitchResponse(logoutResult, resolveCurrentAuthIssuer());
+      } catch {
+        console.error("[auth] Tento Mac je odhlášený, ale prostředí se nepodařilo změnit.");
+        return authOriginSwitchResponse(logoutResult, null);
+      }
+    } finally {
+      authOriginChangeInFlight = false;
+    }
+  });
+});
+
+handleValidated("auth:logout", ["panel", "settings"], async (_event, ...extraPayload) => {
+  requireNoPayload("auth:logout", extraPayload);
+  if (authOriginChangeInFlight) {
+    return {
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "environment-change-active",
+    };
+  }
+  // Není rozhodnuto, zda má odhlášení aktivní agendy samo ukončovat. Do té doby
+  // je bezpečný výchozí stav akci odmítnout: nahrávka nezůstane běžet pod
+  // odhlášenou ikonou a minuty LuTracku nepřejdou na další účet.
+  const blocked = blockedAuthLogoutResult();
+  if (blocked !== null) return blocked;
+  return runAuthSessionTransition(executeAuthLogout);
 });
 
 const requestPermission = createPermissionRequestHandler({ systemPreferences, shell });

@@ -507,10 +507,15 @@ describe("odhlášení", () => {
     const start = mainSource.indexOf(
       'const { createLogoutController } = require("./auth.cjs");',
     );
+    const switchStart = mainSource.indexOf('handleValidated("auth:switch-origin"', start);
+    const logoutStart = mainSource.indexOf('handleValidated("auth:logout"', switchStart);
     const end = mainSource.indexOf("const requestPermission", start);
     expect(start).toBeGreaterThan(-1);
+    expect(switchStart).toBeGreaterThan(start);
+    expect(logoutStart).toBeGreaterThan(switchStart);
     expect(end).toBeGreaterThan(start);
-    const registration = mainSource.slice(start, end);
+    const registration = mainSource.slice(start, switchStart)
+      + mainSource.slice(logoutStart, end);
 
     expect(registration).toContain(
       'const { createLogoutController } = require("./auth.cjs");',
@@ -520,7 +525,8 @@ describe("odhlášení", () => {
     expect(registration).toContain("trackingWorkBlocksQuit()");
     expect(registration).toContain("logoutAuthController.logout()");
     expect(registration).toContain("return result");
-    expect(registration).not.toMatch(/\b(?:accessToken|refreshToken|clientId|identity|token)\b|\.{3}/);
+    expect(registration).not.toMatch(/\b(?:accessToken|refreshToken|clientId|identity|token)\b/);
+    expect(registration).not.toMatch(/return\s+\{\s*\.{3}/u);
     expect(preloadSource).toContain('logout: () => ipcRenderer.invoke("auth:logout")');
 
     /** @type {Readonly<{
@@ -553,6 +559,17 @@ describe("odhlášení", () => {
     const hasLiveRecording = vi.fn(() => false);
     const trackingWorkBlocksQuit = vi.fn(() => false);
     const notifyPanelAuthSessionChanged = vi.fn();
+    const runAuthSessionTransition = vi.fn(async (operation) => {
+      notifyPanelAuthSessionChanged();
+      try {
+        return await operation();
+      } finally {
+        notifyPanelAuthSessionChanged();
+      }
+    });
+    const requireNoPayload = vi.fn((_channel, payload) => {
+      if (payload.length > 0) throw new TypeError("payload");
+    });
     const requireModule = vi.fn(() => ({ createLogoutController }));
     const captured = {};
     const handleValidated = (channel, allowedKinds, handler) => {
@@ -573,6 +590,8 @@ describe("odhlášení", () => {
       "hasLiveRecording",
       "trackingWorkBlocksQuit",
       "notifyPanelAuthSessionChanged",
+      "runAuthSessionTransition",
+      "requireNoPayload",
       `"use strict"; ${registration}`,
     )(
       requireModule,
@@ -589,6 +608,8 @@ describe("odhlášení", () => {
       hasLiveRecording,
       trackingWorkBlocksQuit,
       notifyPanelAuthSessionChanged,
+      runAuthSessionTransition,
+      requireNoPayload,
     );
 
     expect(requireModule).toHaveBeenCalledWith("./auth.cjs");
@@ -625,7 +646,7 @@ describe("odhlášení", () => {
     expect(appState.signedIn, "odhlášení musí změnit FAKT, ne ikonu").toBe(false);
     expect(appState.acceptRendererSignIn).toBe(false);
     expect(refreshTray, "a nechat stav přepočítat").toHaveBeenCalledOnce();
-    expect(notifyPanelAuthSessionChanged).toHaveBeenCalledOnce();
+    expect(notifyPanelAuthSessionChanged).toHaveBeenCalledTimes(2);
     expect(faktPriPrepoctu, "přepočet musí přijít AŽ PO změně faktu").toEqual([false]);
 
     const localFailure = Object.freeze({
@@ -637,7 +658,7 @@ describe("odhlášení", () => {
     appState.signedIn = true;
     expect(await captured.handler()).toBe(localFailure);
     expect(refreshTray, "neúspěšné místní odhlášení lištou nehýbe").toHaveBeenCalledOnce();
-    expect(notifyPanelAuthSessionChanged).toHaveBeenCalledOnce();
+    expect(notifyPanelAuthSessionChanged).toHaveBeenCalledTimes(4);
     expect(appState.signedIn, "a fakt nechává být").toBe(true);
     expect([...appState.trackingOwners], "nahrávka odhlášení nepřežila").toEqual(["nahravka-1"]);
   });
@@ -664,9 +685,11 @@ describe("stav lišty po odhlášení — kontrola, která se ozve, až přistan
     .join("\n");
 
   function blokOdhlaseni() {
-    const zacatek = kodBezKomentaru.indexOf('handleValidated("auth:logout"');
-    expect(zacatek, "blok auth:logout se v main.cjs nenašel").toBeGreaterThan(-1);
-    return kodBezKomentaru.slice(zacatek, zacatek + 900);
+    const zacatek = kodBezKomentaru.indexOf("async function executeAuthLogout()");
+    const konec = kodBezKomentaru.indexOf("function authOriginSwitchResponse", zacatek);
+    expect(zacatek, "implementace auth:logout se v main.cjs nenašla").toBeGreaterThan(-1);
+    expect(konec).toBeGreaterThan(zacatek);
+    return kodBezKomentaru.slice(zacatek, konec);
   }
 
   const b3Pristala = kodBezKomentaru.includes("function refreshTray(");

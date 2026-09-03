@@ -29,11 +29,13 @@ export function App() {
   const authSessionRequestId = useRef(0);
   const queueRequestId = useRef(0);
   const trayCommandId = useRef(0);
+  const panelActionsAvailableRef = useRef(onboardingComplete && sessionExists === true);
+  panelActionsAvailableRef.current = onboardingComplete && sessionExists === true;
 
-  const refreshAuthSession = useCallback(() => {
+  const refreshAuthSession = useCallback(({ suspendActions = false } = {}) => {
     const requestId = authSessionRequestId.current + 1;
     authSessionRequestId.current = requestId;
-    setSessionExists(null);
+    if (suspendActions) setSessionExists(null);
     const hasAuthSession = window.ludone.hasAuthSession;
     if (typeof hasAuthSession !== "function") {
       setSessionExists(false);
@@ -51,7 +53,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    refreshAuthSession();
+    refreshAuthSession({ suspendActions: true });
 
     return () => {
       authSessionRequestId.current += 1;
@@ -59,20 +61,22 @@ export function App() {
   }, [refreshAuthSession]);
 
   useEffect(() => {
-    // Po autoritativním odhlášení posluchače odpojíme. Návrat fokusu z OAuth
-    // prohlížeče pak nemůže rozpracované přihlášení předčasně odmountovat a zrušit.
-    if (sessionExists === false) return undefined;
-
     const refreshWhenFocused = () => refreshAuthSession();
     const refreshWhenShown = () => {
       if (document.visibilityState === "visible") refreshAuthSession();
     };
     const unsubscribe = typeof window.ludone.onAuthSessionChanged === "function"
-      ? window.ludone.onAuthSessionChanged(refreshAuthSession)
+      ? window.ludone.onAuthSessionChanged(() => {
+        refreshAuthSession({ suspendActions: true });
+      })
       : undefined;
 
-    window.addEventListener("focus", refreshWhenFocused);
-    document.addEventListener("visibilitychange", refreshWhenShown);
+    // Ve stavu bez session necháváme jen autoritativní oznámení z main procesu.
+    // Návrat fokusu z OAuth prohlížeče tak rozpracované přihlášení neodmountuje.
+    if (sessionExists === true) {
+      window.addEventListener("focus", refreshWhenFocused);
+      document.addEventListener("visibilitychange", refreshWhenShown);
+    }
     return () => {
       window.removeEventListener("focus", refreshWhenFocused);
       document.removeEventListener("visibilitychange", refreshWhenShown);
@@ -92,11 +96,11 @@ export function App() {
     return window.ludone.onTrayCommand((name) => {
       // Během onboardingu nejsou akční karty namountované. Příkaz přesto
       // spotřebujeme, ale neuchováváme: jinak by se provedl opožděně až po jeho dokončení.
-      if (!onboardingComplete) return;
+      if (!panelActionsAvailableRef.current) return;
       trayCommandId.current += 1;
       setTrayCommand({ id: trayCommandId.current, name });
     });
-  }, [onboardingComplete]);
+  }, []);
 
   const refreshQueueStatus = useCallback(async () => {
     const requestId = queueRequestId.current + 1;
@@ -192,6 +196,27 @@ export function App() {
     );
   }
 
+  if (sessionExists === null) {
+    return (
+      <PanelContentHeightReporter>
+        <main
+          aria-busy="true"
+          className="panel window-surface"
+          data-panel-state="checking-session"
+        >
+          <header className="panel-header">
+            <div className="panel-identity">
+              <LuDoneMark size={22} variant="panel" />
+              <span className="panel-identity__copy">
+                <strong>LuDone</strong>
+              </span>
+            </div>
+          </header>
+        </main>
+      </PanelContentHeightReporter>
+    );
+  }
+
   const bothActivitiesRunning = recording.active && tracking.active;
 
   return (
@@ -205,10 +230,8 @@ export function App() {
             <LuDoneMark size={22} variant="panel" />
             <span className="panel-identity__copy">
               <strong>LuDone</strong>
-              <small data-auth-state={sessionExists === null ? "checking" : sessionExists ? "signed-in" : "signed-out"}>
-                {sessionExists === true
-                  ? (user ? `${user.name} · připojeno` : "Přihlášeno")
-                  : (sessionExists === false ? "Nejsi připojený" : "")}
+              <small data-auth-state="signed-in">
+                {user ? `${user.name} · připojeno` : "Přihlášeno"}
               </small>
             </span>
           </div>

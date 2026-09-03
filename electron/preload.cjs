@@ -13,6 +13,26 @@ function requireAuthOrigin(value) {
   return value;
 }
 
+function requireAuthOriginSwitchResponse(value) {
+  if (
+    !value
+    || typeof value !== "object"
+    || Array.isArray(value)
+    || typeof value.signedOutLocally !== "boolean"
+    || typeof value.serverRevoked !== "boolean"
+    || (value.reason !== null && typeof value.reason !== "string")
+    || (value.origin !== null && !AUTH_ORIGINS.includes(value.origin))
+  ) {
+    throw new TypeError("Hlavní proces nevrátil platný výsledek změny prostředí");
+  }
+  return {
+    signedOutLocally: value.signedOutLocally,
+    serverRevoked: value.serverRevoked,
+    reason: value.reason,
+    origin: value.origin,
+  };
+}
+
 function setPanelContentHeight(height) {
   if (typeof height !== "number" || !Number.isFinite(height)) {
     throw new TypeError("Výška obsahu panelu musí být konečné číslo");
@@ -117,6 +137,11 @@ contextBridge.exposeInMainWorld("ludone", {
   setAuthOrigin: (value) => {
     const authOrigin = requireAuthOrigin(value);
     return ipcRenderer.invoke("auth:set-origin", authOrigin).then(requireAuthOrigin);
+  },
+  switchAuthOrigin: (value) => {
+    const authOrigin = requireAuthOrigin(value);
+    return ipcRenderer.invoke("auth:switch-origin", authOrigin)
+      .then(requireAuthOriginSwitchResponse);
   },
   logout: () => ipcRenderer.invoke("auth:logout"),
   getDeviceName: () => ipcRenderer.invoke("settings:get-device-name"),

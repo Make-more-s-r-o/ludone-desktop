@@ -40,14 +40,23 @@ async function click(element, view) {
  *   },
  *   initialOrigin?: string,
  *   initialSession?: boolean,
+ *   hasAuthSession?: () => Promise<boolean>,
+ *   switchAuthOrigin?: (nextOrigin: string) => Promise<{
+ *     signedOutLocally: boolean,
+ *     serverRevoked: boolean,
+ *     reason: string | null,
+ *     origin: string | null,
+ *   }>,
  *   withSettings?: boolean,
  * }} [options]
  */
 async function renderWindows({
   beginAuth: beginAuthImplementation,
   beginAuthResult = { ok: false, duvod: "bez-site" },
+  hasAuthSession: hasAuthSessionImplementation,
   initialOrigin = PRODUCTION_ORIGIN,
   initialSession = false,
+  switchAuthOrigin: switchAuthOriginImplementation,
   withSettings = false,
 } = {}) {
   const dom = new JSDOM(
@@ -59,6 +68,7 @@ async function renderWindows({
   let authOrigin = initialOrigin;
   let sessionExists = initialSession;
   const authSessionSubscribers = new Set();
+  const trayCommandSubscribers = new Set();
   const beginAuth = vi.fn(async () => {
     const result = beginAuthImplementation
       ? await beginAuthImplementation()
@@ -71,26 +81,46 @@ async function renderWindows({
     for (const subscriber of [...authSessionSubscribers]) subscriber();
     return { signedOutLocally: true, serverRevoked: true, reason: null };
   });
+  const setAuthOrigin = vi.fn(async (nextOrigin) => {
+    authOrigin = nextOrigin;
+    return authOrigin;
+  });
+  const switchAuthOrigin = vi.fn(async (nextOrigin) => {
+    if (switchAuthOriginImplementation) return switchAuthOriginImplementation(nextOrigin);
+    sessionExists = false;
+    authOrigin = nextOrigin;
+    for (const subscriber of [...authSessionSubscribers]) subscriber();
+    return {
+      signedOutLocally: true,
+      serverRevoked: true,
+      reason: null,
+      origin: authOrigin,
+    };
+  });
   const ludone = {
     runtime: { resetOnboarding: false },
     beginAuth,
     cancelAuth: vi.fn().mockResolvedValue({ ok: true, cancelled: 1 }),
     pendingAuthUrl: vi.fn().mockResolvedValue(null),
-    hasAuthSession: vi.fn(async () => sessionExists),
+    hasAuthSession: vi.fn(() => (
+      hasAuthSessionImplementation ? hasAuthSessionImplementation() : Promise.resolve(sessionExists)
+    )),
     onAuthSessionChanged: vi.fn((subscriber) => {
       authSessionSubscribers.add(subscriber);
       return () => authSessionSubscribers.delete(subscriber);
     }),
     reportTrayFacts: vi.fn(),
+    onTrayCommand: vi.fn((subscriber) => {
+      trayCommandSubscribers.add(subscriber);
+      return () => trayCommandSubscribers.delete(subscriber);
+    }),
     listQueue: vi.fn().mockResolvedValue([]),
     openSettings: vi.fn(),
     requestPermission: vi.fn(),
     getAuthIdentity: vi.fn(async () => (sessionExists ? USER : null)),
     getAuthOrigin: vi.fn(async () => authOrigin),
-    setAuthOrigin: vi.fn(async (nextOrigin) => {
-      authOrigin = nextOrigin;
-      return authOrigin;
-    }),
+    setAuthOrigin,
+    switchAuthOrigin,
     logout,
     getDeviceName: vi.fn().mockResolvedValue("MacBook-Test"),
     getDiagnostics: vi.fn().mockResolvedValue(null),
@@ -128,6 +158,9 @@ async function renderWindows({
     document: dom.window.document,
     ludone,
     view: dom.window,
+    emitTrayCommand(command) {
+      for (const subscriber of [...trayCommandSubscribers]) subscriber(command);
+    },
     async cleanup() {
       await React.act(async () => {
         panelRoot.unmount();
@@ -207,9 +240,35 @@ describe("návrat do aplikace po ztrátě session", () => {
     expect(panel.ludone.hasAuthSession.mock.calls.length).toBeGreaterThan(1);
     if (action === "environment") {
       await vi.waitFor(() => {
-        expect(panel.ludone.setAuthOrigin).toHaveBeenCalledExactlyOnceWith(LABS_ORIGIN);
+        expect(panel.ludone.switchAuthOrigin).toHaveBeenCalledExactlyOnceWith(LABS_ORIGIN);
       });
     }
+  });
+
+  it("během první kontroly session nenabízí anonymní akce", async () => {
+    const sessionCheck = new Promise(() => {});
+    const panel = await renderWindows({ hasAuthSession: () => sessionCheck });
+
+    expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(0);
+    expect(panel.document.querySelector('[aria-label="Spustit nahrávání"]')).toBeNull();
+    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
+  });
+
+  it("příkaz z lišty během znovupřihlášení se po přihlášení neprovede opožděně", async () => {
+    const panel = await renderWindows({
+      beginAuthResult: { ok: true, user: USER },
+    });
+    await waitForReauthentication(panel);
+
+    await React.act(async () => {
+      panel.emitTrayCommand("start-tracking");
+      await Promise.resolve();
+    });
+    await click(buttonWithText(panel.document, "Přihlásit přes app.ludone.cz"), panel.view);
+    await waitForSignedIn(panel);
+
+    expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
+    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
   });
 
   it("návrat fokusu během čekání nepřeruší rozpracované znovupřihlášení", async () => {
@@ -290,6 +349,9 @@ describe("oznámení změny session mezi okny", () => {
     expect(mainSource).toMatch(
       /handleValidated\(AUTH_SESSION_STATUS_CHANNEL,\s*\["panel"\]/u,
     );
-    expect(logoutBlock).toContain("notifyPanelAuthSessionChanged()");
+    expect(mainSource).toMatch(
+      /runAuthSessionTransition[\s\S]*notifyPanelAuthSessionChanged\(\)[\s\S]*operation\(\)[\s\S]*notifyPanelAuthSessionChanged\(\)/u,
+    );
+    expect(logoutBlock).toContain("runAuthSessionTransition(executeAuthLogout)");
   });
 });
