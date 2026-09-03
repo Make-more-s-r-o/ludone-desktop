@@ -1010,7 +1010,7 @@ describe("stavový automat fronty", () => {
     expect(reduceQueueForRenderer(queue)[0]).not.toHaveProperty("requiresHumanAction");
   });
 
-  it("nový pokus odstraní požadavek na člověka po běžné pauze i po úspěchu", async () => {
+  it("další pumpa položku čekající na člověka sama znovu nezkouší", async () => {
     const ownerPaused = await processNext(
       oneItemQueue(),
       killswitches(ENABLED_SETTING),
@@ -1021,28 +1021,18 @@ describe("stavový automat fronty", () => {
         });
       },
     );
-    const sessionMissing = await processNext(
+    const send = vi.fn().mockResolvedValue(undefined);
+    const stillPaused = await processNext(
       ownerPaused.queue,
       killswitches(ENABLED_SETTING),
-      async () => {
-        throw Object.assign(new Error("Pro upload chybí přihlášení"), {
-          code: "session_missing",
-          failureClass: FAILURE_CLASSES.PAUSED,
-        });
-      },
-    );
-    const sent = await processNext(
-      ownerPaused.queue,
-      killswitches(ENABLED_SETTING),
-      async () => undefined,
+      send,
     );
 
-    expect(sessionMissing.queue.items[0]).toHaveProperty("requiresHumanAction", false);
-    expect(sent.queue.items[0]).toHaveProperty("requiresHumanAction", false);
-    expect(reduceQueueForRenderer(sessionMissing.queue)[0])
-      .not.toHaveProperty("requiresHumanAction");
-    expect(reduceQueueForRenderer(sent.queue)[0])
-      .not.toHaveProperty("requiresHumanAction");
+    expect(send).not.toHaveBeenCalled();
+    expect(stillPaused.outcome).toBe("idle");
+    expect(stillPaused.queue).toEqual(ownerPaused.queue);
+    expect(reduceQueueForRenderer(stillPaused.queue)[0])
+      .toHaveProperty("requiresHumanAction", true);
   });
 });
 
@@ -1596,6 +1586,84 @@ describe("perzistentní pumpa fronty", () => {
         nextAttemptAt: null,
         state: QUEUE_STATES.SENT,
       });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("ruční retry přeskočí vlastníka čekajícího na člověka a opravdu odešle běžnou položku", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-human-retry-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const firstId = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const secondId = "3d4e7b61-e3d4-483c-94cc-a512454f6976";
+    const send = vi.fn(async (item) => {
+      if (item.clientRecordingId === firstId) {
+        throw Object.assign(new Error("Nahrávka patří jinému účtu"), {
+          code: "queue_owner_mismatch",
+          failureClass: FAILURE_CLASSES.PAUSED,
+        });
+      }
+    });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      await store.enqueueRecording(recording(firstId));
+      expect((await store.pump(killswitches(ENABLED_SETTING))).outcome).toBe("paused");
+      const humanBefore = (await loadQueue(queuePath)).items[0];
+      await store.enqueueRecording(recording(secondId));
+
+      const retried = await store.retry(killswitches(ENABLED_SETTING));
+
+      expect(retried.outcome).toBe("sent");
+      expect(send).toHaveBeenCalledTimes(2);
+      expect(send.mock.calls[1][0].clientRecordingId).toBe(secondId);
+      const persisted = await loadQueue(queuePath);
+      expect(persisted.items[0]).toEqual(humanBefore);
+      expect(persisted.items[1]).toMatchObject({
+        clientRecordingId: secondId,
+        state: QUEUE_STATES.SENT,
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("renderer dostane přesný součet skutečných souborů, ne velikost odhadem z manifestu", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-size-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const microphonePath = path.join(recordingsDirectory, "microphone.webm");
+    const systemPath = path.join(recordingsDirectory, "system.webm");
+    const item = recording();
+    item.trackPaths = { microphone: microphonePath, system: systemPath };
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.writeFile(microphonePath, Buffer.alloc(7));
+      await fs.promises.writeFile(systemPath, Buffer.alloc(11));
+      await store.enqueueRecording(item);
+
+      const reopenedStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      const view = await reopenedStore.list();
+
+      expect(view[0]).toMatchObject({ sizeBytes: 18 });
+      expect(JSON.stringify(view)).not.toContain(directory);
+
+      await fs.promises.unlink(systemPath);
+      expect((await reopenedStore.list())[0]).not.toHaveProperty("sizeBytes");
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

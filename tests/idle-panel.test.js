@@ -651,14 +651,243 @@ describe("schválený klidový panel", () => {
     }
   });
 
+  it("klik na čekající patičku otevře obrazovku fronty se skutečnými souhrny", async () => {
+    const megabyte = 1024 * 1024;
+    const nextAttemptAt = Date.now() + 2 * 60 * 1_000;
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([
+      {
+        id: "cekajici-nahravka",
+        kind: "recording",
+        lastFailureReason: "Síť není dostupná",
+        nextAttemptAt,
+        sizeBytes: 412 * megabyte,
+        state: "ceka",
+      },
+    ]), {
+      configureWindow(domWindow) {
+        const style = domWindow.document.createElement("style");
+        style.textContent = RENDERER_STYLES;
+        domWindow.document.head.append(style);
+      },
+      ludone: { retryQueue: vi.fn() },
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká");
+      });
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+
+      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      await React.act(async () => {
+        footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+
+      const screen = panel.document.querySelector('[data-testid="queue-screen"]');
+      expect(screen?.querySelector("h2")?.textContent).toBe("Čeká fronta");
+      expect(screen.hidden).toBe(false);
+      expect(panel.document.defaultView.getComputedStyle(screen).display).not.toBe("none");
+      expect(screen.closest(".panel-scroll")).not.toBeNull();
+      expect(panel.document.defaultView.getComputedStyle(screen.closest(".panel-scroll")).overflowY)
+        .toBe("auto");
+      expect(screen?.textContent).toContain("Nic se neztratilo, jen to zatím neodešlo.");
+      expect(screen?.textContent).toContain("1 čeká na odeslání");
+      expect(screen?.textContent).toContain("412 MB · další pokus za 2 min");
+      expect(screen?.querySelector('button[data-action="retry-queue"]')?.textContent)
+        .toBe("Zkusit teď");
+      expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(2);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("Zkusit teď vyvolá skutečný retry a po jeho dokončení obnoví data", async () => {
+    let finishRetry;
+    const retryFinished = new Promise((resolve) => { finishRetry = resolve; });
+    const retryQueue = vi.fn(() => retryFinished);
+    const listQueue = vi.fn()
+      .mockResolvedValueOnce([{
+        id: "cekajici-nahravka",
+        kind: "recording",
+        lastFailureReason: "Síť není dostupná",
+        nextAttemptAt: Date.now() + 60_000,
+        sizeBytes: 1024,
+        state: "ceka",
+      }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{
+        id: "pozdejsi-nahravka",
+        kind: "recording",
+        nextAttemptAt: Date.now() + 60_000,
+        sizeBytes: 2048,
+        state: "ceka",
+      }]);
+    const panel = await renderInteractivePanel(listQueue, {
+      configureWindow(domWindow) {
+        Object.defineProperty(domWindow.document, "visibilityState", {
+          configurable: true,
+          value: "visible",
+        });
+      },
+      ludone: { retryQueue },
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká");
+      });
+      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      await React.act(async () => {
+        footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+      const retry = panel.document.querySelector('button[data-action="retry-queue"]');
+      await React.act(async () => {
+        retry.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+        await Promise.resolve();
+      });
+
+      expect(retryQueue).toHaveBeenCalledOnce();
+      expect(retry.disabled).toBe(true);
+      const readsBeforeCompletion = listQueue.mock.calls.length;
+
+      await React.act(async () => {
+        finishRetry({ outcome: "sent" });
+        await retryFinished;
+      });
+      await vi.waitFor(() => {
+        expect(listQueue.mock.calls.length).toBeGreaterThan(readsBeforeCompletion);
+      });
+      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+        .toBe("Vše odesláno");
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+
+      await React.act(async () => {
+        panel.document.dispatchEvent(new panel.document.defaultView.Event("visibilitychange"));
+        await Promise.resolve();
+      });
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká");
+      });
+      expect(panel.document.querySelector('[data-testid="queue-status"]')?.getAttribute("aria-expanded"))
+        .toBe("false");
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("čekání na vlastníka je od běžného čekání viditelně oddělené a retry ho nenabízí", async () => {
+    const retryQueue = vi.fn().mockResolvedValue({ outcome: "idle" });
+    const ownerReason = "Nahrávka patří jinému účtu";
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([
+      {
+        id: "bezne-cekani",
+        kind: "recording",
+        lastFailureReason: "Síť není dostupná",
+        nextAttemptAt: Date.now() + 2 * 60_000,
+        sizeBytes: 10 * 1024 * 1024,
+        state: "ceka",
+      },
+      {
+        id: "ceka-na-vlastnika",
+        kind: "recording",
+        lastFailureReason: ownerReason,
+        nextAttemptAt: null,
+        requiresHumanAction: true,
+        sizeBytes: 2 * 1024 * 1024,
+        state: "ceka",
+      },
+    ]), { ludone: { retryQueue } });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká · 1 čeká na potvrzení");
+      });
+      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      await React.act(async () => {
+        footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+
+      const humanAction = panel.document.querySelector('[data-testid="queue-human-action"]');
+      expect(humanAction?.getAttribute("role")).toBe("alert");
+      expect(humanAction?.textContent).toContain("1 čeká na potvrzení vlastníka");
+      expect(humanAction?.textContent).toContain(ownerReason);
+      expect(humanAction?.textContent).toContain("2 MB");
+      expect(humanAction?.querySelector("button")).toBeNull();
+      const ordinary = panel.document.querySelector('[data-testid="queue-waiting-summary"]');
+      expect(ordinary?.textContent).toContain("1 čeká na odeslání");
+      expect(ordinary?.textContent).toContain("10 MB · další pokus za 2 min");
+      expect(ordinary?.textContent).not.toContain(ownerReason);
+      expect(panel.document.querySelector('[data-testid="queue-total-size"]')?.textContent)
+        .toBe("12 MB celkem");
+      expect(panel.document.querySelectorAll('button[data-action="retry-queue"]')).toHaveLength(1);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("samotné čekání na vlastníka ukáže přesnou velikost, důvod a žádný retry", async () => {
+    const retryQueue = vi.fn();
+    const ownerReason = "Nahrávka patří jinému účtu";
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([{
+      id: "ceka-na-vlastnika",
+      kind: "recording",
+      lastFailureReason: ownerReason,
+      nextAttemptAt: null,
+      requiresHumanAction: true,
+      sizeBytes: 2 * 1024 * 1024,
+      state: "ceka",
+    }]), { ludone: { retryQueue } });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká na potvrzení");
+      });
+      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      await React.act(async () => {
+        footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+
+      const screen = panel.document.querySelector('[data-testid="queue-screen"]');
+      expect(screen?.textContent).toContain("1 čeká na potvrzení vlastníka");
+      expect(screen?.textContent).toContain("2 MB");
+      expect(screen?.textContent).toContain(ownerReason);
+      expect(screen?.querySelector('button[data-action="retry-queue"]')).toBeNull();
+      expect(retryQueue).not.toHaveBeenCalled();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("prázdnou frontu zobrazí jako Vše odesláno", async () => {
-    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
+    const retryQueue = vi.fn();
+    const openSettings = vi.fn();
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      ludone: { openSettings, retryQueue },
+    });
 
     try {
       await vi.waitFor(() => {
         expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
           .toBe("Vše odesláno");
       });
+      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      expect(footer.tagName).toBe("DIV");
+      footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+      expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(2);
+      expect(retryQueue).not.toHaveBeenCalled();
+
+      const settings = panel.document.querySelector('[aria-label="Otevřít nastavení"]');
+      await React.act(async () => {
+        settings.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+      expect(openSettings).toHaveBeenCalledOnce();
     } finally {
       await panel.cleanup();
     }

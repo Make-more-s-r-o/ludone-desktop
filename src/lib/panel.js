@@ -44,3 +44,54 @@ export function queueFooterStatus(items) {
     tone: counts.selhalo > 0 ? "error" : "waiting",
   };
 }
+
+/**
+ * Připraví ověřený souhrn pro rozbalenou kartu fronty. Velikost se ukáže jen
+ * tehdy, když ji hlavní proces dodal pro každou započítanou položku; částečný
+ * součet by se tvářil jako celek a byl by horší než chybějící údaj.
+ */
+export function queuePanelSummary(items, now = Date.now()) {
+  if (!Array.isArray(items) || !Number.isFinite(now)) return null;
+  if (items.some((item) => !item || !QUEUE_STATES.has(item.state))) return null;
+
+  const pending = items.filter((item) => item.state !== "odeslano");
+  if (pending.length === 0) return null;
+
+  const waiting = pending.filter((item) => item.state === "ceka");
+  const humanAction = waiting.filter((item) => item.requiresHumanAction === true);
+  const ordinaryWaiting = waiting.filter((item) => item.requiresHumanAction !== true);
+  const completeSize = (selectedItems) => {
+    if (
+      selectedItems.length === 0
+      || selectedItems.some((item) => !Number.isSafeInteger(item.sizeBytes)
+        || item.sizeBytes < 0)
+    ) {
+      return null;
+    }
+    const total = selectedItems.reduce((sum, item) => sum + item.sizeBytes, 0);
+    return Number.isSafeInteger(total) ? total : null;
+  };
+  const nextAttempts = ordinaryWaiting.map((item) => (
+    item.nextAttemptAt === null ? now : item.nextAttemptAt
+  )).filter(Number.isFinite);
+  const humanReasons = [...new Set(humanAction
+    .map((item) => item.lastFailureReason)
+    .filter((reason) => typeof reason === "string" && reason.trim().length > 0))];
+  const failureReasons = [...new Set(pending
+    .filter((item) => item.state === "selhalo")
+    .map((item) => item.lastFailureReason)
+    .filter((reason) => typeof reason === "string" && reason.trim().length > 0))];
+
+  return {
+    failedCount: pending.filter((item) => item.state === "selhalo").length,
+    failureReasons,
+    humanActionCount: humanAction.length,
+    humanActionSizeBytes: completeSize(humanAction),
+    humanReasons,
+    nextAttemptAt: nextAttempts.length > 0 ? Math.min(...nextAttempts) : null,
+    sendingCount: pending.filter((item) => item.state === "odesila").length,
+    sizeBytes: completeSize(waiting),
+    waitingCount: ordinaryWaiting.length,
+    waitingSizeBytes: completeSize(ordinaryWaiting),
+  };
+}
