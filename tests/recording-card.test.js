@@ -1,5 +1,6 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
@@ -47,6 +48,9 @@ const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží
  */
 async function renderRecordingCard(options = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
+  const styles = dom.window.document.createElement("style");
+  styles.textContent = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  dom.window.document.head.append(styles);
   // React načítáme před založením JSDOM, takže jeho historický fallback pro
   // input event čeká IE metody, které JSDOM nemá. No-op drží test u skutečného
   // `input` eventu bez změny produkčního chování nebo assercí.
@@ -152,6 +156,23 @@ async function renderRecordingCard(options = {}) {
     value: true,
   });
 
+  const animationFrames = new Map();
+  let nextAnimationFrameId = 1;
+  dom.window.requestAnimationFrame = vi.fn((callback) => {
+    const id = nextAnimationFrameId;
+    nextAnimationFrameId += 1;
+    animationFrames.set(id, callback);
+    return id;
+  });
+  dom.window.cancelAnimationFrame = vi.fn((id) => {
+    animationFrames.delete(id);
+  });
+
+  const levelAmplitudes = {
+    microphone: 0,
+    system: 0,
+  };
+
   const ludone = {
     beginRecording: vi.fn(() => (
       options.deferBegin
@@ -249,9 +270,30 @@ async function renderRecordingCard(options = {}) {
       const [track] = stream.getAudioTracks();
       return {
         connect: vi.fn((target, output, input) => {
+          if (typeof target?.getFloatTimeDomainData === "function") {
+            target.track = track;
+            return;
+          }
           this.connections.push({ input, output, target, track });
         }),
         disconnect: vi.fn(),
+      };
+    }
+
+    createAnalyser() {
+      return {
+        fftSize: 0,
+        smoothingTimeConstant: 0,
+        track: null,
+        disconnect: vi.fn(),
+        getFloatTimeDomainData: vi.fn(function getFloatTimeDomainData(target) {
+          const amplitude = this.track === microphoneTrack
+            ? levelAmplitudes.microphone
+            : levelAmplitudes.system;
+          for (let index = 0; index < target.length; index += 1) {
+            target[index] = index % 2 === 0 ? amplitude : -amplitude;
+          }
+        }),
       };
     }
 
@@ -317,6 +359,18 @@ async function renderRecordingCard(options = {}) {
     systemTrack,
     phase,
     currentButton,
+    async sampleLevels() {
+      await React.act(async () => {
+        const pendingFrames = [...animationFrames.values()];
+        animationFrames.clear();
+        for (const callback of pendingFrames) callback(dom.window.performance.now());
+        await Promise.resolve();
+      });
+    },
+    setLevelAmplitudes({ microphone, system }) {
+      levelAmplitudes.microphone = microphone;
+      levelAmplitudes.system = system;
+    },
     resolveBeginRecording() {
       beginRecordingAttempt.resolve({ sessionId: SESSION_ID });
     },
@@ -368,6 +422,48 @@ async function stopRecording(panel) {
 }
 
 describe("RecordingCard", () => {
+  it("za běhu mění oba pruhy podle ticha a hlasitého vstupu", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0, system: 0 });
+      await panel.sampleLevels();
+
+      const microphoneFill = panel.document.querySelector(
+        '[data-testid="recording-source-microphone"] .recording-source__fill',
+      );
+      const systemFill = panel.document.querySelector(
+        '[data-testid="recording-source-system"] .recording-source__fill',
+      );
+      const quietMicrophone = Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(microphoneFill).width,
+      );
+      const quietSystem = Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(systemFill).width,
+      );
+
+      panel.setLevelAmplitudes({ microphone: 0.25, system: 0.25 });
+      await panel.sampleLevels();
+      const loudMicrophone = Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(microphoneFill).width,
+      );
+      const loudSystem = Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(systemFill).width,
+      );
+
+      expect(loudMicrophone - quietMicrophone).toBeGreaterThan(40);
+      expect(loudSystem - quietSystem).toBeGreaterThan(40);
+      expect(quietMicrophone).toBeLessThanOrEqual(5);
+      expect(quietSystem).toBeLessThanOrEqual(5);
+      expect(panel.audioContexts).toHaveLength(1);
+
+      await stopRecording(panel);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("při spuštění požádá o mikrofon i systémový zvuk", async () => {
     const panel = await renderRecordingCard();
 
