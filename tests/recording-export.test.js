@@ -434,3 +434,53 @@ describe("předávka názvu do nahrávací stránky", () => {
     expect(predana.searchParams.get("nazev")).not.toContain("-");
   });
 });
+
+describe("ořez názvu na serverový limit", () => {
+  // 🔴 Interop chyba nalezená 3. 9. 2026: server limituje na 200 UTF-16 jednotek
+  // (jeho `.length`), my jsme ořezávali na 200 Unicode znaků. U emoji to není totéž —
+  // surrogate pair jsou dvě jednotky na znak, takže 200 emoji = 400 jednotek a server
+  // by název zahodil CELÝ, bez chyby a bez hlášky. Obě strany si přitom myslely, že sedí.
+  const LIMIT_JEDNOTEK = 200;
+
+  function nazevZUrl(url) {
+    return new URL(url).searchParams.get("nazev");
+  }
+
+  it("název ze samých emoji nepřekročí serverový limit jednotek", () => {
+    const nazev = "😀".repeat(300);
+    const odeslany = nazevZUrl(
+      buildRecordingUploadUrl("https://labs.ludone.cz", { nazev }),
+    );
+    expect(odeslany.length).toBeLessThanOrEqual(LIMIT_JEDNOTEK);
+  });
+
+  it("ořez nikdy nerozpůlí znak — nevznikne osamocený surrogate", () => {
+    // 🔴 Data musí být LICHÁ. Samé emoji nestačí: 200 jednotek je právě 100 celých párů,
+    // takže i naivní `.slice(0, 200)` by náhodou trefil hranici a test by nic neměřil.
+    // Jeden znak navíc na začátku posune řez doprostřed páru — teprve tam se to pozná.
+    const nazev = `a${"😀".repeat(300)}`;
+    const odeslany = nazevZUrl(
+      buildRecordingUploadUrl("https://labs.ludone.cz", { nazev }),
+    );
+    expect([...odeslany].every((znak) => znak.codePointAt(0) !== 0xfffd)).toBe(true);
+    expect([...odeslany].join("")).toBe(odeslany);
+    for (const znak of odeslany) {
+      const kod = znak.codePointAt(0);
+      expect(kod >= 0xd800 && kod <= 0xdfff, "osamocený surrogate").toBe(false);
+    }
+  });
+
+  it("dlouhý běžný text se ořízne na limit, ne dřív", () => {
+    const odeslany = nazevZUrl(
+      buildRecordingUploadUrl("https://labs.ludone.cz", { nazev: "a".repeat(300) }),
+    );
+    expect(odeslany).toBe("a".repeat(LIMIT_JEDNOTEK));
+  });
+
+  it("krátký název s diakritikou projde beze změny", () => {
+    const nazev = "Porada provozu — příští čtvrtek";
+    expect(
+      nazevZUrl(buildRecordingUploadUrl("https://labs.ludone.cz", { nazev })),
+    ).toBe(nazev);
+  });
+});
