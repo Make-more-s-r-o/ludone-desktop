@@ -321,6 +321,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "queue:retry",
       "recording:append",
       "recording:begin",
+      "recording:confirm-export-failure",
       "recording:export",
       "recording:finish",
       "recording:finish-export",

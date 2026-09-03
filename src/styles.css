@@ -920,6 +920,25 @@ svg {
   line-height: 1.45;
 }
 
+.recording-saved__error--quit {
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in oklab, var(--panel-bad) 35%, transparent);
+  border-radius: 8px;
+  background: var(--danger-soft);
+}
+
+.recording-saved .recording-saved__quit {
+  border-color: var(--panel-bad);
+  background: var(--panel-bad);
+  color: var(--panel-page);
+}
+
+.recording-saved .recording-saved__quit:not(:disabled):hover {
+  border-color: color-mix(in oklab, var(--panel-bad) 88%, white);
+  background: color-mix(in oklab, var(--panel-bad) 88%, white);
+}
+
 .tracking-card.is-active {
   border-color: color-mix(in oklab, var(--panel-ok) 34%, transparent);
   background: var(--panel-raised);

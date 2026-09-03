@@ -160,6 +160,8 @@ contextBridge.exposeInMainWorld("ludone", {
     ipcRenderer.invoke("recording:finish", sessionId, trackTimings),
   finishRecordingExport: (sessionId, outcome) =>
     ipcRenderer.invoke("recording:finish-export", sessionId, outcome),
+  confirmRecordingExportFailure: (sessionId) =>
+    ipcRenderer.invoke("recording:confirm-export-failure", sessionId),
   exportRecording: (clientRecordingId, recordingName) =>
     ipcRenderer.invoke("recording:export", clientRecordingId, recordingName),
   listQueue: () => ipcRenderer.invoke("queue:list"),

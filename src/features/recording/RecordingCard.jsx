@@ -16,6 +16,7 @@ import { watchSystemAudioTrack } from "./system-audio-health.js";
 
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
 const RECORDING_TIMESLICE_MS = 1_000;
+const QUIT_EXPORT_FAILURE_CONSEQUENCE = "LuDone zůstává otevřené. Pokud ho teď ukončíte, dvoukanálový soubor už z aplikace nevyexportujete.";
 
 function describeError(error) {
   if (!error) return "neznámá chyba";
@@ -215,6 +216,7 @@ export function RecordingCard({
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
+  const [quitExportFailure, setQuitExportFailure] = useState(null);
   const [recoveringSystemAudio, setRecoveringSystemAudio] = useState(false);
   const startInFlight = useRef(false);
   const stopRequestedDuringStart = useRef(false);
@@ -256,6 +258,15 @@ export function RecordingCard({
             succeeded: false,
             reason: describeError(error),
           }).catch(() => undefined);
+        })
+        .then((result) => {
+          if (!result?.ok && result?.quitConfirmationRequired === true) {
+            setQuitExportFailure({
+              clientRecordingId: runtime.sessionId,
+              message: result.message || "Dvoukanálový export se nepodařilo připravit.",
+            });
+          }
+          return result;
         })
         .finally(() => runtime.exportCapture.close().catch(() => {}));
 
@@ -324,10 +335,29 @@ export function RecordingCard({
       if (!result?.ok) throw new Error(result?.message || "Export se nepodařil");
       setSavedRecording(null);
       setRecordingName("");
+      setQuitExportFailure(null);
       setNotice({
         type: "success",
         text: `Soubor ${result.fileName} je uložený ve Stažených.`,
       });
+    } catch (error) {
+      setExportError(describeError(error));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function confirmQuitAfterExportFailure() {
+    if (!quitExportFailure || exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const result = await window.ludone.confirmRecordingExportFailure(
+        quitExportFailure.clientRecordingId,
+      );
+      if (!result?.confirmed) {
+        throw new Error("Ukončení zatím nelze potvrdit. Původní stopy se ještě ukládají.");
+      }
     } catch (error) {
       setExportError(describeError(error));
     } finally {
@@ -421,6 +451,7 @@ export function RecordingCard({
     setSavedRecording(null);
     setRecordingName("");
     setExportError(null);
+    setQuitExportFailure(null);
     setSession({
       phase: "checking",
       recordingMode: null,
@@ -659,36 +690,60 @@ export function RecordingCard({
             value={recordingName}
             autoFocus
             aria-describedby="recording-name-hint"
-            aria-errormessage={exportError || notice?.type === "error"
+            aria-errormessage={quitExportFailure || exportError || notice?.type === "error"
               ? "recording-name-error"
               : undefined}
-            aria-invalid={Boolean(exportError || notice?.type === "error")}
+            aria-invalid={Boolean(quitExportFailure || exportError || notice?.type === "error")}
             onInput={(event) => setRecordingName(event.currentTarget.value)}
           />
           <small id="recording-name-hint" className="recording-saved__hint">
             Můžeš přepsat teď nebo později v LuDone.
           </small>
-          {(exportError || notice?.type === "error") && (
+          {quitExportFailure ? (
+            <p
+              id="recording-name-error"
+              className="recording-saved__error recording-saved__error--quit"
+              data-testid="quit-export-failure"
+              role="alert"
+            >
+              {quitExportFailure.message} {QUIT_EXPORT_FAILURE_CONSEQUENCE}
+              {exportError ? <><br />{exportError}</> : null}
+            </p>
+          ) : (exportError || notice?.type === "error") && (
             <p id="recording-name-error" className="recording-saved__error" role="alert">
               {exportError || notice.text}
             </p>
           )}
-          <button
-            type="submit"
-            className="button button--primary button--wide"
-            disabled={exporting}
-          >
-            Uložit a odeslat
-          </button>
-          <button
-            type="button"
-            className="recording-saved__skip"
-            data-testid="skip-recording-name"
-            disabled={exporting}
-            onClick={() => exportSavedRecording("")}
-          >
-            Přeskočit
-          </button>
+          {quitExportFailure ? (
+            <button
+              type="button"
+              className="button button--wide recording-saved__quit"
+              data-testid="confirm-quit-after-export-failure"
+              disabled={exporting}
+              onClick={() => void confirmQuitAfterExportFailure()}
+            >
+              Ukončit LuDone
+            </button>
+          ) : (
+            <>
+              <button
+                type="submit"
+                className="button button--primary button--wide"
+                disabled={exporting}
+              >
+                Uložit a odeslat
+              </button>
+              <button
+                type="button"
+                className="recording-saved__skip"
+                data-testid="skip-recording-name"
+                disabled={exporting}
+                onClick={() => exportSavedRecording("")}
+              >
+                Přeskočit
+              </button>
+            </>
+          )}
         </form>
       ) : session.phase === "idle" ? (
         <>
