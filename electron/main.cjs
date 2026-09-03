@@ -1326,6 +1326,8 @@ async function createRecordingSession(event, sources) {
       destroyedListener: null,
       ownerGone: false,
       preserveFileRequested: false,
+      quitFailureConfirmationRequired: false,
+      quitFailureConfirmed: false,
       ready: exportReady,
       recordingFinishSucceeded: false,
       releaseRequested: false,
@@ -1454,6 +1456,7 @@ function completeRecordingExportStageRelease(exportStage) {
 
 function requestRecordingExportStageRelease(exportStage, { preserveFile = false } = {}) {
   if (recordingExportStages.get(exportStage.sessionId) !== exportStage) return;
+  clearRecordingExportQuitConfirmation(exportStage);
   exportStage.releaseRequested = true;
   if (preserveFile) exportStage.preserveFileRequested = true;
   const settlement = exportStage.finalizePromise ?? finalizeRecordingExportStage(
@@ -1763,9 +1766,13 @@ handleValidated("recording:finish-export", ["panel"], async (event, sessionId, o
   try {
     const result = await finalizeRecordingExportStage(sessionId, outcome);
     if (!result?.ok) {
-      noteDeferredQuitFailure(
+      const quitConfirmationRequired = requireRecordingExportQuitConfirmation(
+        exportStage,
         `Příprava stereo exportu selhala: ${result?.message || "neznámý výsledek"}`,
       );
+      if (quitConfirmationRequired) {
+        return { ...result, quitConfirmationRequired: true };
+      }
       requestRecordingExportStageRelease(exportStage);
     }
     return result;
@@ -2119,13 +2126,19 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
         console.log(`[queue] Zařazeno ${queued.item.clientRecordingId} (recording).`);
       }
       const exportStage = recordingExportStages.get(sessionId);
-      if (exportStage) exportStage.recordingFinishSucceeded = true;
+      if (exportStage) {
+        exportStage.recordingFinishSucceeded = true;
+        releaseConfirmedRecordingExportFailure(exportStage);
+      }
     } catch (error) {
       console.error(`[queue] Zařazení nahrávky selhalo: ${error.stack || error.message}`);
       const exportStage = recordingExportStages.get(sessionId);
       noteDeferredQuitFailure(
         `Lokální zařazení nahrávky selhalo: ${error.message}`,
-        { requiresUserConfirmation: true },
+        {
+          requiresUserConfirmation: true,
+          confirmationReason: `recording-queue:${sessionId}`,
+        },
       );
       showPanel();
       if (exportStage) {
@@ -2144,6 +2157,40 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
 }
 
 handleValidated("recording:finish", ["panel"], finishRecordingAndEnqueue);
+handleValidated(
+  "recording:confirm-export-failure",
+  ["panel"],
+  async (event, sessionId, ...extraPayload) => {
+    if (
+      extraPayload.length > 0
+      || typeof sessionId !== "string"
+      || sessionId.length === 0
+    ) {
+      throw new TypeError("Potvrzení chyby exportu přijímá právě jeden identifikátor session");
+    }
+    const exportStage = recordingExportStages.get(sessionId);
+    const request = deferredQuitRequest;
+    if (
+      !exportStage
+      || exportStage.owner !== event.sender
+      || !request
+      || request.committed
+      || !exportStage.quitFailureConfirmationRequired
+      || exportStage.result?.ok !== false
+      || !exportStage.recordingFinishSucceeded
+    ) {
+      return { confirmed: false };
+    }
+
+    exportStage.quitFailureConfirmationRequired = false;
+    exportStage.quitFailureConfirmed = true;
+    request.confirmationReasons.delete(recordingExportConfirmationReason(sessionId));
+    request.userConfirmationRequired = request.confirmationReasons.size > 0;
+    releaseConfirmedRecordingExportFailure(exportStage);
+    await maybeCompleteDeferredQuit();
+    return { confirmed: true };
+  },
+);
 handleValidated("recording:export", ["panel"], exportCompletedRecording);
 handleValidated("queue:list", ["panel", "settings"], async () => {
   await waitForOutboundQueueRecovery();
@@ -2292,9 +2339,13 @@ function recordingInterruptionIsBlocked() {
 
 function recordingExportAwaitsUserDecision() {
   return [...recordingExportStages.values()].some((stage) => (
-    stage.recordingFinishSucceeded
-    && !stage.releaseRequested
+    !stage.releaseRequested
     && !stage.ownerGone
+    && (
+      stage.quitFailureConfirmationRequired
+      || stage.quitFailureConfirmed
+      || stage.recordingFinishSucceeded
+    )
   ));
 }
 
@@ -2309,12 +2360,81 @@ function quitActivitySnapshot() {
     + `mutace-lutrack=${trackingMutationsInFlight.size}, lutrack=${appState.trackingOwners.size}`;
 }
 
-function noteDeferredQuitFailure(reason, { requiresUserConfirmation = false } = {}) {
+function recordingExportConfirmationReason(sessionId) {
+  return `recording-export:${sessionId}`;
+}
+
+function clearRecordingExportQuitConfirmation(exportStage) {
+  const request = deferredQuitRequest;
+  if (!request || request.committed) return;
+  request.confirmationReasons.delete(
+    recordingExportConfirmationReason(exportStage.sessionId),
+  );
+  request.userConfirmationRequired = request.confirmationReasons.size > 0;
+  exportStage.quitFailureConfirmationRequired = false;
+}
+
+function releaseConfirmedRecordingExportFailure(exportStage) {
+  if (
+    !exportStage.quitFailureConfirmed
+    || !exportStage.recordingFinishSucceeded
+    || exportStage.releaseRequested
+  ) return;
+  requestRecordingExportStageRelease(exportStage);
+}
+
+function requireRecordingExportQuitConfirmation(exportStage, reason) {
+  const request = deferredQuitRequest;
+  if (!request || request.committed || exportStage.releaseRequested) return false;
+  exportStage.quitFailureConfirmationRequired = true;
+  noteDeferredQuitFailure(reason, {
+    requiresUserConfirmation: true,
+    confirmationReason: recordingExportConfirmationReason(exportStage.sessionId),
+  });
+  showPanel();
+  return true;
+}
+
+function confirmRecordingExportFailuresFromRepeatedQuit() {
+  const request = deferredQuitRequest;
+  if (!request || request.committed) return false;
+  const pendingStages = [...recordingExportStages.values()].filter((stage) => (
+    stage.quitFailureConfirmationRequired && !stage.releaseRequested
+  ));
+  if (pendingStages.length === 0) return false;
+  if (pendingStages.some((stage) => !stage.recordingFinishSucceeded)) {
+    showPanel();
+    console.warn("[quit] Původní stopy se ještě ukládají; potvrzené ukončení zůstává odložené.");
+    return true;
+  }
+
+  // Opakovaný Cmd+Q je potvrzením všech právě zobrazených chyb. Samotný quit
+  // ale dál provede společná bariéra, aby nepředběhl manifest ani lokální frontu.
+  request.confirmationReasons.clear();
+  request.userConfirmationRequired = false;
+  for (const stage of pendingStages) {
+    stage.quitFailureConfirmationRequired = false;
+    stage.quitFailureConfirmed = true;
+    releaseConfirmedRecordingExportFailure(stage);
+  }
+  void maybeCompleteDeferredQuit();
+  return true;
+}
+
+function noteDeferredQuitFailure(
+  reason,
+  { requiresUserConfirmation = false, confirmationReason = "other" } = {},
+) {
   const request = deferredQuitRequest;
   if (!request || request.committed) return;
   const isNewFailure = !request.failureReason;
   if (isNewFailure) request.failureReason = reason;
-  const upgradesConfirmation = requiresUserConfirmation && !request.userConfirmationRequired;
+  const hadRequiredConfirmation = request.userConfirmationRequired;
+  if (requiresUserConfirmation) {
+    request.confirmationReasons.add(confirmationReason);
+    request.userConfirmationRequired = true;
+  }
+  const upgradesConfirmation = requiresUserConfirmation && !hadRequiredConfirmation;
   if (upgradesConfirmation) {
     request.userConfirmationRequired = true;
     console.error(`[quit] ${reason}; ukončení čeká na opakované potvrzení uživatele.`);
@@ -2414,6 +2534,7 @@ function beginDeferredQuit() {
     timeoutId: undefined,
     trackingSettled: !hasTracking,
     userConfirmationRequired: false,
+    confirmationReasons: new Set(),
   };
   deferredQuitRequest = request;
 
@@ -3352,6 +3473,7 @@ app.on("before-quit", (event) => {
   if (isQuitting || deferredQuitRequest?.committed) return;
   if (deferredQuitRequest?.userConfirmationRequired) {
     event.preventDefault();
+    if (confirmRecordingExportFailuresFromRepeatedQuit()) return;
     commitDeferredQuit({
       forced: true,
       reason: "Uživatel po zobrazení chyby ukončení výslovně zopakoval",

@@ -2738,6 +2738,20 @@ describe("produkční zapojení odchozí fronty", () => {
     );
   });
 
+  it("preload předá potvrzení ztráty stereo exportu jen jeho úzkému IPC kanálu", async () => {
+    const { api, invoke } = loadPreload({ confirmed: true });
+
+    await api.confirmRecordingExportFailure("session-1");
+
+    expect(invoke).toHaveBeenCalledExactlyOnceWith(
+      "recording:confirm-export-failure",
+      "session-1",
+    );
+    expect(mainCode).toContain(
+      'handleValidated("recording:confirm-export-failure", ["panel"]',
+    );
+  });
+
   it("preload předá hlavnímu procesu přesný seznam vznikajících stop", async () => {
     const { api, invoke } = loadPreload({ sessionId: "session-1" });
 
@@ -4338,16 +4352,31 @@ describe("bezpečné ukončení aplikace", () => {
   });
 
   it("neúspěšnou stereo finalizaci během quitu ukáže a čeká na výslovné potvrzení", async () => {
+    vi.useFakeTimers();
     const harness = await loadMain();
     await harness.runReady();
     const panelContents = harness.windows[0].webContents;
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const { sessionId } = await harness.ipcHandlers.get("recording:begin")(event);
+    await harness.ipcHandlers.get("recording:append")(
+      event,
+      sessionId,
+      "microphone",
+      0,
+      Uint8Array.from([1, 2, 3]).buffer,
+    );
+    await harness.ipcHandlers.get("recording:append")(
+      event,
+      sessionId,
+      "system",
+      0,
+      Uint8Array.from([4, 5]).buffer,
+    );
     const quitEvent = { preventDefault: vi.fn() };
     harness.electron.app.emit("before-quit", quitEvent);
     expect(harness.ipcHandlers.get("tray:command")(event)).toEqual(["stop-recording"]);
 
-    const [, exportResult] = await Promise.all([
+    const [savedResult, exportResult] = await Promise.all([
       harness.ipcHandlers.get("recording:finish")(event, sessionId, {
         microphone: {
           startedAt: "2026-09-02T12:00:00.100Z",
@@ -4364,11 +4393,17 @@ describe("bezpečné ukončení aplikace", () => {
       }),
     ]);
 
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
     expect(exportResult).toMatchObject({
       ok: false,
       quitConfirmationRequired: true,
     });
-    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    expect(savedResult).toMatchObject({
+      files: {
+        microphone: { size: 3 },
+        system: { size: 2 },
+      },
+    });
     expect(harness.windows[0].isVisible()).toBe(true);
     expect(harness.quietConsole.error).toHaveBeenCalledWith(
       expect.stringMatching(/\[quit\].*stereo.*opakované potvrzení/u),
@@ -4383,6 +4418,8 @@ describe("bezpečné ukončení aplikace", () => {
     const recordingDirectory = path.join(harness.userDataPath, "nahravky");
     const recordingFiles = await readdir(recordingDirectory);
     expect(recordingFiles.filter((name) => name.endsWith(".webm"))).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
 
     await expect(harness.ipcHandlers.get("recording:confirm-export-failure")(
       event,
@@ -4419,6 +4456,10 @@ describe("bezpečné ukončení aplikace", () => {
     });
     expect(harness.windows[0].isVisible()).toBe(false);
     expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    await expect(harness.ipcHandlers.get("recording:confirm-export-failure")(
+      event,
+      sessionId,
+    )).resolves.toEqual({ confirmed: false });
   });
 
   it("chyba stereo exportu nesmí přerušit dosud běžící zápis fronty", async () => {
@@ -4463,8 +4504,18 @@ describe("bezpečné ukončení aplikace", () => {
     });
 
     expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    await expect(harness.ipcHandlers.get("recording:confirm-export-failure")(
+      event,
+      sessionId,
+    )).resolves.toEqual({ confirmed: false });
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
     releaseEnqueue();
     await finishing;
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    await expect(harness.ipcHandlers.get("recording:confirm-export-failure")(
+      event,
+      sessionId,
+    )).resolves.toEqual({ confirmed: true });
     await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
   });
 
