@@ -58,6 +58,7 @@ const TRAY_SETTLE_DELAY_MS = 2_000;
 const TRAY_COMMAND_CHANNEL = "tray:command";
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
+const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
 const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
 const RECORDING_TRACKS = new Map([
   ["microphone", "mikrofon"],
@@ -67,6 +68,8 @@ const PROCESS_STARTED_AT = new Date().toISOString();
 const recordingSessions = new Map();
 const recordingOwnersPreparing = new Map();
 const recordingExportStages = new Map();
+const recordingCompletionsInFlight = new Set();
+const trackingMutationsInFlight = new Set();
 
 let tray;
 let panelWindow;
@@ -78,6 +81,7 @@ let trayApplied = false;
 let traySpaceWarningShown = false;
 let trayVisibilityTimer;
 let isQuitting = false;
+let deferredQuitRequest;
 const pendingTrayCommands = [];
 
 protocol.registerSchemesAsPrivileged([
@@ -1285,7 +1289,9 @@ function forgetOwnerActivity(ownerId, reason) {
 onValidated("tray:report-facts", ["panel"], (event, facts) => {
   if (!applyReportedFacts(event.sender.id, facts)) {
     console.warn("[tray] Odmítnut neplatný report faktů; předchozí stav zachován.");
+    return;
   }
+  void maybeCompleteDeferredQuit();
 });
 handleValidated("tray:get-state", ["panel", "settings"], () => trayState);
 handleValidated(TRAY_COMMAND_CHANNEL, ["panel"], (_event, ...extraPayload) => {
@@ -1310,13 +1316,26 @@ handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extra
 });
 onValidated("settings:open", ["panel"], () => createSettingsWindow());
 onValidated("settings:close", ["settings"], () => settingsWindow?.close());
-handleValidated("recording:begin", ["panel"], (event) => createRecordingSession(event));
+handleValidated("recording:begin", ["panel"], (event) => {
+  ensureNewActivityIsAllowed("nahrávání");
+  return createRecordingSession(event);
+});
 handleValidated("recording:append", ["panel"], (event, sessionId, source, sequence, arrayBuffer) => (
   appendRecordingChunk(event, sessionId, source, sequence, arrayBuffer)
 ));
-handleValidated("recording:finish-export", ["panel"], (event, sessionId, outcome) => {
+handleValidated("recording:finish-export", ["panel"], async (event, sessionId, outcome) => {
   ownedRecordingExportStage(event, sessionId);
-  return finalizeRecordingExportStage(sessionId, outcome);
+  try {
+    const result = await finalizeRecordingExportStage(sessionId, outcome);
+    if (!result?.ok) {
+      noteDeferredQuitFailure(
+        `Příprava stereo exportu selhala: ${result?.message || "neznámý výsledek"}`,
+      );
+    }
+    return result;
+  } finally {
+    void maybeCompleteDeferredQuit();
+  }
 });
 
 let outboundQueueStore;
@@ -1526,6 +1545,7 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
 
 function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
   const recordingSession = ownedRecordingSession(event, sessionId);
+  recordingCompletionsInFlight.add(sessionId);
   return finalizeRecordingSession(sessionId, "complete", trackTimings).then(async (result) => {
     try {
       const store = await getOutboundQueueStore();
@@ -1541,8 +1561,17 @@ function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
       }
     } catch (error) {
       console.error(`[queue] Zařazení nahrávky selhalo: ${error.stack || error.message}`);
+      noteDeferredQuitFailure(`Lokální zařazení nahrávky selhalo: ${error.message}`);
     }
     return result;
+  }).catch((error) => {
+    noteDeferredQuitFailure(`Čistá finalizace nahrávky selhala: ${error.message}`);
+    throw error;
+  }).finally(() => {
+    // Quit smí pokračovat až po dokončení manifestu i lokálního enqueue. Samostatná
+    // evidence kryje mezeru, kdy už session zmizela z mapy, ale enqueue ještě běží.
+    recordingCompletionsInFlight.delete(sessionId);
+    void maybeCompleteDeferredQuit();
   });
 }
 
@@ -1602,8 +1631,8 @@ async function runTrackingMutation(method, payload) {
     && result.closed.closedReason !== "zahozeno-clovekem"
   ) {
     try {
-      const store = await getOutboundQueueStore();
-      const queued = await store.enqueueTimeEntry({
+      const queueStore = await getOutboundQueueStore();
+      const queued = await queueStore.enqueueTimeEntry({
         clientTimeEntryId: result.closed.clientTimeEntryId,
         projectId: result.closed.projectId,
         startedAt: result.closed.startedAt,
@@ -1619,20 +1648,203 @@ async function runTrackingMutation(method, payload) {
   return result;
 }
 
-handleValidated("tracking:start", ["panel"], (_event, payload) => (
-  runTrackingMutation("start", payload)
+function trackTrackingMutation(promise, method) {
+  const trackedMutation = { method, promise: undefined };
+  trackedMutation.promise = Promise.resolve(promise).finally(() => {
+    trackingMutationsInFlight.delete(trackedMutation);
+    void maybeCompleteDeferredQuit();
+  });
+  trackingMutationsInFlight.add(trackedMutation);
+  return trackedMutation.promise;
+}
+
+function recordingWorkBlocksQuit() {
+  return recordingOwnersPreparing.size > 0
+    || recordingSessions.size > 0
+    || recordingCompletionsInFlight.size > 0
+    || [...recordingExportStages.values()].some((stage) => stage.result === null);
+}
+
+function trackingWorkBlocksQuit() {
+  return trackingMutationsInFlight.size > 0 || appState.trackingOwners.size > 0;
+}
+
+function quitActivitySnapshot() {
+  const pendingExports = [...recordingExportStages.values()]
+    .filter((stage) => stage.result === null).length;
+  return `přípravy=${recordingOwnersPreparing.size}, session=${recordingSessions.size}, `
+    + `dokončení=${recordingCompletionsInFlight.size}, finalizace-exportu=${pendingExports}, `
+    + `mutace-lutrack=${trackingMutationsInFlight.size}, lutrack=${appState.trackingOwners.size}`;
+}
+
+function noteDeferredQuitFailure(reason) {
+  const request = deferredQuitRequest;
+  if (!request || request.committed || request.failureReason) return;
+  request.failureReason = reason;
+  console.error(`[quit] ${reason}; po dokončení zbývající práce se aplikace přesto ukončí.`);
+}
+
+function ensureNewActivityIsAllowed(activity) {
+  if (!deferredQuitRequest || deferredQuitRequest.committed) return;
+  throw new Error(`Aplikace se ukončuje; nové ${activity} už nelze spustit`);
+}
+
+function commitDeferredQuit({ forced = false, reason = "" } = {}) {
+  const request = deferredQuitRequest;
+  if (!request || request.committed) return;
+  request.committed = true;
+  clearTimeout(request.timeoutId);
+  isQuitting = true;
+  if (forced) {
+    console.error(
+      `[quit] ${reason}; následuje vynucené ukončení. ${quitActivitySnapshot()}`,
+    );
+  } else {
+    console.log("[quit] Aktivní agendy jsou čistě zastavené a zapsané; pokračuji v ukončení.");
+  }
+  app.quit();
+}
+
+async function maybeCompleteDeferredQuit() {
+  const request = deferredQuitRequest;
+  if (!request || request.committed || request.completionCheckInFlight) return;
+  if (!request.trackingSettled) return;
+
+  if (request.recordingStopDeliveryFailed) {
+    commitDeferredQuit({ forced: true, reason: request.failureReason });
+    return;
+  }
+  if (recordingWorkBlocksQuit() || trackingMutationsInFlight.size > 0) return;
+  if (request.failureReason) {
+    commitDeferredQuit({ forced: true, reason: request.failureReason });
+    return;
+  }
+  if (appState.trackingOwners.size > 0) {
+    commitDeferredQuit({
+      forced: true,
+      reason: "LuTrack po pokusu o čisté zastavení stále hlásí běh",
+    });
+    return;
+  }
+
+  request.completionCheckInFlight = true;
+  try {
+    // `list()` je serializační bariéra stejná jako u updateru: nedovolí quitu
+    // předběhnout enqueue, které navazuje na zápis kompletního manifestu.
+    await (await getOutboundQueueStore()).list();
+    if (deferredQuitRequest !== request || request.committed) return;
+    if (
+      !request.trackingSettled
+      || recordingWorkBlocksQuit()
+      || trackingMutationsInFlight.size > 0
+    ) return;
+    if (appState.trackingOwners.size > 0) {
+      commitDeferredQuit({
+        forced: true,
+        reason: "LuTrack se znovu rozběhl během kontroly bezpečného ukončení",
+      });
+      return;
+    }
+    commitDeferredQuit();
+  } catch (error) {
+    if (deferredQuitRequest !== request || request.committed) return;
+    commitDeferredQuit({
+      forced: true,
+      reason: `Bezpečný zápis před ukončením nelze ověřit: ${error.message}`,
+    });
+  } finally {
+    request.completionCheckInFlight = false;
+  }
+}
+
+function beginDeferredQuit() {
+  if (deferredQuitRequest) return;
+  const hasRecording = recordingWorkBlocksQuit();
+  const hasTracking = trackingWorkBlocksQuit();
+  const request = {
+    committed: false,
+    completionCheckInFlight: false,
+    failureReason: "",
+    recordingStopDeliveryFailed: false,
+    timeoutId: undefined,
+    trackingSettled: !hasTracking,
+  };
+  deferredQuitRequest = request;
+
+  // 15 sekund odpovídá existujícímu limitu stereo finalizace. Chunky jsou průběžně
+  // fsyncnuté, takže zbývá flush, hash, manifest a lokální enqueue; po této lhůtě
+  // je důležitější nezamknout uživatele v aplikaci a quit se hlasitě vynutí.
+  request.timeoutId = setTimeout(() => {
+    commitDeferredQuit({
+      forced: true,
+      reason: `Čisté zastavení se nedokončilo do ${GRACEFUL_QUIT_TIMEOUT_MS} ms`,
+    });
+  }, GRACEFUL_QUIT_TIMEOUT_MS);
+
+  if (hasRecording && hasLiveRecording() && !queueTrayCommand("stop-recording")) {
+    request.recordingStopDeliveryFailed = true;
+    request.failureReason = "Příkaz k čistému zastavení nahrávání se nepodařilo předat";
+    console.error(`[quit] ${request.failureReason}; aplikace se přesto ukončí.`);
+  }
+
+  if (hasTracking) {
+    void Promise.resolve()
+      // TDD_OPRAVA_QUIT_ZAVODY_20260903: nejprve doběhnou mutace, které začaly před
+      // žádostí o quit. Start se tak nemůže zapsat až za naším stopem.
+      .then(() => Promise.allSettled(
+        [...trackingMutationsInFlight].map((mutation) => mutation.promise),
+      ))
+      .then(() => {
+        if (request.committed || appState.trackingOwners.size === 0) return null;
+        return trackTrackingMutation(runTrackingMutation("stop"), "stop");
+      })
+      .then((result) => {
+        if (request.committed || result === null) return;
+        if (result?.outcome !== "stopped") {
+          throw new Error(`hlavní proces vrátil výsledek „${result?.outcome ?? "neznámý"}“`);
+        }
+        // Rendererový report může ještě obsahovat starý fakt. Perzistentní store je po
+        // úspěšném stopu autorita a aplikace se stejně bezprostředně ukončí.
+        appState.trackingOwners.clear();
+        refreshTray();
+      })
+      .catch((error) => {
+        noteDeferredQuitFailure(`Čisté zastavení LuTracku selhalo: ${error.message}`);
+      })
+      .finally(() => {
+        request.trackingSettled = true;
+        void maybeCompleteDeferredQuit();
+      });
+  }
+
+  void maybeCompleteDeferredQuit();
+}
+
+handleValidated("tracking:start", ["panel"], (_event, payload) => {
+  ensureNewActivityIsAllowed("měření času");
+  return trackTrackingMutation(runTrackingMutation("start", payload), "start");
+});
+handleValidated("tracking:switch-project", ["panel"], (_event, payload) => {
+  ensureNewActivityIsAllowed("přepnutí měření času");
+  return trackTrackingMutation(
+    runTrackingMutation("switchProject", payload),
+    "switchProject",
+  );
+});
+handleValidated("tracking:stop", ["panel"], () => (
+  trackTrackingMutation(runTrackingMutation("stop"), "stop")
 ));
-handleValidated("tracking:switch-project", ["panel"], (_event, payload) => (
-  runTrackingMutation("switchProject", payload)
-));
-handleValidated("tracking:stop", ["panel"], () => runTrackingMutation("stop"));
 handleValidated("tracking:get-state", ["panel", "settings"], async () => {
   const store = await getReadyTrackingStore();
   return store.getState();
 });
-handleValidated("tracking:resolve-recovered", ["panel"], (_event, payload) => (
-  runTrackingMutation("resolveRecovered", payload)
-));
+handleValidated("tracking:resolve-recovered", ["panel"], (_event, payload) => {
+  ensureNewActivityIsAllowed("obnovení měření času");
+  return trackTrackingMutation(
+    runTrackingMutation("resolveRecovered", payload),
+    "resolveRecovered",
+  );
+});
 
 // Automatické aktualizace jsou schválně uzavřené v jednom bloku. Updater se načítá až
 // v zabalené aplikaci, takže vývoj, unit testy ani GUI měřidla nemohou sáhnout na síť.
@@ -1658,10 +1870,11 @@ function noteUpdateRelevantActivity(channel) {
 
 function updateBlockingActivityIsRunning() {
   // Session zůstává v mapě až do fsync a zápisu manifestu; následné zařazení chrání
-  // serializační bariéra fronty níž. `hasLiveRecording` během finalizace už vrací false.
+  // serializační bariéra fronty níž. Export stage se smaže až po potvrzeném
+  // `recording:export`, takže zahrnuje i uloženou nahrávku čekající na pojmenování.
   return recordingOwnersPreparing.size > 0
     || recordingSessions.size > 0
-    || [...recordingExportStages.values()].some((stage) => stage.result === null)
+    || recordingExportStages.size > 0
     || appState.trackingOwners.size > 0;
 }
 
@@ -1861,6 +2074,14 @@ function createAuthBeginHandler(createController) {
     safeStorage,
     shell,
   }) {
+    // TDD_OPRAVA_AUTH_GENERACE_20260903: pouze nejnovější souběžný pokus smí
+    // zveřejnit nebo smazat svou URL. Cancel staršího pokusu může doběhnout později.
+    let authorizationUrlGeneration = 0;
+
+    function publishAuthorizationUrlFor(generation, url) {
+      if (generation === authorizationUrlGeneration) publishAuthorizationUrl?.(url);
+    }
+
     function writeAuthLog(level, line) {
       try {
         const pending = logger?.[level]?.(line);
@@ -1927,6 +2148,11 @@ function createAuthBeginHandler(createController) {
     }
 
     return async function beginAuth({ signal } = {}) {
+      const publicationGeneration = authorizationUrlGeneration + 1;
+      authorizationUrlGeneration = publicationGeneration;
+      // První pokus začíná nad procesním `null`; retry navíc synchronně smaže URL
+      // předchozího pokusu ještě před asynchronním `controller.start()`.
+      if (publicationGeneration > 1) publishAuthorizationUrlFor(publicationGeneration, null);
       if (isTestRun && app?.isPackaged !== true) {
         return {
           ok: true,
@@ -1951,7 +2177,7 @@ function createAuthBeginHandler(createController) {
         // Čekací obrazovka potřebuje URL, dokud pokus běží — když se prohlížeč neotevře,
         // je to jediná cesta uživatele dál. Po skončení pokusu MUSÍ zmizet: stará URL
         // už nikam nevede a otevřít ji podruhé znamená přihlášení, které nikdo nečeká.
-        publishAuthorizationUrl?.(attempt.authorizationUrl ?? null);
+        publishAuthorizationUrlFor(publicationGeneration, attempt.authorizationUrl ?? null);
         const cancel = () => attempt.cancel();
         if (signal?.aborted) {
           cancel();
@@ -1969,7 +2195,7 @@ function createAuthBeginHandler(createController) {
           return { ok: true, user: { name, email } };
         } finally {
           signal?.removeEventListener?.("abort", cancel);
-          publishAuthorizationUrl?.(null);
+          publishAuthorizationUrlFor(publicationGeneration, null);
         }
       } catch (error) {
         const message = authErrorMessage(error);
@@ -2254,10 +2480,19 @@ app.on("activate", () => {
   if (!panelWindow) createPanelWindow();
 });
 
-app.on("before-quit", () => {
-  isQuitting = true;
+app.on("before-quit", (event) => {
   clearTimeout(trayVisibilityTimer);
   trayVisibilityTimer = undefined;
+  // Jediná brána platí pro menu, Cmd+Q, Dock i systémové ukončení. Při druhém
+  // before-quit po našem vlastním app.quit() už Electron nezastavujeme.
+  if (isQuitting || deferredQuitRequest?.committed) return;
+  if (!recordingWorkBlocksQuit() && !trackingWorkBlocksQuit()) {
+    isQuitting = true;
+    return;
+  }
+
+  event.preventDefault();
+  beginDeferredQuit();
 });
 
 app.on("window-all-closed", () => {

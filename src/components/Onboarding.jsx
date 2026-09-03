@@ -37,6 +37,7 @@ const STEPS = [
 ];
 
 const AUTH_WAIT_SECONDS = 10 * 60;
+const AUTH_URL_POLL_INTERVAL_MS = 250;
 
 function formatCountdown(seconds) {
   const minutes = Math.floor(seconds / 60);
@@ -58,6 +59,7 @@ export function Onboarding({ onAuthenticated, onComplete }) {
   const [authFailure, setAuthFailure] = useState("");
   // Adresa se drží jen po dobu čekání; hlavní proces ji po skončení pokusu sám zahodí.
   const [authUrl, setAuthUrl] = useState("");
+  const [authUrlAttempt, setAuthUrlAttempt] = useState(0);
   const [authSecondsRemaining, setAuthSecondsRemaining] = useState(AUTH_WAIT_SECONDS);
   const [authWaitingActionBusy, setAuthWaitingActionBusy] = useState(false);
   const [permissionBusy, setPermissionBusy] = useState("");
@@ -84,6 +86,8 @@ export function Onboarding({ onAuthenticated, onComplete }) {
       authAttemptRef.current += 1;
       authBusyRef.current = false;
       setAuthBusy(false);
+      setAuthUrl("");
+      setAuthUrlAttempt(0);
       setAuthFailure("vyprselo");
       cancelAuthQuietly();
     };
@@ -92,20 +96,36 @@ export function Onboarding({ onAuthenticated, onComplete }) {
   }, [authBusy, authDeadline, step]);
 
   useEffect(() => {
-    if (step !== 2) {
-      setAuthUrl("");
-      return undefined;
-    }
+    setAuthUrl("");
+    if (step !== 2 || !authBusy || authUrlAttempt === 0) return undefined;
     let current = true;
+    let timer;
     // Adresu si vyžádá renderer sám: hlavní proces nemá do panelu cestu, kterou by
     // ji poslal, a `beginAuth` se vrátí až na konci celého pokusu — tedy pozdě.
-    void Promise.resolve(window.ludone?.pendingAuthUrl?.())
-      .then((url) => {
-        if (current && typeof url === "string" && url.length > 0) setAuthUrl(url);
-      })
-      .catch(() => {});
-    return () => { current = false; };
-  }, [step]);
+    // Řetězený timeout nepustí druhý IPC dotaz, dokud první neskončí. Jakmile
+    // pokus skončí nebo URL dorazí, cleanup/absence dalšího timeoutu polling ukončí.
+    const pollPendingUrl = async () => {
+      let url = null;
+      try {
+        url = await window.ludone?.pendingAuthUrl?.();
+      } catch {
+        // Dočasná chyba dotazu nesmí odstranit jedinou náhradní cestu do prohlížeče.
+      }
+      if (!current) return;
+      if (typeof url === "string" && url.length > 0) {
+        setAuthUrl(url);
+        return;
+      }
+      timer = window.setTimeout(() => {
+        void pollPendingUrl();
+      }, AUTH_URL_POLL_INTERVAL_MS);
+    };
+    void pollPendingUrl();
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [authBusy, authUrlAttempt, step]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -124,6 +144,8 @@ export function Onboarding({ onAuthenticated, onComplete }) {
     authBusyRef.current = true;
     setAuthBusy(true);
     setAuthFailure("");
+    setAuthUrl("");
+    setAuthUrlAttempt(attemptId);
     setAuthDeadline(Date.now() + (AUTH_WAIT_SECONDS * 1_000));
     setAuthSecondsRemaining(AUTH_WAIT_SECONDS);
     setStep(2);
@@ -146,6 +168,8 @@ export function Onboarding({ onAuthenticated, onComplete }) {
     } finally {
       if (authAttemptRef.current === attemptId) {
         authBusyRef.current = false;
+        setAuthUrl("");
+        setAuthUrlAttempt(0);
         setAuthBusy(false);
       }
     }
@@ -155,6 +179,8 @@ export function Onboarding({ onAuthenticated, onComplete }) {
     if (authWaitingActionBusy) return;
     const actionId = authAttemptRef.current + 1;
     authAttemptRef.current = actionId;
+    setAuthUrl("");
+    setAuthUrlAttempt(0);
     setAuthWaitingActionBusy(true);
     let shouldRetry = false;
     try {

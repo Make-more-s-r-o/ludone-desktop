@@ -207,6 +207,7 @@ export function RecordingCard({
   const [exportError, setExportError] = useState(null);
   const [recoveringSystemAudio, setRecoveringSystemAudio] = useState(false);
   const startInFlight = useRef(false);
+  const stopRequestedDuringStart = useRef(false);
   const lastTrayCommandId = useRef(null);
   const runtimeRef = useRef(null);
   const isRecording = session.phase === "recording";
@@ -404,6 +405,7 @@ export function RecordingCard({
   async function start() {
     if (startInFlight.current || runtimeRef.current || session.phase !== "idle") return;
     startInFlight.current = true;
+    stopRequestedDuringStart.current = false;
     setNotice(null);
     setSavedRecording(null);
     setRecordingName("");
@@ -449,6 +451,7 @@ export function RecordingCard({
         cleanupTrackListeners: null,
         closing: false,
         finishPromise: null,
+        readyForStop: false,
       };
       runtimeRef.current = runtime;
       runtime.recorders = [
@@ -501,8 +504,17 @@ export function RecordingCard({
         runtime.exportError = error;
       }
       await Promise.all(runtime.recorders.map((persistentRecorder) => persistentRecorder.start()));
+      runtime.readyForStop = true;
       if (runtime.closing) {
         await runtime.finishPromise;
+        return;
+      }
+      // TDD_OPRAVA_QUIT_START_LATCH_20260903: hlavní proces může poslat stop už
+      // během await beginRecording(). Pro čistou finalizaci jej provedeme hned,
+      // jak mají všechny recordery platné startovní časové kotvy.
+      if (stopRequestedDuringStart.current) {
+        stopRequestedDuringStart.current = false;
+        await finishRuntime(runtime);
         return;
       }
       setSession({
@@ -532,12 +544,17 @@ export function RecordingCard({
         });
       }
     } finally {
+      stopRequestedDuringStart.current = false;
       startInFlight.current = false;
     }
   }
 
   function stop() {
     const runtime = runtimeRef.current;
+    if (startInFlight.current && (!runtime || !runtime.readyForStop)) {
+      stopRequestedDuringStart.current = true;
+      return;
+    }
     if (runtime && !runtime.closing) void finishRuntime(runtime);
   }
 

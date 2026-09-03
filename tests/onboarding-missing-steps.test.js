@@ -540,4 +540,92 @@ describe("dva chybějící kroky onboardingu", () => {
     await panel.click(copy);
     expect(panel.clipboardWrites).toContain(url);
   });
+
+  // TDD_OPRAVA_AUTH_URL_20260903: testy spouštějí polling po dobu konkrétního pokusu.
+  it("doplní adresu přihlášení, i když ji hlavní proces zveřejní později", async () => {
+    const url = "https://app.ludone.cz/api/mcp/oauth/authorize?state=pozde&code_challenge=xyz";
+    const lateUrl = deferred();
+    const pendingAuthUrl = vi.fn()
+      .mockResolvedValueOnce(null)
+      .mockImplementation(() => lateUrl.promise);
+    const panel = await renderOnboarding({
+      beginAuth: vi.fn(() => new Promise(() => {})),
+      pendingAuthUrl,
+    });
+    await enterAuthentication(panel);
+    await panel.click(panel.document.querySelector(".auth-step .button--wide"));
+
+    await vi.waitFor(() => expect(pendingAuthUrl).toHaveBeenCalledOnce());
+    expect(panel.document.querySelector('[data-testid="auth-waiting-url"]')).toBeNull();
+    await vi.waitFor(
+      () => expect(pendingAuthUrl.mock.calls.length).toBeGreaterThanOrEqual(2),
+      { timeout: 800 },
+    );
+
+    await React.act(async () => {
+      lateUrl.resolve(url);
+      await lateUrl.promise;
+    });
+    expect(panel.document.querySelector('[data-testid="auth-waiting-url"]')?.textContent)
+      .toBe(url);
+  });
+
+  it("po skončení pokusu přestane neznámou adresu znovu zjišťovat", async () => {
+    const authAttempt = deferred();
+    const pendingAuthUrl = vi.fn().mockResolvedValue(null);
+    const panel = await renderOnboarding({
+      beginAuth: vi.fn(() => authAttempt.promise),
+      pendingAuthUrl,
+    });
+    await enterAuthentication(panel);
+    await panel.click(panel.document.querySelector(".auth-step .button--wide"));
+    await vi.waitFor(
+      () => expect(pendingAuthUrl.mock.calls.length).toBeGreaterThanOrEqual(2),
+      { timeout: 800 },
+    );
+
+    await React.act(async () => {
+      authAttempt.resolve({ ok: false, duvod: "odmitnuto" });
+      await authAttempt.promise;
+    });
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[data-testid="auth-error-screen"]')).not.toBeNull();
+    });
+    const callsAfterAttempt = pendingAuthUrl.mock.calls.length;
+
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(pendingAuthUrl).toHaveBeenCalledTimes(callsAfterAttempt);
+  });
+
+  it("po skončení zahodí zobrazenou adresu a nepřenese ji do dalšího pokusu", async () => {
+    const firstAttempt = deferred();
+    const secondAttempt = deferred();
+    const url = "https://app.ludone.cz/api/mcp/oauth/authorize?state=stary-pokus";
+    const beginAuth = vi.fn()
+      .mockImplementationOnce(() => firstAttempt.promise)
+      .mockImplementationOnce(() => secondAttempt.promise);
+    const pendingAuthUrl = vi.fn()
+      .mockResolvedValueOnce(url)
+      .mockResolvedValue(null);
+    const panel = await renderOnboarding({ beginAuth, pendingAuthUrl });
+    await enterAuthentication(panel);
+    await panel.click(panel.document.querySelector(".auth-step .button--wide"));
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[data-testid="auth-waiting-url"]')?.textContent)
+        .toBe(url);
+    });
+
+    await React.act(async () => {
+      firstAttempt.resolve({ ok: false, duvod: "odmitnuto" });
+      await firstAttempt.promise;
+    });
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[data-testid="auth-error-screen"]')).not.toBeNull();
+    });
+    await panel.click(panel.document.querySelector('[data-testid="auth-error-action"]'));
+    await vi.waitFor(() => expect(beginAuth).toHaveBeenCalledTimes(2));
+
+    expect(panel.document.querySelector('[data-testid="auth-waiting-screen"]')).not.toBeNull();
+    expect(panel.document.querySelector('[data-testid="auth-waiting-url"]')).toBeNull();
+  });
 });
