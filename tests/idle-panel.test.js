@@ -502,6 +502,47 @@ describe("schválený klidový panel", () => {
     }
   });
 
+  it("viditelný panel přečte změnu background pumpy i během LuTracku", async () => {
+    vi.useFakeTimers();
+    const listQueue = vi.fn()
+      .mockResolvedValueOnce([{ state: "ceka" }])
+      .mockResolvedValue([{ state: "ceka", requiresHumanAction: true }]);
+    let panel;
+
+    try {
+      panel = await renderInteractivePanel(listQueue, {
+        configureWindow(domWindow) {
+          Object.defineProperty(domWindow.document, "visibilityState", {
+            configurable: true,
+            value: "visible",
+          });
+        },
+      });
+      await React.act(async () => Promise.resolve());
+      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+        .toBe("1 čeká");
+
+      const startTracking = panel.document.querySelector('[aria-label="Spustit LuTrack"]');
+      await React.act(async () => {
+        startTracking.dispatchEvent(new panel.document.defaultView.MouseEvent("click", {
+          bubbles: true,
+        }));
+      });
+      expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).not.toBeNull();
+
+      await React.act(async () => {
+        await vi.advanceTimersByTimeAsync(1_000);
+      });
+
+      expect(listQueue).toHaveBeenCalledTimes(2);
+      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+        .toBe("1 čeká na potvrzení");
+    } finally {
+      await panel?.cleanup();
+      vi.useRealTimers();
+    }
+  });
+
   it("opakované změření stejného renderu nespustí smyčku změn výšky", async () => {
     const animationFrames = [];
     const setPanelContentHeight = vi.fn().mockResolvedValue(240);

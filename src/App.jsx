@@ -7,6 +7,7 @@ import { TrackingCard } from "./features/tracking/TrackingCard.jsx";
 import { queueFooterStatus } from "./lib/panel.js";
 
 const ONBOARDING_KEY = "ludone.prototype.onboarding-complete";
+const QUEUE_REFRESH_INTERVAL_MS = 1_000;
 
 function normalizeUser(value) {
   const email = typeof value?.email === "string" ? value.email.trim() : "";
@@ -101,6 +102,28 @@ export function App() {
       void refreshQueueStatus();
     }
   }, [recording.active, refreshQueueStatus, tracking.active]);
+
+  useEffect(() => {
+    if (!onboardingComplete) return undefined;
+
+    let cancelled = false;
+    let timeoutId;
+
+    const refreshVisibleQueue = async () => {
+      if (document.visibilityState === "visible") {
+        await refreshQueueStatus();
+      }
+      if (!cancelled) {
+        timeoutId = window.setTimeout(refreshVisibleQueue, QUEUE_REFRESH_INTERVAL_MS);
+      }
+    };
+
+    timeoutId = window.setTimeout(refreshVisibleQueue, QUEUE_REFRESH_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [onboardingComplete, refreshQueueStatus]);
 
   const handleRecordingChange = useCallback((nextRecording) => {
     setRecording(nextRecording);
