@@ -2,6 +2,34 @@
 
 
 
+
+## 🔴 ROZHODNUTÍ, KTERÉ POTŘEBUJU: rozmrazit T1 (ikona v liště)?
+
+Schválený návrh (`design/navrh/Lista.dc.html`) předepisuje u ikony v liště **osm stavů**,
+kde **barva nese hlavní agendu a odznak tu druhou** — doslova: *„Souběh potřebuje odznak,
+ne pátou ikonu. Barva nese hlavní agendu, odznak tu druhou — a stav nikdy nesmí záviset
+jen na barvě."*
+
+Jenže `electron/main.cjs` má v `deriveTrayState` napsáno, že pátý stav `recording-tracking`
+patří do **zmrazeného úkolu T1** (BD-N5). **Běh proto T1 nerozmrazil** a udělal jen to,
+co pod něj nespadá: překreslil čtyři existující ikony glyfem z návrhu (PR na cestě).
+
+**Co zbývá a čeká na tvé slovo:**
+
+| co | proč to dnes nejde |
+|---|---|
+| pátý stav „nahrává + měří" | výslovně zmrazený T1 |
+| barevné ikony podle stavu | `main.cjs:308` volá `setTemplateImage(true)`; **šablonová ikona se na macOS kreslí jen z alfa kanálu a barvu systém zahodí** — přechod na barevné obrázky je součást T1 |
+| odznak (kolečko na druhou agendu) | totéž |
+| stavy „čeká fronta" a „výpadek zvuku" | v `deriveTrayState` neexistují |
+
+**Doporučuju T1 rozmrazit**, protože důvod jeho zmrazení mezitím pominul: byl zmrazený
+kvůli chybějící kresbě a **návrh ji teď má**. Odhad: jeden běh.
+
+⚠️ Vedlejšek, o kterém bys měl vědět: u barevných (nešablonových) ikon se **ztratí
+automatické přizpůsobení světlé a tmavé liště** — barvu si určujeme sami. Návrh s tím
+počítá (barvy má pro obě varianty), ale je to změna chování, ne jen vzhledu.
+
 ## ✅ OVĚŘENO NAOSTRO 3. 9. dopoledne — Dan to viděl a slyšel
 
 - 🔴 **Stereo export má oddělené kanály.** Dan přehrál vyexportovaný soubor: vlevo mikrofon,
