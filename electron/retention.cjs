@@ -175,6 +175,12 @@ async function verifyDeletionCandidate(candidate, recordingsRoot) {
     || typeof item.sourceManifestPath === "string"
     || !isImmediateChild(recordingsRoot, item.manifestPath)
     || !item.manifestPath.endsWith(".manifest.json")
+    // 🔴 OBRANA DO HLOUBKY — odstranění TÉHLE řádky testy nezčervená, a je to v pořádku.
+    // Zkoušeno 3. 9. pěti způsoby (cizí soubor, vnořený adresář, shodné jméno, bajtově
+    // shodná kopie mimo kořen, i s předaným `recordingsDirectory`). Pokaždé zelená,
+    // protože tytéž případy odmítne dřív kontrola identity manifestu, shody jmen,
+    // velikosti a otisku. Řádku NEODSTRAŇUJ: chrání případ, kdy by někdo podvrhl
+    // frontu i manifest tak, že projdou — pak je umístění poslední, co zbývá.
     || !candidate.files.every((filePath) => isImmediateChild(recordingsRoot, filePath))
     || candidate.files[0] === candidate.files[1]
   ) {
