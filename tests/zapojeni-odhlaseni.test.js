@@ -72,7 +72,13 @@ const renderer = zdrojRendereru();
 
 // Volající se hledá přes most `window.ludone`, ne přes holé slovo — `logout` se může
 // objevit v textu tlačítka nebo v komentáři, aniž by to cokoli volalo.
-const odhlaseniZapojeno = /window\.ludone\??\.\s*logout\s*\(|ludone\.logout\s*\(/.test(renderer);
+// 🔴 Detekuje se VAZBA na `ludone.logout`, ne tvar volání. Původní vzorec vyžadoval
+// závorku hned za názvem, takže ho 3. 9. 2026 porazil obyčejný refaktor:
+// `const logout = window.ludone?.logout; … await logout()`. Funkce fungovala dál,
+// ale detekce ji přestala vidět a DVA strážní testy níž tiše usnuly — včetně toho,
+// který hlídá, že se neodhlašujeme nad běžícím časovačem. Brána, která se dá
+// vypnout přejmenováním proměnné, není brána.
+const odhlaseniZapojeno = /window\.ludone\??\.\s*logout\b|\bludone\.logout\b/.test(renderer);
 const casovacZapojen = /window\.ludone\??\.\s*(start|stop|switch)Tracking|ludone\.(start|stop|switch)Tracking/
   .test(renderer);
 
@@ -94,7 +100,7 @@ describe("odhlášení: co musí platit, jakmile ho někdo zapojí", () => {
   it.runIf(!odhlaseniZapojeno)("DNES NEZAPOJENO — kontroly níž záměrně spí", () => {
     // Tenhle test existuje proto, aby v běžném výpisu bylo VIDĚT, že se tu nic neměří.
     // Zelený soubor bez jediného spuštěného tvrzení je k nerozeznání od bdělé brány.
-    expect(renderer).not.toMatch(/window\.ludone\??\.\s*logout\s*\(/);
+    expect(renderer).not.toMatch(/window\.ludone\??\.\s*logout\b|\bludone\.logout\b/);
   });
 
   it.runIf(odhlaseniZapojeno)(
