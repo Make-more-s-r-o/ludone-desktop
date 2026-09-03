@@ -389,13 +389,15 @@ function formatElapsed(totalSeconds) {
 }
 
 // Dva plné časy by v úzké liště zabraly 19 znaků. Při souběhu proto každý údaj
-// držíme na nejvýš pěti: do hodiny MM:SS, potom HhMM a po 99 hodinách 99h+.
+// držíme na pěti: do hodiny MM:SS, potom HHhMM a od 100 hodin 100h+.
 function formatCompactTrayElapsed(totalSeconds) {
   const normalizedSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(normalizedSeconds / 3600);
   const minutes = Math.floor((normalizedSeconds % 3600) / 60);
-  if (hours >= 100) return "99h+";
-  if (hours > 0) return `${hours}h${String(minutes).padStart(2, "0")}`;
+  if (hours >= 100) return "100h+";
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}h${String(minutes).padStart(2, "0")}`;
+  }
   const seconds = normalizedSeconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }

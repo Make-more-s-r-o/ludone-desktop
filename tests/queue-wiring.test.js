@@ -1372,6 +1372,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
       null,
       "CommandOrControl+Q",
     ]);
+    expect(template[1].enabled).toBe(true);
     expect(tray.popUpContextMenu).toHaveBeenCalledExactlyOnceWith(
       harness.electron.Menu.buildFromTemplate.mock.results[0].value,
     );
@@ -1382,6 +1383,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
 
   it("běžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů", async () => {
     const harness = await loadMain({
+      env: { DESKTOP_TIME_ENABLED: "true" },
       trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
     });
     await harness.runReady();
@@ -1389,10 +1391,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const tray = harness.trays[0];
 
-    harness.ipcListeners.get("tray:report-facts")(
-      event,
-      { signedIn: true, tracking: true },
-    );
+    await harness.ipcHandlers.get("tracking:start")(event, { projectId: PROJECT_A });
     tray.emit("right-click");
 
     const template = harness.electron.Menu.buildFromTemplate.mock.calls[0][0];
@@ -1661,6 +1660,12 @@ describe("průběžný titulek lišty", () => {
     vi.setSystemTime(startTime + 60 * 60 * 1_000);
     const recording = await harness.ipcHandlers.get("recording:begin")(event);
 
+    vi.setSystemTime(startTime + 2 * 60 * 60 * 1_000);
+    harness.runTrayTitleInterval();
+    const titleWithSingleDigitHours = harness.trays[0].setTitle.mock.lastCall?.[0];
+    expect(titleWithSingleDigitHours).toBe("01h00 · 02h00");
+    expect(titleWithSingleDigitHours).toHaveLength(13);
+
     vi.setSystemTime(startTime + 13 * 60 * 60 * 1_000);
     harness.runTrayTitleInterval();
     const titleUnderHundredHours = harness.trays[0].setTitle.mock.lastCall?.[0];
@@ -1670,8 +1675,8 @@ describe("průběžný titulek lišty", () => {
     vi.setSystemTime(startTime + 102 * 60 * 60 * 1_000);
     harness.runTrayTitleInterval();
     const cappedTitle = harness.trays[0].setTitle.mock.lastCall?.[0];
-    expect(cappedTitle).toBe("99h+ · 99h+");
-    expect(cappedTitle.length).toBeLessThanOrEqual(13);
+    expect(cappedTitle).toBe("100h+ · 100h+");
+    expect(cappedTitle).toHaveLength(13);
 
     await harness.ipcHandlers.get("recording:finish")(
       event,
