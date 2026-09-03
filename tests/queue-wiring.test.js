@@ -1433,6 +1433,30 @@ describe("průběžný titulek lišty", () => {
     reportFacts(event, { signedIn: true, tracking: false });
   });
 
+  it("posun hodin zpět nesmí do lišty napsat záporný čas", async () => {
+    // Čas do lišty počítáme z rozdílu dvou okamžiků, ne z vlastního tikání. Když se systémové
+    // hodiny pohnou zpět (letní čas, NTP korekce, obnovený časovač z casovac.json zapsaný
+    // strojem napřed), je ten rozdíl záporný — a `formatElapsed` by z něj složil „-1:-1:-5".
+    // V liště je to jediné, co uživatel vidí, takže se ta hodnota nesmí objevit ani na vteřinu.
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+
+    reportFacts(event, { signedIn: true, tracking: true });
+
+    vi.setSystemTime(startTime - 5_000);
+    harness.runTrayTitleInterval();
+
+    const posledniPopisek = harness.trays[0].setTitle.mock.lastCall?.[0];
+    expect(posledniPopisek).toBe(formatElapsed(0));
+    expect(posledniPopisek).not.toMatch(/-/);
+
+    reportFacts(event, { signedIn: true, tracking: false });
+  });
+
   it("při souběhu ukazuje čas nahrávání a po jeho konci pokračující čas LuTracku", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(startTime);
