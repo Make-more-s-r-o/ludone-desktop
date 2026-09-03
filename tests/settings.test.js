@@ -317,6 +317,22 @@ describe("systémová nastavení", () => {
     }
   });
 
+  it("vykreslí i opačnou kombinaci skutečných boolean stavů", async () => {
+    const settings = await renderSettings({
+      dockVisible: () => Promise.resolve(true),
+      openAtLogin: () => Promise.resolve(false),
+    });
+    try {
+      await vi.waitFor(() => {
+        expect(switchByLabel(settings, DOCK_LABEL)?.getAttribute("aria-checked")).toBe("true");
+        expect(switchByLabel(settings, LOGIN_LABEL)?.getAttribute("aria-checked")).toBe("false");
+      });
+      expect(settings.localStorage.setItem).not.toHaveBeenCalled();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
   it("kliknutí oba přepínače uplatní hned přes boolean API bez kopie v localStorage", async () => {
     const settings = await renderSettings();
     try {

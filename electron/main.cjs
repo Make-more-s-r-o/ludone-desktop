@@ -269,14 +269,30 @@ function applyDockVisibility(dockVisible) {
     return Promise.resolve(app.dock.show()).then(() => dockVisible);
   } else {
     app.dock.hide();
+    // Electron ignoruje hide() méně než sekundu po show(). Accessory policy je
+    // okamžitá pojistka pro rychlé přepnutí a odpovídá výchozímu LSUIElement režimu.
+    app.setActivationPolicy("accessory");
   }
   return dockVisible;
 }
 
 function queueDockVisibility(dockVisible, { persist = false } = {}) {
   const transition = dockVisibilityTransition.then(async () => {
-    if (persist) await dockVisibilityStore.set(dockVisible);
-    return applyDockVisibility(dockVisible);
+    if (!persist) return applyDockVisibility(dockVisible);
+
+    const previousValue = dockVisibilityStore.get();
+    await dockVisibilityStore.set(dockVisible);
+    try {
+      return await applyDockVisibility(dockVisible);
+    } catch (error) {
+      try {
+        await dockVisibilityStore.set(previousValue);
+        await applyDockVisibility(previousValue);
+      } catch (rollbackError) {
+        console.error(`[settings] Návrat nastavení Docku selhal: ${rollbackError.message}`);
+      }
+      throw error;
+    }
   });
   // Další změna musí navázat i po chybě předchozího nativního volání. Serializace
   // zároveň brání tomu, aby pomalejší show přebilo novější hide.

@@ -268,6 +268,7 @@ function fakeElectron(userDataPath, {
     quit: vi.fn(),
     requestSingleInstanceLock: vi.fn(() => true),
     setAppLogsPath: vi.fn(),
+    setActivationPolicy: vi.fn(),
     setLoginItemSettings: vi.fn(({ openAtLogin }) => {
       loginItemState.openAtLogin = openAtLogin;
     }),
@@ -849,10 +850,11 @@ describe("zapojení systémových nastavení", () => {
     expect(store.get).toHaveBeenCalledOnce();
     expect(harness.electron.app.dock.show).toHaveBeenCalledOnce();
     expect(harness.electron.app.dock.hide).not.toHaveBeenCalled();
+    expect(harness.startupEvents).toEqual(["dock:show"]);
+    await ready;
     expect(harness.startupEvents.indexOf("dock:show")).toBeLessThan(
       harness.startupEvents.indexOf("window:create"),
     );
-    await ready;
   });
 
   it("vypnutý Dock zachová dnešní chování a skryje jej před prvním oknem", async () => {
@@ -863,6 +865,8 @@ describe("zapojení systémových nastavení", () => {
 
     expect(store.get).toHaveBeenCalledOnce();
     expect(harness.electron.app.dock.hide).toHaveBeenCalledOnce();
+    expect(harness.electron.app.setActivationPolicy).toHaveBeenCalledOnce();
+    expect(harness.electron.app.setActivationPolicy).toHaveBeenLastCalledWith("accessory");
     expect(harness.electron.app.dock.show).not.toHaveBeenCalled();
     expect(harness.startupEvents.indexOf("dock:hide")).toBeLessThan(
       harness.startupEvents.indexOf("window:create"),
@@ -889,7 +893,24 @@ describe("zapojení systémových nastavení", () => {
     await expect(setDockVisible(settingsEvent, false)).resolves.toBe(false);
     expect(store.set).toHaveBeenLastCalledWith(false);
     expect(harness.electron.app.dock.hide).toHaveBeenCalledOnce();
+    expect(harness.electron.app.setActivationPolicy).toHaveBeenLastCalledWith("accessory");
     expect(getDockVisible(settingsEvent)).toBe(false);
+  });
+
+  it("při chybě nativní změny vrátí uloženou volbu do předchozího stavu", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({ createDockVisibilityStore: () => store });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const nativeError = new Error("Dock API selhalo");
+    harness.electron.app.dock.show.mockRejectedValueOnce(nativeError);
+
+    await expect(harness.ipcHandlers.get("settings:set-dock-visible")(settingsEvent, true))
+      .rejects.toBe(nativeError);
+
+    expect(store.set.mock.calls).toEqual([[true], [false]]);
+    expect(store.get()).toBe(false);
+    expect(harness.electron.app.dock.hide).toHaveBeenCalledTimes(2);
   });
 
   it("uložený Dock přežije nový hlavní proces a platí už při jeho startu", async () => {
