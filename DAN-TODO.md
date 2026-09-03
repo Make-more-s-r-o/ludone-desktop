@@ -35,6 +35,23 @@ tři vady zná — i s umístěním. GitHub navíc drží obsah veřejných fork
 | **B · přepsat historii** (`git filter-repo`) | odstraní stopu z repa, ale ne z případných klonů; rozbije všechny existující klony |
 | **C · přijmout** | expozice byla ~10 hodin v noci u repa, o kterém nikdo nevěděl; riziko nízké, ale nenulové |
 
+### Co bylo doopravdy vystavené — změřeno serverovou session, ne převyprávěno
+
+Poprosil jsem je o ověření, protože rozhodovat máš podle faktů. **Jeden ze tří nálezů byl
+nepřesný a jeden se ověřit nedal** — expozice je tedy o něco menší, než jak jsem ji popsal:
+
+| nález | verdikt |
+|---|---|
+| **prázdný výběr nástrojů vydá plný klíč** | 🔴 **potvrzeno přesně.** Vada je při **zakládání** tokenu, ne při ověřování — samotné vyhodnocení je naopak fail-closed |
+| **deaktivace neodvolá klíče** | 🟡 **nepřesné.** Deaktivace přes `isActive` klíč zneplatní **okamžitě**. Zůstává užší mezera: účet deaktivovaný jinou cestou má klíč dál funkční |
+| **rozsah firmy má jedinou větev** | ⛔ **neověřeno** — formulace byla moc obecná na měření |
+
+Detaily i s umístěním vedou **oni ve svém `DAN-TODO.md` (ludone#574)**, kam patří. Sem je
+schválně nepíšu zpátky.
+
+⇒ **Na doporučení to nic nemění: varianta A** (opravit) je pořád jediná, která odstraní
+důvod místo stopy — a ten první nález je reálná vada bez ohledu na zveřejnění.
+
 **Doporučení: A, a nezávisle na tom zvážit B.** Ať repo zůstane privátní, dokud se
 nerozhodneš — CI zvládne vlastní runner na tvém Macu, ten je pořád registrovaný.
 
