@@ -34,6 +34,7 @@ function recordingResult() {
 
 /**
  * @param {{
+ *   deferBegin?: boolean,
  *   deferCapture?: boolean,
  *   deferRecovery?: boolean,
  *   displayError?: Error | DOMException,
@@ -123,6 +124,7 @@ async function renderRecordingCard(options = {}) {
   const microphoneCapture = deferred();
   const displayCapture = deferred();
   const recoveryCapture = deferred();
+  const beginRecordingAttempt = deferred();
   const getUserMedia = vi.fn(() => (
     options.deferCapture ? microphoneCapture.promise : Promise.resolve(microphoneStream)
   ));
@@ -146,7 +148,11 @@ async function renderRecordingCard(options = {}) {
   });
 
   const ludone = {
-    beginRecording: vi.fn().mockResolvedValue({ sessionId: SESSION_ID }),
+    beginRecording: vi.fn(() => (
+      options.deferBegin
+        ? beginRecordingAttempt.promise
+        : Promise.resolve({ sessionId: SESSION_ID })
+    )),
     appendRecordingChunk: vi.fn().mockResolvedValue({ sequence: 0, bytes: 4 }),
     finishRecording: vi.fn().mockResolvedValue(recordingResult()),
     finishRecordingExport: vi.fn().mockResolvedValue({ ok: true }),
@@ -291,6 +297,9 @@ async function renderRecordingCard(options = {}) {
     systemTrack,
     phase,
     currentButton,
+    resolveBeginRecording() {
+      beginRecordingAttempt.resolve({ sessionId: SESSION_ID });
+    },
     resolveCapture() {
       microphoneCapture.resolve(microphoneStream);
       displayCapture.resolve(displayStream);
@@ -454,6 +463,32 @@ describe("RecordingCard", () => {
       await panel.waitForPhase("saved");
 
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  // TDD_OPRAVA_QUIT_START_LATCH_20260903: stop doručený během beginRecording se neztratí.
+  it("podrží stop příkaz, který dorazí během přípravy hlavní session", async () => {
+    const panel = await renderRecordingCard({ deferBegin: true });
+
+    try {
+      await panel.click(panel.currentButton());
+      await vi.waitFor(() => expect(panel.ludone.beginRecording).toHaveBeenCalledOnce());
+      expect(panel.phase()).toBe("checking");
+
+      await panel.setTrayCommand({ id: 1, name: "stop-recording" });
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+
+      await React.act(async () => {
+        panel.resolveBeginRecording();
+        await Promise.resolve();
+      });
+      await panel.waitForPhase("saved");
+
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+      expect(panel.ludone.finishRecordingExport).toHaveBeenCalledTimes(1);
+      expect(panel.recorders).toHaveLength(3);
     } finally {
       await panel.cleanup();
     }

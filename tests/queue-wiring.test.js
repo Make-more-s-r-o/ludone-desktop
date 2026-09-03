@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -1786,6 +1786,360 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 });
 
+// TDD_OPRAVA_QUIT_20260903: tyto testy musí spouštět společný before-quit guard.
+describe("bezpečné ukončení aplikace", () => {
+  it("při nahrávání odloží quit, čistě dokončí session a zachová její data", async () => {
+    let reportEnqueueStarted;
+    let releaseEnqueue;
+    const enqueueStarted = new Promise((resolve) => { reportEnqueueStarted = resolve; });
+    const enqueueReleased = new Promise((resolve) => { releaseEnqueue = resolve; });
+    const enqueueRecording = vi.fn(async ({ manifest }) => {
+      reportEnqueueStarted();
+      await enqueueReleased;
+      return {
+        added: true,
+        item: { clientRecordingId: manifest.clientRecordingId },
+      };
+    });
+    const createOutboundQueueStore = vi.fn(() => ({
+      enqueueRecording,
+      enqueueTimeEntry: vi.fn(),
+      list: vi.fn(async () => []),
+      pump: vi.fn(async () => ({ outcome: "idle" })),
+      retry: vi.fn(),
+    }));
+    const harness = await loadMain({ createOutboundQueueStore });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const begin = harness.ipcHandlers.get("recording:begin");
+    const append = harness.ipcHandlers.get("recording:append");
+    const finish = harness.ipcHandlers.get("recording:finish");
+    const finishExport = harness.ipcHandlers.get("recording:finish-export");
+    const { sessionId } = await begin(event);
+    await append(event, sessionId, "microphone", 0, Uint8Array.from([1, 2, 3]).buffer);
+    await append(event, sessionId, "system", 0, Uint8Array.from([4, 5]).buffer);
+    await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
+
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+
+    expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    expect(panelContents.send).toHaveBeenCalledWith("tray:command");
+    expect(harness.ipcHandlers.get("tray:command")(event)).toEqual(["stop-recording"]);
+
+    const finishing = finish(event, sessionId, {
+      microphone: {
+        startedAt: "2026-09-02T12:00:00.100Z",
+        endedAt: "2026-09-02T12:00:01.100Z",
+      },
+      system: {
+        startedAt: "2026-09-02T12:00:00.125Z",
+        endedAt: "2026-09-02T12:00:01.125Z",
+      },
+    });
+    await finishExport(event, sessionId, {
+      succeeded: true,
+      timing: {
+        startedAt: "2026-09-02T12:00:00.075Z",
+        endedAt: "2026-09-02T12:00:01.150Z",
+      },
+    });
+    await enqueueStarted;
+
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    const recordingDirectory = path.join(harness.userDataPath, "nahravky");
+    const manifestName = (await readdir(recordingDirectory))
+      .find((name) => name.endsWith(".manifest.json"));
+    expect(manifestName).toBeTypeOf("string");
+    await expect(readFile(path.join(recordingDirectory, manifestName), "utf8").then(JSON.parse))
+      .resolves.toMatchObject({
+        clientRecordingId: sessionId,
+        state: "complete",
+        tracks: {
+          microphone: { sizeBytes: 3, sha256: expect.any(String) },
+          system: { sizeBytes: 2, sha256: expect.any(String) },
+        },
+      });
+
+    releaseEnqueue();
+    await finishing;
+    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    expect(enqueueRecording).toHaveBeenCalledOnce();
+  });
+
+  it("po 15 sekundách nedokončeného zastavení quit přesto vynutí a hlasitě zaloguje", async () => {
+    vi.useFakeTimers();
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    await harness.ipcHandlers.get("recording:begin")(event);
+    const quitEvent = { preventDefault: vi.fn() };
+
+    harness.electron.app.emit("before-quit", quitEvent);
+    expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(harness.ipcHandlers.get("tray:command")(event)).toEqual(["stop-recording"]);
+
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(harness.electron.app.quit).toHaveBeenCalledOnce();
+    expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      expect.stringMatching(/\[quit\].*15000 ms.*vynucen/u),
+    );
+  });
+
+  it("bez nahrávání a LuTracku nechá quit proběhnout okamžitě", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const quitEvent = { preventDefault: vi.fn() };
+
+    harness.electron.app.emit("before-quit", quitEvent);
+
+    expect(quitEvent.preventDefault).not.toHaveBeenCalled();
+    expect(harness.windows[0].webContents.send).not.toHaveBeenCalledWith("tray:command");
+    harness.windows[0].close();
+    expect(harness.windows[0].isDestroyed()).toBe(true);
+  });
+
+  it("před quitem čistě zastaví i LuTrack v hlavním procesu", async () => {
+    let releaseStop;
+    let reportStopStarted;
+    const stopStarted = new Promise((resolve) => { reportStopStarted = resolve; });
+    const stopReleased = new Promise((resolve) => { releaseStop = resolve; });
+    let state = { schemaVersion: 1, aktualni: null, uzavrene: [] };
+    const trackingStore = {
+      getState: () => structuredClone(state),
+      load: vi.fn(async () => structuredClone(state)),
+      start: vi.fn(async () => {
+        const entry = {
+          clientTimeEntryId: "68e55275-b912-447c-a0de-417b1860f9d9",
+          projectId: PROJECT_A,
+          startedAt: "2026-09-02T12:00:00.000Z",
+          state: "bezi",
+        };
+        state = { ...state, aktualni: entry };
+        return { outcome: "started", entry, closed: null };
+      }),
+      stop: vi.fn(async () => {
+        reportStopStarted();
+        await stopReleased;
+        const closed = {
+          ...state.aktualni,
+          endedAt: "2026-09-02T12:01:00.000Z",
+          state: "uzavreno",
+          closedReason: "stop",
+          minutes: 1,
+        };
+        state = { ...state, aktualni: null, uzavrene: [closed] };
+        return { outcome: "stopped", entry: null, closed };
+      }),
+      switchProject: vi.fn(),
+      resolveRecovered: vi.fn(),
+    };
+    const harness = await loadMain({
+      createTrackingStore: () => trackingStore,
+      env: { DESKTOP_TIME_ENABLED: "true" },
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    await harness.ipcHandlers.get("tracking:start")(event, { projectId: PROJECT_A });
+    const quitEvent = { preventDefault: vi.fn() };
+
+    harness.electron.app.emit("before-quit", quitEvent);
+
+    expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(trackingStore.stop).toHaveBeenCalledOnce());
+    await stopStarted;
+    releaseStop();
+    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    expect(state.aktualni).toBeNull();
+    expect(state.uzavrene).toHaveLength(1);
+  });
+
+  // TDD_OPRAVA_QUIT_ZAVODY_20260903: quit nesmí minout práci mezi mapou session a diskem.
+  it("odloží quit vyvolaný až během lokálního enqueue dokončené nahrávky", async () => {
+    let reportEnqueueStarted;
+    let releaseEnqueue;
+    const enqueueStarted = new Promise((resolve) => { reportEnqueueStarted = resolve; });
+    const enqueueReleased = new Promise((resolve) => { releaseEnqueue = resolve; });
+    const enqueueRecording = vi.fn(async ({ manifest }) => {
+      reportEnqueueStarted();
+      await enqueueReleased;
+      return { added: true, item: { clientRecordingId: manifest.clientRecordingId } };
+    });
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording,
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(),
+      }),
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const { sessionId } = await harness.ipcHandlers.get("recording:begin")(event);
+    await harness.ipcHandlers.get("recording:append")(
+      event,
+      sessionId,
+      "stereo",
+      0,
+      Uint8Array.from(stereoWebmBytes()).buffer,
+    );
+    await harness.ipcHandlers.get("recording:finish-export")(event, sessionId, {
+      succeeded: true,
+      timing: {
+        startedAt: "2026-09-02T12:00:00.075Z",
+        endedAt: "2026-09-02T12:00:01.150Z",
+      },
+    });
+    const finishing = harness.ipcHandlers.get("recording:finish")(event, sessionId, {
+      microphone: {
+        startedAt: "2026-09-02T12:00:00.100Z",
+        endedAt: "2026-09-02T12:00:01.100Z",
+      },
+      system: {
+        startedAt: "2026-09-02T12:00:00.125Z",
+        endedAt: "2026-09-02T12:00:01.125Z",
+      },
+    });
+    await enqueueStarted;
+
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+
+    expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    releaseEnqueue();
+    await finishing;
+    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+  });
+
+  it("počká na rozpracovaný start LuTracku a pak jej čistě zastaví", async () => {
+    let reportStartEntered;
+    let releaseStart;
+    const startEntered = new Promise((resolve) => { reportStartEntered = resolve; });
+    const startReleased = new Promise((resolve) => { releaseStart = resolve; });
+    let state = { schemaVersion: 1, aktualni: null, uzavrene: [] };
+    /** @type {Promise<any>} */
+    let queue = Promise.resolve();
+    const enqueue = (operation) => {
+      const result = queue.then(operation);
+      queue = result.catch(() => {});
+      return result;
+    };
+    const trackingStore = {
+      getState: () => structuredClone(state),
+      load: () => enqueue(async () => structuredClone(state)),
+      start: () => enqueue(async () => {
+        reportStartEntered();
+        await startReleased;
+        const entry = {
+          clientTimeEntryId: "78e55275-b912-447c-a0de-417b1860f9d9",
+          projectId: PROJECT_A,
+          startedAt: "2026-09-02T12:00:00.000Z",
+          state: "bezi",
+        };
+        state = { ...state, aktualni: entry };
+        return { outcome: "started", entry, closed: null };
+      }),
+      stop: vi.fn(() => enqueue(async () => {
+        const closed = {
+          ...state.aktualni,
+          endedAt: "2026-09-02T12:01:00.000Z",
+          state: "uzavreno",
+          closedReason: "stop",
+          minutes: 1,
+        };
+        state = { ...state, aktualni: null, uzavrene: [closed] };
+        return { outcome: "stopped", entry: null, closed };
+      })),
+      switchProject: vi.fn(),
+      resolveRecovered: vi.fn(),
+    };
+    const harness = await loadMain({
+      createTrackingStore: () => trackingStore,
+      env: { DESKTOP_TIME_ENABLED: "true" },
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const starting = harness.ipcHandlers.get("tracking:start")(event, { projectId: PROJECT_A });
+    await startEntered;
+
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+    releaseStart();
+    await starting;
+
+    expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(trackingStore.stop).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    expect(state.aktualni).toBeNull();
+    expect(state.uzavrene).toHaveLength(1);
+  });
+
+  it("neočekávaný výsledek zastavení LuTracku vynutí quit a hlasitě jej zaloguje", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    harness.ipcListeners.get("tray:report-facts")(event, { signedIn: true, tracking: true });
+    const quitEvent = { preventDefault: vi.fn() };
+
+    harness.electron.app.emit("before-quit", quitEvent);
+
+    expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      expect.stringMatching(/\[quit\].*LuTrack.*vynucené/u),
+    );
+  });
+
+  it("neúspěšnou stereo finalizaci neprohlásí za čisté ukončení", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const { sessionId } = await harness.ipcHandlers.get("recording:begin")(event);
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+    expect(harness.ipcHandlers.get("tray:command")(event)).toEqual(["stop-recording"]);
+
+    await Promise.all([
+      harness.ipcHandlers.get("recording:finish")(event, sessionId, {
+        microphone: {
+          startedAt: "2026-09-02T12:00:00.100Z",
+          endedAt: "2026-09-02T12:00:01.100Z",
+        },
+        system: {
+          startedAt: "2026-09-02T12:00:00.125Z",
+          endedAt: "2026-09-02T12:00:01.125Z",
+        },
+      }),
+      harness.ipcHandlers.get("recording:finish-export")(event, sessionId, {
+        succeeded: false,
+        reason: "Testovací pád stereo převodu",
+      }),
+    ]);
+
+    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      expect.stringMatching(/\[quit\].*stereo.*vynucené/u),
+    );
+    expect(harness.quietConsole.log).not.toHaveBeenCalledWith(
+      expect.stringContaining("čistě zastavené a zapsané"),
+    );
+  });
+});
+
 describe("produkční zapojení automatických aktualizací", () => {
   it("zkontroluje vydání po startu a znovu po šesti hodinách", async () => {
     vi.useFakeTimers();
@@ -1802,7 +2156,8 @@ describe("produkční zapojení automatických aktualizací", () => {
     expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(2);
   });
 
-  it("běžící nahrávání odloží restart a po celém dokončení jej uplatní", async () => {
+  // TDD_OPRAVA_UPDATE_NAZEV_20260903: hotový derivát není souhlas s restartem.
+  it("restart počká i na pojmenování a export uložené nahrávky", async () => {
     vi.useFakeTimers();
     const autoUpdater = fakeAutoUpdater();
     const harness = await loadMain({ autoUpdater, isPackaged: true });
@@ -1810,9 +2165,12 @@ describe("produkční zapojení automatických aktualizací", () => {
     const panelContents = harness.windows[0].webContents;
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const begin = harness.ipcHandlers.get("recording:begin");
+    const append = harness.ipcHandlers.get("recording:append");
     const finish = harness.ipcHandlers.get("recording:finish");
     const finishExport = harness.ipcHandlers.get("recording:finish-export");
+    const exportRecording = harness.ipcHandlers.get("recording:export");
     const { sessionId } = await begin(event);
+    await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
 
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
     await vi.advanceTimersByTimeAsync(90_000);
@@ -1831,10 +2189,21 @@ describe("produkční zapojení automatických aktualizací", () => {
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
     await Promise.all([
       finishing,
-      finishExport(event, sessionId, { succeeded: false }),
+      finishExport(event, sessionId, {
+        succeeded: true,
+        timing: {
+          startedAt: "2026-09-02T12:00:00.075Z",
+          endedAt: "2026-09-02T12:00:01.150Z",
+        },
+      }),
     ]);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 
+    await vi.advanceTimersByTimeAsync(90_000);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    await expect(exportRecording(event, sessionId, "Porada provozu"))
+      .resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
     await vi.advanceTimersByTimeAsync(30_000);
     await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1));
   });
@@ -2080,9 +2449,12 @@ describe("produkční zapojení automatických aktualizací", () => {
     const panelContents = harness.windows[0].webContents;
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const begin = harness.ipcHandlers.get("recording:begin");
+    const append = harness.ipcHandlers.get("recording:append");
     const finish = harness.ipcHandlers.get("recording:finish");
     const finishExport = harness.ipcHandlers.get("recording:finish-export");
+    const exportRecording = harness.ipcHandlers.get("recording:export");
     const { sessionId } = await begin(event);
+    await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
 
     const finishing = finish(event, sessionId, {
@@ -2097,8 +2469,16 @@ describe("produkční zapojení automatických aktualizací", () => {
     });
     await Promise.all([
       enqueueStarted,
-      finishExport(event, sessionId, { succeeded: false }),
+      finishExport(event, sessionId, {
+        succeeded: true,
+        timing: {
+          startedAt: "2026-09-02T12:00:00.075Z",
+          endedAt: "2026-09-02T12:00:01.150Z",
+        },
+      }),
     ]);
+    await expect(exportRecording(event, sessionId, "Porada provozu"))
+      .resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
     await vi.advanceTimersByTimeAsync(30_000);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 

@@ -270,6 +270,55 @@ describe("zapojení skutečného OAuth controlleru", () => {
     expect(cancel).toHaveBeenCalledOnce();
   });
 
+  // TDD_OPRAVA_AUTH_GENERACE_20260903: starý pokus nesmí přepsat publikaci novějšího.
+  it("dokončení starého souběžného pokusu nesmaže adresu novějšího pokusu", async () => {
+    let resolveFirst;
+    let resolveSecond;
+    let resolveSecondStart;
+    const firstResult = new Promise((resolve) => { resolveFirst = resolve; });
+    const secondResult = new Promise((resolve) => { resolveSecond = resolve; });
+    const secondStart = new Promise((resolve) => { resolveSecondStart = resolve; });
+    const urls = [
+      "https://app.ludone.cz/api/mcp/oauth/authorize?state=prvni",
+      "https://app.ludone.cz/api/mcp/oauth/authorize?state=druhy",
+    ];
+    const results = [firstResult, secondResult];
+    let started = 0;
+    let publishedUrl = null;
+    const publishAuthorizationUrl = vi.fn((url) => { publishedUrl = url; });
+    const handler = compiledAuthWiring(() => ({
+      start() {
+        const index = started;
+        started += 1;
+        const attempt = {
+          authorizationUrl: urls[index],
+          cancel: vi.fn(),
+          result: results[index],
+        };
+        return index === 1 ? secondStart : Promise.resolve(attempt);
+      },
+    }))(dependencies({ publishAuthorizationUrl }));
+
+    const first = handler();
+    await vi.waitFor(() => expect(publishedUrl).toBe(urls[0]));
+    const second = handler();
+    expect(publishedUrl).toBeNull();
+    resolveSecondStart({
+      authorizationUrl: urls[1],
+      cancel: vi.fn(),
+      result: secondResult,
+    });
+    await vi.waitFor(() => expect(publishedUrl).toBe(urls[1]));
+
+    resolveFirst({ ok: true, user: { name: "První", email: "prvni@ludone.cz" } });
+    await first;
+    expect(publishedUrl).toBe(urls[1]);
+
+    resolveSecond({ ok: true, user: { name: "Druhý", email: "druhy@ludone.cz" } });
+    await second;
+    expect(publishedUrl).toBeNull();
+  });
+
   it("v nezabaleném E2E vrátí testovací identitu bez controlleru", async () => {
     const createController = vi.fn();
     const handler = compiledAuthWiring(createController)(dependencies({ isTestRun: true }));
