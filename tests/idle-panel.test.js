@@ -450,7 +450,7 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("načte stav patičky ze skutečného listQueue mostu", async () => {
+  it("samé běžné čekající položky zobrazí jako dnes", async () => {
     const listQueue = vi.fn().mockResolvedValue([
       { state: "ceka" },
       { state: "ceka" },
@@ -461,11 +461,85 @@ describe("schválený klidový panel", () => {
     try {
       await vi.waitFor(() => {
         expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toContain("2 čekají");
+          .toBe("2 čekají");
       });
       expect(listQueue).toHaveBeenCalledTimes(1);
     } finally {
       await panel.cleanup();
+    }
+  });
+
+  it("ukáže lidský zásah a nezapočítá ho mezi běžně čekající položky", async () => {
+    const listQueue = vi.fn().mockResolvedValue([
+      { state: "ceka", requiresHumanAction: true },
+      { state: "ceka" },
+    ]);
+    const panel = await renderInteractivePanel(listQueue);
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká · 1 čeká na potvrzení");
+      });
+      const status = panel.document.querySelector('[data-testid="queue-status"]');
+      expect(status).not.toBeNull();
+      expect(status.textContent).not.toContain("2 čekají");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("prázdnou frontu zobrazí jako Vše odesláno", async () => {
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("Vše odesláno");
+      });
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("viditelný panel přečte změnu background pumpy i během LuTracku", async () => {
+    vi.useFakeTimers();
+    const listQueue = vi.fn()
+      .mockResolvedValueOnce([{ state: "ceka" }])
+      .mockResolvedValue([{ state: "ceka", requiresHumanAction: true }]);
+    let panel;
+
+    try {
+      panel = await renderInteractivePanel(listQueue, {
+        configureWindow(domWindow) {
+          Object.defineProperty(domWindow.document, "visibilityState", {
+            configurable: true,
+            value: "visible",
+          });
+        },
+      });
+      await React.act(async () => Promise.resolve());
+      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+        .toBe("1 čeká");
+
+      const startTracking = panel.document.querySelector('[aria-label="Spustit LuTrack"]');
+      await React.act(async () => {
+        startTracking.dispatchEvent(new panel.document.defaultView.MouseEvent("click", {
+          bubbles: true,
+        }));
+      });
+      expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).not.toBeNull();
+
+      await React.act(async () => {
+        await vi.advanceTimersByTimeAsync(1_000);
+      });
+
+      expect(listQueue).toHaveBeenCalledTimes(2);
+      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+        .toBe("1 čeká na potvrzení");
+    } finally {
+      await panel?.cleanup();
+      vi.useRealTimers();
     }
   });
 

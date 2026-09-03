@@ -20,6 +20,12 @@ export const QUEUE_STATES = Object.freeze({
 
 export const UPLOAD_DISABLED_REASON = "odesílání je vypnuté";
 
+const LEGACY_HUMAN_ACTION_FAILURE_REASONS = new Set([
+  "Nahrávka patří jinému účtu",
+  "Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem",
+  "Identitu aktuálního přihlášení nelze ověřit",
+]);
+
 export const DEFAULT_RETRY_POLICY = Object.freeze({
   baseDelayMs: 30_000,
   maxDelayMs: 6 * 60 * 60 * 1_000,
@@ -116,6 +122,35 @@ function errorFailureClass(error) {
   if (error.failureClass === FAILURE_CLASSES.PERMANENT) return FAILURE_CLASSES.PERMANENT;
   if (error.failureClass === FAILURE_CLASSES.PAUSED) return FAILURE_CLASSES.PAUSED;
   return FAILURE_CLASSES.RETRYABLE;
+}
+
+// 🔴 FAIL-CLOSED pro celou rodinu `*_owner_*`. Původní verze vyjmenovávala konkrétní
+// důvody (`mismatch`, `unknown`), takže nový kód — třeba `queue_owner_revoked` — by se
+// tiše zařadil mezi obyčejné čekající. A přesně to je vada, kvůli které tahle funkce
+// vznikla: položka, která se sama nikdy neodešle, vypadala jako položka, která čeká
+// na odeslání. Nový důvod o vlastnictví má být raději vidět zbytečně než schovaný.
+function failureCodeRequiresHumanAction(code) {
+  if (typeof code !== "string") return false;
+  const [source, subject, reason, ...extra] = code.split("_");
+  if (extra.length > 0 || subject !== "owner") return false;
+  if (typeof reason !== "string" || reason.length === 0) return false;
+  return source === "queue" || source === "session";
+}
+
+function failureRequiresHumanAction(error) {
+  // Konkrétní kódy vlastní upload klient. Fronta jejich společný kontrakt
+  // vyhodnotí jednou a rendereru pošle už jen význam, ne druhý seznam kódů.
+  return failureCodeRequiresHumanAction(error?.code);
+}
+
+function storedFailureRequiresHumanAction(item) {
+  if (Object.prototype.hasOwnProperty.call(item, "requiresHumanAction")) {
+    return item.requiresHumanAction === true;
+  }
+  if (failureCodeRequiresHumanAction(item.lastFailureReason)) return true;
+  // Přesná jednorázová migrace položek, které starší schéma uložilo jen jako
+  // českou error.message. Nové výsledky vždy nesou explicitní boolean.
+  return LEGACY_HUMAN_ACTION_FAILURE_REASONS.has(item.lastFailureReason);
 }
 
 function replaceItem(queue, index, item) {
@@ -257,6 +292,11 @@ export function reduceQueueForRenderer(queue) {
     attempts: item.attempts,
     nextAttemptAt: item.nextAttemptAt,
     lastFailureReason: item.lastFailureReason,
+    ...(
+      item.state === QUEUE_STATES.WAITING && storedFailureRequiresHumanAction(item)
+        ? { requiresHumanAction: true }
+        : {}
+    ),
   }));
 }
 
@@ -336,6 +376,7 @@ export async function processNext(queue, killswitches, send, options = {}) {
   const sendingItem = {
     ...queue.items[index],
     attempts: queue.items[index].attempts + 1,
+    requiresHumanAction: false,
     state: QUEUE_STATES.SENDING,
   };
   const sendingQueue = replaceItem(queue, index, sendingItem);
@@ -379,6 +420,7 @@ export async function processNext(queue, killswitches, send, options = {}) {
         attempts: originalItem.attempts,
         lastFailureReason: errorReason(error),
         nextAttemptAt: originalItem.nextAttemptAt,
+        requiresHumanAction: failureRequiresHumanAction(error),
         state: QUEUE_STATES.WAITING,
       };
       return {
