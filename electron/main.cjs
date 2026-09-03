@@ -56,6 +56,7 @@ const PANEL_MIN_HEIGHT = 180;
 const PANEL_SCREEN_MARGIN = 8;
 const PANEL_LOAD_TIMEOUT_MS = 5_000;
 const TRAY_SETTLE_DELAY_MS = 2_000;
+const TRAY_TITLE_INTERVAL_MS = 1_000;
 const TRAY_COMMAND_CHANNEL = "tray:command";
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
@@ -79,6 +80,9 @@ let settingsWindow;
 let traySpaceWarningWindow;
 let trayState = "signed-out";
 let trayApplied = false;
+let trayTitleApplied;
+let trayTitleTimer;
+let trayTitleUpdatesStopped = false;
 let traySpaceWarningShown = false;
 let trayVisibilityTimer;
 let isQuitting = false;
@@ -319,6 +323,7 @@ const TRAY_LABELS = {
 const appState = {
   signedIn: false,
   trackingOwners: new Set(),
+  trackingStartedAtByOwner: new Map(),
 };
 
 // Nahrávání běží, dokud je aspoň jedna příprava nezrušená nebo aspoň jedna session
@@ -345,6 +350,87 @@ function deriveTrayState({ signedIn, recording, tracking }) {
   return "idle";
 }
 
+// TDD_TRAY_TITLE_IMPL_20260903: stejný tvar jako panelový formatElapsed.
+function formatElapsed(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
+}
+
+function timestampMilliseconds(value) {
+  const milliseconds = typeof value === "number" ? value : Date.parse(value);
+  return Number.isFinite(milliseconds) ? milliseconds : null;
+}
+
+function oldestLiveRecordingStartedAt() {
+  const candidates = [];
+  for (const preparation of recordingOwnersPreparing.values()) {
+    if (preparation.cancelled) continue;
+    const startedAt = timestampMilliseconds(preparation.startedAt);
+    if (startedAt !== null) candidates.push(startedAt);
+  }
+  for (const recordingSession of recordingSessions.values()) {
+    if (recordingSession.finalizePromise) continue;
+    const startedAt = timestampMilliseconds(recordingSession.startedAt);
+    if (startedAt !== null) candidates.push(startedAt);
+  }
+  return candidates.length > 0 ? Math.min(...candidates) : null;
+}
+
+function oldestTrackingStartedAt() {
+  const candidates = [];
+  for (const ownerId of appState.trackingOwners) {
+    const startedAt = timestampMilliseconds(appState.trackingStartedAtByOwner.get(ownerId));
+    if (startedAt !== null) candidates.push(startedAt);
+  }
+  return candidates.length > 0 ? Math.min(...candidates) : null;
+}
+
+function currentTrayTitle() {
+  // Sdílené místo má jediný údaj. Nahrávání má stejnou prioritu jako tray ikona:
+  // aktivní mikrofon je bezpečnostně důležitější a přehlédnutí stojí celou nahrávku.
+  const recordingStartedAt = oldestLiveRecordingStartedAt();
+  const startedAt = recordingStartedAt ?? oldestTrackingStartedAt();
+  if (startedAt === null) return "";
+  return formatElapsed(Math.max(0, Math.floor((Date.now() - startedAt) / 1_000)));
+}
+
+function clearTrayTitleTimer() {
+  if (!trayTitleTimer) return;
+  clearInterval(trayTitleTimer);
+  trayTitleTimer = undefined;
+}
+
+function applyTrayTitle() {
+  if (!tray) return;
+  const nextTitle = currentTrayTitle();
+  if (nextTitle === trayTitleApplied) return;
+  tray.setTitle(nextTitle, { fontType: "monospacedDigit" });
+  trayTitleApplied = nextTitle;
+}
+
+function refreshTrayTitle() {
+  if (trayTitleUpdatesStopped) {
+    clearTrayTitleTimer();
+    return;
+  }
+  const activityRunning = hasLiveRecording() || appState.trackingOwners.size > 0;
+  applyTrayTitle();
+  if (!activityRunning) {
+    clearTrayTitleTimer();
+    return;
+  }
+  if (trayTitleTimer) return;
+  trayTitleTimer = setInterval(applyTrayTitle, TRAY_TITLE_INTERVAL_MS);
+  trayTitleTimer.unref?.();
+}
+
+function stopTrayTitleUpdates() {
+  trayTitleUpdatesStopped = true;
+  clearTrayTitleTimer();
+}
+
 function refreshTray() {
   const recording = hasLiveRecording();
   const tracking = appState.trackingOwners.size > 0;
@@ -355,16 +441,19 @@ function refreshTray() {
   }));
   // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při
   // startu obojí rovná „signed-out“, funkce skončí předčasně a popisek se nenastaví NIKDY.
-  if (next === trayState && trayApplied) return;
-  trayState = next;
-  console.log(
-    `[tray] ${new Date().toISOString()} stav=${trayState} nahrávání=${recording} `
-    + `lutrack=${tracking} přihlášen=${appState.signedIn}`,
-  );
-  if (!tray) return;
-  tray.setImage(trayImage(trayState));
-  tray.setToolTip(TRAY_LABELS[trayState]);
-  trayApplied = true;
+  if (next !== trayState || !trayApplied) {
+    trayState = next;
+    console.log(
+      `[tray] ${new Date().toISOString()} stav=${trayState} nahrávání=${recording} `
+      + `lutrack=${tracking} přihlášen=${appState.signedIn}`,
+    );
+    if (tray) {
+      tray.setImage(trayImage(trayState));
+      tray.setToolTip(TRAY_LABELS[trayState]);
+      trayApplied = true;
+    }
+  }
+  refreshTrayTitle();
 }
 
 function trayIsProbablyOutsideStatusArea(bounds, workArea) {
@@ -463,8 +552,17 @@ function applyReportedFacts(ownerId, facts) {
   if (!REPORTED_FACT_KEYS.every((klic) => typeof facts[klic] === "boolean")) return false;
 
   appState.signedIn = facts.signedIn;
-  if (facts.tracking) appState.trackingOwners.add(ownerId);
-  else appState.trackingOwners.delete(ownerId);
+  const trackingStartedAtByOwner = appState.trackingStartedAtByOwner
+    ?? (appState.trackingStartedAtByOwner = new Map());
+  if (facts.tracking) {
+    if (!appState.trackingOwners.has(ownerId)) {
+      trackingStartedAtByOwner.set(ownerId, Date.now());
+    }
+    appState.trackingOwners.add(ownerId);
+  } else {
+    appState.trackingOwners.delete(ownerId);
+    trackingStartedAtByOwner.delete(ownerId);
+  }
   refreshTray();
   return true;
 }
@@ -927,14 +1025,14 @@ async function createRecordingSession(event) {
   ))) {
     throw new Error("V tomto okně už jedna nahrávací session běží");
   }
-  const preparation = { cancelled: false };
+  const startedAt = new Date();
+  const preparation = { cancelled: false, startedAt: startedAt.toISOString() };
   recordingOwnersPreparing.set(ownerId, preparation);
   refreshTray();
   const tracks = new Map();
   let exportTrack;
   let manifestWasWritten = false;
   try {
-    const startedAt = new Date();
     const timestamp = startedAt.toISOString().replace(/[:.]/g, "-");
     const sessionId = randomUUID();
     const prefix = `${timestamp}-${sessionId.slice(0, 8)}`;
@@ -1325,6 +1423,7 @@ function finalizeRecordingSessionsForOwner(ownerId, reason) {
 function forgetOwnerActivity(ownerId, reason) {
   finalizeRecordingSessionsForOwner(ownerId, reason);
   appState.trackingOwners.delete(ownerId);
+  appState.trackingStartedAtByOwner?.delete(ownerId);
   refreshTray();
 }
 
@@ -1716,10 +1815,20 @@ function getTrackingStore() {
 }
 
 function syncTrackingTray(store) {
-  if (store.getState().aktualni?.state === TRACKING_STATES.RUNNING) {
+  const currentEntry = store.getState().aktualni;
+  const trackingStartedAtByOwner = appState.trackingStartedAtByOwner
+    ?? (appState.trackingStartedAtByOwner = new Map());
+  if (currentEntry?.state === TRACKING_STATES.RUNNING) {
     appState.trackingOwners.add(TRACKING_STORE_OWNER_ID);
+    const rawStartedAt = currentEntry.startedAtRaw ?? currentEntry.startedAt;
+    const parsedStartedAt = typeof rawStartedAt === "number" ? rawStartedAt : Date.parse(rawStartedAt);
+    trackingStartedAtByOwner.set(
+      TRACKING_STORE_OWNER_ID,
+      Number.isFinite(parsedStartedAt) ? parsedStartedAt : Date.now(),
+    );
   } else {
     appState.trackingOwners.delete(TRACKING_STORE_OWNER_ID);
+    trackingStartedAtByOwner.delete(TRACKING_STORE_OWNER_ID);
   }
   refreshTray();
 }
@@ -1942,6 +2051,7 @@ function beginDeferredQuit() {
         // Rendererový report může ještě obsahovat starý fakt. Perzistentní store je po
         // úspěšném stopu autorita a aplikace se stejně bezprostředně ukončí.
         appState.trackingOwners.clear();
+        appState.trackingStartedAtByOwner.clear();
         refreshTray();
       })
       .catch((error) => {
@@ -2594,7 +2704,6 @@ app.whenReady().then(async () => {
   installMediaHandlers();
   if (process.platform === "darwin") app.dock.hide();
   tray = new Tray(trayImage(trayState));
-  tray.setTitle("");
   tray.on("click", togglePanel);
   tray.on("right-click", showTrayContextMenu);
   scheduleTrayVisibilityCheck();
@@ -2628,6 +2737,7 @@ app.on("activate", () => {
 app.on("before-quit", (event) => {
   clearTimeout(trayVisibilityTimer);
   trayVisibilityTimer = undefined;
+  stopTrayTitleUpdates();
   // Jediná brána platí pro menu, Cmd+Q, Dock i systémové ukončení. Při druhém
   // before-quit po našem vlastním app.quit() už Electron nezastavujeme.
   if (isQuitting || deferredQuitRequest?.committed) return;
@@ -2647,6 +2757,8 @@ app.on("before-quit", (event) => {
   event.preventDefault();
   beginDeferredQuit();
 });
+
+app.on("will-quit", stopTrayTitleUpdates);
 
 app.on("window-all-closed", () => {
   // Menu-bar aplikace zůstává aktivní, dokud ji uživatel výslovně neukončí.

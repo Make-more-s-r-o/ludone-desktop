@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { formatElapsed } from "../src/hooks/useElapsedTime.js";
 import { createManifest } from "../src/lib/manifest.js";
 
 function sourceWithoutComments(source) {
@@ -103,6 +104,7 @@ function fakeElectron(userDataPath, {
   let readyCallback;
   let nextWebContentsId = 1;
   let pendingPanelLoad;
+  const trayTitleIntervals = new Map();
   let trayVisibilityCheck;
   let trayVisibilityDelay;
   let reportSettingsReadStarted;
@@ -230,12 +232,12 @@ function fakeElectron(userDataPath, {
       super();
       this.popUpContextMenu = vi.fn();
       this.setContextMenu = vi.fn();
+      this.setImage = vi.fn();
+      this.setTitle = vi.fn();
+      this.setToolTip = vi.fn();
       trays.push(this);
     }
 
-    setTitle() {}
-    setImage() {}
-    setToolTip() {}
     getBounds() {
       if (trayBounds instanceof Error) throw trayBounds;
       return { ...trayBounds };
@@ -326,8 +328,21 @@ function fakeElectron(userDataPath, {
     return globalThis.setTimeout(callback, delay, ...args);
   }
 
+  function controlledSetInterval(callback, delay, ...args) {
+    if (delay !== 1_000) return globalThis.setInterval(callback, delay, ...args);
+    const timer = { unref: vi.fn() };
+    trayTitleIntervals.set(timer, { args, callback, delay });
+    return timer;
+  }
+
+  function controlledClearInterval(timer) {
+    if (!trayTitleIntervals.delete(timer)) globalThis.clearInterval(timer);
+  }
+
   return {
     controlledSetTimeout,
+    controlledSetInterval,
+    controlledClearInterval,
     electron,
     ipcHandlers,
     ipcListeners,
@@ -362,6 +377,10 @@ function fakeElectron(userDataPath, {
       if (!trayVisibilityCheck) throw new Error("Kontrola viditelnosti lišty nebyla naplánovaná");
       return trayVisibilityCheck();
     },
+    runTrayTitleInterval() {
+      for (const { args, callback } of trayTitleIntervals.values()) callback(...args);
+    },
+    trayTitleIntervalCount: () => trayTitleIntervals.size,
     trayVisibilityDelay: () => trayVisibilityDelay,
   };
 }
@@ -463,6 +482,8 @@ async function loadMain({
     "console",
     "process",
     "setTimeout",
+    "setInterval",
+    "clearInterval",
     "injectedManifestModulePromise",
     "injectedQueueModulePromise",
     `"use strict";\n${executableMainSource}`,
@@ -485,6 +506,8 @@ async function loadMain({
       platform: process.platform,
     },
     harness.controlledSetTimeout,
+    harness.controlledSetInterval,
+    harness.controlledClearInterval,
     import("../src/lib/manifest.js"),
     import("../src/lib/queue.js"),
   );
@@ -1327,6 +1350,213 @@ describe("viditelnost ikony a klikání na lištu", () => {
     expect(panel.focused).toBe(true);
     expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(1_066, 26, false);
     expect(tray.popUpContextMenu).not.toHaveBeenCalled();
+  });
+});
+
+// TDD_TRAY_TITLE_20260903: integrační kontrakt titulku spouští skutečný main s fake Electronem.
+describe("průběžný titulek lišty", () => {
+  const startTime = Date.parse("2026-09-03T08:00:00.000Z");
+
+  function panelEvent(harness) {
+    const panelContents = harness.windows[0].webContents;
+    return { sender: panelContents, senderFrame: panelContents.mainFrame };
+  }
+
+  function completedTrackTimings(startedAt, elapsedMilliseconds = 1_000) {
+    const endedAt = new Date(Date.parse(startedAt) + elapsedMilliseconds).toISOString();
+    return {
+      microphone: { startedAt, endedAt },
+      system: { startedAt, endedAt },
+    };
+  }
+
+  it("bez běžící aktivity nechá vedle ikony prázdný text a nezaloží interval", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+
+    await harness.runReady();
+
+    expect(harness.trays[0].setTitle.mock.calls.map(([title]) => title)).toEqual([""]);
+    expect(harness.trayTitleIntervalCount()).toBe(0);
+  });
+
+  it("při nahrávání ukazuje rostoucí čas přesně ve tvaru panelového formatElapsed", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+
+    const started = await harness.ipcHandlers.get("recording:begin")(event);
+    expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
+      formatElapsed(0),
+      { fontType: "monospacedDigit" },
+    );
+    expect(harness.trayTitleIntervalCount()).toBe(1);
+
+    vi.setSystemTime(startTime + 3_661_000);
+    harness.runTrayTitleInterval();
+    expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
+      formatElapsed(3_661),
+      { fontType: "monospacedDigit" },
+    );
+
+    await harness.ipcHandlers.get("recording:finish")(
+      event,
+      started.sessionId,
+      completedTrackTimings(started.startedAt, 3_661_000),
+    );
+  });
+
+  it("při LuTracku ukazuje čas od náběžné hrany faktu z dnešního rendereru", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+
+    reportFacts(event, { signedIn: true, tracking: true });
+    expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
+      formatElapsed(0),
+      { fontType: "monospacedDigit" },
+    );
+
+    vi.setSystemTime(startTime + 61_000);
+    harness.runTrayTitleInterval();
+    expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
+      formatElapsed(61),
+      { fontType: "monospacedDigit" },
+    );
+
+    reportFacts(event, { signedIn: true, tracking: false });
+  });
+
+  it("posun hodin zpět nesmí do lišty napsat záporný čas", async () => {
+    // Čas do lišty počítáme z rozdílu dvou okamžiků, ne z vlastního tikání. Když se systémové
+    // hodiny pohnou zpět (letní čas, NTP korekce, obnovený časovač z casovac.json zapsaný
+    // strojem napřed), je ten rozdíl záporný — a `formatElapsed` by z něj složil „-1:-1:-5".
+    // V liště je to jediné, co uživatel vidí, takže se ta hodnota nesmí objevit ani na vteřinu.
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+
+    reportFacts(event, { signedIn: true, tracking: true });
+
+    vi.setSystemTime(startTime - 5_000);
+    harness.runTrayTitleInterval();
+
+    const posledniPopisek = harness.trays[0].setTitle.mock.lastCall?.[0];
+    expect(posledniPopisek).toBe(formatElapsed(0));
+    expect(posledniPopisek).not.toMatch(/-/);
+
+    reportFacts(event, { signedIn: true, tracking: false });
+  });
+
+  it("při souběhu ukazuje čas nahrávání a po jeho konci pokračující čas LuTracku", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+
+    reportFacts(event, { signedIn: true, tracking: true });
+    vi.setSystemTime(startTime + 30_000);
+    harness.runTrayTitleInterval();
+    const recording = await harness.ipcHandlers.get("recording:begin")(event);
+
+    vi.setSystemTime(startTime + 35_000);
+    harness.runTrayTitleInterval();
+    expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
+      formatElapsed(5),
+      { fontType: "monospacedDigit" },
+    );
+
+    await harness.ipcHandlers.get("recording:finish")(
+      event,
+      recording.sessionId,
+      completedTrackTimings(recording.startedAt, 5_000),
+    );
+    expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
+      formatElapsed(35),
+      { fontType: "monospacedDigit" },
+    );
+    reportFacts(event, { signedIn: true, tracking: false });
+  });
+
+  it("po zastavení nahrávání titulek vyprázdní a interval zruší", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const recording = await harness.ipcHandlers.get("recording:begin")(event);
+
+    vi.setSystemTime(startTime + 2_000);
+    harness.runTrayTitleInterval();
+    const titleBeforeStop = harness.trays[0].setTitle.mock.lastCall?.[0];
+    await harness.ipcHandlers.get("recording:finish")(
+      event,
+      recording.sessionId,
+      completedTrackTimings(recording.startedAt, 2_000),
+    );
+
+    expect({
+      intervalyPoStopu: harness.trayTitleIntervalCount(),
+      titleBeforeStop,
+      titlePoStopu: harness.trays[0].setTitle.mock.lastCall?.[0],
+    }).toEqual({
+      intervalyPoStopu: 0,
+      titleBeforeStop: formatElapsed(2),
+      titlePoStopu: "",
+    });
+  });
+
+  it("při nezměněném textu setTitle znovu nevolá", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const recording = await harness.ipcHandlers.get("recording:begin")(event);
+    const callsBeforeTicks = harness.trays[0].setTitle.mock.calls.length;
+
+    harness.runTrayTitleInterval();
+    harness.runTrayTitleInterval();
+    expect(harness.trays[0].setTitle).toHaveBeenCalledTimes(callsBeforeTicks);
+
+    await harness.ipcHandlers.get("recording:finish")(
+      event,
+      recording.sessionId,
+      completedTrackTimings(recording.startedAt),
+    );
+  });
+
+  it("při ukončení aplikace timer uklidí a už jej znovu nezaloží", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+
+    reportFacts(event, { signedIn: true, tracking: true });
+    const intervalyPredUkoncenim = harness.trayTitleIntervalCount();
+    harness.electron.app.emit("will-quit");
+    reportFacts(event, { signedIn: true, tracking: true });
+
+    expect({
+      intervalyPoUkonceni: harness.trayTitleIntervalCount(),
+      intervalyPredUkoncenim,
+    }).toEqual({
+      intervalyPoUkonceni: 0,
+      intervalyPredUkoncenim: 1,
+    });
   });
 });
 

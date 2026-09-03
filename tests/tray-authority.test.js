@@ -136,6 +136,7 @@ function trayHarness({
     "trayImage",
     "TRAY_LABELS",
     "tray",
+    "refreshTrayTitle",
     "finalizeRecordingSession",
     "finalizeRecordingExportStage",
     "REPORTED_FACT_KEYS",
@@ -178,6 +179,7 @@ function trayHarness({
       (state) => `obrazek:${state}`,
       { "signed-out": "L·odhlášeno", idle: "L·připraveno", recording: "L·nahrává", tracking: "L·lutrack" },
       { setImage: (value) => images.push(value), setToolTip: (value) => tooltips.push(value) },
+      () => {},
       // Atrapa je až TADY, o patro níž. Kdyby stála za finalizeRecordingSessionsForOwner,
       // neprovedl by se produkční řádek, který ruší rozdělanou přípravu — a test by měřil
       // chování atrapy místo chování kódu.
