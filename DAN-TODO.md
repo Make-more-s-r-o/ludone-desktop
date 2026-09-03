@@ -9,6 +9,48 @@
 
 
 
+
+## 🔴 TŘI VADY, KTERÉ DAN NAŠEL VEČER 3. 9. — všechny z mých dnešních PR
+
+Podíval se na build a našel tři věci, které 758 zelených testů nechytlo. Všechny mají
+společné, že **něco vypadá, že funguje, a nefunguje**.
+
+### 1 · Měřáky zvuku LŽOU *(oprava běží)*
+
+Pruhy „Mikrofon" a „Ostatní zvuk" během nahrávání **jsou pořád plné a zelené**, ať uživatel
+mluví nebo mlčí.
+
+Změřeno: `RecordingCard.jsx:821,837` má `<span className="recording-source__fill" />`
+**bez napojení na hlasitost**, `styles.css:641` má `width: 100%` **natvrdo** — a k tomu
+`transition: width 160ms`, tedy někdo to hýbat zamýšlel. `RecordingCard` vůbec neimportuje
+`rmsToPercent`.
+
+🔴 **Horší než chybějící funkce:** uživatel se dívá, jestli mu jde zvuk, a vidí plný pruh,
+i když mikrofon nesnímá nic. Návrh na tom přitom trvá — *„Oba měřáky se musí hýbat."*
+🟢 Onboarding funkční měřáky **má** (`RecordingTestStep.drawLevel`), jen se nezapojily do panelu.
+
+### 2 · Ikona v liště není vidět na tmavé liště *(čeká na uvolnění `main.cjs`)*
+
+**Změřeno:** `nativeTheme.shouldUseDarkColors: false`, takže bereme **světlou sadu
+s tmavým inkoustem** — a Danova lišta je **černá**. Kreslíme tmavé na tmavé.
+
+🔴 **Příčina:** `shouldUseDarkColors` popisuje vzhled **aplikace**, ne pozadí **lišty**.
+macOS kreslí tmavou lištu i ve světlém režimu, když je pod ní tmavá tapeta, a **API na
+„jakou barvu má lišta" neexistuje**. Přesně proto existují šablonové ikony — a já je
+v PR #47 zahodil, abych získal barvu.
+
+**Doporučená oprava:** neutrální stavy (`signed-out`, `idle`) zpět na **šablonové** —
+macOS je pak vykreslí správně na jakékoli liště a jsou to stavy, které Dan vidí 95 % času.
+Barvu si nechat u aktivních stavů (`recording`, `tracking`), kde nese význam a kde jsou
+korálová i tyrkysová středně tmavé, takže se čtou na obou pozadích.
+
+### 3 · „15 čeká" v patičce **nejde kliknout**
+
+Počet ve frontě je jen text. Uživatel vidí číslo a **nemá kam jít**.
+
+🔴 Souvisí to s PR #57: pozastavené nahrávky teď poctivě hlásí **„čeká na potvrzení"** —
+ale potvrdit je není kde. Fronta potřebuje **obrazovku**, ne jen počítadlo.
+
 ## 🔴 OBRAZOVKA ZNOVUPŘIHLÁŠENÍ JE ROZBITÁ (moje PR #58, našel Dan snímkem)
 
 Text „Nejsi připojený" je **uříznutý v půlce písmen**, ikona taky, a **tlačítko k přihlášení
