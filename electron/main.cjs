@@ -104,6 +104,7 @@ let isQuitting = false;
 let deferredQuitRequest;
 const pendingTrayCommands = [];
 
+// Jen tato třída smí předat svůj text uživateli. Přepsání věty její identitu nezmění.
 class RecordingExportUserError extends Error {
   constructor(message) {
     super(message);
@@ -1297,7 +1298,7 @@ async function finalizeRecordingExportStage(sessionId, outcome, { preserveFile =
       }
       exportStage.result = {
         ok: false,
-        message: "Dvoukanálový export se nepodařilo připravit; původní dvě stopy zůstaly uložené.",
+        message: `Dvoukanálový export se nepodařilo připravit. ${RECORDING_EXPORT_TRACKS_PRESERVED}`,
       };
     } else {
       exportStage.timing = timing;
@@ -1688,7 +1689,7 @@ async function waitForRecordingExportStage(exportStage) {
   const timeout = new Promise((resolve) => {
     timeoutId = setTimeout(() => resolve({
       ok: false,
-      message: "Příprava dvoukanálového souboru nedoběhla včas; původní dvě stopy zůstaly uložené.",
+      message: `Příprava dvoukanálového souboru nedoběhla včas. ${RECORDING_EXPORT_TRACKS_PRESERVED}`,
     }), EXPORT_STAGE_READY_TIMEOUT_MS);
   });
   return Promise.race([exportStage.ready, timeout]).finally(() => clearTimeout(timeoutId));

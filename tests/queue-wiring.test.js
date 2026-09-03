@@ -2505,6 +2505,7 @@ describe("soukromí chyb stereo exportu", () => {
 
     const result = await exportRecording(event, sessionId, "Pohovor Novak");
 
+    expect(exportRecordingCopy).toHaveBeenCalledOnce();
     expect(result).toMatchObject({ ok: false, recordingExported: false });
     expect(result.message).toBe(
       "Na disku není dost volného místa. Uvolněte místo a zkuste export znovu. "
@@ -2527,13 +2528,32 @@ describe("soukromí chyb stereo exportu", () => {
 
     try {
       const secondResult = await exportRecording(event, sessionId, "Druhý pokus");
-      expect(secondResult.message).toBe(
-        "Stereo export už probíhá Původní dvě stopy zůstaly uložené.",
-      );
+      expect(secondResult).toEqual({
+        ok: false,
+        recordingExported: false,
+        message: "Stereo export už probíhá Původní dvě stopy zůstaly uložené.",
+      });
     } finally {
       await finishExport(event, sessionId, { succeeded: false });
       await firstExport;
     }
+
+    const unmarkedExport = vi.fn().mockRejectedValue(new Error("Stereo export už probíhá"));
+    const unmarkedHarness = await loadMain({ exportRecordingCopy: unmarkedExport });
+    const unmarkedFixture = await prepareRecordingExport(unmarkedHarness);
+    const unmarkedResult = await unmarkedFixture.exportRecording(
+      unmarkedFixture.event,
+      unmarkedFixture.sessionId,
+      "Druhý pokus",
+    );
+
+    expect(unmarkedExport).toHaveBeenCalledOnce();
+    expect(unmarkedResult).toEqual({
+      ok: false,
+      recordingExported: false,
+      message: "Export se nepodařilo dokončit. Zkuste export znovu. "
+        + "Původní dvě stopy zůstaly uložené.",
+    });
   });
 
   it("každá vrácená hláška končí ujištěním o zachovaných stopách", async () => {
@@ -2560,12 +2580,17 @@ describe("soukromí chyb stereo exportu", () => {
 
     await exportRecording(event, sessionId, "Pohovor Novak");
 
-    const errorLog = JSON.stringify(harness.quietConsole.error.mock.calls);
-    expect(errorLog).toContain("EACCES");
-    expect(errorLog).not.toContain(rawMessage);
-    expect(errorLog).not.toContain("/Users/");
-    expect(errorLog).not.toContain(".webm");
-    expect(errorLog).not.toContain("Pohovor-Novak");
+    expect(exportRecordingCopy).toHaveBeenCalledOnce();
+    const serializedLogs = JSON.stringify([
+      ...harness.quietConsole.error.mock.calls,
+      ...harness.quietConsole.log.mock.calls,
+      ...harness.quietConsole.warn.mock.calls,
+    ]);
+    expect(serializedLogs).toContain("EACCES");
+    expect(serializedLogs).not.toContain(rawMessage);
+    expect(serializedLogs).not.toContain("/Users/");
+    expect(serializedLogs).not.toContain(".webm");
+    expect(serializedLogs).not.toContain("Pohovor-Novak");
   });
 });
 
