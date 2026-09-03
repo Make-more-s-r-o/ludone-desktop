@@ -112,6 +112,7 @@ function errorReason(error) {
 
 function errorFailureClass(error) {
   if (!error || typeof error !== "object") return FAILURE_CLASSES.RETRYABLE;
+  if (error.code === "unauthorized" || error.status === 401) return FAILURE_CLASSES.PAUSED;
   if (error.failureClass === FAILURE_CLASSES.PERMANENT) return FAILURE_CLASSES.PERMANENT;
   if (error.failureClass === FAILURE_CLASSES.PAUSED) return FAILURE_CLASSES.PAUSED;
   return FAILURE_CLASSES.RETRYABLE;
@@ -150,11 +151,30 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
   requireObject(recording, "recording");
   const manifest = validateManifest(recording.manifest);
   const manifestPath = requireNonEmptyString(recording.manifestPath, "manifestPath");
+  const sourceManifestPath = recording.sourceManifestPath === undefined
+    ? manifestPath
+    : requireNonEmptyString(recording.sourceManifestPath, "sourceManifestPath");
+  if (
+    recording.recoveredIncomplete !== undefined
+    && typeof recording.recoveredIncomplete !== "boolean"
+  ) {
+    throw new TypeError("recoveredIncomplete musí být boolean");
+  }
+  const recoveredIncomplete = recording.recoveredIncomplete === true;
   const tracks = normalizeTrackPaths(recording.trackPaths);
   const existing = queue.items.find(
     (item) => item.clientRecordingId === manifest.clientRecordingId,
   );
-  if (existing) return { added: false, item: existing, queue };
+  if (existing) {
+    const sameRecording = existing.kind === QUEUE_ITEM_KINDS.RECORDING
+      && (existing.sourceManifestPath ?? existing.manifestPath) === sourceManifestPath
+      && existing.manifestPath === manifestPath
+      && existing.tracks?.microphone === tracks.microphone
+      && existing.tracks?.system === tracks.system
+      && (existing.recoveredIncomplete === true) === recoveredIncomplete;
+    if (sameRecording) return { added: false, item: existing, queue };
+    throw new Error("Kolize clientRecordingId s jinou položkou fronty");
+  }
 
   const item = {
     attempts: 0,
@@ -164,12 +184,14 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
     lastFailureReason: null,
     manifestPath,
     nextAttemptAt: null,
+    ...(recoveredIncomplete ? { recoveredIncomplete: true } : {}),
     sentAt: null,
     server: {
       recordingId: null,
       uploadedBytes: { microphone: 0, system: 0 },
     },
     state: QUEUE_STATES.WAITING,
+    ...(sourceManifestPath !== manifestPath ? { sourceManifestPath } : {}),
     tracks,
   };
   return {
@@ -320,11 +342,12 @@ export async function processNext(queue, killswitches, send, options = {}) {
 
   try {
     await send(sendingItem);
+    const sentAt = timestamp(options.now ?? Date.now(), "options.now");
     const sentItem = {
       ...sendingItem,
       lastFailureReason: null,
       nextAttemptAt: null,
-      sentAt: new Date(now).toISOString(),
+      sentAt: new Date(sentAt).toISOString(),
       state: QUEUE_STATES.SENT,
     };
     return {
@@ -366,12 +389,13 @@ export async function processNext(queue, killswitches, send, options = {}) {
       };
     }
     const exhausted = sendingItem.attempts >= policy.maxAttempts;
+    const failedAt = timestamp(options.now ?? Date.now(), "options.now");
     const failedItem = {
       ...sendingItem,
       lastFailureReason: errorReason(error),
       nextAttemptAt: exhausted
         ? null
-        : now + retryDelayMs(sendingItem.attempts, policy, options.random),
+        : failedAt + retryDelayMs(sendingItem.attempts, policy, options.random),
       state: exhausted ? QUEUE_STATES.FAILED : QUEUE_STATES.WAITING,
     };
     return {

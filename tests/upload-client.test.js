@@ -307,6 +307,26 @@ describe("mapování serverových chyb do tříd fronty", () => {
     });
   });
 
+  it("unauthorized na posledním pokusu frontu pozastaví místo trvalého selhání", async () => {
+    const fixture = await recordingFixture();
+    fixture.queue.items[0] = { ...fixture.queue.items[0], attempts: 4 };
+    const fetchImpl = vi.fn(async () => fakeResponse(401, { code: "unauthorized" }));
+    const { send } = createSend(fetchImpl);
+
+    const result = await processNext(
+      fixture.queue,
+      { DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined },
+      send,
+    );
+
+    expect(result).toMatchObject({
+      outcome: "paused",
+      item: { attempts: 4, state: QUEUE_STATES.WAITING },
+    });
+    expect(result.reason).toContain("unauthorized");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it("idempotency_conflict je permanentní, neopakuje se a je hlasitě v logu", async () => {
     const fixture = await recordingFixture();
     const fetchImpl = vi.fn(async () => fakeResponse(409, {

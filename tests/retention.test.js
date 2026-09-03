@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import {
+  copyFile,
   mkdir,
   mkdtemp,
   readFile,
@@ -22,12 +24,23 @@ import {
   processNext,
 } from "../src/lib/queue.js";
 
-const { RETENTION_POLICIES, applyRetention, retentionMs } = retention;
+const {
+  RETENTION_POLICIES,
+  applyRetention: applyRetentionToDirectory,
+  retentionMs,
+} = retention;
 const DAY_MS = 24 * 60 * 60 * 1_000;
 const NOW = Date.parse("2026-09-02T12:00:00.000Z");
 const ENABLED_SETTING = ["tr", "ue"].join("");
 
 let temporaryDirectory;
+
+function applyRetention(options) {
+  return applyRetentionToDirectory({
+    ...options,
+    recordingsDirectory: temporaryDirectory,
+  });
+}
 
 beforeEach(async () => {
   temporaryDirectory = await mkdtemp(path.join(tmpdir(), "ludone-retention-"));
@@ -48,6 +61,8 @@ async function createQueuedRecording({
   const manifestPath = path.join(temporaryDirectory, `${suffix}.manifest.json`);
   const startedAt = new Date(recordedAt - 60_000).toISOString();
   const endedAt = new Date(recordedAt - 30_000).toISOString();
+  const microphoneBytes = Buffer.from("mikrofon");
+  const systemBytes = Buffer.from("system");
   const manifest = createManifest({
     clientRecordingId,
     createdAt: startedAt,
@@ -57,22 +72,22 @@ async function createQueuedRecording({
         fileName: path.basename(microphonePath),
         startedAt,
         endedAt,
-        sizeBytes: 10,
-        sha256: "a".repeat(64),
+        sizeBytes: microphoneBytes.byteLength,
+        sha256: createHash("sha256").update(microphoneBytes).digest("hex"),
       },
       system: {
         fileName: path.basename(systemPath),
         startedAt,
         endedAt,
-        sizeBytes: 10,
-        sha256: "b".repeat(64),
+        sizeBytes: systemBytes.byteLength,
+        sha256: createHash("sha256").update(systemBytes).digest("hex"),
       },
     },
   }, "complete");
 
   await Promise.all([
-    writeFile(microphonePath, "mikrofon", { mode: 0o600 }),
-    writeFile(systemPath, "system", { mode: 0o600 }),
+    writeFile(microphonePath, microphoneBytes, { mode: 0o600 }),
+    writeFile(systemPath, systemBytes, { mode: 0o600 }),
     writeFile(manifestPath, JSON.stringify(manifest), { mode: 0o600 }),
   ]);
 
@@ -143,6 +158,48 @@ describe("retence 7 dní", () => {
 
     expect(existsSync(recording.microphonePath)).toBe(false);
     expect(existsSync(recording.systemPath)).toBe(false);
+  });
+
+  it.each([
+    ["jinou velikost", Buffer.from("novější a delší zvuk"), "TRACK_SIZE_MISMATCH"],
+    ["jiný obsah stejné velikosti", Buffer.from("prepsano"), "TRACK_HASH_MISMATCH"],
+  ])("nesmaže žádnou stopu po nahrazení odeslané kopie: %s", async (_case, replacement, code) => {
+    const recording = await createSentRecording({ sentAt: NOW - 8 * DAY_MS });
+    await writeFile(recording.microphonePath, replacement, { mode: 0o600 });
+
+    const result = await applyRetention({
+      queue: recording.queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.systemPath)).toBe(true);
+    expect(result.deletedItems).toEqual([]);
+    expect(result.keptItems).toEqual(recording.queue.items);
+    expect(result.errors).toContainEqual({ code, source: "microphone" });
+  });
+
+  it("obnovenou incomplete nahrávku automatická retence nikdy nesmaže", async () => {
+    const recording = await createSentRecording({ sentAt: NOW - 30 * DAY_MS });
+    const queue = {
+      ...recording.queue,
+      items: recording.queue.items.map((item) => ({
+        ...item,
+        recoveredIncomplete: true,
+      })),
+    };
+
+    const result = await applyRetention({
+      queue,
+      policy: RETENTION_POLICIES.IHNED,
+      now: NOW,
+    });
+
+    expect(result.deletedItems).toHaveLength(0);
+    expect(result.keptItems).toHaveLength(1);
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.systemPath)).toBe(true);
   });
 
   it("nechá nahrávku odeslanou před šesti dny a smaže jen tu osmidenní", async () => {
@@ -364,6 +421,86 @@ describe("retence 7 dní", () => {
     expect(result.keptItems).toEqual([]);
   });
 
+  it("poškozená fronta nesmaže vnořený cizí soubor ani druhou platnou stopu", async () => {
+    const recording = await createSentRecording({ sentAt: NOW - 8 * DAY_MS });
+    const nestedDirectory = path.join(temporaryDirectory, "cizi-adresar");
+    const sentinelPath = path.join(nestedDirectory, "kanarek.webm");
+    await mkdir(nestedDirectory);
+    await writeFile(sentinelPath, "nesmazat", { mode: 0o600 });
+    const queue = {
+      ...recording.queue,
+      items: recording.queue.items.map((item) => ({
+        ...item,
+        tracks: { ...item.tracks, microphone: sentinelPath },
+      })),
+    };
+
+    const result = await applyRetention({
+      queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(sentinelPath)).toBe(true);
+    expect(existsSync(recording.systemPath)).toBe(true);
+    expect(result.deletedItems).toEqual([]);
+    expect(result.keptItems).toEqual(queue.items);
+  });
+
+  it("nesmaže shodnou kopii stopy, která leží MIMO adresář nahrávek", async () => {
+    // Kontrolu umístění nejde změřit podvrhem, který odhalí dřívější brány: shoda jmen
+    // souborů i obsahu proti manifestu se ověřuje před ní. Návnada je proto bajt po bajtu
+    // shodná kopie na jiném místě — jméno, velikost i otisk sedí, liší se jen umístění.
+    const recording = await createSentRecording({ sentAt: NOW - 8 * DAY_MS });
+    const jmeno = path.basename(recording.microphonePath);
+    const mimoKoren = path.join(temporaryDirectory, "..", `mimo-${Date.now()}-${jmeno}`);
+    await copyFile(recording.microphonePath, mimoKoren);
+
+    const podvrzena = {
+      ...recording.queue,
+      items: recording.queue.items.map((item) => ({
+        ...item,
+        tracks: { ...item.tracks, microphone: mimoKoren },
+      })),
+    };
+
+    try {
+      const result = await applyRetention({
+        queue: podvrzena,
+        // 🔴 Bez kořene retence odmítne úplně všechno a test by procházel, aniž by
+        // cokoli měřil. Tahle jediná řádka rozhoduje, jestli je to důkaz nebo divadlo.
+        recordingsDirectory: temporaryDirectory,
+        policy: RETENTION_POLICIES.DNI_7,
+        now: NOW,
+      });
+
+      expect(existsSync(mimoKoren), "soubor mimo adresář nahrávek nesmí zmizet").toBe(true);
+      expect(existsSync(recording.systemPath), "ani druhá stopa nesmí zmizet").toBe(true);
+      expect(result.deletedItems).toEqual([]);
+    } finally {
+      await rm(mimoKoren, { force: true });
+    }
+  });
+
+  it("nesmaže nic, když identita manifestu nesouhlasí s položkou fronty", async () => {
+    const recording = await createSentRecording({ sentAt: NOW - 8 * DAY_MS });
+    const manifest = JSON.parse(await readFile(recording.manifestPath, "utf8"));
+    await writeFile(recording.manifestPath, JSON.stringify({
+      ...manifest,
+      clientRecordingId: "88baad38-6222-4c2b-828e-44a352d2bb73",
+    }));
+
+    const result = await applyRetention({
+      queue: recording.queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.systemPath)).toBe(true);
+    expect(result.deletedItems).toEqual([]);
+  });
+
   it("částečné selhání ponechá položku a nezastaví úklid další nahrávky", async () => {
     const partial = await createSentRecording({
       clientRecordingId: "5edc7c43-5fd6-42c8-920f-a6ef34125854",
@@ -390,13 +527,44 @@ describe("retence 7 dní", () => {
       now: NOW,
     });
 
-    expect(existsSync(partial.microphonePath)).toBe(false);
+    expect(existsSync(partial.microphonePath)).toBe(true);
     expect(existsSync(partial.systemPath)).toBe(true);
     expect(existsSync(complete.microphonePath)).toBe(false);
     expect(existsSync(complete.systemPath)).toBe(false);
     expect(result.errors).toHaveLength(1);
     expect(result.keptItems).toContain(complete.queue.items[0]);
     expect(result.deletedItems).toContain(complete.queue.items[1]);
+  });
+
+  it("chyba úklidu nikdy nevrátí cestu ani název schůzky", async () => {
+    const recording = await createSentRecording({ sentAt: NOW - 8 * DAY_MS });
+    const secretName = "NELOGOVAT-TAJNOU-PORADU.webm";
+    const secretPath = path.join(temporaryDirectory, secretName);
+    await unlink(recording.systemPath);
+    await mkdir(secretPath);
+    const manifest = JSON.parse(await readFile(recording.manifestPath, "utf8"));
+    manifest.tracks.system.fileName = secretName;
+    await writeFile(recording.manifestPath, JSON.stringify(manifest));
+    const queue = {
+      ...recording.queue,
+      items: recording.queue.items.map((item) => ({
+        ...item,
+        tracks: { ...item.tracks, system: secretPath },
+      })),
+    };
+
+    const result = await applyRetention({
+      queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+    const serializedErrors = JSON.stringify(result.errors);
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(secretPath)).toBe(true);
+    expect(result.errors).toHaveLength(1);
+    expect(serializedErrors).not.toContain(secretName);
+    expect(serializedErrors).not.toContain(temporaryDirectory);
   });
 
   it("odeslanou časovou položku ignoruje a neskenuje dočasný adresář", async () => {

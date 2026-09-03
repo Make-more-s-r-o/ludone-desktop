@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -20,7 +21,12 @@ import {
   retryDelayMs,
 } from "../src/lib/queue.js";
 
-const { createOutboundQueueStore, loadQueue, saveQueueAtomically } = queueStore;
+const {
+  createOutboundQueueStore,
+  loadQueue,
+  recoverOrphanedRecordings,
+  saveQueueAtomically,
+} = queueStore;
 const ORIGINAL_UPLOAD_SETTING = process.env.DESKTOP_UPLOAD_ENABLED;
 const ORIGINAL_TIME_SETTING = process.env.DESKTOP_TIME_ENABLED;
 const ENABLED_SETTING = ["tr", "ue"].join("");
@@ -159,6 +165,53 @@ function recording(clientRecordingId = "9e586e55-d688-43f1-8a80-a3d61e754f3e") {
 
 function oneItemQueue(clientRecordingId) {
   return enqueueRecording(createQueue(), recording(clientRecordingId), 1_777_000_000_000).queue;
+}
+
+async function writeRecoverableRecording(
+  recordingsDirectory,
+  clientRecordingId = "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+  { staleMetadata = false, state = "complete" } = {},
+) {
+  const microphoneBytes = Buffer.from("mikrofon");
+  const systemBytes = Buffer.from("systém");
+  const startedAt = "2026-08-25T08:00:00.000Z";
+  const endedAt = "2026-08-25T08:30:00.000Z";
+  const manifestPath = path.join(recordingsDirectory, "osiřelá.manifest.json");
+  const manifest = {
+    ...createManifest({
+      clientRecordingId,
+      createdAt: startedAt,
+      closedAt: staleMetadata ? null : endedAt,
+      tracks: {
+        microphone: {
+          fileName: "session-microphone.webm",
+          startedAt,
+          endedAt: staleMetadata ? null : endedAt,
+          sizeBytes: staleMetadata ? 0 : microphoneBytes.byteLength,
+          sha256: staleMetadata ? null : createHash("sha256").update(microphoneBytes).digest("hex"),
+        },
+        system: {
+          fileName: "session-system.webm",
+          startedAt,
+          endedAt: staleMetadata ? null : endedAt,
+          sizeBytes: staleMetadata ? 0 : systemBytes.byteLength,
+          sha256: staleMetadata ? null : createHash("sha256").update(systemBytes).digest("hex"),
+        },
+      },
+    }, state),
+    title: "NELOGOVAT-TAJNOU-PORADU",
+  };
+  const trackPaths = {
+    microphone: path.join(recordingsDirectory, manifest.tracks.microphone.fileName),
+    system: path.join(recordingsDirectory, manifest.tracks.system.fileName),
+  };
+  await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+  await Promise.all([
+    fs.promises.writeFile(manifestPath, JSON.stringify(manifest)),
+    fs.promises.writeFile(trackPaths.microphone, microphoneBytes),
+    fs.promises.writeFile(trackPaths.system, systemBytes),
+  ]);
+  return { manifest, manifestPath, trackPaths };
 }
 
 function timeEntry(clientTimeEntryId = "7c1f9ab3-1a84-47b3-91eb-7cd4c13f86d8") {
@@ -470,6 +523,18 @@ describe("stavový automat fronty", () => {
     expect(second.queue.items).toHaveLength(1);
   });
 
+  it("shodné ID jiné položky nesmí předstírat idempotentní obnovu nahrávky", () => {
+    const clientRecordingId = recording().manifest.clientRecordingId;
+    const time = enqueueTimeEntry(
+      createQueue(),
+      { ...timeEntry(), clientTimeEntryId: clientRecordingId },
+      1_777_000_000_000,
+    );
+
+    expect(() => enqueueRecording(time.queue, recording(), 1_777_000_001_000))
+      .toThrow(/koliz/i);
+  });
+
   it("neúspěch ponechá položku ve frontě a zvýší počet pokusů", async () => {
     const result = await processNext(oneItemQueue(), killswitches(ENABLED_SETTING), async () => {
       throw new Error("server je dočasně nedostupný");
@@ -485,6 +550,55 @@ describe("stavový automat fronty", () => {
       state: QUEUE_STATES.WAITING,
     });
     expect(result.queue.items[0].nextAttemptAt).toBe(1_777_000_031_000);
+  });
+
+  it("sentAt vznikne až po dokončení odesílání", async () => {
+    const startedAt = 1_777_000_001_000;
+    const completedAt = 1_777_000_009_000;
+    let releaseSend;
+    let sendCompleted = false;
+    const sendReleased = new Promise((resolve) => { releaseSend = resolve; });
+    vi.spyOn(Date, "now").mockImplementation(() => (
+      sendCompleted ? completedAt : startedAt
+    ));
+
+    const processing = processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      vi.fn(async () => {
+        await sendReleased;
+        sendCompleted = true;
+      }),
+    );
+
+    await vi.waitFor(() => expect(Date.now).toHaveBeenCalledTimes(1));
+    releaseSend();
+    const result = await processing;
+
+    expect(sendCompleted).toBe(true);
+    expect(result.item.sentAt).toBe(new Date(completedAt).toISOString());
+    expect(Date.now).toHaveBeenCalledTimes(2);
+  });
+
+  it("retry prodlevu počítá až od dokončení neúspěšného pokusu", async () => {
+    const startedAt = 1_777_000_001_000;
+    const failedAt = 1_777_000_009_000;
+    let failSend;
+    const send = vi.fn(() => new Promise((_resolve, reject) => { failSend = reject; }));
+    vi.spyOn(Date, "now")
+      .mockReturnValueOnce(startedAt)
+      .mockReturnValueOnce(failedAt);
+
+    const processing = processNext(oneItemQueue(), killswitches(ENABLED_SETTING), send, {
+      random: () => 0,
+      retryPolicy: { baseDelayMs: 1_000 },
+    });
+    await vi.waitFor(() => expect(send).toHaveBeenCalledOnce());
+    failSend(new Error("dočasná chyba po dlouhém pokusu"));
+    const result = await processing;
+
+    expect(result.outcome).toBe("retry_scheduled");
+    expect(result.item.nextAttemptAt).toBe(failedAt + 1_000);
   });
 
   it("po vyčerpání pokusů označí položku jako selhalo a nesmaže ji", async () => {
@@ -684,6 +798,328 @@ describe("trvalé uložení fronty", () => {
       "sync:r",
       "close:r",
     ]);
+  });
+});
+
+describe("obnova osiřelých nahrávek", () => {
+  it("dvojí obnova nevytvoří dvě položky", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-idempotent-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    await writeRecoverableRecording(recordingsDirectory);
+
+    try {
+      const options = {
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      };
+      const [first, second] = await Promise.all([
+        recoverOrphanedRecordings(options),
+        recoverOrphanedRecordings(options),
+      ]);
+
+      expect([first.recovered, second.recovered].sort()).toEqual([0, 1]);
+      expect([first.alreadyQueued, second.alreadyQueued].sort()).toEqual([0, 1]);
+      expect((await loadQueue(queuePath)).items).toHaveLength(1);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("poškozený manifest obnovu nezastaví, zůstane ležet a neprozradí název", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-corrupt-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const damagedName = "00-NELOGOVAT-TAJNOU-PORADU.manifest.json";
+    const damagedPath = path.join(recordingsDirectory, damagedName);
+    const damagedContents = "{\"title\":\"NELOGOVAT-TAJNOU-PORADU\"";
+    const logger = { error: vi.fn(), log: vi.fn(), warn: vi.fn() };
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    await writeRecoverableRecording(recordingsDirectory);
+    await fs.promises.writeFile(damagedPath, damagedContents);
+
+    try {
+      await expect(recoverOrphanedRecordings({
+        logger,
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      })).resolves.toMatchObject({ recovered: 1, skipped: 1 });
+
+      expect((await loadQueue(queuePath)).items).toHaveLength(1);
+      await expect(fs.promises.readFile(damagedPath, "utf8")).resolves.toBe(damagedContents);
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain("NELOGOVAT-TAJNOU-PORADU");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("incomplete manifest opraví do uploadovatelného sidecaru a originál zachová", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-incomplete-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(
+      recordingsDirectory,
+      undefined,
+      { staleMetadata: true, state: "incomplete" },
+    );
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      await expect(recoverOrphanedRecordings({
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      })).resolves.toMatchObject({ recovered: 1, skipped: 0 });
+
+      const [item] = (await loadQueue(queuePath)).items;
+      expect(item.manifestPath).not.toBe(fixture.manifestPath);
+      expect(item.sourceManifestPath).toBe(fixture.manifestPath);
+      await expect(fs.promises.readFile(fixture.manifestPath, "utf8").then(JSON.parse))
+        .resolves.toMatchObject({ state: "incomplete" });
+      await expect(fs.promises.readFile(item.manifestPath, "utf8").then(JSON.parse))
+        .resolves.toMatchObject({
+          state: "complete",
+          tracks: {
+            microphone: { sizeBytes: 8, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+            system: { sizeBytes: 7, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+          },
+        });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("jednu nulovou stopu zařadí jako chráněný raw incomplete záznam", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-empty-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(
+      recordingsDirectory,
+      undefined,
+      { staleMetadata: true, state: "incomplete" },
+    );
+    await fs.promises.writeFile(fixture.trackPaths.system, Buffer.alloc(0));
+    const logger = { error: vi.fn(), log: vi.fn(), warn: vi.fn() };
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      await expect(recoverOrphanedRecordings({
+        logger,
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      })).resolves.toMatchObject({ recovered: 1, skipped: 0 });
+      const [item] = (await loadQueue(queuePath)).items;
+      expect(item).toMatchObject({
+        manifestPath: fixture.manifestPath,
+        recoveredIncomplete: true,
+      });
+      expect(fs.existsSync(`${fixture.manifestPath}.recovered-upload-v1.json`)).toBe(false);
+      await expect(fs.promises.readFile(fixture.manifestPath, "utf8"))
+        .resolves.toContain("incomplete");
+      expect(logger.warn).not.toHaveBeenCalled();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("complete manifest s jednou nulovou stopou obnoví do viditelné fronty", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-complete-empty-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(recordingsDirectory);
+    fixture.manifest.tracks.system.sizeBytes = 0;
+    fixture.manifest.tracks.system.sha256 = createHash("sha256").update(Buffer.alloc(0)).digest("hex");
+    await Promise.all([
+      fs.promises.writeFile(fixture.trackPaths.system, Buffer.alloc(0)),
+      fs.promises.writeFile(fixture.manifestPath, JSON.stringify(fixture.manifest)),
+    ]);
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      await expect(recoverOrphanedRecordings({
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      })).resolves.toMatchObject({ recovered: 1, skipped: 0 });
+      const [item] = (await loadQueue(queuePath)).items;
+      expect(item).toMatchObject({ manifestPath: fixture.manifestPath });
+      expect(item.recoveredIncomplete).toBeUndefined();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("obě nulové stopy incomplete manifestu nechá na disku bez položky", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-both-empty-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(
+      recordingsDirectory,
+      undefined,
+      { staleMetadata: true, state: "incomplete" },
+    );
+    await Promise.all([
+      fs.promises.writeFile(fixture.trackPaths.microphone, Buffer.alloc(0)),
+      fs.promises.writeFile(fixture.trackPaths.system, Buffer.alloc(0)),
+    ]);
+    const logger = { error: vi.fn(), log: vi.fn(), warn: vi.fn() };
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      await expect(recoverOrphanedRecordings({
+        logger,
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      })).resolves.toMatchObject({ recovered: 0, skipped: 1 });
+      expect((await loadQueue(queuePath)).items).toHaveLength(0);
+      expect(logger.warn).toHaveBeenCalledOnce();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("complete stopu nad upload limitem zařadí bez čtení celého souboru", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-oversized-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(recordingsDirectory);
+    const oversizedBytes = 512 * 1024 * 1024 + 1;
+    await fs.promises.truncate(fixture.trackPaths.system, oversizedBytes);
+    fixture.manifest.tracks.system.sizeBytes = oversizedBytes;
+    fixture.manifest.tracks.system.sha256 = "c".repeat(64);
+    await fs.promises.writeFile(fixture.manifestPath, JSON.stringify(fixture.manifest));
+    const realOpen = fs.promises.open.bind(fs.promises);
+    const oversizedRead = vi.fn(async () => {
+      throw new Error("Nadlimitní stopa se při obnově nesmí hashovat");
+    });
+    vi.spyOn(fs.promises, "open").mockImplementation(async (target, ...args) => {
+      const handle = await realOpen(target, ...args);
+      if (String(target) !== fixture.trackPaths.system) return handle;
+      return {
+        close: handle.close.bind(handle),
+        read: oversizedRead,
+        stat: handle.stat.bind(handle),
+      };
+    });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      await expect(recoverOrphanedRecordings({
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      })).resolves.toMatchObject({ recovered: 1, skipped: 0 });
+      expect((await loadQueue(queuePath)).items).toHaveLength(1);
+      expect(oversizedRead).not.toHaveBeenCalled();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("selhání zápisu obnovené položky nezamění za vadný manifest", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-enospc-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const fixture = await writeRecoverableRecording(recordingsDirectory);
+    const logger = { error: vi.fn(), log: vi.fn(), warn: vi.fn() };
+    const queueError = Object.assign(new Error("Na disku není místo"), { code: "ENOSPC" });
+
+    try {
+      await expect(recoverOrphanedRecordings({
+        logger,
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: { enqueueRecording: vi.fn(async () => { throw queueError; }) },
+        recordingsDirectory,
+      })).resolves.toMatchObject({ failed: 1, recovered: 0, skipped: 0 });
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("zapsat do fronty"));
+      expect(logger.warn).not.toHaveBeenCalled();
+      await expect(fs.promises.readFile(fixture.manifestPath, "utf8"))
+        .resolves.toContain(fixture.manifest.clientRecordingId);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("existující sidecar přijme jen při přesně shodném bezpečném obsahu", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-sidecar-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(
+      recordingsDirectory,
+      undefined,
+      { staleMetadata: true, state: "incomplete" },
+    );
+    const logger = { error: vi.fn(), log: vi.fn(), warn: vi.fn() };
+
+    try {
+      await recoverOrphanedRecordings({
+        logger,
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: { enqueueRecording: vi.fn(async () => { throw new Error("test stop"); }) },
+        recordingsDirectory,
+      });
+      const sidecarPath = `${fixture.manifestPath}.recovered-upload-v1.json`;
+      const unsafeSidecar = {
+        ...JSON.parse(await fs.promises.readFile(sidecarPath, "utf8")),
+        state: "incomplete",
+        visibility: "company",
+      };
+      await fs.promises.writeFile(sidecarPath, JSON.stringify(unsafeSidecar));
+      const store = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+
+      await expect(recoverOrphanedRecordings({
+        logger,
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      })).resolves.toMatchObject({ recovered: 0, skipped: 1 });
+      expect((await loadQueue(queuePath)).items).toHaveLength(0);
+      await expect(fs.promises.readFile(sidecarPath, "utf8").then(JSON.parse))
+        .resolves.toMatchObject({ state: "incomplete", visibility: "company" });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });
 
