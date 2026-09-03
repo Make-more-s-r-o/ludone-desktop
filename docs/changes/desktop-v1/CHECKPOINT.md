@@ -12,8 +12,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `a610fba`, **620 passed \| 6 skipped (626)**, čistý strom, **Electron 39.8.10** |
-| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3. 9.: **#41–#47** |
+| `main` | `5753262`, **654 passed \| 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
+| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3. 9.: **#41–#51** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
@@ -39,6 +39,29 @@ a patnáct minut jeho času u počítače.
 - 🔴 **Codex v sandboxu nemá síť.** `npm install` mu selže na `ENOTFOUND`, ale
   `package.json` a lockfile se aktualizují — **zelené brány pak běží nad STAROU
   závislostí**. U každého upgradu balíčku si závislost doinstaluj a brány pusť SÁM.
+
+
+## ✅ NASTAVENÍ SLADĚNO S NÁVRHEM (PR #50, #51)
+
+Čtyři záložky **Účet · Zvuk · Záznamy · Diagnostika** podle `nahled.html:520–600`.
+Přibylo: **Zařízení** · **Prostředí** (jen ke čtení) · přepínač **ikony v Docku** ·
+**spouštění po přihlášení** · celá **Diagnostika** s exportem.
+
+🔴 **Dvě věci, které se u toho vyřešily správně a stojí za zapamatování:**
+
+1. **Export diagnostiky je pevný allowlist, ne serializace stavu.** V kódu záměrně není
+   `JSON.stringify` ani spread — **nové pole ve stavu aplikace se do exportu samo nikdy
+   nedostane**. Ověřeno mimo testy: do položky fronty nacpán token, název schůzky,
+   absolutní cesta i tajemství → **do exportu neproniklo nic**.
+2. **„Spojení se serverem" se NEMĚŘÍ HTTP dotazem.** Naše adresa vrací nepřihlášenému
+   307 na `/login` — a **totéž vrací adresa, která neexistuje**. Místo falešné zelené
+   fajfky se ukazuje **poslední potvrzené odeslání** (čas z uploadu, který server
+   potvrdil jako `stored`). Historický důkaz, ne live health-check.
+
+**Prostředí je zatím jen ke čtení.** Je to ale schválené místo pro přepínač labs × produkce,
+který Dan chce — serverová session potvrdila, že labs žije, modul tam je (`enabled_envs =
+{labs}` na obou DB, tedy na produkci schválně ne), Danův účet je tam admin a dynamickou
+registraci klienta už umíme. **Zbývá jen přepnutí + odhlášení.**
 
 ## 🛑 Zbývá — a nic z toho není samostatná práce
 

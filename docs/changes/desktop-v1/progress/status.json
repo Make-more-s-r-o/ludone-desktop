@@ -228,7 +228,7 @@
       "dodani": "merged",
       "vystaveni": "labs",
       "overeni": "tests-green",
-      "dalsiKrok": "Napojit skutečné hodnoty, sladit zbývající obrazovky s návrhem a projít je ručně."
+      "dalsiKrok": "Přestavěno na čtyři záložky podle návrhu (PR #51): Účet · Zvuk · Záznamy · Diagnostika. Přibyly řádky Zařízení a Prostředí, oba přepínače (Dock, start po přihlášení, PR #50) a celá Diagnostika včetně exportu z pevného allowlistu. Připomínky se vědomě nestaví (BD-N43)."
     },
     {
       "id": "DSK-F016",
