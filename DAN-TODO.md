@@ -10,12 +10,36 @@
 
 
 
-## 🔴 TŘI VADY, KTERÉ DAN NAŠEL VEČER 3. 9. — všechny z mých dnešních PR
+
+## 🔴 JEDNO ROZHODNUTÍ O NÁVRHU, KTERÉ SI VZÍT NESMÍM
+
+**Barevné ikony v liště propadají kontrastem na SVĚTLÉ liště.** Spočítáno:
+
+| barva | na bílé | na černé |
+|---|---|---|
+| korálová `oklch(0.75 0.14 34)` | 🔴 **2,35 : 1** | 8,94 : 1 |
+| tyrkysová `oklch(0.78 0.11 178)` | 🔴 **1,91 : 1** | 11,01 : 1 |
+
+Obě propadají i mírné hranici **3 : 1**. PR #64 opravil tvůj případ tím, že **klidové stavy
+vrátil na šablonové** (macOS je tónuje sám podle skutečné lišty) — ale u **aktivních stavů**
+`recording` a `tracking` zůstává barva z návrhu a **na světlé liště je špatně vidět**.
+
+**Vlastní odstín jsem si nevymyslel** — rozešel by se se schváleným návrhem. Varianty:
+
+| | co to znamená |
+|---|---|
+| **kontrastní obrys nebo halo** kolem ikony | barva zůstane, přidá se tenký obrys v barvě lišty; ikona se mírně „ztuční" |
+| **přesunout barvu mimo ikonu** | ikona šablonová vždy, barvu nést v **textu vedle** (čas nahrávání je tam už dnes) |
+| **obětovat barvu úplně** | šablonové i pro nahrávání; stav pozná jen tvar. Nejbezpečnější, nejchudší |
+
+Jsou to všechno zásahy do schváleného návrhu, proto se ptám.
+
+## ✅ TŘI VADY Z VEČERA 3. 9. — VŠECHNY OPRAVENÉ (#63 · #64 · zbývá fronta)
 
 Podíval se na build a našel tři věci, které 758 zelených testů nechytlo. Všechny mají
 společné, že **něco vypadá, že funguje, a nefunguje**.
 
-### 1 · Měřáky zvuku LŽOU *(oprava běží)*
+### ✅ 1 · Měřáky zvuku — OPRAVENO, PR #63
 
 Pruhy „Mikrofon" a „Ostatní zvuk" během nahrávání **jsou pořád plné a zelené**, ať uživatel
 mluví nebo mlčí.
@@ -29,7 +53,7 @@ Změřeno: `RecordingCard.jsx:821,837` má `<span className="recording-source__f
 i když mikrofon nesnímá nic. Návrh na tom přitom trvá — *„Oba měřáky se musí hýbat."*
 🟢 Onboarding funkční měřáky **má** (`RecordingTestStep.drawLevel`), jen se nezapojily do panelu.
 
-### 2 · Ikona v liště není vidět na tmavé liště *(čeká na uvolnění `main.cjs`)*
+### ✅ 2 · Ikona v liště — OPRAVENO, PR #64
 
 **Změřeno:** `nativeTheme.shouldUseDarkColors: false`, takže bereme **světlou sadu
 s tmavým inkoustem** — a Danova lišta je **černá**. Kreslíme tmavé na tmavé.
