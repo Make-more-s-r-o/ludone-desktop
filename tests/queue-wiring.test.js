@@ -4407,7 +4407,7 @@ describe("bezpečné ukončení aplikace", () => {
     });
     expect(harness.windows[0].isVisible()).toBe(true);
     expect(harness.quietConsole.error).toHaveBeenCalledWith(
-      expect.stringMatching(/\[quit\].*stereo.*opakované potvrzení/u),
+      expect.stringMatching(/\[quit\].*stereo.*výslovné potvrzení/u),
     );
     expect(harness.quietConsole.log).not.toHaveBeenCalledWith(
       expect.stringContaining("čistě zastavené a zapsané"),
@@ -4431,6 +4431,67 @@ describe("bezpečné ukončení aplikace", () => {
       sessionId,
     )).resolves.toEqual({ confirmed: true });
     await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+  });
+
+  it("po pozdním potvrzení znovu použije graceful timeout pro jinou visící agendu", async () => {
+    vi.useFakeTimers();
+    let trackingState = { schemaVersion: 1, aktualni: null, uzavrene: [] };
+    const trackingStore = {
+      getState: () => structuredClone(trackingState),
+      load: vi.fn(async () => structuredClone(trackingState)),
+      start: vi.fn(async () => {
+        const entry = {
+          clientTimeEntryId: "98e55275-b912-447c-a0de-417b1860f9d9",
+          projectId: PROJECT_A,
+          startedAt: "2026-09-02T12:00:00.000Z",
+          state: "bezi",
+        };
+        trackingState = { ...trackingState, aktualni: entry };
+        return { outcome: "started", entry, closed: null };
+      }),
+      stop: vi.fn(() => new Promise(() => {})),
+      switchProject: vi.fn(),
+      resolveRecovered: vi.fn(),
+    };
+    const harness = await loadMain({
+      createTrackingStore: () => trackingStore,
+      env: { DESKTOP_TIME_ENABLED: "true" },
+    });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    await harness.ipcHandlers.get("tracking:start")(event, { projectId: PROJECT_A });
+    const { sessionId } = await harness.ipcHandlers.get("recording:begin")(event);
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+
+    await Promise.all([
+      harness.ipcHandlers.get("recording:finish")(event, sessionId, {
+        microphone: {
+          startedAt: "2026-09-02T12:00:00.100Z",
+          endedAt: "2026-09-02T12:00:01.100Z",
+        },
+        system: {
+          startedAt: "2026-09-02T12:00:00.125Z",
+          endedAt: "2026-09-02T12:00:01.125Z",
+        },
+      }),
+      harness.ipcHandlers.get("recording:finish-export")(event, sessionId, {
+        succeeded: false,
+        reason: "Testovací pád stereo převodu",
+      }),
+    ]);
+    await vi.waitFor(() => expect(trackingStore.stop).toHaveBeenCalledOnce());
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+
+    await expect(harness.ipcHandlers.get("recording:confirm-export-failure")(
+      event,
+      sessionId,
+    )).resolves.toEqual({ confirmed: true });
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(harness.electron.app.quit).toHaveBeenCalledOnce();
   });
 
   it("neúspěšná stereo finalizace mimo quit zachová dosavadní chování", async () => {
@@ -4465,6 +4526,15 @@ describe("bezpečné ukončení aplikace", () => {
       event,
       sessionId,
     )).resolves.toEqual({ confirmed: false });
+    await expect(harness.ipcHandlers.get("recording:confirm-export-failure")(
+      event,
+      sessionId,
+      "payload navíc",
+    )).rejects.toThrow(/právě jeden identifikátor/u);
+    expect(() => harness.ipcHandlers.get("recording:confirm-export-failure")(
+      { sender: {}, senderFrame: {} },
+      sessionId,
+    )).toThrow(/nedůvěryhodný odesílatel/u);
     const laterQuit = { preventDefault: vi.fn() };
     harness.electron.app.emit("before-quit", laterQuit);
     expect(laterQuit.preventDefault).not.toHaveBeenCalled();

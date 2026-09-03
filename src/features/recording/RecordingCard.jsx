@@ -707,6 +707,7 @@ export function RecordingCard({
               role="alert"
             >
               {quitExportFailure.message} {QUIT_EXPORT_FAILURE_CONSEQUENCE}
+              {exportError ? <><br />{exportError}</> : null}
             </p>
           ) : (exportError || notice?.type === "error") && (
             <p id="recording-name-error" className="recording-saved__error" role="alert">

@@ -1449,6 +1449,7 @@ function completeRecordingExportStageRelease(exportStage) {
     || recordingExportStages.get(exportStage.sessionId) !== exportStage
   ) return;
   recordingExportStages.delete(exportStage.sessionId);
+  armDeferredQuitTimeout(deferredQuitRequest);
   refreshTray();
   void maybeCompleteDeferredQuit();
   void tryInstallDownloadedUpdate();
@@ -2055,6 +2056,7 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
     });
     await fs.promises.unlink(exportStage.track.filePath).catch(() => {});
     recordingExportStages.delete(clientRecordingId);
+    armDeferredQuitTimeout(deferredQuitRequest);
     void maybeCompleteDeferredQuit();
     const timingDetail = result.trackStartDeltaMs === null
       ? "jednostopý režim bez porovnání stop"
@@ -2179,6 +2181,7 @@ handleValidated("recording:confirm-export-failure", ["panel"], async (
       || !exportStage.quitFailureConfirmationRequired
       || exportStage.result?.ok !== false
       || !exportStage.recordingFinishSucceeded
+      || !request.confirmationReasons.has(recordingExportConfirmationReason(sessionId))
     ) {
       return { confirmed: false };
     }
@@ -2395,29 +2398,18 @@ function requireRecordingExportQuitConfirmation(exportStage, reason) {
   return true;
 }
 
-function confirmRecordingExportFailuresFromRepeatedQuit() {
+function recordingExportFailureNeedsPanelConfirmation() {
   const request = deferredQuitRequest;
   if (!request || request.committed) return false;
-  const pendingStages = [...recordingExportStages.values()].filter((stage) => (
+  const hasPendingFailure = [...recordingExportStages.values()].some((stage) => (
     stage.quitFailureConfirmationRequired && !stage.releaseRequested
   ));
-  if (pendingStages.length === 0) return false;
-  if (pendingStages.some((stage) => !stage.recordingFinishSucceeded)) {
-    showPanel();
-    console.warn("[quit] Původní stopy se ještě ukládají; potvrzené ukončení zůstává odložené.");
-    return true;
-  }
+  if (!hasPendingFailure) return false;
 
-  // Opakovaný Cmd+Q je potvrzením všech právě zobrazených chyb. Samotný quit
-  // ale dál provede společná bariéra, aby nepředběhl manifest ani lokální frontu.
-  request.confirmationReasons.clear();
-  request.userConfirmationRequired = false;
-  for (const stage of pendingStages) {
-    stage.quitFailureConfirmationRequired = false;
-    stage.quitFailureConfirmed = true;
-    releaseConfirmedRecordingExportFailure(stage);
-  }
-  void maybeCompleteDeferredQuit();
+  // Další Cmd+Q může přijít ještě předtím, než renderer stihl výsledek IPC
+  // vykreslit. Ztrátu stereo souboru proto potvrzuje jen viditelné tlačítko.
+  showPanel();
+  console.warn("[quit] Ztrátu stereo exportu je nutné potvrdit v panelu; ukončení zůstává odložené.");
   return true;
 }
 
@@ -2437,7 +2429,7 @@ function noteDeferredQuitFailure(
   const upgradesConfirmation = requiresUserConfirmation && !hadRequiredConfirmation;
   if (upgradesConfirmation) {
     request.userConfirmationRequired = true;
-    console.error(`[quit] ${reason}; ukončení čeká na opakované potvrzení uživatele.`);
+    console.error(`[quit] ${reason}; ukončení čeká na výslovné potvrzení uživatele.`);
     showPanel();
     return;
   }
@@ -2522,6 +2514,28 @@ async function maybeCompleteDeferredQuit() {
   }
 }
 
+function armDeferredQuitTimeout(request) {
+  if (
+    !request
+    || request !== deferredQuitRequest
+    || request.committed
+    || request.timeoutId !== undefined
+  ) return;
+
+  request.timeoutId = setTimeout(() => {
+    request.timeoutId = undefined;
+    if (request !== deferredQuitRequest || request.committed) return;
+    if (request.userConfirmationRequired || recordingExportAwaitsUserDecision()) {
+      console.warn("[quit] Ukončení zůstává odložené, dokud uživatel nerozhodne o uložené nahrávce.");
+      return;
+    }
+    commitDeferredQuit({
+      forced: true,
+      reason: `Čisté zastavení se nedokončilo do ${GRACEFUL_QUIT_TIMEOUT_MS} ms`,
+    });
+  }, GRACEFUL_QUIT_TIMEOUT_MS);
+}
+
 function beginDeferredQuit() {
   if (deferredQuitRequest) return;
   const hasRecording = recordingInterruptionIsBlocked();
@@ -2541,16 +2555,7 @@ function beginDeferredQuit() {
   // 15 sekund odpovídá existujícímu limitu stereo finalizace. Chunky jsou průběžně
   // fsyncnuté, takže zbývá flush, hash, manifest a lokální enqueue; po této lhůtě
   // je důležitější nezamknout uživatele v aplikaci a quit se hlasitě vynutí.
-  request.timeoutId = setTimeout(() => {
-    if (request.userConfirmationRequired || recordingExportAwaitsUserDecision()) {
-      console.warn("[quit] Ukončení zůstává odložené, dokud uživatel nerozhodne o uložené nahrávce.");
-      return;
-    }
-    commitDeferredQuit({
-      forced: true,
-      reason: `Čisté zastavení se nedokončilo do ${GRACEFUL_QUIT_TIMEOUT_MS} ms`,
-    });
-  }, GRACEFUL_QUIT_TIMEOUT_MS);
+  armDeferredQuitTimeout(request);
 
   if (hasRecording && hasLiveRecording() && !queueTrayCommand("stop-recording")) {
     request.recordingStopDeliveryFailed = true;
@@ -3473,7 +3478,7 @@ app.on("before-quit", (event) => {
   if (isQuitting || deferredQuitRequest?.committed) return;
   if (deferredQuitRequest?.userConfirmationRequired) {
     event.preventDefault();
-    if (confirmRecordingExportFailuresFromRepeatedQuit()) return;
+    if (recordingExportFailureNeedsPanelConfirmation()) return;
     commitDeferredQuit({
       forced: true,
       reason: "Uživatel po zobrazení chyby ukončení výslovně zopakoval",

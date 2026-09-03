@@ -762,10 +762,19 @@ describe("RecordingCard", () => {
         '[data-testid="confirm-quit-after-export-failure"]',
       );
       expect(confirmButton?.textContent).toContain("Ukončit LuDone");
+      panel.ludone.confirmRecordingExportFailure.mockResolvedValueOnce({ confirmed: false });
       await panel.click(confirmButton);
       expect(panel.ludone.confirmRecordingExportFailure).toHaveBeenCalledExactlyOnceWith(
         SESSION_ID,
       );
+      await React.act(async () => {
+        await vi.waitFor(() => {
+          expect(panel.document.querySelector('[data-testid="quit-export-failure"]')?.textContent)
+            .toContain("Původní stopy se ještě ukládají");
+        });
+      });
+      await panel.click(confirmButton);
+      expect(panel.ludone.confirmRecordingExportFailure).toHaveBeenCalledTimes(2);
       expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
     } finally {
       await panel.cleanup();
