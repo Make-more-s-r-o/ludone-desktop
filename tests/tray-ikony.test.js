@@ -13,7 +13,15 @@ import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 
-const STAVY = ["signed-out", "idle", "recording", "tracking", "recording-tracking"];
+const STAVY = [
+  "signed-out",
+  "idle",
+  "recording",
+  "tracking",
+  "recording-tracking",
+  "queue-waiting",
+  "recording-audio-lost",
+];
 const MOTIVY = ["dark", "light"];
 const VARIANTY = ["", "@2x"];
 const PNG_PODPIS = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -28,6 +36,7 @@ const BARVY = {
     idle: [0xe4, 0xe6, 0xea],
     recording: [0xf9, 0x8b, 0x71],
     tracking: [0x5c, 0xce, 0xb7],
+    wait: [0xed, 0xb1, 0x54],
     lista: [0x04, 0x06, 0x09],
   },
   light: {
@@ -35,6 +44,7 @@ const BARVY = {
     idle: [0x1c, 0x20, 0x2a],
     recording: [0xa8, 0x38, 0x25],
     tracking: [0x00, 0x69, 0x58],
+    wait: [0x94, 0x5a, 0x00],
     lista: [0xe6, 0xe4, 0xe1],
   },
 };
@@ -44,11 +54,13 @@ const NAVRHOVE_OKLCH = [
   "oklch(0.925 0.005 262)",
   "oklch(0.75 0.14 34)",
   "oklch(0.78 0.11 178)",
+  "oklch(0.8 0.13 76)",
   "oklch(0.12 0.01 262)",
   "oklch(0.635 0.013 260)",
   "oklch(0.245 0.019 266)",
   "oklch(0.5 0.15 32)",
   "oklch(0.46 0.1 178)",
+  "oklch(0.52 0.12 70)",
   "oklch(0.92 0.005 85)",
 ];
 
@@ -138,7 +150,7 @@ function hashAlfy(soubor) {
 }
 
 describe("ikony v liště", () => {
-  it("adresář obsahuje právě dvacet očekávaných PNG s platným podpisem", () => {
+  it("adresář obsahuje právě dvacet osm očekávaných PNG s platným podpisem", () => {
     const ocekavane = MOTIVY.flatMap((motiv) => STAVY.flatMap((stav) => (
       VARIANTY.map((varianta) => `${motiv}-${stav}${varianta}.png`)
     ))).sort();
@@ -173,7 +185,7 @@ describe("ikony v liště", () => {
     }
   });
 
-  it("v každém motivu a rozlišení má všech pět stavů jiný obraz", () => {
+  it("v každém motivu a rozlišení má všech sedm stavů jiný obraz", () => {
     for (const motiv of MOTIVY) {
       for (const varianta of VARIANTY) {
         const hashe = STAVY.map((stav) => (
@@ -210,6 +222,15 @@ describe("ikony v liště", () => {
         );
         expect(obsahujeBarvu(soubeh, barvy.recording)).toBe(true);
         expect(obsahujeBarvu(soubeh, barvy.tracking)).toBe(true);
+        const fronta = dekodujPng(
+          cestaIkony(ADRESAR_IKON, motiv, "queue-waiting", varianta),
+        );
+        const vypadek = dekodujPng(
+          cestaIkony(ADRESAR_IKON, motiv, "recording-audio-lost", varianta),
+        );
+        expect(obsahujeBarvu(fronta, barvy.wait)).toBe(true);
+        expect(obsahujeBarvu(vypadek, barvy.wait)).toBe(true);
+        expect(obsahujeBarvu(vypadek, barvy.recording)).toBe(true);
       }
     }
   });

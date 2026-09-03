@@ -367,7 +367,11 @@ describe("schválený klidový panel", () => {
       expect(header.querySelector("small")?.textContent.trim()).not.toBe("");
       expect(header.querySelector('svg[viewBox="0 0 22 22"]')).not.toBeNull();
       expect(hasAuthSession).toHaveBeenCalledOnce();
-      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({ signedIn: true, tracking: false });
+      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
+        signedIn: true,
+        systemAudioLost: false,
+        tracking: false,
+      });
     } finally {
       await panel.cleanup();
     }
@@ -388,7 +392,11 @@ describe("schválený klidový panel", () => {
       expect(panel.document.body.textContent).not.toContain("Dan Jirotka");
       expect(panel.document.body.textContent).toContain("Přihlásit v prohlížeči");
       expect(hasAuthSession).toHaveBeenCalledOnce();
-      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({ signedIn: false, tracking: false });
+      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
+        signedIn: false,
+        systemAudioLost: false,
+        tracking: false,
+      });
     } finally {
       await panel.cleanup();
     }
@@ -511,7 +519,11 @@ describe("schválený klidový panel", () => {
 
       expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
         .toBe("signed-in");
-      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({ signedIn: true, tracking: false });
+      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
+        signedIn: true,
+        systemAudioLost: false,
+        tracking: false,
+      });
     } finally {
       await panel.cleanup();
     }

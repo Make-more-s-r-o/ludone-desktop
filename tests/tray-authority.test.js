@@ -123,7 +123,9 @@ const trayIconName = Function(
 function trayHarness({
   signedIn = false,
   preparing = [],
+  queueWaitingCount = 0,
   sessions = [],
+  systemAudioLostOwners = [],
   trackingOwners = [],
 } = {}) {
   const finalized = [];
@@ -176,7 +178,12 @@ function trayHarness({
       new Map(preparing),
       new Map(sessions),
       new Map(),
-      { signedIn, trackingOwners: new Set(trackingOwners) },
+      {
+        outboundQueueWaitingCount: queueWaitingCount,
+        signedIn,
+        systemAudioLostOwners: new Set(systemAudioLostOwners),
+        trackingOwners: new Set(trackingOwners),
+      },
       trayIconName,
       (state) => `obrazek:${state}`,
       {
@@ -185,6 +192,8 @@ function trayHarness({
         recording: "L·nahrává",
         tracking: "L·lutrack",
         "recording-tracking": "L·nahrává+lutrack",
+        "queue-waiting": "L·čeká fronta",
+        "recording-audio-lost": "L·výpadek zvuku",
       },
       { setImage: (value) => images.push(value), setToolTip: (value) => tooltips.push(value) },
       () => "dark",
@@ -209,6 +218,8 @@ describe("autorita stavu tray ikony", () => {
     ["recording", "recording"],
     ["tracking", "tracking"],
     ["recording-tracking", "recording-tracking"],
+    ["queue-waiting", "queue-waiting"],
+    ["recording-audio-lost", "recording-audio-lost"],
     ["neznámý stav", "signed-out"],
   ])("mapuje stav %s na ikonu %s", (state, expectedIcon) => {
     expect(trayIconName(state)).toBe(expectedIcon);
@@ -256,10 +267,45 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     [{ signedIn: true, trackingOwners: [1] }, "tracking"],
     [{ signedIn: true, preparing: [[1, { cancelled: false }]] }, "recording"],
     [{ signedIn: true, sessions: [["s", { ownerId: 1 }]] }, "recording"],
+    [{ signedIn: true, queueWaitingCount: 1 }, "queue-waiting"],
+    [
+      {
+        signedIn: true,
+        preparing: [[1, { cancelled: false }]],
+        systemAudioLostOwners: [1],
+      },
+      "recording-audio-lost",
+    ],
     // Souběh se neztratí: nahrávání zůstává hlavní agenda a LuTrack odznak.
     [
       { signedIn: true, trackingOwners: [1], preparing: [[1, { cancelled: false }]] },
       "recording-tracking",
+    ],
+    // Výpadek je zhoršená varianta hlavní nahrávací agendy. Překryje LuTrack i frontu,
+    // ale přihlášení zůstává nejvyšší historickou prioritou.
+    [
+      {
+        signedIn: true,
+        trackingOwners: [1],
+        preparing: [[1, { cancelled: false }]],
+        queueWaitingCount: 2,
+        systemAudioLostOwners: [1],
+      },
+      "recording-audio-lost",
+    ],
+    [
+      { signedIn: true, trackingOwners: [1], queueWaitingCount: 2 },
+      "tracking",
+    ],
+    [
+      {
+        signedIn: false,
+        trackingOwners: [1],
+        preparing: [[1, { cancelled: false }]],
+        queueWaitingCount: 2,
+        systemAudioLostOwners: [1],
+      },
+      "signed-out",
     ],
     // Zrušená příprava a doběhnutá session se za nahrávání NEPOČÍTAJÍ.
     [{ signedIn: true, preparing: [[1, { cancelled: true }]] }, "idle"],
@@ -278,7 +324,11 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     harness.refreshTray();
     expect(harness.getTrayState()).toBe("recording");
 
-    expect(harness.applyReportedFacts(7, { signedIn: true, tracking: true })).toBe(true);
+    expect(harness.applyReportedFacts(7, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: true,
+    })).toBe(true);
     expect(harness.getTrayState()).toBe("recording-tracking");
     expect(harness.images.at(-1)).toBe("obrazek:recording-tracking");
     expect(harness.tooltips.at(-1)).toBe("L·nahrává+lutrack");
@@ -321,6 +371,23 @@ describe("pád rendereru", () => {
     harness.forgetOwnerActivity(7, "pád rendereru");
     expect(harness.getTrayState()).toBe("tracking");
   });
+
+  it("po pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session", () => {
+    const harness = trayHarness({
+      signedIn: true,
+      sessions: [
+        ["padla", { ownerId: 7 }],
+        ["ziva", { ownerId: 9 }],
+      ],
+      systemAudioLostOwners: [7],
+    });
+    harness.refreshTray();
+    expect(harness.getTrayState()).toBe("recording-audio-lost");
+
+    harness.forgetOwnerActivity(7, "pád rendereru");
+
+    expect(harness.getTrayState()).toBe("recording");
+  });
 });
 
 describe("lišta se překresluje jen při skutečné změně", () => {
@@ -335,7 +402,11 @@ describe("lišta se překresluje jen při skutečné změně", () => {
   it("změna stavu obrázek i popisek přepíše", () => {
     const harness = trayHarness({ signedIn: true });
     harness.refreshTray();
-    harness.applyReportedFacts(3, { signedIn: true, tracking: true });
+    harness.applyReportedFacts(3, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: true,
+    });
     expect(harness.getTrayState()).toBe("tracking");
     expect(harness.images.at(-1)).toBe("obrazek:tracking");
     expect(harness.tooltips.at(-1)).toBe("L·lutrack");
@@ -422,7 +493,11 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
     harness.refreshTray();
     expect(harness.getTrayState()).toBe("idle");
 
-    expect(harness.applyReportedFacts(1, { signedIn: true, tracking: "tracking" })).toBe(false);
+    expect(harness.applyReportedFacts(1, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: "tracking",
+    })).toBe(false);
     expect(harness.getTrayState()).toBe("idle");
   });
 
@@ -435,12 +510,13 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
 
   it.each([
     [undefined], [null], ["idle"], [42],
-    [{ signedIn: 1, tracking: false }],
+    [{ signedIn: 1, systemAudioLost: false, tracking: false }],
     [{ signedIn: true }],
+    [{ signedIn: true, tracking: false }],
     // Klíč navíc je pašerácký vektor: kdo umí přiložit `state`, přiloží i jméno ikony.
-    // Přijímáme PRÁVĚ dva klíče, nic víc.
-    [{ signedIn: true, tracking: false, state: "recording" }],
-    [{ signedIn: true, tracking: false, icon: "recording" }],
+    // Přijímáme PRÁVĚ tři klíče, nic víc.
+    [{ signedIn: true, systemAudioLost: false, tracking: false, state: "recording" }],
+    [{ signedIn: true, systemAudioLost: false, tracking: false, icon: "recording" }],
   ])("odmítne %j a nechá fakta být", (payload) => {
     const harness = trayHarness({ signedIn: true });
     harness.refreshTray();
@@ -448,11 +524,45 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
     expect(harness.getTrayState()).toBe("idle");
   });
 
-  it("platnou dvojici boolean přijme", () => {
+  it("platnou trojici boolean přijme", () => {
     const harness = trayHarness({ signedIn: false });
     harness.refreshTray();
-    expect(harness.applyReportedFacts(1, { signedIn: true, tracking: true })).toBe(true);
+    expect(harness.applyReportedFacts(1, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: true,
+    })).toBe(true);
     expect(harness.getTrayState()).toBe("tracking");
+  });
+
+  it("výpadek přijme jen jako boolean, neplatný report stav nezmění a obnova vrátí nahrávání", () => {
+    const harness = trayHarness({
+      signedIn: true,
+      preparing: [[1, { cancelled: false }]],
+    });
+    harness.refreshTray();
+    expect(harness.getTrayState()).toBe("recording");
+
+    expect(harness.applyReportedFacts(1, {
+      signedIn: true,
+      systemAudioLost: true,
+      tracking: false,
+    })).toBe(true);
+    expect(harness.getTrayState()).toBe("recording-audio-lost");
+
+    expect(harness.applyReportedFacts(1, {
+      signedIn: true,
+      systemAudioLost: "lost",
+      tracking: false,
+    })).toBe(false);
+    expect(harness.getTrayState()).toBe("recording-audio-lost");
+
+    expect(harness.applyReportedFacts(1, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: false,
+    })).toBe(true);
+    expect(harness.getTrayState()).toBe("recording");
   });
 });
 
@@ -476,10 +586,10 @@ describe("první vykreslení lišty", () => {
 });
 
 describe("povolené klíče kanálu faktů", () => {
-  it("jsou právě signedIn a tracking", () => {
+  it("jsou právě signedIn, systemAudioLost a tracking", () => {
     // Kdyby do nich někdo přidal třetí, protlačí jím rozhodnutí a testy výš by o tom mlčely,
     // protože si povolené klíče berou z produkce.
-    expect([...reportedFactKeys].sort()).toEqual(["signedIn", "tracking"]);
+    expect([...reportedFactKeys].sort()).toEqual(["signedIn", "systemAudioLost", "tracking"]);
   });
 });
 

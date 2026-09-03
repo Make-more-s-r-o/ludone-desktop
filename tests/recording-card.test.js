@@ -975,6 +975,44 @@ describe("RecordingCard", () => {
     }
   });
 
+  it("App hlásí výpadek systémového zvuku jako boolean a po obnově jej stáhne", async () => {
+    const panel = await renderRecordingCard({ renderApp: true });
+
+    try {
+      await startRecording(panel);
+      await React.act(async () => {
+        await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+          signedIn: true,
+          systemAudioLost: false,
+          tracking: false,
+        }));
+      });
+
+      await React.act(async () => {
+        panel.systemTrack.readyState = "ended";
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
+        await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+          signedIn: true,
+          systemAudioLost: true,
+          tracking: false,
+        }));
+      });
+
+      await panel.click(panel.document.querySelector('[data-testid="retry-system-audio"]'));
+      await React.act(async () => {
+        await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+          signedIn: true,
+          systemAudioLost: false,
+          tracking: false,
+        }));
+      });
+
+      await stopRecording(panel);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("App při souběhu ponechá obě aktivní karty čitelné a samostatně ovladatelné", async () => {
     const panel = await renderRecordingCard({ renderApp: true });
 

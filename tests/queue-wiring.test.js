@@ -2458,6 +2458,42 @@ describe("průběžný titulek lišty", () => {
     );
   });
 
+  it("výpadek zvuku změní stav, zachová čas, odmítne ne-boolean a po obnově vrátí nahrávání", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startTime);
+    const harness = await loadMain();
+    await harness.runReady();
+    const event = panelEvent(harness);
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+    const getTrayState = harness.ipcHandlers.get("tray:get-state");
+
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
+    const recording = await harness.ipcHandlers.get("recording:begin")(event);
+    try {
+      vi.setSystemTime(startTime + 61_000);
+      harness.runTrayTitleInterval();
+      const titleBeforeOutage = harness.trays[0].setTitle.mock.lastCall?.[0];
+
+      reportFacts(event, { signedIn: true, systemAudioLost: true, tracking: false });
+      expect(getTrayState(event)).toBe("recording-audio-lost");
+      expect(harness.trays[0].setTitle.mock.lastCall?.[0]).toBe(titleBeforeOutage);
+      expect(titleBeforeOutage).toBe(formatElapsed(61));
+
+      reportFacts(event, { signedIn: true, systemAudioLost: "lost", tracking: false });
+      expect(getTrayState(event)).toBe("recording-audio-lost");
+
+      reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
+      expect(getTrayState(event)).toBe("recording");
+      expect(harness.trays[0].setTitle.mock.lastCall?.[0]).toBe(titleBeforeOutage);
+    } finally {
+      await harness.ipcHandlers.get("recording:finish")(
+        event,
+        recording.sessionId,
+        completedTrackTimings(recording.startedAt, 61_000),
+      );
+    }
+  });
+
   it("při LuTracku ukazuje čas od náběžné hrany faktu z dnešního rendereru", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(startTime);
@@ -2466,7 +2502,7 @@ describe("průběžný titulek lišty", () => {
     const event = panelEvent(harness);
     const reportFacts = harness.ipcListeners.get("tray:report-facts");
 
-    reportFacts(event, { signedIn: true, tracking: true });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: true });
     expect(harness.trays[0].setTitle).toHaveBeenLastCalledWith(
       formatElapsed(0),
       { fontType: "monospacedDigit" },
@@ -2479,7 +2515,7 @@ describe("průběžný titulek lišty", () => {
       { fontType: "monospacedDigit" },
     );
 
-    reportFacts(event, { signedIn: true, tracking: false });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
   });
 
   it("posun hodin zpět nesmí do lišty napsat záporný čas", async () => {
@@ -2494,7 +2530,7 @@ describe("průběžný titulek lišty", () => {
     const event = panelEvent(harness);
     const reportFacts = harness.ipcListeners.get("tray:report-facts");
 
-    reportFacts(event, { signedIn: true, tracking: true });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: true });
 
     vi.setSystemTime(startTime - 5_000);
     harness.runTrayTitleInterval();
@@ -2503,7 +2539,7 @@ describe("průběžný titulek lišty", () => {
     expect(posledniPopisek).toBe(formatElapsed(0));
     expect(posledniPopisek).not.toMatch(/-/);
 
-    reportFacts(event, { signedIn: true, tracking: false });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
   });
 
   it("při souběhu ukazuje oba časy a po konci nahrávání jediný čas LuTracku", async () => {
@@ -2514,7 +2550,7 @@ describe("průběžný titulek lišty", () => {
     const event = panelEvent(harness);
     const reportFacts = harness.ipcListeners.get("tray:report-facts");
 
-    reportFacts(event, { signedIn: true, tracking: true });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: true });
     vi.setSystemTime(startTime + 30_000);
     harness.runTrayTitleInterval();
     const recording = await harness.ipcHandlers.get("recording:begin")(event);
@@ -2535,7 +2571,7 @@ describe("průběžný titulek lišty", () => {
       formatElapsed(35),
       { fontType: "monospacedDigit" },
     );
-    reportFacts(event, { signedIn: true, tracking: false });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
   });
 
   it("dlouhý souběh zůstane jednoznačný a nepřekročí třináct znaků", async () => {
@@ -2546,7 +2582,7 @@ describe("průběžný titulek lišty", () => {
     const event = panelEvent(harness);
     const reportFacts = harness.ipcListeners.get("tray:report-facts");
 
-    reportFacts(event, { signedIn: true, tracking: true });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: true });
     vi.setSystemTime(startTime + 60 * 60 * 1_000);
     const recording = await harness.ipcHandlers.get("recording:begin")(event);
 
@@ -2573,7 +2609,7 @@ describe("průběžný titulek lišty", () => {
       recording.sessionId,
       completedTrackTimings(recording.startedAt, 101 * 60 * 60 * 1_000),
     );
-    reportFacts(event, { signedIn: true, tracking: false });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
   });
 
   it("po zastavení nahrávání titulek vyprázdní a interval zruší", async () => {
@@ -2632,10 +2668,10 @@ describe("průběžný titulek lišty", () => {
     const event = panelEvent(harness);
     const reportFacts = harness.ipcListeners.get("tray:report-facts");
 
-    reportFacts(event, { signedIn: true, tracking: true });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: true });
     const intervalyPredUkoncenim = harness.trayTitleIntervalCount();
     harness.electron.app.emit("will-quit");
-    reportFacts(event, { signedIn: true, tracking: true });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: true });
 
     expect({
       intervalyPoUkonceni: harness.trayTitleIntervalCount(),
@@ -2794,6 +2830,37 @@ describe("produkční zapojení odchozí fronty", () => {
         attempts: 0,
       }),
     ]);
+  });
+
+  it("čekající položku z vlastního store promítne do lišty, když nic neběží", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const reportFacts = harness.ipcListeners.get("tray:report-facts");
+    const getTrayState = harness.ipcHandlers.get("tray:get-state");
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
+
+    const started = await harness.ipcHandlers.get("recording:begin")(event);
+    await harness.ipcHandlers.get("recording:finish")(
+      event,
+      started.sessionId,
+      {
+        microphone: {
+          startedAt: started.startedAt,
+          endedAt: new Date(Date.parse(started.startedAt) + 1_000).toISOString(),
+        },
+        system: {
+          startedAt: started.startedAt,
+          endedAt: new Date(Date.parse(started.startedAt) + 1_000).toISOString(),
+        },
+      },
+    );
+
+    expect(await harness.ipcHandlers.get("queue:list")(event)).toEqual([
+      expect.objectContaining({ id: started.sessionId, state: "ceka" }),
+    ]);
+    expect(getTrayState(event)).toBe("queue-waiting");
   });
 
   it("vlastník nahrávky se otiskne ze session při jejím začátku bez čitelného e-mailu", async () => {
@@ -4339,7 +4406,11 @@ describe("bezpečné ukončení aplikace", () => {
     await harness.runReady();
     const panelContents = harness.windows[0].webContents;
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
-    harness.ipcListeners.get("tray:report-facts")(event, { signedIn: true, tracking: true });
+    harness.ipcListeners.get("tray:report-facts")(event, {
+      signedIn: true,
+      systemAudioLost: false,
+      tracking: true,
+    });
     const quitEvent = { preventDefault: vi.fn() };
 
     harness.electron.app.emit("before-quit", quitEvent);
@@ -4788,12 +4859,12 @@ describe("produkční zapojení automatických aktualizací", () => {
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const reportFacts = harness.ipcListeners.get("tray:report-facts");
 
-    reportFacts(event, { signedIn: true, tracking: true });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: true });
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
     await vi.advanceTimersByTimeAsync(90_000);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 
-    reportFacts(event, { signedIn: true, tracking: false });
+    reportFacts(event, { signedIn: true, systemAudioLost: false, tracking: false });
     await vi.advanceTimersByTimeAsync(30_000);
     await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
   });
