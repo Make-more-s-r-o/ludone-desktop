@@ -41,6 +41,7 @@ Ráno musí platit:
 
 | # | etapa | akceptační kritérium | kdo |
 |---|---|---|---|
+| **0** | 🔴 **pozastavená nahrávka nesmí vypadat jako čekající** | v panelu se pozná „patří jinému účtu" od „čeká na odeslání" | Codex |
 | 1 | **Adversariální kolo nad dneškem** | seznam nálezů s `soubor:řádek`, každý ověřený | Codex (čtecí) |
 | 2 | opravy potvrzených nálezů | sabotáž na každý | Codex + Claude konsolidace |
 | 3 | **tři stavy lišty** (fronta · výpadek zvuku · bez spojení) | stav se v liště pozná; kontrakt faktů rozšířen vědomě | Codex |
@@ -64,6 +65,52 @@ vedlejší úloha**, ne já — hledat vlastní chyby je levnější než je rá
 ⚠️ **U každého faktu nejdřív změř, kdo je jeho autorita.** Když ji má hlavní proces,
 kontrakt se nerozšiřuje vůbec. Rozšířit ho smíš jen tam, kde autoritou opravdu je renderer —
 a v PR to zdůvodni. Návrh k tomu říká: *„je to právě chvíle, kdy je panel zavřený"*.
+
+## 🔴 ETAPA 0 — vada z dneška, kterou našla až serverová session
+
+`src/lib/panel.js`, `queueFooterStatus()` počítá položky **jen podle `state`**
+(`ceka` · `odesila` · `odeslano` · `selhalo`). Jenže PR #56 zavedl pauzy s důvody
+`queue_owner_mismatch`, `queue_owner_unknown` a `session_owner_unknown` — a všechny
+zůstávají ve stavu **`ceka`**.
+
+⇒ **„Nahrávka patří jinému účtu" vypadá v panelu úplně stejně jako „čeká na odeslání".**
+Uživatel se nikdy nedozví, že se ta nahrávka neodešle, dokud něco neudělá.
+
+`reason` z `pump()` existuje (`electron/queue.cjs:801`), do panelu se ale nedostane.
+
+⚠️ **Návrh pro tenhle stav text NEMÁ** — má jen „čeká fronta". Použij nejbližší formulaci
+z návrhu, **nevymýšlej nový slovník**, a do PR napiš, co jsi použil a proč. Když by to
+znamenalo vymyslet novou obrazovku, **udělej jen to, aby počet nelhal**, a zbytek zapiš.
+
+## 🔴 ZÁVAZNÉ ZÁVISLOSTI SERVEROVÉ STRANY — nerozbít
+
+Potvrzeno serverovou session 3. 9. Předávková cesta je **živá a v produkci funguje**:
+
+1. **Tvar adresy** `/nahravky/nahrat?clientRecordingId=…&startedAt=…&endedAt=…&nazev=…`.
+   Kdyby se změnil, přestane fungovat **jediné dnes funkční propojení**.
+2. **`clientRecordingId` musí zůstat UUID v1–5** (generujeme v4) a **stabilní přes
+   opakování** — stojí na tom jejich idempotence.
+3. 🔴 **Nikdy neposílat sazbu.** Whitelist `{ projectId, startedAt, endedAt }` to drží
+   konstrukcí; kdyby se ta struktura rozšiřovala, tohle pravidlo nesmí povolit.
+
+## 🛑 CO SE V NOCI NESTAVÍ, i když to spec popisuje
+
+Sekce specu o **scope `mcp:upload`, výběru firmy, rozdělané frontě a dělbě odpovědnosti**
+jsou **CÍL, ne stav**. Server ten scope **nezná** — existuje jen `mcp:read` a `mcp:draft`
+a endpoint pro přímé odesílání neexistuje.
+
+⇒ **Nedotýkat se toho ani za vypnutým killswitchem.** Kód proti neexistujícímu rozhraní
+nikdo neověří a ráno vypadá hotově.
+
+## 📦 DROBNÝ ÚKOL PRO SERVEROVOU SESSION (levný, udělej ho)
+
+Vyrob **po jednom ukázkovém souboru z každého exportního režimu** — dvoustopý a jednostopý
+s tichem vpravo — a ulož je tak, aby si je serverová session mohla vzít. Jejich přepisová
+cesta byla dosud měřená **jen na souborech z Plaudu**, tedy na cizím formátu; náš skutečný
+výstup nikdy neviděli.
+
+🔴 **Zvuk ze skutečné schůzky se necommituje.** Vygeneruj syntetický (tón, šum, cokoli),
+krátký. Jde o **formát**, ne o obsah.
 
 ## Past, která dnes stála 36 minut
 
