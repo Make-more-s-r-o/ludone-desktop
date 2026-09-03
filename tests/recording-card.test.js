@@ -37,6 +37,7 @@ const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží
 
 /**
  * @param {{
+ *   analyserError?: Error,
  *   deferBegin?: boolean,
  *   deferCapture?: boolean,
  *   deferRecovery?: boolean,
@@ -281,6 +282,7 @@ async function renderRecordingCard(options = {}) {
     }
 
     createAnalyser() {
+      if (options.analyserError) throw options.analyserError;
       return {
         fftSize: 0,
         smoothingTimeConstant: 0,
@@ -443,9 +445,18 @@ describe("RecordingCard", () => {
         panel.document.defaultView.getComputedStyle(systemFill).width,
       );
 
-      panel.setLevelAmplitudes({ microphone: 0.25, system: 0.25 });
+      panel.setLevelAmplitudes({ microphone: 0.25, system: 0 });
       await panel.sampleLevels();
       const loudMicrophone = Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(microphoneFill).width,
+      );
+      const systemDuringLoudMicrophone = Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(systemFill).width,
+      );
+
+      panel.setLevelAmplitudes({ microphone: 0, system: 0.25 });
+      await panel.sampleLevels();
+      const microphoneDuringLoudSystem = Number.parseFloat(
         panel.document.defaultView.getComputedStyle(microphoneFill).width,
       );
       const loudSystem = Number.parseFloat(
@@ -454,11 +465,34 @@ describe("RecordingCard", () => {
 
       expect(loudMicrophone - quietMicrophone).toBeGreaterThan(40);
       expect(loudSystem - quietSystem).toBeGreaterThan(40);
+      expect(systemDuringLoudMicrophone).toBeLessThanOrEqual(5);
+      expect(microphoneDuringLoudSystem).toBeLessThanOrEqual(5);
       expect(quietMicrophone).toBeLessThanOrEqual(5);
       expect(quietSystem).toBeLessThanOrEqual(5);
       expect(panel.audioContexts).toHaveLength(1);
 
       await stopRecording(panel);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("selhání měřidla nezasáhne do nahrávání ani uložení stop", async () => {
+    const panel = await renderRecordingCard({
+      analyserError: new Error("Analyser není dostupný"),
+    });
+
+    try {
+      await startRecording(panel);
+
+      expect(panel.phase()).toBe("recording");
+      expect(panel.audioContexts).toHaveLength(1);
+      expect(panel.recorders).toHaveLength(3);
+      expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone", "system"]);
+
+      await stopRecording(panel);
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+      expect(panel.phase()).toBe("saved");
     } finally {
       await panel.cleanup();
     }
@@ -504,11 +538,19 @@ describe("RecordingCard", () => {
         panel.resolveCapture();
       });
       await panel.waitForPhase("recording");
+      panel.setLevelAmplitudes({ microphone: 0.25, system: 0.25 });
+      await panel.sampleLevels();
 
       const card = panel.document.querySelector('[aria-label="Nahrávání"]');
       expect(card?.getAttribute("data-system-audio-state")).toBe("unavailable");
       expect(card?.textContent).toContain(MICROPHONE_ONLY_TEXT);
       expect(card?.textContent).toContain("Nahrává se omezeně");
+      const systemFill = card?.querySelector(
+        '[data-testid="recording-source-system"] .recording-source__fill',
+      );
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(systemFill).width,
+      )).toBe(2);
       expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone"]);
       expect(panel.recorders).toHaveLength(2);
       expect(panel.audioContexts).toHaveLength(1);
@@ -906,11 +948,14 @@ describe("RecordingCard", () => {
 
     try {
       await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0, system: 0.25 });
+      await panel.sampleLevels();
       await React.act(async () => {
         panel.systemTrack.readyState = "ended";
         panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
         await Promise.resolve();
       });
+      await panel.sampleLevels();
 
       const card = panel.document.querySelector('[aria-label="Nahrávání"]');
       const outage = panel.document.querySelector('[data-testid="system-audio-outage"]');
@@ -919,6 +964,12 @@ describe("RecordingCard", () => {
       expect(outage).not.toBeNull();
       expect(outage?.getAttribute("role")).toBe("alert");
       expect(outage?.hidden).toBe(false);
+      const systemFill = card?.querySelector(
+        '[data-testid="recording-source-system"] .recording-source__fill',
+      );
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(systemFill).width,
+      )).toBe(2);
       expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
     } finally {
       await panel.cleanup();
@@ -996,6 +1047,7 @@ describe("RecordingCard", () => {
 
     try {
       await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0, system: 0.25 });
       await React.act(async () => {
         panel.systemTrack.readyState = "ended";
         panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
@@ -1015,6 +1067,13 @@ describe("RecordingCard", () => {
       expect(panel.ludone.beginRecording).toHaveBeenCalledTimes(1);
       expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
       expect(panel.microphoneTrack.stop).not.toHaveBeenCalled();
+      await panel.sampleLevels();
+      const restoredSystemFill = card?.querySelector(
+        '[data-testid="recording-source-system"] .recording-source__fill',
+      );
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(restoredSystemFill).width,
+      )).toBeGreaterThan(40);
 
       await React.act(async () => {
         panel.replacementSystemTrack.readyState = "ended";

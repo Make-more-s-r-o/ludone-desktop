@@ -372,6 +372,12 @@ describe("dva chybějící kroky onboardingu", () => {
     expect(system?.dataset.signalState).toBe("live");
     expect(Number(microphone?.dataset.level)).toBe(0);
     expect(Number(system?.dataset.level)).toBeGreaterThan(0);
+    expect(Number.parseFloat(
+      microphone?.querySelector(".audio-level-meter__fill")?.style.width ?? "NaN",
+    )).toBe(0);
+    expect(Number.parseFloat(
+      system?.querySelector(".audio-level-meter__fill")?.style.width ?? "NaN",
+    )).toBeGreaterThan(40);
     expect(panel.document.querySelector('[data-testid="recording-test-continue"]')?.disabled)
       .toBe(true);
     expect(panel.document.querySelector(".done-step")).toBeNull();
@@ -391,6 +397,12 @@ describe("dva chybějící kroky onboardingu", () => {
     expect(system?.dataset.signalState).toBe("silent");
     expect(Number(microphone?.dataset.level)).toBeGreaterThan(0);
     expect(Number(system?.dataset.level)).toBe(0);
+    expect(Number.parseFloat(
+      microphone?.querySelector(".audio-level-meter__fill")?.style.width ?? "NaN",
+    )).toBeGreaterThan(40);
+    expect(Number.parseFloat(
+      system?.querySelector(".audio-level-meter__fill")?.style.width ?? "NaN",
+    )).toBe(0);
     expect(panel.document.querySelector('[data-testid="recording-test-continue"]')?.disabled)
       .toBe(true);
     expect(panel.document.querySelector(".done-step")).toBeNull();
