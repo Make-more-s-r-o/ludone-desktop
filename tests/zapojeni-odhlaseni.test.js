@@ -82,6 +82,17 @@ const odhlaseniZapojeno = /window\.ludone\??\.\s*logout\b|\bludone\.logout\b/.te
 const casovacZapojen = /window\.ludone\??\.\s*(start|stop|switch)Tracking|ludone\.(start|stop|switch)Tracking/
   .test(renderer);
 
+const blokCasovace = (() => {
+  // Stejný trik jako u odhlášení: vyříznout JEN tělo funkce. Assertion nad celým
+  // `main.cjs` je totiž k ničemu — `process.env.DESKTOP_TIME_ENABLED` se v souboru
+  // vyskytuje na třech místech, takže by test prošel, i kdyby ho `getTrackingStore`
+  // přestal číst. Změřeno sabotáží 3. 9. 2026: záměna za pevné "true" NEZČERVENALA.
+  const zacatek = kod.indexOf("function getTrackingStore(");
+  if (zacatek === -1) return "";
+  const konec = kod.indexOf("\nfunction ", zacatek + 1);
+  return kod.slice(zacatek, konec === -1 ? undefined : konec);
+})();
+
 const blokOdhlaseni = (() => {
   const zacatek = kod.indexOf('handleValidated("auth:logout"');
   if (zacatek === -1) return "";
@@ -171,14 +182,19 @@ describe("časovač: totéž pro jeho vlastní zapojení", () => {
     expect(typeof casovacZapojen).toBe("boolean");
   });
 
-  it.runIf(casovacZapojen)(
-    "ZAPOJENO — start časovače musí být fail-closed vůči vypnuté agendě",
-    () => {
-      // R18: chybějící hodnota vypínače znamená VYPNUTO. Jakmile jde časovač spustit
-      // z UI, musí se to opřít o produkční čtení vypínače, ne o hodnotu z testu.
-      expect(kod, "getTrackingStore nečte DESKTOP_TIME_ENABLED").toContain(
-        "process.env.DESKTOP_TIME_ENABLED",
-      );
-    },
-  );
+  it("start časovače musí být fail-closed vůči vypnuté agendě", () => {
+    // 🔴 BĚŽÍ VŽDYCKY, ZÁMĚRNĚ. Dřív visel na `runIf(casovacZapojen)`, tedy na tom,
+    // jestli renderer volá `startTracking`. To je ale detekce ZAPOJENÍ, kdežto invariant
+    // je o HLAVNÍM PROCESU: `getTrackingStore` musí číst vypínač z produkčního prostředí.
+    // Ta podmínka tedy nechránila před ničím — jen dělala z brány fail-open, přesně jako
+    // u odhlášení, kde ji 3. 9. 2026 porazil obyčejný refaktor a strážce tiše usnul.
+    //
+    // R18: chybějící hodnota vypínače znamená VYPNUTO. Ověřeno při zavádění brány
+    // `npm run preskocene`, že tenhle test dnes PROCHÁZÍ — nespal proto, že by neplatil,
+    // ale proto, že se ho nikdo neptal.
+    expect(blokCasovace, "blok getTrackingStore se v main.cjs nenašel").not.toBe("");
+    expect(blokCasovace, "getTrackingStore nečte DESKTOP_TIME_ENABLED").toContain(
+      "process.env.DESKTOP_TIME_ENABLED",
+    );
+  });
 });
