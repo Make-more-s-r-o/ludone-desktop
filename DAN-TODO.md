@@ -109,9 +109,17 @@ architektura, stav mikrofonu a ostatního zvuku, spojení se serverem, fronta,
 
 🔴 **Dva naše vlastní záznamy tvrdily opak a jsou opravené:**
 - `decisions.md` BD-N40 psalo, že nastavení je sladěné. Není.
-- `spec.md` vede `DSK-F015` („Nastavení: účet, zvuk, záznamy, připomínky, diagnostika")
-  jako **merged**, ačkoli diagnostika neexistuje. 🔴 `spec.md` je **ZMRAZENÝ**, takže ho
-  neopravuju sám — **je to chyba ve zmrazeném dokumentu a patří tobě.**
+- `spec.md` vedl `DSK-F015` jako **merged**, ačkoli diagnostika neexistovala.
+  ✅ **VYŘEŠENO 3. 9. a byl to můj omyl, ne Danův úkol.** Tvrdil jsem, že spec musí
+  rozmrazit Dan — jenže `spec.md` má **na ř. 96 napsáno**, že *„stavové osy se smějí
+  udržovat, i když je zbytek specu zmrazený — zmrazení chrání POŽADAVKY, ne sloupce
+  o stavu"* (rozhodnutí **BD-N30**, Danem schválené už 2. 9.).
+  Opravil jsem to sám poznámkou ¹³: diagnostika dostavěna PR #51, **připomínky se vědomě
+  nestaví** (BD-N43), takže `merged` u té funkce znamená **čtyři části z pěti**.
+
+  🔴 **Potřetí jsem něco označil za Danovo rozhodnutí, aniž jsem si přečetl, že rozhodnuté
+  už je.** Léčba je pořád stejná: než z něčeho udělám blocker, projít `decisions.md`
+  **a vlastní pravidla toho dokumentu**.
 
 🟢 **Dobrá zpráva:** řádek **„Prostředí — produkce"** je ve schváleném návrhu, takže
 přepínač labs × produkce, který chceš, má schválené místo a nemusí se vymýšlet.
