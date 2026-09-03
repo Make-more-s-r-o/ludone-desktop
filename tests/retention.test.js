@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import {
+  copyFile,
   mkdir,
   mkdtemp,
   readFile,
@@ -444,6 +445,38 @@ describe("retence 7 dní", () => {
     expect(existsSync(recording.systemPath)).toBe(true);
     expect(result.deletedItems).toEqual([]);
     expect(result.keptItems).toEqual(queue.items);
+  });
+
+  it("nesmaže shodnou kopii stopy, která leží MIMO adresář nahrávek", async () => {
+    // Kontrolu umístění nejde změřit podvrhem, který odhalí dřívější brány: shoda jmen
+    // souborů i obsahu proti manifestu se ověřuje před ní. Návnada je proto bajt po bajtu
+    // shodná kopie na jiném místě — jméno, velikost i otisk sedí, liší se jen umístění.
+    const recording = await createSentRecording({ sentAt: NOW - 8 * DAY_MS });
+    const jmeno = path.basename(recording.microphonePath);
+    const mimoKoren = path.join(temporaryDirectory, "..", `mimo-${Date.now()}-${jmeno}`);
+    await copyFile(recording.microphonePath, mimoKoren);
+
+    const podvrzena = {
+      ...recording.queue,
+      items: recording.queue.items.map((item) => ({
+        ...item,
+        tracks: { ...item.tracks, microphone: mimoKoren },
+      })),
+    };
+
+    try {
+      const result = await applyRetention({
+        queue: podvrzena,
+        policy: RETENTION_POLICIES.DNI_7,
+        now: NOW,
+      });
+
+      expect(existsSync(mimoKoren), "soubor mimo adresář nahrávek nesmí zmizet").toBe(true);
+      expect(existsSync(recording.systemPath), "ani druhá stopa nesmí zmizet").toBe(true);
+      expect(result.deletedItems).toEqual([]);
+    } finally {
+      await rm(mimoKoren, { force: true });
+    }
   });
 
   it("nesmaže nic, když identita manifestu nesouhlasí s položkou fronty", async () => {
