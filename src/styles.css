@@ -2112,6 +2112,10 @@ svg {
   line-height: 1.4;
 }
 
+.settings-environment-hint {
+  font-size: 10px;
+}
+
 .account-card {
   display: grid;
   min-height: 60px;

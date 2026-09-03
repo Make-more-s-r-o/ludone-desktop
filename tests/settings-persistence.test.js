@@ -75,6 +75,13 @@ describe("perzistence prostředí LuDone", () => {
   const PRODUCTION_ORIGIN = "https://app.ludone.cz";
   const LABS_ORIGIN = "https://labs.ludone.cz";
 
+  it("povoluje přesně produkci a labs a seznam nejde rozšířit za běhu", () => {
+    const { AUTH_ORIGINS } = loadSettingsModule();
+
+    expect(AUTH_ORIGINS).toEqual([PRODUCTION_ORIGIN, LABS_ORIGIN]);
+    expect(Object.isFrozen(AUTH_ORIGINS)).toBe(true);
+  });
+
   it("atomický zápis přežije novou instanci hlavního procesu", async () => {
     const { createAuthOriginStore } = loadSettingsModule();
     const filePath = await temporarySettingsPath("prostredi.json");

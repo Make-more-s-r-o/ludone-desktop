@@ -375,6 +375,7 @@ let permissionPromptsInFlight = 0;
 // pořadí; boolean by panel uvolnil už při dokončení prvního z nich.
 let authAttemptsInFlight = 0;
 let authLogoutsInFlight = 0;
+let authOriginChangeInFlight = false;
 let authSessionGeneration = 0;
 const activeAuthAttempts = new Set();
 const AUTH_CANCEL_CHANNEL = "auth:cancel";
@@ -442,6 +443,13 @@ function hasLiveRecording() {
   }
   for (const recordingSession of recordingSessions.values()) {
     if (!recordingSession.finalizePromise) return true;
+  }
+  return false;
+}
+
+function hasRecordingExportInFlight() {
+  for (const exportStage of recordingExportStages.values()) {
+    if (exportStage.exportInFlight) return true;
   }
   return false;
 }
@@ -1659,6 +1667,7 @@ handleValidated("recording:finish-export", ["panel"], async (event, sessionId, o
 });
 
 let outboundQueueStore;
+let outboundQueueSendsInFlight = 0;
 let markOutboundQueueRecoveryReady = () => {};
 const outboundQueueRecoveryReady = new Promise((resolve) => {
   markOutboundQueueRecoveryReady = resolve;
@@ -1788,12 +1797,27 @@ async function recordingUploadContext() {
 }
 
 function createQueueSend() {
-  return createRecordingUploadSend({
-    fetchImpl: (...args) => net.fetch(...args),
-    getUploadContext: recordingUploadContext,
-    logger: console,
-    origin: resolveCurrentAuthIssuer(),
-  });
+  // Store fronty zůstává po celý běh jediný. Konkrétní sender se vytvoří až pro
+  // jednotlivý pokus, aby po bezpečném přepnutí použil právě platný origin.
+  return async (item) => {
+    if (authOriginChangeInFlight) {
+      const error = new Error("Změna prostředí právě probíhá");
+      error.failureClass = "paused";
+      throw error;
+    }
+    outboundQueueSendsInFlight += 1;
+    try {
+      const send = createRecordingUploadSend({
+        fetchImpl: (...args) => net.fetch(...args),
+        getUploadContext: recordingUploadContext,
+        logger: console,
+        origin: resolveCurrentAuthIssuer(),
+      });
+      return await send(item);
+    } finally {
+      outboundQueueSendsInFlight -= 1;
+    }
+  };
 }
 
 async function getOutboundQueueStore() {
@@ -1873,6 +1897,9 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
   const exportStage = ownedRecordingExportStage(event, clientRecordingId);
   let claimedExport = false;
   try {
+    if (authOriginChangeInFlight) {
+      throw new RecordingExportUserError("Handover nelze zahájit během změny prostředí");
+    }
     if (exportStage.releaseRequested) {
       throw new RecordingExportUserError("Stereo export už není dostupný");
     }
@@ -2173,6 +2200,9 @@ function noteDeferredQuitFailure(reason, { requiresUserConfirmation = false } = 
 }
 
 function ensureNewActivityIsAllowed(activity) {
+  if (authOriginChangeInFlight) {
+    throw new Error(`Prostředí se mění; nové ${activity} teď nelze spustit`);
+  }
   if (!isQuitting && (!deferredQuitRequest || deferredQuitRequest.committed)) return;
   throw new Error(`Aplikace se ukončuje; nové ${activity} už nelze spustit`);
 }
@@ -2870,28 +2900,51 @@ handleValidated("auth:origin", ["settings"], (_event, ...extraPayload) => {
   return resolveCurrentAuthIssuer();
 });
 
+function requireIdleAuthOriginChange() {
+  if (hasLiveRecording()) {
+    throw new Error("Prostředí nelze změnit během nahrávání");
+  }
+  if (trackingWorkBlocksQuit()) {
+    throw new Error("Prostředí nelze změnit, dokud běží LuTrack");
+  }
+  if (hasRecordingExportInFlight()) {
+    throw new Error("Prostředí nelze změnit během handover exportu");
+  }
+  if (outboundQueueSendsInFlight > 0) {
+    throw new Error("Prostředí nelze změnit během odesílání fronty");
+  }
+  if (authAttemptsInFlight > 0 || authLogoutsInFlight > 0 || appState.signedIn) {
+    throw new Error("Před změnou prostředí je nutné dokončit přihlášení a odhlásit tento Mac");
+  }
+}
+
 handleValidated("auth:set-origin", ["settings"], async (_event, authOrigin, ...extraPayload) => {
   requireAuthOriginPayload("auth:set-origin", authOrigin, extraPayload);
-  if (authAttemptsInFlight > 0 || authLogoutsInFlight > 0 || appState.signedIn) {
-    throw new Error("Před změnou prostředí je nutné dokončit přihlášení a odhlásit tento Mac");
+  if (authOriginChangeInFlight) {
+    throw new Error("Změna prostředí už probíhá");
   }
+  authOriginChangeInFlight = true;
+  try {
+    requireIdleAuthOriginChange();
 
-  // Renderer vždy nejdřív volá auth:logout. Tahle kontrola drží stejné pořadí i
-  // proti přímému invoke z okna Nastavení a nepolyká poškozenou session jako
-  // hasStoredAuthSession(), protože ani nečitelný token nesmí přetéct mezi originy.
-  const storedSession = await readStoredAuthSession();
-  if (storedSession !== null) {
-    throw new Error("Před změnou prostředí je nutné odhlásit uloženou session");
-  }
-  if (authAttemptsInFlight > 0 || authLogoutsInFlight > 0 || appState.signedIn) {
-    throw new Error("Před změnou prostředí je nutné dokončit přihlášení a odhlásit tento Mac");
-  }
+    // Renderer vždy nejdřív volá auth:logout. Tahle kontrola drží stejné pořadí i
+    // proti přímému invoke z okna Nastavení a nepolyká poškozenou session jako
+    // hasStoredAuthSession(), protože ani nečitelný token nesmí přetéct mezi originy.
+    const sessionGeneration = authSessionGeneration;
+    const storedSession = await readStoredAuthSession();
+    if (sessionGeneration !== authSessionGeneration) {
+      throw new Error("Během změny prostředí se změnil stav odhlášení");
+    }
+    if (storedSession !== null) {
+      throw new Error("Před změnou prostředí je nutné odhlásit uloženou session");
+    }
+    requireIdleAuthOriginChange();
 
-  await authOriginStore.set(authOrigin);
-  // Store drží send vytvořený pro konkrétní origin. Po dalším přihlášení se musí
-  // fronta otevřít s novým senderem; samotná data fronty zůstávají na disku.
-  outboundQueueStore = undefined;
-  return resolveCurrentAuthIssuer();
+    await authOriginStore.set(authOrigin);
+    return resolveCurrentAuthIssuer();
+  } finally {
+    authOriginChangeInFlight = false;
+  }
 });
 
 handleValidated("diagnostics:get", ["settings"], async (_event, ...extraPayload) => {
@@ -2920,6 +2973,9 @@ handleValidated("diagnostics:export", ["settings"], async (_event, ...extraPaylo
 handleValidated("auth:pending-url", ["panel"], () => pendingAuthorizationUrl);
 
 handleValidated("auth:begin", ["panel"], async () => {
+  if (authOriginChangeInFlight) {
+    throw new Error("Přihlášení nelze zahájit během změny prostředí");
+  }
   const attempt = new AbortController();
   activeAuthAttempts.add(attempt);
   authAttemptsInFlight += 1;
@@ -2953,6 +3009,13 @@ const logoutAuthController = createLogoutController({
   logger: console,
 });
 handleValidated("auth:logout", ["panel", "settings"], async () => {
+  if (authOriginChangeInFlight) {
+    return {
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "environment-change-active",
+    };
+  }
   // Není rozhodnuto, zda má odhlášení aktivní agendy samo ukončovat. Do té doby
   // je bezpečný výchozí stav akci odmítnout: nahrávka nezůstane běžet pod
   // odhlášenou ikonou a minuty LuTracku nepřejdou na další účet.
