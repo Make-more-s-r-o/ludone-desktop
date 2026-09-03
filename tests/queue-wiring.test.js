@@ -81,10 +81,12 @@ afterEach(async () => {
  *   isPackaged?: boolean,
  *   deferSettingsRead?: boolean,
  *   navigateDuringSettingsRead?: boolean,
+ *   loginItemState?: {openAtLogin: boolean},
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
  *   settingsReadError?: Error | null,
  *   shouldUseDarkColors?: boolean,
  *   storedSettings?: string | null,
+ *   startupEvents?: string[],
  *   trayBounds?: {x: number, y: number, width: number, height: number} | Error,
  * }} [options]
  */
@@ -92,10 +94,12 @@ function fakeElectron(userDataPath, {
   deferPanelLoad = false,
   deferSettingsRead = false,
   isPackaged = false,
+  loginItemState = { openAtLogin: false },
   navigateDuringSettingsRead = false,
   primaryWorkArea = { x: 0, y: 0, width: 1_440, height: 900 },
   shouldUseDarkColors = true,
   storedSettings = null,
+  startupEvents = [],
   settingsReadError = null,
   trayBounds = { x: 0, y: 0, width: 0, height: 18 },
 } = {}) {
@@ -156,6 +160,7 @@ function fakeElectron(userDataPath, {
   class FakeBrowserWindow extends EventEmitter {
     constructor(options = {}) {
       super();
+      startupEvents.push("window:create");
       this.options = options;
       this.visible = false;
       this.focused = false;
@@ -250,12 +255,22 @@ function fakeElectron(userDataPath, {
 
   const app = Object.assign(new EventEmitter(), {
     commandLine: { appendSwitch: vi.fn() },
-    dock: { hide: vi.fn() },
+    dock: {
+      hide: vi.fn(() => { startupEvents.push("dock:hide"); }),
+      show: vi.fn(async () => { startupEvents.push("dock:show"); }),
+    },
+    getLoginItemSettings: vi.fn(() => ({
+      openAtLogin: loginItemState.openAtLogin,
+      status: loginItemState.openAtLogin ? "enabled" : "not-registered",
+    })),
     getPath: vi.fn(() => userDataPath),
     isPackaged,
     quit: vi.fn(),
     requestSingleInstanceLock: vi.fn(() => true),
     setAppLogsPath: vi.fn(),
+    setLoginItemSettings: vi.fn(({ openAtLogin }) => {
+      loginItemState.openAtLogin = openAtLogin;
+    }),
     setName: vi.fn(),
     setPath: vi.fn(),
     whenReady: vi.fn(() => ({
@@ -366,6 +381,7 @@ function fakeElectron(userDataPath, {
     ipcListeners,
     nativeImages,
     settingsReadStarted,
+    startupEvents,
     trays,
     windows,
     finishPanelLoad() {
@@ -412,6 +428,7 @@ function fakeElectron(userDataPath, {
  * @param {{
  *   applyRetention?: (...args: any[]) => Promise<any>,
  *   autoUpdater?: EventEmitter & Record<string, any>,
+ *   createDockVisibilityStore?: (...args: any[]) => any,
  *   createLogoutController?: (...args: any[]) => any,
  *   createOutboundQueueStore?: (...args: any[]) => any,
  *   createRecordingUploadSend?: (...args: any[]) => any,
@@ -421,19 +438,23 @@ function fakeElectron(userDataPath, {
  *   env?: Record<string, string | undefined>,
  *   exportRecordingCopy?: (...args: any[]) => Promise<any>,
  *   isPackaged?: boolean,
+ *   loginItemState?: {openAtLogin: boolean},
  *   loadQueue?: (...args: any[]) => Promise<any>,
  *   navigateDuringSettingsRead?: boolean,
+ *   platform?: NodeJS.Platform,
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
  *   recoverOrphanedRecordings?: (...args: any[]) => Promise<any>,
  *   settingsReadError?: Error | null,
  *   shouldUseDarkColors?: boolean,
  *   storedSettings?: string | null,
  *   trayBounds?: {x: number, y: number, width: number, height: number} | Error,
+ *   userDataPath?: string,
  * }} [options]
  */
 async function loadMain({
   applyRetention,
   autoUpdater,
+  createDockVisibilityStore,
   createLogoutController,
   createOutboundQueueStore,
   createRecordingUploadSend,
@@ -443,21 +464,26 @@ async function loadMain({
   env = {},
   exportRecordingCopy,
   isPackaged = false,
+  loginItemState,
   loadQueue,
   navigateDuringSettingsRead = false,
+  platform = "darwin",
   primaryWorkArea,
   recoverOrphanedRecordings,
   settingsReadError = null,
   shouldUseDarkColors = true,
   storedSettings = null,
   trayBounds,
+  userDataPath: requestedUserDataPath,
 } = {}) {
-  const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-main-queue-test-"));
+  const userDataPath = requestedUserDataPath
+    ?? await mkdtemp(path.join(tmpdir(), "ludone-main-queue-test-"));
   temporaryRoots.add(userDataPath);
   const harness = fakeElectron(userDataPath, {
     deferPanelLoad,
     deferSettingsRead,
     isPackaged,
+    loginItemState,
     navigateDuringSettingsRead,
     primaryWorkArea,
     shouldUseDarkColors,
@@ -473,6 +499,9 @@ async function loadMain({
     if (specifier === "electron-updater" && autoUpdater) return { autoUpdater };
     if (specifier === "./auth.cjs" && createLogoutController) {
       return { ...actualRequire("./auth.cjs"), createLogoutController };
+    }
+    if (specifier === "./settings.cjs" && createDockVisibilityStore) {
+      return { createDockVisibilityStore };
     }
     if (
       specifier === "./queue.cjs"
@@ -537,7 +566,7 @@ async function loadMain({
         LUDONE_DATA_DIR: undefined,
         ...env,
       },
-      platform: process.platform,
+      platform,
     },
     harness.controlledSetTimeout,
     harness.controlledSetInterval,
@@ -795,6 +824,178 @@ function storedAuthSession({
     identity,
   };
 }
+
+function memoryDockVisibilityStore(initialValue) {
+  let value = initialValue;
+  return {
+    get: vi.fn(() => value),
+    set: vi.fn(async (nextValue) => {
+      value = nextValue;
+      return value;
+    }),
+  };
+}
+
+describe("zapojení systémových nastavení", () => {
+  it("zapnutý Dock uplatní při startu před vytvořením prvního okna", async () => {
+    const store = memoryDockVisibilityStore(true);
+    const createDockVisibilityStore = vi.fn(() => store);
+    const harness = await loadMain({ createDockVisibilityStore });
+
+    await harness.runReady();
+
+    expect(store.get).toHaveBeenCalledOnce();
+    expect(harness.electron.app.dock.show).toHaveBeenCalledOnce();
+    expect(harness.electron.app.dock.hide).not.toHaveBeenCalled();
+    expect(harness.startupEvents.indexOf("dock:show")).toBeLessThan(
+      harness.startupEvents.indexOf("window:create"),
+    );
+  });
+
+  it("vypnutý Dock zachová dnešní chování a skryje jej před prvním oknem", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({ createDockVisibilityStore: () => store });
+
+    await harness.runReady();
+
+    expect(store.get).toHaveBeenCalledOnce();
+    expect(harness.electron.app.dock.hide).toHaveBeenCalledOnce();
+    expect(harness.electron.app.dock.show).not.toHaveBeenCalled();
+    expect(harness.startupEvents.indexOf("dock:hide")).toBeLessThan(
+      harness.startupEvents.indexOf("window:create"),
+    );
+  });
+
+  it("přepnutí Docku za běhu uloží boolean a uplatní změnu hned", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({ createDockVisibilityStore: () => store });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const setDockVisible = harness.ipcHandlers.get("settings:set-dock-visible");
+    expect(setDockVisible).toBeTypeOf("function");
+    harness.electron.app.dock.show.mockClear();
+    harness.electron.app.dock.hide.mockClear();
+
+    await expect(setDockVisible(settingsEvent, true)).resolves.toBe(true);
+    expect(store.set).toHaveBeenLastCalledWith(true);
+    expect(harness.electron.app.dock.show).toHaveBeenCalledOnce();
+
+    await expect(setDockVisible(settingsEvent, false)).resolves.toBe(false);
+    expect(store.set).toHaveBeenLastCalledWith(false);
+    expect(harness.electron.app.dock.hide).toHaveBeenCalledOnce();
+  });
+
+  it("uložený Dock přežije nový hlavní proces a platí už při jeho startu", async () => {
+    const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-main-settings-restart-"));
+    temporaryRoots.add(userDataPath);
+    const firstProcess = await loadMain({ userDataPath });
+    await firstProcess.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(firstProcess);
+    const setDockVisible = firstProcess.ipcHandlers.get("settings:set-dock-visible");
+    expect(setDockVisible).toBeTypeOf("function");
+    await expect(setDockVisible(settingsEvent, true)).resolves.toBe(true);
+
+    const secondProcess = await loadMain({ userDataPath });
+    await secondProcess.runReady();
+
+    expect(secondProcess.electron.app.dock.show).toHaveBeenCalledOnce();
+    expect(secondProcess.startupEvents.indexOf("dock:show")).toBeLessThan(
+      secondProcess.startupEvents.indexOf("window:create"),
+    );
+  });
+
+  it("autostart předá macOS správnou hodnotu a čte jeho skutečný stav", async () => {
+    const loginItemState = { openAtLogin: false };
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({
+      createDockVisibilityStore: () => store,
+      loginItemState,
+    });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const getOpenAtLogin = harness.ipcHandlers.get("settings:get-open-at-login");
+    const setOpenAtLogin = harness.ipcHandlers.get("settings:set-open-at-login");
+    expect(getOpenAtLogin).toBeTypeOf("function");
+    expect(setOpenAtLogin).toBeTypeOf("function");
+
+    expect(getOpenAtLogin(settingsEvent)).toBe(false);
+    expect(setOpenAtLogin(settingsEvent, true)).toBe(true);
+    expect(harness.electron.app.setLoginItemSettings).toHaveBeenLastCalledWith({
+      openAtLogin: true,
+    });
+    expect(getOpenAtLogin(settingsEvent)).toBe(true);
+
+    const nextProcess = await loadMain({
+      createDockVisibilityStore: () => memoryDockVisibilityStore(false),
+      loginItemState,
+    });
+    await nextProcess.runReady();
+    const nextEvent = openSettingsAndCreateEvent(nextProcess).settingsEvent;
+    expect(nextProcess.ipcHandlers.get("settings:get-open-at-login")(nextEvent)).toBe(true);
+  });
+
+  it("nové IPC kanály odmítnou jiný payload než právě jeden boolean", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({ createDockVisibilityStore: () => store });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const setDockVisible = harness.ipcHandlers.get("settings:set-dock-visible");
+    const setOpenAtLogin = harness.ipcHandlers.get("settings:set-open-at-login");
+    const getDockVisible = harness.ipcHandlers.get("settings:get-dock-visible");
+    const getOpenAtLogin = harness.ipcHandlers.get("settings:get-open-at-login");
+    for (const handler of [setDockVisible, setOpenAtLogin, getDockVisible, getOpenAtLogin]) {
+      expect(handler).toBeTypeOf("function");
+    }
+
+    for (const invalid of [undefined, null, 0, 1, "true", {}, []]) {
+      await expect(Promise.resolve().then(() => setDockVisible(settingsEvent, invalid)))
+        .rejects.toThrow(/boolean/u);
+      await expect(Promise.resolve().then(() => setOpenAtLogin(settingsEvent, invalid)))
+        .rejects.toThrow(/boolean/u);
+    }
+    await expect(Promise.resolve().then(() => setDockVisible(settingsEvent, true, false)))
+      .rejects.toThrow(/boolean/u);
+    await expect(Promise.resolve().then(() => getDockVisible(settingsEvent, true)))
+      .rejects.toThrow(/payload/u);
+    await expect(Promise.resolve().then(() => getOpenAtLogin(settingsEvent, false)))
+      .rejects.toThrow(/payload/u);
+    expect(store.set).not.toHaveBeenCalled();
+    expect(harness.electron.app.setLoginItemSettings).not.toHaveBeenCalled();
+  });
+
+  it("kliknutí na viditelnou ikonu v Docku zpřístupní už existující panel", async () => {
+    const harness = await loadMain({
+      createDockVisibilityStore: () => memoryDockVisibilityStore(true),
+    });
+    await harness.runReady();
+    expect(harness.windows[0].isVisible()).toBe(false);
+
+    harness.electron.app.emit("activate");
+
+    expect(harness.windows[0].isVisible()).toBe(true);
+  });
+
+  it("preload mapuje čtyři metody na přesné kanály a setter pustí jen boolean", async () => {
+    const preload = loadPreload((channel, value) => (
+      channel.startsWith("settings:set-") ? value : false
+    ));
+
+    await expect(preload.api.getDockVisible()).resolves.toBe(false);
+    await expect(preload.api.setDockVisible(true)).resolves.toBe(true);
+    await expect(preload.api.getOpenAtLogin()).resolves.toBe(false);
+    await expect(preload.api.setOpenAtLogin(false)).resolves.toBe(false);
+    expect(preload.invoke.mock.calls).toEqual([
+      ["settings:get-dock-visible"],
+      ["settings:set-dock-visible", true],
+      ["settings:get-open-at-login"],
+      ["settings:set-open-at-login", false],
+    ]);
+
+    expect(() => preload.api.setDockVisible("true")).toThrow(/boolean/u);
+    expect(() => preload.api.setOpenAtLogin(1)).toThrow(/boolean/u);
+    expect(preload.invoke).toHaveBeenCalledTimes(4);
+  });
+});
 
 describe("zjištění uložené OAuth session", () => {
   it("hlavní proces vrací pro chybějící, platnou a poškozenou session jen boolean", async () => {
