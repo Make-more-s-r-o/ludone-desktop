@@ -45,7 +45,10 @@ function localTime(iso) {
 
 function queueProjection(queueItems) {
   if (!Array.isArray(queueItems)) {
-    return Object.freeze({ available: false, waiting: 0, sending: 0, failed: 0 });
+    return {
+      queue: Object.freeze({ available: false, waiting: 0, sending: 0, failed: 0 }),
+      lastSuccessfulAt: null,
+    };
   }
 
   let waiting = 0;
@@ -87,9 +90,8 @@ export function createDiagnosticsSnapshot({
   systemAudioStatus,
 }) {
   const projectedQueue = queueProjection(queueItems);
-  const queue = projectedQueue.queue
-    ?? Object.freeze({ available: false, waiting: 0, sending: 0, failed: 0 });
-  const lastSuccessfulAt = projectedQueue.lastSuccessfulAt ?? null;
+  const queue = projectedQueue.queue;
+  const lastSuccessfulAt = projectedQueue.lastSuccessfulAt;
   const serverConnection = lastSuccessfulAt === null
     ? {
         status: "unknown",
@@ -174,9 +176,9 @@ function timestampForFileName(exportedAt) {
   const date = exportedAt instanceof Date ? exportedAt : new Date(exportedAt);
   if (!Number.isFinite(date.getTime())) throw new TypeError("Čas exportu není platný");
   return date.toISOString()
-    .replace(/[-:]/gu, "")
+    .slice(0, 19)
     .replace("T", "-")
-    .slice(0, 15);
+    .replaceAll(":", "");
 }
 
 /** Zapíše nový soubor s právy 0600 a nikdy nevrací jeho absolutní cestu. */

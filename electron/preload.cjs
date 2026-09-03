@@ -92,10 +92,13 @@ contextBridge.exposeInMainWorld("ludone", {
   getAuthIdentity: () => ipcRenderer.invoke("auth:identity"),
   getAuthOrigin: () => ipcRenderer.invoke("auth:origin"),
   logout: () => ipcRenderer.invoke("auth:logout"),
+  getDeviceName: () => ipcRenderer.invoke("settings:get-device-name"),
   getDockVisible: () => getBooleanSetting("settings:get-dock-visible"),
   setDockVisible: (value) => setBooleanSetting("settings:set-dock-visible", value),
   getOpenAtLogin: () => getBooleanSetting("settings:get-open-at-login"),
   setOpenAtLogin: (value) => setBooleanSetting("settings:set-open-at-login", value),
+  getDiagnostics: () => ipcRenderer.invoke("diagnostics:get"),
+  exportDiagnostics: () => ipcRenderer.invoke("diagnostics:export"),
   requestPermission: (permission) =>
     ipcRenderer.invoke("permission:request", permission),
   beginRecording: () => ipcRenderer.invoke("recording:begin"),

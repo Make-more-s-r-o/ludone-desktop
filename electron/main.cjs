@@ -17,6 +17,7 @@ const {
 } = require("electron");
 const { createHash, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const { fileURLToPath, pathToFileURL } = require("node:url");
 const {
@@ -51,6 +52,9 @@ const manifestModulePromise = import(
 );
 const queueModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "queue.js")).href
+);
+const diagnosticsModulePromise = import(
+  pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "diagnostics.js")).href
 );
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
@@ -410,6 +414,7 @@ const TRAY_LABELS = {
 // odvozuje hlavní proces — proto tahle funkce nebere argument. Dokud stav posílal renderer,
 // přežil jeho pád i jeho omyl: spadlé okno nechalo ikonu viset na „nahrává“ donekonečna.
 const appState = {
+  acceptRendererSignIn: true,
   signedIn: false,
   trackingOwners: new Set(),
   trackingStartedAtByOwner: new Map(),
@@ -666,7 +671,12 @@ function applyReportedFacts(ownerId, facts) {
   if (klice.length !== REPORTED_FACT_KEYS.length) return false;
   if (!REPORTED_FACT_KEYS.every((klic) => typeof facts[klic] === "boolean")) return false;
 
-  appState.signedIn = facts.signedIn;
+  // Po odhlášení může starý panel ještě jednou nahlásit stav, který si drží
+  // v Reactu. Hlavní proces takový report nepřijme, dokud sám nedokončí nové
+  // přihlášení; bezpečnostní akci proto renderer nemůže tiše vrátit zpět.
+  if (!facts.signedIn || appState.acceptRendererSignIn !== false) {
+    appState.signedIn = facts.signedIn;
+  }
   const trackingStartedAtByOwner = appState.trackingStartedAtByOwner
     ?? (appState.trackingStartedAtByOwner = new Map());
   if (facts.tracking) {
@@ -1573,6 +1583,15 @@ handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extra
 });
 onValidated("settings:open", ["panel"], () => createSettingsWindow());
 onValidated("settings:close", ["settings"], () => settingsWindow?.close());
+handleValidated("settings:get-device-name", ["settings"], (_event, ...extraPayload) => {
+  requireNoPayload("settings:get-device-name", extraPayload);
+  try {
+    const deviceName = os.hostname().trim();
+    return deviceName || "Název zařízení není známý";
+  } catch {
+    return "Název zařízení není známý";
+  }
+});
 handleValidated("settings:get-dock-visible", ["settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-dock-visible", extraPayload);
   return dockVisibilityStore.get();
@@ -1969,6 +1988,51 @@ handleValidated("queue:retry", ["panel"], async () => {
   console.log(`[queue] ${result.reason ?? result.outcome}`);
   return result;
 });
+
+function readDiagnosticsPermissionStatus(mediaType) {
+  try {
+    return systemPreferences.getMediaAccessStatus(mediaType);
+  } catch {
+    return "unknown";
+  }
+}
+
+async function readDiagnosticsQueueItems() {
+  try {
+    await waitForOutboundQueueRecovery();
+    // list() je serializační bariéra. Teprve po ní čteme atomický soubor, aby
+    // poslední potvrzené sentAt ani čerstvé položky nezůstaly jen v rozpracované operaci.
+    await (await getOutboundQueueStore()).list();
+    const queue = await loadQueue(outboundQueueFilePath());
+    return Array.isArray(queue.items) ? queue.items : null;
+  } catch {
+    // Chyba může nést absolutní cestu. Do logu ani IPC proto neposíláme její text.
+    console.warn("[diagnostics] Stav fronty není dostupný.");
+    return null;
+  }
+}
+
+async function createCurrentDiagnosticsSnapshot() {
+  const { createDiagnosticsSnapshot } = await diagnosticsModulePromise;
+  return createDiagnosticsSnapshot({
+    appVersion: app.getVersion(),
+    architecture: process.arch,
+    microphoneStatus: readDiagnosticsPermissionStatus("microphone"),
+    queueItems: await readDiagnosticsQueueItems(),
+    // Onboarding pro ostatní zvuk používá tentýž stav Záznamu obrazovky.
+    systemAudioStatus: readDiagnosticsPermissionStatus("screen"),
+  });
+}
+
+async function exportCurrentDiagnostics() {
+  const snapshot = await createCurrentDiagnosticsSnapshot();
+  const { writeDiagnosticsExport } = await diagnosticsModulePromise;
+  return writeDiagnosticsExport({
+    downloadsDirectory: app.getPath("downloads"),
+    exportedAt: new Date(),
+    snapshot,
+  });
+}
 
 const TRACKING_STORE_OWNER_ID = "main-process-timer";
 let trackingStore;
@@ -2785,6 +2849,22 @@ handleValidated("auth:identity", ["settings"], () => readStoredAuthIdentity());
 
 handleValidated("auth:origin", ["settings"], () => resolveAuthIssuer(process.env));
 
+handleValidated("diagnostics:get", ["settings"], async (_event, ...extraPayload) => {
+  requireNoPayload("diagnostics:get", extraPayload);
+  return createCurrentDiagnosticsSnapshot();
+});
+
+handleValidated("diagnostics:export", ["settings"], async (_event, ...extraPayload) => {
+  requireNoPayload("diagnostics:export", extraPayload);
+  try {
+    return await exportCurrentDiagnostics();
+  } catch {
+    // Renderer nedostane error.message: systémová chyba může obsahovat domovskou cestu.
+    console.error("[diagnostics] Export se nepodařilo uložit.");
+    return { ok: false, fileName: null };
+  }
+});
+
 handleValidated("auth:pending-url", ["panel"], () => pendingAuthorizationUrl);
 
 handleValidated("auth:begin", ["panel"], async () => {
@@ -2799,6 +2879,9 @@ handleValidated("auth:begin", ["panel"], async () => {
     activeAuthAttempts.delete(attempt);
   }
   if (result?.ok === true) {
+    appState.acceptRendererSignIn = true;
+    appState.signedIn = true;
+    refreshTray();
     void waitForOutboundQueueRecovery().then(() => pumpOutboundQueue());
   }
   return result;
@@ -2817,7 +2900,24 @@ const logoutAuthController = createLogoutController({
   safeStorage,
   logger: console,
 });
-handleValidated("auth:logout", ["panel"], async () => {
+handleValidated("auth:logout", ["panel", "settings"], async () => {
+  // Není rozhodnuto, zda má odhlášení aktivní agendy samo ukončovat. Do té doby
+  // je bezpečný výchozí stav akci odmítnout: nahrávka nezůstane běžet pod
+  // odhlášenou ikonou a minuty LuTracku nepřejdou na další účet.
+  if (hasLiveRecording()) {
+    return {
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "recording-active",
+    };
+  }
+  if (trackingWorkBlocksQuit()) {
+    return {
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "tracking-active",
+    };
+  }
   authSessionGeneration += 1;
   authLogoutsInFlight += 1;
   try {
@@ -2827,6 +2927,7 @@ handleValidated("auth:logout", ["panel"], async () => {
         // Hlavní proces po B3 stav lišty NENASTAVUJE, jen mění fakt a nechá ho odvodit.
         // Kdyby se tu ikona přepsala natvrdo, přebila by běžící nahrávku a lišta by
         // tvrdila „odhlášeno" nad session, která pořád píše na disk.
+        appState.acceptRendererSignIn = false;
         appState.signedIn = false;
         refreshTray();
       } catch (error) {

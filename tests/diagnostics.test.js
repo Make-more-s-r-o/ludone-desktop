@@ -55,7 +55,7 @@ describe("diagnostický snapshot", () => {
   });
 
   it("bez potvrzeného odeslání neprohlašuje server za dostupný", () => {
-    const snapshot = createDiagnosticsSnapshot({
+    const unsafeInputs = {
       appVersion: "0.1.0",
       architecture: "x64",
       microphoneStatus: "not-determined",
@@ -103,7 +103,8 @@ describe("export diagnostiky", () => {
       meetingTitle,
       filePath,
       audio,
-    });
+    };
+    const snapshot = createDiagnosticsSnapshot(unsafeInputs);
     // I kdyby někdo do objektu pro export později přidal nové citlivé pole nebo
     // podvrhl zobrazovaný label, zapisovač smí číst jen pevný výčet primitiv.
     const contaminatedSnapshot = {
