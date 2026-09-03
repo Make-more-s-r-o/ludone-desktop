@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-// @ts-expect-error JSX/ESM produkčního rendereru transformuje při testu Vite.
 import { captureAudioSources } from "../src/lib/audio-levels.js";
 
 // 🔴 PROČ TENHLE SOUBOR VZNIKL: `captureAudioSources()` rozhoduje, jestli se vůbec bude
