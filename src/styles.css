@@ -54,24 +54,40 @@
   font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --background: oklch(0.16 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.2 0 0);
-  --surface-elevated: oklch(0.22 0 0);
-  --surface-elevated-2: oklch(0.26 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --subtle-foreground: oklch(1 0 0 / 45%);
-  --border: oklch(1 0 0 / 10%);
-  --border-strong: oklch(1 0 0 / 20%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --green: oklch(0.5 0.17 145);
-  --green-bright: oklch(0.7 0.18 145);
-  --green-soft: oklch(0.5 0.17 145 / 15%);
-  --green-border: oklch(0.7 0.18 145 / 35%);
-  --danger: oklch(0.63 0.19 25);
-  --danger-soft: oklch(0.63 0.19 25 / 13%);
+  --panel-page: oklch(0.185 0.012 262);
+  --panel-card: oklch(0.235 0.012 262);
+  --panel-raised: oklch(0.265 0.012 262);
+  --panel-sunken: oklch(0.16 0.012 262);
+  --panel-hair: oklch(0.305 0.013 262);
+  --panel-subtle: oklch(0.585 0.014 262);
+  --panel-muted: oklch(0.715 0.012 262);
+  --panel-text: oklch(0.925 0.005 262);
+  --panel-strong: oklch(0.975 0.003 262);
+  --panel-accent: oklch(0.72 0.14 268);
+  --panel-accent-soft: color-mix(in oklab, var(--panel-accent) 16%, transparent);
+  --panel-accent-border: color-mix(in oklab, var(--panel-accent) 40%, transparent);
+  --panel-ok: oklch(0.78 0.11 178);
+  --panel-wait: oklch(0.8 0.13 76);
+  --panel-bad: oklch(0.75 0.14 34);
+  --background: var(--panel-page);
+  --foreground: var(--panel-text);
+  --card: var(--panel-card);
+  --surface-elevated: var(--panel-card);
+  --surface-elevated-2: var(--panel-raised);
+  --muted: var(--panel-raised);
+  --muted-foreground: var(--panel-muted);
+  --subtle-foreground: var(--panel-subtle);
+  --border: var(--panel-hair);
+  --border-strong: var(--panel-hair);
+  --input: var(--panel-hair);
+  --ring: var(--panel-accent);
+  --green: var(--panel-ok);
+  --green-bright: var(--panel-ok);
+  --green-soft: color-mix(in oklab, var(--panel-ok) 12%, transparent);
+  --green-border: color-mix(in oklab, var(--panel-ok) 34%, transparent);
+  --danger: var(--panel-bad);
+  --danger-soft: color-mix(in oklab, var(--panel-bad) 12%, transparent);
+  --mark-ink: var(--panel-page);
   --shadow: 0 8px 32px rgb(0 0 0 / 40%);
   --radius-window: 26px;
   --radius-inset: 18px;
@@ -262,12 +278,12 @@ svg {
 .button--primary {
   border-color: var(--green);
   background: var(--green);
-  color: white;
+  color: var(--mark-ink);
 }
 
 .button--primary:not(:disabled):hover {
-  border-color: oklch(0.55 0.17 145);
-  background: oklch(0.55 0.17 145);
+  border-color: var(--panel-ok);
+  background: var(--panel-ok);
 }
 
 .button--wide {
@@ -374,39 +390,6 @@ svg {
 /* Main panel */
 
 .panel.window-surface {
-  --panel-page: oklch(0.185 0.012 262);
-  --panel-card: oklch(0.235 0.012 262);
-  --panel-raised: oklch(0.265 0.012 262);
-  --panel-sunken: oklch(0.16 0.012 262);
-  --panel-hair: oklch(0.305 0.013 262);
-  --panel-subtle: oklch(0.585 0.014 262);
-  --panel-muted: oklch(0.715 0.012 262);
-  --panel-text: oklch(0.925 0.005 262);
-  --panel-strong: oklch(0.975 0.003 262);
-  --panel-accent: oklch(0.72 0.14 268);
-  --panel-accent-soft: color-mix(in oklab, var(--panel-accent) 16%, transparent);
-  --panel-accent-border: color-mix(in oklab, var(--panel-accent) 40%, transparent);
-  --panel-ok: oklch(0.78 0.11 178);
-  --panel-wait: oklch(0.8 0.13 76);
-  --panel-bad: oklch(0.75 0.14 34);
-  --background: var(--panel-page);
-  --foreground: var(--panel-text);
-  --card: var(--panel-card);
-  --surface-elevated: var(--panel-card);
-  --surface-elevated-2: var(--panel-raised);
-  --muted-foreground: var(--panel-muted);
-  --subtle-foreground: var(--panel-subtle);
-  --border: var(--panel-hair);
-  --border-strong: var(--panel-hair);
-  --input: var(--panel-hair);
-  --ring: var(--panel-accent);
-  --green: var(--panel-ok);
-  --green-bright: var(--panel-ok);
-  --green-soft: color-mix(in oklab, var(--panel-ok) 12%, transparent);
-  --green-border: color-mix(in oklab, var(--panel-ok) 34%, transparent);
-  --danger: var(--panel-bad);
-  --danger-soft: color-mix(in oklab, var(--panel-bad) 12%, transparent);
-  --mark-ink: var(--panel-page);
   display: grid;
   grid-template-rows: 52px minmax(0, 1fr) 34px;
   border-color: var(--panel-hair);
@@ -1843,7 +1826,7 @@ svg {
   border-radius: 30px;
   background: var(--green-soft);
   color: var(--green-bright);
-  box-shadow: inset 0 0 0 12px oklch(0.5 0.17 145 / 7%);
+  box-shadow: inset 0 0 0 12px var(--green-soft);
 }
 
 .done-check svg {
@@ -1903,7 +1886,7 @@ svg {
   position: absolute;
   inset: 4px 6px;
   border-radius: 3px;
-  background: white;
+  background: var(--mark-ink);
   content: "";
 }
 
@@ -2037,7 +2020,7 @@ svg {
 }
 
 .toggle[aria-checked="true"] .toggle__thumb {
-  background: white;
+  background: var(--mark-ink);
   transform: translateX(16px);
 }
 
