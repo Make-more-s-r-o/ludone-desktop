@@ -2851,7 +2851,14 @@ handleValidated("auth:origin", ["settings"], () => resolveAuthIssuer(process.env
 
 handleValidated("diagnostics:get", ["settings"], async (_event, ...extraPayload) => {
   requireNoPayload("diagnostics:get", extraPayload);
-  return createCurrentDiagnosticsSnapshot();
+  try {
+    return await createCurrentDiagnosticsSnapshot();
+  } catch {
+    // Import i systémová chyba mohou nést lokální cestu. Renderer dostane jen
+    // nepřítomná data a sám je zobrazí jako neznámý stav.
+    console.error("[diagnostics] Stav diagnostiky není dostupný.");
+    return null;
+  }
 });
 
 handleValidated("diagnostics:export", ["settings"], async (_event, ...extraPayload) => {

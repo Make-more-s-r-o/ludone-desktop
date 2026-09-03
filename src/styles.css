@@ -1949,8 +1949,8 @@ svg {
 .settings-tabs {
   display: flex;
   align-items: stretch;
-  gap: 17px;
-  padding: 0 16px;
+  gap: 18px;
+  padding: 0 18px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-elevated);
 }
@@ -1961,7 +1961,7 @@ svg {
   border: 0;
   background: transparent;
   color: var(--muted-foreground);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 600;
 }
 

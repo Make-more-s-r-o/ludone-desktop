@@ -152,7 +152,15 @@ describe("čtyři části Nastavení", () => {
       ]);
       expect(settings.document.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(1);
 
-      await selectTab(settings, "Zvuk");
+      tabs[0].focus();
+      await React.act(async () => {
+        tabs[0].dispatchEvent(new settings.document.defaultView.KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "ArrowRight",
+        }));
+        await Promise.resolve();
+      });
+      expect(settings.document.activeElement).toBe(tabs[1]);
       let panel = settings.document.querySelector('[role="tabpanel"]:not([hidden])');
       expect(panel?.textContent).toContain("Kdy nahrávat");
       expect(panel?.textContent).toContain("Co se děje se zvukem");
@@ -223,8 +231,9 @@ describe("čtyři části Nastavení", () => {
         .toBe("Nepovoleno");
       expect(settings.document.querySelector('[data-testid="diagnostics-system-audio"]')?.dataset.status)
         .toBe("denied");
-      expect(settings.document.querySelector('[data-testid="diagnostics-server"]')?.textContent)
-        .toBe("Naposledy v pořádku v 13:05");
+      const serverText = settings.document.querySelector('[data-testid="diagnostics-server"]')
+        ?.textContent;
+      expect(serverText).toMatch(/^Poslední potvrzené odeslání: .*2026.*\d{2}:\d{2}$/u);
       expect(settings.document.querySelector('[data-testid="diagnostics-server"] svg')).toBeNull();
     } finally {
       await settings.cleanup();
@@ -262,6 +271,26 @@ describe("čtyři části Nastavení", () => {
           .toContain("ludone-diagnostika-2026-09-03-130500.txt");
       });
       expect(settings.document.body.textContent).not.toContain("/Users/dan");
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("při vadných počtech fronty nevymýšlí nulu", async () => {
+    const malformedDiagnostics = /** @type {any} */ ({
+      ...DIAGNOSTICS,
+      queue: { available: true, waiting: "2", sending: 0, failed: 0 },
+    });
+    const settings = await renderSettings({
+      diagnostics: () => Promise.resolve(malformedDiagnostics),
+    });
+    try {
+      await selectTab(settings, "Záznamy");
+      await vi.waitFor(() => {
+        expect(settings.document.querySelector('[data-testid="settings-queue-summary"]')?.textContent)
+          .toContain("Stav fronty není dostupný");
+      });
+      expect(settings.document.body.textContent).not.toContain("Nic nečeká");
     } finally {
       await settings.cleanup();
     }

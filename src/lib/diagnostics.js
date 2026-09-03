@@ -22,7 +22,8 @@ function normalizedPermission(status) {
 function normalizedVersion(value) {
   if (typeof value !== "string") return "Neznámá";
   const version = value.trim();
-  return /^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$/u.test(version) ? version : "Neznámá";
+  const semanticVersion = /^\d{1,9}\.\d{1,9}\.\d{1,9}(?:-[0-9A-Za-z.-]{1,32})?(?:\+[0-9A-Za-z.-]{1,32})?$/u;
+  return version.length <= 64 && semanticVersion.test(version) ? version : "Neznámá";
 }
 
 function normalizedArchitecture(value) {
@@ -32,18 +33,26 @@ function normalizedArchitecture(value) {
 function canonicalIso(value) {
   if (typeof value !== "string") return null;
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  if (!Number.isFinite(date.getTime())) return null;
+  return date.toISOString() === value ? value : null;
 }
 
-function localTime(iso) {
-  return new Intl.DateTimeFormat("cs-CZ", {
+function localDateTime(iso) {
+  const date = new Date(iso);
+  const day = new Intl.DateTimeFormat("cs-CZ", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  }).format(date);
+  const time = new Intl.DateTimeFormat("cs-CZ", {
     hour: "2-digit",
     hour12: false,
     minute: "2-digit",
-  }).format(new Date(iso));
+  }).format(date);
+  return `${day} v ${time}`;
 }
 
-function queueProjection(queueItems) {
+function queueProjection(queueItems, observedAt) {
   if (!Array.isArray(queueItems)) {
     return {
       queue: Object.freeze({ available: false, waiting: 0, sending: 0, failed: 0 }),
@@ -56,19 +65,34 @@ function queueProjection(queueItems) {
   let failed = 0;
   let lastSuccessfulAt = null;
   let lastSuccessfulMilliseconds = Number.NEGATIVE_INFINITY;
+  const observedAtMilliseconds = observedAt.getTime();
 
   for (const item of queueItems) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return {
+        queue: Object.freeze({ available: false, waiting: 0, sending: 0, failed: 0 }),
+        lastSuccessfulAt: null,
+      };
+    }
     if (item.state === "ceka") waiting += 1;
     else if (item.state === "odesila") sending += 1;
     else if (item.state === "selhalo") failed += 1;
     else if (item.state === "odeslano") {
       const sentAt = canonicalIso(item.sentAt);
       const milliseconds = sentAt === null ? Number.NaN : Date.parse(sentAt);
-      if (Number.isFinite(milliseconds) && milliseconds > lastSuccessfulMilliseconds) {
+      if (
+        Number.isFinite(milliseconds)
+        && milliseconds <= observedAtMilliseconds
+        && milliseconds > lastSuccessfulMilliseconds
+      ) {
         lastSuccessfulMilliseconds = milliseconds;
         lastSuccessfulAt = sentAt;
       }
+    } else {
+      return {
+        queue: Object.freeze({ available: false, waiting: 0, sending: 0, failed: 0 }),
+        lastSuccessfulAt: null,
+      };
     }
   }
 
@@ -86,10 +110,14 @@ export function createDiagnosticsSnapshot({
   appVersion,
   architecture,
   microphoneStatus,
+  observedAt = new Date(),
   queueItems,
   systemAudioStatus,
 }) {
-  const projectedQueue = queueProjection(queueItems);
+  const normalizedObservedAt = observedAt instanceof Date && Number.isFinite(observedAt.getTime())
+    ? observedAt
+    : new Date();
+  const projectedQueue = queueProjection(queueItems, normalizedObservedAt);
   const queue = projectedQueue.queue;
   const lastSuccessfulAt = projectedQueue.lastSuccessfulAt;
   const serverConnection = lastSuccessfulAt === null
@@ -100,7 +128,7 @@ export function createDiagnosticsSnapshot({
       }
     : {
         status: "last-success",
-        label: `Naposledy v pořádku v ${localTime(lastSuccessfulAt)}`,
+        label: `Poslední potvrzené odeslání: ${localDateTime(lastSuccessfulAt)}`,
         lastSuccessfulAt,
       };
 
@@ -120,13 +148,26 @@ function safeCount(value) {
   return Number.isSafeInteger(value) && value >= 0 ? value : 0;
 }
 
-function normalizedSnapshotForExport(snapshot) {
+function normalizedSnapshotForExport(snapshot, observedAt) {
   const microphone = normalizedPermission(snapshot?.permissions?.microphone?.status);
   const systemAudio = normalizedPermission(snapshot?.permissions?.systemAudio?.status);
-  const lastSuccessfulAt = snapshot?.serverConnection?.status === "last-success"
+  const candidateLastSuccessfulAt = snapshot?.serverConnection?.status === "last-success"
     ? canonicalIso(snapshot.serverConnection.lastSuccessfulAt)
     : null;
-  const queueAvailable = snapshot?.queue?.available === true;
+  const observedAtMilliseconds = observedAt instanceof Date && Number.isFinite(observedAt.getTime())
+    ? observedAt.getTime()
+    : Date.now();
+  const lastSuccessfulAt = candidateLastSuccessfulAt !== null
+    && Date.parse(candidateLastSuccessfulAt) <= observedAtMilliseconds
+    ? candidateLastSuccessfulAt
+    : null;
+  const queueAvailable = snapshot?.queue?.available === true
+    && Number.isSafeInteger(snapshot?.queue?.waiting)
+    && snapshot.queue.waiting >= 0
+    && Number.isSafeInteger(snapshot?.queue?.sending)
+    && snapshot.queue.sending >= 0
+    && Number.isSafeInteger(snapshot?.queue?.failed)
+    && snapshot.queue.failed >= 0;
 
   return {
     version: normalizedVersion(snapshot?.version),
@@ -149,8 +190,8 @@ function normalizedSnapshotForExport(snapshot) {
  * Text se skládá z pevného allowlistu. Záměrně tu není JSON.stringify ani spread
  * vstupu: nové pole ve stavu aplikace se samo do exportu nikdy nedostane.
  */
-export function formatDiagnosticsExport(snapshot) {
-  const safe = normalizedSnapshotForExport(snapshot);
+export function formatDiagnosticsExport(snapshot, observedAt = new Date()) {
+  const safe = normalizedSnapshotForExport(snapshot, observedAt);
   const server = safe.lastSuccessfulAt === null
     ? "zatím bez zaznamenaného úspěšného volání"
     : `naposledy potvrzeno ${safe.lastSuccessfulAt}`;
@@ -188,7 +229,7 @@ export async function writeDiagnosticsExport({ downloadsDirectory, exportedAt, s
   }
   const root = path.resolve(downloadsDirectory);
   const stem = `ludone-diagnostika-${timestampForFileName(exportedAt)}`;
-  const contents = formatDiagnosticsExport(snapshot);
+  const contents = formatDiagnosticsExport(snapshot, new Date(exportedAt));
 
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const suffix = attempt === 0 ? "" : `-${attempt + 1}`;

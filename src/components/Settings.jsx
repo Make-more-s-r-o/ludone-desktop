@@ -48,22 +48,48 @@ function permissionView(value) {
   return { status, label: PERMISSION_LABELS[status] };
 }
 
-function safeCount(value) {
-  return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+function isSafeCount(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function localDateTime(iso) {
+  const date = new Date(iso);
+  const day = new Intl.DateTimeFormat("cs-CZ", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  }).format(date);
+  const time = new Intl.DateTimeFormat("cs-CZ", {
+    hour: "2-digit",
+    hour12: false,
+    minute: "2-digit",
+  }).format(date);
+  return `${day} v ${time}`;
 }
 
 function normalizeDiagnostics(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const version = typeof value.version === "string" && value.version.trim()
-    ? value.version.trim()
+  const rawVersion = typeof value.version === "string" ? value.version.trim() : "";
+  const version = /^\d{1,9}\.\d{1,9}\.\d{1,9}(?:-[0-9A-Za-z.-]{1,32})?(?:\+[0-9A-Za-z.-]{1,32})?$/u
+    .test(rawVersion) && rawVersion.length <= 64
+    ? rawVersion
     : "Neznámá";
   const architecture = ["Apple Silicon", "Intel"].includes(value.architecture)
     ? value.architecture
     : "Neznámá";
-  const queueAvailable = value.queue?.available === true;
-  const lastSuccessfulAt = typeof value.serverConnection?.lastSuccessfulAt === "string"
-    && Number.isFinite(Date.parse(value.serverConnection.lastSuccessfulAt))
-    ? new Date(value.serverConnection.lastSuccessfulAt).toISOString()
+  const queueAvailable = value.queue?.available === true
+    && isSafeCount(value.queue?.waiting)
+    && isSafeCount(value.queue?.sending)
+    && isSafeCount(value.queue?.failed);
+  const rawLastSuccessfulAt = value.serverConnection?.lastSuccessfulAt;
+  const parsedLastSuccessfulAt = typeof rawLastSuccessfulAt === "string"
+    ? new Date(rawLastSuccessfulAt)
+    : null;
+  const lastSuccessfulAt = parsedLastSuccessfulAt
+    && Number.isFinite(parsedLastSuccessfulAt.getTime())
+    && parsedLastSuccessfulAt.toISOString() === rawLastSuccessfulAt
+    && parsedLastSuccessfulAt.getTime() <= Date.now()
+    ? rawLastSuccessfulAt
     : null;
 
   return {
@@ -77,11 +103,7 @@ function normalizeDiagnostics(value) {
       ? {
           status: "last-success",
           lastSuccessfulAt,
-          label: `Naposledy v pořádku v ${new Intl.DateTimeFormat("cs-CZ", {
-            hour: "2-digit",
-            hour12: false,
-            minute: "2-digit",
-          }).format(new Date(lastSuccessfulAt))}`,
+          label: `Poslední potvrzené odeslání: ${localDateTime(lastSuccessfulAt)}`,
         }
       : {
           status: "unknown",
@@ -90,9 +112,9 @@ function normalizeDiagnostics(value) {
         },
     queue: {
       available: queueAvailable,
-      waiting: queueAvailable ? safeCount(value.queue?.waiting) : 0,
-      sending: queueAvailable ? safeCount(value.queue?.sending) : 0,
-      failed: queueAvailable ? safeCount(value.queue?.failed) : 0,
+      waiting: queueAvailable ? value.queue.waiting : 0,
+      sending: queueAvailable ? value.queue.sending : 0,
+      failed: queueAvailable ? value.queue.failed : 0,
     },
   };
 }
@@ -306,27 +328,52 @@ export function SettingsApp() {
 
   useEffect(() => {
     let active = true;
+    let requestId = 0;
+    if (activeTab !== "recordings" && activeTab !== "diagnostics") {
+      return () => { active = false; };
+    }
     const getDiagnostics = window.ludone?.getDiagnostics;
     if (typeof getDiagnostics !== "function") {
       setDiagnostics({ state: "unknown", value: null });
       return () => { active = false; };
     }
 
-    Promise.resolve()
-      .then(() => getDiagnostics())
-      .then((value) => {
-        if (!active) return;
-        const normalized = normalizeDiagnostics(value);
-        setDiagnostics(normalized
-          ? { state: "ready", value: normalized }
-          : { state: "unknown", value: null });
-      })
-      .catch(() => {
-        if (active) setDiagnostics({ state: "unknown", value: null });
-      });
+    const refreshDiagnostics = () => {
+      requestId += 1;
+      const currentRequestId = requestId;
+      setDiagnostics((current) => (
+        current.value ? current : { state: "loading", value: null }
+      ));
+      Promise.resolve()
+        .then(() => getDiagnostics())
+        .then((value) => {
+          if (!active || currentRequestId !== requestId) return;
+          const normalized = normalizeDiagnostics(value);
+          setDiagnostics(normalized
+            ? { state: "ready", value: normalized }
+            : { state: "unknown", value: null });
+        })
+        .catch(() => {
+          if (active && currentRequestId === requestId) {
+            setDiagnostics({ state: "unknown", value: null });
+          }
+        });
+    };
+    const refreshVisibleDiagnostics = () => {
+      if (document.visibilityState === "visible") refreshDiagnostics();
+    };
 
-    return () => { active = false; };
-  }, []);
+    window.addEventListener("focus", refreshDiagnostics);
+    document.addEventListener("visibilitychange", refreshVisibleDiagnostics);
+    refreshDiagnostics();
+
+    return () => {
+      active = false;
+      requestId += 1;
+      window.removeEventListener("focus", refreshDiagnostics);
+      document.removeEventListener("visibilitychange", refreshVisibleDiagnostics);
+    };
+  }, [activeTab]);
 
   const selectRelativeTab = (event, currentIndex) => {
     let nextIndex;
@@ -443,7 +490,7 @@ export function SettingsApp() {
               data-auth-state={account.state}
             >
               {signedIn && (
-                <div className="avatar" data-testid="settings-avatar">
+                <div className="avatar" data-testid="settings-avatar" aria-hidden="true">
                   {identityAvatar(account.identity)}
                 </div>
               )}
@@ -580,7 +627,10 @@ export function SettingsApp() {
               <div><strong>Mikrofon</strong><small>Tvůj hlas se ukládá samostatně.</small></div>
             </div>
             <div className="settings-row settings-row--static">
-              <div><strong>Ostatní zvuk</strong><small>Hlasy z hovoru se ukládají do druhé stopy.</small></div>
+              <div>
+                <strong>Ostatní zvuk</strong>
+                <small>Je-li povolený, hlasy z hovoru se ukládají do druhé stopy.</small>
+              </div>
             </div>
           </section>
         </section>

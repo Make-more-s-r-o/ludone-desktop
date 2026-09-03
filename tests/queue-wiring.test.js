@@ -46,6 +46,9 @@ const modulePromiseDeclarations = `const manifestModulePromise = import(
 );
 const queueModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "queue.js")).href
+);
+const diagnosticsModulePromise = import(
+  pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "diagnostics.js")).href
 );`;
 if (!mainSource.includes(modulePromiseDeclarations)) {
   throw new Error("main.cjs nemá očekávané deklarace modulů manifestu a fronty");
@@ -53,7 +56,8 @@ if (!mainSource.includes(modulePromiseDeclarations)) {
 const executableMainSource = mainSource.replace(
   modulePromiseDeclarations,
   `const manifestModulePromise = injectedManifestModulePromise;
-const queueModulePromise = injectedQueueModulePromise;`,
+const queueModulePromise = injectedQueueModulePromise;
+const diagnosticsModulePromise = injectedDiagnosticsModulePromise;`,
 );
 const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");
 const queueStoreSource = readFileSync(new URL("../electron/queue.cjs", import.meta.url), "utf8");
@@ -550,6 +554,7 @@ async function loadMain({
     "clearInterval",
     "injectedManifestModulePromise",
     "injectedQueueModulePromise",
+    "injectedDiagnosticsModulePromise",
     `"use strict";\n${executableMainSource}`,
   );
   evaluateMain(
@@ -574,6 +579,7 @@ async function loadMain({
     harness.controlledClearInterval,
     import("../src/lib/manifest.js"),
     import("../src/lib/queue.js"),
+    import("../src/lib/diagnostics.js"),
   );
   return { ...harness, quietConsole, userDataPath };
 }

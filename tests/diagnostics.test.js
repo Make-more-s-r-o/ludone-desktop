@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createDiagnosticsSnapshot,
+  formatDiagnosticsExport,
   writeDiagnosticsExport,
 } from "../src/lib/diagnostics.js";
 
@@ -28,6 +29,7 @@ describe("diagnostický snapshot", () => {
       appVersion: "9.8.7",
       architecture: "arm64",
       microphoneStatus: "granted",
+      observedAt: new Date("2026-09-03T12:00:00.000Z"),
       queueItems: [
         { state: "ceka" },
         { state: "ceka" },
@@ -55,7 +57,7 @@ describe("diagnostický snapshot", () => {
   });
 
   it("bez potvrzeného odeslání neprohlašuje server za dostupný", () => {
-    const unsafeInputs = {
+    const snapshot = createDiagnosticsSnapshot({
       appVersion: "0.1.0",
       architecture: "x64",
       microphoneStatus: "not-determined",
@@ -71,6 +73,40 @@ describe("diagnostický snapshot", () => {
     });
     expect(snapshot.serverConnection.label).not.toMatch(/v pořádku|připojeno/iu);
   });
+
+  it("poškozená fronta ani budoucí či nekanonický čas nevytvoří zelený stav", () => {
+    const suspiciousTimes = createDiagnosticsSnapshot({
+      appVersion: "0.1.0",
+      architecture: "arm64",
+      microphoneStatus: "granted",
+      observedAt: new Date("2026-09-03T12:00:00.000Z"),
+      queueItems: [
+        { state: "odeslano", sentAt: "2099-01-01T00:00:00.000Z" },
+        { state: "odeslano", sentAt: "0" },
+      ],
+      systemAudioStatus: "granted",
+    });
+    const corruptQueue = createDiagnosticsSnapshot({
+      appVersion: "0.1.0",
+      architecture: "arm64",
+      microphoneStatus: "granted",
+      queueItems: [{ state: "novy-neznamy-stav" }],
+      systemAudioStatus: "granted",
+    });
+
+    expect(suspiciousTimes.serverConnection.status).toBe("unknown");
+    expect(corruptQueue.queue.available).toBe(false);
+    expect(corruptQueue.serverConnection.status).toBe("unknown");
+    expect(formatDiagnosticsExport({
+      ...suspiciousTimes,
+      serverConnection: {
+        status: "last-success",
+        lastSuccessfulAt: "2099-01-01T00:00:00.000Z",
+      },
+    }, new Date("2026-09-03T12:00:00.000Z"))).toContain(
+      "Spojení se serverem: zatím bez zaznamenaného úspěšného volání",
+    );
+  });
 });
 
 describe("export diagnostiky", () => {
@@ -80,7 +116,7 @@ describe("export diagnostiky", () => {
     const meetingTitle = "TAJNÁ SCHŮZKA O AKVIZICI";
     const filePath = "/Users/dan/Nahravky/tajna-schuzka.webm";
     const audio = "T2dnUwACAAAAAAAAAABTENTINEL-ZVUK";
-    const snapshot = createDiagnosticsSnapshot({
+    const unsafeInputs = {
       appVersion: "9.8.7",
       architecture: "arm64",
       microphoneStatus: "granted",
@@ -109,6 +145,7 @@ describe("export diagnostiky", () => {
     // podvrhl zobrazovaný label, zapisovač smí číst jen pevný výčet primitiv.
     const contaminatedSnapshot = {
       ...snapshot,
+      version: token,
       accessToken: token,
       meetingTitle,
       filePath,
@@ -135,7 +172,7 @@ describe("export diagnostiky", () => {
     const contents = await readFile(exportedPath, "utf8");
     expect(contents).toBe([
       "LuDone Desktop — diagnostika",
-      "Verze: 9.8.7",
+      "Verze: Neznámá",
       "Architektura: Apple Silicon",
       "Mikrofon: Povoleno",
       "Ostatní zvuk: Nepovoleno",
@@ -166,6 +203,8 @@ describe("produkční zapojení diagnostiky", () => {
 
     expect(block).toContain('handleValidated("diagnostics:get", ["settings"]');
     expect(block).toContain('requireNoPayload("diagnostics:get"');
+    expect(block).toContain("Stav diagnostiky není dostupný");
+    expect(block).toContain("return null");
     expect(block).toContain('handleValidated("diagnostics:export", ["settings"]');
     expect(block).toContain('requireNoPayload("diagnostics:export"');
     expect(block).not.toMatch(/net\.fetch|https?:\/\//u);
