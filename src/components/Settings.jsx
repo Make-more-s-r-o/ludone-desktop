@@ -465,19 +465,18 @@ export function SettingsApp() {
       );
       if (!confirmed) return;
 
-      const logout = window.ludone?.logout;
-      const setAuthOrigin = window.ludone?.setAuthOrigin;
-      if (typeof logout !== "function" || typeof setAuthOrigin !== "function") {
+      const switchAuthOrigin = window.ludone?.switchAuthOrigin;
+      if (typeof switchAuthOrigin !== "function") {
         setEnvironmentState({ state: "error", message: "Prostředí se nepodařilo změnit." });
         return;
       }
 
       setEnvironmentState({ state: "busy", message: "Odhlašuji a přepínám…" });
-      const logoutResult = await logout();
-      if (logoutResult?.signedOutLocally !== true) {
+      const switchResult = await switchAuthOrigin(nextOrigin);
+      if (switchResult?.signedOutLocally !== true) {
         setEnvironmentState({
           state: "error",
-          message: logoutFailureMessage(logoutResult?.reason),
+          message: logoutFailureMessage(switchResult?.reason),
         });
         revalidateAccountIdentity();
         return;
@@ -486,7 +485,7 @@ export function SettingsApp() {
       signedOutLocally = true;
       identityRequestGeneration.current += 1;
       setAccount({ state: "signed-out", identity: null });
-      const effectiveOrigin = await setAuthOrigin(nextOrigin);
+      const effectiveOrigin = switchResult.origin;
       const effectiveEnvironment = AUTH_ENVIRONMENTS.find(
         ({ origin }) => origin === effectiveOrigin,
       );

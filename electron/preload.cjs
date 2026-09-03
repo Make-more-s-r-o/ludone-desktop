@@ -4,12 +4,33 @@ const AUTH_ORIGINS = Object.freeze([
   "https://app.ludone.cz",
   "https://labs.ludone.cz",
 ]);
+const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 
 function requireAuthOrigin(value) {
   if (!AUTH_ORIGINS.includes(value)) {
     throw new TypeError("Hodnota prostředí musí být jeden ze dvou známých originů");
   }
   return value;
+}
+
+function requireAuthOriginSwitchResponse(value) {
+  if (
+    !value
+    || typeof value !== "object"
+    || Array.isArray(value)
+    || typeof value.signedOutLocally !== "boolean"
+    || typeof value.serverRevoked !== "boolean"
+    || (value.reason !== null && typeof value.reason !== "string")
+    || (value.origin !== null && !AUTH_ORIGINS.includes(value.origin))
+  ) {
+    throw new TypeError("Hlavní proces nevrátil platný výsledek změny prostředí");
+  }
+  return {
+    signedOutLocally: value.signedOutLocally,
+    serverRevoked: value.serverRevoked,
+    reason: value.reason,
+    origin: value.origin,
+  };
 }
 
 function setPanelContentHeight(height) {
@@ -35,6 +56,15 @@ function setBooleanSetting(channel, value) {
     throw new TypeError("Systémové nastavení musí být boolean");
   }
   return ipcRenderer.invoke(channel, value).then(requireBooleanSettingResponse);
+}
+
+function onAuthSessionChanged(callback) {
+  if (typeof callback !== "function") {
+    throw new TypeError("Odběratel změny přihlášení musí být funkce");
+  }
+  const listener = () => callback();
+  ipcRenderer.on(AUTH_SESSION_STATUS_CHANNEL, listener);
+  return () => ipcRenderer.removeListener(AUTH_SESSION_STATUS_CHANNEL, listener);
 }
 
 function onTrayCommand(callback) {
@@ -100,12 +130,18 @@ contextBridge.exposeInMainWorld("ludone", {
   beginAuth: () => ipcRenderer.invoke("auth:begin"),
   cancelAuth: () => ipcRenderer.invoke("auth:cancel"),
   pendingAuthUrl: () => ipcRenderer.invoke("auth:pending-url"),
-  hasAuthSession: async () => (await ipcRenderer.invoke("auth:has-session")) === true,
+  hasAuthSession: async () => (await ipcRenderer.invoke(AUTH_SESSION_STATUS_CHANNEL)) === true,
+  onAuthSessionChanged,
   getAuthIdentity: () => ipcRenderer.invoke("auth:identity"),
   getAuthOrigin: () => ipcRenderer.invoke("auth:origin"),
   setAuthOrigin: (value) => {
     const authOrigin = requireAuthOrigin(value);
     return ipcRenderer.invoke("auth:set-origin", authOrigin).then(requireAuthOrigin);
+  },
+  switchAuthOrigin: (value) => {
+    const authOrigin = requireAuthOrigin(value);
+    return ipcRenderer.invoke("auth:switch-origin", authOrigin)
+      .then(requireAuthOriginSwitchResponse);
   },
   logout: () => ipcRenderer.invoke("auth:logout"),
   getDeviceName: () => ipcRenderer.invoke("settings:get-device-name"),

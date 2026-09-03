@@ -29,17 +29,20 @@ export function App() {
   const authSessionRequestId = useRef(0);
   const queueRequestId = useRef(0);
   const trayCommandId = useRef(0);
+  const panelActionsAvailableRef = useRef(onboardingComplete && sessionExists === true);
+  panelActionsAvailableRef.current = onboardingComplete && sessionExists === true;
 
-  useEffect(() => {
+  const refreshAuthSession = useCallback(({ suspendActions = false } = {}) => {
     const requestId = authSessionRequestId.current + 1;
     authSessionRequestId.current = requestId;
+    if (suspendActions) setSessionExists(null);
     const hasAuthSession = window.ludone.hasAuthSession;
     if (typeof hasAuthSession !== "function") {
       setSessionExists(false);
-      return undefined;
+      return;
     }
 
-    Promise.resolve()
+    void Promise.resolve()
       .then(() => hasAuthSession())
       .then((result) => {
         if (requestId === authSessionRequestId.current) setSessionExists(result === true);
@@ -47,11 +50,39 @@ export function App() {
       .catch(() => {
         if (requestId === authSessionRequestId.current) setSessionExists(false);
       });
+  }, []);
+
+  useEffect(() => {
+    refreshAuthSession({ suspendActions: true });
 
     return () => {
-      if (requestId === authSessionRequestId.current) authSessionRequestId.current += 1;
+      authSessionRequestId.current += 1;
     };
-  }, []);
+  }, [refreshAuthSession]);
+
+  useEffect(() => {
+    const refreshWhenFocused = () => refreshAuthSession();
+    const refreshWhenShown = () => {
+      if (document.visibilityState === "visible") refreshAuthSession();
+    };
+    const unsubscribe = typeof window.ludone.onAuthSessionChanged === "function"
+      ? window.ludone.onAuthSessionChanged(() => {
+        refreshAuthSession({ suspendActions: true });
+      })
+      : undefined;
+
+    // Ve stavu bez session necháváme jen autoritativní oznámení z main procesu.
+    // Návrat fokusu z OAuth prohlížeče tak rozpracované přihlášení neodmountuje.
+    if (sessionExists === true) {
+      window.addEventListener("focus", refreshWhenFocused);
+      document.addEventListener("visibilitychange", refreshWhenShown);
+    }
+    return () => {
+      window.removeEventListener("focus", refreshWhenFocused);
+      document.removeEventListener("visibilitychange", refreshWhenShown);
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, [refreshAuthSession, sessionExists]);
 
   // Hlásíme FAKTA, ne stav. Co z nich lišta ukáže, rozhoduje hlavní proces — jinak by
   // po pádu tohohle okna zůstala ikona viset na tom, co jsme řekli naposledy.
@@ -65,11 +96,15 @@ export function App() {
     return window.ludone.onTrayCommand((name) => {
       // Během onboardingu nejsou akční karty namountované. Příkaz přesto
       // spotřebujeme, ale neuchováváme: jinak by se provedl opožděně až po jeho dokončení.
-      if (!onboardingComplete) return;
+      if (!panelActionsAvailableRef.current) return;
       trayCommandId.current += 1;
       setTrayCommand({ id: trayCommandId.current, name });
     });
-  }, [onboardingComplete]);
+  }, []);
+
+  useEffect(() => {
+    if (sessionExists !== true) setTrayCommand(null);
+  }, [sessionExists]);
 
   const refreshQueueStatus = useCallback(async () => {
     const requestId = queueRequestId.current + 1;
@@ -157,6 +192,35 @@ export function App() {
     );
   }
 
+  if (sessionExists === false) {
+    return (
+      <PanelContentHeightReporter>
+        <Onboarding reauthenticate onAuthenticated={rememberUser} />
+      </PanelContentHeightReporter>
+    );
+  }
+
+  if (sessionExists === null) {
+    return (
+      <PanelContentHeightReporter>
+        <main
+          aria-busy="true"
+          className="panel window-surface"
+          data-panel-state="checking-session"
+        >
+          <header className="panel-header">
+            <div className="panel-identity">
+              <LuDoneMark size={22} variant="panel" />
+              <span className="panel-identity__copy">
+                <strong>LuDone</strong>
+              </span>
+            </div>
+          </header>
+        </main>
+      </PanelContentHeightReporter>
+    );
+  }
+
   const bothActivitiesRunning = recording.active && tracking.active;
 
   return (
@@ -170,10 +234,8 @@ export function App() {
             <LuDoneMark size={22} variant="panel" />
             <span className="panel-identity__copy">
               <strong>LuDone</strong>
-              <small data-auth-state={sessionExists === null ? "checking" : sessionExists ? "signed-in" : "signed-out"}>
-                {sessionExists === true
-                  ? (user ? `${user.name} · připojeno` : "Přihlášeno")
-                  : (sessionExists === false ? "Nejsi připojený" : "")}
+              <small data-auth-state="signed-in">
+                {user ? `${user.name} · připojeno` : "Přihlášeno"}
               </small>
             </span>
           </div>

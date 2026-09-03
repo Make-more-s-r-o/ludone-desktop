@@ -74,8 +74,8 @@ function cancelAuthQuietly() {
   }
 }
 
-export function Onboarding({ onAuthenticated, onComplete }) {
-  const [step, setStep] = useState(0);
+export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false }) {
+  const [step, setStep] = useState(reauthenticate ? 1 : 0);
   const [authBusy, setAuthBusy] = useState(false);
   const [authDeadline, setAuthDeadline] = useState(0);
   const [authFailure, setAuthFailure] = useState("");
@@ -182,7 +182,7 @@ export function Onboarding({ onAuthenticated, onComplete }) {
         return;
       }
       onAuthenticated(result.user);
-      setStep(3);
+      if (!reauthenticate) setStep(3);
     } catch {
       if (authAttemptRef.current !== attemptId) return;
       setAuthFailure("neznama");
@@ -322,18 +322,20 @@ export function Onboarding({ onAuthenticated, onComplete }) {
     <main className="onboarding window-surface">
       <div className="onboarding__topbar">
         <div className="brand-lockup"><LuDoneMark size={30} /><span>LuDone</span></div>
-        <span className="step-count">{step + 1} / {STEPS.length}</span>
+        {!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}
       </div>
 
-      <div className="step-track" aria-label={`Krok ${step + 1} z ${STEPS.length}`}>
-        {STEPS.map((item, index) => (
-          <span
-            key={item}
-            className={index <= step ? "is-complete" : ""}
-            aria-hidden="true"
-          />
-        ))}
-      </div>
+      {!reauthenticate && (
+        <div className="step-track" aria-label={`Krok ${step + 1} z ${STEPS.length}`}>
+          {STEPS.map((item, index) => (
+            <span
+              key={item}
+              className={index <= step ? "is-complete" : ""}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+      )}
 
       {step === 0 && (
         <section className="onboarding__content welcome-step">
@@ -359,28 +361,40 @@ export function Onboarding({ onAuthenticated, onComplete }) {
       {step === 1 && (
         <section className="onboarding__content auth-step">
           <div className="onboarding-icon"><BrowserIcon /></div>
-          <p className="eyebrow">Přihlášení přes LuDone</p>
-          <h1>Propojte svůj účet</h1>
+          {!reauthenticate && <p className="eyebrow">Přihlášení přes LuDone</p>}
+          <h1>{reauthenticate ? "Nejsi připojený" : "Propojte svůj účet"}</h1>
           <p className="lead">
-            Přihlášení patří do prohlížeče. Aplikace nikdy neuvidí vaše heslo — zpět dostane
-            jen bezpečný přístupový token.
+            {reauthenticate
+              ? "Otevře se ti prohlížeč. Po potvrzení se sem vrátíš sám."
+              : (
+                <>
+                  Přihlášení patří do prohlížeče. Aplikace nikdy neuvidí vaše heslo — zpět
+                  dostane jen bezpečný přístupový token.
+                </>
+              )}
           </p>
-          <div className="auth-flow" aria-label="Průběh přihlášení">
-            <div><span>1</span><p><strong>Otevřít LuDone</strong><small>v prohlížeči</small></p></div>
-            <i />
-            <div><span>2</span><p><strong>Potvrdit přístup</strong><small>bez hesla v aplikaci</small></p></div>
-            <i />
-            <div><span>3</span><p><strong>Vrátit se sem</strong><small>pomocí callbacku</small></p></div>
-          </div>
+          {!reauthenticate && (
+            <div className="auth-flow" aria-label="Průběh přihlášení">
+              <div><span>1</span><p><strong>Otevřít LuDone</strong><small>v prohlížeči</small></p></div>
+              <i />
+              <div><span>2</span><p><strong>Potvrdit přístup</strong><small>bez hesla v aplikaci</small></p></div>
+              <i />
+              <div><span>3</span><p><strong>Vrátit se sem</strong><small>pomocí callbacku</small></p></div>
+            </div>
+          )}
           <button
             type="button"
             className="button button--primary button--wide"
             disabled={authBusy}
             onClick={beginAuth}
           >
-            <BrowserIcon /> {authBusy ? "Čekám na prohlížeč…" : "Přihlásit v prohlížeči"}
+            <BrowserIcon /> {authBusy
+              ? "Čekám na prohlížeč…"
+              : "Přihlásit v prohlížeči"}
           </button>
-          <button type="button" className="text-button" onClick={() => setStep(0)}>Zpět</button>
+          {!reauthenticate && (
+            <button type="button" className="text-button" onClick={() => setStep(0)}>Zpět</button>
+          )}
         </section>
       )}
 

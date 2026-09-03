@@ -94,10 +94,15 @@ const blokCasovace = (() => {
 })();
 
 const blokOdhlaseni = (() => {
+  const zacatekKontroly = kod.indexOf("function blockedAuthLogoutResult()");
+  const konecKontroly = kod.indexOf("\nasync function executeAuthLogout", zacatekKontroly);
   const zacatek = kod.indexOf('handleValidated("auth:logout"');
   if (zacatek === -1) return "";
   const konec = kod.indexOf("\nhandleValidated(", zacatek + 1);
-  return kod.slice(zacatek, konec === -1 ? undefined : konec);
+  const kontrola = zacatekKontroly === -1
+    ? ""
+    : kod.slice(zacatekKontroly, konecKontroly === -1 ? undefined : konecKontroly);
+  return kontrola + kod.slice(zacatek, konec === -1 ? undefined : konec);
 })();
 
 describe("odhlášení: co musí platit, jakmile ho někdo zapojí", () => {
