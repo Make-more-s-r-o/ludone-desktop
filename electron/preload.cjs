@@ -1,5 +1,17 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+const AUTH_ORIGINS = Object.freeze([
+  "https://app.ludone.cz",
+  "https://labs.ludone.cz",
+]);
+
+function requireAuthOrigin(value) {
+  if (!AUTH_ORIGINS.includes(value)) {
+    throw new TypeError("Hodnota prostředí musí být jeden ze dvou známých originů");
+  }
+  return value;
+}
+
 function setPanelContentHeight(height) {
   if (typeof height !== "number" || !Number.isFinite(height)) {
     throw new TypeError("Výška obsahu panelu musí být konečné číslo");
@@ -91,6 +103,10 @@ contextBridge.exposeInMainWorld("ludone", {
   hasAuthSession: async () => (await ipcRenderer.invoke("auth:has-session")) === true,
   getAuthIdentity: () => ipcRenderer.invoke("auth:identity"),
   getAuthOrigin: () => ipcRenderer.invoke("auth:origin"),
+  setAuthOrigin: (value) => {
+    const authOrigin = requireAuthOrigin(value);
+    return ipcRenderer.invoke("auth:set-origin", authOrigin).then(requireAuthOrigin);
+  },
   logout: () => ipcRenderer.invoke("auth:logout"),
   getDeviceName: () => ipcRenderer.invoke("settings:get-device-name"),
   getDockVisible: () => getBooleanSetting("settings:get-dock-visible"),

@@ -69,9 +69,8 @@ function dependencies(overrides = {}) {
   return {
     app: fakeApp,
     coordinator: fakeCoordinator,
-    // Platný clientId je v základu, aby testy měřily zapojení. Jeho NEPŘÍTOMNOST
-    // má vlastní test níž — je to fail-closed cesta z rozhodnutí BD-N6.
-    env: { LUDONE_OAUTH_CLIENT_ID: "klient-z-konfigurace" },
+    env: {},
+    getStoredOrigin: () => "https://app.ludone.cz",
     isTestRun: false,
     logger: { log: vi.fn(), warn: vi.fn() },
     safeStorage: fakeSafeStorage,
@@ -338,17 +337,17 @@ describe("zapojení skutečného OAuth controlleru", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("zapojený tok vždy předá clientId, takže DCR fallback není dosažitelný", async () => {
+  it("bez override nepředá clientId a zpřístupní existující DCR fallback", async () => {
     const calls = [];
     const handler = compiledAuthWiring(successfulController(calls))(dependencies());
 
     await handler();
-    expect(calls[0].clientId).toBe("klient-z-konfigurace");
+    expect(calls[0]).not.toHaveProperty("clientId");
     expect(authSource).toContain("registerPublicClient");
   });
 
-  it("se skutečným controllerem nevolá registrační endpoint", async () => {
-    const issuer = "https://app.ludone.cz";
+  it("se skutečným controllerem registruje klienta u zvoleného issueru", async () => {
+    const issuer = "https://labs.ludone.cz";
     const requestedPaths = [];
     const fetchImpl = vi.fn(async (input) => {
       const url = new URL(input);
@@ -367,6 +366,13 @@ describe("zapojení skutečného OAuth controlleru", () => {
           }),
         };
       }
+      if (url.pathname === "/api/mcp/oauth/register") {
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({ client_id: "klient-vytvoreny-na-labs" }),
+        };
+      }
       throw new Error(`Neočekávaný požadavek ${url.href}`);
     });
     const controller = new AbortController();
@@ -377,6 +383,7 @@ describe("zapojení skutečného OAuth controlleru", () => {
       timeoutMs: 100,
     });
     const handler = compiledAuthWiring(createController)(dependencies({
+      getStoredOrigin: () => issuer,
       shell: {
         openExternal: vi.fn(async () => {
           queueMicrotask(() => controller.abort());
@@ -388,8 +395,10 @@ describe("zapojení skutečného OAuth controlleru", () => {
       ok: false,
       duvod: "odmitnuto",
     });
-    expect(requestedPaths).toEqual(["/.well-known/oauth-authorization-server"]);
-    expect(requestedPaths).not.toContain("/api/mcp/oauth/register");
+    expect(requestedPaths).toEqual([
+      "/.well-known/oauth-authorization-server",
+      "/api/mcp/oauth/register",
+    ]);
   });
 
   it("skutečný preflight úložiště je zapojený do důvodu uloziste", async () => {
@@ -407,19 +416,27 @@ describe("zapojení skutečného OAuth controlleru", () => {
   });
 });
 
-describe("BD-N6: clientId se nehádá, chybí-li, přihlášení se NEPOKUSÍ", () => {
+describe("dynamická registrace klienta podle zvoleného issueru", () => {
   it.each([
     ["chybí úplně", {}],
     ["je prázdný", { LUDONE_OAUTH_CLIENT_ID: "" }],
     ["jsou jen mezery", { LUDONE_OAUTH_CLIENT_ID: "   " }],
-    ["není řetězec", { LUDONE_OAUTH_CLIENT_ID: 42 }],
-  ])("když %s, vrátí důvod konfigurace a controller ani nevznikne", async (_popis, env) => {
+  ])("když clientId %s, controller jej nedostane a zaregistruje si vlastní", async (_popis, env) => {
     const calls = [];
     const handler = compiledAuthWiring(successfulController(calls))(dependencies({ env }));
 
+    await expect(handler()).resolves.toMatchObject({ ok: true });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).not.toHaveProperty("clientId");
+  });
+
+  it("typově cizí explicitní clientId odmítne před vytvořením controlleru", async () => {
+    const calls = [];
+    const handler = compiledAuthWiring(successfulController(calls))(dependencies({
+      env: { LUDONE_OAUTH_CLIENT_ID: 42 },
+    }));
+
     await expect(handler()).resolves.toEqual({ ok: false, duvod: "konfigurace" });
-    // 🔴 Nula je tady to podstatné: nesmí se ani pokusit. Kdyby se controller vytvořil,
-    // sáhne na síť a uživatel dostane serverovou chybu místo srozumitelné věty.
     expect(calls).toHaveLength(0);
   });
 
@@ -428,7 +445,7 @@ describe("BD-N6: clientId se nehádá, chybí-li, přihlášení se NEPOKUSÍ", 
     // pro ně neexistuje. Tenhle kanárek hlídá, aby se to nevrátilo.
     expect(mainSource).not.toMatch(/ldmcp_oauth_client/);
     expect(mainSource).not.toMatch(/staticClientIds/);
-    // Jediný zdroj je proměnná prostředí.
+    // Volitelný override zůstává pro cílené testy a CI; běžný tok používá DCR.
     expect(mainSource).toMatch(/LUDONE_OAUTH_CLIENT_ID/);
   });
 });
@@ -446,9 +463,12 @@ describe("mapování chyb nesmí zaměnit vadu kódu za vadu konfigurace", () =>
     await expect(handler()).resolves.toEqual({ ok: false, duvod: "neznama" });
   });
 
-  it("skutečně chybějící konfigurace se pořád hlásí jako konfigurace", () => {
-    // Povinně zelený protějšek: zúžení nesmí zabít správné zařazení.
-    expect(mainSource).toMatch(/přihlášení zatím není nastavené/);
+  it("typově neplatný explicitní clientId se pořád hlásí jako konfigurace", async () => {
+    const handler = compiledAuthWiring(vi.fn())(dependencies({
+      env: { LUDONE_OAUTH_CLIENT_ID: 42 },
+    }));
+
+    await expect(handler()).resolves.toEqual({ ok: false, duvod: "konfigurace" });
   });
 });
 

@@ -568,6 +568,7 @@ describe("odhlášení", () => {
       "authSessionCoordinator",
       "authSessionGeneration",
       "authLogoutsInFlight",
+      "authOriginChangeInFlight",
       "hasLiveRecording",
       "trackingWorkBlocksQuit",
       `"use strict"; ${registration}`,
@@ -582,6 +583,7 @@ describe("odhlášení", () => {
       authSessionCoordinator,
       0,
       0,
+      false,
       hasLiveRecording,
       trackingWorkBlocksQuit,
     );

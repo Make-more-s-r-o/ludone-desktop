@@ -506,7 +506,7 @@ async function loadMain({
       return { ...actualRequire("./auth.cjs"), createLogoutController };
     }
     if (specifier === "./settings.cjs" && createDockVisibilityStore) {
-      return { createDockVisibilityStore };
+      return { ...actualRequire("./settings.cjs"), createDockVisibilityStore };
     }
     if (
       specifier === "./queue.cjs"
@@ -570,6 +570,8 @@ async function loadMain({
         DESKTOP_TIME_ENABLED: undefined,
         DESKTOP_UPLOAD_ENABLED: undefined,
         LUDONE_DATA_DIR: undefined,
+        LUDONE_OAUTH_CLIENT_ID: undefined,
+        LUDONE_ORIGIN: undefined,
         ...env,
       },
       platform,
@@ -1335,18 +1337,383 @@ describe("zjištění uložené OAuth session", () => {
     expect(() => origin(panelEvent)).toThrow(/nedůvěryhodný odesílatel/);
   });
 
+  it("uložené labs přežije restart hlavního procesu", async () => {
+    const firstProcess = await loadMain();
+    await firstProcess.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(firstProcess);
+    const setOrigin = firstProcess.ipcHandlers.get("auth:set-origin");
+    const getOrigin = firstProcess.ipcHandlers.get("auth:origin");
+
+    expect(setOrigin).toBeTypeOf("function");
+    await expect(setOrigin(settingsEvent, "https://labs.ludone.cz"))
+      .resolves.toBe("https://labs.ludone.cz");
+    expect(getOrigin(settingsEvent)).toBe("https://labs.ludone.cz");
+
+    const secondProcess = await loadMain({ userDataPath: firstProcess.userDataPath });
+    await secondProcess.runReady();
+    const restarted = openSettingsAndCreateEvent(secondProcess);
+    expect(secondProcess.ipcHandlers.get("auth:origin")(restarted.settingsEvent))
+      .toBe("https://labs.ludone.cz");
+  });
+
+  it.each([
+    ["cizí HTTPS origin", "https://utocnik.example", []],
+    ["labs s cestou", "https://labs.ludone.cz/nahravky", []],
+    ["labs s lomítkem", "https://labs.ludone.cz/", []],
+    ["holý hostname", "labs.ludone.cz", []],
+    ["číslo", 42, []],
+    ["null", null, []],
+    ["chybějící hodnota", undefined, []],
+    ["argument navíc", "https://labs.ludone.cz", ["navíc"]],
+  ])("kanál odmítne %s a prostředí nezmění", async (_label, foreignOrigin, extra) => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const setOrigin = harness.ipcHandlers.get("auth:set-origin");
+    const getOrigin = harness.ipcHandlers.get("auth:origin");
+
+    expect(setOrigin).toBeTypeOf("function");
+    await expect(Promise.resolve().then(() => setOrigin(settingsEvent, foreignOrigin, ...extra)))
+      .rejects.toThrow(/právě jeden|prostředí|origin/u);
+    expect(getOrigin(settingsEvent)).toBe("https://app.ludone.cz");
+  });
+
+  it("kanál změny prostředí přijme jen okno settings", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const setOrigin = harness.ipcHandlers.get("auth:set-origin");
+
+    expect(setOrigin).toBeTypeOf("function");
+    expect(() => setOrigin(panelEvent, "https://labs.ludone.cz"))
+      .toThrow(/nedůvěryhodný odesílatel/u);
+    await expect(setOrigin(settingsEvent, "https://labs.ludone.cz"))
+      .resolves.toBe("https://labs.ludone.cz");
+  });
+
+  it("kanál změnu odmítne, dokud auth:logout neodstraní uloženou session", async () => {
+    const createLogoutController = vi.fn(({ app }) => ({
+      logout: vi.fn(async () => {
+        await rm(actualRequire("./auth.cjs").tokenSessionFilePath(app), { force: true });
+        return { signedOutLocally: true, serverRevoked: true, reason: null };
+      }),
+    }));
+    const harness = await loadMain({ createLogoutController });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession(),
+    )));
+
+    const setOrigin = harness.ipcHandlers.get("auth:set-origin");
+    await expect(setOrigin(settingsEvent, "https://labs.ludone.cz"))
+      .rejects.toThrow(/odhlásit|session/u);
+    expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
+      .toBe("https://app.ludone.cz");
+
+    await expect(harness.ipcHandlers.get("auth:logout")(settingsEvent))
+      .resolves.toMatchObject({ signedOutLocally: true });
+    await expect(setOrigin(settingsEvent, "https://labs.ludone.cz"))
+      .resolves.toBe("https://labs.ludone.cz");
+    expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
+      .toBe("https://labs.ludone.cz");
+  });
+
+  it("přímý invoke změny prostředí neobejde blokaci běžícího LuTracku", async () => {
+    const harness = await loadMain({ env: { DESKTOP_TIME_ENABLED: "true" } });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    await harness.ipcHandlers.get("tracking:start")(panelEvent, { projectId: PROJECT_A });
+
+    await expect(harness.ipcHandlers.get("auth:set-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    )).rejects.toThrow(/LuTrack|měření|aktiv/u);
+    expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
+      .toBe("https://app.ludone.cz");
+
+    await harness.ipcHandlers.get("tracking:stop")(panelEvent);
+  });
+
+  it("souběžný neúspěšný logout nesmí změně prostředí skrýt uloženou session", async () => {
+    const logoutController = { logout: vi.fn(async () => ({
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "local-delete-failed",
+    })) };
+    const harness = await loadMain({
+      createLogoutController: vi.fn(() => logoutController),
+    });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession(),
+    )));
+
+    let reportReadStarted;
+    let releaseRead;
+    const readStarted = new Promise((resolve) => { reportReadStarted = resolve; });
+    const readReleased = new Promise((resolve) => { releaseRead = resolve; });
+    const encryptedSession = await readFile(tokenPath);
+    const fsPromises = actualRequire("node:fs").promises;
+    const originalReadFile = fsPromises.readFile.bind(fsPromises);
+    const readSpy = vi.spyOn(fsPromises, "readFile").mockImplementation(async (filePath, ...args) => {
+      if (filePath !== tokenPath) return originalReadFile(filePath, ...args);
+      reportReadStarted();
+      await readReleased;
+      return encryptedSession;
+    });
+
+    try {
+      const changing = harness.ipcHandlers.get("auth:set-origin")(
+        settingsEvent,
+        "https://labs.ludone.cz",
+      );
+      await readStarted;
+      await expect(harness.ipcHandlers.get("auth:logout")(settingsEvent))
+        .resolves.toMatchObject({ signedOutLocally: false });
+      releaseRead();
+
+      await expect(changing).rejects.toThrow(/odhlásit|session/u);
+      expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
+        .toBe("https://app.ludone.cz");
+      expect(logoutController.logout).not.toHaveBeenCalled();
+    } finally {
+      releaseRead();
+      readSpy.mockRestore();
+    }
+  });
+
+  it("během rozpracované změny prostředí nelze zahájit novou aktivitu", async () => {
+    const harness = await loadMain({ env: { DESKTOP_TIME_ENABLED: "true" } });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify(
+      storedAuthSession(),
+    )));
+
+    let reportReadStarted;
+    let releaseRead;
+    const readStarted = new Promise((resolve) => { reportReadStarted = resolve; });
+    const readReleased = new Promise((resolve) => { releaseRead = resolve; });
+    const encryptedSession = await readFile(tokenPath);
+    const fsPromises = actualRequire("node:fs").promises;
+    const originalReadFile = fsPromises.readFile.bind(fsPromises);
+    const readSpy = vi.spyOn(fsPromises, "readFile").mockImplementation(async (filePath, ...args) => {
+      if (filePath !== tokenPath) return originalReadFile(filePath, ...args);
+      reportReadStarted();
+      await readReleased;
+      return encryptedSession;
+    });
+
+    try {
+      const changing = harness.ipcHandlers.get("auth:set-origin")(
+        settingsEvent,
+        "https://labs.ludone.cz",
+      );
+      const changingResult = changing.then(
+        (value) => ({ error: null, value }),
+        (error) => ({ error, value: null }),
+      );
+      await readStarted;
+
+      await expect(Promise.resolve().then(() => harness.ipcHandlers.get("tracking:start")(
+        panelEvent,
+        { projectId: PROJECT_A },
+      ))).rejects.toThrow(/prostředí|mění/u);
+      releaseRead();
+      await expect(changingResult).resolves.toMatchObject({
+        error: expect.objectContaining({ message: expect.stringMatching(/odhlásit|session/u) }),
+        value: null,
+      });
+      expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
+        .toBe("https://app.ludone.cz");
+    } finally {
+      releaseRead();
+      await harness.ipcHandlers.get("tracking:stop")(panelEvent).catch(() => {});
+      readSpy.mockRestore();
+    }
+  });
+
+  it("LUDONE_ORIGIN má přednost, ale uloženou volbu nepřepíše", async () => {
+    const storedProcess = await loadMain();
+    await storedProcess.runReady();
+    const storedEvent = openSettingsAndCreateEvent(storedProcess).settingsEvent;
+    await storedProcess.ipcHandlers.get("auth:set-origin")(
+      storedEvent,
+      "https://labs.ludone.cz",
+    );
+
+    const overriddenProcess = await loadMain({
+      env: { LUDONE_ORIGIN: "https://app.ludone.cz" },
+      userDataPath: storedProcess.userDataPath,
+    });
+    await overriddenProcess.runReady();
+    const overriddenEvent = openSettingsAndCreateEvent(overriddenProcess).settingsEvent;
+    expect(overriddenProcess.ipcHandlers.get("auth:origin")(overriddenEvent))
+      .toBe("https://app.ludone.cz");
+
+    const nextRestart = await loadMain({ userDataPath: storedProcess.userDataPath });
+    await nextRestart.runReady();
+    const nextEvent = openSettingsAndCreateEvent(nextRestart).settingsEvent;
+    expect(nextRestart.ipcHandlers.get("auth:origin")(nextEvent))
+      .toBe("https://labs.ludone.cz");
+  });
+
+  it("stejná instance fronty použije po přepnutí nový efektivní origin", async () => {
+    const uploadOrigins = [];
+    let queueSend;
+    const createRecordingUploadSend = vi.fn((options) => {
+      uploadOrigins.push(options.origin);
+      return vi.fn(async () => ({ outcome: "sent" }));
+    });
+    const createOutboundQueueStore = vi.fn((options) => {
+      queueSend = options.send;
+      return {
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(async () => ({ outcome: "idle" })),
+      };
+    });
+    const harness = await loadMain({ createOutboundQueueStore, createRecordingUploadSend });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    expect(queueSend).toBeTypeOf("function");
+    await queueSend({ id: "před-přepnutím" });
+
+    await harness.ipcHandlers.get("auth:set-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    );
+    await queueSend({ id: "po-přepnutí" });
+
+    expect(uploadOrigins).toEqual([
+      "https://app.ludone.cz",
+      "https://labs.ludone.cz",
+    ]);
+    expect(createOutboundQueueStore).toHaveBeenCalledOnce();
+  });
+
+  it("změnu prostředí odmítne, dokud dobíhá upload, a ponechá jediný store", async () => {
+    let queueSend;
+    let releaseUpload;
+    let reportUploadStarted;
+    const uploadStarted = new Promise((resolve) => {
+      reportUploadStarted = resolve;
+    });
+    const createRecordingUploadSend = vi.fn(() => vi.fn(async () => {
+      reportUploadStarted();
+      await new Promise((resolve) => {
+        releaseUpload = resolve;
+      });
+    }));
+    const createOutboundQueueStore = vi.fn((options) => {
+      queueSend = options.send;
+      return {
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(async () => ({ outcome: "idle" })),
+      };
+    });
+    const harness = await loadMain({ createOutboundQueueStore, createRecordingUploadSend });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const upload = queueSend({ id: "odesílá-se" });
+    await uploadStarted;
+
+    await expect(harness.ipcHandlers.get("auth:set-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    )).rejects.toThrow(/odesílání|front/u);
+    expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
+      .toBe("https://app.ludone.cz");
+    expect(createOutboundQueueStore).toHaveBeenCalledOnce();
+
+    releaseUpload();
+    await upload;
+    await expect(harness.ipcHandlers.get("auth:set-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    )).resolves.toBe("https://labs.ludone.cz");
+    expect(createOutboundQueueStore).toHaveBeenCalledOnce();
+  });
+
+  it("změnu prostředí odmítne, dokud handover drží původní origin", async () => {
+    let releaseExport;
+    let reportExportStarted;
+    const exportStarted = new Promise((resolve) => {
+      reportExportStarted = resolve;
+    });
+    const exportRecordingCopy = vi.fn(async ({ manifest, origin }) => {
+      reportExportStarted(origin);
+      await new Promise((resolve) => {
+        releaseExport = resolve;
+      });
+      return {
+        clientRecordingId: manifest.clientRecordingId,
+        endedAt: manifest.closedAt,
+        fileName: "schuzka.webm",
+        format: "webm",
+        startedAt: manifest.createdAt,
+        trackStartDeltaMs: 0,
+      };
+    });
+    const harness = await loadMain({ exportRecordingCopy });
+    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+    const exporting = exportRecording(event, sessionId, "Schůzka");
+    await expect(exportStarted).resolves.toBe("https://app.ludone.cz");
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+
+    await expect(harness.ipcHandlers.get("auth:set-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    )).rejects.toThrow(/export|handover/u);
+    expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
+      .toBe("https://app.ludone.cz");
+
+    releaseExport();
+    await expect(exporting).resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
+    await expect(harness.ipcHandlers.get("auth:set-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    )).resolves.toBe("https://labs.ludone.cz");
+  });
+
   it("preload předá identity a origin přes oddělené bezargumentové kanály", async () => {
     const identityResponse = { name: null, email: "alice@example.cz" };
-    const { api, invoke } = loadPreload((channel) => (
-      channel === "auth:identity" ? identityResponse : "https://labs.ludone.cz"
-    ));
+    const { api, invoke } = loadPreload((channel, value) => {
+      if (channel === "auth:identity") return identityResponse;
+      if (channel === "auth:set-origin") return value;
+      return "https://labs.ludone.cz";
+    });
 
     await expect(api.getAuthIdentity()).resolves.toBe(identityResponse);
     await expect(api.getAuthOrigin()).resolves.toBe("https://labs.ludone.cz");
+    await expect(api.setAuthOrigin("https://app.ludone.cz"))
+      .resolves.toBe("https://app.ludone.cz");
     expect(invoke.mock.calls).toEqual([
       ["auth:identity"],
       ["auth:origin"],
+      ["auth:set-origin", "https://app.ludone.cz"],
     ]);
+  });
+
+  it("preload cizí origin odmítne ještě před IPC", async () => {
+    const { api, invoke } = loadPreload();
+
+    await expect(Promise.resolve().then(() => api.setAuthOrigin("https://utocnik.example")))
+      .rejects.toThrow(/prostředí|origin/u);
+    expect(invoke).not.toHaveBeenCalled();
   });
 });
 
@@ -2032,7 +2399,7 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(queueStoreCode).toContain("queueModule.processNext");
   });
 
-  it("produkční send je upload klient, ale vypnutý killswitch jej nespustí", async () => {
+  it("vypnutý killswitch upload klienta ani nevytvoří, ani nespustí", async () => {
     const uploadSend = vi.fn();
     const createRecordingUploadSend = vi.fn(() => uploadSend);
     const harness = await loadMain({
@@ -2063,11 +2430,7 @@ describe("produkční zapojení odchozí fronty", () => {
 
     await harness.runReady();
 
-    expect(createRecordingUploadSend).toHaveBeenCalledWith(expect.objectContaining({
-      fetchImpl: expect.any(Function),
-      getUploadContext: expect.any(Function),
-      origin: "https://app.ludone.cz",
-    }));
+    expect(createRecordingUploadSend).not.toHaveBeenCalled();
     expect(uploadSend).not.toHaveBeenCalled();
     expect(harness.electron.net.fetch).not.toHaveBeenCalled();
   });
@@ -2372,11 +2735,22 @@ describe("produkční zapojení odchozí fronty", () => {
 
   it("prošlý access token neposkytne uploadu jako platný kontext", async () => {
     let getUploadContext;
+    let queueSend;
     const createRecordingUploadSend = vi.fn((options) => {
       getUploadContext = options.getUploadContext;
       return vi.fn();
     });
-    const harness = await loadMain({ createRecordingUploadSend });
+    const createOutboundQueueStore = vi.fn((options) => {
+      queueSend = options.send;
+      return {
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(async () => ({ outcome: "idle" })),
+      };
+    });
+    const harness = await loadMain({ createOutboundQueueStore, createRecordingUploadSend });
     const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
     await mkdir(path.dirname(tokenPath), { recursive: true });
     await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
@@ -2384,6 +2758,7 @@ describe("produkční zapojení odchozí fronty", () => {
       accessExpiresAt: Date.now() - 1,
     })));
     await harness.runReady();
+    await queueSend({ id: "sonda-kontextu" });
 
     await expect(getUploadContext()).resolves.toBeNull();
 
@@ -2419,8 +2794,8 @@ describe("produkční zapojení odchozí fronty", () => {
     await vi.waitFor(() => expect(pump).toHaveBeenCalledTimes(2));
   });
 
-  it("pojmenování projde hlavním procesem do jednoho stereo souboru", async () => {
-    const harness = await loadMain({ env: { LUDONE_ORIGIN: "https://labs.ludone.cz" } });
+  it("pojmenování použije pro handover uložený labs origin a jeden stereo soubor", async () => {
+    const harness = await loadMain();
     await harness.runReady();
     const panelContents = harness.windows[0].webContents;
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
@@ -2449,6 +2824,11 @@ describe("produkční zapojení odchozí fronty", () => {
       system: systemTiming,
     });
     expect(saved.trackStartDeltaMs).toBe(25);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    await expect(harness.ipcHandlers.get("auth:set-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    )).resolves.toBe("https://labs.ludone.cz");
     const pendingExport = exportRecording(event, sessionId, "Porada / provozu: Q3");
     await finishExport(event, sessionId, {
       succeeded: true,
