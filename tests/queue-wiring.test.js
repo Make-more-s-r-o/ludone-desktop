@@ -2573,6 +2573,13 @@ describe("soukromí chyb stereo exportu", () => {
     const druhyVysledek = await exportRecording(event, sessionId, "Druhý pokus");
     expect(druhyVysledek.ok).toBe(false);
 
+    // Jádro věci: první export pořád běží, takže i TŘETÍ pokus musí narazit na obsazeno.
+    // Když druhý pokus cestou ven shodí cizí příznak, třetí se pustí souběžně a dva
+    // zapisovatelé si sáhnou na tentýž soubor.
+    const tretiVysledek = await exportRecording(event, sessionId, "Třetí pokus");
+    expect(tretiVysledek).toMatchObject({ ok: false });
+    expect(tretiVysledek.message).toContain("Stereo export už probíhá");
+
     await finishExport(event, sessionId, {
       succeeded: true,
       timing: {
