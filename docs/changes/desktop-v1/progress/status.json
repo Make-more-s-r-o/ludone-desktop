@@ -88,7 +88,7 @@
       "dodani": "merged",
       "vystaveni": "labs",
       "overeni": "verified-live",
-      "dalsiKrok": "Ověřeno naostro: po uvolnění místa v liště se ikona objevila a panel se otevřel. Nebyla vidět kvůli plné liště, ne kvůli vadě; aplikace to nově sama hlásí."
+      "dalsiKrok": "Ikona překreslena glyfem ze schváleného návrhu (PR #44) — pulz M4 18 L10 6 L14 14 L20 9, generovaný skriptem npm run ikony, ne binárka. Čas nahrávání vedle ikony hotov (PR #41). Barva, odznak a pátý stav zůstávají ve zmrazeném T1 — rozhodnutí čeká na Dana."
     },
     {
       "id": "DSK-F002",

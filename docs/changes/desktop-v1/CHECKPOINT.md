@@ -12,8 +12,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `b242de8`, **603 passed \| 6 skipped (609)**, čistý strom |
-| otevřené PR | **0** · worktree **1** (`desktop-glyf`, běží) · mergnuto dnes **#41 #42 #43** |
+| `main` | `15da2da`, **607 passed \| 6 skipped (613)**, čistý strom |
+| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3. 9.: **#41 #42 #43 #44** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
@@ -99,7 +99,9 @@ není vymýšlení.
 
 ## Zbylá práce, kterou běh může udělat sám
 
-0. **Glyf ikony** — běží jako `desktop-glyf`. 🔴 **Úzký záběr schválně:** jen překreslení
+0. ~~**Glyf ikony**~~ — ✅ **hotovo, PR #44.** Generátor `npm run ikony` vyrábí PNG přímo
+   ze souřadnic návrhu; brána hlídá i to, že opakované spuštění dá tytéž bajty.
+   Původní zápis: 🔴 **Úzký záběr schválně:** jen překreslení
    čtyř existujících ikon pulzem z návrhu. Barva, odznak a pátý stav spadají pod
    **zmrazený T1** — běh ho nerozmrazil, rozhodnutí leží v `DAN-TODO.md`.
 
@@ -119,8 +121,14 @@ není vymýšlení.
    *Návrh:* rozlišit vlastní vyhozené chyby (nesou bezpečné české věty) od systémových
    podle `error.code` a ty nahradit obecnou hláškou podle kódu.
 
-2. Po ruce už není nic dalšího doloženého. **Nevymýšlet práci** — dvě adversariální kola
-   (interakce, bezpečnost, ztráta dat) proběhla a jejich nálezy jsou vyřešené.
+🔴 **Doložená samostatná práce DOŠLA.** Změřeno 3. 9.: `DSK-F012` (výběr projektu) čeká
+na serverový kontrakt — je to **money cesta a desktop nesmí hádat pravidlo 110 %**;
+`DSK-F010` (odeslání na server) je fáze 2. Obojí je vědomé, ne zapomenuté.
+Kontrakt na alokace jsem si vyžádal od serverové session.
+
+**Nevymýšlet práci.** Místo toho běží čtecí **audit odchylek od návrhu** — obrazovku po
+obrazovce, každá odchylka s citací z návrhu i z kódu. Dvakrát měl Dan konkrétní pravdu
+tam, kde jsem tvrdil hotovo (čas v liště, glyf ikony); tohle to má najít dřív než on.
 
 ---
 
