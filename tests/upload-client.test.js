@@ -26,6 +26,8 @@ const STARTED_AT = "2026-09-03T08:00:00.000Z";
 const ENDED_AT = "2026-09-03T08:30:00.000Z";
 const CONTRACT_CHUNK_BYTES = 8 * 1024 * 1024;
 const CONTRACT_MAX_BYTES = 512 * 1024 * 1024;
+const OWNER_A = `sha256:${"a".repeat(64)}`;
+const OWNER_B = `sha256:${"b".repeat(64)}`;
 const temporaryRoots = new Set();
 
 if (RECORDING_CHUNK_BYTES !== CONTRACT_CHUNK_BYTES) {
@@ -110,12 +112,13 @@ async function recordingFixture({
       system: systemPath,
     },
   }, Date.parse(ENDED_AT));
+  const item = { ...queued.item, ownerFingerprint: OWNER_A };
   return {
-    item: queued.item,
+    item,
     manifest,
     manifestPath,
     microphonePath,
-    queue: queued.queue,
+    queue: { ...queued.queue, items: [item] },
     systemPath,
   };
 }
@@ -133,6 +136,7 @@ function createSend(fetchImpl, logger = createLogger(), options = {}) {
         accessToken: TOKEN,
         companyTabidooId: COMPANY_ID,
         deviceLabel: "Testovací Mac",
+        ownerFingerprint: OWNER_A,
       })),
       logger,
       origin: ORIGIN,
@@ -140,6 +144,106 @@ function createSend(fetchImpl, logger = createLogger(), options = {}) {
     }),
   };
 }
+
+describe("vlastník nahrávky před uploadem", () => {
+  it("položku pořízenou přihlášeným odešle pod toutéž session", async () => {
+    const fixture = await recordingFixture();
+    const server = createStatefulServer();
+    const getUploadContext = vi.fn(async () => ({
+      accessToken: TOKEN,
+      companyTabidooId: COMPANY_ID,
+      ownerFingerprint: OWNER_A,
+    }));
+    const { send } = createSend(server.fetchImpl, createLogger(), { getUploadContext });
+
+    await expect(send(fixture.item)).resolves.toMatchObject({ completedUploads: 2 });
+    expect(getUploadContext).toHaveBeenCalledOnce();
+    expect(server.fetchImpl).toHaveBeenCalled();
+    for (const [, options] of server.fetchImpl.mock.calls) {
+      expect(requestHeaders(options).get("authorization")).toBe(`Bearer ${TOKEN}`);
+    }
+  });
+
+  it("jiná session položku pozastaví, zachová a nic neodešle", async () => {
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn();
+    const { send } = createSend(fetchImpl, createLogger(), {
+      getUploadContext: vi.fn(async () => ({
+        accessToken: "TOKEN-JINEHO-UCTU",
+        companyTabidooId: COMPANY_ID,
+        ownerFingerprint: OWNER_B,
+      })),
+    });
+
+    const result = await processNext(
+      fixture.queue,
+      { DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined },
+      send,
+    );
+
+    expect(result).toMatchObject({
+      outcome: "paused",
+      item: {
+        attempts: 0,
+        ownerFingerprint: OWNER_A,
+        sentAt: null,
+        state: QUEUE_STATES.WAITING,
+      },
+      queue: { items: [expect.objectContaining({ ownerFingerprint: OWNER_A })] },
+    });
+    expect(result.reason).toMatch(/jinému účtu/i);
+    expect(result.queue.items).toHaveLength(1);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("neznámého vlastníka nepřiřadí první přihlášené session a nechá jej čekat", async () => {
+    const fixture = await recordingFixture();
+    fixture.item.ownerFingerprint = null;
+    fixture.queue.items[0] = fixture.item;
+    const fetchImpl = vi.fn();
+    const { send } = createSend(fetchImpl);
+
+    const result = await processNext(
+      fixture.queue,
+      { DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined },
+      send,
+    );
+
+    expect(result).toMatchObject({
+      outcome: "paused",
+      item: {
+        attempts: 0,
+        ownerFingerprint: null,
+        sentAt: null,
+        state: QUEUE_STATES.WAITING,
+      },
+    });
+    expect(result.reason).toMatch(/vlastník.*potvr/i);
+    expect(result.queue.items).toHaveLength(1);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("starší položku bez pole vlastníka považuje za neznámou a neodešle ji", async () => {
+    const fixture = await recordingFixture();
+    delete fixture.item.ownerFingerprint;
+    fixture.queue.items[0] = fixture.item;
+    const fetchImpl = vi.fn();
+    const { send } = createSend(fetchImpl);
+
+    const result = await processNext(
+      fixture.queue,
+      { DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined },
+      send,
+    );
+
+    expect(result).toMatchObject({
+      outcome: "paused",
+      item: { attempts: 0, sentAt: null, state: QUEUE_STATES.WAITING },
+    });
+    expect(result.queue.items).toHaveLength(1);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
 
 function serverRecordingId(sequence) {
   return `00000000-0000-4000-8000-${String(sequence).padStart(12, "0")}`;
