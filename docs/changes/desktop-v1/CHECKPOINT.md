@@ -60,6 +60,39 @@ jsou vady, které se **projeví jen tichem**.
 
 ---
 
+
+## ⚠️ ŽIVÝ ODKAZ, KTERÝ NIKDO NEPOTVRDIL (nalezeno 3. 9.)
+
+`electron/recording-export.cjs:121` staví `new URL("/nahravky/nahrat", origin)` a po exportu
+ji otevře v prohlížeči. **Serverová session 3. 9. napsala, že za existenci té routy pod tímhle
+jménem NERUČÍ** — přitom v zadání, podle kterého se to stavělo, stálo „potvrzeno serverovou
+session".
+
+**Změřený dopad, kdyby routa neexistovala:**
+- 🟢 nahrávka je v bezpečí — soubor je ve Stažených **před** otevřením odkazu, obě stopy zůstávají
+- 🔴 **404 nepoznáme**: `openExternal` uspěje i u neexistující stránky. Ošetření chyby se
+  spustí jen když selže otevření prohlížeče, ne když selže stránka. Uživatel vidí „hotovo"
+  a rozbitou stránku.
+
+**Čeká na skutečný seznam podstránek od serverové session.** Pak je to změna jednoho řádku —
+cesta je schválně na jednom místě.
+
+## 🔧 PŘEPÍNAČ PROSTŘEDÍ (labs × produkce) — zadání je hotové, staví se až po potvrzení
+
+Dan 3. 9.: *„zprovoznit ten labs, teď mě odkazuje na app a tam ten modul není ještě."*
+
+Povolený seznam v `resolveAuthIssuer` obsahuje **obojí**; chybí jen způsob, jak přepnout —
+výchozí je natvrdo produkce. Dohodnuto se serverovou session:
+1. přepínač v Nastavení, uložený lokálně, prostředí **viditelné v UI**
+2. 🔴 **přepnutí ODHLÁSÍ** — token z jednoho prostředí nesmí přežít do druhého, jinak panel
+   ukazuje odsud a odesílá tamhle a obojí vrací 200
+3. handover URL se odvozuje ze **stejného** originu (už tak je)
+
+**Text hlášky má vysvětlit dvě věci, které potvrdila serverová session z kódu:**
+- modul je **záměrně jen na labs** (`enabled_envs = ['labs']`) — na produkci není schválně
+- modul je **admin-only** (`allowed_roles` prázdné) — „přepnul jsem a je prázdno" má jinou
+  příčinu než mrtvá adresa
+
 ## 🛑 Co čeká na Dana — nic z toho běh rozhodnout nesmí
 
 Plné znění s doporučeními je v **`DAN-TODO.md`**, tady jen výčet:
