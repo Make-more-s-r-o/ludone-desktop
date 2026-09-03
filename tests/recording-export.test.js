@@ -455,10 +455,12 @@ describe("ořez názvu na serverový limit", () => {
   });
 
   it("ořez nikdy nerozpůlí znak — nevznikne osamocený surrogate", () => {
-    // Osamocený půlpár by se do URL zakódoval jako U+FFFD a na serveru by z názvu
-    // zbyl nečitelný shluk. Kontrolujeme to přes zpětný převod na znaky.
+    // 🔴 Data musí být LICHÁ. Samé emoji nestačí: 200 jednotek je právě 100 celých párů,
+    // takže i naivní `.slice(0, 200)` by náhodou trefil hranici a test by nic neměřil.
+    // Jeden znak navíc na začátku posune řez doprostřed páru — teprve tam se to pozná.
+    const nazev = `a${"😀".repeat(300)}`;
     const odeslany = nazevZUrl(
-      buildRecordingUploadUrl("https://labs.ludone.cz", { nazev: "😀".repeat(300) }),
+      buildRecordingUploadUrl("https://labs.ludone.cz", { nazev }),
     );
     expect([...odeslany].every((znak) => znak.codePointAt(0) !== 0xfffd)).toBe(true);
     expect([...odeslany].join("")).toBe(odeslany);
