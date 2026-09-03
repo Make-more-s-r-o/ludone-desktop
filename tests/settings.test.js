@@ -14,8 +14,12 @@ function deferred() {
 }
 
 async function renderSettings({
+  dockVisible = () => Promise.resolve(false),
   identity = () => Promise.resolve({ name: "Ada Lovelace", email: "ada@ludone.cz" }),
+  openAtLogin = () => Promise.resolve(true),
   origin = () => Promise.resolve(ORIGIN),
+  setDockVisible = (value) => Promise.resolve(value),
+  setOpenAtLogin = (value) => Promise.resolve(value),
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const localStorage = {
@@ -27,6 +31,10 @@ async function renderSettings({
     closeSettings: vi.fn(),
     getAuthIdentity: vi.fn(identity),
     getAuthOrigin: vi.fn(origin),
+    getDockVisible: vi.fn(dockVisible),
+    getOpenAtLogin: vi.fn(openAtLogin),
+    setDockVisible: vi.fn(setDockVisible),
+    setOpenAtLogin: vi.fn(setOpenAtLogin),
   };
   Object.defineProperty(dom.window, "localStorage", {
     configurable: true,
@@ -271,6 +279,68 @@ describe("pravdivá identita v Nastavení", () => {
         .toBe("signed-out");
       expect(settings.document.body.textContent).not.toContain("Starý účet");
       expectNoDesignFiction(settings);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+});
+
+describe("systémová nastavení", () => {
+  const DOCK_LABEL = "Zobrazovat i ikonu v Docku";
+  const LOGIN_LABEL = "Spouštět po přihlášení do systému";
+
+  function switchByLabel(settings, label) {
+    return settings.document.querySelector(`button[role="switch"][aria-label="${label}"]`);
+  }
+
+  it("vykreslí doslovné texty a načte oba skutečné stavy z hlavního procesu", async () => {
+    const settings = await renderSettings({
+      dockVisible: () => Promise.resolve(false),
+      openAtLogin: () => Promise.resolve(true),
+    });
+    try {
+      await vi.waitFor(() => {
+        expect(switchByLabel(settings, DOCK_LABEL)?.getAttribute("aria-checked")).toBe("false");
+        expect(switchByLabel(settings, LOGIN_LABEL)?.getAttribute("aria-checked")).toBe("true");
+      });
+
+      expect(settings.document.body.textContent).toContain(DOCK_LABEL);
+      expect(settings.document.body.textContent).toContain(
+        "Zapni, když se ti ikona v liště schovává za notch nebo za jinou aplikaci.",
+      );
+      expect(settings.document.body.textContent).toContain(LOGIN_LABEL);
+      expect(settings.ludone.getDockVisible).toHaveBeenCalledOnce();
+      expect(settings.ludone.getOpenAtLogin).toHaveBeenCalledOnce();
+      expect(settings.localStorage.setItem).not.toHaveBeenCalled();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("kliknutí oba přepínače uplatní hned přes boolean API bez kopie v localStorage", async () => {
+    const settings = await renderSettings();
+    try {
+      await vi.waitFor(() => {
+        expect(switchByLabel(settings, DOCK_LABEL)?.disabled).toBe(false);
+        expect(switchByLabel(settings, LOGIN_LABEL)?.disabled).toBe(false);
+      });
+
+      await React.act(async () => {
+        switchByLabel(settings, DOCK_LABEL).click();
+        await Promise.resolve();
+      });
+      expect(settings.ludone.setDockVisible).toHaveBeenCalledWith(true);
+      expect(settings.ludone.setDockVisible.mock.calls[0]).toHaveLength(1);
+      expect(switchByLabel(settings, DOCK_LABEL).getAttribute("aria-checked")).toBe("true");
+
+      await React.act(async () => {
+        switchByLabel(settings, LOGIN_LABEL).click();
+        await Promise.resolve();
+      });
+      expect(settings.ludone.setOpenAtLogin).toHaveBeenCalledWith(false);
+      expect(settings.ludone.setOpenAtLogin.mock.calls[0]).toHaveLength(1);
+      expect(switchByLabel(settings, LOGIN_LABEL).getAttribute("aria-checked")).toBe("false");
+      expect(settings.localStorage.setItem).not.toHaveBeenCalled();
     } finally {
       await settings.cleanup();
     }
