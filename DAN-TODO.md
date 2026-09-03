@@ -11,6 +11,32 @@
 
 
 
+
+## 🔍 AUDIT ÚPLNOSTI UI — tři další nálezy (v noci 3./4. 9., oprava běží)
+
+Po tvých třech večerních nálezech jsem pustil audit, který se ptá **tvýma očima**:
+*vejde se to · měří to · vede to někam*. Našel tři další.
+
+### 🔴 1 · Tlačítka „Uložit a odeslat" mohou skončit **pod hranou panelu** (VYSOKÁ)
+
+Uložený režim vypíná rolování (`styles.css:817`, `overflow: visible`) a skrývá hlavičku,
+LuTrack i patičku — 🔴 **ale ne kartu fronty**. Když ji máš rozbalenou a dokončíš nahrávku,
+formulář se posune dolů a **na tlačítka nedosáhneš**.
+
+**Přijdeš tím o možnost nahrávku pojmenovat a odeslat.** Zavedlo to moje PR #65.
+
+### 2 · Onboarding po návratu ze systémových Nastavení **neobnoví oprávnění** (STŘEDNÍ)
+
+Zapneš oprávnění v macOS, vrátíš se — a řádek pořád tvrdí, že chybí. „Pokračovat" pak
+zvolí **režim jen s mikrofonem**, ačkoli máš obojí.
+
+🔴 `spec.md:334–340` to výslovně vyžaduje. Není to nápad, je to **nesplněný požadavek**.
+
+### 3 · „Spustit LuTrack" z lišty se **tiše zahodí** (STŘEDNÍ)
+
+Položka je v menu vždy povolená, ale při nedokončeném onboardingu nebo znovupřihlášení
+se příkaz zahodí. **Klikneš a nic se nestane.**
+
 ## 🔴 JEDNO ROZHODNUTÍ O NÁVRHU, KTERÉ SI VZÍT NESMÍM
 
 **Barevné ikony v liště propadají kontrastem na SVĚTLÉ liště.** Spočítáno:
