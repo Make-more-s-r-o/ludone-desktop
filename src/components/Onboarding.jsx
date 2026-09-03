@@ -66,6 +66,16 @@ function formatCountdown(seconds) {
   return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+function unknownPermissionResult(permission) {
+  return {
+    permission,
+    status: "unknown",
+    granted: false,
+    nextAction: "none",
+    settingsUrl: null,
+  };
+}
+
 function cancelAuthQuietly() {
   try {
     void Promise.resolve(window.ludone.cancelAuth()).catch(() => {});
@@ -91,6 +101,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   const authAttemptRef = useRef(0);
   const authBusyRef = useRef(false);
   const mountedRef = useRef(true);
+  const permissionStatusRequestRef = useRef(0);
   const recordingTestStartedRef = useRef(false);
   const microphoneGranted = permissions.microphone?.status === "granted";
   const systemAudioGranted = permissions["system-audio"]?.status === "granted";
@@ -153,11 +164,56 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
     return () => {
       mountedRef.current = false;
       authAttemptRef.current += 1;
+      permissionStatusRequestRef.current += 1;
       if (!authBusyRef.current) return;
       authBusyRef.current = false;
       cancelAuthQuietly();
     };
   }, []);
+
+  useEffect(() => {
+    if (step !== 3 || typeof window.ludone.getPermissionStatus !== "function") {
+      return undefined;
+    }
+    let active = true;
+
+    const refreshPermissionStatus = async () => {
+      const requestId = permissionStatusRequestRef.current + 1;
+      permissionStatusRequestRef.current = requestId;
+      const results = await Promise.all(PERMISSIONS.map(async ({ id }) => {
+        try {
+          return await window.ludone.getPermissionStatus(id);
+        } catch {
+          return unknownPermissionResult(id);
+        }
+      }));
+      if (
+        !active
+        || !mountedRef.current
+        || permissionStatusRequestRef.current !== requestId
+      ) return;
+      setPermissions((current) => ({
+        ...current,
+        ...Object.fromEntries(PERMISSIONS.map(({ id }, index) => [
+          id,
+          results[index] || unknownPermissionResult(id),
+        ])),
+      }));
+    };
+    const refreshWhenFocused = () => void refreshPermissionStatus();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refreshPermissionStatus();
+    };
+
+    window.addEventListener("focus", refreshWhenFocused);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      active = false;
+      permissionStatusRequestRef.current += 1;
+      window.removeEventListener("focus", refreshWhenFocused);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [step]);
 
   async function beginAuth() {
     const attemptId = authAttemptRef.current + 1;
@@ -257,20 +313,26 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   }
 
   async function grantPermission(id) {
+    const requestId = permissionStatusRequestRef.current + 1;
+    permissionStatusRequestRef.current = requestId;
     setPermissionBusy(id);
     try {
       const result = await window.ludone.requestPermission(id);
+      if (!mountedRef.current || permissionStatusRequestRef.current !== requestId) return;
       setPermissions((current) => ({
         ...current,
-        [id]: result || { status: "unknown", granted: false, nextAction: "none" },
+        [id]: result || unknownPermissionResult(id),
       }));
     } catch {
+      if (!mountedRef.current || permissionStatusRequestRef.current !== requestId) return;
       setPermissions((current) => ({
         ...current,
-        [id]: { status: "unknown", granted: false, nextAction: "none" },
+        [id]: unknownPermissionResult(id),
       }));
     } finally {
-      setPermissionBusy("");
+      if (mountedRef.current) {
+        setPermissionBusy((current) => current === id ? "" : current);
+      }
     }
   }
 

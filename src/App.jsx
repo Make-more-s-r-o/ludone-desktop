@@ -31,8 +31,9 @@ export function App() {
   const authSessionRequestId = useRef(0);
   const queueRequestId = useRef(0);
   const trayCommandId = useRef(0);
-  const panelActionsAvailableRef = useRef(onboardingComplete && sessionExists === true);
-  panelActionsAvailableRef.current = onboardingComplete && sessionExists === true;
+  const panelActionsAvailable = onboardingComplete && sessionExists === true;
+  const panelActionsAvailableRef = useRef(panelActionsAvailable);
+  panelActionsAvailableRef.current = panelActionsAvailable;
 
   const refreshAuthSession = useCallback(({ suspendActions = false } = {}) => {
     const requestId = authSessionRequestId.current + 1;
@@ -91,13 +92,14 @@ export function App() {
   useEffect(() => {
     if (typeof sessionExists !== "boolean") return;
     window.ludone.reportTrayFacts({
+      panelActionsAvailable,
       signedIn: sessionExists,
       // Zvukový stream žije jen v rendereru. Posíláme úzký boolean; jméno stavu
       // i ověření, že opravdu běží nahrávání, zůstává hlavnímu procesu.
       systemAudioLost: recording.active && recording.systemAudioState === "lost",
       tracking: tracking.active,
     });
-  }, [recording.active, recording.systemAudioState, sessionExists, tracking.active]);
+  }, [panelActionsAvailable, recording.active, recording.systemAudioState, sessionExists, tracking.active]);
 
   useEffect(() => {
     if (typeof window.ludone.onTrayCommand !== "function") return undefined;

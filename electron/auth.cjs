@@ -1267,6 +1267,27 @@ function decidePermissionResult(requestedPermission, systemStatus) {
   };
 }
 
+function createPermissionStatusHandler({ systemPreferences, logger = console }) {
+  if (!systemPreferences?.getMediaAccessStatus) {
+    throw new TypeError("Chybí Electron systemPreferences pro kontrolu oprávnění");
+  }
+
+  return function getPermissionStatus(permission) {
+    const mediaType = PERMISSION_MEDIA_TYPES.get(permission);
+    if (!mediaType) return decidePermissionResult(permission);
+
+    try {
+      return decidePermissionResult(
+        permission,
+        systemPreferences.getMediaAccessStatus(mediaType),
+      );
+    } catch (error) {
+      logger.error(`[permissions] Stav oprávnění ${permission} se nepodařilo přečíst: ${error.message}`);
+      return decidePermissionResult(permission);
+    }
+  };
+}
+
 function createPermissionRequestHandler({ systemPreferences, shell, logger = console }) {
   if (!systemPreferences?.getMediaAccessStatus || !systemPreferences?.askForMediaAccess) {
     throw new TypeError("Chybí Electron systemPreferences pro kontrolu oprávnění");
@@ -1316,6 +1337,7 @@ module.exports = {
   createAuthSessionCoordinator,
   createLogoutController,
   createPermissionRequestHandler,
+  createPermissionStatusHandler,
   decidePermissionResult,
   discoverEndpoints,
   initializeTokenStorage,

@@ -368,6 +368,7 @@ describe("schválený klidový panel", () => {
       expect(header.querySelector('svg[viewBox="0 0 22 22"]')).not.toBeNull();
       expect(hasAuthSession).toHaveBeenCalledOnce();
       expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
+        panelActionsAvailable: true,
         signedIn: true,
         systemAudioLost: false,
         tracking: false,
@@ -393,6 +394,7 @@ describe("schválený klidový panel", () => {
       expect(panel.document.body.textContent).toContain("Přihlásit v prohlížeči");
       expect(hasAuthSession).toHaveBeenCalledOnce();
       expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
+        panelActionsAvailable: false,
         signedIn: false,
         systemAudioLost: false,
         tracking: false,
@@ -519,11 +521,20 @@ describe("schválený klidový panel", () => {
 
       expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
         .toBe("signed-in");
-      expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
-        signedIn: true,
-        systemAudioLost: false,
-        tracking: false,
-      });
+      expect(reportTrayFacts.mock.calls).toEqual([
+        [{
+          panelActionsAvailable: false,
+          signedIn: true,
+          systemAudioLost: false,
+          tracking: false,
+        }],
+        [{
+          panelActionsAvailable: true,
+          signedIn: true,
+          systemAudioLost: false,
+          tracking: false,
+        }],
+      ]);
     } finally {
       await panel.cleanup();
     }
@@ -1212,8 +1223,9 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("rychlou akci přijatou během onboardingu později samovolně nespustí", async () => {
+  it("nepřipravený onboarding znepřístupní rychlou akci a starý příkaz později nespustí", async () => {
     let deliverCommand;
+    const reportTrayFacts = vi.fn();
     const onTrayCommand = vi.fn((listener) => {
       deliverCommand = listener;
       return vi.fn();
@@ -1223,6 +1235,7 @@ describe("schválený klidový panel", () => {
       ludone: {
         beginAuth: vi.fn().mockResolvedValue({ ok: true, user: USER }),
         onTrayCommand,
+        reportTrayFacts,
         requestPermission: vi.fn().mockResolvedValue({ status: "granted", granted: true }),
       },
     });
@@ -1231,6 +1244,12 @@ describe("schválený klidový panel", () => {
     });
 
     try {
+      await vi.waitFor(() => expect(reportTrayFacts).toHaveBeenLastCalledWith({
+        panelActionsAvailable: false,
+        signedIn: true,
+        systemAudioLost: false,
+        tracking: false,
+      }));
       await React.act(async () => deliverCommand("start-tracking"));
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Začít")));
@@ -1244,6 +1263,13 @@ describe("schválený klidový panel", () => {
       await continueThroughRecordingTest(panel, click);
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Otevřít můj panel")));
+
+      await vi.waitFor(() => expect(reportTrayFacts).toHaveBeenLastCalledWith({
+        panelActionsAvailable: true,
+        signedIn: true,
+        systemAudioLost: false,
+        tracking: false,
+      }));
 
       expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
       expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).toBeNull();

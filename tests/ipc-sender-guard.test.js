@@ -320,6 +320,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "panel:hide",
       "panel:set-content-height",
       "permission:request",
+      "permission:status",
       "queue:list",
       "queue:retry",
       "recording:append",
@@ -353,10 +354,11 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     expect(functionSource(mainSource, "installMediaHandlers")).toContain("isTrustedPanelFrame");
   });
 
-  it("inventarizuje přesně tři boolean fakta přijímaná tray kanálem", () => {
+  it("inventarizuje přesně čtyři boolean fakta přijímaná tray kanálem", () => {
     // Nový fakt není nový IPC kanál. Patří ale do bezpečnostní inventury stejné hranice:
     // renderer smí hlásit jen tyto skutečnosti, nikdy jméno ikony ani volný objekt.
     expect([...reportedFactKeys].sort()).toEqual([
+      "panelActionsAvailable",
       "signedIn",
       "systemAudioLost",
       "tracking",

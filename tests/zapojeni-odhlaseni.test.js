@@ -161,6 +161,7 @@ describe("odhlášení: co musí platit, jakmile ho někdo zapojí", () => {
 
       const appState = {
         acceptRendererSignIn: false,
+        panelActionOwners: new Set(),
         signedIn: false,
         systemAudioLostOwners: new Set(),
         trackingOwners: new Set(),
@@ -171,9 +172,14 @@ describe("odhlášení: co musí platit, jakmile ho někdo zapojí", () => {
         "refreshTray",
         "REPORTED_FACT_KEYS",
         `"use strict"; ${zdrojFaktu}; return applyReportedFacts;`,
-      )(appState, refreshTray, ["signedIn", "tracking", "systemAudioLost"]);
+      )(
+        appState,
+        refreshTray,
+        ["panelActionsAvailable", "signedIn", "tracking", "systemAudioLost"],
+      );
 
       applyReportedFacts("panel-1", {
+        panelActionsAvailable: true,
         signedIn: true,
         systemAudioLost: false,
         tracking: false,
