@@ -9,7 +9,9 @@ import {
   createQueue,
   enqueueRecording,
   processNext,
+  reduceQueueForRenderer,
 } from "../src/lib/queue.js";
+import { queueFooterStatus } from "../src/lib/panel.js";
 
 const {
   RECORDING_CHUNK_BYTES,
@@ -194,6 +196,10 @@ describe("vlastník nahrávky před uploadem", () => {
     expect(result.reason).toMatch(/jinému účtu/i);
     expect(result.queue.items).toHaveLength(1);
     expect(fetchImpl).not.toHaveBeenCalled();
+    expect(queueFooterStatus(reduceQueueForRenderer(result.queue))).toEqual({
+      text: "1 čeká na přihlášení",
+      tone: "waiting",
+    });
   });
 
   it("neznámého vlastníka nepřiřadí první přihlášené session a nechá jej čekat", async () => {
@@ -221,6 +227,62 @@ describe("vlastník nahrávky před uploadem", () => {
     expect(result.reason).toMatch(/vlastník.*potvr/i);
     expect(result.queue.items).toHaveLength(1);
     expect(fetchImpl).not.toHaveBeenCalled();
+    expect(queueFooterStatus(reduceQueueForRenderer(result.queue))).toEqual({
+      text: "1 čeká na přihlášení",
+      tone: "waiting",
+    });
+  });
+
+  it("neověřená identita session je vidět jako čekání na přihlášení", async () => {
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn();
+    const { send } = createSend(fetchImpl, createLogger(), {
+      getUploadContext: vi.fn(async () => ({
+        accessToken: TOKEN,
+        companyTabidooId: COMPANY_ID,
+        ownerFingerprint: null,
+      })),
+    });
+
+    const result = await processNext(
+      fixture.queue,
+      { DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined },
+      send,
+    );
+
+    expect(result).toMatchObject({
+      outcome: "paused",
+      item: { attempts: 0, state: QUEUE_STATES.WAITING },
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(queueFooterStatus(reduceQueueForRenderer(result.queue))).toEqual({
+      text: "1 čeká na přihlášení",
+      tone: "waiting",
+    });
+  });
+
+  it("chybějící přihlášení se dál počítá jako běžné čekání", async () => {
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn();
+    const { send } = createSend(fetchImpl, createLogger(), {
+      getUploadContext: vi.fn(async () => null),
+    });
+
+    const result = await processNext(
+      fixture.queue,
+      { DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined },
+      send,
+    );
+
+    expect(result).toMatchObject({
+      outcome: "paused",
+      item: { attempts: 0, state: QUEUE_STATES.WAITING },
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(queueFooterStatus(reduceQueueForRenderer(result.queue))).toEqual({
+      text: "1 čeká",
+      tone: "waiting",
+    });
   });
 
   it("starší položku bez pole vlastníka považuje za neznámou a neodešle ji", async () => {

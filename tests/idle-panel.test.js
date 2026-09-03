@@ -469,6 +469,26 @@ describe("schválený klidový panel", () => {
     }
   });
 
+  it("ukáže lidský zásah a nezapočítá ho mezi běžně čekající položky", async () => {
+    const listQueue = vi.fn().mockResolvedValue([
+      { state: "ceka", requiresHumanAction: true },
+      { state: "ceka" },
+    ]);
+    const panel = await renderInteractivePanel(listQueue);
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toContain("1 čeká · 1 čeká na přihlášení");
+      });
+      const status = panel.document.querySelector('[data-testid="queue-status"]');
+      expect(status).not.toBeNull();
+      expect(status.textContent).not.toContain("2 čekají");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("opakované změření stejného renderu nespustí smyčku změn výšky", async () => {
     const animationFrames = [];
     const setPanelContentHeight = vi.fn().mockResolvedValue(240);

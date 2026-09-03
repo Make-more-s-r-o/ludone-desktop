@@ -118,6 +118,18 @@ function errorFailureClass(error) {
   return FAILURE_CLASSES.RETRYABLE;
 }
 
+function failureRequiresHumanAction(error) {
+  // Konkrétní kódy vlastní upload klient. Společný segment `owner` dovoluje
+  // frontě předat význam rendereru bez druhého, časem rozcházejícího se seznamu.
+  return typeof error?.code === "string" && error.code.includes("_owner_");
+}
+
+function withoutHumanActionRequirement(item) {
+  const result = { ...item };
+  delete result.requiresHumanAction;
+  return result;
+}
+
 function replaceItem(queue, index, item) {
   const items = [...queue.items];
   items[index] = item;
@@ -257,6 +269,7 @@ export function reduceQueueForRenderer(queue) {
     attempts: item.attempts,
     nextAttemptAt: item.nextAttemptAt,
     lastFailureReason: item.lastFailureReason,
+    ...(item.requiresHumanAction === true ? { requiresHumanAction: true } : {}),
   }));
 }
 
@@ -333,11 +346,11 @@ export async function processNext(queue, killswitches, send, options = {}) {
   }
 
   const policy = normalizeRetryPolicy(options.retryPolicy);
-  const sendingItem = {
+  const sendingItem = withoutHumanActionRequirement({
     ...queue.items[index],
     attempts: queue.items[index].attempts + 1,
     state: QUEUE_STATES.SENDING,
-  };
+  });
   const sendingQueue = replaceItem(queue, index, sendingItem);
 
   try {
@@ -380,6 +393,7 @@ export async function processNext(queue, killswitches, send, options = {}) {
         lastFailureReason: errorReason(error),
         nextAttemptAt: originalItem.nextAttemptAt,
         state: QUEUE_STATES.WAITING,
+        ...(failureRequiresHumanAction(error) ? { requiresHumanAction: true } : {}),
       };
       return {
         item: pausedItem,

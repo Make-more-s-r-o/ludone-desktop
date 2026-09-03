@@ -16,13 +16,26 @@ export function queueFooterStatus(items) {
   if (items.some((item) => !item || !QUEUE_STATES.has(item.state))) return null;
 
   const counts = items.reduce((result, item) => {
-    result[item.state] += 1;
+    if (item.state === "ceka" && item.requiresHumanAction === true) {
+      result.requiresHumanAction += 1;
+    } else {
+      result[item.state] += 1;
+    }
     return result;
-  }, { ceka: 0, odesila: 0, odeslano: 0, selhalo: 0 });
+  }, {
+    ceka: 0,
+    odesila: 0,
+    odeslano: 0,
+    requiresHumanAction: 0,
+    selhalo: 0,
+  });
 
   const parts = [];
   if (counts.odesila > 0) parts.push("Odesílá se");
   if (counts.ceka > 0) parts.push(waitingLabel(counts.ceka));
+  if (counts.requiresHumanAction > 0) {
+    parts.push(`${waitingLabel(counts.requiresHumanAction)} na přihlášení`);
+  }
   if (counts.selhalo > 0) parts.push(`${counts.selhalo} selhalo`);
 
   if (parts.length === 0) return { text: "Vše odesláno", tone: "ok" };
