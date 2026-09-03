@@ -10,6 +10,12 @@ import { RecordingCard } from "../src/features/recording/RecordingCard.jsx";
 
 const SESSION_ID = "session-test-1";
 
+function measuredMeterPercent(fill) {
+  return Number.parseFloat(
+    fill?.style.getPropertyValue("--audio-level-measured") ?? "NaN",
+  );
+}
+
 function deferred() {
   let resolve;
   let reject;
@@ -173,6 +179,10 @@ async function renderRecordingCard(options = {}) {
     microphone: 0,
     system: 0,
   };
+  const levelReadFailures = {
+    microphone: 0,
+    system: 0,
+  };
 
   const ludone = {
     beginRecording: vi.fn(() => (
@@ -259,6 +269,7 @@ async function renderRecordingCard(options = {}) {
   const audioContexts = [];
   class FakeAudioContext {
     constructor() {
+      this.analysers = [];
       this.connections = [];
       this.destinationCount = 0;
       this.sampleRate = 48_000;
@@ -283,20 +294,27 @@ async function renderRecordingCard(options = {}) {
 
     createAnalyser() {
       if (options.analyserError) throw options.analyserError;
-      return {
+      const analyser = {
         fftSize: 0,
         smoothingTimeConstant: 0,
         track: null,
         disconnect: vi.fn(),
         getFloatTimeDomainData: vi.fn(function getFloatTimeDomainData(target) {
-          const amplitude = this.track === microphoneTrack
-            ? levelAmplitudes.microphone
-            : levelAmplitudes.system;
+          const source = this.track === microphoneTrack
+            ? "microphone"
+            : (this.track === systemOutputTrack ? "system" : null);
+          if (source && levelReadFailures[source] > 0) {
+            levelReadFailures[source] -= 1;
+            throw new Error(`${source}: čtení analyzátoru selhalo`);
+          }
+          const amplitude = source ? levelAmplitudes[source] : 0;
           for (let index = 0; index < target.length; index += 1) {
             target[index] = index % 2 === 0 ? amplitude : -amplitude;
           }
         }),
       };
+      this.analysers.push(analyser);
+      return analyser;
     }
 
     createChannelMerger() {
@@ -373,6 +391,9 @@ async function renderRecordingCard(options = {}) {
       levelAmplitudes.microphone = microphone;
       levelAmplitudes.system = system;
     },
+    failNextLevelRead(source) {
+      levelReadFailures[source] += 1;
+    },
     resolveBeginRecording() {
       beginRecordingAttempt.resolve({ sessionId: SESSION_ID });
     },
@@ -438,30 +459,18 @@ describe("RecordingCard", () => {
       const systemFill = panel.document.querySelector(
         '[data-testid="recording-source-system"] .recording-source__fill',
       );
-      const quietMicrophone = Number.parseFloat(
-        panel.document.defaultView.getComputedStyle(microphoneFill).width,
-      );
-      const quietSystem = Number.parseFloat(
-        panel.document.defaultView.getComputedStyle(systemFill).width,
-      );
+      const quietMicrophone = measuredMeterPercent(microphoneFill);
+      const quietSystem = measuredMeterPercent(systemFill);
 
       panel.setLevelAmplitudes({ microphone: 0.25, system: 0 });
       await panel.sampleLevels();
-      const loudMicrophone = Number.parseFloat(
-        panel.document.defaultView.getComputedStyle(microphoneFill).width,
-      );
-      const systemDuringLoudMicrophone = Number.parseFloat(
-        panel.document.defaultView.getComputedStyle(systemFill).width,
-      );
+      const loudMicrophone = measuredMeterPercent(microphoneFill);
+      const systemDuringLoudMicrophone = measuredMeterPercent(systemFill);
 
       panel.setLevelAmplitudes({ microphone: 0, system: 0.25 });
       await panel.sampleLevels();
-      const microphoneDuringLoudSystem = Number.parseFloat(
-        panel.document.defaultView.getComputedStyle(microphoneFill).width,
-      );
-      const loudSystem = Number.parseFloat(
-        panel.document.defaultView.getComputedStyle(systemFill).width,
-      );
+      const microphoneDuringLoudSystem = measuredMeterPercent(microphoneFill);
+      const loudSystem = measuredMeterPercent(systemFill);
 
       expect(loudMicrophone - quietMicrophone).toBeGreaterThan(40);
       expect(loudSystem - quietSystem).toBeGreaterThan(40);
@@ -470,6 +479,10 @@ describe("RecordingCard", () => {
       expect(quietMicrophone).toBeLessThanOrEqual(5);
       expect(quietSystem).toBeLessThanOrEqual(5);
       expect(panel.audioContexts).toHaveLength(1);
+      expect(panel.audioContexts[0].analysers.map(({ track }) => track)).toEqual([
+        panel.recorders[0].stream.getAudioTracks()[0],
+        panel.recorders[1].stream.getAudioTracks()[0],
+      ]);
 
       await stopRecording(panel);
     } finally {
@@ -484,15 +497,58 @@ describe("RecordingCard", () => {
 
     try {
       await startRecording(panel);
+      await panel.sampleLevels();
 
       expect(panel.phase()).toBe("recording");
       expect(panel.audioContexts).toHaveLength(1);
       expect(panel.recorders).toHaveLength(3);
       expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone", "system"]);
+      for (const meter of panel.document.querySelectorAll(".audio-level-meter")) {
+        expect(meter.dataset.measurementState).toBe("unavailable");
+        expect(Number.parseFloat(
+          panel.document.defaultView.getComputedStyle(
+            meter.querySelector(".audio-level-meter__fill"),
+          ).width,
+        )).toBe(2);
+      }
 
       await stopRecording(panel);
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
       expect(panel.phase()).toBe("saved");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("chyba při čtení měřidlo nenechá zamrzlé a nahrávání pokračuje", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0.25, system: 0 });
+      await panel.sampleLevels();
+      const microphoneFill = panel.document.querySelector(
+        '[data-testid="recording-source-microphone"] .recording-source__fill',
+      );
+      expect(measuredMeterPercent(microphoneFill)).toBeGreaterThan(40);
+
+      panel.failNextLevelRead("microphone");
+      await panel.sampleLevels();
+      expect(microphoneFill.closest(".audio-level-meter")?.dataset.measurementState)
+        .toBe("unavailable");
+      expect(Number.parseFloat(
+        panel.document.defaultView.getComputedStyle(microphoneFill).width,
+      )).toBe(2);
+      expect(panel.phase()).toBe("recording");
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+
+      await panel.sampleLevels();
+      expect(microphoneFill.closest(".audio-level-meter")?.dataset.measurementState)
+        .toBe("measured");
+      expect(measuredMeterPercent(microphoneFill)).toBeGreaterThan(40);
+
+      await stopRecording(panel);
+      expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
     } finally {
       await panel.cleanup();
     }
