@@ -4374,6 +4374,7 @@ describe("bezpečné ukončení aplikace", () => {
     );
     const quitEvent = { preventDefault: vi.fn() };
     harness.electron.app.emit("before-quit", quitEvent);
+    expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
     expect(harness.ipcHandlers.get("tray:command")(event)).toEqual(["stop-recording"]);
 
     const [savedResult, exportResult] = await Promise.all([
@@ -4418,6 +4419,10 @@ describe("bezpečné ukončení aplikace", () => {
     const recordingDirectory = path.join(harness.userDataPath, "nahravky");
     const recordingFiles = await readdir(recordingDirectory);
     expect(recordingFiles.filter((name) => name.endsWith(".webm"))).toHaveLength(2);
+    await expect(readFile(path.join(recordingDirectory, savedResult.files.microphone.name)))
+      .resolves.toEqual(Buffer.from([1, 2, 3]));
+    await expect(readFile(path.join(recordingDirectory, savedResult.files.system.name)))
+      .resolves.toEqual(Buffer.from([4, 5]));
     await vi.advanceTimersByTimeAsync(15_000);
     expect(harness.electron.app.quit).not.toHaveBeenCalled();
 
@@ -4460,6 +4465,9 @@ describe("bezpečné ukončení aplikace", () => {
       event,
       sessionId,
     )).resolves.toEqual({ confirmed: false });
+    const laterQuit = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", laterQuit);
+    expect(laterQuit.preventDefault).not.toHaveBeenCalled();
   });
 
   it("chyba stereo exportu nesmí přerušit dosud běžící zápis fronty", async () => {
@@ -4503,6 +4511,10 @@ describe("bezpečné ukončení aplikace", () => {
       reason: "Testovací pád stereo převodu",
     });
 
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    const impatientQuit = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", impatientQuit);
+    expect(impatientQuit.preventDefault).toHaveBeenCalledOnce();
     expect(harness.electron.app.quit).not.toHaveBeenCalled();
     await expect(harness.ipcHandlers.get("recording:confirm-export-failure")(
       event,

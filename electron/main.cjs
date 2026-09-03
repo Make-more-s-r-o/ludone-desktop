@@ -2157,10 +2157,11 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
 }
 
 handleValidated("recording:finish", ["panel"], finishRecordingAndEnqueue);
-handleValidated(
-  "recording:confirm-export-failure",
-  ["panel"],
-  async (event, sessionId, ...extraPayload) => {
+handleValidated("recording:confirm-export-failure", ["panel"], async (
+  event,
+  sessionId,
+  ...extraPayload
+) => {
     if (
       extraPayload.length > 0
       || typeof sessionId !== "string"
@@ -2189,8 +2190,7 @@ handleValidated(
     releaseConfirmedRecordingExportFailure(exportStage);
     await maybeCompleteDeferredQuit();
     return { confirmed: true };
-  },
-);
+});
 handleValidated("recording:export", ["panel"], exportCompletedRecording);
 handleValidated("queue:list", ["panel", "settings"], async () => {
   await waitForOutboundQueueRecovery();

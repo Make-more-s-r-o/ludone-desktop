@@ -766,6 +766,7 @@ describe("RecordingCard", () => {
       expect(panel.ludone.confirmRecordingExportFailure).toHaveBeenCalledExactlyOnceWith(
         SESSION_ID,
       );
+      expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
     } finally {
       await panel.cleanup();
     }
