@@ -810,6 +810,7 @@ svg {
 }
 
 .panel.window-surface:has(.recording-card--saved) .panel-header,
+.panel.window-surface:has(.recording-card--saved) .queue-card,
 .panel.window-surface:has(.recording-card--saved) .tracking-card,
 .panel.window-surface:has(.recording-card--saved) .panel-footer {
   display: none;

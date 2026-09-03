@@ -509,7 +509,7 @@ describe("odhlášení", () => {
     );
     const switchStart = mainSource.indexOf('handleValidated("auth:switch-origin"', start);
     const logoutStart = mainSource.indexOf('handleValidated("auth:logout"', switchStart);
-    const end = mainSource.indexOf("const requestPermission", start);
+    const end = mainSource.indexOf("const getPermissionStatus", start);
     expect(start).toBeGreaterThan(-1);
     expect(switchStart).toBeGreaterThan(start);
     expect(logoutStart).toBeGreaterThan(switchStart);

@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 const require = createRequire(import.meta.url);
 const {
   createPermissionRequestHandler,
+  createPermissionStatusHandler,
   decidePermissionResult,
   tokenStorageDirectory,
 } = require("../electron/auth.cjs");
@@ -119,6 +120,22 @@ describe("rozhodnutí podle skutečného stavu oprávnění macOS", () => {
     expect(result).toMatchObject({ status: "denied", granted: false });
     expect(systemPreferences.askForMediaAccess).toHaveBeenCalledWith("microphone");
     expect(systemPreferences.getMediaAccessStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it("read-only stav systémového zvuku čte z oprávnění screen bez vedlejší akce", () => {
+    const systemPreferences = {
+      askForMediaAccess: vi.fn(),
+      getMediaAccessStatus: vi.fn(() => "granted"),
+    };
+    const permissionStatus = createPermissionStatusHandler({ systemPreferences });
+
+    expect(permissionStatus("system-audio")).toMatchObject({
+      permission: "system-audio",
+      status: "granted",
+      granted: true,
+    });
+    expect(systemPreferences.getMediaAccessStatus).toHaveBeenCalledExactlyOnceWith("screen");
+    expect(systemPreferences.askForMediaAccess).not.toHaveBeenCalled();
   });
 });
 

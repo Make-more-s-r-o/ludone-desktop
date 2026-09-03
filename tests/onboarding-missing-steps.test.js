@@ -37,6 +37,7 @@ function audioSamples(amplitude, target) {
  *   beginAuth?: ReturnType<typeof vi.fn>,
  *   cancelAuth?: ReturnType<typeof vi.fn>,
  *   deferDisplayCapture?: boolean,
+ *   getPermissionStatus?: ReturnType<typeof vi.fn>,
  *   microphoneAmplitude?: number,
  *   pendingAuthUrl?: import("vitest").Mock,
  *   rejectFirstDisplayCapture?: boolean,
@@ -53,6 +54,10 @@ async function renderOnboarding(options = {}) {
     cancelAuth = vi.fn().mockResolvedValue({ ok: true, cancelled: 1 }),
     pendingAuthUrl = vi.fn().mockResolvedValue(null),
     deferDisplayCapture = false,
+    getPermissionStatus = vi.fn().mockResolvedValue({
+      granted: true,
+      status: "granted",
+    }),
     microphoneAmplitude = 0,
     rejectFirstDisplayCapture = false,
     requestPermission = vi.fn().mockResolvedValue({
@@ -192,6 +197,7 @@ async function renderOnboarding(options = {}) {
     value: {
       beginAuth,
       cancelAuth,
+      getPermissionStatus,
       pendingAuthUrl,
       requestPermission,
     },
@@ -228,6 +234,7 @@ async function renderOnboarding(options = {}) {
     clipboardWrites,
     document: dom.window.document,
     getDisplayMedia,
+    getPermissionStatus,
     getUserMedia,
     microphoneTrack,
     requestPermission,
@@ -541,6 +548,51 @@ describe("dva chybějící kroky onboardingu", () => {
     expect(done.textContent).not.toMatch(/Připraveno|Všechno je připravené/);
     expect(panel.getUserMedia).not.toHaveBeenCalled();
     expect(panel.getDisplayMedia).not.toHaveBeenCalled();
+  });
+
+  it("po návratu z Nastavení systému obnoví oba stavy oprávnění", async () => {
+    const requestPermission = vi.fn(async (permission) => (
+      permission === "microphone"
+        ? { permission, granted: true, status: "granted" }
+        : {
+            permission,
+            granted: false,
+            nextAction: "open-settings",
+            status: "denied",
+          }
+    ));
+    const getPermissionStatus = vi.fn(async (permission) => ({
+      permission,
+      granted: true,
+      nextAction: "none",
+      status: "granted",
+    }));
+    const panel = await renderOnboarding({ getPermissionStatus, requestPermission });
+    await navigateToPermissions(panel);
+    for (const button of [...panel.document.querySelectorAll('[data-testid="permission-action"]')]) {
+      await panel.click(button);
+    }
+
+    expect(panel.document.querySelector('[data-permission-id="system-audio"]')?.classList)
+      .not.toContain("is-granted");
+    expect(panel.document.querySelector('[data-testid="microphone-only-note"]')).not.toBeNull();
+
+    await React.act(async () => {
+      panel.view.dispatchEvent(new panel.view.Event("focus"));
+    });
+    await vi.waitFor(() => expect(getPermissionStatus.mock.calls).toEqual([
+      ["microphone"],
+      ["system-audio"],
+    ]));
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[data-permission-id="system-audio"]')?.classList)
+        .toContain("is-granted");
+    });
+
+    expect(panel.document.querySelector('[data-testid="microphone-only-note"]')).toBeNull();
+    await panel.click(panel.document.querySelector(".permission-step > .button--wide"));
+    expect(panel.document.querySelector('[data-testid="recording-test-screen"]')).not.toBeNull();
+    expect(panel.document.querySelector(".done-step")).toBeNull();
   });
 
   it("přeskočený test označí závěr jako neověřený", async () => {

@@ -154,6 +154,7 @@ function trayHarness({
     "finalizeRecordingExportStage",
     "maybeCompleteDeferredQuit",
     "tryInstallDownloadedUpdate",
+    "authSessionTransitionPromise",
     "REPORTED_FACT_KEYS",
     `"use strict";
      let trayState = "signed-out";
@@ -193,6 +194,7 @@ function trayHarness({
       new Map(),
       {
         outboundQueueWaitingCount: queueWaitingCount,
+        panelActionOwners: new Set(),
         signedIn,
         systemAudioLostOwners: new Set(systemAudioLostOwners),
         trackingOwners: new Set(trackingOwners),
@@ -222,6 +224,7 @@ function trayHarness({
       () => Promise.resolve(),
       () => {},
       () => {},
+      null,
       reportedFactKeys,
     ),
   };
@@ -355,6 +358,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     expect(harness.getTrayState()).toBe("recording");
 
     expect(harness.applyReportedFacts(7, {
+      panelActionsAvailable: true,
       signedIn: true,
       systemAudioLost: false,
       tracking: true,
@@ -433,6 +437,7 @@ describe("lišta se překresluje jen při skutečné změně", () => {
     const harness = trayHarness({ signedIn: true });
     harness.refreshTray();
     harness.applyReportedFacts(3, {
+      panelActionsAvailable: true,
       signedIn: true,
       systemAudioLost: false,
       tracking: true,
@@ -524,6 +529,7 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
     expect(harness.getTrayState()).toBe("idle");
 
     expect(harness.applyReportedFacts(1, {
+      panelActionsAvailable: true,
       signedIn: true,
       systemAudioLost: false,
       tracking: "tracking",
@@ -540,13 +546,13 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
 
   it.each([
     [undefined], [null], ["idle"], [42],
-    [{ signedIn: 1, systemAudioLost: false, tracking: false }],
+    [{ panelActionsAvailable: true, signedIn: 1, systemAudioLost: false, tracking: false }],
     [{ signedIn: true }],
     [{ signedIn: true, tracking: false }],
     // Klíč navíc je pašerácký vektor: kdo umí přiložit `state`, přiloží i jméno ikony.
-    // Přijímáme PRÁVĚ tři klíče, nic víc.
-    [{ signedIn: true, systemAudioLost: false, tracking: false, state: "recording" }],
-    [{ signedIn: true, systemAudioLost: false, tracking: false, icon: "recording" }],
+    // Přijímáme PRÁVĚ čtyři klíče, nic víc.
+    [{ panelActionsAvailable: true, signedIn: true, systemAudioLost: false, tracking: false, state: "recording" }],
+    [{ panelActionsAvailable: true, signedIn: true, systemAudioLost: false, tracking: false, icon: "recording" }],
   ])("odmítne %j a nechá fakta být", (payload) => {
     const harness = trayHarness({ signedIn: true });
     harness.refreshTray();
@@ -554,10 +560,11 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
     expect(harness.getTrayState()).toBe("idle");
   });
 
-  it("platnou trojici boolean přijme", () => {
+  it("platnou čtveřici boolean přijme", () => {
     const harness = trayHarness({ signedIn: false });
     harness.refreshTray();
     expect(harness.applyReportedFacts(1, {
+      panelActionsAvailable: true,
       signedIn: true,
       systemAudioLost: false,
       tracking: true,
@@ -574,6 +581,7 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
     expect(harness.getTrayState()).toBe("recording");
 
     expect(harness.applyReportedFacts(1, {
+      panelActionsAvailable: true,
       signedIn: true,
       systemAudioLost: true,
       tracking: false,
@@ -581,6 +589,7 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
     expect(harness.getTrayState()).toBe("recording-audio-lost");
 
     expect(harness.applyReportedFacts(1, {
+      panelActionsAvailable: true,
       signedIn: true,
       systemAudioLost: "lost",
       tracking: false,
@@ -588,6 +597,7 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
     expect(harness.getTrayState()).toBe("recording-audio-lost");
 
     expect(harness.applyReportedFacts(1, {
+      panelActionsAvailable: true,
       signedIn: true,
       systemAudioLost: false,
       tracking: false,
@@ -616,10 +626,15 @@ describe("první vykreslení lišty", () => {
 });
 
 describe("povolené klíče kanálu faktů", () => {
-  it("jsou právě signedIn, systemAudioLost a tracking", () => {
-    // Kdyby do nich někdo přidal třetí, protlačí jím rozhodnutí a testy výš by o tom mlčely,
+  it("jsou právě panelActionsAvailable, signedIn, systemAudioLost a tracking", () => {
+    // Kdyby do nich někdo přidal pátý, protlačí jím rozhodnutí a testy výš by o tom mlčely,
     // protože si povolené klíče berou z produkce.
-    expect([...reportedFactKeys].sort()).toEqual(["signedIn", "systemAudioLost", "tracking"]);
+    expect([...reportedFactKeys].sort()).toEqual([
+      "panelActionsAvailable",
+      "signedIn",
+      "systemAudioLost",
+      "tracking",
+    ]);
   });
 });
 

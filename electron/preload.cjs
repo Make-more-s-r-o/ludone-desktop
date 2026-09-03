@@ -151,6 +151,8 @@ contextBridge.exposeInMainWorld("ludone", {
   setOpenAtLogin: (value) => setBooleanSetting("settings:set-open-at-login", value),
   getDiagnostics: () => ipcRenderer.invoke("diagnostics:get"),
   exportDiagnostics: () => ipcRenderer.invoke("diagnostics:export"),
+  getPermissionStatus: (permission) =>
+    ipcRenderer.invoke("permission:status", permission),
   requestPermission: (permission) =>
     ipcRenderer.invoke("permission:request", permission),
   beginRecording: (sources) => ipcRenderer.invoke("recording:begin", sources),

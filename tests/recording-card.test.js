@@ -9,6 +9,51 @@ import { App } from "../src/App.jsx";
 import { RecordingCard } from "../src/features/recording/RecordingCard.jsx";
 
 const SESSION_ID = "session-test-1";
+const SMALL_WORK_AREA_HEIGHT = 400;
+const PANEL_TOP_BELOW_TRAY = 26;
+const PANEL_BOTTOM_MARGIN = 8;
+
+function installSavedPanelGeometry(view) {
+  const panelHeight = SMALL_WORK_AREA_HEIGHT - PANEL_TOP_BELOW_TRAY - PANEL_BOTTOM_MARGIN;
+  const originalRect = view.HTMLElement.prototype.getBoundingClientRect;
+  const intrinsicHeight = (element) => {
+    if (element.matches(".queue-card")) return 174;
+    if (element.matches(".recording-saved > [role=status]")) return 25;
+    if (element.matches(".recording-saved__meta")) return 16;
+    if (element.matches(".recording-saved__name")) return 40;
+    if (element.matches(".recording-saved__hint")) return 16;
+    if (element.matches('.recording-saved button[type="submit"]')) return 38;
+    if (element.matches(".recording-saved__skip")) return 28;
+    return 0;
+  };
+  const savedFormTop = () => {
+    const queue = view.document.querySelector(".queue-card");
+    const queueVisible = queue && view.getComputedStyle(queue).display !== "none";
+    return 14 + (queueVisible ? intrinsicHeight(queue) + 11 : 0);
+  };
+  const savedChildTop = (element) => {
+    const siblings = [...element.parentElement.children];
+    const index = siblings.indexOf(element);
+    return savedFormTop()
+      + siblings.slice(0, index).reduce((sum, sibling) => sum + intrinsicHeight(sibling), 0)
+      + (index * 10);
+  };
+
+  view.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+    if (this.matches(".panel.window-surface")) {
+      return new view.DOMRect(0, 0, 366, panelHeight);
+    }
+    if (this.matches('.recording-saved button[type="submit"], .recording-saved__skip')) {
+      const top = savedChildTop(this);
+      return new view.DOMRect(14, top, 338, intrinsicHeight(this));
+    }
+    return originalRect.call(this);
+  };
+
+  return () => {
+    view.HTMLElement.prototype.getBoundingClientRect = originalRect;
+  };
+}
 
 function liveMeterWidthPercent(fill) {
   const meterRule = [...(fill?.ownerDocument.styleSheets ?? [])]
@@ -54,6 +99,7 @@ const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží
  *   displayError?: Error | DOMException,
  *   finishRecordingExportResult?: Record<string, unknown>,
  *   microphoneError?: Error | DOMException,
+ *   queueItems?: Array<Record<string, unknown>>,
  *   renderApp?: boolean,
  * }} [options]
  */
@@ -209,7 +255,7 @@ async function renderRecordingCard(options = {}) {
       fileName: `LuDone-${SESSION_ID}.webm`,
     }),
     hasAuthSession: vi.fn().mockResolvedValue(true),
-    listQueue: vi.fn().mockResolvedValue([]),
+    listQueue: vi.fn().mockResolvedValue(options.queueItems ?? []),
     openSettings: vi.fn(),
     reportTrayFacts: vi.fn(),
     runtime: { resetOnboarding: false },
@@ -842,6 +888,57 @@ describe("RecordingCard", () => {
     }
   });
 
+  it("s rozbalenou frontou jsou po dokončení nahrávky obě akce dosažitelné na 400px ploše", async () => {
+    const panel = await renderRecordingCard({
+      queueItems: [{
+        id: "cekajici-nahravka",
+        kind: "recording",
+        nextAttemptAt: Date.now() + 120_000,
+        sizeBytes: 12 * 1024 * 1024,
+        state: "ceka",
+      }],
+      renderApp: true,
+    });
+    const restoreGeometry = installSavedPanelGeometry(panel.document.defaultView);
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')).not.toBeNull();
+      });
+      await panel.click(panel.document.querySelector('[data-testid="queue-status"]'));
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
+      expect(panel.document.defaultView.getComputedStyle(
+        panel.document.querySelector('[data-testid="queue-screen"]'),
+      ).display).not.toBe("none");
+
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      const surfaceRect = panel.document.querySelector(".panel.window-surface")
+        .getBoundingClientRect();
+      expect(surfaceRect.height).toBe(366);
+      const actions = [
+        panel.document.querySelector('.recording-saved button[type="submit"]'),
+        panel.document.querySelector('[data-testid="skip-recording-name"]'),
+      ];
+      for (const action of actions) {
+        const actionRect = action.getBoundingClientRect();
+        expect(actionRect.width).toBeGreaterThan(0);
+        expect(actionRect.height).toBeGreaterThan(0);
+        expect(actionRect.top).toBeGreaterThanOrEqual(surfaceRect.top);
+        expect(actionRect.bottom).toBeLessThanOrEqual(surfaceRect.bottom);
+      }
+
+      await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
+      await panel.waitForPhase("idle");
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, "");
+    } finally {
+      restoreGeometry();
+      await panel.cleanup();
+    }
+  });
+
   it("pojmenování předvyplní datum a čas, fokusuje pole a předá změněný název", async () => {
     const panel = await renderRecordingCard();
 
@@ -1218,6 +1315,7 @@ describe("RecordingCard", () => {
     try {
       await startRecording(panel);
       await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+        panelActionsAvailable: true,
         signedIn: true,
         systemAudioLost: false,
         tracking: false,
@@ -1229,6 +1327,7 @@ describe("RecordingCard", () => {
         await Promise.resolve();
       });
       await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+        panelActionsAvailable: true,
         signedIn: true,
         systemAudioLost: true,
         tracking: false,
@@ -1236,6 +1335,7 @@ describe("RecordingCard", () => {
 
       await panel.click(panel.document.querySelector('[data-testid="retry-system-audio"]'));
       await vi.waitFor(() => expect(panel.ludone.reportTrayFacts).toHaveBeenLastCalledWith({
+        panelActionsAvailable: true,
         signedIn: true,
         systemAudioLost: false,
         tracking: false,

@@ -24,6 +24,7 @@ const {
   createAuthController,
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
+  createPermissionStatusHandler,
   tokenSessionFilePath,
 } = require("./auth.cjs");
 const {
@@ -465,6 +466,7 @@ const TRAY_LABELS = {
 const appState = {
   acceptRendererSignIn: true,
   outboundQueueWaitingCount: 0,
+  panelActionOwners: new Set(),
   signedIn: false,
   systemAudioLostOwners: new Set(),
   trackingOwners: new Set(),
@@ -741,18 +743,18 @@ function scheduleTrayVisibilityCheck() {
   trayVisibilityTimer.unref?.();
 }
 
-// Renderer sem hlásí FAKTA, která zná jen on: dnes přihlášení a časovač, a trvale také
-// výpadek systémového zvuku, protože zachytávaný stream žije v rendereru. Stav z nich
-// odvozuje hlavní proces, takže se sem nikdy nesmí dostat jméno ikony. To je celý rozdíl
-// proti smazanému `tray:set-state`: ten posílal ROZHODNUTÍ.
+// Renderer sem hlásí FAKTA, která zná jen on: dnes přihlášení, připravenost panelových
+// akcí a časovač, a trvale také výpadek systémového zvuku, protože zachytávaný stream
+// žije v rendereru. Stav z nich odvozuje hlavní proces, takže se sem nikdy nesmí dostat
+// jméno ikony. To je celý rozdíl proti smazanému `tray:set-state`: ten posílal ROZHODNUTÍ.
 //
 // Až přistane B5 (časovač do hlavního procesu) a B8 (skutečné přihlášení), první dvě fakta
 // přejdou přímo do hlavního procesu. Úzký boolean o zvuku v kanálu zůstane.
-// 🔴 Přijímá PRÁVĚ tři klíče a PRÁVĚ boolean. Volnější kontrola by z tohohle kanálu udělala
+// 🔴 Přijímá PRÁVĚ čtyři klíče a PRÁVĚ boolean. Volnější kontrola by z tohohle kanálu udělala
 // `tray:set-state` pod novým jménem: `{ tracking: "tracking" }` protlačí doslovné jméno ikony
 // a `{}` tiše přepíše přihlášení na false. Neplatný obsah proto NIC nemění — fail-closed,
 // protože zapomenout fakt je horší než ho neaktualizovat.
-const REPORTED_FACT_KEYS = ["signedIn", "tracking", "systemAudioLost"];
+const REPORTED_FACT_KEYS = ["panelActionsAvailable", "signedIn", "tracking", "systemAudioLost"];
 
 function applyReportedFacts(ownerId, facts) {
   if (!facts || typeof facts !== "object" || Array.isArray(facts)) return false;
@@ -765,6 +767,18 @@ function applyReportedFacts(ownerId, facts) {
   // přihlášení; bezpečnostní akci proto renderer nemůže tiše vrátit zpět.
   if (!facts.signedIn || appState.acceptRendererSignIn !== false) {
     appState.signedIn = facts.signedIn;
+  }
+  const panelActionOwners = appState.panelActionOwners
+    ?? (appState.panelActionOwners = new Set());
+  if (
+    facts.panelActionsAvailable
+    && facts.signedIn
+    && appState.acceptRendererSignIn !== false
+    && authSessionTransitionPromise === null
+  ) {
+    panelActionOwners.add(ownerId);
+  } else {
+    panelActionOwners.delete(ownerId);
   }
   const trackingStartedAtByOwner = appState.trackingStartedAtByOwner
     ?? (appState.trackingStartedAtByOwner = new Map());
@@ -1073,6 +1087,9 @@ async function runAuthSessionTransition(operation) {
     finishTransition = resolve;
   });
   authSessionTransitionPromise = transition;
+  // Renderer teprve znovu ověří session. Do té doby rychlá akce nesmí pracovat
+  // se starou připraveností panelu z doby před změnou přihlášení.
+  appState.panelActionOwners.clear();
   notifyPanelAuthSessionChanged();
   try {
     return await operation();
@@ -1096,6 +1113,12 @@ function openLuDoneInBrowser() {
   });
 }
 
+function canStartTrackingFromTray() {
+  return authSessionTransitionPromise === null
+    && appState.signedIn
+    && appState.panelActionOwners.size > 0;
+}
+
 function trayContextMenuTemplate() {
   const tracking = appState.trackingOwners.size > 0;
   return [
@@ -1108,8 +1131,16 @@ function trayContextMenuTemplate() {
     {
       label: tracking ? "Zastavit měření času" : "Spustit LuTrack",
       accelerator: "Control+Option+T",
-      enabled: true,
-      click: () => queueTrayCommand(tracking ? "stop-tracking" : "start-tracking"),
+      enabled: tracking || canStartTrackingFromTray(),
+      click: () => {
+        // Menu může zůstat chvíli otevřené přes změnu session nebo reload panelu.
+        // Zastaralou nabídku nepředáme neexistující kartě; ukážeme aktuální stav panelu.
+        if (!tracking && !canStartTrackingFromTray()) {
+          showPanel();
+          return;
+        }
+        queueTrayCommand(tracking ? "stop-tracking" : "start-tracking");
+      },
     },
     { type: "separator" },
     {
@@ -1747,6 +1778,7 @@ function forgetOwnerActivity(ownerId, reason) {
   // Smazat před finalizací: ta sama volá refreshTray a nesmí přenést výpadek
   // z padlého rendereru na jinou souběžně živou session.
   appState.systemAudioLostOwners.delete(ownerId);
+  appState.panelActionOwners.delete(ownerId);
   finalizeRecordingSessionsForOwner(ownerId, reason);
   appState.trackingOwners.delete(ownerId);
   appState.trackingStartedAtByOwner?.delete(ownerId);
@@ -3486,6 +3518,14 @@ handleValidated("auth:logout", ["panel", "settings"], async (_event, ...extraPay
   const blocked = blockedAuthLogoutResult();
   if (blocked !== null) return blocked;
   return runAuthSessionTransition(executeAuthLogout);
+});
+
+const getPermissionStatus = createPermissionStatusHandler({ systemPreferences });
+handleValidated("permission:status", ["panel"], (_event, permission, ...extraPayload) => {
+  if (extraPayload.length > 0) {
+    throw new TypeError("Kanál stavu oprávnění přijímá právě jedno oprávnění");
+  }
+  return getPermissionStatus(permission);
 });
 
 const requestPermission = createPermissionRequestHandler({ systemPreferences, shell });
