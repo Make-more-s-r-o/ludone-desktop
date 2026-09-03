@@ -1,6 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { createHash, randomUUID } = require("node:crypto");
+const { createHash, createHmac, randomUUID } = require("node:crypto");
 
 const QUEUE_SCHEMA_VERSION = 1;
 const RECOVERABLE_MANIFEST_STATES = new Set(["complete", "incomplete"]);
@@ -74,7 +74,11 @@ function canonicalQueueOwnerEmail(value) {
  * Jednosměrný otisk váže člověka i issuer. Jméno, e-mail ani token se do
  * outgoing.json nikdy neukládají; tokeny navíc expirují nebo rotují.
  */
-function deriveQueueOwnerFingerprint(session) {
+// 🔴 `secret` je POVINNÝ a bez něj se vrací null. Materiál bez tajemství by šlo
+// slovníkově uhodnout ze známých firemních e-mailů — otisk by pak neskrýval nic.
+// Null se překládá na „vlastník neznámý", tedy pauzu; nikdy na slabší otisk.
+function deriveQueueOwnerFingerprint(session, secret) {
+  if (!Buffer.isBuffer(secret) || secret.length < 32) return null;
   if (!session || typeof session !== "object" || Array.isArray(session)) return null;
   const email = canonicalQueueOwnerEmail(session.identity?.email);
   if (email === null) return null;
@@ -103,7 +107,7 @@ function deriveQueueOwnerFingerprint(session) {
     "email",
     email,
   ]);
-  const digest = createHash("sha256").update(material, "utf8").digest("hex");
+  const digest = createHmac("sha256", secret).update(material, "utf8").digest("hex");
   return `sha256:${digest}`;
 }
 

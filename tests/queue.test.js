@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import fs from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -201,17 +201,18 @@ describe("vlastník nahrávky v perzistentní frontě", () => {
       issuer: "https://app.ludone.cz",
       identity: { name: "Ada Lovelace", email: "  Ada@LuDone.CZ  " },
     };
+    const TAJEMSTVI_VLASTNIKA = Buffer.alloc(32, 7);
 
-    const fingerprint = deriveQueueOwnerFingerprint(session);
+    const fingerprint = deriveQueueOwnerFingerprint(session, TAJEMSTVI_VLASTNIKA);
     const sameIdentity = deriveQueueOwnerFingerprint({
       issuer: "https://app.ludone.cz",
       identity: { email: "Ada@ludone.cz" },
-    });
+    }, TAJEMSTVI_VLASTNIKA);
     const otherIssuer = deriveQueueOwnerFingerprint({
       issuer: "https://labs.ludone.cz",
       identity: { email: "Ada@ludone.cz" },
-    });
-    const expectedFingerprint = `sha256:${createHash("sha256")
+    }, TAJEMSTVI_VLASTNIKA);
+    const expectedFingerprint = `sha256:${createHmac("sha256", TAJEMSTVI_VLASTNIKA)
       .update(JSON.stringify([
         "cz.ludone.desktop",
         "queue-owner",

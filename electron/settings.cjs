@@ -1,4 +1,4 @@
-const { randomUUID } = require("node:crypto");
+const { randomBytes, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -94,6 +94,62 @@ function saveDockVisibility(filePath, dockVisible, log) {
   }, log);
 }
 
+function readQueueOwnerSecret(filePath) {
+  try {
+    const ulozene = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    if (ulozene?.schemaVersion !== SCHEMA_VERSION) return null;
+    if (typeof ulozene.secret !== "string") return null;
+    const buffer = Buffer.from(ulozene.secret, "base64");
+    // Kratší tajemství než 32 bajtů bereme jako poškozené a přepíšeme — slabé
+    // tajemství je horší než žádné, protože vypadá jako ochrana.
+    return buffer.length >= 32 ? buffer : null;
+  } catch {
+    // Chybějící soubor je běžný stav při první instalaci.
+    return null;
+  }
+}
+
+// Náhodné tajemství per instalace pro otisk vlastníka fronty.
+//
+// 🔴 PROČ: bez něj je otisk jen sha256 z e-mailu a známé domény, takže kdo má soubor
+// fronty, prostě vyzkouší e-maily kolegů a zjistí, komu nahrávka patří. Slovníkový útok
+// na e-mail je triviální — je jich v firmě pár desítek. S tajemstvím to nejde.
+//
+// Tajemství leží MIMO frontu (v adresáři nastavení, režim 0600), aby ho útočník
+// s kopií `outgoing.json` neměl.
+/**
+ * @param {{filePath?: unknown, log?: unknown}} [options]
+ */
+function createQueueOwnerSecretStore({ filePath, log = console.warn } = {}) {
+  let secret;
+  return {
+    // Vrací Buffer, nebo null. 🔴 Null znamená „nelze bezpečně určit vlastníka",
+    // což volající MUSÍ přeložit na „vlastník neznámý" — tedy pauzu. Nikdy ne na
+    // nesolený otisk: tichý návrat ke slabší ochraně je horší než přiznaná nedostupnost.
+    get() {
+      if (secret !== undefined) return secret;
+      const ulozene = readQueueOwnerSecret(filePath);
+      if (ulozene !== null) {
+        secret = ulozene;
+        return secret;
+      }
+      try {
+        const novy = randomBytes(32);
+        saveSettingsAtomically(
+          filePath,
+          { schemaVersion: SCHEMA_VERSION, secret: novy.toString("base64") },
+          log,
+        );
+        secret = novy;
+      } catch (error) {
+        report(log, `[nastaveni] Tajemství vlastníka fronty nelze uložit: ${error.message}`);
+        secret = null;
+      }
+      return secret;
+    },
+  };
+}
+
 /**
  * @param {{filePath?: unknown, log?: unknown}} [options]
  */
@@ -181,6 +237,7 @@ function createAuthOriginStore({ filePath, log = console.warn } = {}) {
 }
 
 module.exports = {
+  createQueueOwnerSecretStore,
   AUTH_ORIGINS,
   DEFAULT_AUTH_ORIGIN,
   createAuthOriginStore,

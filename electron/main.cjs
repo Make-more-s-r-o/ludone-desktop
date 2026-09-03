@@ -39,6 +39,7 @@ const {
   AUTH_ORIGINS,
   createAuthOriginStore,
   createDockVisibilityStore,
+  createQueueOwnerSecretStore,
 } = require("./settings.cjs");
 const {
   TRACKING_STATES,
@@ -351,6 +352,13 @@ const dockVisibilityStore = createDockVisibilityStore({
 });
 const authOriginStore = createAuthOriginStore({
   filePath: path.join(app.getPath("userData"), "nastaveni", "prostredi.json"),
+  log: (message) => console.warn(message),
+});
+// Tajemství pro otisk vlastníka fronty leží MIMO frontu schválně: kdo získá kopii
+// `outgoing.json`, nesmí z ní vyčíst, komu nahrávky patří. Bez tajemství by stačilo
+// vyzkoušet e-maily kolegů.
+const queueOwnerSecretStore = createQueueOwnerSecretStore({
+  filePath: path.join(app.getPath("userData"), "nastaveni", "fronta-vlastnik.json"),
   log: (message) => console.warn(message),
 });
 let dockVisibilityTransition = Promise.resolve();
@@ -1860,7 +1868,7 @@ async function recordingUploadContext() {
       ?? storedSession.identity?.companyTabidooId,
     deviceLabel: app.getName?.() ?? "LuDone Desktop",
     issuer: storedSession.issuer,
-    ownerFingerprint: deriveQueueOwnerFingerprint(storedSession),
+    ownerFingerprint: deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get()),
   };
 }
 
@@ -1870,7 +1878,7 @@ async function readCurrentQueueOwnerFingerprint() {
     if (storedSession === null || storedSession.issuer !== resolveCurrentAuthIssuer()) {
       return null;
     }
-    return deriveQueueOwnerFingerprint(storedSession);
+    return deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
   } catch {
     // Chybějící nebo neověřitelná identita nesmí zmařit lokální nahrávání.
     // Explicitní null ji bezpečně ponechá čekat na budoucí potvrzení člověka.

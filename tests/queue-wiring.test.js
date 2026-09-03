@@ -78,6 +78,18 @@ afterEach(async () => {
   temporaryRoots.clear();
 });
 
+// Otisk vlastníka je od 3. 9. 2026 HMAC s tajemstvím per instalace — bez něj by šlo
+// slovníkově uhodnout, komu nahrávka patří. Test si proto musí sáhnout po TÉMŽE
+// tajemství, které si hlavní proces vyrobil, ne odvozovat z holého e-mailu.
+function otiskVlastnika(harness, session) {
+  const cesta = path.join(harness.userDataPath, "nastaveni", "fronta-vlastnik.json");
+  const ulozene = JSON.parse(readFileSync(cesta, "utf8"));
+  return actualRequire("./queue.cjs").deriveQueueOwnerFingerprint(
+    session,
+    Buffer.from(ulozene.secret, "base64"),
+  );
+}
+
 /**
  * @param {string} userDataPath
  * @param {{
@@ -2544,7 +2556,7 @@ describe("produkční zapojení odchozí fronty", () => {
     const queue = JSON.parse(serialized);
     expect(queue.items).toHaveLength(1);
     expect(queue.items[0].ownerFingerprint).toBe(
-      actualRequire("./queue.cjs").deriveQueueOwnerFingerprint(session),
+      otiskVlastnika(harness, session),
     );
     expect(serialized).not.toContain("Ada@LuDone.CZ");
     expect(serialized).not.toContain("Ada Lovelace");
@@ -2935,11 +2947,14 @@ describe("produkční zapojení odchozí fronty", () => {
       ...storedAuthSession(),
       accessExpiresAt: Date.now() + 60_000,
     })));
-    await expect(getUploadContext()).resolves.toMatchObject({
+    // 🔴 Kontext se musí dočkat DŘÍV, než sáhneme po tajemství: vzniká až při prvním
+    // odvození otisku. Objekt uvnitř `toMatchObject` se vyhodnocuje okamžitě, takže
+    // vložený `otiskVlastnika(...)` by hledal soubor, který ještě neexistuje.
+    const kontext = await getUploadContext();
+    expect(kontext).toMatchObject({
       accessToken: "TAJNY-ACCESS-TOKEN",
       issuer: "https://app.ludone.cz",
-      ownerFingerprint: actualRequire("./queue.cjs")
-        .deriveQueueOwnerFingerprint(storedAuthSession()),
+      ownerFingerprint: otiskVlastnika(harness, storedAuthSession()),
     });
   });
 
