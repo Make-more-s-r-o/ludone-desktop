@@ -50,7 +50,7 @@ nahrávání schůzek pod kontrolou, s archivem pro celý tým.
 | C1 | **Apple Developer Program, 99 $/rok** ⚠️ **doporučení se 21. 8. ZMĚNILO — viz níž** | **Začít bez placení.** Měřením se ukázalo, že jde o dvě nezávislé věci, ne o jednu |
 | C2 | **GitHub** — repozitář je na `https://github.com/Make-more-s-r-o/ludone-desktop.git` | Nahrazuje původní lokální stav; adresa ověřena přes `git remote -v` |
 | C3 | **Jedna aplikace, nebo dvě** (nahrávání × čas) | Codex to řeší; předběžně jedna |
-| C4 | **Tři nálezy v `ludone-app`** — deaktivace neodvolá klíče (`consents.ts:129` bez volajícího), prázdný výběr nástrojů vydá plný klíč (`mcp/actions.ts:90`), rozsah firmy má jedinou větev (`business-roles.ts:166-181`) | Zapsat do `DAN-TODO.md` jako samostatný úkol. **Platí na produkci dnes**, s tímhle projektem nesouvisí |
+| C4 | **Tři bezpečnostní nálezy v `ludone-app`** — detaily záměrně nejsou v tomto repu (viz `DAN-TODO.md`, sekce C4). Zapsat do `LuDone/DAN-TODO.md` jako samostatný úkol. **Platí na produkci**, s tímhle projektem nesouvisí |
 | C5 | **Čtyři rozhodnutí z předchozího návrhu** — pilot, Anarlog Pro, práva vedoucího, denní soupis | Viz `2-navrh-luplaud.md` v Downloads |
 
 
