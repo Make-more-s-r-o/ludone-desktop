@@ -12,7 +12,12 @@ permissions:
 
 jobs:
   gates:
-    # Repozitář je veřejný, takže hostované runnery jsou zdarma a bez limitu minut.
+    # 🔴 Repozitář je od 3. 9. zase PRIVÁTNÍ (viz DAN-TODO.md, sekce o zveřejnění),
+    # takže hostované runnery zase spotřebovávají placené minuty — a ty jsou vyčerpané.
+    # Brána proto běží na vlastním runneru `danuv-mac`. Cena té volby: když je Mac
+    # vypnutý, job ČEKÁ ve frontě, nespadne.
+    #
+    # Až se billing spraví nebo repozitář znovu zveřejní, je návrat jednořádkový:
     # Linux je pro tuhle bránu dost — nic macOS-specifického tu neběží a macOS runner
     # se účtuje 10× dráž, kdyby se repozitář někdy vrátil do privátního režimu.
     #
@@ -20,7 +25,7 @@ jobs:
     # Přepnutí je jednořádkové a hodí se, kdyby hostované runnery vypadly — nebo až se
     # jednou zapnou oba smoke kroky níž, které potřebují GUI, zvuk a oprávnění Záznam
     # obrazovky. Ty runner GitHubu nikdy mít nebude, proto jsou dnes `if: false`.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macos]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
