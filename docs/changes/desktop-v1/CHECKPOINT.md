@@ -12,8 +12,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `432270a`, **705 passed \| 3 skipped (708)**, čistý strom, **Electron 39.8.10** | 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
-| otevřené PR | **0** · worktrees **0** · mergnuto 3. 9.: **#41–#55 (18 PR)** |
+| `main` | `7432497`, **716 passed \| 3 skipped (719)**, čistý strom, **Electron 39.8.10** | 3 skipped (708)**, čistý strom, **Electron 39.8.10** | 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
+| otevřené PR | **0** · worktrees **0** · mergnuto 3. 9.: **#41–#56 (19 PR)** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
@@ -89,6 +89,29 @@ založených během dne (`fileproviderd` 100 %, osm `mdworker_shared`).
 🔴 **Než z nehybného logu usoudíš na mrtvý job, spusť `uptime`.** Práce byla přitom hotová
 na disku — převzal jsem ji, brány spustil sám a diff přečetl bez opory o Codexovo hlášení,
 protože výstupní kontrakt nedopsal. Založena značka `~/orca/workspaces/.metadata_never_index`.
+
+
+## ✅ FRONTA ZNÁ SVÉHO VLASTNÍKA (PR #56)
+
+Nahrávka se odešle **jen pod účtem, který ji pořídil**. Cizí session → pauza, ne odeslání.
+Nahrávka bez známého vlastníka (pořízená odhlášeně) **čeká na potvrzení člověkem** —
+přiřadit ji prvnímu přihlášenému by zopakovalo přesně tu vadu, kvůli které úkol vznikl.
+
+🔴 **Otisk je HMAC s tajemstvím per instalace**, ne holý sha256. Delegovaný běh sám přiznal,
+že bez tajemství jde otisk uhodnout ze seznamu firemních e-mailů — doplněno při konsolidaci.
+Tajemství leží **mimo frontu** (`nastaveni/fronta-vlastnik.json`, 0600), takže útočník
+s kopií `outgoing.json` ho nemá. **Fail-closed:** bez tajemství se otisk neodvodí a položka
+zůstane čekat; nikdy se nespadne zpátky na slabší variantu.
+
+## 🛑 ZBÝVÁ — a většina čeká na někoho jiného
+
+| co | na čem visí |
+|---|---|
+| tři stavy lišty (fronta · výpadek zvuku · bez spojení) | rozšíření `REPORTED_FACT_KEYS`, tedy zásah do kontraktu hlídaného 53 testy |
+| obrazovka pro potvrzení nahrávky bez vlastníka | navazuje na #56, samostatný úkol |
+| `DSK-F012` výběr projektu | **kontrakt fáze 2** od serverové session; práh 110 % je hodnota, ne rozhraní, a nesmí být u nás zadrátovaný |
+| `DSK-F010` odeslání na server | fáze 2 |
+| offline slib „nahrávat můžeš dál" | část vyřešena (#55 jednostopé, #56 vlastník); zbývá produktové rozhodnutí, co smí běžet před dokončeným onboardingem |
 
 ## 🛑 Zbývá — a nic z toho není samostatná práce
 
