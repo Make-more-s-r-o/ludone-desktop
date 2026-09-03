@@ -98,7 +98,7 @@
       "dodani": "merged",
       "vystaveni": "labs",
       "overeni": "tests-green",
-      "dalsiKrok": "Postavit pravé kliknutí, rychlé akce a klávesové zkratky podle schváleného návrhu."
+      "dalsiKrok": "Barvy sjednoceny na schválenou paletu (PR #43): paleta povýšena z .panel do :root, onboarding i Nastavení ji teď dědí. Odstraněna přednávrhová zelená i googlovská #34a853 v měřáku."
     },
     {
       "id": "DSK-F003",
@@ -288,5 +288,6 @@
       "nazev": "Schválených 22 obrazovek",
       "cesta": "../../../../design/approved.json"
     }
-  ]
+  ],
+  "poznamky": []
 }

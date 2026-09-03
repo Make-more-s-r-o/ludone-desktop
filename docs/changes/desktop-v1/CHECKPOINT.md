@@ -12,8 +12,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `acb7277`, **597 passed \| 6 skipped (603)**, čistý strom |
-| otevřené PR | **0** · worktrees **2** (`desktop-barvy`, `desktop-hlasky`) · Codex procesy **2 živé** |
+| `main` | `b242de8`, **603 passed \| 6 skipped (609)**, čistý strom |
+| otevřené PR | **0** · worktree **1** (`desktop-glyf`, běží) · mergnuto dnes **#41 #42 #43** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
@@ -99,9 +99,18 @@ není vymýšlení.
 
 ## Zbylá práce, kterou běh může udělat sám
 
-0. **Ikona v liště podle návrhu** (viz výš) — čeká, až se uvolní `electron/main.cjs`.
+0. **Glyf ikony** — běží jako `desktop-glyf`. 🔴 **Úzký záběr schválně:** jen překreslení
+   čtyř existujících ikon pulzem z návrhu. Barva, odznak a pátý stav spadají pod
+   **zmrazený T1** — běh ho nerozmrazil, rozhodnutí leží v `DAN-TODO.md`.
 
-1. **Syrové chyby souborového systému jdou do UI i logu** — `electron/main.cjs`, funkce
+1. ~~**Syrové chyby souborového systému**~~ — ✅ **hotovo, PR #42.** Vlastní chyby dostaly
+   třídu `RecordingExportUserError`; jen ta smí předat text uživateli. Při tom nalezena
+   a opravena latentní vada: `finally` uvolňoval odkládací plochu i volání, které si
+   export nikdy nezabralo — druhé kliknutí mohlo shodit první běžící export.
+
+2. ~~**Barvy**~~ — ✅ **hotovo, PR #43.**
+
+3. **Starý bod (ponechán pro kontext):** syrové chyby souborového systému — `electron/main.cjs`, funkce
    `exportCompletedRecording`, větev `catch`: `error.message` jde do hlášky uživateli
    a `error.stack` do logu. Systémová chyba (`ENOSPC`, `EACCES`) nese **absolutní cestu,
    ve které je i název schůzky**.
