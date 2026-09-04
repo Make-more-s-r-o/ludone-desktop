@@ -109,12 +109,35 @@ aplikace načítá `dist` a dev server nespouští), ohrožený byl vývojář, 
 ✅ **Ověřeno naostro:** po přestavbě aplikace spuštěna a řízena přes CDP · otevřených
 hlášení **9 → 1** (změřeno API, ne odhad).
 
-### `ui-smoke` je brána, kterou nikdo nespouští
+### 6. ✅ HOTOVO — **PR #72 mergnut** · `ui-smoke` byla brána, která nemohla projít
 
-CI ho má vypnutý (`if: ${{ false }}`). Spustil jsem ho: **zasekne se na kroku 3/6** na
-obrazovce „Čekám na prohlížeč", protože očekává, že po kliknutí na přihlášení rovnou přijdou
-oprávnění. Zelený tedy může být **jen tam, kde je OAuth rozbité**. `LUDONE_E2E=1` přihlášení
-nezastupuje (odemyká jen `test:quit` a kontrolu lišty). Nespravováno — zapsáno.
+CI ho má vypnutý (`if: ${{ false }}`), spouští ho člověk na Macu. Spustil jsem ho:
+**deset minut visel a spadl** na `Timeout` u obrazovky oprávnění, protože mezi přihlášením
+a oprávněními je krok „Čekám na prohlížeč", kudy se bez člověka projít nedá.
+
+🔴 **Zelený mohl být jen tam, kde je přihlášení ROZBITÉ** (dřív chybějící
+`LUDONE_OAUTH_CLIENT_ID` krok propadl dál). Zelená dokazovala opak toho, co měla.
+`LUDONE_E2E=1` přihlášení nezastupuje — odemyká jen `test:quit` a kontrolu lišty.
+
+Teď projde vše až k hranici OAuth včetně čekací obrazovky a jejích východů (adresa ·
+Kopírovat · Zkusit znovu s **novým `state`** · Zrušit **bez slepé uličky**), na hranici
+**skončí do 3 sekund**, vyjmenuje ověřené i **neověřené** obrazovky a vrátí **kód 2** —
+ne 0 („vše prošlo") ani 1 („selhalo"). Nad přihlášeným profilem jede dál na panel a nastavení.
+Origin bere z `AUTH_ORIGINS` v kódu aplikace, protože `auth:origin` panelu nepatří.
+
+### 7. ✅ HOTOVO — **PR #73 mergnut** · Tlačítko „Kopírovat", které nekopírovalo
+
+**Našla to ta opravená brána na svém prvním poctivém běhu.** Ověřeno tvrdě: značka ve
+schránce → **skutečný klik myší** přes CDP (s uživatelskou aktivací) → `pbpaste` vrátil
+pořád tu značku. `.catch(() => {})` v `Onboarding.jsx:488` chybu spolkl, uživatel nedostal nic.
+
+Příčina byla **správné chování jinde**: aplikace povoluje jen mediální oprávnění, takže
+Clipboard API padá. Rozvolnit to kvůli tlačítku by byla špatná směna — kopírování jde teď
+přes hlavní proces kanálem, který **nenese žádný text** (jinak by renderer mohl vložit
+uživateli do schránky cokoli); adresu si hlavní proces vezme ze svého stavu a ověří ji.
+
+✅ **Ověřeno naostro po opravě:** klik → schránka obsahuje přihlašovací adresu, tlačítko
+hlásí „Zkopírováno".
 
 ---
 
@@ -125,8 +148,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `dd48f61`, **845 passed \| 3 skipped (848)**, čistý strom, **Electron 39.8.10**, **Vite 7.3.6** |
-| otevřené PR | **0** · worktrees **1** (`desktop-smoke-poctivy`, běží Codex) · mergnuto 3./4. 9.: **#41–#71 (35 PR)** |
+| `main` | `9fd1bf2`, **866 passed \| 3 skipped (869)**, čistý strom, **Electron 39.8.10**, **Vite 7.3.6** |
+| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3./4. 9.: **#41–#73 (37 PR)** |
 | zranitelnosti | **9 → 1** (zbylá `extract-zip` opravu nemá) |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
