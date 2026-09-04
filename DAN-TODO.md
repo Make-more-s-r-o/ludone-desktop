@@ -1744,3 +1744,18 @@ s `@2x` variantou prošlo **`411 passed`**.
 nezakřičí. Není to blocker — ikona bude vidět — ale je to měřidlo, které nic neměří.
 
 **Levná oprava:** test, který ověří, že se pro každý stav registruje i `@2x` reprezentace.
+
+## 🟡 POZOROVÁNÍ K LUTRACKU (nesahal jsem na to, je to tvoje odložené rozhodnutí)
+
+Pustil jsem měření času naostro a zastavil ho. Funguje, projekt si vybere, čas běží.
+Po zastavení ale aplikace teprve řekne: **„Čas zastaven · uložení do LuTracku je ukázkové."**
+
+Před spuštěním o tom **není ani slovo** — na kartě je jen „LuTrack / Spustit". Kdo si odměří
+tři hodiny práce, dozví se až na konci, že se nikam neuložily. Je to táž třída vady, jakou
+jsem dnes v noci opravoval u fronty („další pokus teď", který nikdy nepřijde).
+
+**Neopravil jsem to,** protože `decisions.md` C3 říká *„LuTrack: jen příprava"* a M11 nechává
+osud živého LuTracku **odložený na tebe**. Věta o ukázkovém uložení navíc není ve specifikaci
+ani v návrhu — vznikla v kódu. Kdybych přesunul sdělení dopředu, rozhodoval bych o produktu.
+
+**Doporučení, až na to dojde:** říct to **před** spuštěním, ne po zastavení.

@@ -75,6 +75,27 @@ jinak by ráno neměl aplikaci jak otevřít. Vypnout jde v Nastavení jedním p
 - **Malý terč patičky fronty** — `BUTTON.queue-status` měří **280×33**, dost velký.
 - **Chybějící ikona jako taková** — ikona existuje, jen se nekreslí (viz výš).
 
+### 4. ✅ HOTOVO — **PR #70 mergnut** · Tři vady v okně Nastavení
+
+Otevřel jsem Nastavení v běžící aplikaci a proměřil je.
+
+| vada | měření | stav |
+|---|---|---|
+| **„16 čekají"** místo „16 čeká" na kartách Záznamy i Diagnostika | dvojtvarové skloňování v `Settings.jsx:136`; čeština má tři tvary | ✅ `16 čeká` |
+| karta Účet **opisovala e-mail** sama pod sebou | `getAuthIdentity()` vrací `name: null`, fallback dosadil e-mail | ✅ řádek se bez jména nekreslí |
+| hodnoty se lámaly **uprostřed slova** | sloupec hodnoty **134 px** ve 448 px okně, `overflow-wrap: anywhere`; vinu nesl třetí sloupec mřížky s odznakem | ✅ **202 px, výška 14 px = jeden řádek** |
+
+🔴 **Skloňování je vidět až od PĚTI položek** — při 2–4 dá dvojtvar náhodou správný výsledek.
+Proto prošlo. Testy teď berou hranice 1 · 2 · 4 · 5 · 16. Pomocník `countLabel` je nově
+sdílený (`src/lib/count-label.js`), dřív žil jen v panelu.
+
+### LuTrack — pustil jsem ho naostro, NEOPRAVOVAL
+
+Měření času funguje (projekt si vybere sám, čas běží, Stop zastaví). Po zastavení ale teprve
+řekne *„uložení do LuTracku je ukázkové."* — **před spuštěním o tom není ani slovo**.
+Je to táž třída vady jako fronta slibující pokus. **Nesahal jsem na to**: `decisions.md` C3
+říká „LuTrack: jen příprava" a M11 nechává jeho osud **odložený na Dana**. Zapsáno v `DAN-TODO.md`.
+
 ### `ui-smoke` je brána, kterou nikdo nespouští
 
 CI ho má vypnutý (`if: ${{ false }}`). Spustil jsem ho: **zasekne se na kroku 3/6** na
@@ -91,8 +112,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `558c194`, **834 passed \| 3 skipped (837)**, čistý strom, **Electron 39.8.10** |
-| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** (26 mergnutých smazáno) · mergnuto 3./4. 9.: **#41–#69 (33 PR)** |
+| `main` | `dd1a48f`, **845 passed \| 3 skipped (848)**, čistý strom, **Electron 39.8.10** |
+| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3./4. 9.: **#41–#70 (34 PR)** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
