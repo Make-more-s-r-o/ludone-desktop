@@ -39,6 +39,7 @@ const STEPS = [
 
 const AUTH_WAIT_SECONDS = 10 * 60;
 const AUTH_URL_POLL_INTERVAL_MS = 250;
+const AUTH_COPY_CONFIRMATION_MS = 2_000;
 function completionCopy(recordingTestResult) {
   if (recordingTestResult === "passed") {
     return {
@@ -92,6 +93,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   // Adresa se drží jen po dobu čekání; hlavní proces ji po skončení pokusu sám zahodí.
   const [authUrl, setAuthUrl] = useState("");
   const [authUrlAttempt, setAuthUrlAttempt] = useState(0);
+  const [authCopyState, setAuthCopyState] = useState("idle");
   const [authSecondsRemaining, setAuthSecondsRemaining] = useState(AUTH_WAIT_SECONDS);
   const [authWaitingActionBusy, setAuthWaitingActionBusy] = useState(false);
   const [permissionBusy, setPermissionBusy] = useState("");
@@ -100,6 +102,8 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   const [recordingTestSession, setRecordingTestSession] = useState(null);
   const authAttemptRef = useRef(0);
   const authBusyRef = useRef(false);
+  const authCopyRequestRef = useRef(0);
+  const authCopyTimerRef = useRef();
   const mountedRef = useRef(true);
   const permissionStatusRequestRef = useRef(0);
   const recordingTestStartedRef = useRef(false);
@@ -160,11 +164,20 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   }, [authBusy, authUrlAttempt, step]);
 
   useEffect(() => {
+    authCopyRequestRef.current += 1;
+    window.clearTimeout(authCopyTimerRef.current);
+    authCopyTimerRef.current = undefined;
+    setAuthCopyState("idle");
+  }, [authUrlAttempt, step]);
+
+  useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       authAttemptRef.current += 1;
+      authCopyRequestRef.current += 1;
       permissionStatusRequestRef.current += 1;
+      window.clearTimeout(authCopyTimerRef.current);
       if (!authBusyRef.current) return;
       authBusyRef.current = false;
       cancelAuthQuietly();
@@ -250,6 +263,33 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
         setAuthBusy(false);
       }
     }
+  }
+
+  async function copyPendingAuthUrl() {
+    const requestId = authCopyRequestRef.current + 1;
+    authCopyRequestRef.current = requestId;
+    window.clearTimeout(authCopyTimerRef.current);
+    authCopyTimerRef.current = undefined;
+    setAuthCopyState("idle");
+
+    let copied = false;
+    try {
+      copied = (await window.ludone?.copyPendingAuthUrl?.()) === true;
+    } catch {
+      copied = false;
+    }
+    if (!mountedRef.current || authCopyRequestRef.current !== requestId) return;
+    if (!copied) {
+      setAuthCopyState("error");
+      return;
+    }
+
+    setAuthCopyState("success");
+    authCopyTimerRef.current = window.setTimeout(() => {
+      if (!mountedRef.current || authCopyRequestRef.current !== requestId) return;
+      setAuthCopyState("idle");
+      authCopyTimerRef.current = undefined;
+    }, AUTH_COPY_CONFIRMATION_MS);
   }
 
   async function leaveAuthWaiting(retry) {
@@ -467,7 +507,6 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
           className="onboarding__content auth-waiting-step"
           data-auth-waiting-state="waiting"
           data-testid="auth-waiting-screen"
-          role="status"
         >
           <div className="auth-waiting-spinner" aria-hidden="true" />
           <h1>Čekám na prohlížeč</h1>
@@ -484,12 +523,25 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
                 type="button"
                 className="text-button"
                 data-testid="auth-waiting-copy"
-                onClick={() => {
-                  void navigator.clipboard?.writeText?.(authUrl).catch(() => {});
-                }}
+                onClick={copyPendingAuthUrl}
               >
-                Kopírovat
+                {authCopyState === "success" ? "Zkopírováno" : "Kopírovat"}
               </button>
+              <p
+                aria-atomic="true"
+                aria-live="polite"
+                className={authCopyState === "error"
+                  ? "auth-waiting-copy-feedback"
+                  : "sr-only"}
+                data-testid="auth-waiting-copy-feedback"
+                role="status"
+              >
+                {authCopyState === "success"
+                  ? "Zkopírováno"
+                  : authCopyState === "error"
+                    ? "Zkopírovat se nepodařilo."
+                    : ""}
+              </p>
             </div>
           )}
           <div className="auth-waiting-actions">

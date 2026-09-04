@@ -1,6 +1,7 @@
 const {
   app,
   BrowserWindow,
+  clipboard,
   desktopCapturer,
   Tray,
   ipcMain,
@@ -74,6 +75,7 @@ const TRAY_TITLE_INTERVAL_MS = 1_000;
 const TRAY_COMMAND_CHANNEL = "tray:command";
 const TRAY_SPACE_WARNING_URL = "ludone://tray-warning/index.html#tray-space-warning";
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
+const AUTH_COPY_PENDING_URL_CHANNEL = "auth:copy-pending-url";
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
 const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
@@ -3168,6 +3170,34 @@ const authSessionCoordinator = createAuthSessionCoordinator();
 // Drží se jen po dobu běžícího pokusu; `beginAuth` ji sám nuluje ve svém finally.
 let pendingAuthorizationUrl = null;
 
+function verifiedPendingAuthorizationUrl() {
+  if (authAttemptsInFlight < 1 || typeof pendingAuthorizationUrl !== "string") return null;
+  try {
+    const url = new URL(pendingAuthorizationUrl);
+    if (
+      url.protocol !== "https:"
+      || url.username
+      || url.password
+      || url.origin !== resolveCurrentAuthIssuer()
+    ) return null;
+    return pendingAuthorizationUrl;
+  } catch {
+    return null;
+  }
+}
+
+function copyPendingAuthorizationUrl() {
+  const authorizationUrl = verifiedPendingAuthorizationUrl();
+  if (authorizationUrl === null) return false;
+  try {
+    clipboard.writeText(authorizationUrl);
+    return true;
+  } catch {
+    // URL obsahuje OAuth state a PKCE challenge; chyba ani obsah nesmějí do logu.
+    return false;
+  }
+}
+
 const beginAuth = createAuthBeginHandler(createAuthController)({
   app,
   coordinator: authSessionCoordinator,
@@ -3398,6 +3428,11 @@ handleValidated("diagnostics:export", ["settings"], async (_event, ...extraPaylo
 });
 
 handleValidated("auth:pending-url", ["panel"], () => pendingAuthorizationUrl);
+
+handleValidated(AUTH_COPY_PENDING_URL_CHANNEL, ["panel"], (_event, ...extraPayload) => {
+  requireNoPayload(AUTH_COPY_PENDING_URL_CHANNEL, extraPayload);
+  return copyPendingAuthorizationUrl();
+});
 
 handleValidated("auth:begin", ["panel"], async () => {
   if (authOriginChangeInFlight) {
