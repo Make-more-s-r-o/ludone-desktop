@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { App } from "../src/App.jsx";
 import { queueFooterStatus } from "../src/lib/panel.js";
+import { UPLOAD_DISABLED_REASON } from "../src/lib/queue.js";
 
 const USER = { name: "Dan Jirotka", email: "dan@ludone.cz" };
 const onboardingAudioFrames = new WeakMap();
@@ -662,7 +663,7 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("klik na čekající patičku otevře obrazovku fronty se skutečnými souhrny", async () => {
+  it("při zapnutém odesílání otevře frontu s časem dalšího pokusu a retry jako dosud", async () => {
     const megabyte = 1024 * 1024;
     const nextAttemptAt = Date.now() + 2 * 60 * 1_000;
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([
@@ -712,6 +713,55 @@ describe("schválený klidový panel", () => {
       await panel.cleanup();
     }
   });
+
+  it.each([
+    ["bez naplánovaného času", null],
+    ["s budoucím naplánovaným časem", Date.now() + 2 * 60_000],
+  ])(
+    "při vypnutém odesílání %s ukáže důvod bez dalšího pokusu a bez tlačítka",
+    async (_label, nextAttemptAt) => {
+      const megabyte = 1024 * 1024;
+      const retryQueue = vi.fn();
+      const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([{
+        id: "cekajici-nahravka",
+        kind: "recording",
+        lastFailureReason: null,
+        nextAttemptAt,
+        sendingDisabledReason: UPLOAD_DISABLED_REASON,
+        sizeBytes: Math.round(29.04 * megabyte),
+        state: "ceka",
+      }]), {
+        ludone: {
+          retryQueue,
+        },
+      });
+
+      try {
+        await vi.waitFor(() => {
+          expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+            .toBe("1 čeká");
+        });
+        const footer = panel.document.querySelector('[data-testid="queue-status"]');
+        await React.act(async () => {
+          footer.dispatchEvent(
+            new panel.document.defaultView.MouseEvent("click", { bubbles: true }),
+          );
+        });
+
+        const screen = panel.document.querySelector('[data-testid="queue-screen"]');
+        expect(screen?.querySelector("h2")?.textContent).toBe("Čeká fronta");
+        expect(screen?.textContent).toContain("Nic se neztratilo, jen to zatím neodešlo.");
+        expect(screen?.textContent).toContain("1 čeká na odeslání");
+        expect(UPLOAD_DISABLED_REASON).toBe("odesílání je vypnuté");
+        expect(screen?.textContent).toContain("29,0 MB · odesílání je vypnuté");
+        expect(screen?.textContent).not.toContain("další pokus");
+        expect(screen?.querySelector('button[data-action="retry-queue"]')).toBeNull();
+        expect(retryQueue).not.toHaveBeenCalled();
+      } finally {
+        await panel.cleanup();
+      }
+    },
+  );
 
   it("Zkusit teď vyvolá skutečný retry a po jeho dokončení obnoví data", async () => {
     let finishRetry;
@@ -785,6 +835,255 @@ describe("schválený klidový panel", () => {
       expect(panel.document.querySelector('[data-testid="queue-status"]')?.getAttribute("aria-expanded"))
         .toBe("false");
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it.each(["disabled", "idle", "failed", "paused", "retry_scheduled"])(
+    "vrácený neúspěšný výsledek retry %s ukáže uživateli jeho důvod",
+    async (outcome) => {
+      const reason = "Server je dočasně nedostupný";
+      const item = {
+        id: "cekajici-nahravka",
+        kind: "recording",
+        lastFailureReason: reason,
+        nextAttemptAt: Date.now() + 60_000,
+        sizeBytes: 1024,
+        state: "ceka",
+      };
+      const resultItem = outcome === "failed"
+        ? { ...item, nextAttemptAt: null, state: "selhalo" }
+        : item;
+      const retryQueue = vi.fn().mockResolvedValue({
+        items: [resultItem],
+        outcome,
+        reason,
+      });
+      const listQueue = vi.fn()
+        .mockResolvedValueOnce([item])
+        .mockResolvedValue([resultItem]);
+      const panel = await renderInteractivePanel(listQueue, {
+        ludone: { retryQueue },
+      });
+
+      try {
+        await vi.waitFor(() => {
+          expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+            .toBe("1 čeká");
+        });
+        const footer = panel.document.querySelector('[data-testid="queue-status"]');
+        await React.act(async () => {
+          footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+        });
+        const retry = panel.document.querySelector('button[data-action="retry-queue"]');
+        await React.act(async () => {
+          retry.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+          await Promise.resolve();
+        });
+
+        expect(retryQueue).toHaveBeenCalledOnce();
+        await vi.waitFor(() => {
+          expect(panel.document.querySelector(".queue-card__error[role=alert]")?.textContent)
+            .toBe(reason);
+        });
+      } finally {
+        await panel.cleanup();
+      }
+    },
+  );
+
+  it.each([
+    ["future_failure", "Server vrátil budoucí stav", "Server vrátil budoucí stav"],
+    ["future_failure", undefined, "Pokus se nepodařilo spustit."],
+  ])(
+    "vrácený budoucí neúspěšný výsledek retry %s ukáže bezpečný důvod",
+    async (outcome, reason, expectedMessage) => {
+      const item = {
+        id: "cekajici-nahravka",
+        kind: "recording",
+        lastFailureReason: null,
+        nextAttemptAt: Date.now() + 60_000,
+        sizeBytes: 1024,
+        state: "ceka",
+      };
+      const retryQueue = vi.fn().mockResolvedValue({ items: [item], outcome, reason });
+      const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([item]), {
+        ludone: { retryQueue },
+      });
+
+      try {
+        await vi.waitFor(() => {
+          expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+            .toBe("1 čeká");
+        });
+        await React.act(async () => {
+          panel.document.querySelector('[data-testid="queue-status"]')
+            .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+        });
+        await React.act(async () => {
+          panel.document.querySelector('button[data-action="retry-queue"]')
+            .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+          await Promise.resolve();
+        });
+
+        await vi.waitFor(() => {
+          expect(panel.document.querySelector(".queue-card__error[role=alert]")?.textContent)
+            .toBe(expectedMessage);
+        });
+      } finally {
+        await panel.cleanup();
+      }
+    },
+  );
+
+  it("vrácený neúspěch nezablokuje následným čtením fronty", async () => {
+    const reason = "Server je dočasně nedostupný";
+    const item = {
+      id: "cekajici-nahravka",
+      kind: "recording",
+      lastFailureReason: reason,
+      nextAttemptAt: Date.now() + 60_000,
+      sizeBytes: 1024,
+      state: "ceka",
+    };
+    const listQueue = vi.fn()
+      .mockResolvedValueOnce([item])
+      .mockRejectedValue(new Error("následné čtení fronty selhalo"));
+    const retryQueue = vi.fn().mockResolvedValue({
+      items: [item],
+      outcome: "retry_scheduled",
+      reason,
+    });
+    const panel = await renderInteractivePanel(listQueue, { ludone: { retryQueue } });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká");
+      });
+      await React.act(async () => {
+        panel.document.querySelector('[data-testid="queue-status"]')
+          .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+      await React.act(async () => {
+        panel.document.querySelector('button[data-action="retry-queue"]')
+          .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+        await Promise.resolve();
+      });
+
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector(".queue-card__error[role=alert]")?.textContent)
+          .toBe(reason);
+      });
+      expect(listQueue).toHaveBeenCalledOnce();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("vrácený neúspěch zůstane viditelný i po vyprázdnění fronty", async () => {
+    const reason = "Žádná položka není připravená";
+    const item = {
+      id: "cekajici-nahravka",
+      kind: "recording",
+      lastFailureReason: null,
+      nextAttemptAt: Date.now() + 60_000,
+      sizeBytes: 1024,
+      state: "ceka",
+    };
+    const retryQueue = vi.fn().mockResolvedValue({ items: [], outcome: "idle", reason });
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([item]), {
+      ludone: { retryQueue },
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká");
+      });
+      await React.act(async () => {
+        panel.document.querySelector('[data-testid="queue-status"]')
+          .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+      await React.act(async () => {
+        panel.document.querySelector('button[data-action="retry-queue"]')
+          .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+        await Promise.resolve();
+      });
+
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-retry-feedback"]')?.textContent)
+          .toBe(reason);
+      });
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+        .toBe("Vše odesláno");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("zpětná vazba starého retry zmizí po skutečně novém snapshotu fronty", async () => {
+    const reason = "Server je dočasně nedostupný";
+    const originalItem = {
+      id: "puvodni-nahravka",
+      kind: "recording",
+      lastFailureReason: reason,
+      nextAttemptAt: Date.now() + 60_000,
+      sizeBytes: 1024,
+      state: "ceka",
+    };
+    const nextItem = {
+      ...originalItem,
+      id: "nova-nahravka",
+      lastFailureReason: null,
+      sizeBytes: 2048,
+    };
+    const listQueue = vi.fn()
+      .mockResolvedValueOnce([originalItem])
+      .mockResolvedValue([nextItem]);
+    const retryQueue = vi.fn().mockResolvedValue({
+      items: [originalItem],
+      outcome: "retry_scheduled",
+      reason,
+    });
+    const panel = await renderInteractivePanel(listQueue, {
+      configureWindow(domWindow) {
+        Object.defineProperty(domWindow.document, "visibilityState", {
+          configurable: true,
+          value: "visible",
+        });
+      },
+      ludone: { retryQueue },
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
+          .toBe("1 čeká");
+      });
+      await React.act(async () => {
+        panel.document.querySelector('[data-testid="queue-status"]')
+          .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      });
+      await React.act(async () => {
+        panel.document.querySelector('button[data-action="retry-queue"]')
+          .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+        await Promise.resolve();
+      });
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector(".queue-card__error[role=alert]")?.textContent)
+          .toBe(reason);
+      });
+
+      await React.act(async () => {
+        panel.document.dispatchEvent(new panel.document.defaultView.Event("visibilitychange"));
+        await Promise.resolve();
+      });
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector(".queue-card__error[role=alert]")).toBeNull();
+      });
     } finally {
       await panel.cleanup();
     }

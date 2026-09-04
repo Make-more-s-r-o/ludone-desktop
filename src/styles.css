@@ -1284,6 +1284,16 @@ svg {
   font-size: 10.5px;
 }
 
+.queue-retry-feedback {
+  margin: 0;
+  padding: 10px 11px;
+  border: 1px solid color-mix(in oklab, var(--panel-bad) 32%, transparent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--panel-bad) 12%, transparent);
+  color: var(--panel-bad);
+  font-size: 10.5px;
+}
+
 .queue-status {
   display: flex;
   align-items: center;

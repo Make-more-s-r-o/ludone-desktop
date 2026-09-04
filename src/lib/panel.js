@@ -60,6 +60,10 @@ export function queuePanelSummary(items, now = Date.now()) {
   const waiting = pending.filter((item) => item.state === "ceka");
   const humanAction = waiting.filter((item) => item.requiresHumanAction === true);
   const ordinaryWaiting = waiting.filter((item) => item.requiresHumanAction !== true);
+  const retryableWaiting = ordinaryWaiting.filter((item) => (
+    typeof item.sendingDisabledReason !== "string"
+    || item.sendingDisabledReason.trim().length === 0
+  ));
   const completeSize = (selectedItems) => {
     if (
       selectedItems.length === 0
@@ -71,9 +75,12 @@ export function queuePanelSummary(items, now = Date.now()) {
     const total = selectedItems.reduce((sum, item) => sum + item.sizeBytes, 0);
     return Number.isSafeInteger(total) ? total : null;
   };
-  const nextAttempts = ordinaryWaiting.map((item) => (
+  const nextAttempts = retryableWaiting.map((item) => (
     item.nextAttemptAt === null ? now : item.nextAttemptAt
   )).filter(Number.isFinite);
+  const sendingDisabledReasons = [...new Set(ordinaryWaiting
+    .map((item) => item.sendingDisabledReason)
+    .filter((reason) => typeof reason === "string" && reason.trim().length > 0))];
   const humanReasons = [...new Set(humanAction
     .map((item) => item.lastFailureReason)
     .filter((reason) => typeof reason === "string" && reason.trim().length > 0))];
@@ -89,6 +96,8 @@ export function queuePanelSummary(items, now = Date.now()) {
     humanActionSizeBytes: completeSize(humanAction),
     humanReasons,
     nextAttemptAt: nextAttempts.length > 0 ? Math.min(...nextAttempts) : null,
+    retryableWaitingCount: retryableWaiting.length,
+    sendingDisabledReasons,
     sendingCount: pending.filter((item) => item.state === "odesila").length,
     sizeBytes: completeSize(waiting),
     waitingCount: ordinaryWaiting.length,
