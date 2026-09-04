@@ -1833,6 +1833,14 @@ svg {
   text-align: center;
 }
 
+.auth-waiting-copy-feedback {
+  margin: 0;
+  color: var(--danger);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 .auth-waiting-actions {
   display: flex;
   width: 100%;

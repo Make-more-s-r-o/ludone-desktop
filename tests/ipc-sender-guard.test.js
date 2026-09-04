@@ -317,6 +317,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     expect(jmena.sort()).toEqual([
       "auth:begin",
       "auth:cancel",
+      "auth:copy-pending-url",
       "auth:has-session",
       "auth:identity",
       "auth:logout",

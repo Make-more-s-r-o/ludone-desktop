@@ -324,6 +324,7 @@ function fakeElectron(userDataPath, {
   const electron = {
     app,
     BrowserWindow: FakeBrowserWindow,
+    clipboard: { writeText: vi.fn() },
     desktopCapturer: { getSources: vi.fn(async () => []) },
     ipcMain: {
       handle: vi.fn((channel, handler) => ipcHandlers.set(channel, handler)),
@@ -464,6 +465,7 @@ function fakeElectron(userDataPath, {
  * @param {{
  *   applyRetention?: (...args: any[]) => Promise<any>,
  *   autoUpdater?: EventEmitter & Record<string, any>,
+ *   createAuthController?: (...args: any[]) => any,
  *   createAuthOriginStore?: (...args: any[]) => any,
  *   createDockVisibilityStore?: (...args: any[]) => any,
  *   createLogoutController?: (...args: any[]) => any,
@@ -493,6 +495,7 @@ function fakeElectron(userDataPath, {
 async function loadMain({
   applyRetention,
   autoUpdater,
+  createAuthController,
   createAuthOriginStore,
   createDockVisibilityStore,
   createLogoutController,
@@ -541,8 +544,12 @@ async function loadMain({
   const injectedRequire = (specifier) => {
     if (specifier === "electron") return harness.electron;
     if (specifier === "electron-updater" && autoUpdater) return { autoUpdater };
-    if (specifier === "./auth.cjs" && createLogoutController) {
-      return { ...actualRequire("./auth.cjs"), createLogoutController };
+    if (specifier === "./auth.cjs" && (createAuthController || createLogoutController)) {
+      return {
+        ...actualRequire("./auth.cjs"),
+        ...(createAuthController ? { createAuthController } : {}),
+        ...(createLogoutController ? { createLogoutController } : {}),
+      };
     }
     if (specifier === "./settings.cjs" && (createAuthOriginStore || createDockVisibilityStore)) {
       return {
@@ -915,6 +922,20 @@ function memoryDockVisibilityStore(initialValue) {
   };
 }
 
+function pendingAuthController(authorizationUrl) {
+  let finish;
+  const result = new Promise((resolve) => {
+    finish = resolve;
+  });
+  const cancel = vi.fn();
+  const start = vi.fn(async () => ({ authorizationUrl, cancel, result }));
+  return {
+    createAuthController: vi.fn(() => ({ start })),
+    finish,
+    start,
+  };
+}
+
 describe("zapojení systémových nastavení", () => {
   it("samostatný preload výstrahy vystaví jedinou akci a volá nový kanál bez payloadu", async () => {
     const preload = loadTraySpaceWarningPreload(true);
@@ -1252,6 +1273,139 @@ describe("zapojení systémových nastavení", () => {
 
     await expect(preload.api.getDockVisible()).rejects.toThrow(/boolean/u);
     await expect(preload.api.setDockVisible(true)).rejects.toThrow(/boolean/u);
+  });
+});
+
+describe("kopírování probíhající přihlašovací adresy", () => {
+  it("panel zkopíruje právě probíhající adresu ze stavu hlavního procesu", async () => {
+    const authorizationUrl = [
+      "https://app.ludone.cz/api/mcp/oauth/authorize",
+      "?state=aktualni-pokus&code_challenge=overovaci-vyzva",
+    ].join("");
+    const auth = pendingAuthController(authorizationUrl);
+    const harness = await loadMain({ createAuthController: auth.createAuthController });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const begin = harness.ipcHandlers.get("auth:begin");
+    const pendingUrl = harness.ipcHandlers.get("auth:pending-url");
+
+    const authPromise = begin(panelEvent);
+    const copy = harness.ipcHandlers.get("auth:copy-pending-url");
+    try {
+      await vi.waitFor(() => expect(pendingUrl(panelEvent)).toBe(authorizationUrl));
+      expect(copy).toBeTypeOf("function");
+      expect(copy(panelEvent)).toBe(true);
+      expect(harness.electron.clipboard.writeText)
+        .toHaveBeenCalledExactlyOnceWith(authorizationUrl);
+    } finally {
+      auth.finish({ user: { name: "Test", email: "test@ludone.cz" } });
+      await authPromise;
+    }
+
+    expect(pendingUrl(panelEvent)).toBeNull();
+    expect(copy(panelEvent)).toBe(false);
+    expect(harness.electron.clipboard.writeText).toHaveBeenCalledOnce();
+  });
+
+  it("bez probíhající nebo s cizí adresou nic nezmění a vrátí neúspěch", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const copy = harness.ipcHandlers.get("auth:copy-pending-url");
+
+    expect(copy).toBeTypeOf("function");
+    expect(copy(panelEvent)).toBe(false);
+    expect(harness.electron.clipboard.writeText).not.toHaveBeenCalled();
+
+    const foreignUrl = "https://utocnik.example/authorize?state=podvrzeny";
+    const auth = pendingAuthController(foreignUrl);
+    const foreignHarness = await loadMain({ createAuthController: auth.createAuthController });
+    await foreignHarness.runReady();
+    const foreignPanel = foreignHarness.windows[0].webContents;
+    const foreignPanelEvent = { sender: foreignPanel, senderFrame: foreignPanel.mainFrame };
+    const authPromise = foreignHarness.ipcHandlers.get("auth:begin")(foreignPanelEvent);
+    try {
+      await vi.waitFor(() => {
+        expect(foreignHarness.ipcHandlers.get("auth:pending-url")(foreignPanelEvent))
+          .toBe(foreignUrl);
+      });
+      expect(foreignHarness.ipcHandlers.get("auth:copy-pending-url")(foreignPanelEvent))
+        .toBe(false);
+      expect(foreignHarness.electron.clipboard.writeText).not.toHaveBeenCalled();
+    } finally {
+      auth.finish({ user: { name: "Test", email: "test@ludone.cz" } });
+      await authPromise;
+    }
+  });
+
+  it("odmítne cizího odesílatele i textový payload a preload žádný text neposílá", async () => {
+    const authorizationUrl = [
+      "https://app.ludone.cz/api/mcp/oauth/authorize",
+      "?state=nesmi-uniknout&code_challenge=jen-pro-panel",
+    ].join("");
+    const auth = pendingAuthController(authorizationUrl);
+    const harness = await loadMain({ createAuthController: auth.createAuthController });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const authPromise = harness.ipcHandlers.get("auth:begin")(panelEvent);
+    const copy = harness.ipcHandlers.get("auth:copy-pending-url");
+    try {
+      await vi.waitFor(() => {
+        expect(harness.ipcHandlers.get("auth:pending-url")(panelEvent)).toBe(authorizationUrl);
+      });
+      expect(copy).toBeTypeOf("function");
+      expect(() => copy(settingsEvent)).toThrow(/nedůvěryhodný odesílatel/u);
+      expect(() => copy(panelEvent, "https://utocnik.example/"))
+        .toThrow(/nepřijímá payload/u);
+      expect(harness.electron.clipboard.writeText).not.toHaveBeenCalled();
+
+      const preload = loadPreload(true);
+      await expect(preload.api.copyPendingAuthUrl()).resolves.toBe(true);
+      expect(preload.invoke).toHaveBeenCalledExactlyOnceWith("auth:copy-pending-url");
+      const malformedPreload = loadPreload("true");
+      await expect(malformedPreload.api.copyPendingAuthUrl()).resolves.toBe(false);
+    } finally {
+      auth.finish({ user: { name: "Test", email: "test@ludone.cz" } });
+      await authPromise;
+    }
+  });
+
+  it("chybu nativní schránky vrátí bez zapsání citlivé adresy do logu", async () => {
+    const authorizationUrl = [
+      "https://app.ludone.cz/api/mcp/oauth/authorize",
+      "?state=TAJNY-STAV&code_challenge=TAJNA-VYZVA",
+    ].join("");
+    const auth = pendingAuthController(authorizationUrl);
+    const harness = await loadMain({ createAuthController: auth.createAuthController });
+    await harness.runReady();
+    const panelContents = harness.windows[0].webContents;
+    const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const authPromise = harness.ipcHandlers.get("auth:begin")(panelEvent);
+    const copy = harness.ipcHandlers.get("auth:copy-pending-url");
+    try {
+      await vi.waitFor(() => {
+        expect(harness.ipcHandlers.get("auth:pending-url")(panelEvent)).toBe(authorizationUrl);
+      });
+      harness.electron.clipboard.writeText.mockImplementation(() => {
+        throw new Error(`Schránka odmítla ${authorizationUrl}`);
+      });
+
+      expect(copy).toBeTypeOf("function");
+      expect(copy(panelEvent)).toBe(false);
+      const logged = JSON.stringify([
+        ...harness.quietConsole.error.mock.calls,
+        ...harness.quietConsole.warn.mock.calls,
+        ...harness.quietConsole.log.mock.calls,
+      ]);
+      expect(logged).not.toContain(authorizationUrl);
+      expect(logged).not.toContain("TAJNY-STAV");
+      expect(logged).not.toContain("TAJNA-VYZVA");
+    } finally {
+      auth.finish({ user: { name: "Test", email: "test@ludone.cz" } });
+      await authPromise;
+    }
   });
 });
 

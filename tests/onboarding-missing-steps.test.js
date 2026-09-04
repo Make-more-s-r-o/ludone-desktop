@@ -36,6 +36,7 @@ function audioSamples(amplitude, target) {
  * @param {{
  *   beginAuth?: ReturnType<typeof vi.fn>,
  *   cancelAuth?: ReturnType<typeof vi.fn>,
+ *   copyPendingAuthUrl?: ReturnType<typeof vi.fn>,
  *   deferDisplayCapture?: boolean,
  *   getPermissionStatus?: ReturnType<typeof vi.fn>,
  *   microphoneAmplitude?: number,
@@ -52,6 +53,7 @@ async function renderOnboarding(options = {}) {
       user: { name: "Testovací uživatel", email: "test@ludone.cz" },
     }),
     cancelAuth = vi.fn().mockResolvedValue({ ok: true, cancelled: 1 }),
+    copyPendingAuthUrl = vi.fn().mockResolvedValue(true),
     pendingAuthUrl = vi.fn().mockResolvedValue(null),
     deferDisplayCapture = false,
     getPermissionStatus = vi.fn().mockResolvedValue({
@@ -197,6 +199,7 @@ async function renderOnboarding(options = {}) {
     value: {
       beginAuth,
       cancelAuth,
+      copyPendingAuthUrl,
       getPermissionStatus,
       pendingAuthUrl,
       requestPermission,
@@ -231,6 +234,7 @@ async function renderOnboarding(options = {}) {
     audioContexts,
     beginAuth,
     cancelAuth,
+    copyPendingAuthUrl,
     clipboardWrites,
     document: dom.window.document,
     getDisplayMedia,
@@ -305,6 +309,7 @@ afterEach(async () => {
     await mountedPanels.pop().cleanup();
   }
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("dva chybějící kroky onboardingu", () => {
@@ -654,8 +659,10 @@ describe("dva chybějící kroky onboardingu", () => {
 
   it("na čekací obrazovce ukáže adresu, kterou lze zkopírovat, když se prohlížeč neotevřel", async () => {
     const url = "https://app.ludone.cz/api/mcp/oauth/authorize?state=abc&code_challenge=xyz";
+    const copyPendingAuthUrl = vi.fn().mockResolvedValue(true);
     const panel = await renderOnboarding({
       beginAuth: vi.fn(() => new Promise(() => {})),
+      copyPendingAuthUrl,
       pendingAuthUrl: vi.fn().mockResolvedValue(url),
     });
     await enterAuthentication(panel);
@@ -669,8 +676,67 @@ describe("dva chybějící kroky onboardingu", () => {
     // Adresa je jediná cesta dál, když se prohlížeč sám neotevře — proto musí jít zkopírovat.
     const copy = panel.document.querySelector('[data-testid="auth-waiting-copy"]');
     expect(copy).not.toBeNull();
+    vi.useFakeTimers();
     await panel.click(copy);
-    expect(panel.clipboardWrites).toContain(url);
+    expect(copyPendingAuthUrl).toHaveBeenCalledOnce();
+    expect(copyPendingAuthUrl.mock.calls[0]).toEqual([]);
+    expect(panel.clipboardWrites).toEqual([]);
+    expect(copy.closest('[data-testid="auth-waiting-screen"]')?.getAttribute("role"))
+      .toBeNull();
+    expect(copy.textContent).toBe("Zkopírováno");
+    const feedback = panel.document.querySelector('[data-testid="auth-waiting-copy-feedback"]');
+    expect(feedback?.getAttribute("role")).toBe("status");
+    expect(feedback?.getAttribute("aria-live")).toBe("polite");
+    expect(feedback?.textContent).toBe("Zkopírováno");
+
+    await React.act(async () => {
+      await vi.advanceTimersByTimeAsync(1_999);
+    });
+    expect(copy.textContent).toBe("Zkopírováno");
+    await React.act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(copy.textContent).toBe("Kopírovat");
+  });
+
+  it.each([
+    ["výsledek false", () => Promise.resolve(false)],
+    ["odmítnuté IPC", () => Promise.reject(new Error("IPC selhalo"))],
+  ])("neúspěšné kopírování (%s) řekne důvod a dovolí nový úspěšný pokus", async (
+    _scenario,
+    failCopy,
+  ) => {
+    const url = "https://app.ludone.cz/api/mcp/oauth/authorize?state=abc&code_challenge=xyz";
+    const copyPendingAuthUrl = vi.fn()
+      .mockImplementationOnce(failCopy)
+      .mockResolvedValueOnce(true);
+    const panel = await renderOnboarding({
+      beginAuth: vi.fn(() => new Promise(() => {})),
+      copyPendingAuthUrl,
+      pendingAuthUrl: vi.fn().mockResolvedValue(url),
+    });
+    await enterAuthentication(panel);
+    await panel.click(panel.document.querySelector(".auth-step .button--wide"));
+    await vi.waitFor(() => {
+      expect(panel.document.querySelector('[data-testid="auth-waiting-copy"]')).not.toBeNull();
+    });
+
+    const copy = panel.document.querySelector('[data-testid="auth-waiting-copy"]');
+    await panel.click(copy);
+
+    const feedback = panel.document.querySelector('[data-testid="auth-waiting-copy-feedback"]');
+    expect(feedback?.getAttribute("role")).toBe("status");
+    expect(feedback?.getAttribute("aria-live")).toBe("polite");
+    expect(feedback?.textContent).toBe("Zkopírovat se nepodařilo.");
+    expect(copy.textContent).toBe("Kopírovat");
+    expect(copy.disabled).toBe(false);
+    expect(panel.clipboardWrites).toEqual([]);
+
+    await panel.click(copy);
+    expect(copyPendingAuthUrl).toHaveBeenCalledTimes(2);
+    expect(feedback?.textContent).toBe("Zkopírováno");
+    expect(copy.textContent).toBe("Zkopírováno");
+    expect(copy.disabled).toBe(false);
   });
 
   // TDD_OPRAVA_AUTH_URL_20260903: testy spouštějí polling po dobu konkrétního pokusu.
