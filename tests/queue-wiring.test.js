@@ -61,6 +61,10 @@ const queueModulePromise = injectedQueueModulePromise;
 const diagnosticsModulePromise = injectedDiagnosticsModulePromise;`,
 );
 const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");
+const traySpaceWarningPreloadUrl = new URL(
+  "../electron/tray-space-warning-preload.cjs",
+  import.meta.url,
+);
 const queueStoreSource = readFileSync(new URL("../electron/queue.cjs", import.meta.url), "utf8");
 const mainCode = sourceWithoutComments(mainSource);
 const preloadCode = sourceWithoutComments(preloadSource);
@@ -843,6 +847,33 @@ function loadPreload(invokeResult = true) {
   };
 }
 
+/** @param {unknown | ((...args: unknown[]) => unknown)} [invokeResult] */
+function loadTraySpaceWarningPreload(invokeResult = true) {
+  const traySpaceWarningPreloadSource = readFileSync(traySpaceWarningPreloadUrl, "utf8");
+  let exposedApi;
+  let exposedName;
+  const invoke = vi.fn(async (...args) => (
+    typeof invokeResult === "function" ? invokeResult(...args) : invokeResult
+  ));
+  const evaluatePreload = Function(
+    "require",
+    `"use strict";\n${traySpaceWarningPreloadSource}`,
+  );
+  evaluatePreload((specifier) => {
+    if (specifier !== "electron") throw new Error(`Neočekávaný preload modul: ${specifier}`);
+    return {
+      contextBridge: {
+        exposeInMainWorld(name, api) {
+          exposedName = name;
+          exposedApi = api;
+        },
+      },
+      ipcRenderer: { invoke },
+    };
+  });
+  return { api: exposedApi, exposedName, invoke };
+}
+
 function openSettingsAndCreateEvent(harness) {
   const panelContents = harness.windows[0].webContents;
   const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
@@ -885,6 +916,144 @@ function memoryDockVisibilityStore(initialValue) {
 }
 
 describe("zapojení systémových nastavení", () => {
+  it("samostatný preload výstrahy vystaví jedinou akci a volá nový kanál bez payloadu", async () => {
+    const preload = loadTraySpaceWarningPreload(true);
+
+    expect(preload.exposedName).toBe("ludoneTraySpaceWarning");
+    expect(Object.keys(preload.api)).toEqual(["enableDockIcon"]);
+    expect(Object.isFrozen(preload.api)).toBe(true);
+    await expect(preload.api.enableDockIcon()).resolves.toBe(true);
+    expect(preload.invoke.mock.calls).toEqual([["tray-space-warning:enable-dock"]]);
+
+    const invalidResponse = loadTraySpaceWarningPreload(false);
+    await expect(invalidResponse.api.enableDockIcon()).rejects.toThrow(/nepotvrdil zapnutí/u);
+  });
+
+  it("výstražné okno přes vlastní kanál zapne a uloží ikonu v Docku", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({
+      createDockVisibilityStore: () => store,
+      trayBounds: { x: 599, y: 0, width: 34, height: 33 },
+    });
+    await harness.runReady();
+    harness.runTrayVisibilityCheck();
+
+    const warning = harness.windows[1];
+    expect(warning).toBeTruthy();
+    expect(warning.options.webPreferences).toMatchObject({
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: path.join(mainDirectory, "tray-space-warning-preload.cjs"),
+    });
+    const warningEvent = {
+      sender: warning.webContents,
+      senderFrame: warning.webContents.mainFrame,
+    };
+    const preload = loadTraySpaceWarningPreload((channel, ...payload) => {
+      const handler = harness.ipcHandlers.get(channel);
+      if (!handler) throw new Error(`Kanál ${channel} není registrovaný`);
+      return handler(warningEvent, ...payload);
+    });
+    const enableDock = harness.ipcHandlers.get("tray-space-warning:enable-dock");
+    expect(enableDock).toBeTypeOf("function");
+    harness.electron.app.dock.show.mockClear();
+
+    await expect(preload.api.enableDockIcon()).resolves.toBe(true);
+
+    expect(preload.invoke.mock.calls).toEqual([["tray-space-warning:enable-dock"]]);
+    expect(store.set).toHaveBeenCalledExactlyOnceWith(true);
+    expect(store.get()).toBe(true);
+    expect(harness.electron.app.dock.show).toHaveBeenCalledOnce();
+    await expect(Promise.resolve().then(() => enableDock(warningEvent, true)))
+      .rejects.toThrow(/nepřijímá payload/u);
+    expect(store.set).toHaveBeenCalledTimes(1);
+  });
+
+  it("chybu zapnutí Docku předá přes skutečný handler a preload až rendereru", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({
+      createDockVisibilityStore: () => store,
+      trayBounds: { x: 599, y: 0, width: 34, height: 33 },
+    });
+    await harness.runReady();
+    harness.runTrayVisibilityCheck();
+    const warning = harness.windows[1];
+    const warningEvent = {
+      sender: warning.webContents,
+      senderFrame: warning.webContents.mainFrame,
+    };
+    const preload = loadTraySpaceWarningPreload((channel, ...payload) => {
+      const handler = harness.ipcHandlers.get(channel);
+      if (!handler) throw new Error(`Kanál ${channel} není registrovaný`);
+      return handler(warningEvent, ...payload);
+    });
+    const nativeError = new Error("Dock API selhalo");
+    harness.electron.app.dock.show.mockRejectedValueOnce(nativeError);
+    store.set.mockClear();
+
+    await expect(preload.api.enableDockIcon()).rejects.toBe(nativeError);
+
+    expect(store.set.mock.calls).toEqual([[true], [false]]);
+    expect(store.get()).toBe(false);
+  });
+
+  it("tentýž záchranný kanál odmítne panel i Nastavení bez změny Docku", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({
+      createDockVisibilityStore: () => store,
+      trayBounds: { x: 599, y: 0, width: 34, height: 33 },
+    });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    harness.runTrayVisibilityCheck();
+    expect(harness.windows).toHaveLength(3);
+    const enableDock = harness.ipcHandlers.get("tray-space-warning:enable-dock");
+    expect(enableDock).toBeTypeOf("function");
+    store.set.mockClear();
+    harness.electron.app.dock.show.mockClear();
+
+    await expect(Promise.resolve().then(() => enableDock(panelEvent)))
+      .rejects.toThrow(/IPC odmítnuto/u);
+    await expect(Promise.resolve().then(() => enableDock(settingsEvent)))
+      .rejects.toThrow(/IPC odmítnuto/u);
+
+    expect(store.set).not.toHaveBeenCalled();
+    expect(harness.electron.app.dock.show).not.toHaveBeenCalled();
+    expect(store.get()).toBe(false);
+  });
+
+  it("výstražné okno ztratí nový kanál po změně URL nebo mimo hlavní rám", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({
+      createDockVisibilityStore: () => store,
+      trayBounds: { x: 599, y: 0, width: 34, height: 33 },
+    });
+    await harness.runReady();
+    harness.runTrayVisibilityCheck();
+    const warning = harness.windows[1];
+    const enableDock = harness.ipcHandlers.get("tray-space-warning:enable-dock");
+    expect(enableDock).toBeTypeOf("function");
+    store.set.mockClear();
+    harness.electron.app.dock.show.mockClear();
+
+    const trustedFrame = warning.webContents.mainFrame;
+    trustedFrame.url = "ludone://tray-warning/index.html#settings";
+    await expect(Promise.resolve().then(() => enableDock({
+      sender: warning.webContents,
+      senderFrame: trustedFrame,
+    }))).rejects.toThrow(/IPC odmítnuto/u);
+
+    trustedFrame.url = "ludone://tray-warning/index.html#tray-space-warning";
+    await expect(Promise.resolve().then(() => enableDock({
+      sender: warning.webContents,
+      senderFrame: {},
+    }))).rejects.toThrow(/IPC odmítnuto/u);
+
+    expect(store.set).not.toHaveBeenCalled();
+    expect(harness.electron.app.dock.show).not.toHaveBeenCalled();
+  });
+
   it("zapnutý Dock uplatní při startu před vytvořením prvního okna", async () => {
     const store = memoryDockVisibilityStore(true);
     const createDockVisibilityStore = vi.fn(() => store);
