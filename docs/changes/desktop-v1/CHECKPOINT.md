@@ -1,7 +1,86 @@
 # CHECKPOINT — LuDone Desktop
 
-Poslední zápis: **3. 9. 2026, 10:40**. Psáno pro někoho s **prázdným kontextem** — konverzaci
+Poslední zápis: **4. 9. 2026, 02:15**. Psáno pro někoho s **prázdným kontextem** — konverzaci
 sežere compaction, tenhle soubor ne.
+
+---
+
+## 🔴 ŽIVÉ OVĚŘENÍ 4. 9. v noci — co našlo spuštění aplikace
+
+Audit úplnosti sám přiznal, že **nespustil živý build**. Spustil jsem ho a řídil přes CDP
+(`--remote-debugging-port=9333`). Recept: `scratchpad/ovladac.mjs` — připojí se na panel,
+provede JS a udělá snímek. **Dva nálezy, oba doložené měřením, ne dojmem.**
+
+### 1. Fronta slibuje pokus, který nikdy nepřijde ✅ HOTOVO — **PR #68 mergnut**
+
+Panel ukazuje „16 čeká · 29,0 MB · **další pokus teď**" a tlačítko „Zkusit teď".
+Odesílání je přitom vypnuté killswitchem `DESKTOP_UPLOAD_ENABLED` (spec.md:35 — tak to má být).
+
+✅ **Ověřeno naostro PO opravě:** karta říká `29,0 MB · odesílání je vypnuté`
+a tlačítko se u vypnutého odesílání vůbec nenabízí.
+
+| měření | výsledek |
+|---|---|
+| klik na „Zkusit teď" přes CDP | **nestane se vůbec nic** — žádná hláška, žádná změna |
+| log hlavního procesu | `[queue] odesílání je vypnuté` (2×) |
+| `queue/outgoing.json` | všech 16 položek `attempts: 0` — pokus nikdy neproběhl |
+
+Příčina: `queue:retry` ten výsledek **vrací**, ale `QueueCard.retryNow()` hlídá jen `catch`.
+A `queue:list` (main.cjs:2322) vrací jen položky — karta nemá odkud vědět, že se odesílat nebude.
+🔴 **Tohle je Danova stížnost „píše čeká, ale nejde na to kliknout".** Kliknout jde; nic se nestane.
+
+### 2. ✅ HOTOVO — **PR #67 mergnut** · Ikona v liště se nekreslí — a moje dřívější diagnóza „kontrast" byla MIMO
+
+| měření | výsledek |
+|---|---|
+| macOS Accessibility (`System Events`) | položka **existuje**: x=806, y=4, 36×24 bodů |
+| `screencapture -R 796,0,56,32` | 7168 pixelů, **všechny RGB 32**, ani jeden jasnější než 100 |
+| soubory ikon | v pořádku: 18×18 s 94 a 36×36 s 323 neprůhlednými pixely |
+| `trayIsProbablyOutsideStatusArea` | `842 < 680` = **false** ⇒ pojistka mlčí |
+
+Položka skončila **ve výřezu (notch)**, protože vpravo nezbylo místo. Práh 45 % míří na jiný
+případ (odsun doleva); tenhle leží na 55,7 %.
+
+✅ **Ověřeno naostro PO opravě:** `internal=true`, horní inset **34 bodů**, ikona `773+34`
+⇒ funkce vrací **true**, a po restartu se **výstražné okno skutečně otevřelo** (CDP vidí cíl
+`ludone://tray-warning/`). 🔴 Práh je 32 a naměřeno 34 — **rezerva jsou 2 body**. Kdyby to
+bylo na jiném Macu těsné, snížit práh, NErozšiřovat pás.
+
+🔴 **Návrh to předvídal jmenovitě** (`design/navrh/nahled.html:674`): *„na přítomnost ikony
+v liště se nemá spoléhat — schová ji notch nebo jiná aplikace"*, a schválil záchranu:
+přepínač **„Zobrazovat i ikonu v Docku"**. Ten JE postavený (`Settings.jsx:713`).
+
+### 3. ✅ HOTOVO — **PR #69 mergnut** · Záchrana ležela za ikonou, kterou není vidět
+
+`TraySpaceWarning.jsx` radí „ukonči jinou aplikaci" nebo „použij správce lišty" — ale
+**nenabídne zapnutí ikony v Docku**, tedy vlastní schválenou záchranu. A do Nastavení, kde
+přepínač je, se uživatel bez viditelné ikony **nedostane**. Kruh se uzavírá.
+Okno teď umí ikonu v Docku **zapnout**. Dostalo **vlastní minimální preload** s jedinou
+zmrazenou funkcí; nový kanál `tray-space-warning:enable-dock` nenese payload a přijme se jen
+od odesílatele, který je zároveň webContents toho okna, jeho hlavní rám a **doslovná URL**
+výstrahy. `settings:set-dock-visible` nedostal dalšího volajícího.
+
+✅ **Ověřeno naostro celým řetězem:** po restartu se výstraha otevřela · klik na „Zapnout ikonu
+v Docku" ji přepnul · okno potvrdilo *„Ikona v Docku je zapnutá"* · a **macOS potvrdil položku
+v Docku** (`System Events` → proces Dock obsahuje `Electron`). Aplikace je tedy dosažitelná
+i bez viditelné ikony v liště.
+
+🔴 **PROVEDENO BEZ PTANÍ:** ikonu v Docku jsem na Danově instalaci **nechal zapnutou** —
+jinak by ráno neměl aplikaci jak otevřít. Vypnout jde v Nastavení jedním přepnutím.
+
+### Co živé ověření naopak VYVRÁTILO (abych to nehlásil jako vadu)
+
+- **Prázdný panel pod obsahem** — můj vlastní artefakt vynucené výšky. Skutečné okno je
+  366×239 a sedí na obsah přesně.
+- **Malý terč patičky fronty** — `BUTTON.queue-status` měří **280×33**, dost velký.
+- **Chybějící ikona jako taková** — ikona existuje, jen se nekreslí (viz výš).
+
+### `ui-smoke` je brána, kterou nikdo nespouští
+
+CI ho má vypnutý (`if: ${{ false }}`). Spustil jsem ho: **zasekne se na kroku 3/6** na
+obrazovce „Čekám na prohlížeč", protože očekává, že po kliknutí na přihlášení rovnou přijdou
+oprávnění. Zelený tedy může být **jen tam, kde je OAuth rozbité**. `LUDONE_E2E=1` přihlášení
+nezastupuje (odemyká jen `test:quit` a kontrolu lišty). Nespravováno — zapsáno.
 
 ---
 
@@ -12,8 +91,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `0b0e727`, **800 passed \| 3 skipped (803)**, čistý strom, **Electron 39.8.10** | 3 skipped (797)**, čistý strom, **Electron 39.8.10** | 3 skipped (734)**, čistý strom, **Electron 39.8.10** | 3 skipped (719)**, čistý strom, **Electron 39.8.10** | 3 skipped (708)**, čistý strom, **Electron 39.8.10** | 4 skipped (658)**, čistý strom, **Electron 39.8.10** |
-| otevřené PR | **0** · worktrees **0** · mergnuto 3./4. 9.: **#41–#66 (30 PR)** |
+| `main` | `558c194`, **834 passed \| 3 skipped (837)**, čistý strom, **Electron 39.8.10** |
+| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** (26 mergnutých smazáno) · mergnuto 3./4. 9.: **#41–#69 (33 PR)** |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |

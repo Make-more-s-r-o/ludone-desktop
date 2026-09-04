@@ -39,7 +39,17 @@ se příkaz zahodí. **Klikneš a nic se nestane.**
 
 ## 🔴 JEDNO ROZHODNUTÍ O NÁVRHU, KTERÉ SI VZÍT NESMÍM
 
-**Barevné ikony v liště propadají kontrastem na SVĚTLÉ liště.** Spočítáno:
+🔴 **OPRAVA MÉ DIAGNÓZY (4. 9. v noci):** tvoje „ikona není vidět" **NENÍ o kontrastu.**
+Změřil jsem to naostro: macOS hlásí položku na x=806 z 1512 bodů, tedy **ve výřezu (notch)**,
+a v tom místě je 7168 pixelů, ze kterých **ani jeden není jasnější než 32** — nekreslí se tam
+nic. Soubory ikon jsou přitom v pořádku (94 a 323 neprůhledných pixelů). Vpravo pro ni
+nezbylo místo, tak ji macOS položil pod výřez a nevykreslil.
+**Návrh s tím počítal** (`nahled.html:674`): *„na přítomnost ikony v liště se nemá spoléhat —
+schová ji notch nebo jiná aplikace"*, a schválená záchrana je **přepínač „Zobrazovat i ikonu
+v Docku"**, který jsme nepostavili. Stavím ho. Rozhodovat nemusíš nic.
+
+**Barevné ikony v liště propadají kontrastem na SVĚTLÉ liště.** To je *jiná* a pořád platná
+věc (spočítaná, ne pozorovaná) — rozhodnutí níž stojí:
 
 | barva | na bílé | na černé |
 |---|---|---|
