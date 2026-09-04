@@ -51,6 +51,7 @@ const {
   exportRecordingCopy,
   inspectOpusWebm,
 } = require("./recording-export.cjs");
+const { trayIsProbablyOutsideStatusArea } = require("./tray-visibility.cjs");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
@@ -666,18 +667,6 @@ function refreshTray() {
   refreshTrayTitle();
 }
 
-function trayIsProbablyOutsideStatusArea(bounds, workArea) {
-  if (!bounds || !workArea) return false;
-  if (!Number.isFinite(bounds.x) || !Number.isFinite(bounds.width)) return false;
-  if (!Number.isFinite(workArea.width) || workArea.width <= 0 || bounds.width <= 0) return false;
-
-  // Stavové ikony bydlí v pravé části lišty. Souřadnice končící už před 45 % šířky
-  // primární pracovní plochy odpovídá pozorovanému přidělení do levé oblasti aplikačního
-  // menu, kde macOS položku přijme, ale nenakreslí. Práh je úmyslně konzervativní:
-  // falešné varování u viditelné ikony je horší než mlčení při nejistotě.
-  return bounds.x + bounds.width < workArea.width * 0.45;
-}
-
 function createTraySpaceWarningWindow() {
   const createdWarningWindow = new BrowserWindow({
     width: 420,
@@ -721,8 +710,8 @@ function checkTrayVisibilityAfterStartup() {
   let probablyOutsideStatusArea;
   try {
     const bounds = tray.getBounds();
-    const workArea = screen.getPrimaryDisplay()?.workArea;
-    probablyOutsideStatusArea = trayIsProbablyOutsideStatusArea(bounds, workArea);
+    const display = screen.getDisplayMatching(bounds);
+    probablyOutsideStatusArea = trayIsProbablyOutsideStatusArea(bounds, display);
   } catch {
     return;
   }
