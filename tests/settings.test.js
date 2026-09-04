@@ -1,9 +1,13 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { SettingsApp } from "../src/components/Settings.jsx";
+
+// Styl se vloží do CSSOM JSDOM; testy níže ověřují vypočtený styl, ne text souboru.
+const settingsStyles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 const ORIGIN = "https://labs.ludone.cz";
 const PRODUCTION_ORIGIN = "https://app.ludone.cz";
@@ -52,6 +56,9 @@ async function renderSettings({
   setOpenAtLogin = (value) => Promise.resolve(value),
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
+  const style = dom.window.document.createElement("style");
+  style.textContent = settingsStyles;
+  dom.window.document.head.append(style);
   const localStorage = {
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
@@ -150,6 +157,15 @@ function expectVisibleStatus(settings) {
   expect(settings.document.querySelector('[data-testid="settings-identity-email"]')).toBeNull();
 }
 
+function accountFactEntries(settings) {
+  return [...settings.document.querySelectorAll(
+    '[data-testid="settings-account"] .settings-fact-row',
+  )].map((row) => ({
+    label: row.querySelector("small")?.textContent.trim(),
+    value: row.querySelector("strong")?.textContent.trim(),
+  }));
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -204,6 +220,37 @@ describe("čtyři části Nastavení", () => {
         "true",
       ]);
       expect(settings.document.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(1);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it.each([
+    { count: 1, expected: "1 čeká · 1 se odesílá · 1 selhala" },
+    { count: 2, expected: "2 čekají · 2 se odesílají · 2 selhaly" },
+    { count: 4, expected: "4 čekají · 4 se odesílají · 4 selhaly" },
+    { count: 5, expected: "5 čeká · 5 se odesílá · 5 selhalo" },
+    { count: 16, expected: "16 čeká · 16 se odesílá · 16 selhalo" },
+  ])("skloňuje v Záznamech i Diagnostice všechny stavy pro $count", async ({ count, expected }) => {
+    const settings = await renderSettings({
+      diagnostics: () => Promise.resolve({
+        ...DIAGNOSTICS,
+        queue: { available: true, waiting: count, sending: count, failed: count },
+      }),
+    });
+    try {
+      await selectTab(settings, "Záznamy");
+      await vi.waitFor(() => {
+        expect(settings.document.querySelector(
+          '[data-testid="settings-queue-summary"] small',
+        )?.textContent).toBe(expected);
+      });
+
+      await selectTab(settings, "Diagnostika");
+      await vi.waitFor(() => {
+        expect(settings.document.querySelector('[data-testid="diagnostics-queue"]')?.textContent)
+          .toBe(expected);
+      });
     } finally {
       await settings.cleanup();
     }
@@ -703,6 +750,10 @@ describe("pravdivá identita v Nastavení", () => {
         .toBe("Ada Lovelace");
       expect(settings.document.querySelector('[data-testid="settings-identity-email"]')?.textContent)
         .toBe("ada@ludone.cz");
+      expect(accountFactEntries(settings)).toEqual(expect.arrayContaining([
+        { label: "Přihlášen", value: "Ada Lovelace" },
+        { label: "E-mail", value: "ada@ludone.cz" },
+      ]));
       expect(settings.document.querySelector('[data-testid="settings-avatar"]')?.textContent)
         .toBe("AL");
       expect(settings.document.querySelector(".connected")).not.toBeNull();
@@ -716,19 +767,57 @@ describe("pravdivá identita v Nastavení", () => {
     }
   });
 
-  it("bez jména použije e-mail a avatar odvodí z něj", async () => {
+  it("bez jména ukáže e-mail právě jednou a avatar odvodí z něj", async () => {
     const settings = await renderSettings({
-      identity: () => Promise.resolve({ name: null, email: "alice@example.cz" }),
+      identity: () => Promise.resolve({ name: null, email: "dan.jirotka@makemore.cz" }),
     });
     try {
       await expectAccountState(settings, "signed-in");
 
-      expect(settings.document.querySelector('[data-testid="settings-identity-name"]')?.textContent)
-        .toBe("alice@example.cz");
-      expect(settings.document.querySelector('[data-testid="settings-identity-email"]')).toBeNull();
+      const account = settings.document.querySelector('[data-testid="settings-account"]');
+      expect(account?.textContent.match(/dan\.jirotka@makemore\.cz/gu)).toHaveLength(1);
+      expect(accountFactEntries(settings)).toEqual(expect.arrayContaining([
+        { label: "E-mail", value: "dan.jirotka@makemore.cz" },
+      ]));
+      expect(accountFactEntries(settings).some(({ label }) => label === "Přihlášen")).toBe(false);
+      expect(settings.document.querySelector('[data-testid="settings-identity-name"]')).toBeNull();
+      expect(settings.document.querySelector('[data-testid="settings-identity-email"]')?.textContent)
+        .toBe("dan.jirotka@makemore.cz");
       expect(settings.document.querySelector('[data-testid="settings-avatar"]')?.textContent)
-        .toBe("A");
+        .toBe("D");
+      expect(settings.document.querySelector('[data-testid="settings-account-status"]')?.textContent)
+        .toContain("Přihlášen");
       expectNoDesignFiction(settings);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("dlouhý e-mail v kartě Účet nenastaví běžné lámání uprostřed slova", async () => {
+    const settings = await renderSettings({
+      identity: () => Promise.resolve({ name: null, email: "dan.jirotka@makemore.cz" }),
+    });
+    try {
+      await expectAccountState(settings, "signed-in");
+      const emailRow = accountFactEntries(settings).find(({ label }) => label === "E-mail");
+      expect(emailRow?.value).toBe("dan.jirotka@makemore.cz");
+
+      const email = [...settings.document.querySelectorAll(
+        '[data-testid="settings-account"] .settings-fact-row',
+      )].find((row) => row.querySelector("small")?.textContent.trim() === "E-mail")
+        ?.querySelector("strong");
+      const card = settings.document.querySelector('[data-testid="settings-account"]');
+      const status = settings.document.querySelector('[data-testid="settings-account-status"]');
+      expect(email).not.toBeNull();
+      expect(card).not.toBeNull();
+      expect(status).not.toBeNull();
+      const emailStyle = settings.document.defaultView.getComputedStyle(email);
+      const cardStyle = settings.document.defaultView.getComputedStyle(card);
+      const statusStyle = settings.document.defaultView.getComputedStyle(status);
+      expect(emailStyle.overflowWrap).toBe("break-word");
+      expect(emailStyle.wordBreak).toBe("normal");
+      expect(cardStyle.gridTemplateColumns).toBe("38px minmax(0, 1fr)");
+      expect(statusStyle.gridColumn).toBe("2");
     } finally {
       await settings.cleanup();
     }
@@ -805,9 +894,12 @@ describe("pravdivá identita v Nastavení", () => {
     try {
       await expectAccountState(settings, "signed-in");
 
-      expect(settings.document.querySelector('[data-testid="settings-identity-name"]')?.textContent)
+      const account = settings.document.querySelector('[data-testid="settings-account"]');
+      expect(account?.textContent.match(/alice@example\.cz/gu)).toHaveLength(1);
+      expect(accountFactEntries(settings).some(({ label }) => label === "Přihlášen")).toBe(false);
+      expect(settings.document.querySelector('[data-testid="settings-identity-name"]')).toBeNull();
+      expect(settings.document.querySelector('[data-testid="settings-identity-email"]')?.textContent)
         .toBe("alice@example.cz");
-      expect(settings.document.querySelector('[data-testid="settings-identity-email"]')).toBeNull();
       expectNoDesignFiction(settings);
     } finally {
       await settings.cleanup();

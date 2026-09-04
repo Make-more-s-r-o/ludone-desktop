@@ -2344,9 +2344,10 @@ svg {
 .account-card {
   display: grid;
   min-height: 60px;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
+  grid-template-columns: 38px minmax(0, 1fr);
   align-items: start;
-  gap: 10px;
+  column-gap: 10px;
+  row-gap: 6px;
   padding: 11px;
   border-radius: 11px;
   background: var(--card);
@@ -2375,7 +2376,8 @@ svg {
 
 .settings-fact-row > strong {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .settings-fact-row > select {
@@ -2396,6 +2398,11 @@ svg {
   color: var(--panel-ok);
   font-size: 9px;
   font-weight: 700;
+}
+
+.account-card--signed-in > .connected {
+  grid-column: 2;
+  justify-self: start;
 }
 
 .connected svg {

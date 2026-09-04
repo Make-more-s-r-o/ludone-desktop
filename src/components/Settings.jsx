@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { countLabel } from "../lib/count-label.js";
 import {
   CheckIcon,
   CloseIcon,
@@ -133,9 +134,11 @@ function normalizeDiagnostics(value) {
 function queueStatusText(queue) {
   if (!queue?.available) return "Stav fronty není dostupný";
   const parts = [];
-  if (queue.waiting > 0) parts.push(`${queue.waiting} ${queue.waiting === 1 ? "čeká" : "čekají"}`);
-  if (queue.sending > 0) parts.push(`${queue.sending} ${queue.sending === 1 ? "se odesílá" : "se odesílají"}`);
-  if (queue.failed > 0) parts.push(`${queue.failed} ${queue.failed === 1 ? "selhala" : "selhaly"}`);
+  if (queue.waiting > 0) parts.push(countLabel(queue.waiting, "čeká", "čekají", "čeká"));
+  if (queue.sending > 0) {
+    parts.push(countLabel(queue.sending, "se odesílá", "se odesílají", "se odesílá"));
+  }
+  if (queue.failed > 0) parts.push(countLabel(queue.failed, "selhala", "selhaly", "selhalo"));
   return parts.length > 0 ? parts.join(" · ") : "Nic nečeká";
 }
 
@@ -154,7 +157,7 @@ function normalizeIdentity(value) {
   const email = normalizeIdentityPart(value?.email);
   const name = normalizeIdentityPart(value?.name);
   if (!/^[^\s@]+@[^\s@]+$/u.test(email)) return null;
-  return { name: name || email, email, hasName: Boolean(name) };
+  return { name: name || null, email, hasName: Boolean(name) };
 }
 
 function firstCharacter(value) {
@@ -598,22 +601,22 @@ export function SettingsApp() {
                 </div>
               )}
               <div className="account-card__facts">
-                <div className="settings-fact-row">
-                  <small>Přihlášen</small>
-                  {signedIn ? (
-                    <strong data-testid="settings-identity-name">{account.identity.name}</strong>
-                  ) : (
-                    <strong>
-                      {account.state === "signed-out" ? "Nikdo" : "Identita není známá"}
-                    </strong>
-                  )}
-                </div>
+                {(!signedIn || account.identity.hasName) && (
+                  <div className="settings-fact-row">
+                    <small>Přihlášen</small>
+                    {signedIn ? (
+                      <strong data-testid="settings-identity-name">{account.identity.name}</strong>
+                    ) : (
+                      <strong>
+                        {account.state === "signed-out" ? "Nikdo" : "Identita není známá"}
+                      </strong>
+                    )}
+                  </div>
+                )}
                 <div className="settings-fact-row">
                   <small>E-mail</small>
                   <strong
-                    data-testid={signedIn && account.identity.hasName
-                      ? "settings-identity-email"
-                      : undefined}
+                    data-testid={signedIn ? "settings-identity-email" : undefined}
                   >
                     {signedIn ? account.identity.email : "—"}
                   </strong>

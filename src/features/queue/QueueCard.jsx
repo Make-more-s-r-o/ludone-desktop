@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { CloudIcon, UserIcon } from "../../components/Icons.jsx";
+import { countLabel } from "../../lib/count-label.js";
 import { queuePanelSummary } from "../../lib/panel.js";
-
-function countLabel(count, singular, few, many) {
-  if (count === 1) return `1 ${singular}`;
-  if (count >= 2 && count <= 4) return `${count} ${few}`;
-  return `${count} ${many}`;
-}
 
 function formatSize(bytes) {
   const units = [
