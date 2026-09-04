@@ -98,6 +98,8 @@ function otiskVlastnika(harness, session) {
  *   deferSettingsRead?: boolean,
  *   navigateDuringSettingsRead?: boolean,
  *   loginItemState?: {openAtLogin: boolean},
+ *   primaryDisplayBounds?: {x: number, y: number, width: number, height: number} | null,
+ *   primaryDisplayInternal?: boolean,
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
  *   settingsReadError?: Error | null,
  *   shouldUseDarkColors?: boolean,
@@ -112,6 +114,8 @@ function fakeElectron(userDataPath, {
   isPackaged = false,
   loginItemState = { openAtLogin: false },
   navigateDuringSettingsRead = false,
+  primaryDisplayBounds = { x: 0, y: 0, width: 1_440, height: 900 },
+  primaryDisplayInternal = true,
   primaryWorkArea = { x: 0, y: 0, width: 1_440, height: 900 },
   shouldUseDarkColors = true,
   storedSettings = null,
@@ -301,6 +305,16 @@ function fakeElectron(userDataPath, {
   const nativeTheme = Object.assign(new EventEmitter(), {
     shouldUseDarkColors,
   });
+  /** @type {{
+   *   bounds?: {x: number, y: number, width: number, height: number} | null,
+   *   internal?: boolean,
+   *   workArea: {x: number, y: number, width: number, height: number},
+   * }} */
+  const primaryDisplay = {
+    bounds: primaryDisplayBounds,
+    internal: primaryDisplayInternal,
+    workArea: primaryWorkArea,
+  };
 
   const electron = {
     app,
@@ -350,13 +364,9 @@ function fakeElectron(userDataPath, {
       isEncryptionAvailable: vi.fn(() => true),
     },
     screen: Object.assign(new EventEmitter(), {
-      getDisplayMatching: vi.fn(() => ({
-        workArea: primaryWorkArea,
-      })),
-      getDisplayNearestPoint: vi.fn(() => ({
-        workArea: primaryWorkArea,
-      })),
-      getPrimaryDisplay: vi.fn(() => ({ workArea: primaryWorkArea })),
+      getDisplayMatching: vi.fn(() => primaryDisplay),
+      getDisplayNearestPoint: vi.fn(() => primaryDisplay),
+      getPrimaryDisplay: vi.fn(() => primaryDisplay),
     }),
     session: {
       defaultSession: {
@@ -464,6 +474,8 @@ function fakeElectron(userDataPath, {
  *   loadQueue?: (...args: any[]) => Promise<any>,
  *   navigateDuringSettingsRead?: boolean,
  *   platform?: NodeJS.Platform,
+ *   primaryDisplayBounds?: {x: number, y: number, width: number, height: number} | null,
+ *   primaryDisplayInternal?: boolean,
  *   primaryWorkArea?: {x: number, y: number, width: number, height: number},
  *   recoverOrphanedRecordings?: (...args: any[]) => Promise<any>,
  *   settingsReadError?: Error | null,
@@ -491,6 +503,8 @@ async function loadMain({
   loadQueue,
   navigateDuringSettingsRead = false,
   platform = "darwin",
+  primaryDisplayBounds,
+  primaryDisplayInternal,
   primaryWorkArea,
   recoverOrphanedRecordings,
   settingsReadError = null,
@@ -508,6 +522,8 @@ async function loadMain({
     isPackaged,
     loginItemState,
     navigateDuringSettingsRead,
+    primaryDisplayBounds,
+    primaryDisplayInternal,
     primaryWorkArea,
     shouldUseDarkColors,
     storedSettings,
@@ -2220,6 +2236,143 @@ describe("šablonové a barevné varianty ikony v liště", () => {
 });
 
 describe("viditelnost ikony a klikání na lištu", () => {
+  it.each([
+    [
+      "naměřená položka ve výřezu",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 0, y: 38, width: 1_512, height: 944 },
+        trayBounds: { x: 806, y: 4, width: 36, height: 24 },
+      },
+      2,
+    ],
+    [
+      "tatáž položka na displeji bez výřezu",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 0, y: 24, width: 1_512, height: 958 },
+        trayBounds: { x: 806, y: 4, width: 36, height: 24 },
+      },
+      1,
+    ],
+    [
+      "displej bez výřezu se spodním Dockem",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 0, y: 24, width: 1_512, height: 858 },
+        trayBounds: { x: 806, y: 4, width: 36, height: 24 },
+      },
+      1,
+    ],
+    [
+      "položka odsunutá vlevo před 45 % šířky",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 0, y: 24, width: 1_512, height: 958 },
+        trayBounds: { x: 600, y: 4, width: 36, height: 24 },
+      },
+      2,
+    ],
+    [
+      "položka napravo od původní hranice při Docku vlevo",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 80, y: 24, width: 1_432, height: 958 },
+        trayBounds: { x: 690, y: 4, width: 18, height: 18 },
+      },
+      1,
+    ],
+    [
+      "naměřená poloha na displeji s posunutým počátkem",
+      {
+        primaryDisplayBounds: { x: 1_512, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 1_512, y: 38, width: 1_512, height: 944 },
+        trayBounds: { x: 2_318, y: 4, width: 36, height: 24 },
+      },
+      2,
+    ],
+    [
+      "položka v pravé části lišty na displeji s výřezem",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 0, y: 38, width: 1_512, height: 944 },
+        trayBounds: { x: 900, y: 4, width: 36, height: 24 },
+      },
+      1,
+    ],
+    [
+      "vysoká lišta externího displeje",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryDisplayInternal: false,
+        primaryWorkArea: { x: 0, y: 38, width: 1_512, height: 944 },
+        trayBounds: { x: 806, y: 4, width: 36, height: 24 },
+      },
+      1,
+    ],
+    [
+      "položka s nesmyslnou výškou přesahující lištu",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 0, y: 38, width: 1_512, height: 944 },
+        trayBounds: { x: 806, y: 20, width: 36, height: 100 },
+      },
+      1,
+    ],
+    [
+      "položka odsunutá vlevo, ale mimo horní lištu",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 1_512, height: 982 },
+        primaryWorkArea: { x: 0, y: 24, width: 1_512, height: 958 },
+        trayBounds: { x: 600, y: 200, width: 36, height: 24 },
+      },
+      1,
+    ],
+    [
+      "nesmyslné rozměry displeje",
+      {
+        primaryDisplayBounds: { x: 0, y: 0, width: 0, height: 982 },
+        primaryWorkArea: { x: 0, y: 38, width: 0, height: 944 },
+        trayBounds: { x: 806, y: 4, width: 36, height: 24 },
+      },
+      1,
+    ],
+    [
+      "chybějící rozměry displeje",
+      {
+        primaryDisplayBounds: null,
+        primaryWorkArea: { x: 0, y: 38, width: 1_512, height: 944 },
+        trayBounds: { x: 806, y: 4, width: 36, height: 24 },
+      },
+      1,
+    ],
+  ])("u stavu %s vytvoří očekávaný počet oken", async (_label, options, expectedWindowCount) => {
+    const harness = await loadMain(options);
+    await harness.runReady();
+
+    harness.runTrayVisibilityCheck();
+
+    expect(harness.windows).toHaveLength(expectedWindowCount);
+  });
+
+  it("geometrii vztáhne k displeji odpovídajícímu položce, ne k primárnímu", async () => {
+    const trayBounds = { x: 2_318, y: 4, width: 36, height: 24 };
+    const harness = await loadMain({
+      primaryDisplayBounds: { x: 1_512, y: 0, width: 1_512, height: 982 },
+      primaryWorkArea: { x: 1_512, y: 38, width: 1_512, height: 944 },
+      trayBounds,
+    });
+    await harness.runReady();
+    harness.electron.screen.getDisplayMatching.mockClear();
+    harness.electron.screen.getPrimaryDisplay.mockClear();
+
+    harness.runTrayVisibilityCheck();
+
+    expect(harness.electron.screen.getDisplayMatching).toHaveBeenCalledExactlyOnceWith(trayBounds);
+    expect(harness.electron.screen.getPrimaryDisplay).not.toHaveBeenCalled();
+    expect(harness.windows).toHaveLength(2);
+  });
+
   it("počká na ustálení a u pravděpodobně nevykreslené ikony ukáže varování bez fokusu", async () => {
     const harness = await loadMain({
       trayBounds: { x: 599, y: 0, width: 34, height: 33 },
