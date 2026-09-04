@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { formatElapsed } from "../src/hooks/useElapsedTime.js";
 import { createManifest } from "../src/lib/manifest.js";
+import { UPLOAD_DISABLED_REASON } from "../src/lib/queue.js";
 
 function sourceWithoutComments(source) {
   return source.replace(
@@ -3148,6 +3149,81 @@ describe("produkční zapojení odchozí fronty", () => {
   it("IPC fronty používá předepsané role odesílatele", () => {
     expect(mainCode).toContain('handleValidated("queue:list", ["panel", "settings"]');
     expect(mainCode).toContain('handleValidated("queue:retry", ["panel"]');
+  });
+
+  it("queue:list označí vypnuté odesílání podle druhu položky a fail-closed prostředí", async () => {
+    const cases = [
+      {
+        env: {},
+        kind: "recording",
+        expectedReason: UPLOAD_DISABLED_REASON,
+      },
+      {
+        env: { DESKTOP_UPLOAD_ENABLED: "false" },
+        kind: "recording",
+        expectedReason: UPLOAD_DISABLED_REASON,
+      },
+      {
+        env: { DESKTOP_UPLOAD_ENABLED: "true" },
+        kind: "recording",
+        expectedReason: undefined,
+      },
+      {
+        env: { DESKTOP_TIME_ENABLED: "true", DESKTOP_UPLOAD_ENABLED: "false" },
+        kind: "time",
+        expectedReason: undefined,
+      },
+      {
+        env: { DESKTOP_UPLOAD_ENABLED: "true" },
+        kind: "time",
+        expectedReason: UPLOAD_DISABLED_REASON,
+      },
+      {
+        env: { DESKTOP_TIME_ENABLED: "false", DESKTOP_UPLOAD_ENABLED: "true" },
+        kind: "time",
+        expectedReason: UPLOAD_DISABLED_REASON,
+      },
+      {
+        env: { DESKTOP_TIME_ENABLED: "true", DESKTOP_UPLOAD_ENABLED: "true" },
+        kind: "budouci-druh",
+        expectedReason: UPLOAD_DISABLED_REASON,
+      },
+    ];
+
+    for (const { env, expectedReason, kind } of cases) {
+      const item = {
+        attempts: 0,
+        id: `cekajici-${kind}`,
+        kind,
+        nextAttemptAt: null,
+        state: "ceka",
+      };
+      const store = {
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => [item]),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(async () => ({ items: [item], outcome: "idle", reason: null })),
+      };
+      const harness = await loadMain({
+        createOutboundQueueStore: () => store,
+        env,
+      });
+      await harness.runReady();
+      const panelContents = harness.windows[0].webContents;
+      const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+
+      const [listedItem] = await harness.ipcHandlers.get("queue:list")(event);
+      const expectedItem = (
+        expectedReason === undefined
+          ? item
+          : { ...item, sendingDisabledReason: expectedReason }
+      );
+      expect(listedItem).toEqual(expectedItem);
+
+      const retryResult = await harness.ipcHandlers.get("queue:retry")(event);
+      expect(retryResult.items).toEqual([expectedItem]);
+    }
   });
 
   it("zaregistrované dokončení nahrávky ji zpřístupní přes queue:list", async () => {

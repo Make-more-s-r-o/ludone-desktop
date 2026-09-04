@@ -10,6 +10,15 @@ import { queueFooterStatus, queuePanelSummary } from "./lib/panel.js";
 const ONBOARDING_KEY = "ludone.prototype.onboarding-complete";
 const QUEUE_REFRESH_INTERVAL_MS = 1_000;
 
+function queueItemsFingerprint(items) {
+  if (!Array.isArray(items)) return null;
+  try {
+    return JSON.stringify(items);
+  } catch {
+    return null;
+  }
+}
+
 function normalizeUser(value) {
   const email = typeof value?.email === "string" ? value.email.trim() : "";
   const name = typeof value?.name === "string" ? value.name.trim() : "";
@@ -27,9 +36,11 @@ export function App() {
   const [tracking, setTracking] = useState({ active: false });
   const [queueSnapshot, setQueueSnapshot] = useState({ items: null, status: null });
   const [queueExpanded, setQueueExpanded] = useState(false);
+  const [queueRetryFeedback, setQueueRetryFeedback] = useState(null);
   const [trayCommand, setTrayCommand] = useState(null);
   const authSessionRequestId = useRef(0);
   const queueRequestId = useRef(0);
+  const queueItemsFingerprintRef = useRef(null);
   const trayCommandId = useRef(0);
   const panelActionsAvailable = onboardingComplete && sessionExists === true;
   const panelActionsAvailableRef = useRef(panelActionsAvailable);
@@ -113,10 +124,18 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (sessionExists !== true) setTrayCommand(null);
+    if (sessionExists !== true) {
+      setTrayCommand(null);
+      setQueueRetryFeedback(null);
+    }
   }, [sessionExists]);
 
-  const applyQueueItems = useCallback((items) => {
+  const applyQueueItems = useCallback((items, { preserveRetryFeedback = false } = {}) => {
+    const nextFingerprint = queueItemsFingerprint(items);
+    if (!preserveRetryFeedback && nextFingerprint !== queueItemsFingerprintRef.current) {
+      setQueueRetryFeedback(null);
+    }
+    queueItemsFingerprintRef.current = nextFingerprint;
     const status = queueFooterStatus(items);
     const detailsAvailable = queuePanelSummary(items) !== null;
     setQueueSnapshot({ items: status ? items : null, status });
@@ -146,9 +165,16 @@ export function App() {
 
   const retryQueueNow = useCallback(async () => {
     if (typeof window.ludone.retryQueue !== "function") return;
+    // Retry je novější autoritativní požadavek; žádné dříve zahájené čtení
+    // nesmí později přepsat jeho výsledek ani zpětnou vazbu po výjimce.
+    queueRequestId.current += 1;
     const result = await window.ludone.retryQueue();
-    if (Array.isArray(result?.items)) applyQueueItems(result.items);
+    if (Array.isArray(result?.items)) {
+      applyQueueItems(result.items, { preserveRetryFeedback: true });
+      return result;
+    }
     await refreshQueueStatus();
+    return result;
   }, [applyQueueItems, refreshQueueStatus]);
 
   useEffect(() => {
@@ -280,7 +306,18 @@ export function App() {
             <QueueCard
               items={queueSnapshot.items}
               onRetry={typeof window.ludone.retryQueue === "function" ? retryQueueNow : undefined}
+              onRetryFeedback={setQueueRetryFeedback}
+              retryError={queueRetryFeedback}
             />
+          )}
+          {!queueScreenVisible && queueRetryFeedback && (
+            <p
+              className="queue-retry-feedback"
+              data-testid="queue-retry-feedback"
+              role="alert"
+            >
+              {queueRetryFeedback}
+            </p>
           )}
           <RecordingCard
             compact={bothActivitiesRunning}

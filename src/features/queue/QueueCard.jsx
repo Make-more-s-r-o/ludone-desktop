@@ -31,27 +31,46 @@ function formatNextAttempt(nextAttemptAt, now) {
   return `další pokus za ${remainingMinutes} min`;
 }
 
-export function QueueCard({ items, onRetry }) {
+const RETRY_FAILED_MESSAGE = "Pokus se nepodařilo spustit.";
+
+function returnedFailureMessage(result) {
+  if (result?.outcome === "sent") return null;
+  if (typeof result?.reason === "string" && result.reason.trim().length > 0) {
+    return result.reason;
+  }
+  return RETRY_FAILED_MESSAGE;
+}
+
+export function QueueCard({ items, onRetry, onRetryFeedback, retryError: controlledRetryError }) {
   const now = Date.now();
   const summary = queuePanelSummary(items, now);
   const [retrying, setRetrying] = useState(false);
-  const [retryError, setRetryError] = useState(false);
+  const [localRetryError, setLocalRetryError] = useState(null);
   if (!summary) return null;
 
-  const retryAvailable = summary.waitingCount > 0 && typeof onRetry === "function";
+  const retryError = controlledRetryError === undefined ? localRetryError : controlledRetryError;
+
+  function reportRetryFeedback(message) {
+    setLocalRetryError(message);
+    if (typeof onRetryFeedback === "function") onRetryFeedback(message);
+  }
+
+  const retryAvailable = summary.retryableWaitingCount > 0 && typeof onRetry === "function";
   const metadata = [];
   if (summary.waitingSizeBytes !== null) metadata.push(formatSize(summary.waitingSizeBytes));
   const nextAttempt = formatNextAttempt(summary.nextAttemptAt, now);
   if (nextAttempt) metadata.push(nextAttempt);
+  metadata.push(...summary.sendingDisabledReasons);
 
   async function retryNow() {
     if (retrying || !retryAvailable) return;
     setRetrying(true);
-    setRetryError(false);
+    reportRetryFeedback(null);
     try {
-      await onRetry();
+      const result = await onRetry();
+      reportRetryFeedback(returnedFailureMessage(result));
     } catch {
-      setRetryError(true);
+      reportRetryFeedback(RETRY_FAILED_MESSAGE);
     } finally {
       setRetrying(false);
     }
@@ -97,9 +116,10 @@ export function QueueCard({ items, onRetry }) {
               Zkusit teď
             </button>
           )}
-          {retryError && <p className="queue-card__error" role="alert">Pokus se nepodařilo spustit.</p>}
         </div>
       )}
+
+      {retryError && <p className="queue-card__error" role="alert">{retryError}</p>}
 
       {summary.humanActionCount > 0 && (
         <div className="queue-card__human" data-testid="queue-human-action" role="alert">

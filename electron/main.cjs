@@ -2007,6 +2007,23 @@ function queueKillswitches() {
   };
 }
 
+async function addQueueSendingAvailability(items) {
+  const { killswitchNameForKind, UPLOAD_DISABLED_REASON } = await queueModulePromise;
+  const killswitches = queueKillswitches();
+  return items.map((item) => {
+    if (item?.state !== "ceka" || item.requiresHumanAction === true) return item;
+    let enabled = false;
+    try {
+      enabled = killswitches[killswitchNameForKind(item.kind)] === "true";
+    } catch {
+      // Neznámý typ nesmí omylem zpřístupnit pokus o odeslání.
+    }
+    return enabled
+      ? item
+      : { ...item, sendingDisabledReason: UPLOAD_DISABLED_REASON };
+  });
+}
+
 async function recordingUploadContext() {
   const storedSession = await readStoredAuthSession();
   if (storedSession === null) return null;
@@ -2310,13 +2327,19 @@ handleValidated("recording:confirm-export-failure", ["panel"], async (
 handleValidated("recording:export", ["panel"], exportCompletedRecording);
 handleValidated("queue:list", ["panel", "settings"], async () => {
   await waitForOutboundQueueRecovery();
-  const items = await (await getOutboundQueueStore()).list();
+  const items = await addQueueSendingAvailability(
+    await (await getOutboundQueueStore()).list(),
+  );
   updateOutboundQueueTrayFact(items);
   return items;
 });
 handleValidated("queue:retry", ["panel"], async () => {
   await waitForOutboundQueueRecovery();
-  const result = await (await getOutboundQueueStore()).retry(queueKillswitches());
+  const storeResult = await (await getOutboundQueueStore()).retry(queueKillswitches());
+  const result = {
+    ...storeResult,
+    items: await addQueueSendingAvailability(storeResult.items),
+  };
   updateOutboundQueueTrayFact(result);
   console.log(`[queue] ${result.reason ?? result.outcome}`);
   return result;
