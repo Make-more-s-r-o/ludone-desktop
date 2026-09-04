@@ -190,7 +190,15 @@ export function chooseInitialSmokeRoute(surface) {
 }
 
 export function validateAuthWaitingUrl(value, expectedOrigin) {
-  const trustedOrigin = requireCleanOrigin(expectedOrigin);
+  // Panel se na skutečně nastavené prostředí zeptat NESMÍ — `auth:origin` patří jen oknu
+  // Nastavení. Bereme proto seznam prostředí, která aplikace vůbec připouští, a trváme na
+  // tom, že adresa míří do jednoho z nich. Kdo sem pošle jediný řetězec, dostane totéž
+  // chování jako dřív.
+  const trustedOrigins = (Array.isArray(expectedOrigin) ? expectedOrigin : [expectedOrigin])
+    .map(requireCleanOrigin);
+  if (trustedOrigins.length === 0) {
+    throw new Error("Očekávaný LuDone origin není platný.");
+  }
   let url;
   try {
     url = new URL(value);
@@ -207,8 +215,9 @@ export function validateAuthWaitingUrl(value, expectedOrigin) {
     "code_challenge_method",
     "resource",
   ];
+  const trustedOrigin = trustedOrigins.find((origin) => origin === url.origin);
   if (
-    url.origin !== trustedOrigin
+    trustedOrigin === undefined
     || url.username
     || url.password
     || url.pathname !== "/api/mcp/oauth/authorize"

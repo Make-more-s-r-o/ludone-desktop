@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import {
   SMOKE_SURFACE,
@@ -13,6 +14,9 @@ import {
 } from "../src/lib/ui-smoke.js";
 
 const DEBUG_PORT = Number(process.env.LUDONE_DEBUG_PORT || 9333);
+// Seznam připuštěných prostředí bereme z kódu aplikace, ne z vlastní kopie: kdyby někdo
+// přidal třetí prostředí a zapomněl na bránu, ať to praskne tady, ne u uživatele.
+const { AUTH_ORIGINS } = createRequire(import.meta.url)("../electron/settings.cjs");
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");
 const outputRoot = path.join(projectRoot, ".runtime", "smoke");
@@ -257,6 +261,9 @@ async function waitForAuthUrl(client, expectedOrigin, previous = null) {
   const parsed = validateAuthWaitingUrl(presentation.text, expectedOrigin);
   if (previous !== null && parsed.state === previous.state) {
     throw new Error("Nový OAuth pokus zachoval state předchozího pokusu.");
+  }
+  if (previous !== null && parsed.origin !== previous.origin) {
+    throw new Error("Opakovaný pokus zamířil do jiného prostředí než ten předchozí.");
   }
   observations.push({
     check: "auth-url",
@@ -802,7 +809,7 @@ async function assertUsableAuthEntry(client) {
 
 async function runOnboardingToAuthBoundary(client, initialState) {
   const verifiedChecks = [];
-  const expectedOrigin = await client.evaluate("window.ludone.getAuthOrigin()");
+  const expectedOrigin = AUTH_ORIGINS;
   if (initialState.surface === SMOKE_SURFACE.WELCOME) {
     await assertText(client, "Rozhovory a čas.");
     await assertTray(client, "signed-out");

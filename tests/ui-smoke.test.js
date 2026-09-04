@@ -133,6 +133,31 @@ describe("adresa na čekací obrazovce", () => {
     }
   });
 
+  it("přijme kterékoli připuštěné prostředí, když dostane jejich seznam", () => {
+    // Panel se na nastavené prostředí zeptat nesmí (auth:origin patří jen Nastavení),
+    // takže brána dostává seznam prostředí, která aplikace vůbec připouští.
+    const seznam = ["https://app.ludone.cz", "https://labs.ludone.cz"];
+    for (const origin of seznam) {
+      expect(validateAuthWaitingUrl(validAuthUrl(origin).href, seznam)).toMatchObject({ origin });
+    }
+  });
+
+  it("se seznamem prostředí pořád odmítne adresu mimo něj", () => {
+    const cizi = validAuthUrl("https://labs.ludone.cz");
+    expect(() => validateAuthWaitingUrl(cizi.href, ["https://app.ludone.cz"]))
+      .toThrow("není úplný OAuth PKCE požadavek pro LuDone");
+    expect(() => validateAuthWaitingUrl(validAuthUrl().href, []))
+      .toThrow("Očekávaný LuDone origin není platný.");
+  });
+
+  it("nedovolí, aby resource ukazoval do jiného prostředí než adresa sama", () => {
+    // Se seznamem by mohl projít mix: adresa na labs a resource na produkci.
+    const mix = validAuthUrl("https://labs.ludone.cz");
+    mix.searchParams.set("resource", "https://app.ludone.cz/api/mcp");
+    expect(() => validateAuthWaitingUrl(mix.href, ["https://app.ludone.cz", "https://labs.ludone.cz"]))
+      .toThrow("není úplný OAuth PKCE požadavek pro LuDone");
+  });
+
   it("odmítne nezabezpečený nebo cizí origin i prefixovanou cestu", () => {
     const http = validAuthUrl();
     http.protocol = "http:";
