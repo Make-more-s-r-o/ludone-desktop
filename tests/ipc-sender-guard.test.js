@@ -23,6 +23,7 @@ const reportedFactKeys = Function(
 )();
 const distRoot = path.resolve(fileURLToPath(new URL("../dist", import.meta.url)));
 const trustedUrl = pathToFileURL(path.join(distRoot, "index.html")).toString();
+const traySpaceWarningUrl = "ludone://tray-warning/index.html#tray-space-warning";
 const createGuard = Function(
   "path",
   "fileURLToPath",
@@ -39,9 +40,11 @@ const createPermissionGuard = Function(
   "path",
   "fileURLToPath",
   "DIST_ROOT",
+  "TRAY_SPACE_WARNING_URL",
   `"use strict";
   let panelWindow;
   let settingsWindow;
+  let traySpaceWarningWindow;
   ${functionSource(mainSource, "isTrustedAppUrl")}
   ${functionSource(mainSource, "isTrustedWebContents")}
   ${functionSource(mainSource, "isTrustedRecordingSender")}
@@ -50,13 +53,19 @@ const createPermissionGuard = Function(
   ${functionSource(mainSource, "isAllowedMediaPermission")}
   return {
     isAllowedMediaPermission,
-    setWindows(panel, settings) {
+    setWindows(panel, settings, traySpaceWarning) {
       panelWindow = panel;
       settingsWindow = settings;
+      traySpaceWarningWindow = traySpaceWarning;
     },
   };`,
 );
-const permissionGuard = createPermissionGuard(path, fileURLToPath, distRoot);
+const permissionGuard = createPermissionGuard(
+  path,
+  fileURLToPath,
+  distRoot,
+  traySpaceWarningUrl,
+);
 
 function createWebContents(url = trustedUrl, destroyed = false) {
   const mainFrame = {};
@@ -346,6 +355,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "tray:command",
       "tray:get-state",
       "tray:report-facts",
+      "tray-space-warning:enable-dock",
     ].sort());
     expect(registrations.filter(({ registration }) => registration.startsWith("ipcMain."))).toEqual([]);
     expect(functionSource(mainSource, "handleValidated")).toContain("requireTrustedSender");

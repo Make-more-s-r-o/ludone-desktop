@@ -72,6 +72,7 @@ const PANEL_LOAD_TIMEOUT_MS = 5_000;
 const TRAY_SETTLE_DELAY_MS = 2_000;
 const TRAY_TITLE_INTERVAL_MS = 1_000;
 const TRAY_COMMAND_CHANNEL = "tray:command";
+const TRAY_SPACE_WARNING_URL = "ludone://tray-warning/index.html#tray-space-warning";
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
@@ -170,19 +171,19 @@ function isTrustedAppUrl(value) {
   }
 }
 
-function isTrustedWebContents(webContents) {
+function isTrustedWebContents(webContents, trustedUrl = isTrustedAppUrl) {
   try {
-    return Boolean(webContents && !webContents.isDestroyed() && isTrustedAppUrl(webContents.getURL()));
+    return Boolean(webContents && !webContents.isDestroyed() && trustedUrl(webContents.getURL()));
   } catch {
     return false;
   }
 }
 
-function isTrustedRecordingSender(event, expectedWebContents) {
+function isTrustedRecordingSender(event, expectedWebContents, trustedUrl = isTrustedAppUrl) {
   const sender = event?.sender;
   return Boolean(
     expectedWebContents
-    && isTrustedWebContents(sender)
+    && isTrustedWebContents(sender, trustedUrl)
     && sender === expectedWebContents
     && event.senderFrame
     && event.senderFrame === sender.mainFrame
@@ -198,6 +199,11 @@ function requireTrustedRecordingSender(event) {
 function trustedSenderKind(event) {
   if (isTrustedRecordingSender(event, panelWindow?.webContents)) return "panel";
   if (isTrustedRecordingSender(event, settingsWindow?.webContents)) return "settings";
+  if (isTrustedRecordingSender(
+    event,
+    traySpaceWarningWindow?.webContents,
+    (value) => value === TRAY_SPACE_WARNING_URL,
+  )) return "tray-space-warning";
   return null;
 }
 
@@ -670,11 +676,11 @@ function refreshTray() {
 function createTraySpaceWarningWindow() {
   const createdWarningWindow = new BrowserWindow({
     width: 420,
-    height: 280,
+    height: 400,
     minWidth: 420,
     maxWidth: 420,
-    minHeight: 280,
-    maxHeight: 280,
+    minHeight: 400,
+    maxHeight: 400,
     show: false,
     backgroundColor: "#2f3034",
     resizable: false,
@@ -684,6 +690,7 @@ function createTraySpaceWarningWindow() {
     title: "LuDone běží",
     titleBarStyle: "hiddenInset",
     webPreferences: {
+      preload: path.join(__dirname, "tray-space-warning-preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -697,7 +704,7 @@ function createTraySpaceWarningWindow() {
     if (traySpaceWarningWindow === createdWarningWindow) traySpaceWarningWindow = undefined;
   });
   void createdWarningWindow
-    .loadURL("ludone://tray-warning/index.html#tray-space-warning")
+    .loadURL(TRAY_SPACE_WARNING_URL)
     .catch((error) => {
       console.error(`[tray] Vysvětlující okno se nepodařilo načíst: ${error.message}`);
       if (!createdWarningWindow.isDestroyed()) createdWarningWindow.close();
@@ -1817,6 +1824,14 @@ handleValidated("settings:get-dock-visible", ["settings"], (_event, ...extraPayl
   requireNoPayload("settings:get-dock-visible", extraPayload);
   return dockVisibilityStore.get();
 });
+handleValidated(
+  "tray-space-warning:enable-dock",
+  ["tray-space-warning"],
+  (_event, ...extraPayload) => {
+    requireNoPayload("tray-space-warning:enable-dock", extraPayload);
+    return queueDockVisibility(true, { persist: true });
+  },
+);
 handleValidated(
   "settings:set-dock-visible",
   ["settings"],

@@ -1,12 +1,27 @@
+import { useRef, useState } from "react";
 import { LuDoneMark } from "./Icons.jsx";
 
 export function TraySpaceWarning() {
+  const [dockStatus, setDockStatus] = useState("idle");
+  const dockRequestInFlight = useRef(false);
+
+  const enableDockIcon = async () => {
+    if (dockRequestInFlight.current) return;
+    dockRequestInFlight.current = true;
+    setDockStatus("enabling");
+    try {
+      await window.ludoneTraySpaceWarning.enableDockIcon();
+      setDockStatus("enabled");
+    } catch {
+      setDockStatus("error");
+      dockRequestInFlight.current = false;
+    }
+  };
+
   return (
     <main
       className="panel window-surface auth-error-panel tray-space-warning"
       data-testid="tray-space-warning"
-      role="status"
-      aria-live="polite"
       aria-labelledby="tray-space-warning-title"
     >
       <div className="auth-error-panel__announcement">
@@ -17,6 +32,45 @@ export function TraySpaceWarning() {
         <p className="auth-error-panel__message">
           Ikona se do horní lišty nevešla. Aplikace dál běží, ale z lišty ji teď neuvidíš.
         </p>
+      </div>
+
+      <div className="tray-space-warning__dock-action">
+        {dockStatus !== "enabled" && (
+          <button
+            type="button"
+            className="button auth-error-panel__action auth-error-panel__action--primary"
+            data-testid="tray-space-warning-enable-dock"
+            disabled={dockStatus === "enabling"}
+            onClick={enableDockIcon}
+          >
+            {dockStatus === "enabling" ? "Zapínám ikonu v Docku…" : "Zapnout ikonu v Docku"}
+          </button>
+        )}
+
+        <div
+          className="tray-space-warning__dock-feedback"
+          aria-atomic="true"
+          aria-live="polite"
+        >
+          {dockStatus === "enabled" && (
+            <p
+              className="tray-space-warning__dock-result tray-space-warning__dock-result--success"
+              data-testid="tray-space-warning-dock-success"
+            >
+              Ikona v Docku je zapnutá. LuDone teď najdeš i v Docku.
+            </p>
+          )}
+        </div>
+
+        {dockStatus === "error" && (
+          <p
+            className="tray-space-warning__dock-result tray-space-warning__dock-result--error"
+            data-testid="tray-space-warning-dock-error"
+            role="alert"
+          >
+            Ikonu v Docku se nepodařilo zapnout. Zkus to prosím znovu.
+          </p>
+        )}
       </div>
 
       <div
@@ -33,6 +87,7 @@ export function TraySpaceWarning() {
       </div>
 
       <p className="auth-error-panel__guidance">
+        {dockStatus === "enabled" ? "Hotovo. " : ""}
         Tohle okno můžeš zavřít. LuDone zůstane spuštěné.
       </p>
     </main>
