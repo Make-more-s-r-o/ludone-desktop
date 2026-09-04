@@ -96,6 +96,19 @@ Měření času funguje (projekt si vybere sám, čas běží, Stop zastaví). P
 Je to táž třída vady jako fronta slibující pokus. **Nesahal jsem na to**: `decisions.md` C3
 říká „LuTrack: jen příprava" a M11 nechává jeho osud **odložený na Dana**. Zapsáno v `DAN-TODO.md`.
 
+### 5. ✅ HOTOVO — **PR #71 mergnut** · Devět hlášených zranitelností
+
+Změřeno přes `dependabot/alerts`: **všech 9 bylo `development` scope** — 8× dev server Vite,
+1× `extract-zip` v build nástrojích. Do zabalené aplikace se nedostane ani jedna (hotová
+aplikace načítá `dist` a dev server nespouští), ohrožený byl vývojář, ne uživatel.
+
+`vite` 7.1.3 → **7.3.6** (nejvyšší požadovaná oprava byla 7.3.5), **připnuto přesně** jako
+`electron` — npm sám zapsal stříšku, což by rozbilo reprodukovatelnost buildu.
+`extract-zip` **zůstává**: `first_patched_version` je `null`, není na co povýšit.
+
+✅ **Ověřeno naostro:** po přestavbě aplikace spuštěna a řízena přes CDP · otevřených
+hlášení **9 → 1** (změřeno API, ne odhad).
+
 ### `ui-smoke` je brána, kterou nikdo nespouští
 
 CI ho má vypnutý (`if: ${{ false }}`). Spustil jsem ho: **zasekne se na kroku 3/6** na
@@ -112,8 +125,9 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `dd1a48f`, **845 passed \| 3 skipped (848)**, čistý strom, **Electron 39.8.10** |
-| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3./4. 9.: **#41–#70 (34 PR)** |
+| `main` | `dd48f61`, **845 passed \| 3 skipped (848)**, čistý strom, **Electron 39.8.10**, **Vite 7.3.6** |
+| otevřené PR | **0** · worktrees **1** (`desktop-smoke-poctivy`, běží Codex) · mergnuto 3./4. 9.: **#41–#71 (35 PR)** |
+| zranitelnosti | **9 → 1** (zbylá `extract-zip` opravu nemá) |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
 | CI | běží na **vlastním runneru `danuv-mac`**, ne na hostovaném |
