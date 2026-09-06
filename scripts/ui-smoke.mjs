@@ -600,24 +600,6 @@ async function selectSettingsTab(client, id, expectedText) {
   observations.push({ check: "settings-tab", value: id });
 }
 
-async function readAskOther(client) {
-  return client.evaluate(
-    "document.querySelector('[aria-label=\"Ptát se před nahráváním ostatních hovorů\"]')?.getAttribute('aria-checked')",
-  );
-}
-
-async function toggleAskOther(client, expected) {
-  await clickByAria(client, "Ptát se před nahráváním ostatních hovorů");
-  const actual = await waitFor(
-    async () => {
-      const value = await readAskOther(client);
-      return value === expected ? value : null;
-    },
-    `uložení přepínače na ${expected}`,
-  );
-  observations.push({ action: "settings-ask-other", value: actual });
-}
-
 async function readRetention(client) {
   return client.evaluate("document.querySelector('.settings-select select')?.value || null");
 }
@@ -685,7 +667,6 @@ async function exerciseSettings(client) {
   const storageSnapshot = await client.evaluate(
     "localStorage.getItem('ludone.prototype.settings')",
   );
-  let originalAsk = null;
   let originalRetention = null;
   let primaryError = null;
   const cleanupErrors = [];
@@ -701,13 +682,10 @@ async function exerciseSettings(client) {
     await screenshot(client, "settings-account");
 
     await selectSettingsTab(client, "audio", "Kdy nahrávat");
-    originalAsk = await readAskOther(client);
-    if (!["true", "false"].includes(originalAsk)) {
-      throw new Error(`Přepínač nahrávání má neplatný stav ${JSON.stringify(originalAsk)}.`);
-    }
+    // Karta Zvuk už nemá přepínač, který by se dal změnit a vrátit — nastavení bez
+    // účinku bylo odstraněno. Změnu a obnovení proto měří retence níž; sem patří
+    // návštěva a snímek, ať karta nezmizí z pokrytí.
     await screenshot(client, "settings-audio");
-    await toggleAskOther(client, originalAsk === "true" ? "false" : "true");
-    await screenshot(client, "settings-audio-changed");
 
     await selectSettingsTab(client, "recordings", "Záznamy");
     originalRetention = await readRetention(client);
@@ -742,15 +720,6 @@ async function exerciseSettings(client) {
 
   // Smoke běží i nad skutečným přihlášeným profilem. Obnova proto proběhne i
   // po chybě uprostřed kontroly a raw snapshot je poslední pojistka přesné hodnoty.
-  if (originalAsk !== null) {
-    try {
-      await selectSettingsTab(client, "audio", "Kdy nahrávat");
-      if (await readAskOther(client) !== originalAsk) await toggleAskOther(client, originalAsk);
-      await screenshot(client, "settings-audio-restored");
-    } catch (error) {
-      cleanupErrors.push(error);
-    }
-  }
   if (originalRetention !== null) {
     try {
       await selectSettingsTab(client, "recordings", "Záznamy");

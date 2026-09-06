@@ -13,7 +13,6 @@ import { Toggle } from "./Toggle.jsx";
 
 const STORAGE_KEY = "ludone.prototype.settings";
 const DEFAULTS = {
-  askOther: true,
   retention: "7 dní po odeslání",
 };
 const SETTINGS_TABS = Object.freeze([
@@ -178,7 +177,6 @@ function loadSettings() {
   try {
     const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
     return {
-      askOther: stored.askOther ?? DEFAULTS.askOther,
       retention: stored.retention ?? DEFAULTS.retention,
     };
   } catch {
@@ -434,7 +432,12 @@ export function SettingsApp() {
       if (result?.signedOutLocally === true) {
         identityRequestGeneration.current += 1;
         setAccount({ state: "signed-out", identity: null });
-        setLogoutState({ state: "done", message: "Tento Mac je odhlášený." });
+        setLogoutState(result.serverRevoked === true
+          ? { state: "done", message: "Tento Mac je odhlášený." }
+          : {
+            state: "warning",
+            message: "Tento Mac je odhlášený. Přihlášení na serveru může dál platit. Odhlas se i na webu LuDone.",
+          });
         return;
       }
       setLogoutState({
@@ -697,7 +700,10 @@ export function SettingsApp() {
               <small>Fronta zůstane a odešle se po dalším přihlášení.</small>
             </div>
             {logoutState.message && (
-              <p className={`settings-feedback settings-feedback--${logoutState.state}`} role="status">
+              <p
+                className={`settings-feedback settings-feedback--${logoutState.state === "warning" ? "error" : logoutState.state}`}
+                role={logoutState.state === "warning" ? "alert" : "status"}
+              >
                 {logoutState.message}
               </p>
             )}
@@ -750,13 +756,8 @@ export function SettingsApp() {
                 <h2 id="recording-settings-title">Kdy nahrávat</h2>
               </div>
             </div>
-            <div className="settings-row">
-              <div><strong>Ostatní hovory</strong><small>Nejdřív se zeptat</small></div>
-              <Toggle
-                checked={settings.askOther}
-                onChange={(value) => update("askOther", value)}
-                label="Ptát se před nahráváním ostatních hovorů"
-              />
+            <div className="settings-row settings-row--static">
+              <div><strong>Nahrávání spouštíš ručně.</strong></div>
             </div>
           </section>
 

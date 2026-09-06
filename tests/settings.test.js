@@ -130,6 +130,136 @@ function expectNoDesignFiction(settings) {
   expect(settings.localStorage.setItem).not.toHaveBeenCalled();
 }
 
+async function clickLogout(settings) {
+  await expectAccountState(settings, "signed-in");
+  const button = [...settings.document.querySelectorAll("button")]
+    .find((candidate) => candidate.textContent.trim() === "Odhlásit tento Mac");
+  expect(button?.disabled).toBe(false);
+  await React.act(async () => { button.click(); });
+  expect(settings.ludone.logout).toHaveBeenCalledExactlyOnceWith();
+  return button;
+}
+
+describe("poctivý výsledek odhlášení v Nastavení", () => {
+  it("potvrzené odhlášení na Macu i serveru zachová dosavadní úspěch", async () => {
+    const settings = await renderSettings({
+      logout: vi.fn().mockResolvedValue({ signedOutLocally: true, serverRevoked: true }),
+    });
+    try {
+      const button = await clickLogout(settings);
+      const feedback = settings.document.querySelector(".settings-feedback");
+      expect(feedback?.textContent).toBe("Tento Mac je odhlášený.");
+      expect(feedback?.classList.contains("settings-feedback--done")).toBe(true);
+      expect(feedback?.getAttribute("role")).toBe("status");
+      await expectAccountState(settings, "signed-out");
+      expect(button.disabled).toBe(true);
+      expectVisibleStatus(settings);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it.each([
+    { label: "serverRevoked: false", result: { signedOutLocally: true, serverRevoked: false } },
+    { label: "chybějící serverRevoked", result: { signedOutLocally: true } },
+  ])("$label: ukáže varování a další krok, Mac zůstane odhlášený", async ({ result }) => {
+    const settings = await renderSettings({ logout: vi.fn().mockResolvedValue(result) });
+    try {
+      const button = await clickLogout(settings);
+      await expectAccountState(settings, "signed-out");
+      expect(button.disabled).toBe(true);
+      expectVisibleStatus(settings);
+      const feedback = settings.document.querySelector(".settings-feedback");
+      expect(feedback?.textContent).toBe(
+        "Tento Mac je odhlášený. Přihlášení na serveru může dál platit. Odhlas se i na webu LuDone.",
+      );
+      expect(feedback?.classList.contains("settings-feedback--done")).toBe(false);
+      expect(feedback?.classList.contains("settings-feedback--error")).toBe(true);
+      expect(feedback?.getAttribute("role")).toBe("alert");
+      expect(feedback?.closest("[hidden]")).toBeNull();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it.each([
+    { reason: "recording-active", message: "Nejdřív ukonči nahrávání." },
+    { reason: "tracking-active", message: "Nejdřív zastav LuTrack." },
+    { reason: "offline", message: "Odhlášení se nepodařilo." },
+  ])("neúspěšné lokální odhlášení zachová reakci na $reason", async ({ reason, message }) => {
+    const settings = await renderSettings({
+      logout: vi.fn().mockResolvedValue({ signedOutLocally: false, serverRevoked: false, reason }),
+    });
+    try {
+      const button = await clickLogout(settings);
+      expect(settings.document.querySelector(".settings-feedback--error")?.textContent)
+        .toBe(message);
+      expect(settings.document.querySelector(".settings-feedback")?.getAttribute("role"))
+        .toBe("status");
+      expect(settings.document.querySelector(".settings-feedback--done")).toBeNull();
+      await expectAccountState(settings, "signed-in");
+      expect(button.disabled).toBe(false);
+      expect(settings.ludone.getAuthIdentity).toHaveBeenCalledTimes(2);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("výjimka z odhlášení zachová chybu a znovu ověří účet", async () => {
+    const settings = await renderSettings({
+      logout: vi.fn().mockRejectedValue(new Error("IPC spojení skončilo")),
+    });
+    try {
+      const button = await clickLogout(settings);
+      expect(settings.document.querySelector(".settings-feedback--error")?.textContent)
+        .toBe("Odhlášení se nepodařilo.");
+      expect(settings.document.querySelector(".settings-feedback")?.getAttribute("role"))
+        .toBe("status");
+      expect(settings.document.querySelector(".settings-feedback--done")).toBeNull();
+      await expectAccountState(settings, "signed-in");
+      expect(button.disabled).toBe(false);
+      expect(settings.ludone.getAuthIdentity).toHaveBeenCalledTimes(2);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+});
+
+describe("Nastavení bez nefunkčního přepínače hovorů", () => {
+  it("ve Zvuku nenabízí nefunkční přepínač a vysvětlí ruční spuštění", async () => {
+    const settings = await renderSettings();
+    try {
+      await selectTab(settings, "Zvuk");
+      const panel = settings.document.querySelector('[role="tabpanel"]:not([hidden])');
+      expect(panel?.querySelector('[role="switch"]')).toBeNull();
+      expect(panel?.textContent).not.toContain("Ostatní hovory");
+      expect(panel?.textContent).not.toContain("Nejdřív se zeptat");
+      expect(panel?.textContent).toContain("Nahrávání spouštíš ručně.");
+      expect(settings.localStorage.setItem).not.toHaveBeenCalled();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("při změně retence ukládá jen funkční nastavení", async () => {
+    const settings = await renderSettings();
+    try {
+      await selectTab(settings, "Záznamy");
+      const retention = settings.document.querySelector(".settings-select select");
+      await React.act(async () => {
+        retention.value = "30 dní po odeslání";
+        retention.dispatchEvent(new settings.document.defaultView.Event("change", { bubbles: true }));
+      });
+      expect(settings.localStorage.setItem).toHaveBeenCalledExactlyOnceWith(
+        "ludone.prototype.settings",
+        JSON.stringify({ retention: "30 dní po odeslání" }),
+      );
+    } finally {
+      await settings.cleanup();
+    }
+  });
+});
+
 async function expectAccountState(settings, expected) {
   await vi.waitFor(() => {
     expect(settings.document.querySelector('[data-testid="settings-account"]')?.dataset.authState)
