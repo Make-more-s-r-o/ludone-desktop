@@ -239,15 +239,30 @@ async function copyExportOnce(sourcePath, targetPath) {
   await fs.promises.chmod(targetPath, 0o600);
 }
 
+/**
+ * @param {object} options
+ * @param {string} options.downloadsDirectory
+ * @param {object} options.manifest
+ * @param {(url: string) => Promise<unknown>} options.openExternal
+ * @param {boolean} options.openUploadPage Výslovná volba otevření nahrávací stránky.
+ * @param {string} options.origin
+ * @param {string} [options.recordingName]
+ * @param {string} options.stagePath
+ * @param {{ startedAt: string, endedAt: string }} options.stereoTiming
+ */
 async function exportRecordingCopy({
   downloadsDirectory,
   manifest: manifestValue,
   openExternal,
+  openUploadPage,
   origin,
   recordingName = "",
   stagePath,
   stereoTiming,
 }) {
+  if (typeof openUploadPage !== "boolean") {
+    throw new TypeError("openUploadPage musí být výslovně boolean");
+  }
   const manifest = requiredManifest(manifestValue);
   const timeline = recordingTimeline(manifest, stereoTiming);
   const format = inspectOpusWebm(await readHeader(stagePath));
@@ -269,7 +284,7 @@ async function exportRecordingCopy({
     nazev: recordingName,
   });
   try {
-    await openExternal(uploadUrl);
+    if (openUploadPage) await openExternal(uploadUrl);
   } catch (error) {
     const exportedError = Object.assign(
       error instanceof Error ? error : new Error(String(error)),

@@ -2170,8 +2170,17 @@ function logRecordingExportFailure(error) {
   );
 }
 
-async function exportCompletedRecording(event, clientRecordingId, recordingName) {
+/**
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {string} clientRecordingId
+ * @param {{ recordingName?: string, openUploadPage: boolean }} options
+ */
+async function exportCompletedRecording(event, clientRecordingId, options) {
   const exportStage = ownedRecordingExportStage(event, clientRecordingId);
+  if (!options || typeof options.openUploadPage !== "boolean") {
+    throw new TypeError("openUploadPage musí být výslovně boolean");
+  }
+  const { recordingName, openUploadPage } = options;
   let claimedExport = false;
   try {
     if (authOriginChangeInFlight) {
@@ -2195,6 +2204,7 @@ async function exportCompletedRecording(event, clientRecordingId, recordingName)
       downloadsDirectory: app.getPath("downloads"),
       manifest,
       openExternal: (url) => shell.openExternal(url),
+      openUploadPage,
       origin: resolveCurrentAuthIssuer(),
       recordingName,
       stagePath: exportStage.track.filePath,

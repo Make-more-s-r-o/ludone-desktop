@@ -2252,7 +2252,7 @@ describe("zjištění uložené OAuth session", () => {
     });
     const harness = await loadMain({ exportRecordingCopy });
     const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
-    const exporting = exportRecording(event, sessionId, "Schůzka");
+    const exporting = exportRecording(event, sessionId, { recordingName: "Schůzka", openUploadPage: true });
     await expect(exportStarted).resolves.toBe("https://app.ludone.cz");
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
 
@@ -3431,7 +3431,7 @@ describe("produkční zapojení odchozí fronty", () => {
     };
 
     await api.finishRecordingExport("session-1", { succeeded: true, timing });
-    await api.exportRecording("session-1", "Porada provozu");
+    await api.exportRecording("session-1", { recordingName: "Porada provozu", openUploadPage: true });
 
     expect(invoke).toHaveBeenNthCalledWith(
       1,
@@ -3443,7 +3443,7 @@ describe("produkční zapojení odchozí fronty", () => {
       2,
       "recording:export",
       "session-1",
-      "Porada provozu",
+      { recordingName: "Porada provozu", openUploadPage: true },
     );
   });
 
@@ -3766,7 +3766,7 @@ describe("produkční zapojení odchozí fronty", () => {
       expect.objectContaining({ id: sessionId, kind: "recording", state: "ceka" }),
     ]);
 
-    const pendingExport = exportRecording(event, sessionId, "Jednostopá porada");
+    const pendingExport = exportRecording(event, sessionId, { recordingName: "Jednostopá porada", openUploadPage: true });
     await finishExport(event, sessionId, {
       succeeded: true,
       timing: {
@@ -4132,7 +4132,7 @@ describe("produkční zapojení odchozí fronty", () => {
       settingsEvent,
       "https://labs.ludone.cz",
     )).resolves.toBe("https://labs.ludone.cz");
-    const pendingExport = exportRecording(event, sessionId, "Porada / provozu: Q3");
+    const pendingExport = exportRecording(event, sessionId, { recordingName: "Porada / provozu: Q3", openUploadPage: true });
     await finishExport(event, sessionId, {
       succeeded: true,
       timing: {
@@ -4216,7 +4216,7 @@ describe("produkční zapojení odchozí fronty", () => {
       + `${safeSecretName}-${sessionId}.webm`;
     await writeFile(path.join(harness.userDataPath, conflictingFileName), "jiný obsah");
 
-    await expect(exportRecording(event, sessionId, secretName))
+    await expect(exportRecording(event, sessionId, { recordingName: secretName, openUploadPage: true }))
       .resolves.toMatchObject({ ok: false, recordingExported: false });
     const serializedLogs = JSON.stringify([
       ...harness.quietConsole.error.mock.calls,
@@ -4576,6 +4576,57 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 });
 
+describe("výslovná volba stránky přes exportní IPC", () => {
+  it.each([false, true])("přenese openUploadPage=%s přes skutečný preload až ke kopii", async (openUploadPage) => {
+    const harness = await loadMain();
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const { api, invoke } = loadPreload();
+    invoke.mockImplementation((channel, ...args) => harness.ipcHandlers.get(channel)(event, ...args));
+
+    const result = await api.exportRecording(sessionId, { recordingName: "Porada", openUploadPage });
+
+    expect(result.ok).toBe(true);
+    await expect(readFile(path.join(harness.userDataPath, result.fileName)))
+      .resolves.toEqual(stereoWebmBytes());
+    expect(harness.electron.shell.openExternal).toHaveBeenCalledTimes(openUploadPage ? 1 : 0);
+    if (openUploadPage) {
+      expect(harness.electron.shell.openExternal).toHaveBeenCalledWith(
+        expect.stringContaining("/nahravky/nahrat?clientRecordingId="),
+      );
+    }
+  });
+
+  it.each([undefined, "Starý název", {}, { openUploadPage: "false" }, { openUploadPage: null }])(
+    "odmítne neplatnou nebo chybějící volbu %j bez vedlejších účinků",
+    async (options) => {
+      const exportRecordingCopy = vi.fn();
+      const harness = await loadMain({ exportRecordingCopy });
+      const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+
+      await expect(exportRecording(event, sessionId, options)).rejects.toThrow(/openUploadPage/);
+      expect(exportRecordingCopy).toHaveBeenCalledTimes(0);
+      expect(harness.electron.shell.openExternal).toHaveBeenCalledTimes(0);
+    },
+  );
+
+  it("Jen uložit dokončí i odložený quit bez otevření prohlížeče", async () => {
+    const harness = await loadMain();
+    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+    expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(harness.electron.app.quit).toHaveBeenCalledTimes(0);
+
+    const result = await exportRecording(event, sessionId, { recordingName: "", openUploadPage: false });
+
+    expect(result.ok).toBe(true);
+    await expect(readFile(path.join(harness.userDataPath, result.fileName)))
+      .resolves.toEqual(stereoWebmBytes());
+    await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    expect(harness.electron.shell.openExternal).toHaveBeenCalledTimes(0);
+  });
+});
+
 describe("soukromí chyb stereo exportu", () => {
   it("systémová chyba s cestou neukáže v panelu cestu, příponu ani název schůzky", async () => {
     const rawMessage = "ENOSPC: no space left on device, open "
@@ -4586,7 +4637,7 @@ describe("soukromí chyb stereo exportu", () => {
     const harness = await loadMain({ exportRecordingCopy });
     const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
 
-    const result = await exportRecording(event, sessionId, "Pohovor Novak");
+    const result = await exportRecording(event, sessionId, { recordingName: "Pohovor Novak", openUploadPage: true });
 
     expect(exportRecordingCopy).toHaveBeenCalledOnce();
     expect(result).toMatchObject({ ok: false, recordingExported: false });
@@ -4607,10 +4658,10 @@ describe("soukromí chyb stereo exportu", () => {
       finishExport,
       sessionId,
     } = await prepareRecordingExport(harness, { finishStereo: false });
-    const firstExport = exportRecording(event, sessionId, "První pokus");
+    const firstExport = exportRecording(event, sessionId, { recordingName: "První pokus", openUploadPage: true });
 
     try {
-      const secondResult = await exportRecording(event, sessionId, "Druhý pokus");
+      const secondResult = await exportRecording(event, sessionId, { recordingName: "Druhý pokus", openUploadPage: true });
       expect(secondResult).toEqual({
         ok: false,
         recordingExported: false,
@@ -4627,7 +4678,7 @@ describe("soukromí chyb stereo exportu", () => {
     const unmarkedResult = await unmarkedFixture.exportRecording(
       unmarkedFixture.event,
       unmarkedFixture.sessionId,
-      "Druhý pokus",
+      { recordingName: "Druhý pokus", openUploadPage: true },
     );
 
     expect(unmarkedExport).toHaveBeenCalledOnce();
@@ -4652,14 +4703,14 @@ describe("soukromí chyb stereo exportu", () => {
       sessionId,
     } = await prepareRecordingExport(harness, { finishStereo: false });
 
-    const prvniExport = exportRecording(event, sessionId, "První pokus");
-    const druhyVysledek = await exportRecording(event, sessionId, "Druhý pokus");
+    const prvniExport = exportRecording(event, sessionId, { recordingName: "První pokus", openUploadPage: true });
+    const druhyVysledek = await exportRecording(event, sessionId, { recordingName: "Druhý pokus", openUploadPage: true });
     expect(druhyVysledek.ok).toBe(false);
 
     // Jádro věci: první export pořád běží, takže i TŘETÍ pokus musí narazit na obsazeno.
     // Když druhý pokus cestou ven shodí cizí příznak, třetí se pustí souběžně a dva
     // zapisovatelé si sáhnou na tentýž soubor.
-    const tretiVysledek = await exportRecording(event, sessionId, "Třetí pokus");
+    const tretiVysledek = await exportRecording(event, sessionId, { recordingName: "Třetí pokus", openUploadPage: true });
     expect(tretiVysledek).toMatchObject({ ok: false });
     expect(tretiVysledek.message).toContain("Stereo export už probíhá");
 
@@ -4682,9 +4733,10 @@ describe("soukromí chyb stereo exportu", () => {
     );
     const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
 
-    const result = await exportRecording(event, sessionId, "Pohovor Novak");
+    const result = await exportRecording(event, sessionId, { recordingName: "Pohovor Novak", openUploadPage: true });
 
     expect(result).toMatchObject({ ok: false, recordingExported: true });
+    expect(result.message).toContain("Soubor je uložený ve Stažených");
     expect(result.message).toMatch(/Původní dvě stopy zůstaly uložené\.$/u);
   });
 
@@ -4697,7 +4749,7 @@ describe("soukromí chyb stereo exportu", () => {
     const harness = await loadMain({ exportRecordingCopy });
     const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
 
-    await exportRecording(event, sessionId, "Pohovor Novak");
+    await exportRecording(event, sessionId, { recordingName: "Pohovor Novak", openUploadPage: true });
 
     expect(exportRecordingCopy).toHaveBeenCalledOnce();
     const serializedLogs = JSON.stringify([
@@ -4773,7 +4825,7 @@ describe("bezpečné ukončení aplikace", () => {
     await expect(harness.ipcHandlers.get("recording:export")(
       event,
       sessionId,
-      "Důvěrná porada",
+      { recordingName: "Důvěrná porada", openUploadPage: true },
     )).resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
     await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
     expect(harness.quietConsole.log).toHaveBeenCalledWith(
@@ -4892,7 +4944,7 @@ describe("bezpečné ukončení aplikace", () => {
     releaseEnqueue();
     await finishing;
     expect(harness.electron.app.quit).not.toHaveBeenCalled();
-    await expect(exportRecording(event, sessionId, "Porada provozu"))
+    await expect(exportRecording(event, sessionId, { recordingName: "Porada provozu", openUploadPage: true }))
       .resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
     await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
     expect(enqueueRecording).toHaveBeenCalledOnce();
@@ -5052,7 +5104,7 @@ describe("bezpečné ukončení aplikace", () => {
     await expect(harness.ipcHandlers.get("recording:export")(
       event,
       sessionId,
-      "Porada provozu",
+      { recordingName: "Porada provozu", openUploadPage: true },
     )).resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
     await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
   });
@@ -5595,7 +5647,7 @@ describe("produkční zapojení automatických aktualizací", () => {
     await vi.advanceTimersByTimeAsync(90_000);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 
-    await expect(exportRecording(event, sessionId, "Porada provozu"))
+    await expect(exportRecording(event, sessionId, { recordingName: "Porada provozu", openUploadPage: true }))
       .resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
     await vi.advanceTimersByTimeAsync(30_000);
     await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1));
@@ -5870,7 +5922,7 @@ describe("produkční zapojení automatických aktualizací", () => {
         },
       }),
     ]);
-    await expect(exportRecording(event, sessionId, "Porada provozu"))
+    await expect(exportRecording(event, sessionId, { recordingName: "Porada provozu", openUploadPage: true }))
       .resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
     await vi.advanceTimersByTimeAsync(30_000);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();

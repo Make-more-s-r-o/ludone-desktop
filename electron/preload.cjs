@@ -167,8 +167,10 @@ contextBridge.exposeInMainWorld("ludone", {
     ipcRenderer.invoke("recording:finish-export", sessionId, outcome),
   confirmRecordingExportFailure: (sessionId) =>
     ipcRenderer.invoke("recording:confirm-export-failure", sessionId),
-  exportRecording: (clientRecordingId, recordingName) =>
-    ipcRenderer.invoke("recording:export", clientRecordingId, recordingName),
+  // Druhý argument nese { recordingName, openUploadPage } — most ho jen předává dál,
+  // rozhodnutí o otevření nahrávací stránky patří volajícímu a hlavní proces ho vymáhá.
+  exportRecording: (clientRecordingId, volby) =>
+    ipcRenderer.invoke("recording:export", clientRecordingId, volby),
   listQueue: () => ipcRenderer.invoke("queue:list"),
   retryQueue: () => ipcRenderer.invoke("queue:retry"),
   startTracking: (payload) => ipcRenderer.invoke("tracking:start", payload),

@@ -336,6 +336,9 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "recording:append",
       "recording:begin",
       "recording:confirm-export-failure",
+      // Payload: (clientRecordingId, { recordingName, openUploadPage: boolean }).
+      // openUploadPage je povinný bez defaultu; volbu i průchod preloadem spouští
+      // tests/queue-wiring.test.js v „výslovná volba stránky přes exportní IPC“.
       "recording:export",
       "recording:finish",
       "recording:finish-export",

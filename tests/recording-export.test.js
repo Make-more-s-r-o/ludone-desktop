@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -78,6 +78,7 @@ async function exportFixture(recordingName) {
   await writeFile(stagePath, stereoWebmBytes());
   const openExternal = vi.fn(async () => undefined);
   const result = await exportRecordingCopy({
+    openUploadPage: true,
     downloadsDirectory,
     manifest: completeManifest(),
     openExternal,
@@ -91,6 +92,58 @@ async function exportFixture(recordingName) {
   });
   return { downloadsDirectory, openExternal, result };
 }
+
+describe("povinné rozhodnutí o otevření stránky", () => {
+  async function prepareCopy() {
+    const root = await mkdtemp(path.join(tmpdir(), "ludone-export-decision-test-"));
+    roots.add(root);
+    const downloadsDirectory = path.join(root, "downloads");
+    const stagePath = path.join(root, "schuzka-stereo.webm");
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(downloadsDirectory);
+    await writeFile(stagePath, stereoWebmBytes());
+    return {
+      downloadsDirectory,
+      manifest: completeManifest(),
+      openExternal: vi.fn(async () => undefined),
+      origin: "https://app.ludone.cz",
+      stagePath,
+      stereoTiming: {
+        startedAt: "2026-09-02T12:00:00.090Z",
+        endedAt: "2026-09-02T13:00:00.170Z",
+      },
+    };
+  }
+
+  it("Jen uložit vytvoří soubor ve Stažených a prohlížeč otevře přesně nulakrát", async () => {
+    const options = await prepareCopy();
+    const result = await exportRecordingCopy({ ...options, openUploadPage: false });
+
+    expect(path.dirname(result.filePath)).toBe(options.downloadsDirectory);
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+    await expect(readFile(options.stagePath)).resolves.toEqual(stereoWebmBytes());
+    expect(options.openExternal).toHaveBeenCalledTimes(0);
+  });
+
+  it("Uložit a odeslat vytvoří soubor a otevře nahrávací stránku", async () => {
+    const options = await prepareCopy();
+    const result = await exportRecordingCopy({ ...options, openUploadPage: true });
+
+    expect(path.dirname(result.filePath)).toBe(options.downloadsDirectory);
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+    expect(options.openExternal).toHaveBeenCalledExactlyOnceWith(result.uploadUrl);
+  });
+
+  it("chybějící rozhodnutí odmítne před kopírováním a otevřením prohlížeče", async () => {
+    const options = await prepareCopy();
+
+    // Záměrně obejdeme typovou kontrolu, abychom spustili neplatné volání za běhu.
+    await expect(Reflect.apply(exportRecordingCopy, undefined, [options]))
+      .rejects.toThrow(/openUploadPage/);
+    await expect(readdir(options.downloadsDirectory)).resolves.toEqual([]);
+    expect(options.openExternal).toHaveBeenCalledTimes(0);
+  });
+});
 
 describe("živý stereo derivát", () => {
   it("vede mikrofon výhradně vlevo a systémový zvuk výhradně vpravo", async () => {
@@ -317,6 +370,7 @@ describe("export dokončené schůzky", () => {
     const openExternal = vi.fn(async () => undefined);
 
     const result = await exportRecordingCopy({
+      openUploadPage: true,
       downloadsDirectory,
       manifest: completeManifest(),
       openExternal,
@@ -358,6 +412,7 @@ describe("export dokončené schůzky", () => {
     const openExternal = vi.fn(async () => undefined);
 
     const result = await exportRecordingCopy({
+      openUploadPage: true,
       downloadsDirectory,
       manifest: microphoneOnlyManifest(),
       openExternal,
@@ -403,6 +458,7 @@ describe("export dokončené schůzky", () => {
     ]);
 
     await expect(exportRecordingCopy({
+      openUploadPage: true,
       downloadsDirectory,
       manifest: completeManifest(),
       openExternal: vi.fn(async () => {
