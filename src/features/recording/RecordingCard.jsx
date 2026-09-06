@@ -8,6 +8,7 @@ import {
   captureSystemAudioSource,
   stopStreams,
 } from "../../lib/audio-levels.js";
+import { countLabel } from "../../lib/count-label.js";
 import { createStereoCapture } from "../../lib/stereo-recording.js";
 import {
   AudioLevelMeter,
@@ -168,10 +169,15 @@ function suggestedRecordingName(startedAt) {
 
 function durationLabel(startedAt, endedAt) {
   const durationMs = Date.parse(endedAt) - Date.parse(startedAt);
-  const minutes = Number.isFinite(durationMs) ? Math.max(1, Math.round(durationMs / 60_000)) : 0;
-  if (minutes === 1) return "1 minuta";
-  if (minutes >= 2 && minutes <= 4) return `${minutes} minuty`;
-  return `${minutes} minut`;
+  if (!Number.isFinite(durationMs) || durationMs < 0) {
+    return countLabel(0, "sekunda", "sekundy", "sekund");
+  }
+  // Zaokrouhluje se PŘED rozhodnutím o jednotce: 59,6 s je po zaokrouhlení celá minuta,
+  // a „60 sekund“ je tvar, který nikdo neřekne.
+  const seconds = Math.round(durationMs / 1_000);
+  if (seconds < 60) return countLabel(seconds, "sekunda", "sekundy", "sekund");
+  const minutes = Math.round(durationMs / 60_000);
+  return countLabel(minutes, "minuta", "minuty", "minut");
 }
 
 function formatRecordingElapsed(totalSeconds) {
