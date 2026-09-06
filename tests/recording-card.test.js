@@ -495,6 +495,7 @@ async function stopRecording(panel) {
 }
 
 describe("RecordingCard", () => {
+
   it("za běhu mění oba pruhy podle ticha a hlasitého vstupu", async () => {
     const panel = await renderRecordingCard();
 
@@ -883,6 +884,75 @@ describe("RecordingCard", () => {
         });
       });
       expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it.each([
+    { seconds: 0, expected: "0 sekund" },
+    { seconds: 1, expected: "1 sekunda" },
+    { seconds: 2, expected: "2 sekundy" },
+    { seconds: 5, expected: "5 sekund" },
+    { seconds: 8, expected: "8 sekund" },
+    { seconds: 59, expected: "59 sekund" },
+    // 59,6 s se zaokrouhlí na celou minutu. Kdyby o jednotce rozhodovala délka PŘED
+    // zaokrouhlením, vypsalo by se „60 sekund“ — tvar, který nikdo neřekne.
+    { seconds: 59.6, expected: "1 minuta" },
+    { seconds: 60, expected: "1 minuta" },
+    { seconds: 89, expected: "1 minuta" },
+    { seconds: 90, expected: "2 minuty" },
+    { seconds: 300, expected: "5 minut" },
+  ])("po uložení $seconds s ukáže přesně $expected", async ({ seconds, expected }) => {
+    const panel = await renderRecordingCard();
+    const startedAt = "2026-09-02T12:00:00.000Z";
+    panel.ludone.finishRecording.mockResolvedValue({
+      ...recordingResult(),
+      startedAt,
+      endedAt: new Date(Date.parse(startedAt) + (seconds * 1_000)).toISOString(),
+    });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      expect(panel.document.querySelector(
+        ".recording-saved__meta small:last-child",
+      )?.textContent).toBe(`${expected} · 10 B`);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it.each([
+    {
+      description: "chybějící začátek",
+      startedAt: undefined,
+      endedAt: "2026-09-02T12:00:08.000Z",
+    },
+    {
+      description: "nesmyslný konec",
+      startedAt: "2026-09-02T12:00:00.000Z",
+      endedAt: "není datum",
+    },
+  ])("neplatné datum ($description) nespadne ani nevypíše NaN", async ({
+    startedAt,
+    endedAt,
+  }) => {
+    const panel = await renderRecordingCard();
+    panel.ludone.finishRecording.mockResolvedValue({
+      ...recordingResult(),
+      startedAt,
+      endedAt,
+    });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      expect(panel.phase()).toBe("saved");
+      expect(panel.document.querySelector(".recording-saved__meta")?.textContent)
+        .not.toContain("NaN");
     } finally {
       await panel.cleanup();
     }
