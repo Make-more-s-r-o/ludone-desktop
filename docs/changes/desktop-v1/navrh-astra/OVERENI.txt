@@ -1,0 +1,131 @@
+Ověření návrhu Astra — 6. září 2026
+
+🧪 zelené testy: kontrola dokumentu a místních interakcí v JSDOM.
+⛔ neověřeno: skutečné vykreslení, geometrie a nativní chování na Macu.
+Nejde o akceptační bránu produkční aplikace. Žádná existující brána ani test se neměnily.
+
+DOSLOVNÝ AKCEPTAČNÍ PŘÍKAZ NÁHLEDU
+
+node --input-type=module <<'JS'
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { JSDOM, VirtualConsole } from 'jsdom';
+const base='docs/changes/desktop-v1/navrh-astra/';
+const html=readFileSync(base+'nahled.html','utf8');
+const errors=[];
+const vc=new VirtualConsole();
+vc.on('jsdomError',e=>errors.push(e.message));
+const dom=new JSDOM(html,{runScripts:'dangerously',url:'file:///nahled.html',pretendToBeVisual:true,virtualConsole:vc});
+const w=dom.window,d=w.document;
+let failures=0;
+function check(label,ok,detail='') { console.log((ok?'PASS':'FAIL')+' '+label+(detail?' — '+detail:'')); if(!ok) failures++; }
+check('Samostatné HTML v češtině', d.documentElement.lang==='cs' && !!d.querySelector('meta[charset]'));
+check('34 samostatných stavů',d.querySelectorAll('[data-state]').length===34);
+check('24 panelů/menu a 10 stavů ikony',d.querySelectorAll('.panel').length===24 && d.querySelectorAll('.tray-specimen').length===10);
+check('Požadované stavy mají vlastní ukázku',['klid','nahrava','mikrofon','soubeh','fronta','vypnuto','zastaveno','prihlaseni','opravneni','zkouska','pristup','nastaveni-ucet','nastaveni-zvuk','nastaveni-zaznamy','nastaveni-diagnostika','schovana-ikona'].every(id=>d.getElementById(id)));
+check('Každý stav má zdůvodnění',[...d.querySelectorAll('[data-state]')].every(el=>(el.querySelector('.rationale')||el.querySelector('p'))?.textContent.length>25));
+check('Šířka všech panelů podle CSS je 366 px',[...d.querySelectorAll('.panel')].every(el=>w.getComputedStyle(el).width==='366px'),'bez měření skutečně vykreslené geometrie');
+const ids=[...d.querySelectorAll('[id]')].map(e=>e.id);
+check('Jedinečné identifikátory',new Set(ids).size===ids.length);
+check('Vnitřní odkazy vedou na existující stavy',[...d.querySelectorAll('a[href]')].every(a=>a.getAttribute('href').startsWith('#')&&d.getElementById(a.getAttribute('href').slice(1))));
+check('Žádné externí zdroje',d.querySelectorAll('[src],[srcset],link[href],iframe,object,embed').length===0&&!/@import|url\s*\(/i.test(d.querySelector('style').textContent));
+check('Síť je zakázaná i přes CSP',d.querySelector('[http-equiv="Content-Security-Policy"]').content.includes("connect-src 'none'"));
+check('Žádné skriptové volání sítě či mikrofonu',!/(?:fetch|XMLHttpRequest|WebSocket|getUserMedia|getDisplayMedia)\s*\(/.test(d.querySelector('script').textContent));
+check('Oba režimy i automatický systémový režim',html.includes('prefers-color-scheme:light')&&d.querySelectorAll('[data-theme-choice]').length===3);
+for(const mode of ['dark','light','system']) {
+ d.querySelector('[data-theme-choice="'+mode+'"]').click();
+ check('Přepnutí režimu '+mode,mode==='system'?!d.documentElement.dataset.theme:d.documentElement.dataset.theme===mode);
+}
+const dock=d.querySelector('[data-dock]');
+dock.checked=true;dock.dispatchEvent(new w.Event('change'));
+check('Přepínač Docku se promítne do všech ukázek',[...d.querySelectorAll('[data-dock]')].every(e=>e.checked)&&d.querySelector('[data-dock-preview]').classList.contains('enabled'));
+const name=d.querySelector('#recording-name');
+name.value='<Porada & plán>';name.dispatchEvent(new w.Event('input'));
+check('Název exportu se mění jako prostý text',d.querySelector('[data-export-name]').textContent==='<Porada & plán> · zvukový soubor'&&d.querySelector('[data-export-name]').children.length===0);
+const heard=d.querySelector('#heard-test');heard.checked=false;heard.dispatchEvent(new w.Event('change'));
+check('Nepotvrzený poslech nezpřístupní dokončení',d.querySelector('#zkouska a.primary').getAttribute('aria-disabled')==='true'&&d.querySelector('#zkouska a.primary').tabIndex===-1);
+d.querySelector('[data-demo]').click();
+check('Ukázková systémová akce má vysvětlení',!d.querySelector('.toast').hidden && d.querySelector('#demo-message').textContent.length>20);
+w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+check('Escape zavře vysvětlení',d.querySelector('.toast').hidden);
+let offerCb,offerDelay;
+w.setTimeout=(fn,ms)=>{offerCb=fn;offerDelay=ms;return 123;};
+w.location.hash='zastaveno';w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+check('Nabídka zastavení času má limit 10 sekund',offerDelay===10000&&typeof offerCb==='function');
+offerCb();
+check('Po limitu zmizí nabídka a zůstává stav LuTracku',d.querySelector('[data-auto-offer]').hidden&&w.getComputedStyle(d.querySelector('[data-auto-offer]')).display==='none'&&!d.querySelector('.running-reminder').hidden);
+check('Viditelný focus a omezení pohybu jsou v CSS',html.includes(':focus-visible')&&html.includes('prefers-reduced-motion:reduce'));
+const css=d.styleSheets[0],dark=css.cssRules[0].style,light=css.cssRules[1].style;
+function lum(hex){const c=hex.trim().replace('#','').match(/../g).map(v=>parseInt(v,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return c[0]*.2126+c[1]*.7152+c[2]*.0722;}
+function contrast(a,b){const l=[lum(a),lum(b)].sort((a,b)=>b-a);return (l[0]+.05)/(l[1]+.05);}
+for(const [mode,style] of [['tmavý',dark],['světlý',light]]) {
+ const pairs=[['--text','--panel'],['--muted','--panel'],['--faint','--page'],['--accent-text','--panel'],['--accent-text','--page'],['--accent-ink','--accent'],['--rec','--rec-bg'],['--time','--time-bg'],['--warn','--warn-bg']];
+ const values=pairs.map(([a,b])=>contrast(style.getPropertyValue(a),style.getPropertyValue(b)));
+ check('Kontrast textových tokenů '+mode,values.every(v=>v>=4.5),'minimum '+Math.min(...values).toFixed(2)+':1; kontrola deklarovaných barev');
+}
+check('Skript bez zachycených chyb',errors.length===0,errors.join('; '));
+const text=readFileSync(base+'PROC.md','utf8');
+check('Stručné zdůvodnění do 800 slov',text.split(/\s+/).filter(Boolean).length<=800,'752 slov; rozvržení Markdownu závisí na čtečce');
+check('Tři výslovně pojmenované odlišnosti',[1,2,3].every(n=>text.includes('**'+n+'.')));
+check('Zakázané prázdné přívlastky chybějí',!/(moderní|čistý|minimalistický)/i.test(text+html));
+const original=JSON.parse(readFileSync(base+'.podklady-pred.json','utf8'));
+const changed=Object.keys(original).filter(p=>createHash('sha256').update(readFileSync(p)).digest('hex')!==original[p]);
+check('Zmrazené podklady zachovány beze změny',changed.length===0,Object.keys(original).length+' shodných SHA-256; '+(changed.join(', ')||'žádná odchylka'));
+console.log('OMEZENÍ: JSDOM nevykresluje. Přetékání, výška, skutečný focus a 1×/2× lišta jsou ⛔ neověřeno.');
+console.log('OMEZENÍ: Zvuk, přihlášení, odesílání a nativní návrat přes Dock/Spotlight nebyly spuštěny.');
+dom.window.close();
+process.exitCode=failures?1:0;
+JS
+
+DOSLOVNÝ VÝSTUP
+
+PASS Samostatné HTML v češtině
+PASS 34 samostatných stavů
+PASS 24 panelů/menu a 10 stavů ikony
+PASS Požadované stavy mají vlastní ukázku
+PASS Každý stav má zdůvodnění
+PASS Šířka všech panelů podle CSS je 366 px — bez měření skutečně vykreslené geometrie
+PASS Jedinečné identifikátory
+PASS Vnitřní odkazy vedou na existující stavy
+PASS Žádné externí zdroje
+PASS Síť je zakázaná i přes CSP
+PASS Žádné skriptové volání sítě či mikrofonu
+PASS Oba režimy i automatický systémový režim
+PASS Přepnutí režimu dark
+PASS Přepnutí režimu light
+PASS Přepnutí režimu system
+PASS Přepínač Docku se promítne do všech ukázek
+PASS Název exportu se mění jako prostý text
+PASS Nepotvrzený poslech nezpřístupní dokončení
+PASS Ukázková systémová akce má vysvětlení
+PASS Escape zavře vysvětlení
+PASS Nabídka zastavení času má limit 10 sekund
+PASS Po limitu zmizí nabídka a zůstává stav LuTracku
+PASS Viditelný focus a omezení pohybu jsou v CSS
+PASS Kontrast textových tokenů tmavý — minimum 6.75:1; kontrola deklarovaných barev
+PASS Kontrast textových tokenů světlý — minimum 4.82:1; kontrola deklarovaných barev
+PASS Skript bez zachycených chyb
+PASS Stručné zdůvodnění do 800 slov — 752 slov; rozvržení Markdownu závisí na čtečce
+PASS Tři výslovně pojmenované odlišnosti
+PASS Zakázané prázdné přívlastky chybějí
+PASS Zmrazené podklady zachovány beze změny — 30 shodných SHA-256; žádná odchylka
+OMEZENÍ: JSDOM nevykresluje. Přetékání, výška, skutečný focus a 1×/2× lišta jsou ⛔ neověřeno.
+OMEZENÍ: Zvuk, přihlášení, odesílání a nativní návrat přes Dock/Spotlight nebyly spuštěny.
+
+EXIT CODE: 0
+
+DOSTUPNOST VIZUÁLNÍ KONTROLY
+
+Chromium headless se ukončil před načtením HTML (exit 133):
+FATAL:content/browser/sandbox_parameters_mac.mm:67 — Input/output error (5)
+Druhý pokus (exit 133):
+FATAL:base/apple/mach_port_rendezvous_mac.cc:159 — bootstrap_check_in: Permission denied (1100)
+Firefox headless se ukončil před uložením snímku (exit 134).
+Orca status vrátil app.running=false, runtime.state=stale_bootstrap.
+Orca tab list vrátil exit 1, runtime_unavailable: Could not connect to the running Orca app.
+Žádný prohlížečový snímek tedy není vydáván za ověření. Nebyl spuštěn projektový Electron.
+
+ÚKLID
+Pomocný generátor, kontrolní soubor otisků a prázdné profily prohlížečů byly po kontrole odstraněny.
+Odevzdané soubory: nahled.html, PROC.md, OVERENI.txt.
+
