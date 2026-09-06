@@ -1804,3 +1804,20 @@ dnešní text nepopisuje, že nahrává prohlížeč (BD-N34).
 Serverová session dodala číslo: **500 UTF-16 jednotek po `trim()`**. Máme ho teď shodné,
 v pojmenované konstantě, delší název **odmítneme v panelu** místo tichého zkrácení
 (dvě nahrávky se tak mohly jmenovat stejně). Nic po tobě nechci.
+
+## 🔴 JEDNO ROZHODNUTÍ Z AUDITU (6. 9.) — co znamená „přihlášen"
+
+Audit našel a já ověřil: **po vypršení access tokenu panel dál hlásí „připojeno"** a Nastavení
+zelené „Přihlášen", ačkoli nahrávací kontext už vrací `null`. Jsou to dvě různá pojetí:
+`hasStoredAuthSession` kontroluje jen vydavatele, `recordingUploadContext` navíc `accessExpiresAt`.
+
+**Neopravil jsem to sám**, protože odpověď je produktová:
+- **a)** vypršelý token = odhlášen (uživatel projde přihlášením znovu), nebo
+- **b)** zůstat „přihlášen" a nabídnout znovupřihlášení, až bude potřeba.
+
+`spec.md` navíc už přiznává, že chybí samostatná obrazovka **„Přihlášení vypršelo"** — takže
+tohle rozhodnutí se s ní potká. Doporučuju **(a)**: tvrdit „připojeno" o spojení, které
+nefunguje, je táž nepoctivost jako „další pokus teď" u vypnutého odesílání.
+
+Druhý vysoký nález (**odhlášení, které server neodvolal**) neřeším přes tebe — opravuju ho,
+protože tam je správná odpověď jednoznačná: uživatel se to musí dozvědět.

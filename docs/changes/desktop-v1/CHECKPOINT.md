@@ -260,6 +260,39 @@ v kontraktu je. Podle skillu platí dělba: **psát kód → astra · hledat ciz
 
 ---
 
+## 🔎 AUDIT ÚPLNOSTI #2 (6. 9. večer, `sol/ultra`, read-only)
+
+Prošel **63 rozvržením odlišných stavů** a vrátil **14 nálezů**. Do zadání šly konkrétní
+příklady osmi už opravených vad — a auditor je **poctivě nehlásil znovu**, stejně jako
+vědomě odložené položky z `decisions.md` a `DAN-TODO.md`. Všechny nálezy jsou 🟡 (doložené
+zdrojovým tokem, ne živým během) a sám vypsal sedm věcí, které ověřit nemohl.
+
+🔴 **Nálezy jsou téže třídy, jakou tu lovíme celý den: akce, která selže a mlčí.**
+
+| záv. | kde | co |
+|---|---|---|
+| **vysoká** | `Settings.jsx:437` | „odhlášeno" i když **server relaci neodvolal** → řeší se |
+| **vysoká** | `main.cjs:3304` | po vypršení tokenu panel dál hlásí „připojeno" |
+| střední | `Settings.jsx:755` | přepínač „Ostatní hovory" **nikdo nečte** → řeší se |
+| střední | `App.jsx:158` | poškozený `outgoing.json` ⇒ fronta se tiše skryje |
+| střední | `QueueCard.jsx:80` | „nic se neztratilo" i u trvale selhané položky |
+| střední | `audio-levels.js:405` | suspended AudioContext hlásí nuly jako **naměřené** |
+| střední | `main.cjs:571` | lišta počítá čas dřív, než `MediaRecorder` začne |
+| střední | `AuthErrorScreen.jsx:55` | neplatný origin se ukáže jako obecná chyba |
+| střední | `auth.cjs:1319` | „Otevřít Nastavení" selže bez hlášky |
+| nízká ×5 | Nastavení, test tónu, tray menu | selhání viditelné jen v konzoli |
+
+**Ověřil jsem si oba vysoké sám v kódu — platí.** `Settings.jsx` se ptá jen na
+`signedOutLocally` a `serverRevoked` nečte; `hasStoredAuthSession` kontroluje jen vydavatele,
+kdežto `recordingUploadContext` navíc hlídá `accessExpiresAt`. Dvě různá pojetí „přihlášen"
+a uživatel vidí to optimistické.
+
+🔴 **Druhý vysoký nález NEŘEŠÍM sám:** změnit, co se počítá jako „přihlášen", je produktové
+rozhodnutí (odhlásit? nabídnout znovupřihlášení?) a `spec.md` navíc už přiznává chybějící
+obrazovku „Přihlášení vypršelo". Leží v `DAN-TODO.md`.
+
+---
+
 ## Stav jednou větou
 
 Aplikace je **postavená celá**, ale **ověřená naostro skoro vůbec**. Chybí Danova rozhodnutí
