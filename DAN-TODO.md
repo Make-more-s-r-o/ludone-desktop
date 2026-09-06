@@ -1759,3 +1759,25 @@ osud živého LuTracku **odložený na tebe**. Věta o ukázkovém uložení nav
 ani v návrhu — vznikla v kódu. Kdybych přesunul sdělení dopředu, rozhodoval bych o produktu.
 
 **Doporučení, až na to dojde:** říct to **před** spuštěním, ne po zastavení.
+
+## 🟡 POZOROVÁNÍ Z NAHRÁVÁNÍ NAOSTRO (6. 9.) — jedno rozhodnutí je tvoje
+
+Prohnal jsem nahrávání živě s **podstrčeným syntetickým zvukem** (440 Hz mikrofon, 880 Hz
+systém), abych ti nenahrával pokoj. Celý tok funguje: start · měřáky · souběh s LuTrackem ·
+zastavení · pojmenování · export do Stažených · zařazení do fronty. Po sobě jsem uklidil,
+fronta i složka nahrávek jsou přesně jako předtím (16 položek, 49 souborů).
+
+**Co jsem NEROZHODL a nechávám tobě:** když se systémový zvuk nepodaří získat, aplikace
+správně nabídne pokračovat jen s mikrofonem a panel to říká naplno („NAHRÁVÁ SE OMEZENĚ ·
+Ostatní zvuk: ticho"). **Lišta ale v tu chvíli ukazuje obyčejné nahrávání** — `výpadekZvuku=false`.
+
+Rozlišují se totiž dva stavy: `unavailable` (jen mikrofon, uživatel to přijal) a `lost`
+(zvuk se získal a spadl uprostřed). Červený odznak v liště se rozsvítí jen u druhého.
+
+- **Argument pro změnu:** návrh u toho stavu píše *„je to právě chvíle, kdy je panel zavřený"* —
+  a při zavřeném panelu nemáš jak poznat, že se druhá strana nenahrává.
+- **Argument proti:** uživatel na jednostopé nahrávání **výslovně kývl**, takže červený
+  poplach by byl křik o něčem, co sám zvolil.
+
+Je to produktové rozhodnutí o tom, kdy má lišta křičet — nesahal jsem na to. Kdyby ti to
+mělo hrát roli, doporučuju **tichý odznak** místo červeného: informace bez poplachu.

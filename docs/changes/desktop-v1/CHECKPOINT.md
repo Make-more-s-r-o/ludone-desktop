@@ -141,6 +141,52 @@ hlásí „Zkopírováno".
 
 ---
 
+## 🎙 NAHRÁVÁNÍ OVĚŘENO NAOSTRO (6. 9.) — bez zachyceného zvuku
+
+Nahrávání byl poslední velký tok, který nikdo neviděl běžet. Nešlo ho ověřit, aniž by se
+zachytil Danův pokoj — **dokud se nepodstrčí syntetický proud**:
+
+```js
+Object.defineProperty(navigator.mediaDevices, "getUserMedia", { configurable: true,
+  writable: true, value: async () => proudZOscilatoru(440) });   // systém 880 Hz
+```
+
+Tenhle recept **používej i příště**: mikrofon 440 Hz, systém 880 Hz, žádné oprávnění není
+potřeba a nic skutečného se nenahraje. Ovladač je `scratchpad/podstrc.mjs`.
+
+### Co průchod ověřil ✅
+
+start · **měřáky se počítají** (výplň 207,094 z 218 px, ne natvrdo 100 %) · „Obě stopy
+ověřeny" · **souběh s LuTrackem** (`stav=recording-tracking`, panel ukazuje obojí) ·
+zastavení · pojmenování · **export do Stažených** · zařazení do fronty (16 → 17) ·
+**výpadek systémového zvuku** (panel: „NAHRÁVÁ SE OMEZENĚ · Ostatní zvuk: ticho").
+
+🔴 **Po každé zkoušce ukliď.** Fronta i `nahravky/` a Stažené se vracely na základ
+(16 položek, 49 souborů) — ověřeno po každém kole. Zkušební položky poznáš podle
+`enqueuedAt` s dnešním datem.
+
+### 8. ✅ HOTOVO — **PR #74 mergnut** · Osmisekundová nahrávka hlásila „1 minuta"
+
+`Math.max(1, Math.round(ms / 60_000))` dělalo z každé krátké nahrávky minutu a `Math.round`
+hlásil minutu i pro 89 s. Teď se pod minutu říkají sekundy a **o jednotce se rozhoduje až po
+zaokrouhlení**, takže 59,6 s je „1 minuta", ne „60 sekund".
+✅ **Ověřeno naostro po opravě:** `6 sekund · 187 kB`.
+
+### Co jsem NEZMĚNIL, ačkoli to vypadá jako vada
+
+**Lišta při jednostopé nahrávce nehlásí výpadek** (`výpadekZvuku=false`). Rozlišují se dva
+stavy: `unavailable` (uživatel kývl na jen mikrofon) a `lost` (zvuk spadl uprostřed); červený
+odznak patří jen druhému. Návrh u toho stavu píše *„je to právě chvíle, kdy je panel zavřený"*,
+což mluví pro změnu — ale uživatel na jednostopé nahrávání **výslovně kývl**. Je to produktové
+rozhodnutí, leží v `DAN-TODO.md` s doporučením tichého odznaku místo červeného.
+
+### Zastaralé poznámky, které jsem při té příležitosti opravil
+
+- „při souběhu chybí druhý údaj vedle ikony" — **je implementovaný** (`"nahrávání · časovač"`).
+- „tři stavy lišty chybí" — `queue-waiting` i `recording-audio-lost` **stojí**.
+
+---
+
 ## Stav jednou větou
 
 Aplikace je **postavená celá**, ale **ověřená naostro skoro vůbec**. Chybí Danova rozhodnutí
@@ -148,8 +194,8 @@ a patnáct minut jeho času u počítače.
 
 | | |
 |---|---|
-| `main` | `9fd1bf2`, **866 passed \| 3 skipped (869)**, čistý strom, **Electron 39.8.10**, **Vite 7.3.6** |
-| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3./4. 9.: **#41–#73 (37 PR)** |
+| `main` | `ab0acb6`, **879 passed \| 3 skipped (882)**, čistý strom, **Electron 39.8.10**, **Vite 7.3.6** |
+| otevřené PR | **0** · worktrees **0** · větve `orca/*` **0** · mergnuto 3.–6. 9.: **#41–#74 (38 PR)** |
 | zranitelnosti | **9 → 1** (zbylá `extract-zip` opravu nemá) |
 | design | **21 z 21** desktopových obrazovek stojí (22. je serverová) |
 | repozitář | 🔴 **PRIVÁTNÍ** (vráceno 3. 9. ráno, důvod níž) |
