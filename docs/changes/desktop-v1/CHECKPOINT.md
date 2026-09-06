@@ -271,9 +271,9 @@ zdrojovým tokem, ne živým během) a sám vypsal sedm věcí, které ověřit 
 
 | záv. | kde | co |
 |---|---|---|
-| **vysoká** | `Settings.jsx:437` | „odhlášeno" i když **server relaci neodvolal** → řeší se |
+| ~~vysoká~~ | `Settings.jsx:437` | ✅ **OPRAVENO (#79)** — „odhlášeno" i když server relaci neodvolal |
 | **vysoká** | `main.cjs:3304` | po vypršení tokenu panel dál hlásí „připojeno" |
-| střední | `Settings.jsx:755` | přepínač „Ostatní hovory" **nikdo nečte** → řeší se |
+| ~~střední~~ | `Settings.jsx:755` | ✅ **ODSTRANĚN (#79)** — přepínač, který nikdo nečetl |
 | střední | `App.jsx:158` | poškozený `outgoing.json` ⇒ fronta se tiše skryje |
 | střední | `QueueCard.jsx:80` | „nic se neztratilo" i u trvale selhané položky |
 | střední | `audio-levels.js:405` | suspended AudioContext hlásí nuly jako **naměřené** |
@@ -290,6 +290,31 @@ a uživatel vidí to optimistické.
 🔴 **Druhý vysoký nález NEŘEŠÍM sám:** změnit, co se počítá jako „přihlášen", je produktové
 rozhodnutí (odhlásit? nabídnout znovupřihlášení?) a `spec.md` navíc už přiznává chybějící
 obrazovku „Přihlášení vypršelo". Leží v `DAN-TODO.md`.
+
+---
+
+## 🎨 DVA NÁVRHY OD ASTRY — Dan se na ně podívá ráno (#77, #78)
+
+| | `navrh-astra/` (A) | `navrh-astra-b/` (B) |
+|---|---|---|
+| rozvržení | skládané karty, stálé pořadí agend | **dva sloupce vedle sebe** |
+| grafika | oblé, systémové písmo | rovné hrany, velká proporční čísla, svislé měřáky |
+| fronta | v patičce | **nahoře** |
+| lišta | šablonová dvojice + odznak | **dělený znak** |
+| stavů | 34 | 34 (**stejné, dají se porovnat kus po kuse**) |
+
+Oba jsou **samostatné soubory bez sítě** (0 externích zdrojů), oba jsem **vykreslil
+v Electronu a prohlédl** (9098 a 9314 px, nula chyb v konzoli). Astra u obou přiznala,
+že vykreslení sama ověřit nemohla — místo aby to předstírala.
+
+🔎 **Návrh A nezávisle trefil dvě otevřené položky z `DAN-TODO.md`**: „Zkouška" u LuTracku
+**před** startem a rozlišení agend **tvarem místo barvy** (⇒ padá i otázka kontrastu).
+**Návrh B poctivě píše, co A dělá líp** — bylo to v zadání a splnil to.
+
+⚠️ **Past, na kterou #78 málem doplatil:** B přiložil vlastní kontrolní skript `overit.mjs`
+pod `docs/`, kde ESLint nedává Node globals ⇒ **brány zčervenaly na jinak dokumentačním PR**.
+Smazal jsem skript (jeho výstup zůstal v `OVERENI.txt`), místo abych kvůli jednorázovému
+souboru rozšiřoval sdílenou konfiguraci.
 
 ---
 
