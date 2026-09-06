@@ -226,6 +226,40 @@ Dělba podle skillu: **psát kód → astra · hledat cizí vady → sol na ultr
 
 ---
 
+## 6. 9. večer — délka názvu, návrh od astry, a JEDNA MOJE CHYBNÁ PREMISA
+
+### ✅ #76 — tiché zkracování názvu pro server
+
+Název se cestou do URL **tiše ořízl na 200 jednotek** ⇒ dvě nahrávky mohly nést týž název.
+Serverová session dodala své číslo (**500 UTF-16 jednotek po `trim()`**, `route.ts:150`),
+takže je teď shodné a v pojmenované konstantě; delší se **odmítne v panelu**, ne až u nich.
+
+🔴 **A moje chyba, ať se neopakuje:** zadal jsem to s premisou, že *„export už dnes padá na
+dlouhém českém názvu"*. **Nepadá.** Změřil jsem **ručně poskládaný název souboru** a vynechal
+`sanitizeRecordingName`, která ho odjakživa ořezává na 40 kódových bodů. Astra vrátila
+`premisaPlatila: false` a měla pravdu. **Tutéž chybu jsem pak zopakoval ještě jednou** —
+při ověřování astřiny verze jsem volal jen sanitizaci, ačkoli ořez přesunula do
+`exportFileName`. Teprve třetí měření (přes `vm`, skutečnou funkcí) dalo pravdu:
+246–247 B na obou větvích, obojí bezpečné.
+⇒ **Změna názvu souboru je VYLEPŠENÍ, ne oprava** (zachová 2× víc názvu). Nechal jsem ji,
+protože je změřená a otestovaná, ale v PR i commitu to stojí naplno.
+
+### 🎨 #77 — designový návrh od astry (Danovo zadání, k posouzení)
+
+`docs/changes/desktop-v1/navrh-astra/nahled.html` — 34 stavů, bez sítě, otevře se dvojklikem.
+✅ Vykreslil jsem ho v Electronu: **9098 px, 0 chyb v konzoli**, snímky prohlédnuté.
+Astra vykreslení sama ověřit nemohla a **napsala to**, místo aby to předstírala.
+Dvě z jeho tří změn nezávisle trefily otevřené položky z `DAN-TODO.md` (Zkouška u LuTracku
+před startem · tvar místo barvy v liště ⇒ padá i otázka kontrastu).
+
+### Model `gpt-6-astra` v praxi
+
+Tři běhy, všechny `EXIT=0` napoprvé, brány zelené bez opravného kola. Vrátila
+`premisaPlatila: false` tam, kde jsem se mýlil — to je přesně to, kvůli čemu ta položka
+v kontraktu je. Podle skillu platí dělba: **psát kód → astra · hledat cizí vady → sol/ultra**.
+
+---
+
 ## Stav jednou větou
 
 Aplikace je **postavená celá**, ale **ověřená naostro skoro vůbec**. Chybí Danova rozhodnutí

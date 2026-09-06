@@ -1781,3 +1781,26 @@ Rozlišují se totiž dva stavy: `unavailable` (jen mikrofon, uživatel to přij
 
 Je to produktové rozhodnutí o tom, kdy má lišta křičet — nesahal jsem na to. Kdyby ti to
 mělo hrát roli, doporučuju **tichý odznak** místo červeného: informace bez poplachu.
+
+## 🎨 NÁVRH OD ASTRY — ke koukání, ráno (6. 9.)
+
+Chtěl jsi vidět, co model navrhne sám. Je to v `docs/changes/desktop-v1/navrh-astra/nahled.html`
+— **otevřeš dvojklikem, funguje bez sítě**. 34 stavů na jedné stránce, světlý i tmavý motiv,
+vyznačená šířka 366 bodů. Vedle je `PROC.md` se zdůvodněním na dvě strany.
+
+**Schváleného návrhu se to nedotklo** — `design/**` se jen četlo.
+
+🔎 **Dvě z jeho tří změn trefily to, co ti tady leží jako otevřené:**
+- LuTrack říká **„Zkouška · jen na tomto Macu" už PŘED startem**, ne až po zastavení
+  (viz moje pozorování níž),
+- agendy v liště rozlišuje **tvarem, ne barvou** (plný kruh × hodiny) ⇒ **problém s kontrastem
+  na světlé liště tím mizí** a rozhodnutí o barvách by ses nemusel vůbec dělat.
+
+Za posouzení stojí i třetí: místo „Uložit a odeslat" navrhuje **„Připravit pro web"**, protože
+dnešní text nepopisuje, že nahrává prohlížeč (BD-N34).
+
+## ✅ VYŘEŠENO — délka názvu nahrávky (#76)
+
+Serverová session dodala číslo: **500 UTF-16 jednotek po `trim()`**. Máme ho teď shodné,
+v pojmenované konstantě, delší název **odmítneme v panelu** místo tichého zkrácení
+(dvě nahrávky se tak mohly jmenovat stejně). Nic po tobě nechci.
