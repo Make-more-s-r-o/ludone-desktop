@@ -187,6 +187,45 @@ rozhodnutí, leží v `DAN-TODO.md` s doporučením tichého odznaku místo čer
 
 ---
 
+## 🌐 6. 9. — prohlížeč se otevíral po KAŽDÉM nahrávání (PR #75)
+
+Dan: *„vždy když ukončím nahrávání, tak se mi otevře prohlížeč, to není ideální."*
+
+| měření | výsledek |
+|---|---|
+| panely Safari před × po kliknutí na „Přeskočit" | **70 → 71** |
+| co v tom panelu bylo | `app.ludone.cz/nahravky/nahrat?clientRecordingId=…` |
+| co v seznamu panelů viselo | nahrávací stránky z **2. i 3. září** — každá nahrávka nechávala panel |
+
+Obě tlačítka volala tutéž cestu a `recording-export.cjs:272` otevíralo stránku
+**bezpodmínečně**. 🔴 **Otevírání samo o sobě vada NENÍ** — BD-N34 dává fázi 1 nahrávat
+prohlížeči a návrh (`nahled.html:493`) má jediné tlačítko „Uložit a **odeslat**". Vada byla,
+že totéž dělala i cesta, která odeslat nechtěla.
+
+Rozhodnutí je teď **povinný boolean bez defaultu** (chybí ⇒ chyba, na dvou vrstvách).
+Druhé tlačítko se jmenuje **„Jen uložit"**, soubor uloží a **neotevře nic**.
+
+✅ **Ověřeno naostro po opravě: 71 panelů před i po**, soubor ve Stažených.
+
+### Rozhodl jsem sám (workflow spadlo na limit, tak jsem architekturu rozhodl)
+
+Ultracode workflow devíti agentů **spadlo celé** — všech 9 narazilo na limit Claude session.
+Návrh jsem tedy udělal sám a zapisuji ho: *„Uložit a odeslat" zůstává beze změny včetně
+otevření stránky; „Jen uložit" soubor uloží do Stažených (nic se neztratí) a neodesílá.*
+Alternativa „neexportovat vůbec" by nahrávku nechala jen v `userData`, odkud ji retence
+časem smaže — proto ne.
+
+### 🔴 Model `gpt-6-astra` FUNGUJE — moje předchozí tvrzení bylo chybné
+
+4. 9. jsem zapsal, že „astra na ChatGPT účtu nejede". Testoval jsem `astra`, `gpt-astra`,
+`gpt-5.7-astra`, `gpt-5.6-astra` — **neexistující jména**. Hláška *„model is not supported
+when using Codex with a ChatGPT account"* zní jako výrok o účtu, ale server ji vrací i na
+překlep. **Správný slug je `gpt-6-astra`** a je v `~/.codex/models_cache.json`.
+Tenhle PR napsala astra (`xhigh`): 14 nových testů, všechny brány zelené na první pokus.
+Dělba podle skillu: **psát kód → astra · hledat cizí vady → sol na ultra**.
+
+---
+
 ## Stav jednou větou
 
 Aplikace je **postavená celá**, ale **ověřená naostro skoro vůbec**. Chybí Danova rozhodnutí
