@@ -23,6 +23,9 @@ import { watchSystemAudioTrack } from "./system-audio-health.js";
 
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
 const RECORDING_TIMESLICE_MS = 1_000;
+// Shodné se serverem: String.length po trim(), tedy UTF-16 jednotky.
+// Mění se současně na serveru i v electron/recording-export.cjs.
+const MAX_UPLOAD_NAME_UTF16_UNITS = 500;
 const QUIT_EXPORT_FAILURE_CONSEQUENCE = "LuDone zůstává otevřené. Pokud ho teď ukončíte, dvoukanálový soubor už z aplikace nevyexportujete.";
 
 function describeError(error) {
@@ -342,6 +345,10 @@ export function RecordingCard({
 
   async function exportSavedRecording(name, openUploadPage) {
     if (!savedRecording || exporting) return;
+    if (name.trim().length > MAX_UPLOAD_NAME_UTF16_UNITS) {
+      setExportError("Název je příliš dlouhý. Zkraťte ho.");
+      return;
+    }
     setExporting(true);
     setExportError(null);
     try {
@@ -796,7 +803,10 @@ export function RecordingCard({
               ? "recording-name-error"
               : undefined}
             aria-invalid={Boolean(quitExportFailure || exportError || notice?.type === "error")}
-            onInput={(event) => setRecordingName(event.currentTarget.value)}
+            onInput={(event) => {
+              setRecordingName(event.currentTarget.value);
+              setExportError(null);
+            }}
           />
           <small id="recording-name-hint" className="recording-saved__hint">
             Můžeš přepsat teď nebo později v LuDone.
