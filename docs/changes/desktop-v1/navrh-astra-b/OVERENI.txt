@@ -1,0 +1,87 @@
+Ověření návrhu Astra B — 6. září 2026
+
+🧪 zelené testy: samostatné HTML a místní interakce v JSDOM.
+⛔ neověřeno: skutečné vykreslení, rozměry obsahu, chování panelu a zvuk na Macu.
+Žádný projektový Electron, ui-smoke ani audio-smoke se nespouštěl.
+Existující testy a brány aplikace se neměnily. Náhled nepotřebuje závislosti;
+overit.mjs používá již přítomný jsdom z repozitáře.
+
+DOSLOVNÝ AKCEPTAČNÍ PŘÍKAZ
+
+node docs/changes/desktop-v1/navrh-astra-b/overit.mjs
+
+DOSLOVNÝ VÝSTUP
+
+PASS Stejných 34 stavů a stejné pořadí jako Astra A
+PASS 24 panelů/menu a 10 ukázek ikony
+PASS Každý stav má vlastní vysvětlení
+PASS České samostatné HTML
+PASS Všechny panely mají 366 px a border-box podle CSS — JSDOM nevykresluje; toto není měření skutečné šířky
+PASS Identifikátory jsou jedinečné
+PASS Všechny odkazy vedou na existující místní cíle
+PASS Každý formulářový prvek má popisek
+PASS Žádné externí zdroje ani síťové akce
+PASS CSP zakazuje připojení i odeslání formuláře
+PASS Přepnutí motivu dark
+PASS Přepnutí motivu light
+PASS Deset ikon na obou pozadích
+PASS Souběh má dva sloupce s vlastními konci
+PASS Mikrofon a systém ve správném pořadí
+PASS Přijatý mikrofon a neočekávaný výpadek se neslévají
+PASS Fronta obsahuje pouze dvě čekající nahrávky a jeden místní čas
+PASS Lokální omezení času je vidět před startem i za běhu
+PASS Dock je výchozí vypnutý
+PASS Změna Docku se promítne do všech ukázek
+PASS Název se přenáší jako prostý text
+PASS Příliš dlouhý název neprojde do exportu
+PASS 500 jednotek po trim je přípustných
+PASS Dokončení zkoušky vyžaduje potvrzený poslech
+PASS Potvrzení poslechu znovu zpřístupní dokončení
+PASS Ukázková akce má vysvětlení
+PASS Escape zavře vysvětlení a vrátí focus
+PASS Nabídka zastavení času má limit 10 sekund
+PASS Po limitu je stále přístupné zastavení běžícího času
+PASS Viditelný focus a respektování omezení pohybu
+PASS Kontrast deklarovaných barev textu: světlý — minimum 5.58 : 1
+PASS Kontrast deklarovaných barev textu: tmavý — minimum 6.49 : 1
+PASS Stručné zdůvodnění s přínosy, cenou a přednostmi A — 670 slov; Markdown nemá pevné stránkování
+PASS Žádné chyby skriptu v JSDOM
+OMEZENÍ: ⛔ neověřeno — skutečné vykreslení, geometrie, nativní interakce a zvuk.
+OMEZENÍ: Toto je kontrola návrhu, nikoli ui-smoke nebo audio-smoke aplikace.
+
+EXIT CODE: 0
+
+OCHRANA PODKLADŮ
+
+Před zápisem návrhu byly načteny SHA-256 všech souborů v design/, navrh-astra/,
+src/ a electron/ a souborů AGENTS.md, ROZHODNUTI.md, PLAN.md, DAN-TODO.md,
+desktop-v1/spec.md, desktop-v1/plan.md a desktop-v1/decisions.md.
+Po dokončení byly vypočteny znovu. Porovnání:
+
+PASS Chráněné podklady beze změny — 108 shodných SHA-256; žádná odchylka
+
+VIZUÁLNÍ KONTROLA — NEPROBĚHLA
+
+1. Google Chrome, samostatný headless proces, --window-size=1400,1100,
+   pokus načíst první návrh pro porovnání. Proces skončil bez výstupu a bez snímku.
+   EXIT CODE: 134
+
+2. chrome-headless-shell z místní Playwright cache, --window-size=1400,1200,
+   pokus načíst výsledný návrh B. Skončil před uložením snímku.
+   EXIT CODE: 133
+   Doslovný výstup:
+[0906/221649.897662:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9
+[0906/221649.944387:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.
+[0906/221649.946038:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.
+[0906/221649.951230:FATAL:content/browser/sandbox_parameters_mac.mm:67] Check failed: . : Input/output error (5)
+
+Žádné zvýšení oprávnění ani vypnutí sandboxu. Snímky nevznikly.
+Geometrii, přetékání, vizuální focus, menší pracovní plochu a čitelnost 1×/2× nelze
+z kontroly JSDOM prohlásit za ověřené. Nejvýše 2 strany PROC.md je redakční rozsah;
+Markdown nemá pevné stránkování, výsledný text má 670 slov.
+
+PŘEDÁNÍ
+
+Odevzdáno: nahled.html, PROC.md, overit.mjs, OVERENI.txt.
+Dočasné profily obou prohlížečů a pomocné otisky byly odstraněny.
+Jediný provedený příkaz git byl povolený git --no-pager status --porcelain.
