@@ -1002,7 +1002,7 @@ describe("RecordingCard", () => {
       await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
       await panel.waitForPhase("idle");
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
-      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, "");
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, { recordingName: "", openUploadPage: false });
     } finally {
       restoreGeometry();
       await panel.cleanup();
@@ -1035,7 +1035,7 @@ describe("RecordingCard", () => {
 
       expect(panel.ludone.exportRecording).toHaveBeenCalledWith(
         SESSION_ID,
-        "Porada / provozu",
+        { recordingName: "Porada / provozu", openUploadPage: true },
       );
       const status = panel.document.querySelector('[data-recording-phase] [role="status"]');
       expect(status?.textContent?.trim().length).toBeGreaterThan(0);
@@ -1045,7 +1045,7 @@ describe("RecordingCard", () => {
     }
   });
 
-  it("přeskočení pojmenování neztratí dokončenou nahrávku a exportuje bez názvu", async () => {
+  it("Jen uložit neztratí dokončenou nahrávku a exportuje bez názvu", async () => {
     const panel = await renderRecordingCard();
 
     try {
@@ -1057,10 +1057,55 @@ describe("RecordingCard", () => {
       await panel.waitForPhase("idle");
 
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
-      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, "");
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, { recordingName: "", openUploadPage: false });
       const status = panel.document.querySelector('[data-recording-phase] [role="status"]');
       expect(status?.textContent?.trim().length).toBeGreaterThan(0);
       expect(status?.hidden).toBe(false);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it.each([
+    ["Jen uložit", '[data-testid="skip-recording-name"]', false],
+    ["Uložit a odeslat", 'button[type="submit"]', true],
+  ])("%s předá výslovné rozhodnutí a potvrdí uložení ve Stažených", async (label, selector, openUploadPage) => {
+    const panel = await renderRecordingCard();
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      const button = panel.document.querySelector(selector);
+      expect(button.textContent.trim()).toBe(label);
+      await panel.click(button);
+      await panel.waitForPhase("idle");
+
+      expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        recordingName: openUploadPage ? expect.any(String) : "",
+        openUploadPage,
+      });
+      expect(panel.document.querySelector('[role="status"]')?.textContent)
+        .toContain(`Soubor LuDone-${SESSION_ID}.webm je uložený ve Stažených.`);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("při selhání otevření stránky uživateli řekne, že soubor je uložený", async () => {
+    const panel = await renderRecordingCard();
+    panel.ludone.exportRecording.mockResolvedValueOnce({
+      ok: false,
+      recordingExported: true,
+      message: "Soubor je uložený ve Stažených, ale nahrávací stránku se nepodařilo otevřít. "
+        + "Původní dvě stopy zůstaly uložené.",
+    });
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await panel.click(panel.document.querySelector('button[type="submit"]'));
+
+      expect(panel.document.querySelector('[role="alert"]')?.textContent)
+        .toContain("Soubor je uložený ve Stažených, ale nahrávací stránku se nepodařilo otevřít.");
+      expect(panel.phase()).toBe("saved");
     } finally {
       await panel.cleanup();
     }
@@ -1107,7 +1152,7 @@ describe("RecordingCard", () => {
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
       expect(panel.ludone.exportRecording).toHaveBeenCalledWith(
         SESSION_ID,
-        expect.any(String),
+        { recordingName: expect.any(String), openUploadPage: true },
       );
     } finally {
       await panel.cleanup();

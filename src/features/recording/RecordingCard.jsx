@@ -340,14 +340,14 @@ export function RecordingCard({
     return runtime.finishPromise;
   }
 
-  async function exportSavedRecording(name = recordingName) {
+  async function exportSavedRecording(name, openUploadPage) {
     if (!savedRecording || exporting) return;
     setExporting(true);
     setExportError(null);
     try {
       const result = await window.ludone.exportRecording(
         savedRecording.clientRecordingId,
-        name,
+        { recordingName: name, openUploadPage },
       );
       if (!result?.ok) throw new Error(result?.message || "Export se nepodařil");
       setSavedRecording(null);
@@ -772,7 +772,7 @@ export function RecordingCard({
           aria-busy={exporting}
           onSubmit={(event) => {
             event.preventDefault();
-            void exportSavedRecording();
+            void exportSavedRecording(recordingName, true);
           }}
         >
           <div role="status" aria-live="polite">
@@ -840,9 +840,9 @@ export function RecordingCard({
                 className="recording-saved__skip"
                 data-testid="skip-recording-name"
                 disabled={exporting}
-                onClick={() => exportSavedRecording("")}
+                onClick={() => exportSavedRecording("", false)}
               >
-                Přeskočit
+                Jen uložit
               </button>
             </>
           )}
