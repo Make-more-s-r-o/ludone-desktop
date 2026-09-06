@@ -49,8 +49,10 @@ const {
   handleRendererGone,
 } = require("./tracking.cjs");
 const {
+  RecordingNameValidationError,
   exportRecordingCopy,
   inspectOpusWebm,
+  validateUploadRecordingName,
 } = require("./recording-export.cjs");
 const { trayIsProbablyOutsideStatusArea } = require("./tray-visibility.cjs");
 
@@ -2155,7 +2157,7 @@ function recordingExportSystemCode(error) {
 }
 
 function recordingExportFailureMessage(error, exportStage) {
-  const detail = error instanceof RecordingExportUserError
+  const detail = error instanceof RecordingExportUserError || error instanceof RecordingNameValidationError
     ? error.message
     : RECORDING_EXPORT_SYSTEM_ERRORS.get(recordingExportSystemCode(error))
       ?? RECORDING_EXPORT_GENERIC_ERROR;
@@ -2183,6 +2185,7 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
   const { recordingName, openUploadPage } = options;
   let claimedExport = false;
   try {
+    validateUploadRecordingName(recordingName);
     if (authOriginChangeInFlight) {
       throw new RecordingExportUserError("Handover nelze zahájit během změny prostředí");
     }

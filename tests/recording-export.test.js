@@ -19,6 +19,10 @@ const SYSTEM_STARTED_AT = "2026-09-02T12:00:00.137Z";
 const MICROPHONE_ENDED_AT = "2026-09-02T13:00:00.120Z";
 const SYSTEM_ENDED_AT = "2026-09-02T13:00:00.158Z";
 const roots = new Set();
+const FILE_PREFIX = "LuDone-2026-09-02T12-00-00-100Z-";
+const FILE_SUFFIX = `-${CLIENT_RECORDING_ID}.webm`;
+// Rezerva pro osmibajtový dodatek při vytvoření kopie ve Finderu.
+const NAME_BYTE_BUDGET = 255 - Buffer.byteLength(FILE_PREFIX + FILE_SUFFIX, "utf8") - 8;
 
 afterEach(async () => {
   const { rm } = await import("node:fs/promises");
@@ -93,6 +97,86 @@ async function exportFixture(recordingName) {
   return { downloadsDirectory, openExternal, result };
 }
 
+describe("bajtové hranice názvu souboru", () => {
+  it.each([200, 500])("%i českých znaků uloží do souboru do 255 bajtů a do URL celé", async (count) => {
+    const name = "ř".repeat(count);
+    const { result } = await exportFixture(name);
+    expect(Buffer.byteLength(result.fileName, "utf8")).toBeLessThanOrEqual(255);
+    expect(result.fileName).toBe(
+      `${FILE_PREFIX}${"ř".repeat(Math.floor(NAME_BYTE_BUDGET / 2))}${FILE_SUFFIX}`,
+    );
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+    expect(new URL(result.uploadUrl).searchParams.get("nazev")).toBe(name);
+  });
+
+  it("200 ASCII znaků zkrátí jen o nezbytný přesah bajtového rozpočtu", async () => {
+    // Celých 200 + čas + GUID se do 255 B nevejde; starý strop 40 znaků je zbytečný.
+    const { result } = await exportFixture("a".repeat(200));
+    expect(result.fileName).toBe(`${FILE_PREFIX}${"a".repeat(NAME_BYTE_BUDGET)}${FILE_SUFFIX}`);
+    expect(Buffer.byteLength(result.fileName, "utf8")).toBe(247);
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+  });
+
+  it.each([
+    ["český znak přesně na hraně", "ř", 0],
+    ["český znak přes hranu", "ř", 1],
+    ["emoji přesně na hraně", "😀", 0],
+    ["emoji přes hranu", "😀", 1],
+    ["ZWJ emoji přesně na hraně", "👨‍👩‍👧‍👦", 0],
+    ["ZWJ emoji přes hranu", "👨‍👩‍👧‍👦", 1],
+    ["kombinovaný znak přes hranu", "q\u0301", 1],
+  ])("%s nerozřízne", async (_label, grapheme, overflow) => {
+    const prefix = "a".repeat(NAME_BYTE_BUDGET - Buffer.byteLength(grapheme, "utf8") + overflow);
+    const { result } = await exportFixture(`${prefix}${grapheme}x`);
+    expect(result.fileName).toBe(`${FILE_PREFIX}${prefix}${overflow ? "" : grapheme}${FILE_SUFFIX}`);
+    const bytes = Buffer.from(result.fileName, "utf8");
+    expect(new TextDecoder("utf-8", { fatal: true }).decode(bytes)).toBe(result.fileName);
+    expect(result.fileName).not.toContain("\ufffd");
+    expect(bytes.length).toBeLessThanOrEqual(255);
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+  });
+
+  it("rozpočet uplatní až po rozšíření názvu normalizací NFKC", async () => {
+    const name = "ﷺ".repeat(20);
+    expect(Buffer.byteLength(name.normalize("NFKC"), "utf8")).toBeGreaterThan(255);
+    const { result } = await exportFixture(name);
+    expect(Buffer.byteLength(result.fileName, "utf8")).toBeLessThanOrEqual(255);
+    expect(new URL(result.uploadUrl).searchParams.get("nazev")).toBe(name);
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+  });
+
+  it.each(["", "   ", "../ : ", `q${"\u0301".repeat(100)}`])(
+    "nepoužitelný název %j uloží pod časem a GUID",
+    async (name) => {
+      const { result } = await exportFixture(name);
+      expect(result.fileName).toBe(`${FILE_PREFIX}${CLIENT_RECORDING_ID}.webm`);
+      await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+    },
+  );
+});
+
+describe("serverová hranice 500 UTF-16 jednotek po trim", () => {
+  it.each(["ř".repeat(500), "😀".repeat(250), `${"👨‍👩‍👧‍👦".repeat(45)}abcde`])(
+    "přesně 500 jednotek přijme bez změny včetně emoji (%#)",
+    (name) => {
+      expect(name.length).toBe(500);
+      const url = new URL(buildRecordingUploadUrl("https://labs.ludone.cz", { nazev: `  ${name}  ` }));
+      expect(url.searchParams.get("nazev")).toBe(name);
+    },
+  );
+
+  it.each(["ř".repeat(501), `a${"😀".repeat(250)}`])("501 jednotek odmítne (%#)", (name) => {
+    expect(name.length).toBe(501);
+    expect(() => buildRecordingUploadUrl("https://labs.ludone.cz", { nazev: ` ${name} ` }))
+      .toThrow(/Název je příliš dlouhý/);
+  });
+
+  it.each(["", " \t\n ", undefined])("prázdný název %j vynechá z URL", (name) => {
+    const url = new URL(buildRecordingUploadUrl("https://labs.ludone.cz", { nazev: name }));
+    expect(url.searchParams.has("nazev")).toBe(false);
+  });
+});
+
 describe("povinné rozhodnutí o otevření stránky", () => {
   async function prepareCopy() {
     const root = await mkdtemp(path.join(tmpdir(), "ludone-export-decision-test-"));
@@ -123,6 +207,21 @@ describe("povinné rozhodnutí o otevření stránky", () => {
     await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
     await expect(readFile(options.stagePath)).resolves.toEqual(stereoWebmBytes());
     expect(options.openExternal).toHaveBeenCalledTimes(0);
+  });
+
+  it("501 jednotek odmítne před kopírováním a ponechá stereo pro opravu názvu", async () => {
+    const options = await prepareCopy();
+    await expect(exportRecordingCopy({
+      ...options, openUploadPage: true, recordingName: "ř".repeat(501),
+    })).rejects.toThrow(/Název je příliš dlouhý/);
+    await expect(readdir(options.downloadsDirectory)).resolves.toEqual([]);
+    await expect(readFile(options.stagePath)).resolves.toEqual(stereoWebmBytes());
+    expect(options.openExternal).not.toHaveBeenCalled();
+    const result = await exportRecordingCopy({
+      ...options, openUploadPage: true, recordingName: "ř".repeat(500),
+    });
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+    expect(options.openExternal).toHaveBeenCalledExactlyOnceWith(result.uploadUrl);
   });
 
   it("Uložit a odeslat vytvoří soubor a otevře nahrávací stránku", async () => {
@@ -274,11 +373,11 @@ describe("export dokončené schůzky", () => {
     );
   });
 
-  it("dlouhé pojmenování ořízne na 40 znaků a soubor pořád uloží", async () => {
+  it("dlouhé pojmenování využije bajtový rozpočet a soubor pořád uloží", async () => {
     const { result } = await exportFixture("P".repeat(300));
 
     expect(result.fileName).toBe(
-      `LuDone-2026-09-02T12-00-00-100Z-${"P".repeat(40)}-${CLIENT_RECORDING_ID}.webm`,
+      `${FILE_PREFIX}${"P".repeat(NAME_BYTE_BUDGET)}${FILE_SUFFIX}`,
     );
     await expect(stat(result.filePath)).resolves.toMatchObject({
       size: stereoWebmBytes().length,
@@ -525,16 +624,14 @@ describe("předávka názvu do nahrávací stránky", () => {
     expect(url.searchParams.has("nazev")).toBe(false);
   });
 
-  it("dlouhý název ořízne pod serverový limit 200 znaků", () => {
-    // Server názvy delší než 200 znaků zahazuje — celý, ne po částech.
-    // Poslat delší tedy znamená přijít o název úplně.
+  it("400 českých znaků předá serveru beze zkrácení", () => {
     const url = new URL(buildRecordingUploadUrl("https://app.ludone.cz", {
       clientRecordingId: CLIENT_RECORDING_ID,
       startedAt: MICROPHONE_STARTED_AT,
       endedAt: SYSTEM_ENDED_AT,
       nazev: "Ř".repeat(400),
     }));
-    expect([...url.searchParams.get("nazev")].length).toBeLessThanOrEqual(200);
+    expect(url.searchParams.get("nazev")).toBe("Ř".repeat(400));
   });
 
   it("export předá do URL jméno, které zadal člověk", async () => {
@@ -549,33 +646,24 @@ describe("předávka názvu do nahrávací stránky", () => {
   });
 });
 
-describe("ořez názvu na serverový limit", () => {
-  // 🔴 Interop chyba nalezená 3. 9. 2026: server limituje na 200 UTF-16 jednotek
-  // (jeho `.length`), my jsme ořezávali na 200 Unicode znaků. U emoji to není totéž —
-  // surrogate pair jsou dvě jednotky na znak, takže 200 emoji = 400 jednotek a server
-  // by název zahodil CELÝ, bez chyby a bez hlášky. Obě strany si přitom myslely, že sedí.
-  const LIMIT_JEDNOTEK = 200;
-
+describe("odmítnutí názvu nad serverovým limitem", () => {
   function nazevZUrl(url) {
     return new URL(url).searchParams.get("nazev");
   }
 
-  it("název ze samých emoji nepřekročí serverový limit jednotek", () => {
+  it("600 jednotek ze samých emoji odmítne bez tichého ořezu", () => {
     const nazev = "😀".repeat(300);
-    const odeslany = nazevZUrl(
-      buildRecordingUploadUrl("https://labs.ludone.cz", { nazev }),
-    );
-    expect(odeslany.length).toBeLessThanOrEqual(LIMIT_JEDNOTEK);
+    expect(() => buildRecordingUploadUrl("https://labs.ludone.cz", { nazev }))
+      .toThrow(/Název je příliš dlouhý/);
   });
 
-  it("ořez nikdy nerozpůlí znak — nevznikne osamocený surrogate", () => {
-    // 🔴 Data musí být LICHÁ. Samé emoji nestačí: 200 jednotek je právě 100 celých párů,
-    // takže i naivní `.slice(0, 200)` by náhodou trefil hranici a test by nic neměřil.
-    // Jeden znak navíc na začátku posune řez doprostřed páru — teprve tam se to pozná.
-    const nazev = `a${"😀".repeat(300)}`;
+  it("přijatý název nikdy nerozpůlí znak — nevznikne osamocený surrogate", () => {
+    // Lichý prefix odhalí starý ořez na 200 jednotek i případný řez uprostřed páru.
+    const nazev = `a${"😀".repeat(249)}`;
     const odeslany = nazevZUrl(
       buildRecordingUploadUrl("https://labs.ludone.cz", { nazev }),
     );
+    expect(odeslany).toBe(nazev);
     expect([...odeslany].every((znak) => znak.codePointAt(0) !== 0xfffd)).toBe(true);
     expect([...odeslany].join("")).toBe(odeslany);
     for (const znak of odeslany) {
@@ -584,11 +672,11 @@ describe("ořez názvu na serverový limit", () => {
     }
   });
 
-  it("dlouhý běžný text se ořízne na limit, ne dřív", () => {
+  it("dlouhý běžný text projde celý", () => {
     const odeslany = nazevZUrl(
       buildRecordingUploadUrl("https://labs.ludone.cz", { nazev: "a".repeat(300) }),
     );
-    expect(odeslany).toBe("a".repeat(LIMIT_JEDNOTEK));
+    expect(odeslany).toBe("a".repeat(300));
   });
 
   it("krátký název s diakritikou projde beze změny", () => {

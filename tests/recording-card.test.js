@@ -494,7 +494,90 @@ async function stopRecording(panel) {
   await panel.waitForPhase("saved");
 }
 
+async function enterRecordingName(panel, name) {
+  const input = panel.document.querySelector('[data-testid="recording-name-input"]');
+  await React.act(async () => {
+    input.value = name;
+    input.dispatchEvent(new panel.document.defaultView.Event("input", { bubbles: true }));
+  });
+  return input;
+}
+
 describe("RecordingCard", () => {
+
+  it.each(["ř".repeat(501), "a".repeat(501), `a${"😀".repeat(250)}`])(
+    "501 jednotek odmítne u pole, zachová uloženou nahrávku a dovolí opravu (%#)",
+    async (name) => {
+      const panel = await renderRecordingCard();
+      try {
+        await startRecording(panel);
+        await stopRecording(panel);
+        const input = await enterRecordingName(panel, name);
+        await panel.click(panel.document.querySelector('button[type="submit"]'));
+
+        const error = panel.document.getElementById(input.getAttribute("aria-errormessage"));
+        expect(error?.textContent).toBe("Název je příliš dlouhý. Zkraťte ho.");
+        expect(error?.getAttribute("role")).toBe("alert");
+        expect(error?.hidden).toBe(false);
+        expect(error?.parentElement).toBe(input.parentElement);
+        expect(input.getAttribute("aria-invalid")).toBe("true");
+        expect(input.value).toBe(name);
+        expect(panel.phase()).toBe("saved");
+        expect(panel.document.querySelector('[role="status"]')?.textContent).toContain("Nahrávka uložena");
+        expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+        expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
+
+        const corrected = "ř".repeat(500);
+        await enterRecordingName(panel, corrected);
+        expect(input.getAttribute("aria-invalid")).toBe("false");
+        await panel.click(panel.document.querySelector('button[type="submit"]'));
+        await panel.waitForPhase("idle");
+        expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+          recordingName: corrected, openUploadPage: true,
+        });
+        expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
+      } finally {
+        await panel.cleanup();
+      }
+    },
+  );
+
+  it.each(["ř".repeat(500), "😀".repeat(250), `  ${"ř".repeat(500)}  `, "", "   "])(
+    "přijme nejvýš 500 jednotek po trim i prázdný název (%#)",
+    async (name) => {
+      const panel = await renderRecordingCard();
+      try {
+        await startRecording(panel);
+        await stopRecording(panel);
+        await enterRecordingName(panel, name);
+        await panel.click(panel.document.querySelector('button[type="submit"]'));
+        await panel.waitForPhase("idle");
+        expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+          recordingName: name, openUploadPage: true,
+        });
+      } finally {
+        await panel.cleanup();
+      }
+    },
+  );
+
+  it("po odmítnutí dlouhého názvu dovolí Jen uložit bez názvu", async () => {
+    const panel = await renderRecordingCard();
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await enterRecordingName(panel, "ř".repeat(501));
+      await panel.click(panel.document.querySelector('button[type="submit"]'));
+      expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
+      await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
+      await panel.waitForPhase("idle");
+      expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        recordingName: "", openUploadPage: false,
+      });
+    } finally {
+      await panel.cleanup();
+    }
+  });
 
   it("za běhu mění oba pruhy podle ticha a hlasitého vstupu", async () => {
     const panel = await renderRecordingCard();

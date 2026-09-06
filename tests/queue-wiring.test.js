@@ -4577,6 +4577,43 @@ describe("produkční zapojení odchozí fronty", () => {
 });
 
 describe("výslovná volba stránky přes exportní IPC", () => {
+  it("501 jednotek přes preload odmítne, zachová soubory a po opravě export zopakuje", async () => {
+    const harness = await loadMain();
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const { api, invoke } = loadPreload();
+    invoke.mockImplementation((channel, ...args) => harness.ipcHandlers.get(channel)(event, ...args));
+    const directories = ["nahravky", "ludone-exporty"].map((name) => path.join(harness.userDataPath, name));
+    const originalFiles = (await Promise.all(directories.map(async (directory) => (
+      Promise.all((await readdir(directory)).map(async (name) => {
+        const filePath = path.join(directory, name);
+        return { filePath, bytes: await readFile(filePath) };
+      }))
+    )))).flat();
+    expect(originalFiles).toHaveLength(4);
+
+    const rejected = await api.exportRecording(sessionId, {
+      recordingName: "ř".repeat(501), openUploadPage: true,
+    });
+    expect(rejected).toMatchObject({ ok: false, recordingExported: false });
+    expect(rejected.message).toContain("Název je příliš dlouhý. Zkraťte ho.");
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+    for (const { filePath, bytes } of originalFiles) {
+      await expect(readFile(filePath)).resolves.toEqual(bytes);
+    }
+
+    const corrected = "ř".repeat(500);
+    const result = await api.exportRecording(sessionId, {
+      recordingName: corrected, openUploadPage: true,
+    });
+    expect(result.ok).toBe(true);
+    expect(Buffer.byteLength(result.fileName, "utf8")).toBeLessThanOrEqual(255);
+    await expect(readFile(path.join(harness.userDataPath, result.fileName)))
+      .resolves.toEqual(stereoWebmBytes());
+    expect(harness.electron.shell.openExternal).toHaveBeenCalledOnce();
+    const [[url]] = /** @type {any[][]} */ (harness.electron.shell.openExternal.mock.calls);
+    expect(new URL(url).searchParams.get("nazev")).toBe(corrected);
+  });
+
   it.each([false, true])("přenese openUploadPage=%s přes skutečný preload až ke kopii", async (openUploadPage) => {
     const harness = await loadMain();
     const { event, sessionId } = await prepareRecordingExport(harness);
