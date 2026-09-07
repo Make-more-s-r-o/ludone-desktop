@@ -18,10 +18,25 @@ const FAILURES = {
     // ulička — a tu už tenhle repozitář jednou vyrobil (PR #51/#52).
     action: "Zkusit znovu",
     actionKind: "retry",
+    // Bez tónu vznikne třída `--undefined`, kterou styly neznají; `quiet` je tu
+    // navíc pravdivější — opakování příčinu nespraví, jen odsud vede ven.
+    actionTone: "quiet",
     state: "configuration",
     title: "Chyba nastavení aplikace",
     message: "Přihlášení blokuje neplatné nastavení aplikace.",
     guidance: "Obrať se na správce aplikace; opakování přihlášení to samo nespraví.",
+    icon: AccessDeniedIcon,
+    iconTone: "bad",
+  },
+  uloziste: {
+    // Stejně jako u konfigurace zůstává akce cestou ven po nápravě příčiny.
+    state: "storage",
+    title: "Přihlašovací údaje nejde bezpečně uložit",
+    message: "Systémové úložiště není dostupné. Přihlašovací údaje se neuložily.",
+    guidance: "Odemkni Klíčenku nebo se obrať na správce aplikace. Samotné opakování přihlášení nepomůže.",
+    action: "Zkusit znovu",
+    actionKind: "retry",
+    actionTone: "quiet",
     icon: AccessDeniedIcon,
     iconTone: "bad",
   },

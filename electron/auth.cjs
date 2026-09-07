@@ -1321,6 +1321,11 @@ function createPermissionRequestHandler({ systemPreferences, shell, logger = con
         await shell.openExternal(result.settingsUrl);
       } catch (error) {
         logger.error(`[permissions] Nastavení systému se nepodařilo otevřít: ${error.message}`);
+        result = {
+          ...result,
+          otevreniNastaveniSelhalo: true,
+          adresaNastaveni: result.settingsUrl,
+        };
       }
     }
 
