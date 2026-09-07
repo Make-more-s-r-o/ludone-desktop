@@ -579,6 +579,34 @@ describe("RecordingCard", () => {
     }
   });
 
+  it("při nahrávání ani s tichými stopami netvrdí, že jsou ověřeny", async () => {
+    const panel = await renderRecordingCard();
+
+    try {
+      await startRecording(panel);
+      panel.setLevelAmplitudes({ microphone: 0, system: 0 });
+      await panel.sampleLevels();
+
+      // Kontrolujeme i skrytý text, aby se nepravdivé tvrzení nevrátilo do DOM.
+      expect(panel.document.body.textContent).not.toMatch(/ověřen/iu);
+
+      // Po odstranění hlášky zůstává odečítači stav nahrávání i názvy zdrojů.
+      const status = panel.document.querySelector('[data-testid="recording-running-state"]');
+      expect(status?.getAttribute("role")).toBe("status");
+      expect(status?.textContent).toBe("Nahrává se");
+      expect(status?.closest('[aria-hidden="true"]')).toBeNull();
+      const labels = [...panel.document.querySelectorAll(".recording-source__label")];
+      expect(labels.map((label) => label.textContent)).toEqual(["Mikrofon", "Ostatní zvuk"]);
+      for (const label of labels) {
+        expect(label.closest('[aria-hidden="true"]')).toBeNull();
+      }
+
+      await stopRecording(panel);
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("za běhu mění oba pruhy podle ticha a hlasitého vstupu", async () => {
     const panel = await renderRecordingCard();
 

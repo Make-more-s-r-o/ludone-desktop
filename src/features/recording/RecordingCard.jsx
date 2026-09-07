@@ -903,6 +903,9 @@ export function RecordingCard({
 
       {isRecording && (
         <div className="recording-running">
+          {/* Odečítač dostává stav „Nahrává se“ a názvy obou zdrojů níže.
+              AudioLevelMeter je dekorativní (aria-hidden). Samostatné potvrzení
+              stop vynecháváme: jejich přítomnost nedokládá ověření zvuku. */}
           <div
             className={`activity-status activity-status--recording${systemAudioLost || microphoneOnly ? " is-degraded" : ""}`}
             data-testid="recording-running-state"
@@ -959,10 +962,6 @@ export function RecordingCard({
               <span className="recording-source__pill is-lost">ticho</span>
             )}
           </div>
-          {!systemAudioLost && !microphoneOnly && (
-            <span className="sr-only" aria-hidden="true">Obě stopy ověřeny</span>
-          )}
-
           {microphoneOnly && (
             <div className="recording-mode-note" role="status" aria-atomic="true">
               {MICROPHONE_ONLY_TEXT}
