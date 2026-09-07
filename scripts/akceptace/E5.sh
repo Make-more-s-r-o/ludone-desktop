@@ -18,9 +18,13 @@ test_nenastaveneho_killswitche() {
     && grep -Fq "expect(send).toHaveBeenCalledTimes(0)" tests/queue.test.js
 }
 
-zadny_zapnuty_killswitch() {
+# Hlídá se KAŽDÝ killswitch zvlášť — rozhodnutí R18 žádá dva vypínače, každý
+# s vlastním testem. Do 7. 9. 2026 se tu ptalo jen na odesílání, takže časový
+# vypínač šel zapnout a projít celou akceptací.
+zadny_zapnuty_killswitch() {       # zadny_zapnuty_killswitch <JMÉNO_VYPÍNAČE>
+  local jmeno="$1"
   local vystup="/tmp/e5-killswitch-true.out"
-  local hledany_retezec='DESKTOP_UPLOAD_ENABLED''=true'
+  local hledany_retezec="$jmeno""=true"
   : > "$vystup" || return 1
   # Schválně `grep -r`, ne `rg`: ripgrep je v sandboxu Codexu, ale ne na tomhle Macu
   # ani na runneru CI — a brána, která běží jen v jednom prostředí, není brána.
@@ -62,8 +66,15 @@ zkontroluj "electron/queue.cjs existuje a není prázdný" test -s electron/queu
 zkontroluj "unit testy queue jsou zelené" npm run test:unit -- queue
 zkontroluj "jmenovitý test nenastaveného killswitche je fail-closed" \
   test_nenastaveneho_killswitche
-zkontroluj ".env.example drží killswitch vypnutý" \
+zkontroluj ".env.example drží killswitch odesílání vypnutý" \
   grep -Fxq "DESKTOP_UPLOAD_ENABLED=false" .env.example
-zkontroluj "nikde v repu není killswitch zapnutý" zadny_zapnuty_killswitch
+zkontroluj ".env.example drží časový killswitch vypnutý" \
+  grep -Fxq "DESKTOP_TIME_ENABLED=false" .env.example
+zkontroluj "nikde v repu není killswitch odesílání zapnutý" \
+  zadny_zapnuty_killswitch DESKTOP_UPLOAD_ENABLED
+zkontroluj "nikde v repu není časový killswitch zapnutý" \
+  zadny_zapnuty_killswitch DESKTOP_TIME_ENABLED
+zkontroluj "chybějící hodnota časového killswitche nic nezaznamená (fail-closed)" \
+  node scripts/akceptace/casovac-sondy.mjs vypinac-fail-closed
 
 echo "---"; echo "chyb: $chyby"; exit $(( chyby > 0 ? 1 : 0 ))
