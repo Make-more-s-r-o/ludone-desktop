@@ -952,10 +952,10 @@ Když uživatel vědomě nahrává jen mikrofonem, pravý kanál je **digitáln�
 **Sdílení (D27/D25/D26) se desktopu netýká:** vydání veřejného odkazu je úkon na webu,
 `spec.md:31` má sdílení i archiv mimo náš rozsah. Nic neměníme.
 
-### D28b — `declaredCaptureSources`: dohodnuto, staví se ve FÁZI 2
+### D28b — `declaredCaptureSources`: dohodnuto, ✅ STAVÍME (od 7. 9. odpoledne)
 
-Domluveno se serverovou session 7. 9. 2026. **Nestavět dřív** — výslovná prosba druhé strany,
-ať parametr nevisí u nás bez protistrany, která ho čte.
+Domluveno se serverovou session 7. 9. 2026. Původně „nestavět dřív"; **Dan mezitím schválil
+plán fáze 2** a druhá strana označila tenhle parametr za **první na řadě** — takže se staví.
 
 **Tvar** (jméno i hodnoty určil server, drží konvenci jejich API):
 
@@ -988,3 +988,29 @@ druhá strana mlčela. Chyba by šla v tichém směru — vypadala by věrohodn�
 nestaví nic o penězích ani právech a jejich měření zůstává jediným zdrojem tam, kde tvrzení
 chybí. **Tuhle hranici při stavbě nepřekračovat** — kdyby se z toho stal autoritativní údaj,
 je to bezpečnostní vada, ne vylepšení.
+
+---
+
+## Fáze 2 — co přišlo od serverové session 7. 9. 2026 (Dan schválil plán)
+
+**D29 — `mcp:upload` NEEXISTUJE a je to Danova STOPKA, ne dluh.**
+Server má `MCP_OAUTH_SCOPES = ["mcp:read", "mcp:draft"]`. Přidání není jednořádkové: konstanta,
+čtyři natvrdo psané validátory, věta na souhlasové obrazovce a **nová autentizační větev** —
+a hlavně **nová souhlasová obrazovka pro uživatele**.
+🔴 **Nestavět proti němu nic, ani za vypnutým killswitchem.** `DSK-F010` tím zůstává `no-code`.
+
+**D30 — desktop běží pod identitou přihlášeného uživatele.**
+Ověřeno v `electron/auth.cjs`: `authorization_code` + `refresh_token`, `response_types: ["code"]`,
+scope `mcp:read`, volání nesou `Bearer` token toho člověka. **Žádný servisní účet.**
+⇒ Co smí vidět člověk, smí vidět desktop; nic víc. Rozšíření vyžaduje nový scope.
+⚠️ **Rozsah ale neřeší minimalizaci.** Požádal jsem server, ať v alokacích neposílá sazby ani
+jména za mzdovou bránou — co nedostaneme, nemůžeme vyzradit (diagnostika, log, crash report).
+
+**D31 — práh 110 % je HODNOTA, ne konstanta.** Danův výrok: *„defaultně max 110 %, ale potom
+se LuTrack bude dělat celý design toho modulu, nemá nic ještě. Pak bude nastavení v aplikaci
+per firma, per projekt."*
+🔴 **Nedrátovat u nás.** A důležitější než to číslo: **LuTrack jako modul zatím neexistuje**,
+takže na něm nestavět plán.
+
+**D32 — skutečné nahrávky pro serverové měření: jen záznam pořízený SCHVÁLNĚ jako zkouška.**
+Ne cizí hovor. Při pochybnosti radši žádný soubor. Platí i pro repo.
