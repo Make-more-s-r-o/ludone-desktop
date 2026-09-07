@@ -227,9 +227,16 @@ function useSystemBooleanSetting(getterName, setterName) {
         }
         setState({ value: storedValue, loaded: true, busy: false, failed: storedValue !== nextValue });
       })
-      .catch(() => {
+      .catch(async () => {
+        let value = previousValue;
+        try {
+          const actualValue = await window.ludone?.[getterName]?.();
+          if (typeof actualValue === "boolean") value = actualValue;
+        } catch {
+          // Pokud selže i čtení, ponecháme poslední známou hodnotu s chybou.
+        }
         if (active.current) {
-          setState({ value: previousValue, loaded: true, busy: false, failed: true });
+          setState({ value, loaded: true, busy: false, failed: true });
         }
       });
   };

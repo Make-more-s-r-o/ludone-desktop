@@ -1147,6 +1147,31 @@ describe("systémová nastavení", () => {
     }
   });
 
+  it("po chybě změny Docku přepínač znovu načte realitu a ponechá viditelnou chybu", async () => {
+    let dockVisible = false;
+    const settings = await renderSettings({
+      dockVisible: async () => dockVisible,
+      setDockVisible: async () => {
+        // Dock se změnil, ale nativní volání i jeho návrat ohlásily chybu.
+        dockVisible = true;
+        throw new Error("Změna Docku i návrat selhaly");
+      },
+    });
+    try {
+      const toggle = switchByLabel(settings, DOCK_LABEL);
+      expect(toggle.getAttribute("aria-checked")).toBe("false");
+
+      await React.act(async () => { toggle.click(); });
+
+      expect(toggle.getAttribute("aria-checked")).toBe("true");
+      expect(toggle.disabled).toBe(false);
+      expect(settings.ludone.getDockVisible).toHaveBeenCalledTimes(2);
+      expect(settings.document.body.textContent).toContain("Viditelnost ikony v Docku se nepodařilo změnit.");
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
   it("kliknutí oba přepínače uplatní hned přes boolean API bez kopie v localStorage", async () => {
     const settings = await renderSettings();
     try {

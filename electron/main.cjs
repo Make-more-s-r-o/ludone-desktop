@@ -1839,7 +1839,9 @@ handleValidated("settings:get-device-name", ["settings"], (_event, ...extraPaylo
 });
 handleValidated("settings:get-dock-visible", ["settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-dock-visible", extraPayload);
-  return dockVisibilityStore.get();
+  // Po selhání návratu nemusí úložiště odpovídat Docku a další zápis může selhat také.
+  // Přepínač proto na macOS čte skutečnost; uložená volba slouží pro příští start.
+  return process.platform === "darwin" ? app.dock.isVisible() : dockVisibilityStore.get();
 });
 handleValidated(
   "tray-space-warning:enable-dock",
