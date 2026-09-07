@@ -258,14 +258,22 @@ function isTrustedPanelFrame(frame) {
 
 function isTrustedSettingsAudioFrame(frame) {
   const webContents = settingsWindow?.webContents;
-  return Boolean(
-    frame
-    && webContents
-    && isTrustedRecordingSender({ sender: webContents, senderFrame: frame }, webContents)
-    && isTrustedAppUrl(frame.url)
-    && new URL(frame.url).hash === "#settings"
-    && new URL(webContents.getURL()).hash === "#settings"
-  );
+  try {
+    // `new URL` umí vyhodit — `getURL()` vrací prázdný řetězec u okna, které se právě
+    // naviguje nebo bylo zničeno. Bez `try` by výjimka vyletěla z asynchronního
+    // `setDisplayMediaRequestHandler`, `callback` by se nikdy nezavolal a požadavek by
+    // visel místo toho, aby byl čistě odmítnut. Neznámý stav = nedůvěryhodný.
+    return Boolean(
+      frame
+      && webContents
+      && isTrustedRecordingSender({ sender: webContents, senderFrame: frame }, webContents)
+      && isTrustedAppUrl(frame.url)
+      && new URL(frame.url).hash === "#settings"
+      && new URL(webContents.getURL()).hash === "#settings"
+    );
+  } catch {
+    return false;
+  }
 }
 
 function handleValidated(channel, allowedKinds, handler) {
