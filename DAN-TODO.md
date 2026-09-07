@@ -1821,3 +1821,12 @@ nefunguje, je táž nepoctivost jako „další pokus teď" u vypnutého odesíl
 
 Druhý vysoký nález (**odhlášení, které server neodvolal**) neřeším přes tebe — opravuju ho,
 protože tam je správná odpověď jednoznačná: uživatel se to musí dozvědět.
+
+## ✅ A2 VYŘEŠENO (7. 9. 2026) — Dan požádal o Apple Developer Program
+
+Čeká se na schválení Applem. Tím padá blokátor osy `exposure`: dokud nebyl program, nemohl
+vzniknout podepsaný build a **nic se nemohlo dostat k týmu**.
+
+**Co dělám mezitím:** připravím celou podepisovací a notarizační cestu tak, aby po schválení
+zbylo jen vložit certifikát — ne aby se to teprve začalo řešit. Certifikát ani Team ID
+po tobě nechci, dokud nedorazí.
