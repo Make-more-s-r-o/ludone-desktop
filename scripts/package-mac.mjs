@@ -3,6 +3,7 @@ import { access, rm, symlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { generujIkonuAplikace } from "./tray-ikony.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDirectory, "..");
@@ -137,6 +138,9 @@ if (process.env.LUDONE_PACKAGE_OUTPUT_DIR) {
   arguments_.push(`--config.directories.output=${outputDirectory}`);
 }
 
+// Generujeme před každým balením i releasem: ikona tak nikdy nezůstane starší
+// než sdílený glyf lišty a čistý checkout nepotřebuje verzovanou binární kopii.
+generujIkonuAplikace(path.resolve(projectRoot, builderConfig.mac.icon));
 await runBuilder({ arguments_, environment: plan.environment, executable });
 await preserveAudioSmokePath(outputDirectory);
 console.log(`[balení] Hotovo: DMG + ZIP pro arm64 a x64; publikování=${publishMode}.`);

@@ -275,7 +275,7 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
   ];
 }
 
-function pixely(motiv, stav, rozmer) {
+function pixely(rozmer, vykresliPixel) {
   const radek = 1 + rozmer * 4;
   const data = Buffer.alloc(radek * rozmer);
 
@@ -284,7 +284,7 @@ function pixely(motiv, stav, rozmer) {
     data[zacatekRadku] = 0;
     for (let x = 0; x < rozmer; x += 1) {
       const offset = zacatekRadku + 1 + x * 4;
-      const pixel = pixelStavu(x, y, rozmer, motiv, stav);
+      const pixel = vykresliPixel(x, y);
       data.set(pixel, offset);
     }
   }
@@ -312,7 +312,7 @@ function pngChunk(typ, data) {
   return Buffer.concat([delka, typBuffer, data, kontrolniSoucet]);
 }
 
-function png(motiv, stav, rozmer) {
+function png(rozmer, vykresliPixel) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(rozmer, 0);
   ihdr.writeUInt32BE(rozmer, 4);
@@ -325,32 +325,120 @@ function png(motiv, stav, rozmer) {
   return Buffer.concat([
     PNG_PODPIS,
     pngChunk("IHDR", ihdr),
-    pngChunk("IDAT", deflateSync(pixely(motiv, stav, rozmer), { level: 9 })),
+    pngChunk("IDAT", deflateSync(pixely(rozmer, vykresliPixel), { level: 9 })),
     pngChunk("IEND", Buffer.alloc(0)),
   ]);
 }
 
-function vystupniAdresar(argumenty) {
+function pixelAplikace(x, y, rozmer, barvy) {
+  const velikostPixelu = PLATNO / rozmer;
+  const bodX = (x + 0.5) * velikostPixelu;
+  const bodY = (y + 0.5) * velikostPixelu;
+  const stred = PLATNO / 2;
+  // Podklad má vně 1/16 plátna volnou; zaoblení zabírá pětinu plátna.
+  const polovinaPodkladu = PLATNO * 7 / 16;
+  const polomer = PLATNO / 5;
+  const qx = Math.abs(bodX - stred) - (polovinaPodkladu - polomer);
+  const qy = Math.abs(bodY - stred) - (polovinaPodkladu - polomer);
+  const vzdalenostPodkladu = Math.hypot(Math.max(qx, 0), Math.max(qy, 0))
+    + Math.min(Math.max(qx, qy), 0) - polomer;
+  const podklad = krytiPodepsaneVzdalenosti(vzdalenostPodkladu, velikostPixelu);
+  // Tentýž pulz, šířka a plátno jako v liště; pouze ho zmenšíme kolem středu,
+  // aby mezi tahem a hranou neprůhledného podkladu zůstal čitelný okraj.
+  const meritko = 0.85;
+  const glyf = krytiLomeneCary(
+    (bodX - stred) / meritko + stred,
+    (bodY - stred) / meritko + stred,
+    PULZ,
+    SIRKA_PULZU,
+    velikostPixelu / meritko,
+  );
+  const pixel = prekryj(prekryj([0, 0, 0, 0], barvy.podklad, podklad), barvy.glyf, glyf);
+  return [
+    Math.round(pixel[0]), Math.round(pixel[1]), Math.round(pixel[2]),
+    Math.round(pixel[3] * 255),
+  ];
+}
+
+// ICNS uchovává PNG pod čtyřznakovými typy; každý blok včetně hlavičky
+// nese svou délku. Zápis v Node umožní stejné generování i testy na Linuxu.
+function icns(casti) {
+  const bloky = casti.map(({ typ, data }) => {
+    const hlavicka = Buffer.alloc(8);
+    hlavicka.write(typ, 0, "ascii");
+    hlavicka.writeUInt32BE(data.length + 8, 4);
+    return Buffer.concat([hlavicka, data]);
+  });
+  const hlavicka = Buffer.alloc(8);
+  hlavicka.write("icns", 0, "ascii");
+  hlavicka.writeUInt32BE(8 + bloky.reduce((soucet, blok) => soucet + blok.length, 0), 4);
+  return Buffer.concat([hlavicka, ...bloky]);
+}
+
+export function generujIkonuAplikace(soubor) {
+  const iconset = soubor.replace(/\.icns$/, ".iconset");
+  fs.mkdirSync(iconset, { recursive: true });
+  // Neutrální dark.text na dark.listaPozadi zachovává identitu lišty a dobrou
+  // čitelnost; ikona aplikace tak nepředstírá barevný stav nahrávání či času.
+  const barvy = {
+    podklad: oklchNaRgb(PALETY.dark.listaPozadi),
+    glyf: oklchNaRgb(PALETY.dark.text),
+  };
+  const velikosti = [
+    { zaklad: 16, typy: ["icp4", "ic11"] },
+    { zaklad: 32, typy: ["icp5", "ic12"] },
+    { zaklad: 128, typy: ["ic07", "ic13"] },
+    { zaklad: 256, typy: ["ic08", "ic14"] },
+    { zaklad: 512, typy: ["ic09", "ic10"] },
+  ];
+  const casti = [];
+  const obrazky = new Map();
+  for (const { zaklad, typy } of velikosti) {
+    for (const [index, typ] of typy.entries()) {
+      const rozmer = zaklad * (index + 1);
+      if (!obrazky.has(rozmer)) {
+        obrazky.set(rozmer, png(rozmer, (x, y) => pixelAplikace(x, y, rozmer, barvy)));
+      }
+      const data = obrazky.get(rozmer);
+      const nazev = `icon_${zaklad}x${zaklad}${index === 1 ? "@2x" : ""}.png`;
+      fs.writeFileSync(path.join(iconset, nazev), data);
+      casti.push({ typ, data });
+    }
+  }
+  fs.writeFileSync(soubor, icns(casti));
+  console.log(`Vygenerována ikona aplikace (10 velikostí) do ${soubor}`);
+}
+
+function vystupniAdresar(argumenty, aplikace) {
   if (argumenty.length === 0) {
     const adresarSkriptu = path.dirname(fileURLToPath(import.meta.url));
-    return path.resolve(adresarSkriptu, "../electron/ikony");
+    return path.resolve(adresarSkriptu, aplikace ? "../build/ikona-aplikace" : "../electron/ikony");
   }
   if (argumenty.length === 2 && argumenty[0] === "--output" && argumenty[1]) {
     return path.resolve(argumenty[1]);
   }
-  throw new Error("Použití: node scripts/tray-ikony.mjs [--output <adresář>]");
+  throw new Error("Použití: node scripts/tray-ikony.mjs [--app] [--output <adresář>]");
 }
 
-const cil = vystupniAdresar(process.argv.slice(2));
-fs.mkdirSync(cil, { recursive: true });
-
-for (const motiv of MOTIVY) {
-  for (const stav of STAVY) {
-    for (const { rozmer, pripona } of VELIKOSTI) {
-      const nazev = `${motiv}-${stav}${pripona}.png`;
-      fs.writeFileSync(path.join(cil, nazev), png(motiv, stav, rozmer));
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const argumenty = process.argv.slice(2);
+  const aplikace = argumenty[0] === "--app";
+  const cil = vystupniAdresar(aplikace ? argumenty.slice(1) : argumenty, aplikace);
+  if (aplikace) {
+    generujIkonuAplikace(path.join(cil, "LuDone.icns"));
+  } else {
+    fs.mkdirSync(cil, { recursive: true });
+    for (const motiv of MOTIVY) {
+      for (const stav of STAVY) {
+        for (const { rozmer, pripona } of VELIKOSTI) {
+          const nazev = `${motiv}-${stav}${pripona}.png`;
+          fs.writeFileSync(path.join(cil, nazev), png(
+            rozmer,
+            (x, y) => pixelStavu(x, y, rozmer, motiv, stav),
+          ));
+        }
+      }
     }
+    console.log(`Vygenerováno ${MOTIVY.length * STAVY.length * VELIKOSTI.length} ikon do ${cil}`);
   }
 }
-
-console.log(`Vygenerováno ${MOTIVY.length * STAVY.length * VELIKOSTI.length} ikon do ${cil}`);
