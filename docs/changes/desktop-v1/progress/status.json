@@ -2,7 +2,7 @@
   "projekt": {
     "id": "desktop-v1",
     "nazev": "LuDone Desktop",
-    "aktualizovano": "2026-09-02",
+    "aktualizovano": "2026-09-07",
     "problem": "Dan nechce dál platit paušál za Plaud ani používat jeho neměnné, osekané funkce; nahrávky navíc končí u něj místo u týmu. Kvůli LuTracku musí lidé přepínat do prohlížeče a zapomenuté hodiny pak ve výkazu chybějí.",
     "cil": "Macová aplikace v horní liště spustí nahrávání schůzky a měření času. Zvuk nejdřív bezpečně uloží na disk; archiv, přepis a další práce se záznamem zůstávají ve webovém LuDone.",
     "mimoRozsah": [
@@ -227,7 +227,7 @@
       "rozsah": "approved",
       "dodani": "merged",
       "vystaveni": "labs",
-      "overeni": "tests-green",
+      "overeni": "unverified",
       "dalsiKrok": "Přestavěno na čtyři záložky podle návrhu (PR #51): Účet · Zvuk · Záznamy · Diagnostika. Přibyly řádky Zařízení a Prostředí, oba přepínače (Dock, start po přihlášení, PR #50) a celá Diagnostika včetně exportu z pevného allowlistu. Připomínky se vědomě nestaví (BD-N43)."
     },
     {
@@ -235,9 +235,9 @@
       "nazev": "Ikona v Docku jako volba",
       "riziko": "normal",
       "rozsah": "approved",
-      "dodani": "no-code",
-      "vystaveni": "disabled",
-      "overeni": "unverified",
+      "dodani": "merged",
+      "vystaveni": "labs",
+      "overeni": "verified-live",
       "dalsiKrok": "Přidat výchozí vypnutou volbu do Nastavení a ověřit oba režimy na Macu."
     },
     {
@@ -253,7 +253,7 @@
   ],
   "praveSeStavi": [],
   "blockery": [
-    "B1 · Apple Developer: Dan o program POŽÁDAL (3. 9.). Až přijde schválení, doplnit pět GitHub secrets (MAC_CSC_LINK, MAC_CSC_KEY_PASSWORD, APPLE_API_KEY_P8, APPLE_API_KEY_ID, APPLE_API_ISSUER) a vydat první podepsanou verzi.",
+    "A2 · Apple Developer Program: Dan POŽÁDAL, čeká na schválení. Balení je od 7. 9. funkční (PR #82) — až certifikát dorazí, mění se jen přihlašovací údaje, ne cesta.",
     "Expozice: popisy tří produkčních vad ludone-app byly ~10 h ve veřejném repu. Repozitář vrácen na privátní, detaily z HEAD odstraněny. Rozhodnutí A/B/C na Danovi — doporučení A (opravit ty vady).",
     "B5 · Electron 37.3.1, opravy až v 39.8.10; context-isolation bypass se nás týká přímo. Upgrade jen se živým ověřením — testy si Electron podstrkují.",
     "B2 · Barva hlavního tlačítka: panel modrý, onboarding zelený. Ukázka: progress/barva-tlacitka.html",
@@ -264,8 +264,8 @@
     "Stereo export nikdo neposlechl — oddělení kanálů potvrdí až přehrání nahrávky.",
     "Výpadek ostatního zvuku nikdo nevyvolal odpojením sluchátek.",
     "Ukončení aplikace během nahrávání a obnova po pádu nikdo nezkusil naostro (ošetřeno v PR #38 a #40).",
-    "Skutečné sestavení electron-builderu neproběhlo; ověřená je konfigurace, ne hotový DMG.",
-    "Odesílání na server: klient fáze 2 hotový a vypnutý, endpointy nejsou živé."
+    "Odesílání na server: klient fáze 2 hotový a vypnutý, endpointy nejsou živé.",
+    "Podepsaný build: sestavení proběhlo 7. 9. (arm64 106,7 MB + x64 111,9 MB, podpis adhoc); PODEPSANÝ a notarizovaný build zatím nikdo neviděl — čeká na schválení Apple Developer Programu."
   ],
   "zdroje": [
     {
