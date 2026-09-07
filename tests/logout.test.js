@@ -716,3 +716,82 @@ describe("stav lišty po odhlášení — kontrola, která se ozve, až přistan
     expect(typeof b3Pristala).toBe("boolean");
   });
 });
+
+describe("issuer z uložené session", () => {
+  // 🔴 PROČ: přihlášení bere issuer z prostředí a `main.cjs` ho proti allowlistu ověřuje.
+  // ODHLÁŠENÍ ho ale bere z uloženého `oauth.enc` a kontrolovalo jen tvar adresy — čistá
+  // HTTPS adresa stačila. Podstrčený soubor tak uměl odeslat revokační požadavek s PLATNÝM
+  // tokenem na cizí server. Sourozenecké cesty: jedna se hlídala, druhá ne.
+  const CIZI_ISSUER = "https://utocnik.example";
+
+  it("neosloví hostitele mimo allowlist a token mu nepošle", async () => {
+    await inTemporaryAppData(async ({ app }) => {
+      const safeStorage = fakeSafeStorage();
+      const { blobPath } = await writeSession(app, safeStorage, {
+        issuer: CIZI_ISSUER,
+        resource: `${CIZI_ISSUER}/api/mcp`,
+      });
+      const oslovene = [];
+      const fetchImpl = vi.fn(async (url) => {
+        oslovene.push(String(url));
+        return discoveryResponse({
+          ...METADATA,
+          issuer: CIZI_ISSUER,
+          revocation_endpoint: `${CIZI_ISSUER}/api/mcp/oauth/revoke`,
+        });
+      });
+
+      const result = await createController(app, safeStorage, fetchImpl).logout();
+
+      // Cizí hostitel se nesmí dozvědět ani to, že se odhlašujeme.
+      expect(oslovene).toEqual([]);
+      // Lokální úklid ale proběhnout MUSÍ — jinak by podstrčený soubor navíc znemožnil
+      // odhlášení a token by na disku zůstal.
+      expect(result).toEqual({
+        signedOutLocally: true,
+        serverRevoked: false,
+        reason: "unreadable-session",
+      });
+      expect(fs.existsSync(blobPath)).toBe(false);
+    });
+  });
+
+  it("povoleného hostitele osloví dál", async () => {
+    await inTemporaryAppData(async ({ app }) => {
+      const safeStorage = fakeSafeStorage();
+      await writeSession(app, safeStorage);
+      const oslovene = [];
+      const fetchImpl = vi.fn(async (url) => {
+        oslovene.push(new URL(String(url)).host);
+        if (String(url).includes("/.well-known/")) return discoveryResponse();
+        return { ok: true, status: 200 };
+      });
+
+      const result = await createController(app, safeStorage, fetchImpl).logout();
+
+      expect(oslovene).toEqual(["labs.ludone.cz", "labs.ludone.cz"]);
+      expect(result.serverRevoked).toBe(true);
+    });
+  });
+
+  it("seznam povolených hostitelů je v repozitáři jediný a všechny cesty ho sdílejí", () => {
+    // auth.cjs je zdroj pravdy; main.cjs si ho importuje, aby nevznikl druhý výčet.
+    expect(authSource).toMatch(
+      /const POVOLENI_HOSTITELE_ISSUERU = Object\.freeze\(\["app\.ludone\.cz", "labs\.ludone\.cz"\]\);/,
+    );
+    expect(mainSource).toMatch(/POVOLENI_HOSTITELE_ISSUERU\.includes\(issuer\.host\)/);
+    expect(mainSource).not.toMatch(/\["app\.ludone\.cz", "labs\.ludone\.cz"\]/);
+
+    // preload.cjs a settings.cjs hlídají, KTERÝ origin si smí uživatel uložit. Je to jiná
+    // brána než tahle, ale musí povolovat totéž — jinak by šlo uložit origin, který
+    // přihlášení i odhlášení odmítne, nebo naopak.
+    const require = createRequire(import.meta.url);
+    const { AUTH_ORIGINS } = require("../electron/settings.cjs");
+    const { POVOLENI_HOSTITELE_ISSUERU } = require("../electron/auth.cjs");
+    expect([...AUTH_ORIGINS].map((origin) => new URL(origin).host).sort())
+      .toEqual([...POVOLENI_HOSTITELE_ISSUERU].sort());
+    const preloadOrigins = [...preloadSource.matchAll(/"(https:\/\/[a-z.]+\.ludone\.cz)"/g)]
+      .map(([, origin]) => new URL(origin).host);
+    expect([...new Set(preloadOrigins)].sort()).toEqual([...POVOLENI_HOSTITELE_ISSUERU].sort());
+  });
+});

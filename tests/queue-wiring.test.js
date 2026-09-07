@@ -6345,3 +6345,92 @@ describe("selhání otevření prohlížeče z menu lišty", () => {
     expect(harness.electron.dialog.showMessageBox).not.toHaveBeenCalled();
   });
 });
+
+describe("plošná pojistka nad každým webContents", () => {
+  // ⚠️ Není to měřidlo opravené vady — z dnešního rendereru se sem nedá dostat (nemá
+  // `window.open`, `target="_blank"` ani `<webview>`). Je to obrana do hloubky předepsaná
+  // ve `specs/E3-vady-a-identita.md`, krok 4. Test hlídá, že pojistka existuje a že si
+  // někdo příště nesplete „deny" s „otevři to v novém okně".
+  function fakeContents() {
+    const posluchaci = new Map();
+    return {
+      posluchaci,
+      windowOpenHandler: undefined,
+      on(event, handler) {
+        posluchaci.set(event, handler);
+        return this;
+      },
+      setWindowOpenHandler(handler) {
+        this.windowOpenHandler = handler;
+      },
+    };
+  }
+
+  function navigace(url) {
+    const event = { prevented: false, preventDefault() { this.prevented = true; } };
+    return { event, url };
+  }
+
+  async function pojistka(harness = undefined) {
+    const loaded = harness ?? await loadMain();
+    const contents = fakeContents();
+    loaded.electron.app.emit("web-contents-created", {}, contents);
+    return { harness: loaded, contents };
+  }
+
+  it("zakáže navigaci mimo vlastní dokumenty a vlastní pustí", async () => {
+    const { contents } = await pojistka();
+    const willNavigate = contents.posluchaci.get("will-navigate");
+    expect(willNavigate).toBeTypeOf("function");
+
+    for (const cizi of [
+      "https://utocnik.example/",
+      "https://app.ludone.cz/",
+      "file:///etc/passwd",
+      "ludone://app/neco-jineho",
+      "javascript:alert(1)",
+      "about:blank",
+    ]) {
+      const { event, url } = navigace(cizi);
+      willNavigate(event, url);
+      expect(event.prevented, `${cizi} se měla zakázat`).toBe(true);
+    }
+
+    for (const vlastni of [
+      pathToFileURL(path.join(mainDirectory, "..", "dist", "index.html")).toString(),
+      "ludone://app/index.html",
+      "ludone://app/index.html#settings",
+      "ludone://tray-warning/index.html#tray-space-warning",
+    ]) {
+      const { event, url } = navigace(vlastni);
+      willNavigate(event, url);
+      expect(event.prevented, `${vlastni} se zakázat neměla`).toBe(false);
+    }
+  });
+
+  it("nové okno nikdy neotevře; https pošle do systémového prohlížeče", async () => {
+    const { harness, contents } = await pojistka();
+    expect(contents.windowOpenHandler).toBeTypeOf("function");
+
+    expect(contents.windowOpenHandler({ url: "https://ludone.cz/napoveda" }))
+      .toEqual({ action: "deny" });
+    expect(harness.electron.shell.openExternal)
+      .toHaveBeenCalledExactlyOnceWith("https://ludone.cz/napoveda");
+
+    harness.electron.shell.openExternal.mockClear();
+    for (const url of ["file:///etc/passwd", "javascript:alert(1)", "ludone://app/index.html", "nesmysl"]) {
+      expect(contents.windowOpenHandler({ url })).toEqual({ action: "deny" });
+    }
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+  });
+
+  it("odmítne připojení <webview>", async () => {
+    const { contents } = await pojistka();
+    const willAttach = contents.posluchaci.get("will-attach-webview");
+    expect(willAttach).toBeTypeOf("function");
+
+    const event = { prevented: false, preventDefault() { this.prevented = true; } };
+    willAttach(event);
+    expect(event.prevented).toBe(true);
+  });
+});

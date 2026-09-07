@@ -8,6 +8,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
+  POVOLENI_HOSTITELE_ISSUERU,
   createAuthController: realCreateAuthController,
   createAuthSessionCoordinator,
 } = require("../electron/auth.cjs");
@@ -51,14 +52,18 @@ afterAll(async () => {
 });
 
 function compiledAuthWiring(createAuthController) {
+  // `resolveAuthIssuer` si allowlist hostitelů bere z auth.cjs, aby v repozitáři nebyl
+  // dvakrát. Harness proto musí dodat TUTÉŽ konstantu, ne vlastní kopii — jinak by měřil
+  // jiný seznam, než jaký běží v produkci.
   return Function(
     "createAuthController",
+    "POVOLENI_HOSTITELE_ISSUERU",
     `"use strict";
      ${functionSource(mainSource, "resolveAuthIssuer")}
      ${functionSource(mainSource, "resolveAuthClientId")}
      ${functionSource(mainSource, "createAuthBeginHandler")}
      return createAuthBeginHandler(createAuthController);`,
-  )(createAuthController);
+  )(createAuthController, POVOLENI_HOSTITELE_ISSUERU);
 }
 
 const fakeApp = { getPath: vi.fn(() => AUTH_WIRING_APP_DATA), isPackaged: false };

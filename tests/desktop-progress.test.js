@@ -1,14 +1,25 @@
+// 🔴 PROČ SE TENHLE SOUBOR PŘESTĚHOVAL: ležel ve `scripts/` s příponou `.mjs`, běhal na
+// `node:test` — a nikdo ho nespouštěl. Vitest bere jen `tests/**/*.test.js` a `node --test`
+// se v repozitáři nevolá odnikud, takže těchhle 24 asercí nikdy neproběhlo. Soubor s testy,
+// který nikdo nespouští, vypadá zvenčí stejně jako brána; jenže neměří nic. Aserce zůstávají
+// beze změny (`node:assert/strict`), mění se jen běhoun — teď jede v `npm run test:unit`,
+// tedy i v `npm run gates`.
+
 import assert from "node:assert/strict";
 import { chmod, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, test } from "node:test";
+import { afterEach, test } from "vitest";
 import { spawnSync } from "node:child_process";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const GENERATOR = path.join(ROOT, "scripts", "desktop-progress.mjs");
 const docasneAdresare = [];
+// Každý test spouští skutečný podproces generátoru (nejpomalejší z nich dvakrát). Výchozích
+// 5 s vitestu na to na zatíženém Macu nestačí — limit je tu kvůli podprocesu, ne kvůli
+// změkčení aserce; ty zůstávají všechny do jedné.
+const SPUSTENI_GENERATORU_MS = 60_000;
 
 afterEach(async () => {
   await Promise.all(docasneAdresare.splice(0).map((adresar) => rm(adresar, { recursive: true, force: true })));
@@ -95,6 +106,9 @@ async function pripravFixture({ status = vychoziStatus(), selzeGit = false, selz
       : "[ \"$#\" -eq 8 ] && [ \"$1\" = 'pr' ] && [ \"$2\" = 'list' ] && [ \"$3\" = '--state' ] && [ \"$4\" = 'open' ] && [ \"$5\" = '--limit' ] && [ \"$6\" = '100' ] && [ \"$7\" = '--json' ] && [ \"$8\" = 'number,title,url,isDraft' ] || exit 2\nprintf '%s\\n' '[{\"number\":27,\"title\":\"Čekací obrazovka\",\"url\":\"https://example.test/pr/27\",\"isDraft\":false}]'; exit 0",
   );
 
+  // Anotace je tu proto, že `delete` na odvozeném tvaru neprojde typecheckem — soubor
+  // dřív ležel ve `scripts/` mimo `jsconfig.json`, takže si toho nikdo nevšiml.
+  /** @type {Record<string, string | undefined>} */
   const env = {
     ...process.env,
     PATH: `${bin}${path.delimiter}${process.env.PATH ?? ""}`,
@@ -159,7 +173,7 @@ test("🧪 se nikdy nevykreslí jako ✅ a offline stránka má data uvnitř", a
   assert.match(html, /data-live-fact="commit"[\s\S]{0,240}?01234567/);
   assert.match(html, /data-live-fact="test-count"[\s\S]{0,240}?<strong>8<\/strong>/);
   assert.match(html, /data-live-fact="open-prs"[\s\S]{0,240}?<strong>1<\/strong>/);
-});
+}, SPUSTENI_GENERATORU_MS);
 
 test("chybějící údaj i nezměřitelné živé fakty skončí jako ‚neměřeno‘", async () => {
   const status = vychoziStatus();
@@ -184,7 +198,7 @@ test("chybějící údaj i nezměřitelné živé fakty skončí jako ‚neměř
       `Živý fakt ${fakt} musí přiznat, že není změřený.`,
     );
   }
-});
+}, SPUSTENI_GENERATORU_MS);
 
 test("dvojí běh generátoru vyrobí bajtově totožný soubor", async () => {
   const fixture = await pripravFixture();
@@ -198,4 +212,4 @@ test("dvojí běh generátoru vyrobí bajtově totožný soubor", async () => {
   const druhyHtml = await readFile(fixture.vystup);
 
   assert.deepEqual(druhyHtml, prvniHtml);
-});
+}, SPUSTENI_GENERATORU_MS);

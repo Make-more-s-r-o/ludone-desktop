@@ -46,9 +46,11 @@ jobs:
             throw new Error(`V release prostředí chybí: ${missing.join(", ")}`);
           }
           NODE
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:unit
+      # 🔴 Vlastní výčet bran se tady jednou už rozešel s `ci.yml`: brána
+      # `preskocene` přibyla do `npm run gates`, ale do tohoto seznamu ne, takže
+      # vydání jelo o jednu kontrolu chudší než každý push. Voláme proto TUTÉŽ
+      # bránu; nový výčet se zase rozejde. Hlídá to `tests/brany-workflow.test.js`.
+      - run: npm run gates
       - name: Příprava notářského klíče mimo repozitář
         env:
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}

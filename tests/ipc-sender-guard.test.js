@@ -154,16 +154,24 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     )).toBe(false);
   });
 
-  it("odmítne žádost okna nastavení o mikrofon", () => {
+  // 🔴 Tenhle test se dřív jmenoval „odmítne žádost okna nastavení o mikrofon" a od
+  // 40f17f2 (opakovatelná zkouška zvuku v Nastavení) tvrdil něco, co produkce nedělá:
+  // allowlist je `["panel", "settings"]`, takže Nastavení mikrofon DOSTANE. Zelený zůstal
+  // jen proto, že fixture zapomněla `#settings` v URL — měřil tedy jinou hranici, než jak
+  // se jmenoval. Teď měří tu skutečnou, a to v OBOU směrech: bez druhé poloviny by stačilo
+  // zahodit kontrolu hashe a test by zůstal zelený.
+  it("pustí mikrofon Nastavení jen v jeho vlastním dokumentu #settings", () => {
     const panel = createWebContents();
-    const settings = createWebContents();
-    permissionGuard.setWindows({ webContents: panel }, { webContents: settings });
+    const settingsVeSvem = createWebContents(`${trustedUrl}#settings`);
+    const zadost = { isMainFrame: true, requestingUrl: trustedUrl, mediaTypes: ["audio"] };
 
-    expect(permissionGuard.isAllowedMediaPermission(settings, "media", {
-      isMainFrame: true,
-      requestingUrl: trustedUrl,
-      mediaTypes: ["audio"],
-    })).toBe(false);
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settingsVeSvem });
+    expect(permissionGuard.isAllowedMediaPermission(settingsVeSvem, "media", zadost)).toBe(true);
+
+    // Totéž okno po navigaci na jinou část aplikace už mikrofon nedostane.
+    const settingsJinde = createWebContents(trustedUrl);
+    permissionGuard.setWindows({ webContents: panel }, { webContents: settingsJinde });
+    expect(permissionGuard.isAllowedMediaPermission(settingsJinde, "media", zadost)).toBe(false);
   });
 
   it("povolí panelu zachytávání obrazovky se systémovým zvukem hlášené jako prázdné mediaTypes", () => {
