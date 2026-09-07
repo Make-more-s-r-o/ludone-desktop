@@ -790,3 +790,49 @@ a proto ji **behaviorální test zamknout nemůže**. Drží ji strukturální t
 ⚠️ Upřesnění od serverové session k dřívějšímu pravidlu: **jedna červená neznamená „varování",
 znamená „nevíš"** — může to být křehká aserce, nebo jediné poctivé místo, kde ta pravda žije.
 Lepší odpověď než přidat druhý test na totéž je **doložit, že to drží dvě různá místa**.
+
+---
+
+## 7. 9. — název zařízení (PR #86) a přeměření zbylých nálezů
+
+**PR #86** — panel hlásil „MacBook Pro — mikrofon" i bez názvu stopy od prohlížeče. Na Macu
+Studio s USB mikrofonem by uživatel četl název přístroje, který u něj neleží. Nově
+„Mikrofon — název neznámý", tedy chybějící údaj místo vymyšleného modelu.
+Brány `0/0/0`, **1000 zelených**, sabotáže 3🔴:1🟢.
+
+🔴 **Přiznaná mezera:** náhrada `||` za `.trim()` by chybějící `label` shodila. Vrátil jsem
+odolnost přes `?.`, ale **žádný test to nekryje** — pomocník v testech vyplňuje výchozí
+název, takže se `undefined` ke kódu nedostane. Po třetím pokusu jsem test zahodil a napsal
+důvod do kódu; pojistka stojí na komentáři, ne na zelené bráně, a je to tam řečeno naplno.
+
+### Zbylé nálezy auditu jsem přeměřil, ne přepsal
+
+Detail pěti „nízkých" nálezů v repu nebyl — zůstal v konverzaci, kterou komprese sežrala.
+Místo psaní zadání z hlavy jsem si je našel znovu: **catch bloky, jejichž celé tělo je
+`console.*`**. Deset míst, ale vada to není všude.
+
+| nález z auditu | po přeměření |
+|---|---|
+| `App.jsx:158` — poškozený `outgoing.json` skryje frontu | ❌ **už neplatí** — nedostupná fronta hlásí `role="alert"` |
+| `AuthErrorScreen.jsx:55` — neplatný origin jako obecná chyba | ❌ **už neplatí** — „HTTPS origin" se klasifikuje jako `konfigurace` |
+| `main.cjs:2923` — tichá chyba kontroly aktualizací | ⚪ **obhajitelné** — volá se jen automaticky (ř. 2967/2969), uživatel nic neklikl |
+| `main.cjs:3655`, `2975` | ⚪ **záměr**, důvod stojí v komentáři |
+
+**Byl bych poslal Codex opravovat dvě věci, které jsou dávno hotové.** Souhrnná tabulka
+stárne rychleji než kód pod ní.
+
+### Co měření našlo místo toho — asymetrie dvou sourozeneckých cest
+
+`main.cjs` zařazuje do odchozí fronty na dvou místech. **Nahrávka** při selhání uživatele
+zastaví (`noteDeferredQuitFailure` s `requiresUserConfirmation`). **Záznam času** (ř. 2503)
+při témž selhání jen zapíše do konzole — záznam zůstane lokálně uzavřený, do fronty se
+nedostane, tray fakt se neaktualizuje a uživatel nemá jak zjistit, že o práci přišel.
+
+🔴 **Silnější signál než jednotlivý zámek bez obhájce: dvě cesty pro totéž, jedna hlídaná
+a druhá ne.** Rozdíl mezi nimi nikdo nezvolil — vznikl tím, že se psaly zvlášť. Hledat
+sourozence a porovnat jejich obranu je levnější než hledat vady po jedné.
+
+**Vlna běží** (dva panely v Orce, `gpt-6-astra` na `xhigh`):
+1. `uloziste` nemá obrazovku ⇒ uživatel dostane „zkus znovu" u chyby, kterou opakování
+   nespraví (Klíčenka není dostupná) · „Otevřít Nastavení" selže jen do logu
+2. zaznamenaný čas se nezařadí a nikdo se to nedozví
