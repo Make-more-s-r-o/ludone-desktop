@@ -1239,3 +1239,64 @@ běží 2,3 s a v plné sadě **vyprší po 5 s**. Nezvedal jsem globální stro
 — dostal vlastní 30s limit a v kódu je napsáno proč.
 
 **Stav:** `main` `fcac972`, **1049 zelených**, 0 otevřených PR, 0 worktrees. **Dnes 15 PR.**
+
+---
+
+## 7./8. 9. — noční běh: audit masterplánu, E2E a šest PR
+
+Dan zadal večer: *„Audit na konci celého masterplánu, že je hotové. E2E testing. Opravit, ať
+může jít ráno na produkci."* Odpověď na první otázku je **není hotové, ale ne kvůli kódu** —
+a „ráno na produkci" nešlo celé, protože bez certifikátu Apple balíček **nemá
+`_CodeSignature` vůbec**.
+
+### Audit — 41 nálezů, 26 potvrzených
+
+Osm nezávislých pohledů, každý nález adversariálně ověřený (49 agentů). **Patnáct nálezů
+ověření vyvrátilo** — a to vyvracení mělo cenu: u jednoho auditor „přestal číst o řádek dřív,
+než je podmínka".
+
+🔴 **Systémový vzorec: matice lhala OBĚMA směry.** `F005` (bezpečnostní obnova tokenu) byla
+vedená jako `merged | tests-green` a **ten kód neexistuje**; `F010` jako `no-code`, přitom
+`upload-client.cjs` má **665 řádků** a je zapojený. Souhrn pod maticí měl **všechna čtyři
+čísla** špatně.
+
+### Šest PR (#95–#100)
+
+| PR | co |
+|---|---|
+| #95 | tichý odznak jednostopého nahrávání + stropy pro testy spouštějící podprocesy |
+| #96 | tři červené v akceptaci: podpis bez certifikátu → SKIP s důvodem, timeout, sken tajemství |
+| #97 | dvanáct nepravd ve `spec.md`; **kód se nezměnil ani o řádek** |
+| #98 | pět kódových mezer (release brána, osiřelý test, allowlist při odhlášení, vadné měřidlo) |
+| #99 | akceptační podmínky pro časovač + killswitch času v E5 |
+| #100 | běhová cesta selhání zařazení času — **oprava mého vlastního nedodělku z #88** |
+
+**Akceptace: 55 PASS → 57 PASS → devátý skript pro money agendu.** Testů 1049 → **1074**.
+
+### 🔴 Sabotáž, kvůli které to celé stálo za to
+
+Brána killswitche v `main.cjs` změněná z `=== "true"` na `!== "false"` (chybějící hodnota =
+zapnuto) nechala **všech 39 unit testů časovače zelených A celou `E5` zelenou**. Chytila ji
+**jedině nová podmínka v `E9`**. Časovač přitom zapisuje hodiny do **mzdových nákladů**.
+
+### Co se naučilo o měření
+
+1. **Zelená sabotáž má TŘETÍ příčinu**: generovaný **untracked** artefakt, který
+   `git checkout -- .` neobnoví. Dvakrát za večer vyrobil falešnou červenou.
+2. **Sériové měření** (`--no-file-parallelism`) je pod cizí zátěží jediné důvěryhodné.
+   Stroj měl kvůli jiným projektům `load 20–330`. Zelená pod zátěží je silný důkaz,
+   červená pod zátěží slabý.
+3. 🔴 **Když opravuješ A podle B, změř i B.** V #88 jsem srovnal čas podle nahrávky a ohlásil
+   to hotové. Změřil jsem **rozdíl**, ne absolutní stav ani jedné cesty.
+4. ⚠️ **A korekci vlastní chyby změř taky.** Napsal jsem pak, že tabulka z #88 byla
+   nepravdivá „v obou sloupcích" — měření to **vyvrátilo**, sloupec o nahrávce držel.
+   Přehnaná sebekritika je taky nepřesnost, jen zní zodpovědně.
+
+### Codex vypadl uprostřed
+
+Oba packety spadly patnáct sekund po sobě na **vyčerpaný limit ChatGPT účtu do 13. 9.**
+Práci převzali Claude podagenti — a **těm došel limit ve 20:00**. Zachránilo to jen to, že
+měli commitnuto.
+
+**Stav:** `main` zelený, **1074 zelených testů**, akceptace `E1..E9` zelená (mimo `E3`, kde
+chybí zabalená `.app`), 0 otevřených PR, 0 worktreí. **Dnes 21 mergnutých PR.**
