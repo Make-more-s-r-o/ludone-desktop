@@ -1401,6 +1401,13 @@ svg {
   background: var(--panel-page);
 }
 
+.auth-error-panel--embedded {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+
 .auth-error-panel__announcement {
   display: flex;
   flex-direction: column;

@@ -214,6 +214,7 @@ function savedRecordingMetadata(recording) {
 }
 
 export function RecordingCard({
+  canSend = true,
   compact = false,
   onActivityChange,
   todaySummary = null,
@@ -345,6 +346,7 @@ export function RecordingCard({
 
   async function exportSavedRecording(name, openUploadPage) {
     if (!savedRecording || exporting) return;
+    if (openUploadPage && !canSend) return;
     if (name.trim().length > MAX_UPLOAD_NAME_UTF16_UNITS) {
       setExportError("Název je příliš dlouhý. Zkraťte ho.");
       return;
@@ -748,9 +750,10 @@ export function RecordingCard({
       // Příprava i ukládání jsou aktivní fáze. `idle` se nahlásí až poté, co
       // finishRecording doběhne a hlavní proces stihne položku zařadit do fronty.
       active: session.phase !== "idle",
+      pendingSave: savedRecording !== null,
       systemAudioState: session.systemAudioState,
     });
-  }, [onActivityChange, session.phase, session.systemAudioState]);
+  }, [onActivityChange, savedRecording, session.phase, session.systemAudioState]);
 
   const statusLabel = {
     idle: "Připraveno",
@@ -841,7 +844,7 @@ export function RecordingCard({
               <button
                 type="submit"
                 className="button button--primary button--wide"
-                disabled={exporting}
+                disabled={exporting || !canSend}
               >
                 Uložit a odeslat
               </button>

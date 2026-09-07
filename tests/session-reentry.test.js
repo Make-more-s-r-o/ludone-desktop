@@ -41,6 +41,7 @@ async function click(element, view) {
  *   initialOrigin?: string,
  *   initialSession?: boolean,
  *   hasAuthSession?: () => Promise<boolean>,
+ *   getAuthSessionState?: () => Promise<string>,
  *   switchAuthOrigin?: (nextOrigin: string) => Promise<{
  *     signedOutLocally: boolean,
  *     serverRevoked: boolean,
@@ -54,6 +55,7 @@ async function renderWindows({
   beginAuth: beginAuthImplementation,
   beginAuthResult = { ok: false, duvod: "bez-site" },
   hasAuthSession: hasAuthSessionImplementation,
+  getAuthSessionState,
   initialOrigin = PRODUCTION_ORIGIN,
   initialSession = false,
   switchAuthOrigin: switchAuthOriginImplementation,
@@ -98,6 +100,7 @@ async function renderWindows({
     };
   });
   const ludone = {
+    ...(getAuthSessionState ? { getAuthSessionState } : {}),
     runtime: { resetOnboarding: false },
     beginAuth,
     cancelAuth: vi.fn().mockResolvedValue({ ok: true, cancelled: 1 }),
@@ -366,6 +369,35 @@ describe("návrat do aplikace po ztrátě session", () => {
 });
 
 describe("oznámení změny session mezi okny", () => {
+  it("otevřená okna zjistí vypršení bez změny fokusu a panel nabídne nové přihlášení", async () => {
+    let state = "valid";
+    const panel = await renderWindows({
+      initialSession: true,
+      withSettings: true,
+      getAuthSessionState: async () => state,
+      beginAuth: async () => {
+        state = "valid";
+        return { ok: true, user: USER };
+      },
+    });
+    await waitForSignedIn(panel);
+    state = "expired";
+    // Interval běží v otevřených oknech; neposíláme focus ani oznámení z main.
+    await React.act(async () => {
+      await new Promise((resolve) => panel.view.setTimeout(resolve, 1_100));
+    });
+    expect(panel.document.querySelector('#panel-root [data-auth-state="signed-in"]')).toBeNull();
+    expect(panel.document.querySelector('[data-testid="auth-error-message"]')?.textContent)
+      .toContain("Platnost přihlášení skončila");
+    expect(panel.document.querySelector('[data-testid="settings-account-status"]')?.textContent)
+      .toBe("Přihlášení vypršelo");
+    await click(buttonWithText(panel.document, "Přihlásit se znovu"), panel.view);
+    await waitForSignedIn(panel);
+    expect(panel.ludone.beginAuth).toHaveBeenCalledOnce();
+    expect(panel.ludone.logout).not.toHaveBeenCalled();
+    expect(panel.ludone.cancelAuth).not.toHaveBeenCalled();
+  });
+
   it("používá existující validovaný session kanál jako probuzení bez dat", () => {
     const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
     const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");

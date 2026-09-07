@@ -31,7 +31,8 @@ export function App() {
   const initiallyComplete = !runtime.resetOnboarding && window.localStorage.getItem(ONBOARDING_KEY) === "true";
   const [onboardingComplete, setOnboardingComplete] = useState(initiallyComplete);
   const [user, setUser] = useState(null);
-  const [sessionExists, setSessionExists] = useState(null);
+  const [sessionState, setSessionState] = useState(null);
+  const sessionExists = sessionState === null ? null : sessionState === "valid";
   const [recording, setRecording] = useState({ active: false, systemAudioState: "inactive" });
   const [tracking, setTracking] = useState({ active: false });
   const [queueSnapshot, setQueueSnapshot] = useState({ items: null, status: null, unavailable: false });
@@ -43,26 +44,34 @@ export function App() {
   const queueItemsFingerprintRef = useRef(null);
   const trayCommandId = useRef(0);
   const panelActionsAvailable = onboardingComplete && sessionExists === true;
+  const recordingControlsAvailable = recording.active || recording.pendingSave;
+  const recordingControlsAvailableRef = useRef(recordingControlsAvailable);
+  recordingControlsAvailableRef.current = recordingControlsAvailable;
   const panelActionsAvailableRef = useRef(panelActionsAvailable);
   panelActionsAvailableRef.current = panelActionsAvailable;
 
   const refreshAuthSession = useCallback(({ suspendActions = false } = {}) => {
     const requestId = authSessionRequestId.current + 1;
     authSessionRequestId.current = requestId;
-    if (suspendActions) setSessionExists(null);
+    if (suspendActions) setSessionState(null);
+    const getAuthSessionState = window.ludone.getAuthSessionState;
     const hasAuthSession = window.ludone.hasAuthSession;
-    if (typeof hasAuthSession !== "function") {
-      setSessionExists(false);
+    if (typeof getAuthSessionState !== "function" && typeof hasAuthSession !== "function") {
+      setSessionState("none");
       return;
     }
 
-    void Promise.resolve()
-      .then(() => hasAuthSession())
+    return Promise.resolve()
+      .then(() => typeof getAuthSessionState === "function"
+        ? getAuthSessionState()
+        : Promise.resolve(hasAuthSession()).then((exists) => exists === true ? "valid" : "none"))
       .then((result) => {
-        if (requestId === authSessionRequestId.current) setSessionExists(result === true);
+        if (requestId === authSessionRequestId.current) {
+          setSessionState(["valid", "expired"].includes(result) ? result : "none");
+        }
       })
       .catch(() => {
-        if (requestId === authSessionRequestId.current) setSessionExists(false);
+        if (requestId === authSessionRequestId.current) setSessionState("none");
       });
   }, []);
 
@@ -73,6 +82,22 @@ export function App() {
       authSessionRequestId.current += 1;
     };
   }, [refreshAuthSession]);
+
+  useEffect(() => {
+    if (sessionState !== "valid" || typeof window.ludone.getAuthSessionState !== "function") return;
+    // Vypršení není změna souboru ani fokusu. Otevřený panel ho musí zjistit sám.
+    let cancelled = false;
+    let timer;
+    const poll = async () => {
+      await refreshAuthSession();
+      if (!cancelled) timer = window.setTimeout(poll, 1_000);
+    };
+    timer = window.setTimeout(poll, 1_000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [refreshAuthSession, sessionState]);
 
   useEffect(() => {
     const refreshWhenFocused = () => refreshAuthSession();
@@ -117,7 +142,8 @@ export function App() {
     return window.ludone.onTrayCommand((name) => {
       // Během onboardingu nejsou akční karty namountované. Příkaz přesto
       // spotřebujeme, ale neuchováváme: jinak by se provedl opožděně až po jeho dokončení.
-      if (!panelActionsAvailableRef.current) return;
+      if (!panelActionsAvailableRef.current
+        && !(recordingControlsAvailableRef.current && name === "stop-recording")) return;
       trayCommandId.current += 1;
       setTrayCommand({ id: trayCommandId.current, name });
     });
@@ -164,6 +190,7 @@ export function App() {
   }, [applyQueueItems]);
 
   const retryQueueNow = useCallback(async () => {
+    if (!panelActionsAvailableRef.current) return;
     if (typeof window.ludone.retryQueue !== "function") return;
     // Retry je novější autoritativní požadavek; žádné dříve zahájené čtení
     // nesmí později přepsat jeho výsledek ani zpětnou vazbu po výjimce.
@@ -226,7 +253,7 @@ export function App() {
 
   function rememberUser(nextUser) {
     authSessionRequestId.current += 1;
-    setSessionExists(true);
+    setSessionState("valid");
     const normalizedUser = normalizeUser(nextUser);
     if (!normalizedUser) {
       setUser(null);
@@ -240,7 +267,7 @@ export function App() {
     setOnboardingComplete(true);
   }
 
-  if (!onboardingComplete) {
+  if (!onboardingComplete && !recordingControlsAvailable) {
     return (
       <PanelContentHeightReporter>
         <Onboarding onAuthenticated={rememberUser} onComplete={completeOnboarding} />
@@ -248,15 +275,15 @@ export function App() {
     );
   }
 
-  if (sessionExists === false) {
+  if (sessionExists === false && !recordingControlsAvailable) {
     return (
       <PanelContentHeightReporter>
-        <Onboarding reauthenticate onAuthenticated={rememberUser} />
+        <Onboarding reauthenticate sessionExpired={sessionState === "expired"} onAuthenticated={rememberUser} />
       </PanelContentHeightReporter>
     );
   }
 
-  if (sessionExists === null) {
+  if (sessionExists === null && !recordingControlsAvailable) {
     return (
       <PanelContentHeightReporter>
         <main
@@ -278,9 +305,9 @@ export function App() {
   }
 
   const bothActivitiesRunning = recording.active && tracking.active;
-  const queueStatus = queueSnapshot.status;
+  const queueStatus = panelActionsAvailable ? queueSnapshot.status : null;
   const queueDetailsAvailable = queuePanelSummary(queueSnapshot.items) !== null;
-  const queueScreenVisible = queueExpanded && queueDetailsAvailable;
+  const queueScreenVisible = panelActionsAvailable && queueExpanded && queueDetailsAvailable;
 
   return (
     <PanelContentHeightReporter>
@@ -294,15 +321,17 @@ export function App() {
             <LuDoneMark size={22} variant="panel" />
             <span className="panel-identity__copy">
               <strong>LuDone</strong>
-              <small data-auth-state="signed-in">
-                {user ? `${user.name} · připojeno` : "Přihlášeno"}
+              <small data-auth-state={sessionExists === true ? "signed-in" : sessionState ?? "checking"}>
+                {sessionExists === true
+                  ? (user ? `${user.name} · připojeno` : "Přihlášeno")
+                  : (sessionState === "expired" ? "Přihlášení vypršelo" : "Nepřipojeno")}
               </small>
             </span>
           </div>
         </header>
 
         <div className="panel-scroll">
-          {queueSnapshot.unavailable && (
+          {panelActionsAvailable && queueSnapshot.unavailable && (
             <p className="queue-retry-feedback" role="alert">
               Stav fronty není dostupný. Počet čekajících záznamů není známý.
             </p>
@@ -315,7 +344,7 @@ export function App() {
               retryError={queueRetryFeedback}
             />
           )}
-          {!queueScreenVisible && queueRetryFeedback && (
+          {panelActionsAvailable && !queueScreenVisible && queueRetryFeedback && (
             <p
               className="queue-retry-feedback"
               data-testid="queue-retry-feedback"
@@ -325,15 +354,20 @@ export function App() {
             </p>
           )}
           <RecordingCard
+            key="recording"
+            canSend={panelActionsAvailable}
             compact={bothActivitiesRunning}
             onActivityChange={handleRecordingChange}
             trayCommand={trayCommand}
           />
-          <TrackingCard
+          {sessionExists === false && (
+            <Onboarding embedded reauthenticate sessionExpired={sessionState === "expired"} onAuthenticated={rememberUser} />
+          )}
+          {panelActionsAvailable && <TrackingCard
             compact={bothActivitiesRunning}
             onActivityChange={handleTrackingChange}
             trayCommand={trayCommand}
-          />
+          />}
         </div>
 
         <footer className="panel-footer">
