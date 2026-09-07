@@ -75,16 +75,16 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 
 | ID | Funkce | Riziko | scope | delivery | exposure | verification |
 |---|---|---|---|---|---|---|
-| `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | approved | **merged** | **labs** | **verified-live** ¹⁷ |
+| `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | approved | **merged** | **labs** | tests-green ¹⁷ |
 | `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | approved | **merged** | labs | **verified-live** ²⁰ |
 | `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | approved | **merged** | disabled ⁹ | unverified |
 | `DSK-F004` | Odhlášení s odvoláním na serveru | security | approved | **merged** | disabled ¹⁰ | tests-green |
-| `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | **merged** | disabled | tests-green |
+| `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | no-code ²¹ | disabled | unverified |
 | `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | approved | **merged** | labs | **verified-live** ¹⁹ |
 | `DSK-F007` | Nahrávání dvou stop na disk | normal | approved | merged | labs | **verified-live** ¹⁴ |
 | `DSK-F008` | Pojmenování nahrávky při zastavení | normal | approved | **merged** | labs | **verified-live** ¹⁴ |
 | `DSK-F009` | Odchozí fronta s opakováním | normal | approved | **merged** | disabled ¹⁰ | tests-green |
-| `DSK-F010` | Odeslání na server | rbac | **draft** | no-code | disabled | unverified |
+| `DSK-F010` | Odeslání na server | rbac | **draft** | **merged** ²² | disabled | unverified |
 | `DSK-F011` | Časovač: start, přepnutí projektu, stop | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ¹¹ ¹⁵ | disabled | unverified |
 | `DSK-F013` | Časovač přežije pád a restart | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
@@ -123,31 +123,94 @@ existující obal bez dat není funkce.
 ¹⁶ **Ověřeno naostro 6. 9.**: přepínač v Nastavení + záchrana z výstražného okna (#69);
 macOS potvrdil položku v Docku.
 
-¹⁷ **Ověřeno naostro 4. 9.**: ikona se na Danově stroji schová pod výřezem — aplikace to
-teď pozná a řekne (#67), a nabídne cestu do Docku (#69).
+¹⁷ 🔴 **Sníženo na `tests-green` 7. 9. 2026 — předchozí `verified-live` popíralo vlastní doklad.**
+Změřeno naostro 4. 9. bylo tohle: ikona se na Danově stroji **nevykreslila**. macOS ji položil
+pod výřez a `screencapture -R 796,0,56,32` vrátil **7168 pixelů, všechny RGB 32, ani jeden
+jasnější než 100** (`CHECKPOINT.md:32–47`). To je doklad **selhání**, ne ověření. Ověřené je
+jen to, co přišlo po opravě: aplikace ten stav **pozná a řekne** (#67 — výstražné okno se po
+restartu skutečně otevřelo) a **nabídne cestu do Docku** (#69).
+
+🔴 **Druhá půlka názvu — „klik otevře panel“ — nemá doklad žádný.** Kód existuje
+(`electron/main.cjs:3724`, `tray.on("click", togglePanel)`), ale v bránách na něj nikdo nesahá:
+`testClickTray` volá jedině `scripts/ui-smoke.mjs:446`, a ten v `npm run gates` neběží
+(`tests/ui-smoke.test.js` testuje pomocnou knihovnu `src/lib/ui-smoke.js`, ne ten klik).
+Na Macu ten klik neprovedl nikdo — ikona nebyla vidět.
+
+Stavovou půlku názvu drží testy (`tray-ikony`, `tray-authority`, `tray-space-warning`), proto
+`tests-green`. Zpět na `verified-live` až poté, co někdo klikne na **viditelnou** ikonu a panel
+se otevře.
+
+²¹ 🔴 **Uvedeno na pravou míru 7. 9. 2026: ten kód NEEXISTUJE.** Matice tu do dneška hlásila
+`merged` + `tests-green` u **bezpečnostní** funkce. Změřeno: jediná výměna tokenu v repu je
+`grant_type: "authorization_code"` (`src/lib/oauth.js:109`); refresh token se používá
+**výhradně k odvolání** při odhlášení (`electron/auth.cjs:727`, `sessionTokenForRevocation`).
+Žádná jednovláknová brána — `grep -rn "single.flight\|inFlight\|singleFlight" src/ electron/`
+vrací **0** — a žádný test. `auth.cjs:257`
+(`grant_types: ["authorization_code", "refresh_token"]`) je jen ohláška v dynamické registraci,
+ne implementace.
+
+🔴 **Nestavět to nebyl přehlédnutý dluh, ale rozhodnutí:** `tasks/B8-zapojit-auth.md:126`
+(*„Co B8 NENÍ: obnova tokenu (F005)“*) a `:284` (*„B8 obnovu nepřidává (F005)“*).
+🔴 **Stojí na ní R15** („dva souběžné pokusy odhlásí uživatele samého od sebe“). Kdo tuhle osu
+příště překlopí zpátky na `merged`, ať nejdřív ukáže tu jednovláknovou bránu a test, který ji drží.
+
+²² 🔴 **Uvedeno na pravou míru 7. 9. 2026: ten kód EXISTUJE.** Matice tu držela `no-code`,
+ale `electron/upload-client.cjs` má **665 řádků**, `electron/main.cjs:39` ho importuje
+(`createRecordingUploadSend`), `electron/main.cjs:2130` ho zapojuje do odesílacího pokusu fronty
+a `tests/upload-client.test.js` má 889 řádků. Kód dojel do `main` **3. 9.** (PR #37 `484ec28`,
+PR #56 `7432497`).
+
+**D29 („nestavět proti němu nic, ani za vypnutým killswitchem“) je pokyn DO BUDOUCNA ze 7. 9.**,
+tedy o čtyři dny mladší než ten kód — věta *„`DSK-F010` tím zůstává `no-code`“*
+(`decisions.md:1000`) popisuje záměr, ne stav repozitáře.
+
+`scope` proto zůstává `draft` a `exposure` `disabled`: chybí scope `mcp:upload` (D29) a serverová
+strana je S1. **D36** to shrnuje přesně — *„odesíláme, ale celá cesta nefunguje“*: naše strana je
+hotová (PR #83), ale `declaredCaptureSources` na serveru zatím **nikdo nečte**, takže hodnota
+dorazí a zahodí se, aniž cokoli zčervená.
+⚠️ `verification` nechávám na `unverified` — tenhle běh měnil výhradně osu `delivery`. Testy
+`tests/upload-client.test.js` ale běží nad produkčním modulem, takže osa je kandidát na
+`tests-green`; ať ji posune ten, kdo o F010 rozhoduje.
 
 🔴 **Aktualizováno 2. 9. 2026 po sloučení celého stohu** (PR #2–#13). Dan schválil, že se
 stavové osy smějí udržovat, i když je zbytek specu zmrazený — zmrazení chrání POŽADAVKY
 (R1–R25, acceptance), ne sloupce o stavu (rozhodnutí BD-N30). Osy jsou podle masterplánu
 jediný zdroj pravdy o stavu; nechat je lhát je horší než je upravit.
 
-**Souhrn: 11 funkcí `merged`, ale jen 4 v `labs`.** Ten rozdíl je dnes to nejdůležitější
-číslo v celém projektu — most `preload.cjs` nabízí 23 funkcí a UI jich volá 10. Časová
-agenda, odhlášení i fronta jsou **postavené, otestované a nezapojené**.
+**Souhrn — spočteno z matice výš 7. 9. 2026: ze 17 funkcí je 14 `merged`, 7 v `labs`
+a 6 `verified-live`.** Rozdíl mezi 14 a 7 zůstává nejdůležitějším číslem projektu: most
+`preload.cjs` vystavuje **41** funkcí, `src/` jich volá **31** a **10 zůstává nezavolaných**
+(`getTrackingState`, `getTrayState`, `hidePanel`, `resolveRecoveredTracking`, `setAuthOrigin`,
+`startTracking`, `stopTracking`, `switchTrackingProject` — plus testovací háky `testClickTray`
+a `testQuit`). **Časová agenda je postavená, otestovaná a nezapojená**; odhlášení a fronta
+už volajícího mají (viz poznámka ¹⁰).
 
-🔴 **`verified-live` má nula funkcí.** Aplikaci zatím nikdo neviděl běžet.
+🔴 **`production` má dál nula funkcí** a nic se tam nedostane, dokud nepadne A2.
+⚠️ **Staré znění tohohle odstavce tvrdilo „11 merged, 4 labs, nula verified-live, 16 funkcí“ —
+ani jedno ze čtyř čísel neodpovídalo matici o šedesát řádků výš.** Kdo je bude měnit, ať je
+**přepočítá z tabulky**, ne z paměti.
 
 **Poznámky — každá je změřená, ne odhadnutá:**
+
+⚠️ **Poznámky ¹–⁸ jsou HISTORICKÉ (stav k 2. 9. 2026) a matice na ně už neodkazuje** — žádný
+řádek tabulky výš nenese značku ¹ až ⁸. Zapsané zůstávají jako záznam, čím ta místa tehdy byla,
+**ale nejsou popisem dneška**. Kde se stav od té doby pohnul, je to u poznámky dopsané; čísla
+řádků v nich odplula stejně jako jinde v tomhle dokumentu.
 
 ¹ Commit `ce2bea6` na větvi `fix/tray-prazdna-ikona`, **záměrně nemergováno** — je to user-visible
 implementace bez schváleného specu, tedy přesně to, co tenhle masterplán zakazuje. Brána volá
 produkční `trayImage()`, takže neměří kopii logiky. Ale `verified-live` to není: po opravě
 ikonu nikdo na Macu neviděl.
 
-² `createAuthController` je v `electron/auth.cjs:325` definovaná a na řádku 502 exportovaná —
-a **nikde v repozitáři se neimportuje**. Je to hotová logika mimo provoz. 🔴 Navíc má token scope
-jen `mcp:read` a `mcp:draft` (`auth.cjs:14`), tedy **nemůže zapisovat**; bez zápisového scope
-je serverový kontrakt nepoužitelný.
+² *(historické, 2. 9.)* `createAuthController` je v `electron/auth.cjs:1008` definovaná a na
+řádku 1341 exportovaná — a **nikde v repozitáři se neimportuje**. Je to hotová logika mimo
+provoz. 🔴 Navíc má token scope jen `mcp:read` a `mcp:draft` (`MCP_SCOPES`, `auth.cjs:30`),
+tedy **nemůže zapisovat**; bez zápisového scope je serverový kontrakt nepoužitelný.
+🔴 **Opraveny čtyři ukazatele 7. 9. 2026** — všechny čtyři mířily jinam
+(`325` je hlavička `content-type`, `502` je `removeOrphanedTokenTemps`, `14` je
+`REVOKE_TIMEOUT_MS`). **A první věta už neplatí:** `electron/main.cjs:26` ten controller importuje
+a `electron/main.cjs:3263` ho zapojuje (`createAuthBeginHandler(createAuthController)`).
+Mimo provoz to není. Druhá věta — scope jen `mcp:read` a `mcp:draft` — platí beze změny (D29).
 
 ³ Existuje, ale zamyká celou aplikaci — odepřené oprávnění dnes shodí i časovou agendu, která
 s mikrofonem nemá co do činění.
@@ -159,8 +222,13 @@ skutečné schůzce s živým protějškem (A6, čeká na Dana). A cesta, po kte
 kterou `IsSystemLoopbackCaptureSupported()` na macOS 26.4 hlásí jako nepodporovanou. Proto
 `tests-green`, ne `verified-live`.
 
-⁵ `src/lib/queue.js` má 200+ řádků a vlastní testy, ale **žádný soubor v `src/` ani `electron/`
-ji neimportuje**. Zelené testy nad nezapojeným kódem.
+⁵ *(historické, 2. 9.)* `src/lib/queue.js` má 200+ řádků a vlastní testy, ale **žádný soubor
+v `src/` ani `electron/` ji neimportuje**. Zelené testy nad nezapojeným kódem.
+🔴 **Neplatí od 7. 9. 2026 — a je to učebnice lhavého grepu.** `electron/main.cjs:65` ten modul
+načítá (`const queueModulePromise = import(pathToFileURL(path.join(PROJECT_ROOT, "src", "lib",
+"queue.js")).href)`) a `main.cjs:2076` a `:2148` z něj čerpají. Cesta se skládá za běhu, takže
+`grep -rn "lib/queue" electron/` vrací **0 zásahů** — nula, která neznamená „nezapojeno“,
+ale „nehledal jsem tak, jak se to volá“.
 
 ⁶ **Jediná funkce se scope `draft`, a je to úmysl.** Serverová strana je S1 — dostane vlastní
 průchod masterplánem v `ludone-app`. Zapojit frontu k serveru, který neexistuje, je v `plan.md`
@@ -173,9 +241,11 @@ přesně tím způsobem, kvůli kterému tahle tabulka má čtyři sloupce.
 ⁸ Tamtéž, řádek 5: `const PROJECTS = ["LuDone Desktop", "Web · klientská zóna", "Interní provoz"]`.
 Tři řetězce natvrdo. Žádná alokace, žádné GUID.
 
-**Součet, ať se to nemusí počítat očima:** ze šestnácti funkcí je **jedna** v `main` a běží
-(F007), **čtyři** mají kód mimo provoz (F001, F003, F006/F015, F009), **jedenáct** neexistuje.
-Nic není `verified-live`. **Nic není v `production`.**
+**Součet, ať se to nemusí počítat očima (přepočteno z matice 7. 9. 2026):** ze **sedmnácti**
+funkcí má **čtrnáct** kód v `main` (`merged`), **sedm** z nich je dosažitelných ze zdrojáku na
+Macu (`labs`) a **šest** někdo viděl fungovat naostro (`verified-live`: F002, F006, F007, F008,
+F015, F016). Bez kódu zůstávají **tři** — F005 (obnova tokenu, rozhodnuto nestavět v B8),
+F012 (výběr projektu, BD-N28) a F014 (připomínky, BD-N43). **Nic není v `production`.**
 
 ---
 
@@ -380,14 +450,39 @@ tam není, výsledek je **⛔ NEMĚŘENO**, ne ✅. Grep, který nenajde ani kan
 ne důkaz čistoty.
 
 
-⁹ `DSK-F003` je mergnutá, ale **fail-closed na chybějící `LUDONE_OAUTH_CLIENT_ID`**
-(`main.cjs:939`). Bez ní se nedá projít ani první obrazovkou, takže `exposure` zůstává
-`disabled`. Co přesně založit → [`OAUTH-CO-ZALOZIT.md`](OAUTH-CO-ZALOZIT.md).
+⁹ 🔴 **Přepsáno 7. 9. 2026 — předchozí znění tvrdilo opak toho, co kód dělá.** Stálo tu, že
+`DSK-F003` je *„fail-closed na chybějící `LUDONE_OAUTH_CLIENT_ID`“*, s ukazatelem na
+`main.cjs:939`; na tom řádku je ale plumbing okna (`createPanelWindow` začíná až o pět řádků
+níž), žádná brána.
 
-¹⁰ Kód je v `main` a otestovaný, ale **žádná komponenta v `src/` ho nevolá** — změřeno
-`grep -rn "logout" src/` → 0 a totéž pro `startTracking`/`stopTracking`. Most je vystavený,
-volající chybí. Hlídá to `tests/zapojeni-odhlaseni.test.js`: dnes zelený, červený v sekundě,
-kdy volající přibude.
+**Skutečnost:** `resolveAuthClientId` (`electron/main.cjs:3020`) při chybějící **i prázdné**
+hodnotě vrací `undefined`, `electron/main.cjs:3173` pak `clientId` do controlleru vůbec
+nepředá a `auth.cjs` si veřejného klienta **zaregistruje dynamicky**. Komentář nad tou funkcí
+to říká otevřeně: *„prázdná hodnota DCR nevypíná“*. **Nic se nezavírá.**
+
+🔴 **Je to rozpor s rozhodnutím, ne jen s poznámkou.** BD-N6 (`decisions.md:236–240`) rozhodl,
+že *„`clientId` je POVINNÝ … dynamická registrace se NEPOUŽIJE ANI JAKO ZÁLOHA“*,
+a `decisions.md:42` už jednou zapsal, že *„dnešní kód dělá DCR … obojí se musí srovnat“*.
+Kód dnes dělá zamítnutou variantu — **je to nález v kódu**, který tenhle běh (oprava
+dokumentace) vědomě neopravoval.
+
+⚠️ **`exposure` proto zůstává `disabled`, ale z jiného důvodu, než tu stál:** ne že by přihlášení
+bylo zavřené, ale že ho **nikdo nedokončil naostro** — osa `verification` je `unverified`
+a živý průchod chybí. Kdo ho na labs projde do konce, ať osu posune **a napíše sem měření**,
+ne naopak. Co přesně založit → [`OAUTH-CO-ZALOZIT.md`](OAUTH-CO-ZALOZIT.md).
+
+¹⁰ ⚠️ **Půlka téhle poznámky odpadla 7. 9. 2026.** Stálo tu, že kód je v `main` a otestovaný,
+ale žádná komponenta v `src/` ho nevolá — změřeno `grep -rn "logout" src/` → 0.
+**Totéž měření dnes vrací 18 zásahů**: `src/components/Settings.jsx:735` má tlačítko
+„Odhlásit tento Mac“, které volá `window.ludone.logout`, a fronta má v panelu vlastní kartu
+(`src/App.jsx:6`, `QueueCard`, přes mosty `listQueue` a `retryQueue`). O `DSK-F004`
+a `DSK-F009` tahle věta tedy **už nic nedokazuje** a jejich `exposure` čeká na samostatné
+rozhodnutí, ne na tuhle poznámku.
+
+🔴 **Co platí beze změny, je časová agenda:** `grep -rn "startTracking\|stopTracking" src/`
+→ **0**. Most je vystavený, volající chybí — a právě to drží `exposure: disabled`
+u `DSK-F011` a `DSK-F013`. Hlídá to `tests/zapojeni-odhlaseni.test.js`: dnes zelený, červený
+v sekundě, kdy volající přibude.
 
 ¹¹ `DSK-F012` je zablokovaná rozhodnutím **BD-N28**: pravidlo 110 % patří na server, desktop
 ho jen přebírá. Nezadrátovat ani jednu variantu ze sporu `spec.md` R7 × `plan.md` B6.
@@ -404,11 +499,19 @@ vrátil pro `microphone` i `system-audio` shodně `granted`, a **nezávislý Ele
 `screen: granted`). Dva různé procesy, tatáž odpověď — takže to není appka, která si stav
 domýšlí z vlastního uloženého stavu.
 
-🔴 **Co ověřeno NENÍ: zkouška zvuku.** Existuje jen jako krok onboardingu
-(`Onboarding.jsx:628`) a ten leží **za přihlášením**, které bez OAuth klienta nejde dokončit
-(týž blokátor jako u `DSK-F003`). Karta **Zvuk** v Nastavení zkoušku nenabízí — jsou tam dva
-popisné řádky bez měřidel. Zkouška je tedy jednorázová a po onboardingu se k ní uživatel
-nedostane; leží to v `DAN-TODO.md`, protože obsah Nastavení řídí zmrazený návrh.
+🔴 **Co ověřeno NENÍ: zkouška zvuku.** V době měření (build z `20f5c22`, 7. 9. 12:21)
+existovala jen jako krok onboardingu (`Onboarding.jsx:628`) a ten leží **za přihlášením**,
+které bez dokončeného OAuth toku neprojde (týž blokátor jako u `DSK-F003`).
+
+✅ **Jednorázová už ale NENÍ — opraveno v poznámce 7. 9. 2026.** PR #92 (`40f17f2`, 7. 9. v 18:11)
+přidal `src/components/SettingsAudioTest.jsx` a `src/components/Settings.jsx:821` ho vykresluje
+na kartě **Zvuk**: tlačítko „Spustit zkoušku“ a měřidla z `RecordingTestStep`, kryté testy
+`tests/settings-audio-test.test.js` a `tests/settings-audio-permissions.test.js`. Věta, že karta
+Zvuk zkoušku nenabízí, tedy od té chvíle neplatí.
+
+⚠️ **Naostro to pořád ověřené není** — všechny tři živé zkoušky ze 7. 9. běžely na buildech
+**starších** než #92 (`62f04cb` 10:54 · `20f5c22` 12:21 · `0a1d7cf` 15:01). Druhá půlka
+`DSK-F006` tak čeká na první spuštění zkoušky z Nastavení, ne na rozhodnutí o návrhu.
 
 ⚠️ **Past při měření:** `getPermissionStatus()` bez argumentu vrací `status: "unknown"`,
 `granted: false`. Vypadá to jako vada appky a **není** — most bere jméno oprávnění
@@ -434,3 +537,12 @@ a mlčky selhávající. To je právě ten rozdíl, který jsme dnes opravovali 
 
 ⚠️ Ověřen **obsah a dostupnost**, ne provedení jednotlivých akcí — na ty by bylo potřeba do
 menu klikat, a „Ukončit LuDone" by běh ukončilo.
+
+🔴 **Doplněno 7. 9. 2026: „se zkratkami“ z názvu funkce ověřené NENÍ — a nejspíš ani nemá čím.**
+V repu jsou **popisky** `accelerator` v šabloně menu (`electron/main.cjs:1171, 1177, 1192, 1202,
+1212` — ⌃⌥R, ⌃⌥T, ⌃⌥L, ⌘, a ⌘Q). Co v repu **není**, je jediná registrace zkratky:
+`grep -rn "globalShortcut" electron/ src/` → **0 zásahů**. Aplikace navíc běží jako accessory
+(`LSUIElement: true`, `package.json:49`), takže nekreslí lištu menu a lokální akcelerátory
+nemají kde vzniknout (`docs/ux/cesta-uzivatele-2026-09-01.md:99`).
+**Popisek zkratky, který nic nespustí, je slib bez krytí** — `verified-live` u `DSK-F002` proto
+pokrývá obsah a dostupnost menu, **ne zkratky**.
