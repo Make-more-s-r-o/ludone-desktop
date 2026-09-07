@@ -383,7 +383,12 @@ function fakeElectron(userDataPath, {
     },
     // Dialog je jediný kanál, kterým jde doručit chybu z menu lišty: menu je v tu
     // chvíli zavřené a panel nemusí být otevřený.
-    dialog: { showMessageBox: vi.fn(async () => ({ response: 0 })) },
+    dialog: {
+      showMessageBox: vi.fn(
+        /** @param {{ type?: string, detail?: string }} _volby */
+        async (_volby) => ({ response: 0 }),
+      ),
+    },
     shell: { openExternal: vi.fn(async () => undefined) },
     systemPreferences: {
       askForMediaAccess: vi.fn(async () => false),
