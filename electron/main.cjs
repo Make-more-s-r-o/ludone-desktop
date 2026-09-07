@@ -223,7 +223,10 @@ function isAllowedMediaPermission(webContents, permission, details) {
   let senderFrame = null;
   try {
     if (details?.isMainFrame === true) senderFrame = webContents?.mainFrame;
-    requireTrustedSender({ sender: webContents, senderFrame }, ["panel"]);
+    requireTrustedSender({ sender: webContents, senderFrame }, ["panel", "settings"]);
+    // Nastavení smí zachytávat jen ve svém dokumentu, ne po navigaci na jinou část aplikace.
+    if (webContents === settingsWindow?.webContents
+      && new URL(webContents.getURL()).hash !== "#settings") return false;
   } catch {
     return false;
   }
@@ -235,7 +238,7 @@ function isAllowedMediaPermission(webContents, permission, details) {
   if (Array.isArray(details.mediaTypes)) {
     // Electron hlásí getDisplayMedia se systémovým zvukem jako `media` s prázdným
     // mediaTypes. Tohle povolení samo nic nezachytí: navazující
-    // setDisplayMediaRequestHandler znovu ověří důvěryhodný rám panelu a vrátí
+    // setDisplayMediaRequestHandler znovu ověří důvěryhodný rám panelu či Nastavení a vrátí
     // výhradně obrazovku s audio: "loopback". Jde tedy o dvě nezávislé brány.
     return details.mediaTypes.length === 0
       || (details.mediaTypes.length === 1 && details.mediaTypes[0] === "audio");
@@ -250,6 +253,18 @@ function isTrustedPanelFrame(frame) {
     && panelWebContents
     && trustedSenderKind({ sender: panelWebContents, senderFrame: frame }) === "panel"
     && isTrustedAppUrl(frame.url)
+  );
+}
+
+function isTrustedSettingsAudioFrame(frame) {
+  const webContents = settingsWindow?.webContents;
+  return Boolean(
+    frame
+    && webContents
+    && isTrustedRecordingSender({ sender: webContents, senderFrame: frame }, webContents)
+    && isTrustedAppUrl(frame.url)
+    && new URL(frame.url).hash === "#settings"
+    && new URL(webContents.getURL()).hash === "#settings"
   );
 }
 
@@ -1200,7 +1215,7 @@ function installMediaHandlers() {
   });
   defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
     if (
-      !isTrustedPanelFrame(request.frame)
+      (!isTrustedPanelFrame(request.frame) && !isTrustedSettingsAudioFrame(request.frame))
       || request.audioRequested !== true
       || request.videoRequested !== true
     ) {

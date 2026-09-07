@@ -31,7 +31,7 @@ function nextSignal(previous, rms, available, allowCertification = true) {
   };
 }
 
-function LevelRow({ label, meterRef, rowRef, signal, testId }) {
+function LevelRow({ label, meterRef, rowRef, signal, testId, status }) {
   return (
     <div
       className="recording-test-level"
@@ -47,13 +47,14 @@ function LevelRow({ label, meterRef, rowRef, signal, testId }) {
         state={signal.state}
       />
       <span className={`recording-test-level__status is-${signal.state}`}>
-        {signal.state === "live" ? "slyším" : "ticho"}
+        {status ?? (signal.state === "live" ? "slyším" : "ticho")}
       </span>
     </div>
   );
 }
 
-export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped }) {
+export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped, variant = "onboarding" }) {
+  const inSettings = variant === "settings";
   const [captureState, setCaptureState] = useState("starting");
   const [toneError, setToneError] = useState(false);
   const [toneBusy, setToneBusy] = useState(false);
@@ -165,6 +166,10 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
           || !levels.system.available
           || !levels.system.measured
         ) {
+          if (inSettings) {
+            updateAudioLevelMeter(microphoneMeterRef.current, 0, "unavailable");
+            updateAudioLevelMeter(systemMeterRef.current, 0, "unavailable");
+          }
           setCaptureState("error");
           void session.close().catch(() => {});
           return;
@@ -192,9 +197,12 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
       sessionRef.current = null;
       if (session) void session.close().catch(() => {});
     };
-  }, [sessionAttempt]);
+  }, [sessionAttempt, inSettings]);
 
   const bothHeard = signals.microphone.heard && signals.system.heard;
+  const settingsStatus = captureState === "starting"
+    ? "čekám"
+    : (captureState === "testing" ? "nahrává se" : "nedostupné");
 
   async function playTestSound() {
     const session = sessionRef.current;
@@ -215,12 +223,12 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
 
   return (
     <section
-      className="onboarding__content recording-test-step"
+      className={inSettings ? "settings-audio-test" : "onboarding__content recording-test-step"}
       data-recording-test-state={captureState}
       data-testid="recording-test-screen"
     >
-      <h1>Test záznamu</h1>
-      <p className="lead">
+      {!inSettings && <h1>Test záznamu</h1>}
+      <p className={inSettings ? "settings-hint" : "lead"}>
         Řekni něco nahlas a pusť si libovolný zvuk. Oba měřáky se musí hýbat.
       </p>
 
@@ -229,22 +237,26 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
           label="Mikrofon"
           meterRef={microphoneMeterRef}
           rowRef={microphoneRowRef}
-          signal={signals.microphone}
+          signal={inSettings && captureState !== "testing" ? INITIAL_SIGNAL : signals.microphone}
           testId="recording-level-microphone"
+          status={inSettings ? settingsStatus : undefined}
         />
         <LevelRow
           label="Ostatní zvuk"
           meterRef={systemMeterRef}
           rowRef={systemRowRef}
-          signal={signals.system}
+          signal={inSettings && captureState !== "testing" ? INITIAL_SIGNAL : signals.system}
           testId="recording-level-system"
+          status={inSettings ? settingsStatus : undefined}
         />
       </div>
 
       <div className="recording-test-device">{labels.microphone}</div>
       {captureState === "error" && (
         <p className="queue-retry-feedback" role="alert">
-          Zvuk se nepodařilo změřit. Zkus test znovu.
+          {inSettings
+            ? "Mikrofon nebo ostatní zvuk se nepodařilo získat či změřit. Zkouška je zastavená. Zkus to znovu."
+            : "Zvuk se nepodařilo změřit. Zkus test znovu."}
         </p>
       )}
       {captureState !== "error" && toneError && (
@@ -255,7 +267,7 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
       {captureState === "error" ? (
         <button
           type="button"
-          className="button button--wide"
+          className={inSettings ? "button button--small" : "button button--wide"}
           data-testid="recording-test-retry"
           onClick={onRetry}
         >
@@ -264,35 +276,39 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
       ) : (
         <button
           type="button"
-          className="button button--wide"
+          className={inSettings ? "button button--small" : "button button--wide"}
           disabled={captureState !== "testing" || toneBusy}
           onClick={playTestSound}
         >
           Přehrát zkušební zvuk
         </button>
       )}
-      <button
-        type="button"
-        className="button button--primary button--wide"
-        data-testid="recording-test-continue"
-        disabled={captureState !== "testing" || !bothHeard}
-        onClick={onPassed}
-      >
-        Pokračovat
-      </button>
-      <button
-        type="button"
-        className="text-button"
-        data-testid="recording-test-skip"
-        onClick={() => onSkipped(captureState === "error" ? "failed" : "skipped")}
-      >
-        Pokračovat bez testu
-      </button>
-      <p className="recording-test-hint">
-        {bothHeard
-          ? "Oba kanály slyším."
-          : "Bez ní se nedá tvrdit, že to funguje."}
-      </p>
+      {!inSettings && (
+        <>
+          <button
+            type="button"
+            className="button button--primary button--wide"
+            data-testid="recording-test-continue"
+            disabled={captureState !== "testing" || !bothHeard}
+            onClick={onPassed}
+          >
+            Pokračovat
+          </button>
+          <button
+            type="button"
+            className="text-button"
+            data-testid="recording-test-skip"
+            onClick={() => onSkipped(captureState === "error" ? "failed" : "skipped")}
+          >
+            Pokračovat bez testu
+          </button>
+          <p className="recording-test-hint">
+            {bothHeard
+              ? "Oba kanály slyším."
+              : "Bez ní se nedá tvrdit, že to funguje."}
+          </p>
+        </>
+      )}
     </section>
   );
 }
