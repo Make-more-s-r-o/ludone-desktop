@@ -1076,3 +1076,41 @@ hlášce mlčelo, protože ji nikdo netestoval — a nešlo by to poznat jinak n
 1. **Opravit „ověřeny" vs. „přítomna"** — packet hotový, čeká na load pod 20.
 2. Kritická cesta zůstává **OAuth klient** (Dan), pak Apple.
 3. Brány na Danově stroji — rozhodnutí leží v `DAN-TODO` bodu 9, sám na ně nesahám.
+
+---
+
+## 7. 9. — „ověřeno" vs. „přítomno" (PR #90)
+
+Panel při nahrávání tvrdil **„Obě stopy ověřeny"**, ačkoli podmínka znamenala jen „stopa
+nezmizela". Doloženo průchodem aplikace s **mlčící systémovou stopou** (`mean = max = −91 dB`):
+hláška se zobrazila i o prázdné stopě. Aplikace ticho rozpoznávat neumí, takže to ani vědět
+nemohla.
+
+Druhá vrstva: ten `<span>` byl současně `sr-only` **i** `aria-hidden="true"` ⇒ nevnímal ho
+**nikdo** a žádný test ho nehlídal. Odstraněn; odečítač dostává `role="status"` „Nahrává se"
+a oba názvy zdrojů, což nový test **ověřuje zvlášť** — nekontroluje jen, že věta zmizela.
+
+Brány `0/0/0`, **1015 zelených**, sabotáže 3🔴:1🟢 nad celou sadou.
+
+### 🔴 Zelená sabotáž znamená dvě různé věci
+
+Sabotáž „přejmenuj název zdroje" napoprvé **zůstala zelená** — a nebyl to chybějící zámek.
+Přejmenoval jsem **první výskyt** řetězce (ř. 712, popisek předávaný do měřidla) místo
+vykreslovaného popisku (ř. 954). Po správném zamíření zčervenala.
+
+⇒ **U KAŽDÉ zelené sabotáže se ptej, jestli jsi trefil cíl**, dřív než z ní uděláš nález
+o chybějícím zámku. Táž past už je v tomhle souboru zapsaná z jiného dne — a stejně jsem do
+ní znovu spadl, protože `replace(..., 1)` vypadá jednoznačně a není.
+
+**Stav:** `main` `0a1d7cf`, **1015 zelených**, 0 otevřených PR, 0 worktrees.
+**Dnes mergnuto 11 PR** (#80–#90).
+
+### Co dál
+
+1. **`DSK-F002`** (kontextové menu na ikoně) je `tests-green` + labs ⇒ **jde ověřit naostro**
+   a není blokované OAuthem. To je jediná zbylá položka, která hne sloupcem `verification`
+   bez Danova zásahu.
+2. Kritická cesta zůstává **OAuth klient** (odemyká `F003`/`F004`/`F005` a druhou půlku
+   `F006`), pak **Apple** (podepsaný build).
+3. Rozhodnutí pro Dana: **bod 9** (brány na jeho stroji) a **bod 10** (macOS neotevře export —
+   týká se i webu).
