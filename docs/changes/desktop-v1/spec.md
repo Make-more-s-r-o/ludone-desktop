@@ -76,7 +76,7 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 | ID | Funkce | Riziko | scope | delivery | exposure | verification |
 |---|---|---|---|---|---|---|
 | `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | approved | **merged** | **labs** | **verified-live** ¹⁷ |
-| `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | approved | **merged** | labs | tests-green |
+| `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | approved | **merged** | labs | **verified-live** ²⁰ |
 | `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | approved | **merged** | disabled ⁹ | unverified |
 | `DSK-F004` | Odhlášení s odvoláním na serveru | security | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | **merged** | disabled | tests-green |
@@ -413,3 +413,24 @@ nedostane; leží to v `DAN-TODO.md`, protože obsah Nastavení řídí zmrazen�
 ⚠️ **Past při měření:** `getPermissionStatus()` bez argumentu vrací `status: "unknown"`,
 `granted: false`. Vypadá to jako vada appky a **není** — most bere jméno oprávnění
 (`"microphone"` / `"system-audio"`). Než z toho někdo udělá nález, ať zkontroluje volání.
+
+²⁰ **Ověřeno naostro 7. 9. 2026** na buildu z `0a1d7cf`. Menu se otevřelo **skutečným pravým
+klikem** na položku v liště (`CGEventPost` s `kCGEventRightMouseDown`; `AXShowMenu` nestačí —
+Electron menu vykresluje jako samostatné okno, ne jako potomka položky, takže se přes
+přístupnostní akci nedá vyvolat). Přečtený obsah:
+
+| položka | dostupná |
+|---|---|
+| Ukončit nahrávání | ne — nic se nenahrává |
+| Spustit LuTrack | ne — `DESKTOP_TIME_ENABLED` je vypnutý |
+| Otevřít panel | ano |
+| Otevřít LuDone v prohlížeči | ano |
+| Nastavení… | ano |
+| O aplikaci | ano |
+| Ukončit LuDone | ano |
+
+✅ **Menu tedy nic nepředstírá:** akce, které v daném stavu nejdou, jsou zašedlé, ne aktivní
+a mlčky selhávající. To je právě ten rozdíl, který jsme dnes opravovali jinde.
+
+⚠️ Ověřen **obsah a dostupnost**, ne provedení jednotlivých akcí — na ty by bylo potřeba do
+menu klikat, a „Ukončit LuDone" by běh ukončilo.
