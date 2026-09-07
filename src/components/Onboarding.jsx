@@ -85,11 +85,11 @@ function cancelAuthQuietly() {
   }
 }
 
-export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false }) {
+export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false, sessionExpired = false, embedded = false }) {
   const [step, setStep] = useState(reauthenticate ? 1 : 0);
   const [authBusy, setAuthBusy] = useState(false);
   const [authDeadline, setAuthDeadline] = useState(0);
-  const [authFailure, setAuthFailure] = useState("");
+  const [authFailure, setAuthFailure] = useState(sessionExpired ? "relace-vyprsela" : "");
   // Adresa se drží jen po dobu čekání; hlavní proces ji po skončení pokusu sám zahodí.
   const [authUrl, setAuthUrl] = useState("");
   const [authUrlAttempt, setAuthUrlAttempt] = useState(0);
@@ -417,12 +417,13 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   }
 
   if (authFailure) {
-    return <AuthErrorScreen busy={authBusy} onRetry={beginAuth} reason={authFailure} />;
+    return <AuthErrorScreen busy={authBusy} onRetry={beginAuth} reason={authFailure} embedded={embedded} />;
   }
 
+  const Container = embedded ? "section" : "main";
   return (
-    <main
-      className={`onboarding${reauthenticate ? " onboarding--reauthenticate" : ""} window-surface`}
+    <Container
+      className={`onboarding${reauthenticate ? " onboarding--reauthenticate" : ""}${embedded ? " onboarding--embedded" : " window-surface"}`}
     >
       <div className="onboarding__topbar">
         <div className="brand-lockup"><LuDoneMark size={30} /><span>LuDone</span></div>
@@ -663,6 +664,6 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
           </button>
         </section>
       )}
-    </main>
+    </Container>
   );
 }

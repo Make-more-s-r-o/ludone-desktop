@@ -55,6 +55,18 @@ const FAILURES = {
       "účet nemá v LuDone povolený přístup",
     ],
   },
+  "relace-vyprsela": {
+    // `vyprselo` znamená timeout čekání na prohlížeč. Uložená relace vyprší
+    // i bez otevřeného prohlížeče, proto potřebuje vlastní vysvětlení.
+    state: "session-expired",
+    title: "Přihlášení vypršelo",
+    message: "Platnost přihlášení skončila. Pro odesílání nahrávek se přihlas znovu.",
+    action: "Přihlásit se znovu",
+    actionKind: "retry",
+    actionTone: "primary",
+    icon: TimerIcon,
+    iconTone: "wait",
+  },
   odmitnuto: {
     state: "access",
     title: "Účet nemá přístup",
@@ -79,13 +91,14 @@ const FAILURES = {
   },
 };
 
-export function AuthErrorScreen({ busy, onRetry, reason }) {
+export function AuthErrorScreen({ busy, onRetry, reason, embedded = false }) {
   const failure = FAILURES[reason] || GENERIC_FAILURE;
   const Icon = failure.icon;
+  const Container = embedded ? "section" : "main";
 
   return (
-    <main
-      className="panel window-surface auth-error-panel"
+    <Container
+      className={embedded ? "auth-error-panel auth-error-panel--embedded" : "panel window-surface auth-error-panel"}
       data-testid="auth-error-screen"
       data-auth-error-reason={reason}
       data-auth-error-state={failure.state}
@@ -143,6 +156,6 @@ export function AuthErrorScreen({ busy, onRetry, reason }) {
           {failure.guidance}
         </p>
       )}
-    </main>
+    </Container>
   );
 }

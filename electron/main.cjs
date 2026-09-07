@@ -2060,11 +2060,7 @@ async function addQueueSendingAvailability(items) {
 
 async function recordingUploadContext() {
   const storedSession = await readStoredAuthSession();
-  if (storedSession === null) return null;
-  if (
-    !Number.isFinite(storedSession.accessExpiresAt)
-    || storedSession.accessExpiresAt <= Date.now()
-  ) return null;
+  if (storedAuthSessionState(storedSession) !== "valid") return null;
   return {
     accessToken: storedSession.accessToken,
     companyTabidooId: storedSession.companyTabidooId
@@ -3329,7 +3325,27 @@ async function hasStoredAuthSession() {
   }
 }
 
-async function hasStableStoredAuthSession() {
+// Přítomnost šifrované relace není doklad platnosti. Refresh token zachováváme
+// i po vypršení access tokenu; stejnou podmínku používá UI i odesílání.
+function storedAuthSessionState(storedSession) {
+  if (storedSession === null || storedSession.issuer !== resolveCurrentAuthIssuer()) return "none";
+  return typeof storedSession.accessToken === "string"
+    && storedSession.accessToken.trim().length > 0
+    && Number.isFinite(storedSession.accessExpiresAt)
+    && storedSession.accessExpiresAt > Date.now()
+    ? "valid"
+    : "expired";
+}
+
+async function readStoredAuthSessionState() {
+  try {
+    return storedAuthSessionState(await readStoredAuthSession());
+  } catch {
+    return "none";
+  }
+}
+
+async function hasStableStoredAuthSession(readSession = hasStoredAuthSession) {
   for (;;) {
     const transition = authSessionTransitionPromise;
     if (transition !== null) {
@@ -3337,7 +3353,7 @@ async function hasStableStoredAuthSession() {
       continue;
     }
     const generation = authSessionGeneration;
-    const result = await hasStoredAuthSession();
+    const result = await readSession();
     if (
       authSessionTransitionPromise !== null
       || generation !== authSessionGeneration
@@ -3379,6 +3395,11 @@ async function readStoredAuthIdentity() {
 handleValidated(AUTH_SESSION_STATUS_CHANNEL, ["panel"], async (_event, ...extraPayload) => {
   requireNoPayload(AUTH_SESSION_STATUS_CHANNEL, extraPayload);
   return (await hasStableStoredAuthSession()) === true;
+});
+
+handleValidated("auth:session-state", ["panel", "settings"], async (_event, ...extraPayload) => {
+  requireNoPayload("auth:session-state", extraPayload);
+  return hasStableStoredAuthSession(readStoredAuthSessionState);
 });
 
 handleValidated("auth:identity", ["settings"], () => readStoredAuthIdentity());

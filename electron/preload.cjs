@@ -138,6 +138,10 @@ contextBridge.exposeInMainWorld("ludone", {
     (await ipcRenderer.invoke("auth:copy-pending-url")) === true
   ),
   hasAuthSession: async () => (await ipcRenderer.invoke(AUTH_SESSION_STATUS_CHANNEL)) === true,
+  getAuthSessionState: async () => {
+    const state = await ipcRenderer.invoke("auth:session-state");
+    return ["none", "expired", "valid"].includes(state) ? state : "none";
+  },
   onAuthSessionChanged,
   getAuthIdentity: () => ipcRenderer.invoke("auth:identity"),
   getAuthOrigin: () => ipcRenderer.invoke("auth:origin"),

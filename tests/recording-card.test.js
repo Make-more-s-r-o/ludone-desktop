@@ -494,6 +494,46 @@ async function stopRecording(panel) {
   await panel.waitForPhase("saved");
 }
 
+describe("nahrávání při zneplatnění relace", () => {
+  it.each(["expired", "none"])("stav %s ponechá Stop i lokální uložení, ale zavře odesílání", async (state) => {
+    const panel = await renderRecordingCard({
+      renderApp: true,
+      queueItems: [{ id: "cekajici", kind: "recording", state: "ceka", nextAttemptAt: Date.now() + 60_000 }],
+    });
+    try {
+      await panel.click(panel.document.querySelector('[data-testid="queue-status"]'));
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
+      await startRecording(panel);
+      const card = panel.document.querySelector("[data-recording-phase]");
+      // Starý boolean i nový stav říkají totéž. Test tak odhalí původní odmountování
+      // skutečné RecordingCard; pouhá náhrada tlačítka atrapou nestačí.
+      panel.ludone.hasAuthSession.mockResolvedValue(false);
+      Object.assign(panel.ludone, { getAuthSessionState: vi.fn().mockResolvedValue(state) });
+      await React.act(async () => {
+        panel.document.defaultView.dispatchEvent(new panel.document.defaultView.Event("focus"));
+      });
+      expect(panel.document.querySelector('[data-testid="recording-stop"]')).not.toBeNull();
+      expect(panel.document.querySelector("[data-recording-phase]")).toBe(card);
+      expect(panel.document.querySelector('[data-auth-state="signed-in"]')).toBeNull();
+      if (state === "expired") expect(panel.document.body.textContent).toContain("Přihlášení vypršelo");
+      expect(panel.document.querySelector('[data-testid="queue-status"]')).toBeNull();
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+      expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
+      await stopRecording(panel);
+      expect(panel.ludone.finishRecording).toHaveBeenCalledOnce();
+      const send = [...panel.document.querySelectorAll("button")]
+        .find((button) => button.textContent.trim() === "Uložit a odeslat");
+      expect(!send || send.disabled).toBe(true);
+      await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
+      expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        recordingName: "", openUploadPage: false,
+      });
+    } finally {
+      await panel.cleanup();
+    }
+  });
+});
+
 async function enterRecordingName(panel, name) {
   const input = panel.document.querySelector('[data-testid="recording-name-input"]');
   await React.act(async () => {

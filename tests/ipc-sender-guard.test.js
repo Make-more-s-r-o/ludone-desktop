@@ -323,6 +323,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "auth:logout",
       "auth:origin",
       "auth:pending-url",
+      "auth:session-state",
       "auth:set-origin",
       "auth:switch-origin",
       "diagnostics:export",

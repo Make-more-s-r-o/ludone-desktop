@@ -10,6 +10,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { formatElapsed } from "../src/hooks/useElapsedTime.js";
 import { createManifest } from "../src/lib/manifest.js";
 import { UPLOAD_DISABLED_REASON } from "../src/lib/queue.js";
+import * as React from "react";
+import { createRoot } from "react-dom/client";
+import { JSDOM } from "jsdom";
+// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
+import { App } from "../src/App.jsx";
+// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
+import { SettingsApp } from "../src/components/Settings.jsx";
 
 function sourceWithoutComments(source) {
   return source.replace(
@@ -1490,6 +1497,122 @@ describe("kopírování probíhající přihlašovací adresy", () => {
 });
 
 describe("zjištění uložené OAuth session", () => {
+  it("nový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const state = harness.ipcHandlers.get("auth:session-state");
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await expect(state(panelEvent)).resolves.toBe("none");
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    const now = Date.now();
+    const clock = vi.spyOn(Date, "now").mockReturnValue(now);
+    try {
+      /** @type {Array<[Record<string, unknown>, string]>} */
+      const cases = [
+        [{ accessExpiresAt: now + 1 }, "valid"],
+        [{ accessExpiresAt: now }, "expired"],
+        [{ accessExpiresAt: now - 1 }, "expired"],
+        [{ accessExpiresAt: null }, "expired"],
+        [{ accessExpiresAt: String(now + 1) }, "expired"],
+        [{ accessExpiresAt: now + 1, accessToken: "" }, "expired"],
+        [{ accessExpiresAt: now + 1, issuer: "https://labs.ludone.cz" }, "none"],
+      ];
+      for (const [metadata, expected] of cases) {
+        const blob = harness.electron.safeStorage.encryptString(JSON.stringify({
+          ...storedAuthSession(), ...metadata,
+        }));
+        await writeFile(tokenPath, blob);
+        await expect(state(panelEvent)).resolves.toBe(expected);
+        await expect(state(settingsEvent)).resolves.toBe(expected);
+        expect(await readFile(tokenPath)).toEqual(blob);
+      }
+      await expect(state(panelEvent, "valid")).rejects.toThrow();
+      const foreignEvent = { ...panelEvent, senderFrame: { url: "https://cizi.example" } };
+      expect(() => state(foreignEvent)).toThrow();
+      harness.electron.safeStorage.isEncryptionAvailable.mockReturnValue(false);
+      await expect(state(panelEvent)).resolves.toBe("none");
+      for (const response of ["none", "expired", "valid", true, { state: "valid", token: "TAJNE" }]) {
+        const preload = loadPreload(response);
+        await expect(preload.api.getAuthSessionState()).resolves.toBe(
+          typeof response === "string" ? response : "none",
+        );
+        expect(preload.invoke).toHaveBeenCalledExactlyOnceWith("auth:session-state");
+      }
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it("vypršelá relace přes skutečné IPC ukáže vypršení v obou oknech a zůstane na disku", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    const blob = harness.electron.safeStorage.encryptString(JSON.stringify({
+      v: 1,
+      issuer: "https://app.ludone.cz",
+      clientId: "desktop-client",
+      resource: "https://app.ludone.cz/api/mcp",
+      scope: "mcp:read",
+      accessToken: "TESTOVACI-ACCESS",
+      refreshToken: "TESTOVACI-REFRESH",
+      accessExpiresAt: Date.now() - 60_000,
+      identity: { name: "Ada", email: "ada@ludone.cz" },
+    }));
+    await writeFile(tokenPath, blob);
+    const dom = new JSDOM('<div id="panel"></div><div id="settings"></div>', {
+      url: "https://ludone.test",
+      pretendToBeVisual: true,
+    });
+    const pendingCalls = new Set();
+    const preload = loadPreload((channel, ...payload) => {
+      const event = channel === "auth:identity" || String(channel).startsWith("settings:")
+        || channel === "auth:origin" ? settingsEvent : panelEvent;
+      const call = Promise.resolve(harness.ipcHandlers.get(channel)(event, ...payload));
+      pendingCalls.add(call);
+      void call.finally(() => pendingCalls.delete(call));
+      return call;
+    });
+    dom.window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
+    Object.defineProperty(dom.window, "ludone", { value: preload.api });
+    vi.stubGlobal("React", React);
+    vi.stubGlobal("window", dom.window);
+    vi.stubGlobal("document", dom.window.document);
+    vi.stubGlobal("HTMLElement", dom.window.HTMLElement);
+    vi.stubGlobal("Node", dom.window.Node);
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    const panel = createRoot(dom.window.document.querySelector("#panel"));
+    const settings = createRoot(dom.window.document.querySelector("#settings"));
+    try {
+      await React.act(async () => {
+        panel.render(React.createElement(App));
+        settings.render(React.createElement(SettingsApp));
+      });
+      await React.act(async () => {
+        while (pendingCalls.size > 0) await Promise.all([...pendingCalls]);
+      });
+      await vi.waitFor(async () => {
+        await React.act(async () => { await new Promise(setImmediate); });
+        expect(dom.window.document.querySelector('#panel [data-auth-state="signed-in"]')).toBeNull();
+        expect(dom.window.document.querySelector("#panel")?.textContent)
+          .toContain("Přihlášení vypršelo");
+        expect(dom.window.document.querySelector('[data-testid="settings-account-status"]')?.textContent)
+          .toBe("Přihlášení vypršelo");
+      });
+      expect(dom.window.document.querySelector('[data-testid="auth-error-action"]')?.textContent)
+        .toBe("Přihlásit se znovu");
+      expect(dom.window.document.querySelector(".connected")).toBeNull();
+      expect(dom.window.document.body.textContent).not.toContain("TESTOVACI");
+      expect(await readFile(tokenPath)).toEqual(blob);
+    } finally {
+      await React.act(async () => { panel.unmount(); settings.unmount(); });
+      dom.window.close();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("hlavní proces vrací pro chybějící, platnou a poškozenou session jen boolean", async () => {
     const harness = await loadMain();
     await harness.runReady();

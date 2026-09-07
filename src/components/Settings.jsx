@@ -272,14 +272,25 @@ export function SettingsApp() {
     const getAuthIdentity = window.ludone?.getAuthIdentity;
     if (typeof getAuthIdentity !== "function") return () => { active = false; };
 
-    const refreshIdentity = () => {
+    const refreshIdentity = (suspend = true) => {
       identityRequestGeneration.current += 1;
       const currentRequestId = identityRequestGeneration.current;
-      setAccount({ state: "unknown", identity: null });
-      Promise.resolve()
-        .then(() => getAuthIdentity())
-        .then((value) => {
+      if (suspend) setAccount({ state: "unknown", identity: null });
+      return Promise.resolve()
+        .then(async () => {
+          // `null` = most tu není, tedy NEVÍME. Dřív tu stálo "valid", což je tvrzení,
+          // které nikdo neověřil — a v autentizaci se z „nevím" nesmí stát „přihlášen".
+          // Chování zůstává stejné: když stav neznáme, rozhoduje identita jako dosud.
+          const state = typeof window.ludone.getAuthSessionState === "function"
+            ? await window.ludone.getAuthSessionState() : null;
+          return { state, value: state === "expired" ? null : await getAuthIdentity() };
+        })
+        .then(({ state, value }) => {
           if (!active || currentRequestId !== identityRequestGeneration.current) return;
+          if (state === "expired") {
+            setAccount({ state: "expired", identity: null });
+            return;
+          }
           if (value === null) {
             setAccount({ state: "signed-out", identity: null });
             return;
@@ -303,6 +314,15 @@ export function SettingsApp() {
     window.addEventListener("focus", refreshIdentity);
     document.addEventListener("visibilitychange", refreshVisibleIdentity);
     refreshIdentity();
+    let timer;
+    const poll = async () => {
+      await refreshIdentity(false);
+      if (active) timer = window.setTimeout(poll, 1_000);
+    };
+    if (typeof window.ludone.getAuthSessionState === "function") {
+      timer = window.setTimeout(poll, 1_000);
+    }
+    const unsubscribe = window.ludone.onAuthSessionChanged?.(refreshIdentity);
 
     return () => {
       active = false;
@@ -312,6 +332,8 @@ export function SettingsApp() {
       }
       window.removeEventListener("focus", refreshIdentity);
       document.removeEventListener("visibilitychange", refreshVisibleIdentity);
+      window.clearTimeout(timer);
+      unsubscribe?.();
     };
   }, []);
 
@@ -671,9 +693,15 @@ export function SettingsApp() {
                 role="status"
               >
                 {signedIn && <CheckIcon />}
-                {signedIn ? "Přihlášen" : (account.state === "signed-out" ? "Odhlášen" : "Stav neznámý")}
+                {signedIn ? "Přihlášen" : (account.state === "expired" ? "Přihlášení vypršelo"
+                  : (account.state === "signed-out" ? "Odhlášen" : "Stav neznámý"))}
               </span>
             </div>
+            {account.state === "expired" && (
+              <p className="settings-hint" role="alert">
+                Pro odesílání nahrávek otevři panel LuDone a přihlas se znovu.
+              </p>
+            )}
             <p
               id="settings-environment-explanation"
               className="settings-hint settings-environment-hint"
@@ -699,7 +727,7 @@ export function SettingsApp() {
                 type="button"
                 className="button button--small"
                 disabled={
-                  !signedIn
+                  (!signedIn && account.state !== "expired")
                   || logoutState.state === "busy"
                   || environmentState.state === "busy"
                 }
