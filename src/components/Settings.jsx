@@ -10,6 +10,7 @@ import {
   VolumeIcon,
 } from "./Icons.jsx";
 import { Toggle } from "./Toggle.jsx";
+import { SettingsAudioTest } from "./SettingsAudioTest.jsx";
 
 const STORAGE_KEY = "ludone.prototype.settings";
 const DEFAULTS = {
@@ -817,6 +818,7 @@ export function SettingsApp() {
               </div>
             </div>
           </section>
+          {activeTab === "audio" && <SettingsAudioTest />}
         </section>
 
         <section
