@@ -714,3 +714,27 @@ a vypadalo to jako díra v testech. Když mutuješ výraz, který se v souboru o
 2. Zbylých pět nízkých nálezů auditu.
 3. Po schválení A2: podepsaný build a skutečné soubory pro serverové měření.
 🔴 `DSK-F010` ani `DSK-F012` nestavět (D29, D33).
+
+---
+
+## 7. 9. — vlna 4: co šlo ověřit naostro (a co ne)
+
+Sweep na buildu `62f04cb`, panel řízený přes CDP.
+
+**✅ Ověřeno naostro:** karta fronty (17 položek, 29,2 MB, „odesílání je vypnuté") ·
+LuTrack start i stop (lišta přepnula na `stav=tracking`, `lutrack=true`) · přepnutí projektu ·
+**všechny čtyři karty Nastavení** se skutečným obsahem → `DSK-F015` zvednuto na `verified-live`.
+
+**🔴 Nezvedl jsem `DSK-F009` ani `DSK-F011`/`F013`**, ačkoli jsem je viděl běžet: ověřil jsem
+jen ZOBRAZENÍ. Poznámka ¹⁰ v matici to popisuje přesně — *„most je vystavený, volající chybí"*.
+Doměřeno: `getTrackingState()` vrací `aktualni: null` i při běžícím časovači a po zastavení
+zůstává `uzavrene: []`. **Panelový časovač je atrapa** (rozhodnutí C3 „LuTrack: jen příprava"),
+persistovaná implementace v hlavním procesu je nezapojená. Zvednout ověření by tvrdilo něco,
+co neplatí.
+
+⚠️ **Počtvrté mě zachránilo, že jsem se podíval dřív, než jsem ohlásil nález.** Vypadalo to
+jako vada money funkce; bylo to už zapsané v poznámce ¹⁰ i v C3.
+
+⚠️ A dvakrát mi lhalo vlastní měřidlo: „Přepnout projekt" jsem hledal jako tlačítko (je to
+`select`) a jako „zobrazený projekt" jsem sbíral položky rozbalovacího seznamu. Obojí vypadalo
+jako rozpor, obojí byla chyba sondy.

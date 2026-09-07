@@ -89,7 +89,7 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 | `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ¹¹ ¹⁵ | disabled | unverified |
 | `DSK-F013` | Časovač přežije pád a restart | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F014` | Připomínky, když neběží časovač | normal | approved | no-code | disabled | unverified |
-| `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika ¹³ | normal | approved | **merged** | labs | unverified |
+| `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika ¹³ | normal | approved | **merged** | labs | **verified-live** ¹⁸ |
 | `DSK-F016` | Ikona v Docku jako volba | normal | approved | **merged** | labs | **verified-live** ¹⁶ |
 | `DSK-F017` | Mazání lokálních kopií po 7 dnech | normal | approved ¹² | **merged** | disabled | tests-green |
 
@@ -99,6 +99,13 @@ Nastavení na čtyři záložky podle návrhu (Účet · Zvuk · Záznamy · Dia
 🔴 **Připomínky se vědomě NESTAVÍ** (rozhodnutí BD-N43: „nastavení patří na server, aplikace
 ho pouze přebírá"), takže `merged` u téhle funkce znamená **čtyři části z pěti**.
 Osa se opravuje podle BD-N30 — zmrazení chrání požadavky, ne sloupce o stavu.
+
+
+¹⁸ **Ověřeno naostro 7. 9.** na buildu `62f04cb`: okno Nastavení otevřeno z panelu a projity
+všechny čtyři karty se skutečným obsahem — Účet (e-mail, zařízení, prostředí labs), Zvuk,
+Záznamy (retenční volby), Diagnostika (verze, architektura, oprávnění, fronta).
+⚠️ Ověřeno je **zobrazení**, ne zápis systémových voleb: přepínače Docku a spouštění po
+přihlášení sahají na macOS a ty jsem záměrně nepřepínal.
 
 🔴 **Aktualizováno 7. 9. 2026 — matice byla ČTYŘI DNY po realitě.** Od 3. 9. přibylo 39 PR
 (#41–#79) a matice se neudržovala, takže hlásila `no-code` u funkcí, které stojí. Tohle je
