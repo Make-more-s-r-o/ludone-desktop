@@ -4500,6 +4500,60 @@ describe("produkční zapojení odchozí fronty", () => {
     ]);
   });
 
+  it("selhání zařazení času za běhu otevře panel, i když se aplikace neukončuje", async () => {
+    const queueError = Object.assign(new Error("Na disku není místo"), { code: "ENOSPC" });
+    const enqueueTimeEntry = vi.fn(async () => { throw queueError; });
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry,
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(),
+      }),
+      env: { DESKTOP_TIME_ENABLED: "true" },
+    });
+    await harness.runReady();
+    const panel = harness.windows[0];
+    const event = { sender: panel.webContents, senderFrame: panel.webContents.mainFrame };
+    const started = await harness.ipcHandlers.get("tracking:start")(event, {
+      projectId: PROJECT_A,
+    });
+    panel.hide();
+    expect(panel.isVisible()).toBe(false);
+
+    const stopped = await harness.ipcHandlers.get("tracking:stop")(event);
+
+    expect(stopped.outcome).toBe("stopped");
+    expect(enqueueTimeEntry).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      clientTimeEntryId: started.entry.clientTimeEntryId,
+    }));
+    expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      expect.stringContaining("[queue] Zařazení času selhalo:"),
+    );
+    // Jádro téhle brány: uzavřený čas ve frontě chybí, takže se to uživatel musí
+    // dozvědět i bez probíhajícího Cmd+Q. Samotný log v konzoli nikdo nevidí.
+    expect(panel.isVisible()).toBe(true);
+    // A musí to přijít z běhové cesty, ne z quitové: `noteDeferredQuitFailure` je bez
+    // `deferredQuitRequest` no-op, takže po ní nesmí zůstat ani její hláška.
+    expect(harness.quietConsole.error).not.toHaveBeenCalledWith(
+      expect.stringContaining("[quit] Lokální zařazení časového záznamu"),
+    );
+    await expect(readFile(path.join(harness.userDataPath, "cas", "casovac.json"), "utf8")
+      .then(JSON.parse)).resolves.toMatchObject({
+      aktualni: null,
+      uzavrene: [expect.objectContaining({
+        clientTimeEntryId: started.entry.clientTimeEntryId,
+        state: "uzavreno",
+      })],
+    });
+    // Kontrola měřidla: žádné ukončování opravdu neběželo, panel tedy neotevřela
+    // quitová větev.
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+    expect(quitEvent.preventDefault).not.toHaveBeenCalled();
+  });
+
   it.each([undefined, "false", "1"])(
     "při DESKTOP_TIME_ENABLED=%s nezařadí žádný časový záznam",
     async (timeEnabled) => {
