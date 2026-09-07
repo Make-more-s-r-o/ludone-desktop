@@ -684,3 +684,29 @@ co už stojí**; matice i briéf stárnou rychleji než běh.
 2. **Vlna 4** — zvednout `verification` na `verified-live` syntetickým zvukem.
 3. Zbylých pět nízkých nálezů auditu.
 🔴 `DSK-F010` ani `DSK-F012` nestavět (D29, D33).
+
+---
+
+## 7. 9. odpoledne — declaredCaptureSources (PR #83)
+
+`main` **984 passed | 3 skipped**, 0 PR, 0 worktrees. Serverové session odesláno k proměření.
+
+Nahrávací stránka teď dostává `declaredCaptureSources=microphone` nebo `=microphone%2Bsystem`.
+**Hodnota jde ze stop v manifestu, které zapsal hlavní proces** — ne z rendereru a ne z počtu
+kanálů (jednostopý export má taky dva, vpravo digitální ticho).
+
+🔴 **Přitvrzeno nad rámec dohody:** manifest jen se systémovou stopou parametr **nepošle**.
+Obě hodnoty tvrdí mikrofon; bez jeho stopy nemáme co ohlásit. Nedosažitelné dnes, ale
+`declared` server bere jako naše slovo.
+
+⚠️ **Poučení k sabotážím:** kontrola neznámých druhů je v souboru **dvakrát** (validátor
+manifestu + nová funkce) a `replace(..., 1)` trefil ten první — sabotáž tedy minula cíl
+a vypadalo to jako díra v testech. Když mutuješ výraz, který se v souboru opakuje,
+**cíl vybírej podle řádku, ne podle prvního výskytu**.
+
+## Co dál
+
+1. **Vlna 4** — zvednout `verification` na `verified-live` receptem se syntetickým zvukem.
+2. Zbylých pět nízkých nálezů auditu.
+3. Po schválení A2: podepsaný build a skutečné soubory pro serverové měření.
+🔴 `DSK-F010` ani `DSK-F012` nestavět (D29, D33).
