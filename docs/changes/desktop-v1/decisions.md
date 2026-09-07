@@ -951,3 +951,40 @@ Když uživatel vědomě nahrává jen mikrofonem, pravý kanál je **digitáln�
 
 **Sdílení (D27/D25/D26) se desktopu netýká:** vydání veřejného odkazu je úkon na webu,
 `spec.md:31` má sdílení i archiv mimo náš rozsah. Nic neměníme.
+
+### D28b — `declaredCaptureSources`: dohodnuto, staví se ve FÁZI 2
+
+Domluveno se serverovou session 7. 9. 2026. **Nestavět dřív** — výslovná prosba druhé strany,
+ať parametr nevisí u nás bez protistrany, která ho čte.
+
+**Tvar** (jméno i hodnoty určil server, drží konvenci jejich API):
+
+```
+declaredCaptureSources = microphone | microphone+system
+```
+
+🔴 **Prefix `declared` nese epistemický status přímo v názvu** — „klient tvrdí, my ověřujeme",
+stejně jako jejich `declaredBytes` a `declaredMime`. Kdo ten kód po nás čte, si ho nesplete
+se změřenou hodnotou.
+
+🔴 **Chybějící hodnota NENÍ `microphone`, ale „nevím".** U souboru z telefonu ani u nahrávky
+z prohlížeče ji mít nebudou.
+
+**Proč to vůbec posíláme:** server umí měřit amplitudu pravého kanálu, ale to rozliší jen dva
+stavy ze čtyř. My režim **známe**, protože jednostopé nahrávání je vědomá volba uživatele.
+
+| naše tvrzení | jejich měření pravého kanálu | závěr |
+|---|---|---|
+| `microphone` | ticho | jednostopé, souhlasí |
+| `microphone+system` | zní | dvě strany, souhlasí |
+| **`microphone+system`** | **ticho** | 🔴 **druhá strana nepromluvila nebo měla ztlumeno** |
+| chybí | cokoli | nevím; rozhoduje měření a přizná se to |
+
+**Ten třetí řádek je celý důvod, proč to děláme.** Bez našeho tvrzení by se slil s prvním
+a uživateli bychom tvrdili, že nahrával jen mikrofonem, ačkoli nahrával hovor, ve kterém
+druhá strana mlčela. Chyba by šla v tichém směru — vypadala by věrohodně.
+
+⚠️ **Je to nápověda, ne důkaz.** Parametr jde v URL, na kterou uživatel dosáhne. Server na něm
+nestaví nic o penězích ani právech a jejich měření zůstává jediným zdrojem tam, kde tvrzení
+chybí. **Tuhle hranici při stavbě nepřekračovat** — kdyby se z toho stal autoritativní údaj,
+je to bezpečnostní vada, ne vylepšení.

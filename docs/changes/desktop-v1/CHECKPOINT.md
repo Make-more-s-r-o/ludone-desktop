@@ -472,6 +472,8 @@ už nalezených vad** — bez nich hledá obecně a najde míň.
    všechna fakta. **Dynamickou registraci klienta už umíme** (`registerPublicClient`),
    takže přepnutí = jiný origin + odhlášení. Připraveno k postavení.
 3. `DSK-F012` výběr projektu — čeká na kontrakt fáze 2 (money, nehádat).
+4. **`declaredCaptureSources`** — tvar dohodnutý se serverem (D28b), staví se ve fázi 2.
+   🔴 Serverová session výslovně prosí NESTAVĚT dřív, ať to u nás nevisí bez protistrany.
 
 ## 🔴 První příkazy po probuzení
 
