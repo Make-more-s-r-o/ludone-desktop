@@ -1813,3 +1813,44 @@ cestu ven z něčeho, co běží.
 
 **Souvisí s tím moje odložené rozhodnutí R1** (vypršelý token = odhlášen). Nechal jsem ho
 nepostavené právě proto, že by tenhle případ zhoršilo.
+
+
+---
+
+## ✅ VYŘEŠENO 7. 9. 2026 — Zkouška zvuku už jednorázová NENÍ (PR #92)
+
+🔴 **Tahle položka žádala Dana o rozhodnutí, které už bylo fakticky udělané.** Byla do
+`DAN-TODO.md` commitnutá **dvě hodiny PO** mergi, který ji vyřešil, takže žádala o schválení
+něčeho, co už stálo v `main`.
+
+**Co ji vyřešilo:** PR **#92** (`40f17f2`, 7. 9. 2026 v 18:11) — *„Let people re-run the sound
+check from Settings"*. Přidal `src/components/SettingsAudioTest.jsx` (tlačítko „Spustit
+zkoušku" + měřidla z `RecordingTestStep`), `src/components/Settings.jsx:821` ho vykresluje na
+kartě **Zvuk**, a kryjí to testy `tests/settings-audio-test.test.js`
+a `tests/settings-audio-permissions.test.js`. Zkouška je tedy dostupná i po onboardingu.
+
+⚠️ **Co z toho JEŠTĚ není hotové:** naostro to nikdo nespustil — všechny tři živé zkoušky
+ze 7. 9. běžely na buildech starších než #92 (`62f04cb` 10:54 · `20f5c22` 12:21 · `0a1d7cf`
+15:01). Druhá půlka `DSK-F006` proto čeká na první spuštění zkoušky z Nastavení — ale to je
+**měření, ne rozhodnutí pro Dana**. Detail v `spec.md`, poznámka ¹⁹.
+
+⬇️ **Původní znění položky, jak bylo v `DAN-TODO.md`:**
+
+## 7. Zkouška zvuku je jednorázová — po onboardingu se k ní nedostaneš
+
+**Rozhodnutí:** má karta **Zvuk** v Nastavení nabídnout zkoušku znovu?
+
+Dnes je zkouška (dvě měřidla, „slyším tě") **jen krokem onboardingu**. Karta Zvuk
+v Nastavení má dva popisné řádky — *„Tvůj hlas se ukládá samostatně"* a *„Je-li povolený,
+hlasy z hovoru se ukládají do druhé stopy"* — a **žádné měřidlo**.
+
+**Co to znamená v praxi:** komu po měsíci přestane fungovat mikrofon (přepnutý vstup,
+ztlumeno, odpojené USB), nemá v aplikaci jak zjistit, že je něco špatně. Zjistí to až
+z nahrávky, ve které není slyšet.
+
+🔴 **Nestavím to sám, protože obsah Nastavení řídí zmrazený návrh** — přidat tam sekci
+znamená sáhnout na `design/**`. Rozhodnutí je tvoje.
+
+**Vedlejší následek, který už platí teď:** kvůli tomu **nejde ověřit naostro** druhá půlka
+`DSK-F006`. Zkouška leží za přihlášením a to bez OAuth klienta nedokončím — tedy stejný
+blokátor jako u `DSK-F003`. Půlka s oprávněními ověřená je (viz `spec.md`, poznámka ¹⁹).

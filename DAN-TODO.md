@@ -132,27 +132,6 @@ nepostavené právě proto, že by tenhle případ zhoršilo.
 
 ---
 
-## 7. Zkouška zvuku je jednorázová — po onboardingu se k ní nedostaneš
-
-**Rozhodnutí:** má karta **Zvuk** v Nastavení nabídnout zkoušku znovu?
-
-Dnes je zkouška (dvě měřidla, „slyším tě") **jen krokem onboardingu**. Karta Zvuk
-v Nastavení má dva popisné řádky — *„Tvůj hlas se ukládá samostatně"* a *„Je-li povolený,
-hlasy z hovoru se ukládají do druhé stopy"* — a **žádné měřidlo**.
-
-**Co to znamená v praxi:** komu po měsíci přestane fungovat mikrofon (přepnutý vstup,
-ztlumeno, odpojené USB), nemá v aplikaci jak zjistit, že je něco špatně. Zjistí to až
-z nahrávky, ve které není slyšet.
-
-🔴 **Nestavím to sám, protože obsah Nastavení řídí zmrazený návrh** — přidat tam sekci
-znamená sáhnout na `design/**`. Rozhodnutí je tvoje.
-
-**Vedlejší následek, který už platí teď:** kvůli tomu **nejde ověřit naostro** druhá půlka
-`DSK-F006`. Zkouška leží za přihlášením a to bez OAuth klienta nedokončím — tedy stejný
-blokátor jako u `DSK-F003`. Půlka s oprávněními ověřená je (viz `spec.md`, poznámka ¹⁹).
-
----
-
 ## 8. Ikona v liště — změřeno 7. 9., na tomhle monitoru je vidět
 
 Nechal jsem appku běžet a změřil to systémem, ne odhadem: položka sedí na `{2610, 3}`
