@@ -20,7 +20,7 @@ const temporaryRoots = new Set();
 const TOKEN_RESPONSE = Object.freeze({
   access_token: ACCESS_TOKEN,
   expires_in: 900,
-  refresh_token: "test-refresh-token-nepatri-do-logu",
+  refresh_token: "refresh-ne-logovat",
   scope: "mcp:read",
   token_type: "Bearer",
 });
@@ -180,7 +180,7 @@ describe("best-effort identita po OAuth přihlášení", () => {
     expect(session.identity).toEqual({ name: null, email: "dan@ludone.cz" });
   });
 
-  it("získá e-mail přes přesné JSON-RPC volání ludone_ping", async () => {
+  it("získá e-mail přes přesné JSON-RPC volání ludone_ping a neloguje ani refresh token", async () => {
     const harness = await createHarness();
 
     await expect(completeLogin(harness)).resolves.toEqual({
@@ -207,6 +207,7 @@ describe("best-effort identita po OAuth přihlášení", () => {
     });
     expect(harness.revocationCalls()).toBe(0);
     expect(loggedText(harness.logger)).not.toContain(ACCESS_TOKEN);
+    expect(loggedText(harness.logger)).not.toContain(TOKEN_RESPONSE.refresh_token);
     expect(loggedText(harness.logger)).not.toContain(AUTHORIZATION_CODE);
   });
 

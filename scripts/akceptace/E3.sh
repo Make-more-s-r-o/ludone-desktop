@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Akceptace E3. Každá podmínka hlásí vlastní PASS/FAIL a skript při chybě skončí 1.
 chyby=0
+preskoceno=0
 zkontroluj() {                     # zkontroluj "<popis>" <příkaz…>
   local popis="$1"; shift
   if "$@" > /tmp/e3-akceptace.out 2>&1; then
@@ -8,6 +9,20 @@ zkontroluj() {                     # zkontroluj "<popis>" <příkaz…>
   else
     echo "FAIL  $popis"; sed 's/^/      | /' /tmp/e3-akceptace.out; chyby=$((chyby+1))
   fi
+}
+
+preskoc() {
+  echo "SKIP  $1"
+  preskoceno=$((preskoceno+1))
+}
+
+podpis_je_nakonfigurovany() {
+  # Stejné proměnné i ořezání prázdných hodnot jako signingPlan() v package-mac.mjs.
+  node <<'NODE'
+const hasValue = (name) => typeof process.env[name] === "string"
+  && process.env[name].trim().length > 0;
+console.log((hasValue("CSC_LINK") && hasValue("CSC_KEY_PASSWORD")) || hasValue("CSC_NAME"));
+NODE
 }
 
 balici_skript_ma_audio_popis() {
@@ -84,17 +99,28 @@ if test -d "$bundle"; then
       && grep -Fq '"CFBundleIdentifier" => "cz.ludone.desktop"' /tmp/e3-plist.out
   }
   zkontroluj "release plist má audio popis a ostré bundle id" plist_release_plati
-  zkontroluj "release bundle má platný podpis" \
-    /usr/bin/codesign --verify --deep --strict "$bundle"
+  podpis=$(podpis_je_nakonfigurovany) || podpis=chyba
+  case "$podpis" in
+    true)
+      zkontroluj "release bundle má platný podpis (podepisování je nakonfigurované)" \
+        /usr/bin/codesign --verify --deep --strict "$bundle"
+      ;;
+    false)
+      preskoc "podpis release bundlu: podepisování není nakonfigurované (vyžaduje CSC_LINK + CSC_KEY_PASSWORD nebo CSC_NAME)"
+      ;;
+    *)
+      zkontroluj "konfiguraci podepisování lze vyhodnotit" false
+      ;;
+  esac
   zkontroluj "všechny moduly načítané z electron/** přes src/ jsou v bundlu" \
     balene_src_moduly_existuji
 else
   zkontroluj "release bundle existuje; spusť npm run package:mac" test -d "$bundle"
-  echo "SKIP  release plist: bundle chybí"
-  echo "SKIP  podpis release bundlu: bundle chybí"
-  echo "SKIP  moduly src/ v bundlu: bundle chybí"
+  preskoc "release plist: bundle chybí"
+  preskoc "podpis release bundlu: bundle chybí"
+  preskoc "moduly src/ v bundlu: bundle chybí"
 fi
 
 echo "---"
-echo "chyb: $chyby"
+echo "chyb: $chyby; přeskočeno: $preskoceno"
 exit $(( chyby > 0 ? 1 : 0 ))
