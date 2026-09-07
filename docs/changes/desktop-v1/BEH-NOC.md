@@ -1,115 +1,61 @@
-# BĚH — dotažení desktopu (od 7. 9. 2026)
+# Briéf nočního běhu — 7./8. 9. 2026
 
-🔴 **Tenhle soubor je zadání. Konverzaci sežere compaction, tenhle soubor ne.**
-Stav běhu je v `CHECKPOINT.md`, rozhodnutí v `decisions.md`, Danovy věci v `DAN-TODO.md`.
+> Zadání Dana večer 7. 9.: *„nastav /beh, aktualizuj a pokračuj samostatně, ultracode,
+> delegace na codex co nejvíc. Audit na konci celého masterplánu, že je hotové. E2E testing.
+> Opravit, ať může jít ráno na produkci."*
 
-## Kde produkt stojí (změřeno 7. 9., ne odhad)
+## 🔴 Nejdřív poctivě: „ráno na produkci" NENÍ celé dosažitelné
 
-**14 ze 17 funkcí postaveno.** Chybí tři a **žádná z nich není na nás**:
+Tohle musí být v briéfu první, ať se běh nesnaží o nemožné:
 
-| | co | proč |
-|---|---|---|
-| `F010` | odeslání na server | fáze 2, čeká na scope |
-| `F012` | výběr projektu z alokací | fáze 2, money — UI existuje, ale seznam jsou **čtyři vymyšlené názvy natvrdo** v `TrackingCard.jsx:6–9` |
-| `F014` | připomínky | **vědomě zrušeno**, BD-N43 |
+| co brání | proč to nejde obejít |
+|---|---|
+| **chybí certifikát Apple** | balíček **nemá `Contents/_CodeSignature` vůbec** — `signingPlan()` podepisování bez certifikátových proměnných vypíná. Bez podpisu a notarizace macOS aplikaci nespustí ostatním lidem. Čeká se na schválení programu. |
+| **10 ze 17 funkcí má `exposure: disabled`** | killswitche jsou **Danova vědomá rozhodnutí**; přepnout je je **stopka**, ne úkol běhu. |
+| **`DSK-F010` blokovaná na SERVERU** | scope pro zápis (upload) neexistuje; server zná jen `mcp:read` a `mcp:draft`. |
 
-✅ **A2 padlo 7. 9.** — Dan požádal o Apple Developer Program, čeká na schválení.
+⇒ **Cíl běhu je proto: mít v `main` stav, který PŮJDE vydat v okamžiku, kdy dorazí
+certifikát** — ne vydat ho. Vše ostatní se dotáhne.
 
-## Co tedy zbývá udělat
+## Co běh dělá
 
-### ✅ Vlna 1 HOTOVA (#80, #81) - dvanact nalezu auditu
+1. **Audit dokončenosti** — osm nezávislých pohledů (matice vs. kód · doklady
+   `verified-live` · brány, které nic neměří · killswitche · bezpečnost IPC · pokrytí E2E ·
+   připravenost produkce · dokumentace vs. kód), každý nález **adversariálně ověřený**.
+2. **E2E** — `scripts/akceptace/E1..E8`. 🔴 `E2-sabotaze.sh` **NESPOUŠTĚT** (volá `ui-smoke`,
+   v sandboxu zakázáno).
+3. **Opravy** potvrzených nálezů přes Codex, konsolidace v Claude.
 
-Audit #2 (`sol/ultra`, 63 stavů) našel 14 vad, dvě jsou opravené (#79). Zbylých dvanáct:
+## Mantinely (platí beze změny)
 
-| záv. | kde | co |
-|---|---|---|
-| vysoká | `main.cjs:3304` | po vypršení tokenu panel dál hlásí „připojeno" — **rozhodnutí níž** |
-| střední | `App.jsx:158` | poškozený `outgoing.json` ⇒ fronta se tiše skryje, počet spadne na nulu |
-| střední | `QueueCard.jsx:80` | „nic se neztratilo" i u trvale selhané položky |
-| střední | `audio-levels.js:405` | suspended AudioContext hlásí **nuly jako naměřené** |
-| střední | `main.cjs:571` | lišta počítá čas dřív, než `MediaRecorder` začne |
-| střední | `AuthErrorScreen.jsx:55` | neplatný origin se ukáže jako obecná chyba |
-| střední | `auth.cjs:1319` | „Otevřít Nastavení" selže bez hlášky |
-| nízká ×5 | Nastavení, test tónu, tray menu, Dock přepínač | selhání viditelné jen v konzoli |
+- Killswitche **nesahat**; ostrý zápis do Tabidoo zakázán; secrets nikdy do gitu.
+- `design/**` jen ke čtení; `spec.md`/`plan.md` požadavky zmrazené, osy stavu se udržovat smí.
+- **Nikdy neopravovat měřidlo místo vady.** Zakázané: změkčení aserce, `it.skip`, vypnutí
+  brány, výjimka ve skenu tajemství, globální zvednutí `testTimeout`, `--force`, `[skip ci]`.
+- Max **3 kola** na vadu, pak `failed` + položka „čeká na tebe".
+- **Nespouštět těžké běhy při `load average` nad 20** — CI běží na Danově Macu
+  (`runs-on: [self-hosted, macos]`). Doloženo: commit s pouhým Markdownem vyrobil
+  **24 vypršení testů** při load 130 a byl zelený při load 16.
+- Výsledek CI číst přes `gh … --json conclusion`, **nikdy** přes návratový kód
+  (`gh run watch --exit-status` vrátilo 0 u běhu s `conclusion=failure`).
+- Sabotáže **3🔴:1🟢 nad CELOU sadou** a nad **commitnutou** prací. U zelené sabotáže vždy
+  ověř, že jsi **trefil cíl** — a u projektu s generovanými soubory ověř čistotu stromu
+  **i pro untracked** (`git status --porcelain` bez filtru na `??`).
+- 🔴 **Před ohlášením nálezu si přečti, co už je zapsané** v `decisions.md`, poznámkách
+  pod čarou ve `spec.md`, ve `vzorky/README.md` a v komentářích. Dnes se **pětkrát** stalo,
+  že se jako nález ohlásilo vědomé rozhodnutí — jednou to dokonce šlo Danovi jako otázka.
 
-🔴 **Vzor je pokaždé týž: něco selže a uživatel se to nedozví.** Oprava není „zobrazit chybu",
-ale **rozlišit selhání od záměru** — viz čtvrtá příčina zelené v `codex-delegace-orchestrace`.
+## Kde je stav
 
-### Vlna 2 — co znamená „přihlášen" (rozhodl jsem sám, viz níž)
+- `docs/changes/desktop-v1/spec.md` — matice 17 funkcí, čtyři osy
+- `docs/changes/desktop-v1/CHECKPOINT.md` — průběh (poslední zápisy z 7. 9.)
+- `docs/changes/desktop-v1/decisions.md` — rozhodnutí
+- `DAN-TODO.md` — co čeká na Dana
+- ⚠️ `progress/status.json` je **prázdný** — masterplán se pro tuhle změnu nikdy nenaplnil,
+  stav žije ve `spec.md`. Nepokoušet se z něj číst pravdu.
 
-`hasStoredAuthSession` kontroluje jen vydavatele, `recordingUploadContext` navíc
-`accessExpiresAt`. Dvě pojetí, uživatel vidí to optimistické.
+## Stav při zadání běhu
 
-### Vlna 3 — podepisování a notarizace, PŘIPRAVIT NASUCHO
-
-Po schválení A2 má zbýt jen vložit certifikát. Připravit: konfiguraci `electron-builder`
-pro podpis a notarizaci, entitlements (mikrofon, systémový zvuk), hardened runtime, cestu
-pro `notarytool`, a **ověřit vše, co jde ověřit bez certifikátu**.
-🔴 **Nežádat Dana o certifikát ani Team ID, dokud schválení nedorazí.**
-
-### Vlna 4 — zvednout `verification` z `tests-green` na `verified-live`
-
-Naostro jsou ověřené čtyři funkce ze čtrnácti. Recept na živé ověření bez zachyceného zvuku
-je v `CHECKPOINT.md` (podstrčený syntetický proud, 440/880 Hz) — **používat ho**.
-🔴 **Po každé zkoušce uklidit**: fronta i `nahravky/` zpět na základ, Danovy nahrávky nechat.
-
-## Rozhodnutí, která jsem udělal SÁM (Dan řekl „dotáhni to")
-
-**R1 — vypršelý token = odhlášen.** Tvrdit „připojeno" o spojení, které nefunguje, je táž
-nepoctivost jako „další pokus teď" u vypnutého odesílání. Sjednotit obě pojetí na to přísnější.
-⚠️ Když se ukáže, že to uživatele vyhazuje z rozdělané práce, zastavit a zapsat Danovi.
-
-**R2 — `declaredCaptureSources` se NESTAVÍ** (D28b): serverová session výslovně prosí
-nestavět dřív než ona. Fáze 2.
-
-**R3 — pořadí vln podle rizika, ne podle pohodlí:** nejdřív to, co uživatel vidí (vlna 1),
-pak pravdivost stavu (2), pak distribuce (3), pak důkazy (4).
-
-## Mantinely (beze změny)
-
-Zákaz zápisu do Tabidoo · killswitche `DESKTOP_UPLOAD_ENABLED` a `DESKTOP_TIME_ENABLED`
-zůstávají vypnuté · `design/**` zmrazený · `spec.md`/`plan.md` požadavky zmrazené (osy stavu
-se udržovat SMÍ, BD-N30) · nikdy necommitovat zvuk ze skutečné schůzky · `ui-smoke` nespouštět
-v sandboxu · při selhání opravovat VADU, ne měřidlo, nejvýš tři kola · zakázané „opravy":
-oslabení testu, `it.skip`, vypnutí brány, zápis do baseline, `--force`, `[skip ci]`.
-
-## Jak se pracuje
-
-**Codex dělá, Claude konsoliduje.** Model podle skillu `codex-delegace-orchestrace`:
-**psát kód → `gpt-6-astra`** (`xhigh`) · **hledat cizí vady → `gpt-5.6-sol`** (`ultra`).
-Jeden worktree = jeden zapisovatel; **jeden SOUBOR = jeden job** (hotspot je `main.cjs`).
-Panel v Orce přes `orca terminal create`, zadání **cestou k souboru**, `< /dev/null`.
-Claude si nechává: diff, brány, sabotáže 3🔴:1🟢 včetně povinně zelené, commit, PR, merge.
-
----
-
-## Stav běhu k 7. 9. 2026, 10:15
-
-**Hotovo:** vlna 1a (#80, šest tichých selhání v rendereru) a 1b (#81, dialog u menu lišty).
-`main` **968 passed | 3 skipped**, 0 PR, 0 worktrees.
-
-**Dvě věci z vlny 1b ZÁMĚRNĚ nepostaveny** — pojistka v zadání zabrala:
-- **vypršelý token jako nepřihlášen** (R1): zpřísnění schová ovládání nahrávání i frontu,
-  zatímco recordery běží dál,
-- **čas v liště od skutečného startu**: vyžaduje renderer a preload, které zadání zakázalo.
-
-🔴 **A našla se přitom SKUTEČNÁ existující vada** (ověřeno i na nezměněném `main`):
-**neplatná relace během nahrávání sebere z panelu ovládání i frontu, ale nahrávání běží dál.**
-Cesta ven existuje (pravý klik → Ukončit nahrávání), takže to není slepá ulička — ale na
-Danově stroji je ta ikona pod výřezem. **Rozhodnutí patří Danovi, leží v DAN-TODO.md.**
-
-## Co dál (pořadí pro další kola)
-
-1. **Vlna 3 — podepisování a notarizace nasucho.** A2 podáno, čeká na schválení Applem.
-   Připravit `electron-builder`, entitlements (mikrofon, systémový zvuk), hardened runtime,
-   cestu pro `notarytool`. **Ověřit vše, co jde bez certifikátu.**
-   🔴 Nežádat Dana o certifikát ani Team ID, dokud schválení nedorazí.
-2. **`declaredCaptureSources`** (D28b) — serverová session to teď chce, Dan schválil fázi 2.
-   Parametr do URL nahrávací stránky, hodnoty `microphone` × `microphone+system`,
-   **chybějící hodnota = nevím**. Po dokončení dát vědět serverové session k proměření.
-3. **Vlna 4 — zvednout `verification`** z `tests-green` na `verified-live` receptem
-   s podstrčeným syntetickým zvukem. Po každé zkoušce uklidit.
-4. **Zbylých pět nízkých nálezů auditu**, pokud zbyde čas.
-
-🔴 **`DSK-F010` ani `DSK-F012` NESTAVĚT** — `mcp:upload` scope neexistuje (D29, Danova stopka)
-a alokace čekají na užší projekci (D33).
+`main` zelený · **1049 zelených testů** · **15 PR mergnuto 7. 9.** · 0 otevřených PR ·
+akceptace **55 PASS / 3 FAIL** (podpis bez certifikátu · jeden test přes 5 s · sken tajemství
+našel testovací atrapu).
