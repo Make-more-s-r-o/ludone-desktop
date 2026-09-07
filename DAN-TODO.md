@@ -220,3 +220,19 @@ záznam ve Stažených si pustí, a on se mu neotevře.
 3. **Nechat být** — kdo si to chce poslechnout, jde na web LuDone.
 
 🔴 **Sám to nestavím** — je to volba formátu a produktu, ne oprava.
+
+### ⚠️ Netýká se to jen desktopu — je to JEDNO rozhodnutí pro obě strany
+
+Serverová session si to ověřila u sebe a našla víc, než jsem viděl já:
+
+```
+afinfo …-mikrofon.webm            → Fail: AudioFileOpenURL failed
+mdls -name kMDItemContentType …   → prázdné
+```
+
+macOS ten typ **ani nerozpozná**, nejen nepřehraje. A jejich modul Nahrávky má tlačítko
+**„Stáhnout zvuk"** — takže **kdokoli si stáhne nahrávku z webu, dostane týž nezotvíratelný
+soubor**. V prohlížeči se přehraje bez potíží, proto si toho dosud nikdo nevšiml.
+
+⇒ **Rozhoduj to prosím pro obě cesty naráz** (desktop i web), ať uživatel nedostane dvě různé
+odpovědi na tutéž věc. Tytéž tři možnosti platí pro obojí.
