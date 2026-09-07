@@ -168,31 +168,33 @@ bez tvého svolení dělat nebudu. Tady byla lišta tmavá a bílá ikona na ní
 
 ---
 
-## 9. Brány běží na tvém Macu — chceš to tak?
+## 9. Brány běží na tvém Macu — a moje první rada byla horší než odpověď v repu
 
-`.github/workflows/ci.yml` má `runs-on: [self-hosted, macos]`, takže **celá testovací sada
-běží na stroji, na kterém zároveň pracujeme.** Dnes to změřeno naostro:
+🔴 **OPRAVA MÉ RADY (7. 9. večer).** Nabídl jsem ti „přesunout runner na GitHub-hosted
+`macos-14`" a dodal, že se platí za minuty. **Sám `ci.yml` v komentáři říká něco lepšího:**
 
-| commit | zátěž stroje | výsledek |
-|---|---|---|
-| `6585b58` (jen Markdown) | load ~130 | 🔴 **24 vypršení testů** |
-| `6585b58` (týž commit) | load ~16 | 🟢 zelená |
+> *„Linux je pro tuhle bránu dost — nic macOS-specifického tu neběží a macOS runner se
+> účtuje 10× dráž."*
 
-Stálo to dnes **jeden špatný merge** (mergnul jsem na červenou, protože jsem ji považoval za
-zátěž — a měl jsem pravdu, ale to mě k mergi neopravňovalo) a **tři zbytečné běhy** po ~17
-minutách.
+⇒ Správná varianta tedy není macOS v cloudu, ale **`ubuntu-latest`** — desetkrát levnější
+a pro tuhle bránu dostačující. Ptal jsem se tě dřív, než jsem si přečetl, co je zapsané.
 
-**Tři cesty, rozhodnutí je tvoje:**
-1. **Runner jinam** (GitHub-hosted `macos-14`, jako už má `release-macos.yml`) — stroj se
-   uvolní, ale platí se za minuty.
-2. **`paths-ignore` na `docs/**` a `*.md`** — dokumentační commity by sadu nehnaly. ⚠️ Má to
-   past: u *required* kontroly umí nechat PR viset jako „pending" navěky.
-3. **Nechat být** a jen nepouštět těžké věci souběžně. Já se tím od teď řídím (nad load 20
-   nic nespouštím), ale u deseti souběžných sessions to nikdo neuhlídá.
+**Proč to dnes běží na tvém Macu:** repozitář je od 3. 9. privátní, takže hostované runnery
+spotřebovávají placené minuty, a ty jsou vyčerpané. Cena té volby je doložená: **commit
+s pouhým Markdownem vyrobil 24 vypršení testů**, protože stroj měl `load 130`.
 
-🔴 **Sám na to nesahám** — nemám upravovat bránu, která soudí moji práci.
+**Co jsem už udělal sám:** do `ci.yml` přibylo **rušení překonaných běhů**
+(`concurrency` + `cancel-in-progress`). Když pushneš dvakrát rychle za sebou, starší běh se
+zruší místo aby ti bral výkon, který zároveň měří. Žádnou kontrolu to neoslabuje.
 
----
+**Zbývá tvoje volba mezi třemi:**
+1. **Nechat na tvém Macu** a spoléhat na to, že si běhy hlídám (dnes to fungovalo).
+2. **Spravit billing** a vrátit se na `ubuntu-latest` — podle komentáře v `ci.yml`
+   jednořádková změna.
+3. **Zveřejnit repozitář** → runnery zdarma. ⚠️ **Tohle nedělej bez adversariálního kola.**
+   Minule byly deset hodin veřejné popisy tří živých produkčních vad; dnes je v repu
+   `CHECKPOINT.md` o 1151 řádcích s dvaceti zmínkami o serveru a produkci. **Nabízím, že to
+   projedu a vypíšu ti, co přesně by bylo vidět** — pak se rozhodneš.
 
 ## 10. Nahrávku ve Stažených si na vlastním Macu nepustíš dvojklikem
 

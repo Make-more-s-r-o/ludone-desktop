@@ -10,6 +10,13 @@ on:
 permissions:
   contents: read
 
+# Brána běží na Danově pracovním Macu (viz níž), takže každý překonaný běh mu bere výkon,
+# který zároveň měří. Novější push tedy ten starší běh zruší — neoslabuje to žádnou
+# kontrolu, jen přestává měřit stav, který už nikoho nezajímá.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   gates:
     # 🔴 Repozitář je od 3. 9. zase PRIVÁTNÍ (viz DAN-TODO.md, sekce o zveřejnění),
