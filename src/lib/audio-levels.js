@@ -444,8 +444,12 @@ export async function createStereoLevelSession({ signal } = {}) {
     };
     session = {
       labels: {
-        microphone: capture.microphoneTrack.label || "MacBook Pro — mikrofon",
-        system: capture.systemTrack.label || "Ostatní zvuk",
+        microphone: capture.microphoneTrack.label.trim()
+          ? capture.microphoneTrack.label
+          : "Mikrofon — název neznámý",
+        system: capture.systemTrack.label.trim()
+          ? capture.systemTrack.label
+          : "Ostatní zvuk — název neznámý",
       },
       readLevels() {
         return levelMonitor.readLevels();
