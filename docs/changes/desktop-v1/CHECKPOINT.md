@@ -763,3 +763,30 @@ a podpírá `declaredCaptureSources` (obě hodnoty mikrofon slibují).
 smazání podmínky), spusť **celou** sadu, spočítej červené, vrať zpět a ověř čistý strom.
 Ptej se **„co musím rozbít, aby zčervenala?"** — když je odpověď „nic", zámek tam není,
 jen to tak vypadá.
+
+---
+
+## 7. 9. — druhý zámek bez obhájců (PR #85)
+
+Serverová session udělala z heuristiky **předpověď**, a ta zabrala napoprvé:
+
+🔴 **Zámky bez obhájců se dají hledat podle toho, JAK VZNIKLY.** Bezpečnostní práce si
+sabotáže nese s sebou; **validace tvaru, parser a obranný `assert` se píšou jako hygiena** —
+a invariant nese ten, kdo na něm stojí, ne ten, kdo ho psal. Hledej tam, kde je odstup mezi
+**tvarem kódu** a **váhou toho, co drží**.
+
+Podle toho jsem prošel kandidáty v `recording-export.cjs`:
+
+| zámek | červených | poznámka |
+|---|---|---|
+| sanitizace jména (lomítka, tečky) | 3 → **6** | brání `..` a `/` stát se segmentem cesty |
+| kontrola kontejneru Opus/WebM | 3 | v pořádku |
+| **„název opustil složku Stažené"** | **0 → 1** | 🔴 **bez obhájce**, PR #85 |
+
+**Poučení navíc:** záchranná vrstva je nedosažitelná, dokud první funguje — proto měla nulu
+a proto ji **behaviorální test zamknout nemůže**. Drží ji strukturální test, který
+**odstraňuje komentáře** (ověřeno, že řádek citující tu kontrolu ho neuspokojí).
+
+⚠️ Upřesnění od serverové session k dřívějšímu pravidlu: **jedna červená neznamená „varování",
+znamená „nevíš"** — může to být křehká aserce, nebo jediné poctivé místo, kde ta pravda žije.
+Lepší odpověď než přidat druhý test na totéž je **doložit, že to drží dvě různá místa**.
