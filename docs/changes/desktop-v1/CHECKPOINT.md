@@ -1114,3 +1114,38 @@ ní znovu spadl, protože `replace(..., 1)` vypadá jednoznačně a není.
    `F006`), pak **Apple** (podepsaný build).
 3. Rozhodnutí pro Dana: **bod 9** (brány na jeho stroji) a **bod 10** (macOS neotevře export —
    týká se i webu).
+
+---
+
+## 7. 9. — `DSK-F002` ověřeno naostro a proč tím běh naráží na strop
+
+Menu na ikoně otevřeno **skutečným pravým klikem** (`CGEventPost`). `AXShowMenu` nestačí:
+Electron menu vykresluje jako samostatné okno, ne jako potomka položky v liště, takže se přes
+přístupnostní akci vyvolat nedá — musel jsem si na to přeložit sedmiřádkový program v C.
+
+Menu **nic nepředstírá**: „Ukončit nahrávání" i „Spustit LuTrack" jsou zašedlé, protože nic
+neběží a časovač drží vypnutý killswitch. To je přesně ten rozdíl, který jsme dnes opravovali
+jinde — akce, která nejde, se má tvářit jako nedostupná, ne jako funkční.
+
+### 🔴 Strop běhu: dál to bez Dana nejde
+
+| ověření | kolik | co jim brání |
+|---|---|---|
+| **verified-live** | **7** | — |
+| tests-green | 6 | **všech šest má `exposure: disabled`** — killswitche, které se nesmí přepnout |
+| unverified | 4 | `F003` čeká na OAuth klienta; `F010`/`F012`/`F014` se vědomě nestaví |
+
+⇒ **Sloupec `verification` se dál nehne prací, kterou smím udělat.** Ne proto, že by nebylo
+co dělat, ale proto, že každá zbylá položka končí u rozhodnutí, které patří Danovi: založit
+OAuth klienta, nebo přepnout killswitch.
+
+**Stav při uzavření:** `main` zelený, **1015 zelených testů**, 0 otevřených PR, 0 worktrees,
+žádné zombie procesy. **Dnes 11 mergnutých PR** (#80–#90).
+
+### Co čeká na Dana (nic z toho nesmím udělat sám)
+1. **OAuth klient** — `OAUTH-CO-ZALOZIT.md` (ukazatele na kód přeměřeny 7. 9.); odemyká
+   `F003`, `F004`, `F005` a druhou půlku `F006` naráz.
+2. **Apple Developer** — čeká se na schválení; bez podpisu build nikdo nenainstaluje.
+3. **`DAN-TODO` bod 9** — brány běží na jeho pracovním stroji.
+4. **`DAN-TODO` bod 10** — macOS neotevře stažený záznam; **týká se desktopu i webu**.
+5. Body 1–8 z dřívějška (kontrast ikony, „ukázkové" u LuTracku, co znamená „přihlášen"…).
