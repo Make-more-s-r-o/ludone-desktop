@@ -144,6 +144,18 @@ describe("deklarace zdrojů z manifestu v nahrávací URL", () => {
     expect(href).toBe(originalUrl);
   });
 
+  it("stopa bez mikrofonu neohlásí zdroje vůbec", () => {
+    // Obě ohlašované hodnoty tvrdí mikrofon. Nahrávání bez něj dnes nezačne, ale server
+    // bere `declared` jako naše slovo — tvrzení, které neumíme podložit, se neposílá ani
+    // z nedosažitelné větve.
+    const url = new URL(buildRecordingUploadUrl(
+      "https://app.ludone.cz",
+      { clientRecordingId: "b1d0f8a2-0000-4000-8000-000000000000" },
+      { tracks: { system: { fileName: "s.webm" } } },
+    ));
+    expect(url.searchParams.has("declaredCaptureSources")).toBe(false);
+  });
+
   it("přítomnou systémovou stopu deklaruje i při nulové velikosti", () => {
     const manifest = completeManifest();
     manifest.tracks.system.sizeBytes = 0;

@@ -162,6 +162,11 @@ function declaredCaptureSourcesFromManifest(manifest) {
 
   // Autoritou jsou stopy zapsané hlavním procesem. Dva kanály exportu ani
   // velikost systémové stopy neříkají, zda se zachytával jen mikrofon.
+  //
+  // Obě ohlašované hodnoty tvrdí mikrofon, takže bez jeho stopy nemáme co ohlásit:
+  // nahrávání bez mikrofonu dnes nezačne, ale `declared` server bere jako naše slovo
+  // a tvrzení, které neumíme podložit, se posílat nesmí ani jako nedosažitelná větev.
+  if (!trackKinds.includes("microphone")) return null;
   return trackKinds.includes("system") ? "microphone+system" : "microphone";
 }
 
