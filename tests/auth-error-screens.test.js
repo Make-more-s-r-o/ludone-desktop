@@ -9,7 +9,10 @@ const REASONS = [
   ["vyprselo", "expired", "retry"],
   ["odmitnuto", "access", "switch-account"],
   ["uloziste", "generic", "retry"],
-  ["konfigurace", "generic", "retry"],
+  // Vlastní stav místo obecného: důvod ZNÁME a uživateli ho říkáme. Akce zůstává
+  // „retry" — ne proto, že pomůže, ale protože tahle obrazovka nahrazuje celý panel
+  // a bez tlačítka by z ní nevedla cesta ven.
+  ["konfigurace", "configuration", "retry"],
   ["bez-site", "offline", "retry"],
   ["neznama", "generic", "retry"],
 ];
@@ -78,6 +81,20 @@ describe("chybové obrazovky přihlášení", () => {
       expect(action?.dataset.authErrorActionKind, reason).toBe(expectedAction);
       expect(action?.disabled, reason).toBe(false);
     }
+  });
+
+  it("u chyby konfigurace řekne příčinu, a cestu ven přesto nechá", async () => {
+    // Dřív se tenhle důvod ukázal jako obecné „Přihlášení se nepodařilo" a uživatel
+    // opakoval něco, co nemohlo vyjít. Text teď říká pravdu — ale tlačítko ZŮSTÁVÁ:
+    // obrazovka se vrací místo celého panelu, takže bez něj je z ní slepá ulička.
+    const panel = await renderAuthFailure("konfigurace");
+    const screen = panel.document.querySelector('[data-testid="auth-error-screen"]');
+    const action = screen?.querySelector('[data-testid="auth-error-action"]');
+
+    expect(screen?.textContent).toContain("Obrať se na správce aplikace");
+    expect(screen?.textContent).toContain("opakování přihlášení to samo nespraví");
+    expect(action, "cesta ven musí zůstat").not.toBeNull();
+    expect(action?.disabled).toBe(false);
   });
 
   it("oznámí chybu bez ztráty hlavního landmarku a přesune fokus na akci", async () => {

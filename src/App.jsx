@@ -34,7 +34,7 @@ export function App() {
   const [sessionExists, setSessionExists] = useState(null);
   const [recording, setRecording] = useState({ active: false, systemAudioState: "inactive" });
   const [tracking, setTracking] = useState({ active: false });
-  const [queueSnapshot, setQueueSnapshot] = useState({ items: null, status: null });
+  const [queueSnapshot, setQueueSnapshot] = useState({ items: null, status: null, unavailable: false });
   const [queueExpanded, setQueueExpanded] = useState(false);
   const [queueRetryFeedback, setQueueRetryFeedback] = useState(null);
   const [trayCommand, setTrayCommand] = useState(null);
@@ -138,7 +138,7 @@ export function App() {
     queueItemsFingerprintRef.current = nextFingerprint;
     const status = queueFooterStatus(items);
     const detailsAvailable = queuePanelSummary(items) !== null;
-    setQueueSnapshot({ items: status ? items : null, status });
+    setQueueSnapshot({ items: status ? items : null, status, unavailable: status === null });
     if (!detailsAvailable) setQueueExpanded(false);
   }, []);
 
@@ -302,6 +302,11 @@ export function App() {
         </header>
 
         <div className="panel-scroll">
+          {queueSnapshot.unavailable && (
+            <p className="queue-retry-feedback" role="alert">
+              Stav fronty není dostupný. Počet čekajících záznamů není známý.
+            </p>
+          )}
           {queueScreenVisible && (
             <QueueCard
               items={queueSnapshot.items}

@@ -185,7 +185,7 @@ function loadSettings() {
 }
 
 function useSystemBooleanSetting(getterName, setterName) {
-  const [state, setState] = useState({ value: false, loaded: false, busy: false });
+  const [state, setState] = useState({ value: false, loaded: false, busy: false, failed: false });
   const active = useRef(false);
 
   useEffect(() => {
@@ -200,10 +200,10 @@ function useSystemBooleanSetting(getterName, setterName) {
       .then(() => getter())
       .then((value) => {
         if (!active.current || typeof value !== "boolean") return;
-        setState({ value, loaded: true, busy: false });
+        setState({ value, loaded: true, busy: false, failed: false });
       })
       .catch(() => {
-        if (active.current) setState({ value: false, loaded: false, busy: false });
+        if (active.current) setState({ value: false, loaded: false, busy: false, failed: false });
       });
 
     return () => { active.current = false; };
@@ -212,9 +212,12 @@ function useSystemBooleanSetting(getterName, setterName) {
   const update = (nextValue) => {
     if (!state.loaded || state.busy || typeof nextValue !== "boolean") return;
     const setter = window.ludone?.[setterName];
-    if (typeof setter !== "function") return;
+    if (typeof setter !== "function") {
+      setState((current) => ({ ...current, failed: true }));
+      return;
+    }
     const previousValue = state.value;
-    setState({ value: nextValue, loaded: true, busy: true });
+    setState({ ...state, value: nextValue, busy: true });
     Promise.resolve()
       .then(() => setter(nextValue))
       .then((storedValue) => {
@@ -222,11 +225,11 @@ function useSystemBooleanSetting(getterName, setterName) {
         if (typeof storedValue !== "boolean") {
           throw new TypeError("Hlavní proces nevrátil boolean systémového nastavení");
         }
-        setState({ value: storedValue, loaded: true, busy: false });
+        setState({ value: storedValue, loaded: true, busy: false, failed: storedValue !== nextValue });
       })
       .catch(() => {
         if (active.current) {
-          setState({ value: previousValue, loaded: true, busy: false });
+          setState({ value: previousValue, loaded: true, busy: false, failed: true });
         }
       });
   };
@@ -907,7 +910,16 @@ export function SettingsApp() {
       </div>
 
       <footer className="settings-footer">
-        <span><CheckIcon /> Změny se ukládají automaticky</span>
+        {dock.failed || login.failed ? (
+          <p className="settings-feedback settings-feedback--error" role="alert">
+            {[
+              dock.failed && "Viditelnost ikony v Docku se nepodařilo změnit.",
+              login.failed && "Spouštění po přihlášení se nepodařilo změnit.",
+            ].filter(Boolean).join(" ")}
+          </p>
+        ) : (
+          <span><CheckIcon /> Změny se ukládají automaticky</span>
+        )}
         <button type="button" className="button button--primary" onClick={() => window.ludone.closeSettings()}>
           Hotovo
         </button>

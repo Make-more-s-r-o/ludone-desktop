@@ -77,7 +77,9 @@ export function QueueCard({ items, onRetry, onRetryFeedback, retryError: control
         <span className="queue-card__icon" aria-hidden="true"><CloudIcon /></span>
         <div>
           <h2>Čeká fronta</h2>
-          <p>Nic se neztratilo, jen to zatím neodešlo.</p>
+          <p>{summary.failedCount > 0
+            ? "Některé záznamy se nepodařilo odeslat."
+            : "Nic se neztratilo, jen to zatím neodešlo."}</p>
         </div>
       </div>
 

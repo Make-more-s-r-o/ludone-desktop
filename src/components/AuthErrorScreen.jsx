@@ -12,6 +12,19 @@ const GENERIC_FAILURE = {
 };
 
 const FAILURES = {
+  konfigurace: {
+    // Text říká pravdu (opakování to nespraví, spraví to správce), ale akce ZŮSTÁVÁ:
+    // tahle obrazovka se vrací místo celého panelu, takže bez tlačítka je z ní slepá
+    // ulička — a tu už tenhle repozitář jednou vyrobil (PR #51/#52).
+    action: "Zkusit znovu",
+    actionKind: "retry",
+    state: "configuration",
+    title: "Chyba nastavení aplikace",
+    message: "Přihlášení blokuje neplatné nastavení aplikace.",
+    guidance: "Obrať se na správce aplikace; opakování přihlášení to samo nespraví.",
+    icon: AccessDeniedIcon,
+    iconTone: "bad",
+  },
   vyprselo: {
     state: "expired",
     title: "Přihlášení vypršelo",
@@ -89,7 +102,7 @@ export function AuthErrorScreen({ busy, onRetry, reason }) {
         </p>
       </div>
 
-      <button
+      {failure.action && <button
         type="button"
         className={`button auth-error-panel__action auth-error-panel__action--${failure.actionTone}`}
         data-testid="auth-error-action"
@@ -99,7 +112,7 @@ export function AuthErrorScreen({ busy, onRetry, reason }) {
         autoFocus
       >
         {busy ? "Čekám na prohlížeč…" : failure.action}
-      </button>
+      </button>}
 
       {failure.details && (
         <div className="auth-error-panel__details" data-testid="auth-error-details">
