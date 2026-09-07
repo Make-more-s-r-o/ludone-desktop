@@ -381,6 +381,11 @@ function fakeElectron(userDataPath, {
         setPermissionRequestHandler: vi.fn(),
       },
     },
+    // Dialog je jediný kanál, kterým jde doručit chybu z menu lišty: menu je v tu
+    // chvíli zavřené a panel nemusí být otevřený.
+    dialog: {
+      showMessageBox: vi.fn(async () => ({ response: 0 })),
+    },
     shell: { openExternal: vi.fn(async () => undefined) },
     systemPreferences: {
       askForMediaAccess: vi.fn(async () => false),
@@ -6039,5 +6044,43 @@ describe("produkční zapojení automatických aktualizací", () => {
 
     expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled();
     expect(autoUpdater.listenerCount("update-downloaded")).toBe(0);
+  });
+});
+
+describe("selhání otevření prohlížeče z menu lišty", () => {
+  function browserMenuItem(harness) {
+    harness.trays[0].emit("right-click");
+    const template = harness.electron.Menu.buildFromTemplate.mock.lastCall[0];
+    return template.find((item) => item.label === "Otevřít LuDone v prohlížeči");
+  }
+
+  it("když prohlížeč nejde otevřít, řekne to dialogem a nabídne adresu", async () => {
+    // Menu je v tu chvíli zavřené a panel nemusí být otevřený, takže hláška v panelu
+    // by se nikam nedoručila. Dřív selhání skončilo jen ve vývojářské konzoli.
+    const harness = await loadMain();
+    await harness.runReady();
+    harness.electron.shell.openExternal.mockRejectedValueOnce(new Error("bez prohlížeče"));
+
+    await browserMenuItem(harness).click();
+    await vi.waitFor(() => expect(harness.electron.dialog.showMessageBox).toHaveBeenCalledOnce());
+
+    // Tvrdíme na tom, co se předalo, ne na indexu do mock.lastCall — ten je u atrapy
+    // bez parametrů typovaný jako prázdná n-tice a typecheck by ho odmítl.
+    expect(harness.electron.dialog.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "error",
+        detail: expect.stringContaining("ručně"),
+      }),
+    );
+  });
+
+  it("když se prohlížeč otevře, žádný dialog nevyskočí", async () => {
+    // Povinně tichý protějšek: úspěch nesmí uživatele obtěžovat.
+    const harness = await loadMain();
+    await harness.runReady();
+    harness.electron.shell.openExternal.mockResolvedValue(undefined);
+
+    await browserMenuItem(harness).click();
+    expect(harness.electron.dialog.showMessageBox).not.toHaveBeenCalled();
   });
 });

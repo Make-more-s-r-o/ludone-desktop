@@ -3,6 +3,7 @@ const {
   BrowserWindow,
   clipboard,
   desktopCapturer,
+  dialog,
   Tray,
   ipcMain,
   Menu,
@@ -1100,17 +1101,29 @@ async function runAuthSessionTransition(operation) {
   }
 }
 
-function openLuDoneInBrowser() {
+async function openLuDoneInBrowser() {
   let origin;
   try {
     origin = resolveCurrentAuthIssuer();
+    await shell.openExternal(origin);
   } catch (error) {
-    console.error(`[tray] LuDone nelze otevřít: ${error.message}`);
-    return;
+    console.error(`[tray] LuDone nelze otevřít: ${error?.message || "neznámá chyba"}`);
+    // Menu už je zavřené a panel nemusí být otevřený. Samostatný nativní dialog
+    // doručí chybu i tehdy; asynchronní varianta neblokuje zápis nahrávky v mainu.
+    try {
+      await dialog.showMessageBox({
+        type: "error",
+        title: "LuDone Desktop",
+        message: "LuDone se nepodařilo otevřít",
+        detail: origin
+          ? `Otevřete ${origin} ručně ve svém prohlížeči.`
+          : "Zkontrolujte prostředí v Nastavení → Účet a zkuste otevření v prohlížeči znovu.",
+        buttons: ["Zavřít"],
+      });
+    } catch (dialogError) {
+      console.error(`[tray] Chybový dialog nelze zobrazit: ${dialogError?.message || "neznámá chyba"}`);
+    }
   }
-  void Promise.resolve(shell.openExternal(origin)).catch((error) => {
-    console.error(`[tray] LuDone nelze otevřít: ${error.message}`);
-  });
 }
 
 function canStartTrackingFromTray() {
