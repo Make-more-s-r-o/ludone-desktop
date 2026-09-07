@@ -2549,6 +2549,15 @@ async function runTrackingMutation(method, payload) {
           confirmationReason: `time-queue:${result.closed.clientTimeEntryId}`,
         },
       );
+      // `noteDeferredQuitFailure` je za běhu aplikace no-op: vrací se hned, když
+      // neexistuje `deferredQuitRequest`, a ten vzniká jedině v `beginDeferredQuit()`,
+      // tedy až při Cmd+Q. Bez tohohle řádku zůstal po selhání zařazení mimo ukončování
+      // jen `console.error` a uživatel se o ztrátě nedozvěděl. Panel otevíráme touž
+      // cestou, jakou pro selhání zařazení používá nahrávka (`finishRecordingAndEnqueue`)
+      // — jiný kanál z hlavního procesu k uživateli aplikace nemá a zavádět nový kvůli
+      // tomuhle by bylo víc, než je potřeba. Volá se bezpodmínečně: při ukončování
+      // `noteDeferredQuitFailure` otevře totéž okno, takže druhé volání nic nemění.
+      showPanel();
     }
   }
   return result;

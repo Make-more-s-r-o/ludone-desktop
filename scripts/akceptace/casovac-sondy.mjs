@@ -73,10 +73,10 @@ function vyrobNoteDeferredQuitFailure(pozadavek, konzole, zaznam) {
     "showPanel",
     `${zdrojFunkce("noteDeferredQuitFailure")}\nreturn noteDeferredQuitFailure;`,
   );
-  return tovarna(pozadavek, konzole, () => { zaznam.panel += 1; });
+  return tovarna(pozadavek, konzole, () => { zaznam.panelZNote += 1; });
 }
 
-function vyrobRunTrackingMutation({ store, env, queueStore, konzole, note }) {
+function vyrobRunTrackingMutation({ store, env, queueStore, konzole, note, zaznam }) {
   const tovarna = new Function(
     "getReadyTrackingStore",
     "syncTrackingTray",
@@ -85,6 +85,7 @@ function vyrobRunTrackingMutation({ store, env, queueStore, konzole, note }) {
     "updateOutboundQueueTrayFact",
     "console",
     "noteDeferredQuitFailure",
+    "showPanel",
     `${zdrojFunkce("runTrackingMutation")}\nreturn runTrackingMutation;`,
   );
   return tovarna(
@@ -95,6 +96,7 @@ function vyrobRunTrackingMutation({ store, env, queueStore, konzole, note }) {
     () => {},
     konzole,
     note,
+    () => { zaznam.panelZBehu += 1; },
   );
 }
 
@@ -102,7 +104,7 @@ function vyrobRunTrackingMutation({ store, env, queueStore, konzole, note }) {
  * Postaví produkční `runTrackingMutation` nad skutečným úložištěm časovače
  * a vrátí vše, na co se sondy ptají.
  */
-function prostredi({ store, vypinacProstredi, selhaniFronty = false }) {
+function prostredi({ store, vypinacProstredi, selhaniFronty = false, bezUkonceni = false }) {
   const env = {};
   if (vypinacProstredi !== undefined) env[VYPINAC_CASU] = vypinacProstredi;
   const zarazene = [];
@@ -113,13 +115,18 @@ function prostredi({ store, vypinacProstredi, selhaniFronty = false }) {
       return { added: true, item: { clientRecordingId: polozka.clientTimeEntryId } };
     },
   };
-  const pozadavek = {
+  // `bezUkonceni` je běžný provoz aplikace: `deferredQuitRequest` v hlavním procesu
+  // vzniká jedině v `beginDeferredQuit()`, takže mimo Cmd+Q je nedefinovaný. Sonda ho
+  // proto musí umět podstrčit i jako `undefined` — jinak měří pořád jen quit.
+  const pozadavek = bezUkonceni ? undefined : {
     committed: false,
     failureReason: "",
     confirmationReasons: new Set(),
     userConfirmationRequired: false,
   };
-  const zaznam = { panel: 0, chyby: [], logy: [] };
+  // Panel se počítá zvlášť podle cesty, která ho otevřela. Kdyby to bylo jedno číslo,
+  // sabotáž běhové větve by se schovala za panel z větve quitové.
+  const zaznam = { panelZNote: 0, panelZBehu: 0, chyby: [], logy: [] };
   const konzole = {
     log: (radek) => zaznam.logy.push(String(radek)),
     warn: (radek) => zaznam.logy.push(String(radek)),
@@ -127,13 +134,18 @@ function prostredi({ store, vypinacProstredi, selhaniFronty = false }) {
   };
   const note = vyrobNoteDeferredQuitFailure(pozadavek, konzole, zaznam);
   const runTrackingMutation = vyrobRunTrackingMutation({
-    store, env, queueStore, konzole, note,
+    store, env, queueStore, konzole, note, zaznam,
   });
   return { runTrackingMutation, zarazene, pozadavek, zaznam };
 }
 
 /** Jeden celý úsek: start → stop, obojí přes produkční `runTrackingMutation`. */
-async function behStartStop({ vypinacStore, vypinacProstredi, selhaniFronty = false }) {
+async function behStartStop({
+  vypinacStore,
+  vypinacProstredi,
+  selhaniFronty = false,
+  bezUkonceni = false,
+}) {
   const soubor = await docasnySoubor();
   let ted = ZACATEK;
   const store = createTrackingStore({
@@ -144,7 +156,7 @@ async function behStartStop({ vypinacStore, vypinacProstredi, selhaniFronty = fa
     newId: () => KLIC_A,
     log: () => {},
   });
-  const beh = prostredi({ store, vypinacProstredi, selhaniFronty });
+  const beh = prostredi({ store, vypinacProstredi, selhaniFronty, bezUkonceni });
   const spusteno = await beh.runTrackingMutation("start", { projectId: PROJEKT_A });
   ted = KONEC;
   const zastaveno = await beh.runTrackingMutation("stop");
@@ -368,7 +380,7 @@ async function zahozenyCasNefronti() {
   assert.equal(potvrzeno.zarazene[0].clientTimeEntryId, KLIC_A);
 }
 
-/** PR #88: selhání zařazení do fronty si vyžádá potvrzení a čas neztratí. */
+/** PR #88: selhání zařazení do fronty PŘI UKONČOVÁNÍ si vyžádá potvrzení a čas neztratí. */
 async function selhaniFrontyNeztichne() {
   const beh = await behStartStop({
     vypinacStore: "true",
@@ -391,7 +403,11 @@ async function selhaniFrontyNeztichne() {
     "potvrzení musí být navázané na konkrétní časový úsek",
   );
   assert.match(beh.pozadavek.failureReason, /časového záznamu do fronty selhalo/);
-  assert.equal(beh.zaznam.panel, 1, "panel se musí ukázat, aby to uživatel viděl");
+  assert.equal(
+    beh.zaznam.panelZNote,
+    1,
+    "panel se musí ukázat z quitové cesty, aby to uživatel viděl",
+  );
 
   // Ani při selhání fronty se zaznamenaný čas nesmí ztratit z disku.
   const naDisku = JSON.parse(await readFile(beh.soubor, "utf8"));
@@ -401,7 +417,55 @@ async function selhaniFrontyNeztichne() {
   // Kontrola měřidla: bez selhání fronty se nic potvrzovat nemá.
   const bezSelhani = await behStartStop({ vypinacStore: "true", vypinacProstredi: "true" });
   assert.equal(bezSelhani.pozadavek.userConfirmationRequired, false);
-  assert.equal(bezSelhani.zaznam.panel, 0);
+  assert.equal(bezSelhani.zaznam.panelZNote, 0);
+  assert.equal(bezSelhani.zaznam.panelZBehu, 0);
+}
+
+/**
+ * DAN-TODO 14: selhání zařazení ZA BĚHU aplikace se uživatel taky musí dozvědět.
+ *
+ * Tahle větev je jiná brána než ta nad ní, ne její opakování: `noteDeferredQuitFailure`
+ * se bez `deferredQuitRequest` vrací hned na prvním řádku, takže při běžném provozu
+ * nepotvrzuje ani neotvírá nic. Panel proto musí otevřít `runTrackingMutation` sám.
+ */
+async function selhaniFrontyZaBehu() {
+  const beh = await behStartStop({
+    vypinacStore: "true",
+    vypinacProstredi: "true",
+    selhaniFronty: true,
+    bezUkonceni: true,
+  });
+  assert.equal(beh.pozadavek, undefined, "sonda musí měřit stav bez probíhajícího quitu");
+  assert.equal(beh.zastaveno.outcome, "stopped", "stop se selháním fronty nesmí spadnout");
+  assert.equal(beh.zarazene.length, 1, "o zařazení se aspoň pokusil");
+  assert.ok(
+    beh.zaznam.chyby.some((radek) => radek.includes("Zařazení času selhalo")),
+    "selhání musí být v logu",
+  );
+  assert.equal(
+    beh.zaznam.panelZBehu,
+    1,
+    "za běhu musí panel otevřít sama běhová cesta; do konzole se uživatel nedívá",
+  );
+  assert.equal(
+    beh.zaznam.panelZNote,
+    0,
+    "mimo ukončování nemá quitová cesta co otevírat — jinak sonda měří jinou vadu",
+  );
+
+  // Zaznamenaný čas zůstává na disku; ztratilo se jen zařazení do fronty.
+  const naDisku = JSON.parse(await readFile(beh.soubor, "utf8"));
+  assert.equal(naDisku.uzavrene.length, 1);
+  assert.equal(naDisku.uzavrene[0].minutes, MINUTY);
+
+  // Kontrola měřidla: bez selhání fronty se za běhu panel otevírat nesmí.
+  const bezSelhani = await behStartStop({
+    vypinacStore: "true",
+    vypinacProstredi: "true",
+    bezUkonceni: true,
+  });
+  assert.equal(bezSelhani.zarazene.length, 1, "úspěšný běh se musí zařadit");
+  assert.equal(bezSelhani.zaznam.panelZBehu, 0, "úspěch nesmí uživatele vyrušovat panelem");
 }
 
 const SONDY = new Map([
@@ -410,6 +474,7 @@ const SONDY = new Map([
   ["vypnuty-vypinac-nefronti", vypnutyVypinacNefronti],
   ["zahozeny-cas-nefronti", zahozenyCasNefronti],
   ["selhani-fronty-neztichne", selhaniFrontyNeztichne],
+  ["selhani-fronty-za-behu", selhaniFrontyZaBehu],
 ]);
 
 const jmeno = process.argv[2];

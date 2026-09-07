@@ -31,7 +31,9 @@ zkontroluj "s vypnutým časovým vypínačem se čas nedostane do odchozí fron
   sonda vypnuty-vypinac-nefronti
 zkontroluj "zahozený úsek se do fronty nedostane ani se zapnutým vypínačem" \
   sonda zahozeny-cas-nefronti
-zkontroluj "selhání zařazení času do fronty si vyžádá potvrzení a čas neztratí" \
+zkontroluj "selhání zařazení času při ukončování si vyžádá potvrzení a čas neztratí" \
   sonda selhani-fronty-neztichne
+zkontroluj "selhání zařazení času za běhu aplikace otevře panel a čas neztratí" \
+  sonda selhani-fronty-za-behu
 
 echo "---"; echo "chyb: $chyby"; exit $(( chyby > 0 ? 1 : 0 ))
