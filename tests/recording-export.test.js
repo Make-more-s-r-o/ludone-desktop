@@ -297,6 +297,22 @@ describe("povinné rozhodnutí o otevření stránky", () => {
     expect(options.openExternal).toHaveBeenCalledTimes(0);
   });
 
+  it("manifest bez mikrofonní stopy export odmítne a nic nezapíše", async () => {
+    // Ten požadavek stál ve validátoru bez jediného obhájce: šlo ho smazat celý a 984 testů
+    // zůstalo zelených. Přitom podpírá i to, co tvrdíme serveru v declaredCaptureSources —
+    // obě ohlašované hodnoty mikrofon slibují.
+    const options = await prepareCopy();
+    const bezMikrofonu = {
+      ...options.manifest,
+      tracks: { system: options.manifest.tracks.system },
+    };
+    await expect(exportRecordingCopy({
+      ...options, manifest: bezMikrofonu, openUploadPage: false,
+    })).rejects.toThrow(/mikrofonní stopu/);
+    await expect(readdir(options.downloadsDirectory)).resolves.toEqual([]);
+    expect(options.openExternal).not.toHaveBeenCalled();
+  });
+
   it("501 jednotek odmítne před kopírováním a ponechá stereo pro opravu názvu", async () => {
     const options = await prepareCopy();
     await expect(exportRecordingCopy({
