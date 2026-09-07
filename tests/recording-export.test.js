@@ -297,6 +297,45 @@ describe("povinné rozhodnutí o otevření stránky", () => {
     expect(options.openExternal).toHaveBeenCalledTimes(0);
   });
 
+  it.each([
+    ["cesta nahoru", "../../../../etc/passwd"],
+    ["lomítko uprostřed", "porada/tajne/slozka"],
+    ["dvojtečka a zpětné lomítko", "C:\\\\Windows\\\\system32"],
+    ["samé tečky", "...."],
+    ["skrytá cesta", "..%2F..%2Fmimo"],
+    ["řídicí znak", "porada\u0000/mimo"],
+  ])("nepřátelský název (%s) skončí uvnitř Stažených, ne mimo", async (_popis, nazev) => {
+    // Hranici drží DVĚ vrstvy: sanitizace jména a kontrola, že výsledná cesta nevypadla
+    // ze složky. Ta druhá je záchranná a šla smazat celá, aniž by cokoli zčervenalo —
+    // tenhle test proto tvrdí VÝSLEDEK, ne implementaci, takže chytí regresi v obou.
+    const options = await prepareCopy();
+    const result = await exportRecordingCopy({
+      ...options, openUploadPage: false, recordingName: nazev,
+    });
+    expect(path.dirname(result.filePath)).toBe(options.downloadsDirectory);
+    await expect(readFile(result.filePath)).resolves.toEqual(stereoWebmBytes());
+    const zapsane = await readdir(options.downloadsDirectory);
+    expect(zapsane).toHaveLength(1);
+  });
+
+  it("záchranná kontrola složky ve zdroji zůstává, i když ji chování nedosáhne", async () => {
+    // Druhá vrstva je nedosažitelná, dokud sanitizace funguje — behaviorální test ji tedy
+    // zamknout NEMŮŽE a měření ukázalo nula obhájců. Bez tohohle by ji někdo, kdo si to
+    // změří, v dobré víře smazal jako mrtvý kód. Komentáře se odstraňují, aby test
+    // neuspokojila věta, která o té kontrole jen mluví.
+    const zdroj = await readFile(
+      new URL("../electron/recording-export.cjs", import.meta.url),
+      "utf8",
+    );
+    const bezKomentaru = zdroj
+      .split("\n")
+      .map((radek) => (radek.trim().startsWith("//") ? "" : radek))
+      .join("\n");
+
+    expect(bezKomentaru).toContain("path.dirname(filePath) !== downloadsRoot");
+    expect(bezKomentaru).toContain("opustil složku Stažené");
+  });
+
   it("manifest bez mikrofonní stopy export odmítne a nic nezapíše", async () => {
     // Ten požadavek stál ve validátoru bez jediného obhájce: šlo ho smazat celý a 984 testů
     // zůstalo zelených. Přitom podpírá i to, co tvrdíme serveru v declaredCaptureSources —
