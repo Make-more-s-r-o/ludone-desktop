@@ -329,3 +329,45 @@ současné chování — obojí naráz ne.
 **Nedělám s tím nic**, dokud neřekneš které. Doporučuju **ponechat současné chování** a
 rozhodnutí přepsat: samoregistrace je pro tým bez správce lepší a bezpečnostní vlastnosti
 zůstaly. Ale je to změna zapsaného rozhodnutí, takže patří tobě.
+
+---
+
+## 14. 🔴 Opravuju vlastní tvrzení: PR #88 platí jen při ukončování aplikace
+
+Napsal jsem ti, že *„zaznamenaný čas se při chybě fronty tiše ztrácel, teď tě appka zastaví"*.
+**Platí to jen na cestě ukončování.**
+
+`noteDeferredQuitFailure` (`electron/main.cjs`) začíná řádky
+`const request = deferredQuitRequest; if (!request || request.committed) return;`
+a `deferredQuitRequest` vzniká **jedině v `beginDeferredQuit()`**, tedy až při Cmd+Q.
+
+⇒ Když zařazení do fronty selže **za běhu aplikace**, zůstane po tom jen `console.error`.
+Žádný panel, žádné potvrzení — a `updateOutboundQueueTrayFact` se ani nezavolá, protože
+je až za úspěšnou větví.
+
+🔴 **A co je horší: tutéž funkci volá i cesta NAHRÁVKY** — ta „hlídaná" polovina, podle které
+jsem v #88 rozdíl měřil. Takže moje tehdejší tabulka *„nahrávka zastaví · čas mlčí"* byla
+nejspíš nepravdivá **v obou sloupcích**. Ověřit to už nestihl nikdo — podagentovi došel
+limit uprostřed úkolu.
+
+**Není to nová vada**, je to vada, kterou #88 měl opravit a neopravil celou. Zapisuju to
+takhle naplno, protože jsem ti to ohlásil jako hotové.
+
+**Co s tím:** dodělat běhovou cestu (ukázat panel toutéž cestou, jakou appka používá pro jiná
+selhání) a rozšířit podmínku v `E9.sh`, ať měří **obě** větve. Je to práce na jedno kolo,
+ne rozhodnutí — jen na ni došel limit.
+
+---
+
+## 15. Tři drobnosti z auditu, které nikdo neopravil
+
+- **Dva časové vypínače nemají společný zdroj pravdy.** `getTrackingStore()` si
+  `DESKTOP_TIME_ENABLED` **memoizuje** při první konstrukci, `runTrackingMutation` ho čte
+  **znovu při každé mutaci**. V produkci se prostředí za běhu nemění, takže to není živá
+  vada — ale je to rozestup, který jednou někoho zmate.
+- **Uploadový killswitch je hlídaný grepem přes názvy testů.** `E5` hledá v `queue.test.js`
+  tři literály; přepsat tvrzení uvnitř těch testů a nechat řetězce na místě = brána zůstane
+  zelená. Časový vypínač má nově měření **chování**, uploadový pořád jen měření **názvu**.
+- **`switchTrackingProject` je vystavený most, který nikdo nevolá.** `TrackingCard.jsx`
+  přepíná jen natvrdo psaný seznam v rendereru. Poznámka ¹⁵ ve `spec.md` přitom tvrdí,
+  že ho UI používá.
