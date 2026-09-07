@@ -1849,3 +1849,22 @@ cestu ven z něčeho, co běží.
 
 **Souvisí s tím moje odložené rozhodnutí R1** (vypršelý token = odhlášen). Nechal jsem ho
 nepostavené právě proto, že by tenhle případ zhoršilo.
+
+## 🔴 NÁLEZ K ROZHODNUTÍ — neplatná relace ti vezme Stop uprostřed nahrávání
+
+Ověřeno na nezměněném `main`, není to novinka z mých změn: **když relace zneplatní během
+nahrávání, panel schová ovládání nahrávání i frontu — ale nahrávání běží dál.**
+
+**Slepá ulička to není:** pravý klik na ikonu v liště má „Ukončit nahrávání".
+⚠️ Jenže ta ikona se ti schovává pod výřezem, takže záchrana visí na něčem, co nevidíš.
+
+**Neopravil jsem to sám**, protože odpověď je produktová i bezpečnostní:
+- **a)** běžící nahrávání má ovládání ponechat, i když relace vypršela (dokončit, co běží),
+- **b)** neplatná relace má ovládání vzít (nikdo bez platné relace nemá sahat na data).
+
+Doporučuju **(a)**: nahrávka už na disku vzniká, takže odepřením tlačítka Stop nic nechráníš —
+jen znemožníš její řádné ukončení. Je to táž logika jako u „Jen uložit": nebrat uživateli
+cestu ven z něčeho, co běží.
+
+**Souvisí s tím moje odložené rozhodnutí R1** (vypršelý token = odhlášen). Nechal jsem ho
+nepostavené právě proto, že by tenhle případ zhoršilo.

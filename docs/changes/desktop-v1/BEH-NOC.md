@@ -17,7 +17,7 @@ Stav běhu je v `CHECKPOINT.md`, rozhodnutí v `decisions.md`, Danovy věci v `D
 
 ## Co tedy zbývá udělat
 
-### Vlna 1 — dvanáct nálezů auditu (všechny „akce selže a mlčí")
+### ✅ Vlna 1 HOTOVA (#80, #81) - dvanact nalezu auditu
 
 Audit #2 (`sol/ultra`, 63 stavů) našel 14 vad, dvě jsou opravené (#79). Zbylých dvanáct:
 
@@ -80,3 +80,36 @@ oslabení testu, `it.skip`, vypnutí brány, zápis do baseline, `--force`, `[sk
 Jeden worktree = jeden zapisovatel; **jeden SOUBOR = jeden job** (hotspot je `main.cjs`).
 Panel v Orce přes `orca terminal create`, zadání **cestou k souboru**, `< /dev/null`.
 Claude si nechává: diff, brány, sabotáže 3🔴:1🟢 včetně povinně zelené, commit, PR, merge.
+
+---
+
+## Stav běhu k 7. 9. 2026, 10:15
+
+**Hotovo:** vlna 1a (#80, šest tichých selhání v rendereru) a 1b (#81, dialog u menu lišty).
+`main` **968 passed | 3 skipped**, 0 PR, 0 worktrees.
+
+**Dvě věci z vlny 1b ZÁMĚRNĚ nepostaveny** — pojistka v zadání zabrala:
+- **vypršelý token jako nepřihlášen** (R1): zpřísnění schová ovládání nahrávání i frontu,
+  zatímco recordery běží dál,
+- **čas v liště od skutečného startu**: vyžaduje renderer a preload, které zadání zakázalo.
+
+🔴 **A našla se přitom SKUTEČNÁ existující vada** (ověřeno i na nezměněném `main`):
+**neplatná relace během nahrávání sebere z panelu ovládání i frontu, ale nahrávání běží dál.**
+Cesta ven existuje (pravý klik → Ukončit nahrávání), takže to není slepá ulička — ale na
+Danově stroji je ta ikona pod výřezem. **Rozhodnutí patří Danovi, leží v DAN-TODO.md.**
+
+## Co dál (pořadí pro další kola)
+
+1. **Vlna 3 — podepisování a notarizace nasucho.** A2 podáno, čeká na schválení Applem.
+   Připravit `electron-builder`, entitlements (mikrofon, systémový zvuk), hardened runtime,
+   cestu pro `notarytool`. **Ověřit vše, co jde bez certifikátu.**
+   🔴 Nežádat Dana o certifikát ani Team ID, dokud schválení nedorazí.
+2. **`declaredCaptureSources`** (D28b) — serverová session to teď chce, Dan schválil fázi 2.
+   Parametr do URL nahrávací stránky, hodnoty `microphone` × `microphone+system`,
+   **chybějící hodnota = nevím**. Po dokončení dát vědět serverové session k proměření.
+3. **Vlna 4 — zvednout `verification`** z `tests-green` na `verified-live` receptem
+   s podstrčeným syntetickým zvukem. Po každé zkoušce uklidit.
+4. **Zbylých pět nízkých nálezů auditu**, pokud zbyde čas.
+
+🔴 **`DSK-F010` ani `DSK-F012` NESTAVĚT** — `mcp:upload` scope neexistuje (D29, Danova stopka)
+a alokace čekají na užší projekci (D33).
