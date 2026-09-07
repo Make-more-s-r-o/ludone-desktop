@@ -444,10 +444,13 @@ export async function createStereoLevelSession({ signal } = {}) {
     };
     session = {
       labels: {
-        microphone: capture.microphoneTrack.label.trim()
+        // `?.` je tu schválně: původní `||` chybějící label snesl a náhrada `.trim()`
+        // by na něm spadla uprostřed startu nahrávání. Prohlížeč label vždy vyplní, takže
+        // to test nedosáhne — proto ta pojistka stojí na komentáři, ne na zeleném testu.
+        microphone: capture.microphoneTrack.label?.trim()
           ? capture.microphoneTrack.label
           : "Mikrofon — název neznámý",
-        system: capture.systemTrack.label.trim()
+        system: capture.systemTrack.label?.trim()
           ? capture.systemTrack.label
           : "Ostatní zvuk — název neznámý",
       },
