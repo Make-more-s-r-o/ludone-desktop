@@ -96,7 +96,11 @@ function onTrayCommand(callback) {
             || command === "start-tracking"
             || command === "stop-tracking"
           ) {
-            callback(command);
+            try {
+              callback(command);
+            } catch (error) {
+              console.error(`[tray] Rychlou akci ${command} se nepodařilo zpracovat: ${error.message}`);
+            }
             // Každý příkaz dostane vlastní event-loop tah. React by jinak víc
             // synchronních setState sloučil a komponenty by viděly jen poslední akci.
             if (index < commands.length - 1) {

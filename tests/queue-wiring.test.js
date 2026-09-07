@@ -134,6 +134,7 @@ function fakeElectron(userDataPath, {
   const trays = [];
   const windows = [];
   let readyCallback;
+  let dockVisible = false;
   let nextWebContentsId = 1;
   let pendingPanelLoad;
   const trayTitleIntervals = new Map();
@@ -281,8 +282,15 @@ function fakeElectron(userDataPath, {
   const app = Object.assign(new EventEmitter(), {
     commandLine: { appendSwitch: vi.fn() },
     dock: {
-      hide: vi.fn(() => { startupEvents.push("dock:hide"); }),
-      show: vi.fn(async () => { startupEvents.push("dock:show"); }),
+      hide: vi.fn(() => {
+        startupEvents.push("dock:hide");
+        dockVisible = false;
+      }),
+      show: vi.fn(async () => {
+        startupEvents.push("dock:show");
+        dockVisible = true;
+      }),
+      isVisible: vi.fn(() => dockVisible),
     },
     getLoginItemSettings: vi.fn(() => ({
       openAtLogin: loginItemState.openAtLogin,
@@ -1153,6 +1161,73 @@ describe("zapojení systémových nastavení", () => {
     expect(store.set.mock.calls).toEqual([[true], [false]]);
     expect(store.get()).toBe(false);
     expect(harness.electron.app.dock.hide).toHaveBeenCalledTimes(2);
+  });
+
+  it("po selhání změny Docku i zápisu návratu čte skutečnou viditelnost", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({ createDockVisibilityStore: () => store });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const setDockVisible = harness.ipcHandlers.get("settings:set-dock-visible");
+    const getDockVisible = harness.ipcHandlers.get("settings:get-dock-visible");
+    const nativeError = new Error("Dock nelze zobrazit");
+    harness.electron.app.dock.show.mockRejectedValueOnce(nativeError);
+    const saveValue = store.set.getMockImplementation();
+    store.set.mockImplementationOnce(saveValue).mockRejectedValue(new Error("Disk nelze zapsat"));
+
+    await expect(setDockVisible(settingsEvent, true)).rejects.toBe(nativeError);
+
+    // Selhávají i další zápisy: přepínač musí číst realitu bez opravy souboru.
+    expect(store.get()).toBe(true);
+    expect(harness.electron.app.dock.isVisible()).toBe(false);
+    expect(getDockVisible(settingsEvent)).toBe(false);
+    expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      expect.stringContaining("Návrat nastavení Docku selhal"),
+    );
+
+    store.set.mockImplementation(saveValue);
+    await expect(setDockVisible(settingsEvent, true)).resolves.toBe(true);
+    expect(getDockVisible(settingsEvent)).toBe(true);
+  });
+
+  it("po selhání změny Docku i nativního návratu čte skutečnou viditelnost", async () => {
+    const store = memoryDockVisibilityStore(false);
+    const harness = await loadMain({ createDockVisibilityStore: () => store });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const setDockVisible = harness.ipcHandlers.get("settings:set-dock-visible");
+    const getDockVisible = harness.ipcHandlers.get("settings:get-dock-visible");
+    const dock = harness.electron.app.dock;
+    const nativeError = new Error("Dock ohlásil chybu po zobrazení");
+    const showDock = dock.show.getMockImplementation();
+    dock.show.mockImplementationOnce(async () => {
+      // Nativní operace může změnit stav ještě před ohlášením chyby.
+      await showDock();
+      throw nativeError;
+    });
+    dock.hide.mockImplementationOnce(() => { throw new Error("Dock nelze skrýt"); });
+
+    await expect(setDockVisible(settingsEvent, true)).rejects.toBe(nativeError);
+
+    expect(store.get()).toBe(false);
+    expect(dock.isVisible()).toBe(true);
+    expect(getDockVisible(settingsEvent)).toBe(true);
+    expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      expect.stringContaining("Návrat nastavení Docku selhal"),
+    );
+
+    await expect(setDockVisible(settingsEvent, false)).resolves.toBe(false);
+    expect(getDockVisible(settingsEvent)).toBe(false);
+  });
+
+  it("mimo macOS čte volbu Docku z úložiště bez nativního API", async () => {
+    const store = memoryDockVisibilityStore(true);
+    const harness = await loadMain({ createDockVisibilityStore: () => store, platform: "win32" });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+
+    expect(harness.ipcHandlers.get("settings:get-dock-visible")(settingsEvent)).toBe(true);
+    expect(harness.electron.app.dock.isVisible).not.toHaveBeenCalled();
   });
 
   it("uložený Dock přežije nový hlavní proces a platí už při jeho startu", async () => {
@@ -3037,6 +3112,45 @@ describe("viditelnost ikony a klikání na lištu", () => {
       ["stop-tracking", 2],
     ]);
     unsubscribe();
+  });
+
+  it("preload po výjimce prvního příkazu doručí druhý i třetí s rozestupy a vyzvedne další dávku", async () => {
+    const responses = [
+      ["stop-recording", "start-tracking", "stop-tracking"],
+      ["stop-recording"],
+    ];
+    const { api, emit, invoke } = loadPreload(() => responses.shift() ?? []);
+    let deliveryTurn = 0;
+    const deliveryTurns = [];
+    const listener = vi.fn((command) => {
+      deliveryTurns.push([command, deliveryTurn]);
+      setTimeout(() => { deliveryTurn += 1; }, 0);
+      if (listener.mock.calls.length === 1) {
+        // Další kliknutí přijde během zpracování dávky, těsně před výjimkou.
+        void emit("tray:command");
+        throw new Error("Odběratel prvního příkazu selhal");
+      }
+    });
+
+    const unsubscribe = api.onTrayCommand(listener);
+    try {
+      await vi.waitFor(() => {
+        expect(listener.mock.calls).toEqual([
+          ["stop-recording"],
+          ["start-tracking"],
+          ["stop-tracking"],
+          ["stop-recording"],
+        ]);
+      });
+      expect(deliveryTurns.slice(0, 3)).toEqual([
+        ["stop-recording", 0],
+        ["start-tracking", 1],
+        ["stop-tracking", 2],
+      ]);
+      expect(invoke.mock.calls).toEqual([["tray:command"], ["tray:command"]]);
+    } finally {
+      unsubscribe();
+    }
   });
 
   it("levý klik dál otevře a napozicuje panel, nikoli kontextové menu", async () => {
