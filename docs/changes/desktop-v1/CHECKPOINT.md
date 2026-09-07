@@ -1149,3 +1149,57 @@ OAuth klienta, nebo přepnout killswitch.
 3. **`DAN-TODO` bod 9** — brány běží na jeho pracovním stroji.
 4. **`DAN-TODO` bod 10** — macOS neotevře stažený záznam; **týká se desktopu i webu**.
 5. Body 1–8 z dřívějška (kontrast ikony, „ukázkové" u LuTracku, co znamená „přihlášen"…).
+
+---
+
+## 7. 9. večer — Dan předal rozhodování, vzal jsem si osm bodů z deseti
+
+Dan: *„mám něco udělat? pracuj co nejvíc sám. Ten OAuth asi zvládnu, ostatní body nevím."*
+Zeptal jsem se na **dvě** věci, které vzít nešlo (zkouška zvuku v Nastavení = odchylka od
+návrhu; runner CI), zbytek jsem rozhodl sám a každé rozhodnutí je vypsané.
+
+| PR | co | doloženo |
+|---|---|---|
+| **#91** | „Připojeno" o vypršelé relaci; Stop mizel uprostřed nahrávání | 🧪 1021 |
+| **#92** | zkouška zvuku i z Nastavení + přístup okna k mikrofonu | 🧪 1042 |
+| **#93** | LuTrack přizná ukázkové dopředu · šablonové ikony · věta o přehrání | ✅ + 🧪 1045 |
+
+**Dnes celkem 14 mergnutých PR.**
+
+### Co bylo na těch změnách podstatné
+
+**#91 není o nové obrazovce, ale o tom, že dvě pojetí „přihlášen" jsou teď JEDNA funkce.**
+`hasStoredAuthSession` se ptalo jen na vydavatele, `recordingUploadContext` navíc na vypršení
+— proto panel tvrdil „Připojeno" o spojení, které nefungovalo. Sourozenecké cesty zase.
+
+**#92 není o tlačítku, ale o tom, že okno Nastavení nově smí na mikrofon.** Prochází týmž
+ověřením jako panel a navíc musí mít hash `#settings`. Sabotáže doložily, že ta podmínka
+drží na **dvou nezávislých místech** (vyřazení každé zvlášť = 1 červená, obou = 2).
+
+**#93: ikona ověřena NAOSTRO.** `npm run test:tray-image` pouští skutečný Electron a ptá se
+`nativeImage` — 21× PASS, `isTemplateImage() === true`, v obou motivech identické pixely.
+⚠️ Ten skript **není v `npm run gates`**, takže ho CI nespustí.
+
+### 🔴 Čtyřikrát za den totéž: nepřečteno dřív, než ohlášeno
+
+| co jsem ohlásil / nabídl | co už bylo zapsané |
+|---|---|
+| vyrobím vzorek s mlčící stopou | `vzorky/jednostopa-440hz-ticho.webm` od 3. 9. |
+| nález: chybí `Duration` v kontejneru | popsané ve `vzorky/README.md` |
+| dva nálezy auditu k opravě | oba dávno opravené |
+| **„přesuň runner na macOS v cloudu, platí se za minuty"** | `ci.yml` sám říká, že **Linux stačí a je 10× levnější** |
+
+Ten poslední je nejhorší, protože šel **Danovi jako otázka** — nechal jsem ho vybírat mezi
+variantami, z nichž jednu měl repozitář popsanou líp než já.
+
+### Co jsem si vzal a NEPOSTAVIL (přiznáno)
+
+- **tichý odznak v liště u jednostopého nahrávání** — nepostaveno; je to jediná z položek,
+  kde jsem si nebyl jistý přínosem, a raději to říkám, než abych to tiše vypustil
+- **příprava podepisování** — ukázalo se, že **je hotová**: `hardenedRuntime`, `notarize`,
+  entitlements i texty oprávnění jsou v `package.json`. Po schválení Applem zbývá certifikát.
+
+### Co dál
+1. **OAuth klient** — jediné, co drží sloupec `verification` (Dan).
+2. Rozhodnutí o runneru (bod 9) a o formátu staženého souboru (bod 10).
+3. Nabídka: adversariální kolo **před** případným zveřejněním repozitáře.
