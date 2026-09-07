@@ -156,7 +156,10 @@ describe("kontrakt electron-builderu", () => {
     const config = packageManifest.build;
 
     expect(config.asar).toBe(false);
-    expect(config.allowMissingDependencies).toBe(false);
+    // Tenhle klíč electron-builder NEZNÁ a celý build na něm padá s „unknown property".
+    // Test ho dřív vyžadoval, takže hlídal, aby balení zůstalo rozbité; teď hlídá opak.
+    expect(Object.hasOwn(config, "allowMissingDependencies")).toBe(false);
+    expect(packageManifest.author, "electron-builder autora vyžaduje").toBeTruthy();
     expect(config.files).toEqual([
       "package.json",
       "dist/**/*",
