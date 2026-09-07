@@ -738,3 +738,28 @@ jako vada money funkce; bylo to už zapsané v poznámce ¹⁰ i v C3.
 ⚠️ A dvakrát mi lhalo vlastní měřidlo: „Přepnout projekt" jsem hledal jako tlačítko (je to
 `select`) a jako „zobrazený projekt" jsem sbíral položky rozbalovacího seznamu. Obojí vypadalo
 jako rozpor, obojí byla chyba sondy.
+
+---
+
+## 7. 9. — měření síly zámků (PR #84)
+
+Serverová session přišla s heuristikou, kterou stojí za to používat dál:
+
+🔴 **Počet červených testů říká, kolika NEZÁVISLÝMI podmínkami ten invariant držíš.
+Jedna červená u důležité věci je varování, ne úspěch.**
+
+Vyzkoušeno na třech zámcích tohohle repa:
+
+| zámek | červených | verdikt |
+|---|---|---|
+| strážce odesílatele IPC (`requireTrustedSender`) | **12** | silný |
+| fail-closed brána odesílání (killswitch) | **17** | silný |
+| „manifest musí mít mikrofonní stopu" | **0 → 1** | byl **bez obhájce**, PR #84 |
+
+Ten třetí šel smazat celý a 984 testů zůstalo zelených — přitom v produkci vyhazuje výjimku
+a podpírá `declaredCaptureSources` (obě hodnoty mikrofon slibují).
+
+**Recept, ať to jde zopakovat:** vyřaď zámek (`if (true) return;`, `=== "true"` → `true`,
+smazání podmínky), spusť **celou** sadu, spočítej červené, vrať zpět a ověř čistý strom.
+Ptej se **„co musím rozbít, aby zčervenala?"** — když je odpověď „nic", zámek tam není,
+jen to tak vypadá.
