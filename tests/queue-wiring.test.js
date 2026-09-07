@@ -5206,6 +5206,64 @@ describe("bezpečné ukončení aplikace", () => {
     expect(harness.electron.app.quit).toHaveBeenCalledOnce();
   });
 
+  it("selhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení", async () => {
+    vi.useFakeTimers();
+    const queueError = Object.assign(new Error("Na disku není místo"), { code: "ENOSPC" });
+    const enqueueTimeEntry = vi.fn(async () => { throw queueError; });
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry,
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(),
+      }),
+      env: { DESKTOP_TIME_ENABLED: "true" },
+    });
+    await harness.runReady();
+    const panel = harness.windows[0];
+    const event = { sender: panel.webContents, senderFrame: panel.webContents.mainFrame };
+    const started = await harness.ipcHandlers.get("tracking:start")(event, {
+      projectId: PROJECT_A,
+    });
+    panel.hide();
+    expect(panel.isVisible()).toBe(false);
+
+    const firstQuit = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", firstQuit);
+    await vi.waitFor(() => expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      expect.stringContaining("[queue] Zařazení času selhalo:"),
+    ));
+
+    // Čas už je uzavřený na disku, ale ve frontě chybí. Samotný log nestačí.
+    expect(enqueueTimeEntry).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      clientTimeEntryId: started.entry.clientTimeEntryId,
+    }));
+    await expect(readFile(path.join(harness.userDataPath, "cas", "casovac.json"), "utf8")
+      .then(JSON.parse)).resolves.toMatchObject({
+      aktualni: null,
+      uzavrene: [expect.objectContaining({
+        clientTimeEntryId: started.entry.clientTimeEntryId,
+        state: "uzavreno",
+      })],
+    });
+    expect(firstQuit.preventDefault).toHaveBeenCalledOnce();
+    expect(panel.isVisible()).toBe(true);
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    expect(harness.quietConsole.error).toHaveBeenCalledWith(
+      "[quit] Lokální zařazení časového záznamu do fronty selhalo: Na disku není místo; "
+      + "ukončení čeká na výslovné potvrzení uživatele.",
+    );
+
+    // Ani vypršení lhůty nesmí obejít požadované potvrzení člověka.
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(harness.electron.app.quit).not.toHaveBeenCalled();
+    const confirmedQuit = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", confirmedQuit);
+    expect(confirmedQuit.preventDefault).toHaveBeenCalledOnce();
+    expect(harness.electron.app.quit).toHaveBeenCalledOnce();
+  });
+
   it("počká na rozpracovaný start LuTracku a pak jej čistě zastaví", async () => {
     let reportStartEntered;
     let releaseStart;

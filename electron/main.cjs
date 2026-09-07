@@ -2502,6 +2502,13 @@ async function runTrackingMutation(method, payload) {
       }
     } catch (error) {
       console.error(`[queue] Zařazení času selhalo: ${error.stack || error.message}`);
+      noteDeferredQuitFailure(
+        `Lokální zařazení časového záznamu do fronty selhalo: ${error.message}`,
+        {
+          requiresUserConfirmation: true,
+          confirmationReason: `time-queue:${result.closed.clientTimeEntryId}`,
+        },
+      );
     }
   }
   return result;
