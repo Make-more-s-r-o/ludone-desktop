@@ -41,3 +41,39 @@ Zvuk se do gitu nedává. Stopy, manifest i kombinovaný export:
    nezmizela". Naše mlčící stopa ji splnila a appka o ní tvrdila „**ověřeny**", ačkoli
    ověřená není — jen **přítomná**. Dnes to nikoho neplete, protože to není vidět; jakmile
    ale někdo opraví nález 1, stane se z neviditelné nepravdy viditelná.
+
+---
+
+## 🔴 Oprava vlastního zápisu (7. 9., po přečtení `vzorky/README.md`)
+
+Dvě věci jsem ohlásil jako nové a nové **nejsou**:
+
+1. **Vzorky s mlčícím pravým kanálem existují od 3. 9.** — `vzorky/jednostopa-440hz-ticho.webm`,
+   vyrobené `npm run vzorky` **přes produkční funkce** (`createStereoCapture`) a skutečný
+   Chromium `MediaRecorder`. Rozhodnutí D28 se na ně dokonce výslovně odvolává.
+2. **Chybějící `Duration` v kontejneru je tam popsané taky:** *„Streamovaný WebM z Chromium
+   `MediaRecorder` nemusí mít v kontejneru zapsaný prvek Duration."*
+
+⇒ Znovu totéž poučení: **než něco ohlásím jako nález, přečtu si, co už je zapsané.** Dnes
+potřetí.
+
+### Co z téhle nahrávky tedy zbývá jako přínos
+
+- prošla **celou cestou aplikace** (panel → start → 44 s → „Ukončit a uložit" → manifest →
+  export do Stažených), ne jen generátorem vzorků; delší stopa, oddělené soubory per stopa
+- odhalila hlášku **„Obě stopy ověřeny"** u mlčící stopy — to nový nález JE
+- dala číselný rozlišovač ticha (`mean == max` na −91 dB), ověřený nezávisle i druhou stranou
+
+### A jeden skutečně nový, uživatelský nález
+
+Zatímco chybějící `Duration` je popsaná, tohle popsané nikde není:
+
+```
+afinfo ~/Downloads/LuDone-…-dfc95d63-….webm
+→ Fail: AudioFileOpenURL failed
+```
+
+🔴 **macOS ten soubor nativně vůbec neotevře.** Uživatel dostane do Stažených záznam, který
+si na vlastním Macu nepustí dvojklikem — potřebuje VLC nebo prohlížeč. Je to důsledek volby
+WebM/Opus (což `MediaRecorder` dává a BD-N35 na tom staví oddělení kanálů), ne vada kódu —
+ale **je to vlastnost produktu, kterou nikdo nezapsal a Dan o ní neví**. Leží v `DAN-TODO`.

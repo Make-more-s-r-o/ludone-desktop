@@ -191,3 +191,32 @@ minutách.
    nic nespouštím), ale u deseti souběžných sessions to nikdo neuhlídá.
 
 🔴 **Sám na to nesahám** — nemám upravovat bránu, která soudí moji práci.
+
+---
+
+## 10. Nahrávku ve Stažených si na vlastním Macu nepustíš dvojklikem
+
+Změřeno 7. 9. na skutečném exportu z aplikace:
+
+```
+afinfo ~/Downloads/LuDone-2026-09-07T12-36-02-…webm
+→ Fail: AudioFileOpenURL failed
+```
+
+Soubor je **WebM / Opus** — formát, který `MediaRecorder` dává a na kterém stojí oddělení
+kanálů (BD-N35, a podle D28 je to naše jediná výhoda proti prohlížeči). Jenže **macOS ho
+nativně neumí**: QuickTime ani Finder ho neotevřou, `ffprobe` navíc hlásí délku `N/A`
+(to je u streamovaného WebM očekávané a je to popsané ve `vzorky/README.md`).
+
+**Není to vada kódu.** Je to vlastnost, kterou jsme nikde nenapsali — uživatel čeká, že
+záznam ve Stažených si pustí, a on se mu neotevře.
+
+**Tři cesty, rozhodnutí je tvoje:**
+1. **Nechat a říct to v UI** — u hlášky „Soubor … je uložený ve Stažených" dovětek, čím ho
+   otevřít. Nejlevnější, nic se nerozbije.
+2. **Převádět lokální kopii** (remux do `.m4a`/`.caf`) — uživatel dostane soubor, který mu Mac
+   otevře. ⚠️ Chce to ffmpeg v balíčku (~30 MB) a **rozhodnutí, jestli převádět i stereo
+   oddělení**, nebo mít dvě verze.
+3. **Nechat být** — kdo si to chce poslechnout, jde na web LuDone.
+
+🔴 **Sám to nestavím** — je to volba formátu a produktu, ne oprava.
