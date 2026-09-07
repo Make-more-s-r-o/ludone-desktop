@@ -238,3 +238,20 @@ soubor**. V prohlížeči se přehraje bez potíží, proto si toho dosud nikdo 
 
 ⇒ **Rozhoduj to prosím pro obě cesty naráz** (desktop i web), ať uživatel nedostane dvě různé
 odpovědi na tutéž věc. Tytéž tři možnosti platí pro obojí.
+
+
+---
+
+## ✅ VYŘEŠENO 7. 9. večer — ikona aplikace v Docku
+
+Tvoje „ikona dole nic moc": `build.mac.icon` v manifestu **vůbec nebyl**, takže balíček
+nesl výchozí `electron.icns`. Opraveno v #94 — glyf je **tentýž pulz jako v liště**,
+vykreslený ve velkém ze sdílené geometrie, barvy z návrhu.
+
+**Když v Docku pořád vidíš atom:** macOS si ikony balíčků cachuje. Pomůže `killall Dock`,
+případně přesunout `.app` a vrátit zpět. Balíček samotný je ověřený —
+`CFBundleIconFile = icon.icns`, soubor bajt za bajt shodný s vygenerovaným, žádný
+`electron.icns` uvnitř.
+
+⚠️ Kdybys měl skutečné logo (SVG nebo PNG 1024 px), je to lepší zdroj než odvozenina
+z glyfu lišty — stačí ho dodat a ikonu z něj vyrobím.

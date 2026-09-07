@@ -1203,3 +1203,39 @@ variantami, z nichž jednu měl repozitář popsanou líp než já.
 1. **OAuth klient** — jediné, co drží sloupec `verification` (Dan).
 2. Rozhodnutí o runneru (bod 9) a o formátu staženého souboru (bod 10).
 3. Nabídka: adversariální kolo **před** případným zveřejněním repozitáře.
+
+---
+
+## 7. 9. večer — ikona aplikace (PR #94) a jedna zelená, která nic nedokazovala
+
+Dan: *„ikona dole nic moc"* se snímkem Docku. **Nebyla to nedoladěná ikona, ale žádná:**
+`build.mac.icon` v manifestu neexistoval, takže balíček nesl `electron.icns`.
+
+Tvar jsem nevymýšlel — `scripts/tray-ikony.mjs` kreslí glyf procedurálně (`PULZ`,
+`SIRKA_PULZU`, `PLATNO`) a barvy v `PALETY` jsou doslovné tokeny z návrhu. Ikona aplikace je
+**tentýž glyf ve velkém**, geometrie se **sdílí** — test to hlídá tak, že zmutuje sdílené
+konstanty a trvá na tom, že se změní **glyf aplikace i lišty**.
+
+✅ **Ověřeno naostro celým řetězem, ne jedním krokem:** balení exit 0 · `Info.plist` →
+`CFBundleIconFile = icon.icns` · ten soubor **bajt za bajt** shodný s vygenerovaným
+(`cmp`) · `electron.icns` v balíčku **nula výskytů** · aplikace restartována z nového
+balíčku.
+
+### 🔴 Zelená, která byla jen zbytkem po předchozím běhu
+
+Sabotážní kolo mi vrátilo **zelenou sabotáž jako červenou**. Málem jsem z toho udělal nález.
+Příčina: ikona je **untracked artefakt**, který `git checkout -- .` neobnoví — předchozí
+sabotáž ji smazala a já měřil nad zamořeným stromem.
+
+A ta samá vlastnost vyrobila druhou, horší chybu: test se na ikonu jen **ptal**
+(`existsSync`), takže **na čistém checkoutu v CI padl**. U mě procházel jen proto, že mi
+soubor ležel z dřívějška. **Moje lokální zelená nebyla důkaz, byl to zbytek.**
+
+⇒ **Test, který se ptá na artefakt, si ho musí sám vyrobit** — jinak měří stav stroje,
+ne kód. Opraveno: test ho generuje toutéž cestou jako balení, ověřeno smazáním adresáře.
+
+⚠️ Třetí věc z téhož kola: nový test sdílené geometrie spouští generátor **osmkrát**, sám
+běží 2,3 s a v plné sadě **vyprší po 5 s**. Nezvedal jsem globální strop ani neměnil aserce
+— dostal vlastní 30s limit a v kódu je napsáno proč.
+
+**Stav:** `main` `fcac972`, **1049 zelených**, 0 otevřených PR, 0 worktrees. **Dnes 15 PR.**
