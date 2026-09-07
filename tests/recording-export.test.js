@@ -144,6 +144,18 @@ describe("deklarace zdrojů z manifestu v nahrávací URL", () => {
     expect(href).toBe(originalUrl);
   });
 
+  it("neznámý druh stopy VEDLE mikrofonu taky nic neohlásí", () => {
+    // Tenhle případ hlídá výhradně kontrola neznámých druhů: mikrofon tu je, takže
+    // pojistka „bez mikrofonu neohlašuj" ho nezachytí. Bez tohohle testu šlo tu
+    // kontrolu smazat a nic nezčervenalo.
+    const url = new URL(buildRecordingUploadUrl(
+      "https://app.ludone.cz",
+      { clientRecordingId: "b1d0f8a2-0000-4000-8000-000000000000" },
+      { tracks: { microphone: { fileName: "m.webm" }, kamera: { fileName: "k.webm" } } },
+    ));
+    expect(url.searchParams.has("declaredCaptureSources")).toBe(false);
+  });
+
   it("stopa bez mikrofonu neohlásí zdroje vůbec", () => {
     // Obě ohlašované hodnoty tvrdí mikrofon. Nahrávání bez něj dnes nezačne, ale server
     // bere `declared` jako naše slovo — tvrzení, které neumíme podložit, se neposílá ani
