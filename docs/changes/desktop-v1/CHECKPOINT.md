@@ -909,3 +909,58 @@ nebyly — byly červené a chytily to správně.** Selhalo okno, ne testy. Rozd
 jestli ta druhá cesta má vůbec důvod existovat samostatně.** Sjednocené vstupy hlídač
 symetrie nepotřebují — nejlevnější zámek je ten, který nemá co hlídat. U nás to neplatí
 (nahrávka a čas jsou opravdu dvě věci), ale u příštího nálezu tohohle tvaru se to ptát budu.
+
+---
+
+## 7. 9. — spuštění naostro: půlka `DSK-F006` ověřena, druhá půlka má jméno blokátoru
+
+Po dvou vlnách oprav jsem se přestal hrabat ve zbylých `console.error` a podíval se, **co
+produktu doopravdy chybí**. Odpověď: ne kód. **15 ze 17 funkcí je v `main`**; nepostavené
+jsou jen ty tři, které se vědomě nestaví (`F010` Danova stopka, `F012` čeká na užší projekci,
+`F014` BD-N43). Co chybí, je **ověření naostro** — sloupec `verification`.
+
+### Co se ověřilo
+
+Appka čte **skutečný** stav oprávnění: most `getPermissionStatus` vrátil `granted` pro
+`microphone` i `system-audio`, a **nezávislý Electron proces** čtoucí týž systémový API
+vrátil totéž. Dva procesy, tatáž odpověď ⇒ appka si stav nedomýšlí z vlastního uloženého.
+
+### Tři pasti, do kterých jsem po cestě spadl
+
+| past | co to vypadalo | co to bylo |
+|---|---|---|
+| připojil jsem se na port 9333 | „appka hlásí 18 položek ve frontě" | **cizí běžící instance** s Danovými daty; můj build se na port vůbec nedostal |
+| `getPermissionStatus()` vrátil `unknown` | „vada: appka neumí přečíst oprávnění" | **volal jsem bez argumentu**; most bere jméno oprávnění |
+| bypass onboardingu nezabral | „`audio-smoke` je rozbitý" | **můj vlastní `LUDONE_RESET_ONBOARDING=1`** flag ho přepisoval |
+
+🔴 **Všechny tři vypadaly jako nález v cizím kódu a všechny tři byly vada měřidla.** Znovu
+platí, co už v tomhle souboru je: než obviníš kód, ověř přístroj. Zvlášť u prvního — kdybych
+tam klikal, klikal bych do appky s reálnými daty, ne do své.
+
+### Blokátor, který má teď jméno
+
+Zkouška zvuku existuje **jen jako krok onboardingu** a ten leží **za přihlášením**. Bez
+OAuth klienta ho nedokončím ⇒ **`DSK-F006` nejde doověřit ze stejného důvodu jako `DSK-F003`**.
+Karta Zvuk v Nastavení zkoušku nenabízí (dva popisné řádky, žádné měřidlo), takže se k ní
+nedostane ani uživatel, kterému mikrofon přestane fungovat po měsíci.
+
+⇒ **Nestavím to** — obsah Nastavení řídí zmrazený návrh. Leží to v `DAN-TODO.md` jako bod 7.
+
+### Ikona v liště, změřeno
+
+Položka na `{2610, 3}`, velikost `36 × 24`, pixely `29`–`250` ⇒ **kreslí se**; snímek je
+v `evidence/screenshots/`. Ale měřeno na **externím monitoru bez výřezu** — Danovo hlášení
+bylo o vestavěném displeji s notchem, což je jiný případ a platí dál. Kontrast na světlé
+liště jsem neměřil, musel bych přepnout vzhled jeho systému.
+
+**Stav:** `main` `1494ba7`, 1009 zelených, 0 otevřených PR, 0 worktrees.
+
+### Co dál
+
+1. **Největší zbývající položka je OAuth klient** (`OAUTH-CO-ZALOZIT.md`) — odemyká
+   `DSK-F003`, `F004`, `F005` a druhou půlku `F006` naráz. Bez něj se sloupec `verification`
+   dál nehne, ať se udělá cokoli jiného.
+2. Zbylá tichá selhání vyvolaná klikem (`preload.cjs:108`, `main.cjs:322`).
+3. 🛑 `main.cjs:737` (vysvětlující okno k neviditelné ikoně) **je stopka, ne úkol**: dotáhnout
+   se dá jen zapnutím ikony v Docku, a **M18 říká, že je výchozí vypnutá a rozhodl to Dan**.
+4. Po schválení A2: podepsaný build a záměrně vyrobené nahrávky pro server.
