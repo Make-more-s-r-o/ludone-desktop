@@ -83,6 +83,22 @@ describe("chybové obrazovky přihlášení", () => {
     }
   });
 
+  it("tlačítko každé obrazovky má tón, který styly znají", async () => {
+    // `konfigurace` tón vůbec neměla, takže její tlačítko dostalo třídu
+    // `--undefined`, kterou stylopis nedefinuje. Nikdo si toho nevšiml, protože
+    // se to nijak neprojeví hláškou — jen tichým rozdílem vzhledu. Tenhle test
+    // proto hlídá VŠECHNY obrazovky, ne tu jednu, co se zrovna opravila.
+    const znameTony = ["primary", "quiet"];
+    for (const [reason] of REASONS) {
+      const panel = await renderAuthFailure(reason);
+      const action = panel.document.querySelector('[data-testid="auth-error-action"]');
+      const tony = [...action.classList].filter((t) => t.startsWith("auth-error-panel__action--"));
+
+      expect(tony, reason).toHaveLength(1);
+      expect(znameTony, reason).toContain(tony[0].replace("auth-error-panel__action--", ""));
+    }
+  });
+
   it("u chyby konfigurace řekne příčinu, a cestu ven přesto nechá", async () => {
     // Dřív se tenhle důvod ukázal jako obecné „Přihlášení se nepodařilo" a uživatel
     // opakoval něco, co nemohlo vyjít. Text teď říká pravdu — ale tlačítko ZŮSTÁVÁ:
