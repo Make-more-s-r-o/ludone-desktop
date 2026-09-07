@@ -255,3 +255,30 @@ případně přesunout `.app` a vrátit zpět. Balíček samotný je ověřený 
 
 ⚠️ Kdybys měl skutečné logo (SVG nebo PNG 1024 px), je to lepší zdroj než odvozenina
 z glyfu lišty — stačí ho dodat a ikonu z něj vyrobím.
+
+---
+
+## 11. 🔴 Codex je do 13. 9. mimo — vyčerpaný limit ChatGPT účtu
+
+Doslovná hláška z logu (7. 9. večer, oba běhy):
+
+```
+You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage
+to purchase more credits or try again at Sep 13th, 2026 10:00 PM.
+```
+
+Codex nestihl ani otevřít zadání — přečetl jeden dokument a spadl. **Nic po něm na disku
+nezbylo**, takže se nic nedokončuje ručně, jen se to pustí jinde.
+
+**Co to znamená pro tvoje pravidlo „delegace na Codex co nejvíc":** tenhle týden neplatí.
+Router v `~/.claude/CLAUDE.md` posílá na Codex implementaci, refaktory, testy, migrace
+i bulk editace — do 13. 9. to všechno spadne zpátky na Claude limit.
+
+**Rozhodnutí je tvoje:**
+1. **Dokoupit kredity** (odkaz výš) — router platí dál beze změny.
+2. **Počkat do 13. 9.** a do té doby vědomě jet na Claude — dražší na Claude limit, ale funguje.
+3. **Zkusit jiný účet nebo model.** ⚠️ Neověřeno: pokud je limit účtový, `gpt-5.6-sol`
+   ani `spark` nepomůžou. `spark` má podle zápisu vlastní bucket (`codex_bengalfox`),
+   ale na ChatGPT účtu vrací HTTP 400, takže se na něj spoléhat nedá.
+
+Do rozhodnutí jedu variantu 2 — práci, která měla jít na Codex, dělám v Claude podagentech.
