@@ -151,7 +151,21 @@ function validateUploadRecordingName(value) {
   return name;
 }
 
-function buildRecordingUploadUrl(origin, metadata = {}) {
+function declaredCaptureSourcesFromManifest(manifest) {
+  const tracks = manifest?.tracks;
+  if (!tracks || typeof tracks !== "object" || Array.isArray(tracks)) return null;
+  const trackKinds = Object.keys(tracks);
+  if (
+    trackKinds.length === 0
+    || trackKinds.some((kind) => kind !== "microphone" && kind !== "system")
+  ) return null;
+
+  // Autoritou jsou stopy zapsané hlavním procesem. Dva kanály exportu ani
+  // velikost systémové stopy neříkají, zda se zachytával jen mikrofon.
+  return trackKinds.includes("system") ? "microphone+system" : "microphone";
+}
+
+function buildRecordingUploadUrl(origin, metadata = {}, manifest = null) {
   const url = new URL("/nahravky/nahrat", origin);
   for (const key of ["clientRecordingId", "startedAt", "endedAt"]) {
     const value = metadata[key];
@@ -163,6 +177,10 @@ function buildRecordingUploadUrl(origin, metadata = {}) {
   // chybějící a prázdný nemusí řešit stejně.
   const nazev = validateUploadRecordingName(metadata.nazev);
   if (nazev.length > 0) url.searchParams.set("nazev", nazev);
+  const declaredCaptureSources = declaredCaptureSourcesFromManifest(manifest);
+  if (declaredCaptureSources !== null) {
+    url.searchParams.set("declaredCaptureSources", declaredCaptureSources);
+  }
   return url.href;
 }
 
@@ -283,7 +301,7 @@ async function exportRecordingCopy({
     startedAt: timeline.startedAt,
     endedAt: timeline.endedAt,
     nazev: recordingName,
-  });
+  }, manifest);
   const format = inspectOpusWebm(await readHeader(stagePath));
   const fileName = exportFileName(
     manifest.clientRecordingId,
