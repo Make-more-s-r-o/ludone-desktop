@@ -50,3 +50,16 @@ describe("obě cesty do odchozí fronty se brání stejně", () => {
     expect(blok).toContain("confirmationReason:");
   });
 });
+
+describe("odeslání se ptá na PLATNOU relaci, ne na jakoukoli", () => {
+  // Chování hlídá `queue-wiring`. Tenhle zámek je jiného DRUHU: čte zdroj a trvá na
+  // přesném porovnání. Sabotáž `!== "valid"` → `=== "none"` totiž propustí vypršelou
+  // relaci k odeslání a v diffu vypadá jako drobná úprava podmínky.
+  it("recordingUploadContext porovnává proti valid, ne proti opaku none", () => {
+    const zacatek = kodBezKomentaru.indexOf("async function recordingUploadContext(");
+    expect(zacatek, "funkce recordingUploadContext se nenašla").toBeGreaterThan(-1);
+    const telo = kodBezKomentaru.slice(zacatek, zacatek + 600);
+
+    expect(telo).toContain('storedAuthSessionState(storedSession) !== "valid"');
+  });
+});
