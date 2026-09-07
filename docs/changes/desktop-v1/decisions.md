@@ -929,3 +929,25 @@ implementace o co se opřít. Postavit ji dřív by znamenalo vymyslet si vlastn
 nastavení a pak ho zahodit — přesně ten druh práce, který se dělá dvakrát.
 
 ⇒ **Nestavět, dokud Dan neřekne jinak nebo dokud server nezpřístupní ta nastavení.**
+
+---
+
+## D28 (serverová session, 7. 9. 2026) — desktop je JEDINÝ zdroj druhé strany hovoru
+
+Dan rozhodl, že Nahrávky mají **tři rovnocenné zdroje**: soubor · prohlížeč · LuDone Desktop.
+
+🔴 **Ale rovnocenné jsou jen zdánlivě.** Serverová session to ověřila na našich vzorcích
+(6. 9.): **prohlížeč zachytí mikrofon, ne zvuk online hovoru.** Kdo chce celý hovor včetně
+druhé strany, potřebuje desktop — naše **dvoukanálová stopa (mikrofon vlevo, systém vpravo)
+je jediná cesta**, jak to jde.
+
+⇒ Pro nás z toho plyne priorita, ne jen hezký pocit: **oddělení kanálů je vlastnost, kterou
+nikdo jiný nedodá.** Rozhodnutí BD-N35 („kanály NEMÍCHAT do mona") tím dostalo druhý,
+nezávislý důvod.
+
+⚠️ A jedna past, kterou jsem jim poslal zpět: **dvoukanálový soubor NENÍ důkaz dvou mluvčích.**
+Když uživatel vědomě nahrává jen mikrofonem, pravý kanál je **digitální ticho** — vzorek
+`vzorky/jednostopa-440hz-ticho.webm` je přesně tenhle případ.
+
+**Sdílení (D27/D25/D26) se desktopu netýká:** vydání veřejného odkazu je úkon na webu,
+`spec.md:31` má sdílení i archiv mimo náš rozsah. Nic neměníme.

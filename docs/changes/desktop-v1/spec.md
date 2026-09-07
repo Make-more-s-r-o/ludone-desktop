@@ -75,22 +75,22 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 
 | ID | Funkce | Riziko | scope | delivery | exposure | verification |
 |---|---|---|---|---|---|---|
-| `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | approved | **merged** | **labs** | tests-green |
-| `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | approved | no-code | disabled | unverified |
+| `DSK-F001` | Ikona v liště nese stav, klik otevře panel | normal | approved | **merged** | **labs** | **verified-live** ¹⁷ |
+| `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | approved | **merged** | labs | tests-green |
 | `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | approved | **merged** | disabled ⁹ | unverified |
 | `DSK-F004` | Odhlášení s odvoláním na serveru | security | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | **merged** | disabled | tests-green |
 | `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | approved | **merged** | labs | unverified |
-| `DSK-F007` | Nahrávání dvou stop na disk | normal | approved | merged | labs | tests-green |
-| `DSK-F008` | Pojmenování nahrávky při zastavení | normal | approved | no-code | disabled | unverified |
+| `DSK-F007` | Nahrávání dvou stop na disk | normal | approved | merged | labs | **verified-live** ¹⁴ |
+| `DSK-F008` | Pojmenování nahrávky při zastavení | normal | approved | **merged** | labs | **verified-live** ¹⁴ |
 | `DSK-F009` | Odchozí fronta s opakováním | normal | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F010` | Odeslání na server | rbac | **draft** | no-code | disabled | unverified |
 | `DSK-F011` | Časovač: start, přepnutí projektu, stop | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
-| `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ¹¹ | disabled | unverified |
+| `DSK-F012` | Výběr projektu z alokací | **money** | approved | no-code ¹¹ ¹⁵ | disabled | unverified |
 | `DSK-F013` | Časovač přežije pád a restart | **money** | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F014` | Připomínky, když neběží časovač | normal | approved | no-code | disabled | unverified |
 | `DSK-F015` | Nastavení: účet, zvuk, záznamy, připomínky, diagnostika ¹³ | normal | approved | **merged** | labs | unverified |
-| `DSK-F016` | Ikona v Docku jako volba | normal | approved | no-code | disabled | unverified |
+| `DSK-F016` | Ikona v Docku jako volba | normal | approved | **merged** | labs | **verified-live** ¹⁶ |
 | `DSK-F017` | Mazání lokálních kopií po 7 dnech | normal | approved ¹² | **merged** | disabled | tests-green |
 
 ¹³ **Upřesněno 3. 9. 2026.** Název funkce vyjmenovává pět částí, ale `merged` neplatilo
@@ -99,6 +99,25 @@ Nastavení na čtyři záložky podle návrhu (Účet · Zvuk · Záznamy · Dia
 🔴 **Připomínky se vědomě NESTAVÍ** (rozhodnutí BD-N43: „nastavení patří na server, aplikace
 ho pouze přebírá"), takže `merged` u téhle funkce znamená **čtyři části z pěti**.
 Osa se opravuje podle BD-N30 — zmrazení chrání požadavky, ne sloupce o stavu.
+
+🔴 **Aktualizováno 7. 9. 2026 — matice byla ČTYŘI DNY po realitě.** Od 3. 9. přibylo 39 PR
+(#41–#79) a matice se neudržovala, takže hlásila `no-code` u funkcí, které stojí. Tohle je
+přesně to, kvůli čemu se Dan ve vývoji ztratil, a je to vada dokumentu, ne kódu.
+
+¹⁴ **Ověřeno naostro 6. 9.**: nahrávání prohnáno celým tokem s **podstrčeným syntetickým
+zvukem** (mikrofon 440 Hz, systém 880 Hz) — start · měřáky · souběh s LuTrackem · zastavení ·
+pojmenování · export do Stažených · zařazení do fronty. Recept je v `CHECKPOINT.md`.
+
+¹⁵ 🔴 **Pozor, vypadá to hotově a není:** UI výběru projektu existuje (`Přepnout projekt`
++ most `switchTrackingProject`), ale seznam je **natvrdo v `TrackingCard.jsx:6–9`** — čtyři
+vymyšlené názvy. Skutečné alokace čekají na kontrakt fáze 2. Osa proto zůstává `no-code`:
+existující obal bez dat není funkce.
+
+¹⁶ **Ověřeno naostro 6. 9.**: přepínač v Nastavení + záchrana z výstražného okna (#69);
+macOS potvrdil položku v Docku.
+
+¹⁷ **Ověřeno naostro 4. 9.**: ikona se na Danově stroji schová pod výřezem — aplikace to
+teď pozná a řekne (#67), a nabídne cestu do Docku (#69).
 
 🔴 **Aktualizováno 2. 9. 2026 po sloučení celého stohu** (PR #2–#13). Dan schválil, že se
 stavové osy smějí udržovat, i když je zbytek specu zmrazený — zmrazení chrání POŽADAVKY
