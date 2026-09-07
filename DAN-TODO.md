@@ -165,3 +165,29 @@ jiný případ a ten platí dál.
 
 🔴 **Kontrast na SVĚTLÉ liště jsem NEMĚŘIL** — musel bych ti přepnout vzhled systému, a to
 bez tvého svolení dělat nebudu. Tady byla lišta tmavá a bílá ikona na ní má kontrast dobrý.
+
+---
+
+## 9. Brány běží na tvém Macu — chceš to tak?
+
+`.github/workflows/ci.yml` má `runs-on: [self-hosted, macos]`, takže **celá testovací sada
+běží na stroji, na kterém zároveň pracujeme.** Dnes to změřeno naostro:
+
+| commit | zátěž stroje | výsledek |
+|---|---|---|
+| `6585b58` (jen Markdown) | load ~130 | 🔴 **24 vypršení testů** |
+| `6585b58` (týž commit) | load ~16 | 🟢 zelená |
+
+Stálo to dnes **jeden špatný merge** (mergnul jsem na červenou, protože jsem ji považoval za
+zátěž — a měl jsem pravdu, ale to mě k mergi neopravňovalo) a **tři zbytečné běhy** po ~17
+minutách.
+
+**Tři cesty, rozhodnutí je tvoje:**
+1. **Runner jinam** (GitHub-hosted `macos-14`, jako už má `release-macos.yml`) — stroj se
+   uvolní, ale platí se za minuty.
+2. **`paths-ignore` na `docs/**` a `*.md`** — dokumentační commity by sadu nehnaly. ⚠️ Má to
+   past: u *required* kontroly umí nechat PR viset jako „pending" navěky.
+3. **Nechat být** a jen nepouštět těžké věci souběžně. Já se tím od teď řídím (nad load 20
+   nic nespouštím), ale u deseti souběžných sessions to nikdo neuhlídá.
+
+🔴 **Sám na to nesahám** — nemám upravovat bránu, která soudí moji práci.

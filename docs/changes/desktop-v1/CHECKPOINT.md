@@ -1014,3 +1014,25 @@ visí na `workflow_run` po zelených branách, takže se prostě nenasadí.
 2. Zvážit, jestli 5s strop na test dává smysl u brány běžící na pracovním stroji — ale
    **až po přeměření**, ne teď; ladit strop podle přetíženého běhu je ladění měřidla.
 3. Kritická cesta zůstává **OAuth klient**.
+
+### Uzavřeno: týž commit červený i zelený, podle zátěže stroje
+
+| běh | commit | zátěž | výsledek |
+|---|---|---|---|
+| 34116379191 | #89 (kód) | load 110–219 | 🔴 vypršení, pokaždé jiné testy |
+| 34119055518 | `88c713d` merge #89 | load ~16 | 🟢 `success` |
+| 34120235568 pokus 1 | `6585b58` **jen Markdown** | load ~130 | 🔴 **24 vypršení** |
+| 34120235568 pokus 2 | `6585b58` **týž commit** | load ~16 | 🟢 `success` |
+
+🔴 **Nejsilnější řádek je třetí:** commit, který nesáhl na jediný řádek kódu, shodil
+`logout.test.js` a `queue.test.js` čtyřiadvacetkrát. Dokumentační změna nemůže rozbít testy.
+
+⇒ **Sabotáž ani lokální zelená tuhle třídu nevyloučí** — musí se ptát na `uptime`. A obráceně:
+„byla zátěž" je tvrzení, které se dokládá **týmž commitem změřeným dvakrát**, ne dojmem.
+
+⚠️ **Gate jsem nesáhl a nesáhnu.** Nabízí se přidat `paths-ignore` na `docs/**`, aby
+dokumentační commity nehnaly celou sadu — dnes jich bylo pět, každý ~17 minut na Danově
+stroji. Neudělám to sám ze dvou důvodů: má to známou past (`paths-ignore` u *required*
+kontroly umí nechat PR viset navěky jako „pending"), a hlavně **nemám upravovat bránu, která
+soudí moji vlastní práci** — zvlášť v den, kdy jsem její výsledek jednou špatně přečetl.
+Leží to v `DAN-TODO.md`.
