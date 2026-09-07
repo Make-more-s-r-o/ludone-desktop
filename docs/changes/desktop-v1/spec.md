@@ -80,7 +80,7 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 | `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | approved | **merged** | disabled ⁹ | unverified |
 | `DSK-F004` | Odhlášení s odvoláním na serveru | security | approved | **merged** | disabled ¹⁰ | tests-green |
 | `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | **merged** | disabled | tests-green |
-| `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | approved | **merged** | labs | unverified |
+| `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | approved | **merged** | labs | **verified-live** ¹⁹ |
 | `DSK-F007` | Nahrávání dvou stop na disk | normal | approved | merged | labs | **verified-live** ¹⁴ |
 | `DSK-F008` | Pojmenování nahrávky při zastavení | normal | approved | **merged** | labs | **verified-live** ¹⁴ |
 | `DSK-F009` | Odchozí fronta s opakováním | normal | approved | **merged** | disabled ¹⁰ | tests-green |
@@ -394,3 +394,22 @@ ho jen přebírá. Nezadrátovat ani jednu variantu ze sporu `spec.md` R7 × `pl
 
 ¹² `DSK-F017` je **nové ID přidělené 2. 9. 2026** — retence vznikla v B11 a v matici do té
 doby vůbec nebyla. Kód je hotový a otestovaný; zapojení do startu aplikace právě běží.
+
+¹⁹ **Ověřeno naostro 7. 9. 2026** na buildu z `20f5c22`, ale **jen půlka funkce** — stejná
+výhrada jako u ¹³.
+
+**Co ověřeno:** appka čte SKUTEČNÝ stav oprávnění ze systému. Most `getPermissionStatus`
+vrátil pro `microphone` i `system-audio` shodně `granted`, a **nezávislý Electron proces**
+čtoucí `systemPreferences.getMediaAccessStatus` vrátil totéž (`microphone: granted`,
+`screen: granted`). Dva různé procesy, tatáž odpověď — takže to není appka, která si stav
+domýšlí z vlastního uloženého stavu.
+
+🔴 **Co ověřeno NENÍ: zkouška zvuku.** Existuje jen jako krok onboardingu
+(`Onboarding.jsx:628`) a ten leží **za přihlášením**, které bez OAuth klienta nejde dokončit
+(týž blokátor jako u `DSK-F003`). Karta **Zvuk** v Nastavení zkoušku nenabízí — jsou tam dva
+popisné řádky bez měřidel. Zkouška je tedy jednorázová a po onboardingu se k ní uživatel
+nedostane; leží to v `DAN-TODO.md`, protože obsah Nastavení řídí zmrazený návrh.
+
+⚠️ **Past při měření:** `getPermissionStatus()` bez argumentu vrací `status: "unknown"`,
+`granted: false`. Vypadá to jako vada appky a **není** — most bere jméno oprávnění
+(`"microphone"` / `"system-audio"`). Než z toho někdo udělá nález, ať zkontroluje volání.
