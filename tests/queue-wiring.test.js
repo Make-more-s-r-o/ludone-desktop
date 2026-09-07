@@ -4818,6 +4818,10 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     expect(new URL(url).searchParams.get("nazev")).toBe(corrected);
   });
 
+  // Hlášený běh trval 6,27 s; lokální profil ~0,48 s (samotný preload ~2 ms).
+  // Cena je hlavně v přípravě a skutečném exportu přes main, včetně zápisů a fsync.
+  // Každá volba potřebuje vlastní nahrávku: export ji spotřebuje. Není tu zbytečné
+  // čekání ani generování; rezervu 10 s proto dostává jen tento parametrizovaný test.
   it.each([false, true])("přenese openUploadPage=%s přes skutečný preload až ke kopii", async (openUploadPage) => {
     const harness = await loadMain();
     const { event, sessionId } = await prepareRecordingExport(harness);
@@ -4835,7 +4839,7 @@ describe("výslovná volba stránky přes exportní IPC", () => {
         expect.stringContaining("/nahravky/nahrat?clientRecordingId="),
       );
     }
-  });
+  }, 10_000);
 
   it.each([undefined, "Starý název", {}, { openUploadPage: "false" }, { openUploadPage: null }])(
     "odmítne neplatnou nebo chybějící volbu %j bez vedlejších účinků",
