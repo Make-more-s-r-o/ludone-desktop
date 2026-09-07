@@ -211,7 +211,7 @@ describe("ikony v liště", () => {
   });
 
   it("šablonové stavy mají neprázdnou, částečně průhlednou a na motivu nezávislou alfu", () => {
-    for (const stav of ["signed-out", "idle", "queue-waiting"]) {
+    for (const stav of STAVY) {
       for (const varianta of VARIANTY) {
         const tmava = alfa(cestaIkony(ADRESAR_IKON, "dark", stav, varianta));
         const svetla = alfa(cestaIkony(ADRESAR_IKON, "light", stav, varianta));

@@ -451,22 +451,15 @@ function shouldHidePanelOnBlur({
   return true;
 }
 
-function currentTrayIconTheme() {
-  // nativeTheme popisuje vzhled aplikace, nikdy skutečné pozadí systémové lišty.
-  // Používáme ho proto jen pro návrhové varianty barevných aktivních stavů.
-  return nativeTheme.shouldUseDarkColors ? "dark" : "light";
+function trayIconVariant() {
+  // Všechny stavy tónuje macOS podle skutečné lišty; rozlišují je tvary alfa masky.
+  return "template";
 }
 
-function trayIconVariant(state, theme = currentTrayIconTheme()) {
-  const iconName = trayIconName(state);
-  if (["signed-out", "idle", "queue-waiting"].includes(iconName)) return "template";
-  return theme === "light" ? "light" : "dark";
-}
-
-function trayImage(state, theme = currentTrayIconTheme()) {
+function trayImage(state) {
   const iconName = trayIconName(state);
   const iconDirectory = path.join(__dirname, "ikony");
-  const iconVariant = trayIconVariant(iconName, theme);
+  const iconVariant = trayIconVariant();
   // U šablony rozhoduje výhradně alfa; jednu kanonickou sadu proto používáme v obou
   // motivech. Tím změna vzhledu aplikace zbytečně nepřekreslí systémově tónovanou ikonu.
   const iconTheme = iconVariant === "template" ? "dark" : iconVariant;
@@ -681,7 +674,7 @@ function refreshTray() {
     systemAudioLost,
     tracking,
   }));
-  const iconVariant = trayIconVariant(next);
+  const iconVariant = trayIconVariant();
   // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při
   // startu obojí rovná „signed-out“, funkce skončí předčasně a popisek se nenastaví NIKDY.
   if (next !== trayState || iconVariant !== trayVariantApplied || !trayApplied) {
@@ -692,7 +685,7 @@ function refreshTray() {
       + `fronta=${appState.outboundQueueWaitingCount} přihlášen=${appState.signedIn}`,
     );
     if (tray) {
-      tray.setImage(trayImage(trayState, iconVariant));
+      tray.setImage(trayImage(trayState));
       tray.setToolTip(TRAY_LABELS[trayState]);
       trayApplied = true;
       trayVariantApplied = iconVariant;
@@ -3711,7 +3704,7 @@ app.whenReady().then(async () => {
   }
   registerAppProtocol();
   installMediaHandlers();
-  tray = new Tray(trayImage(trayState, currentTrayIconTheme()));
+  tray = new Tray(trayImage(trayState));
   nativeTheme.on("updated", refreshTray);
   tray.on("click", togglePanel);
   tray.on("right-click", showTrayContextMenu);

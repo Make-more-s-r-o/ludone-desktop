@@ -1220,7 +1220,7 @@ describe("RecordingCard", () => {
   it.each([
     ["Jen uložit", '[data-testid="skip-recording-name"]', false],
     ["Uložit a odeslat", 'button[type="submit"]', true],
-  ])("%s předá výslovné rozhodnutí a potvrdí uložení ve Stažených", async (label, selector, openUploadPage) => {
+  ])("%s potvrdí uložení ve Stažených a poradí přehrání WebM", async (label, selector, openUploadPage) => {
     const panel = await renderRecordingCard();
     try {
       await startRecording(panel);
@@ -1236,6 +1236,9 @@ describe("RecordingCard", () => {
       });
       expect(panel.document.querySelector('[role="status"]')?.textContent)
         .toContain(`Soubor LuDone-${SESSION_ID}.webm je uložený ve Stažených.`);
+      const notice = panel.document.querySelector('[role="status"]');
+      expect(notice.textContent).toContain("Přehrajete ho v prohlížeči nebo ve VLC.");
+      expect(notice.closest('[hidden], .sr-only')).toBeNull();
     } finally {
       await panel.cleanup();
     }

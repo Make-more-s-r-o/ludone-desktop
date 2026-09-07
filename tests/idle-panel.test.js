@@ -584,7 +584,10 @@ describe("schválený klidový panel", () => {
     try {
       expect(panel.document.querySelector('[data-testid="recording-daily-summary"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="tracking-daily-summary"]')).toBeNull();
-      expect(panel.document.querySelectorAll(".idle-feature-row__copy small")).toHaveLength(0);
+      // Jediný doprovodný text je upozornění před startem, žádný vymyšlený denní souhrn.
+      expect([...panel.document.querySelectorAll(".idle-feature-row__copy small")]
+        .map((element) => element.textContent.trim()))
+        .toEqual(["Uložení do LuTracku je zatím ukázkové."]);
       expect(panel.document.querySelector(".panel-scroll").textContent).not.toContain("Dnes");
     } finally {
       await panel.cleanup();
@@ -1429,6 +1432,33 @@ describe("schválený klidový panel", () => {
       expect(setPanelContentHeight).toHaveBeenLastCalledWith(310);
     } finally {
       domWindow.HTMLElement.prototype.getBoundingClientRect = originalRect;
+      await panel.cleanup();
+    }
+  });
+
+  it("LuTrack před prvním spuštěním viditelně přizná ukázkové uložení", async () => {
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
+      configureWindow(view) {
+        const style = view.document.createElement("style");
+        style.textContent = RENDERER_STYLES;
+        view.document.head.append(style);
+      },
+    });
+
+    try {
+      const card = panel.document.querySelector('.tracking-card[data-activity-state="idle"]');
+      const notice = card.querySelector(".idle-feature-row__notice");
+      expect(notice?.textContent.trim()).toBe("Uložení do LuTracku je zatím ukázkové.");
+      expect(notice.closest('[hidden], .sr-only')).toBeNull();
+      const style = panel.document.defaultView.getComputedStyle(notice);
+      expect(style.display).not.toBe("none");
+      expect(style.visibility).toBe("visible");
+      expect(style.whiteSpace).toBe("normal");
+      expect(style.overflow).toBe("visible");
+      expect(card.querySelector('[aria-label="Spustit LuTrack"]').textContent).toBe("Spustit");
+      expect(card.querySelector('[aria-label="Spustit LuTrack"]').getAttribute("aria-checked"))
+        .toBe("false");
+    } finally {
       await panel.cleanup();
     }
   });

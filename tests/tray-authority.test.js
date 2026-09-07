@@ -121,7 +121,6 @@ const trayIconVariant = Function(
   "nativeTheme",
   "trayIconName",
   `"use strict";
-   ${functionSource(mainCodeWithoutComments, "currentTrayIconTheme")}
    ${functionSource(mainCodeWithoutComments, "trayIconVariant")}
    return trayIconVariant;`,
 )({ shouldUseDarkColors: true }, trayIconName);
@@ -259,10 +258,10 @@ describe("autorita stavu tray ikony", () => {
     ["signed-out", "template", "template"],
     ["idle", "template", "template"],
     ["queue-waiting", "template", "template"],
-    ["recording", "dark", "light"],
-    ["tracking", "dark", "light"],
-    ["recording-tracking", "dark", "light"],
-    ["recording-audio-lost", "dark", "light"],
+    ["recording", "template", "template"],
+    ["tracking", "template", "template"],
+    ["recording-tracking", "template", "template"],
+    ["recording-audio-lost", "template", "template"],
   ])("volí pro %s variantu %s/%s", (state, darkExpected, lightExpected) => {
     expect(trayIconVariant(state, "dark")).toBe(darkExpected);
     expect(trayIconVariant(state, "light")).toBe(lightExpected);
