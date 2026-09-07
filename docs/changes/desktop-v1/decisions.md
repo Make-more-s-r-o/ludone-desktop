@@ -1014,3 +1014,12 @@ takže na něm nestavět plán.
 
 **D32 — skutečné nahrávky pro serverové měření: jen záznam pořízený SCHVÁLNĚ jako zkouška.**
 Ne cizí hovor. Při pochybnosti radši žádný soubor. Platí i pro repo.
+
+**D33 (server, 7. 9.) — alokace přijdou jako ALLOWLIST polí.**
+Endpoint pro výběr projektu vydá `{ id, název projektu, případně firma }` a **nic víc**;
+sazby ani jména kolegů se neposílají, ani skrytě.
+🔴 **Allowlist, nikdy deny-list** — u allowlistu chyba autora pole **skryje**, u deny-listu ho
+**zveřejní**. Serverová session to má doložené vlastním incidentem: mzdové hodiny alokací
+unikly právě tím, že se pole přidalo a deny-list o něm nevěděl.
+⇒ **Pro nás to znamená, že `DSK-F012` smíme postavit až proti té užší projekci** — a když
+v odpovědi uvidíme cokoli za mzdovou bránou, je to nález, ne bonus.
