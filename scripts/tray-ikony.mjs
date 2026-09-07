@@ -28,6 +28,7 @@ const STAVY = [
   "recording-tracking",
   "queue-waiting",
   "recording-audio-lost",
+  "recording-microphone-only",
 ];
 const MOTIVY = ["dark", "light"];
 const VELIKOSTI = [
@@ -158,12 +159,14 @@ function barvyStavu(motiv, stav) {
     "recording-tracking": "bad",
     "queue-waiting": "wait",
     "recording-audio-lost": "wait",
+    "recording-microphone-only": "bad",
   }[stav];
   const odznakToken = {
     recording: "bad",
     "recording-tracking": "ok",
     "queue-waiting": "wait",
     "recording-audio-lost": "bad",
+    "recording-microphone-only": "subtle",
   }[stav] ?? "bad";
   return {
     hlavni: oklchNaRgb(paleta[hlavniToken]),
@@ -228,6 +231,7 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
     "recording-tracking",
     "queue-waiting",
     "recording-audio-lost",
+    "recording-microphone-only",
   ].includes(stav)) {
     // Barevné kolečko má v souřadnicích návrhu poloměr 2,5. Obrys široký 1,5
     // kreslíme vně, aby nezmenšil čitelnou barevnou část odznaku.
@@ -261,6 +265,11 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
         POLOMER_ODZNAKU,
         velikostPixelu,
       );
+      if (stav === "recording-microphone-only") {
+        // Polovina sdíleného kolečka značí jedinou přijatou stopu. Pravá půlka
+        // je průhledná, takže informaci zachová i systémové tónování šablony.
+        odznak *= krytiPodepsaneVzdalenosti(bodX - STRED_ODZNAKU[0], velikostPixelu);
+      }
     }
     pixel = prekryj(pixel, barvy.obrys, obrys);
     // Prstýnek souběhu a dvě tečky fronty zachovávají význam i bez barvy.

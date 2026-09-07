@@ -83,6 +83,8 @@ async function runPackage(environment = {}, arguments_ = []) {
 }
 
 describe("kontrakt electron-builderu", () => {
+  // Spouští balicí skript jako PODPROCES; 5 s je málo, jakmile na stroji běží cokoli
+  // dalšího. Aserce beze změny, mění se jen přiznaná cena.
   it("bez podpisových proměnných provede nepodepsaný build plán a nespadne", async () => {
     const { capture, outputRoot, result } = await runPackage();
 
@@ -103,7 +105,7 @@ describe("kontrakt electron-builderu", () => {
       builtDirectory,
       "LuDone Desktop.app",
     ));
-  });
+  }, 30_000);
 
   it("úplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší", async () => {
     const secrets = {
@@ -126,13 +128,15 @@ describe("kontrakt electron-builderu", () => {
     }
   });
 
+  // Spouští balicí skript jako PODPROCES; 5 s je málo, jakmile na stroji běží cokoli
+  // dalšího. Aserce beze změny, mění se jen přiznaná cena.
   it("nepodepsaný plán nikdy nepublikuje release", async () => {
     const { capturePath, result } = await runPackage({}, ["--publish", "always"]);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("publikovat");
     await expect(readFile(capturePath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
-  });
+  }, 30_000);
 
   it("drží identitu, oba formáty, obě architektury a veřejný GitHub feed", () => {
     const config = packageManifest.build;

@@ -209,6 +209,7 @@ function trayHarness({
         "recording-tracking": "L·nahrává+lutrack",
         "queue-waiting": "L·čeká fronta",
         "recording-audio-lost": "L·výpadek zvuku",
+        "recording-microphone-only": "L·jen mikrofon",
       },
       { setImage: (value) => images.push(value), setToolTip: (value) => tooltips.push(value) },
       () => "dark",
@@ -238,6 +239,7 @@ describe("autorita stavu tray ikony", () => {
     ["recording-tracking", "recording-tracking"],
     ["queue-waiting", "queue-waiting"],
     ["recording-audio-lost", "recording-audio-lost"],
+    ["recording-microphone-only", "recording-microphone-only"],
     ["neznámý stav", "signed-out"],
   ])("mapuje stav %s na ikonu %s", (state, expectedIcon) => {
     expect(trayIconName(state)).toBe(expectedIcon);
@@ -262,6 +264,7 @@ describe("autorita stavu tray ikony", () => {
     ["tracking", "template", "template"],
     ["recording-tracking", "template", "template"],
     ["recording-audio-lost", "template", "template"],
+    ["recording-microphone-only", "template", "template"],
   ])("volí pro %s variantu %s/%s", (state, darkExpected, lightExpected) => {
     expect(trayIconVariant(state, "dark")).toBe(darkExpected);
     expect(trayIconVariant(state, "light")).toBe(lightExpected);
@@ -346,6 +349,55 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     const harness = trayHarness(input);
     harness.refreshTray();
     expect(harness.getTrayState()).toBe(expected);
+  });
+
+  it.each([
+    ["příprava", { preparing: [[1, { cancelled: false, sources: ["microphone"] }]] }],
+    ["živá session", { sessions: [["s", { ownerId: 1, tracks: new Map([["microphone", {}]]) }]] }],
+    ["souběh s LuTrackem", {
+      sessions: [["s", { ownerId: 1, tracks: new Map([["microphone", {}]]) }]],
+      trackingOwners: [1],
+      queueWaitingCount: 2,
+    }],
+  ])("jednostopé nahrávání odliší od plného nahrávání i výpadku: %s", (_popis, input) => {
+    const harness = trayHarness({ signedIn: true, ...input });
+    harness.refreshTray();
+    expect(harness.getTrayState()).not.toBe("recording");
+    expect(harness.getTrayState()).not.toBe("recording-audio-lost");
+    expect(harness.getTrayState()).toBe("recording-microphone-only");
+    expect(harness.images.at(-1)).toBe("obrazek:recording-microphone-only");
+    expect(harness.tooltips.at(-1)).toBe("L·jen mikrofon");
+  });
+
+  it.each([
+    { preparing: [[1, { cancelled: true, sources: ["microphone"] }]] },
+    { sessions: [["s", {
+      ownerId: 1, tracks: new Map([["microphone", {}]]), finalizePromise: Promise.resolve(),
+    }]] },
+  ])("ukončená jednostopá session nepřidá odznak jinému plnému nahrávání: %j", (input) => {
+    const harness = trayHarness({
+      signedIn: true,
+      ...input,
+      sessions: [
+        ...(input.sessions ?? []),
+        ["plna", { ownerId: 2, tracks: new Map([["microphone", {}], ["system", {}]]) }],
+      ],
+    });
+    harness.refreshTray();
+    expect(harness.getTrayState()).toBe("recording");
+  });
+
+  it("skutečný výpadek má přednost před přijatým jednostopým nahráváním", () => {
+    const harness = trayHarness({
+      signedIn: true,
+      preparing: [
+        [1, { cancelled: false, sources: ["microphone"] }],
+        [2, { cancelled: false, sources: ["microphone", "system"] }],
+      ],
+      systemAudioLostOwners: [2],
+    });
+    harness.refreshTray();
+    expect(harness.getTrayState()).toBe("recording-audio-lost");
   });
 
   it("při souběhu spojí fakt LuTracku se skutečným nahráváním z hlavního procesu", () => {

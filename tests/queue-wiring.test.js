@@ -2680,6 +2680,7 @@ describe("šablonové ikony v liště", () => {
     ["recording", true, false, false],
     ["recording-tracking", true, true, false],
     ["recording-audio-lost", true, false, true],
+    ["recording-microphone-only", true, false, false],
   ])("aktivní stav %s použije šablonu se stejnými bajty v obou motivech", async (
     state, recording, tracking, systemAudioLost,
   ) => {
@@ -2688,7 +2689,9 @@ describe("šablonové ikony v liště", () => {
     const tray = harness.trays[0];
     const panelContents = harness.windows[0].webContents;
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
-    if (recording) await harness.ipcHandlers.get("recording:begin")(event);
+    if (recording) await harness.ipcHandlers.get("recording:begin")(
+      event, state === "recording-microphone-only" ? ["microphone"] : ["microphone", "system"],
+    );
     harness.ipcListeners.get("tray:report-facts")(event, {
       panelActionsAvailable: true,
       signedIn: true,
@@ -3350,8 +3353,11 @@ describe("průběžný titulek lišty", () => {
     reportFacts(event, { panelActionsAvailable: true, signedIn: true, systemAudioLost: false, tracking: false });
     const recording = await harness.ipcHandlers.get("recording:begin")(event, ["microphone"]);
     try {
+      expect(getTrayState(event)).toBe("recording-microphone-only");
+      expect(harness.trays[0].setToolTip).toHaveBeenLastCalledWith("LuDone · nahrává jen mikrofon");
       reportFacts(event, { panelActionsAvailable: true, signedIn: true, systemAudioLost: true, tracking: false });
-      expect(getTrayState(event)).toBe("recording");
+      expect(getTrayState(event)).not.toBe("recording-audio-lost");
+      expect(getTrayState(event)).toBe("recording-microphone-only");
     } finally {
       await harness.ipcHandlers.get("recording:finish")(
         event,

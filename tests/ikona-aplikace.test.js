@@ -63,6 +63,7 @@ function generuj(skript, cil, aplikace = true) {
 }
 
 describe("ikona aplikace", () => {
+  // Když ikona chybí (čistý checkout), test si ji vyrobí PODPROCESEM — 5 s je málo.
   it("build.mac.icon ukazuje na existující neprázdnou sadu ICNS", () => {
     expect(MANIFEST.build.mac.icon, "Chybí build.mac.icon").toBeTypeOf("string");
     expect(MANIFEST.build.mac.icon.length).toBeGreaterThan(0);
@@ -99,8 +100,11 @@ describe("ikona aplikace", () => {
       expect(tmavyPodklad, `${typ}: chybí podklad dark.listaPozadi`)
         .toBeGreaterThan(rozmer * rozmer / 2);
     }
-  });
+  }, 30_000);
 
+    // Spouští generátor jako PODPROCES; výchozích 5 s na to nestačí, jakmile na stroji
+  // běží cokoli dalšího — a falešná červená je horší než přiznaná cena.
+  // Aserce se nemění, mění se jen strop.
   it("generátor vytváří všech deset PNG a reprodukovatelné ICNS", () => {
     const koren = mkdtempSync(path.join(tmpdir(), "ludone-app-ikona-"));
     try {
@@ -130,7 +134,7 @@ describe("ikona aplikace", () => {
     } finally {
       rmSync(koren, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 
   // 🔴 Vlastní strop: tenhle test spouští generátor OSMKRÁT (základ + tři mutace, pokaždé
   // ikona aplikace i sada lišty). Sám doběhne za ~2,3 s, ale v plné sadě na zatíženém
@@ -168,6 +172,9 @@ describe("ikona aplikace", () => {
     }
   }, 30_000);
 
+    // Spouští generátor jako PODPROCES; výchozích 5 s na to nestačí, jakmile na stroji
+  // běží cokoli dalšího — a falešná červená je horší než přiznaná cena.
+  // Aserce se nemění, mění se jen strop.
   it("balení vytvoří chybějící ikonu dříve, než spustí electron-builder", () => {
     const koren = mkdtempSync(path.join(tmpdir(), "ludone-app-baleni-"));
     try {
@@ -199,5 +206,5 @@ mkdirSync(path.join("release", process.arch === "arm64" ? "mac-arm64" : "mac", "
     } finally {
       rmSync(koren, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 });
