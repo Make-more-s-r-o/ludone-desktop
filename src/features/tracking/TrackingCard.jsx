@@ -66,7 +66,7 @@ export function TrackingCard({
 
   return (
     <section
-      className={`feature-card tracking-card${active ? " is-active" : " idle-feature-row"}${!active && lastMessage ? " has-notice" : ""}`}
+      className={`feature-card tracking-card${active ? " is-active" : " idle-feature-row has-notice"}`}
       data-activity-state={active ? "tracking" : "idle"}
       data-layout={active && compact ? "compact" : "default"}
       data-testid={active ? undefined : "idle-action-row"}
@@ -126,8 +126,15 @@ export function TrackingCard({
               <small className="idle-feature-row__notice" role="status">
                 {lastMessage}
               </small>
-            ) : todaySummary && (
-              <small data-testid="tracking-daily-summary">{todaySummary}</small>
+            ) : (
+              <>
+                <small className="idle-feature-row__notice">
+                  Uložení do LuTracku je zatím ukázkové.
+                </small>
+                {todaySummary && (
+                  <small data-testid="tracking-daily-summary">{todaySummary}</small>
+                )}
+              </>
             )}
           </span>
           <button

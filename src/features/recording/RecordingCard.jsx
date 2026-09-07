@@ -364,7 +364,7 @@ export function RecordingCard({
       setQuitExportFailure(null);
       setNotice({
         type: "success",
-        text: `Soubor ${result.fileName} je uložený ve Stažených.`,
+        text: `Soubor ${result.fileName} je uložený ve Stažených. Přehrajete ho v prohlížeči nebo ve VLC.`,
       });
     } catch (error) {
       setExportError(describeError(error));

@@ -2659,7 +2659,7 @@ describe("výška panelu podle obsahu", () => {
   });
 });
 
-describe("šablonové a barevné varianty ikony v liště", () => {
+describe("šablonové ikony v liště", () => {
   it("neutrální stav použije šablonový obraz a při změně motivu ho nepřepíná", async () => {
     const harness = await loadMain({ shouldUseDarkColors: true });
     await harness.runReady();
@@ -2675,90 +2675,45 @@ describe("šablonové a barevné varianty ikony v liště", () => {
     expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart);
   });
 
-  it("u aktivního stavu přepne tmavou a světlou sadu a zachová očekávané bajty", async () => {
+  it.each([
+    ["tracking", false, true, false],
+    ["recording", true, false, false],
+    ["recording-tracking", true, true, false],
+    ["recording-audio-lost", true, false, true],
+  ])("aktivní stav %s použije šablonu se stejnými bajty v obou motivech", async (
+    state, recording, tracking, systemAudioLost,
+  ) => {
     const harness = await loadMain({ shouldUseDarkColors: true });
     await harness.runReady();
     const tray = harness.trays[0];
     const panelContents = harness.windows[0].webContents;
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    if (recording) await harness.ipcHandlers.get("recording:begin")(event);
     harness.ipcListeners.get("tray:report-facts")(event, {
       panelActionsAvailable: true,
       signedIn: true,
-      systemAudioLost: false,
-      tracking: true,
+      systemAudioLost,
+      tracking,
     });
-    const darkImage = tray.setImage.mock.calls.at(-1)?.[0];
+    expect(harness.ipcHandlers.get("tray:get-state")(event)).toBe(state);
+    const activeImage = tray.setImage.mock.calls.at(-1)?.[0];
     const callsAfterStart = tray.setImage.mock.calls.length;
-    const ocekavanaTmava = readFileSync(path.join(
-      mainDirectory,
-      "ikony",
-      "dark-tracking.png",
-    ));
-    const ocekavanaTmavaRetina = readFileSync(path.join(
-      mainDirectory,
-      "ikony",
-      "dark-tracking@2x.png",
-    ));
-    const ocekavanaSvetla = readFileSync(path.join(
-      mainDirectory,
-      "ikony",
-      "light-tracking.png",
-    ));
-    const ocekavanaSvetlaRetina = readFileSync(path.join(
-      mainDirectory,
-      "ikony",
-      "light-tracking@2x.png",
-    ));
+    const expectedBytes = readFileSync(path.join(mainDirectory, "ikony", `dark-${state}.png`));
+    const expectedRetinaBytes = readFileSync(path.join(mainDirectory, "ikony", `dark-${state}@2x.png`));
 
-    expect(darkImage.sourceBytes.equals(ocekavanaTmava)).toBe(true);
-    expect(darkImage.retinaBytes.equals(ocekavanaTmavaRetina)).toBe(true);
-    expect(darkImage.setTemplateImage).not.toHaveBeenCalled();
-    expect(darkImage.isTemplateImage()).toBe(false);
+    expect(activeImage.sourceBytes.equals(expectedBytes)).toBe(true);
+    expect(activeImage.retinaBytes.equals(expectedRetinaBytes)).toBe(true);
+    expect(activeImage.setTemplateImage).toHaveBeenCalledExactlyOnceWith(true);
+    expect(activeImage.isTemplateImage()).toBe(true);
 
-    harness.setShouldUseDarkColors(true);
-    expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart);
-
-    harness.setShouldUseDarkColors(false);
-
-    expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart + 1);
-    const lightImage = tray.setImage.mock.calls.at(-1)[0];
-    expect(lightImage.sourceBytes.equals(ocekavanaSvetla)).toBe(true);
-    expect(lightImage.retinaBytes.equals(ocekavanaSvetlaRetina)).toBe(true);
-    expect(lightImage.sourceBytes.equals(darkImage.sourceBytes)).toBe(false);
-    expect(lightImage.retinaBytes.equals(darkImage.retinaBytes)).toBe(false);
-    expect(lightImage.setTemplateImage).not.toHaveBeenCalled();
-    expect(lightImage.isTemplateImage()).toBe(false);
-
-    harness.setShouldUseDarkColors(true);
-
-    expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart + 2);
-    const darkImageAgain = tray.setImage.mock.calls.at(-1)[0];
-    expect(darkImageAgain.sourceBytes.equals(darkImage.sourceBytes)).toBe(true);
-    expect(darkImageAgain.retinaBytes.equals(darkImage.retinaBytes)).toBe(true);
-    expect(darkImageAgain.setTemplateImage).not.toHaveBeenCalled();
-    expect(darkImageAgain.isTemplateImage()).toBe(false);
-  });
-
-  it("aktivní obrázky nejsou macOS template images", async () => {
-    const harness = await loadMain({ shouldUseDarkColors: true });
-    await harness.runReady();
-    const panelContents = harness.windows[0].webContents;
-    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
-    harness.ipcListeners.get("tray:report-facts")(event, {
-      panelActionsAvailable: true,
-      signedIn: true,
-      systemAudioLost: false,
-      tracking: true,
-    });
-
-    const activeImage = harness.trays[0].setImage.mock.calls.at(-1)?.[0];
-    expect(activeImage.sourceBytes.equals(readFileSync(path.join(
-      mainDirectory,
-      "ikony",
-      "dark-tracking.png",
-    )))).toBe(true);
-    expect(activeImage.setTemplateImage).not.toHaveBeenCalled();
-    expect(activeImage.isTemplateImage()).toBe(false);
+    for (const dark of [true, false, true]) {
+      harness.setShouldUseDarkColors(dark);
+      expect(tray.setImage).toHaveBeenCalledTimes(callsAfterStart);
+      const image = tray.setImage.mock.calls.at(-1)[0];
+      expect(image.sourceBytes.equals(expectedBytes)).toBe(true);
+      expect(image.retinaBytes.equals(expectedRetinaBytes)).toBe(true);
+      expect(image.isTemplateImage()).toBe(true);
+    }
   });
 });
 

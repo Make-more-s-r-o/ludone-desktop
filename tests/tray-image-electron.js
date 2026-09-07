@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, nativeImage, nativeTheme } from "electron";
+import { app, nativeImage } from "electron";
 
 function functionSource(source, name) {
   const start = source.indexOf(`function ${name}(`);
@@ -33,21 +33,18 @@ const VSECHNY_STAVY = [
   "queue-waiting",
   "recording-audio-lost",
 ];
-const SABLONOVE_STAVY = new Set(["signed-out", "idle", "queue-waiting"]);
 const production = Function(
   "fs",
   "path",
   "nativeImage",
-  "nativeTheme",
   "__dirname",
   `"use strict";
   ${mainSource.includes("function traySvg(") ? functionSource(mainSource, "traySvg") : ""}
   ${functionSource(mainSource, "trayIconName")}
-  ${functionSource(mainSource, "currentTrayIconTheme")}
   ${functionSource(mainSource, "trayIconVariant")}
   ${functionSource(mainSource, "trayImage")}
   return { trayIconName, trayIconVariant, trayImage };`,
-)(fs, path, nativeImage, nativeTheme, mainDirectory);
+)(fs, path, nativeImage, mainDirectory);
 
 let failures = 0;
 
@@ -63,8 +60,8 @@ for (const theme of ["dark", "light"]) {
       const image = production.trayImage(state, theme);
       const size = image.getSize();
       const pngLength = image.toPNG().length;
-      const expectedTemplate = SABLONOVE_STAVY.has(state);
-      const expectedTheme = expectedTemplate ? "dark" : theme;
+      const expectedTemplate = true;
+      const expectedTheme = "dark";
       const expectedImage = nativeImage.createFromBuffer(fs.readFileSync(path.join(
         mainDirectory,
         "ikony",
@@ -80,9 +77,7 @@ for (const theme of ["dark", "light"]) {
       assert.equal(
         image.isTemplateImage(),
         expectedTemplate,
-        expectedTemplate
-          ? "neutrální ikona musí být template image"
-          : "aktivní ikona nesmí být template image",
+        "každá ikona včetně aktivní musí být template image",
       );
       assert.ok(size.width > 0, "šířka musí být větší než nula");
       assert.ok(size.height > 0, "výška musí být větší než nula");
@@ -90,7 +85,7 @@ for (const theme of ["dark", "light"]) {
       assert.equal(
         image.toPNG({ scaleFactor: 1 }).equals(expectedImage.toPNG({ scaleFactor: 1 })),
         true,
-        "obrázek musí zachovat očekávaný stav a barevnou sadu",
+        "obrázek musí zachovat očekávaný stav a kanonickou sadu šablon",
       );
       const line = `PASS ${theme}-${state}: isEmpty=false template=${expectedTemplate} `
         + `getSize=${size.width}x${size.height} toPNG.length=${pngLength}`;
@@ -110,11 +105,7 @@ for (const state of VSECHNY_STAVY) {
     const dark = production.trayImage(state, "dark");
     const light = production.trayImage(state, "light");
     const samePixels = dark.toPNG().equals(light.toPNG());
-    if (SABLONOVE_STAVY.has(state)) {
-      assert.equal(samePixels, true, "šablonový stav nesmí mít co přepínat");
-    } else {
-      assert.equal(samePixels, false, "aktivní stav musí přepnout barevnou sadu");
-    }
+    assert.equal(samePixels, true, "šablonový stav nesmí mít co přepínat");
     const line = `PASS theme-switch-${state}: samePixels=${samePixels}`;
     outputLines.push(line);
     console.log(line);
