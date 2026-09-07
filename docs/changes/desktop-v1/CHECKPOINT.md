@@ -639,3 +639,48 @@ tam, kde jsem tvrdil hotovo (čas v liště, glyf ikony); tohle to má najít d�
   není slabší zelená, je to nezměřeno.
 - **Před zveřejněním repozitáře patří adversariální kolo PŘED, ne po.** Hledá se
   trojí: tajemství · infrastruktura · **popisy cizích slabin**.
+
+---
+
+## 7. 9. — vlna 1 a 3 (PR #80, #81, #82)
+
+`main` **968 passed | 3 skipped**, 0 PR, 0 worktrees.
+
+### ✅ Vlna 1 — dvanáct nálezů auditu
+
+**#80** opravil šest podob jedné vady v rendereru („akce selže a mlčí"): poškozená fronta
+čtená jako prázdná · protimluv v kartě fronty · zastavený `AudioContext` hlásící nuly jako
+naměřené · konkrétní chyba konfigurace ukázaná jako obecná · přepínač vracející se beze slova ·
+němý zkušební tón. **Každá oprava je pár**: selhání je vidět a legitimní tichý stav zůstává tichý.
+
+**#81** dal menu lišty nativní dialog, když nejde otevřít prohlížeč.
+
+🔴 **Dvě věci ZÁMĚRNĚ nepostaveny** (pojistka v zadání zabrala): vypršelý token jako
+„nepřihlášen" by schoval ovládání běžícího nahrávání, a čas v liště od skutečného startu
+vyžaduje zakázaný renderer.
+
+### 🔴 Nález pro Dana: neplatná relace bere Stop uprostřed nahrávání
+
+Ověřeno i na nezměněném `main`. Cesta ven existuje (tray menu), ale ikona bývá pod výřezem.
+Rozhodnutí v `DAN-TODO.md`.
+
+### ✅ Vlna 3 — balení POPRVÉ proběhlo (#82)
+
+🔴 **`npm run package:mac` padal od PR #35** na neplatném klíči `allowMissingDependencies`
+— a **test ten klíč vyžadoval**, takže hlídal, aby balení zůstalo rozbité. Test je obrácený:
+teď hlídá, že se vada nevrátí.
+
+✅ **Naostro:** EXIT=0, vznikly `LuDone Desktop-0.1.0-arm64.dmg` (106,7 MB) a `-x64.dmg`
+(111,9 MB), bundle `cz.ludone.desktop`, minimum macOS 12.0.0, česká hláška o mikrofonu,
+podpis `adhoc`. **Až přijde certifikát, mění se jen přihlašovací údaje, ne cesta.**
+
+⚠️ **Poučení pro další vlny:** briéf jsem psal ze zastaralého předpokladu, že podepisovací
+cesta se teprve staví — přitom byla hotová a jen nikdy nespuštěná. **Před zadáním vlny změř,
+co už stojí**; matice i briéf stárnou rychleji než běh.
+
+### Co dál
+
+1. **`declaredCaptureSources`** (D28b) — server to chce, Dan schválil fázi 2.
+2. **Vlna 4** — zvednout `verification` na `verified-live` syntetickým zvukem.
+3. Zbylých pět nízkých nálezů auditu.
+🔴 `DSK-F010` ani `DSK-F012` nestavět (D29, D33).
