@@ -55,6 +55,8 @@ function LevelRow({ label, meterRef, rowRef, signal, testId }) {
 
 export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped }) {
   const [captureState, setCaptureState] = useState("starting");
+  const [toneError, setToneError] = useState(false);
+  const [toneBusy, setToneBusy] = useState(false);
   const [labels, setLabels] = useState({
     microphone: "MacBook Pro — mikrofon",
     system: "Ostatní zvuk",
@@ -81,6 +83,8 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
     updateAudioLevelMeter(microphoneMeterRef.current, 0);
     updateAudioLevelMeter(systemMeterRef.current, 0);
     setCaptureState("starting");
+    setToneError(false);
+    setToneBusy(false);
     setLabels({
       microphone: "MacBook Pro — mikrofon",
       system: "Ostatní zvuk",
@@ -194,11 +198,19 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
 
   async function playTestSound() {
     const session = sessionRef.current;
-    if (!session) return;
+    if (!session || toneBusy) return;
     // Zvuk z reproduktoru může přeslechnout mikrofon. Během tónu proto může
     // mikrofonní měřák žít, ale tento pohyb sám o sobě test mikrofonu nesplní.
     suppressMicrophoneUntilRef.current = window.performance.now() + 1_000;
-    await session.playTestSound().catch(() => {});
+    setToneBusy(true);
+    try {
+      await session.playTestSound();
+      if (sessionRef.current === session) setToneError(false);
+    } catch {
+      if (sessionRef.current === session) setToneError(true);
+    } finally {
+      if (sessionRef.current === session) setToneBusy(false);
+    }
   }
 
   return (
@@ -230,6 +242,16 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
       </div>
 
       <div className="recording-test-device">{labels.microphone}</div>
+      {captureState === "error" && (
+        <p className="queue-retry-feedback" role="alert">
+          Zvuk se nepodařilo změřit. Zkus test znovu.
+        </p>
+      )}
+      {captureState !== "error" && toneError && (
+        <p className="queue-retry-feedback" role="alert">
+          Zkušební zvuk se nepodařilo přehrát. Zkus to znovu.
+        </p>
+      )}
       {captureState === "error" ? (
         <button
           type="button"
@@ -243,7 +265,7 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
         <button
           type="button"
           className="button button--wide"
-          disabled={captureState !== "testing"}
+          disabled={captureState !== "testing" || toneBusy}
           onClick={playTestSound}
         >
           Přehrát zkušební zvuk

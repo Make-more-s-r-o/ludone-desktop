@@ -260,7 +260,7 @@ function disconnectLevelChannel(channel) {
   }
 }
 
-function readLevelChannel(channel) {
+function readLevelChannel(channel, contextRunning) {
   if (!channel) {
     return {
       available: false,
@@ -274,6 +274,9 @@ function readLevelChannel(channel) {
     && channel.track.enabled
     && !channel.track.muted,
   );
+  if (!contextRunning) {
+    return { available, measured: false, percent: 0, rms: 0 };
+  }
   if (!available) {
     return {
       available: false,
@@ -341,8 +344,8 @@ export function createAudioLevelMonitor(context) {
     },
     readLevels() {
       return {
-        microphone: readLevelChannel(channels.microphone),
-        system: readLevelChannel(channels.system),
+        microphone: readLevelChannel(channels.microphone, context.state === "running"),
+        system: readLevelChannel(channels.system, context.state === "running"),
       };
     },
     dispose() {
@@ -402,9 +405,12 @@ export async function createStereoLevelSession({ signal } = {}) {
     if (signal?.aborted) throw captureAbortedError();
     context = new window.AudioContext();
     if (context.state === "suspended") {
-      await context.resume().catch(() => {});
+      await context.resume();
     }
     if (signal?.aborted) throw captureAbortedError();
+    if (context.state !== "running") {
+      throw new Error("Zvukový context neběží; úroveň nelze změřit");
+    }
     levelMonitor = createAudioLevelMonitor(context);
     if (
       !levelMonitor.replaceSource("microphone", capture.microphoneStream)
@@ -418,8 +424,19 @@ export async function createStereoLevelSession({ signal } = {}) {
 
     function cleanupTone(tone) {
       if (!activeTones.delete(tone)) return;
-      tone.oscillator.disconnect();
-      tone.gain.disconnect();
+      if (tone.oscillator) tone.oscillator.onended = null;
+      try {
+        tone.oscillator?.stop();
+      } catch {
+        // Po neúspěšném startu ještě nemusí být co zastavit.
+      }
+      for (const node of [tone.oscillator, tone.gain]) {
+        try {
+          node?.disconnect();
+        } catch {
+          // Selhání jednoho uzlu nesmí zabránit odpojení druhého.
+        }
+      }
     }
 
     const closeOnAbort = () => {
@@ -436,18 +453,30 @@ export async function createStereoLevelSession({ signal } = {}) {
       async playTestSound() {
         if (closePromise) return;
         if (context.state === "suspended") await context.resume();
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        const tone = { gain, oscillator };
+        // Zavření testu během resume je záměr; nesmí po něm vzniknout tón.
+        if (closePromise) return;
+        if (context.state !== "running") {
+          throw new Error("Zvukový context neběží; tón nelze přehrát");
+        }
+        const tone = { gain: null, oscillator: null };
         activeTones.add(tone);
-        oscillator.frequency.setValueAtTime(440, context.currentTime);
-        gain.gain.setValueAtTime(0.12, context.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.65);
-        oscillator.connect(gain);
-        gain.connect(context.destination);
-        oscillator.onended = () => cleanupTone(tone);
-        oscillator.start();
-        oscillator.stop(context.currentTime + 0.65);
+        try {
+          const oscillator = context.createOscillator();
+          tone.oscillator = oscillator;
+          const gain = context.createGain();
+          tone.gain = gain;
+          oscillator.frequency.setValueAtTime(440, context.currentTime);
+          gain.gain.setValueAtTime(0.12, context.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.65);
+          oscillator.connect(gain);
+          gain.connect(context.destination);
+          oscillator.onended = () => cleanupTone(tone);
+          oscillator.start();
+          oscillator.stop(context.currentTime + 0.65);
+        } catch (error) {
+          cleanupTone(tone);
+          throw error;
+        }
       },
       close() {
         if (closePromise) return closePromise;
