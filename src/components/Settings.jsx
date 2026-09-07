@@ -278,9 +278,12 @@ export function SettingsApp() {
       if (suspend) setAccount({ state: "unknown", identity: null });
       return Promise.resolve()
         .then(async () => {
+          // `null` = most tu není, tedy NEVÍME. Dřív tu stálo "valid", což je tvrzení,
+          // které nikdo neověřil — a v autentizaci se z „nevím" nesmí stát „přihlášen".
+          // Chování zůstává stejné: když stav neznáme, rozhoduje identita jako dosud.
           const state = typeof window.ludone.getAuthSessionState === "function"
-            ? await window.ludone.getAuthSessionState() : "valid";
-          return { state, value: state === "valid" ? await getAuthIdentity() : null };
+            ? await window.ludone.getAuthSessionState() : null;
+          return { state, value: state === "expired" ? null : await getAuthIdentity() };
         })
         .then(({ state, value }) => {
           if (!active || currentRequestId !== identityRequestGeneration.current) return;
