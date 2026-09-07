@@ -97,6 +97,94 @@ async function exportFixture(recordingName) {
   return { downloadsDirectory, openExternal, result };
 }
 
+describe("deklarace zdrojů z manifestu v nahrávací URL", () => {
+  const metadata = {
+    clientRecordingId: CLIENT_RECORDING_ID,
+    startedAt: MICROPHONE_STARTED_AT,
+    endedAt: SYSTEM_ENDED_AT,
+    nazev: "Porada provozu + vývoj",
+  };
+  const originalUrl = "https://app.ludone.cz/nahravky/nahrat"
+    + `?clientRecordingId=${CLIENT_RECORDING_ID}`
+    + "&startedAt=2026-09-02T12%3A00%3A00.100Z"
+    + "&endedAt=2026-09-02T13%3A00%3A00.158Z"
+    + "&nazev=Porada+provozu+%2B+v%C3%BDvoj";
+
+  it.each([
+    ["mikrofon a systém", completeManifest(), "microphone+system", "microphone%2Bsystem"],
+    ["jen mikrofon", microphoneOnlyManifest(), "microphone", "microphone"],
+  ])("%s: přidá jediný parametr a zachová ostatní hodnoty i pořadí", (
+    _label, manifest, expected, encoded,
+  ) => {
+    const href = buildRecordingUploadUrl("https://app.ludone.cz", metadata, manifest);
+    expect(href).toBe(`${originalUrl}&declaredCaptureSources=${encoded}`);
+    const url = new URL(href);
+    expect(url.searchParams.getAll("declaredCaptureSources")).toEqual([expected]);
+    url.searchParams.delete("declaredCaptureSources");
+    expect(url.href).toBe(originalUrl);
+    expect(Object.fromEntries(url.searchParams)).toEqual(metadata);
+  });
+
+  it.each([
+    ["chybějící manifest", undefined],
+    ["nedostupný manifest", null],
+    ["manifest bez tracks", {}],
+    ["tracks null", { tracks: null }],
+    ["tracks jako pole", { tracks: ["microphone", "system"] }],
+    ["tracks jako text", { tracks: "microphone+system" }],
+    ["prázdné tracks", { tracks: {} }],
+    ["neznámá stopa", { tracks: { camera: {} } }],
+    ["mikrofon a neznámá stopa", { tracks: { microphone: {}, camera: {} } }],
+    ["obě známé a neznámá stopa", { tracks: { microphone: {}, system: {}, camera: {} } }],
+  ])("%s: zdroje vynechá bez prázdné hodnoty a bez změny původní URL", (
+    _label, manifest,
+  ) => {
+    const href = buildRecordingUploadUrl("https://app.ludone.cz", metadata, manifest);
+    expect(new URL(href).searchParams.has("declaredCaptureSources")).toBe(false);
+    expect(href).toBe(originalUrl);
+  });
+
+  it("neznámý druh stopy VEDLE mikrofonu taky nic neohlásí", () => {
+    // Tenhle případ hlídá výhradně kontrola neznámých druhů: mikrofon tu je, takže
+    // pojistka „bez mikrofonu neohlašuj" ho nezachytí. Bez tohohle testu šlo tu
+    // kontrolu smazat a nic nezčervenalo.
+    const url = new URL(buildRecordingUploadUrl(
+      "https://app.ludone.cz",
+      { clientRecordingId: "b1d0f8a2-0000-4000-8000-000000000000" },
+      { tracks: { microphone: { fileName: "m.webm" }, kamera: { fileName: "k.webm" } } },
+    ));
+    expect(url.searchParams.has("declaredCaptureSources")).toBe(false);
+  });
+
+  it("stopa bez mikrofonu neohlásí zdroje vůbec", () => {
+    // Obě ohlašované hodnoty tvrdí mikrofon. Nahrávání bez něj dnes nezačne, ale server
+    // bere `declared` jako naše slovo — tvrzení, které neumíme podložit, se neposílá ani
+    // z nedosažitelné větve.
+    const url = new URL(buildRecordingUploadUrl(
+      "https://app.ludone.cz",
+      { clientRecordingId: "b1d0f8a2-0000-4000-8000-000000000000" },
+      { tracks: { system: { fileName: "s.webm" } } },
+    ));
+    expect(url.searchParams.has("declaredCaptureSources")).toBe(false);
+  });
+
+  it("přítomnou systémovou stopu deklaruje i při nulové velikosti", () => {
+    const manifest = completeManifest();
+    manifest.tracks.system.sizeBytes = 0;
+    const url = new URL(buildRecordingUploadUrl("https://app.ludone.cz", metadata, manifest));
+    expect(url.searchParams.get("declaredCaptureSources")).toBe("microphone+system");
+  });
+
+  it("tvrzení v metadatech nenahradí autoritativní manifest", () => {
+    const href = buildRecordingUploadUrl("https://app.ludone.cz", {
+      ...metadata,
+      declaredCaptureSources: "microphone+system",
+      channels: 2,
+    });
+    expect(href).toBe(originalUrl);
+  });
+});
+
 describe("bajtové hranice názvu souboru", () => {
   it.each([200, 500])("%i českých znaků uloží do souboru do 255 bajtů a do URL celé", async (count) => {
     const name = "ř".repeat(count);
@@ -494,7 +582,8 @@ describe("export dokončené schůzky", () => {
       "https://app.ludone.cz/nahravky/nahrat"
       + `?clientRecordingId=${CLIENT_RECORDING_ID}`
       + "&startedAt=2026-09-02T12%3A00%3A00.100Z"
-      + "&endedAt=2026-09-02T13%3A00%3A00.158Z",
+      + "&endedAt=2026-09-02T13%3A00%3A00.158Z"
+      + "&declaredCaptureSources=microphone%2Bsystem",
     );
     await expect(stat(microphonePath)).resolves.toMatchObject({ size: 8 });
     await expect(stat(systemPath)).resolves.toMatchObject({ size: 6 });
@@ -535,7 +624,8 @@ describe("export dokončené schůzky", () => {
       "https://app.ludone.cz/nahravky/nahrat"
       + `?clientRecordingId=${CLIENT_RECORDING_ID}`
       + "&startedAt=2026-09-02T12%3A00%3A00.100Z"
-      + "&endedAt=2026-09-02T13%3A00%3A00.120Z",
+      + "&endedAt=2026-09-02T13%3A00%3A00.120Z"
+      + "&declaredCaptureSources=microphone",
     );
   });
 
