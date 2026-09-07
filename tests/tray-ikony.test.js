@@ -21,6 +21,7 @@ const STAVY = [
   "recording-tracking",
   "queue-waiting",
   "recording-audio-lost",
+  "recording-microphone-only",
 ];
 const MOTIVY = ["dark", "light"];
 const VARIANTY = ["", "@2x"];
@@ -155,7 +156,7 @@ function alfa(soubor) {
 }
 
 describe("ikony v liště", () => {
-  it("adresář obsahuje právě dvacet osm očekávaných PNG s platným podpisem", () => {
+  it("adresář obsahuje právě třicet dva očekávaných PNG s platným podpisem", () => {
     const ocekavane = MOTIVY.flatMap((motiv) => STAVY.flatMap((stav) => (
       VARIANTY.map((varianta) => `${motiv}-${stav}${varianta}.png`)
     ))).sort();
@@ -190,7 +191,7 @@ describe("ikony v liště", () => {
     }
   });
 
-  it("v každém motivu a rozlišení má všech sedm stavů jiný obraz", () => {
+  it("v každém motivu a rozlišení má všech osm stavů jiný obraz", () => {
     for (const motiv of MOTIVY) {
       for (const varianta of VARIANTY) {
         const hashe = STAVY.map((stav) => (
@@ -222,6 +223,28 @@ describe("ikony v liště", () => {
         expect(tmava.some((hodnota) => hodnota === 0), `${stav}${varianta} nemá průhledné okolí`)
           .toBe(true);
       }
+    }
+  });
+
+  it("jednostopé nahrávání má tichý půlodznak odlišný od plného nahrávání i výpadku", () => {
+    for (const motiv of MOTIVY) {
+      for (const varianta of VARIANTY) {
+        const soubor = cestaIkony(ADRESAR_IKON, motiv, "recording-microphone-only", varianta);
+        for (const jinyStav of ["recording", "recording-audio-lost"]) {
+          expect(hashAlfy(soubor)).not.toBe(hashAlfy(
+            cestaIkony(ADRESAR_IKON, motiv, jinyStav, varianta),
+          ));
+        }
+        const obrazek = dekodujPng(soubor);
+        expect(obsahujeBarvu(obrazek, BARVY[motiv]["signed-out"])).toBe(true);
+      }
+      const obrazek = dekodujPng(
+        cestaIkony(ADRESAR_IKON, motiv, "recording-microphone-only", "@2x"),
+      );
+      // Celý pulz jako při nahrávání, odznak vlevo subtle, vpravo průhledný.
+      expect(obrazek.pixel(29, 15)[3]).toBeGreaterThan(192);
+      expect(obrazek.pixel(26, 27)).toEqual([...BARVY[motiv]["signed-out"], 255]);
+      expect(obrazek.pixel(30, 27)[3]).toBe(0);
     }
   });
 

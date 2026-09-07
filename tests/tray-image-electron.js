@@ -32,6 +32,7 @@ const VSECHNY_STAVY = [
   "recording-tracking",
   "queue-waiting",
   "recording-audio-lost",
+  "recording-microphone-only",
 ];
 const production = Function(
   "fs",

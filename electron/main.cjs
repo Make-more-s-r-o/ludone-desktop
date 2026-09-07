@@ -414,6 +414,7 @@ function trayIconName(state) {
     "recording-tracking",
     "queue-waiting",
     "recording-audio-lost",
+    "recording-microphone-only",
   ];
   // Brána čte seznam bez druhého výčtu; nový stav se tak přidává na jediné místo.
   if (arguments.length === 0) return [...names];
@@ -486,6 +487,7 @@ const TRAY_LABELS = {
   "recording-tracking": "LuDone · nahrává + LuTrack běží",
   "queue-waiting": "LuDone · čeká na odeslání",
   "recording-audio-lost": "LuDone · výpadek systémového zvuku",
+  "recording-microphone-only": "LuDone · nahrává jen mikrofon",
 };
 
 // 🔴 Jediný zdroj pravdy o tom, co lišta ukazuje. Renderer sem hlásí FAKTA, stav z nich
@@ -542,11 +544,13 @@ function hasRecordingExportInFlight() {
 
 // Čistá funkce schválně — je to jediný způsob, jak tohle rozhodnutí otestovat bez GUI
 // (viz tests/tray-authority.test.js). Stejný důvod jako u shouldHidePanelOnBlur.
-function deriveTrayState({ queueWaiting, recording, signedIn, systemAudioLost, tracking }) {
+function deriveTrayState({ microphoneOnly, queueWaiting, recording, signedIn, systemAudioLost, tracking }) {
   if (!signedIn) return "signed-out";
   // Výpadek je zhoršená varianta nahrávání. Nahrávání dál zůstává hlavní agendou,
   // ale červený odznak má přednost před méně závažným odznakem LuTracku.
   if (recording && systemAudioLost) return "recording-audio-lost";
+  // Přijatá jediná stopa je tichá informace, která musí zůstat vidět i při LuTracku.
+  if (recording && microphoneOnly) return "recording-microphone-only";
   // Nahrávání zůstává při souběhu hlavní agendou, LuTrack ukazuje odznak.
   if (recording && tracking) return "recording-tracking";
   if (recording) return "recording";
@@ -665,9 +669,20 @@ function stopTrayTitleUpdates() {
 function refreshTray() {
   const recording = hasLiveRecording();
   const systemAudioLost = hasLiveSystemAudioLoss();
+  // Počet stop drží hlavní proces už od přípravy. Nejde o odhad ticha ani výpadek.
+  const microphoneOnly = [...recordingOwnersPreparing.values()].some((preparation) => (
+    !preparation.cancelled
+    && preparation.sources?.length === 1
+    && preparation.sources.includes("microphone")
+  )) || [...recordingSessions.values()].some((recordingSession) => (
+    !recordingSession.finalizePromise
+    && recordingSession.tracks?.size === 1
+    && recordingSession.tracks.has("microphone")
+  ));
   const tracking = appState.trackingOwners.size > 0;
   const queueWaiting = appState.outboundQueueWaitingCount > 0;
   const next = trayIconName(deriveTrayState({
+    microphoneOnly,
     queueWaiting,
     recording,
     signedIn: appState.signedIn,
@@ -681,7 +696,7 @@ function refreshTray() {
     trayState = next;
     console.log(
       `[tray] ${new Date().toISOString()} stav=${trayState} nahrávání=${recording} `
-      + `výpadekZvuku=${systemAudioLost} lutrack=${tracking} `
+      + `výpadekZvuku=${systemAudioLost} jenMikrofon=${microphoneOnly} lutrack=${tracking} `
       + `fronta=${appState.outboundQueueWaitingCount} přihlášen=${appState.signedIn}`,
     );
     if (tray) {
