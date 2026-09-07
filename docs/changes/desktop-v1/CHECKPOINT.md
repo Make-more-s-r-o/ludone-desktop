@@ -1036,3 +1036,43 @@ stroji. Neudělám to sám ze dvou důvodů: má to známou past (`paths-ignore`
 kontroly umí nechat PR viset navěky jako „pending"), a hlavně **nemám upravovat bránu, která
 soudí moji vlastní práci** — zvlášť v den, kdy jsem její výsledek jednou špatně přečetl.
 Leží to v `DAN-TODO.md`.
+
+---
+
+## 7. 9. — zkušební nahrávka s tichou systémovou stopou (a nález, který z ní vypadl)
+
+Serverová session potřebovala stav, kde metadata slíbí dva zdroje a druhý je prázdný.
+Vyrobeno vstřikem oscilátoru přes override `getUserMedia`/`getDisplayMedia` — **žádný
+skutečný hovor ani pokoj** (D32). Mikrofon 440 Hz / zisk 0,5, systém 880 Hz / **zisk 0**.
+
+**Tvrzení jsme napsali PŘED měřením**, pak měřili nezávisle (`ffmpeg volumedetect`):
+
+| stopa | velikost | mean | max |
+|---|---|---|---|
+| mikrofon | 710 859 B | −9,0 dB | −5,9 dB |
+| systém | 11 139 B | **−91,0 dB** | **−91,0 dB** |
+
+🔴 **Použitelný rozlišovač ticha: `mean` se rovná `max`.** U tichého, ale živého zvuku se
+liší; shoda obou hodnot je podpis konstantního ticha. Hrubší varianta: 64× menší soubor
+při stejné délce. Doklad: `dukazy/ticha-systemova-stopa-2026-09-07/`, zvuk mimo git.
+
+### Nález, který se ukázal až za běhu
+
+Panel po celou dobu hlásil **„Obě stopy ověřeny"** — i o té mlčící. Podmínka
+(`RecordingCard.jsx:963`) je totiž jen „stopa nezmizela", ne „něco v ní je". Appka tedy
+zaměňuje **„přítomná"** za **„ověřená"** — přesně to, před čím jsem varoval serverovou
+session.
+
+A druhá vrstva: ten `<span>` je současně **`sr-only` i `aria-hidden="true"`**, takže ho
+nevnímá **nikdo** — ani očima, ani odečítačem — a **žádný test ho nehlídá**. Dnes to nikoho
+neplete; jakmile ale někdo opraví přístupnost, stane se z neviditelné nepravdy viditelná.
+Proto se to má opravit naráz. **Packet je napsaný, čeká na volný stroj.**
+
+⚠️ Znovu se potvrdilo, že **spuštění najde, co testy ne**: 1014 zelených testů o téhle
+hlášce mlčelo, protože ji nikdo netestoval — a nešlo by to poznat jinak než tím, že si
+člověk pustí nahrávání s mlčící stopou a přečte, co panel tvrdí.
+
+### Co dál
+1. **Opravit „ověřeny" vs. „přítomna"** — packet hotový, čeká na load pod 20.
+2. Kritická cesta zůstává **OAuth klient** (Dan), pak Apple.
+3. Brány na Danově stroji — rozhodnutí leží v `DAN-TODO` bodu 9, sám na ně nesahám.
