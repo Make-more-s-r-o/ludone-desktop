@@ -836,3 +836,58 @@ sourozence a porovnat jejich obranu je levnější než hledat vady po jedné.
 1. `uloziste` nemá obrazovku ⇒ uživatel dostane „zkus znovu" u chyby, kterou opakování
    nespraví (Klíčenka není dostupná) · „Otevřít Nastavení" selže jen do logu
 2. zaznamenaný čas se nezařadí a nikdo se to nedozví
+
+---
+
+## 7. 9. — dvě vlny tichých selhání (PR #87, #88) a heuristika, která platí oběma směry
+
+**PR #87** — nedostupná Klíčenka radila „zkus to znovu". `main.cjs:3170` chybu klasifikuje
+jako `uloziste`, ale `AuthErrorScreen` takový klíč neměl ⇒ generická hláška u chyby, kterou
+opakování nespraví nikdy. Nově vlastní obrazovka. Druhá vada: `shell.openExternal` selhalo
+jen do logu, volající se nedozvěděl nic ⇒ `otevreniNastaveniSelhalo` + `adresaNastaveni`.
+
+**Nález navíc při čtení diffu:** `konfigurace` neměla `actionTone` vůbec ⇒ className končil
+`--undefined`, což stylopis nedefinuje. Tichá dvakrát: nic nespadne, jen tlačítko vypadá
+jinak. Obě slepé uličky mají teď `quiet` — tlačítko, které příčinu nespraví, nemá být
+nejhlasitější prvek obrazovky.
+
+**PR #88** — asymetrie dvou sourozeneckých cest. Nahrávka při selhání zařazení uživatele
+zastaví, záznam času jen zapsal do konzole a tiše zmizel. Srovnáno + **strukturální test
+symetrie**, aby se ty cesty nerozešly znovu.
+
+### 🔴 Co z toho platí obecně
+
+**1. Sourozenecké cesty jsou levnější lovná zvěř než jednotlivé zámky.** Otázka
+*„která dvě místa dělají totéž, a brání se stejně?"* nepotřebuje spustitelnou sabotáž a
+najde rozdíly, které **nikdo nezvolil** — vznikly tím, že se ty cesty psaly zvlášť. Testy je
+nechytí, protože obě strany mají zelené testy na svůj úspěšný průběh.
+
+**Zabralo to i u sousedů:** serverová session tuhle otázku dostala a **do hodiny našla totéž
+u sebe** — dvě cesty uploadu, jedna `declaredCaptureSources` znala, druhá o něm nevěděla a
+kvůli allowlistu klíčů by celý upload odmítla s **400**. Ta druhá měla dokonce hotové testy
+na funkci, kterou nikdo neimplementoval.
+
+**2. Okno si vybírá ten, kdo měří** (formulace serverové session). Jejich cílený běh ten
+adresář nezahrnoval, takže vadu neviděl — chytila ji až plná suita v CI. Platí i tady:
+u #87 jsem sabotáže měřil nad **dvěma soubory**, u #88 nad **celou sadou**. Rozdíl v ceně je
+minuty, rozdíl v důkazu je zásadní. **Sabotáž měřit nad celou sadou.**
+
+**3. Jedna červená = „nevíš".** U #88 dávaly všechny tři sabotáže jednu jedinou červenou ⇒
+celou opravu držel jeden test. Odpověď nebyla přidat druhý test na totéž, ale **druhý druh
+zámku**: chování hlídá `queue-wiring`, symetrii hlídá `fronta-symetrie` čtením zdroje.
+Ověřeno, že ho **neuspokojí komentář**, který správné volání cituje.
+
+**4. Souhrnná tabulka stárne rychleji než kód.** Dva z nálezů auditu už neplatily.
+
+**Stav:** `main` `7b57cab`, **1009 zelených**, 0 otevřených PR, 0 worktrees.
+
+### Co dál
+
+1. Zbylá tichá selhání, která uživatel vyvolal klikem (`preload.cjs:108` rychlá akce v liště,
+   `main.cjs:737` vysvětlující okno, `main.cjs:322` návrat nastavení Docku) — **napřed změřit,
+   jestli je uživatel vůbec vyvolá**, teprve pak zadávat.
+2. Počet ve frontě v Nastavení zůstává starý, dokud je okno otevřené.
+3. Po schválení A2: podepsaný build a záměrně vyrobené nahrávky pro serverové měření,
+   **včetně té, kde systémová stopa existuje, ale mlčí** — serverová session ji označila za
+   nejcennější z celé sady.
+🔴 `DSK-F010` ani `DSK-F012` nestavět (D29, D33). Killswitche zůstávají vypnuté.
