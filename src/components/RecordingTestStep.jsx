@@ -58,7 +58,7 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
   const [toneError, setToneError] = useState(false);
   const [toneBusy, setToneBusy] = useState(false);
   const [labels, setLabels] = useState({
-    microphone: "MacBook Pro — mikrofon",
+    microphone: "Mikrofon",
     system: "Ostatní zvuk",
   });
   const [signals, setSignals] = useState({
@@ -86,7 +86,7 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
     setToneError(false);
     setToneBusy(false);
     setLabels({
-      microphone: "MacBook Pro — mikrofon",
+      microphone: "Mikrofon",
       system: "Ostatní zvuk",
     });
     setSignals(freshSignals);
