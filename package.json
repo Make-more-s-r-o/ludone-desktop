@@ -1,6 +1,7 @@
 {
   "name": "ludone-desktop-prototype",
   "version": "0.1.0",
+  "author": "Make more s.r.o.",
   "private": true,
   "description": "Klikatelná kostra menu-bar spouštěče LuDone Desktop",
   "main": "electron/main.cjs",
@@ -9,7 +10,6 @@
     "appId": "cz.ludone.desktop",
     "productName": "LuDone Desktop",
     "asar": false,
-    "allowMissingDependencies": false,
     "directories": {
       "output": "release"
     },
