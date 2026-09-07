@@ -23,6 +23,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { fileURLToPath, pathToFileURL } = require("node:url");
 const {
+  POVOLENI_HOSTITELE_ISSUERU,
   createAuthController,
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
@@ -171,6 +172,16 @@ function isTrustedAppUrl(value) {
     }
     if (url.protocol !== "file:") return false;
     return path.resolve(fileURLToPath(url)) === path.join(DIST_ROOT, "index.html");
+  } catch {
+    return false;
+  }
+}
+
+// Do systémového prohlížeče pouštíme jen https. `file:`, `ludone:` ani `javascript:`
+// by tam neměly co dělat a `startsWith` by je od https neodlišil spolehlivě.
+function isExternalHttpsUrl(value) {
+  try {
+    return new URL(value).protocol === "https:";
   } catch {
     return false;
   }
@@ -3050,7 +3061,9 @@ function resolveAuthIssuer(env, storedOrigin = "https://app.ludone.cz") {
   ) {
     throw new Error("Adresa přihlášení musí být čistý HTTPS origin");
   }
-  if (!["app.ludone.cz", "labs.ludone.cz"].includes(issuer.host)) {
+  // Seznam bydlí v auth.cjs, protože ho potřebuje i cesta odhlášení. Vlastní kopie tady
+  // by se s ní jednoho dne rozešla — přesně jako se rozešel výčet bran ve dvou workflow.
+  if (!POVOLENI_HOSTITELE_ISSUERU.includes(issuer.host)) {
     throw new Error("Adresa přihlášení míří na nepovoleného hostitele");
   }
   return issuer.origin;
@@ -3697,6 +3710,29 @@ handleValidated("test:quit", ["panel"], (event) => {
   if (!IS_TEST_RUN) return { allowed: false };
   setImmediate(() => app.quit());
   return { allowed: true };
+});
+
+// ⚠️ POJISTKA, NE OPRAVA VADY. Renderer dnes žádné `window.open`, `target="_blank"` ani
+// `<webview>` nemá a IPC by takový pokus stejně odmítlo — z rendereru se sem tedy nedá
+// dostat. `specs/E3-vady-a-identita.md` (krok 4) tuhle plošnou pojistku přesto předepisuje
+// a je levná: brána má stát dřív, než vznikne důvod ji potřebovat. Až do rendereru přibude
+// první odkaz nebo vložený obsah, platí sama od sebe.
+app.on("web-contents-created", (_event, contents) => {
+  contents.on("will-navigate", (event, url) => {
+    // Vlastní dokumenty se načítají programově (loadFile/loadURL) a ty `will-navigate`
+    // nespouštějí. Co sem dojde, iniciovala stránka — a ven z aplikace nesmí.
+    if (!isTrustedAppUrl(url) && url !== TRAY_SPACE_WARNING_URL) event.preventDefault();
+  });
+  contents.setWindowOpenHandler(({ url }) => {
+    // Nové okno Electronu by zdědilo preload i oprávnění svého otvírače. Neotvíráme ho
+    // nikdy; běžný https odkaz patří do systémového prohlížeče, tedy mimo dosah aplikace.
+    if (isExternalHttpsUrl(url)) void shell.openExternal(url);
+    return { action: "deny" };
+  });
+  contents.on("will-attach-webview", (event) => {
+    // <webview> je celý druhý renderer s vlastními oprávněními. Aplikace žádný nemá.
+    event.preventDefault();
+  });
 });
 
 app.on("second-instance", () => {

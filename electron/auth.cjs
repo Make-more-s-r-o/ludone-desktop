@@ -28,6 +28,13 @@ const TOKEN_TEMP_FILE_PATTERN = /^\.oauth\.enc\.[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f
 const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const MCP_SCOPES = new Set(["mcp:read", "mcp:draft"]);
+// 🔴 JEDINÝ seznam hostitelů, kterým desktop smí poslat token — přihlášení i ODHLÁŠENÍ.
+// Přihlášení bralo issuer z prostředí a `main.cjs` ho proti seznamu ověřoval; odhlášení ho
+// ale bere z ULOŽENÉ session (`oauth.enc`) a kontrolovalo jen tvar adresy. Podstrčený soubor
+// tak uměl poslat revokační požadavek s platným tokenem na cizí HTTPS server. Kontrola je
+// proto v `normalizedIssuer`, kterým prochází OBĚ cesty, a `main.cjs` si sahá po tomhle
+// seznamu — dva výčty téhož se vždycky rozejdou a rozejdou se tiše.
+const POVOLENI_HOSTITELE_ISSUERU = Object.freeze(["app.ludone.cz", "labs.ludone.cz"]);
 
 let oauthLogicPromise;
 let tokenStorageTransaction = Promise.resolve();
@@ -52,6 +59,9 @@ function normalizedIssuer(value) {
   const url = new URL(requiredString(value, "issuer"));
   if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
     throw new Error("OAuth issuer musí být čistá HTTPS adresa");
+  }
+  if (!POVOLENI_HOSTITELE_ISSUERU.includes(url.host)) {
+    throw new Error("OAuth issuer míří na nepovoleného hostitele");
   }
   return url.href.replace(/\/$/, "");
 }
@@ -1338,6 +1348,7 @@ module.exports = {
   IDENTITY_LOOKUP_DEADLINE_MS,
   LOGOUT_DISCOVERY_DEADLINE_MS,
   LOGOUT_REVOKE_DEADLINE_MS,
+  POVOLENI_HOSTITELE_ISSUERU,
   createAuthController,
   createAuthSessionCoordinator,
   createLogoutController,
