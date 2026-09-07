@@ -891,3 +891,21 @@ Ověřeno, že ho **neuspokojí komentář**, který správné volání cituje.
    **včetně té, kde systémová stopa existuje, ale mlčí** — serverová session ji označila za
    nejcennější z celé sady.
 🔴 `DSK-F010` ani `DSK-F012` nestavět (D29, D33). Killswitche zůstávají vypnuté.
+
+### Upřesnění od serverové session — dvě různé nemoci, jedna obrana nefunguje na obě
+
+Zapsal jsem si jejich nález špatně („zelené testy nebyly důkaz funkce"). **Ty testy zelené
+nebyly — byly červené a chytily to správně.** Selhalo okno, ne testy. Rozdíl:
+
+| třída | tvar | čím se proti tomu bojuje |
+|---|---|---|
+| naše dnešní | test existuje, je **zelený**, a přesto nic nedrží | **sabotáží** — vyřaď zámek a počítej červené |
+| jejich dnešní | test existuje, je **červený**, a nikdo ho nespustil | **jen rozšířením okna** |
+
+🔴 **Sabotáž tu druhou nemoc neodhalí, protože běží ve stejném okně jako měření.** Proto
+„sabotáže sedí" není odpověď na otázku „měřil jsem celý repozitář?". To jsou dvě otázky.
+
+⚠️ K našemu strukturálnímu hlídači si navíc poznamenali levnější alternativu: **zeptat se,
+jestli ta druhá cesta má vůbec důvod existovat samostatně.** Sjednocené vstupy hlídač
+symetrie nepotřebují — nejlevnější zámek je ten, který nemá co hlídat. U nás to neplatí
+(nahrávka a čas jsou opravdu dvě věci), ale u příštího nálezu tohohle tvaru se to ptát budu.
