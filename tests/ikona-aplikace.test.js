@@ -127,6 +127,10 @@ describe("ikona aplikace", () => {
     }
   });
 
+  // 🔴 Vlastní strop: tenhle test spouští generátor OSMKRÁT (základ + tři mutace, pokaždé
+  // ikona aplikace i sada lišty). Sám doběhne za ~2,3 s, ale v plné sadě na zatíženém
+  // stroji přesáhne výchozích 5 s a vyprší — což vypadá jako vada produktu, a není.
+  // Aserce zůstávají beze změny; mění se jen přiznaná cena.
   it("změna sdílených bodů, šířky i plátna mění glyf aplikace i lišty", () => {
     const koren = mkdtempSync(path.join(tmpdir(), "ludone-app-geometrie-"));
     const zdroj = readFileSync(GENERATOR, "utf8");
@@ -157,7 +161,7 @@ describe("ikona aplikace", () => {
     } finally {
       rmSync(koren, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 
   it("balení vytvoří chybějící ikonu dříve, než spustí electron-builder", () => {
     const koren = mkdtempSync(path.join(tmpdir(), "ludone-app-baleni-"));

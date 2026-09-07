@@ -48,3 +48,6 @@ dukazy/**/*.aiff
 # nesedí, takže by ho vpustil dovnitř.
 design/canvas/ludone-desktop-design.html
 design/navrh/tri-smery-pristroje.html
+
+# Ikona aplikace se generuje při balení ze sdíleného glyfu (scripts/tray-ikony.mjs).
+build/ikona-aplikace/
