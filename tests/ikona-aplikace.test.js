@@ -67,7 +67,12 @@ describe("ikona aplikace", () => {
     expect(MANIFEST.build.mac.icon, "Chybí build.mac.icon").toBeTypeOf("string");
     expect(MANIFEST.build.mac.icon.length).toBeGreaterThan(0);
     const soubor = path.resolve(KOREN, MANIFEST.build.mac.icon);
-    expect(existsSync(soubor), `Chybí ${soubor}`).toBe(true);
+    // Ikona je artefakt balení, ne verzovaný soubor (viz `.gitignore`) — na čistém
+    // checkoutu tedy NEEXISTUJE a test se na ni nesmí jen zeptat. Vyrobíme si ji stejnou
+    // cestou, jakou ji vyrábí balení; teprve pak má smysl tvrdit něco o jejím obsahu.
+    // 🔴 Bez tohohle kroku test procházel jen na stroji, kde už ikona ležela z dřívějška.
+    if (!existsSync(soubor)) generuj(GENERATOR, path.dirname(soubor));
+    expect(existsSync(soubor), `Chybí ${soubor} ani po vygenerování`).toBe(true);
     const casti = castiIcns(readFileSync(soubor));
     const ocekavane = {
       icp4: 16, icp5: 32, ic07: 128, ic08: 256, ic09: 512,
