@@ -324,10 +324,29 @@ a `deferredQuitRequest` vzniká **jedině v `beginDeferredQuit()`**, tedy až p�
 Žádný panel, žádné potvrzení — a `updateOutboundQueueTrayFact` se ani nezavolá, protože
 je až za úspěšnou větví.
 
-🔴 **A co je horší: tutéž funkci volá i cesta NAHRÁVKY** — ta „hlídaná" polovina, podle které
-jsem v #88 rozdíl měřil. Takže moje tehdejší tabulka *„nahrávka zastaví · čas mlčí"* byla
-nejspíš nepravdivá **v obou sloupcích**. Ověřit to už nestihl nikdo — podagentovi došel
-limit uprostřed úkolu.
+### ⚠️ Oprava mé vlastní korekce (změřeno o hodinu později)
+
+Napsal jsem sem, že tutéž funkci volá i cesta **nahrávky**, takže tabulka z #88 byla
+*„nejspíš nepravdivá v obou sloupcích"*. **To bylo přehnané a měřením se to vyvrátilo.**
+
+Cesta nahrávky **tichá NENÍ**: `finishRecordingAndEnqueue` (`main.cjs:2346–2361`) volá
+`noteDeferredQuitFailure`, ale **hned za ním bezpodmínečně `showPanel()`** (ř. 2358) a pak
+`throw error` — takže `recording:finish` přes IPC odmítne a `RecordingCard.jsx:310–330` to
+chytí a ukáže červenou hlášku *„Nahrávání bylo zastaveno kvůli chybě…"*. Je na to i zelený
+test **bez quitu** (`queue-wiring.test.js:4041–4059`), který ověřuje, že panel vyskočí.
+
+⇒ **Sloupec „nahrávka zastaví" držel.** Nepravdivý byl jen sloupec o čase — a to je přesně
+to, co #88 měl opravit a opravil jen zčásti.
+
+🔴 **Poučení pro mě:** korekci vlastní chyby je potřeba změřit stejně jako původní tvrzení.
+Přehnaná sebekritika je taky nepřesnost — jen se hůř pozná, protože zní zodpovědně.
+
+### A jedna věc navíc, která se u toho našla
+
+`src/features/tracking/TrackingCard.jsx` **je pořád atrapa** — nevolá
+`window.ludone.startTracking/stopTracking` vůbec. Takže i kdyby výsledek mutace chybu nesl,
+**nemá ji kdo zobrazit**. Oprava hlavního procesu je tedy nutná, ale ne dostatečná; UI
+časovače je zvlášť.
 
 **Není to nová vada**, je to vada, kterou #88 měl opravit a neopravil celou. Zapisuju to
 takhle naplno, protože jsem ti to ohlásil jako hotové.
