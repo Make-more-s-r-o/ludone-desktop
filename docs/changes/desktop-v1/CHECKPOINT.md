@@ -964,3 +964,53 @@ liště jsem neměřil, musel bych přepnout vzhled jeho systému.
 3. 🛑 `main.cjs:737` (vysvětlující okno k neviditelné ikoně) **je stopka, ne úkol**: dotáhnout
    se dá jen zapnutím ikony v Docku, a **M18 říká, že je výchozí vypnutá a rozhodl to Dan**.
 4. Po schválení A2: podepsaný build a záměrně vyrobené nahrávky pro server.
+
+---
+
+## 7. 9. — PR #89 a brána, která měřila stroj (a moje chyba u merge)
+
+**PR #89** opravil dvě selhání po kliknutí: jedna vadná rychlá akce z lišty brala s sebou
+zbylé příkazy z téže dávky, a přepínač Docku ukazoval uloženou volbu místo skutečnosti.
+Lokálně `lint/tsc/vitest = 0/0/0`, **1014 zelených**, sabotáže 3🔴:1🟢 nad celou sadou.
+
+### 🔴 Moje chyba: mergnul jsem na `gates=FAILURE`
+
+Na řádku mi svítilo `UNSTABLE | gates=FAILURE` a merge jsem pustil stejně, protože
+`gh run watch --exit-status` předtím vrátil **0** u běhu, jehož `conclusion` byl `failure`.
+**Měřidlo lhalo, ale rozhodnutí bylo moje** — status jsem si vypsal a přečetl.
+Táž vada jako v `mergnul-jsem-pred-checky`, jen s jiným nástrojem.
+
+### Příčina červené: brána běží na TOMTÉŽ stroji jako práce
+
+`.github/workflows/ci.yml` má **`runs-on: [self-hosted, macos]`** — CI jede na Danově Macu.
+V okamžiku měření hlásil `load average` **110 / 200 / 219**.
+
+**A na té zátěži jsem se podílel já:** současně jsem balil `.app` (`npm run package:mac`),
+spouštěl Electron instance a pětkrát za sebou hnal celou testovou sadu.
+
+Podpisy, podle kterých to jde poznat a odlišit od skutečné regrese:
+
+| signál | co ukazoval |
+|---|---|
+| lokálně | 1014 zelených, dotčený soubor **5× po sobě** zelený |
+| pokus 1 vs. pokus 2 | padly **jiné** testy (`auth-error-screens:71`, `queue.test:1562` × `queue-wiring:825`) |
+| `main` po mergi | **kaskáda** ≥10 vypršení po 5000 ms, ne jedna aserce |
+| `collect` | **179 s** na běžci proti **4,4 s** lokálně |
+
+🔴 **Poučení, které přesahuje tenhle běh: měření soutěží s tím, co měří.** Když brána běží
+na stejném stroji jako vývoj, „červená" může znamenat „byl jsem zaneprázdněný". Revert by
+to neopravil — příčina není v kódu.
+
+⚠️ **Zároveň to NENÍ omluvenka.** „Pomalý stroj" je nejpohodlnější vysvětlení červené a
+právě proto se musí doložit, ne tvrdit: jiné testy v každém pokusu, kaskáda místo jedné
+aserce, a lokální opakování téhož souboru. Bez těch tří věcí je to jen výmluva.
+
+**Stav:** `main` `88c713d` obsahuje #89, kód je v pořádku, ale **poslední běh bran na `main`
+je červený** — čeká na přeměření, až stroj klesne. Produkce tím ohrožená není: `deploy-prod`
+visí na `workflow_run` po zelených branách, takže se prostě nenasadí.
+
+### Co dál
+1. **Přeměřit brány na `main`**, až `load average` klesne pod ~20. Nic neměnit.
+2. Zvážit, jestli 5s strop na test dává smysl u brány běžící na pracovním stroji — ale
+   **až po přeměření**, ne teď; ladit strop podle přetíženého běhu je ladění měřidla.
+3. Kritická cesta zůstává **OAuth klient**.
