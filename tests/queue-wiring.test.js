@@ -384,10 +384,7 @@ function fakeElectron(userDataPath, {
     // Dialog je jediný kanál, kterým jde doručit chybu z menu lišty: menu je v tu
     // chvíli zavřené a panel nemusí být otevřený.
     dialog: {
-      showMessageBox: vi.fn(
-        /** @param {{ type?: string, detail?: string }} _volby */
-        async (_volby) => ({ response: 0 }),
-      ),
+      showMessageBox: vi.fn(async () => ({ response: 0 })),
     },
     shell: { openExternal: vi.fn(async () => undefined) },
     systemPreferences: {
@@ -6063,14 +6060,18 @@ describe("selhání otevření prohlížeče z menu lišty", () => {
     const harness = await loadMain();
     await harness.runReady();
     harness.electron.shell.openExternal.mockRejectedValueOnce(new Error("bez prohlížeče"));
-    harness.electron.dialog.showMessageBox.mockResolvedValue({ response: 0 });
 
     await browserMenuItem(harness).click();
     await vi.waitFor(() => expect(harness.electron.dialog.showMessageBox).toHaveBeenCalledOnce());
 
-    const volba = harness.electron.dialog.showMessageBox.mock.lastCall?.[0];
-    expect(volba?.type).toBe("error");
-    expect(volba?.detail).toContain("ručně");
+    // Tvrdíme na tom, co se předalo, ne na indexu do mock.lastCall — ten je u atrapy
+    // bez parametrů typovaný jako prázdná n-tice a typecheck by ho odmítl.
+    expect(harness.electron.dialog.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "error",
+        detail: expect.stringContaining("ručně"),
+      }),
+    );
   });
 
   it("když se prohlížeč otevře, žádný dialog nevyskočí", async () => {
