@@ -282,3 +282,50 @@ i bulk editace — do 13. 9. to všechno spadne zpátky na Claude limit.
    ale na ChatGPT účtu vrací HTTP 400, takže se na něj spoléhat nedá.
 
 Do rozhodnutí jedu variantu 2 — práci, která měla jít na Codex, dělám v Claude podagentech.
+
+---
+
+## 12. 🔴 Automatické aktualizace by tiše nefungovaly
+
+Audit našel a ověřil: `package.json:59` má v `build.publish` položku s `private: false`.
+Tím se pro stahování vybere **anonymní** `GitHubProvider` — jenže **repozitář je privátní**.
+
+**Následek:** ani `latest-mac.yml`, ani DMG se nestáhne; GitHub vrátí **404** a chyba spadne
+do `catch`, který ji jen zaloguje (`[updater] Kontrola aktualizace selhala`). Uživatel se
+nedozví nic a **zůstane na staré verzi** — včetně bezpečnostních oprav.
+
+⚠️ Dnes to nikoho netrápí, protože se nic nevydává. **Trápit to začne v den, kdy vydáš první
+podepsaný build** — tedy až dorazí certifikát od Apple.
+
+**Rozhodnutí je tvoje, protože každá cesta má cenu:**
+1. **Zveřejnit repozitář** → anonymní provider začne fungovat. ⚠️ Nedělat bez adversariálního
+   kola (viz bod 9) — je v něm popis vad a odkazy na server.
+2. **Privátní feed s tokenem v aplikaci** → token je v `.app` balíčku, kdokoli si ho vytáhne.
+   Musel by to být token jen pro čtení releasů a počítat s tím, že je fakticky veřejný.
+3. **Vlastní feed mimo GitHub** (S3, vlastní server) → nejvíc práce, ale žádný token
+   v aplikaci a žádné zveřejňování repozitáře.
+4. **Vydávat ručně** a aktualizace zatím nepoužívat — pak ale ať to appka **řekne**,
+   místo aby tiše selhávala.
+
+🔴 **Sám to nestavím**, protože je to volba mezi zveřejněním kódu, tajemstvím v balíčku
+a vlastní infrastrukturou — to není implementační detail.
+
+---
+
+## 13. Chybějící `LUDONE_OAUTH_CLIENT_ID` tiše zapne dynamickou registraci
+
+`electron/main.cjs:3005` — `resolveAuthClientId` při chybějící hodnotě vrací `undefined`
+a aplikace pak jde cestou dynamické registrace (`electron/auth.cjs:1046`). Je to **jediný
+přepínač v repu, který při chybějící hodnotě akci POVOLÍ**; PR #52 tam původní `throw` smazal.
+
+⚠️ **Není to obejití autorizace** a auditor to výslovně přiznal: allowlist hostitelů, PKCE
+S256 i souhlas v prohlížeči platí dál. **A je to přesně ta cesta, díky které tvůj tým nemusí
+nic dělat** — appka si klienta zaregistruje sama.
+
+**Proč to sem přesto píšu:** ruší to důvod zapsaný v `decisions.md:42` („odvolatelná jedním
+UPDATE") a rozhodnutí BD-N16, které **nikdo neodvolal**. Buď platí ta rozhodnutí, nebo
+současné chování — obojí naráz ne.
+
+**Nedělám s tím nic**, dokud neřekneš které. Doporučuju **ponechat současné chování** a
+rozhodnutí přepsat: samoregistrace je pro tým bez správce lepší a bezpečnostní vlastnosti
+zůstaly. Ale je to změna zapsaného rozhodnutí, takže patří tobě.
