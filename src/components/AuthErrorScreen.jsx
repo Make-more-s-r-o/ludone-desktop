@@ -25,6 +25,18 @@ const FAILURES = {
     icon: AccessDeniedIcon,
     iconTone: "bad",
   },
+  uloziste: {
+    // Stejně jako u konfigurace zůstává akce cestou ven po nápravě příčiny.
+    state: "storage",
+    title: "Přihlašovací údaje nejde bezpečně uložit",
+    message: "Systémové úložiště není dostupné. Přihlašovací údaje se neuložily.",
+    guidance: "Odemkni Klíčenku nebo se obrať na správce aplikace. Samotné opakování přihlášení nepomůže.",
+    action: "Zkusit znovu",
+    actionKind: "retry",
+    actionTone: "primary",
+    icon: AccessDeniedIcon,
+    iconTone: "bad",
+  },
   vyprselo: {
     state: "expired",
     title: "Přihlášení vypršelo",

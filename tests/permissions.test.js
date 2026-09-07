@@ -103,6 +103,41 @@ describe("rozhodnutí podle skutečného stavu oprávnění macOS", () => {
     expect(systemPreferences.getMediaAccessStatus).toHaveBeenCalledWith("microphone");
     expect(systemPreferences.askForMediaAccess).not.toHaveBeenCalled();
     expect(shell.openExternal).toHaveBeenCalledWith(result.settingsUrl);
+    expect(result).not.toHaveProperty("otevreniNastaveniSelhalo");
+    expect(result).not.toHaveProperty("adresaNastaveni");
+  });
+
+  it.each([
+    ["microphone", "denied", "Privacy_Microphone"],
+    ["system-audio", "denied", "Privacy_ScreenCapture"],
+    ["system-audio", "not-determined", "Privacy_ScreenCapture"],
+  ])("při selhání otevření Nastavení pro %s ve stavu %s vrátí příznak i adresu", async (
+    permission, status, panel,
+  ) => {
+    const systemPreferences = {
+      askForMediaAccess: vi.fn(),
+      getMediaAccessStatus: vi.fn(() => status),
+    };
+    const shell = { openExternal: vi.fn().mockRejectedValue(new Error("Otevření selhalo")) };
+    const logger = { ...console, error: vi.fn() };
+    const requestPermission = createPermissionRequestHandler({ systemPreferences, shell, logger });
+    const settingsUrl = `x-apple.systempreferences:com.apple.preference.security?${panel}`;
+
+    const result = await requestPermission(permission);
+
+    // Selhání otevření nesmí změnit skutečný stav oprávnění ani ztratit ruční cestu.
+    expect(result).toEqual({
+      permission,
+      status,
+      granted: false,
+      nextAction: "open-settings",
+      settingsUrl,
+      otevreniNastaveniSelhalo: true,
+      adresaNastaveni: settingsUrl,
+    });
+    expect(shell.openExternal).toHaveBeenCalledExactlyOnceWith(settingsUrl);
+    expect(systemPreferences.askForMediaAccess).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledOnce();
   });
 
   it("produkční handler po žádosti znovu přečte skutečný stav macOS", async () => {

@@ -8,7 +8,7 @@ import { Onboarding } from "../src/components/Onboarding.jsx";
 const REASONS = [
   ["vyprselo", "expired", "retry"],
   ["odmitnuto", "access", "switch-account"],
-  ["uloziste", "generic", "retry"],
+  ["uloziste", "storage", "retry"],
   // Vlastní stav místo obecného: důvod ZNÁME a uživateli ho říkáme. Akce zůstává
   // „retry" — ne proto, že pomůže, ale protože tahle obrazovka nahrazuje celý panel
   // a bez tlačítka by z ní nevedla cesta ven.
@@ -97,6 +97,23 @@ describe("chybové obrazovky přihlášení", () => {
     expect(action?.disabled).toBe(false);
   });
 
+  it("u chyby úložiště ukáže vlastní příčinu a radu místo generického opakování", async () => {
+    const panel = await renderAuthFailure("uloziste");
+    const screen = panel.document.querySelector('[data-testid="auth-error-screen"]');
+    const message = screen?.querySelector('[data-testid="auth-error-message"]');
+    const guidance = screen?.querySelector('[data-testid="auth-admin-guidance"]');
+    const action = screen?.querySelector('[data-testid="auth-error-action"]');
+
+    expect(screen?.querySelector("h1")?.textContent).toContain("nejde bezpečně uložit");
+    expect(message?.textContent).toContain("Systémové úložiště není dostupné");
+    expect(message?.textContent).not.toContain("Zkus to prosím znovu");
+    expect(guidance?.textContent).toContain("Odemkni Klíčenku");
+    expect(guidance?.textContent).toContain("obrať na správce aplikace");
+    expect(guidance?.textContent).toContain("Samotné opakování přihlášení nepomůže");
+    expect(action?.textContent).toBe("Zkusit znovu");
+    expect(action?.disabled, "cesta ven po nápravě úložiště musí zůstat").toBe(false);
+  });
+
   it("oznámí chybu bez ztráty hlavního landmarku a přesune fokus na akci", async () => {
     const panel = await renderAuthFailure("vyprselo");
     const screen = panel.document.querySelector('[data-testid="auth-error-screen"]');
@@ -133,7 +150,7 @@ describe("chybové obrazovky přihlášení", () => {
     expect(continuity?.textContent.trim()).toBeTruthy();
   });
 
-  it.each(["vyprselo", "odmitnuto", "bez-site", "neznama"])(
+  it.each(["vyprselo", "odmitnuto", "uloziste", "bez-site", "neznama"])(
     "akce obrazovky %s znovu spustí existující přihlašovací tok",
     async (reason) => {
       const panel = await renderAuthFailure(reason, {
