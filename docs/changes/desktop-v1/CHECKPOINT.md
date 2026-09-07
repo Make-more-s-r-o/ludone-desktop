@@ -689,7 +689,11 @@ co už stojí**; matice i briéf stárnou rychleji než běh.
 
 ## 7. 9. odpoledne — declaredCaptureSources (PR #83)
 
-`main` **984 passed | 3 skipped**, 0 PR, 0 worktrees. Serverové session odesláno k proměření.
+`main` **984 passed | 3 skipped**, 0 PR, 0 worktrees.
+
+🔴 **Naše strana hotová, CELÁ CESTA NE.** Serverová session změřila, že parametr u nich zatím
+**nikdo nečte** (nula výskytů, staví se jako T-04) — hodnota dorazí a zahodí se, a my se to
+nedozvíme, protože upload projde. Drž to jako *odesíláme*, ne *funguje* (D36).
 
 Nahrávací stránka teď dostává `declaredCaptureSources=microphone` nebo `=microphone%2Bsystem`.
 **Hodnota jde ze stop v manifestu, které zapsal hlavní proces** — ne z rendereru a ne z počtu

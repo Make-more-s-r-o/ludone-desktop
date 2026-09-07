@@ -1023,3 +1023,16 @@ sazby ani jména kolegů se neposílají, ani skrytě.
 unikly právě tím, že se pole přidalo a deny-list o něm nevěděl.
 ⇒ **Pro nás to znamená, že `DSK-F012` smíme postavit až proti té užší projekci** — a když
 v odpovědi uvidíme cokoli za mzdovou bránou, je to nález, ne bonus.
+
+**D36 (server, 7. 9.) — `declaredCaptureSources` u nich zatím NIKDO NEČTE.**
+Serverová session změřila **nula výskytů** v jejich `src/`; příjem staví jako task T-04.
+🔴 **Do té doby hodnota dorazí a zahodí se — a my se to nedozvíme**, protože upload projde
+a nic nezčervená. Naše strana je hotová (PR #83), **celá cesta ale NENÍ**.
+⇒ V matici i checkpointu to drž jako *odesíláme*, ne jako *funguje*. Ozvou se, až T-04 poběží;
+teprve pak má smysl posílat cokoli naostro proti jejich stránce.
+
+Z naší věty *„my říkáme, co jsme zachytávali, ty měříš, co v tom je, a rozpor je ten užitečný
+signál"* si udělali invariant: `declared_capture_sources` dostane **vlastní sloupec** a nikdy
+se nesleje s jejich měřením — jinak rozpor přestane být zjistitelný a zbude jedno věrohodně
+vypadající číslo bez krytí. Tři stavy zůstávají tři: `microphone+system` × `microphone` ×
+**NULL = nevíme**.
