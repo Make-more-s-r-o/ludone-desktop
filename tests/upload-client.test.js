@@ -629,27 +629,25 @@ describe("mapování serverových chyb do tříd fronty", () => {
   // Tři různé stavy pod jedním statusem. Kdyby o třídě rozhodoval status, jedna z nich by
   // pokaždé dopadla špatně — proto se čte `retryable` z těla, ne číslo odpovědi.
   it.each([
-    ["vypnuté úložiště čeká na člověka", { code: "storage_disabled" }, "paused"],
-    [
-      "přechodná chyba úložiště se opakuje",
-      { code: "storage_failed", retryable: true },
-      "retryable",
-    ],
-    ["nedostupný registr firem se opakuje", { code: "scope_unavailable", retryable: true }, "retryable"],
-    ["neznámý důvod je fail-closed", { code: "neznamy_duvod" }, "paused"],
-    ["samotné `retryable: false` nestačí k opakování", { code: "storage_failed", retryable: false }, "paused"],
+    ["vypnuté úložiště čeká na člověka",
+      { code: "storage_disabled" }, "storage_disabled", "paused"],
+    ["přechodná chyba úložiště se opakuje",
+      { code: "storage_failed", retryable: true }, "storage_failed", "retryable"],
+    ["nedostupný registr firem se opakuje",
+      { code: "scope_unavailable", retryable: true }, "scope_unavailable", "retryable"],
+    ["neznámý důvod je fail-closed",
+      { code: "neznamy_duvod" }, "neznamy_duvod", "paused"],
+    ["samotné `retryable: false` nestačí k opakování",
+      { code: "storage_failed", retryable: false }, "storage_failed", "paused"],
     // Bez kódu nemluví aplikace, ale nejspíš proxy před ní — takový výpadek je přechodný.
-    ["tělo bez kódu je přechodný výpadek, ne rozhodnutí aplikace", {}, "retryable"],
-  ])("HTTP 503: %s", async (_label, payload, failureClass) => {
+    // Klient si pak dosadí vlastní neutrální jméno.
+    ["tělo bez kódu je přechodný výpadek, ne rozhodnutí aplikace",
+      {}, "upload_failed", "retryable"],
+  ])("HTTP 503: %s", async (_label, payload, code, failureClass) => {
     const fixture = await recordingFixture();
     const { send } = createSend(vi.fn(async () => fakeResponse(503, payload)));
 
-    await expect(send(fixture.item)).rejects.toMatchObject({
-      // Bez kódu v těle si klient dosadí vlastní neutrální jméno.
-      code: payload.code ?? "upload_failed",
-      failureClass,
-      status: 503,
-    });
+    await expect(send(fixture.item)).rejects.toMatchObject({ code, failureClass, status: 503 });
   });
 
   it("unauthorized na posledním pokusu frontu pozastaví místo trvalého selhání", async () => {
