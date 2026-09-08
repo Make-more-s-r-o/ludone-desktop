@@ -369,6 +369,8 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "tray:get-state",
       "tray:report-facts",
       "tray-space-warning:enable-dock",
+      // Nové čtení stavu; odmítnutí cizího rámu i payloadu měří queue-wiring.test.js.
+      "updater:get-state",
     ].sort());
     expect(registrations.filter(({ registration }) => registration.startsWith("ipcMain."))).toEqual([]);
     expect(functionSource(mainSource, "handleValidated")).toContain("requireTrustedSender");

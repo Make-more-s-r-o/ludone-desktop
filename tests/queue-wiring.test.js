@@ -6512,3 +6512,192 @@ describe("plošná pojistka nad každým webContents", () => {
     expect(event.prevented).toBe(true);
   });
 });
+
+// Měření celé cesty main → skutečný preload → React; dosavadní restartové testy výš
+// zůstávají beze změny. Události updateru tu nejsou nahrazené textem pro renderer.
+describe("viditelnost automatických aktualizací v panelu", () => {
+  async function mountUpdatePanel(harness, { onboardingComplete = true, statusOnly = false } = {}) {
+    const dom = new JSDOM('<div id="root"></div>', {
+      url: "https://ludone.test",
+      pretendToBeVisual: true,
+    });
+    const panelContents = harness.windows[0].webContents;
+    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    const ipcRenderer = Object.assign(new EventEmitter(), {
+      invoke: vi.fn(async (channel, ...payload) => {
+        // Přihlášení není předmětem této sondy; aktualizační IPC běží celé naostro.
+        if (channel === "auth:session-state") return "valid";
+        if (channel === "auth:has-session") return true;
+        return harness.ipcHandlers.get(channel)(event, ...payload);
+      }),
+      send: vi.fn(),
+    });
+    let api;
+    Function("require", `"use strict";\n${preloadSource}`)((specifier) => {
+      if (specifier !== "electron") throw new Error(`Neočekávaný modul: ${specifier}`);
+      return {
+        ipcRenderer,
+        contextBridge: { exposeInMainWorld: (_name, value) => { api = value; } },
+      };
+    });
+    panelContents.send.mockImplementation((channel, payload) => ipcRenderer.emit(channel, {}, payload));
+    if (onboardingComplete) dom.window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
+    Object.defineProperty(dom.window, "ludone", { value: api });
+    vi.stubGlobal("React", React);
+    vi.stubGlobal("window", dom.window);
+    vi.stubGlobal("document", dom.window.document);
+    vi.stubGlobal("HTMLElement", dom.window.HTMLElement);
+    vi.stubGlobal("Node", dom.window.Node);
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    const root = createRoot(dom.window.document.querySelector("#root"));
+    // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
+    const { ApplicationUpdateStatus } = await import("../src/components/ApplicationUpdateStatus.jsx");
+    await React.act(async () => root.render(React.createElement(statusOnly ? ApplicationUpdateStatus : App)));
+    return {
+      api,
+      document: dom.window.document,
+      event,
+      ipcRenderer,
+      async close() {
+        await React.act(async () => root.unmount());
+        expect(ipcRenderer.listenerCount("updater:state-changed")).toBe(0);
+        dom.window.close();
+        vi.unstubAllGlobals();
+      },
+    };
+  }
+
+  it.each([true, false])("verze je přítomná bez interakce (dokončený onboarding: %s)", async (onboardingComplete) => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness, { onboardingComplete });
+    try {
+      const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+      expect(panel.document.querySelector('[data-testid="application-version"]')?.textContent)
+        .toBe(`Verze ${manifest.version}`);
+      expect(panel.document.querySelector('[data-testid="update-downloaded"]')).toBeNull();
+      expect(panel.document.querySelector('[data-testid="update-check-failed"]')).toBeNull();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it.each(["recording", "tracking"])("stažení doručí verzi do živého panelu a %s dál blokuje instalaci", async (activity) => {
+    vi.useFakeTimers();
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true, env: { DESKTOP_TIME_ENABLED: "true" } });
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness);
+    try {
+      if (activity === "recording") await harness.ipcHandlers.get("recording:begin")(panel.event);
+      else await harness.ipcHandlers.get("tracking:start")(panel.event, { projectId: PROJECT_A, note: null });
+      await React.act(async () => {
+        autoUpdater.emit("update-downloaded", { version: "4.5.6" });
+      });
+      const notice = panel.document.querySelector('[data-testid="update-downloaded"]');
+      expect(notice?.textContent).toContain("4.5.6");
+      expect(notice?.textContent).toContain("automaticky restartuje");
+      expect(notice?.getAttribute("role")).toBe("status");
+      // Tři další pokusy o bezpečný restart nesmějí přerušit skutečnou aktivitu mainu.
+      await React.act(async () => vi.advanceTimersByTimeAsync(90_000));
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("panel otevřený až po stažení vyzvedne uložený stav přes preload", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const contents = harness.windows[0].webContents;
+    await harness.ipcHandlers.get("recording:begin")({ sender: contents, senderFrame: contents.mainFrame });
+    autoUpdater.emit("update-downloaded", { version: "7.8.9" });
+    const panel = await mountUpdatePanel(harness);
+    try {
+      expect(panel.document.querySelector('[data-testid="update-downloaded"]')?.textContent).toContain("7.8.9");
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("jedna ani dvě chyby nevarují; třetí varuje a úspěch hlášku i počítadlo vynuluje", async () => {
+    vi.useFakeTimers();
+    const autoUpdater = fakeAutoUpdater();
+    autoUpdater.checkForUpdates.mockImplementation(async () => {
+      const error = new Error("síťový test");
+      autoUpdater.emit("error", error);
+      throw error;
+    });
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness, { statusOnly: true });
+    const warning = () => panel.document.querySelector('[data-testid="update-check-failed"]');
+    const nextCheck = () => React.act(async () => vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1_000));
+    try {
+      expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+      expect(warning()).toBeNull();
+      await nextCheck();
+      expect(warning()).toBeNull();
+      await nextCheck();
+      expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(3);
+      expect(warning()?.textContent).toContain("Aktualizace opakovaně selhávají");
+      expect(warning()?.getAttribute("role")).toBe("alert");
+      autoUpdater.checkForUpdates.mockResolvedValueOnce({ updateInfo: null });
+      await nextCheck();
+      expect(warning()).toBeNull();
+      await nextCheck();
+      expect(warning()).toBeNull();
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("jednotlivé chyby oddělené úspěchem se nesčítají", async () => {
+    vi.useFakeTimers();
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness, { statusOnly: true });
+    try {
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        if (attempt % 2 === 0) autoUpdater.checkForUpdates.mockRejectedValueOnce(new Error("výpadek"));
+        await React.act(async () => vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1_000));
+        expect(panel.document.querySelector('[data-testid="update-check-failed"]')).toBeNull();
+      }
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("opakované odmítnutí downloadPromise se také dostane do panelu", async () => {
+    vi.useFakeTimers();
+    const autoUpdater = fakeAutoUpdater();
+    autoUpdater.checkForUpdates.mockImplementation(async () => ({
+      updateInfo: null,
+      downloadPromise: Promise.reject(new Error("stažení selhalo")),
+    }));
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness, { statusOnly: true });
+    try {
+      expect(panel.document.querySelector('[data-testid="update-check-failed"]')).toBeNull();
+      await React.act(async () => vi.advanceTimersByTimeAsync(12 * 60 * 60 * 1_000));
+      expect(panel.document.querySelector('[data-testid="update-check-failed"]')?.textContent)
+        .toContain("Nedaří se ověřit nebo stáhnout novou verzi");
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("aktualizační IPC odmítne cizí frame i neočekávaný payload", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const contents = harness.windows[0].webContents;
+    const readStatus = harness.ipcHandlers.get("updater:get-state");
+    expect(() => readStatus({ sender: contents, senderFrame: { url: "https://cizi.example" } })).toThrow();
+    expect(() => readStatus({ sender: contents, senderFrame: contents.mainFrame }, "navíc")).toThrow();
+  });
+});

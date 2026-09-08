@@ -1,4 +1,5 @@
 import { AccessDeniedIcon, OfflineIcon, TimerIcon } from "./Icons.jsx";
+import { ApplicationUpdateStatus } from "./ApplicationUpdateStatus.jsx";
 
 const GENERIC_FAILURE = {
   state: "generic",
@@ -156,6 +157,7 @@ export function AuthErrorScreen({ busy, onRetry, reason, embedded = false }) {
           {failure.guidance}
         </p>
       )}
+      {!embedded && <ApplicationUpdateStatus />}
     </Container>
   );
 }

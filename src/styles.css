@@ -463,6 +463,26 @@ svg {
   transition: border-color 200ms ease, background 200ms ease;
 }
 
+.application-version {
+  color: var(--panel-subtle);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.application-version__build {
+  display: block;
+}
+
+.panel-header > .application-version {
+  flex-shrink: 0;
+  margin-left: auto;
+  text-align: right;
+}
+
+.application-update-status .feature-card {
+  margin-top: 8px;
+}
+
 .feature-card.idle-feature-row {
   display: flex;
   height: 56px;

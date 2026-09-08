@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { LuDoneMark } from "./components/Icons.jsx";
 import { PanelContentHeightReporter } from "./components/PanelContentHeightReporter.jsx";
+import { ApplicationUpdateStatus, ApplicationVersion } from "./components/ApplicationUpdateStatus.jsx";
 import { RecordingCard } from "./features/recording/RecordingCard.jsx";
 import { QueueCard } from "./features/queue/QueueCard.jsx";
 import { TrackingCard } from "./features/tracking/TrackingCard.jsx";
@@ -298,7 +299,9 @@ export function App() {
                 <strong>LuDone</strong>
               </span>
             </div>
+            <ApplicationVersion />
           </header>
+          <div className="panel-scroll"><ApplicationUpdateStatus showVersion={false} /></div>
         </main>
       </PanelContentHeightReporter>
     );
@@ -328,9 +331,11 @@ export function App() {
               </small>
             </span>
           </div>
+          <ApplicationVersion />
         </header>
 
         <div className="panel-scroll">
+          <ApplicationUpdateStatus showVersion={false} />
           {panelActionsAvailable && queueSnapshot.unavailable && (
             <p className="queue-retry-feedback" role="alert">
               Stav fronty není dostupný. Počet čekajících záznamů není známý.

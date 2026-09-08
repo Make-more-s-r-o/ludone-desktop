@@ -2893,6 +2893,30 @@ handleValidated("tracking:resolve-recovered", ["panel"], (_event, payload) => {
 // v zabalené aplikaci, takže vývoj, unit testy ani GUI měřidla nemohou sáhnout na síť.
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1_000;
 const UPDATE_INSTALL_RETRY_MS = 30_000;
+// Tři po sobě selhané kontroly při šestihodinovém intervalu znamenají nejméně
+// 12 hodin potíží v jednom běhu aplikace. Jednorázový výpadek tak uživatele neruší.
+const UPDATE_CHECK_FAILURE_THRESHOLD = 3;
+let consecutiveUpdateCheckFailures = 0;
+let updateStatus = { revision: 0, downloadedVersion: null, checkFailed: false };
+
+handleValidated("updater:get-state", ["panel"], (_event, ...extraPayload) => {
+  requireNoPayload("updater:get-state", extraPayload);
+  return { ...updateStatus };
+});
+
+function publishUpdateStatus(changes) {
+  if (Object.entries(changes).every(([key, value]) => updateStatus[key] === value)) return;
+  updateStatus = { ...updateStatus, ...changes, revision: updateStatus.revision + 1 };
+  const panelContents = panelWindow?.webContents;
+  try {
+    if (!panelContents || panelContents.isDestroyed() || !isTrustedPanelFrame(panelContents.mainFrame)) return;
+    panelContents.send("updater:state-changed", { ...updateStatus });
+  } catch (error) {
+    // Selhání oznámení nesmí změnit průchod bezpečnostní branou restartu.
+    console.error(`[updater] Stav se nepodařilo předat panelu: ${error.message}`);
+  }
+}
+
 let autoUpdateClient;
 let updateCheckInFlight = false;
 let updateInstallAttemptInFlight = false;
@@ -3002,7 +3026,15 @@ async function checkForApplicationUpdate() {
   try {
     const result = await autoUpdateClient.checkForUpdates();
     await result?.downloadPromise;
+    consecutiveUpdateCheckFailures = 0;
+    publishUpdateStatus({ checkFailed: false });
   } catch (error) {
+    // electron-updater tutéž chybu také emituje jako „error“. Počítáme ji jen zde,
+    // jednou za kontrolu včetně jejího stahování, nikoli podruhé v listeneru.
+    consecutiveUpdateCheckFailures += 1;
+    if (consecutiveUpdateCheckFailures >= UPDATE_CHECK_FAILURE_THRESHOLD) {
+      publishUpdateStatus({ checkFailed: true });
+    }
     console.error(`[updater] Kontrola aktualizace selhala: ${error.message}`);
   } finally {
     updateCheckInFlight = false;
@@ -3032,6 +3064,7 @@ async function initializeAutoUpdates() {
   autoUpdateClient.on("update-downloaded", (info) => {
     const version = typeof info?.version === "string" ? info.version : "neznámá";
     console.log(`[updater] Verze ${version} je stažená; čekám na bezpečný restart.`);
+    publishUpdateStatus({ downloadedVersion: version });
     downloadedUpdatePending = true;
     ensureUpdateInstallRetry();
     void tryInstallDownloadedUpdate();
