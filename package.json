@@ -53,11 +53,9 @@
     },
     "publish": [
       {
-        "provider": "github",
-        "owner": "Make-more-s-r-o",
-        "repo": "ludone-desktop",
-        "private": false,
-        "releaseType": "release"
+        "provider": "generic",
+        "url": "https://stahnout.ludone.cz/desktop/",
+        "channel": "latest"
       }
     ]
   },
