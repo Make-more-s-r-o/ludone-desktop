@@ -17,6 +17,7 @@ import {
   enqueueTimeEntry,
   killswitchNameForKind,
   processNext,
+  queueItemRequiresHumanAction,
   reduceQueueForRenderer,
   retryDelayMs,
   retryFailedItem,
@@ -846,6 +847,9 @@ describe("stavový automat fronty", () => {
         ...before.items[1],
         attempts: 0,
         nextAttemptAt: null,
+        // Příznak „čeká na člověka" se sráží výslovně, jinak by ho odvození z uloženého
+        // důvodu zvedlo znovu a položka by v `ceka` uvízla, aniž by to bylo vidět.
+        requiresHumanAction: false,
         state: QUEUE_STATES.WAITING,
       });
       expect(result.item.lastFailureReason).toBe("manifest není platný");
@@ -882,6 +886,52 @@ describe("stavový automat fronty", () => {
       expect(queued).toEqual(before);
     },
   );
+
+  // Položka uložená starším schématem nenese `requiresHumanAction`; příznak se odvozuje
+  // z uloženého důvodu. Bez výslovného sražení by návrat do fronty jen vypadal, že proběhl.
+  it("vrácená položka se opravdu dostane k dalšímu pokusu, ne jen do stavu ceka", async () => {
+    const queued = oneItemQueue();
+    const { requiresHumanAction: _vynechano, ...bezPriznaku } = {
+      ...queued.items[0],
+      attempts: 3,
+      lastFailureReason: "server odmítl nahrávku",
+      requiresHumanAction: true,
+      state: QUEUE_STATES.FAILED,
+    };
+    queued.items[0] = bezPriznaku;
+
+    const retried = retryFailedItem(queued, queued.items[0].clientRecordingId);
+    expect(queueItemRequiresHumanAction(retried.item)).toBe(false);
+
+    const send = vi.fn().mockResolvedValue(undefined);
+    const result = await processNext(retried.queue, killswitches(ENABLED_SETTING), send, {
+      now: 1_777_000_001_000,
+    });
+
+    expect(send).toHaveBeenCalledOnce();
+    expect(result.outcome).toBe("sent");
+  });
+
+  it.each([
+    ["kód rodiny vlastnictví", "queue_owner_mismatch"],
+    ["starší česká hláška", "Nahrávka patří jinému účtu"],
+  ])("%s se ručním vrácením neobejde", (_label, lastFailureReason) => {
+    const queued = oneItemQueue();
+    queued.items[0] = {
+      ...queued.items[0],
+      attempts: 3,
+      lastFailureReason,
+      state: QUEUE_STATES.FAILED,
+    };
+    const before = structuredClone(queued);
+
+    const result = retryFailedItem(queued, queued.items[0].clientRecordingId);
+
+    expect(result.queue).toBe(queued);
+    expect(result.item).toBe(queued.items[0]);
+    expect(result.item.state).toBe(QUEUE_STATES.FAILED);
+    expect(queued).toEqual(before);
+  });
 
   it("vrácení neznámého clientRecordingId odmítne a frontu nezmění", () => {
     const queued = oneItemQueue();

@@ -352,12 +352,26 @@ export function retryFailedItem(queue, clientRecordingId) {
 
   const originalItem = queue.items[index];
   if (originalItem.state !== QUEUE_STATES.FAILED) return { item: originalItem, queue };
+  // 🔴 Blokádu kvůli VLASTNICTVÍ tudy obejít nejde. „Zkusit znovu" je rozhodnutí o tom, že
+  // se má opakovat pokus — ne potvrzení, že nahrávka patří tomu, kdo je zrovna přihlášený.
+  // Kdyby to tahle cesta srazila, položka by odešla pod cizí relací a kontrola vlastníka
+  // by existovala jen naoko. Taková položka se proto vrací beze změny.
+  if (
+    failureCodeRequiresHumanAction(originalItem.lastFailureReason)
+    || LEGACY_HUMAN_ACTION_FAILURE_REASONS.has(originalItem.lastFailureReason)
+  ) {
+    return { item: originalItem, queue };
+  }
 
-  // Důvod zůstává pro rozhodnutí člověka a původní otisk pro kontrolu vlastníka.
   const item = {
     ...originalItem,
     attempts: 0,
     nextAttemptAt: null,
+    // 🔴 Důvod zůstává, aby bylo pořád vidět, proč to minule selhalo. Jenže právě z něj se
+    // u položek uložených starším schématem odvozuje „čeká na člověka" — a pumpa takovou
+    // položku ve stavu `ceka` navždy přeskakuje. Bez tohohle výslovného `false` by tedy
+    // návrat do fronty vypadal, že proběhl, a nahrávka by přesto nikdy neodešla.
+    requiresHumanAction: false,
     state: QUEUE_STATES.WAITING,
   };
   return { item, queue: replaceItem(queue, index, item) };
