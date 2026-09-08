@@ -20,7 +20,7 @@
       "src/lib/**/*",
       "src/pisma/**/*"
     ],
-    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "artifactName": "LuDone-Desktop-${version}-${arch}.${ext}",
     "mac": {
       "icon": "build/ikona-aplikace/LuDone.icns",
       "hardenedRuntime": true,
