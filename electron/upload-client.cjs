@@ -301,13 +301,34 @@ async function preflightRecording(item) {
     throw localError("invalid_input", "Manifest neodpovídá položce fronty", "permanent");
   }
 
+  // 🔴 Sada stop se odvozuje z POLOŽKY, ne z konstanty. Nahrávka bez povoleného systémového
+  // zvuku má jedinou stopu, vzniká legitimně (electron/main.cjs createMicrophoneOnlyManifest)
+  // a fronta ji zařadí vlastní větví (electron/queue.cjs enqueueMicrophoneOnlyRecording).
+  // Kdyby se tu trvalo na obou stopách, taková nahrávka by skončila TRVALOU chybou a nikdy
+  // by neodešla — tedy tichá ztráta celé nahrávky, ne jen jedné stopy.
+  const trackKinds = RECORDING_TRACK_KINDS.filter(
+    (trackKind) => safeString(item.tracks[trackKind]) !== "",
+  );
+  if (!trackKinds.includes("microphone")) {
+    throw localError("invalid_input", "Položka fronty nemá mikrofonní stopu", "permanent");
+  }
+  // Fronta a manifest se musí shodnout na tom, kolik stop nahrávka má. Rozejít se můžou jen
+  // ke škodě: jedna stopa by se tiše neodeslala. Proto je neshoda trvalá chyba, ne varování.
+  const manifestKinds = RECORDING_TRACK_KINDS.filter(
+    (trackKind) => isPlainObject(manifest.tracks?.[trackKind]),
+  );
+  if (manifestKinds.length !== trackKinds.length) {
+    throw localError(
+      "invalid_input",
+      "Manifest a fronta se neshodují v počtu stop nahrávky",
+      "permanent",
+    );
+  }
+
   // Limit všech stop se ověří dřív, než se načte token nebo odešle první init.
   const tracks = [];
-  for (const trackKind of RECORDING_TRACK_KINDS) {
+  for (const trackKind of trackKinds) {
     const filePath = safeString(item.tracks[trackKind]);
-    if (filePath === "") {
-      throw localError("invalid_input", "Položka fronty nemá obě stopy", "permanent");
-    }
     tracks.push({
       trackKind,
       ...await statTrack(filePath, manifest.tracks?.[trackKind]),

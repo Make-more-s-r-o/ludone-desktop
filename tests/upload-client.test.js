@@ -3,6 +3,7 @@ import { mkdtemp, open, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import queueStore from "../electron/queue.cjs";
 import uploadClient from "../electron/upload-client.cjs";
 import {
   QUEUE_STATES,
@@ -82,6 +83,9 @@ async function recordingFixture({
   microphoneBytes = Buffer.from("mikrofon-webm"),
   systemBytes = Buffer.from("system-webm"),
   sameContent = false,
+  // ⚠️ Nahrávka může mít jen mikrofon — systémový zvuk nemusí být povolený. Bez téhle
+  // možnosti nešlo takovou nahrávku v testech vůbec vyrobit, takže se na ni nedalo měřit.
+  microphoneOnly = false,
 } = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "ludone-upload-client-"));
   temporaryRoots.add(root);
@@ -102,18 +106,31 @@ async function recordingFixture({
     companyTabidooId: COMPANY_ID,
     tracks: {
       microphone: manifestTrack(path.basename(microphonePath), microphoneBytes),
-      system: manifestTrack(path.basename(systemPath), actualSystemBytes),
+      ...(microphoneOnly
+        ? {}
+        : { system: manifestTrack(path.basename(systemPath), actualSystemBytes) }),
     },
   };
   await writeFile(manifestPath, JSON.stringify(manifest));
-  const queued = enqueueRecording(createQueue(), {
-    manifest,
-    manifestPath,
-    trackPaths: {
-      microphone: microphonePath,
-      system: systemPath,
-    },
-  }, Date.parse(ENDED_AT));
+  // 🔴 Jednostopou položku NESTAVÍ `enqueueRecording` ze `src/lib/queue.js` — ta obě stopy
+  // vyžaduje. V provozu jde jednostopa vlastní větví produkčního storu, takže i test musí
+  // jít tudy; ručně poskládaná položka by byla kopie logiky, která smí driftovat.
+  const queued = microphoneOnly
+    ? await queueStore.createOutboundQueueStore({
+      filePath: path.join(root, "queue", "outgoing.json"),
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    }).enqueueRecording({
+      manifest,
+      manifestPath,
+      trackPaths: { microphone: microphonePath },
+    })
+    : enqueueRecording(createQueue(), {
+      manifest,
+      manifestPath,
+      // Cesty musí odpovídat stopám v manifestu — fronta na neshodu upozorní.
+      trackPaths: { microphone: microphonePath, system: systemPath },
+    }, Date.parse(ENDED_AT));
   const item = { ...queued.item, ownerFingerprint: OWNER_A };
   return {
     item,
@@ -1003,6 +1020,16 @@ describe("záchytná síť proti záměně nahrávky", () => {
     expect(error).toMatchObject({ code: "recording_replaced", failureClass: "permanent" });
     // Musí to přijít AŽ po dokončení — dřív o záměně vědět nemůžeme.
     expect(fetchImpl.mock.calls.some(([url]) => requestPath(url).endsWith("/dokoncit"))).toBe(true);
+  });
+
+  // 🔴 Porovnání otisků obou stop nesmí sáhnout na druhou stopu, když neexistuje.
+  // Bez podmínky na počet stop by tady spadlo čtení `tracks[1].sha256`.
+  it("jednostopá nahrávka projde a nespadne na chybějící druhé stopě", async () => {
+    const fixture = await recordingFixture({ microphoneOnly: true });
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl);
+
+    await expect(send(fixture.item)).resolves.toBeDefined();
   });
 
   it("shodné recordingId nechá upload projít beze změny", async () => {
