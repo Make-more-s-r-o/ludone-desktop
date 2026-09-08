@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AuthErrorScreen } from "./AuthErrorScreen.jsx";
+import { ApplicationVersion } from "./ApplicationUpdateStatus.jsx";
 import { RecordingTestStep } from "./RecordingTestStep.jsx";
 import { createStereoLevelSession } from "../lib/audio-levels.js";
 import { MICROPHONE_ONLY_TEXT } from "../features/recording/recording-copy.js";
@@ -427,7 +428,10 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
     >
       <div className="onboarding__topbar">
         <div className="brand-lockup"><LuDoneMark size={30} /><span>LuDone</span></div>
-        {!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}
+        <div>
+          <ApplicationVersion withBuildDate={false} />
+          {!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}
+        </div>
       </div>
 
       {!reauthenticate && (

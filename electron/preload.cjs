@@ -143,6 +143,15 @@ contextBridge.exposeInMainWorld("ludone", {
     return ["none", "expired", "valid"].includes(state) ? state : "none";
   },
   onAuthSessionChanged,
+  getUpdateStatus: () => ipcRenderer.invoke("updater:get-state"),
+  onUpdateStatusChanged: (callback) => {
+    if (typeof callback !== "function") {
+      throw new TypeError("Odběratel stavu aktualizací musí být funkce");
+    }
+    const listener = (_event, status) => callback(status);
+    ipcRenderer.on("updater:state-changed", listener);
+    return () => ipcRenderer.removeListener("updater:state-changed", listener);
+  },
   getAuthIdentity: () => ipcRenderer.invoke("auth:identity"),
   getAuthOrigin: () => ipcRenderer.invoke("auth:origin"),
   setAuthOrigin: (value) => {
