@@ -978,3 +978,38 @@ describe("bezpečné dokončení a diagnostika", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
+
+describe("záchytná síť proti záměně nahrávky", () => {
+  // 🔴 Server při dokončení hledá duplikát podle dvojice (uživatel, otisk). Když ho najde,
+  // TUHLE stopu označí za smazanou, její soubor FYZICKY SMAŽE a vrátí 200 se stavem
+  // `stored` a `recordingId` TÉ CIZÍ. Doloženo serverovou session 8. 9. 2026 v jejím kódu.
+  // `verifyRemoteIdentity` to nechytí — porovnává velikost a otisk, a ty u kolize SEDÍ.
+  // Jediné, co se rozejde, je identifikátor, a právě ten tenhle test hlídá.
+  it("odmítne dokončení, které vrátí cizí recordingId", async () => {
+    const fixture = await recordingFixture({});
+    const server = createStatefulServer();
+    const CIZI = "11111111-2222-4333-8444-555555555555";
+    const fetchImpl = vi.fn(async (url, options) => {
+      const response = await server.fetchImpl(url, options);
+      if (!requestPath(url).endsWith("/dokoncit")) return response;
+      const telo = await response.json();
+      return fakeResponse(200, { ...telo, recordingId: CIZI });
+    });
+    const { send } = createSend(fetchImpl);
+
+    const error = await send(fixture.item).catch((error) => error);
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toMatchObject({ code: "recording_replaced", failureClass: "permanent" });
+    // Musí to přijít AŽ po dokončení — dřív o záměně vědět nemůžeme.
+    expect(fetchImpl.mock.calls.some(([url]) => requestPath(url).endsWith("/dokoncit"))).toBe(true);
+  });
+
+  it("shodné recordingId nechá upload projít beze změny", async () => {
+    const fixture = await recordingFixture({});
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl);
+
+    await expect(send(fixture.item)).resolves.toBeDefined();
+  });
+});
