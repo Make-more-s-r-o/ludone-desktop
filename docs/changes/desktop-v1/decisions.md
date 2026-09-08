@@ -1158,3 +1158,37 @@ je to první místo, které se musí předělat.
 
 **Stav: `merged` · `disabled` · `tests-green`.** 🔴 **Nikdo neviděl skutečnou obnovu naostro** —
 devět testů měří chování, ne provoz.
+
+### D36e — předávka `declaredCaptureSources` je doměřená až do databáze
+
+**Zdroj: serverová session, 8. 9. 2026.** Doplňuje [D36d]. **Není to naše měření** — my jsme
+si u toho nic nespustili; přebíráme jejich doklad i jeho hranice.
+
+Dřívější stav byl, že hodnotu **desktop vyrábí** do adresy uploadu
+(`electron/recording-export.cjs:187`) a **server ji přijímá**, ale **krok mezi tím nikdo
+nepostavil** — stránka ji z adresy nikdy neposlala, takže všechny nahrávky měly `NULL`.
+To je opravené: stránka parametr z adresy přebírá a hodnota **dorazí do databáze**.
+
+Jejich doklad: dvě kola skutečným prohlížečem na labs. Nanečisto tělo požadavku neslo
+`"declaredCaptureSources":"microphone+system"` a požadavek **zrušili**, takže nic nezaložil.
+Naostro tentýž obsah prošel a u nahrávky `a30439cb-cfb5-4237-ab9d-5491fc0f5d39` je
+`declared_capture_sources = microphone+system` — doslova ten řetězec, ne `NULL` ani prázdno.
+Sloupec je `text`, takže se ty tři stavy rozlišit dají.
+
+🔴 **Co tím prokázané NENÍ — ať to nikdo nečte šířeji, než to je:**
+
+1. **Neprokazuje to naši cestu naostro.** Nahrával **prohlížeč**, ne naše aplikace. Tvar
+   odkazu byl náš, ale že desktop takovou adresu opravdu sestaví a upload dokončí, nikdo
+   neviděl. Pro nás je to pořád 🧪, ne ✅.
+2. **Neprokazuje to funkční upload.** Jejich nahrávka skončila ve stavu `failed`, protože
+   jako zvuk poslali 2 kB smyšlených bajtů a spadla normalizace. Hodnota se zapisuje při
+   **zahájení** uploadu, takže na měřenou věc to nemá vliv — ale „celá cesta funguje" to
+   neznamená.
+3. **Mantinel z D36d platí beze změny:** je to pořád **tvrzení aplikace o tom, co zamýšlela
+   nahrávat, ne měření zvuku**. Jejich nápověda to teď říká i uživateli, včetně dvou tichých
+   případů — neznámou hodnotu server uloží jako prázdno a nahrávku **nezahodí**, a upload
+   z prohlížeče bez desktopu ten údaj nemá vůbec.
+
+⚠️ **Modul má na jejich straně `enabled_envs = {labs}`** a na produkci nepůjde bez Danova
+rozhodnutí. U nás tomu odpovídá `DESKTOP_UPLOAD_ENABLED` vypnutý z jeho dřívějšího
+rozhodnutí — obě strany tedy zůstávají vypnuté a nic se tu nepřepínalo.
