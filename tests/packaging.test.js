@@ -156,6 +156,20 @@ describe("kontrakt electron-builderu", () => {
     }]);
   });
 
+  it("drží název balíčku bez mezery, protože aktualizace selhává tiše", () => {
+    const config = packageManifest.build;
+
+    // 🔴 Jméno souboru NENÍ kosmetika. `latest-mac.yml` si z něj skládá adresu, ze které
+    // si aplikace stahuje aktualizaci. Mezera by musela projít jako `%20` a je to jediný
+    // znak, který dělí „funguje" od 404 — a ta 404 se neprojeví tady, ale u uživatele,
+    // kterému aktualizace tiše přestane chodit a nikdo se ho nezeptá.
+    // `productName` mezeru schválně SI PONECHÁVÁ: to je název, který člověk vidí v Docku,
+    // kdežto `artifactName` je adresa. Proto se ta dvě jména od 8. 9. 2026 rozcházejí.
+    expect(config.artifactName).not.toMatch(/\s/);
+    expect(config.artifactName).toBe("LuDone-Desktop-${version}-${arch}.${ext}");
+    expect(config.productName).toBe("LuDone Desktop");
+  });
+
   it("balí jen runtime allowlist včetně zdrojů písem", () => {
     const config = packageManifest.build;
 
