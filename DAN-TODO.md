@@ -609,3 +609,55 @@ nainstalovaný" — **spustí se i na Macu, který ji nikdy neviděl.**
 
 ⚠️ Staré nepodepsané artefakty jsou odložené v `release/zastarale-pred-podpisem/`.
 **Nerozesílat je** — jsou z doby před certifikátem.
+
+## 20. 🔴 Dvě nezapsané vady v odesílání — nalezeny 8. 9. při Danově otázce
+
+Dan se zeptal „nahrává se to teda?". Odpověď je **ne** (viz níž), ale při měření vypadly dvě
+vady, které v `decisions.md` ani nikde jinde zapsané **nebyly**.
+
+### A) Údaj o zdrojích zvuku umí jen prohlížečová cesta
+
+`declaredCaptureSources` vkládá do adresy `electron/recording-export.cjs:185` — tedy
+**prohlížečová** noha. V `initPayload` nativního klienta (`electron/upload-client.cjs:472`)
+to pole **není vůbec**.
+
+⇒ Kdyby se `DESKTOP_UPLOAD_ENABLED` zapnul, nativní upload by u serveru skončil s prázdnou
+hodnotou. Celá včerejší práce serverové session (D36c–D36e) by se té cesty netýkala.
+
+🔴 **Neopravuji to**, protože rozhodnutí **D29** zní *„nestavět proti němu nic, ani za vypnutým
+killswitchem"* a týká se právě `DSK-F010`. Doplnit jedno pole je pět minut, ale je to stavba
+na funkci, kterou jsi zastavil — a to je tvoje rozhodnutí, ne moje.
+
+### B) Jedna schůzka, dva identifikátory ⇒ dva záznamy
+
+Táž nahrávka leží **současně** ve frontě i ve Stažených, a každá cesta pro ni používá jiný klíč:
+
+| cesta | co pošle |
+|---|---|
+| prohlížeč | syrové `manifest.clientRecordingId` (`recording-export.cjs:305`) |
+| nativní klient | odvozené UUID z `deriveUploadIdentity` (`upload-client.cjs:176`) |
+
+⇒ Serverová idempotence je **nespojí**. Kdo nahraje přes prohlížeč a později se zapne
+killswitch, dostane ze **stejné schůzky dva záznamy**. To je rozhodnutí o kontraktu se
+serverem, ne oprava na jeden řádek — patří serverové session a tobě.
+
+### Proč odesílání dnes nefunguje — tři brány, každá sama stačí
+
+1. **Killswitch je vypnutý** a v zabalené `.app` z Finderu **ho zapnout nejde** — je to
+   proměnná prostředí a `.app` dědí prostředí launchd, ne shellu.
+2. **Scope `mcp:upload` na serveru neexistuje** (D29). Náš klient si o něj neumí ani říct —
+   `auth.cjs:31` povoluje jen `mcp:read` a `mcp:draft`.
+   ⚠️ Nativní cesta by tedy poslala `Bearer` s `mcp:read` na zapisující endpoint. **Jak by
+   server odpověděl, nikdo nezměřil.**
+3. **Obrazovka pro potvrzení nahrávky bez vlastníka není postavená.** Nahrávka pořízená
+   odhlášeně skončí jako `queue_owner_unknown` a čeká na člověka, který nemá kam kliknout.
+
+✅ **Nahrávky se ale neztrácejí.** Při vypnutém killswitchi zůstane položka ve stavu `ceka`
+a retence maže **výhradně už odeslané** (`electron/retention.cjs:257`).
+
+### Co dnes zažiješ v zabalené aplikaci
+
+Zastavíš nahrávání → dostaneš formulář s názvem → „Uložit a odeslat" zkopíruje soubor do
+Stažených a otevře prohlížeč. 🔴 **Na produkci se ale modul nahrávek nezobrazí** — má
+`enabled_envs = {labs}`. Panel přesto hlásí úspěch, protože `openExternal` uspěje i u prázdné
+stránky. Musel bys v Nastavení přepnout prostředí na labs, což tě odhlásí.
