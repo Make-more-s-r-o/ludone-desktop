@@ -502,3 +502,48 @@ placeném GitHub runneru — a právě kvůli fakturaci se zbytek CI stěhoval n
 
 ⚠️ Na stroji **není Xcode**, jen command line tools. Pro tuhle cestu to stačí —
 `notarytool` i `codesign` jsou v nich.
+
+## 17. 🔴 Adversariální posudek našel OTEVŘENÉ díry v ŽIVÝCH systémech (ne v desktopu)
+
+**8. 9. 2026.** Posudek vznikl kvůli otázce, jestli jde repo zveřejnit. Zveřejnění je mezitím
+**mimo hru** (Dan zvolil vlastní server), ale posudek prošel 424 commitů a **našel něco, co
+platí bez ohledu na to**: repo je podrobný bezpečnostní deník *cizích produkčních systémů*
+a část těch popsaných děr je pořád otevřená.
+
+🔴 **Tohle nejsou vady desktopu. Jsou to vady `ludone-app` a LuTracku, které jsme si sem
+jen zapsali** — a zápis je starší než oprava.
+
+| # | Co je otevřené | Kde je to popsané |
+|---|---|---|
+| **K1** | Kdokoli z internetu si může proti `app.ludone.cz` založit **trvalého OAuth klienta**. Repo k tomu má i změřený rate limit, tedy návod, jak ho obejít. | `OAUTH-CO-ZALOZIT.md` §4 |
+| **K2** | `mcp:read` **dovolí tři mutace**, ale souhlasová obrazovka mluví jen o čtení. S K1 je to celý řetěz: založ klienta → nech si odsouhlasit „čtení" → zapisuj do produkce. | `SERVER-CO-POSTAVIT.md:90` |
+| **K3** | Pět edge funkcí LuTracku má **`verify_jwt = false` bez náhradní kontroly**, jmenovitě `tabidoo-sync-weekly-summaries` a `auto-stop-timers`. Kdo zná project ref, spustí je zvenčí. `intent.md:50` k tomu dodává, že je to **money-path**. | 4 místa, mj. `DAN-TODO-archiv.md:799` |
+| **K4** | Prázdný výběr nástrojů **vydá plný klíč**; deaktivace klíče neodvolá. | `DAN-TODO-archiv.md:358` |
+| **K5** | Tři uploadové prefixy zůstávají veřejné, **adresy platí navždy, nejdou odvolat a nikdo neloguje, kdo je použil.** | `DAN-TODO-archiv.md` |
+
+⚠️ **Rozhodnutí je tvoje, ne moje** — jsou to cizí systémy a já do nich nesahám. Ale K1+K2
+je dohromady řetěz do produkčního zápisu a K3 je money-path. Nabízím předat to serverové
+session, se kterou jsme dnes komunikovali.
+
+### Co posudek NEnašel — ať to nevyzní hůř, než to je
+
+Prošel **každý blob historie**, ne jen HEAD, dvaceti vzorky na tokeny a klíče a entropickým
+skenem. **Nula použitelných tajemství.** Devatenáct zásahů byly testovací atrapy
+(`HESLO-SENTINEL`, `APPLE-KLIC-SENTINEL`). Podpisový materiál Apple v repu vůbec není —
+workflow ho čte z prostředí, píše do `$RUNNER_TEMP` s `umask 077` a má `persist-credentials: false`.
+Žádná Slack ID, telefony, jména klientů, částky ani mzdy. Metodika, zvukový výzkum i design
+jsou bezpečnostně netečné.
+
+🔴 **Opravuji přitom vlastní starší zápis:** `DAN-TODO-archiv.md:465` doporučoval „přijmout,
+nulová stopa by stála přepsání historie" a vyjmenovával „dva hostnames a tři cesty".
+**Ve výčtu chybí veřejná IP produkčního stroje s účtem `root`**, která v historii je (3 soubory,
+3 commity, odstraněná až commitem `a4529dd`). To je jiná kategorie než cesta k adresáři.
+Dnes to nevadí, protože repo zůstává privátní — ale kdyby se zveřejnění někdy vrátilo na stůl,
+**tenhle bod je ten drahý**, ne ty ostatní.
+
+### Jedna věc k ověření uchem
+
+`dukazy/nahravani-2026-08-21/` obsahuje dva pětisekundové `.webm` z mikrofonu. `.gitignore:41`
+u nich píše „jsou to pípání, ne lidé". Naměřeno **−58 dB, tedy prakticky ticho** — obsahem to
+nejspíš sedí. Ale **původem je to skutečný vestavěný mikrofon MacBooku, ne syntéza, a nikdo
+si je neposlechl.** Je to na jedno poslechnutí.
