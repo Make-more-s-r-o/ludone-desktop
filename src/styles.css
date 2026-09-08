@@ -692,7 +692,8 @@ svg {
   color: var(--panel-strong);
 }
 
-.recording-mode-note {
+.recording-mode-note,
+.tracking-demo-notice {
   padding: 10px 11px;
   border: 1px solid color-mix(in oklab, var(--panel-wait) 32%, transparent);
   border-radius: 10px;
@@ -700,6 +701,12 @@ svg {
   color: var(--panel-muted);
   font-size: 11px;
   line-height: 1.45;
+}
+
+.tracking-demo-notice {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
 }
 
 .recording-outage__actions,

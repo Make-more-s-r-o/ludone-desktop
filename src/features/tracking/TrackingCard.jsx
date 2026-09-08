@@ -1,13 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronDownIcon, TimerIcon } from "../../components/Icons.jsx";
+import { useEffect, useId, useRef, useState } from "react";
+import { TimerIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
-
-const PROJECTS = [
-  "Make more Finanční řízení 2026",
-  "LuDone Desktop",
-  "Web · klientská zóna",
-  "Interní provoz",
-];
 
 function formatCompactElapsed(totalSeconds) {
   const hours = Math.floor(totalSeconds / 3_600);
@@ -21,13 +14,20 @@ export function TrackingCard({
   todaySummary = null,
   trayCommand = null,
 }) {
-  const [project, setProject] = useState(PROJECTS[0]);
-  const [description, setDescription] = useState("");
   const [active, setActive] = useState(false);
   const [startedAt, setStartedAt] = useState(null);
   const [lastMessage, setLastMessage] = useState("");
   const lastTrayCommandId = useRef(null);
   const elapsed = useElapsedTime(active, startedAt);
+  const demoNoticeId = useId();
+  const demoNotice = (
+    <div className="tracking-demo-notice" id={demoNoticeId} role="note">
+      <small className="idle-feature-row__notice" role={lastMessage ? "status" : undefined}>
+        {lastMessage || "Uložení do LuTracku je zatím ukázkové."}
+      </small>
+      <span>Ukládání není zapojené. Odměřený čas se nikam neuloží.</span>
+    </div>
+  );
 
   function toggleTracking() {
     if (active) {
@@ -42,8 +42,9 @@ export function TrackingCard({
   }
 
   useEffect(() => {
-    onActivityChange({ active, project, description });
-  }, [active, description, onActivityChange, project]);
+    // Ukázka nemá skutečný projekt ani popis k uložení.
+    onActivityChange({ active, project: null, description: "" });
+  }, [active, onActivityChange]);
 
   useEffect(() => {
     if (!trayCommand || trayCommand.id === lastTrayCommandId.current) return;
@@ -80,28 +81,19 @@ export function TrackingCard({
             role="status"
           >
             <span className="activity-status__dot" aria-hidden="true" />
-            <span>Měří se čas</span>
+            <span>Běží ukázka časovače</span>
             <span className="tracking-compact__time" data-panel-height-neutral="true">
               {formatCompactElapsed(elapsed)}
             </span>
           </div>
-          <p className="tracking-compact__project" title={project}>{project}</p>
+          <p className="tracking-compact__project">Ukázka bez projektu</p>
           <div className="tracking-compact__actions">
-            <label className="tracking-compact__switch">
-              <span>Přepnout</span>
-              <select
-                value={project}
-                aria-label="Přepnout projekt"
-                onChange={(event) => setProject(event.target.value)}
-              >
-                {PROJECTS.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </label>
             <button
               type="button"
               className="tracking-compact__stop"
               data-testid="tracking-stop"
               aria-label="Zastavit LuTrack"
+              aria-describedby={demoNoticeId}
               onClick={toggleTracking}
             >
               Stop
@@ -112,7 +104,7 @@ export function TrackingCard({
         <div className="feature-card__header">
           <span className="section-icon section-icon--tracking"><TimerIcon /></span>
           <div>
-            <p className="eyebrow">LuTrack</p>
+            <p className="eyebrow">LuTrack · ukázka</p>
             <h2 data-testid="tracking-running-state">Časovač</h2>
           </div>
           <p className="tracking-time" aria-live="polite">{formatElapsed(elapsed)}</p>
@@ -120,29 +112,21 @@ export function TrackingCard({
       ) : (
         <>
           <span className="idle-feature-row__icon"><TimerIcon variant="idle" /></span>
-          <span className="idle-feature-row__copy">
+          <div className="idle-feature-row__copy">
             <strong>LuTrack</strong>
-            {lastMessage ? (
-              <small className="idle-feature-row__notice" role="status">
-                {lastMessage}
-              </small>
-            ) : (
-              <>
-                <small className="idle-feature-row__notice">
-                  Uložení do LuTracku je zatím ukázkové.
-                </small>
-                {todaySummary && (
-                  <small data-testid="tracking-daily-summary">{todaySummary}</small>
-                )}
-              </>
+            {demoNotice}
+            {!lastMessage && todaySummary && (
+              <small data-testid="tracking-daily-summary">{todaySummary}</small>
             )}
-          </span>
+          </div>
           <button
             type="button"
             className="idle-feature-row__action"
             role="switch"
             aria-checked="false"
             aria-label="Spustit LuTrack"
+            aria-describedby={demoNoticeId}
+            title="Spustit ukázku časovače"
             onClick={toggleTracking}
           >
             Spustit
@@ -150,13 +134,14 @@ export function TrackingCard({
         </>
       )}
 
+      {active && demoNotice}
+
       <div className="tracking-controls" hidden={!active || compact}>
         <label className="select-field">
           <span className="sr-only">Projekt</span>
-          <select value={project} disabled={active} onChange={(event) => setProject(event.target.value)}>
-            {PROJECTS.map((item) => <option key={item}>{item}</option>)}
+          <select value="" disabled>
+            <option value="">Projekty nejsou zapojené</option>
           </select>
-          <ChevronDownIcon />
         </label>
         <button
           type="button"
@@ -165,6 +150,7 @@ export function TrackingCard({
           role="switch"
           aria-checked={active}
           aria-label={active ? "Zastavit LuTrack" : "Spustit LuTrack"}
+          aria-describedby={demoNoticeId}
           onClick={toggleTracking}
         >
           <span className="track-toggle__thumb">
@@ -175,12 +161,11 @@ export function TrackingCard({
       </div>
 
       <label className="description-field" hidden={!active || compact}>
-        <span className="sr-only">Volitelný popis práce</span>
+        <span className="sr-only">Popis práce není zapojený</span>
         <input
-          value={description}
-          disabled={active}
-          onChange={(event) => setDescription(event.target.value)}
-          placeholder="Co právě dělám? (volitelné)"
+          value=""
+          disabled
+          placeholder="Popis práce není zapojený"
         />
       </label>
     </section>
