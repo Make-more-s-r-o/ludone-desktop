@@ -537,9 +537,12 @@ describe("shodný obsah zvukových stop", () => {
 });
 
 describe("kontrakt INITu nativní a prohlížečové cesty", () => {
+  // ⚠️ Případ „totožný obsah stop" tady BYL, ale k INITu se už nedostane: shodné otisky
+  // odmítne `identical_tracks` dřív, než padne první požadavek — jinak by server obě stopy
+  // sloučil podle dvojice (uživatel, otisk) a druhou fyzicky smazal. Odmítnutí měří vlastní
+  // sada „shodný obsah zvukových stop"; duplikovat ho sem by zakrylo, kde se to rozhoduje.
   it.each([
     ["různý obsah stop", false],
-    ["totožný obsah stop", true],
   ])("%s: dvě stopy nemají shodný clientRecordingId ani při opakování", async (
     _label, sameContent,
   ) => {
