@@ -237,7 +237,32 @@ z glyfu lišty — stačí ho dodat a ikonu z něj vyrobím.
 
 ---
 
-## 11. 🔴 Codex je do 13. 9. mimo — vyčerpaný limit ChatGPT účtu
+## 11. ✅ VYŘEŠENO 8. 9. — Codex nebyl vyčerpaný, Orca ho tiše přepínala na cizí účet
+
+🔴 **NEKUPUJ KREDITY.** Změřeno 8. 9. ve 3:30:
+
+| konfigurace | účet | zkušební běh |
+|---|---|---|
+| `~/.codex` (výchozí) | **dan.jirotka@makemore.cz** | ✅ **„FUNGUJE"** |
+| Orca `CODEX_HOME` | dan.jirotka@gmail.com | ❌ vyčerpáno do 13. 9. |
+
+**Orca injektuje `CODEX_HOME`** do každého panelu podle `codex-pane-accounts.json`, který
+mapuje worktree → accountId. Panel `ludone-desktop` má namapovaný **gmail účet**, a ten je
+vyčerpaný. V `.zshrc` ani jinde ta proměnná není — přichází přímo v prostředí procesu.
+
+⇒ **Celou noc 7./8. 9. jsem delegoval na účet bez kreditů, zatímco účet s kredity byl volný.**
+Práci proto odedřeli Claude podagenti, dvakrát jim došel limit, a tobě jsem napsal, ať zvážíš
+nákup kreditů. **Nic z toho nebylo potřeba.**
+
+**Řešení, které jsem zavedl hned:** delegace z téhle session nastavují
+`CODEX_HOME=/Users/dan/.codex` výslovně.
+
+**Co můžeš udělat ty (nespěchá):** přemapovat panel v Orce na účet `makemore.cz`, ať to
+platí i pro panely, které pouštíš ručně. Jinak bude Orca dál tiše sahat na gmail účet.
+
+### Původní zápis (ponechán, ať je vidět, na čem stála špatná rada)
+
+## 11b. Codex hlásil vyčerpaný limit — a proč to bylo zavádějící
 
 Doslovná hláška z logu (7. 9. večer, oba běhy):
 
