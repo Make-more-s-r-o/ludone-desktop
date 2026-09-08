@@ -15,7 +15,10 @@ const { failureClassForStatus } = require("../electron/upload-client.cjs");
 // jen jeho výstupní kontrakt, protože právě ten fronta vyhodnocuje. Třída se počítá
 // PRODUKČNÍ funkcí, ne opsanou hodnotou, jinak by test přežil i její rozbití.
 function serverovaChyba(status, code) {
-  const chyba = new Error(`${code} (HTTP ${status})`);
+  // Vlastní pole na `Error` typová brána nezná, proto jedno přetypování na jednom místě.
+  // Tvar je záměrně TÝŽ, jaký posílá produkční `RecordingUploadError` — kdyby se rozešel,
+  // testovali bychom chybu, která ve skutečnosti nikdy nedorazí.
+  const chyba = /** @type {any} */ (new Error(`${code} (HTTP ${status})`));
   chyba.name = "RecordingUploadError";
   chyba.code = code;
   chyba.status = status;
