@@ -77,11 +77,24 @@ function quotaNumbers(payload) {
   return Object.keys(quota).length > 0 ? Object.freeze(quota) : undefined;
 }
 
+// 🔴 Stav odpovědi rozhoduje tam, kde kód neznáme. Doloženo serverovou session 8. 9. 2026:
+// 403 posílá i pro stavy, které se mění (`forbidden`, `scope_empty` — prázdný firemní
+// rozsah, vypnutý serverový přepínač). Dokud to padalo do `retryable`, každý pokus ubral
+// z rozpočtu a po vyčerpání skončila nahrávka v `selhalo` — a odtud dnes cesta zpět nevede.
+// `paused` pokus nespotřebuje, takže se položka dočká, až se stav na serveru změní.
+// 401 řešíme zvlášť: znamená „tudy cesta nevede", ne „zkus to za chvíli".
+function failureClassForStatus(status, code) {
+  const podleKodu = failureClassForCode(code);
+  if (podleKodu !== "retryable") return podleKodu;
+  if (status === 401 || status === 403) return "paused";
+  return podleKodu;
+}
+
 function serverError(status, payload) {
   const code = safeServerCode(payload?.code);
   return new RecordingUploadError(`${code} (HTTP ${status})`, {
     code,
-    failureClass: failureClassForCode(code),
+    failureClass: failureClassForStatus(status, code),
     quota: code === "quota_exceeded" ? quotaNumbers(payload) : undefined,
     status,
   });
@@ -656,6 +669,7 @@ function createRecordingUploadSend({
 }
 
 module.exports = {
+  failureClassForStatus,
   RECORDING_CHUNK_BYTES,
   RECORDING_MAX_BYTES,
   RecordingUploadError,

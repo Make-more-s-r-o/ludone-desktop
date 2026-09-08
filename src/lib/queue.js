@@ -138,6 +138,15 @@ function failureCodeRequiresHumanAction(code) {
 }
 
 function failureRequiresHumanAction(error) {
+  // 🔴 HTTP 401 na uploadové cestě NEZNAMENÁ „vypršel token" — znamená „tudy cesta
+  // nevede". Změřila to serverová session 8. 9. 2026: uploadové routy `Authorization:
+  // Bearer` vůbec nečtou, jedou na přihlášení přes cookie. Dokud tohle 401 nezvedalo
+  // příznak, položka mlčky stála a v panelu neměla ani tlačítko, ani vysvětlení —
+  // člověk viděl nahrávku, která nikdy neodejde, a nevěděl proč.
+  // ⚠️ Zvednutí příznaku má i druhý účel: brání tomu, aby se 401 vykládal jako
+  // pobídka k obnově tokenu. Souběžná obnova spustí na serveru reuse detekci,
+  // která revokuje CELOU rodinu tokenů — tedy odhlásí člověka úplně.
+  if (error?.status === 401 || error?.code === "unauthorized") return true;
   // Konkrétní kódy vlastní upload klient. Fronta jejich společný kontrakt
   // vyhodnotí jednou a rendereru pošle už jen význam, ne druhý seznam kódů.
   return failureCodeRequiresHumanAction(error?.code);
