@@ -1,6 +1,7 @@
 const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { declaredCaptureSourcesFromManifest } = require("./recording-export.cjs");
 
 const RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
 const RECORDING_MAX_BYTES = 512 * 1024 * 1024;
@@ -523,9 +524,12 @@ function initPayload(recording, track, context) {
   return {
     chunkCount: track.chunkCount,
     chunkSize: RECORDING_CHUNK_BYTES,
-    clientRecordingId: track.identity.clientRecordingId,
+    // Server rozlišuje samostatné uploady podle stopy, ne jen podle schůzky.
+    // Odvozené UUID zůstává interní; společný klíč by sloučil obě stopy do jedné.
+    clientRecordingId: `${recording.manifest.clientRecordingId}:${track.trackKind}`,
     companyTabidooId: context.companyTabidooId,
     declaredBytes: track.sizeBytes,
+    declaredCaptureSources: declaredCaptureSourcesFromManifest(recording.manifest),
     declaredMime: track.contentType,
     deviceLabel: context.deviceLabel,
     endedAt,

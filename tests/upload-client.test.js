@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import queueStore from "../electron/queue.cjs";
 import uploadClient from "../electron/upload-client.cjs";
+import recordingExport from "../electron/recording-export.cjs";
 import {
   QUEUE_STATES,
   createQueue,
@@ -329,7 +330,7 @@ function serverRecordingId(sequence) {
 }
 
 function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } = {}) {
-  const uploadsByKey = new Map();
+  const uploadsByClientRecordingId = new Map();
   const uploadsById = new Map();
   let sequence = 1;
   let failed = false;
@@ -348,6 +349,7 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
         "clientRecordingId",
         "companyTabidooId",
         "declaredBytes",
+        "declaredCaptureSources",
         "declaredMime",
         "deviceLabel",
         "endedAt",
@@ -363,7 +365,10 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
       expect(body.title).toEqual(expect.any(String));
       expect(body.title.length).toBeGreaterThan(0);
       expect(body.companyTabidooId).toBe(COMPANY_ID);
-      let upload = uploadsByKey.get(key);
+      // Kontrakt z 8. 9.: identitou je pole INITu. Shodný klíč vrací úspěch
+      // s původním záznamem, i když druhý požadavek patří jiné stopě.
+      let upload = uploadsByClientRecordingId.get(body.clientRecordingId);
+      const idempotent = Boolean(upload);
       if (!upload) {
         upload = {
           body,
@@ -372,12 +377,12 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
           received: new Set(),
         };
         sequence += 1;
-        uploadsByKey.set(key, upload);
+        uploadsByClientRecordingId.set(body.clientRecordingId, upload);
         uploadsById.set(upload.id, upload);
       }
-      return fakeResponse(upload === uploadsByKey.get(key) && upload.received.size > 0 ? 200 : 201, {
+      return fakeResponse(idempotent ? 200 : 201, {
         chunkSize: CONTRACT_CHUNK_BYTES,
-        idempotent: upload.received.size > 0,
+        idempotent,
         quotaWarning,
         recordingId: upload.id,
         state: upload.finalized ? "stored" : "uploading",
@@ -446,7 +451,7 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
 
     throw new Error(`Neočekávaný HTTP požadavek: ${method} ${pathname}`);
   });
-  return { fetchImpl, uploadsById, uploadsByKey };
+  return { fetchImpl, uploadsById, uploadsByClientRecordingId };
 }
 
 describe("shodný obsah zvukových stop", () => {
@@ -528,6 +533,52 @@ describe("shodný obsah zvukových stop", () => {
       .filter(([, options]) => options.method === "PUT")
       .map(([, options]) => options.body);
     expect(uploadedBytes).toEqual([microphoneBytes, systemBytes]);
+  });
+});
+
+describe("kontrakt INITu nativní a prohlížečové cesty", () => {
+  it.each([
+    ["různý obsah stop", false],
+    ["totožný obsah stop", true],
+  ])("%s: dvě stopy nemají shodný clientRecordingId ani při opakování", async (
+    _label, sameContent,
+  ) => {
+    const fixture = await recordingFixture({ sameContent });
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl);
+
+    const first = await send(fixture.item);
+    // Nová instance klienta simuluje další pokus po restartu aplikace.
+    const retried = await createSend(server.fetchImpl).send(fixture.item);
+
+    expect(first.completedUploads).toBe(2);
+    expect(first.uploads[0].recordingId).not.toBe(first.uploads[1].recordingId);
+    expect(retried.uploads).toEqual(first.uploads);
+    expect(server.uploadsByClientRecordingId.size).toBe(2);
+    const initCalls = server.fetchImpl.mock.calls.filter(([input, options]) => (
+      requestPath(input) === "/api/nahravky/uploads" && options.method === "POST"
+    ));
+    expect(initCalls).toHaveLength(4);
+    const payloads = initCalls.map(([, options]) => JSON.parse(String(options.body)));
+    const clientIds = payloads.map((body) => body.clientRecordingId);
+    expect(clientIds[0]).not.toBe(clientIds[1]);
+    expect(clientIds.slice(0, 2)).toEqual([
+      `${fixture.manifest.clientRecordingId}:microphone`,
+      `${fixture.manifest.clientRecordingId}:system`,
+    ]);
+    expect(clientIds.slice(2)).toEqual(clientIds.slice(0, 2));
+
+    const browserUrl = new URL(recordingExport.buildRecordingUploadUrl(
+      ORIGIN,
+      { clientRecordingId: fixture.manifest.clientRecordingId },
+      fixture.manifest,
+    ));
+    expect(browserUrl.searchParams.has("declaredCaptureSources")).toBe(true);
+    for (const body of payloads) {
+      expect(body.declaredCaptureSources).toBe(
+        browserUrl.searchParams.get("declaredCaptureSources"),
+      );
+    }
   });
 });
 
@@ -819,7 +870,7 @@ describe("resumable upload", () => {
     expect(otherContent.idempotencyKey).not.toBe(original.idempotencyKey);
   });
 
-  it("jiný obsah téže stopy mění klíč i v odeslaném initu", async () => {
+  it("jiný obsah téže stopy mění hlavičku, ale zachová clientRecordingId a odhalí rozpor", async () => {
     const firstFixture = await recordingFixture();
     const secondFixture = await recordingFixture({
       microphoneBytes: Buffer.from("jiny-obsah-stejneho-mikrofonu"),
@@ -828,7 +879,10 @@ describe("resumable upload", () => {
     const { send } = createSend(server.fetchImpl);
 
     await send(firstFixture.item);
-    await send(secondFixture.item);
+    await expect(send(secondFixture.item)).rejects.toMatchObject({
+      code: "idempotency_conflict",
+      failureClass: "permanent",
+    });
 
     const microphoneInitCalls = server.fetchImpl.mock.calls.filter(([input, options]) => {
       if (options?.method !== "POST" || requestPath(input) !== "/api/nahravky/uploads") {
@@ -841,6 +895,9 @@ describe("resumable upload", () => {
     ));
     expect(keys).toHaveLength(2);
     expect(keys[1]).not.toBe(keys[0]);
+    const bodies = microphoneInitCalls.map(([, options]) => JSON.parse(String(options.body)));
+    expect(bodies[1].clientRecordingId).toBe(bodies[0].clientRecordingId);
+    expect(server.uploadsByClientRecordingId.size).toBe(2);
   });
 });
 

@@ -751,3 +751,51 @@ hlavního procesu s ručně přiloženou cookie.
 6. killswitch nastavitelný v zabalené aplikaci
 
 Body 4 a 5 dostanou sabotáže navíc — tichá vada tam znamená „nahráno pod cizí účet".
+
+## 22. 🔴 POTVRZENO: druhá stopa nahrávky se na serveru TIŠE ZTRÁCÍ
+
+**8. 9. 2026 večer, doloženo serverovou session v jejím kódu s čísly řádků.** Není to teorie
+a není to chyba v ošetření výjimky — **je to hlavní dopředná větev.**
+
+Když mají obě stopy jedné schůzky **bitově stejný obsah** (nejtypičtěji ticho na obou):
+
+1. init druhé stopy hledá jen podle `(uživatel, klíč)` — otisk v podmínce není ⇒ založí nový
+   řádek a odpoví **201, „není to duplikát"**
+2. při dokončení se ale hledá **výhradně podle `(uživatel, otisk)`** a najde první stopu
+3. 🔴 **naše druhá stopa se označí za smazanou A JEJÍ SOUBOR SE FYZICKY SMAŽE**
+4. odpověď: **HTTP 200, stav „uloženo", `recordingId` té PRVNÍ stopy**
+
+Zamčeno jejich testem, který přímo očekává, že se vrátí **cizí** `recordingId`.
+
+⇒ **Uživatel by viděl „hotovo" a měl v systému polovinu schůzky.** Naše kontrola
+`verifyRemoteIdentity` to nechytí — porovnává velikost a otisk, a ty u kolize sedí.
+
+### ✅ Dvě obrany, které stavím BEZ nich
+
+1. **Porovnat otisky obou stop lokálně** ještě před prvním voláním na server. Oba se počítají
+   v `preflightRecording`, takže je to jeden `if` na místě, kde jsou po ruce. (Codex staví.)
+2. 🔴 **Porovnat `recordingId` z initu s tím, které přijde z dokončení.** Serverová session
+   sama upozornila, že se v takovém případě **liší** — a že je to **detekovatelné u nás už
+   dnes, bez jakékoli změny na jejich straně**. To je druhá, nezávislá obrana.
+
+### 🔴 Rozhodnutí pro Dana — pole `track` NENÍ změna kontraktu, ale SCHÉMATU
+
+Chtěl jsem po nich přidat do požadavku pole rozlišující stopu. Změřili to a:
+
+- sloupec `track` v jejich tabulce **neexistuje**
+- unikátní index `(sezení, stopa)`, o kterém mluví naše specifikace, **neexistuje** —
+  ta věta popisuje záměr, ne jejich kód
+- jediné pole pro druh zvuku je `declaredCaptureSources`, které povoluje jen `microphone`
+  a `microphone+system` — hodnota pro **samotný systémový zvuk v katalogu není** a kontrola
+  by ji odmítla; sémanticky navíc popisuje jednu nahrávku, ne stopu ve dvojici
+
+⇒ **Přidat `track` znamená změnit jejich schéma.** To je Danovo rozhodnutí, ne dohoda dvou
+session. Bez něj nemá jejich deduplikace jak poznat, že jde o **dvě legitimní stopy jedné
+schůzky**, a ne o duplikát.
+
+⚠️ **Propojení sezení proto zatím NESTAVÍM.** Kdybych ho postavil, obě stopy by šly pod jedním
+sezením a server by je neměl podle čeho odlišit — dnešní stav (dvě samostatná sezení) je
+ošklivý, ale funguje.
+
+⚠️ Serverová session to **vědomě neopravuje dnes v noci**: deduplikace podle otisku je jejich
+záměrný návrh a oprava mění chování nad uživatelskými daty. Souhlasím s tím.
