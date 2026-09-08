@@ -165,15 +165,29 @@ tedy o čtyři dny mladší než ten kód — věta *„`DSK-F010` tím zůstáv
 (`decisions.md:1000`) popisuje záměr, ne stav repozitáře.
 
 `scope` proto zůstává `draft` a `exposure` `disabled`: chybí scope `mcp:upload` (D29) a serverová
-strana je S1. **D36** to shrnuje přesně — *„odesíláme, ale celá cesta nefunguje“*: naše strana je
-hotová (PR #83), ale `declaredCaptureSources` u nás **končí v adrese nahrávací stránky**.
+strana je S1. Věta *„odesíláme, ale celá cesta nefunguje“* (D36) **platila do 8. 9. 2026** —
+teď platí jen její první polovina.
 
-🔴 **Zmírněno 8. 9. 2026 — dřívější znění „hodnota dorazí a zahodí se“ tvrdilo víc, než je
-doložené.** Oprava přišla od **serverové session (8. 9.)**, není to naše měření: **prohlížečová
-cesta parametr vůbec neposílá dál** — je to parametr od desktopu — takže se k příjmu nedostane
-a jejich záznam má u toho pole **`NULL`**. Hodnota `microphone+system` **dosud neprošla žádným
-skutečným požadavkem**; kryjí ji jen naše unit testy (`tests/recording-export.test.js`) a `CHECK`
-v jejich databázi. Ne „dorazí a zahodí se“, ale **nedorazí**. Podrobně `decisions.md` **D36b**.
+✅ **Příjem té hodnoty je od 8. 9. 2026 ověřený NAOSTRO — serverovou stranou, ne námi.** Poslali
+tři skutečné POSTy na `/api/nahravky/uploads` a přečetli, co se uložilo v databázi:
+
+| posláno | uloženo |
+|---|---|
+| `microphone+system` | **`microphone+system`** (záznam `43320f94`) |
+| `nesmysl-xyz` | **`NULL`**, upload **HTTP 201** — neznámá hodnota nahrávku nezahodí |
+| parametr chybí | **`NULL`** |
+
+⇒ **Tři stavy se neslévají.** To je ověření skutečným požadavkem, ne unit testem — a je to
+**jejich měření (serverová session, 8. 9.)**, ne naše.
+
+🔴 **Co ověřené NENÍ, a proč:** naše noha té cesty. Do jejich měření měly všechny nahrávky na
+labs u toho pole `NULL`, protože **prohlížečová cesta ten parametr strukturálně neposílá** — je
+to údaj od desktopu a nebylo jak vzniknout, dokud ho desktop nepošle. **Nebyla to vada kódu**,
+je to rozdíl mezi *otestovaným* a *pozorovaným*. Podrobně `decisions.md` **D36c**.
+
+✅ **`exposure: disabled` je doložitelně správně:** `mcp:upload` má v celém jejich `src/`
+**0 výskytů**, ani jako mrtvý kód (`MCP_OAUTH_SCOPES = ["mcp:read", "mcp:draft"]`,
+`src/mcp/oauth/config.ts:4`) — změřila serverová session 8. 9.
 
 ⚠️ `verification` nechávám na `unverified` — tenhle běh měnil výhradně osu `delivery`. Testy
 `tests/upload-client.test.js` ale běží nad produkčním modulem, takže osa je kandidát na

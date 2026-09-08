@@ -15,12 +15,18 @@ Stopa tedy **existuje, běží a končí spolu s mikrofonní** — jen v ní nen
 Manifest deklaruje **obě**, takže desktop vloží do adresy nahrávací stránky
 `declaredCaptureSources` = `microphone+system`.
 
-🔴 **Zpřesněno 8. 9. 2026 podle opravy serverové session (jejich měření, ne naše): k serveru ta
-hodnota NEDORAZILA.** Prohlížečová cesta `declaredCaptureSources` **vůbec neposílá** — je to
-parametr od desktopu — takže jejich záznam téhle nahrávky má u toho pole **`NULL`** a hodnota
-`microphone+system` **u nich dosud neprošla žádným skutečným požadavkem**; kryjí ji jen unit testy
-a `CHECK` v databázi. Tenhle důkaz tedy dokládá **stopy a jejich ticho**, ne to, že by deklarace
-dvou zdrojů prošla celou cestou.
+🔴 **Zpřesněno 8. 9. 2026 (jejich měření, ne naše): u TÉHLE nahrávky hodnota k serveru
+nedorazila — ale samotný příjem je ověřený.** Záznam téhle nahrávky má u toho pole **`NULL`**,
+protože **prohlížečová cesta parametr strukturálně neposílá**: je to údaj od desktopu a nemá jak
+vzniknout, dokud ho desktop nepošle. **Není to vada kódu.**
+
+Příjem serverová session odpoledne 8. 9. doměřila **třemi skutečnými POSTy** na
+`/api/nahravky/uploads`: `microphone+system` se uloží jako `microphone+system` (záznam
+`43320f94`), neznámá hodnota jako `NULL` s **HTTP 201** (nahrávku to nezahodí) a chybějící
+parametr jako `NULL`. ⇒ **Tři stavy se neslévají.**
+
+Tenhle důkaz tedy dokládá **stopy a jejich ticho**; deklaraci dvou zdrojů dokládá až jejich
+měření z 8. 9. (`decisions.md` **D36c**).
 
 ## Nezávislé měření (ffmpeg `volumedetect`, ne naše tvrzení)
 
