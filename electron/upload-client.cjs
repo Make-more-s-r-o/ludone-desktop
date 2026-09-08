@@ -84,10 +84,27 @@ function quotaNumbers(payload) {
 // z rozpočtu a po vyčerpání skončila nahrávka v `selhalo` — a odtud dnes cesta zpět nevede.
 // `paused` pokus nespotřebuje, takže se položka dočká, až se stav na serveru změní.
 // 401 řešíme zvlášť: znamená „tudy cesta nevede", ne „zkus to za chvíli".
-function failureClassForStatus(status, code) {
+// 🔴 A 503 nejsou tři jména jednoho stavu, ale tři různé stavy. Doloženo serverovou session
+// 9. 9. 2026 v jejich kódu: `storage_disabled` je vypnutý přepínač (opakování nepomůže,
+// dokud ho člověk nezapne), kdežto `storage_failed` a `scope_unavailable` jsou přechodné a
+// opakovat se MAJÍ. Kdyby se rozhodovalo podle statusu, jedna z těch tří tříd by pokaždé
+// dopadla špatně: buď by položka uvázla na přechodné chybě, nebo by donekonečna ubírala
+// z rozpočtu pokusů kvůli vypnutému přepínači.
+// ⚠️ Přechodnost si NEVYJMENOVÁVÁME sami — čteme ji z `retryable: true`, které server u té
+// třídy posílá. Vlastní seznam kódů by zastaral tiše: nový přechodný kód by spadl mezi
+// pozastavené a nikdo by se to nedozvěděl. Neznámý 503 je proto fail-closed „čeká na
+// člověka": neznámý stav není totéž co „zkus to znovu".
+// ⚠️ Rozlišuj ale dvě různá 503: „aplikace řekla kód, kterému nerozumím" (fail-closed) od
+// „v těle není žádný kód" — to druhé typicky nemluví aplikace, ale proxy před ní, a takový
+// výpadek je přechodný. Proto rozhoduje přítomnost kódu, ne jeho neznámost.
+function failureClassForStatus(status, code, payload) {
   const podleKodu = failureClassForCode(code);
   if (podleKodu !== "retryable") return podleKodu;
   if (status === 401 || status === 403) return "paused";
+  if (status === 503) {
+    if (payload?.retryable === true) return "retryable";
+    return typeof payload?.code === "string" ? "paused" : "retryable";
+  }
   return podleKodu;
 }
 
@@ -95,7 +112,7 @@ function serverError(status, payload) {
   const code = safeServerCode(payload?.code);
   return new RecordingUploadError(`${code} (HTTP ${status})`, {
     code,
-    failureClass: failureClassForStatus(status, code),
+    failureClass: failureClassForStatus(status, code, payload),
     quota: code === "quota_exceeded" ? quotaNumbers(payload) : undefined,
     status,
   });
