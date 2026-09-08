@@ -1,0 +1,46 @@
+$ bash scripts/akceptace/E5.sh
+PASS  src/lib/queue.js existuje a není prázdný
+PASS  electron/queue.cjs existuje a není prázdný
+FAIL  unit testy queue jsou zelené
+      | 
+      | > ludone-desktop-prototype@0.1.0 test:unit
+      | > vitest run queue
+      | 
+      | failed to load config from /Users/dan/orca/workspaces/ludone-desktop/desktop-prepinac-v-app/vitest.config.js
+      | 
+      | ⎯⎯⎯⎯⎯⎯⎯ Startup Error ⎯⎯⎯⎯⎯⎯⎯⎯
+      | Error: EPERM: operation not permitted, open '/Users/dan/orca/workspaces/ludone-desktop/desktop-prepinac-v-app/node_modules/.vite-temp/vitest.config.js.timestamp-1788905359787-f27aebc1022c.mjs'
+      |     at async open (node:internal/fs/promises:636:25)
+      |     at async Object.writeFile (node:internal/fs/promises:1205:14)
+      |     at async loadConfigFromBundledFile (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules/vite/dist/node/chunks/config.js:35994:3)
+      |     at async bundleAndLoadConfigFile (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules/vite/dist/node/chunks/config.js:35884:17)
+      |     at async loadConfigFromFile (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules/vite/dist/node/chunks/config.js:35851:42)
+      |     at async resolveConfig (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules/vite/dist/node/chunks/config.js:35500:22)
+      |     at async _createServer (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules/vite/dist/node/chunks/config.js:25441:67)
+      |     at async createViteServer (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules/vitest/dist/chunks/cli-api.DVe0nWUx.js:6921:17)
+      |     at async createVitest (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules/vitest/dist/chunks/cli-api.DVe0nWUx.js:10212:17)
+      |     at async prepareVitest (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules/vitest/dist/chunks/cli-api.DVe0nWUx.js:10551:14) {
+      |   errno: -1,
+      |   code: 'EPERM',
+      |   syscall: 'open',
+      |   path: '/Users/dan/orca/workspaces/ludone-desktop/desktop-prepinac-v-app/node_modules/.vite-temp/vitest.config.js.timestamp-1788905359787-f27aebc1022c.mjs'
+      | }
+      | 
+      | 
+      | 
+PASS  jmenovitý test nenastaveného killswitche je fail-closed
+FAIL  vypínač odesílání je fail-closed i v produkční cestě (chování)
+      | sonda vypinac-odesilani-fail-closed selhala: desktopKillswitch is not defined
+      | ReferenceError: desktopKillswitch is not defined
+      |     at Object.queueKillswitches (eval at prostredi (file:///Users/dan/orca/workspaces/ludone-desktop/desktop-prepinac-v-app/scripts/akceptace/fronta-sondy.mjs:108:19), <anonymous>:8:29)
+      |     at vypinacOdesilaniFailClosed (file:///Users/dan/orca/workspaces/ludone-desktop/desktop-prepinac-v-app/scripts/akceptace/fronta-sondy.mjs:151:20)
+      |     at async file:///Users/dan/orca/workspaces/ludone-desktop/desktop-prepinac-v-app/scripts/akceptace/fronta-sondy.mjs:235:3
+PASS  .env.example drží killswitch odesílání vypnutý
+PASS  .env.example drží časový killswitch vypnutý
+PASS  nikde v repu není killswitch odesílání zapnutý
+PASS  nikde v repu není časový killswitch zapnutý
+PASS  chybějící hodnota časového killswitche nic nezaznamená (fail-closed)
+---
+chyb: 2
+
+Exit code: 1

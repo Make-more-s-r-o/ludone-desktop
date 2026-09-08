@@ -1,0 +1,673 @@
+$ npx vitest run --configLoader runner --no-file-parallelism
+
+ RUN  v3.2.7 /Users/dan/orca/workspaces/ludone-desktop/desktop-prepinac-v-app
+
+ ✓ tests/ikona-aplikace.test.js (4 tests) 3521ms
+   ✓ ikona aplikace > build.mac.icon ukazuje na existující neprázdnou sadu ICNS  762ms
+   ✓ ikona aplikace > generátor vytváří všech deset PNG a reprodukovatelné ICNS  631ms
+   ✓ ikona aplikace > změna sdílených bodů, šířky i plátna mění glyf aplikace i lišty  1580ms
+   ✓ ikona aplikace > balení vytvoří chybějící ikonu dříve, než spustí electron-builder  547ms
+stderr | tests/queue-wiring.test.js > zjištění uložené OAuth session > nový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů
+[auth] Obnova relace selhala: reason=refresh-failed
+
+stderr | tests/queue-wiring.test.js > zjištění uložené OAuth session > vypršelá relace přes skutečné IPC ukáže vypršení v obou oknech a zůstane na disku
+[auth] Obnova relace selhala: reason=refresh-failed
+
+stdout | tests/queue-wiring.test.js > zjištění uložené OAuth session > přímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-srhKoH/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > zjištění uložené OAuth session > přímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-srhKoH/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > viditelnost ikony a klikání na lištu > běžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-6e8OEu/cas/casovac.json
+
+stderr | tests/queue-wiring.test.js > viditelnost ikony a klikání na lištu > preload po výjimce prvního příkazu doručí druhý i třetí s rozestupy a vyzvedne další dávku
+[tray] Rychlou akci stop-recording se nepodařilo zpracovat: Odběratel prvního příkazu selhal
+
+stderr | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > prošlý access token neposkytne uploadu jako platný kontext
+[auth] Obnova relace selhala: reason=refresh-failed
+
+stdout | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-Zcyle4/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-Zcyle4/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > selhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-rhtTx7/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > selhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-rhtTx7/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > bezpečné ukončení aplikace > selhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-4KEwob/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > bezpečné ukončení aplikace > selhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-4KEwob/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení automatických aktualizací > běžící LuTrack odloží restart a po zastavení jej uplatní
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-GJChKn/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení automatických aktualizací > běžící LuTrack odloží restart a po zastavení jej uplatní
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-GJChKn/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > viditelnost automatických aktualizací v panelu > stažení doručí verzi do živého panelu a tracking dál blokuje instalaci
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-17ybn2/cas/casovac.json
+
+ ✓ tests/queue-wiring.test.js (239 tests) 4363ms
+ ✓ tests/recording-card.test.js (54 tests) 1199ms
+ ✓ tests/packaging.test.js (6 tests) 992ms
+   ✓ kontrakt electron-builderu > bez podpisových proměnných provede nepodepsaný build plán a nespadne  488ms
+   ✓ kontrakt electron-builderu > úplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší  476ms
+ ✓ tests/settings.test.js (44 tests) 1093ms
+ ✓ tests/onboarding-missing-steps.test.js (20 tests) 1506ms
+   ✓ dva chybějící kroky onboardingu > po skončení pokusu přestane neznámou adresu znovu zjišťovat  867ms
+ ✓ tests/desktop-progress.test.js (3 tests) 1478ms
+   ✓ 🧪 se nikdy nevykreslí jako ✅ a offline stránka má data uvnitř  509ms
+   ✓ chybějící údaj i nezměřitelné živé fakty skončí jako ‚neměřeno‘  423ms
+   ✓ dvojí běh generátoru vyrobí bajtově totožný soubor  545ms
+ ✓ tests/session-reentry.test.js (11 tests) 1365ms
+   ✓ oznámení změny session mezi okny > otevřená okna zjistí vypršení bez změny fokusu a panel nabídne nové přihlášení  1131ms
+ ✓ tests/idle-panel.test.js (44 tests) 824ms
+ ✓ tests/renderer-failure-feedback.test.js (29 tests) 412ms
+ ❯ tests/tracking-timer.test.js (58 tests | 6 failed) 536ms
+   ✓ start a ořez času > uloží klíč proti duplicitě před návratem ze startu 18ms
+   ✓ start a ořez času > ořezává dolů na celou minutu 0ms
+   ✓ start a ořez času > počítá minuty z ořezaných konců, ne ze surového rozdílu 18ms
+   ✓ start a ořez času > odmítne název, prázdný projekt i chybějící projekt 1ms
+   ✓ start a ořez času > nikdy nepersistuje sazbu, částku ani měnu z rendereru 10ms
+   ✓ start a ořez času > druhý souběžný start je noop a první úsek neztratí 10ms
+   ✓ stop a přepnutí projektu > skok hodin zpět při stop uloží nulový kandidát s anomálií a ponechá ho k rozhodnutí 26ms
+   ✓ stop a přepnutí projektu > historická anomálie po srovnání hodin nepovolí skutečně budoucí konec 17ms
+   ✓ stop a přepnutí projektu > skok hodin zpět při přepnutí nechá starý projekt čekat a nový tiše nespustí 17ms
+   ✓ stop a přepnutí projektu > normální běh se zastaví jako dřív a žádnou anomálii nezapíše 19ms
+   ✓ stop a přepnutí projektu > stop uloží uzavřený úsek na disk 17ms
+   ✓ stop a přepnutí projektu > přepnutí uloží starý projekt a nový nechá běžet bez mezery 17ms
+   ✓ stop a přepnutí projektu > stop bez běžícího časovače je noop a nezapisuje 0ms
+   ✓ obnova po pádu > ukončí obnovený úsek i když jsou nástěnné hodiny před jeho začátkem 23ms
+   ✓ obnova po pádu > anomálii vzniklou až po načtení přenese rozhodnutí do uzavřeného úseku 35ms
+   ✓ obnova po pádu > pokračování zachová anomálii a další stop ji tiše nezapočítá 32ms
+   ✓ obnova po pádu > opakované načtení nepřepíše už uložený pending kandidát 29ms
+   ✓ obnova po pádu > po restartu procesu zachová klíč i začátek a čeká na rozhodnutí 15ms
+   ✓ obnova po pádu > ve stejném procesu nechá časovač běžet 7ms
+   ✓ obnova po pádu > obnovu načte i s vypnutým vypínačem 16ms
+   ✓ obnova po pádu > neexistující soubor vrátí prázdný stav a nic nezaloží 0ms
+   ✓ obnova po pádu > rozbitý JSON ani jinou chybu čtení nepřevádí na prázdný stav 1ms
+   ✓ obnova po pádu > sémanticky poškozený běžící záznam odmítne místo jeho přepsání 1ms
+   ✓ obnova po pádu > pokračování zachová klíč i původní začátek 23ms
+   ✓ obnova po pádu > ukončení po obnově uloží úsek na disk 26ms
+   ✓ obnova po pádu > odmítne chybějící, předčasný a budoucí endedAt 17ms
+   ✓ obnova po pádu > výslovné zahození zachová auditní stopu s nulou minut 22ms
+   ✓ obnova po pádu > obnova nemá výchozí rozhodnutí 17ms
+   ✓ vypínač DESKTOP_TIME_ENABLED > pro hodnotu undefined fail-closed zakáže všechny zapisující metody 1ms
+   ✓ vypínač DESKTOP_TIME_ENABLED > pro hodnotu false fail-closed zakáže všechny zapisující metody 1ms
+   ✓ vypínač DESKTOP_TIME_ENABLED > pro hodnotu 1 fail-closed zakáže všechny zapisující metody 0ms
+   × vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou undefined skončí jako disabled 5ms
+     → desktopKillswitch is not defined
+   × vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou false skončí jako disabled 1ms
+     → desktopKillswitch is not defined
+   × vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou TRUE skončí jako disabled 1ms
+     → desktopKillswitch is not defined
+   × vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou 1 skončí jako disabled 1ms
+     → desktopKillswitch is not defined
+   × vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou  true  skončí jako disabled 1ms
+     → desktopKillswitch is not defined
+   × vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou true skončí jako started 0ms
+     → desktopKillswitch is not defined
+   ✓ atomická perzistence > po úspěchu nezůstane temp a adresář založený kódem má 0700 9ms
+   ✓ atomická perzistence > selhání uprostřed zápisu zachová celý předchozí stav a uklidí temp 9ms
+   ✓ atomická perzistence > atomický zápis casovac.json fsyncne data i adresář 1ms
+   ✓ atomická perzistence > produkční zápis používá wx, fsync a rename až po fsync 17ms
+   ✓ atomická perzistence > po úspěšném uložení zapíše kanárek 11ms
+   ✓ pád rendereru > prokazatelně běžící časovač nezastaví ani nezmění soubor 10ms
+   ✓ pád rendereru > hook nevolá žádnou mutující metodu 0ms
+   ✓ IPC povrch > registruje tracking:start výhradně přes handleValidated 0ms
+   ✓ IPC povrch > registruje tracking:switch-project výhradně přes handleValidated 0ms
+   ✓ IPC povrch > registruje tracking:stop výhradně přes handleValidated 0ms
+   ✓ IPC povrch > registruje tracking:get-state výhradně přes handleValidated 0ms
+   ✓ IPC povrch > registruje tracking:resolve-recovered výhradně přes handleValidated 0ms
+   ✓ IPC povrch > preload vystavuje startTracking přes tracking:start 0ms
+   ✓ IPC povrch > preload vystavuje switchTrackingProject přes tracking:switch-project 0ms
+   ✓ IPC povrch > preload vystavuje stopTracking přes tracking:stop 0ms
+   ✓ IPC povrch > preload vystavuje getTrackingState přes tracking:get-state 0ms
+   ✓ IPC povrch > preload vystavuje resolveRecoveredTracking přes tracking:resolve-recovered 0ms
+   ✓ IPC povrch > tracking modul zůstává načitatelný bez Electronu 0ms
+   ✓ IPC povrch > hlavní proces registruje nemutující hook na pád rendereru 0ms
+   ✓ R22: klíč proti duplikaci musí být jedinečný i BEZ podstrčeného generátoru > dva starty za sebou dostanou různé klíče 23ms
+   ✓ produkční výchozí hodnota času > bez now override použije Date.now a nevymyslí anomálii 11ms
+ ✓ tests/tracking-card.test.js (10 tests) 374ms
+ ✓ tests/auth-error-screens.test.js (13 tests) 321ms
+ ✓ tests/logout.test.js (23 tests | 1 skipped) 233ms
+ ✓ tests/logout-safety.test.js (13 tests) 270ms
+ ✓ tests/settings-audio-test.test.js (10 tests) 273ms
+ ✓ tests/auth-cancellation-storage.test.js (11 tests) 312ms
+ ✓ tests/tray-ikony.test.js (9 tests) 220ms
+ ✓ tests/tray-space-warning.test.js (4 tests) 88ms
+ ✓ tests/recording-export.test.js (75 tests) 115ms
+ ✓ tests/auth-identity-fallback.test.js (5 tests) 153ms
+ ✓ tests/retention.test.js (26 tests) 34ms
+ ✓ tests/queue-card-labels.test.js (5 tests) 74ms
+ ✓ tests/settings-persistence.test.js (29 tests) 167ms
+ ✓ tests/nazev-zarizeni.test.js (8 tests) 125ms
+ ✓ tests/auth-refresh.test.js (9 tests) 35ms
+ ❯ tests/queue.test.js (84 tests | 10 failed) 423ms
+   ✓ vlastník nahrávky v perzistentní frontě > ukládá jen stabilní doménově oddělený SHA-256 otisk, ne čitelnou identitu 2ms
+   ✓ vlastník nahrávky v perzistentní frontě > bez tajemství se otisk NEODVODÍ — musí vyjít null 0ms
+   ✓ vlastník nahrávky v perzistentní frontě > produkční store přidá otisk k dvoustopé i jednostopé položce 19ms
+   ✓ vlastník nahrávky v perzistentní frontě > anonymní enqueue zapíše null a pozdější opakování jej nepřivlastní 10ms
+   ✓ vlastník nahrávky v perzistentní frontě > starou položku schématu v1 bez pole vlastníka načte beze ztráty jako neznámou 1ms
+   × produkční čtení killswitchů > 'nenastavený vypínač nahrávek zůstane …' 6ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'false ve vypínači nahrávek zůstane di…' 0ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'nepřesné TRUE vypínač nahrávek nezapne' 0ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'přesný řetězec true zapne nahrávky' 0ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'produkčně zapnutý časový vypínač nepo…' 0ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'nenastavený vypínač času zůstane disa…' 0ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'false ve vypínači času zůstane disabl…' 0ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'nepřesné TRUE vypínač času nezapne' 0ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'přesný řetězec true zapne čas' 0ms
+     → desktopKillswitch is not defined
+   × produkční čtení killswitchů > 'produkčně zapnutý vypínač nahrávek ne…' 0ms
+     → desktopKillswitch is not defined
+   ✓ killswitch odchozí fronty > s nenastaveným DESKTOP_UPLOAD_ENABLED záměrně nic neodešle 0ms
+   ✓ killswitch odchozí fronty > s hodnotou false nic neodešle a vrátí důvod vypnutí 0ms
+   ✓ killswitch odchozí fronty > s hodnotou true zavolá pouze mockovanou odesílací vrstvu 0ms
+   ✓ killswitch odchozí fronty > jiná pravdivostní hodnota odesílání nezapne 0ms
+   ✓ killswitch odchozí fronty > časová položka používá samostatný zapnutý vypínač 0ms
+   ✓ killswitch odchozí fronty > zapnutý vypínač času nepovolí nahrávku 0ms
+   ✓ killswitch odchozí fronty > zapnutý vypínač nahrávek nepovolí časovou položku 0ms
+   ✓ killswitch odchozí fronty > boolean true časový vypínač fail-closed nezapne 0ms
+   ✓ killswitch odchozí fronty > blokovaná položka má přednost před položkou čekající na čas 0ms
+   ✓ stavový automat fronty > zařazená nahrávka nese rozlišovač typu 0ms
+   ✓ stavový automat fronty > zařazený časový záznam nese typ time a klíč z B5 0ms
+   ✓ stavový automat fronty > časový záznam se sazbou se odmítne 0ms
+   ✓ stavový automat fronty > do časové položky se nedostane žádné pole se sazbou 0ms
+   ✓ stavový automat fronty > dvojí zařazení stejného clientTimeEntryId vytvoří jedinou položku 0ms
+   ✓ stavový automat fronty > dvojí zařazení stejného clientRecordingId vytvoří jedinou položku 0ms
+   ✓ stavový automat fronty > produkční store zařadí jednostopu pravdivě a idempotentně 9ms
+   ✓ stavový automat fronty > shodné ID jiné položky nesmí předstírat idempotentní obnovu nahrávky 0ms
+   ✓ stavový automat fronty > neúspěch ponechá položku ve frontě a zvýší počet pokusů 0ms
+   ✓ stavový automat fronty > sentAt vznikne až po dokončení odesílání 0ms
+   ✓ stavový automat fronty > retry prodlevu počítá až od dokončení neúspěšného pokusu 0ms
+   ✓ stavový automat fronty > po vyčerpání pokusů označí položku jako selhalo a nesmaže ji 0ms
+   ✓ stavový automat fronty > vrátí selhalo do ceka bez změny důvodu, vlastníka (sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) a vstupní fronty 0ms
+   ✓ stavový automat fronty > vrátí selhalo do ceka bez změny důvodu, vlastníka (null) a vstupní fronty 0ms
+   ✓ stavový automat fronty > vrácení položky ve stavu ceka ponechá původní frontu i položku 0ms
+   ✓ stavový automat fronty > vrácení položky ve stavu odesila ponechá původní frontu i položku 0ms
+   ✓ stavový automat fronty > vrácení položky ve stavu odeslano ponechá původní frontu i položku 0ms
+   ✓ stavový automat fronty > vrácená položka se opravdu dostane k dalšímu pokusu, ne jen do stavu ceka 0ms
+   ✓ stavový automat fronty > kód rodiny vlastnictví se ručním vrácením neobejde 0ms
+   ✓ stavový automat fronty > starší česká hláška se ručním vrácením neobejde 0ms
+   ✓ stavový automat fronty > vrácení neznámého clientRecordingId odmítne a frontu nezmění 0ms
+   ✓ stavový automat fronty > po selhání permanent umožní nový pokus s obnoveným rozpočtem pokusů 1ms
+   ✓ stavový automat fronty > po selhání retryable umožní nový pokus s obnoveným rozpočtem pokusů 0ms
+   ✓ stavový automat fronty > opakování používá rostoucí exponenciální prodlevu s pevným stropem 0ms
+   ✓ stavový automat fronty > offsety obou stop vždy převezme ze serveru místo lokálního odhadu 0ms
+   ✓ stavový automat fronty > postup k neznámé nahrávce odmítne a frontu nezmění 0ms
+   ✓ stavový automat fronty > vyžaduje killswitch v podpisu spolu s odesílací vrstvou 0ms
+   ✓ stavový automat fronty > trvalá chyba skončí při prvním pokusu a neopakuje se pětkrát 0ms
+   ✓ stavový automat fronty > pauza invalid_grant nespotřebuje pokus 0ms
+   ✓ stavový automat fronty > starší položka bez kind se čte jako nahrávka 0ms
+   ✓ stavový automat fronty > pohled pro renderer neobsahuje absolutní cesty ani manifest 0ms
+   ✓ stavový automat fronty > NEZNÁMÝ vlastnický důvod se bere jako čekající na člověka: queue_owner_revoked 0ms
+   ✓ stavový automat fronty > NEZNÁMÝ vlastnický důvod se bere jako čekající na člověka: session_owner_expired 0ms
+   ✓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Nahrávka patří jinému účtu 0ms
+   ✓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem 0ms
+   ✓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Identitu aktuálního přihlášení nelze ověřit 0ms
+   ✓ stavový automat fronty > libovolná jiná pauza se slovem owner nepatří bez výslovného kontraktu člověku 0ms
+   ✓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Vlastník databáze je potvrzen, ale server není dostupný 0ms
+   ✓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Identitu zařízení se po přihlášení nepodařilo načíst 0ms
+   ✓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Nahrávka se kvůli síti nepřiřadila jinému účtu 0ms
+   ✓ stavový automat fronty > další pumpa položku čekající na člověka sama znovu nezkouší 1ms
+   ✓ trvalé uložení fronty > po restartu zachová data a doplní neznámého vlastníka 9ms
+   ✓ trvalé uložení fronty > atomický zápis fsyncne data i adresář 0ms
+   ✓ obnova osiřelých nahrávek > obnoví dokončenou jednostopu bez vymyšleného systémového souboru 10ms
+   ✓ obnova osiřelých nahrávek > dvojí obnova nevytvoří dvě položky 23ms
+   ✓ obnova osiřelých nahrávek > poškozený manifest obnovu nezastaví, zůstane ležet a neprozradí název 27ms
+   ✓ obnova osiřelých nahrávek > incomplete manifest opraví do uploadovatelného sidecaru a originál zachová 33ms
+   ✓ obnova osiřelých nahrávek > jednu nulovou stopu zařadí jako chráněný raw incomplete záznam 23ms
+   ✓ obnova osiřelých nahrávek > complete manifest s jednou nulovou stopou obnoví do viditelné fronty 22ms
+   ✓ obnova osiřelých nahrávek > obě nulové stopy incomplete manifestu nechá na disku bez položky 7ms
+   ✓ obnova osiřelých nahrávek > complete stopu nad upload limitem zařadí bez čtení celého souboru 17ms
+   ✓ obnova osiřelých nahrávek > selhání zápisu obnovené položky nezamění za vadný manifest 9ms
+   ✓ obnova osiřelých nahrávek > existující sidecar přijme jen při přesně shodném bezpečném obsahu 23ms
+   ✓ perzistentní pumpa fronty > po selhání fsync adresáře znovu načte stav po dokončeném rename 0ms
+   ✓ perzistentní pumpa fronty > serializuje souběžná zařazení bez ztráty položky 28ms
+   ✓ perzistentní pumpa fronty > trvalý první pokus uloží s attempts 1 a další pumpy ho neopakují 17ms
+   ✓ perzistentní pumpa fronty > ruční retry vynuluje prodlevu, uloží ji a hned probudí pumpu 36ms
+   ✓ perzistentní pumpa fronty > ruční retry přeskočí vlastníka čekajícího na člověka a opravdu odešle běžnou položku 51ms
+   ✓ perzistentní pumpa fronty > renderer dostane přesný součet skutečných souborů, ne velikost odhadem z manifestu 15ms
+   ✓ perzistentní pumpa fronty > pumpa s vypnutými přepínači položku zachová bez pokusu 13ms
+ ✓ tests/auth-controller-wiring.test.js (42 tests) 137ms
+ ✓ tests/upload-client.test.js (47 tests) 197ms
+ ✓ tests/diagnostics.test.js (6 tests) 23ms
+ ✓ tests/main-entry.test.js (1 test) 25ms
+ ✓ tests/auth-wait-lifecycle.test.js (2 tests) 44ms
+ ✓ tests/pisma.test.js (4 tests) 4ms
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":false} jako signed-out
+[tray] 2026-09-08T22:08:47.458Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true} jako idle
+[tray] 2026-09-08T22:08:47.459Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1]} jako tracking
+[tray] 2026-09-08T22:08:47.460Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false}]]} jako recording
+[tray] 2026-09-08T22:08:47.460Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1}]]} jako recording
+[tray] 2026-09-08T22:08:47.460Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"queueWaitingCount":1} jako queue-waiting
+[tray] 2026-09-08T22:08:47.460Z stav=queue-waiting nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=1 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"systemAudioLostOwners":[1]} jako idle
+[tray] 2026-09-08T22:08:47.460Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"systemAudioLostOwners":[1]} jako recording-audio-lost
+[tray] 2026-09-08T22:08:47.460Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]]} jako recording-tracking
+[tray] 2026-09-08T22:08:47.460Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako recording-audio-lost
+[tray] 2026-09-08T22:08:47.461Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=true fronta=2 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"queueWaitingCount":2} jako tracking
+[tray] 2026-09-08T22:08:47.461Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=2 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":false,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako signed-out
+[tray] 2026-09-08T22:08:47.461Z stav=signed-out nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=2 přihlášen=false
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":true}]]} jako idle
+[tray] 2026-09-08T22:08:47.461Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1,"finalizePromise":{}}]]} jako idle
+[tray] 2026-09-08T22:08:47.461Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: příprava
+[tray] 2026-09-08T22:08:47.461Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: živá session
+[tray] 2026-09-08T22:08:47.462Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: souběh s LuTrackem
+[tray] 2026-09-08T22:08:47.462Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=true fronta=2 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > ukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"preparing":[[1,{"cancelled":true,"sources":["microphone"]}]]}
+[tray] 2026-09-08T22:08:47.462Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > ukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"sessions":[["s",{"ownerId":1,"tracks":{},"finalizePromise":{}}]]}
+[tray] 2026-09-08T22:08:47.462Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > skutečný výpadek má přednost před přijatým jednostopým nahráváním
+[tray] 2026-09-08T22:08:47.462Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > při souběhu spojí fakt LuTracku se skutečným nahráváním z hlavního procesu
+[tray] 2026-09-08T22:08:47.462Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-08T22:08:47.462Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > pád rendereru > nechá lištu hlásit správný stav, ne ten poslední odeslaný
+[tray] 2026-09-08T22:08:47.463Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+[tray] 2026-09-08T22:08:47.463Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+[tray] 2026-09-08T22:08:47.463Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > pád rendereru > NEODHLÁSÍ uživatele — session drží hlavní proces
+[tray] 2026-09-08T22:08:47.463Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+[tray] 2026-09-08T22:08:47.463Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > pád rendereru > zapomene jen padlé okno, ostatní nechá běžet
+[tray] 2026-09-08T22:08:47.463Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > pád rendereru > po pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session
+[tray] 2026-09-08T22:08:47.463Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-08T22:08:47.463Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stderr | tests/tray-authority.test.js > pád rendereru > po pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session
+[recording] Session uzavřena po události „pád rendereru“: mikrofon 0 B, systém 0 B.
+
+stdout | tests/tray-authority.test.js > lišta se překresluje jen při skutečné změně > stejný stav podruhé už obrázek nesahá
+[tray] 2026-09-08T22:08:47.463Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > lišta se překresluje jen při skutečné změně > změna stavu obrázek i popisek přepíše
+[tray] 2026-09-08T22:08:47.464Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-08T22:08:47.464Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne hodnotu, která není boolean, a fakta NECHÁ být
+[tray] 2026-09-08T22:08:47.464Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > prázdný objekt uživatele NEODHLÁSÍ
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne undefined a nechá fakta být
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne null a nechá fakta být
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne "idle" a nechá fakta být
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne 42 a nechá fakta být
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":1,"systemAudioLost":false,"tracking":false} a nechá fakta být
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"signedIn":true} a nechá fakta být
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"signedIn":true,"tracking":false} a nechá fakta být
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"state":"recording"} a nechá fakta být
+[tray] 2026-09-08T22:08:47.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"icon":"recording"} a nechá fakta být
+[tray] 2026-09-08T22:08:47.466Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > platnou čtveřici boolean přijme
+[tray] 2026-09-08T22:08:47.466Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[tray] 2026-09-08T22:08:47.467Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > výpadek přijme jen jako boolean, neplatný report stav nezmění a obnova vrátí nahrávání
+[tray] 2026-09-08T22:08:47.467Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-08T22:08:47.467Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-08T22:08:47.467Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > první vykreslení lišty > nastaví obrázek i popisek, i když se stav nezměnil
+[tray] 2026-09-08T22:08:47.467Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+
+stdout | tests/tray-authority.test.js > první vykreslení lišty > podruhé už na lištu nesahá
+[tray] 2026-09-08T22:08:47.467Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+
+ ❯ tests/tray-authority.test.js (81 tests | 4 failed) 22ms
+   ✓ autorita stavu tray ikony > mapuje stav signed-out na ikonu signed-out 0ms
+   ✓ autorita stavu tray ikony > mapuje stav idle na ikonu idle 0ms
+   ✓ autorita stavu tray ikony > mapuje stav recording na ikonu recording 0ms
+   ✓ autorita stavu tray ikony > mapuje stav tracking na ikonu tracking 0ms
+   ✓ autorita stavu tray ikony > mapuje stav recording-tracking na ikonu recording-tracking 0ms
+   ✓ autorita stavu tray ikony > mapuje stav queue-waiting na ikonu queue-waiting 0ms
+   ✓ autorita stavu tray ikony > mapuje stav recording-audio-lost na ikonu recording-audio-lost 0ms
+   ✓ autorita stavu tray ikony > mapuje stav recording-microphone-only na ikonu recording-microphone-only 0ms
+   ✓ autorita stavu tray ikony > mapuje stav neznámý stav na ikonu signed-out 0ms
+   ✓ autorita stavu tray ikony > výběr obrázku používá čisté mapování stavu 0ms
+   ✓ autorita stavu tray ikony > uložený stav lišty používá stejné čisté mapování 0ms
+   ✓ autorita stavu tray ikony > volí pro signed-out variantu template/template 0ms
+   ✓ autorita stavu tray ikony > volí pro idle variantu template/template 0ms
+   ✓ autorita stavu tray ikony > volí pro queue-waiting variantu template/template 0ms
+   ✓ autorita stavu tray ikony > volí pro recording variantu template/template 0ms
+   ✓ autorita stavu tray ikony > volí pro tracking variantu template/template 0ms
+   ✓ autorita stavu tray ikony > volí pro recording-tracking variantu template/template 0ms
+   ✓ autorita stavu tray ikony > volí pro recording-audio-lost variantu template/template 0ms
+   ✓ autorita stavu tray ikony > volí pro recording-microphone-only variantu template/template 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > renderer už nemá jak stav rozhodnout 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > renderer hlásí fakta, ne jméno ikony 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":false} jako signed-out 1ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true} jako idle 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1]} jako tracking 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false}]]} jako recording 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1}]]} jako recording 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"queueWaitingCount":1} jako queue-waiting 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"systemAudioLostOwners":[1]} jako idle 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"systemAudioLostOwners":[1]} jako recording-audio-lost 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]]} jako recording-tracking 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako recording-audio-lost 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"queueWaitingCount":2} jako tracking 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":false,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako signed-out 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":true}]]} jako idle 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1,"finalizePromise":{}}]]} jako idle 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: příprava 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: živá session 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: souběh s LuTrackem 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > ukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"preparing":[[1,{"cancelled":true,"sources":["microphone"]}]]} 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > ukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"sessions":[["s",{"ownerId":1,"tracks":{},"finalizePromise":{}}]]} 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > skutečný výpadek má přednost před přijatým jednostopým nahráváním 0ms
+   ✓ stav vlastní hlavní proces, ne renderer > při souběhu spojí fakt LuTracku se skutečným nahráváním z hlavního procesu 0ms
+   ✓ pád rendereru > nechá lištu hlásit správný stav, ne ten poslední odeslaný 0ms
+   ✓ pád rendereru > NEODHLÁSÍ uživatele — session drží hlavní proces 0ms
+   ✓ pád rendereru > zapomene jen padlé okno, ostatní nechá běžet 0ms
+   ✓ pád rendereru > po pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session 0ms
+   ✓ lišta se překresluje jen při skutečné změně > stejný stav podruhé už obrázek nesahá 0ms
+   ✓ lišta se překresluje jen při skutečné změně > změna stavu obrázek i popisek přepíše 0ms
+   ✓ každá změna nahrávacího faktu lištu přepočítá > u „'recordingOwnersPreparing.set(ownerId,…'“ stojí refreshTray() 'za' ní 0ms
+   ✓ každá změna nahrávacího faktu lištu přepočítá > u „'recordingSessions.set(sessionId, reco…'“ stojí refreshTray() 'za' ní 0ms
+   ✓ každá změna nahrávacího faktu lištu přepočítá > u „'recordingOwnersPreparing.delete(owner…'“ stojí refreshTray() 'za' ní 0ms
+   ✓ každá změna nahrávacího faktu lištu přepočítá > u „'recordingSessions.delete(sessionId);'“ stojí refreshTray() 'za' ní 0ms
+   ✓ každá změna nahrávacího faktu lištu přepočítá > u „'return recordingSession.finalizePromi…'“ stojí refreshTray() 'pred' ní 0ms
+   ✓ každá změna nahrávacího faktu lištu přepočítá > kotva pátého případu se v kódu vyskytuje víckrát — proto lastIndexOf 0ms
+   ✓ každá změna nahrávacího faktu lištu přepočítá > žádná mutace nezůstala nezmapovaná 0ms
+   ✓ každá změna nahrávacího faktu lištu přepočítá > zrušení přípravy lištu přepočítá — jen až za smyčkou, a to schválně 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne hodnotu, která není boolean, a fakta NECHÁ být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > prázdný objekt uživatele NEODHLÁSÍ 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne undefined a nechá fakta být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne null a nechá fakta být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne "idle" a nechá fakta být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne 42 a nechá fakta být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":1,"systemAudioLost":false,"tracking":false} a nechá fakta být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"signedIn":true} a nechá fakta být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"signedIn":true,"tracking":false} a nechá fakta být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"state":"recording"} a nechá fakta být 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"icon":"recording"} a nechá fakta být 1ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > platnou čtveřici boolean přijme 0ms
+   ✓ kanál faktů nesmí být tray:set-state pod jiným jménem > výpadek přijme jen jako boolean, neplatný report stav nezmění a obnova vrátí nahrávání 0ms
+   ✓ první vykreslení lišty > nastaví obrázek i popisek, i když se stav nezměnil 0ms
+   ✓ první vykreslení lišty > podruhé už na lištu nesahá 0ms
+   ✓ povolené klíče kanálu faktů > jsou právě panelActionsAvailable, signedIn, systemAudioLost a tracking 0ms
+   ✓ každá změna časovače lištu přepočítá z faktu hlavního procesu > běžící store drží stabilní vlastník mimo renderer a vždy volá refreshTray 0ms
+   ✓ každá změna časovače lištu přepočítá z faktu hlavního procesu > kanál tracking:start prochází společnou mutací start 0ms
+   ✓ každá změna časovače lištu přepočítá z faktu hlavního procesu > kanál tracking:switch-project prochází společnou mutací switchProject 0ms
+   ✓ každá změna časovače lištu přepočítá z faktu hlavního procesu > kanál tracking:stop prochází společnou mutací stop 0ms
+   ✓ každá změna časovače lištu přepočítá z faktu hlavního procesu > kanál tracking:resolve-recovered prochází společnou mutací resolveRecovered 0ms
+   × každá změna časovače lištu přepočítá z faktu hlavního procesu > start skutečně synchronizuje trackingOwners a právě jednou překreslí lištu 9ms
+     → promise rejected "ReferenceError: desktopKillswitch is not …" instead of resolving
+   × každá změna časovače lištu přepočítá z faktu hlavního procesu > switchProject skutečně synchronizuje trackingOwners a právě jednou překreslí lištu 0ms
+     → promise rejected "ReferenceError: desktopKillswitch is not …" instead of resolving
+   × každá změna časovače lištu přepočítá z faktu hlavního procesu > stop skutečně synchronizuje trackingOwners a právě jednou překreslí lištu 0ms
+     → promise rejected "ReferenceError: desktopKillswitch is not …" instead of resolving
+   × každá změna časovače lištu přepočítá z faktu hlavního procesu > resolveRecovered skutečně synchronizuje trackingOwners a právě jednou překreslí lištu 0ms
+     → promise rejected "ReferenceError: desktopKillswitch is not …" instead of resolving
+ ✓ tests/manifest.test.js (10 tests) 22ms
+ ✓ tests/oauth-state.test.js (10 tests) 5ms
+ ✓ tests/ui-smoke.test.js (15 tests) 8ms
+ ✓ tests/fronta-neztrati.test.js (8 tests) 4ms
+ ✓ tests/settings-audio-permissions.test.js (11 tests) 6ms
+ ❯ tests/zapojeni-odhlaseni.test.js (12 tests | 1 failed | 1 skipped) 7ms
+   ✓ odhlášení: co musí platit, jakmile ho někdo zapojí > řekne nahlas, jestli tenhle soubor dnes něco měří 1ms
+   ↓ odhlášení: co musí platit, jakmile ho někdo zapojí > DNES NEZAPOJENO — kontroly níž záměrně spí
+   ✓ odhlášení: co musí platit, jakmile ho někdo zapojí > odhlášení nesmí proběhnout nad běžícím časovačem 0ms
+   ✓ odhlášení: co musí platit, jakmile ho někdo zapojí > ZAPOJENO — odhlášení nesmí proběhnout nad běžící nahrávkou 0ms
+   ✓ odhlášení: co musí platit, jakmile ho někdo zapojí > ZAPOJENO — report faktů z panelu nesmí odhlášení tiše vrátit zpět 1ms
+   ✓ časovač: totéž pro jeho vlastní zapojení > řekne nahlas, jestli je časovač zapojený 0ms
+   ✓ časovač: totéž pro jeho vlastní zapojení > start časovače musí být fail-closed vůči vypnuté agendě 0ms
+   ✓ časový vypínač má jediný zdroj pravdy > prostředí se na časový vypínač ptá jediná funkce 0ms
+   ✓ časový vypínač má jediný zdroj pravdy > getTrackingStore jde na vypínač skrz sdílenou funkci 0ms
+   ✓ časový vypínač má jediný zdroj pravdy > runTrackingMutation jde na vypínač skrz sdílenou funkci 0ms
+   ✓ časový vypínač má jediný zdroj pravdy > queueKillswitches jde na vypínač skrz sdílenou funkci 0ms
+   × časový vypínač má jediný zdroj pravdy > úložiště si hodnotu smí zmrazit, sdílená funkce ne 4ms
+     → timeTrackingKillswitch si hodnotu pamatuje; čtení musí zůstat živé: expected 'function timeTrackingKillswitch() { r…' to be 'function timeTrackingKillswitch() { r…' // Object.is equality
+ ❯ tests/ipc-sender-guard.test.js (20 tests | 1 failed) 10ms
+   ✓ ochrana odesílatele nahrávacího IPC > povolí očekávané okno a jeho hlavní rám 1ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne jiné webContents 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne iframe očekávaného okna 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne chybějící senderFrame 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne senderFrame s hodnotou null 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne zničené webContents bez výjimky 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne souborovou URL, která jen začíná povolenou cestou 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne HTTPS doménu, která jen začíná povoleným názvem 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne jiný dokument na interním protokolu ludone 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > pustí mikrofon Nastavení jen v jeho vlastním dokumentu #settings 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > povolí panelu zachytávání obrazovky se systémovým zvukem hlášené jako prázdné mediaTypes 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > ponechá zakázanou kameru 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > ponechá zakázanou kombinaci mikrofonu a kamery 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne prázdné mediaTypes z nedůvěryhodné URL 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne prázdné mediaTypes od nedůvěryhodného odesílatele 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > ponechá povolený mikrofon 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > povolí panelu pouze žádost o zvuk 0ms
+   ✓ ochrana odesílatele nahrávacího IPC > odmítne žádost o média z podrámu panelu 0ms
+   × ochrana odesílatele nahrávacího IPC > všechny IPC kanály z produkčního kódu registruje přes validační wrapper 8ms
+     → expected [ 'auth:begin', 'auth:cancel', …(46) ] to deeply equal [ 'auth:begin', 'auth:cancel', …(42) ]
+   ✓ ochrana odesílatele nahrávacího IPC > inventarizuje přesně čtyři boolean fakta přijímaná tray kanálem 0ms
+ ✓ tests/permissions.test.js (18 tests) 8ms
+ ✓ tests/kalendar-zrusen.test.js (4 tests | 1 skipped) 5ms
+ ✓ tests/auth-timeout-guard.test.js (2 tests) 1ms
+ ✓ tests/panel-blur-guard.test.js (6 tests) 1ms
+ ✓ tests/brany-workflow.test.js (5 tests) 3ms
+ ✓ tests/auth-panel-blur-guard.test.js (6 tests) 3ms
+ ✓ tests/recording-order-guard.test.js (1 test) 1ms
+ ✓ tests/pkce.test.js (5 tests) 3ms
+ ✓ tests/fronta-symetrie.test.js (3 tests) 2ms
+ ✓ tests/barvy.test.js (1 test) 2ms
+ ✓ tests/electron-verze.test.js (3 tests) 1ms
+ ✓ tests/zachyceni-zdroju.test.js (3 tests) 4ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 22 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/ipc-sender-guard.test.js > ochrana odesílatele nahrávacího IPC > všechny IPC kanály z produkčního kódu registruje přes validační wrapper
+AssertionError: expected [ 'auth:begin', 'auth:cancel', …(46) ] to deeply equal [ 'auth:begin', 'auth:cancel', …(42) ]
+
+- Expected
++ Received
+
+@@ -26,13 +26,17 @@
+    "recording:finish-export",
+    "settings:close",
+    "settings:get-device-name",
+    "settings:get-dock-visible",
+    "settings:get-open-at-login",
++   "settings:get-time-enabled",
++   "settings:get-upload-enabled",
+    "settings:open",
+    "settings:set-dock-visible",
+    "settings:set-open-at-login",
++   "settings:set-time-enabled",
++   "settings:set-upload-enabled",
+    "test:click-tray",
+    "test:quit",
+    "tracking:get-state",
+    "tracking:resolve-recovered",
+    "tracking:start",
+
+ ❯ tests/ipc-sender-guard.test.js:325:26
+    323|     expect(dvakrat, `kanál registrovaný dvakrát: ${dvakrat.join(", ")}…
+    324| 
+    325|     expect(jmena.sort()).toEqual([
+       |                          ^
+    326|       "auth:begin",
+    327|       "auth:cancel",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/22]⎯
+
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'nenastavený vypínač nahrávek zůstane …'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'false ve vypínači nahrávek zůstane di…'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'nepřesné TRUE vypínač nahrávek nezapne'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'přesný řetězec true zapne nahrávky'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'produkčně zapnutý časový vypínač nepo…'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'nenastavený vypínač času zůstane disa…'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'false ve vypínači času zůstane disabl…'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'nepřesné TRUE vypínač času nezapne'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'přesný řetězec true zapne čas'
+ FAIL  tests/queue.test.js > produkční čtení killswitchů > 'produkčně zapnutý vypínač nahrávek ne…'
+ReferenceError: desktopKillswitch is not defined
+ ❯ queueKillswitches tests/queue.test.js:122:41
+    120| // vytáhnout obě funkce. Bez té sdílené by `queueKillswitches()` spadl…
+    121| // — což je mimochodem doklad, že se tu měří produkční zapojení, ne je…
+    122| const readProductionQueueKillswitches = Function(
+       |                                         ^
+    123|   "process",
+    124|   `"use strict";
+ ❯ eval tests/queue.test.js:122:41
+ ❯ tests/queue.test.js:524:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/22]⎯
+
+ FAIL  tests/tracking-timer.test.js > vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou undefined skončí jako disabled
+ FAIL  tests/tracking-timer.test.js > vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou false skončí jako disabled
+ FAIL  tests/tracking-timer.test.js > vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou TRUE skončí jako disabled
+ FAIL  tests/tracking-timer.test.js > vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou 1 skončí jako disabled
+ FAIL  tests/tracking-timer.test.js > vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou  true  skončí jako disabled
+ FAIL  tests/tracking-timer.test.js > vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou true skončí jako started
+ReferenceError: desktopKillswitch is not defined
+ ❯ timeTrackingKillswitch tests/tracking-timer.test.js:107:39
+    105|   "utf8",
+    106| ));
+    107| const createProductionTrackingStore = Function(
+       |                                       ^
+    108|   "createTrackingStore",
+    109|   "path",
+ ❯ getTrackingStore tests/tracking-timer.test.js:107:39
+ ❯ eval tests/tracking-timer.test.js:107:39
+ ❯ storeFromProductionWiring tests/tracking-timer.test.js:125:17
+ ❯ tests/tracking-timer.test.js:651:38
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/22]⎯
+
+ FAIL  tests/tray-authority.test.js > každá změna časovače lištu přepočítá z faktu hlavního procesu > start skutečně synchronizuje trackingOwners a právě jednou překreslí lištu
+AssertionError: promise rejected "ReferenceError: desktopKillswitch is not …" instead of resolving
+ ❯ tests/tray-authority.test.js:768:29
+    766| 
+    767|       expect(refreshesBeforeMutationFinished).toEqual([]);
+    768|       await expect(mutation).resolves.toEqual({ method, payload });
+       |                             ^
+    769| 
+    770|       expect(harness.calls).toEqual([{ method, payload }]);
+
+Caused by: ReferenceError: desktopKillswitch is not defined
+ ❯ timeTrackingKillswitch tests/tray-authority.test.js:62:38
+ ❯ Object.runTrackingMutation tests/tray-authority.test.js:62:38
+ ❯ tests/tray-authority.test.js:768:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/22]⎯
+
+ FAIL  tests/tray-authority.test.js > každá změna časovače lištu přepočítá z faktu hlavního procesu > switchProject skutečně synchronizuje trackingOwners a právě jednou překreslí lištu
+ FAIL  tests/tray-authority.test.js > každá změna časovače lištu přepočítá z faktu hlavního procesu > stop skutečně synchronizuje trackingOwners a právě jednou překreslí lištu
+ FAIL  tests/tray-authority.test.js > každá změna časovače lištu přepočítá z faktu hlavního procesu > resolveRecovered skutečně synchronizuje trackingOwners a právě jednou překreslí lištu
+AssertionError: promise rejected "ReferenceError: desktopKillswitch is not …" instead of resolving
+ ❯ tests/tray-authority.test.js:768:29
+    766| 
+    767|       expect(refreshesBeforeMutationFinished).toEqual([]);
+    768|       await expect(mutation).resolves.toEqual({ method, payload });
+       |                             ^
+    769| 
+    770|       expect(harness.calls).toEqual([{ method, payload }]);
+
+Caused by: ReferenceError: desktopKillswitch is not defined
+ ❯ timeTrackingKillswitch tests/tray-authority.test.js:62:38
+ ❯ Object.runTrackingMutation tests/tray-authority.test.js:62:38
+ ❯ tests/tray-authority.test.js:768:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/22]⎯
+
+ FAIL  tests/zapojeni-odhlaseni.test.js > časový vypínač má jediný zdroj pravdy > úložiště si hodnotu smí zmrazit, sdílená funkce ne
+AssertionError: timeTrackingKillswitch si hodnotu pamatuje; čtení musí zůstat živé: expected 'function timeTrackingKillswitch() { r…' to be 'function timeTrackingKillswitch() { r…' // Object.is equality
+
+Expected: "function timeTrackingKillswitch() { return process.env.DESKTOP_TIME_ENABLED; }"
+Received: "function timeTrackingKillswitch() { return desktopKillswitch(process.env.DESKTOP_TIME_ENABLED, "timeEnabled"); }"
+
+ ❯ tests/zapojeni-odhlaseni.test.js:282:7
+    280|       blokSdilenehoVypinace.replace(/\s+/gu, " "),
+    281|       `${CTECI_FUNKCE} si hodnotu pamatuje; čtení musí zůstat živé`,
+    282|     ).toBe(`function ${CTECI_FUNKCE}() { return ${PROMENNA_CASU}; }`);
+       |       ^
+    283|   });
+    284| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/22]⎯
+
+
+ Test Files  5 failed | 48 passed (53)
+      Tests  22 failed | 1147 passed | 3 skipped (1172)
+   Start at  00:08:18
+   Duration  31.57s (transform 365ms, setup 0ms, collect 4.99s, tests 21.05s, environment 286ms, prepare 1.45s)
+
+
+Exit code: 1

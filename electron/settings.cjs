@@ -26,23 +26,23 @@ function closeIgnoringErrors(fileDescriptor) {
   }
 }
 
-function readDockVisibility(filePath, log) {
+function readApplicationSettings(filePath, log) {
   try {
     const stored = JSON.parse(fs.readFileSync(filePath, "utf8"));
     if (
       !stored
+      || typeof stored !== "object"
       || Array.isArray(stored)
       || stored.schemaVersion !== SCHEMA_VERSION
-      || typeof stored.dockVisible !== "boolean"
     ) {
       throw new TypeError("Soubor nastavení nemá platné schéma");
     }
-    return stored.dockVisible;
+    return stored;
   } catch (error) {
     if (error?.code !== "ENOENT") {
-      report(log, `[settings] Nastavení Docku nelze načíst, používám vypnuto: ${error.message}`);
+      report(log, `[settings] Nastavení aplikace nelze načíst, používám vypnuto: ${error.message}`);
     }
-    return false;
+    return {};
   }
 }
 
@@ -85,13 +85,6 @@ function saveSettingsAtomically(filePath, value, log) {
     closeIgnoringErrors(directoryDescriptor);
     report(log, `[settings] Nelze potvrdit zápis adresáře nastavení: ${error.message}`);
   }
-}
-
-function saveDockVisibility(filePath, dockVisible, log) {
-  saveSettingsAtomically(filePath, {
-    schemaVersion: SCHEMA_VERSION,
-    dockVisible,
-  }, log);
 }
 
 function readQueueOwnerSecret(filePath) {
@@ -153,29 +146,52 @@ function createQueueOwnerSecretStore({ filePath, log = console.warn } = {}) {
 /**
  * @param {{filePath?: unknown, log?: unknown}} [options]
  */
-function createDockVisibilityStore({ filePath, log = console.warn } = {}) {
+function createApplicationSettingsStore({ filePath, log = console.warn } = {}) {
   if (typeof filePath !== "string" || filePath.length === 0) {
-    throw new TypeError("Nastavení Docku vyžaduje cestu k souboru");
+    throw new TypeError("Nastavení aplikace vyžaduje cestu k souboru");
   }
   if (typeof log !== "function") {
-    throw new TypeError("Logger nastavení Docku musí být funkce");
+    throw new TypeError("Logger nastavení aplikace musí být funkce");
   }
 
-  let dockVisible = readDockVisibility(filePath, log);
+  const keys = new Set(["dockVisible", "uploadEnabled", "timeEnabled"]);
+  function requireKey(key) {
+    if (!keys.has(key)) throw new TypeError("Neznámý klíč nastavení aplikace");
+  }
+
+  // Čtení nic nezapisuje. Starší soubor může obsahovat jen Dock; chybějící nebo
+  // typově poškozená hodnota je vypnuto, zapíná výhradně skutečný boolean true.
+  let settings = readApplicationSettings(filePath, log);
   return Object.freeze({
-    get() {
-      return dockVisible;
+    get(key) {
+      requireKey(key);
+      return Object.prototype.hasOwnProperty.call(settings, key) && settings[key] === true;
     },
-    async set(nextValue) {
+    async set(key, nextValue) {
+      requireKey(key);
       if (typeof nextValue !== "boolean") {
-        throw new TypeError("Viditelnost Docku musí být boolean");
+        throw new TypeError("Nastavení aplikace musí být boolean");
       }
       // Volba je malá a mění se vzácně. Dokončený synchronní atomický zápis před
       // návratem brání tomu, aby okamžité Cmd+Q předběhlo uložení.
-      saveDockVisibility(filePath, nextValue, log);
-      dockVisible = nextValue;
-      return dockVisible;
+      const nextSettings = { ...settings, schemaVersion: SCHEMA_VERSION, [key]: nextValue };
+      saveSettingsAtomically(filePath, nextSettings, log);
+      settings = nextSettings;
+      return nextValue;
     },
+  });
+}
+
+/**
+ * @param {{filePath?: unknown, log?: unknown, settingsStore?: ReturnType<typeof createApplicationSettingsStore>}} [options]
+ */
+function createDockVisibilityStore({ filePath, log = console.warn, settingsStore } = {}) {
+  // Dock i vypínače sdílejí jednu instanci a jeden soubor. Zápis jedné volby tak
+  // zachová ostatní i při návratu Docku po selhání nativního API.
+  const store = settingsStore ?? createApplicationSettingsStore({ filePath, log });
+  return Object.freeze({
+    get: () => store.get("dockVisible"),
+    set: (value) => store.set("dockVisible", value),
   });
 }
 
@@ -240,6 +256,7 @@ module.exports = {
   createQueueOwnerSecretStore,
   AUTH_ORIGINS,
   DEFAULT_AUTH_ORIGIN,
+  createApplicationSettingsStore,
   createAuthOriginStore,
   createDockVisibilityStore,
 };

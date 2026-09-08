@@ -42,6 +42,7 @@ const { createRecordingUploadSend } = require("./upload-client.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
   AUTH_ORIGINS,
+  createApplicationSettingsStore,
   createAuthOriginStore,
   createDockVisibilityStore,
   createQueueOwnerSecretStore,
@@ -393,12 +394,13 @@ configureWritablePaths();
 app.setName("LuDone Desktop");
 app.commandLine.appendSwitch("disable-breakpad");
 
-// Dock musí znát svou hodnotu ještě před existencí rendereru. Synchronní konstrukce
-// načte jediný boolean z hlavního procesu; renderer je jen projekce tohoto stavu.
-const dockVisibilityStore = createDockVisibilityStore({
+// Dock i vypínače znají uložené volby ještě před existencí rendereru. Jediná
+// instance nastavení zachovává všechny volby při atomickém zápisu téhož souboru.
+const applicationSettingsStore = createApplicationSettingsStore({
   filePath: path.join(app.getPath("userData"), "nastaveni", "aplikace.json"),
   log: (message) => console.warn(message),
 });
+const dockVisibilityStore = createDockVisibilityStore({ settingsStore: applicationSettingsStore });
 const authOriginStore = createAuthOriginStore({
   filePath: path.join(app.getPath("userData"), "nastaveni", "prostredi.json"),
   log: (message) => console.warn(message),
@@ -1918,6 +1920,22 @@ handleValidated(
     return app.getLoginItemSettings().openAtLogin === true;
   },
 );
+handleValidated("settings:get-upload-enabled", ["settings"], (_event, ...extraPayload) => {
+  requireNoPayload("settings:get-upload-enabled", extraPayload);
+  return queueKillswitches().DESKTOP_UPLOAD_ENABLED === "true";
+});
+handleValidated("settings:set-upload-enabled", ["settings"], (_event, value, ...extraPayload) => {
+  requireBooleanPayload("settings:set-upload-enabled", value, extraPayload);
+  return setUploadEnabled(value);
+});
+handleValidated("settings:get-time-enabled", ["settings"], (_event, ...extraPayload) => {
+  requireNoPayload("settings:get-time-enabled", extraPayload);
+  return timeTrackingKillswitch() === "true";
+});
+handleValidated("settings:set-time-enabled", ["settings"], (_event, value, ...extraPayload) => {
+  requireBooleanPayload("settings:set-time-enabled", value, extraPayload);
+  return setTimeEnabled(value);
+});
 handleValidated("recording:begin", ["panel"], async (event, sources, ...extraPayload) => {
   if (extraPayload.length > 0) {
     throw new TypeError("Kanál recording:begin přijímá nejvýše jeden seznam zdrojů");
@@ -2078,11 +2096,30 @@ async function applyOutboundQueueRetention(panelStartup) {
   }
 }
 
+function desktopKillswitch(environmentValue, settingKey) {
+  // Pořadí: existující proměnná prostředí (i prázdná či neplatná) přebíjí uloženou
+  // volbu; jinak platí uložený boolean. Chybějící či neplatná volba je vypnuto.
+  // Fronta i časovač přijímají zapnutí výhradně jako přesný řetězec "true".
+  if (environmentValue !== undefined) return environmentValue;
+  return applicationSettingsStore.get(settingKey) ? "true" : "false";
+}
+
+async function setUploadEnabled(value) {
+  await applicationSettingsStore.set("uploadEnabled", value);
+  // IPC vrací účinný stav: vývojové prostředí může uloženou volbu dál přebíjet.
+  return queueKillswitches().DESKTOP_UPLOAD_ENABLED === "true";
+}
+
+async function setTimeEnabled(value) {
+  await applicationSettingsStore.set("timeEnabled", value);
+  // Fronta čte změnu při dalším pokusu. Samotný časovač si podle dosavadního
+  // kontraktu drží hodnotu z konstrukce úložiště až do restartu aplikace.
+  return timeTrackingKillswitch() === "true";
+}
+
 function queueKillswitches() {
   return {
-    // Asymetrie je záměrná: vypínač odesílání má v hlavním procesu jediného čtenáře,
-    // tenhle řádek. Časový jich má tři, proto vede přes sdílenou `timeTrackingKillswitch()`.
-    DESKTOP_UPLOAD_ENABLED: process.env.DESKTOP_UPLOAD_ENABLED,
+    DESKTOP_UPLOAD_ENABLED: desktopKillswitch(process.env.DESKTOP_UPLOAD_ENABLED, "uploadEnabled"),
     DESKTOP_TIME_ENABLED: timeTrackingKillswitch(),
   };
 }
@@ -2483,7 +2520,7 @@ let trackingStore;
 let trackingStoreReady;
 
 /**
- * Jediné místo v hlavním procesu, které se ptá prostředí na časový vypínač.
+ * Jediné místo v hlavním procesu, které čte účinný časový vypínač.
  *
  * Ptají se na něj tři cesty — konstrukce úložiště v `getTrackingStore()`, zařazení
  * uzavřeného úseku do odchozí fronty v `runTrackingMutation()` a soupis vypínačů pro
@@ -2494,14 +2531,15 @@ let trackingStoreReady;
  * 🔴 Čte se POKAŽDÉ, ne jednou, a je to rozhodnutí, ne opomenutí. Memoizace v téhle
  * agendě smysl má, ale o patro níž: `createTrackingStore()` hodnotu přebírá jako
  * argument a zmrazí si ji u sebe, protože úložiště se konstruuje jednou za běh
- * aplikace. Kdyby ji zmrazila tahle funkce, přišel by `runTrackingMutation()` o živé
+ * aplikace. Uloženou volbu lze měnit za běhu; kdyby ji zmrazila tahle funkce,
+ * přišel by `runTrackingMutation()` o živé
  * čtení, které dnes má — to by bylo sjednocení, které MĚNÍ chování. Opačným směrem to
  * nejde vůbec: úložiště hodnotu dostává konstrukcí a jinou cestu k ní nemá. Sjednocené
  * je tedy čtení, ne životnost hodnoty: prostředí se ptá jediná funkce a jak dlouho si
  * volající odpověď podrží, zůstává jeho věcí.
  */
 function timeTrackingKillswitch() {
-  return process.env.DESKTOP_TIME_ENABLED;
+  return desktopKillswitch(process.env.DESKTOP_TIME_ENABLED, "timeEnabled");
 }
 
 function getTrackingStore() {
