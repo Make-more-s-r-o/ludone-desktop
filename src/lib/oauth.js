@@ -117,3 +117,12 @@ export function buildTokenRequestBody({
   }
   return body;
 }
+
+export function buildRefreshTokenRequestBody({ refreshToken, clientId, resource }) {
+  return new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: requiredString(refreshToken, "refreshToken"),
+    client_id: requiredString(clientId, "clientId"),
+    resource: requiredString(resource, "resource"),
+  });
+}

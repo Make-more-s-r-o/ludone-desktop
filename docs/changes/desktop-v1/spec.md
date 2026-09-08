@@ -79,7 +79,7 @@ a nedostane se tam, dokud nepadne A2 (Apple Developer Program). To není nedodě
 | `DSK-F002` | Kontextové menu na ikoně se zkratkami | normal | approved | **merged** | labs | **verified-live** ²⁰ |
 | `DSK-F003` | Přihlášení OAuth 2.1 + PKCE, loopback | security | approved | **merged** | disabled ⁹ | unverified |
 | `DSK-F004` | Odhlášení s odvoláním na serveru | security | approved | **merged** | disabled ¹⁰ | tests-green |
-| `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | no-code ²¹ | disabled | unverified |
+| `DSK-F005` | Obnova tokenu, jednovláknová | security | approved | **merged** ²¹ | disabled | tests-green |
 | `DSK-F006` | Oprávnění mikrofon a systémový zvuk + zkouška | normal | approved | **merged** | labs | **verified-live** ¹⁹ |
 | `DSK-F007` | Nahrávání dvou stop na disk | normal | approved | merged | labs | **verified-live** ¹⁴ |
 | `DSK-F008` | Pojmenování nahrávky při zastavení | normal | approved | **merged** | labs | **verified-live** ¹⁴ |
@@ -158,6 +158,12 @@ vrací **0** — a žádný test. `auth.cjs:257`
 (`grant_types: ["authorization_code", "refresh_token"]`) je jen ohláška v dynamické registraci,
 ne implementace.
 
+🟢 **Postaveno 8. 9. 2026.** Osa `delivery` proto `no-code` → `merged` a `verification`
+→ `tests-green`. **`exposure` zůstává `disabled`**, protože celá přihlašovací cesta je
+vypnutá stejně jako u `DSK-F003` a `DSK-F004`; obnova tokenu nic nevystavuje navíc.
+🔴 **`verified-live` to NENÍ a nebude, dokud někdo neuvidí skutečné probuzení notebooku
+s vypršelým tokenem** — devět testů měří chování, ne provoz.
+
 🔴 **Nestavět to nebyl přehlédnutý dluh, ale rozhodnutí:** `tasks/B8-zapojit-auth.md:126`
 (*„Co B8 NENÍ: obnova tokenu (F005)“*) a `:284` (*„B8 obnovu nepřidává (F005)“*).
 🔴 **Stojí na ní R15** („dva souběžné pokusy odhlásí uživatele samého od sebe“). Kdo tuhle osu
@@ -207,8 +213,8 @@ stavové osy smějí udržovat, i když je zbytek specu zmrazený — zmrazení 
 (R1–R25, acceptance), ne sloupce o stavu (rozhodnutí BD-N30). Osy jsou podle masterplánu
 jediný zdroj pravdy o stavu; nechat je lhát je horší než je upravit.
 
-**Souhrn — spočteno z matice výš 7. 9. 2026: ze 17 funkcí je 14 `merged`, 7 v `labs`
-a 6 `verified-live`.** Rozdíl mezi 14 a 7 zůstává nejdůležitějším číslem projektu: most
+**Souhrn — přepočteno z matice výš 8. 9. 2026: ze 17 funkcí je 15 `merged`, 7 v `labs`
+a 6 `verified-live`.** Rozdíl mezi 15 a 7 zůstává nejdůležitějším číslem projektu: most
 `preload.cjs` vystavuje **41** funkcí, `src/` jich volá **31** a **10 zůstává nezavolaných**
 (`getTrackingState`, `getTrayState`, `hidePanel`, `resolveRecoveredTracking`, `setAuthOrigin`,
 `startTracking`, `stopTracking`, `switchTrackingProject` — plus testovací háky `testClickTray`

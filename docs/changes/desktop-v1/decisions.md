@@ -1124,3 +1124,37 @@ Proto jsme vyráběli nahrávku s tichou stopou (`vzorky/jednostopa-440hz-ticho.
 **dvoukanálový soubor není důkaz dvou mluvčích** — pravý kanál může být digitální ticho.
 Počet kanálů doložený obsahem souboru vypovídá o souboru, ne o počtu mluvčích;
 **parametr v odkazu není důkaz vůbec ničeho** o skutečně zachyceném zvuku.
+
+### D37 — obnova tokenu postavena, a co u ní vědomě NEUMÍME
+
+**8. 9. 2026.** `DSK-F005` byla jediná funkce se `scope: approved`, kterou nezakazovalo
+žádné rozhodnutí — vypadla z rozsahu story B8 (`tasks/B8-zapojit-auth.md:126`) a nikdo pro
+ni nezaložil náhradní. Postavena v autonomním běhu, protože „hotový masterplán" s nepostavenou
+schválenou funkcí není hotový masterplán.
+
+**Tvar, který jsme zvolili** — nová cesta se spouští VÝHRADNĚ tam, kde dnešní kód rezignoval
+(vypršelý access token + existující refresh token). Tím je poloměr škody omezený: cokoli se
+nepovede, skončí přesně tam, kde aplikace byla předtím.
+
+🔴 **Neúspěšná obnova NEMAŽE uložené tokeny.** Codexova první verze je mazala; shodily to dva
+existující testy (*„bez mazání tokenů"*, *„zůstane na disku"*) a byla to skutečná vada:
+**výpadek sítě hned po probuzení notebooku by zahodil refresh token, který je pořád platný.**
+Relace zůstane vypršelá — fail-closed, ale bez ztráty údajů.
+
+🔴 **Brzda na opakované selhání.** Tentýž už neúspěšný refresh token se podruhé nezkouší.
+Bez ní by každé čtení stavu relace vyrobilo další HTTP požadavek a z vypršené relace by se
+stal nepřetržitý proud dotazů na server, dokud se člověk znovu nepřihlásí.
+
+⚠️ **Co vědomě NEUMÍME a je to zapsané, ne přehlédnuté:** *„server odmítl"* a *„nedosáhl jsem
+na server"* dnes rozlišit nejde. Všechny chyby padnou do jednoho `catch`, volající dostane
+`null` a log zná jediný důvod `refresh-failed`. Pro dnešní chování to nevadí (obojí končí
+vypršelou relací), ale až bude někdo chtít chytřejší opakování, musí to rozlišení nejdřív
+vzniknout — `jsonResponse` nese HTTP status jen v textu zprávy, ne jako pole.
+
+⚠️ **Sdílená brána je jeden globální slot bez klíče.** Druhý volající dostane výsledek prvního
+běhu i tehdy, když poslal jinou relaci. Uvnitř se snímek porovnává, ale proti relaci PRVNÍHO
+volajícího. Dnes je to neškodné (desktop má v jednu chvíli jednu identitu); kdyby měl mít víc,
+je to první místo, které se musí předělat.
+
+**Stav: `merged` · `disabled` · `tests-green`.** 🔴 **Nikdo neviděl skutečnou obnovu naostro** —
+devět testů měří chování, ne provoz.
