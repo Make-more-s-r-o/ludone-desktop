@@ -661,3 +661,50 @@ Zastavíš nahrávání → dostaneš formulář s názvem → „Uložit a odes
 Stažených a otevře prohlížeč. 🔴 **Na produkci se ale modul nahrávek nezobrazí** — má
 `enabled_envs = {labs}`. Panel přesto hlásí úspěch, protože `openExternal` uspěje i u prázdné
 stránky. Musel bys v Nastavení přepnout prostředí na labs, což tě odhlásí.
+
+## 21. 🔴 Kontrakt na upload je změřený — `mcp:upload` se stavět NEBUDE
+
+**8. 9. 2026, odpověď serverové session.** Zásadní obrat proti tomu, co jsem předpokládal.
+
+**Uploadové routy `Authorization: Bearer` vůbec nečtou.** Jedou výhradně na next-auth session
+(cookie), a `middleware.ts` v jejich repu **není**, takže Bearer nikdo nepřekládá ani o patro
+výš. Ověření OAuth tokenu žije jen v `/api/mcp`.
+
+⇒ Postavit `mcp:upload` by neznamenalo přidat konstantu, ale **otevřít novou autentizační
+větev na zapisující cestě**. Odmítli to věcně a souhlasím: při ověřování mých nálezů jim
+vyšlo, že **registrace OAuth klienta je otevřená komukoli z internetu** (K1 potvrzeno)
+a klienta **nejde odvolat** — `revoked_at` nikdo v jejich `src/` nenastavuje.
+
+### Rozhodnutý kontrakt
+
+| věc | jak to je |
+|---|---|
+| **autentizace** | jako prohlížeč — držet cookie, volat tytéž čtyři routy jako prohlížečová noha |
+| **identita** | posílat `manifest.clientRecordingId` z OBOU cest; naše odvozené UUID zůstává interní |
+| **idempotence** | klíč je dvojice `(uploaded_by, client_upload_id)`; druhý init vrátí 200 + `idempotent: true` |
+| 🔴 **401** | znamená **„tudy cesta nevede"**, NE „vypršel token". Fronta na něj nesmí zkoušet obnovu, jinak se točí donekonečna |
+| **409** | `idempotency_conflict` = tentýž klíč od jiného uživatele. Obrana, ne vada |
+| **`declaredCaptureSources`** | volitelné pole INITu, fail-soft, ale **přísný allowlist klíčů** — nic navíc neposílat |
+
+### Dvě opravy mých dřívějších tvrzení
+
+⚠️ **Modul UŽ NENÍ labs-only.** Dnes přepnut na `{labs,prod}`, přepínače na produkci zapnuté,
+crony ověřené. Psal jsem Danovi, že na produkci uvidí prázdno — **to už neplatí**.
+🔴 Jejich seed `module-policies.ts` přitom pořád říká `ENVS_LABS`. **Není to rozpor, pravda je
+živá DB** — kdo přečte jen soubor, dojde ke špatnému závěru.
+
+⚠️ **Nález A byl menší, než jsem psal.** `declaredCaptureSources` není pole formuláře, ale
+volitelné pole INITu — nativní klient ho může posílat hned, u serveru netřeba nic dostavovat.
+
+### 🔴 Co jsem k tomu našel já a v kontraktu to nebylo
+
+**Desktop by měl DVĚ nezávislá přihlášení.** Aplikace už přihlášená je (OAuth 2.1 + PKCE,
+`DSK-F003`). Cookie by byla druhá identita a ty dvě o sobě nevědí:
+
+- **Odhlášení by přestalo být odhlášením** — `logout()` revokuje OAuth token, cookie ne.
+  Člověk uvidí odhlášený stav a upload pojede dál pod jeho účtem.
+- **Můžou se rozejít na osobě** — u sdílené „zasedačky" hned.
+- **Vypršení nepoznáme dopředu** — u cookie nevíme nic.
+
+Navrhl jsem tři cesty a přikláním se k té, kde po přihlášení **ověříme shodu obou identit
+a při rozporu upload zablokujeme**. Čeká na odpověď; přihlašovací část zatím nestavím.
