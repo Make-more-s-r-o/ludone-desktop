@@ -573,3 +573,39 @@ Až adresa dorazí, zbývají tři kroky: přepnout `build.publish` na `provider
 **upravit `tests/packaging.test.js:150`** (asertuje přesnou hodnotu `provider: "github"`,
 takže bez úpravy shodí každý push) a doplnit krok nahrání — 🔴 **`electron-builder` na
 vlastní server sám nenahrává**, `--publish always` u `generic` mlčky neudělá nic.
+
+## 19. 🟢 Podepsaná a notarizovaná aplikace existuje — 8. 9. 2026
+
+**Balíčky leží v `release/`** (mimo git). Apple Silicon hotový, Intel zbývá.
+
+| soubor | k čemu | stav |
+|---|---|---|
+| `LuDone-Desktop-0.1.0-arm64.dmg` (126 MB) | první instalace, tenhle odkaz jde kolegům | podepsaný, notarizace obalu dobíhá |
+| `LuDone-Desktop-0.1.0-arm64.zip` (107 MB) | **tímhle se aplikace aktualizuje** | ✅ notarizovaný a přišitý |
+| `latest-mac.yml` | podle něj aplikace pozná novou verzi | hotový, součet spočten ze souboru |
+
+✅ **Rozhodující měření prošlo:** `spctl -a -t exec` na aplikaci vrátil
+**`accepted · source=Notarized Developer ID`**. Tedy ne „soubor existuje" ani „certifikát je
+nainstalovaný" — **spustí se i na Macu, který ji nikdy neviděl.**
+
+### 🔴 Tři pasti, které stály čas a stojí za zapamatování
+
+1. **Ověřil jsem `.app` a odeslal starý `.zip`.** `codesign --verify --deep --strict` řekl
+   „valid on disk" — jenže Applu jsem podstrčil archiv z **předchozího dne**, vyrobený dřív,
+   než jsme měli certifikát. Apple ho správně odmítl a já skoro hodinu hledal chybu v podpisu,
+   který byl v pořádku. **Rozhodly časy souborů, ne obsah.** Zabitý build se k přebalení
+   nikdy nedostal a v `release/` zůstaly staré soubory.
+2. **Obal a obsah se notarizují zvlášť.** Aplikace uvnitř `.dmg` byla `accepted`, ale samotný
+   `.dmg` `rejected`. macOS při stažení kontroluje **obal** — kdo změří jen jedno z toho,
+   pošle kolegům balíček s varováním.
+3. **Notarizace trvala 25 minut**, ne obvyklých 5–15. Zaseknuté to nebylo.
+
+### Co zbývá
+
+- **nahrát na `stahnout.ludone.cz`**, až serverová session potvrdí, že vhost běží
+- **postavit intelovou verzi** — dnes nešlo, systém build dvakrát zabil kvůli paměti
+- **doplnit krok nahrání** do vydávacího postupu: 🔴 `electron-builder` na vlastní server
+  **sám nenahrává**, u `provider: generic` se `--publish always` mlčky vrátí
+
+⚠️ Staré nepodepsané artefakty jsou odložené v `release/zastarale-pred-podpisem/`.
+**Nerozesílat je** — jsou z doby před certifikátem.
