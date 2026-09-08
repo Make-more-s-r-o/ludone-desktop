@@ -1401,3 +1401,50 @@ až ten další řádek. Nechali jsme ho tam (čitelnost záměru), ale je to za
 - Doběhnutí Codexu se pozná **strukturou** logu (`turn.completed` 1×, `turn.failed` 0×,
   `{"type":"error"` 0×), **ne grepem na řetězec** — grep na „usage limit" mi jednou sedl na
   citaci z `DAN-TODO.md`, kterou si Codex přečetl, a vyrobil falešný závěr.
+
+## 8. 9. 2026, 04:50 — masterplán dostavěn: DSK-F005
+
+**PR #104 sloučen.** Audit dokončenosti našel, že masterplán hotový NENÍ: ze tří funkcí
+`no-code` byly dvě vědomě blokované rozhodnutími (D29 pro odesílání, BD-N43 pro připomínky)
+a `DSK-F012` čeká na serverový kontrakt alokací — ale **`DSK-F005` (obnova tokenu,
+jednovláknová) měla `scope: approved` a nezakazovalo ji nic**. Vypadla jen z rozsahu story
+B8 (`tasks/B8-zapojit-auth.md:126`) a nikdo pro ni nezaložil náhradní.
+
+Kryje riziko **R15**: po probuzení notebooku si o token řekne fronta, měřidlo i panel naráz;
+bez jedné sdílené brány spustí souběžný refresh serverovou reuse detekci, která revokuje
+celou rodinu tokenů.
+
+### Co chytily testy — dvě skutečné vady
+
+🔴 **Codexova verze při neúspěšné obnově MAZALA uloženou relaci.** Shodily to dva existující
+testy (*„bez mazání tokenů"*, *„zůstane na disku"*). Nebyl to konflikt s měřidlem, ale vada:
+**výpadek sítě hned po probuzení by zahodil refresh token, který je pořád platný.** Opraven
+kód. Relace zůstane vypršelá — fail-closed, ale bez ztráty údajů.
+
+🔴 **Chyběla brzda na opakované selhání.** Bez ní by každé čtení stavu relace vyrobilo další
+HTTP požadavek — z vypršené relace nepřetržitý proud dotazů, dokud se člověk nepřihlásí.
+
+### Tři měřidla, která v tomhle packetu lhala
+
+1. **První běh bran neměřil kód vůbec.** Spadly všechny tři naráz, protože čerstvý worktree
+   nemá `node_modules` a `npx` místo toho stahoval z registru cizí balíčky (`tsc@2.0.4`,
+   `eslint@10.10.0`). Červená bez vztahu ke kódu je nebezpečnější než zelená — svádí
+   „opravovat" něco, na co se měřidlo vůbec nedívalo.
+2. **Plné brány jsem pustil dřív, než soubor s testy vznikl**, a pak už jen `vitest`. Typová
+   brána nový soubor poprvé viděla až na CI. ⇒ **Po přidání souboru se pouští CELÁ sada bran.**
+3. 🔴 **Čekací podmínka „žádná kontrola neběží" projde i při NULE kontrol.** Vrátila
+   `mergeable=UNKNOWN` s prázdným seznamem. Je to táž past jako u PR #89 7. 9. Správná
+   podmínka vyžaduje **aspoň jednu** kontrolu A všechny dokončené.
+
+### Přerušený sabotážní běh nechal zásah v stromu
+
+Zabitý obal zanechal nasazenou sabotáž (tři smazané řádky) a 13 živých procesů testů. Kdyby
+to nikdo nezkontroloval, další měření by běželo nad zamořeným stromem. ⇒ **Po každém
+přerušeném běhu `git status` a `pgrep`, než se cokoli měří dál.** Výsledky sabotáží od té
+doby jdou průběžně do souboru, ne jen do výstupu úlohy.
+
+### Stav
+
+`DSK-F005`: `no-code | unverified` → **`merged | disabled | tests-green`**. Souhrn matice
+**14 → 15 `merged`**. Rozhodnutí **D37** popisuje i to, co funkce vědomě neumí.
+🔴 **`verified-live` to NENÍ** — devět testů měří chování, ne provoz.
