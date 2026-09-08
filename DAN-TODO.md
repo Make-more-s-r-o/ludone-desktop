@@ -708,3 +708,46 @@ volitelné pole INITu — nativní klient ho může posílat hned, u serveru net
 
 Navrhl jsem tři cesty a přikláním se k té, kde po přihlášení **ověříme shodu obou identit
 a při rozporu upload zablokujeme**. Čeká na odpověď; přihlašovací část zatím nestavím.
+
+### 21b. Kontrakt uzavřen — jak se desktop bude přihlašovat
+
+**Serverová session, 8. 9. odpoledne.** Doplňuje bod 21; přihlašovací část je odblokovaná.
+
+**Zvolena varianta „ověřit shodu, při rozporu blokovat"**, a serverová session ji vylepšila
+o dvě věci, obě lepší než můj původní návrh:
+
+1. 🔴 **Kontrola patří PŘED KAŽDÝ upload, ne jen po přihlášení.** Cookie a OAuth token
+   vyprší nezávisle a v jinou chvíli; kontrola při startu by po hodině tvrdila něco,
+   co už neplatí. (Tohle je přesně ta chyba, kterou v projektu potkávám pořád: změřím
+   stav a chovám se, jako by platil navěky.)
+2. **`logout()` zahodí i cookie** — trojka chrání před rozporem, tohle brání jeho vzniku.
+
+⚠️ **Vydávat cookie výměnou za OAuth token** (moje varianta 2) **zamítnuto** — byl by to
+další autentizační most, tedy přesně to, čemu jsme se u `mcp:upload` vyhnuli.
+
+### 🔴 Tři pasti z jejich měření, které si musím zapsat do kódu
+
+| past | proč je zákeřná |
+|---|---|
+| `GET /api/auth/session` **bez cookie vrací 200 s tělem `null`** | kdo testuje `res.ok`, dostane „přihlášen" pro nepřihlášeného. **Testovat OBSAH, ne status.** |
+| **porovnávat se dá jen e-mailem** | na OAuth straně žádný `userinfo` neexistuje; identitu vrací jen MCP `ludone_ping` a `userId` v ní není. Není to náhražka — server drží obě identity na téže řádce `users` a sám to kontroluje |
+| **odhlášený a revokovaný jsou k nerozeznání** | obojí 200 + `null`, liší se jen hlavičkou `Set-Cookie` |
+
+⚠️ Čtvrtý stav: **při výpadku jejich DB** vrátí 200 s pravdivou identitou, ale `role: viewer`
+a prázdnými právy. Pro porovnání identity použitelné, pro cokoli o oprávněních ne.
+Proto z té odpovědi čtu **jen `email`** a nic jiného.
+
+⚠️ **CORS není překážka** (v jejich aplikaci není jediná `Access-Control-*` hlavička) — ale
+právě proto se cookie k cross-origin požadavku z rendereru **nepřipojí**. Půjdu cestou
+hlavního procesu s ručně přiloženou cookie.
+
+### Co se staví
+
+1. `clientRecordingId` do nativního initu, odvozené UUID zůstává interní
+2. `declaredCaptureSources` do nativního initu — jen ten klíč (přísný allowlist)
+3. **401 jako NEOPAKOVATELNÁ třída** ve frontě — „vyžaduje člověka", ne „obnov token"
+4. **ověření shody e-mailů před každým uploadem**, při rozporu blokovat
+5. **`logout()` zahodí i cookie**
+6. killswitch nastavitelný v zabalené aplikaci
+
+Body 4 a 5 dostanou sabotáže navíc — tichá vada tam znamená „nahráno pod cizí účet".
