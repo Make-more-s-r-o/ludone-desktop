@@ -452,3 +452,53 @@ i behaviorální sondu `scripts/akceptace/fronta-sondy.mjs` zapojenou do `E5` �
 s vyprázdněnými testy a sabotovaným vypínačem zůstane grep zelený a spadne jedině sonda;
 (3) poznámka ¹⁵ ve `spec.md` opravená — most **zůstává** (C3 „jen příprava"), lhal
 dokument. Killswitche se nepřepínaly, `DESKTOP_TIME_ENABLED` zůstává vypnutý.
+
+## 16. 🍎 Apple: členství zaplaceno — zbývají tři kroky k podepsanému buildu
+
+**8. 9. 2026.** Dan zaplatil Apple Developer Program. Změřeno hned poté:
+`security find-identity -v -p codesigning` → **`0 valid identities found`**.
+🔴 **Zaplacené členství není certifikát.** Podepsat zatím nejde ničím.
+
+Dobrá zpráva: **vydávací cesta v repu už existuje.** `.github/workflows/release-macos.yml`
+se spouští na tagu `v*`, běží na `macos-14` a sám podepíše i notarizuje. Čeká na **pět
+tajemství**, a všech pět dnes chybí:
+
+| tajemství | co to je |
+|---|---|
+| `MAC_CSC_LINK` | certifikát `.p12` zakódovaný do base64 |
+| `MAC_CSC_KEY_PASSWORD` | heslo k tomu `.p12` |
+| `APPLE_API_KEY_P8` | obsah klíče App Store Connect (`.p8`) |
+| `APPLE_API_KEY_ID` | ID toho klíče |
+| `APPLE_API_ISSUER` | ID vydavatele |
+
+### Krok 1 — certifikát „Developer ID Application"
+
+Žádost už je vygenerovaná, aby se nemuselo klikat v Keychain Access:
+**`~/LuDone-podpis/zadost.certSigningRequest`** (privátní klíč `klic.pem` leží vedle,
+práva 600, složka 700).
+
+🔴 **`klic.pem` nesmí nikdy do gitu, do promptu ani do chatu.** Kdo ho má, může podepisovat
+jménem Make more.
+
+1. `developer.apple.com/account/resources/certificates` → **+** → **Developer ID Application**
+2. nahrát `zadost.certSigningRequest`, stáhnout vydaný `.cer` do `~/LuDone-podpis/`
+3. složit `.p12` (řekni a udělám to za tebe — je to jeden příkaz `openssl pkcs12 -export`),
+   zvolit heslo
+4. `MAC_CSC_LINK` = `base64 -i cert.p12`, `MAC_CSC_KEY_PASSWORD` = to heslo
+
+### Krok 2 — klíč pro notarizaci
+
+`appstoreconnect.apple.com/access/integrations/api` → **+** → role **Developer** → stáhnout
+`.p8` (jde stáhnout **jen jednou**). Odtud `APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`
+a `APPLE_API_ISSUER`.
+
+### Krok 3 — nahrát a otagovat
+
+`gh secret set <jméno> < soubor` pro každé z pěti, pak `git tag v0.1.0 && git push --tags`.
+
+⚠️ **Riziko, které se ukáže až u prvního tagu:** workflow běží na **`macos-14`**, tedy na
+placeném GitHub runneru — a právě kvůli fakturaci se zbytek CI stěhoval na Danův Mac
+(bod 9). Může to spadnout na účtování dřív než na podpisu. Pozná se to hned, ne po hodině.
+
+⚠️ Na stroji **není Xcode**, jen command line tools. Pro tuhle cestu to stačí —
+`notarytool` i `codesign` jsou v nich.
