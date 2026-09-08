@@ -28,6 +28,7 @@ const {
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
   createPermissionStatusHandler,
+  refreshStoredAuthSession,
   tokenSessionFilePath,
 } = require("./auth.cjs");
 const {
@@ -2104,7 +2105,7 @@ async function addQueueSendingAvailability(items) {
 }
 
 async function recordingUploadContext() {
-  const storedSession = await readStoredAuthSession();
+  const storedSession = await readUsableAuthSession();
   if (storedAuthSessionState(storedSession) !== "valid") return null;
   return {
     accessToken: storedSession.accessToken,
@@ -3403,8 +3404,8 @@ async function hasStoredAuthSession() {
   }
 }
 
-// Přítomnost šifrované relace není doklad platnosti. Refresh token zachováváme
-// i po vypršení access tokenu; stejnou podmínku používá UI i odesílání.
+// Přítomnost šifrované relace není doklad platnosti; stejnou podmínku používá UI
+// i odesílání, a to i po pokusu o obnovu.
 function storedAuthSessionState(storedSession) {
   if (storedSession === null || storedSession.issuer !== resolveCurrentAuthIssuer()) return "none";
   return typeof storedSession.accessToken === "string"
@@ -3417,10 +3418,26 @@ function storedAuthSessionState(storedSession) {
 
 async function readStoredAuthSessionState() {
   try {
-    return storedAuthSessionState(await readStoredAuthSession());
+    return storedAuthSessionState(await readUsableAuthSession());
   } catch {
     return "none";
   }
+}
+
+async function readUsableAuthSession() {
+  const generation = authSessionGeneration;
+  const storedSession = await readStoredAuthSession();
+  if (storedAuthSessionState(storedSession) !== "expired"
+    || typeof storedSession.refreshToken !== "string"
+    || !storedSession.refreshToken.trim()
+    || !Number.isFinite(storedSession.accessExpiresAt)
+    || storedSession.accessExpiresAt > Date.now()) return storedSession;
+  const refreshedSession = await refreshStoredAuthSession({ app, safeStorage, storedSession });
+  // Odhlášení může přijít během HTTP nebo fsync. Starý čtenář pak nesmí vydat token.
+  if (authLogoutsInFlight > 0 || generation !== authSessionGeneration) return null;
+  // Neúspěšná obnova vrací PŮVODNÍ relaci, ne null: stav tím zůstane "expired"
+  // (ne "none") a uložené tokeny přežijí pro pozdější pokus, až se vrátí síť.
+  return refreshedSession ?? storedSession;
 }
 
 async function hasStableStoredAuthSession(readSession = hasStoredAuthSession) {

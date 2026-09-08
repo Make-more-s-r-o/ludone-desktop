@@ -21,6 +21,7 @@ const LOGOUT_REVOKE_DEADLINE_MS = 5_000;
 // Zjištění identity je stejně malý best-effort požadavek jako OAuth discovery.
 // Sdílí proto její pětisekundový strop i společný AbortController vzor níž.
 const IDENTITY_LOOKUP_DEADLINE_MS = LOGOUT_DISCOVERY_DEADLINE_MS;
+const REFRESH_DEADLINE_MS = 5_000;
 const MCP_IDENTITY_REQUEST_ID = 1;
 const TOKEN_DIRECTORY = "auth";
 const TOKEN_FILE = "oauth.enc";
@@ -38,6 +39,11 @@ const POVOLENI_HOSTITELE_ISSUERU = Object.freeze(["app.ludone.cz", "labs.ludone.
 
 let oauthLogicPromise;
 let tokenStorageTransaction = Promise.resolve();
+// Jediná brána pro celý proces, včetně discovery i zápisu obnovené relace.
+let refreshSessionPromise = null;
+// Refresh token, který už jednou neprošel. Bez téhle brzdy by každé čtení stavu
+// relace vyrobilo další HTTP požadavek, dokud se uživatel znovu nepřihlásí.
+let failedRefreshToken = null;
 const tokenStorageInitializations = new WeakMap();
 
 function loadOauthLogic() {
@@ -720,6 +726,110 @@ function decryptStoredSession(safeStorage, encrypted) {
   }
 }
 
+function canRefreshSession(session) {
+  return typeof session?.accessToken === "string"
+    && session.accessToken.trim().length > 0
+    && Number.isFinite(session.accessExpiresAt)
+    && session.accessExpiresAt <= Date.now()
+    && typeof session.refreshToken === "string"
+    && session.refreshToken.trim().length > 0;
+}
+
+function logRefreshFailure(logger, reason) {
+  try {
+    logger?.warn?.(`[auth] Obnova relace selhala: reason=${reason}`);
+  } catch {
+    // Diagnostika nesmí změnit odhlášený výsledek ani zveřejnit chybu s tokenem.
+  }
+}
+
+// Záměrně není async: souběžní čtenáři dostanou tentýž rozpracovaný slib.
+function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl = globalThis.fetch, logger = console }) {
+  if (!canRefreshSession(storedSession)) return Promise.resolve(null);
+  // Tentýž refresh token už jednou neprošel. Bez téhle brzdy by každé čtení stavu
+  // relace vyrobilo další HTTP požadavek, dokud se uživatel znovu nepřihlásí.
+  if (failedRefreshToken !== null && failedRefreshToken === storedSession.refreshToken) {
+    return Promise.resolve(null);
+  }
+  if (refreshSessionPromise !== null) return refreshSessionPromise;
+
+  refreshSessionPromise = withTokenStorageTransaction(async () => {
+    try {
+      const storage = tokenStorageLocation(app);
+      await initializeTokenStorage(app, storage);
+      const encrypted = await readEncryptedSession(storage);
+      const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
+      if (session === null) return null;
+      // Čtenář mohl čekat na dokončenou rotaci, nové přihlášení nebo odhlášení.
+      // Opožděný snímek nikdy nesmí odeslat již použitý refresh token.
+      if (session.issuer !== storedSession.issuer || session.clientId !== storedSession.clientId
+        || session.resource !== storedSession.resource) return null;
+      if (session.accessToken !== storedSession.accessToken
+        || session.refreshToken !== storedSession.refreshToken) return session;
+      if (!canRefreshSession(session)) return session;
+
+      const issuer = normalizedIssuer(session.issuer);
+      const clientId = requiredString(session.clientId, "clientId");
+      const resource = trustedRemoteEndpoint(session.resource, issuer, "resource");
+      const oauth = await loadOauthLogic();
+      const endpoints = await runWithDeadline(
+        (signal) => discoverEndpoints((url, init = {}) => fetchImpl(url, { ...init, signal }), issuer),
+        REFRESH_DEADLINE_MS,
+        "OAuth discovery",
+      );
+      const body = oauth.buildRefreshTokenRequestBody({
+        refreshToken: session.refreshToken,
+        clientId,
+        resource,
+      });
+      const tokenResponse = await runWithDeadline(
+        (signal) => jsonResponse(fetchImpl, endpoints.tokenEndpoint, {
+          method: "POST",
+          headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
+          redirect: "error",
+          body: body.toString(),
+          signal,
+        }, "Obnova relace"),
+        REFRESH_DEADLINE_MS,
+        "OAuth refresh",
+      );
+      const accessToken = requiredString(tokenResponse.access_token, "access_token");
+      const refreshToken = requiredString(tokenResponse.refresh_token, "refresh_token");
+      const expiresIn = tokenResponse.expires_in;
+      const accessExpiresAt = Date.now() + expiresIn * 1000;
+      if (!accessToken.trim() || !refreshToken.trim()
+        || typeof tokenResponse.token_type !== "string"
+        || tokenResponse.token_type.toLowerCase() !== "bearer"
+        || !Number.isFinite(expiresIn) || expiresIn <= 0
+        || !Number.isFinite(accessExpiresAt) || accessExpiresAt <= Date.now()) {
+        throw new Error("Obnova relace vrátila neplatné údaje");
+      }
+      const refreshedSession = {
+        ...session,
+        accessToken,
+        refreshToken,
+        tokenType: tokenResponse.token_type,
+        accessExpiresAt,
+      };
+      // Stejný šifrovaný atomický zápis a fsync jako při přihlášení; až pak token vydáme.
+      await persistEncryptedSession(safeStorage, refreshedSession, storage);
+      failedRefreshToken = null;
+      return refreshedSession;
+    } catch {
+      // Uložené tokeny se ZÁMĚRNĚ nemažou. Selhání bývá dočasné (spící síť hned po
+      // probuzení) a smazaný refresh token by zahodil relaci, která je pořád platná.
+      // Relace zůstane vypršelá — fail-closed, ale bez ztráty údajů. Hlídají to testy
+      // „bez mazání tokenů" a „zůstane na disku" v tests/queue-wiring.test.js.
+      failedRefreshToken = storedSession.refreshToken;
+      logRefreshFailure(logger, "refresh-failed");
+      return null;
+    }
+  }).finally(() => {
+    refreshSessionPromise = null;
+  });
+  return refreshSessionPromise;
+}
+
 function storedTokenResponse(session) {
   const refreshToken = typeof session?.refreshToken === "string" && session.refreshToken.length > 0
     ? session.refreshToken
@@ -1348,6 +1458,7 @@ module.exports = {
   IDENTITY_LOOKUP_DEADLINE_MS,
   LOGOUT_DISCOVERY_DEADLINE_MS,
   LOGOUT_REVOKE_DEADLINE_MS,
+  REFRESH_DEADLINE_MS,
   POVOLENI_HOSTITELE_ISSUERU,
   createAuthController,
   createAuthSessionCoordinator,
@@ -1357,6 +1468,7 @@ module.exports = {
   decidePermissionResult,
   discoverEndpoints,
   initializeTokenStorage,
+  refreshStoredAuthSession,
   resolveAuthTimeout,
   tokenSessionFilePath,
   tokenStorageDirectory,
