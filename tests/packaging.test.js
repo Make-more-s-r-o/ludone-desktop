@@ -138,7 +138,7 @@ describe("kontrakt electron-builderu", () => {
     await expect(readFile(capturePath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   }, 30_000);
 
-  it("drží identitu, oba formáty, obě architektury a veřejný GitHub feed", () => {
+  it("drží identitu, oba formáty, obě architektury a vlastní feed", () => {
     const config = packageManifest.build;
 
     expect(config.appId).toBe("cz.ludone.desktop");
@@ -147,13 +147,17 @@ describe("kontrakt electron-builderu", () => {
       { target: "dmg", arch: ["arm64", "x64"] },
       { target: "zip", arch: ["arm64", "x64"] },
     ]);
+    // 🔴 Feed se 8. 9. 2026 přestěhoval z GitHub Releases na vlastní server (rozhodnutí Dana:
+    // repozitář zůstává privátní a GitHub Actions se neplatí). Aserce se proto NEVYPÍNÁ,
+    // jen přepisuje — kdyby se hodnota vrátila na `github`, aktualizace by u všech uživatelů
+    // tiše přestaly chodit, protože privátní repozitář vrací bez tokenu 404.
+    // ⚠️ `url` MUSÍ končit lomítkem: electron-updater k ní připojuje jméno souboru přímo.
     expect(config.publish).toEqual([{
-      provider: "github",
-      owner: "Make-more-s-r-o",
-      repo: "ludone-desktop",
-      private: false,
-      releaseType: "release",
+      provider: "generic",
+      url: "https://stahnout.ludone.cz/desktop/",
+      channel: "latest",
     }]);
+    expect(config.publish[0].url.endsWith("/")).toBe(true);
   });
 
   it("drží název balíčku bez mezery, protože aktualizace selhává tiše", () => {
