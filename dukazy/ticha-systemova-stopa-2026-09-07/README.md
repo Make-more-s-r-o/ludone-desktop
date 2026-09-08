@@ -12,7 +12,15 @@ není důkaz dvou mluvčích**. Zvuk je **syntetický** — vstříknutý oscil�
 | **systémový zvuk** | reálná stopa ze sinu 880 Hz, ale **zisk 0** ⇒ digitální ticho |
 
 Stopa tedy **existuje, běží a končí spolu s mikrofonní** — jen v ní není nic slyšet.
-Manifest deklaruje **obě**, takže `declaredCaptureSources` = `microphone+system`.
+Manifest deklaruje **obě**, takže desktop vloží do adresy nahrávací stránky
+`declaredCaptureSources` = `microphone+system`.
+
+🔴 **Zpřesněno 8. 9. 2026 podle opravy serverové session (jejich měření, ne naše): k serveru ta
+hodnota NEDORAZILA.** Prohlížečová cesta `declaredCaptureSources` **vůbec neposílá** — je to
+parametr od desktopu — takže jejich záznam téhle nahrávky má u toho pole **`NULL`** a hodnota
+`microphone+system` **u nich dosud neprošla žádným skutečným požadavkem**; kryjí ji jen unit testy
+a `CHECK` v databázi. Tenhle důkaz tedy dokládá **stopy a jejich ticho**, ne to, že by deklarace
+dvou zdrojů prošla celou cestou.
 
 ## Nezávislé měření (ffmpeg `volumedetect`, ne naše tvrzení)
 

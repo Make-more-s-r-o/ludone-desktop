@@ -692,10 +692,19 @@ co už stojí**; matice i briéf stárnou rychleji než běh.
 `main` **984 passed | 3 skipped**, 0 PR, 0 worktrees.
 
 🔴 **Naše strana hotová, CELÁ CESTA NE.** Serverová session změřila, že parametr u nich zatím
-**nikdo nečte** (nula výskytů, staví se jako T-04) — hodnota dorazí a zahodí se, a my se to
+**nikdo nečte** (nula výskytů, staví se jako T-04) — hodnota se k příjmu nedostane, a my se to
 nedozvíme, protože upload projde. Drž to jako *odesíláme*, ne *funguje* (D36).
 
-Nahrávací stránka teď dostává `declaredCaptureSources=microphone` nebo `=microphone%2Bsystem`.
+🔴 **Zmírněno 8. 9. 2026 podle opravy serverové session — není to naše měření.** Původně tu stálo,
+že „hodnota dorazí a zahodí se“ a že nahrávací **stránka parametr dostává**. Doložené je míň:
+desktop ho vloží do **adresy** stránky `/nahravky/nahrat`, ale **prohlížečová cesta ho dál
+neposílá** — je to parametr od desktopu. Jejich záznam naší zkušební nahrávky má proto u toho pole
+`NULL` a hodnota `microphone+system` **dosud neprošla žádným skutečným požadavkem**; kryjí ji jen
+unit testy (`tests/recording-export.test.js`) a `CHECK` v jejich databázi ⇒ **⛔ neověřeno
+naostro**. Rozepsáno v `decisions.md` **D36b**.
+
+Do adresy nahrávací stránky desktop teď vkládá `declaredCaptureSources=microphone` nebo
+`=microphone%2Bsystem`.
 **Hodnota jde ze stop v manifestu, které zapsal hlavní proces** — ne z rendereru a ne z počtu
 kanálů (jednostopý export má taky dva, vpravo digitální ticho).
 
@@ -866,6 +875,10 @@ nechytí, protože obě strany mají zelené testy na svůj úspěšný průběh
 u sebe** — dvě cesty uploadu, jedna `declaredCaptureSources` znala, druhá o něm nevěděla a
 kvůli allowlistu klíčů by celý upload odmítla s **400**. Ta druhá měla dokonce hotové testy
 na funkci, kterou nikdo neimplementoval.
+
+⚠️ **Doplněno 8. 9. 2026 podle jejich vlastní opravy** (jejich měření, ne naše): ani jedna z těch
+dvou cest zatím hodnotu **naostro nenesla** — prohlížečová `declaredCaptureSources` vůbec
+neposílá, takže `microphone+system` u nich dosud neprošlo žádným skutečným požadavkem (`D36b`).
 
 **2. Okno si vybírá ten, kdo měří** (formulace serverové session). Jejich cílený běh ten
 adresář nezahrnoval, takže vadu neviděl — chytila ji až plná suita v CI. Platí i tady:

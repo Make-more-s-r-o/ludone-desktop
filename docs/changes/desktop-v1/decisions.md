@@ -989,6 +989,12 @@ nestaví nic o penězích ani právech a jejich měření zůstává jediným zd
 chybí. **Tuhle hranici při stavbě nepřekračovat** — kdyby se z toho stal autoritativní údaj,
 je to bezpečnostní vada, ne vylepšení.
 
+🔴 **Stav k 8. 9. 2026: ta tabulka je NÁVRH, ne popis provozu.** Podle opravy **serverové session
+(8. 9.)** se hodnota k příjmu zatím vůbec nedostane — prohlížečová cesta parametr neposílá dál,
+jejich záznam má u toho pole `NULL` a `microphone+system` **dosud neprošlo žádným skutečným
+požadavkem**; kryjí ho jen unit testy a `CHECK` v databázi. Ani jeden řádek té tabulky tedy
+zatím nikdo naostro neviděl. Podrobně **D36b**.
+
 ---
 
 ## Fáze 2 — co přišlo od serverové session 7. 9. 2026 (Dan schválil plán)
@@ -1026,8 +1032,8 @@ v odpovědi uvidíme cokoli za mzdovou bránou, je to nález, ne bonus.
 
 **D36 (server, 7. 9.) — `declaredCaptureSources` u nich zatím NIKDO NEČTE.**
 Serverová session změřila **nula výskytů** v jejich `src/`; příjem staví jako task T-04.
-🔴 **Do té doby hodnota dorazí a zahodí se — a my se to nedozvíme**, protože upload projde
-a nic nezčervená. Naše strana je hotová (PR #83), **celá cesta ale NENÍ**.
+🔴 **Do té doby se hodnota k příjmu vůbec nedostane — a my se to nedozvíme**, protože upload
+projde a nic nezčervená. Naše strana je hotová (PR #83), **celá cesta ale NENÍ**.
 ⇒ V matici i checkpointu to drž jako *odesíláme*, ne jako *funguje*. Ozvou se, až T-04 poběží;
 teprve pak má smysl posílat cokoli naostro proti jejich stránce.
 
@@ -1036,3 +1042,25 @@ signál"* si udělali invariant: `declared_capture_sources` dostane **vlastní s
 se nesleje s jejich měřením — jinak rozpor přestane být zjistitelný a zbude jedno věrohodně
 vypadající číslo bez krytí. Tři stavy zůstávají tři: `microphone+system` × `microphone` ×
 **NULL = nevíme**.
+
+**D36b (oprava od serverové session, 8. 9. 2026) — obě jejich dřívější tvrzení jsou slabší, než
+jak jsme si je zapsali.** Není to naše měření; přebíráme jejich korekci a píšeme k ní zdroj, ať
+je poznat, že jsme si to sami nezměřili.
+
+1. 🔴 **„Živé na produkci“ platí o KÓDU, ne o funkci.** Kód `#1193` na produkci **je** (ověřeno
+   jejich grepem v běžícím kontejneru) a sloupec v produkční DB **je** (migrace 284 na obou) —
+   tohle platí. Ale modul má `enabled_envs = {labs}` a **prázdné `allowed_roles`**, tedy je
+   **záměrně labs-only a admin-only**. Na produkci se k němu nikdo nedostane, dokud Dan
+   nerozhodne o publikaci. ⇒ Nikde nepsat, že ta **funkce** je na produkci živá; nasazený je
+   **kód**. Náš dřívější zápis (`CHECKPOINT.md`, sekce „PŘEPÍNAČ PROSTŘEDÍ“) tím zůstává
+   v platnosti — `enabled_envs = {labs}` na obou DB, na produkci schválně ne.
+2. 🔴 **`microphone+system` naostro NIKDY neprošlo.** Prohlížečová cesta `declaredCaptureSources`
+   **vůbec neposílá** — je to parametr od desktopu. Jejich záznam naší zkušební nahrávky
+   (`dukazy/ticha-systemova-stopa-2026-09-07/`) má u toho pole **`NULL`** a hodnota
+   `microphone+system` **u nich dosud neprošla žádným skutečným požadavkem**; kryjí ji jen unit
+   testy a `CHECK` v databázi. ⇒ Stav je **⛔ neověřeno naostro**, ne „dorazí a zahodí se“.
+
+⚠️ **A opačným směrem to nepřehánět:** kód na produkci opravdu je a sloupec v produkční DB taky.
+Nepravdivé bylo jen *„funkce je živá“* a *„`microphone+system` prošlo naostro“*. Osy `scope`
+a `exposure` u `DSK-F010` (`draft` / `disabled`) serverová session výslovně potvrdila jako
+správné — ty se nemění.
