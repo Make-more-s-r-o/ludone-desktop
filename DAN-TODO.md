@@ -799,3 +799,18 @@ ošklivý, ale funguje.
 
 ⚠️ Serverová session to **vědomě neopravuje dnes v noci**: deduplikace podle otisku je jejich
 záměrný návrh a oprava mění chování nad uživatelskými daty. Souhlasím s tím.
+
+## 23. Nahrávka bez systémového zvuku se nikdy neodeslala (opraveno, PR #111)
+
+**Co bylo špatně:** když jsi nahrával bez povoleného systémového zvuku, aplikace nahrávku
+korektně pořídila, zapsala manifest i zařadila do fronty — a upload ji pak shodil **trvalou**
+chybou „Položka fronty nemá obě stopy". Trvalá znamená bez opakování: nahrávka by z počítače
+nikdy neodešla a nikdo by se to nedozvěděl, protože ve frontě jen tiše zčervená.
+
+**Příčina:** upload si sadu stop bral z konstanty `["microphone","system"]` místo ze samotné
+položky. Podmínka, která na to měla myslet (`tracks.length > 1`), byla mrtvý kód — jednostopá
+položka se k ní nikdy nedostala.
+
+**Co po tobě chci:** až budeš mít podepsaný build, zkus nahrát schůzku **bez systémového zvuku**
+(nepovolit sdílení zvuku obrazovky) a ověř, že položka ve frontě dojde do „odesláno". Zatím je
+to ověřené jen testy, naostro to nikdo neproklikal.
