@@ -2078,8 +2078,10 @@ async function applyOutboundQueueRetention(panelStartup) {
 
 function queueKillswitches() {
   return {
+    // Asymetrie je záměrná: vypínač odesílání má v hlavním procesu jediného čtenáře,
+    // tenhle řádek. Časový jich má tři, proto vede přes sdílenou `timeTrackingKillswitch()`.
     DESKTOP_UPLOAD_ENABLED: process.env.DESKTOP_UPLOAD_ENABLED,
-    DESKTOP_TIME_ENABLED: process.env.DESKTOP_TIME_ENABLED,
+    DESKTOP_TIME_ENABLED: timeTrackingKillswitch(),
   };
 }
 
@@ -2478,11 +2480,33 @@ const TRACKING_STORE_OWNER_ID = "main-process-timer";
 let trackingStore;
 let trackingStoreReady;
 
+/**
+ * Jediné místo v hlavním procesu, které se ptá prostředí na časový vypínač.
+ *
+ * Ptají se na něj tři cesty — konstrukce úložiště v `getTrackingStore()`, zařazení
+ * uzavřeného úseku do odchozí fronty v `runTrackingMutation()` a soupis vypínačů pro
+ * frontu v `queueKillswitches()`. Do 8. 9. 2026 sahala do prostředí každá zvlášť, tedy
+ * tři nezávislá čtení téže proměnné. V produkci se prostředí za běhu nemění, takže se
+ * nerozcházela — ale rozejít se mohla kdykoli a tiše, protože je u sebe nic nedrželo.
+ *
+ * 🔴 Čte se POKAŽDÉ, ne jednou, a je to rozhodnutí, ne opomenutí. Memoizace v téhle
+ * agendě smysl má, ale o patro níž: `createTrackingStore()` hodnotu přebírá jako
+ * argument a zmrazí si ji u sebe, protože úložiště se konstruuje jednou za běh
+ * aplikace. Kdyby ji zmrazila tahle funkce, přišel by `runTrackingMutation()` o živé
+ * čtení, které dnes má — to by bylo sjednocení, které MĚNÍ chování. Opačným směrem to
+ * nejde vůbec: úložiště hodnotu dostává konstrukcí a jinou cestu k ní nemá. Sjednocené
+ * je tedy čtení, ne životnost hodnoty: prostředí se ptá jediná funkce a jak dlouho si
+ * volající odpověď podrží, zůstává jeho věcí.
+ */
+function timeTrackingKillswitch() {
+  return process.env.DESKTOP_TIME_ENABLED;
+}
+
 function getTrackingStore() {
   if (!trackingStore) {
     trackingStore = createTrackingStore({
       filePath: path.join(app.getPath("userData"), "cas", "casovac.json"),
-      timeEnabled: process.env.DESKTOP_TIME_ENABLED,
+      timeEnabled: timeTrackingKillswitch(),
       processStartedAt: PROCESS_STARTED_AT,
     });
   }
@@ -2524,7 +2548,7 @@ async function runTrackingMutation(method, payload) {
   const result = await store[method](payload);
   syncTrackingTray(store);
   if (
-    process.env.DESKTOP_TIME_ENABLED === "true"
+    timeTrackingKillswitch() === "true"
     && result.closed
     && result.closed.closedReason !== "zahozeno-clovekem"
   ) {

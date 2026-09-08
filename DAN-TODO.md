@@ -389,3 +389,11 @@ ne rozhodnutí — jen na ni došel limit.
 - **`switchTrackingProject` je vystavený most, který nikdo nevolá.** `TrackingCard.jsx`
   přepíná jen natvrdo psaný seznam v rendereru. Poznámka ¹⁵ ve `spec.md` přitom tvrdí,
   že ho UI používá.
+
+✅ **Všechny tři opravené 8. 9. 2026 na větvi `orca/desktop-tri-drobnosti`** (nepushnuto,
+čeká na tebe): (1) časový vypínač čte v `main.cjs` jediná funkce `timeTrackingKillswitch()`
+a strážní test hlídá, že se čtenáři nerozdvojí; (2) uploadový vypínač má vedle grepu
+i behaviorální sondu `scripts/akceptace/fronta-sondy.mjs` zapojenou do `E5` — změřeno, že
+s vyprázdněnými testy a sabotovaným vypínačem zůstane grep zelený a spadne jedině sonda;
+(3) poznámka ¹⁵ ve `spec.md` opravená — most **zůstává** (C3 „jen příprava"), lhal
+dokument. Killswitche se nepřepínaly, `DESKTOP_TIME_ENABLED` zůstává vypnutý.

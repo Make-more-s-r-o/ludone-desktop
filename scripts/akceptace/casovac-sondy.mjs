@@ -11,23 +11,20 @@
 // proto v konstantě — ať se v repu neobjeví literál "zapnuto", na který se ptá
 // brána E5.
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { Linter } from "eslint";
+import { KOREN, zdrojFunkce } from "./produkcni-zdroj.mjs";
 
 const require = createRequire(import.meta.url);
-const KOREN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const {
   TRACKING_STATES,
   TIME_DISABLED_REASON,
   createTrackingStore,
   handleRendererGone,
 } = require(path.join(KOREN, "electron", "tracking.cjs"));
-const MAIN_ZDROJ = readFileSync(path.join(KOREN, "electron", "main.cjs"), "utf8");
 
 const VYPINAC_CASU = "DESKTOP_TIME" + "_ENABLED";
 const PROJEKT_A = "11111111-1111-4111-8111-111111111111";
@@ -47,23 +44,6 @@ async function docasnySoubor() {
   const koren = await mkdtemp(path.join(os.tmpdir(), "ludone-akceptace-cas-"));
   docasneKoreny.push(koren);
   return path.join(koren, "cas", "casovac.json");
-}
-
-/** Vytáhne z `main.cjs` doslovný zdroj jedné funkce; parsuje se AST, ne regulárem. */
-function zdrojFunkce(jmeno) {
-  const linter = new Linter();
-  linter.verify(MAIN_ZDROJ, [{
-    languageOptions: { ecmaVersion: "latest", sourceType: "commonjs" },
-  }]);
-  const sourceCode = linter.getSourceCode();
-  if (!sourceCode) throw new Error("electron/main.cjs se nepodařilo rozparsovat");
-  const uzly = sourceCode.ast.body.filter((uzel) => (
-    uzel.type === "FunctionDeclaration" && uzel.id && uzel.id.name === jmeno
-  ));
-  if (uzly.length !== 1) {
-    throw new Error(`Funkce ${jmeno} musí mít v main.cjs právě jednu deklaraci, nalezeno ${uzly.length}`);
-  }
-  return MAIN_ZDROJ.slice(uzly[0].range[0], uzly[0].range[1]);
 }
 
 function vyrobNoteDeferredQuitFailure(pozadavek, konzole, zaznam) {
@@ -86,7 +66,9 @@ function vyrobRunTrackingMutation({ store, env, queueStore, konzole, note, zazna
     "console",
     "noteDeferredQuitFailure",
     "showPanel",
-    `${zdrojFunkce("runTrackingMutation")}\nreturn runTrackingMutation;`,
+    // Časový vypínač čte produkce přes sdílenou `timeTrackingKillswitch()`; vytáhne se
+    // sem s ní, aby se ptala PODSTRČENÉHO `process`, ne toho skutečného.
+    `${zdrojFunkce("timeTrackingKillswitch")}\n${zdrojFunkce("runTrackingMutation")}\nreturn runTrackingMutation;`,
   );
   return tovarna(
     async () => store,

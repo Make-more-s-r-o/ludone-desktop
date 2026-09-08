@@ -112,6 +112,7 @@ const createProductionTrackingStore = Function(
   "PROCESS_STARTED_AT",
   `"use strict";
    let trackingStore;
+   ${functionSource(mainCodeWithoutComments, "timeTrackingKillswitch")}
    ${functionSource(mainCodeWithoutComments, "getTrackingStore")}
    return getTrackingStore();`,
 );

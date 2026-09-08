@@ -115,10 +115,19 @@ přesně to, kvůli čemu se Dan ve vývoji ztratil, a je to vada dokumentu, ne 
 zvukem** (mikrofon 440 Hz, systém 880 Hz) — start · měřáky · souběh s LuTrackem · zastavení ·
 pojmenování · export do Stažených · zařazení do fronty. Recept je v `CHECKPOINT.md`.
 
-¹⁵ 🔴 **Pozor, vypadá to hotově a není:** UI výběru projektu existuje (`Přepnout projekt`
-+ most `switchTrackingProject`), ale seznam je **natvrdo v `TrackingCard.jsx:6–9`** — čtyři
-vymyšlené názvy. Skutečné alokace čekají na kontrakt fáze 2. Osa proto zůstává `no-code`:
-existující obal bez dat není funkce.
+¹⁵ 🔴 **Pozor, vypadá to hotově a není:** UI výběru projektu existuje (výběr
+`Přepnout projekt` v `TrackingCard.jsx`) a most `switchTrackingProject` existuje taky
+(`electron/preload.cjs:185`) — ale **spojené nejsou**. Ten výběr přepisuje jedině lokální
+`useState` v rendereru; most nevolá v `src/` nikdo, a je proto i v seznamu deseti
+nezavolaných funkcí o kus výš. Seznam projektů je navíc **natvrdo v `TrackingCard.jsx:6–9`**
+— čtyři vymyšlené názvy. Skutečné alokace čekají na kontrakt fáze 2. Osa proto zůstává
+`no-code`: existující obal bez dat není funkce.
+
+⚠️ **Opraveno 8. 9. 2026 — poznámka do té doby tvrdila, že most UI používá.** Staré znění
+dávalo `Přepnout projekt` a `switchTrackingProject` do jedné závorky, tedy je vydávalo za
+jednu hotovou věc; přitom mezi nimi nikdy nevedl jediný řádek kódu. **Most se ale
+neodstraňuje**: LuTrack je podle `decisions.md` C3 *„jen příprava"*, takže most patří tam,
+kde je, a čeká na dodělané UI. Vada byla v dokumentu, ne v kódu.
 
 ¹⁶ **Ověřeno naostro 6. 9.**: přepínač v Nastavení + záchrana z výstražného okna (#69);
 macOS potvrdil položku v Docku.

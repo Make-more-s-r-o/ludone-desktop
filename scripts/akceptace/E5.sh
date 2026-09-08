@@ -66,6 +66,15 @@ zkontroluj "electron/queue.cjs existuje a není prázdný" test -s electron/queu
 zkontroluj "unit testy queue jsou zelené" npm run test:unit -- queue
 zkontroluj "jmenovitý test nenastaveného killswitche je fail-closed" \
   test_nenastaveneho_killswitche
+# 🔴 Druhé měření téhož vypínače, a schválně jiného druhu. Podmínka nad tímhle řádkem se
+# ptá na NÁZVY tří tvrzení v `tests/queue.test.js` — chytne smazaný test, ale ne přepsaný:
+# kdo nechá řetězce na místě a vyprázdní tvrzení uvnitř, nechá ji zelenou. Sonda proto měří
+# CHOVÁNÍ: spouští produkční `pumpOutboundQueue`, `queueKillswitches`
+# a `addQueueSendingAvailability` z `main.cjs` nad skutečným úložištěm fronty. Změřeno
+# 8. 9. 2026 sabotáží: s vyprázdněnými testy a zapnutým vypínačem natvrdo zůstala grepová
+# podmínka zelená a spadla jedině sonda. Obě se doplňují, ani jedna nenahrazuje druhou.
+zkontroluj "vypínač odesílání je fail-closed i v produkční cestě (chování)" \
+  node scripts/akceptace/fronta-sondy.mjs vypinac-odesilani-fail-closed
 zkontroluj ".env.example drží killswitch odesílání vypnutý" \
   grep -Fxq "DESKTOP_UPLOAD_ENABLED=false" .env.example
 zkontroluj ".env.example drží časový killswitch vypnutý" \
