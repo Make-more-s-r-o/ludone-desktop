@@ -432,6 +432,88 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
   return { fetchImpl, uploadsById, uploadsByKey };
 }
 
+describe("shodný obsah zvukových stop", () => {
+  it.each([
+    ["ticho", Buffer.alloc(32)],
+    ["netichý obsah", Buffer.from("stejny-zvuk-v-obou-stopach")],
+  ])("%s odmítne trvale před tokenem i prvním HTTP požadavkem bez úniku údajů", async (_label, bytes) => {
+    const fixture = await recordingFixture({ microphoneBytes: bytes, sameContent: true });
+    const server = createStatefulServer();
+    const getUploadContext = vi.fn(async () => ({
+      accessToken: TOKEN,
+      companyTabidooId: COMPANY_ID,
+      ownerFingerprint: OWNER_A,
+    }));
+    const { send } = createSend(server.fetchImpl, createLogger(), { getUploadContext });
+
+    const error = await send(fixture.item).catch((error) => error);
+
+    expect(server.fetchImpl).toHaveBeenCalledTimes(0);
+    expect(getUploadContext).toHaveBeenCalledTimes(0);
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toMatchObject({
+      code: "identical_tracks",
+      failureClass: "permanent",
+      message: "Mikrofonní a systémová stopa obsahují totéž, nejspíš ticho. "
+        + "Odeslání by nezachovalo dvě samostatné stopy a opakování nepomůže.",
+    });
+    const diagnostic = JSON.stringify(error, Object.getOwnPropertyNames(error));
+    for (const track of Object.values(fixture.manifest.tracks)) {
+      expect(diagnostic).not.toContain(track.sha256);
+      expect(diagnostic).not.toContain(track.fileName);
+    }
+    for (const filePath of [fixture.microphonePath, fixture.systemPath, fixture.manifestPath]) {
+      expect(diagnostic).not.toContain(filePath);
+    }
+  });
+
+  it("fronta shodné stopy označí jako selhání s důvodem a další pokus nenaplánuje", async () => {
+    const fixture = await recordingFixture({ sameContent: true });
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl);
+    const countedSend = vi.fn(send);
+    const switches = { DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined };
+
+    const first = await processNext(fixture.queue, switches, countedSend);
+    const second = await processNext(first.queue, switches, countedSend);
+
+    expect(first).toMatchObject({
+      outcome: "failed",
+      item: { attempts: 1, nextAttemptAt: null, sentAt: null, state: QUEUE_STATES.FAILED },
+    });
+    expect(first.reason).toContain("Mikrofonní a systémová stopa obsahují totéž");
+    expect(reduceQueueForRenderer(first.queue)[0].lastFailureReason).toBe(first.reason);
+    expect(second.outcome).toBe("idle");
+    expect(countedSend).toHaveBeenCalledTimes(1);
+    expect(server.fetchImpl).toHaveBeenCalledTimes(0);
+    await expect(readFile(fixture.microphonePath)).resolves.toEqual(Buffer.from("mikrofon-webm"));
+    await expect(readFile(fixture.systemPath)).resolves.toEqual(Buffer.from("mikrofon-webm"));
+  });
+
+  it("různé otisky i při stejné velikosti odešle jako dvě úplné stopy", async () => {
+    const microphoneBytes = Buffer.alloc(32);
+    const systemBytes = Buffer.alloc(32, 1);
+    const fixture = await recordingFixture({ microphoneBytes, systemBytes });
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl);
+
+    await expect(send(fixture.item)).resolves.toEqual({
+      completedUploads: 2,
+      quotaWarning: false,
+      uploads: [
+        { quotaWarning: false, recordingId: serverRecordingId(1), track: "microphone" },
+        { quotaWarning: false, recordingId: serverRecordingId(2), track: "system" },
+      ],
+    });
+    expect(server.fetchImpl).toHaveBeenCalledTimes(8);
+    expect([...server.uploadsById.values()].map((upload) => upload.finalized)).toEqual([true, true]);
+    const uploadedBytes = server.fetchImpl.mock.calls
+      .filter(([, options]) => options.method === "PUT")
+      .map(([, options]) => options.body);
+    expect(uploadedBytes).toEqual([microphoneBytes, systemBytes]);
+  });
+});
+
 describe("mapování serverových chyb do tříd fronty", () => {
   it("HTTP 507 quota_exceeded frontu pozastaví a nikdy položku nevzdá", async () => {
     const fixture = await recordingFixture();
@@ -680,7 +762,7 @@ describe("resumable upload", () => {
   });
 
   it("stabilní klíč váže clientRecordingId, druh stopy a otisk obsahu", async () => {
-    const fixture = await recordingFixture({ sameContent: true });
+    const fixture = await recordingFixture();
     const server = createStatefulServer();
     const { send } = createSend(server.fetchImpl);
 
@@ -696,6 +778,15 @@ describe("resumable upload", () => {
     const clientIds = initCalls.map(([, options]) => JSON.parse(String(options.body)).clientRecordingId);
     expect(clientIds[0]).not.toBe(clientIds[1]);
     expect(clientIds.slice(2)).toEqual(clientIds.slice(0, 2));
+  });
+
+  it("stejný otisk odliší v identitě podle druhu stopy", () => {
+    const hash = sha256(Buffer.from("stejny-obsah"));
+    const microphone = deriveUploadIdentity(CLIENT_RECORDING_ID, "microphone", hash);
+    const system = deriveUploadIdentity(CLIENT_RECORDING_ID, "system", hash);
+
+    expect(microphone.idempotencyKey).not.toBe(system.idempotencyKey);
+    expect(microphone.clientRecordingId).not.toBe(system.clientRecordingId);
   });
 
   it("změna clientRecordingId nebo otisku vždy změní idempotenční klíč", () => {

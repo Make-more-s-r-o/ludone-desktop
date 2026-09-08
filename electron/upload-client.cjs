@@ -324,6 +324,20 @@ async function preflightRecording(item) {
     track.chunkCount = hashes.chunkHashes.length;
     track.identity = deriveUploadIdentity(clientRecordingId, track.trackKind, hashes.sha256);
   }
+  // 🔴 Server by shodný obsah sloučil do jedné nahrávky BEZ CHYBY: při dokončení hledá
+  // duplikát podle dvojice (uživatel, otisk), druhou stopu označí za smazanou, její soubor
+  // FYZICKY SMAŽE a vrátí 200 s `recordingId` té PRVNÍ. Doloženo serverovou session
+  // 8. 9. 2026 v jejím kódu; mají na to i test, který přesně tohle očekává.
+  // ⚠️ Podmínka na POČET stop není opatrnost navíc: nahrávka může mít jen mikrofon
+  // (systémový zvuk nemusí být povolený) a `tracks[1]` by pak neexistovala.
+  if (tracks.length > 1 && tracks[0].sha256 === tracks[1].sha256) {
+    throw localError(
+      "identical_tracks",
+      "Mikrofonní a systémová stopa obsahují totéž, nejspíš ticho. "
+        + "Odeslání by nezachovalo dvě samostatné stopy a opakování nepomůže.",
+      "permanent",
+    );
+  }
   return Object.freeze({ clientRecordingId, manifest, tracks: Object.freeze(tracks) });
 }
 
@@ -602,6 +616,19 @@ async function uploadTrack({ context, logger, recording, request, track }) {
     || !UUID_PATTERN.test(safeString(finalized.recordingId))
   ) {
     throw localError("finalization_unconfirmed", "Server nepotvrdil dokončení uploadu", "retryable");
+  }
+  // 🔴 DRUHÁ, NEZÁVISLÁ OBRANA. Když server při dokončení najde nahrávku se shodným otiskem,
+  // tuhle stopu SMAŽE a vrátí `recordingId` TÉ CIZÍ — přitom stav `stored` i platné UUID
+  // sedí, takže kontrola výš projde. Jediné, co se rozejde, je identifikátor.
+  // ⚠️ Upozornila na to serverová session; sami bychom to nepoznali, protože
+  // `verifyRemoteIdentity` porovnává velikost a otisk, a ty u kolize SEDÍ.
+  if (safeString(finalized.recordingId) !== recordingId) {
+    throw localError(
+      "recording_replaced",
+      "Server přiřadil nahrávku k jinému záznamu, než který založil. "
+        + "Tahle stopa by se neuložila samostatně a opakování nepomůže.",
+      "permanent",
+    );
   }
   return Object.freeze({ quotaWarning, recordingId, track: track.trackKind });
 }
