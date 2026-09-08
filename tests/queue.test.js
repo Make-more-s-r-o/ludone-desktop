@@ -891,13 +891,15 @@ describe("stavový automat fronty", () => {
   // z uloženého důvodu. Bez výslovného sražení by návrat do fronty jen vypadal, že proběhl.
   it("vrácená položka se opravdu dostane k dalšímu pokusu, ne jen do stavu ceka", async () => {
     const queued = oneItemQueue();
-    const { requiresHumanAction: _vynechano, ...bezPriznaku } = {
+    const bezPriznaku = {
       ...queued.items[0],
       attempts: 3,
       lastFailureReason: "server odmítl nahrávku",
-      requiresHumanAction: true,
       state: QUEUE_STATES.FAILED,
     };
+    // Klíč tu nesmí být vůbec — jinak by se příznak četl z něj a ne z uloženého důvodu,
+    // což je právě ta cesta, kterou tenhle test měří.
+    delete bezPriznaku.requiresHumanAction;
     queued.items[0] = bezPriznaku;
 
     const retried = retryFailedItem(queued, queued.items[0].clientRecordingId);
