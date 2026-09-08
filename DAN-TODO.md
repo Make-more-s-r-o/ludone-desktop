@@ -261,9 +261,16 @@ i bulk editace — do 13. 9. to všechno spadne zpátky na Claude limit.
 **Rozhodnutí je tvoje:**
 1. **Dokoupit kredity** (odkaz výš) — router platí dál beze změny.
 2. **Počkat do 13. 9.** a do té doby vědomě jet na Claude — dražší na Claude limit, ale funguje.
-3. **Zkusit jiný účet nebo model.** ⚠️ Neověřeno: pokud je limit účtový, `gpt-5.6-sol`
-   ani `spark` nepomůžou. `spark` má podle zápisu vlastní bucket (`codex_bengalfox`),
-   ale na ChatGPT účtu vrací HTTP 400, takže se na něj spoléhat nedá.
+3. ~~**Zkusit jiný model.**~~ 🔴 **ZMĚŘENO 8. 9. ve 3:15 — nepomůže, tuhle možnost škrtám.**
+
+   | model | výsledek | obnova |
+   |---|---|---|
+   | `gpt-6-astra` | vyčerpaný limit | 13. 9. 22:00 |
+   | `gpt-5.6-sol` | **tentýž** limit | 13. 9. 22:00 |
+   | `spark` | *„not supported when using Codex with a ChatGPT account"* | — (neběží z principu) |
+
+   ⇒ **Strop je ÚČTOVÝ, ne modelový.** Přepnutí routeru na jiný model tedy nic nevyřeší
+   a dřívější zápis, že „spark má vlastní bucket", je pro ChatGPT účet bezcenný.
 
 Do rozhodnutí jedu variantu 2 — práci, která měla jít na Codex, dělám v Claude podagentech.
 
