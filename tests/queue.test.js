@@ -952,6 +952,19 @@ describe("stavový automat fronty", () => {
     });
   });
 
+  // Postup pro nahrávku, která ve frontě NENÍ, znamená, že se rozešel stav klienta a serveru.
+  // Tiché přijetí by ten rozpor schovalo a offsety by se zapsaly někam, kde je nikdo nečeká.
+  it("postup k neznámé nahrávce odmítne a frontu nezmění", () => {
+    const queued = oneItemQueue();
+    const before = structuredClone(queued);
+
+    expect(() => applyServerProgress(queued, "nezname-id", {
+      recordingId: "server-recording-id",
+      uploadedBytes: { microphone: 10, system: 20 },
+    })).toThrow("položka fronty nebyla nalezena");
+    expect(queued).toEqual(before);
+  });
+
   it("vyžaduje killswitch v podpisu spolu s odesílací vrstvou", async () => {
     await expect(processNext(oneItemQueue())).rejects.toThrow(/povinné argumenty/);
   });
