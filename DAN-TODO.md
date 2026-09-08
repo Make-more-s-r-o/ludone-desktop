@@ -430,7 +430,7 @@ ne rozhodnutí — jen na ni došel limit.
 
 ---
 
-## 15. Tři drobnosti z auditu, které nikdo neopravil
+## 15. ✅ VYŘEŠENO (PR #102) — tři drobnosti z auditu
 
 - **Dva časové vypínače nemají společný zdroj pravdy.** `getTrackingStore()` si
   `DESKTOP_TIME_ENABLED` **memoizuje** při první konstrukci, `runTrackingMutation` ho čte
@@ -443,8 +443,10 @@ ne rozhodnutí — jen na ni došel limit.
   přepíná jen natvrdo psaný seznam v rendereru. Poznámka ¹⁵ ve `spec.md` přitom tvrdí,
   že ho UI používá.
 
-✅ **Všechny tři opravené 8. 9. 2026 na větvi `orca/desktop-tri-drobnosti`** (nepushnuto,
-čeká na tebe): (1) časový vypínač čte v `main.cjs` jediná funkce `timeTrackingKillswitch()`
+✅ **Všechny tři opravené a sloučené 8. 9. 2026 jako PR #102**
+(`orca/desktop-tri-drobnosti`, merge 03:38). ⚠️ Do 8. 9. 04:15 tu stálo „nepushnuto, čeká
+na tebe" — **to už neplatilo a nic po tobě tenhle bod nechce**; je to stejný nedodělek,
+jaký jsem tu nechal u bodu 14. Co se opravilo: (1) časový vypínač čte v `main.cjs` jediná funkce `timeTrackingKillswitch()`
 a strážní test hlídá, že se čtenáři nerozdvojí; (2) uploadový vypínač má vedle grepu
 i behaviorální sondu `scripts/akceptace/fronta-sondy.mjs` zapojenou do `E5` — změřeno, že
 s vyprázdněnými testy a sabotovaným vypínačem zůstane grep zelený a spadne jedině sonda;
