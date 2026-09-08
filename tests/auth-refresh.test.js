@@ -6,11 +6,14 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
-const {
-  REFRESH_DEADLINE_MS,
-  refreshStoredAuthSession,
-  tokenSessionFilePath,
-} = require("../electron/auth.cjs");
+const authModul = require("../electron/auth.cjs");
+const { REFRESH_DEADLINE_MS, tokenSessionFilePath } = authModul;
+// Produkční podpis má výchozí hodnoty `globalThis.fetch` a `console`, takže si z nich
+// typová brána odvodí plný `Response` i celou `Console`. Naši dvojníci jsou záměrně
+// částeční — chceme měřit chování, ne stavět repliku prohlížečové odpovědi.
+const refreshStoredAuthSession = /** @type {(args: any) => Promise<any>} */ (
+  authModul.refreshStoredAuthSession
+);
 
 // Zapsaná kopie produkční konstanty: kdyby se strop tiše změnil, spadne tenhle test,
 // ne až chování naostro. Stejný vzor drží tests/logout-safety.test.js u odhlášení.
