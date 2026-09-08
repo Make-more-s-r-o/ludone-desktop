@@ -302,13 +302,34 @@ async function preflightRecording(item) {
     throw localError("invalid_input", "Manifest neodpovídá položce fronty", "permanent");
   }
 
+  // 🔴 Sada stop se odvozuje z POLOŽKY, ne z konstanty. Nahrávka bez povoleného systémového
+  // zvuku má jedinou stopu, vzniká legitimně (electron/main.cjs createMicrophoneOnlyManifest)
+  // a fronta ji zařadí vlastní větví (electron/queue.cjs enqueueMicrophoneOnlyRecording).
+  // Kdyby se tu trvalo na obou stopách, taková nahrávka by skončila TRVALOU chybou a nikdy
+  // by neodešla — tedy tichá ztráta celé nahrávky, ne jen jedné stopy.
+  const trackKinds = RECORDING_TRACK_KINDS.filter(
+    (trackKind) => safeString(item.tracks[trackKind]) !== "",
+  );
+  if (!trackKinds.includes("microphone")) {
+    throw localError("invalid_input", "Položka fronty nemá mikrofonní stopu", "permanent");
+  }
+  // Fronta a manifest se musí shodnout na tom, kolik stop nahrávka má. Rozejít se můžou jen
+  // ke škodě: jedna stopa by se tiše neodeslala. Proto je neshoda trvalá chyba, ne varování.
+  const manifestKinds = RECORDING_TRACK_KINDS.filter(
+    (trackKind) => isPlainObject(manifest.tracks?.[trackKind]),
+  );
+  if (manifestKinds.length !== trackKinds.length) {
+    throw localError(
+      "invalid_input",
+      "Manifest a fronta se neshodují v počtu stop nahrávky",
+      "permanent",
+    );
+  }
+
   // Limit všech stop se ověří dřív, než se načte token nebo odešle první init.
   const tracks = [];
-  for (const trackKind of RECORDING_TRACK_KINDS) {
+  for (const trackKind of trackKinds) {
     const filePath = safeString(item.tracks[trackKind]);
-    if (filePath === "") {
-      throw localError("invalid_input", "Položka fronty nemá obě stopy", "permanent");
-    }
     tracks.push({
       trackKind,
       ...await statTrack(filePath, manifest.tracks?.[trackKind]),
@@ -324,6 +345,20 @@ async function preflightRecording(item) {
     track.chunkHashes = hashes.chunkHashes;
     track.chunkCount = hashes.chunkHashes.length;
     track.identity = deriveUploadIdentity(clientRecordingId, track.trackKind, hashes.sha256);
+  }
+  // 🔴 Server by shodný obsah sloučil do jedné nahrávky BEZ CHYBY: při dokončení hledá
+  // duplikát podle dvojice (uživatel, otisk), druhou stopu označí za smazanou, její soubor
+  // FYZICKY SMAŽE a vrátí 200 s `recordingId` té PRVNÍ. Doloženo serverovou session
+  // 8. 9. 2026 v jejím kódu; mají na to i test, který přesně tohle očekává.
+  // ⚠️ Podmínka na POČET stop není opatrnost navíc: nahrávka může mít jen mikrofon
+  // (systémový zvuk nemusí být povolený) a `tracks[1]` by pak neexistovala.
+  if (tracks.length > 1 && tracks[0].sha256 === tracks[1].sha256) {
+    throw localError(
+      "identical_tracks",
+      "Mikrofonní a systémová stopa obsahují totéž, nejspíš ticho. "
+        + "Odeslání by nezachovalo dvě samostatné stopy a opakování nepomůže.",
+      "permanent",
+    );
   }
   return Object.freeze({ clientRecordingId, manifest, tracks: Object.freeze(tracks) });
 }
@@ -606,6 +641,19 @@ async function uploadTrack({ context, logger, recording, request, track }) {
     || !UUID_PATTERN.test(safeString(finalized.recordingId))
   ) {
     throw localError("finalization_unconfirmed", "Server nepotvrdil dokončení uploadu", "retryable");
+  }
+  // 🔴 DRUHÁ, NEZÁVISLÁ OBRANA. Když server při dokončení najde nahrávku se shodným otiskem,
+  // tuhle stopu SMAŽE a vrátí `recordingId` TÉ CIZÍ — přitom stav `stored` i platné UUID
+  // sedí, takže kontrola výš projde. Jediné, co se rozejde, je identifikátor.
+  // ⚠️ Upozornila na to serverová session; sami bychom to nepoznali, protože
+  // `verifyRemoteIdentity` porovnává velikost a otisk, a ty u kolize SEDÍ.
+  if (safeString(finalized.recordingId) !== recordingId) {
+    throw localError(
+      "recording_replaced",
+      "Server přiřadil nahrávku k jinému záznamu, než který založil. "
+        + "Tahle stopa by se neuložila samostatně a opakování nepomůže.",
+      "permanent",
+    );
   }
   return Object.freeze({ quotaWarning, recordingId, track: track.trackKind });
 }
