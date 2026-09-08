@@ -814,3 +814,36 @@ položka se k ní nikdy nedostala.
 **Co po tobě chci:** až budeš mít podepsaný build, zkus nahrát schůzku **bez systémového zvuku**
 (nepovolit sdílení zvuku obrazovky) a ověř, že položka ve frontě dojde do „odesláno". Zatím je
 to ověřené jen testy, naostro to nikdo neproklikal.
+
+## 24. Přihlašovací kontrakt doměřen — a opravil mi premisu (9. 9. 2026)
+
+Serverová session odpověděla na tři otázky, na kterých stálo přihlášení pro upload. Dvě
+potvrdila, u třetí ukázala, že **jsem se ptal na neexistující pole**.
+
+**Cookie:** `__Secure-authjs.session-token` na https, ale **číst se musí OBĚ jména** —
+i `authjs.session-token`, protože prefix závisí na protokolu v `NEXTAUTH_URL` a ten
+z repozitáře určit nejde. Jejich vlastní proxy to řeší přesně takhle. Atributy jsou
+z defaultu: `httpOnly`, `sameSite: lax`, `path: /`, `secure`. 🔴 **`domain` se nenastavuje**,
+takže cookie je host-only — `labs.ludone.cz` a `app.ludone.cz` jsou **dvě nezávislé cookie**.
+Session je JWT s platností 8 hodin.
+
+**Identita — tady jsem se mýlil.** Můj bod 21b říkal „porovnávat e-mail". Změřili, že
+`session.user.id` u nich **vůbec neexistuje** (není ani v typu) — kdo ho přečte, dostane
+`undefined`, a to je přesně ta třída chyby, která se pozná až naostro. Číselný klíč se
+jmenuje **`dbId`** a vlastnictví nahrávky klíčují právě jím (`uploaded_by = user:${dbId}`).
+E-mail je unikátní **jen mezi živými řádky**: po soft-delete může tentýž e-mail dostat nový
+řádek s jiným `dbId`. ⇒ **autorita je `dbId`, e-mail je druhá, lidsky čitelná kontrola.**
+
+**Nepřihlášený stav:** potvrzeno 200 s tělem doslova `null`. Testovat OBSAH, ne status.
+A 200 s `user` ještě neznamená „mám práva" — mají dvě fail-static větve, kdy přijde
+pravdivá identita s `role: viewer` a prázdnými právy.
+
+**Jednostopé nahrávky:** `/dokoncit` o stopách neví nic, `microphone` se nikde nechová
+jinak než `microphone+system`, podmínku na dvě nahrávky v jednom sezení nenašli.
+⇒ ostré doměření to neblokuje.
+
+**Co z toho plyne pro nás:** klient dnes posílá `Authorization: Bearer`, tedy přesně to,
+co uploadová routa nečte, a test to dokonce vynucuje. Přestavuje se to na cookie.
+
+**Čeká na tebe:** až první ostrý pokus vrátí **503 `storage_disabled`**, není to naše chyba —
+je to jejich killswitch a jeho polohu z repozitáře určit nejde. Poznáš to podle toho kódu.
