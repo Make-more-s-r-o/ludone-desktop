@@ -351,6 +351,7 @@ async function exportRecordingCopy({
 module.exports = {
   RecordingNameValidationError,
   buildRecordingUploadUrl,
+  declaredCaptureSourcesFromManifest,
   exportRecordingCopy,
   inspectOpusWebm,
   recordingTimeline,
