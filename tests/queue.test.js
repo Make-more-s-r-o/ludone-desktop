@@ -19,6 +19,7 @@ import {
   processNext,
   reduceQueueForRenderer,
   retryDelayMs,
+  retryFailedItem,
 } from "../src/lib/queue.js";
 
 const {
@@ -820,6 +821,107 @@ describe("stavový automat fronty", () => {
       state: QUEUE_STATES.FAILED,
     });
   });
+
+  it.each([`sha256:${"a".repeat(64)}`, null])(
+    "vrátí selhalo do ceka bez změny důvodu, vlastníka (%s) a vstupní fronty",
+    (ownerFingerprint) => {
+      const queued = enqueueRecording(
+        oneItemQueue(),
+        recording("3d4e7b61-e3d4-483c-94cc-a512454f6976"),
+        1_777_000_001_000,
+      ).queue;
+      queued.items[1] = {
+        ...queued.items[1],
+        attempts: 3,
+        lastFailureReason: "manifest není platný",
+        nextAttemptAt: 1_777_000_031_000,
+        ownerFingerprint,
+        state: QUEUE_STATES.FAILED,
+      };
+      const before = structuredClone(queued);
+
+      const result = retryFailedItem(queued, queued.items[1].clientRecordingId);
+
+      expect(result.item).toEqual({
+        ...before.items[1],
+        attempts: 0,
+        nextAttemptAt: null,
+        state: QUEUE_STATES.WAITING,
+      });
+      expect(result.item.lastFailureReason).toBe("manifest není platný");
+      expect(result.item.ownerFingerprint).toBe(ownerFingerprint);
+      expect(result.queue).not.toBe(queued);
+      expect(result.queue.items).not.toBe(queued.items);
+      expect(result.queue.items).toEqual([before.items[0], result.item]);
+      expect(result.queue.items[0]).toBe(queued.items[0]);
+      expect(result.queue.items[1]).toBe(result.item);
+      expect(result.item).not.toBe(queued.items[1]);
+      expect(queued).toEqual(before);
+    },
+  );
+
+  it.each([QUEUE_STATES.WAITING, QUEUE_STATES.SENDING, QUEUE_STATES.SENT])(
+    "vrácení položky ve stavu %s ponechá původní frontu i položku",
+    (state) => {
+      const queued = oneItemQueue();
+      queued.items[0] = {
+        ...queued.items[0],
+        attempts: 2,
+        lastFailureReason: "Nahrávka patří jinému účtu",
+        nextAttemptAt: 1_777_000_031_000,
+        ownerFingerprint: `sha256:${"a".repeat(64)}`,
+        requiresHumanAction: true,
+        state,
+      };
+      const before = structuredClone(queued);
+
+      const result = retryFailedItem(queued, queued.items[0].clientRecordingId);
+
+      expect(result.queue).toBe(queued);
+      expect(result.item).toBe(queued.items[0]);
+      expect(queued).toEqual(before);
+    },
+  );
+
+  it("vrácení neznámého clientRecordingId odmítne a frontu nezmění", () => {
+    const queued = oneItemQueue();
+    queued.items[0] = { ...queued.items[0], attempts: 3, state: QUEUE_STATES.FAILED };
+    const before = structuredClone(queued);
+
+    expect(() => retryFailedItem(queued, "nezname-id"))
+      .toThrow("položka fronty nebyla nalezena");
+    expect(queued).toEqual(before);
+  });
+
+  it.each([FAILURE_CLASSES.PERMANENT, FAILURE_CLASSES.RETRYABLE])(
+    "po selhání %s umožní nový pokus s obnoveným rozpočtem pokusů",
+    async (failureClass) => {
+      const queued = oneItemQueue();
+      queued.items[0] = { ...queued.items[0], attempts: 2 };
+      const failed = await processNext(queued, killswitches(ENABLED_SETTING), async () => {
+        throw Object.assign(new Error("server odmítl nahrávku"), { failureClass });
+      }, {
+        now: 1_777_000_001_000,
+        retryPolicy: { maxAttempts: 3 },
+      });
+      expect(failed.outcome).toBe("failed");
+      const retried = retryFailedItem(failed.queue, failed.item.clientRecordingId);
+      const send = vi.fn().mockResolvedValue(undefined);
+
+      const result = await processNext(retried.queue, killswitches(ENABLED_SETTING), send, {
+        now: 1_777_000_001_000,
+      });
+
+      expect(send).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+        clientRecordingId: failed.item.clientRecordingId,
+        attempts: 1,
+        lastFailureReason: "server odmítl nahrávku",
+        state: QUEUE_STATES.SENDING,
+      }));
+      expect(result.outcome).toBe("sent");
+      expect(result.item.state).toBe(QUEUE_STATES.SENT);
+    },
+  );
 
   it("opakování používá rostoucí exponenciální prodlevu s pevným stropem", () => {
     const policy = { baseDelayMs: 100, maxDelayMs: 350, jitterRatio: 0.2 };

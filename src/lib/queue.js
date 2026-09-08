@@ -344,6 +344,25 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
   return { item, queue: replaceItem(queue, index, item) };
 }
 
+export function retryFailedItem(queue, clientRecordingId) {
+  requireQueue(queue);
+  requireNonEmptyString(clientRecordingId, "clientRecordingId");
+  const index = queue.items.findIndex((item) => item.clientRecordingId === clientRecordingId);
+  if (index === -1) throw new Error("položka fronty nebyla nalezena");
+
+  const originalItem = queue.items[index];
+  if (originalItem.state !== QUEUE_STATES.FAILED) return { item: originalItem, queue };
+
+  // Důvod zůstává pro rozhodnutí člověka a původní otisk pro kontrolu vlastníka.
+  const item = {
+    ...originalItem,
+    attempts: 0,
+    nextAttemptAt: null,
+    state: QUEUE_STATES.WAITING,
+  };
+  return { item, queue: replaceItem(queue, index, item) };
+}
+
 /** Exponenciální prodleva s kladným jitterem a pevným stropem. */
 export function retryDelayMs(attempts, retryPolicy = {}, random = Math.random) {
   if (!Number.isSafeInteger(attempts) || attempts <= 0) {
