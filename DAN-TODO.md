@@ -547,3 +547,29 @@ Dnes to nevadí, protože repo zůstává privátní — ale kdyby se zveřejně
 u nich píše „jsou to pípání, ne lidé". Naměřeno **−58 dB, tedy prakticky ticho** — obsahem to
 nejspíš sedí. Ale **původem je to skutečný vestavěný mikrofon MacBooku, ne syntéza, a nikdo
 si je neposlechl.** Je to na jedno poslechnutí.
+
+## 18. ✅ Rozhodnuto samostatně 8. 9. — runner jako služba, nálezy předány
+
+Dan řekl „dohlídej to, pracuj samostatně". Tři body, které visely, jsem rozhodl sám:
+
+**CI runner je teď služba.** Ráno se stroj restartoval a runner nenaskočil — GitHub ho hlásil
+`offline` a **každý PR by čekal ve frontě donekonečna**. Zaregistrován přes `svc.sh install`
+jako `actions.runner.Make-more-s-r-o-ludone-desktop.danuv-mac`, po restartu naskočí sám.
+Vrátit zpět jde `svc.sh uninstall`.
+
+**Bezpečnostní nálezy K1–K5 předány serverové session** s výslovnou poznámkou, že jsou
+**převzaté z naší dokumentace, tedy tvrzení, ne měření**, a že rozhodnutí je Danovo.
+Není to externí komunikace — je to peer session na témž stroji, která ty systémy staví.
+
+**Adresa serveru pro distribuci vyžádána** od téže session. Vymyslet ji za Dana nešlo:
+v repu žádné místo pro statické soubory není a přístup má mimo repozitář.
+
+### Co je připravené a čeká jen na tu adresu
+
+Podepsané balíčky leží v `release/` (mimo git, `.gitignore` je pokrývá):
+`LuDone Desktop-0.1.0-arm64.dmg` (106 MB) a `-x64.dmg` (112 MB), plus `.zip` k oběma.
+
+Až adresa dorazí, zbývají tři kroky: přepnout `build.publish` na `provider: "generic"`,
+**upravit `tests/packaging.test.js:150`** (asertuje přesnou hodnotu `provider: "github"`,
+takže bez úpravy shodí každý push) a doplnit krok nahrání — 🔴 **`electron-builder` na
+vlastní server sám nenahrává**, `--publish always` u `generic` mlčky neudělá nic.
