@@ -1095,3 +1095,32 @@ mrtvý kód (`MCP_OAUTH_SCOPES = ["mcp:read", "mcp:draft"]`, `src/mcp/oauth/conf
 ⚠️ **A opačným směrem to nepřehánět:** ověřený je **příjem u nich**. Že hodnota projde **celou
 cestou od našeho desktopu** — přes exportovaný soubor a nahrávací stránku až do záznamu — nikdo
 neviděl. Osy `scope` a `exposure` u `DSK-F010` (`draft` / `disabled`) zůstávají.
+
+### D36d — `declaredCaptureSources` je tvrzení, ne měření
+
+**Zdroj: serverová session, 8. 9. 2026**, při domluvě o `declaredCaptureSources`.
+Navazuje na D36c; přebíráme jejich mantinel, **není to naše měření**:
+
+> `declaredCaptureSources` zůstává **tvrzením, ne měřením**. Jakmile ho stránka bere z adresy,
+> může ho tam napsat kdokoli, kdo si ji otevře.
+
+Platí tři pravidla v jejich znění:
+
+- server hodnotu **ověřuje proti výčtu** a neznámou ukládá jako `NULL` — upload se nezahazuje
+- v aplikaci se zobrazuje jako **tvrzení o zdroji**, nikdy jako doklad, že mikrofon opravdu běžel
+- stránka ji bere **jen z adresy, se kterou byla otevřená** — nikam si ji neukládá a nepřenáší
+  na jiný upload
+
+**Dnes (8. 9. 2026) tu hodnotu v desktopové aplikaci nikde nezobrazujeme**, takže se mantinel
+pro její zobrazení nemá kde porušit. Zapisuje se preventivně, aby se neporušil,
+**až se zobrazovat začne**.
+
+Čtvrté pravidlo do budoucna:
+
+> Kdyby to někdy mělo být měření, musí to doložit **obsah souboru** (počet kanálů z remuxu),
+> ne parametr v odkazu.
+
+Proto jsme vyráběli nahrávku s tichou stopou (`vzorky/jednostopa-440hz-ticho.webm`, viz D28):
+**dvoukanálový soubor není důkaz dvou mluvčích** — pravý kanál může být digitální ticho.
+Počet kanálů doložený obsahem souboru vypovídá o souboru, ne o počtu mluvčích;
+**parametr v odkazu není důkaz vůbec ničeho** o skutečně zachyceném zvuku.

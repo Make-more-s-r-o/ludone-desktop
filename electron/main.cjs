@@ -766,7 +766,8 @@ function checkTrayVisibilityAfterStartup() {
     const bounds = tray.getBounds();
     const display = screen.getDisplayMatching(bounds);
     probablyOutsideStatusArea = trayIsProbablyOutsideStatusArea(bounds, display);
-  } catch {
+  } catch (error) {
+    console.error(`[tray] Viditelnost ikony se nepodařilo ověřit: ${error.message}`);
     return;
   }
   if (!probablyOutsideStatusArea) return;
