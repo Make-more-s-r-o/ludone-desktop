@@ -118,9 +118,29 @@ MCP nástroje staví aplikace, ne desktop (S2). Ale aby to šlo, musí uložená
 
 ## 7. Co tenhle dokument ruší
 
-| Ruší se | Proč |
+🔴 **UVEDENO NA PRAVOU MÍRU 8. 9. 2026: tahle tabulka ruší routu, která ŽIJE, a zavádí tu,
+která NEEXISTUJE.** Odůvodnění bylo navíc doložitelně nepravdivé — odkazovalo na
+`src/lib/queue.js:98-109` s tvrzením, že tam fronta stojí na `/api/desktop/recordings`.
+Na těch řádcích je funkce `normalizeRetryPolicy`, tedy validace `baseDelayMs`, `maxDelayMs`
+a `jitterRatio`. **Žádná adresa tam není** a nikdy nebyla: `src/lib/queue.js` ani
+`electron/queue.cjs` neobsahují řetězec `api/` ani jednou. Fronta je vůči přenosu neutrální,
+HTTP dělá výhradně `electron/upload-client.cjs`.
+
+**Změřeno:**
+
+| adresa | výskytů v repu | z toho v KÓDU |
+|---|---|---|
+| `/api/desktop/recordings` | 19 | 🔴 **0** |
+| `/api/nahravky/uploads` | 31 | **4** — `upload-client.cjs:555, 575, 583, 585` |
+
+Serverová session 8. 9. potvrdila, že routa `/api/desktop/recordings` **u nich neexistuje**,
+a doložila tři skutečné POSTy na `/api/nahravky/uploads` s HTTP 201 a přečtenými hodnotami
+z databáze. ⇒ **Platí `/api/nahravky/uploads`.** Řádek níž je ponechaný jako záznam toho,
+co se kdy tvrdilo, ne jako pokyn.
+
+| Rušilo se (NEPLATÍ) | Původní zdůvodnění (nepravdivé) |
 |---|---|
-| `POST /api/nahravky/uploads` s číslovanými částmi (`specs/E5-server-prijem.md`) | Hotová fronta v `src/lib/queue.js:98-109` stojí na `/api/desktop/recordings`; druhá varianta by znamenala přepsat frontu i její testy |
+| ~~`POST /api/nahravky/uploads` s číslovanými částmi~~ | ~~fronta v `src/lib/queue.js:98-109` stojí na `/api/desktop/recordings`~~ |
 | `track IN ('mic','system')` | Sjednoceno na `microphone` / `system` |
 | Klíč `${sessionId}:${track}` | Nahrazen `clientRecordingId` na úrovni **nahrávky**, ne stopy |
 | `recordings` ve významu „jedna stopa" | Znamená **schůzku** |
