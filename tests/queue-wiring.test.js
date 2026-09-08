@@ -2912,6 +2912,30 @@ describe("viditelnost ikony a klikání na lištu", () => {
     expect(harness.windows).toHaveLength(1);
   });
 
+  it.each(["tray.getBounds", "screen.getDisplayMatching"])(
+    "při výjimce z %s zaloguje důvod a vrátí se bez varovného okna",
+    async (method) => {
+      const harness = await loadMain({
+        trayBounds: { x: 599, y: 0, width: 34, height: 33 },
+      });
+      await harness.runReady();
+      const failingMethod = method === "tray.getBounds"
+        ? vi.spyOn(harness.trays[0], "getBounds")
+        : harness.electron.screen.getDisplayMatching;
+      failingMethod.mockImplementationOnce(() => {
+        throw new Error("macOS geometrii neposkytl");
+      });
+      harness.quietConsole.error.mockClear();
+
+      expect(() => harness.runTrayVisibilityCheck()).not.toThrow();
+
+      expect(harness.quietConsole.error).toHaveBeenCalledExactlyOnceWith(
+        "[tray] Viditelnost ikony se nepodařilo ověřit: macOS geometrii neposkytl",
+      );
+      expect(harness.windows).toHaveLength(1);
+    },
+  );
+
   it("varuje nejvýš jednou za spuštění i po zavření okna", async () => {
     const harness = await loadMain({
       trayBounds: { x: 599, y: 0, width: 34, height: 33 },
