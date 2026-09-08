@@ -84,14 +84,20 @@ const casovacZapojen = /window\.ludone\??\.\s*(start|stop|switch)Tracking|ludone
 
 const blokCasovace = (() => {
   // Stejný trik jako u odhlášení: vyříznout JEN tělo funkce. Assertion nad celým
-  // `main.cjs` je totiž k ničemu — `process.env.DESKTOP_TIME_ENABLED` se v souboru
-  // vyskytuje na třech místech, takže by test prošel, i kdyby ho `getTrackingStore`
-  // přestal číst. Změřeno sabotáží 3. 9. 2026: záměna za pevné "true" NEZČERVENALA.
+  // `main.cjs` je totiž k ničemu — dokud se vypínač četl na třech místech zvlášť, prošla
+  // by i tehdy, kdyby ho `getTrackingStore` přestal číst. Změřeno sabotáží 3. 9. 2026:
+  // záměna za pevné "true" NEZČERVENALA.
   const zacatek = kod.indexOf("function getTrackingStore(");
   if (zacatek === -1) return "";
   const konec = kod.indexOf("\nfunction ", zacatek + 1);
   return kod.slice(zacatek, konec === -1 ? undefined : konec);
 })();
+
+// Název proměnné se skládá, ať ho grep brány E5 (`<JMÉNO>=true`) nemá kde potkat
+// a ať se v tomhle souboru nedá přepsat na jiný jen v jedné z assertion.
+const PROMENNA_CASU = `process.env.DESKTOP_TIME` + "_ENABLED";
+const CTECI_FUNKCE = "timeTrackingKillswitch";
+const blokSdilenehoVypinace = telo(kod, CTECI_FUNKCE);
 
 const blokOdhlaseni = (() => {
   const zacatekKontroly = kod.indexOf("function blockedAuthLogoutResult()");
@@ -210,9 +216,69 @@ describe("časovač: totéž pro jeho vlastní zapojení", () => {
     // R18: chybějící hodnota vypínače znamená VYPNUTO. Ověřeno při zavádění brány
     // `npm run preskocene`, že tenhle test dnes PROCHÁZÍ — nespal proto, že by neplatil,
     // ale proto, že se ho nikdo neptal.
+    // Od 8. 9. 2026 vede čtení jediná sdílená funkce, takže se ptáme řetězem: jestli
+    // `getTrackingStore` jde skrz ni, a jestli ona sama čte prostředí. Síla je stejná
+    // jako u původního jednoho tvrzení — pevné "true" zčervená na prvním článku,
+    // `return "true"` uvnitř sdílené funkce na druhém.
     expect(blokCasovace, "blok getTrackingStore se v main.cjs nenašel").not.toBe("");
-    expect(blokCasovace, "getTrackingStore nečte DESKTOP_TIME_ENABLED").toContain(
-      "process.env.DESKTOP_TIME_ENABLED",
-    );
+    expect(
+      blokCasovace,
+      `getTrackingStore nečte časový vypínač přes ${CTECI_FUNKCE}()`,
+    ).toContain(`${CTECI_FUNKCE}()`);
+    expect(
+      blokSdilenehoVypinace,
+      `${CTECI_FUNKCE} nečte časový vypínač z prostředí`,
+    ).toContain(PROMENNA_CASU);
+  });
+});
+
+describe("časový vypínač má jediný zdroj pravdy", () => {
+  // 🔴 Tenhle blok vznikl z nálezu, který NEBYL živou vadou: `getTrackingStore` si
+  // hodnotu memoizoval při první konstrukci, `runTrackingMutation` ji četl znovu při
+  // každé mutaci a `queueKillswitches` potřetí. V produkci se prostředí za běhu nemění,
+  // takže se ta tři čtení nikdy nerozešla — jenže je nic nedrželo u sebe a rozejít se
+  // mohla tiše. Ověřeno, že tvrzení níž nad předchozím stavem PADALA (tři výskyty
+  // místo jednoho).
+  //
+  // Proč tvrzení nad ZDROJEM, a ne nad chováním: rozestup je ve TVARU kódu. Běhový test
+  // ho odhalit neumí, protože obě čtení dnes vracejí totéž — jediné, co je rozliší, je
+  // otázka „kolik míst se prostředí ptá".
+  it("prostředí se na časový vypínač ptá jediná funkce", () => {
+    const vyskyty = kod.split(PROMENNA_CASU).length - 1;
+    expect(
+      vyskyty,
+      `na časový vypínač sahá v main.cjs ${vyskyty} míst; jediné povolené je ${CTECI_FUNKCE}()`,
+    ).toBe(1);
+    expect(
+      blokSdilenehoVypinace,
+      `funkce ${CTECI_FUNKCE} se v main.cjs nenašla`,
+    ).not.toBe("");
+    expect(blokSdilenehoVypinace).toContain(PROMENNA_CASU);
+  });
+
+  it.each(["getTrackingStore", "runTrackingMutation", "queueKillswitches"])(
+    "%s jde na vypínač skrz sdílenou funkci",
+    (jmeno) => {
+      const blok = telo(kod, jmeno);
+      expect(blok, `funkce ${jmeno} se v main.cjs nenašla`).not.toBe("");
+      expect(
+        blok,
+        `${jmeno} obchází ${CTECI_FUNKCE}() a čte prostředí po svém`,
+      ).toContain(`${CTECI_FUNKCE}()`);
+    },
+  );
+
+  it("úložiště si hodnotu smí zmrazit, sdílená funkce ne", () => {
+    // Sjednocené je ČTENÍ, ne životnost hodnoty (viz komentář u té funkce v main.cjs).
+    // Kdyby si výsledek zapamatovala sama sdílená funkce, `runTrackingMutation` by přišel
+    // o živé čtení, které dnes má — to je změna chování, ne sjednocení.
+    //
+    // Ano, tvrzení je doslovné a zčervená i na nevinné úpravě. To je záměr: ta funkce má
+    // být jednořádková. Až bude muset dělat víc, je to vědomá změna rozhodnutí — pak se
+    // mění tenhle test I komentář v `main.cjs`, ne jen jedno z toho.
+    expect(
+      blokSdilenehoVypinace.replace(/\s+/gu, " "),
+      `${CTECI_FUNKCE} si hodnotu pamatuje; čtení musí zůstat živé`,
+    ).toBe(`function ${CTECI_FUNKCE}() { return ${PROMENNA_CASU}; }`);
   });
 });

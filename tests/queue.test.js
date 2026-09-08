@@ -114,9 +114,13 @@ function functionDeclarationSource(source, name) {
   throw new Error(`Funkce ${name} nemá uzavřené tělo`);
 }
 
+// Vypínače čte produkce přes sdílenou `timeTrackingKillswitch()`, takže se sem musí
+// vytáhnout obě funkce. Bez té sdílené by `queueKillswitches()` spadl na ReferenceError
+// — což je mimochodem doklad, že se tu měří produkční zapojení, ne jeho opis.
 const readProductionQueueKillswitches = Function(
   "process",
   `"use strict";
+  ${functionDeclarationSource(mainSource, "timeTrackingKillswitch")}
   ${functionDeclarationSource(mainSource, "queueKillswitches")}
   return queueKillswitches();`,
 );
