@@ -257,6 +257,27 @@ nákup kreditů. **Nic z toho nebylo potřeba.**
 **Řešení, které jsem zavedl hned:** delegace z téhle session nastavují
 `CODEX_HOME=/Users/dan/.codex` výslovně.
 
+### ⚠️ Oprava mé rady (změřeno 8. 9. ve 3:42) — panel přemapovat NEMUSÍŠ
+
+Napsal jsem ti, že *„Codex se musí pouštět mimo Orca panel, protože Orca si `CODEX_HOME`
+přepíše po mně"*. **Není to doložené a beru to zpět.**
+
+Ověření logu ukázalo, že běh **přes Orca panel vůbec nespadl**: `turn.completed`, **nula**
+chyb, odpověď 32 kB. Můj monitor ho odepsal na `grep "usage limit"` — a ten řetězec byl
+**citace z `DAN-TODO.md`**, který si Codex načetl jako podklad. Měřidlo souhlasilo a
+neměřilo, co mělo.
+
+⇒ **Nastavení `CODEX_HOME` v příkazu funguje i uvnitř Orca panelu.** Přemapování panelu je
+tedy volitelné pohodlí, ne nutnost.
+
+**Co platí dál** (změřeno dvakrát nezávisle, tohle se nemění):
+- Orca mapuje tenhle worktree na `dan.jirotka@gmail.com`, který **je** vyčerpaný do 13. 9.
+- `~/.codex` = `dan.jirotka@makemore.cz` **funguje**
+- **kredity kupovat nemusíš**
+
+**Co si z toho beru:** grep na řetězec v logu je fail-open na citaci. Selhání běhu se pozná
+podle `turn.failed` / `"type":"error"`, ne podle toho, že se někde v logu vyskytlo slovo.
+
 **Co můžeš udělat ty (nespěchá):** přemapovat panel v Orce na účet `makemore.cz`, ať to
 platí i pro panely, které pouštíš ručně. Jinak bude Orca dál tiše sahat na gmail účet.
 
