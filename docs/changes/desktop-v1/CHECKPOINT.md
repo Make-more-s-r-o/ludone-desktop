@@ -1363,3 +1363,41 @@ disabled` u F010 je tím **doložitelně správně**, ne opatrnost.
 ⚠️ **Co ověřené pořád není:** že hodnota projde **celou cestou od našeho desktopu** — přes
 exportovaný soubor a nahrávací stránku až do záznamu. Ověřený je **příjem u nich**. Osy `scope`
 a `exposure` u `DSK-F010` (`draft` / `disabled`) proto zůstávají.
+
+## 8. 9. 2026, 04:10 — běh ukončen
+
+**PR #103 sloučen** (`Leave a trace when the tray visibility check gives up`) — poslední
+packet noci. Zelenou jsem četl přes `gh pr view --json statusCheckRollup`
+(`gates COMPLETED SUCCESS`), ne přes návratový kód; to je poučení z PR #89, kdy jsem
+mergnul na `gh run watch --exit-status`, které vrátilo 0 pro běh s `conclusion: failure`.
+
+**Stav po sloučení:** `main` na `74a73de` · 0 otevřených PR · 0 osiřelých `orca/*` větví
+(smazáno 18, každá měla sloučené PR) · pracovní strom čistý · žádný běžící Codex proces.
+
+### Co v tomhle packetu bylo
+
+`checkTrayVisibilityAfterStartup` měl doslova prázdný `catch { return; }`. Přibyl jeden
+řádek logu ve tvaru dvou sourozeneckých catch bloků téhož modulu (`:756`, `:781`).
+**Chování se nezměnilo** — pořád se tiše vrací.
+
+⚠️ **Není to oprava vady.** Průzkum funkcí se slibem ve jméně to sám **nenahlásil** jako
+nález, protože neprokázal dosažitelnou výjimku. Následek tichého selhání je jen to, že se
+nezobrazí informační varování o poloze ikony. Ať to za půl roku nikdo nečte jako díru.
+
+Druhá půlka packetu je **D36d** — mantinel od serverové session k `declaredCaptureSources`
+(„zůstává tvrzením, ne měřením"), zapsaný výslovně jako **jejich měření, ne naše**,
+a **pro budoucnost**: dnes tu hodnotu v aplikaci nikde nezobrazujeme.
+
+### Sabotáž, která vyšla zeleně — a proč to není díra
+
+Smazání `return;` z toho catch bloku nic neshodilo. Správná otázka byla „trefil jsem cíl?",
+ne „chybí zámek?": následující `if (!probablyOutsideStatusArea) return;` udělá pro
+`undefined` přesně totéž. Ten `return` je fakticky **redundantní** — „tiše se vrátí" drží
+až ten další řádek. Nechali jsme ho tam (čitelnost záměru), ale je to zapsané.
+
+### Poznámky k měření, které stály čas
+
+- První měření bran vracelo návratový kód `tail`, protože `$?` stálo za `| tail`. Přeměřeno bez pipe.
+- Doběhnutí Codexu se pozná **strukturou** logu (`turn.completed` 1×, `turn.failed` 0×,
+  `{"type":"error"` 0×), **ne grepem na řetězec** — grep na „usage limit" mi jednou sedl na
+  citaci z `DAN-TODO.md`, kterou si Codex přečetl, a vyrobil falešný závěr.
