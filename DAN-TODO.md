@@ -249,6 +249,11 @@ to purchase more credits or try again at Sep 13th, 2026 10:00 PM.
 Codex nestihl ani otevřít zadání — přečetl jeden dokument a spadl. **Nic po něm na disku
 nezbylo**, takže se nic nedokončuje ručně, jen se to pustí jinde.
 
+🔴 **PŘEMĚŘENO 8. 9. ve 3:10** (řekls „codex obnovený, nasaď to"): **limit se NEOBNOVIL.**
+Zkušební běh vrátil za 4 s **tutéž hlášku a totéž datum** — `Sep 13th, 2026 10:00 PM`.
+Konfigurační chyba se vyloučila zvlášť (`--skip-git-repo-check`), jiné modely ani účty se
+nezkoušely. Do 13. 9. tedy Codex opravdu nejede.
+
 **Co to znamená pro tvoje pravidlo „delegace na Codex co nejvíc":** tenhle týden neplatí.
 Router v `~/.claude/CLAUDE.md` posílá na Codex implementaci, refaktory, testy, migrace
 i bulk editace — do 13. 9. to všechno spadne zpátky na Claude limit.
@@ -311,7 +316,22 @@ zůstaly. Ale je to změna zapsaného rozhodnutí, takže patří tobě.
 
 ---
 
-## 14. 🔴 Opravuju vlastní tvrzení: PR #88 platí jen při ukončování aplikace
+## 14. ✅ VYŘEŠENO (PR #100) — a nechal jsem tu viset zastaralý úkol
+
+🔴 **Tenhle bod jsem napsal ve 23:37 a ve 23:49 ho sám vyřešil PR #100 — a TODO
+neaktualizoval.** Čtyři hodiny tu na tebe čekal úkol, který byl hotový. Je to **přesně ta
+vada, kterou jsem celou noc opravoval ve `spec.md`**: dokument stárne rychleji než kód,
+a nejrychleji ze všech ten, který sám píšu.
+
+`showPanel()` v běhové cestě `runTrackingMutation` **je v `main`**, akceptační podmínka
+v `E9.sh` je rozdělená na quit i běhovou větev, obě sabotované zvlášť.
+
+⚠️ **Co z bodu 14 platí dál:** `TrackingCard.jsx` je pořád atrapa a s opravou #100
+nesouvisí — viz bod 15.
+
+### Původní zápis (ponechán, ať je vidět, co se opravovalo)
+
+## 14b. Opravuju vlastní tvrzení: PR #88 platil jen při ukončování aplikace
 
 Napsal jsem ti, že *„zaznamenaný čas se při chybě fronty tiše ztrácel, teď tě appka zastaví"*.
 **Platí to jen na cestě ukončování.**
