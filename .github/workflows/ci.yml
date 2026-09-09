@@ -19,20 +19,16 @@ concurrency:
 
 jobs:
   gates:
-    # 🔴 Repozitář je od 3. 9. zase PRIVÁTNÍ (viz DAN-TODO.md, sekce o zveřejnění),
-    # takže hostované runnery zase spotřebovávají placené minuty — a ty jsou vyčerpané.
-    # Brána proto běží na vlastním runneru `danuv-mac`. Cena té volby: když je Mac
-    # vypnutý, job ČEKÁ ve frontě, nespadne.
+    # 🔴 Brána NESMÍ běžet na vlastním runneru, dokud je repozitář veřejný. Kdokoli by si
+    # udělal fork, přidal soubor do `tests/` a jeho kód by se spustil na tom stroji — a na
+    # Danově Macu leží podpisový certifikát firmy, SSH klíče k produkci a dvacet dalších
+    # firemních repozitářů. Není to teoretická úvaha: `pull_request` níž nemá omezení
+    # a job se zařadí komukoli. Runner `danuv-mac` byl proto 9. 9. 2026 odregistrován.
     #
-    # Až se billing spraví nebo repozitář znovu zveřejní, je návrat jednořádkový:
-    # Linux je pro tuhle bránu dost — nic macOS-specifického tu neběží a macOS runner
-    # se účtuje 10× dráž, kdyby se repozitář někdy vrátil do privátního režimu.
-    #
-    # Záloha: na Danově Macu je registrovaný vlastní runner se štítky `self-hosted, macos`.
-    # Přepnutí je jednořádkové a hodí se, kdyby hostované runnery vypadly — nebo až se
-    # jednou zapnou oba smoke kroky níž, které potřebují GUI, zvuk a oprávnění Záznam
-    # obrazovky. Ty runner GitHubu nikdy mít nebude, proto jsou dnes `if: false`.
-    runs-on: [self-hosted, macos]
+    # Linux na tuhle bránu stačí — nic macOS-specifického tu neběží. Oba smoke kroky dole,
+    # které potřebují GUI, zvuk a oprávnění Záznam obrazovky, jsou vypnuté a spouští je
+    # člověk na skutečném Macu; runner GitHubu je mít nikdy nebude.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
