@@ -21,10 +21,8 @@ proaktivně spolu."*
 
 | # | Co | Kdo to má | Stav | Doložení / poznámka |
 |---|---|---|---|---|
-| P1 | **Postavit `stahnout.ludone.cz`** — vhost, kořen `/opt/makemore-data/stahnout/desktop/`, TLS certifikát pro tenhle název | serverová session | `nový` | Změřeno z desktopu 9. 9.: doména míří na `23.88.61.12`, ale server odpovídá certifikátem pro `data.ludone.cz` (SAN tenhle název neobsahuje), adresář `/opt/makemore-data/stahnout` **neexistuje** a v konfiguraci nginxu není o `stahnout` zmínka. TLS drží dockerový `makemore-nginx` + `makemore-certbot`. Detail v P1a. |
-| P1a | Potvrdit, jestli smí desktopová session na ten stroj sahat, nebo to udělá serverová | serverová session | `nový` | Dan to schválil dopředu („vhost, kořen, scp stávajícím klíčem, TLS přes certbot"), ale ten nginx obsluhuje i produkční `data.ludone.cz`. Desktopová session do produkce sahat nechce naslepo. |
-| P2 | **Přijmout `Authorization: Bearer` na uploadových routách** (nebo jinou cestu, která nevyžaduje druhé přihlášení) | serverová session | `nový` | Viz „Rozhodnutí, které visí" níž. Toto je nejlevnější cesta z pohledu uživatele: nemusí dělat nic navíc. |
-| P3 | Poloha killswitche `isNahravkyUploadEnabled()` na labs i prod | serverová session | `nový` | Serverová session sama upozornila, že z repozitáře to určit nejde a první ostrý pokus může vrátit 503 `storage_disabled`. Desktop to už umí odlišit od přechodné chyby (PR #113), ale rád bych věděl polohu předem, ať ostrý test nezačne falešným poplachem. |
+| P2 | **Přijmout `Authorization: Bearer` na uploadových routách**, nebo jinou cestu, která po uživateli nechce druhé přihlášení | **Dan** | `čeká na rozhodnutí` | Serverová session změřila, že proveditelné to je (`upload-guard.ts:76` je jediný vstupní bod), ale za šesti podmínkami — a je to rozšíření autentizační plochy o zápisovou cestu, tedy Danovo rozhodnutí, ne dohoda dvou session. 🔴 Bez tohohle rozhodnutí **upload nahrávek nejde dostavět**: server nečte token, který posíláme, a cookie z aplikace vzít nejde, dokud se přihlášení neodehraje uvnitř ní. |
+| P4 | Ověřit **obsahem buildu**, že zúžení `redirect_uris` je na produkci | serverová session | `staví se` | Merge spouští nasazení sám; zelený běh nasazení není důkaz. |
 
 ## Hotové a doložené
 
@@ -35,6 +33,12 @@ proaktivně spolu."*
 | H3 | Cesta ze stavu `selhalo` zpět do fronty | desktop | PR #112 |
 | H4 | 503 se rozlišuje podle těla, ne podle statusu | desktop | PR #113. Serverová session doložila tři různé stavy pod jedním statusem. |
 | H5 | Kontrakt přihlášení změřen (cookie, `dbId`, jednostopé nahrávky) | serverová session | Její zpráva 9. 9., cituje vlastní zdrojové soubory. Opravila přitom naši premisu: `session.user.id` neexistuje. |
+| H6 | **`stahnout.ludone.cz` běží** — vhost, TLS, výpis adresáře, stahování po částech | serverová session | Ověřeno HTTP dotazy, ne z konfigurace. Produkce se nehnula. |
+| H7 | **Instalačky jsou nahrané a ověřené naostro** | desktop | Staženo zpět: otisk sedí s manifestem, Gatekeeper hlásí `accepted` + notarizováno, `Range` vrací 206. Obě architektury. |
+| H8 | Aplikace už neregistruje nového OAuth klienta při každém přihlášení | desktop | PR #115, sabotáže 4/4 červené. Odstraňuje i riziko vyčerpání limitu 20 registrací/h za firemním NATem. |
+| H9 | **Zúžení `redirect_uris`** (loopback výčtem neprochází, takže desktop jede dál) | serverová session | Jejich PR #1295 smergnut; nasazení na produkci se ověřuje jako P4. |
+| H10 | Přepínač odesílání jde nastavit i v zabalené aplikaci | desktop | PR #114. Dosud byl z Finderu nedosažitelný. |
+| H11 | Repozitář `ludone-desktop` je veřejný a brány běží u GitHubu | desktop | Runner odregistrován z Danova Macu **před** publikací — veřejný repozitář s vlastním runnerem znamená spuštění cizího kódu na tom stroji. |
 
 ## Rozhodnutí, které visí
 
