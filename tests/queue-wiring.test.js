@@ -1363,6 +1363,173 @@ describe("zapojení systémových nastavení", () => {
   });
 });
 
+describe("uložený vypínač odesílání v hlavním procesu", () => {
+  const switches = [
+    { suffix: "upload-enabled", key: "uploadEnabled", envName: "DESKTOP_UPLOAD_ENABLED" },
+  ];
+
+  it("čerstvá zabalená aplikace má odesílání vypnuté a nezapisuje výchozí volby", async () => {
+    const harness = await loadMain({ isPackaged: true });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+
+    for (const { suffix } of switches) {
+      expect(harness.ipcHandlers.get(`settings:get-${suffix}`)(settingsEvent)).toBe(false);
+    }
+    expect(harness.ipcHandlers.has("settings:get-time-enabled")).toBe(false);
+    expect(harness.ipcHandlers.has("settings:set-time-enabled")).toBe(false);
+    await expect(readFile(path.join(harness.userDataPath, "nastaveni", "aplikace.json")))
+      .rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("uložený vypínač přežije restart zabalené aplikace i mezilehlou změnu Docku", async () => {
+    const firstProcess = await loadMain({ isPackaged: true });
+    await firstProcess.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(firstProcess);
+
+    for (const { suffix } of switches) {
+      await expect(firstProcess.ipcHandlers.get(`settings:set-${suffix}`)(settingsEvent, true))
+        .resolves.toBe(true);
+    }
+    await firstProcess.ipcHandlers.get("settings:set-dock-visible")(settingsEvent, true);
+
+    const secondProcess = await loadMain({
+      isPackaged: true, userDataPath: firstProcess.userDataPath,
+    });
+    await secondProcess.runReady();
+    const restarted = openSettingsAndCreateEvent(secondProcess);
+    for (const { suffix } of switches) {
+      expect(secondProcess.ipcHandlers.get(`settings:get-${suffix}`)(restarted.settingsEvent))
+        .toBe(true);
+    }
+    expect(secondProcess.electron.app.dock.show).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    [true, "false", false],
+    [false, "true", true],
+    [true, "", false],
+    [true, "TRUE", false],
+    [true, "1", false],
+    [true, "true ", false],
+  ])("uloženou volbu %s přebije prostředí %j na %s i po zápisu", async (stored, env, effective) => {
+    const firstProcess = await loadMain();
+    await firstProcess.runReady();
+    const firstEvent = openSettingsAndCreateEvent(firstProcess).settingsEvent;
+    for (const { suffix } of switches) {
+      await firstProcess.ipcHandlers.get(`settings:set-${suffix}`)(firstEvent, stored);
+    }
+
+    const overridden = await loadMain({
+      userDataPath: firstProcess.userDataPath,
+      env: Object.fromEntries(switches.map(({ envName }) => [envName, env])),
+    });
+    await overridden.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(overridden);
+    for (const { suffix } of switches) {
+      expect(overridden.ipcHandlers.get(`settings:get-${suffix}`)(settingsEvent)).toBe(effective);
+      await expect(overridden.ipcHandlers.get(`settings:set-${suffix}`)(settingsEvent, stored))
+        .resolves.toBe(effective);
+    }
+
+    const restarted = await loadMain({ userDataPath: firstProcess.userDataPath });
+    await restarted.runReady();
+    const lastEvent = openSettingsAndCreateEvent(restarted).settingsEvent;
+    for (const { suffix } of switches) {
+      expect(restarted.ipcHandlers.get(`settings:get-${suffix}`)(lastEvent)).toBe(stored);
+    }
+  });
+
+  it.each(["{rozbitý JSON", JSON.stringify({
+    schemaVersion: 1, uploadEnabled: "true",
+  })])("poškozený soubor %s nezapne vypínač ani neshodí start", async (contents) => {
+    const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-main-settings-invalid-"));
+    temporaryRoots.add(userDataPath);
+    await mkdir(path.join(userDataPath, "nastaveni"), { recursive: true });
+    await writeFile(path.join(userDataPath, "nastaveni", "aplikace.json"), contents);
+    const harness = await loadMain({ userDataPath });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+
+    for (const { suffix } of switches) {
+      expect(harness.ipcHandlers.get(`settings:get-${suffix}`)(settingsEvent)).toBe(false);
+    }
+  });
+
+  it("IPC zápis se projeví v pumpě, opakování i soupisu jediné instance fronty", async () => {
+    const items = ["recording", "time"].map((kind) => ({ kind, state: "ceka" }));
+    const store = {
+      enqueueRecording: vi.fn(),
+      enqueueTimeEntry: vi.fn(),
+      list: vi.fn(async () => items),
+      pump: vi.fn(async () => ({ outcome: "idle" })),
+      retry: vi.fn(async () => ({ items, outcome: "idle", reason: null })),
+    };
+    const createOutboundQueueStore = vi.fn(() => store);
+    const harness = await loadMain({ createOutboundQueueStore });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    await vi.waitFor(() => expect(store.pump).toHaveBeenCalledOnce());
+    expect(store.pump).toHaveBeenLastCalledWith({
+      DESKTOP_UPLOAD_ENABLED: "false", DESKTOP_TIME_ENABLED: undefined,
+    });
+
+    for (const upload of [true, false]) {
+      await harness.ipcHandlers.get("settings:set-upload-enabled")(settingsEvent, upload);
+      await harness.ipcHandlers.get("queue:retry")(panelEvent);
+
+      expect(store.retry).toHaveBeenLastCalledWith({
+        DESKTOP_UPLOAD_ENABLED: String(upload), DESKTOP_TIME_ENABLED: undefined,
+      });
+      const listed = await harness.ipcHandlers.get("queue:list")(panelEvent);
+      expect(listed.map((item) => item.sendingDisabledReason)).toEqual([
+        upload ? undefined : UPLOAD_DISABLED_REASON,
+        UPLOAD_DISABLED_REASON,
+      ]);
+    }
+    expect(createOutboundQueueStore).toHaveBeenCalledOnce();
+  });
+
+  it("IPC odmítne cizí okno, podřízený rám, neplatný boolean i argumenty navíc", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+
+    for (const { suffix } of switches) {
+      const get = harness.ipcHandlers.get(`settings:get-${suffix}`);
+      const set = harness.ipcHandlers.get(`settings:set-${suffix}`);
+      for (const event of [panelEvent, { ...settingsEvent, senderFrame: {} }]) {
+        expect(() => get(event)).toThrow(/nedůvěryhodný odesílatel/u);
+        expect(() => set(event, true)).toThrow(/nedůvěryhodný odesílatel/u);
+      }
+      for (const value of [undefined, null, "true", 1, {}, []]) {
+        expect(() => set(settingsEvent, value)).toThrow(/právě jeden boolean/u);
+      }
+      expect(() => get(settingsEvent, "navíc")).toThrow(/nepřijímá payload/u);
+      expect(() => set(settingsEvent, true, "navíc")).toThrow(/právě jeden boolean/u);
+      expect(get(settingsEvent)).toBe(false);
+    }
+    await expect(readFile(path.join(harness.userDataPath, "nastaveni", "aplikace.json")))
+      .rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("preload vystaví úzké booleanské kanály a odmítne vadné vstupy i odpovědi", async () => {
+    const { api, invoke } = loadPreload(true);
+    const malformed = loadPreload("true");
+    for (const [name, suffix] of [["UploadEnabled", "upload-enabled"]]) {
+      await expect(api[`get${name}`]()).resolves.toBe(true);
+      expect(invoke).toHaveBeenLastCalledWith(`settings:get-${suffix}`);
+      await expect(api[`set${name}`](false)).resolves.toBe(true);
+      expect(invoke).toHaveBeenLastCalledWith(`settings:set-${suffix}`, false);
+      expect(() => api[`set${name}`]("true")).toThrow(/boolean/u);
+      await expect(malformed.api[`get${name}`]()).rejects.toThrow(/boolean/u);
+      await expect(malformed.api[`set${name}`](false)).rejects.toThrow(/boolean/u);
+    }
+    expect(api.getTimeEnabled).toBeUndefined();
+    expect(api.setTimeEnabled).toBeUndefined();
+  });
+});
+
 describe("kopírování probíhající přihlašovací adresy", () => {
   it("panel zkopíruje právě probíhající adresu ze stavu hlavního procesu", async () => {
     const authorizationUrl = [

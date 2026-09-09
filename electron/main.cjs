@@ -42,6 +42,7 @@ const { createRecordingUploadSend } = require("./upload-client.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
   AUTH_ORIGINS,
+  createApplicationSettingsStore,
   createAuthOriginStore,
   createDockVisibilityStore,
   createQueueOwnerSecretStore,
@@ -393,12 +394,13 @@ configureWritablePaths();
 app.setName("LuDone Desktop");
 app.commandLine.appendSwitch("disable-breakpad");
 
-// Dock musí znát svou hodnotu ještě před existencí rendereru. Synchronní konstrukce
-// načte jediný boolean z hlavního procesu; renderer je jen projekce tohoto stavu.
-const dockVisibilityStore = createDockVisibilityStore({
+// Dock i vypínače znají uložené volby ještě před existencí rendereru. Jediná
+// instance nastavení zachovává všechny volby při atomickém zápisu téhož souboru.
+const applicationSettingsStore = createApplicationSettingsStore({
   filePath: path.join(app.getPath("userData"), "nastaveni", "aplikace.json"),
   log: (message) => console.warn(message),
 });
+const dockVisibilityStore = createDockVisibilityStore({ settingsStore: applicationSettingsStore });
 const authOriginStore = createAuthOriginStore({
   filePath: path.join(app.getPath("userData"), "nastaveni", "prostredi.json"),
   log: (message) => console.warn(message),
@@ -1918,6 +1920,14 @@ handleValidated(
     return app.getLoginItemSettings().openAtLogin === true;
   },
 );
+handleValidated("settings:get-upload-enabled", ["settings"], (_event, ...extraPayload) => {
+  requireNoPayload("settings:get-upload-enabled", extraPayload);
+  return queueKillswitches().DESKTOP_UPLOAD_ENABLED === "true";
+});
+handleValidated("settings:set-upload-enabled", ["settings"], (_event, value, ...extraPayload) => {
+  requireBooleanPayload("settings:set-upload-enabled", value, extraPayload);
+  return setUploadEnabled(value);
+});
 handleValidated("recording:begin", ["panel"], async (event, sources, ...extraPayload) => {
   if (extraPayload.length > 0) {
     throw new TypeError("Kanál recording:begin přijímá nejvýše jeden seznam zdrojů");
@@ -2078,11 +2088,23 @@ async function applyOutboundQueueRetention(panelStartup) {
   }
 }
 
+function desktopKillswitch(environmentValue, settingKey, store = applicationSettingsStore) {
+  // Pořadí: existující proměnná prostředí (i prázdná či neplatná) přebíjí uloženou
+  // volbu; jinak platí uložený boolean. Chybějící či neplatná volba je vypnuto.
+  // Fronta přijímá zapnutí výhradně jako přesný řetězec "true".
+  if (environmentValue !== undefined) return environmentValue;
+  return store.get(settingKey) ? "true" : "false";
+}
+
+async function setUploadEnabled(value) {
+  await applicationSettingsStore.set("uploadEnabled", value);
+  // IPC vrací účinný stav: vývojové prostředí může uloženou volbu dál přebíjet.
+  return queueKillswitches().DESKTOP_UPLOAD_ENABLED === "true";
+}
+
 function queueKillswitches() {
   return {
-    // Asymetrie je záměrná: vypínač odesílání má v hlavním procesu jediného čtenáře,
-    // tenhle řádek. Časový jich má tři, proto vede přes sdílenou `timeTrackingKillswitch()`.
-    DESKTOP_UPLOAD_ENABLED: process.env.DESKTOP_UPLOAD_ENABLED,
+    DESKTOP_UPLOAD_ENABLED: desktopKillswitch(process.env.DESKTOP_UPLOAD_ENABLED, "uploadEnabled"),
     DESKTOP_TIME_ENABLED: timeTrackingKillswitch(),
   };
 }

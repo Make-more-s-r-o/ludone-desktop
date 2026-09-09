@@ -116,16 +116,18 @@ function functionDeclarationSource(source, name) {
   throw new Error(`Funkce ${name} nemá uzavřené tělo`);
 }
 
-// Vypínače čte produkce přes sdílenou `timeTrackingKillswitch()`, takže se sem musí
-// vytáhnout obě funkce. Bez té sdílené by `queueKillswitches()` spadl na ReferenceError
-// — což je mimochodem doklad, že se tu měří produkční zapojení, ne jeho opis.
+// Vypínače čte produkce přes `desktopKillswitch()` a `timeTrackingKillswitch()`,
+// takže se sem musí vytáhnout i obě závislosti. Uložené odesílání je v atrapě
+// vypnuté; testy tak měří produkční zapojení nad podstrčeným prostředím.
 const readProductionQueueKillswitches = Function(
+  "applicationSettingsStore",
   "process",
   `"use strict";
+  ${functionDeclarationSource(mainSource, "desktopKillswitch")}
   ${functionDeclarationSource(mainSource, "timeTrackingKillswitch")}
   ${functionDeclarationSource(mainSource, "queueKillswitches")}
   return queueKillswitches();`,
-);
+).bind(null, { get: () => false });
 
 afterEach(() => {
   if (ORIGINAL_UPLOAD_SETTING === undefined) delete process.env.DESKTOP_UPLOAD_ENABLED;

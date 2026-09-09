@@ -65,11 +65,13 @@ const createTrackingMutationRunner = Function(
   "refreshTray",
   "TRACKING_STATES",
   "TRACKING_STORE_OWNER_ID",
+  "applicationSettingsStore",
   // `runTrackingMutation` se na časový vypínač ptá přes sdílenou `timeTrackingKillswitch()`,
   // takže se sem musí vytáhnout obě. Vlastní `process` se tu záměrně NEpodstrkuje — tenhle
   // harness měří ikonu v liště, ne vypínač, a čte tedy prostředí testovacího běhu stejně
   // jako předtím.
   `"use strict";
+   ${functionSource(mainCodeWithoutComments, "desktopKillswitch")}
    ${functionSource(mainCodeWithoutComments, "timeTrackingKillswitch")}
    ${functionSource(mainCodeWithoutComments, "syncTrackingTray")}
    ${functionSource(mainCodeWithoutComments, "runTrackingMutation")}
@@ -101,6 +103,7 @@ function trackingMutationHarness({ method, initialEntry, initialOwners, nextEntr
     () => { refreshSnapshots.push([...trackingOwners]); },
     TRACKING_STATES,
     trackingStoreOwnerId,
+    { get: () => false },
   );
   return {
     calls,

@@ -111,7 +111,9 @@ async function prostredi({ vypinacNahravek, vypinacCasu } = {}) {
     "queueModulePromise",
     "updateOutboundQueueTrayFact",
     "console",
-    `${zdrojFunkce("timeTrackingKillswitch")}
+    "applicationSettingsStore",
+    `${zdrojFunkce("desktopKillswitch")}
+     ${zdrojFunkce("timeTrackingKillswitch")}
      ${zdrojFunkce("queueKillswitches")}
      ${zdrojFunkce("pumpOutboundQueue")}
      ${zdrojFunkce("addQueueSendingAvailability")}
@@ -123,6 +125,7 @@ async function prostredi({ vypinacNahravek, vypinacCasu } = {}) {
     Promise.resolve(fronta),
     () => {},
     konzole,
+    { get: () => false },
   );
 
   return { odeslane, produkce, store, zaznam };
@@ -146,11 +149,21 @@ async function vypinacOdesilaniFailClosed() {
       `${popis}: nahrávka se musela zařadit, jinak sonda neměří odesílání`,
     );
 
-    // Produkční soupis vypínačů nesmí hodnotu „vylepšit" — ani doplnit výchozí.
-    assert.equal(
-      beh.produkce.queueKillswitches()[VYPINAC_NAHRAVEK],
-      hodnota,
-      `${popis}: soupis vypínačů podstrčil jinou hodnotu, než jaká je v prostředí`,
+    // 🔴 Tohle tvrzení dřív žádalo hodnotu DOSLOVA takovou, jaká je v prostředí — tedy
+    // zakazovalo i doplnění uložené volby. Jenže v zabalené aplikaci žádné proměnné
+    // prostředí nejsou, takže ten zákaz znamenal „přepínač nesmí jít nastavit". Brána se
+    // tím nezměkčuje: pořád platí, že z vypnutého stavu nesmí vzniknout zapnutý, a přibyl
+    // zákaz `undefined` — nezměřený stav se totiž nesmí vydávat za vypnutý.
+    const ucinna = beh.produkce.queueKillswitches()[VYPINAC_NAHRAVEK];
+    assert.notEqual(
+      ucinna,
+      ZAPNUTO,
+      `${popis}: z vypnutého prostředí vznikl zapnutý vypínač`,
+    );
+    assert.notEqual(
+      ucinna,
+      undefined,
+      `${popis}: soupis vypínačů neřekl nic — nezměřeno není totéž co vypnuto`,
     );
 
     const vysledek = await beh.produkce.pumpOutboundQueue();
