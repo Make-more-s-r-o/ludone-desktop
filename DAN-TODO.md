@@ -847,3 +847,46 @@ co uploadová routa nečte, a test to dokonce vynucuje. Přestavuje se to na coo
 
 **Čeká na tebe:** až první ostrý pokus vrátí **503 `storage_disabled`**, není to naše chyba —
 je to jejich killswitch a jeho polohu z repozitáře určit nejde. Poznáš to podle toho kódu.
+
+## 25. Před zveřejněním: brány musí pryč z tvého Macu (9. 9. 2026)
+
+Prověrka celé historie repozitáře (1 541 objektů, všechny větve) **nenašla jediné tajemství** —
+žádný klíč, token ani `.env`. Rotovat není co.
+
+🔴 **Zato našla něco, co nás oba nenapadlo: veřejný repozitář + brány běžící na tvém Macu
+= kdokoli si na tvém notebooku spustí vlastní kód.** U veřejného repa může kdokoli udělat
+fork, přidat do testů jeden soubor a otevřít pull request; ten se pak spustí na `danuv-mac`
+pod tvým účtem. Vedle leží `~/LuDone-podpis/` (podpis jménem Make more), tvoje SSH klíče
+včetně přístupu na produkci, 15 souborů s hesly a 19 dalších firemních repozitářů.
+
+**Pořadí je proto závazné:** (1) serverová session zavře díru v `redirect_uris`,
+(2) brány se přepnou na GitHub a runner se z Macu odregistruje, (3) teprve pak public.
+Obráceně stačí pár minut.
+
+**Tvoje rozhodnutí 9. 9.:** zveřejnit **včetně historie**. V ní zůstane adresa produkčního
+serveru, `root`, cesty a jména kontejnerů — přístup to nikomu nedá (chrání ho klíč, ne
+utajení adresy) a přepsat to stejně nejde: GitHub drží 113 kopií starých pull requestů,
+kterých se force-push nedotkne.
+
+**Zbylo na tebe jedno:** v `dukazy/nahravani-2026-08-21/` leží dvě pětisekundové nahrávky
+ze skutečného mikrofonu v reálné místnosti. Změřené jsou jako ticho (−58 dB), ale **nikdo je
+neposlechl** a `.gitignore` o nich nepravdivě tvrdí, že jsou to pípání. Dvakrát pět vteřin.
+
+## 26. Proč aplikace nadělala šest přihlašovacích klientů (9. 9. 2026)
+
+Serverová session našla v jejich DB **5 klientů na produkci a 1 na labs** jménem `LuDone
+Desktop`, které nikdy nedostaly souhlas. Čtyři vznikly v noci mezi 23:55 a 4:05, tak jsem
+se lekl, že se aplikace přihlašuje sama. **Nepřihlašuje** — v kódu není jediná automatická
+cesta, přihlášení spustí výhradně klik.
+
+Skutečná příčina je jinde a je to vada: **`client_id` se ukládá, ale při dalším přihlášení
+se nikdy nepřečte.** Každý pokus proto registruje nového klienta — i ten úspěšný. A protože
+registrace běží **dřív, než se otevře prohlížeč**, klient vznikne i tehdy, když prohlížeč
+zavřeš nebo přihlášení zrušíš. Kdo dvakrát klikne „Zkusit znovu" a pak to vzdá, nadělá tři.
+
+⚠️ **Vážnější než těch šest osiřelých klientů:** server po dvaceti registracích za hodinu
+z jedné IP odpoví odmítnutím. V kanceláři za jedním připojením se to dá vyčerpat běžným
+používáním — a přihlášení pak přestane fungovat všem.
+
+Opravuju to: při novém přihlášení se použije uložený `client_id`, když sedí prostředí
+a rozsah oprávnění.
