@@ -154,7 +154,7 @@ function createApplicationSettingsStore({ filePath, log = console.warn } = {}) {
     throw new TypeError("Logger nastavení aplikace musí být funkce");
   }
 
-  const keys = new Set(["dockVisible", "uploadEnabled", "timeEnabled"]);
+  const keys = new Set(["dockVisible", "uploadEnabled"]);
   function requireKey(key) {
     if (!keys.has(key)) throw new TypeError("Neznámý klíč nastavení aplikace");
   }
@@ -186,7 +186,7 @@ function createApplicationSettingsStore({ filePath, log = console.warn } = {}) {
  * @param {{filePath?: unknown, log?: unknown, settingsStore?: ReturnType<typeof createApplicationSettingsStore>}} [options]
  */
 function createDockVisibilityStore({ filePath, log = console.warn, settingsStore } = {}) {
-  // Dock i vypínače sdílejí jednu instanci a jeden soubor. Zápis jedné volby tak
+  // Dock i vypínač odesílání sdílejí jednu instanci a jeden soubor. Zápis jedné volby tak
   // zachová ostatní i při návratu Docku po selhání nativního API.
   const store = settingsStore ?? createApplicationSettingsStore({ filePath, log });
   return Object.freeze({

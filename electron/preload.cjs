@@ -171,8 +171,6 @@ contextBridge.exposeInMainWorld("ludone", {
   setOpenAtLogin: (value) => setBooleanSetting("settings:set-open-at-login", value),
   getUploadEnabled: () => getBooleanSetting("settings:get-upload-enabled"),
   setUploadEnabled: (value) => setBooleanSetting("settings:set-upload-enabled", value),
-  getTimeEnabled: () => getBooleanSetting("settings:get-time-enabled"),
-  setTimeEnabled: (value) => setBooleanSetting("settings:set-time-enabled", value),
   getDiagnostics: () => ipcRenderer.invoke("diagnostics:get"),
   exportDiagnostics: () => ipcRenderer.invoke("diagnostics:export"),
   getPermissionStatus: (permission) =>

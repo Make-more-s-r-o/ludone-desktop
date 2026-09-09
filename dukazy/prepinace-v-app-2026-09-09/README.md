@@ -1,73 +1,75 @@
-# Perzistentní vypínače odesílání — 9. 9. 2026
+# Perzistentní vypínač odesílání — 9. 9. 2026
 
-Původní přepínače byly čtené pouze z prostředí. Nyní používají existující
-`userData/nastaveni/aplikace.json`, stejný atomický zápis a stejnou instanci
-nastavení jako viditelnost Docku. Ukládají se jako booleany `uploadEnabled`
-a `timeEnabled`. Změna jedné volby zachová ostatní. Start ani čtení nevytváří
+Jediný nový perzistentní vypínač je `uploadEnabled`. Používá existující
+`userData/nastaveni/aplikace.json`, atomický zápis a společnou instanci nastavení
+s viditelností Docku. Změna jedné volby zachová ostatní. Start ani čtení nevytváří
 soubor a nepřidává výchozí hodnoty do staršího souboru.
 
 Pořadí je prostředí, pokud existuje, potom uložený boolean, potom vypnuto.
 I prázdná či neplatná proměnná prostředí přebíjí uložené zapnutí. Neplatný JSON,
-schéma nebo typ uložené hodnoty nezapne příslušný vypínač. Čerstvá instalace
-bez prostředí předá frontě oba vypínače jako řetězec `"false"`.
+schéma nebo typ uložené hodnoty odesílání nezapne. Čerstvá instalace bez prostředí
+předá frontě vypínač odesílání jako řetězec `"false"`.
 
-Hlavní proces poskytuje `setUploadEnabled(value)` a `setTimeEnabled(value)`.
-Přes preload jsou dostupné `window.ludone.getUploadEnabled()`,
-`setUploadEnabled(value)`, `getTimeEnabled()` a `setTimeEnabled(value)`.
-Používají kanály `settings:get-upload-enabled`, `settings:set-upload-enabled`,
-`settings:get-time-enabled` a `settings:set-time-enabled`. IPC přijímá pouze
+Hlavní proces poskytuje `setUploadEnabled(value)`. Přes preload jsou dostupné
+`window.ludone.getUploadEnabled()` a `setUploadEnabled(value)`, přes kanály
+`settings:get-upload-enabled` a `settings:set-upload-enabled`. IPC přijímá pouze
 hlavní rám důvěryhodného okna Nastavení; setter vyžaduje právě jeden boolean.
-Vrací účinný stav po započtení případného přebití prostředím.
+Vrací účinný stav po započtení případného přebití prostředím. Fronta čte hodnotu
+při dalším pokusu i při výpisu dostupnosti odesílání. `desktopKillswitch` přijímá
+úložiště jako parametr s výchozí hodnotou `applicationSettingsStore`, takže lze
+produkční funkci spouštět také ve výřezech s podstrčeným úložištěm.
 
-Fronta čte nové hodnoty při dalším pokusu i při výpisu dostupnosti odesílání.
-Samotné úložiště časovače si podle dosavadního kontraktu ponechává hodnotu
-z konstrukce až do restartu. Životnost časovače se v tomto úkolu nemění.
+## Proč tu není časový přepínač
+
+`getTrackingStore()` zmrazí vypínač při první konstrukci. Živé nastavení času by
+po změně hlásilo zapnuto, ale časovač by do restartu zůstal vypnutý. Proto tato
+změna neukládá `timeEnabled`, nemá časové IPC kanály ani funkce v preloadu.
+`timeTrackingKillswitch()` má původní komentář a vrací pouze
+`process.env.DESKTOP_TIME_ENABLED`; životnost hodnoty u čtenářů se nemění.
 
 ## Ověření
 
-Doslovné výstupy včetně příkazů a exit kódů jsou v sousedních souborech.
-Příkazy se spouštěly bez roury; exit kód je návratový kód procesu.
+Původní `eslint.log` a `tsc.log` zůstávají zachované. Zastaralé `vitest.log`,
+`preskocene.log` a `E5.log` byly odstraněny; poslední dva obsahovaly selhání zápisu
+konfigurace ve sdíleném `node_modules/.vite-temp`, nikoli měření vady aplikace.
+Nové doslovné výstupy všech čtyř příkazů včetně exit kódů jsou v
+[`overeni-opravy.log`](overeni-opravy.log). Příkazy běžely bez roury; exit kód
+byl převzat přímo z procesu. Vitest a E5 se v tomto běhu nepřekrývaly.
 
-| Příkaz | Exit kód | Výsledek |
+| Příkaz | Exit kód | Výsledek po opravě |
 |---|---:|---|
 | `npx eslint .` | 0 | Bez výstupu |
 | `npx tsc --noEmit -p jsconfig.json` | 0 | Bez výstupu |
-| `npx vitest run --configLoader runner --no-file-parallelism` | 1 | 22 selhání, 1147 průchodů, 3 přeskočené |
-| `npm run preskocene` | 1 | EPERM při zápisu konfigurace do sdíleného `node_modules/.vite-temp` |
-| `bash scripts/akceptace/E5.sh` | 1 | `chyb: 2` |
+| `npx vitest run --configLoader runner --no-file-parallelism` | 0 | 53 souborů, 1169 prošlých testů, 3 původně přeskočené |
+| `bash scripts/akceptace/E5.sh` | 1 | V obou pokusech závěrečný řádek `chyb: 2` |
 
-🧪 zelené testy: `tests/queue-wiring.test.js` a
-`tests/settings-persistence.test.js`, celkem 268/268. Nové testy ověřují čerstvou
-instalaci bez zápisu, restart nad skutečným dočasným souborem, přebití prostředím
-včetně neplatných hodnot, poškozená data, zachování voleb při změně Docku,
-chybu zápisu, předání hodnot frontě a validaci IPC i preloadu.
-Před přidáváním testů byly přečteny existující testy i jejich pomocníci v obou
-souborech. Dosavadní testy nebyly přepsány.
+🧪 zelené testy: celý Vitest včetně nezměněného `zapojeni-odhlaseni.test.js`
+a nezměněných tvrzení `tracking-timer.test.js`. Testy perzistence a zapojení
+z předchozího kola jsou omezené na odesílání; ověřují také odmítnutí časového
+klíče a nepřítomnost časových IPC kanálů a funkcí preloadu.
 
-⚠️ varování či rozpor: celý testovací běh a E5 zelené nejsou. Podrobnosti:
+⚠️ varování či rozpor: E5 zůstává červená ze dvou oddělených důvodů:
 
-- 20 testů v `queue.test.js`, `tracking-timer.test.js` a
-  `tray-authority.test.js` spouští vytažená těla funkcí bez nové závislosti
-  `desktopKillswitch` a končí na `ReferenceError`.
-- `zapojeni-odhlaseni.test.js` vyžaduje doslovné původní tělo
-  `timeTrackingKillswitch`, které vrací pouze proměnnou prostředí. To je v přímém
-  rozporu s nově zadanou perzistencí.
-- `ipc-sender-guard.test.js` vyžaduje přesný původní seznam kanálů; nové čtyři
-  validované kanály v jeho seznamu nejsou.
-- Sonda E5 také spouští výřez funkcí bez úložiště a nové závislosti. Navíc
-  výslovně vyžaduje přesné vrácení původní hodnoty z prostředí, včetně
-  `undefined`, bez doplnění výchozí hodnoty. Předpokládá tedy původní kontrakt.
-  Proto je v předání `premisaPlatila: false` podle pokynu pro neodpovídající
-  bránu, přestože původní čtení pouze z prostředí bylo potvrzeno.
-- Druhé selhání E5 je stejný zákaz zápisu konfigurace Vitestu jako u
-  `preskocene`. Kontroly vypnutých hodnot v `.env.example` i nepřítomnosti
-  zapnutých vypínačů v provozním kódu prošly.
+- `unit testy queue jsou zelené`: Vitest uvnitř E5 skončil před spuštěním testů
+  na EPERM při zápisu konfigurace do `node_modules/.vite-temp`. Podle zadání
+  byl celý příkaz zopakován; EPERM přetrval. `node_modules` odkazuje na
+  `/Users/dan/Dev/ClaudeCode/ludone-desktop/node_modules`, mimo zapisovatelný
+  worktree. To je selhání prostředí, nikoli červený test aplikace; samotnou
+  souběžnou kolizi tento běh neprokázal.
+- `vypínač odesílání je fail-closed i v produkční cestě (chování)`: sonda
+  vyžaduje pro chybějící proměnnou prostředí přesně `undefined`, ale nový
+  vypínač s uloženou volbou vypnuto vrací `"false"`. Tvrzení sondy zůstalo
+  beze změny a jeho úpravu podle zadání přebírá orchestrátor.
 
-Timeout nenastal; žádný běh nebyl kvůli timeoutu opakován. Nebyly měněny brány,
-baseline, pravidla lintu ani timeouty. Nebyla provedena git operace, přidáno
-tlačítko ani změněno skutečné uživatelské nastavení. Zapnuté hodnoty vznikaly
-pouze v izolovaných dočasných testovacích datech.
+Původní log měl 20 pádů na chybějícím `desktopKillswitch`, jeden na doslovném
+starém těle časového vypínače a jeden na starém soupisu IPC kanálů. Premisa
+jediné příčiny všech 22 pádů tedy nebyla přesná. Výřezy nyní dostávají funkci
+i atrapu úložiště vracející vypnuto. Tvrzení v `queue.test.js`,
+`tracking-timer.test.js`, `tray-authority.test.js` a v sondě E5 byla porovnána
+s počáteční kopií a jsou beze změny. Původní časový komentář i funkce byly
+obnoveny doslova podle souboru v hlavním pracovním stromu, bez git operace.
 
 ⛔ neověřeno: skutečná zabalená aplikace spuštěná z Finderu a ostré odesílání.
-Review nad diffem a zařazení důkazů do verzování přebírá orchestrátor;
-tento běh podle zadání neprováděl commit ani jinou git operaci.
+Žádný provozní vypínač ani skutečné uživatelské nastavení se v tomto běhu nemění.
+Review nad diffem a verzování důkazů přebírá orchestrátor; tento běh podle zadání
+neprovádí žádnou git operaci.

@@ -1363,13 +1363,12 @@ describe("zapojení systémových nastavení", () => {
   });
 });
 
-describe("uložené vypínače odesílání v hlavním procesu", () => {
+describe("uložený vypínač odesílání v hlavním procesu", () => {
   const switches = [
     { suffix: "upload-enabled", key: "uploadEnabled", envName: "DESKTOP_UPLOAD_ENABLED" },
-    { suffix: "time-enabled", key: "timeEnabled", envName: "DESKTOP_TIME_ENABLED" },
   ];
 
-  it("čerstvá zabalená aplikace má oba vypínače vypnuté a nezapisuje výchozí volby", async () => {
+  it("čerstvá zabalená aplikace má odesílání vypnuté a nezapisuje výchozí volby", async () => {
     const harness = await loadMain({ isPackaged: true });
     await harness.runReady();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
@@ -1377,11 +1376,13 @@ describe("uložené vypínače odesílání v hlavním procesu", () => {
     for (const { suffix } of switches) {
       expect(harness.ipcHandlers.get(`settings:get-${suffix}`)(settingsEvent)).toBe(false);
     }
+    expect(harness.ipcHandlers.has("settings:get-time-enabled")).toBe(false);
+    expect(harness.ipcHandlers.has("settings:set-time-enabled")).toBe(false);
     await expect(readFile(path.join(harness.userDataPath, "nastaveni", "aplikace.json")))
       .rejects.toMatchObject({ code: "ENOENT" });
   });
 
-  it("uložené vypínače přežijí restart zabalené aplikace i mezilehlou změnu Docku", async () => {
+  it("uložený vypínač přežije restart zabalené aplikace i mezilehlou změnu Docku", async () => {
     const firstProcess = await loadMain({ isPackaged: true });
     await firstProcess.runReady();
     const { settingsEvent } = openSettingsAndCreateEvent(firstProcess);
@@ -1440,8 +1441,8 @@ describe("uložené vypínače odesílání v hlavním procesu", () => {
   });
 
   it.each(["{rozbitý JSON", JSON.stringify({
-    schemaVersion: 1, uploadEnabled: "true", timeEnabled: 1,
-  })])("poškozený soubor %s nezapne vypínače ani neshodí start", async (contents) => {
+    schemaVersion: 1, uploadEnabled: "true",
+  })])("poškozený soubor %s nezapne vypínač ani neshodí start", async (contents) => {
     const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-main-settings-invalid-"));
     temporaryRoots.add(userDataPath);
     await mkdir(path.join(userDataPath, "nastaveni"), { recursive: true });
@@ -1470,21 +1471,20 @@ describe("uložené vypínače odesílání v hlavním procesu", () => {
     const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
     await vi.waitFor(() => expect(store.pump).toHaveBeenCalledOnce());
     expect(store.pump).toHaveBeenLastCalledWith({
-      DESKTOP_UPLOAD_ENABLED: "false", DESKTOP_TIME_ENABLED: "false",
+      DESKTOP_UPLOAD_ENABLED: "false", DESKTOP_TIME_ENABLED: undefined,
     });
 
-    for (const [upload, time] of [[true, false], [false, true], [true, true], [false, false]]) {
+    for (const upload of [true, false]) {
       await harness.ipcHandlers.get("settings:set-upload-enabled")(settingsEvent, upload);
-      await harness.ipcHandlers.get("settings:set-time-enabled")(settingsEvent, time);
       await harness.ipcHandlers.get("queue:retry")(panelEvent);
 
       expect(store.retry).toHaveBeenLastCalledWith({
-        DESKTOP_UPLOAD_ENABLED: String(upload), DESKTOP_TIME_ENABLED: String(time),
+        DESKTOP_UPLOAD_ENABLED: String(upload), DESKTOP_TIME_ENABLED: undefined,
       });
       const listed = await harness.ipcHandlers.get("queue:list")(panelEvent);
       expect(listed.map((item) => item.sendingDisabledReason)).toEqual([
         upload ? undefined : UPLOAD_DISABLED_REASON,
-        time ? undefined : UPLOAD_DISABLED_REASON,
+        UPLOAD_DISABLED_REASON,
       ]);
     }
     expect(createOutboundQueueStore).toHaveBeenCalledOnce();
@@ -1516,7 +1516,7 @@ describe("uložené vypínače odesílání v hlavním procesu", () => {
   it("preload vystaví úzké booleanské kanály a odmítne vadné vstupy i odpovědi", async () => {
     const { api, invoke } = loadPreload(true);
     const malformed = loadPreload("true");
-    for (const [name, suffix] of [["UploadEnabled", "upload-enabled"], ["TimeEnabled", "time-enabled"]]) {
+    for (const [name, suffix] of [["UploadEnabled", "upload-enabled"]]) {
       await expect(api[`get${name}`]()).resolves.toBe(true);
       expect(invoke).toHaveBeenLastCalledWith(`settings:get-${suffix}`);
       await expect(api[`set${name}`](false)).resolves.toBe(true);
@@ -1525,6 +1525,8 @@ describe("uložené vypínače odesílání v hlavním procesu", () => {
       await expect(malformed.api[`get${name}`]()).rejects.toThrow(/boolean/u);
       await expect(malformed.api[`set${name}`](false)).rejects.toThrow(/boolean/u);
     }
+    expect(api.getTimeEnabled).toBeUndefined();
+    expect(api.setTimeEnabled).toBeUndefined();
   });
 });
 

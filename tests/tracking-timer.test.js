@@ -110,8 +110,10 @@ const createProductionTrackingStore = Function(
   "app",
   "process",
   "PROCESS_STARTED_AT",
+  "applicationSettingsStore",
   `"use strict";
    let trackingStore;
+   ${functionSource(mainCodeWithoutComments, "desktopKillswitch")}
    ${functionSource(mainCodeWithoutComments, "timeTrackingKillswitch")}
    ${functionSource(mainCodeWithoutComments, "getTrackingStore")}
    return getTrackingStore();`,
@@ -133,6 +135,7 @@ function storeFromProductionWiring(filePath, timeEnabled) {
     },
     { env: environment },
     PROCESS_A,
+    { get: () => false },
   );
   return { createStore, store };
 }

@@ -124,18 +124,17 @@ describe("perzistence prostředí LuDone", () => {
   });
 });
 
-describe("perzistence vypínačů odesílání ve společném nastavení", () => {
-  it("bez souboru jsou oba vypínače vypnuté a čtení žádný soubor nevytvoří", async () => {
+describe("perzistence vypínače odesílání ve společném nastavení", () => {
+  it("bez souboru je vypínač vypnutý a čtení žádný soubor nevytvoří", async () => {
     const { createApplicationSettingsStore } = loadSettingsModule();
     const filePath = await temporarySettingsPath();
     const store = createApplicationSettingsStore({ filePath, log: vi.fn() });
 
     expect(store.get("uploadEnabled")).toBe(false);
-    expect(store.get("timeEnabled")).toBe(false);
     await expect(readFile(filePath)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
-  it("zápisy vypínačů a Docku se zachovají navzájem a přežijí restart", async () => {
+  it("zápisy vypínače a Docku se zachovají navzájem a přežijí restart", async () => {
     const { createApplicationSettingsStore, createDockVisibilityStore } = loadSettingsModule();
     const filePath = await temporarySettingsPath();
     const firstProcess = createApplicationSettingsStore({ filePath, log: vi.fn() });
@@ -146,24 +145,20 @@ describe("perzistence vypínačů odesílání ve společném nastavení", () =>
       schemaVersion: 1, uploadEnabled: true,
     });
     await expect(dock.set(true)).resolves.toBe(true);
-    await expect(firstProcess.set("timeEnabled", true)).resolves.toBe(true);
     await expect(dock.set(false)).resolves.toBe(false);
 
     const secondProcess = createApplicationSettingsStore({ filePath, log: vi.fn() });
     expect(secondProcess.get("uploadEnabled")).toBe(true);
-    expect(secondProcess.get("timeEnabled")).toBe(true);
     expect(secondProcess.get("dockVisible")).toBe(false);
     expect(JSON.parse(await readFile(filePath, "utf8"))).toEqual({
-      schemaVersion: 1, dockVisible: false, uploadEnabled: true, timeEnabled: true,
+      schemaVersion: 1, dockVisible: false, uploadEnabled: true,
     });
     expect((await stat(filePath)).mode & 0o777).toBe(0o600);
     expect(await readdir(path.dirname(filePath))).toEqual(["aplikace.json"]);
 
     await secondProcess.set("uploadEnabled", false);
-    await secondProcess.set("timeEnabled", false);
     const thirdProcess = createApplicationSettingsStore({ filePath, log: vi.fn() });
     expect(thirdProcess.get("uploadEnabled")).toBe(false);
-    expect(thirdProcess.get("timeEnabled")).toBe(false);
   });
 
   it.each([
@@ -171,12 +166,12 @@ describe("perzistence vypínačů odesílání ve společném nastavení", () =>
     "null",
     "true",
     "[]",
-    JSON.stringify({ schemaVersion: 2, uploadEnabled: true, timeEnabled: true }),
+    JSON.stringify({ schemaVersion: 2, uploadEnabled: true }),
     ...["true", "false", 1, 0, null, [], {}, { enabled: true }].map((value) => (
-      JSON.stringify({ schemaVersion: 1, uploadEnabled: value, timeEnabled: value })
+      JSON.stringify({ schemaVersion: 1, uploadEnabled: value })
     )),
     JSON.stringify({ schemaVersion: 1, dockVisible: true }),
-  ])("neplatné nebo starší nastavení %s nechá vypínače vypnuté bez přepisu", async (contents) => {
+  ])("neplatné nebo starší nastavení %s nechá vypínač vypnutý bez přepisu", async (contents) => {
     const { createApplicationSettingsStore } = loadSettingsModule();
     const filePath = await temporarySettingsPath();
     await mkdir(path.dirname(filePath), { recursive: true });
@@ -185,7 +180,6 @@ describe("perzistence vypínačů odesílání ve společném nastavení", () =>
     const store = createApplicationSettingsStore({ filePath, log: vi.fn() });
 
     expect(store.get("uploadEnabled")).toBe(false);
-    expect(store.get("timeEnabled")).toBe(false);
     expect(await readFile(filePath, "utf8")).toBe(contents);
   });
 
@@ -194,19 +188,17 @@ describe("perzistence vypínačů odesílání ve společném nastavení", () =>
     const filePath = await temporarySettingsPath();
     const store = createApplicationSettingsStore({ filePath, log: vi.fn() });
 
-    for (const key of ["uploadEnabled", "timeEnabled"]) {
-      await expect(store.set(key, "true")).rejects.toThrow(/boolean/u);
-      expect(store.get(key)).toBe(false);
-    }
+    await expect(store.set("uploadEnabled", "true")).rejects.toThrow(/boolean/u);
+    expect(store.get("uploadEnabled")).toBe(false);
     await expect(store.set("neznamaVolba", true)).rejects.toThrow(/Neznámý/u);
+    await expect(store.set("timeEnabled", true)).rejects.toThrow(/Neznámý/u);
+    expect(() => store.get("timeEnabled")).toThrow(/Neznámý/u);
     await expect(readFile(filePath)).rejects.toMatchObject({ code: "ENOENT" });
 
     // Adresář místo cílového souboru vynutí skutečné selhání atomického přejmenování.
     await mkdir(filePath, { recursive: true });
-    for (const key of ["uploadEnabled", "timeEnabled"]) {
-      await expect(store.set(key, true)).rejects.toThrow();
-      expect(store.get(key)).toBe(false);
-    }
+    await expect(store.set("uploadEnabled", true)).rejects.toThrow();
+    expect(store.get("uploadEnabled")).toBe(false);
     expect(await readdir(path.dirname(filePath))).toEqual(["aplikace.json"]);
   });
 });
