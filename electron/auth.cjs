@@ -1163,7 +1163,21 @@ function createAuthController(options) {
         options.loopbackServerFactory,
       );
 
-      const clientId = options.clientId ?? await registerPublicClient(
+      let clientId = options.clientId;
+      if (clientId == null) {
+        try {
+          const encrypted = await readEncryptedSession(storage);
+          const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
+          // Klient pro jiné prostředí nebo rozsah oprávnění by mohl použít oprávnění,
+          // která uživatel neodsouhlasil; proto musí souhlasit issuer, resource i scope.
+          if (session?.issuer === issuer && session.resource === resource && session.scope === scope) {
+            clientId = requiredString(session.clientId, "clientId");
+          }
+        } catch {
+          // Poškozená nebo nečitelná session nesmí bránit nové registraci.
+        }
+      }
+      clientId ??= await registerPublicClient(
         fetchImpl,
         endpoints.registrationEndpoint,
         listener.redirectUri,

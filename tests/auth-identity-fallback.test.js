@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
-import { readFile, mkdtemp, rm } from "node:fs/promises";
+import { promises as fs } from "node:fs";
+import { readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -14,6 +15,7 @@ const {
 
 const ISSUER = "https://app.ludone.cz";
 const CLIENT_ID = "desktop-identity-test";
+const REGISTERED_CLIENT_ID = "desktop-registered-test";
 const ACCESS_TOKEN = "test-access-token-nepatri-do-logu";
 const AUTHORIZATION_CODE = "test-authorization-code-nepatri-do-logu";
 const temporaryRoots = new Set();
@@ -77,6 +79,10 @@ class CallbackLoopbackServer extends EventEmitter {
 
 /**
  * @param {{
+ *   appData?: string,
+ *   clientId?: string | null,
+ *   issuer?: string,
+ *   scope?: string,
  *   mcpHandler?: (input: string | URL, init: RequestInit) => Promise<{
  *     ok: boolean,
  *     status: number,
@@ -87,10 +93,13 @@ class CallbackLoopbackServer extends EventEmitter {
  */
 async function createHarness(options = {}) {
   const {
+    clientId = CLIENT_ID,
+    issuer = ISSUER,
+    scope,
     mcpHandler = async () => jsonResponse(MCP_RESPONSE),
     tokenResponse = TOKEN_RESPONSE,
   } = options;
-  const appData = await mkdtemp(path.join(tmpdir(), "ludone-auth-identity-"));
+  const appData = options.appData ?? await mkdtemp(path.join(tmpdir(), "ludone-auth-identity-"));
   temporaryRoots.add(appData);
   let loopbackServer;
   let revocationCalls = 0;
@@ -99,13 +108,16 @@ async function createHarness(options = {}) {
     const url = new URL(input);
     if (url.pathname === "/.well-known/oauth-authorization-server") {
       return jsonResponse({
-        issuer: ISSUER,
-        authorization_endpoint: `${ISSUER}/api/mcp/oauth/authorize`,
-        token_endpoint: `${ISSUER}/api/mcp/oauth/token`,
-        registration_endpoint: `${ISSUER}/api/mcp/oauth/register`,
-        revocation_endpoint: `${ISSUER}/api/mcp/oauth/revoke`,
+        issuer,
+        authorization_endpoint: `${issuer}/api/mcp/oauth/authorize`,
+        token_endpoint: `${issuer}/api/mcp/oauth/token`,
+        registration_endpoint: `${issuer}/api/mcp/oauth/register`,
+        revocation_endpoint: `${issuer}/api/mcp/oauth/revoke`,
         code_challenge_methods_supported: ["S256"],
       });
+    }
+    if (url.pathname === "/api/mcp/oauth/register") {
+      return jsonResponse({ client_id: REGISTERED_CLIENT_ID });
     }
     if (url.pathname === "/api/mcp/oauth/token") {
       return jsonResponse(tokenResponse);
@@ -121,21 +133,24 @@ async function createHarness(options = {}) {
   });
   const app = { getPath: vi.fn(() => appData) };
   const safeStorage = {
+    decryptString: vi.fn((value) => value.toString("utf8")),
     encryptString: vi.fn((value) => Buffer.from(value, "utf8")),
     isEncryptionAvailable: vi.fn(() => true),
   };
+  const shell = { openExternal: vi.fn(async (url = "") => url) };
   const controller = createAuthController({
     app,
-    clientId: CLIENT_ID,
+    clientId,
     fetchImpl,
-    issuer: ISSUER,
+    issuer,
     logger,
     loopbackServerFactory(handler) {
       loopbackServer = new CallbackLoopbackServer(handler);
       return loopbackServer;
     },
     safeStorage,
-    shell: { openExternal: vi.fn(async () => {}) },
+    scope,
+    shell,
   });
 
   return {
@@ -145,6 +160,8 @@ async function createHarness(options = {}) {
     getLoopbackServer: () => loopbackServer,
     logger,
     revocationCalls: () => revocationCalls,
+    safeStorage,
+    shell,
   };
 }
 
@@ -164,8 +181,147 @@ function loggedText(logger) {
 
 afterEach(async () => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
   await Promise.all([...temporaryRoots].map((root) => rm(root, { force: true, recursive: true })));
   temporaryRoots.clear();
+});
+
+describe("znovupoužití uloženého OAuth klienta", () => {
+  it("při druhém přihlášení použije uloženého klienta bez nové registrace", async () => {
+    const first = await createHarness({ clientId: null });
+    await expect(completeLogin(first)).resolves.toMatchObject({ ok: true });
+    expect(first.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(1);
+    expect((await readSession(first)).clientId).toBe(REGISTERED_CLIENT_ID);
+
+    const second = await createHarness({ clientId: null, appData: first.app.getPath() });
+    await expect(completeLogin(second)).resolves.toMatchObject({ ok: true });
+
+    expect(second.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(0);
+    expect(new URL(second.shell.openExternal.mock.calls[0][0]).searchParams.get("client_id"))
+      .toBe(REGISTERED_CLIENT_ID);
+    const tokenCall = second.fetchImpl.mock.calls.find(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/token"
+    ));
+    expect(new URLSearchParams(tokenCall?.[1]?.body).get("client_id")).toBe(REGISTERED_CLIENT_ID);
+  });
+
+  it.each([
+    ["issuer", { issuer: "https://labs.ludone.cz", scope: "mcp:read" }],
+    ["scope", { issuer: ISSUER, scope: "mcp:read mcp:draft" }],
+  ])("při změně %s zaregistruje nového klienta", async (_name, options) => {
+    const first = await createHarness();
+    await expect(completeLogin(first)).resolves.toMatchObject({ ok: true });
+    const second = await createHarness({
+      ...options,
+      clientId: null,
+      appData: first.app.getPath(),
+    });
+
+    await expect(completeLogin(second)).resolves.toMatchObject({ ok: true });
+
+    const registrationCalls = second.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ));
+    expect(registrationCalls).toHaveLength(1);
+    expect(registrationCalls[0][0]).toBe(`${options.issuer}/api/mcp/oauth/register`);
+    expect(JSON.parse(registrationCalls[0][1].body).scope).toBe(options.scope);
+    expect(new URL(second.shell.openExternal.mock.calls[0][0]).searchParams.get("client_id"))
+      .toBe(REGISTERED_CLIENT_ID);
+    expect((await readSession(second)).clientId).toBe(REGISTERED_CLIENT_ID);
+  });
+
+  it.each([
+    ["issuer", "https://labs.ludone.cz"],
+    ["resource", `${ISSUER}/api/jiny-resource`],
+  ])("samotná neshoda uloženého %s stačí k nové registraci", async (field, value) => {
+    const harness = await createHarness({ clientId: null });
+    await expect(completeLogin(harness)).resolves.toMatchObject({ ok: true });
+    const session = await readSession(harness);
+    await writeFile(tokenSessionFilePath(harness.app), JSON.stringify({ ...session, [field]: value }));
+    harness.fetchImpl.mockClear();
+
+    await expect(completeLogin(harness)).resolves.toMatchObject({ ok: true });
+
+    expect(harness.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(1);
+  });
+
+  it.each([
+    ["chybějící", null],
+    ["prázdná", ""],
+    ["poškozená", "{neplatny-json"],
+    ["s neplatným schématem", "[]"],
+  ])("session %s nebrání registraci a dokončení přihlášení", async (_name, stored) => {
+    const harness = await createHarness({ clientId: null });
+    if (stored !== null) {
+      const destination = tokenSessionFilePath(harness.app);
+      await mkdir(path.dirname(destination), { recursive: true });
+      await writeFile(destination, stored);
+    }
+
+    await expect(completeLogin(harness)).resolves.toMatchObject({ ok: true });
+
+    expect(harness.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(1);
+    expect((await readSession(harness)).clientId).toBe(REGISTERED_CLIENT_ID);
+  });
+
+  it("chyba čtení uložené session nebrání registraci a dokončení přihlášení", async () => {
+    const harness = await createHarness({ clientId: null });
+    await expect(completeLogin(harness)).resolves.toMatchObject({ ok: true });
+    harness.fetchImpl.mockClear();
+    const read = vi.spyOn(fs, "readFile").mockRejectedValueOnce(
+      Object.assign(new Error("Session nelze přečíst"), { code: "EACCES" }),
+    );
+
+    const attempt = await harness.controller.start();
+    expect(read).toHaveBeenCalledWith(tokenSessionFilePath(harness.app));
+    read.mockRestore();
+    harness.getLoopbackServer().deliverCode(attempt.authorizationUrl);
+    await expect(attempt.result).resolves.toMatchObject({ ok: true });
+
+    expect(harness.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(1);
+  });
+
+  it("chyba dešifrování session nebrání registraci a dokončení přihlášení", async () => {
+    const harness = await createHarness({ clientId: null });
+    await expect(completeLogin(harness)).resolves.toMatchObject({ ok: true });
+    harness.fetchImpl.mockClear();
+    harness.safeStorage.decryptString.mockImplementation(() => {
+      throw new Error("Session nelze dešifrovat");
+    });
+
+    await expect(completeLogin(harness)).resolves.toMatchObject({ ok: true });
+
+    expect(harness.safeStorage.decryptString).toHaveBeenCalled();
+    expect(harness.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(1);
+  });
+
+  it("options.clientId z prostředí přebije uloženého klienta bez registrace", async () => {
+    const first = await createHarness({ clientId: null });
+    await expect(completeLogin(first)).resolves.toMatchObject({ ok: true });
+    const second = await createHarness({ clientId: CLIENT_ID, appData: first.app.getPath() });
+
+    await expect(completeLogin(second)).resolves.toMatchObject({ ok: true });
+
+    expect(second.safeStorage.decryptString).not.toHaveBeenCalled();
+    expect(second.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(0);
+    expect(new URL(second.shell.openExternal.mock.calls[0][0]).searchParams.get("client_id"))
+      .toBe(CLIENT_ID);
+    expect((await readSession(second)).clientId).toBe(CLIENT_ID);
+  });
 });
 
 describe("best-effort identita po OAuth přihlášení", () => {
