@@ -16,6 +16,11 @@ const QUEUE_OWNER_FINGERPRINT_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const COMPLETE_UPLOAD_STATES = new Set(["normalized", "stored"]);
 
 const PAUSED_CODES = new Set([
+  // 🔴 Platný token, jen požádal o špatné oprávnění. NENÍ to vypršení: nové přihlášení
+  // nepomůže, dokud aplikace nezažádá o `nahravky:upload`. Opakování je proto marné
+  // a nesmí ubírat z rozpočtu pokusů — jinak nahrávka doputuje do „selhalo" kvůli chybě,
+  // kterou opravuje vývojář, ne uživatel. Doloženo serverovou session 10. 9. 2026.
+  "insufficient_scope",
   "quota_exceeded",
   "queue_owner_mismatch",
   "queue_owner_unknown",
