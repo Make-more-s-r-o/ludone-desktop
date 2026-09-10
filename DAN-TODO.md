@@ -100,9 +100,19 @@ Přesný kanonizační kontrakt jsem jim poslal.
 bez hlášky, že jde o vadu aplikace (`src/lib/queue.js:132–153` uzná jen tvar `*_owner_*`).
 Je to dosažitelné až po přepnutí scope, takže to zatím nehoří — doporučená oprava, až padne rozhodnutí výš.
 
-**Na labs to zatím není** — serverová session hlásí rozbitý `main` (zdvojený klíč), po opravě
-tam půjde Bearer i oprava přepisu. Ozvou se jednou větou. Do té doby naostro nic nezkoušej,
-protože přepínač Bearer je živý na produkci a na labs ještě ne — dostal bys jiné chování a nebyla by to vada.
+✅ **Bearer JE na labs (11. 9. ~21:59) a přepínač `NAHRAVKY_UPLOAD_BEARER_ENABLED=true`
+je zapnutý na labs i na produkci** — ověřeno serverovou session otiskem v běžícím buildu, ne
+zeleným během. Dřívější asymetrie (živé na prod, ne na labs) tím zmizela, obě prostředí jsou stejná.
+
+🔴 **Plný test odeslání ale ještě NEJDE** — je zablokovaný tou identitou výš. K úspěšnému
+uploadu je potřeba upload scope; ten dnes láme otisk vlastníka (identita = null → pauza). Takže
+end-to-end test „nahraju a odešle se to na labs" má smysl teprve **po** rozhodnutí a postavení
+`userinfo`. Serverová session výslovně varuje: scope si zatím nevyžádat.
+**Recept na ranní test (až bude userinfo hotové):** přihlásit se v appce → nahrát krátký klip
+→ v panelu fronty sledovat, že položka projde do „odesláno", ne do „čeká na potvrzení" /
+`queue_owner_mismatch`. Prostředí přepneš přes `LUDONE_ORIGIN` na labs. Otevřená otázka na
+server (pro tebe, ať test není naslepo): přijme dnešní `mcp:read` token upload routu, nebo
+vrátí `403 insufficient_scope`? Zeptal jsem se, odpověď doplní.
 
 ---
 
