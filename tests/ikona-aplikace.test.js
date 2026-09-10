@@ -75,10 +75,22 @@ describe("ikona aplikace", () => {
     if (!existsSync(soubor)) generuj(GENERATOR, path.dirname(soubor));
     expect(existsSync(soubor), `Chybí ${soubor} ani po vygenerování`).toBe(true);
     const casti = castiIcns(readFileSync(soubor));
+    // 🔴 Tenhle soupis dřív obsahoval `icp4` a `icp5` — a tím tenhle test VADU PŘEDEPISOVAL
+    // jako správný stav. Ty dva typy nesou v ICNS historická RLE data, ne PNG; macOS je tak
+    // četl a v seznamu ve Finderu z ikony vyšel barevný šum. Test to nechytil, protože se
+    // ptal jen „je uvnitř bloku dekódovatelné PNG?", a to bylo — nikdy se nezeptal, jestli
+    // to systém přečte stejně. Pro 16 a 32 bodů žádný PNG typ neexistuje, takže se do ICNS
+    // nepíšou vůbec a macOS si je dopočítá z retinových `ic11`/`ic12`.
     const ocekavane = {
-      icp4: 16, icp5: 32, ic07: 128, ic08: 256, ic09: 512,
+      ic07: 128, ic08: 256, ic09: 512,
       ic11: 32, ic12: 64, ic13: 256, ic14: 512, ic10: 1024,
     };
+    // Zámek na příčinu, ne na následek: kdyby se ty typy vrátily, tenhle řádek zčervená
+    // dřív, než si toho někdo všimne na obrazovce.
+    expect([...casti.keys()]).not.toContain("icp4");
+    expect([...casti.keys()]).not.toContain("icp5");
+    expect([...casti.keys()]).not.toContain("ic04");
+    expect([...casti.keys()]).not.toContain("ic05");
     expect([...casti.keys()].sort()).toEqual(Object.keys(ocekavane).sort());
     for (const [typ, rozmer] of Object.entries(ocekavane)) {
       const obrazek = dekodujPng(casti.get(typ));
@@ -121,6 +133,10 @@ describe("ikona aplikace", () => {
       expect(icns.equals(readFileSync(path.join(druhy, "LuDone.icns"))))
         .toBe(true);
       const vlozene = [...castiIcns(icns).values()];
+      // Sada `.iconset` zůstává ÚPLNÁ — z ní si ikonu vyrábí Applův `iconutil` i kdokoli
+      // další. Do ICNS ale nejde všechno: pro 16 bodů neexistuje typ bloku, který by nesl
+      // PNG, takže se ta velikost vědomě vynechává a macOS si ji dopočítá z `ic11`.
+      const bezVlastnihoBloku = new Set(["icon_16x16.png"]);
       for (const velikost of VELIKOSTI) {
         for (const nasobek of [1, 2]) {
           const nazev = `icon_${velikost}x${velikost}${nasobek === 2 ? "@2x" : ""}.png`;
@@ -128,8 +144,19 @@ describe("ikona aplikace", () => {
           const obrazek = dekodujPng(png);
           expect([obrazek.sirka, obrazek.vyska])
             .toEqual([velikost * nasobek, velikost * nasobek]);
-          expect(vlozene.some((data) => data.equals(png)), `${nazev} není v ICNS`).toBe(true);
+          expect(
+            vlozene.some((data) => data.equals(png)),
+            `${nazev} ${bezVlastnihoBloku.has(nazev) ? "nemá být v ICNS" : "není v ICNS"}`,
+          ).toBe(!bezVlastnihoBloku.has(nazev));
         }
+      }
+      // Obráceným směrem: v ICNS nesmí ležet nic, co ze sady nepochází. Kdyby si generátor
+      // vymyslel vlastní data, předchozí smyčka by o tom nevěděla.
+      const sada = VELIKOSTI.flatMap((velikost) => [1, 2].map((nasobek) => readFileSync(
+        path.join(prvni, "LuDone.iconset", `icon_${velikost}x${velikost}${nasobek === 2 ? "@2x" : ""}.png`),
+      )));
+      for (const data of vlozene) {
+        expect(sada.some((png) => png.equals(data)), "blok ICNS nepochází ze sady").toBe(true);
       }
     } finally {
       rmSync(koren, { recursive: true, force: true });
@@ -202,7 +229,7 @@ mkdirSync(path.join("release", process.arch === "arm64" ? "mac-arm64" : "mac", "
         env: { ...env, LUDONE_BUILDER_EXECUTABLE: builder },
         stdio: "pipe",
       });
-      expect(castiIcns(readFileSync(ikona)).size).toBe(10);
+      expect(castiIcns(readFileSync(ikona)).size).toBe(8);
     } finally {
       rmSync(koren, { recursive: true, force: true });
     }

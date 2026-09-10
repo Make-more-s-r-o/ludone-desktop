@@ -371,6 +371,13 @@ function pixelAplikace(x, y, rozmer, barvy) {
 
 // ICNS uchovává PNG pod čtyřznakovými typy; každý blok včetně hlavičky
 // nese svou délku. Zápis v Node umožní stejné generování i testy na Linuxu.
+//
+// 🔴 Typ bloku NENÍ jen jmenovka — říká systému, JAK data přečíst. Do 10. 9. 2026 se sem
+// psaly 16px a 32px pod `icp4`/`icp5`, jenže to jsou historické typy pro RLE, ne pro PNG:
+// macOS ta data rozbalil jako RLE a v seznamu ve Finderu z ikony vyšel barevný šum.
+// Velký náhled byl přitom v pořádku, protože ten bere jinou velikost — vada byla vidět
+// jen tam, kam se nikdo nedíval. Měřeno: průměrná barva 16px vyšla (124, 11, 0) proti
+// (22, 24, 26) u zdravých velikostí, a alfa 255 místo 187, protože RLE průhlednost nemá.
 function icns(casti) {
   const bloky = casti.map(({ typ, data }) => {
     const hlavicka = Buffer.alloc(8);
@@ -394,8 +401,12 @@ export function generujIkonuAplikace(soubor) {
     glyf: oklchNaRgb(PALETY.dark.text),
   };
   const velikosti = [
-    { zaklad: 16, typy: ["icp4", "ic11"] },
-    { zaklad: 32, typy: ["icp5", "ic12"] },
+    // `null` = velikost se zapíše do `.iconset`, ale do ICNS nejde. Pro 16 a 32 bodů
+    // neexistuje typ, který by nesl PNG: `icp4`/`icp5` čeká RLE a `ic04`/`ic05` ARGB
+    // (obojí změřeno — obojí dá šum). macOS si proto malé velikosti dopočítá z retinových
+    // `ic11`/`ic12`, což je přesně to, co dělá i vlastní nástroj Applu.
+    { zaklad: 16, typy: [null, "ic11"] },
+    { zaklad: 32, typy: [null, "ic12"] },
     { zaklad: 128, typy: ["ic07", "ic13"] },
     { zaklad: 256, typy: ["ic08", "ic14"] },
     { zaklad: 512, typy: ["ic09", "ic10"] },
@@ -411,11 +422,11 @@ export function generujIkonuAplikace(soubor) {
       const data = obrazky.get(rozmer);
       const nazev = `icon_${zaklad}x${zaklad}${index === 1 ? "@2x" : ""}.png`;
       fs.writeFileSync(path.join(iconset, nazev), data);
-      casti.push({ typ, data });
+      if (typ !== null) casti.push({ typ, data });
     }
   }
   fs.writeFileSync(soubor, icns(casti));
-  console.log(`Vygenerována ikona aplikace (10 velikostí) do ${soubor}`);
+  console.log(`Vygenerována ikona aplikace (${casti.length} bloků ICNS) do ${soubor}`);
 }
 
 function vystupniAdresar(argumenty, aplikace) {
