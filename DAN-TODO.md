@@ -110,9 +110,19 @@ end-to-end test „nahraju a odešle se to na labs" má smysl teprve **po** rozh
 `userinfo`. Serverová session výslovně varuje: scope si zatím nevyžádat.
 **Recept na ranní test (až bude userinfo hotové):** přihlásit se v appce → nahrát krátký klip
 → v panelu fronty sledovat, že položka projde do „odesláno", ne do „čeká na potvrzení" /
-`queue_owner_mismatch`. Prostředí přepneš přes `LUDONE_ORIGIN` na labs. Otevřená otázka na
-server (pro tebe, ať test není naslepo): přijme dnešní `mcp:read` token upload routu, nebo
-vrátí `403 insufficient_scope`? Zeptal jsem se, odpověď doplní.
+`queue_owner_mismatch`. Prostředí přepneš přes `LUDONE_ORIGIN` na labs. ✅ **Odpovězeno
+serverem:** dnešní `mcp:read` token dostane na upload routu **`403 insufficient_scope`, žádná
+přechodová tolerance** (ověřeno čtením `upload-guard.ts`/`authorizeFromBearer`) — takže
+s Bearerem **ráno nemáš co zkoušet**, dokud nebude `userinfo` + přepnutý scope.
+
+🔴 **Nesluč si dvě nezávislé věci na labs:**
+- **Přepis** — tvůj ranní test, jede přes běžné přihlášení v prohlížeči, je nasazený a
+  připravený, **zkusit můžeš hned**. S Bearerem vůbec nesouvisí.
+- **Upload z desktopu** — čeká na `userinfo` a scope, tenhle teď ne.
+
+*(Volitelně, ~5 min: záporný test — poslat na upload routu `mcp:read` token a čekat `403`.
+Nedokáže, že upload funguje, jen že hranice drží a Bearer je opravdu nasazený. Vyžaduje ale
+přihlášení kvůli tokenu, takže to není „na kliknutí".)*
 
 ---
 
