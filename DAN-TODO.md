@@ -931,3 +931,31 @@ sdílené zařízení (velká) · chybějící stavy panelu jako „Přihlášen
 
 Kalendář · připomínky · seznam účastníků · `mcp:upload` · dvě přihlášení pro uživatele ·
 vydávání cookie výměnou za token · obrazovky aktualizace a odinstalování.
+
+## 28. Kde se pokračuje, až budou limity (stav k 10. 9. 2026 večer)
+
+**Zvuk funguje.** Ověřeno naostro: obě stopy, systémová −21 dB se špičkami −1,2 dB.
+Příčina byla v systémovém záznamu oprávnění — macOS si u záznamu obrazovky pamatoval
+otisk jednoho konkrétního sestavení místo podpisu, takže po každé nové verzi aplikaci
+nepoznal. Smazáno a uděleno znovu; teď už si pamatuje podpis a má to vydržet.
+
+**Odesílání na server:** serverová strana Bearer smergovala, ale **na labs to ještě není** —
+jejich nasazení blokuje konflikt, který vznikl až složením dvou samostatně zelených PR.
+Mají opravu, dají vědět.
+
+### Co se má udělat, až se rozjedeme
+
+1. **Klient uploadu** — přepnout na oprávnění `nahravky:upload` (žádá se samostatně, hotovo
+   v PR #119) a doladit podle jejich postupu, který mají poslat. 🔴 Nestavět na volitelné
+   velikosti části — server si ji podle všeho určuje sám.
+2. **Tlačítko přepínače odesílání v Nastavení.** Dnes ho nikde neklikneš a je to záměr:
+   postavená je jen vrstva pod ním (PR #114). Tlačítko je zásah do schváleného návrhu.
+3. **Doměřit z pohledu klienta**, jestli obě stopy dorazily oddělené. Server to ze své
+   strany nevidí a je to ta vada, která se neprojeví chybou — dvě stopy se slijí a odpověď
+   je 200. Nepotřebuju k tomu přehrávat zvuk, stačí porovnat otisky.
+4. **Přepsat pravidlo R22** — stojí na nepravdivé premise, ta duplikace není dosažitelná
+   (obnova osiřelé stopy vůbec neskenuje). Místo něj do specu patří dvě skutečné vady:
+   úklid nechává popisný soubor na disku navždy, a nechává tam i jednostopé nahrávky
+   (druhá opravena v PR #120).
+5. **Rozhodnutí o časovém přepínači** — dnes jde zapnout jen restartem aplikace, protože
+   se hodnota zmrazí při prvním sestavení časovače.
