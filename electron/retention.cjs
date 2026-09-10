@@ -44,7 +44,11 @@ function retentionMs(policy) {
  * nahrávky jednostopé, takže se od té doby neuklidilo nic a disk rostl dál. A protože při
  * zaplnění disku aplikace přestane nahrávat, je to tichá cesta k tomu, že přestane fungovat.
  *
- * ⚠️ Mikrofon je povinný — nahrávka bez něj neexistuje a její soubory nemáme podle čeho ověřit.
+ * ⚠️ Mikrofon je povinný — nahrávka bez něj neexistuje a její soubory nemáme podle čeho
+ * ověřit. Je to ZÁLOŽNÍ obrana: změřeno 10. 9. 2026, že bez ní položku stejně odmítne
+ * kontrola cesty (`UNVERIFIED_RECORDING`). Zůstává proto, že odmítnout vadný vstup hned
+ * je čitelnější než ho nechat propadnout o dvě patra níž — ne proto, že by bez ní hrozilo
+ * smazání.
  *
  * @param {unknown} tracks
  * @returns {Array<{ source: "microphone" | "system", filePath: string }> | null}
@@ -53,10 +57,11 @@ function trackFiles(tracks) {
   if (!tracks || typeof tracks !== "object" || Array.isArray(tracks)) return null;
   const values = /** @type {Record<string, unknown>} */ (tracks);
   if (typeof values.microphone !== "string") return null;
-  const files = [{ source: /** @type {const} */ ("microphone"), filePath: values.microphone }];
+  /** @type {Array<{ source: "microphone" | "system", filePath: string }>} */
+  const files = [{ source: "microphone", filePath: values.microphone }];
   if (values.system !== undefined) {
     if (typeof values.system !== "string") return null;
-    files.push({ source: /** @type {const} */ ("system"), filePath: values.system });
+    files.push({ source: "system", filePath: values.system });
   }
   return files;
 }
@@ -196,6 +201,8 @@ async function verifyDeletionCandidate(candidate, recordingsRoot) {
     // velikosti a otisku. Řádku NEODSTRAŇUJ: chrání případ, kdy by někdo podvrhl
     // frontu i manifest tak, že projdou — pak je umístění poslední, co zbývá.
     || !candidate.files.every(({ filePath }) => isImmediateChild(recordingsRoot, filePath))
+    // Táž cesta dvakrát znamená, že fronta o nahrávce lže. Taky ZÁLOŽNÍ obrana: změřeno,
+    // že bez ní to zachytí neshoda jmen s manifestem (`MANIFEST_MISMATCH`).
     || new Set(candidate.files.map(({ filePath }) => filePath)).size !== candidate.files.length
   ) {
     return { ok: false, error: { code: "UNVERIFIED_RECORDING" } };
