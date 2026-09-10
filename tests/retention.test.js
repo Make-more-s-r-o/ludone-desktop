@@ -14,6 +14,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import queueStore from "../electron/queue.cjs";
 import retention from "../electron/retention.cjs";
 import { createManifest } from "../src/lib/manifest.js";
 import {
@@ -126,6 +127,174 @@ async function createSentRecording({ queue = createQueue(), sentAt, ...recording
     queue: sent.queue,
   };
 }
+
+
+// 🔴 Jednostopá nahrávka (bez povoleného systémového zvuku) je legitimní stav a do fronty
+// jde vlastní větví produkčního storu. Do 10. 9. 2026 na ni úklid NIKDY nesáhl, protože
+// vyžadoval obě stopy — a protože od 8. 9. byly na Danově Macu jednostopé úplně všechny,
+// neuklidilo se od té doby nic. Disk rostl a při jeho zaplnění aplikace přestane nahrávat.
+async function createQueuedMicrophoneOnly({
+  clientRecordingId = "3d4e7b61-e3d4-483c-94cc-a512454f6976",
+  recordedAt = NOW - DAY_MS,
+  suffix = "jednostopa",
+} = {}) {
+  const microphonePath = path.join(temporaryDirectory, `${suffix}-mikrofon.webm`);
+  const manifestPath = path.join(temporaryDirectory, `${suffix}.manifest.json`);
+  const startedAt = new Date(recordedAt - 60_000).toISOString();
+  const endedAt = new Date(recordedAt - 30_000).toISOString();
+  const microphoneBytes = Buffer.from("jen mikrofon");
+  const manifest = {
+    schemaVersion: 1,
+    clientRecordingId,
+    createdAt: startedAt,
+    closedAt: endedAt,
+    state: "complete",
+    tracks: {
+      microphone: {
+        fileName: path.basename(microphonePath),
+        startedAt,
+        endedAt,
+        sizeBytes: microphoneBytes.byteLength,
+        sha256: createHash("sha256").update(microphoneBytes).digest("hex"),
+      },
+    },
+  };
+  await Promise.all([
+    writeFile(microphonePath, microphoneBytes, { mode: 0o600 }),
+    writeFile(manifestPath, JSON.stringify(manifest), { mode: 0o600 }),
+  ]);
+  // Položku staví produkční store toutéž větví jako v provozu; ručně poskládaná by byla
+  // kopie logiky, která smí driftovat.
+  const queued = await queueStore.createOutboundQueueStore({
+    filePath: path.join(temporaryDirectory, "queue", "outgoing.json"),
+    queueModulePromise: import("../src/lib/queue.js"),
+    send: async () => {},
+  }).enqueueRecording({
+    manifest,
+    manifestPath,
+    trackPaths: { microphone: microphonePath },
+  });
+  return { item: queued.item, microphonePath, manifestPath };
+}
+
+describe("úklid jednostopé nahrávky", () => {
+  it("smaže mikrofonní stopu odeslanou před osmi dny", async () => {
+    const recording = await createQueuedMicrophoneOnly();
+    const odeslano = {
+      ...recording.item,
+      state: QUEUE_STATES.SENT,
+      sentAt: new Date(NOW - 8 * DAY_MS).toISOString(),
+    };
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+
+    const vysledek = await applyRetention({
+      queue: { schemaVersion: 1, items: [odeslano] },
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(false);
+    expect(vysledek.deletedFiles).toEqual([recording.microphonePath]);
+    expect(vysledek.errors).toEqual([]);
+  });
+
+  it("čerstvou jednostopou nechá být, stejně jako dvoustopou", async () => {
+    const recording = await createQueuedMicrophoneOnly({ suffix: "cerstva" });
+    const odeslano = {
+      ...recording.item,
+      state: QUEUE_STATES.SENT,
+      sentAt: new Date(NOW - 1 * DAY_MS).toISOString(),
+    };
+
+    await applyRetention({
+      queue: { schemaVersion: 1, items: [odeslano] },
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+  });
+
+  it("neodeslanou jednostopou nesmaže ani po osmi dnech", async () => {
+    // Úklid maže jen to, co je prokazatelně na serveru. Neodeslaná nahrávka je jediná kopie.
+    const recording = await createQueuedMicrophoneOnly({ suffix: "neodeslana" });
+    const ceka = { ...recording.item, sentAt: null };
+
+    await applyRetention({
+      queue: { schemaVersion: 1, items: [ceka] },
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+  });
+
+  it("položku bez mikrofonní stopy nesmaže a nespadne na ní", async () => {
+    // Mikrofon je povinný — nahrávka bez něj neexistuje a její soubory nemáme podle čeho
+    // ověřit. Bez téhle podmínky by se do mazání dostala položka s `undefined` cestou.
+    const recording = await createQueuedMicrophoneOnly({ suffix: "bezmikrofonu" });
+    const odeslano = {
+      ...recording.item,
+      tracks: { system: recording.microphonePath },
+      state: QUEUE_STATES.SENT,
+      sentAt: new Date(NOW - 8 * DAY_MS).toISOString(),
+    };
+
+    const vysledek = await applyRetention({
+      queue: { schemaVersion: 1, items: [odeslano] },
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(vysledek.deletedFiles).toEqual([]);
+  });
+
+  it("dvě stopy se stejnou cestou odmítne, ať nemaže tentýž soubor dvakrát", async () => {
+    // Shodná cesta znamená, že fronta o nahrávce lže. Smazání by proběhlo „úspěšně" nad
+    // jedním souborem a druhé by hlásilo ENOENT — vypadalo by to jako hotový úklid.
+    const recording = await createQueuedMicrophoneOnly({ suffix: "dvakrattotez" });
+    const odeslano = {
+      ...recording.item,
+      tracks: { microphone: recording.microphonePath, system: recording.microphonePath },
+      state: QUEUE_STATES.SENT,
+      sentAt: new Date(NOW - 8 * DAY_MS).toISOString(),
+    };
+
+    const vysledek = await applyRetention({
+      queue: { schemaVersion: 1, items: [odeslano] },
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(vysledek.deletedFiles).toEqual([]);
+  });
+
+  it("nesmaže, když manifest o druhé stopě mluví a fronta ji nemá", async () => {
+    // Neshoda v počtu stop se smí vyložit jen ke škodě: mazalo by se něco, co manifest
+    // nepopisuje. Fail-closed.
+    const recording = await createQueuedMicrophoneOnly({ suffix: "neshoda" });
+    const manifest = JSON.parse(await readFile(recording.manifestPath, "utf8"));
+    manifest.tracks.system = { ...manifest.tracks.microphone, fileName: "cizi-system.webm" };
+    await writeFile(recording.manifestPath, JSON.stringify(manifest), { mode: 0o600 });
+    const odeslano = {
+      ...recording.item,
+      state: QUEUE_STATES.SENT,
+      sentAt: new Date(NOW - 8 * DAY_MS).toISOString(),
+    };
+
+    const vysledek = await applyRetention({
+      queue: { schemaVersion: 1, items: [odeslano] },
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(vysledek.errors.map(({ code }) => code)).toContain("MANIFEST_MISMATCH");
+  });
+});
 
 describe("retence 7 dní", () => {
   it("smaže obě stopy nahrávky odeslané před osmi dny", async () => {
