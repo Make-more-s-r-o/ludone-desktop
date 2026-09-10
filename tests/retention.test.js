@@ -230,6 +230,48 @@ describe("úklid jednostopé nahrávky", () => {
     expect(existsSync(recording.microphonePath)).toBe(true);
   });
 
+  it("položku bez mikrofonní stopy nesmaže a nespadne na ní", async () => {
+    // Mikrofon je povinný — nahrávka bez něj neexistuje a její soubory nemáme podle čeho
+    // ověřit. Bez téhle podmínky by se do mazání dostala položka s `undefined` cestou.
+    const recording = await createQueuedMicrophoneOnly({ suffix: "bezmikrofonu" });
+    const odeslano = {
+      ...recording.item,
+      tracks: { system: recording.microphonePath },
+      state: QUEUE_STATES.SENT,
+      sentAt: new Date(NOW - 8 * DAY_MS).toISOString(),
+    };
+
+    const vysledek = await applyRetention({
+      queue: { schemaVersion: 1, items: [odeslano] },
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(vysledek.deletedFiles).toEqual([]);
+  });
+
+  it("dvě stopy se stejnou cestou odmítne, ať nemaže tentýž soubor dvakrát", async () => {
+    // Shodná cesta znamená, že fronta o nahrávce lže. Smazání by proběhlo „úspěšně" nad
+    // jedním souborem a druhé by hlásilo ENOENT — vypadalo by to jako hotový úklid.
+    const recording = await createQueuedMicrophoneOnly({ suffix: "dvakrattotez" });
+    const odeslano = {
+      ...recording.item,
+      tracks: { microphone: recording.microphonePath, system: recording.microphonePath },
+      state: QUEUE_STATES.SENT,
+      sentAt: new Date(NOW - 8 * DAY_MS).toISOString(),
+    };
+
+    const vysledek = await applyRetention({
+      queue: { schemaVersion: 1, items: [odeslano] },
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(vysledek.deletedFiles).toEqual([]);
+  });
+
   it("nesmaže, když manifest o druhé stopě mluví a fronta ji nemá", async () => {
     // Neshoda v počtu stop se smí vyložit jen ke škodě: mazalo by se něco, co manifest
     // nepopisuje. Fail-closed.
