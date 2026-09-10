@@ -18,6 +18,7 @@ import { createMicrophoneOnlyExportCapture } from "./microphone-only-capture.js"
 import {
   MICROPHONE_ONLY_TEXT,
   MICROPHONE_REQUIRED_TEXT,
+  microphoneOnlyReason,
 } from "./recording-copy.js";
 import { watchSystemAudioTrack } from "./system-audio-health.js";
 
@@ -245,6 +246,29 @@ export function RecordingCard({
   const systemAudioLost = isRecording && session.systemAudioState === "lost";
   const systemSourceState = microphoneOnly ? "unavailable" : (systemAudioLost ? "lost" : "live");
   const elapsed = useElapsedTime(isRecording, session.startedAt);
+  const [systemAudioPermission, setSystemAudioPermission] = useState(null);
+
+  // Stav oprávnění se čte teprve tehdy, když nahrávka opravdu vyšla jednostopá — dřív
+  // není co vysvětlovat a dotaz by jen běžel nazmar. Selhání čtení nesmí kartu shodit:
+  // bez odpovědi zůstane obecný text, tedy dnešní chování.
+  useEffect(() => {
+    if (!microphoneOnly || typeof window.ludone?.getPermissionStatus !== "function") {
+      return undefined;
+    }
+    let active = true;
+    window.ludone.getPermissionStatus("system-audio").then(
+      (result) => { if (active) setSystemAudioPermission(result); },
+      () => { if (active) setSystemAudioPermission(null); },
+    );
+    return () => { active = false; };
+  }, [microphoneOnly]);
+
+  const microphoneOnlyNote = microphoneOnly
+    ? microphoneOnlyReason({
+      permission: systemAudioPermission,
+      error: session.systemAudioError,
+    })
+    : MICROPHONE_ONLY_TEXT;
 
   async function finishRuntime(runtime, initialError = null) {
     if (runtime.finishPromise) return runtime.finishPromise;
@@ -484,6 +508,7 @@ export function RecordingCard({
       startedAt: null,
       labels: null,
       systemAudioState: "inactive",
+      systemAudioError: null,
     });
     let capture;
     let runtime;
@@ -624,6 +649,9 @@ export function RecordingCard({
         systemAudioState: hasSystemAudio
           ? (runtime.systemAudioLost ? "lost" : "live")
           : "unavailable",
+        // Důvod, proč druhá stopa nepřišla. Aplikace ho znala už dřív, jen ho zahazovala —
+        // a bez něj vypadá odepřené oprávnění na obrazovce stejně jako skutečné ticho.
+        systemAudioError: hasSystemAudio ? null : (capture.systemAudioError ?? null),
       });
     } catch (error) {
       if (runtime) {
@@ -967,7 +995,7 @@ export function RecordingCard({
           </div>
           {microphoneOnly && (
             <div className="recording-mode-note" role="status" aria-atomic="true">
-              {MICROPHONE_ONLY_TEXT}
+              {microphoneOnlyNote}
             </div>
           )}
 
