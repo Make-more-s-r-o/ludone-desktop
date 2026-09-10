@@ -72,6 +72,19 @@ závislost na serveru, je to náš vnitřní návrh. **Nepřepínám scope**, do
 - (b) nechat server vracet identitu i s upload-scope, nebo
 - (c) vzít identitu z jiného zdroje než z access tokenu.
 
+🔴 **Nová vrstva k tomu (10. 9. v noci, změřeno):** `identity.email` NENÍ jen popisek —
+vstupuje do HMAC otisku vlastníka nahrávky (`electron/queue.cjs:75`), který se snímá **na
+začátku nahrávání** (`main.cjs:1481,1519`) a při odeslání porovnává (`upload-client.cjs:394`,
+`queue_owner_mismatch`). Chrání to před tím, aby si pozdější přihlášení přivlastnilo
+anonymně pořízenou nahrávku. Důsledek: **náhradní zdroj identity MUSÍ dodat stabilní,
+kanonizovatelný e-mail už v čase nahrávání**, ne až v odpovědi uploadu. Serverem doporučená
+cesta 1 (e-mail v odpovědi zahájení uploadu) řeší zobrazení a otisk při přípravě odeslání,
+ale **ne ten první snímek na začátku nahrávání** — tam by e-mail pořád chyběl a každá
+nahrávka by se pauzla na `session_owner_unknown`. Buď musí e-mail zůstat dostupný už při
+přihlášení (třeba claim čitelný přímo z tokenu / userinfo, ne přes MCP), nebo se vědomě mění
+návrh otisku vlastníka. Řekl jsem to serverové session, ať cestu 1 nestaví s touhle dírou.
+`identity.name` je bezpečně nahraditelný odkudkoli — jen avatar a text.
+
 **Drobný latentní nález (nestavěl jsem, šetřím limit):** kdyby server někdy vrátil
 `403 insufficient_scope`, fronta ho dnes bere jako běžné „čeká" a **zkouší donekonečna**
 bez hlášky, že jde o vadu aplikace (`src/lib/queue.js:132–153` uzná jen tvar `*_owner_*`).
