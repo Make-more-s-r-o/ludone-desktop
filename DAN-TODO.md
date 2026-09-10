@@ -9,6 +9,80 @@ Historie se nemaže, přestěhovala se do [`DAN-TODO-archiv.md`](DAN-TODO-archiv
 
 ---
 
+## 🔴🔴 NEJVYŠŠÍ PRIORITA (10. 9. 2026 večer) — veřejné repo obsahuje návod na živé systémy
+
+**Změřeno dnes na HEAD `d58e663`, ne převzato z auditu:** `gh repo view` → repo je
+**PUBLIC** (`Make-more-s-r-o/ludone-desktop`). A v HEAD (ne jen v historii) leží čitelný
+popis **otevřených děr v BĚŽÍCÍCH systémech Make more** — sekce 17 téhle přílohy (K1–K5,
+ř. 508–530) a soubory `docs/changes/desktop-v1/OAUTH-CO-ZALOZIT.md`,
+`SERVER-CO-POSTAVIT.md`, `DAN-TODO-archiv.md`:
+
+- **K1** — kdokoli z internetu si proti `app.ludone.cz` založí trvalý neodvolatelný OAuth
+  klient (přiložený funkční `curl` + změřený rate limit = návod, jak ho obejít)
+- **K2** — scope `mcp:read` dovolí zápis, souhlas mluví jen o čtení → s K1 řetěz anonym → zápis do produkce
+- **K3** — pět edge funkcí LuTracku `verify_jwt=false` na **money-path** (jmenovitě uvedené)
+- **K4** — deaktivace uživatele neodvolá jeho klíče · **K5** — trvale veřejné upload prefixy
+
+🔴 **Proč to píšu jako nové rozhodnutí, i když jsi zveřejnění schválil:** tvé rozhodnutí
+publikovat (sekce 25, 9. 9.) vážilo **jen produkční IP a dvě mikrofonní nahrávky** a jeho
+zdůvodnění („přístup chrání klíč, ne utajení adresy") je o adresách infrastruktury.
+**Nikde v repu není záznam, že by rozhodnutí publikovat zvažovalo obsah K1–K5** — a to
+nejsou adresy, ale hotový útočný playbook na živou autorizaci. Produkční IP `23.88.61.12`
+je z HEAD pryč (zůstává v historii, cos přijal vědomě); tohle je jiná, nerozhodnutá věc.
+
+**Co jsem NEUDĚLAL a proč:** viditelnost repa jsem **nepřepnul**. Reverzoval bych tím tvé
+výslovné písemné rozhodnutí o disklozuře vlastních systémů firmy, a navíc private může
+rozbít auto-update/CI, který právě testuješ. To je tvoje volba, ne moje.
+
+**Doporučení + jednořádková oprava, až se probudíš** (private zastaví NOVÉ čtenáře, ale
+nevytáhne zpět, co už je forknuté — audit zmiňoval 113 kopií starých PR; skutečná náprava
+je oprava těch živých děr, na které jede serverová session):
+```
+gh repo edit Make-more-s-r-o/ludone-desktop --visibility private
+```
+Rozhodni: (a) private teď + redakce K1–K5 z HEAD než zase public, nebo (b) nechat public,
+protože jsou to tvé vlastní systémy a bereš to. Serverová session mezitím opravuje ty živé díry.
+
+**Druhá věc ze stejného auditu:** `dukazy/nahravani-2026-08-21/**/*-mikrofon.webm` jsou
+**dvě skutečné 5s nahrávky pokoje** (trackované, veřejné), a `.gitignore:41` o nich tvrdí,
+že jsou „pípání". Nikdo si je neposlechl. Buď smazat z HEAD, nebo potvrdit, že to bereš.
+
+---
+
+## 🔵 BEARER UPLOAD — kde to stojí (10. 9. 2026 v noci)
+
+**Dedup stop: OBRANA JE HOTOVÁ A SPRÁVNÁ, nic neměním.** Bál jsem se díry, kde by server
+sloučil dvě odeslání se shodným otiskem a klient by to nepoznal. Serverová session mi to
+**doměřila v jejich kódu**: dedup podle otisku běží **jen při dokončení** (`/dokoncit`),
+ne při zahájení. Naše kontrola `recording_replaced` (`electron/upload-client.cjs:672`) ho
+chytá přesně tam. 🔴 A je to **jediná** obrana v celém řetězu, protože tvar odpovědi je pro
+legitimní opakování a pro kolizi identický — držet ji, i až to server jednou opraví.
+Kolize obsahu mezi dvěma stopami TÉŽE nahrávky navíc nemůže nastat, blokuje ji `identical_tracks`
+kontrola před odesláním. (Serverová session má u sebe tuhle věc zapsanou jako otevřený nález z 8. 9. —
+tichá ztráta jedné ze dvou obsahově shodných stop — čeká to na tvé rozhodnutí o datech/schématu na JEJICH straně.)
+
+🔴 **ROZHODNUTÍ PRO TEBE — přepnutí scope na `nahravky:upload` má skrytou závislost.**
+Plán byl přepnout přihlášení na samotný upload-scope. Změřil jsem (workflow), že to
+**rozbije zjišťování identity**: stejný access token se dnes používá i pro MCP volání
+`ludone_ping` (`electron/auth.cjs:354–424`), kterým se po přihlášení dohledá tvůj e-mail
+a jméno. Upload-only token na to dostane `403 insufficient_scope`, chyba je odchycená, takže
+se login nezhroutí — ale `identity.email`/`name` se **natrvalo uloží jako null**. Není to
+závislost na serveru, je to náš vnitřní návrh. **Nepřepínám scope**, dokud nerozhodneš jak dál:
+- (a) nechat přihlášení na `mcp:read` a upload-scope žádat zvlášť jen před odesláním (dva tokeny), nebo
+- (b) nechat server vracet identitu i s upload-scope, nebo
+- (c) vzít identitu z jiného zdroje než z access tokenu.
+
+**Drobný latentní nález (nestavěl jsem, šetřím limit):** kdyby server někdy vrátil
+`403 insufficient_scope`, fronta ho dnes bere jako běžné „čeká" a **zkouší donekonečna**
+bez hlášky, že jde o vadu aplikace (`src/lib/queue.js:132–153` uzná jen tvar `*_owner_*`).
+Je to dosažitelné až po přepnutí scope, takže to zatím nehoří — doporučená oprava, až padne rozhodnutí výš.
+
+**Na labs to zatím není** — serverová session hlásí rozbitý `main` (zdvojený klíč), po opravě
+tam půjde Bearer i oprava přepisu. Ozvou se jednou větou. Do té doby naostro nic nezkoušej,
+protože přepínač Bearer je živý na produkci a na labs ještě ne — dostal bys jiné chování a nebyla by to vada.
+
+---
+
 ## 🔴 JEDNO ROZHODNUTÍ O NÁVRHU, KTERÉ SI VZÍT NESMÍM
 
 🔴 **OPRAVA MÉ DIAGNÓZY (4. 9. v noci):** tvoje „ikona není vidět" **NENÍ o kontrastu.**
