@@ -37,14 +37,28 @@ function retentionMs(policy) {
 }
 
 /**
+ * 🔴 Nahrávka nemusí mít obě stopy. Když není povolený systémový zvuk, vznikne jednostopá
+ * a je to legitimní stav (electron/main.cjs createMicrophoneOnlyManifest). Do 10. 9. 2026 tu
+ * ale stálo, že obě stopy MUSÍ být řetězce — jednostopá nahrávka proto vrátila `null`, spadla
+ * mezi „ponechané" a úklid ji NIKDY nesmazal. Doloženo na Danově Macu: od 8. 9. jsou všechny
+ * nahrávky jednostopé, takže se od té doby neuklidilo nic a disk rostl dál. A protože při
+ * zaplnění disku aplikace přestane nahrávat, je to tichá cesta k tomu, že přestane fungovat.
+ *
+ * ⚠️ Mikrofon je povinný — nahrávka bez něj neexistuje a její soubory nemáme podle čeho ověřit.
+ *
  * @param {unknown} tracks
- * @returns {[string, string] | null}
+ * @returns {Array<{ source: "microphone" | "system", filePath: string }> | null}
  */
 function trackFiles(tracks) {
   if (!tracks || typeof tracks !== "object" || Array.isArray(tracks)) return null;
   const values = /** @type {Record<string, unknown>} */ (tracks);
-  if (typeof values.microphone !== "string" || typeof values.system !== "string") return null;
-  return [values.microphone, values.system];
+  if (typeof values.microphone !== "string") return null;
+  const files = [{ source: /** @type {const} */ ("microphone"), filePath: values.microphone }];
+  if (values.system !== undefined) {
+    if (typeof values.system !== "string") return null;
+    files.push({ source: /** @type {const} */ ("system"), filePath: values.system });
+  }
+  return files;
 }
 
 function safeErrorCode(error) {
@@ -181,8 +195,8 @@ async function verifyDeletionCandidate(candidate, recordingsRoot) {
     // protože tytéž případy odmítne dřív kontrola identity manifestu, shody jmen,
     // velikosti a otisku. Řádku NEODSTRAŇUJ: chrání případ, kdy by někdo podvrhl
     // frontu i manifest tak, že projdou — pak je umístění poslední, co zbývá.
-    || !candidate.files.every((filePath) => isImmediateChild(recordingsRoot, filePath))
-    || candidate.files[0] === candidate.files[1]
+    || !candidate.files.every(({ filePath }) => isImmediateChild(recordingsRoot, filePath))
+    || new Set(candidate.files.map(({ filePath }) => filePath)).size !== candidate.files.length
   ) {
     return { ok: false, error: { code: "UNVERIFIED_RECORDING" } };
   }
@@ -203,16 +217,20 @@ async function verifyDeletionCandidate(candidate, recordingsRoot) {
     || manifest.schemaVersion !== 1
     || manifest.state !== "complete"
     || manifest.clientRecordingId !== item.clientRecordingId
-    || manifest.tracks?.microphone?.fileName !== path.basename(candidate.files[0])
-    || manifest.tracks?.system?.fileName !== path.basename(candidate.files[1])
-    || manifest.tracks.microphone.fileName === manifest.tracks.system.fileName
+    // Manifest a fronta se musí shodovat v POČTU stop i v každém jméně. Rozejít se můžou
+    // jen ke škodě: smazala by se stopa, kterou manifest nepopisuje.
+    || Object.keys(manifest.tracks ?? {}).length !== candidate.files.length
+    || candidate.files.some(({ source, filePath }) => (
+      manifest.tracks?.[source]?.fileName !== path.basename(filePath)
+    ))
+    || new Set(candidate.files.map(({ source }) => manifest.tracks[source].fileName)).size
+      !== candidate.files.length
   ) {
     return { ok: false, error: { code: "MANIFEST_MISMATCH" } };
   }
 
-  const sources = ["microphone", "system"];
-  const inspectedTracks = await Promise.all(candidate.files.map((filePath, index) => (
-    inspectTrackForDeletion(filePath, manifest.tracks[sources[index]], sources[index])
+  const inspectedTracks = await Promise.all(candidate.files.map(({ source, filePath }) => (
+    inspectTrackForDeletion(filePath, manifest.tracks[source], source)
   )));
   const failedTrack = inspectedTracks.find((track) => !track.ok);
   if (failedTrack) {
@@ -300,21 +318,21 @@ async function applyRetention({ queue, policy, now, recordingsDirectory }) {
       errors.push(verified.error);
       continue;
     }
-    const stillMatches = await Promise.all(candidate.files.map((filePath, index) => (
+    const stillMatches = await Promise.all(candidate.files.map(({ filePath }, index) => (
       trackStillMatches(filePath, verified.inspectedTracks[index])
     )));
     const changedIndex = stillMatches.findIndex((matches) => !matches);
     if (changedIndex !== -1) {
       errors.push({
         code: "TRACK_CHANGED",
-        source: changedIndex === 0 ? "microphone" : "system",
+        source: candidate.files[changedIndex].source,
       });
       continue;
     }
     let itemFailed = false;
     for (let index = 0; index < candidate.files.length; index += 1) {
       if (verified.inspectedTracks[index].missing) continue;
-      const filePath = candidate.files[index];
+      const { filePath, source } = candidate.files[index];
       try {
         await unlink(filePath);
         deletedFiles.push(filePath);
@@ -322,7 +340,7 @@ async function applyRetention({ queue, policy, now, recordingsDirectory }) {
         const code = safeErrorCode(error);
         if (code !== "ENOENT") {
           itemFailed = true;
-          errors.push({ code, source: index === 0 ? "microphone" : "system" });
+          errors.push({ code, source });
         }
       }
     }
