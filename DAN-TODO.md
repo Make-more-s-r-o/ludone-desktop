@@ -85,6 +85,16 @@ přihlášení (třeba claim čitelný přímo z tokenu / userinfo, ne přes MCP
 návrh otisku vlastníka. Řekl jsem to serverové session, ať cestu 1 nestaví s touhle dírou.
 `identity.name` je bezpečně nahraditelný odkudkoli — jen avatar a text.
 
+✅ **Rozhodnutí dosedlo (serverová session, 10. 9. v noci) — ráno je to na kývnutí, ne diskuse:**
+doporučená cesta je **`userinfo` endpoint** (vrací jen e-mail/jméno/id, upload-only token na
+něj smí, scope se nerozvolní). Claim přímo v tokenu **zamítnut věcně** — jejich tokeny jsou
+neprůhledné řetězce ověřované proti DB, claim by měnil formát tokenu pro všechny klienty.
+Staví to serverová session (nová autentizační routa, dnes v noci ne — nezreviewované by bylo
+horší než nepostavené). **Přejímka:** `userinfo` musí vracet e-mail se **stabilní lokální
+částí** (bytově stejnou mezi voláními) — náš otisk lowercasuje jen doménu, lokální část
+nechává být, takže kolísání velikosti písmen v lokální části = falešný `queue_owner_mismatch`.
+Přesný kanonizační kontrakt jsem jim poslal.
+
 **Drobný latentní nález (nestavěl jsem, šetřím limit):** kdyby server někdy vrátil
 `403 insufficient_scope`, fronta ho dnes bere jako běžné „čeká" a **zkouší donekonečna**
 bez hlášky, že jde o vadu aplikace (`src/lib/queue.js:132–153` uzná jen tvar `*_owner_*`).
