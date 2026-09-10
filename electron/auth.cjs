@@ -29,6 +29,15 @@ const TOKEN_TEMP_FILE_PATTERN = /^\.oauth\.enc\.[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f
 const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const MCP_SCOPES = new Set(["mcp:read", "mcp:draft"]);
+// 🔴 Oprávnění k odesílání nahrávek se smí žádat VÝHRADNĚ SAMO. Serverová session to
+// 10. 9. 2026 postavila jako tvrdou podmínku a má pro ni důvod: kdyby šlo požádat
+// „nahravky:upload mcp:read" najednou, vznikl by token, kterým jde současně nahrávat
+// zvuk A číst všechny MCP nástroje — mzdy, rozpočty, nabídky i cizí přepisy. Právě proto
+// odmítli rozšířit význam `mcp:read` a udělali oprávnění nové.
+//
+// ⚠️ Dodržuje se to KONSTRUKCÍ, ne kontrolou u volajícího: `validatedScope` níž kombinaci
+// odmítne, takže ji nejde vyrobit ani omylem. Kdo tuhle funkci obejde, obejde i dohodu.
+const UPLOAD_SCOPE = "nahravky:upload";
 // 🔴 JEDINÝ seznam hostitelů, kterým desktop smí poslat token — přihlášení i ODHLÁŠENÍ.
 // Přihlášení bralo issuer z prostředí a `main.cjs` ho proti seznamu ověřoval; odhlášení ho
 // ale bere z ULOŽENÉ session (`oauth.enc`) a kontrolovalo jen tvar adresy. Podstrčený soubor
@@ -88,9 +97,24 @@ function trustedRemoteEndpoint(value, issuer, name) {
 
 function validatedMcpScope(value) {
   const scope = requiredString(value, "scope");
-  const requested = scope.split(/\s+/);
-  if (requested.some((item) => !MCP_SCOPES.has(item))) {
-    throw new Error("E7 smí žádat jen MCP scopy; scope pro odesílání není dostupný");
+  const requested = scope.split(/\s+/).filter((item) => item !== "");
+  if (requested.length === 0) throw new Error("scope musí být neprázdný");
+
+  const chceUpload = requested.includes(UPLOAD_SCOPE);
+  const chceMcp = requested.some((item) => MCP_SCOPES.has(item));
+
+  // Smíšená žádost je ta nebezpečná: vznikl by jeden token, který umí nahrávat i číst.
+  if (chceUpload && chceMcp) {
+    throw new Error(
+      `Oprávnění ${UPLOAD_SCOPE} se žádá samostatně; společně s MCP by vznikl token, `
+        + "kterým jde současně odesílat i číst cizí data",
+    );
+  }
+  if (chceUpload && requested.length !== 1) {
+    throw new Error(`Oprávnění ${UPLOAD_SCOPE} nesmí být doplněné o žádné další`);
+  }
+  if (!chceUpload && requested.some((item) => !MCP_SCOPES.has(item))) {
+    throw new Error("E7 smí žádat jen MCP scopy nebo samostatné oprávnění k odesílání");
   }
   return requested.join(" ");
 }
@@ -1474,6 +1498,8 @@ module.exports = {
   LOGOUT_REVOKE_DEADLINE_MS,
   REFRESH_DEADLINE_MS,
   POVOLENI_HOSTITELE_ISSUERU,
+  UPLOAD_SCOPE,
+  validatedMcpScope,
   createAuthController,
   createAuthSessionCoordinator,
   createLogoutController,
