@@ -890,3 +890,44 @@ používáním — a přihlášení pak přestane fungovat všem.
 
 Opravuju to: při novém přihlášení se použije uložený `client_id`, když sedí prostředí
 a rozsah oprávnění.
+
+## 27. Kde masterplán doopravdy stojí (změřeno 10. 9. 2026)
+
+Prošel jsem všech 17 funkcí ze specifikace proti kódu, ne proti přehledu. **Hotových
+a ověřených naostro je 6.** Když se čtou poznámky pod čarou, které u tří z nich část
+ověření samy odvolávají, jsou to **3**. V produkci není ani jedna.
+
+🔴 **Přehled `status.json` na několika místech lže** — je z 7. 9. a nezná PR #105–#117.
+Pravdu má `spec.md` plus kód. Nejdůležitější rozpor: **blokátor kolem Applu už padl** —
+aplikace je podepsaná, notarizovaná a ověřená po stažení, takže cesta do produkce
+zavřená není, jen o tom přehled neví.
+
+### Co drží nejvíc naráz
+
+**Tvoje jedno slovo k uploadu odblokuje čtyři funkce** — odchozí frontu, odeslání nahrávky,
+mazání kopií po sedmi dnech a část odhlášení. Nic jiného na nich nevisí.
+
+### Tichý dluh, který nikde nefiguroval
+
+- **Sdílené zařízení pro zasedačku** je napsané jako součást první verze a má **nula řádků
+  kódu**. Nemá ani vlastní číslo funkce, takže v matici nikde není vidět. Největší dluh,
+  který se našel.
+- **Money pravidlo R22 není postavené.** Jméno souboru nahrávky nese jen zkrácený
+  identifikátor; když se ztratí popisný soubor vedle něj, ztratí se i klíč a obnova vyrobí
+  duplikát — přesně to, proti čemu celá ta ochrana stojí. Test, který se jmenuje po tom
+  pravidle, měří něco jiného.
+- **Zkratky v menu nic nespouštějí.** Popisky u položek jsou, obsluha ne. Slib bez krytí.
+- **Časovač je atrapa a je vidět v panelu.** Mosty pro ukládání času nikdo nevolá; karta
+  to teď aspoň říká dopředu.
+
+### Co jde dělat hned, bez čekání na kohokoli
+
+Zkratky (malá) · R22 (střední, money) · doměřit věci, které jsou hotové, ale nikdo je
+neproklikal: klik na ikonu v liště, zkouška zvuku z Nastavení, oba systémové přepínače,
+obnova tokenu (všechno drobné) · sladit zbylých 18 obrazovek s návrhem (velká) ·
+sdílené zařízení (velká) · chybějící stavy panelu jako „Přihlášení vypršelo" a „Bez sítě".
+
+### Co je vědomě zrušené a NENÍ dluh
+
+Kalendář · připomínky · seznam účastníků · `mcp:upload` · dvě přihlášení pro uživatele ·
+vydávání cookie výměnou za token · obrazovky aktualizace a odinstalování.
