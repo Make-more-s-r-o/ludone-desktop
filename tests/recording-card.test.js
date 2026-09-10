@@ -805,8 +805,14 @@ describe("RecordingCard", () => {
 
       const card = panel.document.querySelector('[aria-label="Nahrávání"]');
       expect(card?.getAttribute("data-system-audio-state")).toBe("unavailable");
-      expect(card?.textContent).toContain(MICROPHONE_ONLY_TEXT);
       expect(card?.textContent).toContain("Nahrává se omezeně");
+      // 🔴 Během nahrávání se varuje KONKRÉTNĚ, ne obecným textem: dřív tu stálo totéž,
+      // co u kontroly před startem, a člověk z toho nepoznal, že mu chybí povolení.
+      // Nahrávání zvuku z jiných aplikací je samostatné oprávnění, ne Záznam obrazovky.
+      expect(card?.textContent).toContain("samostatné povolení");
+      expect(card?.textContent).toContain("oddělené od Záznamu obrazovky");
+      // A důvod od systému se nesmí zahodit — právě jeho absence stála hodiny hádání.
+      expect(card?.textContent).toContain("Přístup zamítnut");
       const systemFill = card?.querySelector(
         '[data-testid="recording-source-system"] .recording-source__fill',
       );
