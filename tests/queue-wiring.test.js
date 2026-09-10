@@ -341,6 +341,13 @@ function fakeElectron(userDataPath, {
     BrowserWindow: FakeBrowserWindow,
     clipboard: { writeText: vi.fn() },
     desktopCapturer: { getSources: vi.fn(async () => []) },
+    // Popisky zkratek v nabídce nově plynou z toho, co systém při startu PŘIJAL — proto
+    // to harness musí umět. Bez téhle napodobeniny se registrace tiše nezdaří a popisky
+    // zmizí; test by pak hlásil vadu o sobě, ne o kódu.
+    globalShortcut: {
+      register: vi.fn(() => true),
+      unregisterAll: vi.fn(),
+    },
     ipcMain: {
       handle: vi.fn((channel, handler) => ipcHandlers.set(channel, handler)),
       on: vi.fn((channel, handler) => ipcListeners.set(channel, handler)),
@@ -3140,6 +3147,10 @@ describe("viditelnost ikony a klikání na lištu", () => {
       "separator",
       "Ukončit LuDone",
     ]);
+    // 🔴 Tenhle soupis dřív dokládal jen to, že jsou popisky napsané v šabloně — a ty
+    // zkratky přitom NIC nespouštěly, protože se nikdy neregistrovaly. Teď dokládá, že
+    // startovní sekvence registraci opravdu provedla: kdyby ji vynechala, popisky zmizí.
+    expect(harness.electron.globalShortcut.register).toHaveBeenCalledTimes(3);
     expect(template.map((item) => item.accelerator ?? null)).toEqual([
       "Control+Option+R",
       "Control+Option+T",
@@ -3147,10 +3158,13 @@ describe("viditelnost ikony a klikání na lištu", () => {
       "Control+Option+L",
       null,
       null,
-      "CommandOrControl+,",
+      // `Cmd+,` a `Cmd+Q` se ZÁMĚRNĚ nenabízejí: globálně by je LuDone ukradl všem
+      // ostatním aplikacím, takže by oprava jedné lži vyrobila horší vadu. A lokálně
+      // fungovat nemůžou — aplikace běží jako accessory a nekreslí lištu menu.
       null,
       null,
-      "CommandOrControl+Q",
+      null,
+      null,
     ]);
     expect(template[1].enabled).toBe(false);
     expect(tray.popUpContextMenu).toHaveBeenCalledExactlyOnceWith(

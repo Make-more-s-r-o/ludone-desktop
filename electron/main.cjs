@@ -4,6 +4,7 @@ const {
   clipboard,
   desktopCapturer,
   dialog,
+  globalShortcut,
   Tray,
   ipcMain,
   Menu,
@@ -1178,33 +1179,93 @@ function canStartTrackingFromTray() {
     && appState.panelActionOwners.size > 0;
 }
 
+// 🔴 Popisek zkratky, který nic nespustí, je slib bez krytí — a přesně to menu do
+// 10. 9. 2026 dělalo: nabízelo pět zkratek a `globalShortcut` se v celém repu nevolal
+// ani jednou. Aplikace navíc běží jako accessory (`LSUIElement`), takže nekreslí lištu
+// menu a lokální akcelerátory nemají kde vzniknout.
+//
+// Řešení je proto stavěné tak, aby se popisek NEMOHL rozejít se skutečností: do menu se
+// dostane jedině zkratka, kterou systém opravdu přijal. Když ji zabere jiná aplikace,
+// položka zůstane, jen bez popisku — funkční menu je důležitější než hezký popisek.
+//
+// ⚠️ Registrují se jen zkratky s modifikátory Control+Option, tedy takové, které si
+// aplikace smí vzít globálně. `Cmd+,` a `Cmd+Q` se ZÁMĚRNĚ neregistrují: globálně by je
+// LuDone ukradl všem ostatním aplikacím, takže by oprava jedné lži vyrobila horší vadu.
+const GLOBALNI_ZKRATKY = Object.freeze([
+  { akce: "stop-recording", zkratka: "Control+Option+R" },
+  { akce: "prepnout-tracking", zkratka: "Control+Option+T" },
+  { akce: "otevrit-panel", zkratka: "Control+Option+L" },
+]);
+
+/** Zkratky, které systém skutečně přijal. Prázdné, dokud se neregistrovalo. */
+const prijateZkratky = new Map();
+
+function zkratkaProAkci(akce) {
+  return prijateZkratky.get(akce);
+}
+
+function prepnoutTrackingZListy() {
+  const tracking = appState.trackingOwners.size > 0;
+  // Menu i zkratka můžou dorazit ve chvíli, kdy panel zrovna neexistuje nebo se mění
+  // relace. Zastaralý pokyn nepředáváme neexistující kartě; ukážeme aktuální stav.
+  if (!tracking && !canStartTrackingFromTray()) {
+    showPanel();
+    return;
+  }
+  queueTrayCommand(tracking ? "stop-tracking" : "start-tracking");
+}
+
+function spustAkciZkratky(akce) {
+  if (akce === "stop-recording") {
+    // Zkratka nesmí „ukončit" nahrávání, které neběží — z lišty to hlídá `enabled`,
+    // globální zkratka žádné `enabled` nemá.
+    if (hasLiveRecording()) queueTrayCommand("stop-recording");
+    return;
+  }
+  if (akce === "prepnout-tracking") {
+    prepnoutTrackingZListy();
+    return;
+  }
+  if (akce === "otevrit-panel") showPanel();
+}
+
+function registerGlobalShortcuts(shortcuts = globalShortcut) {
+  prijateZkratky.clear();
+  for (const { akce, zkratka } of GLOBALNI_ZKRATKY) {
+    try {
+      // `register` vrací false, když zkratku drží někdo jiný — a to není chyba aplikace,
+      // je to normální stav sdíleného systému. Proto se jen neukáže popisek.
+      if (shortcuts.register(zkratka, () => spustAkciZkratky(akce))) {
+        prijateZkratky.set(akce, zkratka);
+      } else {
+        console.log(`[tray] Zkratku ${zkratka} drží jiná aplikace; položka zůstane bez popisku.`);
+      }
+    } catch (error) {
+      console.error(`[tray] Zkratku ${zkratka} nelze registrovat: ${error.message}`);
+    }
+  }
+  return prijateZkratky.size;
+}
+
 function trayContextMenuTemplate() {
   const tracking = appState.trackingOwners.size > 0;
   return [
     {
       label: "Ukončit nahrávání",
-      accelerator: "Control+Option+R",
+      accelerator: zkratkaProAkci("stop-recording"),
       enabled: hasLiveRecording(),
       click: () => queueTrayCommand("stop-recording"),
     },
     {
       label: tracking ? "Zastavit měření času" : "Spustit LuTrack",
-      accelerator: "Control+Option+T",
+      accelerator: zkratkaProAkci("prepnout-tracking"),
       enabled: tracking || canStartTrackingFromTray(),
-      click: () => {
-        // Menu může zůstat chvíli otevřené přes změnu session nebo reload panelu.
-        // Zastaralou nabídku nepředáme neexistující kartě; ukážeme aktuální stav panelu.
-        if (!tracking && !canStartTrackingFromTray()) {
-          showPanel();
-          return;
-        }
-        queueTrayCommand(tracking ? "stop-tracking" : "start-tracking");
-      },
+      click: prepnoutTrackingZListy,
     },
     { type: "separator" },
     {
       label: "Otevřít panel",
-      accelerator: "Control+Option+L",
+      accelerator: zkratkaProAkci("otevrit-panel"),
       click: showPanel,
     },
     {
@@ -1214,7 +1275,6 @@ function trayContextMenuTemplate() {
     { type: "separator" },
     {
       label: "Nastavení…",
-      accelerator: "CommandOrControl+,",
       click: createSettingsWindow,
     },
     {
@@ -1224,7 +1284,6 @@ function trayContextMenuTemplate() {
     { type: "separator" },
     {
       label: "Ukončit LuDone",
-      accelerator: "CommandOrControl+Q",
       click: () => app.quit(),
     },
   ];
@@ -3865,6 +3924,7 @@ app.whenReady().then(async () => {
   nativeTheme.on("updated", refreshTray);
   tray.on("click", togglePanel);
   tray.on("right-click", showTrayContextMenu);
+  registerGlobalShortcuts();
   scheduleTrayVisibilityCheck();
   refreshTray();
   const panelStartup = createPanelWindow();
@@ -3927,6 +3987,17 @@ app.on("before-quit", (event) => {
 });
 
 app.on("will-quit", stopTrayTitleUpdates);
+// Globální zkratky drží systém, ne aplikace. Bez uvolnění by je LuDone po ukončení
+// zabíral dál a další spuštění by je už nezískalo — z „funguje" by se stalo
+// „fungovalo jednou po restartu".
+app.on("will-quit", () => {
+  try {
+    globalShortcut.unregisterAll();
+  } catch (error) {
+    console.error(`[tray] Zkratky se nepodařilo uvolnit: ${error.message}`);
+  }
+  prijateZkratky.clear();
+});
 
 app.on("window-all-closed", () => {
   // Menu-bar aplikace zůstává aktivní, dokud ji uživatel výslovně neukončí.
