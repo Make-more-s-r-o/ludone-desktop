@@ -72,3 +72,31 @@ používat."* Z toho plyne pořadí:
 - Nepřihlášený stav vrací **200 s tělem `null`**. Testovat obsah, ne status.
 - Vlastnictví nahrávky klíčuje server podle **`dbId`**, ne e-mailu; e-mail je unikátní jen
   mezi živými řádky, takže po smazání může tentýž e-mail patřit jinému `dbId`.
+
+## Kontrakt uploadového tokenu (dohodnuto 10. 9. 2026)
+
+Dan Bearer schválil. Serverová session k tomu dodala podmínky, které se musí dodržet
+**konstrukcí, ne kontrolou**:
+
+- **Scope je `nahravky:upload` a žádá se SÁM.** Kombinace s `mcp:read` je odmítnutá
+  záměrně (`invalid_scope`), aby uploadový token nikdy nebyl zároveň čtecí. Rozšířit
+  význam `mcp:read` bylo vědomě zamítnuto — desktop by tím dostal čtecí přístup ke mzdám,
+  rozpočtům i cizím přepisům jen kvůli tomu, že chce odeslat zvuk.
+- **Nejdřív labs**, ostrá zkouška až na jejich signál.
+
+### Tři nové stavy odpovědí, proti kterým stavíme
+
+| stav | co znamená | co s tím |
+|---|---|---|
+| **403 `insufficient_scope`** | platný token, ale bez `nahravky:upload` | není to vypršení; nové přihlášení nepomůže, špatně se vyžádal scope |
+| **401 s platným tokenem** | jejich killswitch `NAHRAVKY_UPLOAD_BEARER_ENABLED` je vypnutý | chová se, jako by hlavička nedorazila; není to odmítnutý token |
+| `invalid_scope` | dnes očekávaný stav | scope zatím nejde udělit, opravují to |
+
+🔴 **Tokenem se ke zvuku nedostaneme NIKDY.** Čtecí cesta k nahrávkám má vlastní bránu,
+která `Authorization` nečte vůbec. Token umí odeslat, ne stáhnout — takže ověřovací
+přehrání po uploadu tudy nepůjde a nemá smysl ho plánovat.
+
+### Co stavíme hned (na serveru to nečeká)
+
+Kontrola identity před každým uploadem podle `dbId` · `logout()` zahodí i cookie ·
+klasifikace nových stavů odpovědí.
