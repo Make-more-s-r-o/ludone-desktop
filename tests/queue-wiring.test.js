@@ -57,6 +57,9 @@ const queueModulePromise = import(
 );
 const diagnosticsModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "diagnostics.js")).href
+);
+const uploadCompanyModulePromise = import(
+  pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "upload-company-resolution.js")).href
 );`;
 if (!mainSource.includes(modulePromiseDeclarations)) {
   throw new Error("main.cjs nemá očekávané deklarace modulů manifestu a fronty");
@@ -65,7 +68,8 @@ const executableMainSource = mainSource.replace(
   modulePromiseDeclarations,
   `const manifestModulePromise = injectedManifestModulePromise;
 const queueModulePromise = injectedQueueModulePromise;
-const diagnosticsModulePromise = injectedDiagnosticsModulePromise;`,
+const diagnosticsModulePromise = injectedDiagnosticsModulePromise;
+const uploadCompanyModulePromise = injectedUploadCompanyModulePromise;`,
 );
 const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");
 const traySpaceWarningPreloadUrl = new URL(
@@ -632,6 +636,7 @@ async function loadMain({
     "injectedManifestModulePromise",
     "injectedQueueModulePromise",
     "injectedDiagnosticsModulePromise",
+    "injectedUploadCompanyModulePromise",
     `"use strict";\n${executableMainSource}`,
   );
   evaluateMain(
@@ -659,6 +664,7 @@ async function loadMain({
     import("../src/lib/manifest.js"),
     import("../src/lib/queue.js"),
     import("../src/lib/diagnostics.js"),
+    import("../src/lib/upload-company-resolution.js"),
   );
   return { ...harness, quietConsole, userDataPath };
 }

@@ -32,7 +32,10 @@ const {
   createPermissionStatusHandler,
   refreshStoredAuthSession,
   tokenSessionFilePath,
+  trustedRemoteEndpoint,
+  updateStoredAuthSessionCompany,
 } = require("./auth.cjs");
+const { fetchCompanies } = require("./companies.cjs");
 const {
   createOutboundQueueStore,
   deriveQueueOwnerFingerprint,
@@ -72,6 +75,9 @@ const queueModulePromise = import(
 );
 const diagnosticsModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "diagnostics.js")).href
+);
+const uploadCompanyModulePromise = import(
+  pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "upload-company-resolution.js")).href
 );
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
@@ -2186,13 +2192,41 @@ async function addQueueSendingAvailability(items) {
   });
 }
 
+/**
+ * Adaptér: doplní skutečné závislosti postupu, který zjišťuje firmu pro odeslání.
+ *
+ * Samotný postup (kdy se sahá na síť, kdy se překládá název a kdy se NESMÍ hádat) bydlí
+ * v `src/lib/upload-company-resolution.js`, aby se dal otestovat beze zbytku a bez Electronu.
+ * Tady zůstává jen propojení — proto tu není co rozhodovat ani co zvlášť testovat.
+ */
+async function resolveUploadCompanyId(storedSession) {
+  const { resolveCompanyForUpload } = await uploadCompanyModulePromise;
+  const { companyTabidooId } = await resolveCompanyForUpload({
+    configuredCompanyName: process.env.LUDONE_UPLOAD_COMPANY,
+    fetchOffer: () => fetchCompanies({
+      accessToken: storedSession.accessToken,
+      fetchImpl: globalThis.fetch,
+      issuer: storedSession.issuer,
+      trustedRemoteEndpoint,
+    }),
+    onNote: (zprava) => console.log(`[upload] ${zprava}`),
+    persistChoice: (firma) => updateStoredAuthSessionCompany({
+      app,
+      safeStorage,
+      companyTabidooId: firma,
+      storedSession,
+    }),
+    storedCompanyId: storedSession.companyTabidooId ?? storedSession.identity?.companyTabidooId,
+  });
+  return companyTabidooId;
+}
+
 async function recordingUploadContext() {
   const storedSession = await readUsableAuthSession();
   if (storedAuthSessionState(storedSession) !== "valid") return null;
   return {
     accessToken: storedSession.accessToken,
-    companyTabidooId: storedSession.companyTabidooId
-      ?? storedSession.identity?.companyTabidooId,
+    companyTabidooId: await resolveUploadCompanyId(storedSession),
     deviceLabel: app.getName?.() ?? "LuDone Desktop",
     issuer: storedSession.issuer,
     ownerFingerprint: deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get()),
