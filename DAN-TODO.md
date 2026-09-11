@@ -49,7 +49,20 @@ protože jsou to tvé vlastní systémy a bereš to. Serverová session mezitím
 
 ---
 
-## 🔵 BEARER UPLOAD — kde to stojí (10. 9. 2026 v noci)
+## 🔵 BEARER UPLOAD — kde to stojí
+
+✅ **HOTOVO A SMERGNUTO (11. 9. 2026, PR #121, `main` 005ea82): upload z appky je postavený.**
+Appka umí žádat scope `nahravky:upload` a brát identitu z `userinfo` — za env přepínačem
+`LUDONE_UPLOAD_SCOPE_ENABLED`, který je **VYPNUTÝ** (default), takže merge nic nezměnil.
+Brány zelené, 4 sabotáže potvrdily testy. **Naostro to ještě nikdo neproklikal** (⛔) — čeká to
+na dvě věci: (1) serverová session nasadí `userinfo` na labs a napíše, že naostro odpovídá;
+(2) pak se přepínač zapne a proklikne se end-to-end (přihlásit → nahrát → odejde na labs).
+🔴 **Přepnutí `LUDONE_UPLOAD_SCOPE_ENABLED=true` je JEDINÁ zbývající akce** — nedělám ji sám,
+dokud server nepotvrdí userinfo na labs (jinak by se identita rozbila a nahrávky pauzly).
+
+---
+
+## 🔵 BEARER UPLOAD — jak se k rozhodnutí došlo (10. 9. 2026 v noci)
 
 **Dedup stop: OBRANA JE HOTOVÁ A SPRÁVNÁ, nic neměním.** Bál jsem se díry, kde by server
 sloučil dvě odeslání se shodným otiskem a klient by to nepoznal. Serverová session mi to
