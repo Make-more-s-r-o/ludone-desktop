@@ -1685,6 +1685,14 @@ describe("kopírování probíhající přihlašovací adresy", () => {
 
 describe("zjištění uložené OAuth session", () => {
   it("nový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů", async () => {
+    // 🔴 Tenhle test sahal na SKUTEČNOU síť. Vypršelá relace spustí obnovu tokenu a ta bere
+    // `globalThis.fetch`, protože `main.cjs` jí žádnou atrapu nepředává. Produkční kód
+    // selhání obnovy spolkne, takže to nebylo vidět — odhalil to až čítač v zákazu sítě.
+    // Atrapa selhává stejně, jako dosud selhávala skutečná síť, takže test měří přesně
+    // totéž co dřív: výsledný stav relace a netknutost souboru s tokeny.
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("Obnova tokenu v testu nesmí na síť.");
+    }));
     const harness = await loadMain();
     await harness.runReady();
     const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
@@ -1732,6 +1740,13 @@ describe("zjištění uložené OAuth session", () => {
   });
 
   it("vypršelá relace přes skutečné IPC ukáže vypršení v obou oknech a zůstane na disku", async () => {
+    // Stejný důvod jako u testu výš: relace na disku je rovnou vypršelá, takže první čtení
+    // stavu z panelu i z Nastavení spustí obnovu tokenu přes `globalThis.fetch`. Testu jde
+    // o text „Přihlášení vypršelo" v obou oknech a o to, že se soubor s tokeny nepřepíše —
+    // ne o to, jestli obnova selhala u skutečného serveru, nebo u atrapy.
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("Obnova tokenu v testu nesmí na síť.");
+    }));
     const harness = await loadMain();
     await harness.runReady();
     const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
@@ -4525,6 +4540,13 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 
   it("prošlý access token neposkytne uploadu jako platný kontext", async () => {
+    // Prošlý token spustí obnovu přes `globalThis.fetch` dřív, než se test vůbec dostane ke
+    // svým tvrzením. Testu jde o to, že vypršelá relace nedá uploadu kontext a že se do něj
+    // po obnovení NEDOSTANE obnovený token — na výsledku HTTP volání nezáleží, takže atrapa,
+    // která selže stejně jako dosud selhávala síť, měří totéž.
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("Obnova tokenu v testu nesmí na síť.");
+    }));
     let getUploadContext;
     let queueSend;
     const createRecordingUploadSend = vi.fn((options) => {

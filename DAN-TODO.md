@@ -247,6 +247,32 @@ procesu) a hledá se dál. Nepřijde-li, je to pokryté.
 (souběh instancí, „dávka neposlala nic", cizí forky). Tuhle jsem zastavil **před** vyslovením,
 což je jediný pokrok, kterého jsem v tomhle za večer dosáhl.
 
+#### ✅ DOŘEŠENO: viník nalezen, oprava ověřená NULOU
+
+**Zákaz funguje. Změřeno protistranou, ne mou zelenou sadou:** z CI běhu toho PR nepřišel na
+labs **ani jeden** požadavek. A co je důležitější, **ověřili si i měřidlo** — tatáž dotazovací
+věta nad předchozím během (bez zákazu) našla přesně těch 8 řádků. Nula je tedy skutečná nula,
+ne slepé měřidlo. Od 17:37 nepřišla z žádné IP jediná taková chyba.
+
+**Proč jsem tvrdil, že se zákaz nechytá:** chytal se — ale **produkční kód tu výjimku spolkne**
+(obnova tokenu i výběr firem mají vlastní ošetření chyby), takže test doběhl zeleně a v jeho
+výstupu nezbyla stopa. Postavil jsem pojistku, **jejíž vlastní zásahy nebyly vidět**.
+
+**Opraveno:** čítač je teď uvnitř stubu a test padá podle něj. Okamžitě vytáhl **tři testy** —
+a jsou to **přesně ty tři**, které protistrana nezávisle našla podle časů v CI logu. Dvě měřidla
+z opačných konců, tentýž výsledek. Zbývá jim podstrčit atrapu.
+
+### ❓ ROZHODNUTÍ PRO TEBE: má `429` ubírat pokus?
+
+Zapojuju čtení `Retry-After` (server ho má od dneška na labs **i na produkci**), takže po
+odmítnutí počkáme přesně tolik, kolik server řekne, místo exponenciálního opakování **uvnitř
+běžícího okna** — to bychom si limit sami zhoršovali.
+
+🔴 **Co ale NEMĚNÍM sám:** dnes `429` ubírá jeden z **pěti** pokusů položky. Když server řekne
+„čekej hodinu", může dlouhé okno položce vyčerpat rozpočet a ta skončí jako **selhaná**, i když
+šlo jen o limit. Opravit to znamená vytáhnout `rate_limited` z běžné retry větve — **to je
+rozhodnutí o chování, ne úklid**, a nedělám ho v noci bez tebe. Řekni a udělám to.
+
 ✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
 Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
 v testovacím harnessu napevno `true`, takže druhou instanci nešlo vyrobit. Test teď měří,
