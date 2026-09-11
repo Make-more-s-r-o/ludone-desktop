@@ -165,16 +165,32 @@ líně — **je-li volba jednou uložená, na server se už nesahá vůbec**; na
 když volba chybí nebo přestala platit. Název, který zadáš do `LUDONE_UPLOAD_COMPANY`, se použije
 **právě jednou** na překlad na GUID; dál se pracuje jen s GUID, protože názvy se na serveru mění.
 
-🔴 **ZBÝVÁ JEDINÝ KROK: první reálné odeslání.** Čeká se na nasazení serverového endpointu na
-labs (jejich commit `39f8f718`, ETA ~12:45–12:55 UTC). Jakmile napíšou „živé":
+✅ **Pravdivé hlášky, proč nejde odeslat** (PR #127, `a8151e4`). Než jsem cokoli poslal,
+serverová session zjistila, že jejich uploadové routy vracejí bez session cookie **307 na
+přihlašovací stránku, i s Bearer tokenem**. Změřil jsem, co s tím udělá náš klient — a byly
+to **tři vady u nás**, nezávislé na jejich opravě:
+1. 🔴 **klient lhal o příčině** — z přesměrování na přihlášení udělal „Pro upload chybí
+   identifikátor firmy"; firma nechyběla, jen jsme na server nedosáhli,
+2. 🔴 **zmrazilo to celou frontu** — jedna nedosažitelná nabídka firem zablokovala odesílání
+   všech ostatních nahrávek,
+3. 🔴 **a bylo to tiché** — panel ukázal jen „N čeká na odeslání" a **žádnou příčinu**.
+
+Opraveno: „na server jsme nedosáhli" je teď opakovatelné a říká to pravdu, „firma není vybraná"
+čeká na člověka a je vidět. Platí to pro **každé** přesměrování na přihlášení — proxy, captive
+portal, vypršelá session — ne jen pro tenhle jeden serverový nedostatek.
+
+🔴 **ZBÝVÁ JEDINÝ KROK: první reálné odeslání.** Blokuje ho **serverová oprava proxy** (jejich
+PR #1329), která se ještě nasazuje; odhad „živé" je **13:35–13:45 UTC**. Jakmile napíšou:
 1. přeložím „Make more s.r.o." na GUID z jejich nabídky — **při nejednoznačné nebo žádné shodě
    se nehádá**, zastavím se a zeptám se tě,
-2. pustím jeden pump → odejde **jedna** nahrávka,
+2. dám jim vědět předem, ať si zapnou hlídač, a pustím jeden pump → odejde **jedna** nahrávka,
 3. ověřím, že vrácené `recordingId` sedí s tím, na které se volalo (jediná stráž proti tichému
    slití stop), a porovnám to s tím, co nezávisle uvidí server.
 
-*(Drobnost, která stojí za zapamatování: jejich PR s endpointem si vlastní bránu zrušil merge,
-který přišel hned za ním — táž třída „dva merge těsně po sobě", před kterou nás sami varovali.)*
+*(Dvě drobnosti, které stojí za zapamatování: jejich PR s endpointem si vlastní bránu zrušil
+merge, který přišel hned za ním — táž třída „dva merge těsně po sobě", před kterou nás sami
+varovali. A u mě našel **lint zapomenutý nedosažitelný `return`, který 1289 zelených testů
+přehlédlo** — každá brána vidí jinou třídu vad.)*
 
 *(Poznámka k sabotážím u #125: jedna zůstala zelená a byl to nález, ne úspěch. Obrana proti
 souběhu porovnávala účet, jenže při obnově tokenu se účet nemění — tu záměnu tedy vidět
