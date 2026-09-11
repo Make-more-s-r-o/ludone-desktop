@@ -142,6 +142,33 @@ describe("adresa na čekací obrazovce", () => {
     }
   });
 
+  it("s očekávaným upload scope přijme nahravky:upload a odmítne mcp:read", () => {
+    const uploadUrl = validAuthUrl();
+    uploadUrl.searchParams.set("scope", "nahravky:upload");
+    // Přepínač zapnutý (scope předán explicitně): adresa s upload scope projde…
+    expect(validateAuthWaitingUrl(uploadUrl.href, "https://app.ludone.cz", "nahravky:upload"))
+      .toMatchObject({ origin: "https://app.ludone.cz" });
+    // …a dnešní mcp:read adresa je v tomhle režimu naopak neúplná (lockstep s appkou).
+    expect(() => validateAuthWaitingUrl(validAuthUrl().href, "https://app.ludone.cz", "nahravky:upload"))
+      .toThrow("není úplný OAuth PKCE požadavek pro LuDone");
+  });
+
+  it("odvodí očekávaný scope z LUDONE_UPLOAD_SCOPE_ENABLED, když ho volající nepředá", () => {
+    const uploadUrl = validAuthUrl();
+    uploadUrl.searchParams.set("scope", "nahravky:upload");
+    const original = process.env.LUDONE_UPLOAD_SCOPE_ENABLED;
+    try {
+      process.env.LUDONE_UPLOAD_SCOPE_ENABLED = "true";
+      expect(validateAuthWaitingUrl(uploadUrl.href, "https://app.ludone.cz"))
+        .toMatchObject({ origin: "https://app.ludone.cz" });
+      expect(() => validateAuthWaitingUrl(validAuthUrl().href, "https://app.ludone.cz"))
+        .toThrow("není úplný OAuth PKCE požadavek pro LuDone");
+    } finally {
+      if (original === undefined) delete process.env.LUDONE_UPLOAD_SCOPE_ENABLED;
+      else process.env.LUDONE_UPLOAD_SCOPE_ENABLED = original;
+    }
+  });
+
   it("se seznamem prostředí pořád odmítne adresu mimo něj", () => {
     const cizi = validAuthUrl("https://labs.ludone.cz");
     expect(() => validateAuthWaitingUrl(cizi.href, ["https://app.ludone.cz"]))

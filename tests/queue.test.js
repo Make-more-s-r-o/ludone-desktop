@@ -1156,6 +1156,46 @@ describe("stavový automat fronty", () => {
     expect(reduceQueueForRenderer(queue)[0]).toMatchObject({ requiresHumanAction: true });
   });
 
+  it("insufficient_scope (HTTP 403) je čekání na člověka, ne tichá nekonečná smyčka", async () => {
+    // Nastane v přechodovém okně po zapnutí uploadu: uložená session ještě nese starý scope
+    // `mcp:read`, upload routa vyžaduje `nahravky:upload` → 403. Opakování nepomůže, spraví
+    // to jedině nové přihlášení — proto to musí být vidět jako „čeká na člověka".
+    const result = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => {
+        throw Object.assign(new Error("insufficient_scope (HTTP 403)"), {
+          code: "insufficient_scope",
+          status: 403,
+          failureClass: FAILURE_CLASSES.PAUSED,
+        });
+      },
+    );
+
+    expect(result.outcome).toBe("paused");
+    expect(result.queue.items[0]).toHaveProperty("requiresHumanAction", true);
+  });
+
+  it("položka pauznutá na insufficient_scope se další pumpou sama nezkusí", async () => {
+    const paused = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => {
+        throw Object.assign(new Error("insufficient_scope (HTTP 403)"), {
+          code: "insufficient_scope",
+          status: 403,
+          failureClass: FAILURE_CLASSES.PAUSED,
+        });
+      },
+    );
+    const send = vi.fn().mockResolvedValue(undefined);
+    const still = await processNext(paused.queue, killswitches(ENABLED_SETTING), send);
+
+    expect(send).not.toHaveBeenCalled();
+    expect(still.outcome).toBe("idle");
+    expect(reduceQueueForRenderer(still.queue)[0]).toHaveProperty("requiresHumanAction", true);
+  });
+
   it("libovolná jiná pauza se slovem owner nepatří bez výslovného kontraktu člověku", async () => {
     const result = await processNext(
       oneItemQueue(),

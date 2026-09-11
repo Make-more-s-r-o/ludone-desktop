@@ -83,7 +83,13 @@ class CallbackLoopbackServer extends EventEmitter {
  *   clientId?: string | null,
  *   issuer?: string,
  *   scope?: string,
+ *   identityEndpoint?: string,
  *   mcpHandler?: (input: string | URL, init: RequestInit) => Promise<{
+ *     ok: boolean,
+ *     status: number,
+ *     json?: () => Promise<unknown>,
+ *   }>,
+ *   userinfoHandler?: (input: string | URL, init: RequestInit) => Promise<{
  *     ok: boolean,
  *     status: number,
  *     json?: () => Promise<unknown>,
@@ -96,7 +102,9 @@ async function createHarness(options = {}) {
     clientId = CLIENT_ID,
     issuer = ISSUER,
     scope,
+    identityEndpoint,
     mcpHandler = async () => jsonResponse(MCP_RESPONSE),
+    userinfoHandler = async () => jsonResponse({ sub: "42", email: "dan@ludone.cz", name: null }),
     tokenResponse = TOKEN_RESPONSE,
   } = options;
   const appData = options.appData ?? await mkdtemp(path.join(tmpdir(), "ludone-auth-identity-"));
@@ -125,6 +133,9 @@ async function createHarness(options = {}) {
     if (url.pathname === "/api/mcp") {
       return mcpHandler(input, init);
     }
+    if (url.pathname === "/api/mcp/oauth/userinfo") {
+      return userinfoHandler(input, init);
+    }
     if (url.pathname === "/api/mcp/oauth/revoke") {
       revocationCalls += 1;
       return { ok: true, status: 200 };
@@ -148,6 +159,7 @@ async function createHarness(options = {}) {
       loopbackServer = new CallbackLoopbackServer(handler);
       return loopbackServer;
     },
+    identityEndpoint,
     safeStorage,
     scope,
     shell,
@@ -439,5 +451,71 @@ describe("best-effort identita po OAuth přihlášení", () => {
     });
     expect((await readSession(harness)).identity).toEqual({ name: null, email: null });
     expect(harness.revocationCalls()).toBe(0);
+  });
+});
+
+describe("identita z userinfo endpointu (upload scope)", () => {
+  const USERINFO = `${ISSUER}/api/mcp/oauth/userinfo`;
+
+  it("vezme e-mail z userinfo a ludone_ping vůbec nezavolá", async () => {
+    const harness = await createHarness({
+      identityEndpoint: USERINFO,
+      userinfoHandler: async () => jsonResponse({ sub: "7", email: "upload@makemore.cz", name: "Up Loader" }),
+      // Kdyby se přesto sáhlo na MCP, je to poplach: upload-only token tam nemá co dělat.
+      mcpHandler: async () => { throw new Error("ludone_ping se u upload identity nesmí volat"); },
+    });
+
+    await expect(completeLogin(harness)).resolves.toEqual({
+      ok: true,
+      user: { name: "Up Loader", email: "upload@makemore.cz" },
+    });
+    // 🔴 Důkaz, že identita jde z userinfo, ne z MCP: na /api/mcp nepadl ŽÁDNÝ požadavek.
+    const mcpCalls = harness.fetchImpl.mock.calls.filter(
+      ([input]) => new URL(input).pathname === "/api/mcp",
+    );
+    expect(mcpCalls).toHaveLength(0);
+    const userinfoCall = harness.fetchImpl.mock.calls.find(
+      ([input]) => new URL(input).pathname === "/api/mcp/oauth/userinfo",
+    );
+    expect(userinfoCall?.[0]).toBe(USERINFO);
+    expect(userinfoCall?.[1]).toMatchObject({
+      headers: { accept: "application/json", authorization: `Bearer ${ACCESS_TOKEN}` },
+      redirect: "error",
+    });
+    // GET = fetch default, tedy žádné method v options (server userinfo je GET).
+    expect(userinfoCall?.[1]?.method).toBeUndefined();
+    expect((await readSession(harness)).identity).toEqual({
+      name: "Up Loader",
+      email: "upload@makemore.cz",
+    });
+  });
+
+  it("když userinfo spadne a token nemá MCP práva, login přežije s prázdnou identitou", async () => {
+    const harness = await createHarness({
+      identityEndpoint: USERINFO,
+      userinfoHandler: async () => jsonResponse({ error: "boom" }, { ok: false, status: 500 }),
+      // Upload-only token na MCP: 403. Best-effort fallback nesmí shodit login.
+      mcpHandler: async () => jsonResponse({ error: "insufficient_scope" }, { ok: false, status: 403 }),
+    });
+
+    await expect(completeLogin(harness)).resolves.toEqual({
+      ok: true,
+      user: { name: null, email: null },
+    });
+    expect((await readSession(harness)).identity).toEqual({ name: null, email: null });
+    expect(harness.revocationCalls()).toBe(0);
+  });
+
+  it("uloží e-mail z userinfo bytově beze změny (lokální část se nelowercasuje)", async () => {
+    const harness = await createHarness({
+      identityEndpoint: USERINFO,
+      userinfoHandler: async () => jsonResponse({ sub: "9", email: "Dan.Jirotka@makemore.cz", name: null }),
+      mcpHandler: async () => { throw new Error("MCP se nemá volat"); },
+    });
+
+    await expect(completeLogin(harness)).resolves.toMatchObject({ ok: true });
+    // Otisk vlastníka (queue.cjs) lowercasuje jen doménu; kdybychom lokální část zmršili tady,
+    // rozešel by se otisk mezi dvěma přihlášeními téhož člověka → falešný queue_owner_mismatch.
+    expect((await readSession(harness)).identity.email).toBe("Dan.Jirotka@makemore.cz");
   });
 });
