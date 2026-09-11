@@ -124,8 +124,14 @@ identifikátor firmy`. Stav změřený z obou stran:
   Důvod: firma je jejich jediná hranice práv, rozsah jednoho člověka může obsahovat víc firem,
   a odvozovat ji z tokenu by znamenalo hádat (to jejich pravidla zakazují, fail-closed).
 - ⚠️ **OPRAVA MÉ DIAGNÓZY:** podezříval jsem přechod na `userinfo`, že nám firmu vzal.
-  **Není to pravda** — serverová session doložila kódem, že `ludone_ping` firmy nikdy nevracel.
-  Nikdy jsme ji neměli; narazili jsme na to teprve teď, když se fronta poprvé dostala k odesílání.
+  **Není to pravda.** Serverová session doložila kódem, že `ludone_ping` firmy nikdy nevracel —
+  a měření na naší straně to dotáhlo ještě dál: **pole `companyTabidooId` nemá v celém repu
+  JEDINÉHO ZAPISOVATELE.** Čte se na dvou místech (`main.cjs:2194`, `upload-client.cjs:428`),
+  nastavuje se nikde; `auth.cjs` ho při ukládání session nezapíše ani jednou a `normalizeIdentity`
+  vrací natvrdo jen `{name, email}`, takže by ho nepropustila, ani kdyby ho server posílal.
+  🔴 **Důsledek: odesílání z aplikace nikdy nefungovalo — nikomu a nikdy.** Není to dnešní
+  regrese ani vada jedné z cest; je to chybějící implementace, na kterou se přišlo teprve teď,
+  když se fronta poprvé prokousala až k odesílání.
 - **Server staví endpoint** `GET /api/nahravky/uploads/firmy` → `{ companies: [{id,name}],
   defaultCompanyId }`, za toutéž branou jako upload. Hotový řádově za hodinu.
 
