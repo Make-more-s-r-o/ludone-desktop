@@ -518,22 +518,29 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
     if (method === "POST" && pathname === "/api/nahravky/uploads") {
       const body = JSON.parse(String(options.body));
       const key = headers.get("idempotency-key");
-      expect(Object.keys(body).sort()).toEqual([
-        "chunkCount",
-        "chunkSize",
-        "clientRecordingId",
-        "companyTabidooId",
-        "declaredBytes",
-        "declaredCaptureSources",
-        "declaredMime",
-        "deviceLabel",
-        "endedAt",
-        "sessionId",
-        "sha256",
-        "startedAt",
-        "title",
-        "visibility",
-      ]);
+      // Server neznámý klíč v těle odmítá, takže povinnou množinu hlídáme dál přesně.
+      // `declaredCaptureSources` je ale VOLITELNÝ údaj o souboru: mikrofonní stopa ho nese,
+      // systémová ho vynechává (hodnota „system" v povoleném výčtu není a server by ji tiše
+      // uložil jako NULL). Proto se porovnává zbytek klíčů a volitelný se řeší zvlášť.
+      expect(Object.keys(body).filter((klic) => klic !== "declaredCaptureSources").sort())
+        .toEqual([
+          "chunkCount",
+          "chunkSize",
+          "clientRecordingId",
+          "companyTabidooId",
+          "declaredBytes",
+          "declaredMime",
+          "deviceLabel",
+          "endedAt",
+          "sessionId",
+          "sha256",
+          "startedAt",
+          "title",
+          "visibility",
+        ]);
+      if ("declaredCaptureSources" in body) {
+        expect(body.declaredCaptureSources).toBe("microphone");
+      }
       expect(key).toMatch(/^[a-f0-9]{64}$/);
       expect(body.chunkSize).toBe(CONTRACT_CHUNK_BYTES);
       expect(body.chunkCount).toBe(Math.ceil(body.declaredBytes / CONTRACT_CHUNK_BYTES));
@@ -739,10 +746,16 @@ describe("kontrakt INITu nativní a prohlížečové cesty", () => {
     const payloads = initCalls.map(([, options]) => JSON.parse(String(options.body)));
     const clientIds = payloads.map((body) => body.clientRecordingId);
     expect(clientIds[0]).not.toBe(clientIds[1]);
-    expect(clientIds.slice(0, 2)).toEqual([
-      `${fixture.manifest.clientRecordingId}:microphone`,
-      `${fixture.manifest.clientRecordingId}:system`,
-    ]);
+    // 🔴 Tady stál doslovný starý tvar `<uuid>:<stopa>` — a byl to jen OPIS IMPLEMENTACE,
+    // který nechránil vůbec nic. Naopak: server přijímá jako `clientRecordingId` POUZE UUID,
+    // takže tenhle zelený assert ve skutečnosti zamykal podobu, kterou init odmítal
+    // `400 invalid_input` u každého uploadu. Měříme proto VLASTNOSTI, na kterých záleží —
+    // že je to UUID verze 5. Různost stop a stabilitu při opakování hlídají asserty okolo.
+    for (const id of clientIds) {
+      expect(id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+      );
+    }
     expect(clientIds.slice(2)).toEqual(clientIds.slice(0, 2));
 
     const browserUrl = new URL(recordingExport.buildRecordingUploadUrl(
@@ -751,10 +764,19 @@ describe("kontrakt INITu nativní a prohlížečové cesty", () => {
       fixture.manifest,
     ));
     expect(browserUrl.searchParams.has("declaredCaptureSources")).toBe(true);
-    for (const body of payloads) {
-      expect(body.declaredCaptureSources).toBe(
-        browserUrl.searchParams.get("declaredCaptureSources"),
-      );
+    // 🔴 Dřív se tu tvrdilo, že údaj nese KAŽDÉ tělo initu a rovná se parametru z prohlížečové
+    // cesty. To už neplatí a je dobře: `declaredCaptureSources` popisuje SOUBOR, ne schůzku.
+    // Mikrofonní soubor systémový zvuk neobsahuje, takže u něj platí „microphone"; systémová
+    // stopa pole vynechává, protože „system" server v povoleném výčtu nemá a tiše by ho uložil
+    // jako NULL — chyba by se nikde neprojevila.
+    //
+    // Měříme proto, že ho nese PRÁVĚ JEDNA stopa z dvojice (tedy dvě těla ze čtyř, protože
+    // odesíláme dvakrát). Kdybychom jen procházeli ta těla, která ho mají, prošla by regrese,
+    // která ho přilepí i systémové stopě.
+    const sVypovediOZdroji = payloads.filter((body) => "declaredCaptureSources" in body);
+    expect(sVypovediOZdroji).toHaveLength(2);
+    for (const body of sVypovediOZdroji) {
+      expect(body.declaredCaptureSources).toBe("microphone");
     }
   });
 });
