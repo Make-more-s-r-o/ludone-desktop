@@ -289,6 +289,42 @@ describe("vlastník nahrávky před uploadem", () => {
     await expect(send(fixture.item)).rejects.not.toThrow(/10\.0\.0\.1/u);
   });
 
+  it("🔴 příčinu vytáhne i z vnořené chyby, kterou Node zabalí", async () => {
+    // Node skutečnou příčinu (špatný host, vadné TLS, odmítnuté spojení) schová do `cause`
+    // a navrch dá holé „TypeError: fetch failed". Bez čtení `cause.code` vypadá překlep
+    // v adrese úplně stejně jako rozbitý certifikát — a přesně na tomhle uvázlo první
+    // ostré odeslání: server v auditu viděl, že mu nic nedorazilo, a nám zbyl „TypeError".
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => {
+      throw Object.assign(new TypeError("fetch failed"), {
+        cause: Object.assign(new Error("getaddrinfo ENOTFOUND labs.ludone.invalid"), {
+          code: "ENOTFOUND",
+        }),
+      });
+    });
+    const { send } = createSend(fetchImpl);
+
+    await expect(send(fixture.item)).rejects.toThrow(/ENOTFOUND/u);
+    // 🔴 Ani z VNOŘENÉ chyby se nesmí vzít celá zpráva — nese adresu.
+    await expect(send(fixture.item)).rejects.not.toThrow(/getaddrinfo/u);
+  });
+
+  it("🔴 pojmenuje krok uploadu, který spadl — metodu a cestu", async () => {
+    // Bez metody a cesty se nepozná zahájení od posílání částí ani od dokončení. Server
+    // umí říct jen „nic nedorazilo"; který z požadavků to byl, musí říct náš vlastní log.
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => {
+      throw Object.assign(new Error("connect ECONNREFUSED 10.0.0.1:443"), {
+        code: "ECONNREFUSED",
+      });
+    });
+    const { send } = createSend(fetchImpl);
+
+    await expect(send(fixture.item)).rejects.toThrow(/\[POST \/api\/[^\]]+\]/u);
+    // Cesta ano, celá adresa ne — host ani schéma do hlášky nepatří.
+    await expect(send(fixture.item)).rejects.not.toThrow(/https?:\/\//u);
+  });
+
   it("jiná session položku pozastaví, zachová a nic neodešle", async () => {
     const fixture = await recordingFixture();
     const fetchImpl = vi.fn();
