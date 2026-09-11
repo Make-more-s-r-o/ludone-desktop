@@ -56,9 +56,23 @@ Appka umí žádat scope `nahravky:upload` a brát identitu z `userinfo` — za 
 `LUDONE_UPLOAD_SCOPE_ENABLED`, který je **VYPNUTÝ** (default), takže merge nic nezměnil.
 Brány zelené, 4 sabotáže potvrdily testy. **Naostro to ještě nikdo neproklikal** (⛔).
 
-**Stav serveru (11. 9. v noci):** `userinfo` ještě NENÍ na labs — je v jejich PR, dvě brány jim
-zčervenaly (obě jejich, ne naše: chybějící kotva routy v soupisu funkcí + nápovědová brána si
-spletla test s nápovědou), opravují to. Ozvou se jednou větou.
+✅ **Stav serveru (11. 9.): `userinfo` na labs ŽIJE.** Ověřeno serverovou session živým
+voláním (ne otiskem buildu): `GET https://labs.ludone.cz/api/mcp/oauth/userinfo` bez tokenu →
+401, `userinfo_endpoint` je v metadatech AS, a `nahravky:upload` v inzerovaných scopech
+schválně NENÍ (klient si o něj musí říct jménem). To potvrzuje „endpoint nasazený a odmítá
+neověřené", NE „identita správná" — druhá půlka je na prvním reálném přihlášení.
+
+🔴🔴 **PŘIPRAVENO — TVŮJ TAH (tohle už za tebe neudělám).** Zapnutí přepínače a první přihlášení
+vyžaduje spustit appku a projít reálným OAuth loginem v prohlížeči s tvými údaji — login se bez
+nich fail-closed zastaví, takže to z terminálu neproženu. Recept:
+1. Spusť dev build proti labs se zapnutým přepínačem:
+   `LUDONE_UPLOAD_SCOPE_ENABLED=true LUDONE_ORIGIN=https://labs.ludone.cz npm start`
+2. Přihlas se. **Zkontroluj e-mail v Nastavení** — musí sedět s tvým účtem.
+3. Nahraj krátký klip a v panelu fronty sleduj, že projde do „odesláno", ne do
+   `queue_owner_mismatch` / `session_owner_unknown`.
+4. **Napiš mi, co přišlo v `email` a jestli se nahrávka odeslala** — serverová session to chce
+   vědět hned, ať dopadne jakkoli; je to jediný okamžik, kdy se pozná, že kontrakt sedí i v běhu.
+Když e-mail přijde jiný/prázdný, nahrávka se pauzne (fail-safe) — to je signál, ne katastrofa.
 
 🔴 **Co ta jejich věta BUDE a NEBUDE znamenat** (aby se nepřečetla silněji): potvrdí jen, že
 endpoint na labs **žije a odmítá neověřené** (401, ne 404) a je v metadatech AS. **Nepotvrdí,
