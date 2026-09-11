@@ -54,11 +54,23 @@ protože jsou to tvé vlastní systémy a bereš to. Serverová session mezitím
 ✅ **HOTOVO A SMERGNUTO (11. 9. 2026, PR #121, `main` 005ea82): upload z appky je postavený.**
 Appka umí žádat scope `nahravky:upload` a brát identitu z `userinfo` — za env přepínačem
 `LUDONE_UPLOAD_SCOPE_ENABLED`, který je **VYPNUTÝ** (default), takže merge nic nezměnil.
-Brány zelené, 4 sabotáže potvrdily testy. **Naostro to ještě nikdo neproklikal** (⛔) — čeká to
-na dvě věci: (1) serverová session nasadí `userinfo` na labs a napíše, že naostro odpovídá;
-(2) pak se přepínač zapne a proklikne se end-to-end (přihlásit → nahrát → odejde na labs).
-🔴 **Přepnutí `LUDONE_UPLOAD_SCOPE_ENABLED=true` je JEDINÁ zbývající akce** — nedělám ji sám,
-dokud server nepotvrdí userinfo na labs (jinak by se identita rozbila a nahrávky pauzly).
+Brány zelené, 4 sabotáže potvrdily testy. **Naostro to ještě nikdo neproklikal** (⛔).
+
+**Stav serveru (11. 9. v noci):** `userinfo` ještě NENÍ na labs — je v jejich PR, dvě brány jim
+zčervenaly (obě jejich, ne naše: chybějící kotva routy v soupisu funkcí + nápovědová brána si
+spletla test s nápovědou), opravují to. Ozvou se jednou větou.
+
+🔴 **Co ta jejich věta BUDE a NEBUDE znamenat** (aby se nepřečetla silněji): potvrdí jen, že
+endpoint na labs **žije a odmítá neověřené** (401, ne 404) a je v metadatech AS. **Nepotvrdí,
+že pro skutečný token vrátí správnou identitu** — tu půlku umíme ověřit jedině my, protože k ní
+je potřeba projít přihlášením. Takže **první reálné přihlášení po zapnutí přepínače JE zároveň
+ověřením identity.**
+
+🔴 **Zbývající akce = přepnout `LUDONE_UPLOAD_SCOPE_ENABLED=true`** (env appky, ne serveru;
+pro test dev buildu `LUDONE_UPLOAD_SCOPE_ENABLED=true LUDONE_ORIGIN=https://labs.ludone.cz npm start`).
+Nedělám ji, dokud server nepotvrdí, že endpoint žije. Při prvním přihlášení **zkontroluj e-mail
+v Nastavení** — musí sedět s tvým účtem; když přijde jiný/prázdný, nahrávka se pauzne (fail-safe,
+ne tiché špatné přiřazení) a je to signál, že kontrakt v běhu nesedí — nahlásit serverové session.
 
 ---
 
