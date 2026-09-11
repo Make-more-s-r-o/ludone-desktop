@@ -74,6 +74,20 @@ nich fail-closed zastaví, takže to z terminálu neproženu. Recept:
    vědět hned, ať dopadne jakkoli; je to jediný okamžik, kdy se pozná, že kontrakt sedí i v běhu.
 Když e-mail přijde jiný/prázdný, nahrávka se pauzne (fail-safe) — to je signál, ne katastrofa.
 
+🔴 **SAMOSTATNÝ NÁLEZ (11. 9., změřeno ve frontě na disku): 19 z 36 tvých nahrávek se nikdy
+neodešle.** Ve `~/Library/Application Support/LuDone Desktop/queue/outgoing.json` je 36 položek,
+všechny ve stavu `ceka`, a `ownerFingerprint` u nich vypadá takhle:
+- **19× otisk vůbec CHYBÍ** (nejstarší položky) → při odeslání spadnou na „vlastník neznámý"
+  (`queue_owner_unknown`) a zůstanou čekat na člověka. **Samy se neodešlou nikdy.**
+- 12× otisk z jiného přihlášení/prostředí → pauznou se na „patří jinému účtu".
+- 5× otisk, který sedí na současné labs přihlášení (do téhle skupiny patří i dnešní testovací klip).
+
+Není to dnešní regrese — ty položky vznikly dřív, než otisk vlastníka vůbec existoval, takže ho
+nemají čím doplnit. Ale prakticky to znamená, že **19 nahrávek ti ve frontě leží nadobro**, dokud
+se nerozhodne, co s nimi: buď je vědomě zahodit, nebo jim doplnit vlastníka (to je zásah do dat
+fronty, který bez tvého pokynu dělat nebudu), nebo je nechat ležet. **Rozhodnutí pro tebe.**
+⚠️ Fronta navíc bere položky v pořadí vzniku, takže těch 19 stojí ve FRONTĚ PŘED vším ostatním.
+
 🔴 **Co ta jejich věta BUDE a NEBUDE znamenat** (aby se nepřečetla silněji): potvrdí jen, že
 endpoint na labs **žije a odmítá neověřené** (401, ne 404) a je v metadatech AS. **Nepotvrdí,
 že pro skutečný token vrátí správnou identitu** — tu půlku umíme ověřit jedině my, protože k ní
