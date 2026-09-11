@@ -160,11 +160,21 @@ kódem serveru, takže jde rozlišit problém s oprávněním od dočasného vý
 úklidový kód) a obnovu tokenu naopak přežije. Zápis se nikdy nedělá ze zastaralého snímku —
 relace se čte znovu v transakci a zápis se zahodí, když mezitím patří někomu jinému.
 
-🔴 **Zapojené do odesílání to zatím NENÍ. Zbývají dva kroky:**
-1. **Endpoint musí být živý.** Serverová session ho má v PR (#1326) a čeká na CI; s deployem
-   na labs to je řádově 20–30 minut. Do té doby není co volat.
-2. **Zapojit a přeložit „Make more s.r.o." na GUID** ze seznamu, jakmile endpoint naběhne.
-   Při nejednoznačné nebo žádné shodě názvu se **nehádá** — zastaví se a zeptá se tě.
+✅ **Zapojení je hotové a v `main`** (PR #126, `215b62b`): při přípravě odeslání se firma zjistí
+líně — **je-li volba jednou uložená, na server se už nesahá vůbec**; nabídka se vyzvedne jen
+když volba chybí nebo přestala platit. Název, který zadáš do `LUDONE_UPLOAD_COMPANY`, se použije
+**právě jednou** na překlad na GUID; dál se pracuje jen s GUID, protože názvy se na serveru mění.
+
+🔴 **ZBÝVÁ JEDINÝ KROK: první reálné odeslání.** Čeká se na nasazení serverového endpointu na
+labs (jejich commit `39f8f718`, ETA ~12:45–12:55 UTC). Jakmile napíšou „živé":
+1. přeložím „Make more s.r.o." na GUID z jejich nabídky — **při nejednoznačné nebo žádné shodě
+   se nehádá**, zastavím se a zeptám se tě,
+2. pustím jeden pump → odejde **jedna** nahrávka,
+3. ověřím, že vrácené `recordingId` sedí s tím, na které se volalo (jediná stráž proti tichému
+   slití stop), a porovnám to s tím, co nezávisle uvidí server.
+
+*(Drobnost, která stojí za zapamatování: jejich PR s endpointem si vlastní bránu zrušil merge,
+který přišel hned za ním — táž třída „dva merge těsně po sobě", před kterou nás sami varovali.)*
 
 *(Poznámka k sabotážím u #125: jedna zůstala zelená a byl to nález, ne úspěch. Obrana proti
 souběhu porovnávala účet, jenže při obnově tokenu se účet nemění — tu záměnu tedy vidět
