@@ -115,14 +115,31 @@ tomu řetězci, který server odmítá. Je to dnes už druhý případ téhož (
 - Ve frontě je **15 položek připravených k odeslání** (12 jen mikrofon, 3 dvoustopé).
   Zbylých 19 drží potvrzení vlastníka člověkem — to je záměr, ne závada.
 
-### Dvě nesrovnalosti, které prověřuji
+### Dvě nesrovnalosti — obě prověřené, obě naše
 
-1. Naše fronta si u odeslané položky drží `server.recordingId: null` a `uploadedBytes: 0`,
-   ačkoli server nahrávku má celou a znormalizovanou. **Náš lokální stav neodpovídá
-   skutečnosti** — sám o sobě to nic neshodí, ale je to zase „měřidlo, co neměří".
-2. Server viděl mezi 16:11 a 16:26 **10× `GET /uploads/firmy → 401`**. To okno je moje;
-   běžely mi dvě instance appky naráz a dva procesy nad jedním úložištěm tokenů jsou
-   přesně to, jak si obnova tokenu vzájemně zneplatní session.
+**1. 🔴 Dvě instance appky si navzájem zneplatní přihlášení (SKUTEČNÁ VADA, čeká na opravu).**
+Server viděl mezi 16:11 a 16:26 **10× `GET /uploads/firmy → 401`** a ani jednou 200. Příčina
+je v našem kódu a složila se ze dvou věcí:
+
+- `app.requestSingleInstanceLock()` při neúspěchu volá `app.quit()`, ale **chybí `else`** —
+  `whenReady().then(…)` je zaregistrované bezpodmínečně. `quit()` je asynchronní žádost, ne
+  okamžité ukončení, takže **druhá instance stihne projet start včetně pumpy fronty**.
+- Zámky obnovy tokenu (`tokenStorageTransaction`, `refreshSessionPromise`) jsou **jen
+  proměnné v paměti procesu** — přes procesy neplatí nic. Dvě instance tedy přečtou tentýž
+  refresh token, obě zavolají obnovu, rotace zneplatní ten poražený — a ta instance pak dál
+  posílá access token, který **lokálně vypadá platně**, protože kontrolujeme jen expiraci,
+  ne odvolání.
+
+Odpovídá tomu i to, že jakmile jsem zastavil všechny instance a spustil **jednu**, odeslání
+prošlo napoprvé. **Do opravy platí: pouštět appku jen jednou.** Opravuji samostatně, ne
+přilepené k rozdělané změně.
+
+**2. Funkce, která má zapsat výsledek odeslání, se v ostrém běhu nikdy nevolá (nedodělek).**
+Fronta si u odeslané položky drží `server.recordingId: null` a `uploadedBytes: 0`, ačkoli
+server nahrávku má celou a znormalizovanou. Zapisovatel (`applyServerProgress`) existuje
+**včetně testů**, ale volá ho **jen test** — pumpa výsledek odeslání zahodí. Dnes to nic
+neshodí, protože ta pole nikdo nečte; je to ale hotová logika, která nikdy neběží, takže
+cokoli budoucího (dedup, potvrzení v panelu) by se na ni spolehlo naprázdno.
 
 🔴 **Musel jsem kvůli tomu zapnout `DESKTOP_UPLOAD_ENABLED=true`** (jen proměnnou prostředí
 pro jeden běh, nic se neuložilo). Opírám to o tvé dnešní rozhodnutí zapsané výš v tomhle
