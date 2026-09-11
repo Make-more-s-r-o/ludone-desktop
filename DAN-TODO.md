@@ -273,6 +273,19 @@ běžícího okna** — to bychom si limit sami zhoršovali.
 šlo jen o limit. Opravit to znamená vytáhnout `rate_limited` z běžné retry větve — **to je
 rozhodnutí o chování, ne úklid**, a nedělám ho v noci bez tebe. Řekni a udělám to.
 
+#### ✅ Čtení `Retry-After` je hotové (PR #140, `81ba5f0`)
+
+Server hlavičku posílá od dneška na **labs i na produkci**. Čteme ji včetně zálohy v těle
+(`retryAfterSeconds`) — server posílá obojí schválně, kdyby hlavičku cestou sebrala proxy.
+
+**Nesmyslná hodnota** (nula, záporná, nečíselná) znamená „server nic neřekl" a platí náš
+vlastní backoff. Kdyby se brala doslova, `retry-after: 0` by frontu poslalo okamžitě zpátky
+do běžícího okna — tedy přesně tam, kam nemá.
+
+🔴 **A ještě jednou to samé poučení:** `retryAfterMs` jsem nejdřív přiřazoval až po vytvoření
+chyby. JavaScriptu nedeklarované pole nevadí, takže **všech 1305 testů bylo zelených** —
+a odmítl to až `tsc`. Dnes už popáté: každá brána vidí jinou třídu vad.
+
 ✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
 Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
 v testovacím harnessu napevno `true`, takže druhou instanci nešlo vyrobit. Test teď měří,
