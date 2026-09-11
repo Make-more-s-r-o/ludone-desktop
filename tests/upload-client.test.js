@@ -503,6 +503,17 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
     // test byl zelený; ostrému klientovi vadila a upload kvůli ní nikdy neodešel. Kontrola
     // je proto obrácená a platí pro KAŽDÝ požadavek — zahájení, části i dokončení.
     expect(headers.get("content-length")).toBeNull();
+    // 🔴 A tohle je druhá půlka téže dohody. Server `Content-Length` u zahájení a u částí
+    // naopak VYŽADUJE (jinak 411) — doplní ji Chromium, ale JEN když délku těla zná předem,
+    // tedy u `string`, `Buffer` nebo `Uint8Array`. U těla jako `ReadableStream` přejde na
+    // `Transfer-Encoding: chunked`, hlavička zmizí a upload spadne na 411. Přechod na
+    // streamované tělo je proto tichá regrese, kterou by jinak nikdo nechytil.
+    expect(
+      options.body === undefined
+      || typeof options.body === "string"
+      || Buffer.isBuffer(options.body)
+      || options.body instanceof Uint8Array,
+    ).toBe(true);
 
     if (method === "POST" && pathname === "/api/nahravky/uploads") {
       const body = JSON.parse(String(options.body));
