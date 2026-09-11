@@ -76,15 +76,9 @@ const queueModulePromise = import(
 const diagnosticsModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "diagnostics.js")).href
 );
-// 🔴 Schválně NE na úrovni souboru, na rozdíl od modulů výš. Testy si z `main.cjs` vytahují
-// jednotlivé funkce a kompilují je v prostředí bez podpory dynamického importu; import na
-// úrovni souboru tam vyrobil 242 chyb, které sada přesto hlásila jako zelenou. Uvnitř funkce
-// se vyhodnotí až při skutečném volání, tedy nikdy při takové kompilaci.
-function uploadCompanyModule() {
-  return import(pathToFileURL(
-    path.join(PROJECT_ROOT, "src", "lib", "upload-company-resolution.js"),
-  ).href);
-}
+const uploadCompanyModulePromise = import(
+  pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "upload-company-resolution.js")).href
+);
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
 const PANEL_MIN_HEIGHT = 180;
@@ -2206,7 +2200,7 @@ async function addQueueSendingAvailability(items) {
  * Tady zůstává jen propojení — proto tu není co rozhodovat ani co zvlášť testovat.
  */
 async function resolveUploadCompanyId(storedSession) {
-  const { resolveCompanyForUpload } = await uploadCompanyModule();
+  const { resolveCompanyForUpload } = await uploadCompanyModulePromise;
   const { companyTabidooId } = await resolveCompanyForUpload({
     configuredCompanyName: process.env.LUDONE_UPLOAD_COMPANY,
     fetchOffer: () => fetchCompanies({
