@@ -135,11 +135,20 @@ identifikátor firmy`. Stav změřený z obou stran:
 - **Server staví endpoint** `GET /api/nahravky/uploads/firmy` → `{ companies: [{id,name}],
   defaultCompanyId }`, za toutéž branou jako upload. Hotový řádově za hodinu.
 
-🔴 **ROZHODNUTÍ PRO TEBE: jsi admin, takže vidíš VŠECHNY firmy → server ti vrátí
-`defaultCompanyId: null` a appka se tě musí zeptat, kterou firmu použít.** To je prvek
-uživatelského rozhraní a **`design/**` je zmrazený**, takže obrazovku s výběrem sám nepřidám.
-Otázka na tebe je v prvé řadě produktová: chodí ti všechny nahrávky pod jednu firmu (pak stačí
-vybrat jednou a zapamatovat per účet), nebo potřebuješ volit u každé nahrávky zvlášť?
+✅ **ROZHODNUTO (Dan, 11. 9.): „jedna firma: Make more s.r.o."** Všechny nahrávky jdou pod
+jednu firmu, takže obrazovka s výběrem se NESTAVÍ a do zmrazeného `design/**` se nesahá —
+volba se uloží jednou a appka ji používá. *(Kdyby Dan později chtěl volit u každé nahrávky
+zvlášť, je to změna návrhu ke schválení, ne doplněk.)*
+
+⚠️ **Jeden nedořešený detail: potřebuju GUID, ne název.** Server rozhoduje výhradně podle GUID
+firmy a výslovně varuje, že názvy se mění. „Make more s.r.o." si proto přeložím na GUID
+ze seznamu, který vrátí jejich endpoint, až bude živý. 🔴 **Kdyby názvu odpovídalo víc firem
+nebo žádná, zastavím se a zeptám se** — hádání firmy je přesně to, čemu celé to pravidlo brání.
+
+✅ **Pravidlo výběru firmy je hotové a v `main`** (PR #123, `14715ad`): ověřuje uloženou volbu
+proti aktuální nabídce, neplatnou zahodí (nikdy tiše nenahradí jinou), respektuje
+`defaultCompanyId` jen když je v nabídce, a při víc firmách bez volby vrací výslovné
+„musí vybrat člověk". Zatím nikam nezapojené — čeká na endpoint a na uložení volby.
 
 ### Dluhy na naší straně, nalezené při tomhle měření (neopravuju teď)
 
