@@ -224,6 +224,29 @@ chytne i test, který někdo napíše příště.
 **Důkaz nebude zelená sada**, ale to, že serverové session ty dávky z CI i z tvé IP **úplně
 zmizí**. To uvidí oni, ne já.
 
+#### Stav: pojistka nasazena, viník NENALEZEN
+
+Zákaz sítě v testech je hotový a v PR. **Ale nenašel jsem, který test volal ven** — a nebudu
+dělat, že ano.
+
+| co | výsledek |
+|---|---|
+| Zákaz sítě přidán do setupu testů | ✅ hotovo |
+| **Funguje ten zákaz vůbec?** | ✅ ověřeno: dočasný test volající `fetch` spadl, zákaz se chytil **6×** (test jsem pak smazal) |
+| Chytil se zákaz v naší sadě? | ⛔ **ANI JEDNOU**, a sada je dál celá zelená |
+
+To je v rozporu s analýzou, která mi ukázala na dva konkrétní testy. Serverová korelace
+(27 dávek = 27 běhů našeho CI, podle názvů mých větví) je z toho nejlíp doložená, takže
+**neopouštím ji — opouštím svoje určení viníka**.
+
+**Rozhodne běh CI toho PR:** serverová session se dívá, jestli z něj dávka `401` přijde.
+Přijde-li, cesta ven obchází globální `fetch` (vlastní HTTP klient, `undici` napřímo, potomek
+procesu) a hledá se dál. Nepřijde-li, je to pokryté.
+
+🔴 **Tohle je dnes počtvrté, co jsem měl jistotu a neměl důkaz.** Předchozí tři jsem odvolal
+(souběh instancí, „dávka neposlala nic", cizí forky). Tuhle jsem zastavil **před** vyslovením,
+což je jediný pokrok, kterého jsem v tomhle za večer dosáhl.
+
 ✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
 Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
 v testovacím harnessu napevno `true`, takže druhou instanci nešlo vyrobit. Test teď měří,
