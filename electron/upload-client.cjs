@@ -506,8 +506,37 @@ function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
         })),
         timeout,
       ]);
-    } catch {
-      throw localError("network_error", "Síťový požadavek uploadu selhal", "retryable");
+    } catch (error) {
+      // 🔴 Tady býval prázdný `catch` a z každé síťové chyby zbylo jen „selhal“. Při prvním
+      // ostrém odeslání jsem proto nepoznal přesměrování od TLS, od vypršení ani od odmítnutého
+      // spojení — a musel jsem se ptát protistrany, co u nich v auditu vidí, místo abych si to
+      // přečetl z vlastního logu. Příčina se proto doplňuje, ale ZÚŽENĚ: jen strojový kód nebo
+      // název chyby, NIKDY celá zpráva — ta umí nést adresu i kus požadavku.
+      const kod = typeof error?.code === "string"
+        && /^[A-Za-z_][A-Za-z0-9_]{0,39}$/u.test(error.code)
+        ? error.code
+        : null;
+      const nazev = typeof error?.name === "string" && /^[A-Za-z]{1,40}$/u.test(error.name)
+        ? error.name
+        : null;
+      // 🔴 Node balí skutečnou síťovou příčinu do VNOŘENÉ chyby. Bez tohohle řádku zbude jen
+      // „TypeError“ a odmítnuté spojení vypadá stejně jako vadné TLS nebo špatné DNS.
+      const vnorenyKod = typeof error?.cause?.code === "string"
+        && /^[A-Za-z_][A-Za-z0-9_]{0,39}$/u.test(error.cause.code)
+        ? error.cause.code
+        : null;
+      // Přesměrování pojmenujeme natvrdo: je to nejčastější tichá příčina (vypršelá session,
+      // proxy, captive portal) a bez jména vypadá jako obyčejný výpadek sítě.
+      const pricina = /redirect/iu.test(String(error?.message ?? ""))
+        ? "server odpověděl přesměrováním, nejspíš na přihlášení"
+        : kod ?? vnorenyKod ?? nazev ?? "neznámá příčina";
+      // Metoda a CESTA (ne celá adresa a nikdy ne zpráva chyby) říkají, který krok uploadu
+      // spadl — bez toho se nepozná zahájení od posílání částí ani od dokončení.
+      throw localError(
+        "network_error",
+        `Síťový požadavek uploadu selhal: ${pricina} [${method} ${pathname}]`,
+        "retryable",
+      );
     } finally {
       clearTimeout(timeoutId);
     }
