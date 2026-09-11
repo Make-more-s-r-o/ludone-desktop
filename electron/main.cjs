@@ -2201,7 +2201,10 @@ async function addQueueSendingAvailability(items) {
  */
 async function resolveUploadCompanyId(storedSession) {
   const { resolveCompanyForUpload } = await uploadCompanyModulePromise;
-  const { companyTabidooId } = await resolveCompanyForUpload({
+  // 🔴 `reason` se NESMÍ zahodit. Když se zahodil, splynuly dva různé světy do jedné lživé
+  // hlášky „Pro upload chybí identifikátor firmy“ — i tehdy, když firma nechyběla a jen se
+  // nepodařilo dosáhnout na server. Volající podle důvodu rozliší, co má uživateli říct.
+  return resolveCompanyForUpload({
     configuredCompanyName: process.env.LUDONE_UPLOAD_COMPANY,
     fetchOffer: () => fetchCompanies({
       accessToken: storedSession.accessToken,
@@ -2218,15 +2221,18 @@ async function resolveUploadCompanyId(storedSession) {
     }),
     storedCompanyId: storedSession.companyTabidooId ?? storedSession.identity?.companyTabidooId,
   });
-  return companyTabidooId;
 }
 
 async function recordingUploadContext() {
   const storedSession = await readUsableAuthSession();
   if (storedAuthSessionState(storedSession) !== "valid") return null;
+  const firma = await resolveUploadCompanyId(storedSession);
   return {
     accessToken: storedSession.accessToken,
-    companyTabidooId: await resolveUploadCompanyId(storedSession),
+    companyTabidooId: firma.companyTabidooId,
+    // Důvod putuje dál, aby uploadová cesta uměla říct PRAVDU o tom, proč firma není:
+    // jiná hláška pro „nedosáhli jsme na server“ a jiná pro „firma není vybraná“.
+    companyReason: firma.reason ?? null,
     deviceLabel: app.getName?.() ?? "LuDone Desktop",
     issuer: storedSession.issuer,
     ownerFingerprint: deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get()),

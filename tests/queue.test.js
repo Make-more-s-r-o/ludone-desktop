@@ -1156,6 +1156,42 @@ describe("stavový automat fronty", () => {
     expect(reduceQueueForRenderer(queue)[0]).toMatchObject({ requiresHumanAction: true });
   });
 
+  it("nevybraná firma je čekání na člověka, ne tiché stání fronty", async () => {
+    // Dřív z toho byla obyčejná pauza bez příznaku — panel pak ukázal jen „N čeká na
+    // odeslání" a ŽÁDNOU příčinu. Uživatel viděl frontu, která se nehýbe, a nevěděl proč.
+    const result = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => {
+        throw Object.assign(new Error("Není vybraná firma, pod kterou se má nahrávka odeslat"), {
+          code: "company_not_chosen",
+          failureClass: FAILURE_CLASSES.PAUSED,
+        });
+      },
+    );
+
+    expect(result.outcome).toBe("paused");
+    expect(result.queue.items[0]).toHaveProperty("requiresHumanAction", true);
+    expect(reduceQueueForRenderer(result.queue)[0]).toMatchObject({ requiresHumanAction: true });
+  });
+
+  it("nedosažitelný seznam firem je opakovatelný a frontu nezastaví", async () => {
+    // 🔴 Opak předchozího: tohle je přechodné (výpadek, přesměrování na přihlášení), takže
+    // se má zkusit znovu — a hlavně to NESMÍ zmrazit celou frontu jako pauza.
+    const send = vi.fn(async () => {
+      throw Object.assign(new Error("Seznam firem se nepodařilo získat"), {
+        code: "company_offer_unavailable",
+        failureClass: FAILURE_CLASSES.RETRYABLE,
+      });
+    });
+
+    const result = await processNext(oneItemQueue(), killswitches(ENABLED_SETTING), send);
+
+    expect(result.outcome).toBe("retry_scheduled");
+    expect(result.queue.items[0]).toHaveProperty("requiresHumanAction", false);
+    expect(result.queue.items[0].nextAttemptAt).not.toBeNull();
+  });
+
   it("insufficient_scope (HTTP 403) je čekání na člověka, ne tichá nekonečná smyčka", async () => {
     // Nastane v přechodovém okně po zapnutí uploadu: uložená session ještě nese starý scope
     // `mcp:read`, upload routa vyžaduje `nahravky:upload` → 403. Opakování nepomůže, spraví
