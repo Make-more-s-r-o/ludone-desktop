@@ -3976,6 +3976,17 @@ app.on("second-instance", () => {
 });
 
 app.whenReady().then(async () => {
+  // 🔴 Bez téhle pojistky rozjede start i instance, která zámek NEZÍSKALA. `app.quit()` výš
+  // je asynchronní ŽÁDOST o ukončení, ne okamžitý konec — druhá instance proto stihne projet
+  // obnovu fronty i pumpu. A dvě instance nad jedním úložištěm tokenů si obnovou vzájemně
+  // zneplatní přihlášení: obě přečtou tentýž refresh token, obě zavolají obnovu a rotace
+  // zneplatní ten poražený. Zámky obnovy jsou totiž jen proměnné v paměti procesu, přes
+  // procesy neplatí nic.
+  //
+  // Změřeno naostro 11. 9. 2026: server z toho viděl 10× `GET /uploads/firmy → 401` a ani
+  // jednu úspěšnou odpověď. Lokálně přitom token vypadal platně, protože kontrolujeme jen
+  // expiraci, ne odvolání — takže se ani nespustila obnova, která by to napravila.
+  if (!gotSingleInstanceLock) return;
   try {
     const dockVisibleAtStartup = dockVisibilityStore.get();
     if (dockVisibleAtStartup) {

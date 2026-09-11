@@ -122,11 +122,13 @@ function otiskVlastnika(harness, session) {
  *   storedSettings?: string | null,
  *   startupEvents?: string[],
  *   trayBounds?: {x: number, y: number, width: number, height: number} | Error,
+ *   gotSingleInstanceLock?: boolean,
  * }} [options]
  */
 function fakeElectron(userDataPath, {
   deferPanelLoad = false,
   deferSettingsRead = false,
+  gotSingleInstanceLock = true,
   isPackaged = false,
   loginItemState = { openAtLogin: false },
   navigateDuringSettingsRead = false,
@@ -310,7 +312,9 @@ function fakeElectron(userDataPath, {
     getPath: vi.fn(() => userDataPath),
     isPackaged,
     quit: vi.fn(),
-    requestSingleInstanceLock: vi.fn(() => true),
+    // Napevno `true` znamenalo, že se druhá instance nedala v testu vůbec vyrobit — a právě
+    // ta je nebezpečná: `app.quit()` je asynchronní, takže bez pojistky projede celý start.
+    requestSingleInstanceLock: vi.fn(() => gotSingleInstanceLock),
     setAppLogsPath: vi.fn(),
     setActivationPolicy: vi.fn(),
     setLoginItemSettings: vi.fn(({ openAtLogin }) => {
@@ -521,6 +525,7 @@ function fakeElectron(userDataPath, {
  *   storedSettings?: string | null,
  *   trayBounds?: {x: number, y: number, width: number, height: number} | Error,
  *   userDataPath?: string,
+ *   gotSingleInstanceLock?: boolean,
  * }} [options]
  */
 async function loadMain({
@@ -537,6 +542,7 @@ async function loadMain({
   deferSettingsRead = false,
   env = {},
   exportRecordingCopy,
+  gotSingleInstanceLock = true,
   isPackaged = false,
   loginItemState,
   loadQueue,
@@ -558,6 +564,7 @@ async function loadMain({
   const harness = fakeElectron(userDataPath, {
     deferPanelLoad,
     deferSettingsRead,
+    gotSingleInstanceLock,
     isPackaged,
     loginItemState,
     navigateDuringSettingsRead,
@@ -4290,6 +4297,41 @@ describe("produkční zapojení odchozí fronty", () => {
         }),
       ]);
     });
+  });
+
+  it("🔴 instance bez zámku nesmí sáhnout na frontu", async () => {
+    // `app.quit()` je asynchronní ŽÁDOST o ukončení, ne okamžitý konec. Bez pojistky proto
+    // projede i instance, která zámek nezískala, celý start — včetně obnovy nahrávek a
+    // pumpy. Dvě instance nad jedním úložištěm tokenů si pak obnovou vzájemně zneplatní
+    // přihlášení (rotace refresh tokenu, zámky jsou jen v paměti procesu). Změřeno naostro
+    // 11. 9. 2026: server z toho viděl 10× `GET /uploads/firmy → 401` a ani jednu úspěšnou.
+    //
+    // Měříme VLASTNOST „frontě se nesáhlo", ne přítomnost řádku s `return` — ten by šlo
+    // přepsat a test by o tom nevěděl.
+    const recoverOrphanedRecordings = vi.fn(async () => (
+      { alreadyQueued: 0, recovered: 0, skipped: 0 }
+    ));
+    const pump = vi.fn(async () => ({ outcome: "idle" }));
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => []),
+        pump,
+        retry: vi.fn(),
+      }),
+      gotSingleInstanceLock: false,
+      recoverOrphanedRecordings,
+    });
+
+    await harness.runReady();
+
+    expect(harness.electron.app.quit).toHaveBeenCalled();
+    expect(recoverOrphanedRecordings).not.toHaveBeenCalled();
+    expect(pump).not.toHaveBeenCalled();
+    // A vůbec nic z nastartované appky: ikona v liště ani panel nevzniknou.
+    expect(harness.trays).toHaveLength(0);
+    expect(harness.windows).toHaveLength(0);
   });
 
   it("čekající obnova nezdrží vytvoření ikony, panelu ani dokončení startu", async () => {
