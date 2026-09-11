@@ -325,6 +325,22 @@ describe("vlastník nahrávky před uploadem", () => {
     await expect(send(fixture.item)).rejects.not.toThrow(/https?:\/\//u);
   });
 
+  it("🔴 pojmenuje i chromí chybu, která nemá code ani cause", async () => {
+    // Změřeno naostro: `net.fetch` u zakázané hlavičky vyhodí `Error: net::ERR_INVALID_ARGUMENT`
+    // BEZ `code` a BEZ `cause`. Bez tohohle by z první ostré vady zbylo v logu holé „Error" —
+    // tedy přesně ta nečitelnost, kvůli které se muselo ptát protistrany, co vidí v auditu.
+    // Jediný strojový údaj je token `net::ERR_…` ve zprávě; bereme JEN ten, nikdy celou zprávu.
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("net::ERR_INVALID_ARGUMENT při POST na /api/nahravky/uploads/tajne");
+    });
+    const { send } = createSend(fetchImpl);
+
+    await expect(send(fixture.item)).rejects.toThrow(/net::ERR_INVALID_ARGUMENT/u);
+    // Zbytek zprávy se do hlášky nesmí dostat ani tady.
+    await expect(send(fixture.item)).rejects.not.toThrow(/tajne/u);
+  });
+
   it("jiná session položku pozastaví, zachová a nic neodešle", async () => {
     const fixture = await recordingFixture();
     const fetchImpl = vi.fn();
@@ -480,6 +496,13 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
     const method = options.method ?? "GET";
     const headers = requestHeaders(options);
     expect(headers.get("authorization")).toBe(`Bearer ${TOKEN}`);
+    // 🔴 Tady dřív stálo, že PUT části MUSÍ nést `Content-Length` — a přesně tím si test
+    // uzamkl vadu. Odesíláme přes Electroní `net.fetch`, tedy chromí síťový stack, a ten
+    // ručně nastavenou `Content-Length` odmítne chybou `net::ERR_INVALID_ARGUMENT` JEŠTĚ
+    // PŘED odesláním. Tenhle falešný server je pouhý mock, takže mu hlavička nevadila a
+    // test byl zelený; ostrému klientovi vadila a upload kvůli ní nikdy neodešel. Kontrola
+    // je proto obrácená a platí pro KAŽDÝ požadavek — zahájení, části i dokončení.
+    expect(headers.get("content-length")).toBeNull();
 
     if (method === "POST" && pathname === "/api/nahravky/uploads") {
       const body = JSON.parse(String(options.body));
@@ -557,7 +580,6 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
       );
       expect(options.body.byteLength).toBe(expectedLength);
       expect(headers.get("content-type")).toBe("application/octet-stream");
-      expect(headers.get("content-length")).toBe(String(expectedLength));
       expect(headers.get("x-chunk-sha256")).toBe(sha256(options.body));
       if (!failed && failOnceAtIndex === index) {
         failed = true;
