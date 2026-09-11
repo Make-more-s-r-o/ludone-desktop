@@ -149,6 +149,42 @@ proč mi tři běhy na pozadí skončily s kódem 144.
 
 Je to dnes už potřetí táž chyba: **uvěřil jsem měřidlu, které odpovídalo na jinou otázku.**
 
+### 🔴 Co ale z hledání vypadlo jako SKUTEČNÁ křehkost: odvolaný klient se nikdy neobnoví
+
+Nezávisle na tom, kdo ty 401 posílá: náš kód **znovupoužije uložené `client_id`**, kdykoli sedí
+issuer, resource a scope — a **nikdy se neptá, jestli ten klient ještě žije** (`electron/auth.cjs`,
+větev okolo ř. 1193–1202). Nová registrace se pak přeskočí (`clientId ??= await registerPublicClient(...)`
+už má hodnotu).
+
+**Důsledek:** kdyby server tvého klienta odvolal, appka se s ním bude hlásit **donekonečna**
+a sama se nikdy nepřeregistruje. Ručně to člověk nepozná — přihlášení navenek „je", jen
+každý pokus o obnovu tiše padá. Dnes server odvolal klienta v 10:38:52 a hned nato proběhla
+nová registrace, takže tohle **není nutně dnešní příčina** — ale je to mina.
+
+**Vyloučeno měřením kódu:** `client_secret` neposíláme nikde (registrujeme se jako veřejný
+klient), takže jedna ze tří možných příčin serverového `invalid_client` u nás padá. Na disku
+je jediná uložená session, ne víc kopií.
+
+### ❓ Zdroj 213× `401` zůstává NEZNÁMÝ — nejnadějnější stopa je MCP konektor
+
+Server naměřil **213× `401` na `/api/mcp/oauth/token`** a 71× na `/firmy`, z UA `node`, ~2× za
+minutu, **a děje se to pořád**. Naše uploady (Electron UA) přitom **neselhaly ani jednou** a
+naše session se normálně obnovuje.
+
+V našem kódu **není žádný časovač**, který by to dělal — ani patnáctiminutový, ani minutový.
+
+🔴 **Moje hypotéza „bude to MCP konektor" byla VYVRÁCENA** (a je dobře, že jsem ji označil jako
+hypotézu). Serverová session ukázala proč: tentýž `node` klient volá i **`GET /uploads/firmy`**,
+a to je endpoint **desktopového** výběru firmy. MCP konektor ho nezná a nemá důvod na něj sahat.
+Každá trojice odmítnutých pokusů o token končí právě voláním `/firmy`.
+
+**Co z toho plyne:** někde běží **druhý proces s kódem desktopu**, jako Node, a drží **mrtvé
+`client_id`**. Není to ta instance, kterou vidím — ta se obnovuje v pořádku. Kandidáti:
+dev instance nebo testovací běh **z jiného worktree**, e2e/smoke harness, nebo druhá kopie
+session na jiné cestě (jiný `userData`). Hledám to.
+
+⚠️ Rozhoduje **odkud** to běží, ne kolik instancí nainstalované appky je vidět.
+
 ✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
 Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
 v testovacím harnessu napevno `true`, takže druhou instanci nešlo vyrobit. Test teď měří,
