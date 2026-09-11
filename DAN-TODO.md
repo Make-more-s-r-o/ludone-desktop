@@ -190,9 +190,39 @@ zanikl. Požádal jsem serverovou session o jedinou věc, která to rozsekne: **
 IP těch 401 s IP našich úspěšných uploadů.** Liší-li se, je to jiný stroj a tady je hledání
 marné.
 
-🔴 **Tohle už je mimo zadání „zprovozni odesílání" (to je hotové a ověřené) a nechávám to
-otevřené, ne rozdělané.** Nebudu v noci bez tebe prohledávat cizí stroje ani dekryptovat tvoji
-klíčenku. Až přijde ta IP, je to na deset minut.
+### ✅ VYŘEŠENO: ty 401 vyráběla NAŠE TESTOVACÍ SADA. Byl jsem to já.
+
+Rozsekla to serverová session porovnáním zdrojových IP s běhy CI. **Všech 27 dávek z rotujících
+adres padá přesně dovnitř běhu našeho CI**, na mých dnešních větvích (`uuid-pro-stopu`,
+`pumpa-vyprazdni-frontu`, `jedna-instance`…). Rotující IP = GitHub-hosted runnery na Azure.
+A druhý zdroj, z tvé domácí IP, je **tatáž sada spuštěná lokálně**: 108 odmítnutí ÷ 6 na běh =
+**18 běhů** — přesně tolik kol bran a sabotáží jsem dnes odpoledne pustil.
+
+**Hledal jsem celý večer druhou instanci appky, kterou jsem si sám vyráběl každým spuštěním
+testů.** V procesech jsem nic nenašel proto, že běh testů trvá vteřiny a zmizí.
+
+🔴 **NENÍ to bezpečnostní incident** a stahuji i tu svou hypotézu o cizích forcích. Otázka
+„má zůstat repo veřejné" platí dál, ale **tahle stopa k ní nic nepřidává** — nenech si ji k ní
+přifařit, rozhodni ji věcně.
+
+**Vada, která z toho zbývá, je ale skutečná a je naše:**
+
+| co | dopad |
+|---|---|
+| Test volá **skutečnou síť** na labs místo atrapy | každý běh sady pošle **6× obnovu tokenu + 2× seznam firem**, všechno odmítnuté |
+| Test je přitom **zelený** | 401 buď čeká, nebo ji spolkne — *měřidlo, které souhlasí, ale neměří*, tentokrát na síti |
+| 🔴 **Lokální běhy čerpají TVŮJ limit** | neúspěšné ověření má strop **30/min na IP a SDÍLÍ ho s `/api/mcp`** — pár souběžných běhů testů a **tvoje MCP dostane 429** |
+
+Server potvrdil, že **oba OAuth klienti žijí** (ranní `revoke` odvolal token, ne klienta), takže
+`invalid_client` znamená `client_id`, které server nezná vůbec — tedy **vymyšlenou hodnotu
+z testovací fixture**.
+
+**Oprava, kterou dělám:** ne záplatovat ten jeden test, ale **zakázat v setupu testů skutečnou
+síť** — kdo si `fetch` nezamockuje, dostane červenou místo tichého volání na labs. Jen tak to
+chytne i test, který někdo napíše příště.
+
+**Důkaz nebude zelená sada**, ale to, že serverové session ty dávky z CI i z tvé IP **úplně
+zmizí**. To uvidí oni, ne já.
 
 ✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
 Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
