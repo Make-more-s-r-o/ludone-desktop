@@ -259,6 +259,36 @@ describe("vlastník nahrávky před uploadem", () => {
     }
   });
 
+  it("🔴 přesměrování pojmenuje, místo aby z něj udělalo obyčejný výpadek sítě", async () => {
+    // Tohle stálo jedno celé kolo dohadování: při prvním ostrém odeslání zbylo z chyby jen
+    // „Síťový požadavek uploadu selhal" a musel jsem se ptát protistrany, co vidí v auditu.
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError("unexpected redirect, redirect mode is set to error");
+    });
+    const { send } = createSend(fetchImpl);
+
+    await expect(send(fixture.item)).rejects.toMatchObject({
+      code: "network_error",
+      failureClass: "retryable",
+    });
+    await expect(send(fixture.item)).rejects.toThrow(/přesměrováním/u);
+  });
+
+  it("u jiné síťové chyby doplní strojový kód, ale nic z požadavku", async () => {
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => {
+      throw Object.assign(new Error("connect ECONNREFUSED 10.0.0.1:443"), {
+        code: "ECONNREFUSED",
+      });
+    });
+    const { send } = createSend(fetchImpl);
+
+    await expect(send(fixture.item)).rejects.toThrow(/ECONNREFUSED/u);
+    // 🔴 Celá zpráva chyby se do hlášky NESMÍ dostat — nese adresu i kus požadavku.
+    await expect(send(fixture.item)).rejects.not.toThrow(/10\.0\.0\.1/u);
+  });
+
   it("jiná session položku pozastaví, zachová a nic neodešle", async () => {
     const fixture = await recordingFixture();
     const fetchImpl = vi.fn();
