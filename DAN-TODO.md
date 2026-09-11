@@ -133,6 +133,22 @@ je v našem kódu a složila se ze dvou věcí:
 Odpovídá tomu i to, že jakmile jsem zastavil všechny instance a spustil **jednu**, odeslání
 prošlo napoprvé.
 
+🔴 **OPRAVA MÉHO VLASTNÍHO TVRZENÍ (17:10): „běžely dvě instance" NEBYLA PRAVDA.** Změřeno:
+`pgrep -f` na cestu k Electronu chytal i **můj vlastní shell skript**, protože tu cestu má
+v příkazové řádce jako text. Electron instance byla po celou dobu **jedna**. Navíc — má
+zabíjecí smyčka tím pádem střílela po mých vlastních spouštěcích shellech, což vysvětluje,
+proč mi tři běhy na pozadí skončily s kódem 144.
+
+**Co z toho platí a co ne:**
+- ✅ **Vada v kódu je skutečná** a oprava správná: bez pojistky by druhá instance opravdu
+  projela celý start. To je doložené čtením kódu, ne pozorováním procesů.
+- ❌ **Tvrzení „těch 10× 401 způsobil souběh dvou instancí" je NEDOLOŽENÉ.** Zněl přesvědčivě,
+  ale opíral se o pozorování, které bylo artefaktem mého měřidla. **Příčina 401 je zatím
+  neznámá.** Pravděpodobnější kandidát je vypršení tokenu bez obnovy (kontrolujeme jen
+  expiraci, ne odvolání), ale to jsem NEZMĚŘIL a nebudu to vydávat za zjištění.
+
+Je to dnes už potřetí táž chyba: **uvěřil jsem měřidlu, které odpovídalo na jinou otázku.**
+
 ✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
 Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
 v testovacím harnessu napevno `true`, takže druhou instanci nešlo vyrobit. Test teď měří,
@@ -199,9 +215,40 @@ a ty se tím pádem odešlou do LuDone. Řekls *„ty staré nahrávky neřeš, 
 ve frontě na odeslání stojí. Kdybys to myslel přísněji, řekni a dávku zastavím — zatím
 neproběhla.
 
-⛔ **Dvoustopé odeslání pořád není ověřené.** Je napsané, otestované a smergnuté, ale přes
-drát ještě nešlo. Čekám na serverovou session, jestli má pro první ostrou dávku stáhnout
-strop níž (jejich okno sdílíš s webem).
+## ✅✅ DVOUSTOPÁ NAHRÁVKA JE V LUDONE (17:06) — celý řetěz ověřen z obou stran
+
+Serverová session to změřila přímo v DB labs:
+
+| nahrávka | `client_recording_id` | `session_id` | zdroj | stav |
+|---|---|---|---|---|
+| 2ac132ec | 6b395a39… | **cdda850d…** | `microphone` | normalized |
+| 310c2df7 | f8b71cf6… | **cdda850d…** | NULL (systémová) | normalized |
+
+**Dvě nahrávky, dvě různá ID, JEDNA schůzka.** Dedup je nesloučil. Tím je potvrzené všechno,
+co dnes vzniklo: odstranění zakázané hlavičky, UUIDv5 jako `clientRecordingId` i řetězení
+`sessionId`. Ve stejné dávce odešla i třetí, delší jednostopá nahrávka (3,5 MB, 3,6 min).
+
+### 🔴 Vada, kterou jsem dnes vyrobil a hned na ni naletěl
+
+Appka loguje **jen POSLEDNÍ výsledek pumpy**. Vyprazdňovací smyčka běží, dokud se daří, takže
+po třech úspěšných odesláních vypsala poslední iterace `žádná položka není připravená` — a **to
+jediné se objevilo v logu**. Přečetl jsem to jako „nic se neodeslalo", ohlásil to tak Danovi
+i protistraně a požádal je, ať vypnou hlídač. Neposlechli a měli pravdu.
+
+🔴 **Ta samá slepota mě svedla podruhé o pár minut později:** tvrdil jsem protistraně, že dávka
+nespotřebovala ani jedno zahájení. Spotřebovala tři. Změřili to v tabulce limitů (5 z 30, okno
+do 17:26). Dvě nepravdivá tvrzení během dvaceti minut, obě ze stejného kořene.
+
+**Je to táž třída vady, kterou jsme dnes celý den lovili: měřidlo, které souhlasí, ale neměří** —
+jen jsem si ji tentokrát vyrobil sám, dvě hodiny po tom, co jsem o ní psal do zápisků.
+**K opravě:** pumpa musí hlásit, KOLIK položek odeslala, ne jak dopadla poslední.
+
+### ⚠️ Na tvoje oko: systémová stopa má 1 205 B na 4,2 s
+
+To je prakticky ticho. Nejspíš správně — při testu z počítače zřejmě nic nehrálo. Ale je to
+přesně ten výsledek, u kterého **nejde odlišit „zachytili jsme ticho" od „nezachytili jsme
+nic"**, a to už si dnes jednou vybralo daň. **Poslechni si prosím jednu systémovou stopu**,
+kde zvuk opravdu hrál; sám to od terminálu nerozhodnu.
 
 🔴 **Musel jsem kvůli tomu zapnout `DESKTOP_UPLOAD_ENABLED=true`** (jen proměnnou prostředí
 pro jeden běh, nic se neuložilo). Opírám to o tvé dnešní rozhodnutí zapsané výš v tomhle
