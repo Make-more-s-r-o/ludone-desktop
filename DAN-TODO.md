@@ -103,10 +103,17 @@ fronty, který bez tvého pokynu dělat nebudu), nebo je nechat ležet. **Rozhod
 
 ✅ **ROZHODNUTO (Dan, 11. 9.):** *„ty staré nahrávky neřeš, respektive je v pohodě že nejsou
 použitelné. Jen ty nové prostě ať se nahrajou a zprovozní to odesílání."* — staré položky se
-odepisují, cíl je, aby odcházely NOVÉ nahrávky. Odesílání zapnuto, fronta se prohání
-opakovanými starty appky (jedna položka na start), aby se hlava fronty vyčistila; položky bez
-vlastníka se přitom jen označí jako vyřízené a napořád přeskakují. **Do souboru fronty se
-NEZASAHUJE** — žádné mazání ani přepisování Danových dat.
+odepisují, cíl je, aby odcházely NOVÉ nahrávky. ✅ **Opraveno v kódu (PR #122, `main` f0e3266) — a byla to skutečná vada, ne jen překážka
+testu.** Fronta bere položky v pořadí vzniku a **jedna neodeslatelná nahrávka spotřebovala
+celý pump**, takže těch 19 bez vlastníka ji v čele zmrazilo napořád a nové nahrávky se nikdy
+nedostaly na řadu. Nově pump takovou položku označí a jde na další; odešle se pořád nejvýš
+jedna nahrávka. 🔴 Pokračuje se **JEN** u vlastnictví (`queue_owner_*`) — chyba přihlášení
+(401, chybějící oprávnění) i jakýkoli neznámý důvod pauzy pump okamžitě zastaví, jinak by se
+jedna chyba přihlášení zopakovala u každé položky fronty a vyčerpala limit serveru.
+**Do souboru fronty se NEZASAHUJE** — žádné mazání ani přepisování Danových dat.
+
+*(Předchozí obchůzka — opakované restarty appky, jeden pump na start — je tímhle nahrazená.
+Danovi blikala appka na obrazovce; to byla moje smyčka, ne vada aplikace.)*
 
 🔴 **Co ta jejich věta BUDE a NEBUDE znamenat** (aby se nepřečetla silněji): potvrdí jen, že
 endpoint na labs **žije a odmítá neověřené** (401, ne 404) a je v metadatech AS. **Nepotvrdí,
