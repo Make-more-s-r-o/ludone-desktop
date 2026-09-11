@@ -1906,6 +1906,100 @@ describe("perzistentní pumpa fronty", () => {
     }
   });
 
+  it("🔴 jedna pumpa pošle víc nahrávek, ale zastaví se na první systémové chybě", async () => {
+    // Dvě vlastnosti naráz, protože každá z nich sama o sobě je vada:
+    //
+    // 1. Do 11. 9. 2026 posunula jedna pumpa JEDINOU položku a nikdo ji neopakoval, takže
+    //    člověk se čtrnácti frontovanými nahrávkami potřeboval čtrnáct restartů appky.
+    // 2. Smyčka ale nesmí být slepá. Kdyby pokračovala i po chybě přihlášení, zopakuje ji
+    //    na KAŽDÉ položce fronty — a neúspěšné ověření tokenu má na serveru vlastní strop
+    //    30/min na IP, který SDÍLÍ s `/api/mcp`. Jedna rozbitá session by tak člověku
+    //    shodila i MCP. Proto se tu měří i to, že se čtvrtá položka už vůbec nezkusila.
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-drain-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const prvni = "1f0c4f2a-51b7-4e63-9d71-2c8a6d0e91b4";
+    const druha = "2a7d9c31-6e84-4b12-8f05-7d3e1a4c62f8";
+    const treti = "3c5b8e47-92af-4d70-a613-5e9f2b81c04d";
+    const ctvrta = "4e9a1d63-b075-4c28-9e34-8a1c7f50d2b6";
+    const send = vi.fn(async (item) => {
+      if (item.clientRecordingId === treti) {
+        throw Object.assign(new Error("Přihlášení pro upload nelze načíst"), {
+          code: "session_missing",
+          failureClass: FAILURE_CLASSES.PAUSED,
+        });
+      }
+    });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      await store.enqueueRecording(recording(prvni));
+      await store.enqueueRecording(recording(druha));
+      await store.enqueueRecording(recording(treti));
+      await store.enqueueRecording(recording(ctvrta));
+
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+
+      // Jediná pumpa sáhla na tři položky — dřív by to byla jedna a zbytek by čekal na
+      // další spuštění appky.
+      expect(send).toHaveBeenCalledTimes(3);
+      expect(send.mock.calls.map(([item]) => item.clientRecordingId))
+        .toEqual([prvni, druha, treti]);
+      // 🔴 Čtvrtá se nezkusila. Na tomhle stojí celá obrana proti vystřílení limitu.
+      expect(vysledek.outcome).not.toBe("sent");
+
+      const ulozena = await loadQueue(queuePath);
+      expect(ulozena.items[0].state).toBe(QUEUE_STATES.SENT);
+      expect(ulozena.items[1].state).toBe(QUEUE_STATES.SENT);
+      expect(ulozena.items[3]).toMatchObject({ attempts: 0, state: QUEUE_STATES.WAITING });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("🔴 jedna pumpa nepřekročí strop, i když je fronta delší", async () => {
+    // Strop drží limit serveru: zahájení má 30 za hodinu, okno je PEVNÉ (ne klouzavé),
+    // počítá se i idempotentní opakování a klíčem je UŽIVATEL, ne zařízení — takže se
+    // stejného stropu dotýká i web téhož člověka. Kdyby tuhle kontrolu nikdo nedržel,
+    // stačilo by přepsat konstantu na tisíc a jediná pumpa by vystřílela celé okno.
+    //
+    // ⚠️ Tenhle test vznikl POTÉ, co sabotáž se zvednutým stropem zůstala zelená. Strop
+    // byl do té chvíle číslo, které nikdo neměřil — a přitom je to jediné, co nás dělí
+    // od `429` bez `Retry-After`, tedy od hodiny slepého čekání.
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-strop-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const send = vi.fn(async () => {});
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      for (let poradi = 0; poradi < 25; poradi += 1) {
+        await store.enqueueRecording(
+          recording(`00000000-0000-4000-8000-${String(poradi).padStart(12, "0")}`),
+        );
+      }
+
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+
+      // Odešlo jich právě tolik, kolik strop dovolí — ne celá fronta.
+      expect(send).toHaveBeenCalledTimes(20);
+      // A pumpa skončila úspěchem, ne chybou: zbytek fronty čeká na další probuzení.
+      expect(vysledek.outcome).toBe("sent");
+      const ulozena = await loadQueue(queuePath);
+      expect(ulozena.items.filter((item) => item.state === QUEUE_STATES.SENT)).toHaveLength(20);
+      expect(ulozena.items.filter((item) => item.state === QUEUE_STATES.WAITING))
+        .toHaveLength(5);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("ruční retry vynuluje prodlevu, uloží ji a hned probudí pumpu", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-retry-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");
