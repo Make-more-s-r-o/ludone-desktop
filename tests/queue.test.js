@@ -1196,6 +1196,104 @@ describe("stavový automat fronty", () => {
     expect(reduceQueueForRenderer(still.queue)[0]).toHaveProperty("requiresHumanAction", true);
   });
 
+  // 🔴 Sada k vadě z 11. 9. 2026: jedna nahrávka bez vlastníka spotřebovala celý pump, takže
+  // 19 takových položek v čele fronty ji zmrazilo napořád a nové nahrávky se nikdy nedostaly
+  // na řadu. Pump je teď smí přeskočit — ale JEN je, chyba přihlášení musí pořád zastavit.
+  const uploadEnabled = () => ({
+    [killswitchNameForKind(QUEUE_ITEM_KINDS.RECORDING)]: ENABLED_SETTING,
+  });
+  const queueWithRecordings = (ids) => ids.reduce(
+    (accumulated, id, order) => enqueueRecording(
+      accumulated,
+      recording(id),
+      1_777_000_000_000 + order,
+    ).queue,
+    createQueue(),
+  );
+  const PRVNI = "11111111-1111-4111-8111-111111111111";
+  const DRUHA = "22222222-2222-4222-8222-222222222222";
+  const TRETI = "33333333-3333-4333-8333-333333333333";
+  const bezVlastnika = () => Object.assign(new Error("Vlastník nahrávky není potvrzený"), {
+    code: "queue_owner_unknown",
+    failureClass: FAILURE_CLASSES.PAUSED,
+  });
+
+  it("nahrávku bez vlastníka přeskočí a odešle další v pořadí", async () => {
+    const send = vi.fn(async (item) => {
+      if (item.clientRecordingId === PRVNI) throw bezVlastnika();
+    });
+
+    const result = await processNext(
+      queueWithRecordings([PRVNI, DRUHA]),
+      uploadEnabled(),
+      send,
+    );
+
+    // Odešle se DRUHÁ — první jen překáží a sama se odeslat nedá.
+    expect(result.outcome).toBe("sent");
+    expect(result.item.clientRecordingId).toBe(DRUHA);
+    expect(send).toHaveBeenCalledTimes(2);
+    // A ta přeskočená zůstane označená, takže ji příští pump už nebude zkoušet.
+    const skipped = result.queue.items.find((item) => item.clientRecordingId === PRVNI);
+    expect(skipped).toMatchObject({ state: QUEUE_STATES.WAITING, requiresHumanAction: true });
+  });
+
+  it("když jsou všechny připravené bez vlastníka, označí je všechny a nic neodešle", async () => {
+    const send = vi.fn(async () => {
+      throw bezVlastnika();
+    });
+
+    const result = await processNext(
+      queueWithRecordings([PRVNI, DRUHA, TRETI]),
+      uploadEnabled(),
+      send,
+    );
+
+    expect(result.outcome).toBe("paused");
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(result.queue.items.every((item) => item.requiresHumanAction === true)).toBe(true);
+    expect(result.reason).toMatch(/3 nahrávek čeká na potvrzení vlastníka/u);
+  });
+
+  it("🔴 chyba přihlášení pump ZASTAVÍ a zbytek fronty vůbec nezkouší", async () => {
+    // Kdyby se pokračovalo i tady, 401 by se zopakovalo u každé položky fronty — desítky
+    // marných požadavků a vyčerpaný limit serveru. Proto se pokračuje jen u vlastnictví.
+    const send = vi.fn(async () => {
+      throw Object.assign(new Error("unauthorized"), {
+        code: "unauthorized",
+        status: 401,
+        failureClass: FAILURE_CLASSES.PAUSED,
+      });
+    });
+
+    const result = await processNext(
+      queueWithRecordings([PRVNI, DRUHA, TRETI]),
+      uploadEnabled(),
+      send,
+    );
+
+    expect(result.outcome).toBe("paused");
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("neznámý důvod pauzy pump taky zastaví (fail-closed)", async () => {
+    const send = vi.fn(async () => {
+      throw Object.assign(new Error("dočasně nedostupný vlastník databáze"), {
+        code: "database_owner_unavailable",
+        failureClass: FAILURE_CLASSES.PAUSED,
+      });
+    });
+
+    const result = await processNext(
+      queueWithRecordings([PRVNI, DRUHA]),
+      uploadEnabled(),
+      send,
+    );
+
+    expect(result.outcome).toBe("paused");
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it("libovolná jiná pauza se slovem owner nepatří bez výslovného kontraktu člověku", async () => {
     const result = await processNext(
       oneItemQueue(),

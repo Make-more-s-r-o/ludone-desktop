@@ -402,9 +402,27 @@ export function retryDelayMs(attempts, retryPolicy = {}, random = Math.random) {
   );
 }
 
+// 🔴 Rozlišuje pauzu, která patří JEDNÉ POLOŽCE, od pauzy, která patří CELÉMU PŘIHLÁŠENÍ.
+// Je to jádro obrany proti dvěma opačným vadám:
+//  · Kdyby se nerozlišovalo a pump se po každé pauze zastavil, jediná nahrávka bez vlastníka
+//    zmrazí frontu napořád — změřeno 11. 9. 2026: 19 takových položek stálo v čele a nové
+//    nahrávky se nikdy nedostaly na řadu, i když byly v pořádku.
+//  · Kdyby se naopak pokračovalo VŽDY, chyba přihlášení (401 / chybějící oprávnění) by se
+//    zopakovala u každé položky fronty — desítky marných požadavků a vyčerpaný limit serveru.
+// Proto: pokračuj jen u důvodů vázaných na položku (`queue_owner_*`), u všeho ostatního zastav.
+// Neznámý důvod pauzy zastavuje — fail-closed, protože nevíme, koho se týká.
+function pauseBelongsToItem(error) {
+  const code = error?.code;
+  if (typeof code !== "string") return false;
+  const [source, subject, reason, ...extra] = code.split("_");
+  if (extra.length > 0 || source !== "queue" || subject !== "owner") return false;
+  return typeof reason === "string" && reason.length > 0;
+}
+
 /**
- * Zpracuje nejvýše jednu připravenou položku. Oba killswitche jsou povinné
- * a každý typ povolují výhradně při přesné řetězcové hodnotě "true".
+ * Odešle nejvýše JEDNU položku. Položky, které odeslat nelze kvůli vlastnictví, cestou
+ * označí a přeskočí — jinak by první taková zmrazila celou frontu (viz `pauseBelongsToItem`).
+ * Oba killswitche jsou povinné a každý typ povolují výhradně při přesné hodnotě "true".
  */
 export async function processNext(queue, killswitches, send, options = {}) {
   requireQueue(queue);
@@ -428,11 +446,10 @@ export async function processNext(queue, killswitches, send, options = {}) {
       return false;
     }
   };
-  const readyEnabled = automaticWaitingItems.find(({ item }) => (
+  const readyEnabled = automaticWaitingItems.filter(({ item }) => (
     isEnabled(item) && (item.nextAttemptAt === null || item.nextAttemptAt <= now)
   ));
-  const index = readyEnabled?.index ?? -1;
-  if (index === -1) {
+  if (readyEnabled.length === 0) {
     if (automaticWaitingItems.some(({ item }) => !isEnabled(item))) {
       return { item: null, outcome: "disabled", queue, reason: UPLOAD_DISABLED_REASON };
     }
@@ -440,78 +457,107 @@ export async function processNext(queue, killswitches, send, options = {}) {
   }
 
   const policy = normalizeRetryPolicy(options.retryPolicy);
-  const sendingItem = {
-    ...queue.items[index],
-    attempts: queue.items[index].attempts + 1,
-    requiresHumanAction: false,
-    state: QUEUE_STATES.SENDING,
-  };
-  const sendingQueue = replaceItem(queue, index, sendingItem);
+  // Smyčka je konečná z definice: jde právě přes připravené položky a každou vezme nejvýš
+  // jednou. Odeslat se smí pořád jen JEDNA — pokračuje se výhradně přes položky, které
+  // odeslat nešlo kvůli vlastnictví, a ty žádný požadavek na server neposílají.
+  let workingQueue = queue;
+  let lastSkipped = null;
+  let skippedCount = 0;
 
-  try {
-    await send(sendingItem);
-    const sentAt = timestamp(options.now ?? Date.now(), "options.now");
-    const sentItem = {
-      ...sendingItem,
-      lastFailureReason: null,
-      nextAttemptAt: null,
-      sentAt: new Date(sentAt).toISOString(),
-      state: QUEUE_STATES.SENT,
+  for (const { index } of readyEnabled) {
+    const originalItem = workingQueue.items[index];
+    const sendingItem = {
+      ...originalItem,
+      attempts: originalItem.attempts + 1,
+      requiresHumanAction: false,
+      state: QUEUE_STATES.SENDING,
     };
-    return {
-      item: sentItem,
-      outcome: "sent",
-      queue: replaceItem(sendingQueue, index, sentItem),
-      reason: null,
-    };
-  } catch (error) {
-    const failureClass = errorFailureClass(error);
-    if (failureClass === FAILURE_CLASSES.PERMANENT) {
+    const sendingQueue = replaceItem(workingQueue, index, sendingItem);
+
+    try {
+      await send(sendingItem);
+      const sentAt = timestamp(options.now ?? Date.now(), "options.now");
+      const sentItem = {
+        ...sendingItem,
+        lastFailureReason: null,
+        nextAttemptAt: null,
+        sentAt: new Date(sentAt).toISOString(),
+        state: QUEUE_STATES.SENT,
+      };
+      return {
+        item: sentItem,
+        outcome: "sent",
+        queue: replaceItem(sendingQueue, index, sentItem),
+        reason: null,
+      };
+    } catch (error) {
+      const failureClass = errorFailureClass(error);
+      if (failureClass === FAILURE_CLASSES.PERMANENT) {
+        const failedItem = {
+          ...sendingItem,
+          lastFailureReason: errorReason(error),
+          nextAttemptAt: null,
+          state: QUEUE_STATES.FAILED,
+        };
+        return {
+          item: failedItem,
+          outcome: "failed",
+          queue: replaceItem(sendingQueue, index, failedItem),
+          reason: failedItem.lastFailureReason,
+        };
+      }
+      if (failureClass === FAILURE_CLASSES.PAUSED) {
+        const pausedItem = {
+          ...sendingItem,
+          attempts: originalItem.attempts,
+          lastFailureReason: errorReason(error),
+          nextAttemptAt: originalItem.nextAttemptAt,
+          requiresHumanAction: failureRequiresHumanAction(error),
+          state: QUEUE_STATES.WAITING,
+        };
+        const pausedQueue = replaceItem(sendingQueue, index, pausedItem);
+        // Vlastnictví je vada TÉHLE položky: označ ji a zkus další. Cokoli jiného
+        // (401, chybějící oprávnění, neznámý důvod) je vada přihlášení a zastavuje.
+        if (pauseBelongsToItem(error)) {
+          workingQueue = pausedQueue;
+          lastSkipped = pausedItem;
+          skippedCount += 1;
+          continue;
+        }
+        return {
+          item: pausedItem,
+          outcome: "paused",
+          queue: pausedQueue,
+          reason: pausedItem.lastFailureReason,
+        };
+      }
+      const exhausted = sendingItem.attempts >= policy.maxAttempts;
+      const failedAt = timestamp(options.now ?? Date.now(), "options.now");
       const failedItem = {
         ...sendingItem,
         lastFailureReason: errorReason(error),
-        nextAttemptAt: null,
-        state: QUEUE_STATES.FAILED,
+        nextAttemptAt: exhausted
+          ? null
+          : failedAt + retryDelayMs(sendingItem.attempts, policy, options.random),
+        state: exhausted ? QUEUE_STATES.FAILED : QUEUE_STATES.WAITING,
       };
       return {
         item: failedItem,
-        outcome: "failed",
+        outcome: exhausted ? "failed" : "retry_scheduled",
         queue: replaceItem(sendingQueue, index, failedItem),
         reason: failedItem.lastFailureReason,
       };
     }
-    if (failureClass === FAILURE_CLASSES.PAUSED) {
-      const originalItem = queue.items[index];
-      const pausedItem = {
-        ...sendingItem,
-        attempts: originalItem.attempts,
-        lastFailureReason: errorReason(error),
-        nextAttemptAt: originalItem.nextAttemptAt,
-        requiresHumanAction: failureRequiresHumanAction(error),
-        state: QUEUE_STATES.WAITING,
-      };
-      return {
-        item: pausedItem,
-        outcome: "paused",
-        queue: replaceItem(sendingQueue, index, pausedItem),
-        reason: pausedItem.lastFailureReason,
-      };
-    }
-    const exhausted = sendingItem.attempts >= policy.maxAttempts;
-    const failedAt = timestamp(options.now ?? Date.now(), "options.now");
-    const failedItem = {
-      ...sendingItem,
-      lastFailureReason: errorReason(error),
-      nextAttemptAt: exhausted
-        ? null
-        : failedAt + retryDelayMs(sendingItem.attempts, policy, options.random),
-      state: exhausted ? QUEUE_STATES.FAILED : QUEUE_STATES.WAITING,
-    };
-    return {
-      item: failedItem,
-      outcome: exhausted ? "failed" : "retry_scheduled",
-      queue: replaceItem(sendingQueue, index, failedItem),
-      reason: failedItem.lastFailureReason,
-    };
   }
+
+  // Sem se dojde jen tehdy, když VŠECHNY připravené položky byly neodeslatelné kvůli
+  // vlastnictví. Jsou označené, takže příští pump je přeskočí a sáhne rovnou po nových.
+  return {
+    item: lastSkipped,
+    outcome: "paused",
+    queue: workingQueue,
+    reason: skippedCount > 1
+      ? `${skippedCount} nahrávek čeká na potvrzení vlastníka; žádná jiná není připravená`
+      : lastSkipped?.lastFailureReason ?? null,
+  };
 }
