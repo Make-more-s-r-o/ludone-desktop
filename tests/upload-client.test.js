@@ -54,10 +54,13 @@ function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function fakeResponse(status, payload) {
+// Hlavičky odpovědi jsou nepovinné, takže všechna dosavadní volání zůstávají beze změny.
+// Bez nich nešlo `Retry-After` u `429` vůbec otestovat — atrapa odpovědi je prostě neuměla.
+function fakeResponse(status, payload, headers = {}) {
   return {
     ok: status >= 200 && status < 300,
     status,
+    headers: new Headers(headers),
     json: vi.fn(async () => payload),
   };
 }
@@ -832,6 +835,56 @@ describe("kontrakt INITu nativní a prohlížečové cesty", () => {
 });
 
 describe("mapování serverových chyb do tříd fronty", () => {
+  it("🔴 429 s hlavičkou Retry-After nese pauzu určenou serverem", async () => {
+    // Bez téhle hodnoty bychom po odmítnutí opakovali podle vlastního rozvrhu — za 30 s,
+    // 60 s, 120 s — tedy UVNITŘ okna, které ještě běží. Každý takový pokus se serveru do
+    // limitu počítá znovu, i idempotentní, takže bychom si okno sami posouvali.
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => fakeResponse(
+      429,
+      { code: "rate_limited" },
+      { "retry-after": "5" },
+    ));
+    const { send } = createSend(fetchImpl);
+
+    await expect(send(fixture.item)).rejects.toMatchObject({
+      code: "rate_limited",
+      retryAfterMs: 5_000,
+    });
+  });
+
+  it("když hlavička chybí, vezme se retryAfterSeconds z těla", async () => {
+    // Server posílá obojí schválně: kdyby hlavičku cestou sebrala proxy, tělo zůstane.
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => fakeResponse(429, {
+      code: "rate_limited",
+      retryAfterSeconds: 7,
+    }));
+    const { send } = createSend(fetchImpl);
+
+    await expect(send(fixture.item)).rejects.toMatchObject({
+      code: "rate_limited",
+      retryAfterMs: 7_000,
+    });
+  });
+
+  it("🔴 nesmyslnou hodnotu ignoruje a spadne zpět na vlastní rozvrh", async () => {
+    // Kdybychom věřili čemukoli, co přijde, stačilo by `retry-after: 0` nebo záporné číslo
+    // a fronta by se rozjela okamžitě zpátky do běžícího okna. Neplatná hodnota proto NENÍ
+    // pauza nula — je to „server nic neřekl" a platí náš vlastní backoff.
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => fakeResponse(
+      429,
+      { code: "rate_limited", retryAfterSeconds: -3 },
+      { "retry-after": "brzy" },
+    ));
+    const { send } = createSend(fetchImpl);
+
+    const chyba = await send(fixture.item).catch((duvod) => duvod);
+    expect(chyba.code).toBe("rate_limited");
+    expect(chyba.retryAfterMs).toBeUndefined();
+  });
+
   it("HTTP 507 quota_exceeded frontu pozastaví a nikdy položku nevzdá", async () => {
     const fixture = await recordingFixture();
     const fetchImpl = vi.fn(async () => fakeResponse(507, {

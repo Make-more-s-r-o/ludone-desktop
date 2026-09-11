@@ -45,16 +45,20 @@ class RecordingUploadError extends Error {
    *   code?: string,
    *   failureClass?: string,
    *   quota?: Readonly<Record<string, number>>,
+   *   retryAfterMs?: number,
    *   status?: number,
    * }} [options]
    */
-  constructor(message, { code, failureClass, quota, status } = {}) {
+  constructor(message, { code, failureClass, quota, retryAfterMs, status } = {}) {
     super(message);
     this.name = "RecordingUploadError";
     this.code = code ?? "upload_failed";
     this.failureClass = failureClass ?? "retryable";
     if (Number.isInteger(status)) this.status = status;
     if (quota) this.quota = quota;
+    // Pauza vyžádaná serverem u `429`. Fronta ji čte místo vlastního rozvrhu — viz
+    // `odkladPoSelhani` v `src/lib/queue.js`.
+    if (Number.isFinite(retryAfterMs)) this.retryAfterMs = retryAfterMs;
   }
 }
 
@@ -112,12 +116,38 @@ function failureClassForStatus(status, code, payload) {
   return podleKodu;
 }
 
-function serverError(status, payload) {
+// 🔴 U `429` server říká, jak dlouho má klient počkat — hlavičkou `Retry-After` a pro jistotu
+// i polem `retryAfterSeconds` v těle. Čteme OBOJÍ: kdyby hlavičku cestou něco sebralo (proxy,
+// přepis), tělo zůstane.
+//
+// Není to pohodlí, je to obrana. Bez téhle hodnoty bychom po odmítnutí opakovali podle svého
+// exponenciálního rozvrhu — za 30 s, pak 60, pak 120 — tedy UVNITŘ okna, které ještě běží.
+// Každý takový pokus se do limitu počítá znovu, i idempotentní, takže bychom si okno sami
+// posouvali a limit zhoršovali. Nejvyšší hodnota, kterou server posílá, je 3600 s.
+const MAX_RETRY_AFTER_MS = 6 * 60 * 60 * 1000;
+
+function retryAfterMsFrom(response, payload) {
+  const zHlavicky = Number.parseInt(response?.headers?.get?.("retry-after") ?? "", 10);
+  const zTela = payload?.retryAfterSeconds;
+  let sekundy = null;
+  if (Number.isFinite(zHlavicky) && zHlavicky > 0) sekundy = zHlavicky;
+  else if (Number.isFinite(zTela) && zTela > 0) sekundy = zTela;
+  if (sekundy === null) return undefined;
+  return Math.min(MAX_RETRY_AFTER_MS, Math.round(sekundy * 1000));
+}
+
+function serverError(status, payload, retryAfterMs) {
   const code = safeServerCode(payload?.code);
+  // ⚠️ Nejdřív jsem `retryAfterMs` přiřazoval až PO vytvoření, protože jsem konstruktor
+  // neviděl a bál se, že neznámý klíč zahodí. Ta obava byla oprávněná — konstruktor klíče
+  // vyjmenovává — ale správné řešení je přidat pole do typu, ne ho propašovat mimo něj.
+  // Upozornil na to `tsc`; sada testů byla v tu chvíli celá zelená, protože JavaScriptu
+  // nedeklarované pole nevadí.
   return new RecordingUploadError(`${code} (HTTP ${status})`, {
     code,
     failureClass: failureClassForStatus(status, code, payload),
     quota: code === "quota_exceeded" ? quotaNumbers(payload) : undefined,
+    retryAfterMs,
     status,
   });
 }
@@ -546,7 +576,9 @@ function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
       clearTimeout(timeoutId);
     }
     const { payload, response } = exchange;
-    if (!response?.ok) throw serverError(response?.status, payload);
+    if (!response?.ok) {
+      throw serverError(response?.status, payload, retryAfterMsFrom(response, payload));
+    }
     return payload;
   };
 }

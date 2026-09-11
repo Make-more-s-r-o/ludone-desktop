@@ -406,6 +406,19 @@ export function retryDelayMs(attempts, retryPolicy = {}, random = Math.random) {
   );
 }
 
+// 🔴 Když server řekne, jak dlouho čekat (`429` nese `Retry-After`), POSLECHNEME HO místo
+// vlastního exponenciálního rozvrhu. Náš rozvrh by se probudil za 30 s, tedy uvnitř okna,
+// které ještě běží — a každý takový pokus se do limitu počítá znovu, i idempotentní. Sami
+// bychom si tím okno posouvali. Strop politiky platí dál jako pojistka proti nesmyslné
+// hodnotě; server posílá nejvýš 3600 s, což se do něj vejde bez ořezu.
+function odkladPoSelhani(error, attempts, policy, random) {
+  const odServeru = error?.retryAfterMs;
+  if (Number.isFinite(odServeru) && odServeru > 0) {
+    return Math.min(policy.maxDelayMs, Math.round(odServeru));
+  }
+  return retryDelayMs(attempts, policy, random);
+}
+
 // 🔴 Rozlišuje pauzu, která patří JEDNÉ POLOŽCE, od pauzy, která patří CELÉMU PŘIHLÁŠENÍ.
 // Je to jádro obrany proti dvěma opačným vadám:
 //  · Kdyby se nerozlišovalo a pump se po každé pauze zastavil, jediná nahrávka bez vlastníka
@@ -542,7 +555,7 @@ export async function processNext(queue, killswitches, send, options = {}) {
         lastFailureReason: errorReason(error),
         nextAttemptAt: exhausted
           ? null
-          : failedAt + retryDelayMs(sendingItem.attempts, policy, options.random),
+          : failedAt + odkladPoSelhani(error, sendingItem.attempts, policy, options.random),
         state: exhausted ? QUEUE_STATES.FAILED : QUEUE_STATES.WAITING,
       };
       return {
