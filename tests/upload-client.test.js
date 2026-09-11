@@ -557,6 +557,10 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
           finalized: false,
           id: serverRecordingId(sequence),
           received: new Set(),
+          // Server schůzku přidělí, když klient žádnou nepošle, a respektuje tu poslanou.
+          // Bez toho by se řetězení `sessionId` nedalo měřit vůbec.
+          sessionId: body.sessionId
+            ?? `5e551011-0000-4000-8000-${String(sequence).padStart(12, "0")}`,
         };
         sequence += 1;
         uploadsByClientRecordingId.set(body.clientRecordingId, upload);
@@ -567,6 +571,7 @@ function createStatefulServer({ failOnceAtIndex = null, quotaWarning = false } =
         idempotent,
         quotaWarning,
         recordingId: upload.id,
+        sessionId: upload.sessionId,
         state: upload.finalized ? "stored" : "uploading",
       });
     }
@@ -700,12 +705,29 @@ describe("shodný obsah zvukových stop", () => {
     const server = createStatefulServer();
     const { send } = createSend(server.fetchImpl);
 
-    await expect(send(fixture.item)).resolves.toEqual({
+    const vysledek = await send(fixture.item);
+    // 🔴 Obě stopy musí nést TUTÉŽ schůzku — v tom je celý smysl řetězení `sessionId`.
+    // Hodnotu proto nepíšu natvrdo, ale dosadím ji do očekávání DVAKRÁT z jedné proměnné:
+    // kdyby se stopy rozešly, `toEqual` spadne. Natvrdo psaná hodnota by tuhle vlastnost
+    // neměřila, jen by opisovala, co zrovna vrátil falešný server.
+    const schuzka = vysledek.uploads[0].sessionId;
+    expect(schuzka).toEqual(expect.any(String));
+    expect(vysledek).toEqual({
       completedUploads: 2,
       quotaWarning: false,
       uploads: [
-        { quotaWarning: false, recordingId: serverRecordingId(1), track: "microphone" },
-        { quotaWarning: false, recordingId: serverRecordingId(2), track: "system" },
+        {
+          quotaWarning: false,
+          recordingId: serverRecordingId(1),
+          sessionId: schuzka,
+          track: "microphone",
+        },
+        {
+          quotaWarning: false,
+          recordingId: serverRecordingId(2),
+          sessionId: schuzka,
+          track: "system",
+        },
       ],
     });
     expect(server.fetchImpl).toHaveBeenCalledTimes(8);
@@ -778,6 +800,34 @@ describe("kontrakt INITu nativní a prohlížečové cesty", () => {
     for (const body of sVypovediOZdroji) {
       expect(body.declaredCaptureSources).toBe("microphone");
     }
+  });
+
+  it("🔴 druhá stopa se připne ke schůzce, kterou dostala první", async () => {
+    // Schůzku drží pohromadě `sessionId`. První stopa ho posílá jako `null`, server jí ho
+    // přidělí, a druhá stopa už musí poslat TENTÝŽ. Bez toho dorazí dvoustopá nahrávka jako
+    // DVĚ samostatné schůzky — a nikdo si toho nevšimne, protože obě stopy se uloží v
+    // pořádku a nic nespadne. Vada by byla vidět až člověku, který v LuDone hledá jednu
+    // schůzku a najde dvě půlky.
+    const fixture = await recordingFixture();
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl);
+
+    await expect(send(fixture.item)).resolves.toMatchObject({ completedUploads: 2 });
+
+    const initBodies = server.fetchImpl.mock.calls
+      .filter(([input, options]) => (
+        requestPath(input) === "/api/nahravky/uploads" && options.method === "POST"
+      ))
+      .map(([, options]) => JSON.parse(String(options.body)));
+
+    expect(initBodies).toHaveLength(2);
+    // První stopa schůzku neurčuje — přiděluje ji server.
+    expect(initBodies[0].sessionId).toBeNull();
+    const prirazena = server.uploadsByClientRecordingId
+      .get(initBodies[0].clientRecordingId).sessionId;
+    expect(prirazena).toEqual(expect.any(String));
+    // A druhá stopa jde pod TOUTÉŽ schůzkou, ne pod vlastní.
+    expect(initBodies[1].sessionId).toBe(prirazena);
   });
 });
 

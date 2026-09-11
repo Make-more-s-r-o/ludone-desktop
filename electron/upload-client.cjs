@@ -626,7 +626,7 @@ function uuidV5(namespaceUuid, name) {
   ].join("-");
 }
 
-function initPayload(recording, track, context) {
+function initPayload(recording, track, context, sessionId) {
   const startedAt = normalizedDate(track.manifestTrack.startedAt ?? recording.manifest.createdAt);
   const endedAt = normalizedDate(track.manifestTrack.endedAt ?? recording.manifest.closedAt);
   return {
@@ -654,7 +654,10 @@ function initPayload(recording, track, context) {
     declaredMime: track.contentType,
     deviceLabel: context.deviceLabel,
     endedAt,
-    sessionId: safeString(recording.manifest.sessionId) || null,
+    // Schůzku drží pohromadě `sessionId`. První stopa ho pošle jako `null` a server jí ho
+    // přidělí; druhá stopa pak posílá TENTÝŽ, aby obě skončily pod jednou schůzkou. Bez
+    // toho dorazí dvoustopá nahrávka jako dvě samostatné schůzky.
+    sessionId: safeString(sessionId) || safeString(recording.manifest.sessionId) || null,
     sha256: track.sha256,
     startedAt,
     title: titleForTrack(recording.manifest, track.trackKind),
@@ -700,7 +703,7 @@ function verifyRemoteIdentityAndLog(payload, track, sizeField, logger, recording
   }
 }
 
-async function uploadTrack({ context, logger, recording, request, track }) {
+async function uploadTrack({ context, logger, recording, request, sessionId, track }) {
   const trackRequest = async (...args) => {
     try {
       return await request(...args);
@@ -711,7 +714,7 @@ async function uploadTrack({ context, logger, recording, request, track }) {
       throw error;
     }
   };
-  const body = JSON.stringify(initPayload(recording, track, context));
+  const body = JSON.stringify(initPayload(recording, track, context, sessionId));
   const initialized = await trackRequest("/api/nahravky/uploads", {
     body,
     // 🔴 ŽÁDNÁ ruční `Content-Length`. Odesíláme přes Electroní `net.fetch`, tedy chromí
@@ -727,6 +730,11 @@ async function uploadTrack({ context, logger, recording, request, track }) {
   });
 
   const recordingId = validatedRecordingId(initialized);
+  // Schůzka přidělená serverem. Když ji nevrátí, držíme tu, se kterou jsme přišli — nikdy
+  // se nevracíme k `null`, protože tím by se druhá stopa odpojila od první.
+  const prirazenaSchuzka = safeString(initialized.sessionId)
+    || safeString(sessionId)
+    || null;
   const quotaWarning = initialized.quotaWarning === true;
   if (quotaWarning) {
     safeLog(
@@ -739,7 +747,13 @@ async function uploadTrack({ context, logger, recording, request, track }) {
   const status = await trackRequest(`/api/nahravky/uploads/${recordingId}`);
   verifyRemoteIdentityAndLog(status, track, "declaredBytes", logger, recording);
   if (COMPLETE_UPLOAD_STATES.has(safeString(status.state).toLowerCase())) {
-    return Object.freeze({ quotaWarning, recordingId, track: track.trackKind });
+    // 🔴 I tahle větev MUSÍ schůzku vrátit. Je to cesta „upload už byl hotový", tedy přesně
+    // navázání na rozdělané odeslání — kdyby tu chyběla, druhá stopa by se po restartu
+    // připnula k `null` a schůzka by se rozpadla na dvě. Tady se to pozná nejhůř, protože
+    // se to stane jen při opakování, ne při prvním průchodu.
+    return Object.freeze({
+      quotaWarning, recordingId, sessionId: prirazenaSchuzka, track: track.trackKind,
+    });
   }
 
   // Záměrně sekvenční await v obyčejném for-of: proxy nesmí vidět souběžné části.
@@ -781,7 +795,9 @@ async function uploadTrack({ context, logger, recording, request, track }) {
       "permanent",
     );
   }
-  return Object.freeze({ quotaWarning, recordingId, track: track.trackKind });
+  return Object.freeze({
+    quotaWarning, recordingId, sessionId: prirazenaSchuzka, track: track.trackKind,
+  });
 }
 
 /**
@@ -837,8 +853,14 @@ function createRecordingUploadSend({
     });
     const uploads = [];
     let quotaWarning = false;
+    // Stopy jdou po sobě a schůzka se předává z jedné na druhou: první ji dostane od
+    // serveru, každá další už ji posílá s sebou. Proto se tu drží mimo cyklus.
+    let sessionId = safeString(recording.manifest.sessionId) || null;
     for (const track of recording.tracks) {
-      const uploaded = await uploadTrack({ context, logger, recording, request, track });
+      const uploaded = await uploadTrack({
+        context, logger, recording, request, sessionId, track,
+      });
+      sessionId = uploaded.sessionId ?? sessionId;
       uploads.push(uploaded);
       quotaWarning ||= uploaded.quotaWarning;
     }
