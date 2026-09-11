@@ -138,8 +138,15 @@ vybrat jednou a zapamatovat per účet), nebo potřebuješ volit u každé nahr�
 ### Dluhy na naší straně, nalezené při tomhle měření (neopravuju teď)
 
 Nesouvisí s rozchozením odesílání, ale ať se neztratí:
-- **`sessionId` posíláme serveru VŽDY jako `null`** — manifest nahrávky takové pole vůbec nemá
-  a nikdo ho nevyplní. Serverová session na něj byla upozorněna.
+- 🔴 **`sessionId` posíláme serveru VŽDY jako `null`** — manifest nahrávky takové pole vůbec
+  nemá a nikdo ho nevyplní. **Důsledek je horší, než to zní:** `null` u nich znamená „nová
+  schůzka", takže se **každá tvoje nahrávka na serveru rozpadne na DVĚ samostatné schůzky**
+  (mikrofon zvlášť, systémový zvuk zvlášť). Nic se neztratí, ale v seznamu nahrávek to bude
+  vypadat jako dvojnásobek schůzek. Správný tok: zahájit první stopu s `null`, vzít `sessionId`
+  z odpovědi a druhou stopu zahájit už s ním. Zatím neopravuju — nejdřív musí odesílání vůbec
+  začít fungovat, jinak bych ladil něco, co nikdy neproběhlo.
+  *(Naopak co je v pořádku: každá stopa má vlastní `clientRecordingId` s příponou stopy, takže
+  se stopy na serveru nemůžou tiše slít do jedné — ověřeno v `upload-client.cjs:551`.)*
 - **Vrácené `recordingId` si nikam neukládáme.** Funkce, která ho měla zapsat k položce fronty
   (`applyServerProgress`), **není odnikud volaná** a návratová hodnota odesílání se zahazuje.
   Důsledek: po restartu appky po něm nezbude stopa a klient se serverem nejde po běhu porovnat.
