@@ -179,11 +179,20 @@ a to je endpoint **desktopového** výběru firmy. MCP konektor ho nezná a nem�
 Každá trojice odmítnutých pokusů o token končí právě voláním `/firmy`.
 
 **Co z toho plyne:** někde běží **druhý proces s kódem desktopu**, jako Node, a drží **mrtvé
-`client_id`**. Není to ta instance, kterou vidím — ta se obnovuje v pořádku. Kandidáti:
-dev instance nebo testovací běh **z jiného worktree**, e2e/smoke harness, nebo druhá kopie
-session na jiné cestě (jiný `userData`). Hledám to.
+`client_id`**. Není to ta instance, kterou vidím — ta se obnovuje v pořádku.
 
-⚠️ Rozhoduje **odkud** to běží, ne kolik instancí nainstalované appky je vidět.
+**Prohledal jsem celý tenhle Mac a NENAŠEL jsem ho:** jediný `oauth.enc` na disku, jediný
+git worktree, jediný strom Electronu (starý 20 minut, spustil jsem ho já), žádný e2e/smoke
+proces, žádný `electron .` odjinud. Přitom 401 běžely ještě v 17:13.
+
+⇒ **Zdroj nejspíš neběží na tomhle stroji** — jiný Mac, CI runner, nebo proces, který mezitím
+zanikl. Požádal jsem serverovou session o jedinou věc, která to rozsekne: **porovnat zdrojovou
+IP těch 401 s IP našich úspěšných uploadů.** Liší-li se, je to jiný stroj a tady je hledání
+marné.
+
+🔴 **Tohle už je mimo zadání „zprovozni odesílání" (to je hotové a ověřené) a nechávám to
+otevřené, ne rozdělané.** Nebudu v noci bez tebe prohledávat cizí stroje ani dekryptovat tvoji
+klíčenku. Až přijde ta IP, je to na deset minut.
 
 ✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
 Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
