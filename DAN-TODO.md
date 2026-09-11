@@ -115,6 +115,37 @@ jedna chyba přihlášení zopakovala u každé položky fronty a vyčerpala lim
 *(Předchozí obchůzka — opakované restarty appky, jeden pump na start — je tímhle nahrazená.
 Danovi blikala appka na obrazovce; to byla moje smyčka, ne vada aplikace.)*
 
+### 🔴 Aktuální překážka odesílání: chybí identifikátor firmy
+
+Po opravě fronty se odesílání poprvé dostalo dál a zaseklo se na `Pro upload chybí
+identifikátor firmy`. Stav změřený z obou stran:
+
+- **Firma je v zahájení uploadu POVINNÁ** a server si ji sám neodvodí — bez ní vrátí `400`.
+  Důvod: firma je jejich jediná hranice práv, rozsah jednoho člověka může obsahovat víc firem,
+  a odvozovat ji z tokenu by znamenalo hádat (to jejich pravidla zakazují, fail-closed).
+- ⚠️ **OPRAVA MÉ DIAGNÓZY:** podezříval jsem přechod na `userinfo`, že nám firmu vzal.
+  **Není to pravda** — serverová session doložila kódem, že `ludone_ping` firmy nikdy nevracel.
+  Nikdy jsme ji neměli; narazili jsme na to teprve teď, když se fronta poprvé dostala k odesílání.
+- **Server staví endpoint** `GET /api/nahravky/uploads/firmy` → `{ companies: [{id,name}],
+  defaultCompanyId }`, za toutéž branou jako upload. Hotový řádově za hodinu.
+
+🔴 **ROZHODNUTÍ PRO TEBE: jsi admin, takže vidíš VŠECHNY firmy → server ti vrátí
+`defaultCompanyId: null` a appka se tě musí zeptat, kterou firmu použít.** To je prvek
+uživatelského rozhraní a **`design/**` je zmrazený**, takže obrazovku s výběrem sám nepřidám.
+Otázka na tebe je v prvé řadě produktová: chodí ti všechny nahrávky pod jednu firmu (pak stačí
+vybrat jednou a zapamatovat per účet), nebo potřebuješ volit u každé nahrávky zvlášť?
+
+### Dluhy na naší straně, nalezené při tomhle měření (neopravuju teď)
+
+Nesouvisí s rozchozením odesílání, ale ať se neztratí:
+- **`sessionId` posíláme serveru VŽDY jako `null`** — manifest nahrávky takové pole vůbec nemá
+  a nikdo ho nevyplní. Serverová session na něj byla upozorněna.
+- **Vrácené `recordingId` si nikam neukládáme.** Funkce, která ho měla zapsat k položce fronty
+  (`applyServerProgress`), **není odnikud volaná** a návratová hodnota odesílání se zahazuje.
+  Důsledek: po restartu appky po něm nezbude stopa a klient se serverem nejde po běhu porovnat.
+- **Pole `idempotent` z odpovědi serveru nečteme vůbec.**
+- Souborový log neexistuje, Diagnostika i Záznamy ukazují jen agregáty (schválně, kvůli soukromí).
+
 🔴 **Co ta jejich věta BUDE a NEBUDE znamenat** (aby se nepřečetla silněji): potvrdí jen, že
 endpoint na labs **žije a odmítá neověřené** (401, ne 404) a je v metadatech AS. **Nepotvrdí,
 že pro skutečný token vrátí správnou identitu** — tu půlku umíme ověřit jedině my, protože k ní
