@@ -1491,6 +1491,55 @@ function createPermissionRequestHandler({ systemPreferences, shell, logger = con
   };
 }
 
+// GUID firmy malými písmeny. Vlastní kopie vzoru je tu schválně: `upload-client.cjs` má tutéž
+// a sdílet ji přes ESM modul by znamenalo dynamický import uvnitř synchronní validace.
+const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+
+/**
+ * Zapíše do ULOŽENÉ relace vybranou firmu, pod kterou se budou odesílat nahrávky.
+ *
+ * Firma patří k přihlášenému účtu, ne ke stroji — proto bydlí uvnitř šifrované relace
+ * a ne v nastavení aplikace. Má to dva důsledky, oba žádoucí a oba zadarmo: odhlášení
+ * i přepnutí prostředí mažou celý soubor relace, takže volba zmizí sama a nemůže
+ * „prosáknout“ k dalšímu účtu na stejném Macu; a obnovu tokenu volba přežije, protože
+ * `refreshStoredAuthSession` relaci rozšiřuje, nesestavuje ji znovu.
+ *
+ * 🔴 Zápis NIKDY nevychází ze snímku, který držel volající. Mezi jeho přečtením a tímhle
+ * zápisem se mohl člověk odhlásit nebo přihlásit jiným účtem; přepsat cizí relaci vlastní
+ * firmou by bylo horší než volbu neuložit. Proto se relace čte znovu uvnitř transakce
+ * a zápis se zahodí, jakmile neodpovídá tomu, co volající viděl — stejná opatrnost,
+ * jakou má obnova tokenu.
+ *
+ * @returns {Promise<object|null>} aktualizovaná relace, nebo `null`, když se neuložila
+ */
+function updateStoredAuthSessionCompany({ app, safeStorage, companyTabidooId, storedSession }) {
+  const firma = typeof companyTabidooId === "string" ? companyTabidooId : "";
+  if (!COMPANY_ID_PATTERN.test(firma)) {
+    // Nesmysl se do relace nezapisuje: odesílání by pak selhalo až na serveru a vypadalo
+    // by to jako vada spojení, ne jako vadná uložená hodnota.
+    return Promise.reject(new Error("Identifikátor firmy musí být GUID"));
+  }
+
+  return withTokenStorageTransaction(async () => {
+    const storage = tokenStorageLocation(app);
+    await initializeTokenStorage(app, storage);
+    const encrypted = await readEncryptedSession(storage);
+    const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
+    if (session === null) return null;
+    if (
+      session.issuer !== storedSession?.issuer
+      || session.clientId !== storedSession?.clientId
+      || session.resource !== storedSession?.resource
+    ) {
+      return null;
+    }
+
+    const updatedSession = { ...session, companyTabidooId: firma };
+    await persistEncryptedSession(safeStorage, updatedSession, storage);
+    return updatedSession;
+  });
+}
+
 module.exports = {
   DEFAULT_TIMEOUT_MS,
   IDENTITY_LOOKUP_DEADLINE_MS,
@@ -1512,4 +1561,5 @@ module.exports = {
   resolveAuthTimeout,
   tokenSessionFilePath,
   tokenStorageDirectory,
+  updateStoredAuthSessionCompany,
 };
