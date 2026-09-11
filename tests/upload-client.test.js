@@ -243,6 +243,22 @@ describe("vlastník nahrávky před uploadem", () => {
     }
   });
 
+  it("🔴 každý požadavek zakazuje přesměrování", async () => {
+    // Na téhle jediné volbě stojí celá obrana proti tomu, aby se HTML přihlašovací stránky
+    // dostalo do parsování JSON. Server umí na uploadové cestě odpovědět 307 na /login —
+    // s „follow" bychom dostali HTML se stavem 200 a vznikla by nesrozumitelná chyba
+    // parsování místo hlášky o přihlášení. Bez tohohle testu by to nikdo nehlídal.
+    const fixture = await recordingFixture();
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl);
+
+    await expect(send(fixture.item)).resolves.toMatchObject({ completedUploads: 2 });
+    expect(server.fetchImpl).toHaveBeenCalled();
+    for (const [, options] of server.fetchImpl.mock.calls) {
+      expect(options.redirect).toBe("error");
+    }
+  });
+
   it("jiná session položku pozastaví, zachová a nic neodešle", async () => {
     const fixture = await recordingFixture();
     const fetchImpl = vi.fn();
