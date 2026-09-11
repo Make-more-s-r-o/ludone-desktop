@@ -286,6 +286,23 @@ do běžícího okna — tedy přesně tam, kam nemá.
 chyby. JavaScriptu nedeklarované pole nevadí, takže **všech 1305 testů bylo zelených** —
 a odmítl to až `tsc`. Dnes už popáté: každá brána vidí jinou třídu vad.
 
+### ⚠️ Appka NEBĚŽÍ — ukončil ji systém kvůli paměti
+
+Po posledním ostrém odeslání ji **systém ukončil kvůli nedostatku paměti**, ne já. Ověřeno:
+neběží ani hlavní proces Electronu, ani wrapper — spadla celá. Stroj měl v tu chvíli volných
+~1,1 GB z 16 GB při load ~2,9; běžné vytížení, ne havárie. **Nezůstaly po mně žádné osiřelé
+procesy** (vitest ani build).
+
+🔴 **Až ji budeš pouštět, nestačí ji jen spustit — bez proměnné se odesílání NEZAPNE**,
+protože přepínač zatím nemá místo v UI (bod 21.6):
+
+```
+DESKTOP_UPLOAD_ENABLED=true LUDONE_UPLOAD_SCOPE_ENABLED=true LUDONE_ORIGIN=https://labs.ludone.cz npm start
+```
+
+Pouštěj **jen jednu instanci**. Fronta po startu sama pošle až 20 připravených položek —
+což po dnešku znamená ty, u kterých potvrdíš vlastníka.
+
 ✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
 Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
 v testovacím harnessu napevno `true`, takže druhou instanci nešlo vyrobit. Test teď měří,
