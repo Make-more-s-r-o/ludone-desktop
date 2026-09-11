@@ -3986,9 +3986,19 @@ app.whenReady().then(async () => {
   // zneplatní ten poražený. Zámky obnovy jsou totiž jen proměnné v paměti procesu, přes
   // procesy neplatí nic.
   //
-  // Změřeno naostro 11. 9. 2026: server z toho viděl 10× `GET /uploads/firmy → 401` a ani
-  // jednu úspěšnou odpověď. Lokálně přitom token vypadal platně, protože kontrolujeme jen
-  // expiraci, ne odvolání — takže se ani nespustila obnova, která by to napravila.
+  // ⚠️ OPRAVA TÉHOŽ DNE: na tomhle místě stálo „Změřeno naostro 11. 9. 2026: server z toho
+  // viděl 10× `GET /uploads/firmy → 401`". **To neplatí a je to odvoláno.** Souběh dvou
+  // instancí nebyl nikdy pozorován — `pgrep -f` tehdy chytal i můj vlastní shell skript,
+  // který má tuhle cestu v příkazové řádce jako obyčejný text.
+  //
+  // Co platí: vada popsaná výš je skutečná a je doložená ČTENÍM KÓDU, ne pozorováním, a
+  // pojistka je proto správná. Co neplatí: její spojení s tehdejšími 401. Příčina těch 401
+  // je k 11. 9. 2026 NEZNÁMÁ (server mezitím změřil, že jejich 401 znamená `invalid_client`,
+  // tedy neznámé `client_id`, nikoli obsazený refresh token).
+  //
+  // 🔴 Nechávám to tu napsané schválně: ten odvolaný závěr už jednou posloužil jako „důkaz"
+  // tomu, kdo si ho přečetl právě v tomhle komentáři. Nedoložená domněnka zapsaná do kódu
+  // se začne chovat jako fakt — a hůř než v chatu, protože v kódu vypadá prověřeně.
   if (!gotSingleInstanceLock) return;
   try {
     const dockVisibleAtStartup = dockVisibilityStore.get();
