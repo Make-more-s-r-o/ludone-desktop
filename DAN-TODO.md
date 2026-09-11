@@ -77,9 +77,27 @@ sabotáže 3:1 (vrácení hlavičky = 15 červených).
 **Co to znamená pro dokončení:** `/dokoncit` nastavovalo `Content-Length: "0"` bez těla,
 takže **nebylo dosažitelné o nic víc než zahájení** — upload nemohl projít nikomu a nikdy.
 
-⛔ **Ostré odeslání po opravě zatím NEPROBĚHLO** — běžící instance appky je ze starého kódu,
-takže ji bylo nutné jednou restartovat; dokud to nedoběhne, „opraveno“ znamená jen zelené
-testy, ne doručenou nahrávku.
+✅ **OVĚŘENO NAOSTRO (16:08:56): požadavek POPRVÉ DORAZIL NA SERVER.** Appka dostala
+`400 invalid_input` — a to je odpověď serveru, tedy důkaz, že request opustil počítač.
+Do téhle chvíle nevyrobilo odeslání žádný požadavek vůbec. **Oprava zakázané hlavičky je
+tím potvrzená ostrým během, ne jen zelenými testy.**
+
+🔴 **Pozor na to slovo „opraveno": nahrávka pořád NEDOŠLA.** Posunuli jsme se od „nic
+neodešlo" k „server nám odpověděl, že se mu nelíbí obsah zahájení". To je velký posun
+v diagnostice, ale pro tebe to zatím znamená totéž: v LuDone žádná nahrávka není.
+
+**Co blokuje teď:** server odmítl obsah zahájení uploadu. Prošel jsem jeho čtyři podmínky
+(hash části, velikosti částí, `chunkSize`/`chunkCount`, idempotence) — všechny náš kód
+splňuje. Nejsilnější zbývající kandidát: `clientRecordingId` posíláme jako `<uuid>:<stopa>`
+(dvě stopy = dva uploady), ne jako holé UUID. Kdyby si to server validoval jako UUID, padne
+na tom **každý** upload. Je to zatím hypotéza — požádal jsem serverovou session o jméno
+odmítnutého pole z jejich logu, ať to neměním naslepo.
+
+🔴 **Musel jsem kvůli tomu zapnout `DESKTOP_UPLOAD_ENABLED=true`** (jen proměnnou prostředí
+pro jeden běh, nic se neuložilo). Opírám to o tvé dnešní rozhodnutí zapsané výš v tomhle
+souboru („zprovozni to odesílání"). UI přepínač pro tenhle klíč zatím neexistuje, takže
+appka odesílá jen tehdy, když se spustí s touhle proměnnou — což je samo o sobě věc
+k dořešení (bod 21.6).
 
 **Stav fronty (36 položek, ani jedna nikdy neodešla — žádná nemá `sentAt`):**
 
