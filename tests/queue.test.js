@@ -1960,6 +1960,40 @@ describe("perzistentní pumpa fronty", () => {
     }
   });
 
+  it("🔴 pumpa řekne, KOLIK odeslala, ne jen jak dopadla poslední", async () => {
+    // 11. 9. 2026 znala appka jen POSLEDNÍ výsledek smyčky. Jenže po úspěšném vyprázdnění
+    // je poslední výsledek „žádná položka není připravená" — pumpa přece skončí až ve chvíli,
+    // kdy nic nezbývá. Přečetl jsem to jako „nic se neodeslalo", ohlásil to Danovi i serverové
+    // session a požádal je, ať vypnou hlídač. Na serveru mezitím ležely tři nové nahrávky
+    // včetně dvoustopého páru, na který jsme celé odpoledne čekali.
+    //
+    // 🔴 Koncový stav běhu NENÍ jeho výsledek. Tenhle test drží ten rozdíl.
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-pocet-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const send = vi.fn(async () => {});
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      await store.enqueueRecording(recording("5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"));
+      await store.enqueueRecording(recording("6b2c3d4e-5f6a-4b7c-8d8e-0f1a2b3c4d5e"));
+      await store.enqueueRecording(recording("7c3d4e5f-6a7b-4c8d-8e9f-1a2b3c4d5e6f"));
+
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+
+      // Odeslaly se tři — a to musí být vidět, i když poslední průchod už nic nenašel.
+      expect(vysledek.odeslanoVDavce).toBe(3);
+      expect(send).toHaveBeenCalledTimes(3);
+      // Poslední výsledek je „nic nezbylo". Právě tenhle řádek dřív svedl k opačnému závěru.
+      expect(vysledek.outcome).not.toBe("sent");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("🔴 jedna pumpa nepřekročí strop, i když je fronta delší", async () => {
     // Strop drží limit serveru: zahájení má 30 za hodinu, okno je PEVNÉ (ne klouzavé),
     // počítá se i idempotentní opakování a klíčem je UŽIVATEL, ne zařízení — takže se

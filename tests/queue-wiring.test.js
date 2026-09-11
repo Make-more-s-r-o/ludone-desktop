@@ -4299,6 +4299,43 @@ describe("produkční zapojení odchozí fronty", () => {
     });
   });
 
+  it("🔴 z logu pumpy jde poznat, KOLIK se odeslalo", async () => {
+    // Tenhle jediný řádek mě 11. 9. 2026 svedl dvakrát. Vyprazdňovací pumpa skončí až ve
+    // chvíli, kdy nic nezbývá, takže její POSLEDNÍ výsledek je „žádná položka není
+    // připravená" — a já z něj usoudil, že se neodeslalo nic. Na serveru mezitím ležely tři
+    // nové nahrávky včetně dvoustopého páru, na který jsme celé odpoledne čekali. Ze stejného
+    // důvodu jsem pak tvrdil, že dávka nespotřebovala ani jedno zahájení; spotřebovala tři.
+    //
+    // 🔴 Sabotáž, která tenhle řádek vrátila na starý tvar, nechala VŠECH 1300 testů zelených.
+    // Jediná existující kontrola hlídá jen prefix `[queue] `, tedy že se něco vypsalo — ne co.
+    // Proto tenhle test měří VLASTNOST „z logu jde poznat počet", ne přesné znění věty.
+    const pump = vi.fn(async () => ({
+      odeslanoVDavce: 3,
+      outcome: "idle",
+      reason: "žádná položka není připravená",
+    }));
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => []),
+        pump,
+        retry: vi.fn(),
+      }),
+    });
+
+    await harness.runReady();
+    await waitForQueuePump(harness);
+
+    const radek = harness.quietConsole.log.mock.calls
+      .map(([zprava]) => zprava)
+      .find((zprava) => typeof zprava === "string" && zprava.startsWith("[queue] "));
+    // Počet odeslaných musí být v řádku vidět.
+    expect(radek).toMatch(/\b3\b/u);
+    // A důvod konce zůstává taky — jedno bez druhého nestačí.
+    expect(radek).toContain("žádná položka není připravená");
+  });
+
   it("🔴 instance bez zámku nesmí sáhnout na frontu", async () => {
     // `app.quit()` je asynchronní ŽÁDOST o ukončení, ne okamžitý konec. Bez pojistky proto
     // projede i instance, která zámek nezískala, celý start — včetně obnovy nahrávek a

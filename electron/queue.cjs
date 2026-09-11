@@ -829,11 +829,19 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
   function pump(killswitches) {
     return serialize(async () => {
       let posledni = null;
+      let odeslano = 0;
       for (let poradi = 0; poradi < MAX_POLOZEK_NA_JEDNU_PUMPU; poradi += 1) {
         posledni = (await processOne(killswitches)).result;
-        if (posledni.outcome !== "sent") return posledni;
+        if (posledni.outcome !== "sent") break;
+        odeslano += 1;
       }
-      return posledni;
+      // 🔴 Počet odeslaných MUSÍ ven ze smyčky. Bez něj zná appka jen POSLEDNÍ výsledek — a
+      // ten je po úspěšném vyprázdnění „žádná položka není připravená", protože pumpa skončí
+      // až ve chvíli, kdy nic nezbývá. 11. 9. 2026 jsem přesně takový log přečetl jako „nic
+      // se neodeslalo", ohlásil to Danovi i serverové session a požádal je, ať vypnou hlídač.
+      // Na serveru mezitím ležely tři nové nahrávky včetně dvoustopého páru, na který jsme
+      // celé odpoledne čekali. Koncový stav běhu není totéž co jeho výsledek.
+      return { ...posledni, odeslanoVDavce: odeslano };
     });
   }
 

@@ -2311,7 +2311,10 @@ async function pumpOutboundQueue() {
     const store = await getOutboundQueueStore();
     const result = await store.pump(queueKillswitches());
     updateOutboundQueueTrayFact(result);
-    console.log(`[queue] ${result.reason ?? result.outcome}`);
+    // Nejdřív KOLIK se odeslalo, teprve pak PROČ pumpa skončila. Opačné pořadí (jen důvod
+    // konce) svedlo 11. 9. 2026 k závěru, že se neodeslalo nic, ačkoli odešly tři nahrávky.
+    const odeslano = Number.isInteger(result.odeslanoVDavce) ? result.odeslanoVDavce : 0;
+    console.log(`[queue] odesláno ${odeslano}, konec: ${result.reason ?? result.outcome}`);
     return result;
   } catch (error) {
     console.error(`[queue] Pumpa selhala: ${error.stack || error.message}`);
