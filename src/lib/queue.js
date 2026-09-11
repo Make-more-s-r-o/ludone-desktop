@@ -147,6 +147,13 @@ function failureRequiresHumanAction(error) {
   // pobídka k obnově tokenu. Souběžná obnova spustí na serveru reuse detekci,
   // která revokuje CELOU rodinu tokenů — tedy odhlásí člověka úplně.
   if (error?.status === 401 || error?.code === "unauthorized") return true;
+  // 🔴 `insufficient_scope` (HTTP 403) NENÍ o vlastnictví, proto nespadá pod `*_owner_*`,
+  // ale je to stejná třída „opakování nepomůže": token nemá upload oprávnění. Nastane hlavně
+  // v přechodovém okně po zapnutí uploadu — uložená session ještě nese starý scope `mcp:read`
+  // a token se čte z ní bez nového přihlášení. Bez tohoto příznaku by se položka zkoušela
+  // donekonečna a v panelu vypadala jako obyčejné „čeká na odeslání", zatímco ji spraví jedině
+  // nové přihlášení. Raději viditelně „čeká na člověka" než tichá nekonečná smyčka.
+  if (error?.code === "insufficient_scope") return true;
   // Konkrétní kódy vlastní upload klient. Fronta jejich společný kontrakt
   // vyhodnotí jednou a rendereru pošle už jen význam, ne druhý seznam kódů.
   return failureCodeRequiresHumanAction(error?.code);

@@ -61,6 +61,9 @@ function compiledAuthWiring(createAuthController) {
     `"use strict";
      ${functionSource(mainSource, "resolveAuthIssuer")}
      ${functionSource(mainSource, "resolveAuthClientId")}
+     ${functionSource(mainSource, "resolveUploadScopeEnabled")}
+     ${functionSource(mainSource, "uploadIdentityEndpoint")}
+     const UPLOAD_SCOPE = ${JSON.stringify(require("../electron/auth.cjs").UPLOAD_SCOPE)};
      ${functionSource(mainSource, "createAuthBeginHandler")}
      return createAuthBeginHandler(createAuthController);`,
   )(createAuthController, POVOLENI_HOSTITELE_ISSUERU);
@@ -161,6 +164,36 @@ describe("zapojení skutečného OAuth controlleru", () => {
     expect(calls[0].timeoutMs).toBeUndefined();
     expect(calls[0].scope).toBeUndefined();
     expect(calls[0].resource).toBeUndefined();
+  });
+
+  it.each([
+    [undefined, "https://app.ludone.cz"],
+    ["https://labs.ludone.cz", "https://labs.ludone.cz"],
+  ])(
+    "se zapnutým LUDONE_UPLOAD_SCOPE_ENABLED žádá upload scope A identityEndpoint na userinfo (%s)",
+    async (origin, issuer) => {
+      const calls = [];
+      const env = { LUDONE_UPLOAD_SCOPE_ENABLED: "true" };
+      if (origin) env.LUDONE_ORIGIN = origin;
+      const handler = compiledAuthWiring(successfulController(calls))(dependencies({ env }));
+
+      await expect(handler()).resolves.toMatchObject({ ok: true });
+      expect(calls).toHaveLength(1);
+      // 🔴 OBĚ pole zároveň. Scope bez identityEndpoint je přesně ta vada, kvůli které je to
+      // JEDEN přepínač: upload-only token by nechal identitu prázdnou a nahrávky by se pauzly.
+      expect(calls[0].scope).toBe("nahravky:upload");
+      expect(calls[0].identityEndpoint).toBe(`${issuer}/api/mcp/oauth/userinfo`);
+    },
+  );
+
+  it("hodnota jiná než \"true\" (např. \"false\") nechá dnešní chování", async () => {
+    const calls = [];
+    const handler = compiledAuthWiring(successfulController(calls))(
+      dependencies({ env: { LUDONE_UPLOAD_SCOPE_ENABLED: "false" } }),
+    );
+    await expect(handler()).resolves.toMatchObject({ ok: true });
+    expect(calls[0].scope).toBeUndefined();
+    expect(calls[0].identityEndpoint).toBeUndefined();
   });
 
   it.each([

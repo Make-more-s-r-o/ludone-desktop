@@ -189,7 +189,16 @@ export function chooseInitialSmokeRoute(surface) {
   return "unknown";
 }
 
-export function validateAuthWaitingUrl(value, expectedOrigin) {
+export function validateAuthWaitingUrl(value, expectedOrigin, expectedScope) {
+  // Očekávaný scope MUSÍ jít v lockstepu s tím, co appka reálně žádá (main.cjs
+  // resolveUploadScopeEnabled). Když volající scope nepředá, odvodíme ho ze stejného
+  // přepínače LUDONE_UPLOAD_SCOPE_ENABLED — jinak by tenhle validátor po zapnutí uploadu
+  // odmítl legitimní adresu jako „neúplný OAuth požadavek". „nahravky:upload" drží auth.cjs
+  // (UPLOAD_SCOPE); tady je to literál schválně, ať se ESM/CJS nekříží, drift by chytil test.
+  const uploadScopeExpected = expectedScope
+    ?? (globalThis.process?.env?.LUDONE_UPLOAD_SCOPE_ENABLED?.trim?.() === "true"
+      ? "nahravky:upload"
+      : "mcp:read");
   // Panel se na skutečně nastavené prostředí zeptat NESMÍ — `auth:origin` patří jen oknu
   // Nastavení. Bereme proto seznam prostředí, která aplikace vůbec připouští, a trváme na
   // tom, že adresa míří do jednoho z nich. Kdo sem pošle jediný řetězec, dostane totéž
@@ -224,7 +233,7 @@ export function validateAuthWaitingUrl(value, expectedOrigin) {
     || url.hash
     || required.some((name) => url.searchParams.getAll(name).length !== 1)
     || url.searchParams.get("response_type") !== "code"
-    || url.searchParams.get("scope") !== "mcp:read"
+    || url.searchParams.get("scope") !== uploadScopeExpected
     || url.searchParams.get("code_challenge_method") !== "S256"
     || !/^[A-Za-z0-9_-]{43}$/.test(url.searchParams.get("state") ?? "")
     || !/^[A-Za-z0-9_-]{43}$/.test(url.searchParams.get("code_challenge") ?? "")

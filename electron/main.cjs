@@ -25,6 +25,7 @@ const path = require("node:path");
 const { fileURLToPath, pathToFileURL } = require("node:url");
 const {
   POVOLENI_HOSTITELE_ISSUERU,
+  UPLOAD_SCOPE,
   createAuthController,
   createAuthSessionCoordinator,
   createPermissionRequestHandler,
@@ -3188,6 +3189,31 @@ function resolveAuthClientId(env) {
   return value.trim();
 }
 
+// 🔴 JEDEN přepínač zapíná DVĚ věci najednou, a to schválně: appka začne žádat scope
+// `nahravky:upload` A identitu si vezme z userinfo místo z MCP. Rozdělit je nesmíme —
+// upload-only token do MCP nesmí (403), takže scope bez userinfo by nechal e-mail natrvalo
+// null, otisk vlastníka prázdný a KAŽDÁ nahrávka by se při odeslání pauzla na
+// `session_owner_unknown`. Default (nenastaveno / cokoli jiného než "true") = dnešní chování
+// beze změny (mcp:read + MCP identita), aby merge nic nerozbil, dokud userinfo nenaběhne na
+// labs a Dan přepínač vědomě nezapne. Vzor 1:1 podle resolveAuthClientId.
+function resolveUploadScopeEnabled(env) {
+  const value = env?.LUDONE_UPLOAD_SCOPE_ENABLED;
+  if (value === undefined || (typeof value === "string" && value.trim().length === 0)) {
+    return false;
+  }
+  if (typeof value !== "string") {
+    throw new Error("Přepínač LUDONE_UPLOAD_SCOPE_ENABLED má neplatný typ");
+  }
+  return value.trim() === "true";
+}
+
+// Cesta userinfo je pevná součást kontraktu se serverem (potvrzeno serverovou session
+// 11. 9. 2026). Leží na originu issueru, takže projde trustedRemoteEndpoint bez úpravy
+// allowlisty; když se origin přepne na labs přes LUDONE_ORIGIN, jde userinfo automaticky tam.
+function uploadIdentityEndpoint(issuer) {
+  return `${issuer}/api/mcp/oauth/userinfo`;
+}
+
 function resolveAuthIssuer(env, storedOrigin = "https://app.ludone.cz") {
   const value = env?.LUDONE_ORIGIN ?? storedOrigin;
   if (typeof value !== "string" || value.length === 0) {
@@ -3333,6 +3359,11 @@ function createAuthBeginHandler(createController) {
           shell,
         };
         if (clientId !== undefined) controllerOptions.clientId = clientId;
+        // Scope a identityEndpoint jdou spolu, nebo vůbec — viz komentář u resolveUploadScopeEnabled.
+        if (resolveUploadScopeEnabled(env)) {
+          controllerOptions.scope = UPLOAD_SCOPE;
+          controllerOptions.identityEndpoint = uploadIdentityEndpoint(issuer);
+        }
         const controller = createController(controllerOptions);
         const attempt = await controller.start();
         // Čekací obrazovka potřebuje URL, dokud pokus běží — když se prohlížeč neotevře,
