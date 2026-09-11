@@ -173,6 +173,36 @@ kontrakt. Sedla, ale doložit jsem je neuměl, a to je chyba i tak.
 - **`507` je trvalé** (`quota_exceeded`, `disk_space_low`) — neopakovat vůbec.
 - Úzké místo není počet nahrávek, ale **části**: 300/h × 8 MiB ≈ 2,3 GiB za hodinu.
 
+### ✅ Jedna pumpa teď vyprázdní frontu (PR #135, `31efc93`)
+
+**Tvoje stížnost „furt se mi to zapíná a vypíná" měla věcné jádro, které jsem přehlédl:**
+jeden start appky posunul **jedinou** nahrávku. Se čtrnácti frontovanými bys potřeboval
+čtrnáct restartů — a já jsem ti místo opravy nabízel restarty.
+
+Pumpa teď pokračuje, **dokud se daří**. Jakákoli pauza, vypnuté odesílání, prázdná fronta
+nebo chyba ji zastaví. To zastavení není opatrnost: neúspěšné ověření tokenu má na serveru
+vlastní strop **30/min na IP sdílený s `/api/mcp`**, takže rozbitá session hnaná přes celou
+frontu by ti shodila i MCP.
+
+**Strop je 20 položek na jedno probuzení** kvůli limitu zahájení (30/h, pevné okno).
+
+🔴 **Nález, který stojí za zapsání:** sabotáž, která strop zvedla na 1000, zůstala **zelená**.
+Ten strop byl do té chvíle číslo, které neměřil **nikdo** — šlo ho přepsat a jediná pumpa by
+vystřílela celé hodinové okno serveru. Test na strop vznikl **až kvůli té zelené sabotáži**.
+Je to dnes už druhý případ, kdy zelená sabotáž byla cennější než červená.
+
+### 🔴 ROZHODL JSEM SÁM: dávka pošle i staré nahrávky
+
+Než pumpa dojde ke třem **dvoustopým** položkám, projde přes ~11 starších jednostopých —
+a ty se tím pádem odešlou do LuDone. Řekls *„ty staré nahrávky neřeš, respektive je v pohodě
+že nejsou použitelné"*; **čtu to jako „nevěnuj jim úsilí", ne jako „nesmí se odeslat"**, protože
+ve frontě na odeslání stojí. Kdybys to myslel přísněji, řekni a dávku zastavím — zatím
+neproběhla.
+
+⛔ **Dvoustopé odeslání pořád není ověřené.** Je napsané, otestované a smergnuté, ale přes
+drát ještě nešlo. Čekám na serverovou session, jestli má pro první ostrou dávku stáhnout
+strop níž (jejich okno sdílíš s webem).
+
 🔴 **Musel jsem kvůli tomu zapnout `DESKTOP_UPLOAD_ENABLED=true`** (jen proměnnou prostředí
 pro jeden běh, nic se neuložilo). Opírám to o tvé dnešní rozhodnutí zapsané výš v tomhle
 souboru („zprovozni to odesílání"). UI přepínač pro tenhle klíč zatím neexistuje, takže
