@@ -82,16 +82,47 @@ takže **nebylo dosažitelné o nic víc než zahájení** — upload nemohl pro
 Do téhle chvíle nevyrobilo odeslání žádný požadavek vůbec. **Oprava zakázané hlavičky je
 tím potvrzená ostrým během, ne jen zelenými testy.**
 
-🔴 **Pozor na to slovo „opraveno": nahrávka pořád NEDOŠLA.** Posunuli jsme se od „nic
-neodešlo" k „server nám odpověděl, že se mu nelíbí obsah zahájení". To je velký posun
-v diagnostice, ale pro tebe to zatím znamená totéž: v LuDone žádná nahrávka není.
+## ✅✅ NAHRÁVKA JE V LUDONE (16:26:44) — poprvé v historii projektu
 
-**Co blokuje teď:** server odmítl obsah zahájení uploadu. Prošel jsem jeho čtyři podmínky
-(hash části, velikosti částí, `chunkSize`/`chunkCount`, idempotence) — všechny náš kód
-splňuje. Nejsilnější zbývající kandidát: `clientRecordingId` posíláme jako `<uuid>:<stopa>`
-(dvě stopy = dva uploady), ne jako holé UUID. Kdyby si to server validoval jako UUID, padne
-na tom **každý** upload. Je to zatím hypotéza — požádal jsem serverovou session o jméno
-odmítnutého pole z jejich logu, ať to neměním naslepo.
+**Potvrzeno z OBOU stran**, ne jen naším logem. Serverová session to změřila přímo v DB labs
+a v nginx logu; celý řetěz prošel: `POST /uploads → 201` · `GET → 200` · `PUT …/casti/0 → 200`
+· `POST …/dokoncit → 201`.
+
+| údaj | hodnota |
+|---|---|
+| `id` na serveru | `500bf891-c209-4367-93f0-ff011885c35b` |
+| `client_recording_id` | `75c58a56-f7c0-5fd9-82bd-196c6cb2f32d` (UUIDv5 ✓) |
+| firma | **Make more s.r.o.** ✓ |
+| stav | `normalized` — tedy dál než uložení: remux proběhl, délka změřená |
+| obsah | 4 796 ms, 1 kanál, `audio/webm`, 77 505 B |
+
+**Druhá vada, kterou odhalila až oprava té první:** `clientRecordingId` jsme posílali jako
+`<uuid>:<stopa>`, jenže server přijímá **jen UUID** → `400 invalid_input` u **každého**
+uploadu, nových dvoustopých nevyjímaje. Nešlo to najít dřív: dokud vázla zakázaná hlavička,
+serveru nedorazil ani jeden požadavek, takže obsah zahájení **nikdy nikdo neposoudil**.
+Teď se skládá jako UUIDv5 z `<uuid-schůzky>:<stopa>` — různé pro každou stopu, stálé při
+opakování. Smergnuto jako PR #132 (`c857bad`), brány zelené, sabotáže 3:1.
+
+🔴 **Znovu i tady zelený test vadu DRŽEL** — tvrdil, že `clientRecordingId` se rovná přesně
+tomu řetězci, který server odmítá. Je to dnes už druhý případ téhož (první byl
+`Content-Length`). Oba asserty byly opis implementace, ne měření požadavku.
+
+### ⛔ Co tímhle NENÍ ověřené (ať to nečteš líp, než to je)
+
+- **Odešla jedna 4,8sekundová MIKROFONNÍ stopa.** Dvoustopé odesílání proběhlé NENÍ.
+- **Řetězení `sessionId` chybí** — až půjde dvoustopá nahrávka, dorazí jako **dvě schůzky**.
+  Je to má další změna.
+- Ve frontě je **15 položek připravených k odeslání** (12 jen mikrofon, 3 dvoustopé).
+  Zbylých 19 drží potvrzení vlastníka člověkem — to je záměr, ne závada.
+
+### Dvě nesrovnalosti, které prověřuji
+
+1. Naše fronta si u odeslané položky drží `server.recordingId: null` a `uploadedBytes: 0`,
+   ačkoli server nahrávku má celou a znormalizovanou. **Náš lokální stav neodpovídá
+   skutečnosti** — sám o sobě to nic neshodí, ale je to zase „měřidlo, co neměří".
+2. Server viděl mezi 16:11 a 16:26 **10× `GET /uploads/firmy → 401`**. To okno je moje;
+   běžely mi dvě instance appky naráz a dva procesy nad jedním úložištěm tokenů jsou
+   přesně to, jak si obnova tokenu vzájemně zneplatní session.
 
 🔴 **Musel jsem kvůli tomu zapnout `DESKTOP_UPLOAD_ENABLED=true`** (jen proměnnou prostředí
 pro jeden běh, nic se neuložilo). Opírám to o tvé dnešní rozhodnutí zapsané výš v tomhle
