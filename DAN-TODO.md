@@ -131,8 +131,12 @@ je v našem kódu a složila se ze dvou věcí:
   ne odvolání.
 
 Odpovídá tomu i to, že jakmile jsem zastavil všechny instance a spustil **jednu**, odeslání
-prošlo napoprvé. **Do opravy platí: pouštět appku jen jednou.** Opravuji samostatně, ne
-přilepené k rozdělané změně.
+prošlo napoprvé.
+
+✅ **OPRAVENO A SMERGNUTO** (PR #134, `a7489c5`): instance bez zámku start vůbec nerozjede.
+Měřidlo na tuhle třídu vad předtím **neexistovalo** — `requestSingleInstanceLock` byl
+v testovacím harnessu napevno `true`, takže druhou instanci nešlo vyrobit. Test teď měří,
+že instance bez zámku nesáhne na obnovu ani na pumpu a nevytvoří ikonu ani okno.
 
 **2. Funkce, která má zapsat výsledek odeslání, se v ostrém běhu nikdy nevolá (nedodělek).**
 Fronta si u odeslané položky drží `server.recordingId: null` a `uploadedBytes: 0`, ačkoli
@@ -140,6 +144,34 @@ server nahrávku má celou a znormalizovanou. Zapisovatel (`applyServerProgress`
 **včetně testů**, ale volá ho **jen test** — pumpa výsledek odeslání zahodí. Dnes to nic
 neshodí, protože ta pole nikdo nečte; je to ale hotová logika, která nikdy neběží, takže
 cokoli budoucího (dedup, potvrzení v panelu) by se na ni spolehlo naprázdno.
+
+### 📏 Limity serveru na uploadu — zapsané, ať se na ně nikdo neptá z paměti
+
+Změřeno serverovou session přímo v jejich kódu, `origin/main` commit `1b07fad7`, 11. 9. 2026.
+🔴 **V našem repu tahle čísla dosud NEBYLA** — citoval jsem je zpaměti a vydával za společný
+kontrakt. Sedla, ale doložit jsem je neuměl, a to je chyba i tak.
+
+| endpoint | strop |
+|---|---|
+| zahájení `POST /api/nahravky/uploads` | 30 / h |
+| část `PUT …/casti/{index}` | 300 / h |
+| stav `GET …/{id}` | 120 / h |
+| dokončení `POST …/dokoncit` | 30 / h |
+| seznam firem | bez limitu |
+
+**Co je na tom nečekané a co to pro nás mění:**
+
+- **Klíč je UŽIVATEL**, ne IP ani token — Dan tedy čerpá jeden strop webem i desktopem naráz.
+- **Okno je pevné (3 600 s od prvního požadavku), ne klouzavé**, a počítadlo drží DB, takže
+  restart serveru ho nevynuluje.
+- **Počítá se každé volání včetně idempotentního opakování** — opakovaný init není zadarmo.
+- **`429` nenese `Retry-After`**, takže bez další změny bych musel čekat naslepo až hodinu.
+  Serverová session nabídla hlavičku doplnit; **řekl jsem ano a zavázal se, že ji budeme
+  číst** (a bez ní spadneme na bezpečných 60 minut).
+- 🔴 **Neúspěšné ověření tokenu má vlastní strop 30/min na IP a SDÍLÍ ho s `/api/mcp`.**
+  Rozbitá session hnaná přes celou frontu by tedy nevystřelila jen upload, ale i MCP.
+- **`507` je trvalé** (`quota_exceeded`, `disk_space_low`) — neopakovat vůbec.
+- Úzké místo není počet nahrávek, ale **části**: 300/h × 8 MiB ≈ 2,3 GiB za hodinu.
 
 🔴 **Musel jsem kvůli tomu zapnout `DESKTOP_UPLOAD_ENABLED=true`** (jen proměnnou prostředí
 pro jeden běh, nic se neuložilo). Opírám to o tvé dnešní rozhodnutí zapsané výš v tomhle
