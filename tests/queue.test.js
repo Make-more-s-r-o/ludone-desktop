@@ -783,6 +783,30 @@ describe("stavový automat fronty", () => {
     expect(Date.now).toHaveBeenCalledTimes(2);
   });
 
+  it("🔴 po 429 počká přesně tolik, kolik řekl server, ne podle vlastního rozvrhu", async () => {
+    // Náš rozvrh by z `now` udělal `now + 30 000`. Server ale řekl 90 sekund, a jeho okno
+    // ještě běží — kdybychom se probudili dřív, každý pokus by se mu do limitu počítal
+    // znovu a okno bychom si sami posunuli. Proto musí vyhrát hodnota od serveru.
+    const now = 1_777_000_001_000;
+    const send = vi.fn(async () => {
+      throw Object.assign(new Error("rate_limited (HTTP 429)"), {
+        code: "rate_limited",
+        failureClass: FAILURE_CLASSES.RETRYABLE,
+        retryAfterMs: 90_000,
+      });
+    });
+
+    const result = await processNext(oneItemQueue(), killswitches(ENABLED_SETTING), send, {
+      now,
+      random: () => 0,
+    });
+
+    expect(result.outcome).toBe("retry_scheduled");
+    expect(result.item.nextAttemptAt).toBe(now + 90_000);
+    // 🔴 Kontrola, že to opravdu není náš rozvrh: ten by dal now + 30 000.
+    expect(result.item.nextAttemptAt).not.toBe(now + 30_000);
+  });
+
   it("retry prodlevu počítá až od dokončení neúspěšného pokusu", async () => {
     const startedAt = 1_777_000_001_000;
     const failedAt = 1_777_000_009_000;
