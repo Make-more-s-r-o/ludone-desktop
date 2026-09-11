@@ -148,7 +148,24 @@ nebo žádná, zastavím se a zeptám se** — hádání firmy je přesně to, �
 ✅ **Pravidlo výběru firmy je hotové a v `main`** (PR #123, `14715ad`): ověřuje uloženou volbu
 proti aktuální nabídce, neplatnou zahodí (nikdy tiše nenahradí jinou), respektuje
 `defaultCompanyId` jen když je v nabídce, a při víc firmách bez volby vrací výslovné
-„musí vybrat člověk". Zatím nikam nezapojené — čeká na endpoint a na uložení volby.
+„musí vybrat člověk".
+
+✅ **Vyzvednutí seznamu firem je hotové a v `main`** (PR #124, `504cabf`): volá
+`GET /api/nahravky/uploads/firmy` s Bearer tokenem, validaci originu si nepíše vlastní
+(injektuje tu existující — třetí kopie by se rozešla), a chybu vrací se stavem i vlastním
+kódem serveru, takže jde rozlišit problém s oprávněním od dočasného výpadku.
+
+🔴 **Ani jedno zatím NENÍ ZAPOJENÉ do odesílání** — schválně. Chybí poslední tři kroky:
+1. **Endpoint musí být živý** — serverová session ho má hotový v PR a merguje po doběhnutí
+   diagnostiky na labs. Do té doby není co volat.
+2. **Kam uložit volbu firmy.** Měření ukázalo, že mechanismus pro hodnotu vázanou na ÚČET
+   v repu dnes neexistuje: nastavení aplikace umí jen ano/ne hodnoty (GUID by tam nešel)
+   a **odhlášení žádné nastavení nemaže**, takže by volba prosákla k dalšímu účtu na stejném
+   Macu. Správné místo je uvnitř šifrované přihlašovací session — přesně tam, kde to mrtvé pole
+   `companyTabidooId` už čeká a odkud ho odesílání už dnes čte. Ověřuje se, jestli tam pole
+   přežije obnovu tokenu; kdyby ne, musí se úložiště navrhnout jinak.
+3. **Překlad „Make more s.r.o." na GUID** ze seznamu, až bude endpoint živý. Při nejednoznačnosti
+   se nehádá — zastaví se a zeptá.
 
 ### Dluhy na naší straně, nalezené při tomhle měření (neopravuju teď)
 
