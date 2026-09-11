@@ -810,8 +810,31 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     return { queueModule, result };
   }
 
+  // 🔴 `processNext` odešle vždy nejvýš JEDNU položku a je to záměr (viz její komentář):
+  // uvnitř pokračuje výhradně přes položky, které na server nic neposílají. Opakované
+  // volání je proto na volajícím — a TO JE PRÁVĚ TO, co tu do 11. 9. 2026 chybělo: pump
+  // zavolal `processOne` jednou a skončil, takže jeden start appky posunul jedinou
+  // nahrávku a člověk se čtrnácti frontovanými by potřeboval čtrnáct restartů.
+  //
+  // Smyčka pokračuje VÝHRADNĚ po úspěchu. Každý jiný výsledek — pauza, vypnuté odesílání,
+  // prázdná fronta, chyba — ji zastaví. Tím zůstává fail-closed: chyba přihlášení se
+  // nezopakuje na každé položce fronty. To není opatrnost: neúspěšné ověření tokenu má
+  // u serveru vlastní strop 30/min na IP, který SDÍLÍ s `/api/mcp`, takže rozbitá session
+  // hnaná přes celou frontu by člověku shodila i MCP.
+  //
+  // Strop existuje kvůli limitu zahájení (30/h, počítá se i opakování, okno je pevné
+  // a `429` zatím nenese `Retry-After`). Jedním během proto nechceme vyčerpat celé okno.
+  const MAX_POLOZEK_NA_JEDNU_PUMPU = 20;
+
   function pump(killswitches) {
-    return serialize(async () => (await processOne(killswitches)).result);
+    return serialize(async () => {
+      let posledni = null;
+      for (let poradi = 0; poradi < MAX_POLOZEK_NA_JEDNU_PUMPU; poradi += 1) {
+        posledni = (await processOne(killswitches)).result;
+        if (posledni.outcome !== "sent") return posledni;
+      }
+      return posledni;
+    });
   }
 
   function list() {
