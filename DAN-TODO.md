@@ -88,6 +88,26 @@ se nerozhodne, co s nimi: buď je vědomě zahodit, nebo jim doplnit vlastníka 
 fronty, který bez tvého pokynu dělat nebudu), nebo je nechat ležet. **Rozhodnutí pro tebe.**
 ⚠️ Fronta navíc bere položky v pořadí vzniku, takže těch 19 stojí ve FRONTĚ PŘED vším ostatním.
 
+### Co je k 11. 9. ověřené NAOSTRO a co ne
+
+- ✅ **Přihlášení s upload scope + identita z `userinfo`** — Dan se odhlásil a znovu přihlásil,
+  Nastavení ukázalo správný e-mail na labs. Ověřeno živě, ne testem.
+- ✅ **Pojistka vlastníka funguje naostro** — po zapnutí `DESKTOP_UPLOAD_ENABLED=true` se fronta
+  zastavila hláškou „Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem"
+  a **neodeslala nic**. Hlasité selhání místo tichého, přesně jak má být.
+- ⛔ **Vlastní odeslání na server NENÍ ověřené.** Nedošlo na něj, protože ho zastavila ta pojistka
+  výš (19 položek bez vlastníka stojí v čele fronty).
+- 📏 **Mechanika fronty (změřeno):** jeden start appky = jeden pump = **jedna** položka. Žádný
+  periodický časovač, žádné zřetězení. Fronta se sama neprokouše — každá položka potřebuje
+  vlastní spouštěč (restart / přihlášení / ruční retry v panelu).
+
+✅ **ROZHODNUTO (Dan, 11. 9.):** *„ty staré nahrávky neřeš, respektive je v pohodě že nejsou
+použitelné. Jen ty nové prostě ať se nahrajou a zprovozní to odesílání."* — staré položky se
+odepisují, cíl je, aby odcházely NOVÉ nahrávky. Odesílání zapnuto, fronta se prohání
+opakovanými starty appky (jedna položka na start), aby se hlava fronty vyčistila; položky bez
+vlastníka se přitom jen označí jako vyřízené a napořád přeskakují. **Do souboru fronty se
+NEZASAHUJE** — žádné mazání ani přepisování Danových dat.
+
 🔴 **Co ta jejich věta BUDE a NEBUDE znamenat** (aby se nepřečetla silněji): potvrdí jen, že
 endpoint na labs **žije a odmítá neověřené** (401, ne 404) a je v metadatech AS. **Nepotvrdí,
 že pro skutečný token vrátí správnou identitu** — tu půlku umíme ověřit jedině my, protože k ní
