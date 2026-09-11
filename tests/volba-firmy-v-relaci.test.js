@@ -139,6 +139,37 @@ describe("uložení vybrané firmy do přihlašovací relace", () => {
     },
   );
 
+  it("🔴 nepřepíše tokeny, které mezitím vyměnila obnova relace", async () => {
+    // Volající drží snímek relace z doby PŘED obnovou tokenu. Kdyby se zapisovalo z něj,
+    // vrátily by se na disk staré tokeny, obnova by se tiše zahodila a člověk by vypadl
+    // z přihlášení — a vypadalo by to jako vada serveru. Účet je přitom pořád tentýž,
+    // takže kontrola vlastnictví relace tuhle záměnu nechytí; musí ji chytit tenhle test.
+    const poObnove = relace({
+      accessToken: "token-po-obnove",
+      refreshToken: "refresh-po-obnove",
+    });
+    const { app, precti } = await harness(poObnove);
+
+    const vysledek = await updateStoredAuthSessionCompany({
+      app,
+      safeStorage,
+      companyTabidooId: FIRMA,
+      storedSession: relace({
+        accessToken: "token-pred-obnovou",
+        refreshToken: "refresh-pred-obnovou",
+      }),
+    });
+
+    expect(vysledek).toMatchObject({
+      accessToken: "token-po-obnove",
+      refreshToken: "refresh-po-obnove",
+      companyTabidooId: FIRMA,
+    });
+    const naDisku = await precti();
+    expect(naDisku.accessToken).toBe("token-po-obnove");
+    expect(naDisku.refreshToken).toBe("refresh-po-obnove");
+  });
+
   it("volbu firmy lze přepsat novou volbou", async () => {
     const puvodni = relace({ companyTabidooId: FIRMA });
     const { app, precti } = await harness(puvodni);
