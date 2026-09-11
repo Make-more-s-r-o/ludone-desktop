@@ -155,17 +155,20 @@ proti aktuální nabídce, neplatnou zahodí (nikdy tiše nenahradí jinou), res
 (injektuje tu existující — třetí kopie by se rozešla), a chybu vrací se stavem i vlastním
 kódem serveru, takže jde rozlišit problém s oprávněním od dočasného výpadku.
 
-🔴 **Ani jedno zatím NENÍ ZAPOJENÉ do odesílání** — schválně. Chybí poslední tři kroky:
-1. **Endpoint musí být živý** — serverová session ho má hotový v PR a merguje po doběhnutí
-   diagnostiky na labs. Do té doby není co volat.
-2. **Kam uložit volbu firmy.** Měření ukázalo, že mechanismus pro hodnotu vázanou na ÚČET
-   v repu dnes neexistuje: nastavení aplikace umí jen ano/ne hodnoty (GUID by tam nešel)
-   a **odhlášení žádné nastavení nemaže**, takže by volba prosákla k dalšímu účtu na stejném
-   Macu. Správné místo je uvnitř šifrované přihlašovací session — přesně tam, kde to mrtvé pole
-   `companyTabidooId` už čeká a odkud ho odesílání už dnes čte. Ověřuje se, jestli tam pole
-   přežije obnovu tokenu; kdyby ne, musí se úložiště navrhnout jinak.
-3. **Překlad „Make more s.r.o." na GUID** ze seznamu, až bude endpoint živý. Při nejednoznačnosti
-   se nehádá — zastaví se a zeptá.
+✅ **Uložení volby k účtu je hotové a v `main`** (PR #125, `105d398`): firma bydlí uvnitř
+šifrované přihlašovací session, takže ji odhlášení i přepnutí prostředí smažou samy (žádný
+úklidový kód) a obnovu tokenu naopak přežije. Zápis se nikdy nedělá ze zastaralého snímku —
+relace se čte znovu v transakci a zápis se zahodí, když mezitím patří někomu jinému.
+
+🔴 **Zapojené do odesílání to zatím NENÍ. Zbývají dva kroky:**
+1. **Endpoint musí být živý.** Serverová session ho má v PR (#1326) a čeká na CI; s deployem
+   na labs to je řádově 20–30 minut. Do té doby není co volat.
+2. **Zapojit a přeložit „Make more s.r.o." na GUID** ze seznamu, jakmile endpoint naběhne.
+   Při nejednoznačné nebo žádné shodě názvu se **nehádá** — zastaví se a zeptá se tě.
+
+*(Poznámka k sabotážím u #125: jedna zůstala zelená a byl to nález, ne úspěch. Obrana proti
+souběhu porovnávala účet, jenže při obnově tokenu se účet nemění — tu záměnu tedy vidět
+nemohla. Doplněn test, který ji chytá.)*
 
 ### Dluhy na naší straně, nalezené při tomhle měření (neopravuju teď)
 
