@@ -49,6 +49,46 @@ protože jsou to tvé vlastní systémy a bereš to. Serverová session mezitím
 
 ---
 
+## ✅ PROČ UPLOAD NIKDY NEODEŠEL — příčina nalezena a změřena (11. 9. 2026 odpoledne)
+
+**Nebyla to síť ani server.** Posílali jsme hlavičku, kterou náš vlastní klient odmítá.
+
+Serverová session z auditu potvrdila, že ve 13:34:05 jim `GET /api/nahravky/uploads/firmy`
+**dorazil a vrátil 200** — a že po něm k nim nedorazilo **nic**. Obojí přitom letí ze stejné
+appky na stejný origin. Liší se **klient**: seznam firem jde přes Node `fetch`, upload přes
+Electroní `net.fetch`, což je chromí síťový stack. Upload si ručně nastavoval `Content-Length`
+— zakázanou hlavičku dle Fetch specu. Node je shovívavý, Chromium požadavek zahodí chybou
+`net::ERR_INVALID_ARGUMENT` **ještě před odesláním**, takže protistrana nemá co zaznamenat.
+
+**Změřeno naostro** (headless Electron, vlastní server počítal příchozí požadavky), ne
+odvozeno ze specifikace: `net.fetch` s hlavičkou → vyhodí a nedorazí; bez hlavičky → 200;
+Node `fetch` s toutéž hlavičkou → 200. Serveru dorazily 2 ze 4 požadavků.
+
+🔴 **Zelené testy tu vadu DRŽELY.** Falešný server v sadě je mock a nikdy se nechoval jako
+Chromium, takže mu zakázaná hlavička nevadila — a test navíc **tvrdil, že tam ta hlavička
+BÝT MUSÍ**. 1294 zelených testů ji proto nemohlo najít. Kontrola je teď obrácená a platí pro
+každý požadavek. Tohle je čtvrtý případ téže třídy za týden: měřidlo souhlasí, ale neměří.
+
+**Smergnuto:** PR #129 (`17b965d`) pojmenování příčiny v `catch` · PR #130 (`102502a`)
+odstranění zakázané hlavičky ze všech tří míst (zahájení, části, dokončení) + vytažení
+tokenu `net::ERR_…`, protože chromí chyby nemají `code` ani `cause`. Brány zelené,
+sabotáže 3:1 (vrácení hlavičky = 15 červených).
+
+**Co to znamená pro dokončení:** `/dokoncit` nastavovalo `Content-Length: "0"` bez těla,
+takže **nebylo dosažitelné o nic víc než zahájení** — upload nemohl projít nikomu a nikdy.
+
+⛔ **Ostré odeslání po opravě zatím NEPROBĚHLO** — běžící instance appky je ze starého kódu,
+takže ji bylo nutné jednou restartovat; dokud to nedoběhne, „opraveno“ znamená jen zelené
+testy, ne doručenou nahrávku.
+
+**Vedlejší zjištění z fronty** (36 položek): pokus byl zatím jediný a padl na **staré,
+jen-mikrofonní** nahrávce, ne na tvých nových dvoustopých. Položky nesou **tři různé otisky
+vlastníka** (19 / 12 / 5) — starší jsou z dřívějších přihlášení. Řekls, že staré neřešíme;
+jestli je chceš z fronty vyhodit, řekni a připravím to jako samostatný krok (sám to
+nemažu — jsou to tvoje data).
+
+---
+
 ## 🔵 BEARER UPLOAD — kde to stojí
 
 ✅ **HOTOVO A SMERGNUTO (11. 9. 2026, PR #121, `main` 005ea82): upload z appky je postavený.**
