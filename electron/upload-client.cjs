@@ -1,7 +1,6 @@
 const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { declaredCaptureSourcesFromManifest } = require("./recording-export.cjs");
 
 const RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
 const RECORDING_MAX_BYTES = 512 * 1024 * 1024;
@@ -595,18 +594,63 @@ function missingChunkIndexes(payload, chunkCount) {
   return [...unique].sort((left, right) => left - right);
 }
 
+// 🔴 Server přijímá jako `clientRecordingId` VÝHRADNĚ UUID. Dřív jsme posílali
+// `<uuid-schůzky>:<stopa>`, což UUID není — init proto odmítal `400 invalid_input`
+// KAŽDÝ upload, nové dvoustopé nahrávky nevyjímaje. Upload tedy nemohl projít nikdy
+// a nikomu; nebyla to vada jen starých položek.
+//
+// Potřebujeme přitom dvě věci naráz: pro každou stopu JINÝ identifikátor (jinak by se
+// mikrofon a systém slily do jednoho záznamu) a zároveň STÁLÝ (jinak by opakované
+// odeslání téže stopy vyrobilo duplikát a rozbilo idempotenci). UUIDv5 je přesně tohle:
+// deterministický otisk jména v pevném jmenném prostoru.
+//
+// ⚠️ Jmenný prostor se NESMÍ nikdy změnit. Jiná konstanta = jiná UUID pro tytéž nahrávky
+// = duplikáty na serveru u všeho, co se odešle znovu.
+const UPLOAD_NAMESPACE_UUID = "6f8c1d3a-9b27-4e51-a0d4-3c7e5b21f984";
+
+function uuidV5(namespaceUuid, name) {
+  const namespaceBytes = Buffer.from(namespaceUuid.replace(/-/gu, ""), "hex");
+  const bytes = Buffer.from(
+    createHash("sha1").update(namespaceBytes).update(Buffer.from(name, "utf8")).digest()
+      .subarray(0, 16),
+  );
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join("-");
+}
+
 function initPayload(recording, track, context) {
   const startedAt = normalizedDate(track.manifestTrack.startedAt ?? recording.manifest.createdAt);
   const endedAt = normalizedDate(track.manifestTrack.endedAt ?? recording.manifest.closedAt);
   return {
     chunkCount: track.chunkCount,
     chunkSize: RECORDING_CHUNK_BYTES,
-    // Server rozlišuje samostatné uploady podle stopy, ne jen podle schůzky.
-    // Odvozené UUID zůstává interní; společný klíč by sloučil obě stopy do jedné.
-    clientRecordingId: `${recording.manifest.clientRecordingId}:${track.trackKind}`,
+    // Server rozlišuje samostatné uploady podle stopy, ne jen podle schůzky — a přijme
+    // jen UUID, proto odvozené UUIDv5 (viz komentář u `UPLOAD_NAMESPACE_UUID` výš).
+    clientRecordingId: uuidV5(
+      UPLOAD_NAMESPACE_UUID,
+      `${recording.manifest.clientRecordingId}:${track.trackKind}`,
+    ),
     companyTabidooId: context.companyTabidooId,
     declaredBytes: track.sizeBytes,
-    declaredCaptureSources: declaredCaptureSourcesFromManifest(recording.manifest),
+    // 🔴 Tohle je údaj o SOUBORU, ne o schůzce — server drží jeden řádek na jeden soubor.
+    // Mikrofonní soubor systémový zvuk NEobsahuje, takže je u něj pravdivé „microphone",
+    // i když schůzka zachytávala obojí. Hodnota „microphone+system" vznikla pro původní
+    // plán JEDNOHO stereo souboru (vlevo mikrofon, vpravo systém) a tvrdila by, že je
+    // v souboru i druhá strana — na tom může stát třeba pozdější rozlišení mluvčích.
+    //
+    // U systémové stopy pole vynecháváme: „system" v povoleném výčtu NENÍ a server by
+    // neznámou hodnotu tiše uložil jako NULL a jen zalogoval varování. Raději neposlat nic
+    // než něco, co se zahodí bez hlesnutí. Rozlišení stop na tomhle poli nestojí — to dělá
+    // `clientRecordingId`.
+    ...(track.trackKind === "microphone" ? { declaredCaptureSources: "microphone" } : {}),
     declaredMime: track.contentType,
     deviceLabel: context.deviceLabel,
     endedAt,
