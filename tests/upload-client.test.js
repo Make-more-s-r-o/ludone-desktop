@@ -165,6 +165,65 @@ function createSend(fetchImpl, logger = createLogger(), options = {}) {
   };
 }
 
+describe("pravdivá hláška, když firma pro upload není", () => {
+  // 🔴 Manifest fixtury sám nese identifikátor firmy a kontrola na něj padá zpátky. Bez
+  // tohohle přepsání by se nové větve vůbec nespustily a testy by jen předstíraly, že měří.
+  async function bezFirmyVManifestu() {
+    const fixture = await recordingFixture();
+    const manifestBezFirmy = { ...fixture.manifest };
+    delete manifestBezFirmy.companyTabidooId;
+    await writeFile(fixture.manifestPath, JSON.stringify(manifestBezFirmy));
+    return fixture;
+  }
+
+  function odeslatSDuvodem(companyReason) {
+    const fetchImpl = vi.fn();
+    const { send } = createSend(fetchImpl, createLogger(), {
+      getUploadContext: vi.fn(async () => ({
+        accessToken: TOKEN,
+        companyReason,
+        ownerFingerprint: OWNER_A,
+      })),
+    });
+    return { fetchImpl, send };
+  }
+
+  it("🔴 nedosažitelný seznam firem NEHLÁSÍ chybějící firmu a je opakovatelný", async () => {
+    // Tohle je ta lež, kvůli které to vzniklo: firma nechybí, jen jsme na server nedosáhli
+    // (výpadek, přesměrování na přihlášení). Hláška to musí říct a pokus se má zopakovat.
+    const fixture = await bezFirmyVManifestu();
+    const { fetchImpl, send } = odeslatSDuvodem("nabidku-se-nepodarilo-ziskat");
+
+    await expect(send(fixture.item)).rejects.toMatchObject({
+      code: "company_offer_unavailable",
+      failureClass: "retryable",
+    });
+    await expect(send(fixture.item)).rejects.toThrow(/přihlášení|spojení/u);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("nevybraná firma čeká na člověka, ne na další pokus", async () => {
+    const fixture = await bezFirmyVManifestu();
+    const { send } = odeslatSDuvodem("musi-vybrat-clovek");
+
+    await expect(send(fixture.item)).rejects.toMatchObject({
+      code: "company_not_chosen",
+      failureClass: "paused",
+    });
+    await expect(send(fixture.item)).rejects.toThrow(/firma/iu);
+  });
+
+  it("bez udaného důvodu zůstává původní hláška beze změny", async () => {
+    const fixture = await bezFirmyVManifestu();
+    const { send } = odeslatSDuvodem(null);
+
+    await expect(send(fixture.item)).rejects.toMatchObject({
+      code: "upload_context_missing",
+      failureClass: "paused",
+    });
+  });
+});
+
 describe("vlastník nahrávky před uploadem", () => {
   it("položku pořízenou přihlášeným odešle pod toutéž session", async () => {
     const fixture = await recordingFixture();

@@ -428,6 +428,26 @@ function normalizedContext(context, manifest, expectedOrigin, item) {
   const companyTabidooId = safeString(context.companyTabidooId)
     || safeString(manifest.companyTabidooId);
   if (!COMPANY_ID_PATTERN.test(companyTabidooId)) {
+    // 🔴 Dva různé světy, které dřív splývaly do jedné hlášky — a ta hláška lhala.
+    // Nedosáhli jsme na server (výpadek, přesměrování na přihlášení, chyba serveru):
+    // firma NECHYBÍ, jen ji nemáme odkud vzít. Je to přechodné, takže opakovatelné —
+    // a hlavně to nesmí zastavit celou frontu, jak to dělala pauza.
+    if (safeString(context.companyReason) === "nabidku-se-nepodarilo-ziskat") {
+      throw localError(
+        "company_offer_unavailable",
+        "Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení",
+        "retryable",
+      );
+    }
+    // Nabídku jsme dostali, ale firma z ní nevyšla jednoznačně. Tohle opakování nespraví —
+    // musí rozhodnout člověk, a musí se to v panelu ukázat, ne mlčky čekat.
+    if (safeString(context.companyReason) !== "") {
+      throw localError(
+        "company_not_chosen",
+        "Není vybraná firma, pod kterou se má nahrávka odeslat",
+        "paused",
+      );
+    }
     throw localError(
       "upload_context_missing",
       "Pro upload chybí identifikátor firmy",

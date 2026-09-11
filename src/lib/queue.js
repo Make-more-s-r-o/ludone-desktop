@@ -154,6 +154,10 @@ function failureRequiresHumanAction(error) {
   // donekonečna a v panelu vypadala jako obyčejné „čeká na odeslání", zatímco ji spraví jedině
   // nové přihlášení. Raději viditelně „čeká na člověka" než tichá nekonečná smyčka.
   if (error?.code === "insufficient_scope") return true;
+  // 🔴 Nevybraná firma taky není o vlastnictví, ale opakování ji nespraví — spraví ji jedině
+  // člověk. Bez tohohle příznaku by položka zůstala jako obyčejné „čeká“ a panel by neukázal
+  // ŽÁDNOU příčinu: uživatel by viděl frontu, která se nehýbe, a nevěděl proč.
+  if (error?.code === "company_not_chosen") return true;
   // Konkrétní kódy vlastní upload klient. Fronta jejich společný kontrakt
   // vyhodnotí jednou a rendereru pošle už jen význam, ne druhý seznam kódů.
   return failureCodeRequiresHumanAction(error?.code);
