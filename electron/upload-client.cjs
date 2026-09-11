@@ -525,11 +525,17 @@ function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
         && /^[A-Za-z_][A-Za-z0-9_]{0,39}$/u.test(error.cause.code)
         ? error.cause.code
         : null;
+      // 🔴 Chromí síťová vrstva (`net.fetch`) nedává `code` ANI `cause` — jediné, co o příčině
+      // řekne, je token `net::ERR_…` uvnitř zprávy. Změřeno naostro: zakázaná hlavička shodí
+      // požadavek chybou `net::ERR_INVALID_ARGUMENT`, a bez tohohle řádku by z ní v logu zbylo
+      // holé „Error". Vytahujeme proto JEN ten token: má pevný strojový tvar a neobsahuje
+      // adresu, takže zbytek zprávy zůstává mimo log stejně jako dosud.
+      const chromiumKod = String(error?.message ?? "").match(/net::ERR_[A-Z_]{1,40}/u)?.[0] ?? null;
       // Přesměrování pojmenujeme natvrdo: je to nejčastější tichá příčina (vypršelá session,
       // proxy, captive portal) a bez jména vypadá jako obyčejný výpadek sítě.
       const pricina = /redirect/iu.test(String(error?.message ?? ""))
         ? "server odpověděl přesměrováním, nejspíš na přihlášení"
-        : kod ?? vnorenyKod ?? nazev ?? "neznámá příčina";
+        : kod ?? vnorenyKod ?? chromiumKod ?? nazev ?? "neznámá příčina";
       // Metoda a CESTA (ne celá adresa a nikdy ne zpráva chyby) říkají, který krok uploadu
       // spadl — bez toho se nepozná zahájení od posílání částí ani od dokončení.
       throw localError(
@@ -664,8 +670,12 @@ async function uploadTrack({ context, logger, recording, request, track }) {
   const body = JSON.stringify(initPayload(recording, track, context));
   const initialized = await trackRequest("/api/nahravky/uploads", {
     body,
+    // 🔴 ŽÁDNÁ ruční `Content-Length`. Odesíláme přes Electroní `net.fetch`, tedy chromí
+    // síťový stack, a ten ji jako zakázanou hlavičku odmítne chybou `net::ERR_INVALID_ARGUMENT`
+    // JEŠTĚ PŘED odesláním — požadavek se na síť vůbec nedostane. Přesně kvůli tomu první
+    // ostré odeslání selhalo: serveru dorazil seznam firem (jde přes Node `fetch`, který je
+    // shovívavý) a hned následující zahájení uploadu už ne. Délku si `fetch` spočítá sám.
     headers: {
-      "Content-Length": String(Buffer.byteLength(body)),
       "Content-Type": "application/json",
       "Idempotency-Key": track.identity.idempotencyKey,
     },
@@ -693,8 +703,8 @@ async function uploadTrack({ context, logger, recording, request, track }) {
     const bytes = await readChunk(track, index);
     await trackRequest(`/api/nahravky/uploads/${recordingId}/casti/${index}`, {
       body: bytes,
+      // Bez ruční `Content-Length` — viz zahájení výš: chromí stack ji odmítne předem.
       headers: {
-        "Content-Length": String(bytes.length),
         "Content-Type": "application/octet-stream",
         "X-Chunk-Sha256": track.chunkHashes[index],
       },
@@ -702,8 +712,9 @@ async function uploadTrack({ context, logger, recording, request, track }) {
     });
   }
 
+  // Dokončení nemá tělo. Ruční `Content-Length: "0"` tu byla zbytečná a stejně zakázaná —
+  // shodila by i tenhle krok, takže dokončení nebylo dosažitelné o nic víc než zahájení.
   const finalized = await trackRequest(`/api/nahravky/uploads/${recordingId}/dokoncit`, {
-    headers: { "Content-Length": "0" },
     method: "POST",
   });
   verifyRemoteIdentityAndLog(finalized, track, "sizeBytes", logger, recording);
