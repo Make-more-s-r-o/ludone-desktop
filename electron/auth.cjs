@@ -1561,5 +1561,8 @@ module.exports = {
   resolveAuthTimeout,
   tokenSessionFilePath,
   tokenStorageDirectory,
+  // Vystaveno schválně: `companies.cjs` si validaci originu nechává injektovat, aby v repu
+  // nevznikla její třetí kopie. Dvě, které tu jsou (přihlášení a upload), se hlídají testy.
+  trustedRemoteEndpoint,
   updateStoredAuthSessionCompany,
 };

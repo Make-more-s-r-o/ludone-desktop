@@ -32,7 +32,10 @@ const {
   createPermissionStatusHandler,
   refreshStoredAuthSession,
   tokenSessionFilePath,
+  trustedRemoteEndpoint,
+  updateStoredAuthSessionCompany,
 } = require("./auth.cjs");
+const { fetchCompanies } = require("./companies.cjs");
 const {
   createOutboundQueueStore,
   deriveQueueOwnerFingerprint,
@@ -73,6 +76,13 @@ const queueModulePromise = import(
 const diagnosticsModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "diagnostics.js")).href
 );
+// 🔴 Schválně NE na úrovni souboru, na rozdíl od modulů výš. Testy si z `main.cjs` vytahují
+// jednotlivé funkce a kompilují je v prostředí bez podpory dynamického importu; import na
+// úrovni souboru tam vyrobil 242 chyb, které sada přesto hlásila jako zelenou. Uvnitř funkce
+// se vyhodnotí až při skutečném volání, tedy nikdy při takové kompilaci.
+function uploadCompanyModule() {
+  return import(pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "upload-company.js")).href);
+}
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
 const PANEL_WIDTH = 366;
 const PANEL_MIN_HEIGHT = 180;
@@ -2186,13 +2196,83 @@ async function addQueueSendingAvailability(items) {
   });
 }
 
+const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+
+/**
+ * Zjistí firmu, pod kterou se nahrávka odešle, a zapamatuje si ji k účtu.
+ *
+ * Server firmu z tokenu neodvozuje a v zahájení uploadu ji vyžaduje. Jakmile je jednou
+ * uložená, tahle funkce na síť vůbec nesáhne — nabídka se vyzvedává jen tehdy, když volba
+ * ještě není nebo přestala platit.
+ *
+ * 🔴 Nikdy se nehádá. Když z nabídky nevyjde právě jedna firma, volba se neuloží a vrátí se
+ * `null`; odesílání se pak zastaví přesně tou hláškou, kterou má dnes. Raději nahrávka, která
+ * počká, než schůzka odeslaná pod cizí firmu.
+ * 🔴 Nic odsud nevyletí ven. Výpadek sítě ani odmítnutí serveru nesmí shodit přípravu
+ * odeslání — projeví se jako „firma není“, což je stav, který fronta už umí.
+ */
+async function resolveUploadCompanyId(storedSession) {
+  const ulozena = storedSession.companyTabidooId ?? storedSession.identity?.companyTabidooId;
+  if (typeof ulozena === "string" && COMPANY_ID_PATTERN.test(ulozena)) return ulozena;
+
+  try {
+    const { COMPANY_SELECTION, resolveUploadCompany } = await uploadCompanyModule();
+    const nabidka = await fetchCompanies({
+      accessToken: storedSession.accessToken,
+      fetchImpl: globalThis.fetch,
+      issuer: storedSession.issuer,
+      trustedRemoteEndpoint,
+    });
+    const rozhodnuti = resolveUploadCompany({
+      companies: nabidka.companies,
+      defaultCompanyId: nabidka.defaultCompanyId,
+      storedCompanyId: ulozena,
+    });
+
+    let vybrana = rozhodnuti.stav === COMPANY_SELECTION.CHOSEN
+      ? rozhodnuti.companyTabidooId
+      : null;
+
+    if (vybrana === null && rozhodnuti.stav === COMPANY_SELECTION.MUST_CHOOSE) {
+      // Jednorázové nasazení podle NÁZVU, který člověk zadal do prostředí. Název se použije
+      // právě jednou — dál se pracuje výhradně s GUID, protože názvy se na serveru mění.
+      const zadany = (process.env.LUDONE_UPLOAD_COMPANY ?? "").trim();
+      const shody = zadany === ""
+        ? []
+        : nabidka.companies.filter((firma) => firma?.name === zadany);
+      if (shody.length === 1) {
+        vybrana = shody[0].id;
+      } else {
+        console.log(
+          `[upload] Firma se nevybrala: zadáno "${zadany || "nic"}", odpovídá ${shody.length} z `
+            + `${nabidka.companies.length} nabízených. Nehádám — nastavte LUDONE_UPLOAD_COMPANY `
+            + "přesně na jednu z nich.",
+        );
+      }
+    }
+
+    if (vybrana === null) return null;
+    // Uložení je best-effort: když mezitím někdo přepnul účet, zápis se zahodí a odeslání
+    // proběhne s právě zjištěnou firmou. Příště se nabídka vyzvedne znovu.
+    await updateStoredAuthSessionCompany({
+      app,
+      safeStorage,
+      companyTabidooId: vybrana,
+      storedSession,
+    });
+    return vybrana;
+  } catch (error) {
+    console.log(`[upload] Seznam firem se nepodařilo získat: ${error?.code ?? "chyba"}`);
+    return null;
+  }
+}
+
 async function recordingUploadContext() {
   const storedSession = await readUsableAuthSession();
   if (storedAuthSessionState(storedSession) !== "valid") return null;
   return {
     accessToken: storedSession.accessToken,
-    companyTabidooId: storedSession.companyTabidooId
-      ?? storedSession.identity?.companyTabidooId,
+    companyTabidooId: await resolveUploadCompanyId(storedSession),
     deviceLabel: app.getName?.() ?? "LuDone Desktop",
     issuer: storedSession.issuer,
     ownerFingerprint: deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get()),
