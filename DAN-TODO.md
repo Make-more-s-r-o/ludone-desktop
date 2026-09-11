@@ -81,11 +81,22 @@ takže **nebylo dosažitelné o nic víc než zahájení** — upload nemohl pro
 takže ji bylo nutné jednou restartovat; dokud to nedoběhne, „opraveno“ znamená jen zelené
 testy, ne doručenou nahrávku.
 
-**Vedlejší zjištění z fronty** (36 položek): pokus byl zatím jediný a padl na **staré,
-jen-mikrofonní** nahrávce, ne na tvých nových dvoustopých. Položky nesou **tři různé otisky
-vlastníka** (19 / 12 / 5) — starší jsou z dřívějších přihlášení. Řekls, že staré neřešíme;
-jestli je chceš z fronty vyhodit, řekni a připravím to jako samostatný krok (sám to
-nemažu — jsou to tvoje data).
+**Stav fronty (36 položek, ani jedna nikdy neodešla — žádná nemá `sentAt`):**
+
+| kolik | stav | co s tím |
+|---|---|---|
+| **19** | `requiresHumanAction: true`, otisk vlastníka **chybí** — „Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem" | 🔴 **čeká to na tebe**, ne na kód |
+| **16** | běžné, otisk vyplněný, `attempts: 0` | odejdou samy, až bude odesílání průchozí |
+| **1** | jediný dosavadní pokus — padl na té zakázané hlavičce | po opravě se zkusí znovu |
+
+🔴 **Oprava mého dřívějšího tvrzení v tomhle souboru:** psal jsem, že položky nesou „tři různé
+otisky vlastníka (19/12/5) z dřívějších přihlášení". Ve skutečnosti je to 19× **žádný otisk**
+(to jsou ty čekající na tvoje potvrzení) a 12+5 dva skutečné otisky. Rozdíl je podstatný:
+těch 19 není starý balast, ale položky, které fronta záměrně drží, dokud nepotvrdíš vlastnictví.
+
+Jediný dosavadní pokus navíc padl na **staré, jen-mikrofonní** nahrávce, ne na tvých nových
+dvoustopých. Staré řešit nemusíme — jen řekni, jestli je chceš z fronty vyhodit, a připravím
+to jako samostatný krok (sám je nemažu, jsou to tvoje data).
 
 ---
 
