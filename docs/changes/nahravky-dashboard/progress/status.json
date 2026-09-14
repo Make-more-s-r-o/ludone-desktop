@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:21:36.682Z",
+    "updatedAt": "2026-09-14T20:23:14.676Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -251,7 +251,7 @@
       "deps": [
         "T-04"
       ],
-      "packet": "ZADANI-PRO-CODEX.md"
+      "packet": "tasks/T-05.md"
     },
     {
       "id": "T-A1",
@@ -286,6 +286,10 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:23:14.676Z",
+      "text": "Připraven packet souhlasu a bezpečných akcí včetně obnovení odložených pokusů fronty. Odesílání zachová dosavadní upload protokol; samostatné ověřování dashboardu zůstává ruční."
+    },
     {
       "at": "2026-09-14T20:21:36.682Z",
       "text": "T-02 převzato v a25bd5c; 440 testů koordinátora prošlo. T-03 implementuje Sol, další části jsou seřazené bez souběžných zápisů do fronty."
