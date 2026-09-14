@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T22:27:51.508Z",
+    "updatedAt": "2026-09-14T22:31:23.695Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -320,17 +320,30 @@
       "id": "T-A4",
       "title": "Zapojení firmy a ochrana rozpracovaného uploadu",
       "executor": "codex",
-      "state": "pending",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-05",
         "T-A3"
       ],
-      "packet": "tasks/T-A4.md"
+      "packet": "tasks/T-A4.md",
+      "worktree": ".claude/worktrees/nahravky-firma-zapojeni"
     }
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T22:31:23.695Z",
+      "text": "T-A4 běží z 77543cb v samostatném stromu. GUI T5 potvrdilo přímé Nastavení bez přihlášení, prázdný přehled a přepínač automatiky on/off; nejde o ostrý audio/login důkaz. Dva staré texty Účtu předány T-A4."
+    },
+    {
+      "at": "2026-09-14T22:28:05.515Z",
+      "text": "Task T-A4 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-14T22:28:05.087Z",
+      "text": "Pro task T-A4 byl zaregistrován worktree .claude/worktrees/nahravky-firma-zapojeni."
+    },
     {
       "at": "2026-09-14T22:27:51.508Z",
       "text": "T5 převzato z e225880 po opravených P2 a root gates1469. Společná T5+A3 integrační brána má 1488 PASS, 3 původní skipy, exit0. T-A4 přebírá hotspoty pro poslední funkční zapojení firmy."
