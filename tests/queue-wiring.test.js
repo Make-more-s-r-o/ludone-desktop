@@ -6827,7 +6827,11 @@ describe("plošná pojistka nad každým webContents", () => {
 // Měření celé cesty main → skutečný preload → React; dosavadní restartové testy výš
 // zůstávají beze změny. Události updateru tu nejsou nahrazené textem pro renderer.
 describe("viditelnost automatických aktualizací v panelu", () => {
-  async function mountUpdatePanel(harness, { onboardingComplete = true, statusOnly = false } = {}) {
+  async function mountUpdatePanel(harness, {
+    onboardingComplete = true,
+    statusOnly = false,
+    initialUpdateStatus = null,
+  } = {}) {
     const dom = new JSDOM('<div id="root"></div>', {
       url: "https://ludone.test",
       pretendToBeVisual: true,
@@ -6839,6 +6843,7 @@ describe("viditelnost automatických aktualizací v panelu", () => {
         // Přihlášení není předmětem této sondy; aktualizační IPC běží celé naostro.
         if (channel === "auth:session-state") return "valid";
         if (channel === "auth:has-session") return true;
+        if (channel === "updater:get-state" && initialUpdateStatus) return initialUpdateStatus;
         return harness.ipcHandlers.get(channel)(event, ...payload);
       }),
       send: vi.fn(),
@@ -6886,8 +6891,71 @@ describe("viditelnost automatických aktualizací v panelu", () => {
       const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
       expect(panel.document.querySelector('[data-testid="application-version"]')?.textContent)
         .toBe(`Verze ${manifest.version}`);
+      expect(panel.document.querySelector('[data-testid="update-available"]')).toBeNull();
+      expect(panel.document.querySelector('[data-testid="update-downloading"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="update-downloaded"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="update-check-failed"]')).toBeNull();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("dostupnost a skutečný průběh projdou z updater události přes IPC do živého panelu", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness, { statusOnly: true });
+    try {
+      await React.act(async () => {
+        autoUpdater.emit("update-available", { version: "4.5.6" });
+      });
+      const available = panel.document.querySelector('[data-testid="update-available"]');
+      expect(available?.textContent).toContain("Je dostupná nová verze 4.5.6");
+      expect(available?.textContent).toContain("automaticky stáhne na pozadí");
+      expect(available?.getAttribute("role")).toBe("status");
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+      await React.act(async () => {
+        autoUpdater.emit("download-progress", { percent: 42.4 });
+      });
+      const downloading = panel.document.querySelector('[data-testid="update-downloading"]');
+      expect(downloading?.textContent).toContain("Stahuje se nová verze 4.5.6");
+      expect(downloading?.textContent).toContain("Staženo 42 %");
+      expect(panel.document.querySelector('[data-testid="update-available"]')).toBeNull();
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("opožděný počáteční snapshot nepřepíše novější událost o dostupné verzi", async () => {
+    let resolveInitialStatus;
+    const initialUpdateStatus = new Promise((resolve) => { resolveInitialStatus = resolve; });
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness, { statusOnly: true, initialUpdateStatus });
+    try {
+      await React.act(async () => {
+        autoUpdater.emit("update-available", { version: "8.1.0" });
+      });
+      expect(panel.document.querySelector('[data-testid="update-available"]')?.textContent)
+        .toContain("8.1.0");
+
+      await React.act(async () => {
+        resolveInitialStatus({
+          revision: 0,
+          availableVersion: null,
+          downloading: false,
+          downloadPercent: null,
+          downloadedVersion: null,
+          checkFailed: false,
+        });
+        await initialUpdateStatus;
+        await Promise.resolve();
+      });
+      expect(panel.document.querySelector('[data-testid="update-available"]')?.textContent)
+        .toContain("8.1.0");
     } finally {
       await panel.close();
     }

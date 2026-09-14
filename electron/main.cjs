@@ -3023,7 +3023,14 @@ const UPDATE_INSTALL_RETRY_MS = 30_000;
 // 12 hodin potíží v jednom běhu aplikace. Jednorázový výpadek tak uživatele neruší.
 const UPDATE_CHECK_FAILURE_THRESHOLD = 3;
 let consecutiveUpdateCheckFailures = 0;
-let updateStatus = { revision: 0, downloadedVersion: null, checkFailed: false };
+let updateStatus = {
+  revision: 0,
+  availableVersion: null,
+  downloading: false,
+  downloadPercent: null,
+  downloadedVersion: null,
+  checkFailed: false,
+};
 
 handleValidated("updater:get-state", ["panel"], (_event, ...extraPayload) => {
   requireNoPayload("updater:get-state", extraPayload);
@@ -3041,6 +3048,19 @@ function publishUpdateStatus(changes) {
     // Selhání oznámení nesmí změnit průchod bezpečnostní branou restartu.
     console.error(`[updater] Stav se nepodařilo předat panelu: ${error.message}`);
   }
+}
+
+function normalizeUpdateVersion(value) {
+  if (typeof value !== "string") return null;
+  const version = value.trim();
+  // Hodnota přichází z metadat vydání a končí v UI i logu. Propustíme jen běžný
+  // tvar verze, aby metadata nemohla podstrčit řídicí znaky nebo libovolný text.
+  return /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/.test(version) ? version : null;
+}
+
+function normalizeUpdatePercent(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.round(Math.min(100, Math.max(0, value)));
 }
 
 let autoUpdateClient;
@@ -3158,6 +3178,9 @@ async function checkForApplicationUpdate() {
     // electron-updater tutéž chybu také emituje jako „error“. Počítáme ji jen zde,
     // jednou za kontrolu včetně jejího stahování, nikoli podruhé v listeneru.
     consecutiveUpdateCheckFailures += 1;
+    if (!downloadedUpdatePending) {
+      publishUpdateStatus({ downloading: false, downloadPercent: null });
+    }
     if (consecutiveUpdateCheckFailures >= UPDATE_CHECK_FAILURE_THRESHOLD) {
       publishUpdateStatus({ checkFailed: true });
     }
@@ -3187,10 +3210,38 @@ async function initializeAutoUpdates() {
   autoUpdateClient.autoDownload = true;
   // Aktualizaci nikdy nenecháme vynutit při quit události mimo naši kontrolu aktivity.
   autoUpdateClient.autoInstallOnAppQuit = false;
+  autoUpdateClient.on("update-available", (info) => {
+    const version = normalizeUpdateVersion(info?.version) || "neznámá";
+    console.log(`[updater] Verze ${version} je dostupná; začíná stahování.`);
+    publishUpdateStatus({
+      availableVersion: version,
+      downloading: false,
+      downloadPercent: null,
+    });
+  });
+  autoUpdateClient.on("download-progress", (progress) => {
+    publishUpdateStatus({
+      downloading: true,
+      downloadPercent: normalizeUpdatePercent(progress?.percent),
+    });
+  });
+  autoUpdateClient.on("update-not-available", () => {
+    if (downloadedUpdatePending) return;
+    publishUpdateStatus({
+      availableVersion: null,
+      downloading: false,
+      downloadPercent: null,
+    });
+  });
   autoUpdateClient.on("update-downloaded", (info) => {
-    const version = typeof info?.version === "string" ? info.version : "neznámá";
+    const version = normalizeUpdateVersion(info?.version) || "neznámá";
     console.log(`[updater] Verze ${version} je stažená; čekám na bezpečný restart.`);
-    publishUpdateStatus({ downloadedVersion: version });
+    publishUpdateStatus({
+      availableVersion: null,
+      downloading: false,
+      downloadPercent: null,
+      downloadedVersion: version,
+    });
     downloadedUpdatePending = true;
     ensureUpdateInstallRetry();
     void tryInstallDownloadedUpdate();
