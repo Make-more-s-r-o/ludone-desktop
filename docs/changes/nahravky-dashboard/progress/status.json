@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T19:55:36.348Z",
+    "updatedAt": "2026-09-14T19:57:14.148Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -116,7 +116,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Dokončit review release a updater změn; signed build, publikační konfigurace, tag a živý update stále čekají.",
+      "nextStep": "Nastavit publikační hodnoty, potvrdit zálohu klíče a po dokončení funkcí vytvořit signed build; Dan pak pushne tag a živě ověří instalaci i update.",
       "evidence": []
     }
   ],
@@ -211,8 +211,8 @@
       "id": "T-02",
       "title": "Explicitní převzetí",
       "executor": "codex",
-      "state": "ready",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-01"
       ],
@@ -276,7 +276,7 @@
       "id": "T-06",
       "title": "Příprava vydání a aktualizace",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 0,
       "deps": [],
       "packet": "ZADANI-PRO-CODEX.md"
@@ -284,6 +284,10 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T19:57:14.148Z",
+      "text": "T-02 byl dispatchován; updater a T-06 jsou integrované s koordinátorovou bránou 1341 testů."
+    },
     {
       "at": "2026-09-14T19:55:36.348Z",
       "text": "Masterplan odkazuje na aktuální běh; historický desktop-v1 zůstává zachovaný s 17 funkcemi."
@@ -399,7 +403,8 @@
   ],
   "tryNow": [],
   "notes": [
-    "Schválený goal a autonomie z 14. 9. dovolují tento běh bez nového design approval; redesign je odložen. Frontmatter plánu zůstává draft, protože neexistuje hookový approval konkrétního souboru."
+    "Schválený goal a autonomie z 14. 9. dovolují tento běh bez nového design approval; redesign je odložen. Frontmatter plánu zůstává draft, protože neexistuje hookový approval konkrétního souboru.",
+    "Izolovaný unpackaged GUI průchod není live ověření produkčního přihlášení ani zvuku; oprava session re-entry má pouze zelené cílené testy."
   ],
   "hub": {
     "repo": "nahravky-integrace",
