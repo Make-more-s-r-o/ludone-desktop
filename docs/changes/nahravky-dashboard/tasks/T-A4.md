@@ -47,6 +47,7 @@ Plan ID `nahravky-dashboard`; feature `NRD-07`, návaznost `NRD-01/NRD-06`. Záv
   - `dukazy/nahravky-dashboard-2026-09-14/A4/sabotaz-pin.log`
   - `dukazy/nahravky-dashboard-2026-09-14/A4/sabotaz-sender.log`
 - Hotspoty `electron/main.cjs`, `electron/preload.cjs`, `electron/queue.cjs`, `electron/upload-client.cjs`, `src/lib/queue.js` a `src/components/Settings.jsx` přebírá výhradně T-A4 až po T5. Měň pouze volbu firmy, související upload context/progress a úzkou retry ochranu.
+- Integrační nález z 15. 9.: v `exportCompletedRecording` smí T-A4 změnit pouze await celé pumpy na spuštění existující pumpy na pozadí po durable rozhodnutí a úklidu stage. UI musí dostat potvrzení `queued` před dokončením sítě. Zachovej held bez pumpy, recovery i všechny bariéry. V `tests/queue-wiring.test.js` ověř skutečný handler s pozdrženou pumpou a před cleanup ji dokonči; žádná časová prodleva místo bariéry.
 - Hotspoty `electron/companies.cjs` a `src/lib/upload-company-resolution.js` vlastní T-A4 pouze pro zachování/validaci skutečné nabídky a bezpečný kontext firmy. Auth, A3 controller a selector jsou již přijaté a read-only.
 - `electron/recordings-dashboard.cjs` a jeho testy přebírá T-A4 po T5 pouze pro pevné bezpečné vysvětlení `company_binding_missing` a odmítnuté firmy; žádná změna diskového snapshotu nebo akcí.
 - Git, masterplan a širší integrační dokumenty vlastní root.
