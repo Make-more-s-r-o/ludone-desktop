@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:23:14.676Z",
+    "updatedAt": "2026-09-14T20:26:30.470Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -17,10 +17,10 @@
     "requires": []
   },
   "summary": {
-    "done": 3,
+    "done": 4,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 5
+    "notStarted": 4
   },
   "features": [
     {
@@ -32,7 +32,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Spustit lintnutý packet T-02; živý upload dosud nebyl ověřen.",
+      "nextStep": "Per-track ID a převzetí jsou integrované. Po lokálním přehledu doplnit trvalý 429 cooldown T-R1; skutečný upload čeká na Mac.",
       "evidence": []
     },
     {
@@ -40,11 +40,11 @@
       "name": "Výslovné převzetí",
       "whatItGives": "Uživatel odblokuje jednu vlastní nahrávku s potvrzením.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "committed",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Převzato v a25bd5c, 440 cílených testů koordinátora. Native potvrzení ještě ověří Dan na Macu.",
       "evidence": []
     },
     {
@@ -56,7 +56,7 @@
       "exposure": "unavailable",
       "verification": "unverified",
       "label": "Navrženo",
-      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "nextStep": "Sol implementuje read-only přehled nad a25bd5c; root review hlídá bezpečné souborové cesty a pravdivé lokální stavy.",
       "evidence": []
     },
     {
@@ -286,6 +286,18 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:26:30.470Z",
+      "text": "Funkce NRD-03 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T20:26:29.883Z",
+      "text": "Funkce NRD-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T20:26:29.462Z",
+      "text": "Funkce NRD-02 byla aktualizována."
+    },
     {
       "at": "2026-09-14T20:23:14.676Z",
       "text": "Připraven packet souhlasu a bezpečných akcí včetně obnovení odložených pokusů fronty. Odesílání zachová dosavadní upload protokol; samostatné ověřování dashboardu zůstává ruční."
