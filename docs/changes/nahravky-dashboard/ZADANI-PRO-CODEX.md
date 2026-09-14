@@ -391,10 +391,9 @@ v kódu nikde není; jediný výskyt je `docs/server-modul/kontrakt-desktopu.md:
 dokument, který sekce 13 označuje za zastaralý. **Čti ho obranně (`=== true`) a neukládej**,
 dokud pro něj nemáš doložený tvar.
 
-**P5. `sessionId` se nikdy neuloží.** `uploadTrack` ho čte z `recording.manifest.sessionId`
-(`:890`), ale `createManifest` ho zahazuje — schéma má šest klíčů (`manifest.js:72–79`).
-`sessionId` je přitom jediné, co dvě stopy spojuje do jedné schůzky. **Nespoléhej na něj**
-a když na to narazíš, napiš to jako nález.
+**P5. ✅ Vyřešeno v T1: `sessionId` se předtím nikdy neukládalo.** Strict manifest je dál
+beze změny; serverové `sessionId` se nyní ukládá do položky fronty hned po idempotentním INITu
+a další stopa i pokus po restartu ho čtou odtud. Tím se dvě stopy znovu nespojují odhadem.
 
 **P6. Převzetí při nepřihlášeném stavu by pojistku ZRUŠILO.** `readCurrentQueueOwnerFingerprint()`
 vrací `null` při chybějící relaci, jiném issueru i chybějícím tajemství (`main.cjs:2242–2254`).
@@ -575,8 +574,8 @@ zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 
 | úkol | stav | commit / PR | poznámka |
 |---|---|---|---|
-| T0 — rozšířit povrch fronty | 🔵 hotovo ve větvi | tento commit | Bezpečná projekce nese `createdAt`, `durationMs`, skutečnou `sizeBytes`, per-stopový `server` a `blockReason`; chybějící data jsou `null`, ne odhad. |
-| T1 — uložit `recordingId` | ⬜ nezačato | — | pasti P1, P2, P3 |
+| T0 — rozšířit povrch fronty | 🔵 hotovo ve větvi | `7edb09a` | Bezpečná projekce nese `createdAt`, `durationMs`, skutečnou `sizeBytes`, per-stopový `server` a `blockReason`; chybějící data jsou `null`, ne odhad. |
+| T1 — uložit `recordingId` | 🔵 hotovo ve větvi | tento commit | `recordingId` a bajty se ukládají per stopu, společné `sessionId` do fronty. INIT se fsyncuje před dalším HTTP krokem; restart i částečný úspěch jsou pokryté mocked E2E testy nad `outgoing.json`. |
 | T2 — převzetí nahrávky | ⬜ nezačato | — | **odblokuje tři čekající nahrávky**; past P6 |
 | T3 — datová vrstva dashboardu | ⬜ nezačato | — | guard odesílatele povinný |
 | T4 — ověření proti serveru | ⬜ nezačato | — | závisí na T1; rozpočet dotazů |

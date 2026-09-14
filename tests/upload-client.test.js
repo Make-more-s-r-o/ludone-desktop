@@ -168,6 +168,18 @@ function createSend(fetchImpl, logger = createLogger(), options = {}) {
   };
 }
 
+function recordingInput(fixture) {
+  return {
+    manifest: fixture.manifest,
+    manifestPath: fixture.manifestPath,
+    ownerFingerprint: OWNER_A,
+    trackPaths: {
+      microphone: fixture.microphonePath,
+      ...(fixture.manifest.tracks.system ? { system: fixture.systemPath } : {}),
+    },
+  };
+}
+
 describe("pravdivá hláška, když firma pro upload není", () => {
   // 🔴 Manifest fixtury sám nese identifikátor firmy a kontrola na něj padá zpátky. Bez
   // tohohle přepsání by se nové větve vůbec nespustily a testy by jen předstíraly, že měří.
@@ -724,12 +736,14 @@ describe("shodný obsah zvukových stop", () => {
           recordingId: serverRecordingId(1),
           sessionId: schuzka,
           track: "microphone",
+          uploadedBytes: microphoneBytes.byteLength,
         },
         {
           quotaWarning: false,
           recordingId: serverRecordingId(2),
           sessionId: schuzka,
           track: "system",
+          uploadedBytes: systemBytes.byteLength,
         },
       ],
     });
@@ -739,6 +753,205 @@ describe("shodný obsah zvukových stop", () => {
       .filter(([, options]) => options.method === "PUT")
       .map(([, options]) => options.body);
     expect(uploadedBytes).toEqual([microphoneBytes, systemBytes]);
+  });
+});
+
+describe("výsledek uploadu v perzistentním souboru fronty", () => {
+  it.each([
+    ["jednostopý", true],
+    ["dvoustopý", false],
+  ])("%s upload uloží per-stopové ID, session a bajty až do outgoing.json", async (
+    _label,
+    microphoneOnly,
+  ) => {
+    const fixture = await recordingFixture({ microphoneOnly });
+    const queuePath = path.join(
+      path.dirname(fixture.manifestPath),
+      "persistent-queue",
+      "outgoing.json",
+    );
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl);
+    const store = queueStore.createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+    await store.enqueueRecording(recordingInput(fixture));
+
+    const result = await store.pump({
+      DESKTOP_TIME_ENABLED: undefined,
+      DESKTOP_UPLOAD_ENABLED: "true",
+    });
+    const [persisted] = JSON.parse(await readFile(queuePath, "utf8")).items;
+
+    expect(result.odeslanoVDavce, JSON.stringify(result)).toBe(1);
+    expect(persisted.state).toBe(QUEUE_STATES.SENT);
+    expect(persisted.server).toEqual({
+      sessionId: expect.any(String),
+      tracks: {
+        microphone: {
+          recordingId: serverRecordingId(1),
+          uploadedBytes: fixture.manifest.tracks.microphone.sizeBytes,
+        },
+        system: microphoneOnly
+          ? { recordingId: null, uploadedBytes: 0 }
+          : {
+            recordingId: serverRecordingId(2),
+            uploadedBytes: fixture.manifest.tracks.system.sizeBytes,
+          },
+      },
+    });
+  });
+
+  it("po pádu hned po INITu restart naváže stejnou session a dopíše obě stopy", async () => {
+    const fixture = await recordingFixture();
+    const queuePath = path.join(
+      path.dirname(fixture.manifestPath),
+      "persistent-queue",
+      "outgoing.json",
+    );
+    const server = createStatefulServer();
+    let reportFirstStatus;
+    const firstStatusStarted = new Promise((resolve) => {
+      reportFirstStatus = resolve;
+    });
+    let statusBlocked = false;
+    const never = new Promise(() => {});
+    const fetchImpl = vi.fn(async (input, options) => {
+      if (
+        !statusBlocked
+        && options?.method === "GET"
+        && requestPath(input) === `/api/nahravky/uploads/${serverRecordingId(1)}`
+      ) {
+        statusBlocked = true;
+        reportFirstStatus();
+        return never;
+      }
+      return server.fetchImpl(input, options);
+    });
+    const firstStore = queueStore.createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: createSend(fetchImpl).send,
+    });
+    await firstStore.enqueueRecording(recordingInput(fixture));
+
+    void firstStore.pump({ DESKTOP_TIME_ENABLED: undefined, DESKTOP_UPLOAD_ENABLED: "true" });
+    await firstStatusStarted;
+    const afterInit = JSON.parse(await readFile(queuePath, "utf8")).items[0];
+    expect(afterInit).toMatchObject({
+      attempts: 0,
+      state: QUEUE_STATES.WAITING,
+      server: {
+        sessionId: expect.any(String),
+        tracks: {
+          microphone: { recordingId: serverRecordingId(1), uploadedBytes: 0 },
+          system: { recordingId: null, uploadedBytes: 0 },
+        },
+      },
+    });
+
+    const restartedStore = queueStore.createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: createSend(fetchImpl).send,
+    });
+    await expect(restartedStore.pump({
+      DESKTOP_TIME_ENABLED: undefined,
+      DESKTOP_UPLOAD_ENABLED: "true",
+    })).resolves.toMatchObject({ odeslanoVDavce: 1 });
+
+    const persisted = JSON.parse(await readFile(queuePath, "utf8")).items[0];
+    expect(persisted).toMatchObject({
+      state: QUEUE_STATES.SENT,
+      server: {
+        sessionId: afterInit.server.sessionId,
+        tracks: {
+          microphone: {
+            recordingId: serverRecordingId(1),
+            uploadedBytes: fixture.manifest.tracks.microphone.sizeBytes,
+          },
+          system: {
+            recordingId: serverRecordingId(2),
+            uploadedBytes: fixture.manifest.tracks.system.sizeBytes,
+          },
+        },
+      },
+    });
+    const initBodies = fetchImpl.mock.calls
+      .filter(([input, options]) => (
+        requestPath(input) === "/api/nahravky/uploads" && options.method === "POST"
+      ))
+      .map(([, options]) => JSON.parse(String(options.body)));
+    expect(initBodies[0].sessionId).toBeNull();
+    expect(initBodies.slice(1).every((body) => body.sessionId === afterInit.server.sessionId))
+      .toBe(true);
+  });
+
+  it("po úspěšné první stopě a výpadku druhé zachová oba serverové klíče pro retry", async () => {
+    const fixture = await recordingFixture();
+    const queuePath = path.join(
+      path.dirname(fixture.manifestPath),
+      "partial-queue",
+      "outgoing.json",
+    );
+    const server = createStatefulServer();
+    let systemFailed = false;
+    const fetchImpl = vi.fn(async (input, options) => {
+      if (
+        !systemFailed
+        && options?.method === "PUT"
+        && requestPath(input).startsWith(
+          `/api/nahravky/uploads/${serverRecordingId(2)}/casti/`,
+        )
+      ) {
+        systemFailed = true;
+        throw Object.assign(new Error("simulovaný výpadek druhé stopy"), { code: "ECONNRESET" });
+      }
+      return server.fetchImpl(input, options);
+    });
+    const store = queueStore.createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: createSend(fetchImpl).send,
+    });
+    await store.enqueueRecording(recordingInput(fixture));
+
+    await expect(store.pump({
+      DESKTOP_TIME_ENABLED: undefined,
+      DESKTOP_UPLOAD_ENABLED: "true",
+    })).resolves.toMatchObject({ outcome: "retry_scheduled", odeslanoVDavce: 0 });
+    const partial = JSON.parse(await readFile(queuePath, "utf8")).items[0];
+    expect(partial.server).toEqual({
+      sessionId: expect.any(String),
+      tracks: {
+        microphone: {
+          recordingId: serverRecordingId(1),
+          uploadedBytes: fixture.manifest.tracks.microphone.sizeBytes,
+        },
+        system: { recordingId: serverRecordingId(2), uploadedBytes: 0 },
+      },
+    });
+
+    await expect(store.retry({
+      DESKTOP_TIME_ENABLED: undefined,
+      DESKTOP_UPLOAD_ENABLED: "true",
+    })).resolves.toMatchObject({ outcome: "sent" });
+    const completed = JSON.parse(await readFile(queuePath, "utf8")).items[0];
+    expect(completed.server).toEqual({
+      sessionId: partial.server.sessionId,
+      tracks: {
+        microphone: {
+          recordingId: serverRecordingId(1),
+          uploadedBytes: fixture.manifest.tracks.microphone.sizeBytes,
+        },
+        system: {
+          recordingId: serverRecordingId(2),
+          uploadedBytes: fixture.manifest.tracks.system.sizeBytes,
+        },
+      },
+    });
   });
 });
 
@@ -1027,6 +1240,34 @@ describe("mapování serverových chyb do tříd fronty", () => {
     const { send } = createSend(vi.fn(async () => fakeResponse(status, {})));
 
     await expect(send(fixture.item)).rejects.toMatchObject({ failureClass: "retryable" });
+  });
+
+  it("chybějící sessionId z INITu odmítne před přenosem obsahu", async () => {
+    const fixture = await recordingFixture({ microphoneOnly: true });
+    const server = createStatefulServer();
+    const fetchImpl = vi.fn(async (input, options) => {
+      const response = await server.fetchImpl(input, options);
+      if (
+        options?.method !== "POST"
+        || requestPath(input) !== "/api/nahravky/uploads"
+      ) return response;
+      const withoutSessionId = await response.json();
+      delete withoutSessionId.sessionId;
+      return fakeResponse(response.status, withoutSessionId);
+    });
+    const { send } = createSend(fetchImpl);
+    const reportServerProgress = vi.fn();
+
+    // Ostrý kontrakt z 8. 9. (DAN-TODO) říká, že první INIT s `null` přidělí sessionId.
+    // Kdyby zmizelo, nesmíme obsah nahrát a teprve potom zjistit, že ho nelze bezpečně
+    // spojit s další stopou nebo po restartu obnovit.
+    await expect(send(fixture.item, reportServerProgress)).rejects.toMatchObject({
+      code: "invalid_response",
+      failureClass: "retryable",
+      message: "Server nevrátil sessionId",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(reportServerProgress).not.toHaveBeenCalled();
   });
 });
 

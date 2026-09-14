@@ -2256,7 +2256,7 @@ async function readCurrentQueueOwnerFingerprint() {
 function createQueueSend() {
   // Store fronty zůstává po celý běh jediný. Konkrétní sender se vytvoří až pro
   // jednotlivý pokus, aby po bezpečném přepnutí použil právě platný origin.
-  return async (item) => {
+  return async (item, reportServerProgress) => {
     if (authOriginChangeInFlight) {
       const error = new Error("Změna prostředí právě probíhá");
       error.failureClass = "paused";
@@ -2270,7 +2270,7 @@ function createQueueSend() {
         logger: console,
         origin: resolveCurrentAuthIssuer(),
       });
-      return await send(item);
+      return await send(item, reportServerProgress);
     } finally {
       outboundQueueSendsInFlight -= 1;
     }
