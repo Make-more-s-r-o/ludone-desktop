@@ -54,13 +54,13 @@ Aktuální etapa sdílených hotspotů je T-A4; T-05 byl převzat z `e225880` a 
 | `src/features/recordings/RecordingsDashboard.jsx` | T-05 | T-03 → T-04 → T-05 | Lokální přehled, serverové výsledky a akce. |
 | `src/features/recordings/RecordingsDashboard.test.jsx` | T-05 | T-03 → T-04 → T-05 | Testovací sibling dashboardu. |
 | `src/styles.css` | T-05 | T-03 → T-04 → T-05 | Jen existující tokeny a kompozice. |
-| `electron/recordings-dashboard.cjs` | T-05 | T-03 → T-05 | Trusted diskový snapshot a pozdější akce. |
-| `electron/recordings-dashboard.test.cjs` | T-05 | T-03 → T-05 | Testovací sibling diskového snapshotu. |
+| `electron/recordings-dashboard.cjs` | T-A4 | T-03 → T-05 → T-A4 | T-A4 pouze pevné vysvětlení chyb firmy v bezpečné projekci. |
+| `electron/recordings-dashboard.test.cjs` | T-A4 | T-03 → T-05 → T-A4 | Testovací sibling diskového snapshotu. |
 | `tests/queue.test.js` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | Sdílené queue a store regrese. |
 | `tests/queue-wiring.test.js` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | Sdílené main/IPC wiring regrese. |
 | `tests/logout.test.js` | T-A4 | T-04 → T-05 → T-A4 | Fixture skutečného logout handleru přijímá nové závislosti; ochrany se zachovají. |
 | `tests/ipc-sender-guard.test.js` | T-A4 | T-03 → T-04 → T-05 → T-A4 | Ochrana odesílatele nových kanálů. |
-| `tests/recordings-dashboard.test.js` | T-05 | T-03 → T-04 → T-05 | Integrační renderer test dashboardu. |
+| `tests/recordings-dashboard.test.js` | T-A4 | T-03 → T-04 → T-05 → T-A4 | Integrační renderer test dashboardu a bezpečných důvodů firmy. |
 | `tests/settings.test.js` | T-A4 | T-03 → T-05 → T-A4 | T-03 jej vlastní po review `19b89b4`; T-05 naváže později. |
 | `src/components/Settings.jsx` | T-A4 | T-05 → T-A4 | T-02 je přijatý; do další změny soubor nikdo jiný nepřebírá. |
 | `src/components/Settings.test.jsx` | T-A4 | T-05 → T-A4 | Testovací sibling Nastavení. |

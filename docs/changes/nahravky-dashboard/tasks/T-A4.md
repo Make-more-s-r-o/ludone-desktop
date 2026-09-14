@@ -22,6 +22,8 @@ Plan ID `nahravky-dashboard`; feature `NRD-07`, návaznost `NRD-01/NRD-06`. Záv
   - `electron/queue.test.cjs`
   - `electron/upload-client.cjs`
   - `electron/upload-client.test.cjs`
+  - `electron/recordings-dashboard.cjs`
+  - `electron/recordings-dashboard.test.cjs`
   - `src/lib/queue.js`
   - `src/lib/queue.test.js`
   - `src/lib/upload-company-resolution.js`
@@ -38,6 +40,7 @@ Plan ID `nahravky-dashboard`; feature `NRD-07`, návaznost `NRD-01/NRD-06`. Záv
   - `tests/firma-pro-odeslani.test.js`
   - `tests/upload-company-wiring.test.js`
   - `tests/upload-company-binding.test.js`
+  - `tests/recordings-dashboard.test.js`
   - `docs/changes/nahravky-dashboard/evidence/tasks/T-A4.report.json`
   - `dukazy/nahravky-dashboard-2026-09-14/A4/typecheck.log`
   - `dukazy/nahravky-dashboard-2026-09-14/A4/gates.log`
@@ -45,6 +48,7 @@ Plan ID `nahravky-dashboard`; feature `NRD-07`, návaznost `NRD-01/NRD-06`. Záv
   - `dukazy/nahravky-dashboard-2026-09-14/A4/sabotaz-sender.log`
 - Hotspoty `electron/main.cjs`, `electron/preload.cjs`, `electron/queue.cjs`, `electron/upload-client.cjs`, `src/lib/queue.js` a `src/components/Settings.jsx` přebírá výhradně T-A4 až po T5. Měň pouze volbu firmy, související upload context/progress a úzkou retry ochranu.
 - Hotspoty `electron/companies.cjs` a `src/lib/upload-company-resolution.js` vlastní T-A4 pouze pro zachování/validaci skutečné nabídky a bezpečný kontext firmy. Auth, A3 controller a selector jsou již přijaté a read-only.
+- `electron/recordings-dashboard.cjs` a jeho testy přebírá T-A4 po T5 pouze pro pevné bezpečné vysvětlení `company_binding_missing` a odmítnuté firmy; žádná změna diskového snapshotu nebo akcí.
 - Git, masterplan a širší integrační dokumenty vlastní root.
 
 ## Co si přečti jako první
