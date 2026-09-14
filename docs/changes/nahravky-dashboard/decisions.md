@@ -17,6 +17,8 @@
 | D13 | Odhlášený panel zpřístupní Nastavení přímo. | Skutečný GUI průchod ukázal, že jinak je dostupné jen přes kontextové menu ikony v liště. Lokální přehled má být použitelný i bez přihlášení. |
 | D14 | Ověření obnovené nahrávky smí číst již existující přesně pojmenovaný recovery upload manifest. | Primární manifest po pádu obsahuje neúplná metadata, skutečný upload používá `${primary}.recovered-upload-v1.json`. Primární manifest zůstává autoritou identity a cest. Známý sidecar se přijme jen při shodě UUID, času, zdrojů, názvů souborů a všech již známých hashů a velikostí primárního manifestu; obě čtení musí být omezená, stabilní a bez následování symlinků. Ověření nic negeneruje ani nepřepisuje a musí fungovat také při chybějícím audiu, dokud fronta obsahuje uložená serverová ID. Skutečná retence může odstranit celou queue položku; zbylý orphan pak ID nemá a zůstává neověřený. |
 
+| D15 | Dokončit výslovný výběr upload firmy v existujícím Nastavení a atomicky jej vázat na skutečnou session/identitu. | Průzkum kódu potvrdil, že více firem bez uložené volby dosud vyžaduje LUDONE_UPLOAD_COMPANY z terminálu. To blokuje schválené odesílání z Finderu. Controller a samostatná komponenta vzniknou nezávisle, main/preload/Settings se zapojí až po T5. Volba nic neodešle a nesmí přepsat cizí účet ani přesunout inicializovaný záznam do jiné firmy. |
+
 ## Čeká na ověření
 
 Publikační GitHub Secrets/Variables, záloha podpisového klíče, nový podepsaný build a Danův skutečný test zůstávají samostatné ověřovací kroky. Chybějící přístup neblokuje implementaci.

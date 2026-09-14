@@ -20,3 +20,5 @@ Root průběžně reviewoval nový verifier, export existujícího requesteru, s
 ⛔ Produkční login, server, GUI ani skutečný zvuk nebyly ověřeny. Žádné `ui-smoke` ani `audio-smoke` se nespouštělo. Testy pokrývají temp-disk getter, mockované HTTP, chráněný main/preload a React klik; nejde o živý průchod instalovanou aplikací.
 
 Worker uvedl 517 cílených testů bez archivovaného plného výpisu této sady. Autoritativní důkaz je proto samostatná plná root brána. Skutečný přírůstek proti předchozí plné bráně je 32 testů (1401 → 1433).
+
+🧪 GitHub CI pro přesný integrační HEAD `88f17a5` skončilo SUCCESS včetně `npm ci`, `npm run gates` a `npm run build`: [run 34899958715](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34899958715). UI a audio kroky se podle původního CI kontraktu nespouštěly. Metadata kontroly jsou v `ci.json`.

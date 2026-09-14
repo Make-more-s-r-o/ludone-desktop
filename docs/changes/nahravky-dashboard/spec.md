@@ -47,6 +47,8 @@ Umožní uživateli nad jednou čerstvou položkou opakovat odeslání, potvrzen
 
 Umožní aplikaci spuštěné z Finderu získat správný upload scope a bezpečně obnovit odmítnutou klientskou relaci.
 
+Výběr upload firmy musí fungovat z Finderu bez proměnné terminálu. Při více firmách vybírá člověk ze skutečné serverové nabídky; zápis zůstává u stejné platné session/identity. Výběr sám nic neodešle a inicializované nahrávky se tiše nepřesouvají do jiné firmy (D15).
+
 ### NRD-08 — vydání a update
 
 Umožní uživateli obdržet ověřenou aktualizaci z existujícího feedu a vidět, že je připravená k instalaci.

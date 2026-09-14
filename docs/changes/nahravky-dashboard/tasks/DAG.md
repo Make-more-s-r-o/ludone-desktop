@@ -14,16 +14,23 @@
 | T-05 | T-04 | Akce a volba odeslání navazují na pravdivé stavy přehledu. |
 | T-A1 | — | Přihlášení se integruje nezávisle. |
 | T-A2 | T-A1 | Oprava identity zjištěná nezávislým review; před přejímkou. |
+| T-A3 | T-A2 | Samostatný controller a komponenta firmy; zapojení sdílených hotspotů až po T5. |
 | T-R1 | T-03 | Chování 429 se doplní po hotovém lokálním store a před serverovým ověřením. |
 | T-06 | — | Příprava vydání je nezávislá; zveřejnění má vlastní brány. |
 
 ## Hotspoty a globální vlastnictví sdílených souborů
 
-Aktuální etapa je T-04; T-R1 byl převzat z `0addac6` a T-A2 z `445fe9f`. Tabulka jmenuje právě jednoho vlastníka a závazné pořadí předání. U souborů mimo aktivní packet zůstává poslední přijatý vlastník jako záznam předání; žádný worker do nich nyní nezapisuje. Není to autorizace souběhu: další vlastník začne zapisovat až po převzetí a integraci předchozí etapy.
+Aktuální etapa sdílených hotspotů je T-05; T-R1 byl převzat z `0addac6` a T-A2 z `445fe9f`. Tabulka jmenuje právě jednoho vlastníka a závazné pořadí předání. U souborů mimo aktivní packet zůstává poslední přijatý vlastník jako záznam předání; žádný worker do nich nyní nezapisuje. Není to autorizace souběhu: další vlastník začne zapisovat až po převzetí a integraci předchozí etapy.
 
 | Soubor | Aktuální vlastník | Pořadí předání | Poznámka |
 |---|---|---|---|
-| `electron/auth.cjs` | T-A2 | T-A1 → T-A2 | Izolovaná oprava userinfo fallbacku; main a queue jsou read-only. |
+| `electron/auth.cjs` | T-A3 | T-A1 → T-A2 → T-A3 | Atomický zápis firmy vázaný na skutečnou session/identitu; main a queue jsou read-only. |
+| `electron/auth.test.cjs` | T-A3 | T-A3 | Testovací sibling auth CAS. |
+| `electron/upload-company-selection.cjs` | T-A3 | T-A3 | Samostatný controller nabídky a volby firmy. |
+| `electron/upload-company-selection.test.cjs` | T-A3 | T-A3 | Testovací sibling controlleru. |
+| `src/components/UploadCompanySelector.jsx` | T-A3 | T-A3 | Samostatná komponenta, zatím bez vložení do Settings. |
+| `src/components/UploadCompanySelector.test.jsx` | T-A3 | T-A3 | Testovací sibling komponenty. |
+| `tests/volba-firmy-v-relaci.test.js` | T-A3 | T-A3 | Skutečná token storage transakce. |
 | `tests/auth-identity-fallback.test.js` | T-A2 | T-A1 → T-A2 | Regrese skutečného controlleru a uložené session. |
 | `tests/auth-controller-wiring.test.js` | T-A2 | T-A1 → T-A2 | Auth wiring. |
 | `tests/auth-refresh.test.js` | T-A2 | T-A1 → T-A2 | Zachování důvěryhodné identity při refreshi. |
@@ -71,6 +78,7 @@ Aktuální etapa je T-04; T-R1 byl převzat z `0addac6` a T-A2 z `445fe9f`. Tabu
 | T-05 | `tasks/T-05.md` | Sol consent a per-item akce |
 | T-A1 | `tasks/T-A1.md` | Sol auth — zpětný přehled |
 | T-A2 | `tasks/T-A2.md` | Sol userinfo review oprava |
+| T-A3 | `tasks/T-A3.md` | Sol bezpečný výběr firmy — samostatný základ |
 | T-06 | `tasks/T-06.md` | Sol vydání — zpětný přehled |
 
 Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.

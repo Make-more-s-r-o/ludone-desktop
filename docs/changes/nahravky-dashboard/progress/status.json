@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T21:40:35.116Z",
+    "updatedAt": "2026-09-14T21:52:41.065Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -104,7 +104,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "T-A2 převzat z 445fe9f; 87 auth regresí koordinátora zelených. Identita uploadu je výhradně z userinfo; Finder login čeká na Mac.",
+      "nextStep": "D15: zbývá výběr upload firmy pro více firem bez env; T-A3 připraví bezpečný základ, main/preload/Settings wiring naváže po T5.",
       "evidence": []
     },
     {
@@ -301,10 +301,38 @@
       "packet": "tasks/T-A2.md",
       "worktree": ".claude/worktrees/nahravky-userinfo",
       "report": "evidence/tasks/T-A2.report.json"
+    },
+    {
+      "id": "T-A3",
+      "title": "Bezpečný základ výběru firmy",
+      "executor": "codex",
+      "state": "dispatched",
+      "attempts": 1,
+      "deps": [
+        "T-A2"
+      ],
+      "packet": "tasks/T-A3.md",
+      "worktree": ".claude/worktrees/nahravky-firma"
     }
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T21:52:41.065Z",
+      "text": "D15: více firem bez uložené volby dosud vyžaduje env z terminálu. T-A3 nezávisle připraví bezpečný controller, komponentu a atomický zápis stejné relace; sekvenční wiring naváže po T5 před finální přejímkou."
+    },
+    {
+      "at": "2026-09-14T21:52:40.733Z",
+      "text": "Task T-A3 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-14T21:52:07.598Z",
+      "text": "Funkce NRD-07 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T21:52:06.408Z",
+      "text": "Byl zalozen task T-A3: Bezpečný základ výběru firmy."
+    },
     {
       "at": "2026-09-14T21:40:35.116Z",
       "text": "Pro task T-05 byl zaregistrován worktree .claude/worktrees/nahravky-akce."

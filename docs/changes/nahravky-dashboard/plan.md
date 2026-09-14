@@ -49,6 +49,7 @@ Desktop už nahrává a obsahuje upload klienta, ale uživatelská cesta z Finde
 | T-04 | NRD-04 | Sol dashboard | T-R1 | Jen GET známých ID, obě stopy, cache, 404/429/auth/network stavy. |
 | T-05 | NRD-05, NRD-06 | Sol integrace/UI | T-04 | Consent, automatika jen nových záznamů a per-item akce. |
 | T-A1 | NRD-07 | Sol auth | — | Finder default, scope a bezpečná obnova `invalid_client`. |
+| T-A3 | NRD-07 | Sol firma | T-A2; wiring až po T5 | Controller nabídky, explicitní UI volba a atomická vazba na skutečnou relaci. |
 | T-R1 | NRD-01 | Sol fronta | T-03 | `429` neubírá pokus a respektuje společné `Retry-After`. |
 | T-06 | NRD-08 | Sol vydání | — pro přípravu; T-05, T-A1 a T-R1 pro release | Validace, archiv pro review, bezpečné SCP, feed poslední, stav aktualizace v UI. |
 | M-01 | všechny | Astra | všechny implementace | Review diffu, `gates`, `gates:clean`, evidence a přejímka. |
@@ -59,7 +60,7 @@ Přesný graf a aktuální vlastnictví hotspotů je v [DAG](tasks/DAG.md). `ele
 
 1. Převzít integrované T-00, T-01, T-A1, updater a T-06; T-02 už běží podle lintnutého packetu.
 2. Po přijetí T-02 pokračovat T-03, potom T-R1 a T-04. Závislé změny fronty a main procesu mají jednoho zapisovatele a integrují se postupně.
-3. T-05 spojí consent, akce a hotový přehled.
+3. T-05 spojí consent, akce a hotový přehled. Nezávisle vznikne T-A3 základ výběru firmy; jeho main/preload/Settings zapojení přijde sekvenčně po T5 a před finální přejímkou.
 4. T-06 lze reviewovat průběžně, ale veřejné vydání čeká na přijetí funkčního řetězce, publikační konfiguraci, zálohu klíče a Danův tag.
 5. Koordinátor provede finální review, brány a předání Danovi k živému testu.
 
