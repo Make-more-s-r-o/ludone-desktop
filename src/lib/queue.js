@@ -202,12 +202,51 @@ function requireUploadedBytes(uploadedBytes) {
   };
 }
 
+function emptyServerProgress() {
+  return {
+    sessionId: null,
+    tracks: {
+      microphone: { recordingId: null, uploadedBytes: 0 },
+      system: { recordingId: null, uploadedBytes: 0 },
+    },
+  };
+}
+
+function normalizedStoredServer(item) {
+  const normalized = emptyServerProgress();
+  const server = item.server && typeof item.server === "object" ? item.server : {};
+  normalized.sessionId = safeGuid(server.sessionId);
+  for (const track of ["microphone", "system"]) {
+    const progress = server.tracks?.[track];
+    normalized.tracks[track] = {
+      recordingId: safeGuid(progress?.recordingId),
+      uploadedBytes: safeUploadedBytes(progress?.uploadedBytes ?? server.uploadedBytes?.[track]),
+    };
+  }
+  const itemTracks = Object.keys(item.tracks ?? {});
+  const legacyRecordingId = safeNullableString(server.recordingId);
+  if (legacyRecordingId !== null) {
+    if (itemTracks.length === 1 && itemTracks[0] in normalized.tracks) {
+      normalized.tracks[itemTracks[0]].recordingId ??= legacyRecordingId;
+    } else {
+      // U staré dvoustopé položky nevíme, které stopě jediný identifikátor patřil.
+      // Hodnotu zachováme pro diagnostiku, ale T4 ji nesmí vydávat za ověřenou stopu.
+      normalized.legacyRecordingId = legacyRecordingId;
+    }
+  }
+  return normalized;
+}
+
 function safeUploadedBytes(value) {
   return Number.isSafeInteger(value) && value >= 0 ? value : 0;
 }
 
 function safeNullableString(value) {
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function safeGuid(value) {
+  return typeof value === "string" && PROJECT_GUID_PATTERN.test(value) ? value : null;
 }
 
 function serverForRenderer(item) {
@@ -217,10 +256,10 @@ function serverForRenderer(item) {
     : {};
   const perTrack = server.tracks && typeof server.tracks === "object" ? server.tracks : {};
   const itemTrackKinds = Object.keys(item.tracks ?? {});
-  const legacyRecordingId = safeNullableString(server.recordingId);
+  const legacyRecordingId = safeGuid(server.recordingId);
 
   return {
-    sessionId: safeNullableString(server.sessionId),
+    sessionId: safeGuid(server.sessionId),
     tracks: Object.fromEntries(["microphone", "system"].map((track) => {
       const trackProgress = perTrack[track] && typeof perTrack[track] === "object"
         ? perTrack[track]
@@ -231,7 +270,7 @@ function serverForRenderer(item) {
         ? legacyRecordingId
         : null;
       return [track, {
-        recordingId: safeNullableString(trackProgress.recordingId) ?? legacyTrackId,
+        recordingId: safeGuid(trackProgress.recordingId) ?? legacyTrackId,
         uploadedBytes: safeUploadedBytes(
           trackProgress.uploadedBytes ?? uploadedBytes[track],
         ),
@@ -294,10 +333,7 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
     nextAttemptAt: null,
     ...(recoveredIncomplete ? { recoveredIncomplete: true } : {}),
     sentAt: null,
-    server: {
-      recordingId: null,
-      uploadedBytes: { microphone: 0, system: 0 },
-    },
+    server: emptyServerProgress(),
     state: QUEUE_STATES.WAITING,
     ...(sourceManifestPath !== manifestPath ? { sourceManifestPath } : {}),
     tracks,
@@ -390,14 +426,69 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
   requireQueue(queue);
   requireNonEmptyString(clientRecordingId, "clientRecordingId");
   requireObject(serverProgress, "serverProgress");
-  const recordingId = requireNonEmptyString(serverProgress.recordingId, "serverProgress.recordingId");
-  const uploadedBytes = requireUploadedBytes(serverProgress.uploadedBytes);
   const index = queue.items.findIndex((item) => item.clientRecordingId === clientRecordingId);
   if (index === -1) throw new Error("položka fronty nebyla nalezena");
 
+  const originalItem = queue.items[index];
+  const server = normalizedStoredServer(originalItem);
+  const track = serverProgress.track;
+
+  // Starý čistý kontrakt zůstává čitelný pro položky schématu v1. Jediný identifikátor
+  // nelze pravdivě přiřadit dvěma stopám, proto se u dvojice zachová jen jako legacy údaj.
+  if (track === undefined) {
+    const recordingId = requireGuid(
+      serverProgress.recordingId,
+      "serverProgress.recordingId",
+    );
+    const uploadedBytes = requireUploadedBytes(serverProgress.uploadedBytes);
+    server.tracks.microphone.uploadedBytes = uploadedBytes.microphone;
+    server.tracks.system.uploadedBytes = uploadedBytes.system;
+    const itemTracks = Object.keys(originalItem.tracks ?? {});
+    if (itemTracks.length === 1 && itemTracks[0] in server.tracks) {
+      server.tracks[itemTracks[0]].recordingId = recordingId;
+    } else {
+      server.legacyRecordingId = recordingId;
+    }
+  } else {
+    if (track !== "microphone" && track !== "system") {
+      throw new TypeError("serverProgress.track musí být microphone nebo system");
+    }
+    if (!Object.prototype.hasOwnProperty.call(originalItem.tracks ?? {}, track)) {
+      throw new TypeError("serverProgress.track není stopou položky fronty");
+    }
+    const recordingId = requireGuid(
+      serverProgress.recordingId,
+      "serverProgress.recordingId",
+    );
+    const previousRecordingId = server.tracks[track].recordingId;
+    if (previousRecordingId !== null && previousRecordingId !== recordingId) {
+      throw new Error("server změnil recordingId už známé stopy");
+    }
+    const duplicateTrack = Object.entries(server.tracks).find(([otherTrack, progress]) => (
+      otherTrack !== track && progress.recordingId === recordingId
+    ));
+    if (duplicateTrack) {
+      throw new Error("server přiřadil stejné recordingId dvěma stopám");
+    }
+    const sessionId = serverProgress.sessionId === undefined
+      ? server.sessionId
+      : requireGuid(serverProgress.sessionId, "serverProgress.sessionId");
+    if (server.sessionId !== null && sessionId !== server.sessionId) {
+      throw new Error("server změnil sessionId už známé nahrávky");
+    }
+    const uploadedBytes = serverProgress.uploadedBytes === undefined
+      ? server.tracks[track].uploadedBytes
+      : serverProgress.uploadedBytes;
+    if (!Number.isSafeInteger(uploadedBytes) || uploadedBytes < 0) {
+      throw new TypeError("serverProgress.uploadedBytes musí být nezáporné celé číslo");
+    }
+    server.sessionId = sessionId;
+    server.tracks[track] = { recordingId, uploadedBytes };
+  }
+
   const item = {
-    ...queue.items[index],
-    server: { recordingId, uploadedBytes },
+    ...originalItem,
+    server,
   };
   return { item, queue: replaceItem(queue, index, item) };
 }
@@ -495,6 +586,9 @@ export async function processNext(queue, killswitches, send, options = {}) {
   }
   requireObject(killswitches, "killswitches");
   if (typeof send !== "function") throw new TypeError("send musí být funkce");
+  if (options.persistProgress !== undefined && typeof options.persistProgress !== "function") {
+    throw new TypeError("options.persistProgress musí být funkce");
+  }
 
   const now = timestamp(options.now ?? Date.now(), "options.now");
   const waitingItems = queue.items
@@ -536,13 +630,49 @@ export async function processNext(queue, killswitches, send, options = {}) {
       requiresHumanAction: false,
       state: QUEUE_STATES.SENDING,
     };
-    const sendingQueue = replaceItem(workingQueue, index, sendingItem);
+    let progressQueue = workingQueue;
+    const reportServerProgress = async (serverProgress) => {
+      const previousServer = progressQueue.items[index].server;
+      const progressed = applyServerProgress(
+        progressQueue,
+        originalItem.clientRecordingId,
+        serverProgress,
+      );
+      if (JSON.stringify(progressed.item.server) === JSON.stringify(previousServer)) return;
+      progressQueue = progressed.queue;
+      // Persistuje se čekající položka, ne přechodný stav `odesila`. Když proces po fsync
+      // spadne, nový běh ji smí bezpečně zvednout přes idempotentní INIT.
+      if (options.persistProgress) await options.persistProgress(progressQueue);
+    };
 
     try {
-      await send(sendingItem);
+      const sendResult = await send(sendingItem, reportServerProgress);
+      if (sendResult?.uploads !== undefined) {
+        if (!Array.isArray(sendResult.uploads)) {
+          throw new TypeError("sendResult.uploads musí být pole");
+        }
+        if (
+          sendResult.completedUploads !== undefined
+          && sendResult.completedUploads !== sendResult.uploads.length
+        ) {
+          throw new TypeError("sendResult.completedUploads neodpovídá počtu stop");
+        }
+        const expectedTracks = Object.keys(sendingItem.tracks ?? {}).sort();
+        const reportedTracks = sendResult.uploads.map((upload) => upload?.track).sort();
+        if (
+          reportedTracks.length !== expectedTracks.length
+          || reportedTracks.some((track, trackIndex) => track !== expectedTracks[trackIndex])
+        ) {
+          throw new TypeError("sendResult.uploads neodpovídá stopám položky");
+        }
+        // Výsledek je druhá kontrola callbacku a současně kompatibilní cesta pro sender,
+        // který průběžný callback nepoužil. Nekonzistentní ID nebo session apply odmítne.
+        for (const upload of sendResult.uploads) await reportServerProgress(upload);
+      }
       const sentAt = timestamp(options.now ?? Date.now(), "options.now");
       const sentItem = {
         ...sendingItem,
+        server: progressQueue.items[index].server,
         lastFailureReason: null,
         nextAttemptAt: null,
         sentAt: new Date(sentAt).toISOString(),
@@ -551,14 +681,19 @@ export async function processNext(queue, killswitches, send, options = {}) {
       return {
         item: sentItem,
         outcome: "sent",
-        queue: replaceItem(sendingQueue, index, sentItem),
+        queue: replaceItem(progressQueue, index, sentItem),
         reason: null,
+        sendResult,
       };
     } catch (error) {
+      const progressedSendingItem = {
+        ...sendingItem,
+        server: progressQueue.items[index].server,
+      };
       const failureClass = errorFailureClass(error);
       if (failureClass === FAILURE_CLASSES.PERMANENT) {
         const failedItem = {
-          ...sendingItem,
+          ...progressedSendingItem,
           lastFailureReason: errorReason(error),
           nextAttemptAt: null,
           state: QUEUE_STATES.FAILED,
@@ -566,20 +701,20 @@ export async function processNext(queue, killswitches, send, options = {}) {
         return {
           item: failedItem,
           outcome: "failed",
-          queue: replaceItem(sendingQueue, index, failedItem),
+          queue: replaceItem(progressQueue, index, failedItem),
           reason: failedItem.lastFailureReason,
         };
       }
       if (failureClass === FAILURE_CLASSES.PAUSED) {
         const pausedItem = {
-          ...sendingItem,
+          ...progressedSendingItem,
           attempts: originalItem.attempts,
           lastFailureReason: errorReason(error),
           nextAttemptAt: originalItem.nextAttemptAt,
           requiresHumanAction: failureRequiresHumanAction(error),
           state: QUEUE_STATES.WAITING,
         };
-        const pausedQueue = replaceItem(sendingQueue, index, pausedItem);
+        const pausedQueue = replaceItem(progressQueue, index, pausedItem);
         // Vlastnictví je vada TÉHLE položky: označ ji a zkus další. Cokoli jiného
         // (401, chybějící oprávnění, neznámý důvod) je vada přihlášení a zastavuje.
         if (pauseBelongsToItem(error)) {
@@ -595,20 +730,25 @@ export async function processNext(queue, killswitches, send, options = {}) {
           reason: pausedItem.lastFailureReason,
         };
       }
-      const exhausted = sendingItem.attempts >= policy.maxAttempts;
+      const exhausted = progressedSendingItem.attempts >= policy.maxAttempts;
       const failedAt = timestamp(options.now ?? Date.now(), "options.now");
       const failedItem = {
-        ...sendingItem,
+        ...progressedSendingItem,
         lastFailureReason: errorReason(error),
         nextAttemptAt: exhausted
           ? null
-          : failedAt + odkladPoSelhani(error, sendingItem.attempts, policy, options.random),
+          : failedAt + odkladPoSelhani(
+            error,
+            progressedSendingItem.attempts,
+            policy,
+            options.random,
+          ),
         state: exhausted ? QUEUE_STATES.FAILED : QUEUE_STATES.WAITING,
       };
       return {
         item: failedItem,
         outcome: exhausted ? "failed" : "retry_scheduled",
-        queue: replaceItem(sendingQueue, index, failedItem),
+        queue: replaceItem(progressQueue, index, failedItem),
         reason: failedItem.lastFailureReason,
       };
     }

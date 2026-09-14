@@ -33,6 +33,9 @@ const {
 const ORIGINAL_UPLOAD_SETTING = process.env.DESKTOP_UPLOAD_ENABLED;
 const ORIGINAL_TIME_SETTING = process.env.DESKTOP_TIME_ENABLED;
 const ENABLED_SETTING = ["tr", "ue"].join("");
+const SERVER_MICROPHONE_ID = "00000000-0000-4000-8000-000000000001";
+const SERVER_SYSTEM_ID = "00000000-0000-4000-8000-000000000002";
+const SERVER_SESSION_ID = "00000000-0000-4000-8000-000000000101";
 const mainSource = fs.readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
 
 function sourceCodeMask(source) {
@@ -720,7 +723,13 @@ describe("stavový automat fronty", () => {
       expect(second.added).toBe(false);
       const [item] = (await loadQueue(queuePath)).items;
       expect(item.tracks).toEqual({ microphone: "/nahravky/session-microphone.webm" });
-      expect(item.server.uploadedBytes).toEqual({ microphone: 0 });
+      expect(item.server).toEqual({
+        sessionId: null,
+        tracks: {
+          microphone: { recordingId: null, uploadedBytes: 0 },
+          system: { recordingId: null, uploadedBytes: 0 },
+        },
+      });
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -995,7 +1004,7 @@ describe("stavový automat fronty", () => {
         attempts: 1,
         lastFailureReason: "server odmítl nahrávku",
         state: QUEUE_STATES.SENDING,
-      }));
+      }), expect.any(Function));
       expect(result.outcome).toBe("sent");
       expect(result.item.state).toBe(QUEUE_STATES.SENT);
     },
@@ -1012,22 +1021,141 @@ describe("stavový automat fronty", () => {
   it("offsety obou stop vždy převezme ze serveru místo lokálního odhadu", () => {
     const queued = oneItemQueue();
     const first = applyServerProgress(queued, queued.items[0].clientRecordingId, {
-      recordingId: "server-recording-id",
+      recordingId: SERVER_MICROPHONE_ID,
       uploadedBytes: { microphone: 90, system: 180 },
     });
     const correctedByServer = applyServerProgress(
       first.queue,
       queued.items[0].clientRecordingId,
       {
-        recordingId: "server-recording-id",
+        recordingId: SERVER_MICROPHONE_ID,
         uploadedBytes: { microphone: 40, system: 80 },
       },
     );
 
     expect(correctedByServer.item.server).toEqual({
-      recordingId: "server-recording-id",
-      uploadedBytes: { microphone: 40, system: 80 },
+      legacyRecordingId: SERVER_MICROPHONE_ID,
+      sessionId: null,
+      tracks: {
+        microphone: { recordingId: null, uploadedBytes: 40 },
+        system: { recordingId: null, uploadedBytes: 80 },
+      },
     });
+  });
+
+  it("ukládá recordingId po stopách a odmítne pozdější změnu ID nebo session", () => {
+    const queued = oneItemQueue();
+    const microphone = applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    });
+    const completed = applyServerProgress(
+      microphone.queue,
+      queued.items[0].clientRecordingId,
+      {
+        recordingId: SERVER_MICROPHONE_ID,
+        sessionId: SERVER_SESSION_ID,
+        track: "microphone",
+        uploadedBytes: 120,
+      },
+    );
+
+    expect(completed.item.server).toEqual({
+      sessionId: SERVER_SESSION_ID,
+      tracks: {
+        microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 },
+        system: { recordingId: null, uploadedBytes: 0 },
+      },
+    });
+    expect(() => applyServerProgress(completed.queue, completed.item.clientRecordingId, {
+      recordingId: "00000000-0000-4000-8000-000000000099",
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    })).toThrow(/změnil recordingId/u);
+    expect(() => applyServerProgress(completed.queue, completed.item.clientRecordingId, {
+      recordingId: SERVER_SYSTEM_ID,
+      sessionId: "00000000-0000-4000-8000-000000000199",
+      track: "system",
+    })).toThrow(/změnil sessionId/u);
+  });
+
+  it("odmítne neplatné nebo společné recordingId dvou stop", () => {
+    const queued = oneItemQueue();
+    expect(() => applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      recordingId: "server-microphone",
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    })).toThrow(/recordingId musí být GUID/u);
+
+    const microphone = applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    });
+    expect(() => applyServerProgress(microphone.queue, queued.items[0].clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "system",
+    })).toThrow(/stejné recordingId dvěma stopám/u);
+  });
+
+  it("propustí ověřený návrat senderu do výsledku i per-stopového stavu fronty", async () => {
+    const sendResult = {
+      completedUploads: 2,
+      quotaWarning: false,
+      uploads: [
+        {
+          recordingId: SERVER_MICROPHONE_ID,
+          sessionId: SERVER_SESSION_ID,
+          track: "microphone",
+          uploadedBytes: 120,
+        },
+        {
+          recordingId: SERVER_SYSTEM_ID,
+          sessionId: SERVER_SESSION_ID,
+          track: "system",
+          uploadedBytes: 240,
+        },
+      ],
+    };
+
+    const result = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => sendResult,
+      { now: 1_777_000_001_000 },
+    );
+
+    expect(result).toMatchObject({ outcome: "sent", sendResult });
+    expect(result.item.server).toEqual({
+      sessionId: SERVER_SESSION_ID,
+      tracks: {
+        microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 },
+        system: { recordingId: SERVER_SYSTEM_ID, uploadedBytes: 240 },
+      },
+    });
+  });
+
+  it("výsledek senderu nesmí uložit neexistující stopu ani označit položku jako odeslanou", async () => {
+    const result = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => ({
+        completedUploads: 1,
+        uploads: [{
+          recordingId: "server-camera",
+          sessionId: SERVER_SESSION_ID,
+          track: "camera",
+          uploadedBytes: 10,
+        }],
+      }),
+      { now: 1_777_000_001_000, random: () => 0 },
+    );
+
+    expect(result.outcome).toBe("retry_scheduled");
+    expect(result.queue.items[0].state).toBe(QUEUE_STATES.WAITING);
+    expect(result.queue.items[0].server.tracks.microphone.recordingId).toBeNull();
   });
 
   // Postup pro nahrávku, která ve frontě NENÍ, znamená, že se rozešel stav klienta a serveru.
@@ -1163,15 +1291,15 @@ describe("stavový automat fronty", () => {
       lastFailureReason: "Nahrávka patří jinému účtu",
       requiresHumanAction: true,
       server: {
-        sessionId: "session-1",
+        sessionId: SERVER_SESSION_ID,
         token: "nesmí ven",
         tracks: {
           microphone: {
-            recordingId: "recording-microphone",
+            recordingId: SERVER_MICROPHONE_ID,
             uploadedBytes: 120,
             signedUrl: "https://example.invalid/tajne",
           },
-          system: { recordingId: "recording-system", uploadedBytes: 240 },
+          system: { recordingId: SERVER_SYSTEM_ID, uploadedBytes: 240 },
         },
       },
     };
@@ -1184,10 +1312,10 @@ describe("stavový automat fronty", () => {
       durationMs: 1_800_000,
       sizeBytes: 360,
       server: {
-        sessionId: "session-1",
+        sessionId: SERVER_SESSION_ID,
         tracks: {
-          microphone: { recordingId: "recording-microphone", uploadedBytes: 120 },
-          system: { recordingId: "recording-system", uploadedBytes: 240 },
+          microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 },
+          system: { recordingId: SERVER_SYSTEM_ID, uploadedBytes: 240 },
         },
       },
     });
@@ -1461,6 +1589,46 @@ describe("stavový automat fronty", () => {
 });
 
 describe("trvalé uložení fronty", () => {
+  it.each([
+    ["jednostopé", ["microphone"], "microphone"],
+    ["dvoustopé", ["microphone", "system"], null],
+  ])("staré %s serverové schéma načte beze lži o stopě", async (
+    _label,
+    trackKinds,
+    assignedTrack,
+  ) => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-server-migration-"));
+    const queuePath = path.join(directory, "outgoing.json");
+    const legacy = oneItemQueue();
+    legacy.items[0].tracks = Object.fromEntries(trackKinds.map((track) => [
+      track,
+      `/nahravky/${track}.webm`,
+    ]));
+    legacy.items[0].server = {
+      recordingId: "legacy-server-id",
+      uploadedBytes: { microphone: 11 },
+    };
+    await fs.promises.writeFile(queuePath, JSON.stringify(legacy));
+
+    try {
+      const [loaded] = (await loadQueue(queuePath)).items;
+      expect(loaded.server.tracks).toEqual({
+        microphone: {
+          recordingId: assignedTrack === "microphone" ? "legacy-server-id" : null,
+          uploadedBytes: 11,
+        },
+        system: { recordingId: null, uploadedBytes: 0 },
+      });
+      if (assignedTrack === null) {
+        expect(loaded.server.legacyRecordingId).toBe("legacy-server-id");
+      } else {
+        expect(loaded.server).not.toHaveProperty("legacyRecordingId");
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("po restartu zachová data a doplní neznámého vlastníka", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-restart-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");

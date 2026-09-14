@@ -35,16 +35,65 @@ function validateQueue(queue) {
       return item;
     }
     const ownerFingerprint = normalizeQueueOwnerFingerprint(item.ownerFingerprint);
+    const server = normalizeStoredServer(item);
     if (
       Object.prototype.hasOwnProperty.call(item, "ownerFingerprint")
       && item.ownerFingerprint === ownerFingerprint
+      && JSON.stringify(item.server) === JSON.stringify(server)
     ) {
       return item;
     }
     changed = true;
-    return { ...item, ownerFingerprint };
+    return { ...item, ownerFingerprint, server };
   });
   return changed ? { ...queue, items } : queue;
+}
+
+function safeNonEmptyString(value) {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function safeUploadedBytes(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+
+function normalizeStoredServer(item) {
+  const stored = item.server && typeof item.server === "object" ? item.server : {};
+  const server = {
+    sessionId: typeof stored.sessionId === "string" && UUID_PATTERN.test(stored.sessionId)
+      ? stored.sessionId
+      : null,
+    tracks: {
+      microphone: {
+        recordingId: typeof stored.tracks?.microphone?.recordingId === "string"
+          && UUID_PATTERN.test(stored.tracks.microphone.recordingId)
+          ? stored.tracks.microphone.recordingId
+          : null,
+        uploadedBytes: safeUploadedBytes(
+          stored.tracks?.microphone?.uploadedBytes ?? stored.uploadedBytes?.microphone,
+        ),
+      },
+      system: {
+        recordingId: typeof stored.tracks?.system?.recordingId === "string"
+          && UUID_PATTERN.test(stored.tracks.system.recordingId)
+          ? stored.tracks.system.recordingId
+          : null,
+        uploadedBytes: safeUploadedBytes(
+          stored.tracks?.system?.uploadedBytes ?? stored.uploadedBytes?.system,
+        ),
+      },
+    },
+  };
+  const itemTracks = Object.keys(item.tracks ?? {});
+  const legacyRecordingId = safeNonEmptyString(stored.recordingId ?? stored.legacyRecordingId);
+  if (legacyRecordingId !== null) {
+    if (itemTracks.length === 1 && itemTracks[0] in server.tracks) {
+      server.tracks[itemTracks[0]].recordingId ??= legacyRecordingId;
+    } else {
+      server.legacyRecordingId = legacyRecordingId;
+    }
+  }
+  return server;
 }
 
 function normalizeQueueOwnerFingerprint(value) {
@@ -187,7 +236,13 @@ function enqueueMicrophoneOnlyRecording(queue, recording, now = Date.now()) {
     nextAttemptAt: null,
     ...(recoveredIncomplete ? { recoveredIncomplete: true } : {}),
     sentAt: null,
-    server: { recordingId: null, uploadedBytes: { microphone: 0 } },
+    server: {
+      sessionId: null,
+      tracks: {
+        microphone: { recordingId: null, uploadedBytes: 0 },
+        system: { recordingId: null, uploadedBytes: 0 },
+      },
+    },
     state: "ceka",
     ...(sourceManifestPath !== manifestPath ? { sourceManifestPath } : {}),
     tracks: normalizedTracks,
@@ -850,8 +905,12 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
   async function processOne(killswitches) {
     const queueModule = await loadQueueModule();
     const before = await ensureLoaded();
-    const result = await queueModule.processNext(before, killswitches, send);
-    if (result.queue !== before) await commit(result.queue);
+    const result = await queueModule.processNext(before, killswitches, send, {
+      // Už jsme uvnitř `serialize()`. Přímý commit drží jednu transakci; volání veřejné
+      // metody storu odsud by čekalo samo na sebe a vytvořilo deadlock.
+      persistProgress: commit,
+    });
+    if (result.queue !== currentQueue) await commit(result.queue);
     return { queueModule, result };
   }
 

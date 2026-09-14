@@ -591,6 +591,14 @@ function validatedRecordingId(payload) {
   return recordingId;
 }
 
+function validatedSessionId(payload, previousSessionId) {
+  const sessionId = safeString(payload?.sessionId) || safeString(previousSessionId);
+  if (!UUID_PATTERN.test(sessionId)) {
+    throw localError("invalid_response", "Server nevrátil sessionId", "retryable");
+  }
+  return sessionId;
+}
+
 function verifyRemoteIdentity(payload, track, sizeField) {
   const remoteSize = payload?.[sizeField];
   const remoteSha256 = safeString(payload?.sha256).toLowerCase();
@@ -735,7 +743,15 @@ function verifyRemoteIdentityAndLog(payload, track, sizeField, logger, recording
   }
 }
 
-async function uploadTrack({ context, logger, recording, request, sessionId, track }) {
+async function uploadTrack({
+  context,
+  logger,
+  recording,
+  reportServerProgress,
+  request,
+  sessionId,
+  track,
+}) {
   const trackRequest = async (...args) => {
     try {
       return await request(...args);
@@ -762,11 +778,19 @@ async function uploadTrack({ context, logger, recording, request, sessionId, tra
   });
 
   const recordingId = validatedRecordingId(initialized);
-  // Schůzka přidělená serverem. Když ji nevrátí, držíme tu, se kterou jsme přišli — nikdy
-  // se nevracíme k `null`, protože tím by se druhá stopa odpojila od první.
-  const prirazenaSchuzka = safeString(initialized.sessionId)
-    || safeString(sessionId)
-    || null;
+  // Serverová cesta ověřená 8. 9. vrací po INITu UUID schůzky i pro první stopu, která
+  // poslala `null`. Bez něj nelze druhou stopu bezpečně připojit ani obnovit upload po pádu,
+  // proto odpověď odmítneme ještě před GETem a přenosem obsahu. Při idempotentním resume smí
+  // server hodnotu vynechat jen tehdy, když už ji klient přinesl z perzistentní fronty.
+  const prirazenaSchuzka = validatedSessionId(initialized, sessionId);
+  // INIT je okamžik, kdy už server zná oba klíče potřebné pro bezpečné navázání po pádu.
+  // Callback se awaitne ještě před GET a chunky; store tak může oba údaje fsyncnout v právě
+  // otevřené transakci a retry pak pokračuje přes tentýž idempotentní upload i session.
+  await reportServerProgress(Object.freeze({
+    recordingId,
+    sessionId: prirazenaSchuzka,
+    track: track.trackKind,
+  }));
   const quotaWarning = initialized.quotaWarning === true;
   if (quotaWarning) {
     safeLog(
@@ -783,9 +807,15 @@ async function uploadTrack({ context, logger, recording, request, sessionId, tra
     // navázání na rozdělané odeslání — kdyby tu chyběla, druhá stopa by se po restartu
     // připnula k `null` a schůzka by se rozpadla na dvě. Tady se to pozná nejhůř, protože
     // se to stane jen při opakování, ne při prvním průchodu.
-    return Object.freeze({
-      quotaWarning, recordingId, sessionId: prirazenaSchuzka, track: track.trackKind,
+    const result = Object.freeze({
+      quotaWarning,
+      recordingId,
+      sessionId: prirazenaSchuzka,
+      track: track.trackKind,
+      uploadedBytes: track.sizeBytes,
     });
+    await reportServerProgress(result);
+    return result;
   }
 
   // Záměrně sekvenční await v obyčejném for-of: proxy nesmí vidět souběžné části.
@@ -827,9 +857,15 @@ async function uploadTrack({ context, logger, recording, request, sessionId, tra
       "permanent",
     );
   }
-  return Object.freeze({
-    quotaWarning, recordingId, sessionId: prirazenaSchuzka, track: track.trackKind,
+  const result = Object.freeze({
+    quotaWarning,
+    recordingId,
+    sessionId: prirazenaSchuzka,
+    track: track.trackKind,
+    uploadedBytes: track.sizeBytes,
   });
+  await reportServerProgress(result);
+  return result;
 }
 
 /**
@@ -861,7 +897,10 @@ function createRecordingUploadSend({
   }
   const uploadOrigin = normalizedOrigin(origin);
 
-  return async function sendRecording(item) {
+  return async function sendRecording(item, reportServerProgress = async () => {}) {
+    if (typeof reportServerProgress !== "function") {
+      throw new TypeError("reportServerProgress musí být funkce");
+    }
     if (item?.kind === "time") {
       throw localError(
         "time_upload_unavailable",
@@ -887,10 +926,12 @@ function createRecordingUploadSend({
     let quotaWarning = false;
     // Stopy jdou po sobě a schůzka se předává z jedné na druhou: první ji dostane od
     // serveru, každá další už ji posílá s sebou. Proto se tu drží mimo cyklus.
-    let sessionId = safeString(recording.manifest.sessionId) || null;
+    let sessionId = safeString(item?.server?.sessionId)
+      || safeString(recording.manifest.sessionId)
+      || null;
     for (const track of recording.tracks) {
       const uploaded = await uploadTrack({
-        context, logger, recording, request, sessionId, track,
+        context, logger, recording, reportServerProgress, request, sessionId, track,
       });
       sessionId = uploaded.sessionId ?? sessionId;
       uploads.push(uploaded);

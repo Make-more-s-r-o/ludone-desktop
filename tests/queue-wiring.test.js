@@ -2658,6 +2658,32 @@ describe("zjištění uložené OAuth session", () => {
     expect(createOutboundQueueStore).toHaveBeenCalledOnce();
   });
 
+  it("produkční adaptér předá upload klientu callback pro durable serverový postup", async () => {
+    let queueSend;
+    const uploadSend = vi.fn(async () => undefined);
+    const createRecordingUploadSend = vi.fn(() => uploadSend);
+    const createOutboundQueueStore = vi.fn((options) => {
+      queueSend = options.send;
+      return {
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(async () => ({ outcome: "idle" })),
+      };
+    });
+    const harness = await loadMain({ createOutboundQueueStore, createRecordingUploadSend });
+    await harness.runReady();
+    const reportServerProgress = vi.fn();
+
+    await queueSend({ id: "nahravka" }, reportServerProgress);
+
+    expect(uploadSend).toHaveBeenCalledExactlyOnceWith(
+      { id: "nahravka" },
+      reportServerProgress,
+    );
+  });
+
   it("změnu prostředí odmítne, dokud handover drží původní origin", async () => {
     let releaseExport;
     let reportExportStarted;
@@ -4220,7 +4246,13 @@ describe("produkční zapojení odchozí fronty", () => {
     ));
     expect(queue.items).toHaveLength(1);
     expect(Object.keys(queue.items[0].tracks)).toEqual(["microphone"]);
-    expect(queue.items[0].server.uploadedBytes).toEqual({ microphone: 0 });
+    expect(queue.items[0].server).toEqual({
+      sessionId: null,
+      tracks: {
+        microphone: { recordingId: null, uploadedBytes: 0 },
+        system: { recordingId: null, uploadedBytes: 0 },
+      },
+    });
     await expect(list(event)).resolves.toEqual([
       expect.objectContaining({ id: sessionId, kind: "recording", state: "ceka" }),
     ]);
