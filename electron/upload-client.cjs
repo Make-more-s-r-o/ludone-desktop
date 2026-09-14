@@ -127,13 +127,16 @@ function failureClassForStatus(status, code, payload) {
 const MAX_RETRY_AFTER_MS = 6 * 60 * 60 * 1000;
 
 function retryAfterMsFrom(response, payload) {
-  const zHlavicky = Number.parseInt(response?.headers?.get?.("retry-after") ?? "", 10);
+  const rawHlavicka = response?.headers?.get?.("retry-after");
+  const zHlavicky = typeof rawHlavicka === "string" && /^[1-9][0-9]*$/u.test(rawHlavicka)
+    ? Number(rawHlavicka)
+    : null;
   const zTela = payload?.retryAfterSeconds;
   let sekundy = null;
-  if (Number.isFinite(zHlavicky) && zHlavicky > 0) sekundy = zHlavicky;
-  else if (Number.isFinite(zTela) && zTela > 0) sekundy = zTela;
+  if (Number.isSafeInteger(zHlavicky) && zHlavicky > 0) sekundy = zHlavicky;
+  else if (Number.isSafeInteger(zTela) && zTela > 0) sekundy = zTela;
   if (sekundy === null) return undefined;
-  return Math.min(MAX_RETRY_AFTER_MS, Math.round(sekundy * 1000));
+  return Math.min(MAX_RETRY_AFTER_MS, sekundy * 1000);
 }
 
 function serverError(status, payload, retryAfterMs) {

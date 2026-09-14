@@ -1502,7 +1502,7 @@ describe("uložený vypínač odesílání v hlavním procesu", () => {
     await vi.waitFor(() => expect(store.pump).toHaveBeenCalledOnce());
     expect(store.pump).toHaveBeenLastCalledWith({
       DESKTOP_UPLOAD_ENABLED: "false", DESKTOP_TIME_ENABLED: undefined,
-    });
+    }, null);
 
     for (const upload of [true, false]) {
       await harness.ipcHandlers.get("settings:set-upload-enabled")(settingsEvent, upload);
@@ -1510,7 +1510,7 @@ describe("uložený vypínač odesílání v hlavním procesu", () => {
 
       expect(store.retry).toHaveBeenLastCalledWith({
         DESKTOP_UPLOAD_ENABLED: String(upload), DESKTOP_TIME_ENABLED: undefined,
-      });
+      }, null);
       const listed = await harness.ipcHandlers.get("queue:list")(panelEvent);
       expect(listed.map((item) => item.sendingDisabledReason)).toEqual([
         upload ? undefined : UPLOAD_DISABLED_REASON,
@@ -4102,23 +4102,29 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 
   it("převzetí s chybějící nebo expirovanou session odmítne bez obnovy a bez dialogu", async () => {
+    const fetchImpl = vi.fn(async () => { throw new Error("Převzetí nesmí obnovovat token"); });
+    vi.stubGlobal("fetch", fetchImpl);
     for (const session of [null, {
       ...storedAuthSession(),
       accessExpiresAt: Date.now() - 1,
     }]) {
       const claimRecording = vi.fn();
+      const pump = vi.fn(async () => ({ outcome: "idle" }));
       const harness = await loadMain({
         createOutboundQueueStore: () => ({
           claimRecording,
           enqueueRecording: vi.fn(),
           enqueueTimeEntry: vi.fn(),
           list: vi.fn(async () => []),
-          pump: vi.fn(async () => ({ outcome: "idle" })),
+          pump,
           retry: vi.fn(),
         }),
       });
-      if (session) await writeStoredAuthSession(harness, session);
       await harness.runReady();
+      // Startupová transportní pumpa může token obnovit. Tady měříme samostatné
+      // lokální převzetí, takže expiraci nastavíme až po dokončeném startupu.
+      await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+      if (session) await writeStoredAuthSession(harness, session);
       const { settingsEvent } = openSettingsAndCreateEvent(harness);
       harness.electron.net.fetch.mockClear();
 
@@ -4130,6 +4136,7 @@ describe("produkční zapojení odchozí fronty", () => {
       expect(claimRecording).not.toHaveBeenCalled();
       expect(harness.electron.dialog.showMessageBox).not.toHaveBeenCalled();
       expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+      expect(fetchImpl).not.toHaveBeenCalled();
     }
   });
 
@@ -4969,7 +4976,11 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 
   it("úspěšné nové přihlášení znovu probudí pozastavenou frontu", async () => {
-    const pump = vi.fn(async () => ({ outcome: "idle" }));
+    const pump = vi.fn(async (killswitches, ownerFingerprint) => {
+      void killswitches;
+      void ownerFingerprint;
+      return { outcome: "idle" };
+    });
     const harness = await loadMain({
       createOutboundQueueStore: () => ({
         enqueueRecording: vi.fn(),
@@ -4988,6 +4999,110 @@ describe("produkční zapojení odchozí fronty", () => {
     await expect(harness.ipcHandlers.get("auth:begin")(event))
       .resolves.toMatchObject({ ok: true });
     await vi.waitFor(() => expect(pump).toHaveBeenCalledTimes(2));
+    expect(pump.mock.calls[0][1]).toBeNull();
+    expect(pump.mock.calls[1][1]).toBeNull();
+  });
+
+  it("startup i ruční retry předají stejný platný current owner", async () => {
+    const items = [];
+    const pump = vi.fn(async (killswitches, ownerFingerprint) => {
+      void killswitches;
+      void ownerFingerprint;
+      return { outcome: "idle" };
+    });
+    const retry = vi.fn(async (killswitches, ownerFingerprint) => {
+      void killswitches;
+      void ownerFingerprint;
+      return { items, outcome: "idle", reason: null };
+    });
+    const store = {
+      enqueueRecording: vi.fn(),
+      enqueueTimeEntry: vi.fn(),
+      list: vi.fn(async () => items),
+      pump,
+      retry,
+    };
+    const harness = await loadMain({ createOutboundQueueStore: () => store });
+    const session = { ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000 };
+    await writeStoredAuthSession(harness, session);
+    await harness.runReady();
+    await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+    const panelContents = harness.windows[0].webContents;
+    const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    await harness.ipcHandlers.get("queue:retry")(panelEvent);
+
+    const owner = otiskVlastnika(harness, session);
+    expect(pump).toHaveBeenCalledWith(expect.any(Object), owner);
+    expect(retry).toHaveBeenCalledWith(expect.any(Object), owner);
+  });
+
+  it("startup obnoví expirovanou session před předáním current owner pumpě", async () => {
+    const fetchImpl = vi.fn(async (input) => ({
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => String(input).includes(".well-known") ? {
+        issuer: "https://app.ludone.cz",
+        authorization_endpoint: "https://app.ludone.cz/api/oauth/authorize",
+        token_endpoint: "https://app.ludone.cz/api/oauth/token",
+        registration_endpoint: "https://app.ludone.cz/api/oauth/register",
+        code_challenge_methods_supported: ["S256"],
+      } : {
+        access_token: "OBNOVENY-ACCESS-TOKEN",
+        refresh_token: "OBNOVENY-REFRESH-TOKEN",
+        token_type: "Bearer",
+        expires_in: 3600,
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchImpl);
+    const pump = vi.fn(async (killswitches, ownerFingerprint) => {
+      void killswitches;
+      void ownerFingerprint;
+      return { outcome: "idle" };
+    });
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording: vi.fn(), enqueueTimeEntry: vi.fn(), list: vi.fn(async () => []),
+        pump, retry: vi.fn(),
+      }),
+    });
+    const expired = {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() - 1,
+      refreshToken: "T-R1-REFRESH-USPECH",
+    };
+    await writeStoredAuthSession(harness, expired);
+    await harness.runReady();
+    await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(pump.mock.calls[0][1]).toBe(otiskVlastnika(harness, expired));
+  });
+
+  it("selhaná obnova expirované session předá null a nespustí recording send", async () => {
+    const fetchImpl = vi.fn(async () => { throw new Error("síť nedostupná"); });
+    vi.stubGlobal("fetch", fetchImpl);
+    const recordingSend = vi.fn();
+    const pump = vi.fn(async (_killswitches, ownerFingerprint) => {
+      if (ownerFingerprint !== null) await recordingSend();
+      return { outcome: "paused" };
+    });
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording: vi.fn(), enqueueTimeEntry: vi.fn(), list: vi.fn(async () => []),
+        pump, retry: vi.fn(),
+      }),
+    });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() - 1,
+      refreshToken: "T-R1-REFRESH-SELHANI",
+    });
+    await harness.runReady();
+    await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(pump.mock.calls[0][1]).toBeNull();
+    expect(recordingSend).not.toHaveBeenCalled();
   });
 
   it("pojmenování použije pro handover uložený labs origin a jeden stereo soubor", async () => {

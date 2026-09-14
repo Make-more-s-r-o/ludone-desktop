@@ -31,6 +31,35 @@ function validateQueue(queue) {
   ) {
     throw new TypeError("soubor fronty neodpovídá schématu v1");
   }
+  if (
+    Object.prototype.hasOwnProperty.call(queue, "uploadCooldowns")
+    && !Array.isArray(queue.uploadCooldowns)
+  ) {
+    throw new TypeError("uploadCooldowns musí být pole");
+  }
+  const seenCooldownOwners = new Set();
+  for (const cooldown of queue.uploadCooldowns ?? []) {
+    if (!cooldown || typeof cooldown !== "object" || Array.isArray(cooldown)) {
+      throw new TypeError("záznam uploadCooldowns musí být objekt");
+    }
+    const keys = Object.keys(cooldown).sort();
+    if (keys.length !== 2 || keys[0] !== "ownerFingerprint" || keys[1] !== "retryAt") {
+      throw new TypeError("záznam uploadCooldowns má neplatný tvar");
+    }
+    if (
+      typeof cooldown.ownerFingerprint !== "string"
+      || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(cooldown.ownerFingerprint)
+    ) {
+      throw new TypeError("uploadCooldowns.ownerFingerprint musí být platný otisk");
+    }
+    if (!Number.isSafeInteger(cooldown.retryAt) || cooldown.retryAt <= 0) {
+      throw new TypeError("uploadCooldowns.retryAt musí být platný čas v milisekundách");
+    }
+    if (seenCooldownOwners.has(cooldown.ownerFingerprint)) {
+      throw new TypeError("uploadCooldowns nesmí obsahovat stejného vlastníka dvakrát");
+    }
+    seenCooldownOwners.add(cooldown.ownerFingerprint);
+  }
   let changed = false;
   const items = queue.items.map((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item) || item.kind === "time") {
@@ -896,6 +925,39 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     loaded = true;
   }
 
+  function requireCurrentOwnerFingerprint(value) {
+    if (
+      value !== null
+      && (typeof value !== "string" || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(value))
+    ) {
+      throw new TypeError("currentOwnerFingerprint musí být platný otisk nebo null");
+    }
+    return value;
+  }
+
+  function activeCooldown(queue, ownerFingerprint, now) {
+    if (ownerFingerprint === null) return null;
+    return (queue.uploadCooldowns ?? []).find((cooldown) => (
+      cooldown.ownerFingerprint === ownerFingerprint && cooldown.retryAt > now
+    )) ?? null;
+  }
+
+  function withoutExpiredCooldowns(queue, now) {
+    if (!Object.prototype.hasOwnProperty.call(queue, "uploadCooldowns")) return queue;
+    const uploadCooldowns = queue.uploadCooldowns.filter((cooldown) => cooldown.retryAt > now);
+    return uploadCooldowns.length === queue.uploadCooldowns.length
+      ? queue
+      : { ...queue, uploadCooldowns };
+  }
+
+  function withCooldown(queue, ownerFingerprint, retryAt) {
+    const uploadCooldowns = (queue.uploadCooldowns ?? []).filter(
+      (cooldown) => cooldown.ownerFingerprint !== ownerFingerprint,
+    );
+    uploadCooldowns.push({ ownerFingerprint, retryAt });
+    return { ...queue, uploadCooldowns };
+  }
+
   function enqueueRecording(recording) {
     return serialize(async () => {
       const queueModule = await loadQueueModule();
@@ -966,16 +1028,40 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
-  async function processOne(killswitches) {
+  async function processOne(killswitches, currentOwnerFingerprint) {
     const queueModule = await loadQueueModule();
-    const before = await ensureLoaded();
-    const result = await queueModule.processNext(before, killswitches, send, {
+    const now = Date.now();
+    let before = withoutExpiredCooldowns(await ensureLoaded(), now);
+    if (before !== currentQueue) await commit(before);
+    const cooldown = activeCooldown(before, currentOwnerFingerprint, now);
+    const guardedSend = async (item, reportServerProgress) => {
+      if ((item.kind ?? "recording") !== "recording") return send(item, reportServerProgress);
+      if (currentOwnerFingerprint === null) {
+        throw Object.assign(new Error("Identitu aktuálního přihlášení nelze ověřit"), {
+          code: "queue_owner_unknown",
+          failureClass: "paused",
+        });
+      }
+      if (item.ownerFingerprint !== currentOwnerFingerprint) {
+        throw Object.assign(new Error("Nahrávka patří jinému účtu"), {
+          code: "queue_owner_mismatch",
+          failureClass: "paused",
+        });
+      }
+      return send(item, reportServerProgress);
+    };
+    const result = await queueModule.processNext(before, killswitches, guardedSend, {
+      currentOwnerFingerprint,
       // Už jsme uvnitř `serialize()`. Přímý commit drží jednu transakci; volání veřejné
       // metody storu odsud by čekalo samo na sebe a vytvořilo deadlock.
       persistProgress: commit,
+      ...(cooldown ? { recordingCooldownRetryAt: cooldown.retryAt } : {}),
     });
-    if (result.queue !== currentQueue) await commit(result.queue);
-    return { queueModule, result };
+    const queueAfterResult = result.outcome === "rate_limited" && result.item !== null
+      ? withCooldown(result.queue, currentOwnerFingerprint, result.retryAt)
+      : result.queue;
+    if (queueAfterResult !== currentQueue) await commit(queueAfterResult);
+    return { queueModule, result: { ...result, queue: queueAfterResult } };
   }
 
   // 🔴 `processNext` odešle vždy nejvýš JEDNU položku a je to záměr (viz její komentář):
@@ -994,12 +1080,13 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
   // a `429` zatím nenese `Retry-After`). Jedním během proto nechceme vyčerpat celé okno.
   const MAX_POLOZEK_NA_JEDNU_PUMPU = 20;
 
-  function pump(killswitches) {
+  function pump(killswitches, currentOwnerFingerprint = null) {
+    requireCurrentOwnerFingerprint(currentOwnerFingerprint);
     return serialize(async () => {
       let posledni = null;
       let odeslano = 0;
       for (let poradi = 0; poradi < MAX_POLOZEK_NA_JEDNU_PUMPU; poradi += 1) {
-        posledni = (await processOne(killswitches)).result;
+        posledni = (await processOne(killswitches, currentOwnerFingerprint)).result;
         if (posledni.outcome !== "sent") break;
         odeslano += 1;
       }
@@ -1058,16 +1145,25 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
-  function retry(killswitches) {
+  function retry(killswitches, currentOwnerFingerprint = null) {
+    requireCurrentOwnerFingerprint(currentOwnerFingerprint);
     return serialize(async () => {
       const queueModule = await loadQueueModule();
-      const queue = await ensureLoaded();
+      const now = Date.now();
+      let queue = withoutExpiredCooldowns(await ensureLoaded(), now);
+      if (queue !== currentQueue) await commit(queue);
+      const cooldown = activeCooldown(queue, currentOwnerFingerprint, now);
       let changed = false;
       const items = queue.items.map((item) => {
         if (
           item.state !== "ceka"
           || item.nextAttemptAt === null
           || queueModule.queueItemRequiresHumanAction(item)
+          || ((item.kind ?? "recording") === "recording" && (
+            currentOwnerFingerprint === null
+            || item.ownerFingerprint !== currentOwnerFingerprint
+            || cooldown !== null
+          ))
         ) {
           return item;
         }
@@ -1076,7 +1172,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       });
       if (changed) await commit({ ...queue, items });
 
-      const { result } = await processOne(killswitches);
+      const { result } = await processOne(killswitches, currentOwnerFingerprint);
       return {
         outcome: result.outcome,
         reason: result.reason,
