@@ -382,6 +382,16 @@ Serverová session to změřila přímo v DB labs:
 co dnes vzniklo: odstranění zakázané hlavičky, UUIDv5 jako `clientRecordingId` i řetězení
 `sessionId`. Ve stejné dávce odešla i třetí, delší jednostopá nahrávka (3,5 MB, 3,6 min).
 
+#### 📊 Celkový součet: 4 položky fronty = 5 nahrávek v LuDone
+
+`500bf891` (16:26) · `e0565988` (16:40) · `8523bfb8` + `2ac132ec` + `310c2df7` (dávka 17:06).
+Položek fronty odešly **čtyři**, nahrávek je **pět**, protože jedna položka byla dvoustopá.
+
+⚠️ **Nahrávka `e0565988` (16:40, 1,2 MB, 78,7 s) tu až dosud CHYBĚLA** — a právě proto jsem ti
+v hlášeních opakovaně tvrdil „tři nahrávky". Počítal jsem z toho, co bylo zapsané v tomhle
+souboru, a tady jedna položka chyběla. **Neúplný zápis se chová jako fakt** — stejná třída
+chyby jako odvolané tvrzení nechané v komentáři kódu.
+
 ### 🔴 Vada, kterou jsem dnes vyrobil a hned na ni naletěl
 
 Appka loguje **jen POSLEDNÍ výsledek pumpy**. Vyprazdňovací smyčka běží, dokud se daří, takže
