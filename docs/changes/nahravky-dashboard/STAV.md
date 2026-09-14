@@ -23,6 +23,11 @@ Izolovaný unpackaged GUI průchod není produkční login ani audio smoke. Opra
 
 Rozpracované změny jsou v [draft PR #141](https://github.com/Make-more-s-r-o/ludone-desktop/pull/141). Finální souhrnná brána a čistý klon přijdou po zbývající implementaci.
 
+⚠️ CI na `c21eca6` po integraci T5 selhalo: pět testů mělo chybnou časovou fixture
+závislou na pásmu hostitele a jeden narazil na `ENOTEMPTY` při úklidu fronty.
+Časová fixture je opravená (59 PASS v UTC i Europe/Prague); lifecycle fronty řeší
+T-A4. Nové zelené CI zatím čeká. [Doslovné důkazy](../../../dukazy/nahravky-dashboard-2026-09-14/integrace/ci-opravy/review.md).
+
 ## Co blokuje jen veřejné vydání
 
 | Blokovaná část | Čeká na |

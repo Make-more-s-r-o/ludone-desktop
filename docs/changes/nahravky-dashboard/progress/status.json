@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T22:31:23.695Z",
+    "updatedAt": "2026-09-14T22:42:57.733Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -332,6 +332,10 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T22:42:57.733Z",
+      "text": "CI c21eca6: 6 FAIL; pět časových fixtures opraveno při zachování přesných asercí, 59 PASS v UTC i Europe/Prague. ENOTEMPTY lifecycle fronty předáno T-A4; finální CI čeká."
+    },
     {
       "at": "2026-09-14T22:31:23.695Z",
       "text": "T-A4 běží z 77543cb v samostatném stromu. GUI T5 potvrdilo přímé Nastavení bez přihlášení, prázdný přehled a přepínač automatiky on/off; nejde o ostrý audio/login důkaz. Dva staré texty Účtu předány T-A4."

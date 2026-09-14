@@ -79,8 +79,10 @@ function deferred() {
 function recordingResult() {
   return {
     clientRecordingId: SESSION_ID,
-    startedAt: "2026-09-02T12:00:00.010Z",
-    endedAt: "2026-09-02T12:30:00.020Z",
+    // Název používá místní čas uživatele; fixture proto začíná ve 14:00
+    // i na CI v UTC. Přesná aserce názvu zůstává stejná v každém pásmu.
+    startedAt: new Date(2026, 8, 2, 14, 0, 0, 10).toISOString(),
+    endedAt: new Date(2026, 8, 2, 14, 30, 0, 20).toISOString(),
     trackStartDeltaMs: 25,
     files: {
       microphone: { name: "microphone.webm", size: 4 },
