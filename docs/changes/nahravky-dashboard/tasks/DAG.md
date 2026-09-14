@@ -16,17 +16,19 @@
 | T-R1 | T-02 | Chování 429 se doplní po serializovaném převzetí. |
 | T-06 | — | Příprava vydání je nezávislá; zveřejnění má vlastní brány. |
 
-## Hotspoty pro T-03 po přijetí T-02
+## Hotspoty pro T-04 po přijetí T-03
 
-Dokud T-02 běží, zůstávají jeho hotspoty výhradně jeho. Následující vlastnictví začne platit až po přijetí a integraci T-02; teprve potom smí koordinátor dispatchovat T-03.
+Dokud T-03 není přijatý a integrovaný, zůstávají jeho hotspoty výhradně jeho. Následující vlastnictví začne platit až po jeho přijetí; teprve potom smí koordinátor dispatchovat T-04.
 
 | Soubor | Vlastník | Poznámka |
 |---|---|---|
-| `electron/queue.cjs` | T-03 | Serializovaný getter; queue a claim kontrakty zůstávají zachované. |
-| `electron/main.cjs` | T-03 | Jen queue/dashboard IPC; auth, updater a ostatní bloky jsou read-only. |
-| `electron/preload.cjs` | T-03 | Jen most lokálního přehledu a případně existující retry. |
-| `src/features/recordings/RecordingsDashboard.jsx` | T-03 | Rozšíření komponenty po T-02 při zachování claim UI. |
-| `src/styles.css` | T-03 | Jen styly lokálního přehledu se stávajícími tokeny. |
+| `electron/recording-verification.cjs` | T-04 | Jediný verifier, cache, rozpočet a mapování výsledků. |
+| `electron/upload-client.cjs` | T-04 | Jen export a zpevnění stávajícího `createRequester`. |
+| `electron/queue.cjs` | T-04 | Jen trusted getter detailu nad přijatým store kontraktem T-03. |
+| `electron/main.cjs` | T-04 | Jen verify/open-web IPC a auth invalidace cache. |
+| `electron/preload.cjs` | T-04 | Jen úzký verify/open-web most. |
+| `src/features/recordings/RecordingsDashboard.jsx` | T-04 | Ruční ověření a zobrazení per-track výsledků v přehledu T-03. |
+| `src/styles.css` | T-04 | Jen styly výsledků ověření se stávajícími tokeny. |
 
 ## Packety a executor
 
@@ -34,5 +36,6 @@ Dokud T-02 běží, zůstávají jeho hotspoty výhradně jeho. Následující v
 |---|---|---|
 | T-02 | `tasks/T-02.md` | Sol převzetí |
 | T-03 | `tasks/T-03.md` | Sol dashboard |
+| T-04 | `tasks/T-04.md` | Sol serverové ověření |
 
 Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.
