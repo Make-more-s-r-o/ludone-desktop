@@ -137,12 +137,14 @@ describe("obnova access tokenu", () => {
       expect(a).toBe(b);
       expect(a.accessToken).toBe("novy-access");
       expect(a.refreshToken).toBe("novy-refresh");
+      expect(a.identity).toEqual(session.identity);
       // Discovery + výměna = dvě volání. Bez sdílené brány by jich byly čtyři a server
       // by druhý pokus vyhodnotil jako znovupoužití — to je celé riziko R15.
       expect(fetchImpl).toHaveBeenCalledTimes(2);
       expect(await relaceNaDisku(safeStorage, blobPath)).toMatchObject({
         accessToken: "novy-access",
         refreshToken: "novy-refresh",
+        identity: session.identity,
       });
     });
   });
