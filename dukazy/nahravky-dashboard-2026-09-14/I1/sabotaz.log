@@ -1,0 +1,57 @@
+SABOTÁŽ RED: univerzální čekající text
+$ npm run test:unit -- tests/recordings-status.test.js
+
+> ludone-desktop-prototype@0.1.2 test:unit
+> vitest run tests/recordings-status.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-popisky
+
+ ❯ tests/recordings-status.test.js (2 tests | 1 failed) 75ms
+   × pravdivé stavy lokálních nahrávek > rozliší stav fronty a consent bez tvrzení o neprovedeném serverovém ověření 68ms
+     → expected '14. 9. 2026 12:00Ve frontě30 s1 kBID:…' to contain 'Odesílá se do LuDone'
+   ✓ pravdivé stavy lokálních nahrávek > u vlastního názvu zachová datum a zobrazí jen osmiznakový prefix ID 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/recordings-status.test.js > pravdivé stavy lokálních nahrávek > rozliší stav fronty a consent bez tvrzení o neprovedeném serverovém ověření
+AssertionError: expected '14. 9. 2026 12:00Ve frontě30 s1 kBID:…' to contain 'Odesílá se do LuDone'
+
+Expected: "Odesílá se do LuDone"
+Received: "14. 9. 2026 12:00Ve frontě30 s1 kBID: 11111111Zvuk je kompletníNahrávka čeká ve frontě.Ověřit v LuDoneUkázat ve Finderu"
+
+ ❯ tests/recordings-status.test.js:95:55
+     93|     try {
+     94|       await vi.waitFor(() => expect(dashboard.card(ids.sent)).not.toBe…
+     95|       expect(dashboard.card(ids.sending).textContent).toContain("Odesí…
+       |                                                       ^
+     96|       expect(dashboard.card(ids.sent).textContent).toContain("Odesláno…
+     97|       expect(dashboard.card(ids.sent).textContent).not.toContain("čeká…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  00:52:10
+   Duration  785ms (transform 32ms, setup 7ms, collect 478ms, tests 75ms, environment 0ms, prepare 58ms)
+
+EXIT=1
+
+OBNOVENÍ GREEN: pravdivé stavové popisky
+$ npm run test:unit -- tests/recordings-status.test.js
+
+> ludone-desktop-prototype@0.1.2 test:unit
+> vitest run tests/recordings-status.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-popisky
+
+ ✓ tests/recordings-status.test.js (2 tests) 73ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  00:52:27
+   Duration  727ms (transform 29ms, setup 7ms, collect 425ms, tests 73ms, environment 0ms, prepare 38ms)
+
+EXIT=0

@@ -1,0 +1,23 @@
+{
+  "summary": "Konkrétní oprava popisků a identifikace.",
+  "premisaPlatila": true,
+  "premisaPoznamka": "Karta používala univerzální čekající text i pro odeslanou položku a zdrojový fakt Ve frontě. Nová projekce rozlišuje stav fronty a consent, používá neutrální zdroj V aplikaci, zachovává konkrétní důvody a zobrazuje datum i stejný osmiznakový prefix ID jako nativní dialog.",
+  "kontrolniNula": {
+    "souboruMimoAllowlist": 0,
+    "gitZapisu": 0,
+    "produkcnichRequestu": 0,
+    "novychSkipuBaseline": 0
+  },
+  "sabotaze": [
+    {
+      "nazev": "sent zobrazen jako čekající",
+      "vysledek": "RED a obnovený GREEN",
+      "doslovnyVystup": "dukazy/nahravky-dashboard-2026-09-14/I1/sabotaz.log (RED EXIT=1, obnovený GREEN EXIT=0)"
+    }
+  ],
+  "doslovnyVystupTestu": "dukazy/nahravky-dashboard-2026-09-14/I1/testy.log (typecheck EXIT=0; počátečních 17 cílených testů EXIT=0; po review opravě znovu 17 cílených testů EXIT=0)",
+  "coJsemNEOVERIL": [
+    "Živá aplikace, audio a produkční server.",
+    "Plné gates; spouští je root při integraci."
+  ]
+}
