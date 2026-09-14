@@ -286,6 +286,33 @@ do běžícího okna — tedy přesně tam, kam nemá.
 chyby. JavaScriptu nedeklarované pole nevadí, takže **všech 1305 testů bylo zelených** —
 a odmítl to až `tsc`. Dnes už popáté: každá brána vidí jinou třídu vad.
 
+### ✅ Fronta vyčištěná — smazáno 32 testovacích nahrávek (14. 9.)
+
+Na tvůj pokyn („smaž ty testovací staré"). Smazáno **32 položek fronty + 32 manifestů + 52
+`.webm`**. Fronta má teď **4 položky**, na disku zbylo **5 `.webm`**, složka spadla ze 100 MB
+na 91 MB.
+
+**Co jsem NECHAL a proč** — vybral jsi variantu „dlouhé nechat":
+
+| nahrávka | délka | stav | důvod |
+|---|---|---|---|
+| `8087dd1a` | **64 min** | čeká | ⚠️ „patří jinému účtu" |
+| `594223df` | **27 min** | čeká | vlastník nepotvrzený (+ „recovered" soubor po přerušeném uploadu) |
+| `53ab63fc` | 2 m 47 s | čeká | ⚠️ „patří jinému účtu" |
+| `74bc2fdd` | 3 m 39 s | odesláno | už je v LuDone |
+
+🔴 **Pozor u dvou z nich:** `8087dd1a` a `53ab63fc` nesou důvod **„Nahrávka patří jinému účtu"**,
+ne „vlastník nepotvrzený". Vznikly pod jiným přihlášením než je to tvoje současné, takže je
+pouhé potvrzení vlastnictví **nemusí odblokovat**. Kdyby je nešlo odeslat, není to vada uploadu.
+
+**Záloha:** 84 souborů (9,1 MB) + původní `outgoing.json` ve scratchpadu session. Dokud ji
+nesmažeš, jde mazání vrátit.
+
+⚠️ **Chyba, kterou hlásím sám na sebe:** první pokus smazal jen manifesty a všech 57 `.webm`
+nechal ležet — sbíral jsem cesty z pole `trackPaths`, jenže položka je má v `tracks`. Smazal
+jsem tím přesně to, **podle čeho obnova nahrávku pozná**, a nechal data. Odhalilo to jen to, že
+čísla po mazání nesedla. Kdybych je nekontroloval a appku spustil, fronta a disk by se rozešly.
+
 ### ⚠️ Appka NEBĚŽÍ — ukončil ji systém kvůli paměti
 
 Po posledním ostrém odeslání ji **systém ukončil kvůli nedostatku paměti**, ne já. Ověřeno:
