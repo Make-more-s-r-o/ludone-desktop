@@ -18,6 +18,8 @@ Plan ID je `nahravky-dashboard`, zdrojový commit aktuálního integračního pl
   - `electron/queue.test.cjs`
   - `electron/main.cjs`
   - `electron/main.test.cjs`
+  - `electron/upload-client.cjs`
+  - `electron/upload-client.test.cjs`
   - `tests/queue.test.js`
   - `tests/queue-wiring.test.js`
   - `tests/upload-client.test.js`
@@ -29,6 +31,7 @@ Plan ID je `nahravky-dashboard`, zdrojový commit aktuálního integračního pl
 - Hotspot `src/lib/queue.js` vlastní během dispatchu výhradně `T-R1`; měň jen výsledek 429 a zachovej ostatní klasifikace i per-track progress.
 - Hotspot `electron/queue.cjs` vlastní během dispatchu výhradně `T-R1`; měň jen validaci, atomické uložení a kontrolu sdíleného cooldownu.
 - Hotspot `electron/main.cjs` vlastní během dispatchu výhradně `T-R1`; předej current owner do všech existujících vstupů pumpy a retry, bez změny auth kontraktu.
+- Hotspot `electron/upload-client.cjs` vlastní během dispatchu výhradně `T-R1`; zpevni jen parser sekund `Retry-After`, neměň HTTP klienta ani klasifikaci ostatních chyb.
 - Commity, push, merge, tag a zápis stavu masterplánu dělá koordinátor po převzetí.
 
 ## Co si přečti jako první
@@ -52,6 +55,8 @@ Plan ID je `nahravky-dashboard`, zdrojový commit aktuálního integračního pl
 V `processNext` rozpoznej `rate_limited` výhradně podle HTTP statusu 429, ne podle volného textu nebo serverového code. Vrať samostatný outcome `rate_limited`, obnov `attempts` na původní hodnotu, ponech položku ve stavu čekání a zachovej již uložený per-track server progress. Druhou položku ani další stopu po tomto výsledku neposílej.
 
 Platný `Retry-After` má přednost. Když chybí nebo je neplatný, použij přesně 60 minut od předaného `now`. Síťové chyby a 5xx zůstávají retryable; 401, 403 a quota/paused důvody zůstávají paused bez spotřeby pokusu; 413, `too_large` a `invalid_input` zůstávají permanent. Neměň jejich dosavadní stavový kontrakt.
+
+Existující upload klient přijímá sekundy z hlavičky i `retryAfterSeconds` těla. Číselnou hlavičku uznej jen jako celé kladné sekundy, nikoli prefix z `parseInt("1neplatné")`; tělo stejně vyžaduje kladné celé číslo. Vadná hlavička může použít platné tělo, jinak výše uvedený fallback. Ověř skutečnou cestu mock HTTP odpověď → klientova chyba → fronta, ne jen ručně sestavenou chybu. Zachovej dosavadní horní mez podporovaného serverového intervalu.
 
 ### Perzistentní cooldown vlastníka
 
