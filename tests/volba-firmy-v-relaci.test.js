@@ -160,14 +160,11 @@ describe("uložení vybrané firmy do přihlašovací relace", () => {
       }),
     });
 
-    expect(vysledek).toMatchObject({
-      accessToken: "token-po-obnove",
-      refreshToken: "refresh-po-obnove",
-      companyTabidooId: FIRMA,
-    });
+    expect(vysledek).toBeNull();
     const naDisku = await precti();
     expect(naDisku.accessToken).toBe("token-po-obnove");
     expect(naDisku.refreshToken).toBe("refresh-po-obnove");
+    expect(naDisku).not.toHaveProperty("companyTabidooId");
   });
 
   it("volbu firmy lze přepsat novou volbou", async () => {
@@ -181,6 +178,41 @@ describe("uložení vybrané firmy do přihlašovací relace", () => {
       storedSession: puvodni,
     });
 
+    expect((await precti()).companyTabidooId).toBe(JINA_FIRMA);
+  });
+
+  it("🔴 odmítne účet B se stejným issuerem a DCR klientem", async () => {
+    const ucetA = relace();
+    const ucetB = relace({
+      accessToken: "token-uctu-b",
+      identity: { name: "Jiný účet", email: "jiny@makemore.cz" },
+    });
+    const { app, precti } = await harness(ucetB);
+
+    await expect(updateStoredAuthSessionCompany({
+      app, safeStorage, companyTabidooId: FIRMA, storedSession: ucetA,
+    })).resolves.toBeNull();
+    expect(await precti()).not.toHaveProperty("companyTabidooId");
+  });
+
+  it("podmíněně smaže jen očekávanou volbu stejné relace", async () => {
+    const puvodni = relace({ companyTabidooId: FIRMA });
+    const { app, precti } = await harness(puvodni);
+    await expect(updateStoredAuthSessionCompany({
+      app, safeStorage, companyTabidooId: null, expectedCompanyId: FIRMA, storedSession: puvodni,
+    })).resolves.not.toBeNull();
+    expect(await precti()).not.toHaveProperty("companyTabidooId");
+  });
+
+  it("nesmaže novější volbu a při guard=false nezapisuje", async () => {
+    const novejsi = relace({ companyTabidooId: JINA_FIRMA });
+    const { app, precti } = await harness(novejsi);
+    await expect(updateStoredAuthSessionCompany({
+      app, safeStorage, companyTabidooId: null, expectedCompanyId: FIRMA, storedSession: novejsi,
+    })).resolves.toBeNull();
+    await expect(updateStoredAuthSessionCompany({
+      app, safeStorage, companyTabidooId: FIRMA, storedSession: novejsi, guard: () => false,
+    })).resolves.toBeNull();
     expect((await precti()).companyTabidooId).toBe(JINA_FIRMA);
   });
 });

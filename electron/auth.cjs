@@ -1623,12 +1623,27 @@ const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
  *
  * @returns {Promise<object|null>} aktualizovaná relace, nebo `null`, když se neuložila
  */
-function updateStoredAuthSessionCompany({ app, safeStorage, companyTabidooId, storedSession }) {
+function updateStoredAuthSessionCompany({
+  app,
+  safeStorage,
+  companyTabidooId,
+  expectedCompanyId = undefined,
+  storedSession,
+  guard = undefined,
+}) {
+  const mazeFirmu = companyTabidooId === null;
   const firma = typeof companyTabidooId === "string" ? companyTabidooId : "";
-  if (!COMPANY_ID_PATTERN.test(firma)) {
+  if ((!mazeFirmu && !COMPANY_ID_PATTERN.test(firma))
+    || (mazeFirmu && !COMPANY_ID_PATTERN.test(expectedCompanyId ?? ""))) {
     // Nesmysl se do relace nezapisuje: odesílání by pak selhalo až na serveru a vypadalo
     // by to jako vada spojení, ne jako vadná uložená hodnota.
     return Promise.reject(new Error("Identifikátor firmy musí být GUID"));
+  }
+  if (!storedSession || typeof storedSession !== "object") {
+    return Promise.reject(new Error("Chybí snímek přihlašovací relace"));
+  }
+  if (guard !== undefined && typeof guard !== "function") {
+    return Promise.reject(new TypeError("Guard musí být synchronní funkce"));
   }
 
   return withTokenStorageTransaction(async () => {
@@ -1641,11 +1656,30 @@ function updateStoredAuthSessionCompany({ app, safeStorage, companyTabidooId, st
       session.issuer !== storedSession?.issuer
       || session.clientId !== storedSession?.clientId
       || session.resource !== storedSession?.resource
+      || session.scope !== UPLOAD_SCOPE
+      || storedSession.scope !== UPLOAD_SCOPE
+      || session.accessToken !== storedSession.accessToken
+      || typeof session.identity?.email !== "string"
+      || session.identity.email !== storedSession.identity?.email
+      || (session.identity.name ?? null) !== (storedSession.identity?.name ?? null)
     ) {
       return null;
     }
 
-    const updatedSession = { ...session, companyTabidooId: firma };
+    if (mazeFirmu && session.companyTabidooId !== expectedCompanyId) return null;
+    if (guard !== undefined) {
+      let guardPlati = false;
+      try {
+        guardPlati = guard() === true;
+      } catch {
+        return null;
+      }
+      if (!guardPlati) return null;
+    }
+
+    const updatedSession = { ...session };
+    if (mazeFirmu) delete updatedSession.companyTabidooId;
+    else updatedSession.companyTabidooId = firma;
     await persistEncryptedSession(safeStorage, updatedSession, storage);
     return updatedSession;
   });

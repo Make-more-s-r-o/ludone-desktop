@@ -1,0 +1,91 @@
+
+> ludone-desktop-prototype@0.1.2 gates
+> npm run lint && npm run typecheck && npm run test:unit && npm run preskocene
+
+
+> ludone-desktop-prototype@0.1.2 lint
+> eslint .
+
+
+/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-firma/electron/upload-company-selection.cjs
+  36:74  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
+
+/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-firma/src/components/UploadCompanySelector.jsx
+  12:50  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
+
+✖ 2 problems (2 errors, 0 warnings)
+
+
+EXIT_CODE=1
+
+TARGETED_RERUN_AFTER_LINT_FIX
+
+> ludone-desktop-prototype@0.1.2 lint
+> eslint .
+
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-firma
+
+ ✓ tests/upload-company-selection.test.js (12 tests) 58ms
+ ✓ tests/volba-firmy-v-relaci.test.js (14 tests) 91ms
+ ✓ tests/upload-company-selector.test.js (4 tests) 77ms
+
+ Test Files  3 passed (3)
+      Tests  30 passed (30)
+   Start at  23:59:30
+   Duration  883ms (transform 65ms, setup 29ms, collect 578ms, tests 226ms, environment 0ms, prepare 215ms)
+
+
+EXIT_CODE=0
+
+TARGETED_RERUN_AFTER_SABOTAGE_RESTORE
+
+> ludone-desktop-prototype@0.1.2 lint
+> eslint .
+
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-firma
+
+ ✓ tests/upload-company-selection.test.js (12 tests) 58ms
+ ✓ tests/volba-firmy-v-relaci.test.js (14 tests) 61ms
+ ✓ tests/upload-company-selector.test.js (4 tests) 74ms
+
+ Test Files  3 passed (3)
+      Tests  30 passed (30)
+   Start at  00:00:30
+   Duration  796ms (transform 45ms, setup 33ms, collect 499ms, tests 193ms, environment 0ms, prepare 167ms)
+
+
+EXIT_CODE=0
+
+TARGETED_RERUN_AFTER_AUTHSTATE_ALIGNMENT
+
+> ludone-desktop-prototype@0.1.2 lint
+> eslint .
+
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-firma
+
+ ✓ tests/volba-firmy-v-relaci.test.js (14 tests) 53ms
+ ✓ tests/upload-company-selection.test.js (12 tests) 58ms
+ ✓ tests/upload-company-selector.test.js (4 tests) 80ms
+
+ Test Files  3 passed (3)
+      Tests  30 passed (30)
+   Start at  00:01:28
+   Duration  765ms (transform 45ms, setup 18ms, collect 463ms, tests 191ms, environment 0ms, prepare 135ms)
+
+
+EXIT_CODE=0
