@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T21:37:45.991Z",
+    "updatedAt": "2026-09-14T21:40:35.116Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -254,7 +254,8 @@
       "deps": [
         "T-04"
       ],
-      "packet": "tasks/T-05.md"
+      "packet": "tasks/T-05.md",
+      "worktree": ".claude/worktrees/nahravky-akce"
     },
     {
       "id": "T-A1",
@@ -304,6 +305,10 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T21:40:35.116Z",
+      "text": "Pro task T-05 byl zaregistrován worktree .claude/worktrees/nahravky-akce."
+    },
     {
       "at": "2026-09-14T21:37:45.991Z",
       "text": "T4 převzato z 9b233c8: root plná brána 1433 PASS, tři původní skipy, exit 0; nezávislé review bez doložených P1/P2. T5 předáno Sol pro trvalý souhlas, jednotlivé akce a obnovu retry."

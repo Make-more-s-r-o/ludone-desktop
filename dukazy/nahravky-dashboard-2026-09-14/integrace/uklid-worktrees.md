@@ -18,3 +18,10 @@ Starší workery už koordinátor převzal cherry-pickem. `git cherry` potvrdil 
 Některá odstranění přerušil nově vznikající `.DS_Store`. U zbytku stromu `nahravky-fronta` bylo před dokončením úklidu všech 333 zbývajících trackovaných souborů ověřeno proti původním Git blobům; rozdíly nebyly. Mimo ně zůstávaly pouze závislosti a generované ikony. Úklid nezahrnoval výchozí `main`, cizí větve ani aktivní `nahravky-overeni`.
 
 🧪 GitHub CI pro společný kód T-03, T-R1 a T-A2 na `ea338b5` skončilo SUCCESS: [run 34896911725](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34896911725). Následujících pět archivních merge commitů mělo totožný obsah stromu. Toto není důkaz živého uploadu, instalace nebo zvuku; finální brány čekají na T-04/T-05.
+
+
+## Následné převzetí T4
+
+Po merge `0078c935` a zelené root bráně 1433 PASS byla větev `feat/nahravky-overeni` se zdrojovým commitem `9b233c8` ověřena jako předek integrace. Čtyři původní worker logy byly byte-for-byte shodné s integračním archivem. Root report navíc obsahuje plný doslovný obsah těchto logů a vlastní přejímku. Čistý strom `nahravky-overeni` a jeho větev byly odstraněny; první pokus o `branch -d` z main správně odmítl smazání, následný příkaz z integrační větve po kontrole předka uspěl bez force.
+
+Aktivní zůstaly pouze `nahravky-integrace` a `nahravky-akce` (T5), vedle nedotčeného výchozího main. Původní T4 commit je stále dosažitelný z integrační historie a pushnutého PR.
