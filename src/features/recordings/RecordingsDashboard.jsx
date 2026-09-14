@@ -131,6 +131,18 @@ const LOCAL_STATE_LABELS = Object.freeze({
   "invalid-manifest": "Data nahrávky jsou poškozená",
 });
 
+function deliveryStateLabel(item) {
+  if (item.source === "orphan") return "Zůstává jen na tomto Macu";
+  if (item.state === "odesila") return "Odesílá se do LuDone";
+  if (item.state === "odeslano") return "Odesláno podle stavu fronty";
+  if (item.state === "selhalo") return "Odeslání selhalo";
+  if (item.state === "ceka" && item.uploadIntent === "approved") {
+    return "Schváleno k odeslání · čeká ve frontě";
+  }
+  if (item.state === "ceka") return "Zůstává na Macu";
+  return "Stav odeslání není známý";
+}
+
 const VERIFICATION_LABELS = Object.freeze({
   complete: "Na serveru je úplná a shoduje se",
   incomplete: "Na serveru ještě není úplná",
@@ -344,17 +356,18 @@ export function RecordingsDashboard({ authState }) {
               <li className="recording-queue-card" key={item.id} data-recording-id={item.id}>
                 <strong>{item.title ?? formatCreatedAt(item.createdAt)}</strong>
                 <div className="recording-queue-card__facts">
-                  <span>{item.source === "orphan" ? "Jen na Macu" : "Ve frontě"}</span>
+                  <span>{item.source === "orphan" ? "Jen na Macu" : "V aplikaci"}</span>
+                  {item.title && <span>{formatCreatedAt(item.createdAt)}</span>}
                   <span>{formatDuration(item.durationMs)}</span>
                   <span>{formatSize(item.sizeBytes)}</span>
+                  <span>ID: {item.id.slice(0, 8)}</span>
                 </div>
                 <p className={`recording-queue-card__local recording-queue-card__local--${item.localState}`}>
                   {LOCAL_STATE_LABELS[item.localState]}
                 </p>
-                <p>{item.uploadIntent === "approved" ? "Schváleno k odeslání" : "Zůstává na Macu"}</p>
-                <p>{item.localReason ?? item.blockReason ?? (item.source === "orphan"
-                  ? "Nahrávka není ve frontě a nemá dostupnou akci."
-                  : "Nahrávka čeká ve frontě.")}</p>
+                <p>{deliveryStateLabel(item)}</p>
+                {item.localReason && <p>{item.localReason}</p>}
+                {item.blockReason && item.blockReason !== item.localReason && <p>{item.blockReason}</p>}
                 {claimable && (
                   <button
                     type="button"
