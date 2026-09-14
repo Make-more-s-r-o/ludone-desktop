@@ -9,6 +9,52 @@ Historie se nemaže, přestěhovala se do [`DAN-TODO-archiv.md`](DAN-TODO-archiv
 
 ---
 
+## 🔴 SLEPÁ ULIČKA: vlastnictví nahrávky NEJDE z aplikace potvrdit (14. 9. 2026)
+
+**Opravuji vlastní radu.** Psal jsem ti „potvrď vlastníka nahrávky" a ukazoval na panel.
+**Takové tlačítko v aplikaci neexistuje** a nešlo by ho ani vyvolat jinudy — změřeno čtením
+kódu, ne odhadem:
+
+| vrstva | co tam je |
+|---|---|
+| `electron/preload.cjs:193–194` | vystavené jen `listQueue` a `retryQueue` |
+| `electron/main.cjs:2540, 2548` | IPC kanály jen `queue:list` a `queue:retry` |
+| `src/features/queue/QueueCard.jsx:117–135` | pouhý text `role="alert"`, **žádné tlačítko** |
+
+**Příčina je hlouběji než v UI.** `prepareRecoveredRecording` (`electron/queue.cjs:458–565`)
+při obnově nahrávky **nikdy nenastaví `ownerFingerprint`**. Zůstane `null`, takže
+`requireMatchingQueueOwner` vrátí `queue_owner_unknown` a **nemá to s čím porovnat** — žádné
+přihlášení to nespraví, protože se neporovnává se session, ale s prázdnou hodnotou.
+
+**Důsledek pro tvoje tři čekající nahrávky:**
+
+| nahrávka | délka | proč stojí | pomůže přihlášení? |
+|---|---|---|---|
+| `594223df` | 27 min | otisk vlastníka prázdný po obnově | ❌ ne — není co porovnat |
+| `8087dd1a` | 64 min | otisk z **jiného účtu** | ❌ ne — potřebuje převzetí |
+| `53ab63fc` | 2 m 47 s | otisk z **jiného účtu** | ❌ ne — potřebuje převzetí |
+
+🔴 **Ta pojistka není vada — brání tomu, aby si pozdější přihlášení tiše přivlastnilo cizí
+nahrávku.** Chybí k ní jen lidský úkon. Řešení je proto v bodě 3 sekce „tři věci
+k doprogramování" (převzetí výslovným klikem u konkrétní položky), teď rozšířené na dashboard
+níž.
+
+## 📋 ZADÁNÍ PRO CODEX: dashboard nahrávek (rozhodnuto 14. 9. 2026)
+
+Dan bude vývoj pouštět v Codexu/GPT. **Codex nesahá na serverovou stranu, jen na tuhle
+aplikaci.** Plné zadání: [`docs/changes/nahravky-dashboard/ZADANI-PRO-CODEX.md`](docs/changes/nahravky-dashboard/ZADANI-PRO-CODEX.md).
+
+Danova rozhodnutí, ze kterých zadání vychází:
+
+1. **Umístění:** samostatná obrazovka v **Nastavení** (ne v panelu z lišty).
+2. **Zdroj pravdy:** **ptát se serveru a porovnávat** — dashboard ukazuje skutečný rozdíl
+   „lokálně × v LuDone", ne jen to, co si fronta myslí. Čtení, žádný zápis na server.
+3. **Akce u položky:** převzít pod svůj účet · poslat znovu / zkusit teď · smazat nahrávku ·
+   otevřít složku se souborem — **a všechny musí být vidět v UI**.
+4. **Rozsah UI:** volná ruka včetně Nastavení (Codex smí přepracovat i stávající panel).
+
+---
+
 ## ✅ ROZHODNUTO 14. 9. — repo zůstává VEŘEJNÉ (bylo: nejvyšší priorita)
 
 **Změřeno dnes na HEAD `d58e663`, ne převzato z auditu:** `gh repo view` → repo je
