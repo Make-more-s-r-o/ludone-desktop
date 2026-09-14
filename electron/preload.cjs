@@ -5,6 +5,8 @@ const AUTH_ORIGINS = Object.freeze([
   "https://labs.ludone.cz",
 ]);
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
+const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 
 function requireAuthOrigin(value) {
   if (!AUTH_ORIGINS.includes(value)) {
@@ -191,6 +193,17 @@ contextBridge.exposeInMainWorld("ludone", {
   exportRecording: (clientRecordingId, volby) =>
     ipcRenderer.invoke("recording:export", clientRecordingId, volby),
   listQueue: () => ipcRenderer.invoke("queue:list"),
+  claimRecording: (clientRecordingId, expectedRevision) => {
+    if (
+      typeof clientRecordingId !== "string"
+      || !QUEUE_ITEM_ID_PATTERN.test(clientRecordingId)
+      || typeof expectedRevision !== "string"
+      || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
+    ) {
+      throw new TypeError("Převzetí vyžaduje GUID nahrávky a platnou revizi");
+    }
+    return ipcRenderer.invoke("queue:claim-recording", clientRecordingId, expectedRevision);
+  },
   retryQueue: () => ipcRenderer.invoke("queue:retry"),
   startTracking: (payload) => ipcRenderer.invoke("tracking:start", payload),
   switchTrackingProject: (payload) =>

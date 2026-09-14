@@ -91,6 +91,8 @@ const TRAY_COMMAND_CHANNEL = "tray:command";
 const TRAY_SPACE_WARNING_URL = "ludone://tray-warning/index.html#tray-space-warning";
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const AUTH_COPY_PENDING_URL_CHANNEL = "auth:copy-pending-url";
+const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
 const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
@@ -457,6 +459,7 @@ let authLogoutsInFlight = 0;
 let authOriginChangeInFlight = false;
 let authSessionGeneration = 0;
 let authSessionTransitionPromise = null;
+let claimDialogGeneration = 0;
 const activeAuthAttempts = new Set();
 const AUTH_CANCEL_CHANNEL = "auth:cancel";
 
@@ -2254,6 +2257,63 @@ async function readCurrentQueueOwnerFingerprint() {
   }
 }
 
+// Převzetí je čistě lokální akce. Záměrně nevolá readUsableAuthSession(), protože
+// ten může obnovovat token po síti. Neplatná relace se zde odmítne a UI vyžádá přihlášení.
+async function readStableClaimOwnerSnapshot() {
+  const generation = authSessionGeneration;
+  if (
+    authAttemptsInFlight > 0
+    || authLogoutsInFlight > 0
+    || authOriginChangeInFlight
+    || authSessionTransitionPromise !== null
+  ) {
+    throw new Error("Identita se právě mění; zkuste převzetí znovu");
+  }
+  const storedSession = await readStoredAuthSession();
+  if (
+    generation !== authSessionGeneration
+    || authAttemptsInFlight > 0
+    || authLogoutsInFlight > 0
+    || authOriginChangeInFlight
+    || authSessionTransitionPromise !== null
+    || storedAuthSessionState(storedSession) !== "valid"
+  ) {
+    throw new Error("Pro převzetí je nutné platné přihlášení");
+  }
+  const ownerFingerprint = deriveQueueOwnerFingerprint(
+    storedSession,
+    queueOwnerSecretStore.get(),
+  );
+  if (typeof ownerFingerprint !== "string" || ownerFingerprint.length === 0) {
+    throw new Error("Přihlášenou identitu nelze bezpečně ověřit");
+  }
+  return Object.freeze({ generation, ownerFingerprint });
+}
+
+function sameClaimOwnerSnapshot(first, second) {
+  return first.generation === second.generation
+    && first.ownerFingerprint === second.ownerFingerprint;
+}
+
+async function readCurrentValidQueueOwnerFingerprint() {
+  try {
+    return (await readStableClaimOwnerSnapshot()).ownerFingerprint;
+  } catch {
+    return null;
+  }
+}
+
+function claimRecordingDialogLabel(item) {
+  let dateLabel = "neznámého data";
+  if (typeof item.createdAt === "string" && Number.isFinite(Date.parse(item.createdAt))) {
+    dateLabel = new Intl.DateTimeFormat("cs-CZ", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(item.createdAt));
+  }
+  return `${dateLabel} · ID ${item.id.slice(0, 8)}`;
+}
+
 function createQueueSend() {
   // Store fronty zůstává po celý běh jediný. Konkrétní sender se vytvoří až pro
   // jednotlivý pokus, aby po bezpečném přepnutí použil právě platný origin.
@@ -2540,11 +2600,92 @@ handleValidated("recording:confirm-export-failure", ["panel"], async (
 handleValidated("recording:export", ["panel"], exportCompletedRecording);
 handleValidated("queue:list", ["panel", "settings"], async () => {
   await waitForOutboundQueueRecovery();
+  const currentOwnerFingerprint = await readCurrentValidQueueOwnerFingerprint();
   const items = await addQueueSendingAvailability(
-    await (await getOutboundQueueStore()).list(),
+    await (await getOutboundQueueStore()).list(currentOwnerFingerprint),
   );
   updateOutboundQueueTrayFact(items);
   return items;
+});
+handleValidated("queue:claim-recording", ["settings"], async (
+  event,
+  clientRecordingId,
+  expectedRevision,
+  ...extraPayload
+) => {
+  if (
+    extraPayload.length > 0
+    || typeof clientRecordingId !== "string"
+    || !QUEUE_ITEM_ID_PATTERN.test(clientRecordingId)
+    || typeof expectedRevision !== "string"
+    || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
+  ) {
+    throw new TypeError("Kanál queue:claim-recording očekává GUID a platnou revizi");
+  }
+
+  await waitForOutboundQueueRecovery();
+  const dialogGeneration = ++claimDialogGeneration;
+  const confirmedOwner = await readStableClaimOwnerSnapshot();
+  const store = await getOutboundQueueStore();
+  const currentItems = await store.list(confirmedOwner.ownerFingerprint);
+  const currentItem = currentItems.find((item) => item.id === clientRecordingId);
+  if (
+    !currentItem
+    || currentItem.kind !== "recording"
+    || currentItem.revision !== expectedRevision
+    || !["ceka", "selhalo"].includes(currentItem.state)
+    || !["unknown", "other"].includes(currentItem.ownership)
+  ) {
+    throw new Error("Nahrávku už nelze převzít; načtěte seznam znovu");
+  }
+  const confirmation = await dialog.showMessageBox(settingsWindow, {
+    type: "warning",
+    title: "Převzít nahrávku?",
+    message: "Převzít tuto nahrávku pod svůj účet?",
+    detail: `Nahrávka ${claimRecordingDialogLabel(currentItem)} vznikla pod jiným nebo neověřeným účtem. Převzetí ji neodešle.`,
+    buttons: ["Zrušit", "Převzít"],
+    cancelId: 0,
+    defaultId: 0,
+    noLink: true,
+  });
+  if (confirmation.response !== 1 || dialogGeneration !== claimDialogGeneration) {
+    return {
+      claimed: false,
+      items: await addQueueSendingAvailability(currentItems),
+    };
+  }
+
+  // Modal dovolí rendereru navigovat i účtu se mezitím změnit. Ověřujeme obojí
+  // znovu těsně před serializovaným zápisem a ještě jednou uvnitř jeho guardu.
+  requireTrustedSender(event, ["settings"]);
+  const currentOwner = await readStableClaimOwnerSnapshot();
+  if (!sameClaimOwnerSnapshot(currentOwner, confirmedOwner)) {
+    throw new Error("Účet se během potvrzení změnil; načtěte seznam znovu");
+  }
+  const storeResult = await store.claimRecording(
+    clientRecordingId,
+    expectedRevision,
+    confirmedOwner.ownerFingerprint,
+    {
+      guard: async () => {
+        if (dialogGeneration !== claimDialogGeneration) return false;
+        try {
+          requireTrustedSender(event, ["settings"]);
+          const latestOwner = await readStableClaimOwnerSnapshot();
+          requireTrustedSender(event, ["settings"]);
+          return sameClaimOwnerSnapshot(latestOwner, confirmedOwner);
+        } catch {
+          return false;
+        }
+      },
+    },
+  );
+  const result = {
+    ...storeResult,
+    items: await addQueueSendingAvailability(storeResult.items),
+  };
+  updateOutboundQueueTrayFact(result.items);
+  return result;
 });
 handleValidated("queue:retry", ["panel"], async () => {
   await waitForOutboundQueueRecovery();

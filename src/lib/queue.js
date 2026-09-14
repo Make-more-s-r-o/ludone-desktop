@@ -34,6 +34,9 @@ export const DEFAULT_RETRY_POLICY = Object.freeze({
 });
 
 const PROJECT_GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const QUEUE_OWNER_FINGERPRINT_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+
+export const CLAIMED_RECORDING_HOLD_REASON = "Převzatá nahrávka čeká na volbu odeslání";
 
 function requireObject(value, field) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -392,8 +395,17 @@ export function killswitchNameForKind(kind = QUEUE_ITEM_KINDS.RECORDING) {
   throw new TypeError(`neznámý typ položky fronty: ${String(kind)}`);
 }
 
-export function reduceQueueForRenderer(queue) {
+export function reduceQueueForRenderer(queue, currentOwnerFingerprint = null) {
   requireQueue(queue);
+  if (
+    currentOwnerFingerprint !== null
+    && (
+      typeof currentOwnerFingerprint !== "string"
+      || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(currentOwnerFingerprint)
+    )
+  ) {
+    throw new TypeError("currentOwnerFingerprint musí být platný otisk nebo null");
+  }
   return queue.items.map((item) => ({
     id: item.clientRecordingId,
     kind: item.kind ?? QUEUE_ITEM_KINDS.RECORDING,
@@ -410,12 +422,68 @@ export function reduceQueueForRenderer(queue) {
       : null,
     server: serverForRenderer(item),
     blockReason: queueItemBlockReason(item),
+    ownership: item.ownerFingerprint === null || item.ownerFingerprint === undefined
+      ? "unknown"
+      : (currentOwnerFingerprint === null
+          ? "unavailable"
+          : (item.ownerFingerprint === currentOwnerFingerprint ? "current" : "other")),
+    ...(
+      typeof item.revision === "string" && /^sha256:[a-f0-9]{64}$/u.test(item.revision)
+        ? { revision: item.revision }
+        : {}
+    ),
     ...(
       queueItemRequiresHumanAction(item)
         ? { requiresHumanAction: true }
         : {}
     ),
   }));
+}
+
+/**
+ * Přepíše vlastníka jediné lokální nahrávky. Nový vlastník tím ještě neschvaluje
+ * odeslání, proto položka zůstává držená pro navazující volbu v T5.
+ */
+export function claimRecording(queue, clientRecordingId, ownerFingerprint) {
+  requireQueue(queue);
+  requireGuid(clientRecordingId, "clientRecordingId");
+  if (
+    typeof ownerFingerprint !== "string"
+    || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(ownerFingerprint)
+  ) {
+    throw new TypeError("ownerFingerprint musí být platný otisk vlastníka");
+  }
+  const index = queue.items.findIndex((item) => item.clientRecordingId === clientRecordingId);
+  if (index === -1) throw new Error("nahrávka ve frontě nebyla nalezena");
+  const originalItem = queue.items[index];
+  if ((originalItem.kind ?? QUEUE_ITEM_KINDS.RECORDING) !== QUEUE_ITEM_KINDS.RECORDING) {
+    throw new Error("převzít lze jen nahrávku");
+  }
+  if (originalItem.state === QUEUE_STATES.SENDING) {
+    throw new Error("právě odesílanou nahrávku nelze převzít");
+  }
+  if (originalItem.state === QUEUE_STATES.SENT) {
+    throw new Error("odeslanou nahrávku nelze převzít");
+  }
+  if (originalItem.state !== QUEUE_STATES.WAITING && originalItem.state !== QUEUE_STATES.FAILED) {
+    throw new Error("nahrávka není ve stavu, který lze převzít");
+  }
+  if (originalItem.ownerFingerprint === ownerFingerprint) {
+    throw new Error("nahrávka už patří aktuálnímu účtu");
+  }
+
+  const item = {
+    ...originalItem,
+    attempts: 0,
+    lastFailureReason: CLAIMED_RECORDING_HOLD_REASON,
+    nextAttemptAt: null,
+    ownerFingerprint,
+    requiresHumanAction: true,
+    sentAt: null,
+    server: emptyServerProgress(),
+    state: QUEUE_STATES.WAITING,
+  };
+  return { item, queue: replaceItem(queue, index, item) };
 }
 
 /**
