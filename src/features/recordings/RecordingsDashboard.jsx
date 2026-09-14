@@ -11,7 +11,7 @@ function safeNonNegativeInteger(value) {
   return Number.isSafeInteger(value) && value >= 0 ? value : null;
 }
 
-function normalizeQueueItem(value) {
+function normalizeRecordingItem(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   if (
     value.kind !== "recording"
@@ -35,12 +35,22 @@ function normalizeQueueItem(value) {
       ? value.ownership
       : "unavailable",
     requiresHumanAction: value.requiresHumanAction === true,
+    source: value.source === "orphan" ? "orphan" : "queue",
+    localState: ["complete-audio", "partial-audio", "missing-audio", "invalid-manifest"]
+      .includes(value.localState) ? value.localState : "invalid-manifest",
+    localReason: safeText(value.localReason),
+    canClaim: value.allowedActions?.claim === true,
   };
 }
 
-function normalizeQueue(value) {
-  if (!Array.isArray(value)) throw new TypeError("Hlavní proces nevrátil seznam nahrávek");
-  return value.map(normalizeQueueItem).filter(Boolean);
+function normalizeSnapshot(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || !Array.isArray(value.items)) {
+    throw new TypeError("Hlavní proces nevrátil lokální přehled nahrávek");
+  }
+  return {
+    items: value.items.map(normalizeRecordingItem).filter(Boolean),
+    unreadableCount: safeNonNegativeInteger(value.unreadableCount) ?? 0,
+  };
 }
 
 function formatCreatedAt(value) {
@@ -79,8 +89,17 @@ function accountExplanation(authState) {
   return null;
 }
 
+const LOCAL_STATE_LABELS = Object.freeze({
+  "complete-audio": "Zvuk je kompletní",
+  "partial-audio": "Část zvuku chybí",
+  "missing-audio": "Zvukové soubory chybí",
+  "invalid-manifest": "Data nahrávky jsou poškozená",
+});
+
 export function RecordingsDashboard({ authState }) {
-  const [view, setView] = useState({ state: "loading", items: [], message: "" });
+  const [view, setView] = useState({
+    state: "loading", items: [], unreadableCount: 0, message: "",
+  });
   const [claimingId, setClaimingId] = useState(null);
   const active = useRef(true);
   const claimInFlight = useRef(false);
@@ -89,22 +108,23 @@ export function RecordingsDashboard({ authState }) {
 
   const load = useCallback(() => {
     const requestGeneration = ++loadGeneration.current;
-    const listQueue = window.ludone?.listQueue;
-    if (typeof listQueue !== "function") {
-      setView({ state: "error", items: [], message: "Seznam nahrávek není dostupný." });
+    const listLocalRecordings = window.ludone?.listLocalRecordings;
+    if (typeof listLocalRecordings !== "function") {
+      setView({ state: "error", items: [], unreadableCount: 0, message: "Přehled nahrávek není dostupný." });
       return Promise.resolve();
     }
     setView((current) => ({ ...current, state: "loading", message: "" }));
     return Promise.resolve()
-      .then(() => listQueue())
-      .then((items) => {
+      .then(() => listLocalRecordings())
+      .then((snapshotValue) => {
         if (active.current && requestGeneration === loadGeneration.current) {
-          setView({ state: "ready", items: normalizeQueue(items), message: "" });
+          const snapshot = normalizeSnapshot(snapshotValue);
+          setView({ state: "ready", ...snapshot, message: "" });
         }
       })
       .catch(() => {
         if (active.current && requestGeneration === loadGeneration.current) {
-          setView({ state: "error", items: [], message: "Nahrávky se nepodařilo načíst." });
+          setView({ state: "error", items: [], unreadableCount: 0, message: "Nahrávky se nepodařilo načíst." });
         }
       });
   }, []);
@@ -133,13 +153,15 @@ export function RecordingsDashboard({ authState }) {
     setClaimingId(item.id);
     try {
       const result = await window.ludone.claimRecording(item.id, item.revision);
-      const items = normalizeQueue(result?.items);
-      if (active.current) setView({ state: "ready", items, message: "" });
+      if (result?.claimed === true || result?.claimed === false) {
+        await load();
+      }
     } catch {
       if (active.current) {
         setView({
           state: "error",
           items: [],
+          unreadableCount: 0,
           message: "Převzetí se nepodařilo. Načti čerstvý seznam a zkus to znovu.",
         });
       }
@@ -154,8 +176,18 @@ export function RecordingsDashboard({ authState }) {
   return (
     <div className="recordings-dashboard" data-testid="recordings-dashboard">
       <p className="recordings-dashboard__intro">
-        Přebíráš nahrávku vzniklou pod jiným nebo neověřeným účtem. Převzetí ji neodešle.
+        Přehled spojuje frontu s nahrávkami, které zůstaly jen na tomto Macu. Převzetí ji neodešle.
       </p>
+      <div className="recordings-dashboard__toolbar">
+        <button
+          type="button"
+          className="button button--small"
+          disabled={view.state === "loading"}
+          onClick={() => void load()}
+        >
+          Obnovit přehled
+        </button>
+      </div>
       {disabledExplanation && (
         <p className="recordings-dashboard__notice" role="status">{disabledExplanation}</p>
       )}
@@ -168,22 +200,29 @@ export function RecordingsDashboard({ authState }) {
           </button>
         </div>
       )}
-      {view.state === "ready" && view.items.length === 0 && (
-        <p className="recordings-dashboard__empty">Ve frontě nejsou žádné nahrávky.</p>
+      {view.state === "ready" && view.items.length === 0 && view.unreadableCount === 0 && (
+        <p className="recordings-dashboard__empty">Na tomto Macu nejsou žádné nahrávky k zobrazení.</p>
       )}
-      {view.state === "ready" && view.items.length > 0 && (
-        <ul className="recordings-dashboard__list" aria-label="Nahrávky ve frontě">
+      {view.state === "ready" && (view.items.length > 0 || view.unreadableCount > 0) && (
+        <ul className="recordings-dashboard__list" aria-label="Lokální nahrávky">
           {view.items.map((item) => {
-            const claimable = ["unknown", "other"].includes(item.ownership)
+            const claimable = item.source === "queue" && item.canClaim
+              && ["unknown", "other"].includes(item.ownership)
               && ["ceka", "selhalo"].includes(item.state);
             return (
               <li className="recording-queue-card" key={item.id} data-recording-id={item.id}>
                 <strong>{formatCreatedAt(item.createdAt)}</strong>
                 <div className="recording-queue-card__facts">
+                  <span>{item.source === "orphan" ? "Jen na Macu" : "Ve frontě"}</span>
                   <span>{formatDuration(item.durationMs)}</span>
                   <span>{formatSize(item.sizeBytes)}</span>
                 </div>
-                <p>{item.blockReason ?? "Nahrávka čeká ve frontě."}</p>
+                <p className={`recording-queue-card__local recording-queue-card__local--${item.localState}`}>
+                  {LOCAL_STATE_LABELS[item.localState]}
+                </p>
+                <p>{item.localReason ?? item.blockReason ?? (item.source === "orphan"
+                  ? "Nahrávka není ve frontě a nemá dostupnou akci."
+                  : "Nahrávka čeká ve frontě.")}</p>
                 {claimable && (
                   <button
                     type="button"
@@ -197,6 +236,16 @@ export function RecordingsDashboard({ authState }) {
               </li>
             );
           })}
+          {view.unreadableCount > 0 && (
+            <li className="recording-queue-card recording-queue-card--invalid" data-testid="unreadable-recordings">
+              <strong>Poškozená data bez bezpečné identity</strong>
+              <p>
+                {view.unreadableCount === 1
+                  ? "Jednu nahrávku nelze bezpečně zobrazit ani použít."
+                  : `${view.unreadableCount} nahrávek nelze bezpečně zobrazit ani použít.`}
+              </p>
+            </li>
+          )}
         </ul>
       )}
     </div>

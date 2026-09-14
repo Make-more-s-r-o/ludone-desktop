@@ -193,6 +193,7 @@ contextBridge.exposeInMainWorld("ludone", {
   exportRecording: (clientRecordingId, volby) =>
     ipcRenderer.invoke("recording:export", clientRecordingId, volby),
   listQueue: () => ipcRenderer.invoke("queue:list"),
+  listLocalRecordings: () => ipcRenderer.invoke("recordings:list-local"),
   claimRecording: (clientRecordingId, expectedRevision) => {
     if (
       typeof clientRecordingId !== "string"

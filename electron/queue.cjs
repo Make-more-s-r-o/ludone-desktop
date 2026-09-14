@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { createHash, createHmac, randomUUID } = require("node:crypto");
+const { createLocalRecordingsSnapshot } = require("./recordings-dashboard.cjs");
 
 const QUEUE_SCHEMA_VERSION = 1;
 const RECOVERABLE_MANIFEST_STATES = new Set(["complete", "incomplete"]);
@@ -862,6 +863,17 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     return queueModule.reduceQueueForRenderer({ ...queue, items }, currentOwnerFingerprint);
   }
 
+  function reduceForLocalDashboard(queueModule, queue, currentOwnerFingerprint = null) {
+    const items = queue.items.map((item) => ({
+      ...item,
+      createdAt: null,
+      durationMs: null,
+      revision: queueItemRevision(item),
+      sizeBytes: null,
+    }));
+    return queueModule.reduceQueueForRenderer({ ...queue, items }, currentOwnerFingerprint);
+  }
+
   async function ensureLoaded() {
     if (!loaded) {
       currentQueue = await loadQueue(filePath);
@@ -1017,6 +1029,35 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
+  function listLocalRecordings(currentOwnerFingerprint = null) {
+    if (
+      currentOwnerFingerprint !== null
+      && (
+        typeof currentOwnerFingerprint !== "string"
+        || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(currentOwnerFingerprint)
+      )
+    ) {
+      throw new TypeError("currentOwnerFingerprint musí být platný otisk nebo null");
+    }
+    return serialize(async () => {
+      const queueModule = await loadQueueModule();
+      // Přehled čte frontu pokaždé z disku. Poškození vzniklé mimo proces tak
+      // nezakryje dříve načtená cache a disk se začne skenovat až po platné frontě.
+      let queue;
+      try {
+        queue = await loadQueue(filePath);
+      } catch (error) {
+        currentQueue = undefined;
+        loaded = false;
+        throw error;
+      }
+      currentQueue = queue;
+      loaded = true;
+      const queueItems = reduceForLocalDashboard(queueModule, queue, currentOwnerFingerprint);
+      return createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory });
+    });
+  }
+
   function retry(killswitches) {
     return serialize(async () => {
       const queueModule = await loadQueueModule();
@@ -1044,7 +1085,15 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
-  return Object.freeze({ claimRecording, enqueueRecording, enqueueTimeEntry, list, pump, retry });
+  return Object.freeze({
+    claimRecording,
+    enqueueRecording,
+    enqueueTimeEntry,
+    list,
+    listLocalRecordings,
+    pump,
+    retry,
+  });
 }
 
 module.exports = {
