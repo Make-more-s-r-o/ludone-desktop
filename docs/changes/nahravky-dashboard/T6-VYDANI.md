@@ -54,7 +54,7 @@ včetně veřejné dostupnosti; samotné vytvoření balíčků se za publikaci 
 ## Postup pro první instalaci a aktualizaci
 
 Test používá dvě po sobě jdoucí verze: živou `0.1.1` a připravenou `0.1.2`. Bump je v commitu
-`5a7a1ab`; při integraci je nutné ověřit, že se do tagu dostane spolu s výsledkem T0–T6.
+`5259d57`; před tagem je nutné ověřit, že obsahuje také výsledky T0–T6.
 Tag vždy vytváří a pushuje Dan.
 
 1. Na testovacím Macu stáhni starší DMG pro správnou architekturu přes prohlížeč z
@@ -78,3 +78,8 @@ Tag vždy vytváří a pushuje Dan.
 Výsledek zapiš jako ✅ pouze tehdy, když projde stažení prohlížečem, první instalace, skutečná
 nahrávka, automatický download, bezpečný restart a druhá skutečná nahrávka po aktualizaci.
 Samostatně archivuj doslovné výstupy HTTP, `spctl`, verze aplikace a akceptačního příkazu.
+
+Přechod `0.1.1 → 0.1.2` testuje příjem balíčku původním updaterem. Nová informace o dostupné
+verzi a procentu stahování poběží až v `0.1.2`; její ostré ověření vyžaduje další schválenou
+vyšší verzi. Tento běh kvůli tomu nepřepisuje feed ani nevytváří další tag. Podrobný protokol
+je v [OVERENI-NA-MACU.md](OVERENI-NA-MACU.md).
