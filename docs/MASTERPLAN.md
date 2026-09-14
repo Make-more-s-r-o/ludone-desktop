@@ -1,3 +1,34 @@
+# Masterplan LuDone Desktop — aktuální rozcestník
+
+**Aktualizováno 14. 9. 2026.** Proces nových a rozpracovaných změn řídí skill `masterplan`, `AGENTS.md` a vždy konkrétní adresář v `docs/changes/`. Dlouhý text verze 0.2 pod tímto rozcestníkem je zachovaný historický bootstrap; není dnešní plán projektu ani obecná autorita nad aktuálním skillem.
+
+## Co je aktuální
+
+| Oblast | Autoritativní stav | Praktický význam |
+|---|---|---|
+| Dokončení nahrávek | [`nahravky-dashboard/STAV.md`](changes/nahravky-dashboard/STAV.md) a [`progress/status.json`](changes/nahravky-dashboard/progress/status.json) | Aktivní běh. T-00, T-01 a T-A1 jsou integrované s testy; T-02 navazuje. T-03 až T-05 a T-R1 čekají. |
+| Vydání a aktualizace | Funkce NRD-08 v [`nahravky-dashboard/spec.md`](changes/nahravky-dashboard/spec.md) | Kód je v review. Nový signed/notarized build ani verze 0.1.2 nebyly zveřejněny. |
+| Původní desktop v1 | [`desktop-v1/STAV.md`](changes/desktop-v1/STAV.md) | Historický snapshot z 1.–7. 9. Jeho 17 funkcí zůstává zachováno v původním českém schématu; nepoužívej jej pro dnešní postup. |
+| Dlouhodobý etapový plán | [`PLAN.md`](../PLAN.md) | Historický základ z 24. 8. s novou úvodní aktualizací; podrobný dnešní DAG je u aktivní změny. |
+
+## Dnešní korekce starých tvrzení
+
+- GitHub repozitář `Make-more-s-r-o/ludone-desktop` je veřejný a `main` má zelené CI; staré texty o lokálním, neveřejném nebo prázdném repozitáři jsou historie.
+- Názvy pěti podpisových secrets v GitHubu existují. Z toho nelze odvodit, že je podpisový klíč zálohovaný nebo že vznikl nový podepsaný build; obojí stále čeká na ověření.
+- Veřejný feed zatím obsluhuje verzi 0.1.1. Připravený release workflow, zelené testy ani SCP konfigurace samy neznamenají, že verze 0.1.2 byla publikována.
+- Automatický sync už není obecně „pozdější fáze“. Současný schválený běh ho zavádí s per-item consentem a bez zpětného odeslání starých nahrávek.
+
+## Jak navázat
+
+1. Přečti `ROZHODNUTI.md` → `PLAN.md` → `DAN-TODO.md` → `docs/changes/nahravky-dashboard/STAV.md`.
+2. Stav implementace a ověření ber z `progress/status.json`; HTML je pouze generovaná projekce.
+3. Pro další task použij DAG a konkrétní lintnutý packet. Neobnovuj staré B-story z `desktop-v1` jako dnešní backlog.
+4. Zelené testy označuj 🧪. Podepsané vydání a update mají ✅ až po skutečné instalaci a aktualizaci na Macu.
+
+---
+
+## Historický bootstrap masterplánu 0.2
+
 > **Zkopírováno do repozitáře 1. 9. 2026** z `~/Downloads/LUDONE_MASTERPLAN_BOOTSTRAP.md`.
 > Do té chvíle se jím běh řídil z Danova adresáře Stažené, tedy ze zdroje, který nikdo nemohl
 > zkontrolovat ani verzovat — a audit téhož dne to našel jako odchylku **O6**.

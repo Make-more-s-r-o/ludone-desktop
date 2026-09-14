@@ -1,5 +1,9 @@
 # Plan: LuDone Desktop v1
 
+> **Archivovaný plán etapy z 1. 9. 2026.** Zachovává tehdejší rozhodnutí a B-story, ale
+> neurčuje dnešní pořadí práce. Aktuální běh, který nahrazuje odložené části kolem uploadu,
+> dashboardu a vydání, je v [`../nahravky-dashboard/plan.md`](../nahravky-dashboard/plan.md).
+
 **Stav: ZMRAZENO 1. 9. 2026** po zodpovězení rozhodovacího balíku. Nadřazené: [`intent.md`](intent.md) · [`spec.md`](spec.md) · [`decisions.md`](decisions.md)
 
 ---
