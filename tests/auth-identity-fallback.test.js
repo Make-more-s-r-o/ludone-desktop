@@ -27,6 +27,10 @@ const TOKEN_RESPONSE = Object.freeze({
   scope: "mcp:read",
   token_type: "Bearer",
 });
+const TOKEN_IDENTITY_SENTINEL = Object.freeze({
+  email: "tokenova-identita@example.invalid",
+  name: "Tokenová identita",
+});
 const MCP_RESPONSE = Object.freeze({
   jsonrpc: "2.0",
   id: 1,
@@ -423,6 +427,22 @@ describe("znovupoužití uloženého OAuth klienta", () => {
 });
 
 describe("best-effort identita po OAuth přihlášení", () => {
+  it("legacy větev bez resolveru dál přijme identitu z token response", async () => {
+    const harness = await createHarness({
+      tokenResponse: { ...TOKEN_RESPONSE, ...TOKEN_IDENTITY_SENTINEL },
+      mcpHandler: async () => { throw new Error("MCP se při úplné tokenové identitě nemá volat"); },
+    });
+
+    await expect(completeLogin(harness)).resolves.toEqual({
+      ok: true,
+      user: TOKEN_IDENTITY_SENTINEL,
+    });
+    expect((await readSession(harness)).identity).toEqual(TOKEN_IDENTITY_SENTINEL);
+    expect(harness.fetchImpl.mock.calls.filter(
+      ([input]) => new URL(input).pathname === "/api/mcp",
+    )).toHaveLength(0);
+  });
+
   it("token bez identity přesto uloží jako úspěšnou session", async () => {
     const harness = await createHarness();
 
@@ -547,6 +567,7 @@ describe("identita z userinfo endpointu (upload scope)", () => {
     const harness = await createHarness({
       identityEndpoint: USERINFO,
       scope: UPLOAD_SCOPE,
+      tokenResponse: { ...TOKEN_RESPONSE, ...TOKEN_IDENTITY_SENTINEL },
       userinfoHandler: async () => jsonResponse({ sub: "7", email: "upload@makemore.cz", name: "Up Loader" }),
       // Kdyby se přesto sáhlo na MCP, je to poplach: upload-only token tam nemá co dělat.
       mcpHandler: async () => { throw new Error("ludone_ping se u upload identity nesmí volat"); },
@@ -581,7 +602,8 @@ describe("identita z userinfo endpointu (upload scope)", () => {
     const harness = await createHarness({
       identityEndpoint: USERINFO,
       scope: UPLOAD_SCOPE,
-      userinfoHandler: async () => jsonResponse({ error: "boom" }, { ok: false, status: 500 }),
+      tokenResponse: { ...TOKEN_RESPONSE, ...TOKEN_IDENTITY_SENTINEL },
+      userinfoHandler: async () => jsonResponse({ error: "boom" }, { ok: false, status: 503 }),
       // Upload-only token na MCP: 403. Best-effort fallback nesmí shodit login.
       mcpHandler: async () => jsonResponse({ error: "insufficient_scope" }, { ok: false, status: 403 }),
     });
@@ -595,6 +617,66 @@ describe("identita z userinfo endpointu (upload scope)", () => {
     expect(harness.fetchImpl.mock.calls.filter(
       ([input]) => new URL(input).pathname === "/api/mcp",
     )).toHaveLength(0);
+  });
+
+  it.each([
+    {
+      expected: { email: "userinfo@example.invalid", name: null },
+      label: "jméno",
+      userinfo: { email: "userinfo@example.invalid" },
+    },
+    {
+      expected: { email: null, name: "Userinfo identita" },
+      label: "e-mail",
+      userinfo: { name: "Userinfo identita" },
+    },
+  ])("částečný userinfo nedoplní $label z token response", async ({ expected, userinfo }) => {
+    const harness = await createHarness({
+      identityEndpoint: USERINFO,
+      scope: UPLOAD_SCOPE,
+      tokenResponse: { ...TOKEN_RESPONSE, ...TOKEN_IDENTITY_SENTINEL },
+      userinfoHandler: async () => jsonResponse(userinfo),
+    });
+
+    await expect(completeLogin(harness)).resolves.toEqual({ ok: true, user: expected });
+    expect((await readSession(harness)).identity).toEqual(expected);
+    expect(harness.fetchImpl.mock.calls.filter(
+      ([input]) => new URL(input).pathname === "/api/mcp",
+    )).toHaveLength(0);
+  });
+
+  it("deadline userinfo uloží neznámou identitu, abortuje request a nevolá MCP", async () => {
+    let userinfoSignal;
+    let announceUserinfoStarted;
+    const userinfoStarted = new Promise((resolve) => {
+      announceUserinfoStarted = resolve;
+    });
+    const harness = await createHarness({
+      identityEndpoint: USERINFO,
+      scope: UPLOAD_SCOPE,
+      tokenResponse: { ...TOKEN_RESPONSE, ...TOKEN_IDENTITY_SENTINEL },
+      userinfoHandler: async (_input, init) => new Promise(() => {
+        userinfoSignal = init.signal;
+        announceUserinfoStarted();
+      }),
+    });
+    vi.useFakeTimers();
+
+    const pending = completeLogin(harness);
+    await userinfoStarted;
+    expect(userinfoSignal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(IDENTITY_LOOKUP_DEADLINE_MS);
+
+    await expect(pending).resolves.toEqual({
+      ok: true,
+      user: { name: null, email: null },
+    });
+    expect(userinfoSignal.aborted).toBe(true);
+    expect((await readSession(harness)).identity).toEqual({ name: null, email: null });
+    expect(harness.fetchImpl.mock.calls.filter(
+      ([input]) => new URL(input).pathname === "/api/mcp",
+    )).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("uloží e-mail z userinfo bytově beze změny (lokální část se nelowercasuje)", async () => {

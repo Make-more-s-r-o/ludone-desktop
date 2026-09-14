@@ -1,0 +1,23 @@
+TYPECHECK
+PŘÍKAZ: npm run typecheck
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+EXIT_CODE=0
+
+CÍLENÉ AUTH TESTY
+PŘÍKAZ: npx vitest run tests/auth-identity-fallback.test.js tests/auth-controller-wiring.test.js tests/auth-refresh.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-userinfo
+
+ ✓ tests/auth-refresh.test.js (10 tests) 140ms
+ ✓ tests/auth-controller-wiring.test.js (48 tests) 159ms
+ ✓ tests/auth-identity-fallback.test.js (29 tests) 814ms
+
+ Test Files  3 passed (3)
+      Tests  87 passed (87)
+   Start at  22:56:15
+   Duration  1.12s (transform 58ms, setup 22ms, collect 109ms, tests 1.11s, environment 0ms, prepare 208ms)
+
+EXIT_CODE=0

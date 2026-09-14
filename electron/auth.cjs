@@ -412,8 +412,13 @@ async function requestMcpIdentity(fetchImpl, issuer, accessToken, signal) {
 }
 
 async function resolveUserIdentity(options, fetchImpl, accessToken, tokenResponse, issuer) {
-  let identity = normalizeIdentity(tokenResponse);
   const hasConfiguredResolver = typeof options.resolveIdentity === "function" || options.identityEndpoint;
+  // Explicitní resolver je autorita pro identitu daného scope. Token response může nést
+  // stejně pojmenovaná, ale neověřená pole; při chybě ani částečné odpovědi jimi proto
+  // nesmíme doplnit userinfo. Legacy tok bez resolveru si původní fallback zachovává.
+  let identity = hasConfiguredResolver
+    ? normalizeIdentity(null)
+    : normalizeIdentity(tokenResponse);
   if (!hasConfiguredResolver && identity.email !== null) return identity;
 
   try {
@@ -423,7 +428,8 @@ async function resolveUserIdentity(options, fetchImpl, accessToken, tokenRespons
           const resolved = await options.resolveIdentity({ accessToken, issuer, signal });
           identity = mergeIdentity(normalizeIdentity(resolved), identity);
         } catch {
-          // Identita je pouze popisek; chyba resolveru nesmí zrušit vydaný token.
+          // Chyba identity nezruší vydaný token; bez ověřené identity ale nelze
+          // odvodit vlastníka nahrávky a povolit její odeslání.
         }
       } else if (options.identityEndpoint) {
         try {
@@ -438,7 +444,7 @@ async function resolveUserIdentity(options, fetchImpl, accessToken, tokenRespons
           }, "Načtení identity uživatele");
           identity = mergeIdentity(normalizeIdentity(result), identity);
         } catch {
-          // Když volitelný endpoint nedopoví, zůstane dostupná tokenová identita.
+          // Když autoritativní endpoint nedopoví, identita zůstane neznámá.
         }
       }
 
