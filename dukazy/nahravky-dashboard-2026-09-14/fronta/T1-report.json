@@ -1,0 +1,43 @@
+{
+  "etapa": "T1",
+  "stav": "🧪 zelené testy",
+  "premisaPlatila": true,
+  "premisa": "Návrat sendRecording se před T1 zahazoval a applyServerProgress nebylo zapojené; sessionId ani per-stopové recordingId po restartu ve frontě nezůstaly.",
+  "kontrolniNula": 0,
+  "kontrolniNulaVyklad": "Nula změněných souborů mimo přidělené vlastnictví, výslovně přidělený blok createQueueSend, odpovídající wiring test, sekci 12 zadání a archiv důkazů.",
+  "implementationCommit": "3ca71da97b68f36526ab2446d849615ac8f6f428",
+  "apiZmeny": [
+    "send(item, reportServerProgress) přijímá awaitovaný callback s {track, recordingId, sessionId, uploadedBytes?}.",
+    "processNext vrací sendResult a podporuje options.persistProgress(queue) bez návratu do serializované veřejné metody storu.",
+    "Položka fronty ukládá server.sessionId a server.tracks.microphone/system s recordingId a uploadedBytes."
+  ],
+  "tests": {
+    "mockedUploadDoSouboruFronty": {
+      "passed": 4,
+      "exitCode": 0,
+      "evidence": "T1-upload-e2e.log"
+    },
+    "cilenaSada": {
+      "filesPassed": 3,
+      "testsPassed": 416
+    },
+    "gates": {
+      "filesPassed": 60,
+      "testsPassed": 1318,
+      "testsSkippedBaseline": 3,
+      "exitCode": 0,
+      "evidence": "T1-gates.log"
+    }
+  },
+  "overeno": [
+    "jednostopý a dvoustopý výsledek v outgoing.json",
+    "fsync serverových klíčů hned po INITu a restart před GETem",
+    "zachování obou klíčů po úspěchu první stopy a výpadku druhé",
+    "UUID, neměnnost session/ID a zákaz stejného recordingId pro dvě stopy",
+    "migrace starého jedno- i dvoustopého schématu"
+  ],
+  "nespusteno": [
+    "GUI smoke",
+    "audio smoke"
+  ]
+}
