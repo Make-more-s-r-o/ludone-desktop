@@ -747,10 +747,55 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     return total;
   }
 
+  async function recordingMetadata(item) {
+    if ((item.kind ?? "recording") !== "recording") return null;
+    if (typeof item.manifestPath !== "string" || item.manifestPath.length === 0) return null;
+    const manifestPath = path.resolve(item.manifestPath);
+    if (path.dirname(manifestPath) !== recordingsDirectory) return null;
+
+    try {
+      const manifest = JSON.parse(await readStableRegularFile(
+        manifestPath,
+        RECOVERY_MANIFEST_MAX_BYTES,
+      ));
+      if (manifest.clientRecordingId !== item.clientRecordingId) return null;
+      const createdAt = canonicalIsoTimestamp(
+        manifest.createdAt,
+        "createdAt",
+        { nullable: false },
+      );
+      const durations = Object.values(requiredObject(manifest.tracks, "tracks"))
+        .map((track) => {
+          if (!track || typeof track !== "object" || Array.isArray(track)) return null;
+          const startedAt = canonicalIsoTimestamp(track.startedAt, "track.startedAt");
+          const endedAt = canonicalIsoTimestamp(track.endedAt, "track.endedAt");
+          if (startedAt === null || endedAt === null) return null;
+          const durationMs = Date.parse(endedAt) - Date.parse(startedAt);
+          return Number.isSafeInteger(durationMs) && durationMs >= 0 ? durationMs : null;
+        })
+        .filter((durationMs) => durationMs !== null);
+      return {
+        createdAt,
+        durationMs: durations.length > 0 ? Math.max(...durations) : null,
+      };
+    } catch {
+      // Poškozený nebo mezitím smazaný manifest nesmí shodit celý dashboard.
+      return null;
+    }
+  }
+
   async function reduceForRenderer(queueModule, queue) {
     const items = await Promise.all(queue.items.map(async (item) => {
-      const sizeBytes = await recordingSizeBytes(item);
-      return sizeBytes === null ? item : { ...item, sizeBytes };
+      const [sizeBytes, metadata] = await Promise.all([
+        recordingSizeBytes(item),
+        recordingMetadata(item),
+      ]);
+      return {
+        ...item,
+        createdAt: metadata?.createdAt ?? null,
+        durationMs: metadata?.durationMs ?? null,
+        sizeBytes,
+      };
     }));
     return queueModule.reduceQueueForRenderer({ ...queue, items });
   }

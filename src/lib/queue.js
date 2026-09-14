@@ -202,6 +202,49 @@ function requireUploadedBytes(uploadedBytes) {
   };
 }
 
+function safeUploadedBytes(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+
+function safeNullableString(value) {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function serverForRenderer(item) {
+  const server = item.server && typeof item.server === "object" ? item.server : {};
+  const uploadedBytes = server.uploadedBytes && typeof server.uploadedBytes === "object"
+    ? server.uploadedBytes
+    : {};
+  const perTrack = server.tracks && typeof server.tracks === "object" ? server.tracks : {};
+  const itemTrackKinds = Object.keys(item.tracks ?? {});
+  const legacyRecordingId = safeNullableString(server.recordingId);
+
+  return {
+    sessionId: safeNullableString(server.sessionId),
+    tracks: Object.fromEntries(["microphone", "system"].map((track) => {
+      const trackProgress = perTrack[track] && typeof perTrack[track] === "object"
+        ? perTrack[track]
+        : {};
+      // Staré schéma má jedno nepojmenované recordingId. Lze je bezpečně přiřadit
+      // jen jednostopé položce; u dvou stop bychom jinak jednu z nich vydávali za ověřenou.
+      const legacyTrackId = itemTrackKinds.length === 1 && itemTrackKinds[0] === track
+        ? legacyRecordingId
+        : null;
+      return [track, {
+        recordingId: safeNullableString(trackProgress.recordingId) ?? legacyTrackId,
+        uploadedBytes: safeUploadedBytes(
+          trackProgress.uploadedBytes ?? uploadedBytes[track],
+        ),
+      }];
+    })),
+  };
+}
+
+function queueItemBlockReason(item) {
+  const blocked = queueItemRequiresHumanAction(item) || item.state === QUEUE_STATES.FAILED;
+  return blocked ? safeNullableString(item.lastFailureReason) : null;
+}
+
 /** Vytvoří prázdnou, serializovatelnou frontu. */
 export function createQueue() {
   return { schemaVersion: QUEUE_SCHEMA_VERSION, items: [] };
@@ -322,11 +365,15 @@ export function reduceQueueForRenderer(queue) {
     attempts: item.attempts,
     nextAttemptAt: item.nextAttemptAt,
     lastFailureReason: item.lastFailureReason,
-    ...(
-      Number.isSafeInteger(item.sizeBytes) && item.sizeBytes >= 0
-        ? { sizeBytes: item.sizeBytes }
-        : {}
-    ),
+    createdAt: safeNullableString(item.createdAt),
+    durationMs: Number.isSafeInteger(item.durationMs) && item.durationMs >= 0
+      ? item.durationMs
+      : null,
+    sizeBytes: Number.isSafeInteger(item.sizeBytes) && item.sizeBytes >= 0
+      ? item.sizeBytes
+      : null,
+    server: serverForRenderer(item),
+    blockReason: queueItemBlockReason(item),
     ...(
       queueItemRequiresHumanAction(item)
         ? { requiresHumanAction: true }

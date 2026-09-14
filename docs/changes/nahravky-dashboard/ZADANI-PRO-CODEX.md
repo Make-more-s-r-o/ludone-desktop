@@ -575,7 +575,7 @@ zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 
 | úkol | stav | commit / PR | poznámka |
 |---|---|---|---|
-| T0 — rozšířit povrch fronty | ⬜ nezačato | — | jinak vznikne třikrát narychlo |
+| T0 — rozšířit povrch fronty | 🔵 hotovo ve větvi | tento commit | Bezpečná projekce nese `createdAt`, `durationMs`, skutečnou `sizeBytes`, per-stopový `server` a `blockReason`; chybějící data jsou `null`, ne odhad. |
 | T1 — uložit `recordingId` | ⬜ nezačato | — | pasti P1, P2, P3 |
 | T2 — převzetí nahrávky | ⬜ nezačato | — | **odblokuje tři čekající nahrávky**; past P6 |
 | T3 — datová vrstva dashboardu | ⬜ nezačato | — | guard odesílatele povinný |
