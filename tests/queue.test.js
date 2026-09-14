@@ -37,6 +37,7 @@ const ENABLED_SETTING = ["tr", "ue"].join("");
 const SERVER_MICROPHONE_ID = "00000000-0000-4000-8000-000000000001";
 const SERVER_SYSTEM_ID = "00000000-0000-4000-8000-000000000002";
 const SERVER_SESSION_ID = "00000000-0000-4000-8000-000000000101";
+const CURRENT_OWNER = `sha256:${"c".repeat(64)}`;
 const mainSource = fs.readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
 
 function sourceCodeMask(source) {
@@ -468,6 +469,10 @@ function recording(clientRecordingId = "9e586e55-d688-43f1-8a80-a3d61e754f3e") {
       system: `/nahravky/${manifest.tracks.system.fileName}`,
     },
   };
+}
+
+function ownedRecording(clientRecordingId) {
+  return { ...recording(clientRecordingId), ownerFingerprint: CURRENT_OWNER };
 }
 
 function microphoneOnlyRecording(
@@ -1097,6 +1102,7 @@ describe("stavový automat fronty", () => {
         code: "rate_limited",
         failureClass: FAILURE_CLASSES.RETRYABLE,
         retryAfterMs: 90_000,
+        status: 429,
       });
     });
 
@@ -1105,10 +1111,88 @@ describe("stavový automat fronty", () => {
       random: () => 0,
     });
 
-    expect(result.outcome).toBe("retry_scheduled");
-    expect(result.item.nextAttemptAt).toBe(now + 90_000);
-    // 🔴 Kontrola, že to opravdu není náš rozvrh: ten by dal now + 30 000.
-    expect(result.item.nextAttemptAt).not.toBe(now + 30_000);
+    expect(result).toMatchObject({
+      outcome: "rate_limited",
+      retryAt: now + 90_000,
+      item: { attempts: 0, nextAttemptAt: null, state: QUEUE_STATES.WAITING },
+    });
+  });
+
+  it("429 zachová původní attempts i částečný per-track progress a bez intervalu čeká hodinu", async () => {
+    const now = 1_777_000_001_000;
+    const queue = oneItemQueue();
+    queue.items[0].attempts = 4;
+    const result = await processNext(
+      queue,
+      killswitches(ENABLED_SETTING),
+      async (_item, reportProgress) => {
+        await reportProgress({
+          track: "microphone",
+          recordingId: SERVER_MICROPHONE_ID,
+          sessionId: SERVER_SESSION_ID,
+          uploadedBytes: 120,
+        });
+        throw Object.assign(new Error("jakýkoli text"), { status: 429 });
+      },
+      { now },
+    );
+
+    expect(result).toMatchObject({
+      outcome: "rate_limited",
+      retryAt: now + 60 * 60 * 1_000,
+      item: {
+        attempts: 4,
+        state: QUEUE_STATES.WAITING,
+        server: {
+          sessionId: SERVER_SESSION_ID,
+          tracks: { microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 } },
+        },
+      },
+    });
+  });
+
+  it("HTTP 429 u timeentry zachová původní retryable kontrakt bez rate_limited outcome", async () => {
+    const queued = enqueueTimeEntry(createQueue(), {
+      clientTimeEntryId: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+      projectId: "865a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+      startedAt: "2026-09-14T08:00:00.000Z",
+      endedAt: "2026-09-14T08:30:00.000Z",
+    }).queue;
+    const result = await processNext(
+      queued,
+      killswitches(undefined, ENABLED_SETTING),
+      async () => {
+        throw Object.assign(new Error("time limit"), { status: 429, retryAfterMs: 90_000 });
+      },
+      { now: 1_777_000_001_000, random: () => 0 },
+    );
+
+    expect(result).toMatchObject({
+      outcome: "retry_scheduled",
+      item: { attempts: 1, kind: QUEUE_ITEM_KINDS.TIME },
+    });
+    expect(result).not.toHaveProperty("retryAt");
+  });
+
+  it("cooldown na přesné hraně expirace není chyba a dovolí recording send", async () => {
+    const now = 1_777_000_001_000;
+    const send = vi.fn(async () => {});
+    const result = await processNext(
+      {
+        ...oneItemQueue(),
+        items: [{ ...oneItemQueue().items[0], ownerFingerprint: CURRENT_OWNER }],
+      },
+      killswitches(ENABLED_SETTING),
+      send,
+      {
+        currentOwnerFingerprint: CURRENT_OWNER,
+        now,
+        recordingCooldownRetryAt: now,
+      },
+    );
+
+    expect(result.outcome).toBe("sent");
+    expect(send).toHaveBeenCalledOnce();
   });
 
   it("retry prodlevu počítá až od dokončení neúspěšného pokusu", async () => {
@@ -1933,6 +2017,7 @@ describe("trvalé uložení fronty", () => {
       },
     };
     queue.items[1] = { ...queue.items[1], ownerFingerprint: oldOwner };
+    queue.uploadCooldowns = [{ ownerFingerprint: oldOwner, retryAt: Date.now() + 60_000 }];
     await saveQueueAtomically(queuePath, queue);
     const send = vi.fn();
     const store = createOutboundQueueStore({
@@ -1969,6 +2054,7 @@ describe("trvalé uložení fronty", () => {
       expect(persisted.items[0].manifestPath).toBe(queue.items[0].manifestPath);
       expect(persisted.items[0].tracks).toEqual(queue.items[0].tracks);
       expect(persisted.items[1]).toEqual(queue.items[1]);
+      expect(persisted.uploadCooldowns).toEqual(queue.uploadCooldowns);
       expect(send).not.toHaveBeenCalled();
 
       const reopened = createOutboundQueueStore({
@@ -2492,6 +2578,215 @@ describe("obnova osiřelých nahrávek", () => {
 });
 
 describe("perzistentní pumpa fronty", () => {
+  it("429 atomicky uloží queue i cooldown a restart ani ruční retry nepošlou request", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-restart-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const now = 1_777_000_001_000;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    const firstId = recording().manifest.clientRecordingId;
+    const secondId = "3d4e7b61-e3d4-483c-94cc-a512454f6976";
+    const stored = createQueue();
+    for (const id of [firstId, secondId]) {
+      const queued = enqueueRecording(stored, recording(id), now).item;
+      stored.items.push({ ...queued, attempts: id === firstId ? 4 : 0, ownerFingerprint: CURRENT_OWNER });
+    }
+    await saveQueueAtomically(queuePath, stored);
+    const send = vi.fn(async () => {
+      throw Object.assign(new Error("limit"), { status: 429, retryAfterMs: 90_000 });
+    });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      const limited = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
+      const persisted = await loadQueue(queuePath);
+      expect(limited).toMatchObject({ outcome: "rate_limited", odeslanoVDavce: 0 });
+      expect(send).toHaveBeenCalledOnce();
+      expect(persisted.items.map((item) => item.attempts)).toEqual([4, 0]);
+      expect(persisted.uploadCooldowns).toEqual([{
+        ownerFingerprint: CURRENT_OWNER,
+        retryAt: now + 90_000,
+      }]);
+      expect(limited.queue).toEqual(persisted);
+
+      const restartedSend = vi.fn();
+      const restarted = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: restartedSend,
+      });
+      await expect(restarted.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      await expect(restarted.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      expect(restartedSend).not.toHaveBeenCalled();
+      expect(await loadQueue(queuePath)).toEqual(persisted);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("cooldowny zůstávají per-owner přes A→B→A a expirace se uklidí atomickou mutací", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-owners-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const ownerA = `sha256:${"a".repeat(64)}`;
+    const ownerB = `sha256:${"b".repeat(64)}`;
+    let now = 1_777_000_001_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const queue = createQueue();
+    const aItem = enqueueRecording(queue, recording(), now).item;
+    const bItem = enqueueRecording(queue, recording("3d4e7b61-e3d4-483c-94cc-a512454f6976"), now).item;
+    await saveQueueAtomically(queuePath, {
+      ...queue,
+      items: [
+        { ...aItem, ownerFingerprint: ownerA },
+        { ...bItem, ownerFingerprint: ownerB },
+      ],
+      uploadCooldowns: [{ ownerFingerprint: ownerA, retryAt: now + 60_000 }],
+    });
+    const send = vi.fn(async () => {});
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      await expect(store.pump(killswitches(ENABLED_SETTING), ownerA))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      expect(send).not.toHaveBeenCalled();
+      await expect(store.pump(killswitches(ENABLED_SETTING), ownerB))
+        .resolves.toMatchObject({ odeslanoVDavce: 1 });
+      expect(send).toHaveBeenCalledOnce();
+      await expect(store.pump(killswitches(ENABLED_SETTING), ownerA))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      expect(send).toHaveBeenCalledOnce();
+
+      now += 60_001;
+      const expiryQueuePath = path.join(directory, "expiry", "outgoing.json");
+      await saveQueueAtomically(expiryQueuePath, {
+        ...queue,
+        items: [{ ...aItem, ownerFingerprint: ownerA }],
+        uploadCooldowns: [{ ownerFingerprint: ownerA, retryAt: now - 1 }],
+      });
+      const expirySend = vi.fn(async () => {});
+      const expiryStore = createOutboundQueueStore({
+        filePath: expiryQueuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: expirySend,
+      });
+      await expect(expiryStore.pump(killswitches(ENABLED_SETTING), ownerA))
+        .resolves.toMatchObject({ odeslanoVDavce: 1 });
+      expect(expirySend).toHaveBeenCalledOnce();
+      expect((await loadQueue(expiryQueuePath)).uploadCooldowns).toEqual([]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("vadný cooldown se načte fail-closed a read-only list expirovaný záznam nemaže", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-validation-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    try {
+      await fs.promises.mkdir(path.dirname(queuePath), { recursive: true });
+      await fs.promises.writeFile(queuePath, JSON.stringify({
+        schemaVersion: 1,
+        items: [],
+        uploadCooldowns: [{ ownerFingerprint: "sha256:kratke", retryAt: Date.now() + 1_000 }],
+      }));
+      await expect(loadQueue(queuePath)).rejects.toThrow(/uploadCooldowns\.ownerFingerprint/u);
+      await fs.promises.writeFile(queuePath, JSON.stringify({
+        schemaVersion: 1,
+        items: [],
+        uploadCooldowns: [{ ownerFingerprint: [CURRENT_OWNER], retryAt: Date.now() + 1_000 }],
+      }));
+      await expect(loadQueue(queuePath)).rejects.toThrow(/uploadCooldowns\.ownerFingerprint/u);
+
+      const expired = {
+        schemaVersion: 1,
+        items: [],
+        uploadCooldowns: [{ ownerFingerprint: CURRENT_OWNER, retryAt: 1 }],
+      };
+      await fs.promises.writeFile(queuePath, JSON.stringify(expired));
+      const store = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      await store.list(CURRENT_OWNER);
+      expect(JSON.parse(await fs.promises.readFile(queuePath, "utf8"))).toEqual(expired);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("cooldown nahrávek neblokuje časovou položku s vlastním killswitchem", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-time-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const now = Date.now();
+    const time = enqueueTimeEntry(createQueue(), {
+      clientTimeEntryId: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+      projectId: "865a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+      startedAt: "2026-09-14T08:00:00.000Z",
+      endedAt: "2026-09-14T08:30:00.000Z",
+    }, now).queue;
+    await saveQueueAtomically(queuePath, {
+      ...time,
+      uploadCooldowns: [{ ownerFingerprint: CURRENT_OWNER, retryAt: now + 60_000 }],
+    });
+    const send = vi.fn(async (item) => { void item; });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      const result = await store.pump(
+        killswitches(ENABLED_SETTING, ENABLED_SETTING),
+        CURRENT_OWNER,
+      );
+      expect(result.odeslanoVDavce).toBe(1);
+      expect(send).toHaveBeenCalledOnce();
+      expect(send.mock.calls[0][0].kind).toBe(QUEUE_ITEM_KINDS.TIME);
+      expect((await loadQueue(queuePath)).uploadCooldowns).toHaveLength(1);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("store ukotví cooldown na okamžik přijetí pomalé 429 odpovědi", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-response-time-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const startedAt = 1_777_000_001_000;
+    const receivedAt = startedAt + 120_000;
+    let now = startedAt;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const send = vi.fn(async () => {
+      now = receivedAt;
+      throw Object.assign(new Error("limit"), { status: 429, retryAfterMs: 90_000 });
+    });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      await store.enqueueRecording(ownedRecording());
+      await expect(store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      expect((await loadQueue(queuePath)).uploadCooldowns).toEqual([{
+        ownerFingerprint: CURRENT_OWNER,
+        retryAt: receivedAt + 90_000,
+      }]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
   it("po selhání fsync adresáře znovu načte stav po dokončeném rename", async () => {
     const queuePath = "/virtual/queue/outgoing.json";
     const files = new Map();
@@ -2590,10 +2885,10 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording());
-      await store.pump(killswitches(ENABLED_SETTING));
+      await store.enqueueRecording(ownedRecording());
+      await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
       for (let pass = 0; pass < 4; pass += 1) {
-        await store.pump(killswitches(ENABLED_SETTING));
+        await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
       }
 
       expect(send).toHaveBeenCalledTimes(1);
@@ -2638,12 +2933,12 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording(prvni));
-      await store.enqueueRecording(recording(druha));
-      await store.enqueueRecording(recording(treti));
-      await store.enqueueRecording(recording(ctvrta));
+      await store.enqueueRecording(ownedRecording(prvni));
+      await store.enqueueRecording(ownedRecording(druha));
+      await store.enqueueRecording(ownedRecording(treti));
+      await store.enqueueRecording(ownedRecording(ctvrta));
 
-      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
       // Jediná pumpa sáhla na tři položky — dřív by to byla jedna a zbytek by čekal na
       // další spuštění appky.
@@ -2680,11 +2975,11 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording("5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"));
-      await store.enqueueRecording(recording("6b2c3d4e-5f6a-4b7c-8d8e-0f1a2b3c4d5e"));
-      await store.enqueueRecording(recording("7c3d4e5f-6a7b-4c8d-8e9f-1a2b3c4d5e6f"));
+      await store.enqueueRecording(ownedRecording("5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"));
+      await store.enqueueRecording(ownedRecording("6b2c3d4e-5f6a-4b7c-8d8e-0f1a2b3c4d5e"));
+      await store.enqueueRecording(ownedRecording("7c3d4e5f-6a7b-4c8d-8e9f-1a2b3c4d5e6f"));
 
-      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
       // Odeslaly se tři — a to musí být vidět, i když poslední průchod už nic nenašel.
       expect(vysledek.odeslanoVDavce).toBe(3);
@@ -2717,11 +3012,11 @@ describe("perzistentní pumpa fronty", () => {
     try {
       for (let poradi = 0; poradi < 25; poradi += 1) {
         await store.enqueueRecording(
-          recording(`00000000-0000-4000-8000-${String(poradi).padStart(12, "0")}`),
+          ownedRecording(`00000000-0000-4000-8000-${String(poradi).padStart(12, "0")}`),
         );
       }
 
-      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
       // Odešlo jich právě tolik, kolik strop dovolí — ne celá fronta.
       expect(send).toHaveBeenCalledTimes(20);
@@ -2749,12 +3044,12 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording());
-      const first = await store.pump(killswitches(ENABLED_SETTING));
+      await store.enqueueRecording(ownedRecording());
+      const first = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
       expect(first.outcome).toBe("retry_scheduled");
       expect((await loadQueue(queuePath)).items[0].nextAttemptAt).not.toBeNull();
 
-      const retried = await store.retry(killswitches(ENABLED_SETTING));
+      const retried = await store.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
       expect(retried.outcome).toBe("sent");
       expect(send).toHaveBeenCalledTimes(2);
@@ -2788,12 +3083,12 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording(firstId));
-      expect((await store.pump(killswitches(ENABLED_SETTING))).outcome).toBe("paused");
+      await store.enqueueRecording(ownedRecording(firstId));
+      expect((await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER)).outcome).toBe("paused");
       const humanBefore = (await loadQueue(queuePath)).items[0];
-      await store.enqueueRecording(recording(secondId));
+      await store.enqueueRecording(ownedRecording(secondId));
 
-      const retried = await store.retry(killswitches(ENABLED_SETTING));
+      const retried = await store.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
       expect(retried.outcome).toBe("sent");
       expect(send).toHaveBeenCalledTimes(2);
@@ -2863,8 +3158,8 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording());
-      const result = await store.pump(killswitches());
+      await store.enqueueRecording(ownedRecording());
+      const result = await store.pump(killswitches(), CURRENT_OWNER);
 
       expect(result).toMatchObject({ outcome: "disabled" });
       expect(send).toHaveBeenCalledTimes(0);

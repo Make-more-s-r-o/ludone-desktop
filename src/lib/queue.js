@@ -19,6 +19,7 @@ export const QUEUE_STATES = Object.freeze({
 });
 
 export const UPLOAD_DISABLED_REASON = "odesílání je vypnuté";
+export const DEFAULT_RATE_LIMIT_COOLDOWN_MS = 60 * 60 * 1_000;
 
 const LEGACY_HUMAN_ACTION_FAILURE_REASONS = new Set([
   "Nahrávka patří jinému účtu",
@@ -659,6 +660,15 @@ export async function processNext(queue, killswitches, send, options = {}) {
   }
 
   const now = timestamp(options.now ?? Date.now(), "options.now");
+  if (
+    options.recordingCooldownRetryAt !== undefined
+    && (
+      !Number.isSafeInteger(options.recordingCooldownRetryAt)
+      || options.recordingCooldownRetryAt <= 0
+    )
+  ) {
+    throw new TypeError("options.recordingCooldownRetryAt musí být kladný čas v milisekundách");
+  }
   const waitingItems = queue.items
     .map((item, index) => ({ item, index }))
     .filter(({ item }) => item.state === QUEUE_STATES.WAITING);
@@ -672,10 +682,46 @@ export async function processNext(queue, killswitches, send, options = {}) {
       return false;
     }
   };
-  const readyEnabled = automaticWaitingItems.filter(({ item }) => (
+  const readyEnabledIncludingCooldown = automaticWaitingItems.filter(({ item }) => (
     isEnabled(item) && (item.nextAttemptAt === null || item.nextAttemptAt <= now)
   ));
+  const recordingUnavailableForOwner = ({ item }) => (
+    (item.kind ?? QUEUE_ITEM_KINDS.RECORDING) === QUEUE_ITEM_KINDS.RECORDING
+    && options.currentOwnerFingerprint !== undefined
+    && (
+      options.currentOwnerFingerprint === null
+      || item.ownerFingerprint !== options.currentOwnerFingerprint
+    )
+  );
+  const recordingBlockedByCooldown = ({ item }) => (
+    (item.kind ?? QUEUE_ITEM_KINDS.RECORDING) === QUEUE_ITEM_KINDS.RECORDING
+    && options.recordingCooldownRetryAt !== undefined
+    && options.recordingCooldownRetryAt > now
+    && !recordingUnavailableForOwner({ item })
+  );
+  const readyEnabled = readyEnabledIncludingCooldown.filter(
+    (candidate) => (
+      !recordingUnavailableForOwner(candidate) && !recordingBlockedByCooldown(candidate)
+    ),
+  );
   if (readyEnabled.length === 0) {
+    if (readyEnabledIncludingCooldown.some(recordingBlockedByCooldown)) {
+      return {
+        item: null,
+        outcome: "rate_limited",
+        queue,
+        reason: "odesílání nahrávek čeká na vypršení serverového limitu",
+        retryAt: options.recordingCooldownRetryAt,
+      };
+    }
+    if (readyEnabledIncludingCooldown.some(recordingUnavailableForOwner)) {
+      return {
+        item: null,
+        outcome: "paused",
+        queue,
+        reason: "bez platného vlastníka nelze nahrávku odeslat",
+      };
+    }
     if (automaticWaitingItems.some(({ item }) => !isEnabled(item))) {
       return { item: null, outcome: "disabled", queue, reason: UPLOAD_DISABLED_REASON };
     }
@@ -759,6 +805,30 @@ export async function processNext(queue, killswitches, send, options = {}) {
         server: progressQueue.items[index].server,
       };
       const failureClass = errorFailureClass(error);
+      if (
+        (progressedSendingItem.kind ?? QUEUE_ITEM_KINDS.RECORDING) === QUEUE_ITEM_KINDS.RECORDING
+        && error?.status === 429
+      ) {
+        const retryAfterMs = Number.isFinite(error.retryAfterMs) && error.retryAfterMs > 0
+          ? Math.min(policy.maxDelayMs, Math.round(error.retryAfterMs))
+          : DEFAULT_RATE_LIMIT_COOLDOWN_MS;
+        const retryAt = timestamp(options.now ?? Date.now(), "options.now") + retryAfterMs;
+        const rateLimitedItem = {
+          ...progressedSendingItem,
+          attempts: originalItem.attempts,
+          lastFailureReason: errorReason(error),
+          nextAttemptAt: originalItem.nextAttemptAt,
+          requiresHumanAction: false,
+          state: QUEUE_STATES.WAITING,
+        };
+        return {
+          item: rateLimitedItem,
+          outcome: "rate_limited",
+          queue: replaceItem(progressQueue, index, rateLimitedItem),
+          reason: rateLimitedItem.lastFailureReason,
+          retryAt,
+        };
+      }
       if (failureClass === FAILURE_CLASSES.PERMANENT) {
         const failedItem = {
           ...progressedSendingItem,

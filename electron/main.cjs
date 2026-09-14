@@ -2257,6 +2257,16 @@ async function readCurrentQueueOwnerFingerprint() {
   }
 }
 
+async function readUsableQueueOwnerFingerprint() {
+  try {
+    const storedSession = await readUsableAuthSession();
+    if (storedAuthSessionState(storedSession) !== "valid") return null;
+    return deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
+  } catch {
+    return null;
+  }
+}
+
 // Převzetí je čistě lokální akce. Záměrně nevolá readUsableAuthSession(), protože
 // ten může obnovovat token po síti. Neplatná relace se zde odmítne a UI vyžádá přihlášení.
 async function readStableClaimOwnerSnapshot() {
@@ -2370,7 +2380,8 @@ async function recoverOutboundRecordings() {
 async function pumpOutboundQueue() {
   try {
     const store = await getOutboundQueueStore();
-    const result = await store.pump(queueKillswitches());
+    const currentOwnerFingerprint = await readUsableQueueOwnerFingerprint();
+    const result = await store.pump(queueKillswitches(), currentOwnerFingerprint);
     updateOutboundQueueTrayFact(result);
     // Nejdřív KOLIK se odeslalo, teprve pak PROČ pumpa skončila. Opačné pořadí (jen důvod
     // konce) svedlo 11. 9. 2026 k závěru, že se neodeslalo nic, ačkoli odešly tři nahrávky.
@@ -2696,7 +2707,11 @@ handleValidated("queue:claim-recording", ["settings"], async (
 });
 handleValidated("queue:retry", ["panel"], async () => {
   await waitForOutboundQueueRecovery();
-  const storeResult = await (await getOutboundQueueStore()).retry(queueKillswitches());
+  const currentOwnerFingerprint = await readUsableQueueOwnerFingerprint();
+  const storeResult = await (await getOutboundQueueStore()).retry(
+    queueKillswitches(),
+    currentOwnerFingerprint,
+  );
   const result = {
     ...storeResult,
     items: await addQueueSendingAvailability(storeResult.items),

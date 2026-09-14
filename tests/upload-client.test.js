@@ -782,7 +782,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     const result = await store.pump({
       DESKTOP_TIME_ENABLED: undefined,
       DESKTOP_UPLOAD_ENABLED: "true",
-    });
+    }, OWNER_A);
     const [persisted] = JSON.parse(await readFile(queuePath, "utf8")).items;
 
     expect(result.odeslanoVDavce, JSON.stringify(result)).toBe(1);
@@ -837,7 +837,10 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     });
     await firstStore.enqueueRecording(recordingInput(fixture));
 
-    void firstStore.pump({ DESKTOP_TIME_ENABLED: undefined, DESKTOP_UPLOAD_ENABLED: "true" });
+    void firstStore.pump(
+      { DESKTOP_TIME_ENABLED: undefined, DESKTOP_UPLOAD_ENABLED: "true" },
+      OWNER_A,
+    );
     await firstStatusStarted;
     const afterInit = JSON.parse(await readFile(queuePath, "utf8")).items[0];
     expect(afterInit).toMatchObject({
@@ -860,7 +863,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     await expect(restartedStore.pump({
       DESKTOP_TIME_ENABLED: undefined,
       DESKTOP_UPLOAD_ENABLED: "true",
-    })).resolves.toMatchObject({ odeslanoVDavce: 1 });
+    }, OWNER_A)).resolves.toMatchObject({ odeslanoVDavce: 1 });
 
     const persisted = JSON.parse(await readFile(queuePath, "utf8")).items[0];
     expect(persisted).toMatchObject({
@@ -921,7 +924,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     await expect(store.pump({
       DESKTOP_TIME_ENABLED: undefined,
       DESKTOP_UPLOAD_ENABLED: "true",
-    })).resolves.toMatchObject({ outcome: "retry_scheduled", odeslanoVDavce: 0 });
+    }, OWNER_A)).resolves.toMatchObject({ outcome: "retry_scheduled", odeslanoVDavce: 0 });
     const partial = JSON.parse(await readFile(queuePath, "utf8")).items[0];
     expect(partial.server).toEqual({
       sessionId: expect.any(String),
@@ -937,7 +940,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     await expect(store.retry({
       DESKTOP_TIME_ENABLED: undefined,
       DESKTOP_UPLOAD_ENABLED: "true",
-    })).resolves.toMatchObject({ outcome: "sent" });
+    }, OWNER_A)).resolves.toMatchObject({ outcome: "sent" });
     const completed = JSON.parse(await readFile(queuePath, "utf8")).items[0];
     expect(completed.server).toEqual({
       sessionId: partial.server.sessionId,
@@ -1079,6 +1082,46 @@ describe("mapování serverových chyb do tříd fronty", () => {
       code: "rate_limited",
       retryAfterMs: 7_000,
     });
+  });
+
+  it("neuzná číselný prefix neplatné hlavičky a použije platné celé sekundy z těla", async () => {
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => fakeResponse(
+      429,
+      { code: "rate_limited", retryAfterSeconds: 11 },
+      { "retry-after": "1neplatné" },
+    ));
+    const { send } = createSend(fetchImpl);
+
+    await expect(send(fixture.item)).rejects.toMatchObject({
+      status: 429,
+      retryAfterMs: 11_000,
+    });
+  });
+
+  it("mock HTTP 429 projde z klientovy chyby až do hodinového výsledku čisté fronty", async () => {
+    const fixture = await recordingFixture();
+    const fetchImpl = vi.fn(async () => fakeResponse(
+      429,
+      { code: "libovolny_kod", retryAfterSeconds: "3600" },
+      { "retry-after": "1neplatné" },
+    ));
+    const { send } = createSend(fetchImpl);
+    const now = 1_777_000_001_000;
+
+    const result = await processNext(
+      fixture.queue,
+      { DESKTOP_TIME_ENABLED: undefined, DESKTOP_UPLOAD_ENABLED: "true" },
+      send,
+      { now },
+    );
+
+    expect(result).toMatchObject({
+      outcome: "rate_limited",
+      retryAt: now + 60 * 60 * 1_000,
+      item: { attempts: 0, state: QUEUE_STATES.WAITING },
+    });
+    expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
   it("🔴 nesmyslnou hodnotu ignoruje a spadne zpět na vlastní rozvrh", async () => {
