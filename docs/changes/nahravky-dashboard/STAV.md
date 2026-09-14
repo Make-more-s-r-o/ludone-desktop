@@ -1,6 +1,6 @@
 # Stav běhu `nahravky-dashboard` — odkud pokračovat
 
-**Aktualizováno 14. 9. 2026.** Kanonický strojový stav je [progress/status.json](progress/status.json); [HTML přehled](progress/index.html) je jeho generovaná projekce.
+**Aktualizováno 15. 9. 2026.** Kanonický strojový stav je [progress/status.json](progress/status.json); [HTML přehled](progress/index.html) je jeho generovaná projekce.
 
 ## Co je integrované
 
@@ -17,6 +17,7 @@
 1. 🧪 **T-R1 — limity serveru:** převzato z `0addac6`; vlastní plná brána koordinátora 1401 zelených testů, tři původní skipy, exit 0. Pauza přežije restart i přepnutí účtu a neubírá pokus.
 2. 🧪 **T-04 — ruční serverové ověření:** převzato z `9b233c8`, root plná brána 1433 zelených testů, tři původní skipy, exit 0. Nezávislé review bez doložených P1/P2. **T-05** přebírá hotspoty pro consent a jednotlivé akce podle [DAG](tasks/DAG.md). Oba packety prošly 28 pravidly bez nálezu.
 3. 🧪 **Updater a T-06:** implementace je integrovaná včetně veřejné HTTPS kontroly po SSH (`2499dbb`). Koordinátorova brána skončila exit 0: 1341 testů zelených a tři známé baseline skipy. Podepsaný build ani veřejná verze nevznikly.
+4. 🧪 **T-A3 — základ výběru firmy:** převzatý z `0340c8e`; koordinátorova plná brána 1452 PASS, tři původní skipy, exit 0. Samostatný selector a bezpečný zápis stejné relace zatím nejsou připojené do Nastavení. **T-A4 naváže po T5**: skutečný IPC/fetch adapter a ochrana rozpracovaných uploadů při změně firmy. D15 řeší doloženou chybějící cestu pro účet s více firmami ve Finderu.
 
 Izolovaný unpackaged GUI průchod není produkční login ani audio smoke. Oprava návratu z initial onboardingu do reauthenticate je integrovaná v `9158ae6`; opětovné otevření 14. 9. ve 22:19 ukázalo odpovídající odhlášenou obrazovku. T-05 doplní přímé Nastavení také v tomto stavu.
 

@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T21:52:41.065Z",
+    "updatedAt": "2026-09-14T22:04:06.099Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -104,7 +104,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "D15: zbývá výběr upload firmy pro více firem bez env; T-A3 připraví bezpečný základ, main/preload/Settings wiring naváže po T5.",
+      "nextStep": "T-A3 převzato z 0340c8e, root plná brána 1452 PASS a 3 původní skipy. T-A4 po T5 zapojí skutečný výběr firmy a ochranu rozpracovaných uploadů; Finder login stále čeká na live test.",
       "evidence": []
     },
     {
@@ -306,17 +306,30 @@
       "id": "T-A3",
       "title": "Bezpečný základ výběru firmy",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-A2"
       ],
       "packet": "tasks/T-A3.md",
-      "worktree": ".claude/worktrees/nahravky-firma"
+      "worktree": ".claude/worktrees/nahravky-firma",
+      "report": "evidence/tasks/T-A3.report.json"
     }
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T22:04:06.099Z",
+      "text": "T-A3 přijatý po root review a plné bráně 1452 PASS. T5 dokončuje consent a bezpečné akce, následný T-A4 zapojí volbu firmy do Nastavení."
+    },
+    {
+      "at": "2026-09-14T22:04:05.781Z",
+      "text": "Funkce NRD-07 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T22:04:05.453Z",
+      "text": "Task T-A3 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T21:52:41.065Z",
       "text": "D15: více firem bez uložené volby dosud vyžaduje env z terminálu. T-A3 nezávisle připraví bezpečný controller, komponentu a atomický zápis stejné relace; sekvenční wiring naváže po T5 před finální přejímkou."

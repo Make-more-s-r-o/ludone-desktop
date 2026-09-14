@@ -665,6 +665,8 @@ s exit kódem 0; doslovné výpisy jsou v
 
 ### Původní otázka na zapnutí uploadu — vyřešena vloženým goalem
 
+15. 9. navíc potvrzeno D15: účet s více firmami neměl v aplikaci výběr firmy a vyžadoval terminálovou proměnnou. T-A3 (`0340c8e`) připravil bezpečný selector a atomický zápis firmy; root plná brána 1452 PASS a tři původní skipy, exit 0. Zapojení do Nastavení a ochrana již inicializovaných uploadů při změně firmy ještě čekají na T-A4 po T5. Samostatný selector není vydaná ani živě ověřená funkce.
+
 Dan 14. 9. výslovně schválil dokončení přihlášení a odesílání z Finderu i volitelnou automatiku. Rozhodnutí D3/D10/D11 nahrazují dřívější odložení přepínače: T-A1 zapnul odpovídající scope a zdroj identity společně. T5 zpřístupní manuální odeslání schválené položky bez shellového nastavení; uložený přepínač bude pouze automatika nových nahrávek. Explicitní false/invalid transportní proměnná zůstane tvrdou stopkou. Další souhlas s tímto rozsahem se nevyžaduje.
 
 Pro veřejné vydání stále chybí potvrzení zálohy klíče a publikační GitHub konfigurace. Starý updater z 0.1.1 může ověřit doručení 0.1.2; nové zobrazení dostupné verze/průběhu v 0.1.2 vyžaduje budoucí Danem schválenou vyšší verzi. Podrobný krátký postup je v [OVERENI-NA-MACU.md](OVERENI-NA-MACU.md).
