@@ -29,6 +29,7 @@ const TOKEN_TEMP_FILE_PATTERN = /^\.oauth\.enc\.[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f
 const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const MCP_SCOPES = new Set(["mcp:read", "mcp:draft"]);
+const INVALID_CLIENT = "invalid_client";
 // 🔴 Oprávnění k odesílání nahrávek se smí žádat VÝHRADNĚ SAMO. Serverová session to
 // 10. 9. 2026 postavila jako tvrdou podmínku a má pro ni důvod: kdyby šlo požádat
 // „nahravky:upload mcp:read" najednou, vznikl by token, kterým jde současně nahrávat
@@ -130,7 +131,19 @@ function resolveAuthTimeout(value) {
 async function jsonResponse(fetchImpl, url, options, label) {
   const response = await fetchImpl(url, options);
   if (!response.ok) {
-    throw new Error(`${label} selhal (HTTP ${response.status})`);
+    let oauthError = null;
+    try {
+      const body = await response.json();
+      oauthError = typeof body?.error === "string" ? body.error : null;
+    } catch {
+      // OAuth chyba je volitelný strojový údaj. Stav HTTP zůstává zdrojem pravdy.
+    }
+    const error = new Error(
+      `${label} selhal (HTTP ${response.status}${oauthError ? `, ${oauthError}` : ""})`,
+    );
+    // Neenumerovat: diagnostika smí vypsat třídu a bezpečnou zprávu, ne celé tělo odpovědi.
+    Object.defineProperty(error, "oauthError", { value: oauthError });
+    throw error;
   }
   try {
     return await response.json();
@@ -408,7 +421,10 @@ async function resolveUserIdentity(options, fetchImpl, accessToken, tokenRespons
         }
       }
 
-      if (identity.email === null) {
+      // Explicitní resolver určuje identitní kontrakt daného scope. Upload-only token
+      // se po chybě userinfo nesmí poslat do MCP jako „fallback“: nemá pro něj oprávnění
+      // a vznikla by druhá, zavádějící identitní cesta.
+      if (!hasConfiguredResolver && identity.email === null) {
         try {
           const mcpIdentity = await requestMcpIdentity(fetchImpl, issuer, accessToken, signal);
           identity = mergeIdentity(identity, mcpIdentity);
@@ -750,6 +766,32 @@ function decryptStoredSession(safeStorage, encrypted) {
   }
 }
 
+function sessionMatchesAuthContext(session, { issuer, resource, scope }) {
+  return session?.issuer === issuer
+    && session.resource === resource
+    && session.scope === scope;
+}
+
+async function invalidateCachedClient({ app, safeStorage, expectedSession }) {
+  return withTokenStorageTransaction(async () => {
+    const storage = tokenStorageLocation(app);
+    await initializeTokenStorage(app, storage);
+    const encrypted = await readEncryptedSession(storage);
+    const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
+    if (
+      session === null
+      || session.issuer !== expectedSession?.issuer
+      || session.clientId !== expectedSession?.clientId
+      || session.resource !== expectedSession?.resource
+      || session.scope !== expectedSession?.scope
+    ) {
+      return false;
+    }
+    await removeEncryptedSession(storage);
+    return true;
+  });
+}
+
 function canRefreshSession(session) {
   return typeof session?.accessToken === "string"
     && session.accessToken.trim().length > 0
@@ -778,8 +820,8 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
   if (refreshSessionPromise !== null) return refreshSessionPromise;
 
   refreshSessionPromise = withTokenStorageTransaction(async () => {
+    const storage = tokenStorageLocation(app);
     try {
-      const storage = tokenStorageLocation(app);
       await initializeTokenStorage(app, storage);
       const encrypted = await readEncryptedSession(storage);
       const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
@@ -839,7 +881,17 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
       await persistEncryptedSession(safeStorage, refreshedSession, storage);
       failedRefreshToken = null;
       return refreshedSession;
-    } catch {
+    } catch (error) {
+      if (error?.oauthError === INVALID_CLIENT) {
+        // `invalid_client` potvrzuje, že uložené client_id už server nezná. Celá relace
+        // je proto cache neplatného klienta. Smažeme ji atomicky, ale NIKDY zde znovu
+        // nepoužijeme starý refresh token a nespouštíme automatický login. Nový klient
+        // vznikne až při dalším výslovném interaktivním přihlášení.
+        await removeEncryptedSession(storage);
+        failedRefreshToken = storedSession.refreshToken;
+        logRefreshFailure(logger, "invalid-client");
+        return null;
+      }
       // Uložené tokeny se ZÁMĚRNĚ nemažou. Selhání bývá dočasné (spící síť hned po
       // probuzení) a smazaný refresh token by zahodil relaci, která je pořád platná.
       // Relace zůstane vypršelá — fail-closed, ale bez ztráty údajů. Hlídají to testy
@@ -1167,6 +1219,14 @@ function createAuthController(options) {
   if (resource !== expectedResource) {
     throw new Error("E7 se smí autorizovat jen k MCP resource issueru");
   }
+  if (scope === UPLOAD_SCOPE) {
+    const expectedIdentityEndpoint = new URL("/api/mcp/oauth/userinfo", issuer).href;
+    if (options.identityEndpoint !== expectedIdentityEndpoint || options.resolveIdentity) {
+      throw new Error(`Oprávnění ${UPLOAD_SCOPE} vyžaduje identitu z userinfo svého issueru`);
+    }
+  } else if (options.identityEndpoint) {
+    throw new Error("Userinfo endpoint patří výhradně k oprávnění nahravky:upload");
+  }
 
   async function start() {
     const loginTicket = coordinator.captureLoginTicket();
@@ -1194,7 +1254,7 @@ function createAuthController(options) {
           const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
           // Klient pro jiné prostředí nebo rozsah oprávnění by mohl použít oprávnění,
           // která uživatel neodsouhlasil; proto musí souhlasit issuer, resource i scope.
-          if (session?.issuer === issuer && session.resource === resource && session.scope === scope) {
+          if (sessionMatchesAuthContext(session, { issuer, resource, scope })) {
             clientId = requiredString(session.clientId, "clientId");
           }
         } catch {
@@ -1230,15 +1290,27 @@ function createAuthController(options) {
             clientId,
             resource,
           });
-          const tokenResponse = await jsonResponse(fetchImpl, endpoints.tokenEndpoint, {
-            method: "POST",
-            headers: {
-              accept: "application/json",
-              "content-type": "application/x-www-form-urlencoded",
-            },
-            redirect: "error",
-            body: tokenBody.toString(),
-          }, "Výměna autorizačního kódu");
+          let tokenResponse;
+          try {
+            tokenResponse = await jsonResponse(fetchImpl, endpoints.tokenEndpoint, {
+              method: "POST",
+              headers: {
+                accept: "application/json",
+                "content-type": "application/x-www-form-urlencoded",
+              },
+              redirect: "error",
+              body: tokenBody.toString(),
+            }, "Výměna autorizačního kódu");
+          } catch (error) {
+            if (error?.oauthError === INVALID_CLIENT && options.clientId == null) {
+              await invalidateCachedClient({
+                app,
+                safeStorage,
+                expectedSession: { issuer, clientId, resource, scope },
+              });
+            }
+            throw error;
+          }
           let rollbackStarted = false;
           let sessionPersisted = false;
           try {
@@ -1561,6 +1633,7 @@ module.exports = {
   resolveAuthTimeout,
   tokenSessionFilePath,
   tokenStorageDirectory,
+  sessionMatchesAuthContext,
   // Vystaveno schválně: `companies.cjs` si validaci originu nechává injektovat, aby v repu
   // nevznikla její třetí kopie. Dvě, které tu jsou (přihlášení a upload), se hlídají testy.
   trustedRemoteEndpoint,

@@ -31,6 +31,7 @@ const {
   createPermissionRequestHandler,
   createPermissionStatusHandler,
   refreshStoredAuthSession,
+  sessionMatchesAuthContext,
   tokenSessionFilePath,
   trustedRemoteEndpoint,
   updateStoredAuthSessionCompany,
@@ -2242,7 +2243,7 @@ async function recordingUploadContext() {
 async function readCurrentQueueOwnerFingerprint() {
   try {
     const storedSession = await readStoredAuthSession();
-    if (storedSession === null || storedSession.issuer !== resolveCurrentAuthIssuer()) {
+    if (!storedSessionMatchesCurrentAuth(storedSession)) {
       return null;
     }
     return deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
@@ -3232,22 +3233,25 @@ function resolveAuthClientId(env) {
   return value.trim();
 }
 
-// 🔴 JEDEN přepínač zapíná DVĚ věci najednou, a to schválně: appka začne žádat scope
+// 🔴 JEDEN přepínač řídí DVĚ věci najednou, a to schválně: appka žádá scope
 // `nahravky:upload` A identitu si vezme z userinfo místo z MCP. Rozdělit je nesmíme —
 // upload-only token do MCP nesmí (403), takže scope bez userinfo by nechal e-mail natrvalo
 // null, otisk vlastníka prázdný a KAŽDÁ nahrávka by se při odeslání pauzla na
-// `session_owner_unknown`. Default (nenastaveno / cokoli jiného než "true") = dnešní chování
-// beze změny (mcp:read + MCP identita), aby merge nic nerozbil, dokud userinfo nenaběhne na
-// labs a Dan přepínač vědomě nezapne. Vzor 1:1 podle resolveAuthClientId.
+// `session_owner_unknown`. Userinfo i nový scope už byly ověřené naostro 11. 9.; proto je
+// nenastavená hodnota produkční default. Přesné "false" zůstává jako řízený vývojový návrat
+// ke starému MCP přihlášení, nikdy však nevzniká samo při spuštění packaged .app z Finderu.
 function resolveUploadScopeEnabled(env) {
   const value = env?.LUDONE_UPLOAD_SCOPE_ENABLED;
   if (value === undefined || (typeof value === "string" && value.trim().length === 0)) {
-    return false;
+    return true;
   }
   if (typeof value !== "string") {
     throw new Error("Přepínač LUDONE_UPLOAD_SCOPE_ENABLED má neplatný typ");
   }
-  return value.trim() === "true";
+  const normalized = value.trim();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  throw new Error("Přepínač LUDONE_UPLOAD_SCOPE_ENABLED má neplatnou hodnotu");
 }
 
 // Cesta userinfo je pevná součást kontraktu se serverem (potvrzeno serverovou session
@@ -3289,6 +3293,19 @@ function resolveAuthIssuer(env, storedOrigin = "https://app.ludone.cz") {
 
 function resolveCurrentAuthIssuer() {
   return resolveAuthIssuer(process.env, authOriginStore.get());
+}
+
+function currentAuthContext() {
+  const issuer = resolveCurrentAuthIssuer();
+  return {
+    issuer,
+    resource: `${issuer}/api/mcp`,
+    scope: resolveUploadScopeEnabled(process.env) ? UPLOAD_SCOPE : "mcp:read",
+  };
+}
+
+function storedSessionMatchesCurrentAuth(storedSession) {
+  return sessionMatchesAuthContext(storedSession, currentAuthContext());
 }
 
 function createAuthBeginHandler(createController) {
@@ -3586,7 +3603,7 @@ async function readStoredAuthSession() {
 async function hasStoredAuthSession() {
   try {
     const storedSession = await readStoredAuthSession();
-    return storedSession !== null && storedSession.issuer === resolveCurrentAuthIssuer();
+    return storedSessionMatchesCurrentAuth(storedSession);
   } catch {
     return false;
   }
@@ -3595,7 +3612,7 @@ async function hasStoredAuthSession() {
 // Přítomnost šifrované relace není doklad platnosti; stejnou podmínku používá UI
 // i odesílání, a to i po pokusu o obnovu.
 function storedAuthSessionState(storedSession) {
-  if (storedSession === null || storedSession.issuer !== resolveCurrentAuthIssuer()) return "none";
+  if (!storedSessionMatchesCurrentAuth(storedSession)) return "none";
   return typeof storedSession.accessToken === "string"
     && storedSession.accessToken.trim().length > 0
     && Number.isFinite(storedSession.accessExpiresAt)
@@ -3661,8 +3678,7 @@ async function readStoredAuthIdentity() {
     throw new Error("Identitu právě ověřuje probíhající přihlášení");
   }
 
-  const configuredOrigin = resolveCurrentAuthIssuer();
-  if (storedSession.issuer !== configuredOrigin) return null;
+  if (!storedSessionMatchesCurrentAuth(storedSession)) return null;
 
   const name = normalizedIdentityPart(storedSession.identity?.name);
   const email = normalizedIdentityPart(storedSession.identity?.email);

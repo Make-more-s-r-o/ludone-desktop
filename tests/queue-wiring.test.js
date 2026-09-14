@@ -938,13 +938,14 @@ function openSettingsAndCreateEvent(harness) {
 function storedAuthSession({
   identity = { name: "Ada Lovelace", email: "ada@ludone.cz" },
   issuer = "https://app.ludone.cz",
+  scope = "nahravky:upload",
 } = {}) {
   return {
     v: 1,
     issuer,
     clientId: "desktop-client",
     resource: `${issuer}/api/mcp`,
-    scope: "mcp:read",
+    scope,
     accessToken: "TAJNY-ACCESS-TOKEN",
     refreshToken: "TAJNY-REFRESH-TOKEN",
     identity,
@@ -1684,6 +1685,28 @@ describe("kopírování probíhající přihlašovací adresy", () => {
 });
 
 describe("zjištění uložené OAuth session", () => {
+  it("starou mcp:read relaci zachová pro bezpečný přepis, ale nepustí ji do upload identity", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    const oldBlob = harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...storedAuthSession({ scope: "mcp:read" }),
+      accessExpiresAt: Date.now() + 60_000,
+    }));
+    await writeFile(tokenPath, oldBlob);
+
+    await expect(harness.ipcHandlers.get("auth:has-session")(panelEvent)).resolves.toBe(false);
+    await expect(harness.ipcHandlers.get("auth:session-state")(panelEvent)).resolves.toBe("none");
+    await expect(harness.ipcHandlers.get("auth:identity")(settingsEvent)).resolves.toBeNull();
+    expect(await readFile(tokenPath)).toEqual(oldBlob);
+
+    // Migrace je dokončená až úspěšným interaktivním loginem, který relaci atomicky
+    // přepíše. Do té doby se starý token nemaže ani neobnovuje a UI vyžádá přihlášení.
+    expect(harness.electron.safeStorage.decryptString).toHaveBeenCalled();
+  });
+
   it("nový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů", async () => {
     // 🔴 Tenhle test sahal na SKUTEČNOU síť. Vypršelá relace spustí obnovu tokenu a ta bere
     // `globalThis.fetch`, protože `main.cjs` jí žádnou atrapu nepředává. Produkční kód
@@ -1757,7 +1780,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
       accessToken: "TESTOVACI-ACCESS",
       refreshToken: "TESTOVACI-REFRESH",
       accessExpiresAt: Date.now() - 60_000,
@@ -1832,7 +1855,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
     };
     await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
       ...completeMetadata,
@@ -1900,7 +1923,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
       accessToken: "TOKEN-V-NEDOSTUPNEM-ULOZISTI",
     })));
     harness.electron.safeStorage.isEncryptionAvailable.mockReturnValue(false);
@@ -1944,7 +1967,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
       accessToken: "TOKEN-PRED-ODHLASENIM",
     })));
 
@@ -2144,7 +2167,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
       accessToken: "TOKEN-PRED-ODHLASENIM",
     })));
 
