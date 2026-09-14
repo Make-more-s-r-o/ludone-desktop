@@ -14,8 +14,8 @@
 
 ## Co právě navazuje
 
-1. **T-R1 — limity serveru:** další Sol implementuje trvalou pauzu pro účet po HTTP 429. Packet [tasks/T-R1.md](tasks/T-R1.md) prošel lintem: 28 pravidel, nula nálezů.
-2. **T-04 → T-05:** navážou postupně podle [DAG](tasks/DAG.md); sdílejí serializovanou frontu a hlavní proces.
+1. 🧪 **T-R1 — limity serveru:** převzato z `0addac6`; vlastní plná brána koordinátora 1401 zelených testů, tři původní skipy, exit 0. Pauza přežije restart i přepnutí účtu a neubírá pokus.
+2. **T-04 → T-05:** Sol implementuje ruční serverové ověření, potom navážou consent a akce podle [DAG](tasks/DAG.md). Packet T-04 prošel 28 pravidly bez nálezu; hotspoty jsou předané sekvenčně.
 3. 🧪 **Updater a T-06:** implementace je integrovaná včetně veřejné HTTPS kontroly po SSH (`2499dbb`). Koordinátorova brána skončila exit 0: 1341 testů zelených a tři známé baseline skipy. Podepsaný build ani veřejná verze nevznikly.
 
 Izolovaný unpackaged GUI průchod není produkční login ani audio smoke. Oprava návratu z initial onboardingu do reauthenticate je integrovaná v `9158ae6`; opětovné otevření 14. 9. ve 22:19 ukázalo odpovídající odhlášenou obrazovku. T-05 doplní přímé Nastavení také v tomto stavu.

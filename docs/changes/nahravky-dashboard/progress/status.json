@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T21:00:21.260Z",
+    "updatedAt": "2026-09-14T21:05:16.765Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -32,7 +32,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Per-track ID a převzetí jsou integrované. Po lokálním přehledu doplnit trvalý 429 cooldown T-R1; skutečný upload čeká na Mac.",
+      "nextStep": "T-R1 převzat z 0addac6, plná brána 1401 zelených testů a tři původní skipy. T-05 doplní plánování odložených schválených pokusů; živý upload čeká na Mac.",
       "evidence": []
     },
     {
@@ -68,7 +68,7 @@
       "exposure": "unavailable",
       "verification": "unverified",
       "label": "Navrženo",
-      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "nextStep": "Sol implementuje výslovné ověření známých per-track ID nad přijatým T-R1; žádný polling nebo INIT pro lookup.",
       "evidence": []
     },
     {
@@ -236,12 +236,13 @@
       "id": "T-04",
       "title": "Ověření na serveru",
       "executor": "codex",
-      "state": "pending",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-R1"
       ],
-      "packet": "tasks/T-04.md"
+      "packet": "tasks/T-04.md",
+      "worktree": ".claude/worktrees/nahravky-overeni"
     },
     {
       "id": "T-05",
@@ -268,13 +269,14 @@
       "id": "T-R1",
       "title": "Limity fronty",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-03"
       ],
       "packet": "tasks/T-R1.md",
-      "worktree": ".claude/worktrees/nahravky-limity"
+      "worktree": ".claude/worktrees/nahravky-limity",
+      "report": "evidence/tasks/T-R1.report.json"
     },
     {
       "id": "T-06",
@@ -301,6 +303,22 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T21:05:16.765Z",
+      "text": "Funkce NRD-04 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T21:05:16.463Z",
+      "text": "Task T-04 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-14T21:05:16.164Z",
+      "text": "Funkce NRD-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T21:05:15.860Z",
+      "text": "Task T-R1 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T21:00:21.260Z",
       "text": "Funkce NRD-07 byla aktualizována."

@@ -580,8 +580,8 @@ Aktuální implementační větev je `feat/nahravky-dokonceni`, [draft PR #141](
 | T1 — uložit recordingId | 🧪 integrováno, testy zelené | `fdb4535`, `53ca859` | Per-track ID/session/progress se uloží před dalším HTTP krokem; restart otestován na dočasném disku. |
 | T2 — převzetí nahrávky | 🧪 integrováno, testy zelené | `a25bd5c` | Jednotlivé potvrzení a čerstvá identita/revize/odesílatel; samo nic neodešle. Root ověřil 440 dotčených testů. |
 | T3 — datová vrstva dashboardu | 🧪 integrováno, testy zelené | `0b3f36b` | Queue + primární manifesty, ghost/partial/invalid stavy, bez cest a sítě. Root plná brána: 1388 zelených testů, tři původní skipy, exit 0. |
-| T-R1 — limity serveru | 🟡 implementace prochází review | samostatný Sol worktree | Trvalý 429 cooldown, zachování attempts, restart a oddělení časových položek. |
-| T4 — ověření proti serveru | ⛔ ještě neimplementováno | packet T-04 | Naváže po T-R1; ruční GET známých ID, samostatný stav obou stop a lokální rozpočet dotazů. |
+| T-R1 — limity serveru | 🧪 integrováno, testy zelené | `0addac6` | Trvalý 429 cooldown, zachování attempts, restart a oddělení časových položek. Root plná brána: 1401 zelených testů, tři původní skipy, exit 0. |
+| T4 — ověření proti serveru | 🟡 implementuje Sol | packet T-04 | Ruční GET známých ID, samostatný stav obou stop a lokální rozpočet dotazů; T-R1 už přijatý. |
 | T5 — zbylé akce a UI | ⛔ ještě neimplementováno | packet T-05 | Per-item souhlas, automatika nových nahrávek, obnova retry, název, koš, Finder a přímé Nastavení bez loginu. |
 | T-A1 + T-A2 — auth | 🧪 integrováno, testy zelené | `f9dd296`, `ccb47e7`, `445fe9f` | Finder default upload scope a výhradní userinfo identita; poslední root auth sady 87/87. |
 | T6 — vydání verze | 🧪 kód připraven; 🟡 publikace čeká | PR #141 | Verze 0.1.2, podpis/notarizace vložené aplikace, metadata a atomická SSH publikace s veřejnou HTTPS kontrolou. Čeká konfigurace, záloha klíče, Danův tag a skutečná přejímka. |
