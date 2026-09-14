@@ -65,12 +65,10 @@ function signingPlan(source) {
   return { configArguments, environment, notarizationEnabled, signingEnabled };
 }
 
-function requestedPublishMode(arguments_) {
-  if (arguments_.length === 0) return "never";
-  if (arguments_.length === 2 && arguments_[0] === "--publish") {
-    if (["never", "always"].includes(arguments_[1])) return arguments_[1];
-  }
-  throw new Error("Použití: node scripts/package-mac.mjs [--publish never|always]");
+function requestedBuildMode(arguments_) {
+  if (arguments_.length === 0) return "package";
+  if (arguments_.length === 1 && arguments_[0] === "--release") return "release";
+  throw new Error("Použití: node scripts/package-mac.mjs [--release]");
 }
 
 function verifyConfig(config) {
@@ -121,7 +119,7 @@ async function preserveAudioSmokePath(outputDirectory) {
   console.log(`[balení] Audio-smoke cesta: ${compatibilityApp} -> ${builtApp}`);
 }
 
-const publishMode = requestedPublishMode(process.argv.slice(2));
+const buildMode = requestedBuildMode(process.argv.slice(2));
 verifyConfig(builderConfig);
 const outputDirectory = path.resolve(
   process.env.LUDONE_PACKAGE_OUTPUT_DIR
@@ -130,10 +128,13 @@ const outputDirectory = path.resolve(
 const executable = process.env.LUDONE_BUILDER_EXECUTABLE
   || path.join(projectRoot, "node_modules", ".bin", "electron-builder");
 const plan = signingPlan(process.env);
-if (publishMode === "always" && (!plan.signingEnabled || !plan.notarizationEnabled)) {
+if (buildMode === "release" && (!plan.signingEnabled || !plan.notarizationEnabled)) {
   throw new Error("Nepodepsaný nebo nenotarizovaný build nelze publikovat do update kanálu.");
 }
-const arguments_ = ["--mac", "--publish", publishMode, ...plan.configArguments];
+// Generic provider nic nepřenáší. Režim `always` zde pouze přikáže electron-builderu
+// vytvořit latest-mac.yml a blockmapy; skutečný přenos provádí až release workflow.
+const builderPublishMode = buildMode === "release" ? "always" : "never";
+const arguments_ = ["--mac", "--publish", builderPublishMode, ...plan.configArguments];
 if (process.env.LUDONE_PACKAGE_OUTPUT_DIR) {
   arguments_.push(`--config.directories.output=${outputDirectory}`);
 }
@@ -143,4 +144,8 @@ if (process.env.LUDONE_PACKAGE_OUTPUT_DIR) {
 generujIkonuAplikace(path.resolve(projectRoot, builderConfig.mac.icon));
 await runBuilder({ arguments_, environment: plan.environment, executable });
 await preserveAudioSmokePath(outputDirectory);
-console.log(`[balení] Hotovo: DMG + ZIP pro arm64 a x64; publikování=${publishMode}.`);
+console.log(
+  buildMode === "release"
+    ? "[balení] Hotovo: podepsané release artefakty a update metadata jsou připravené; nic nebylo přeneseno."
+    : "[balení] Hotovo: lokální DMG + ZIP pro arm64 a x64; nic nebylo přeneseno.",
+);
