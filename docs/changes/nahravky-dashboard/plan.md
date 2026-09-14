@@ -21,7 +21,7 @@ Desktop už nahrává a obsahuje upload klienta, ale uživatelská cesta z Finde
 | Stávající download feed | Verze 0.1.1 a čtyři instalační balíčky vracejí HTTP 200 | Read-only měření běhu 14. 9.; nejde o ověření nové verze. |
 | T-00 a T-A1 | Integrované; testy zelené, bez live audio/login | Reporty `evidence/tasks/T0.report.json` a `evidence/tasks/A1.report.json`. |
 | T-01 | Integrované po review; 417 cílených testů zelených | Commity `fdb4535` a `53ca859`; živý upload se tím nedokládá. |
-| T-06 | Sedm release commitů připraveno k review; nová verze nezveřejněná | Release předání; signed build nebyl vytvořen. |
+| T-06 a updater | Integrované, včetně veřejné HTTPS kontroly po SSH; nová verze nezveřejněná | Commit `2499dbb`; koordinátorova brána: 1341 testů zelených, tři známé baseline skipy, exit 0. Signed build nebyl vytvořen. |
 
 ## Architecture Spine
 
@@ -57,8 +57,8 @@ Přesný graf a aktuální vlastnictví hotspotů je v [DAG](tasks/DAG.md). `ele
 
 ## Pořadí
 
-1. Převzít integrované T-00, T-01 a T-A1 a spustit lintnutý packet T-02.
-2. Po přijetí T-02 pokračovat T-03 a T-04; T-R1 může navázat souběžně jen bez sdíleného hotspotu.
+1. Převzít integrované T-00, T-01, T-A1, updater a T-06; T-02 už běží podle lintnutého packetu.
+2. Po přijetí T-02 připravit a lintnout packet T-03, potom pokračovat T-04; T-R1 může navázat souběžně jen bez sdíleného hotspotu.
 3. T-05 spojí consent, akce a hotový přehled.
 4. T-06 lze reviewovat průběžně, ale veřejné vydání čeká na přijetí funkčního řetězce, publikační konfiguraci, zálohu klíče a Danův tag.
 5. Koordinátor provede finální review, brány a předání Danovi k živému testu.

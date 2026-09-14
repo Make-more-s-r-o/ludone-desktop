@@ -6,8 +6,8 @@
 
 | Oblast | Autoritativní stav | Praktický význam |
 |---|---|---|
-| Dokončení nahrávek | [`nahravky-dashboard/STAV.md`](changes/nahravky-dashboard/STAV.md) a [`progress/status.json`](changes/nahravky-dashboard/progress/status.json) | Aktivní běh. T-00, T-01 a T-A1 jsou integrované s testy; T-02 navazuje. T-03 až T-05 a T-R1 čekají. |
-| Vydání a aktualizace | Funkce NRD-08 v [`nahravky-dashboard/spec.md`](changes/nahravky-dashboard/spec.md) | Kód je v review. Nový signed/notarized build ani verze 0.1.2 nebyly zveřejněny. |
+| Dokončení nahrávek | [`nahravky-dashboard/STAV.md`](changes/nahravky-dashboard/STAV.md) a [`progress/status.json`](changes/nahravky-dashboard/progress/status.json) | Aktivní běh. T-00, T-01 a T-A1 jsou integrované s testy; T-02 běží. T-03 až T-05 a T-R1 čekají. |
+| Vydání a aktualizace | Funkce NRD-08 v [`nahravky-dashboard/spec.md`](changes/nahravky-dashboard/spec.md) | Updater i T-06 jsou integrované a testované. Nový signed/notarized build ani verze 0.1.2 nebyly zveřejněny. |
 | Původní desktop v1 | [`desktop-v1/STAV.md`](changes/desktop-v1/STAV.md) | Historický snapshot z 1.–7. 9. Jeho 17 funkcí zůstává zachováno v původním českém schématu; nepoužívej jej pro dnešní postup. |
 | Dlouhodobý etapový plán | [`PLAN.md`](../PLAN.md) | Historický základ z 24. 8. s novou úvodní aktualizací; podrobný dnešní DAG je u aktivní změny. |
 

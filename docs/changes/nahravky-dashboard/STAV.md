@@ -12,9 +12,11 @@
 
 ## Co právě navazuje
 
-1. **T-02 — výslovné převzetí jedné nahrávky:** packet [tasks/T-02.md](tasks/T-02.md) prošel `mp-lint --packet T-02` bez nálezu a je připravený k dispatchi po T-01.
+1. **T-02 — výslovné převzetí jedné nahrávky:** běží v samostatném worktree ze základu `be3f370`; packet [tasks/T-02.md](tasks/T-02.md) před dispatchí prošel `mp-lint --packet T-02` bez nálezu. Výsledek ani report zatím převzaté nejsou.
 2. **T-03 až T-05 a T-R1:** čekají podle [DAG](tasks/DAG.md).
-3. **Updater a T-06:** implementace existuje ve workerech a prochází review; podepsaný build ani veřejná verze nevznikly.
+3. 🧪 **Updater a T-06:** implementace je integrovaná včetně veřejné HTTPS kontroly po SSH (`2499dbb`). Koordinátorova brána skončila exit 0: 1341 testů zelených a tři známé baseline skipy. Podepsaný build ani veřejná verze nevznikly.
+
+Izolovaný unpackaged GUI průchod není produkční login ani audio smoke. Odhalil mezeru fake session; oprava návratu z initial onboardingu do reauthenticate je integrovaná v `9158ae6` a 12 cílených session-reentry testů je zelených.
 
 ## Co blokuje jen veřejné vydání
 
