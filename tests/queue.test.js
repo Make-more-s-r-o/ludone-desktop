@@ -1139,7 +1139,60 @@ describe("stavový automat fronty", () => {
       attempts: 0,
       nextAttemptAt: null,
       lastFailureReason: null,
+      createdAt: null,
+      durationMs: null,
+      sizeBytes: null,
+      server: {
+        sessionId: null,
+        tracks: {
+          microphone: { recordingId: null, uploadedBytes: 0 },
+          system: { recordingId: null, uploadedBytes: 0 },
+        },
+      },
+      blockReason: null,
     });
+  });
+
+  it("projekce zpřístupní jen bezpečná serverová pole a přesný důvod blokace", () => {
+    const queue = oneItemQueue();
+    queue.items[0] = {
+      ...queue.items[0],
+      createdAt: "2026-08-25T08:00:00.000Z",
+      durationMs: 1_800_000,
+      sizeBytes: 360,
+      lastFailureReason: "Nahrávka patří jinému účtu",
+      requiresHumanAction: true,
+      server: {
+        sessionId: "session-1",
+        token: "nesmí ven",
+        tracks: {
+          microphone: {
+            recordingId: "recording-microphone",
+            uploadedBytes: 120,
+            signedUrl: "https://example.invalid/tajne",
+          },
+          system: { recordingId: "recording-system", uploadedBytes: 240 },
+        },
+      },
+    };
+
+    const [view] = reduceQueueForRenderer(queue);
+
+    expect(view).toMatchObject({
+      blockReason: "Nahrávka patří jinému účtu",
+      createdAt: "2026-08-25T08:00:00.000Z",
+      durationMs: 1_800_000,
+      sizeBytes: 360,
+      server: {
+        sessionId: "session-1",
+        tracks: {
+          microphone: { recordingId: "recording-microphone", uploadedBytes: 120 },
+          system: { recordingId: "recording-system", uploadedBytes: 240 },
+        },
+      },
+    });
+    expect(JSON.stringify(view)).not.toContain("nesmí ven");
+    expect(JSON.stringify(view)).not.toContain("signedUrl");
   });
 
   it.each(["queue_owner_revoked", "session_owner_expired"])(
@@ -2138,6 +2191,7 @@ describe("perzistentní pumpa fronty", () => {
     const microphonePath = path.join(recordingsDirectory, "microphone.webm");
     const systemPath = path.join(recordingsDirectory, "system.webm");
     const item = recording();
+    item.manifestPath = path.join(recordingsDirectory, "recording.manifest.json");
     item.trackPaths = { microphone: microphonePath, system: systemPath };
     const store = createOutboundQueueStore({
       filePath: queuePath,
@@ -2147,6 +2201,7 @@ describe("perzistentní pumpa fronty", () => {
 
     try {
       await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.writeFile(item.manifestPath, JSON.stringify(item.manifest));
       await fs.promises.writeFile(microphonePath, Buffer.alloc(7));
       await fs.promises.writeFile(systemPath, Buffer.alloc(11));
       await store.enqueueRecording(item);
@@ -2158,11 +2213,15 @@ describe("perzistentní pumpa fronty", () => {
       });
       const view = await reopenedStore.list();
 
-      expect(view[0]).toMatchObject({ sizeBytes: 18 });
+      expect(view[0]).toMatchObject({
+        createdAt: "2026-08-25T08:00:00.000Z",
+        durationMs: 1_800_000,
+        sizeBytes: 18,
+      });
       expect(JSON.stringify(view)).not.toContain(directory);
 
       await fs.promises.unlink(systemPath);
-      expect((await reopenedStore.list())[0]).not.toHaveProperty("sizeBytes");
+      expect((await reopenedStore.list())[0]).toHaveProperty("sizeBytes", null);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
