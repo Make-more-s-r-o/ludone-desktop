@@ -30,6 +30,16 @@ const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const MCP_SCOPES = new Set(["mcp:read", "mcp:draft"]);
 const INVALID_CLIENT = "invalid_client";
+const SAFE_OAUTH_ERROR_CODES = new Set([
+  INVALID_CLIENT,
+  "invalid_request",
+  "unauthorized_client",
+  "access_denied",
+  "unsupported_response_type",
+  "invalid_scope",
+  "server_error",
+  "temporarily_unavailable",
+]);
 // 🔴 Oprávnění k odesílání nahrávek se smí žádat VÝHRADNĚ SAMO. Serverová session to
 // 10. 9. 2026 postavila jako tvrdou podmínku a má pro ni důvod: kdyby šlo požádat
 // „nahravky:upload mcp:read" najednou, vznikl by token, kterým jde současně nahrávat
@@ -128,22 +138,31 @@ function resolveAuthTimeout(value) {
   return timeoutMs;
 }
 
+function safeOAuthErrorCode(value) {
+  return typeof value === "string" && SAFE_OAUTH_ERROR_CODES.has(value) ? value : null;
+}
+
+function oauthResponseError(label, status, candidateCode) {
+  const oauthError = safeOAuthErrorCode(candidateCode);
+  const statusText = Number.isInteger(status) ? `HTTP ${status}` : null;
+  const detail = [statusText, oauthError].filter(Boolean).join(", ");
+  const error = new Error(`${label} selhal${detail ? ` (${detail})` : ""}`);
+  // Neenumerovat: diagnostika smí vypsat třídu a bezpečný kód, ne celé tělo odpovědi.
+  Object.defineProperty(error, "oauthError", { value: oauthError });
+  return error;
+}
+
 async function jsonResponse(fetchImpl, url, options, label) {
   const response = await fetchImpl(url, options);
   if (!response.ok) {
     let oauthError = null;
     try {
       const body = await response.json();
-      oauthError = typeof body?.error === "string" ? body.error : null;
+      oauthError = safeOAuthErrorCode(body?.error);
     } catch {
       // OAuth chyba je volitelný strojový údaj. Stav HTTP zůstává zdrojem pravdy.
     }
-    const error = new Error(
-      `${label} selhal (HTTP ${response.status}${oauthError ? `, ${oauthError}` : ""})`,
-    );
-    // Neenumerovat: diagnostika smí vypsat třídu a bezpečnou zprávu, ne celé tělo odpovědi.
-    Object.defineProperty(error, "oauthError", { value: oauthError });
-    throw error;
+    throw oauthResponseError(label, response.status, oauthError);
   }
   try {
     return await response.json();
@@ -262,7 +281,9 @@ async function createLoopbackListener(
     if (oauthError || !code) {
       sendBrowserResponse(response, 400, "Přihlášení nebylo dokončeno.");
       close();
-      rejectCode(new Error(oauthError ? `OAuth odmítl přihlášení: ${oauthError}` : "Chybí autorizační kód"));
+      rejectCode(oauthError
+        ? oauthResponseError("OAuth autorizace", undefined, oauthError)
+        : new Error("Chybí autorizační kód"));
       return;
     }
 
@@ -1281,7 +1302,19 @@ function createAuthController(options) {
 
       const result = (async () => {
         try {
-          const code = await listener.codePromise;
+          let code;
+          try {
+            code = await listener.codePromise;
+          } catch (error) {
+            if (error?.oauthError === INVALID_CLIENT && options.clientId == null) {
+              await invalidateCachedClient({
+                app,
+                safeStorage,
+                expectedSession: { issuer, clientId, resource, scope },
+              });
+            }
+            throw error;
+          }
           if (listener.isCancelled()) throw cancelledAuthError();
           const tokenBody = oauth.buildTokenRequestBody({
             code,

@@ -76,6 +76,18 @@ class CallbackLoopbackServer extends EventEmitter {
     }, response);
     expect(response.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
   }
+
+  deliverError(authorizationUrl, error, errorDescription = "") {
+    const state = new URL(authorizationUrl).searchParams.get("state");
+    const response = { end: vi.fn(), writeHead: vi.fn() };
+    const params = new URLSearchParams({ error, error_description: errorDescription, state });
+    this.handler({
+      headers: { host: "127.0.0.1:49721" },
+      method: "GET",
+      url: `/callback?${params.toString()}`,
+    }, response);
+    expect(response.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+  }
 }
 
 /**
@@ -365,6 +377,48 @@ describe("znovupoužití uloženého OAuth klienta", () => {
     expect(recovered.fetchImpl.mock.calls.filter(([input]) => (
       new URL(input).pathname === "/api/mcp/oauth/register"
     ))).toHaveLength(1);
+  });
+
+  it("invalid_client z autorizace přes loopback zneplatní stejnou cache jako token endpoint", async () => {
+    const first = await createHarness({ clientId: null });
+    await expect(completeLogin(first)).resolves.toMatchObject({ ok: true });
+
+    const rejected = await createHarness({ appData: first.app.getPath(), clientId: null });
+    const attempt = await rejected.controller.start();
+    rejected.getLoopbackServer().deliverError(
+      attempt.authorizationUrl,
+      "invalid_client",
+      "SENTINEL_CALLBACK_DESCRIPTION",
+    );
+    const captured = await attempt.result.catch((error) => error);
+
+    expect(captured).toBeInstanceOf(Error);
+    expect(captured.message).toContain("invalid_client");
+    expect(captured.message).not.toContain("SENTINEL_CALLBACK_DESCRIPTION");
+    await expect(readFile(tokenSessionFilePath(rejected.app))).rejects.toMatchObject({ code: "ENOENT" });
+
+    const recovered = await createHarness({ appData: first.app.getPath(), clientId: null });
+    await expect(completeLogin(recovered)).resolves.toMatchObject({ ok: true });
+    expect(recovered.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(1);
+  });
+
+  it("neznámý body.error ani error_description nepropustí ze serveru do zprávy", async () => {
+    const sentinelError = "SENTINEL_PRIVATE_OAUTH_ERROR";
+    const sentinelDescription = "SENTINEL_PRIVATE_OAUTH_DESCRIPTION";
+    const harness = await createHarness({
+      tokenHandler: async () => jsonResponse({
+        error: sentinelError,
+        error_description: sentinelDescription,
+      }, { ok: false, status: 400 }),
+    });
+
+    const captured = await completeLogin(harness).catch((error) => error);
+    expect(captured).toBeInstanceOf(Error);
+    expect(captured.message).toBe("Výměna autorizačního kódu selhal (HTTP 400)");
+    expect(captured.message).not.toContain(sentinelError);
+    expect(captured.message).not.toContain(sentinelDescription);
   });
 });
 
