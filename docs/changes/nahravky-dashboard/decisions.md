@@ -12,6 +12,9 @@
 | D8 | Finální tag a zveřejnění aktualizace provede Dan po převzetí. | Výslovná hranice vloženého goalu a zadání §11. |
 | D9 | Použít masterplan skill pro stav, evidenci a přehled. | Dan 14. 9.: „pak masterplan taky aktualizuj podle skillu“. Projektový overlay chybí, používá se univerzální proces s předností už schváleného goalu a AGENTS.md. |
 | D10 | Nevytvářet nové schválení designu ani znovu žádat potvrzení plánu. | Dan schválil samostatnou implementaci funkcí a výslovně odložil redesign. L0 kontrakt níže popisuje autorizované chování; žádný falešný hookový approval se nevyrábí. |
+| D11 | Souhlas s odesláním se ukládá u každé nahrávky jako `held` nebo `approved`; legacy a recovery jsou bez souhlasu. | Ruční odeslání musí fungovat i při vypnuté automatice a přežít restart. Uložená volba `uploadEnabled` bude určovat jen automatiku nových nahrávek; explicitní proměnná prostředí zůstává tvrdou transportní stopkou. Samotné zapnutí automatiky staré položky neschválí. |
+| D12 | Potvrzené lokální smazání použije systémový koš, manifest až jako poslední soubor. | Více souborů nelze odstranit jednou atomickou operací. Koš umožní obnovu, částečné selhání ponechá frontu i zbývající manifest a nezaloží nový desktopový archiv. Serverová data se nemažou. |
+| D13 | Odhlášený panel zpřístupní Nastavení přímo. | Skutečný GUI průchod ukázal, že jinak je dostupné jen přes kontextové menu ikony v liště. Lokální přehled má být použitelný i bez přihlášení. |
 
 ## Čeká na ověření
 

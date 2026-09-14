@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:14:30.740Z",
+    "updatedAt": "2026-09-14T20:21:36.682Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -211,23 +211,25 @@
       "id": "T-02",
       "title": "Explicitní převzetí",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-01"
       ],
-      "packet": "tasks/T-02.md"
+      "packet": "tasks/T-02.md",
+      "report": "evidence/tasks/T-02.report.json"
     },
     {
       "id": "T-03",
       "title": "Lokální dashboard",
       "executor": "codex",
-      "state": "pending",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-02"
       ],
-      "packet": "tasks/T-03.md"
+      "packet": "tasks/T-03.md",
+      "worktree": ".claude/worktrees/nahravky-dashboard"
     },
     {
       "id": "T-04",
@@ -284,6 +286,18 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:21:36.682Z",
+      "text": "T-02 převzato v a25bd5c; 440 testů koordinátora prošlo. T-03 implementuje Sol, další části jsou seřazené bez souběžných zápisů do fronty."
+    },
+    {
+      "at": "2026-09-14T20:16:44.538Z",
+      "text": "Task T-03 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-14T20:16:44.151Z",
+      "text": "Task T-02 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T20:14:30.740Z",
       "text": "Převzat packet trvalého 429 cooldownu. Kvůli společné frontě bude implementace pokračovat postupně T-03 → T-R1 → T-04."
