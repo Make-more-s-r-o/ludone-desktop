@@ -1,8 +1,25 @@
 # Dashboard nahrávek — zadání pro Codex
 
 **Pro koho:** externí vývojář (Codex / GPT) pracující **jen na téhle desktopové aplikaci**.
-**Repo:** `Make-more-s-r-o/ludone-desktop`, větev `main`.
-**Zadal:** Dan Jirotka, 14. 9. 2026. **Podklady:** změřeno čtením kódu téhož dne, ne z paměti.
+**Repo:** `Make-more-s-r-o/ludone-desktop`, větev `main`. 🔴 **Repo je VEŘEJNÉ** — cokoli sem
+napíšeš, je veřejné okamžitě a nevratně.
+**Zadal:** Dan Jirotka, 14. 9. 2026. **Podklady:** změřeno čtením kódu téhož dne.
+**Prošlo kritikou** jako zadání pro samostatný běh; nálezy z ní jsou v sekci 7.
+
+> ## ⏩ Začni tady
+>
+> 1. Přečti **sekci 12 (Stav práce)** — je tam, co už je hotové a kde skončil minulý běh.
+> 2. Vezmi první úkol, který není ✅, a přečti si k němu sekci 8.
+> 3. Než sáhneš na kód, projdi **sekci 1 (mantinely)** a **sekci 7 (devět pastí)**.
+> 4. Po každém hotovém kroku **commitni kód A zápis do sekce 12**, pak pushni.
+>
+> 🔴 **Commituj po sobě sám.** Je to doložená slabina: jedno sezení Codexu v desktopové
+> aplikaci vyrobilo v jiném repu za 62 minut **176 souborů a git použilo čtyřikrát — pokaždé
+> jen `git status`.** Nula `git add`, nula `git commit`. Práce pak ležela den netrackovaná
+> a našla se náhodou. **Netrackovaný soubor na konci běhu je vada, ne stav.**
+>
+> Ptát se Dana můžeš, ale neblokuj tím celou práci — sekce 14 říká, co rozhodnout samostatně
+> a co je skutečná otázka na něj.
 
 ---
 
@@ -16,8 +33,14 @@ s jeho nahrávkami stalo.** Panel v liště ukáže jen „N čeká na odeslán�
 Tři nahrávky teď stojí ve frontě zablokované a **aplikace nenabízí jediný způsob, jak je
 odblokovat** — chybí IPC kanál i tlačítko (sekce 3).
 
-**Cíl:** obrazovka v Nastavení, kde uživatel vidí každou svou nahrávku, její skutečný stav
-včetně toho, co o ní ví server, a může s ní něco udělat.
+**Cíl:** obrazovka v Nastavení, kde uživatel vidí **živé nahrávky** — co leží na disku, co čeká
+ve frontě, co je zablokované a co už v LuDone je — a může s tím něco udělat.
+
+🔴 **Není to archiv a nesmí se jím stát.** `ROZHODNUTI.md:27–28` (tabulka A, „neotvírat znovu"):
+**A11** *„Aplikace je spouštěč, ne platforma — archiv, přepisy, hledání a dashboardy patří do
+webu"* · **A12** *„archiv nahrávek NE"*. Dan tohle rozhodnutí 14. 9. **potvrdil, že platí dál**.
+⇒ **Nezakládej žádné nové úložiště historie.** Když retence nahrávku smaže, zmizí i z dashboardu
+— a je to správně. Archiv je na webu.
 
 ---
 
@@ -37,12 +60,15 @@ Tohle nejsou doporučení. Každý bod už jednou něco stál.
 4. 🔴 **`design/**` je cizí práce — jen ke čtení.** `AGENTS.md:66`: *„design/ je samostatná,
    cizí práce; bez výslovného vlastnictví na ni nesahej."*
 5. 🔴 **Žádná tajemství do gitu** — tokeny, klíče, `client_id`, e-maily z ostrého provozu.
-   Ani v testech, fixturách nebo commit message.
+   Ani v testech, fixturách nebo commit message. Repo je veřejné.
 6. 🔴 **Nikdy necommituj zvuk ze skutečné schůzky.** Fixtury generuj, nekopíruj z dat uživatele.
-7. **Testy mají síť zakázanou globálně** (`tests/setup-no-network.js`). **Zákaz neobcházej** —
+7. 🔴 **Neruš ani neobcházej rozhodnutí z tabulky A v `ROZHODNUTI.md`.** `ROZHODNUTI.md:129`
+   je řadí mezi věci, které smí změnit jen Dan.
+8. **Testy mají síť zakázanou globálně** (`tests/setup-no-network.js`). **Zákaz neobcházej** —
    kdo si `fetch` nezamockuje, dostane právem červenou. Vznikl proto, že testovací sada
    posílala na ostrý server 6 neúspěšných přihlášení na běh a čerpala tím uživateli limit.
-8. **Nemaž ani nepřepisuj data fronty** mimo akce, které si uživatel vyžádá kliknutím.
+9. **Nemaž ani nepřepisuj data fronty** mimo akce, které si uživatel vyžádá kliknutím.
+   *(Výjimka, která už existuje: retence maže sama při startu — viz sekce 5.)*
 
 ---
 
@@ -54,6 +80,9 @@ Tohle nejsou doporučení. Každý bod už jednou něco stál.
 | 2 | Zdroj pravdy | **Ptát se serveru a porovnávat** — ukázat skutečný rozdíl „lokálně × v LuDone", ne jen to, co si fronta myslí. Čtení, žádný zápis. ⚠️ Sekce 6 říká, kolik z toho dnes jde. |
 | 3 | Akce u položky | **Převzít pod svůj účet · Poslat znovu / zkusit teď · Smazat nahrávku · Otevřít složku se souborem.** Všechny čtyři **vidět v UI**. |
 | 4 | Rozsah UI | **Volná ruka včetně Nastavení** — smíš přepracovat i stávající panel. |
+| 5 | Archiv × spouštěč | **Jen živé nahrávky. A11 platí dál**, nové úložiště historie se nezakládá. |
+| 6 | Pořadí | **Převzetí se staví HNED po datové vrstvě**, ne jako poslední akce. Tři zablokované nahrávky mají být odblokované i tehdy, když vývoj později uvázne. |
+| 7 | Vydání verze | **Ano, dotáhnout až k vydání** — včetně chybějícího nahrávacího kroku. Detail a co k tomu potřebuješ od Dana: sekce 11. |
 
 **Proč rozhodnutí 2 stojí za tu práci:** za poslední týden podvedl vlastní záznam aplikace
 nejméně třikrát — hlásila „nic se neodeslalo", zatímco na serveru ležely tři nahrávky.
@@ -72,14 +101,10 @@ nahrávku má celou a znormalizovanou. **„Synchronizováno" podle naší front
 
 **Kořen je hlouběji než v UI.** `prepareRecoveredRecording` (`electron/queue.cjs:458–565`)
 vrací objekt `{ manifest, manifestPath, trackPaths, recoveredIncomplete?, sourceManifestPath? }`
-— **pole `ownerFingerprint` v něm vůbec není.** `recoverOrphanedRecordings`
-(`electron/queue.cjs:581–674`) ho předá do `enqueueRecording` (`:780–794`), kde
-`addOwnerToNewRecording` normalizuje `undefined` na **`null`**. Při odeslání pak
-`requireMatchingQueueOwner` (`electron/upload-client.cjs:423–447`) vrátí `queue_owner_unknown`
-a **nemá to s čím porovnat** — žádné další přihlášení to nespraví.
-
-`retryFailedItem` (`src/lib/queue.js:358–389`) navíc **výslovně odmítá** tuhle blokádu obejít
-u položek se `selhalo` a důvodem `queue_owner_*` (komentář na ř. 366–369). Je to záměr.
+— **pole `ownerFingerprint` v něm vůbec není** (`:556–564`). `recoverOrphanedRecordings`
+(`:581–674`) ho předá do `enqueueRecording` (`:780–794`), kde `addOwnerToNewRecording`
+normalizuje `undefined` na **`null`**. Při odeslání pak `requireMatchingQueueOwner`
+(`electron/upload-client.cjs:423–447`) vrátí `queue_owner_unknown` a **nemá to s čím porovnat**.
 
 Tři reálné zablokované nahrávky uživatele:
 
@@ -89,6 +114,12 @@ Tři reálné zablokované nahrávky uživatele:
 | `8087dd1a` | 64 min | otisk **jiného účtu** (`queue_owner_mismatch`) | ❌ potřebuje převzetí |
 | `53ab63fc` | 2 m 47 s | otisk **jiného účtu** (`queue_owner_mismatch`) | ❌ potřebuje převzetí |
 
+🔴 **A „Poslat znovu" jim nepomůže taky** — a je to jiný důvod, než by se zdálo. Vlastnické
+chyby mají třídu `paused` (`upload-client.cjs:427, 440, 446`), takže položka zůstává ve stavu
+**`ceka`**, ne `selhalo` (`src/lib/queue.js:530–545`). `retryFailedItem` ale vrací beze změny
+cokoli, co není `selhalo` (`:362`). **Opakování je u nich no-op z definice.** Jediná cesta je
+převzetí — proto je v rozhodnutí 6 posunuté dopředu.
+
 ---
 
 ## 4. Mapa aplikace — UI vrstva
@@ -97,7 +128,11 @@ Tři reálné zablokované nahrávky uživatele:
 Jeden globální stylesheet `src/styles.css` (2 603 řádků) s CSS proměnnými v `:root`
 (ř. 52–94): `--panel-page`, `--panel-card`, `--panel-accent`, `--panel-ok`, `--panel-wait`,
 `--panel-bad`, `--radius-window: 26px`, `--radius-inset: 18px`, `--radius-control: 10px`.
-Barvy v `oklch()`, měkké varianty přes `color-mix(in oklab, …)`. **Nové barvy nevymýšlej.**
+Barvy v `oklch()`, měkké varianty přes `color-mix(in oklab, …)`.
+
+🔴 **„Nové barvy nevymýšlej" není vkus, je to brána.** `tests/barvy.test.js:29–38` vymáhá
+**právě jeden blok `:root`** v `src/styles.css` a čtyři sémantické barvy definované právě
+jednou. Vlastní `:root` pro dashboard = červená.
 
 **Tři okna, jeden bundle.** `index.html` načítá `src/main.jsx`, ten podle
 `window.location.hash` vybere root komponentu:
@@ -108,9 +143,9 @@ Barvy v `oklch()`, měkké varianty přes `color-mix(in oklab, …)`. **Nové ba
 | **Nastavení** | `#settings` | `SettingsApp` ze `src/components/Settings.jsx` | `electron/main.cjs:1051`, `loadFile(…, { hash: "settings" })` ř. 1084, okno **448×676** (ř. 1058–1064) |
 | varování o liště | `#tray-space-warning` | `TraySpaceWarning.jsx` | `electron/main.cjs:734` |
 
-⚠️ **Okno Nastavení je 448 px široké a pevné.** Dashboard se musí vejít do téhle šířky, nebo
-je součástí zadání okno zvětšit — rozhodni a **napiš, cos zvolil**; tabulka o sedmi sloupcích
-se sem nevejde.
+⚠️ **Okno Nastavení je 448×676 a je ZAMČENÉ** — `min`/`max` rozměry i `resizable: false`
+(`main.cjs:1058–1064`). Dashboard se musí vejít, nebo je součástí práce okno odemknout.
+Rozhodni a **napiš, cos zvolil**; tabulka o sedmi sloupcích se sem nevejde.
 
 **Nastavení je jeden soubor** — `src/components/Settings.jsx` (966 řádků). Záložky mají
 registr (ř. 19–24):
@@ -128,31 +163,30 @@ const SETTINGS_TABS = Object.freeze([
 `<section role="tabpanel" hidden={activeTab !== "…"}>` bloky v témže souboru
 (`account` 617–781 · `audio` 783–822 · `recordings` 824–854 · `diagnostics` 856+).
 
-⚠️ **Kolize názvů:** záložka `recordings` („Záznamy") už existuje a řeší **lokální retenci** —
-jak dlouho se soubory drží na disku. Dashboard je něco jiného. Rozhodni, jestli je to pátá
-záložka vedle ní, nebo jestli se obě slijí; **uživatel nesmí mít v Nastavení dvě různé věci
-se stejným jménem.**
+🔴 **Kolize se „Záznamy" je nebezpečnější, než vypadá.** Ta záložka řeší **retenci** a její
+hodnota bydlí v `localStorage` pod klíčem `ludone.prototype.settings` (`Settings.jsx:15, 179,
+268`). **Hlavní proces si ji čte tak, že spustí JavaScript v panelovém rendereru**
+(`main.cjs:2082–2087`) — a každá chyba čtení končí `return undefined`, tedy „nic nemaž"
+(`:2100–2110`). ⇒ **Když při přepracování panelu tenhle klíč nebo renderer rozbiješ, retence
+se tiše vypne a žádná brána si toho nevšimne.** Je to fail-open. Doporučení: **pátá záložka
+vedle, ne sloučení** — a když se do toho pustíš, napiš test, který čtení politiky ověří.
 
 **Jak přidat sekci:** (a) záznam do `SETTINGS_TABS`, (b) nový `<section role="tabpanel">`.
 Obsah **vytáhni do vlastní komponenty** a jen ji naimportuj — vzor je `SettingsAudioTest`
-(`src/components/SettingsAudioTest.jsx`). Devět set řádků v jednom souboru stačí.
+(`src/components/SettingsAudioTest.jsx`).
 
 **Panel v liště** (`src/features/**`): `queue/QueueCard.jsx` · `recording/RecordingCard.jsx`,
 `AudioLevelMeter.jsx`, `microphone-only-capture.js`, `recording-copy.js`,
 `system-audio-health.js` · `tracking/TrackingCard.jsx`. Skládá je `src/App.jsx`.
-`QueueCard` je čistě prezentační — dostane `items`, `onRetry`, `onRetryFeedback`,
-`retryError` (ř. 39); odvozená čísla počítá `queuePanelSummary()` z `src/lib/panel.js`.
 
 **Jak renderer čte data: pollingem, ne událostí.** `App.jsx:39` drží `queueSnapshot`,
 `refreshQueueStatus()` (ř. 172–191) volá `window.ludone.listQueue()`, a `useEffect`
 (ř. 225–245) to opakuje rekurzivním `setTimeout` každou **1 s**
-(`QUEUE_REFRESH_INTERVAL_MS`, ř. 11) — vždy až po dokončení předchozího dotazu. Navíc
-okamžitý refresh na `visibilitychange` (ř. 208–217) a při změně
-`recording.active`/`tracking.active` (ř. 219–223).
+(`QUEUE_REFRESH_INTERVAL_MS`, ř. 11). Navíc okamžitý refresh na `visibilitychange`
+(ř. 208–217) a při změně `recording.active`/`tracking.active` (ř. 219–223).
 
-🔴 **Tenhle vzor na dashboard NEPŘEBÍREJ beze změny.** Sekundový polling je v pořádku pro
-kartu v panelu; na obrazovce, která se navíc ptá serveru, by znamenal dotaz na server každou
-vteřinu — a limity jsou tvrdé (sekce 6). Pro srovnání: přihlášení jede na skutečné události
+🔴 **Tenhle vzor na dashboard NEPŘEBÍREJ beze změny** — sekundový dotaz na server by vystřílel
+limit (sekce 6). Pro srovnání: přihlášení jede na skutečné události
 (`window.ludone.onAuthSessionChanged`, `App.jsx:108`), takže obě cesty jsou v repu zavedené.
 
 **Jediný most renderer ↔ main** je `electron/preload.cjs:130`
@@ -162,22 +196,17 @@ vteřinu — a limity jsou tvrdé (sekce 6). Pro srovnání: přihlášení jede
 `countLabel(count, singular, few, many)` v `src/lib/count-label.js`. **Piš česky**
 (`AGENTS.md`: dokumentace a komentáře česky, commit message anglicky).
 
-**Testy UI:** Vitest, `environment: "node"`, **žádné `@testing-library/react`**. Testy leží
-v `tests/*.test.js`. Dva zavedené vzory:
-
-- **plné mountování s interakcí** — `tests/settings.test.js`: ruční `new JSDOM(…)`,
-  `createRoot().render()` uvnitř `React.act(async …)`, `window.ludone` jako mock, klik přes
-  `button.click()`, assert na mock;
-- **statický markup** — `tests/queue-card-labels.test.js`: `renderToStaticMarkup(<QueueCard …/>)`
-  obalený do `new JSDOM(markup)`.
-
-Dashboard s tlačítky patří k prvnímu vzoru.
+**Testy UI:** Vitest, `environment: "node"`, **žádné `@testing-library/react`**. Dva vzory:
+`tests/settings.test.js` (ruční `new JSDOM`, `createRoot().render()` uvnitř
+`React.act(async …)`, `window.ludone` jako mock, klik přes `button.click()`) a
+`tests/queue-card-labels.test.js` (`renderToStaticMarkup` + `JSDOM`). Dashboard s tlačítky
+patří k prvnímu.
 
 ---
 
 ## 5. Mapa aplikace — data
 
-**Kde co leží** (vše z `app.getPath("userData")`, nic natvrdo):
+**Kde co leží** (vše z `app.getPath("userData")`):
 
 | co | cesta | zdroj |
 |---|---|---|
@@ -197,8 +226,9 @@ Dashboard s tlačítky patří k prvnímu vzoru.
             system:     { …totéž… } } }
 ```
 
-Přechody stavu manifestu (`transitionManifest`, ř. 87–100) jen `recording → complete` nebo
-`recording → incomplete`. Zápis atomicky (temp + fsync + rename, ř. 132–150).
+⚠️ **Manifest nemá název nahrávky ani její délku** a schéma má přesně těch šest klíčů
+(`:72–79`) — co do něj nepatří, `createManifest` zahodí. **Délka se musí dopočítat** z
+`tracks.*.startedAt/endedAt`, velikost umí `recordingSizeBytes` (`queue.cjs:722–748`).
 
 **Položka fronty** (`src/lib/queue.js:244–261`):
 
@@ -212,9 +242,14 @@ Přechody stavu manifestu (`transitionManifest`, ř. 87–100) jen `recording �
 ```
 
 🔴 **Cesty k souborům jsou v `tracks`, ne v `trackPaths`.** `trackPaths` existuje jen
-v mezitvaru z `prepareRecoveredRecording`. Záměna těch dvou polí už jednou smazala
-32 manifestů a nechala 57 audio souborů ležet — tedy smazala **to, podle čeho se nahrávka
-pozná**, a data nechala. Napiš si to za uši u každé akce, která sahá na soubory.
+v mezitvaru z `prepareRecoveredRecording`. Záměna těch dvou polí už jednou smazala 32 manifestů
+a nechala 57 audio souborů ležet — tedy smazala **to, podle čeho se nahrávka pozná**, a data
+nechala.
+
+**Projekce pro renderer je chudá.** `queue:list` dává jen `id` (= `clientRecordingId`),
+`kind`, `state`, `attempts`, `nextAttemptAt`, `lastFailureReason`, volitelně `sizeBytes`
+a `requiresHumanAction` (`src/lib/queue.js:316–333`). **Žádné `createdAt`, žádný název.**
+Dashboard potřebuje víc — rozšíření projekce je proto první úkol (T0).
 
 **Stavy a jejich význam** (`processNext`, `src/lib/queue.js:444–580`):
 
@@ -225,32 +260,53 @@ pozná**, a data nechala. Napiš si to za uši u každé akce, která sahá na s
 | `paused` | zůstává `ceka`, **`attempts` se NEinkrementuje**, nastaví se `requiresHumanAction` |
 | `retryable` | `attempts >= maxAttempts` → `selhalo`; jinak `ceka` + `nextAttemptAt = teď + odklad` |
 
-Pole `pausedReason` **neexistuje** — důvod nese `lastFailureReason` (text) + boolean
-`requiresHumanAction`. Autoritativní klasifikace je `queueItemRequiresHumanAction`
-(`src/lib/queue.js:181–184`); používá ji projekce, pumpa i ruční retry. **Dashboard ať čte
-tuhle funkci, nepíše si vlastní podmínku** — třetí kopie téže logiky by se rozešla.
+Pole `pausedReason` **neexistuje** — důvod nese `lastFailureReason` + boolean
+`requiresHumanAction`. ⚠️ `queueItemRequiresHumanAction` (`:181–184`) vrací `true` **jen pro
+`state === "ceka"`**; položky ve stavu `selhalo` potřebují člověka taky, ale hlásí `false`.
+Dashboard tedy druhou podmínku mít **musí** — jen ji nepiš jako kopii té první, pojmenuj ji.
 
-Retry policy (`src/lib/queue.js:29–34`): `baseDelayMs: 30 s`, `maxDelayMs: 6 h`,
-`maxAttempts: 5`, `jitterRatio: 0.2`. `Retry-After` ze serveru má přednost
-(`odkladPoSelhani`, ř. 414–420).
-
-Pumpa (`electron/queue.cjs:829–846`) posílá nejvýš **20 položek na jedno probuzení**
-(`MAX_POLOZEK_NA_JEDNU_PUMPU`, ř. 827) a pokračuje jen po `outcome === "sent"`.
+Retry policy (`:29–34`): `baseDelayMs: 30 s`, `maxDelayMs: 6 h`, `maxAttempts: 5`,
+`jitterRatio: 0.2`; `Retry-After` ze serveru má přednost (`odkladPoSelhani`, `:414–420`).
+Pumpa (`electron/queue.cjs:829–846`) posílá nejvýš **20 položek na probuzení** (`:827`).
 
 **Otisk vlastníka** (`deriveQueueOwnerFingerprint`, `electron/queue.cjs:80–112`):
 HMAC-SHA256 nad `["cz.ludone.desktop","queue-owner","v1", issuer, "email", email]`,
 tajemství ≥32 B, výstup `"sha256:<hex64>"`. Snímá se **při startu nahrávání**
-(`main.cjs:1488`) — tedy je to snímek okamžiku pořízení, ne aktuálního přihlášení.
-Aktuální otisk pro porovnání dá `readCurrentQueueOwnerFingerprint()` (`main.cjs:2242–2254`).
+(`main.cjs:1488`). Aktuální otisk dá `readCurrentQueueOwnerFingerprint()` (`:2242–2254`).
+
+🔴 **Z otisku NELZE zjistit, komu patří.** Je to jednosměrný HMAC a komentář nad ním říká
+doslova: *„Jméno, e-mail ani token se do outgoing.json nikdy neukládají"* (`queue.cjs:73–79`).
+⇒ V UI jde napsat jen **„patří jinému účtu, než kterým jsi přihlášen"**, ne u koho vznikla.
+Je to vědomý ústupek proti rozhodnutí 3 a Dan o něm ví.
+
+### 🔴 Retence — subsystém, který dashboardu maže data pod rukama
+
+`electron/retention.cjs` (369 řádků) běží **při každém startu aplikace** (`main.cjs:4029`)
+a **maže odeslané nahrávky včetně jejich položek ve frontě** (`retention.cjs:305–365`).
+Výchozí lhůta je 7 dní po odeslání (`Settings.jsx:17`).
+
+To není chyba, kterou máš opravit — **je to důvod, proč dashboard ukazuje živé věci a ne
+archiv** (sekce 0, rozhodnutí 5). Ale musíš s tím počítat:
+
+- Položka, kterou uživatel právě vidí, **může za vteřinu zmizet**.
+- Retence maže **zvukové soubory, ale ne `.manifest.json`** (`:340–353` volá `unlink` jen nad
+  `candidate.files`). Při dalším startu takový manifest najde `recoverOrphanedRecordings`
+  (`queue.cjs:581`), `prepareRecoveredRecording` spadne na chybějících stopách (`:491–497`)
+  a jen zvedne počítadlo `skipped`. **Manifest tam zůstane navždy.** ⇒ „Nahrávky na disku bez
+  položky ve frontě" jsou z velké části tihle duchové. Dashboard je má umět zobrazit jako
+  „soubory chybí" a nabídnout úklid, ne je tvářit jako nahrávku k odeslání.
+- Ve stejném adresáři je **třetí typ souboru** — sidecar `*.manifest.json.recovered-upload-v1.json`
+  (`queue.cjs:537`). Nepočítej ho jako nahrávku.
 
 **Kompletní IPC povrch dnes** má 46 kanálů; pro tebe jsou podstatné `queue:list`
-(`main.cjs:2540`) a `queue:retry` (`main.cjs:2548`), vystavené v `preload.cjs:193–194`.
+(`main.cjs:2540`) a `queue:retry` (`:2548`). ⚠️ **`queue:retry` je povolený jen odesílateli
+`"panel"`** — z okna Nastavení je dnes nedosažitelný, takže i kdybys nic jiného neměnil,
+tohle rozšířit musíš.
 
-🔴 **Každý nový IPC kanál musí projít kontrolou odesílatele.** V repu na to je
-`handleValidated`/`onValidated` (`main.cjs:300–321`) a celá testovací sada
-`tests/ipc-sender-guard.test.js` (20 testů). `AGENTS.md:53–54` říká, že přihlášení, tokeny,
-idempotence fronty a **kontrola odesílatele IPC** vyžadují review nad diffem. Kanál bez
-guardu je bezpečnostní vada, ne opomenutí.
+🔴 **Každý nový IPC kanál musí projít kontrolou odesílatele** (`handleValidated`/`onValidated`,
+`main.cjs:300–321`; 20 testů v `tests/ipc-sender-guard.test.js`). `AGENTS.md:53–54` řadí
+kontrolu odesílatele IPC mezi věci vyžadující review nad diffem. Kanál bez guardu je
+bezpečnostní vada.
 
 **Testy, které se tě dotknou:**
 
@@ -260,264 +316,308 @@ guardu je bezpečnostní vada, ne opomenutí.
 | `tests/queue-wiring.test.js` | 241 | zapojení do `main.cjs`, produkční fronta (3795) |
 | `tests/upload-client.test.js` | 66 | kontrakt uploadu, vlastník před odesláním (230) |
 | `tests/ipc-sender-guard.test.js` | 20 | ochrana IPC |
-| `tests/settings.test.js` | — | vzor pro UI test s interakcí |
-
-**Brány** (`package.json`): `npm run gates` = `lint` (eslint) → `typecheck`
-(`tsc --noEmit -p jsconfig.json`) → `test:unit` (`vitest run`) → `preskocene`
-(hlídá, aby nerostl počet přeskočených testů). **Musí projít všechny čtyři** — v tomhle repu
-každá chytá jinou třídu vad a je to doložené: `tsc` našel chybu, kterou 1 305 zelených testů
-propustilo, a `eslint` nedosažitelný `return`, který přežil 1 289 testů.
+| `tests/barvy.test.js` | — | právě jeden `:root`, čtyři sémantické barvy |
+| `tests/brany-workflow.test.js` | — | výčet bran smí být v repu jen jednou |
+| `tests/packaging.test.js` | — | tvar publikace (dotkne se tě v T6) |
 
 ---
 
-## 6. 🔴 NÁLEZ: porovnání se serverem dnes nejde postavit celé
+## 6. 🔴 NÁLEZ: porovnání se serverem nejde postavit celé
 
-**Tohle je nejdůležitější věta celého zadání. Přečti ji dřív, než začneš plánovat.**
-
-Aplikace volá na server právě pět cest (`electron/upload-client.cjs`, `electron/companies.cjs`):
+**Přečti dřív, než začneš plánovat.** Aplikace volá na server právě pět cest:
 
 | # | metoda + cesta | k čemu | limit |
 |---|---|---|---|
-| 1 | `POST /api/nahravky/uploads` | založení uploadu jedné stopy (idempotentní) | **30/h** |
+| 1 | `POST /api/nahravky/uploads` | založení uploadu **jedné stopy** (idempotentní) | **30/h** |
 | 2 | `GET /api/nahravky/uploads/{recordingId}` | stav **jedné konkrétní** nahrávky | **120/h** |
 | 3 | `PUT …/{recordingId}/casti/{index}` | část obsahu | 300/h |
 | 4 | `POST …/{recordingId}/dokoncit` | dokončení | 30/h |
 | 5 | `GET /api/nahravky/uploads/firmy` | seznam firem | bez limitu |
 
-**Co chybí:** neexistuje endpoint, který by vypsal nahrávky uživatele, ani takový, který by
-odpověděl na dotaz podle `clientRecordingId`. Stav se dá zjistit **jen podle `recordingId`,
-které přiděluje server** — a to aplikace zná pouze bezprostředně po vlastním init volání.
+**Co chybí:** neexistuje endpoint, který by vypsal nahrávky uživatele, ani dotaz podle
+`clientRecordingId`. Stav se dá zjistit **jen podle `recordingId`, které přiděluje server**.
 
-**A druhá půlka problému je u nás:** funkce, která to `recordingId` má uložit
-(`applyServerProgress`, `src/lib/queue.js:342–356`), **není odnikud volaná**. Je hotová
-i otestovaná (`tests/queue.test.js:1014–1039`), ale v `electron/*.cjs` ji nevolá nikdo, takže
-`server.recordingId` zůstává `null` i u nahrávek, které na serveru bezpečně leží.
+**A druhá půlka problému je u nás:** `applyServerProgress` (`src/lib/queue.js:342–356`) —
+funkce, která to `recordingId` má uložit — **není odnikud volaná**. Je hotová i otestovaná
+(`tests/queue.test.js:1014–1039`), ale v `electron/*.cjs` ji nevolá nikdo.
 
-**Limity, na které se nesmí zapomenout** (změřeno serverovým týmem v jejich kódu, commit
-`1b07fad7`, 11. 9. 2026):
+**Limity** (změřeno serverovým týmem v jejich kódu, commit `1b07fad7`, 11. 9. 2026):
 
-- **Klíčem je UŽIVATEL**, ne IP ani token — uživatel čerpá **jeden strop webem i desktopem**.
-- **Okno je pevné (3 600 s od prvního požadavku), ne klouzavé**, a počítadlo drží databáze,
-  takže restart serveru ho nevynuluje.
+- **Klíčem je UŽIVATEL** — jeden strop webem i desktopem dohromady.
+- **Okno je pevné (3 600 s od prvního požadavku), ne klouzavé**; počítadlo drží databáze.
 - **Počítá se každé volání včetně idempotentního opakování.**
-- Neúspěšné ověření tokenu má vlastní strop **30/min na IP a sdílí ho s `/api/mcp`** —
-  rozbitá session hnaná přes celou frontu shodí uživateli i MCP.
+- ⚠️ **Rozpočet 120/h nesdílíš jen s webem, ale i s vlastním odesíláním** — `uploadTrack` dělá
+  po každém init ještě `GET /uploads/{id}` (`upload-client.cjs:779`), takže dvoustopá nahrávka
+  spotřebuje 2 ze 120 ještě předtím, než se dashboard na cokoli zeptá.
+- Neúspěšné ověření tokenu má vlastní strop **30/min na IP sdílený s `/api/mcp`**.
 
-### Co z toho plyne pro zadání
+### Co z toho plyne
 
-**„Zeptat se serveru" jde jen u nahrávek, u kterých známe `recordingId`.** Proto:
-
-- **T1 níž (uložit `recordingId`) je předpoklad, ne vylepšení.** Bez něj je porovnání
-  postavitelné pouze tak, že se na server pošle **zapisující** init se stejným
-  `Idempotency-Key` — což stojí stejný rozpočet jako skutečné odeslání (30/h), vyžaduje mít
-  po ruce celý soubor a jeho hash, a při sebemenší neshodě metadat vrátí `idempotency_conflict`.
+- **T1 (uložit `recordingId`) je předpoklad, ne vylepšení.** Bez něj by šlo porovnávat jen
+  přes **zapisující** init se stejným `Idempotency-Key` — stejný rozpočet jako skutečné
+  odeslání, nutnost mít celý soubor a hash, a při neshodě metadat `idempotency_conflict`.
   **Tudy nechoď.**
-- U **starých** nahrávek (odeslaných před T1) `recordingId` nikde není a už nevznikne.
-  Dashboard u nich musí poctivě říct **„na serveru neověřeno"** — ne je přebarvit na zelenou
-  podle toho, že fronta říká `odeslano`. Tohle je přesně ta třída omylu, kvůli které Dan
-  porovnání se serverem chce.
-- **Chybějící endpoint pro výpis / dotaz podle `clientRecordingId` je nález pro serverový
-  tým, ne práce pro tebe.** Zapiš ho do reportu a jdi dál.
+- U **starých** nahrávek `recordingId` nikde není a už nevznikne. Dashboard u nich musí říct
+  **„na serveru neověřeno"** — ne je přebarvit na zelenou podle toho, co říká fronta.
+- **Chybějící endpoint pro výpis je nález pro serverový tým**, ne práce pro tebe. Zapiš a jdi dál.
 
 ---
 
-## 7. Plán práce
+## 7. Devět pastí, na kterých se implementace zasekne
 
-Pořadí je závazné — T1 je předpoklad T3. Každý bod je samostatný commit s vlastními testy.
+Tohle našla kritika tohoto zadání. Neřeš je znovu od nuly.
 
-### T1 — Zapojit ukládání výsledku odeslání *(předpoklad všeho ostatního)*
+**P1. 🔴 `recordingId` je PER STOPU, ne per nahrávku.** `uploadTrack` zakládá upload pro každou
+stopu zvlášť a z každé dostane vlastní `recordingId` (`upload-client.cjs:750–764`, cyklus
+`:891–898`); `sendRecording` vrací **pole** `uploads` (`:899`). Ale `server.recordingId` je
+**jeden string** (`queue.js:256`) a `applyServerProgress` čeká právě jeden (`:347`).
+⇒ Rozšiř schéma na stopy. **Kdo uloží jen první id, postaví dashboard, který hlásí „je tam"
+podle jedné ze dvou stop** — přesně ta lež, kvůli které Dan porovnání chce. A T3 pak dělá
+**dva dotazy na položku**, ne jeden; promítni to do rozpočtu.
 
-`applyServerProgress` (`src/lib/queue.js:342–356`) existuje a je otestovaná, ale nikdo ji
-nevolá. Zapoj ji tak, aby se po úspěšném odeslání uložilo `server.recordingId` a
-`server.uploadedBytes`; z odpovědi čti i pole `idempotent`, které dnes ignorujeme.
+**P2. 🔴 `uploadedBytes` u jednostopé nahrávky shodí úspěšnou větev.** `requireUploadedBytes`
+vyžaduje **oba** klíče jako celá čísla (`queue.js:192–203`), ale mikrofon-only položka vzniká
+s `{ microphone: 0 }` bez `system` (`queue.cjs:190`). Naivní zapojení T1 hodí `TypeError`
+**hned po úspěšném odeslání**. Dopočítej `system: 0`. Pozor: fixtury bývají dvoustopé, takže
+tohle ti test nemusí chytit — napiš ho schválně jednostopý.
 
-**Důkaz hotovosti:** test, který projde celou cestou odeslání přes atrapu serveru a ověří,
-že se hodnota **v souboru fronty** objevila. Test volající jen `applyServerProgress` přímo
-tuhle vadu nenajde — ta funkce byla takhle otestovaná celou dobu, co nefungovala.
+**P3. 🔴 Volání store zevnitř odesílání = deadlock.** `processNext` návratovou hodnotu `send`
+zahazuje (`queue.js:497`). Store je `Object.freeze` s pěti metodami (`queue.cjs:889`) a
+**každá jde přes `serialize()`** (`:700–704`) — zavolat store zevnitř `send` (což už uvnitř
+`serialize` běží) zatuhne. Výsledek musí propadnout ven z `processNext`.
 
-### T2 — Datová vrstva dashboardu (main proces)
+**P4. Pole `idempotent` existuje jen v dokumentu, kterému se nemá věřit.** T1 ho chce číst,
+v kódu nikde není; jediný výskyt je `docs/server-modul/kontrakt-desktopu.md:41,46` — tedy
+dokument, který sekce 13 označuje za zastaralý. **Čti ho obranně (`=== true`) a neukládej**,
+dokud pro něj nemáš doložený tvar.
 
-Nový IPC kanál, který vrátí **spojený pohled**: položky fronty + nahrávky ležící na disku,
-které ve frontě nejsou. Na položku aspoň: identifikátor, kdy vznikla, délka/velikost, stav
-fronty, `requiresHumanAction` a lidsky čitelný důvod, jestli známe `server.recordingId`,
-a cesty k souborům pro akci „otevřít složku".
+**P5. `sessionId` se nikdy neuloží.** `uploadTrack` ho čte z `recording.manifest.sessionId`
+(`:890`), ale `createManifest` ho zahazuje — schéma má šest klíčů (`manifest.js:72–79`).
+`sessionId` je přitom jediné, co dvě stopy spojuje do jedné schůzky. **Nespoléhej na něj**
+a když na to narazíš, napiš to jako nález.
 
-**Guard odesílatele je povinný** (`handleValidated`, `main.cjs:300–321`).
+**P6. Převzetí při nepřihlášeném stavu by pojistku ZRUŠILO.** `readCurrentQueueOwnerFingerprint()`
+vrací `null` při chybějící relaci, jiném issueru i chybějícím tajemství (`main.cjs:2242–2254`).
+Slepé „přepiš aktuálním otiskem" by platný otisk **vynulovalo**. ⇒ Tlačítko neaktivní bez
+přihlášení; zápis `null` odmítni.
 
-### T3 — Ověření proti serveru
+**P7. HTTP klient pro T3 se nedá znovu použít.** `createRequester` **není exportovaný**
+(`upload-client.cjs:903–911` exportuje 7 jmen). Buď ho vyexportuješ — zásah do bezpečnostně
+citlivého modulu, tedy review nad diffem — nebo napíšeš druhého klienta, což je ta „třetí
+kopie téže logiky", před kterou tohle zadání varuje jinde. **Doporučení: vyexportovat a napsat
+proč.**
 
-Pro položky, kde známe `recordingId`, volej `GET /api/nahravky/uploads/{recordingId}`
-a porovnej se stavem fronty. Odpověď nese `state` (`"normalized"` / `"stored"` = hotovo),
-`missing` (chybějící části), `declaredBytes`, `sha256`.
+**P8. Chybí prázdné a chybové stavy.** Rozmysli a naimplementuj: prázdný dashboard · stav bez
+přihlášení (T3 ani převzetí nejdou) · `429` (limit vyčerpán — to je čtvrtý výsledek vedle
+„je tam / není tam / nevíme") · poškozený `outgoing.json` · soubor, který mezitím smazala
+retence, a uživatel klikne „Otevřít složku".
 
-🔴 **Ověřování nesmí běžet v pollingu.** Rozpočet je 120 dotazů na hodinu **sdílený s webem**.
-Navrhni to jako **akci uživatele** (tlačítko „Zkontrolovat proti LuDone") nebo jako ověření
-při otevření obrazovky s výsledkem uloženým do mezipaměti a viditelným časem posledního
-ověření. **Do zadání napiš, cos zvolil a kolik dotazů to v nejhorším udělá.**
-
-Tři možné výsledky, tři různá sdělení: **je tam** · **není tam** · **nevíme** (chybí
-`recordingId`, nedosáhli jsme na server, došel limit). Třetí se nesmí tvářit jako první.
-
-### T4 — Čtyři akce u položky
-
-| akce | co dělá | na co pozor |
-|---|---|---|
-| **Převzít pod svůj účet** | přepíše `ownerFingerprint` položky aktuálním otiskem (`readCurrentQueueOwnerFingerprint()`) a položka jde normální cestou | 🔴 jen u konkrétní položky, jen na klik, **nikdy hromadně**; v UI musí být vidět, že přebíráš cizí nahrávku, a u koho vznikla |
-| **Poslat znovu / zkusit teď** | vyvolá pokus u jedné položky | dnešní `queue:retry` pracuje nad frontou jako celkem; tohle je per-položka |
-| **Smazat nahrávku** | odstraní položku fronty, manifest **i audio soubory** | 🔴 nevratné → potvrzovací dotaz; cesty ber z **`tracks`**, ne z `trackPaths` |
-| **Otevřít složku se souborem** | `shell.showItemInFolder` | ověř, že cesta leží uvnitř adresáře nahrávek — neotevírej, co přijde z rendereru bez kontroly |
-
-Převzetí je zároveň jediná cesta, jak vyřešit `queue_owner_unknown` u obnovených nahrávek
-(sekce 3). **Zvaž i druhou opravu:** aby `prepareRecoveredRecording` otisk vůbec nastavoval —
-ale pozor, „vlastník je snapshot z okamžiku nahrávání" je záměr, takže převzít otisk
-aktuálního přihlášení při obnově **mění pravidlo**. Je-li to podle tebe správně, **napiš to
-jako návrh a nech to rozhodnout Dana**, neprosaď to potichu.
-
-### T5 — UI
-
-Obrazovka v Nastavení podle sekce 4. Volná ruka včetně přepracování panelu — ale co dnes
-funguje (lišta, nahrávání, stavy), musí fungovat dál.
+**P9. Snímek v UI stárne.** Pumpa běží sama, retence při startu. Uživatel klikne „Smazat" nad
+seznamem starým půl minuty. `serialize()` chrání **soubor, ne záměr** — není verze ani kontrola
+„stav je pořád ten, cos viděl". U nevratné akce nad audiem to ošetři.
 
 ---
 
-## 8. Hotovo znamená
+## 8. Plán práce
 
-1. `npm run gates` zelené — **všechny čtyři brány**, ne jen testy.
+Pořadí je závazné. Každý bod je samostatný commit s vlastními testy.
+
+### T0 — Rozšířit povrch fronty *(jinak vznikne třikrát narychlo)*
+
+Store je zamrzlý na pěti metodách (`queue.cjs:889`) a projekce pro renderer dává šest polí
+(`queue.js:316–333`). T2, T3 i T4 to potřebují rozšířit. **Udělej to jednou pořádně:**
+projekce ať nese i `createdAt`, délku, velikost, `server` a důvod blokace.
+
+### T1 — Zapojit ukládání výsledku odeslání *(předpoklad T3)*
+
+`applyServerProgress` existuje a nikdo ji nevolá. Zapoj ji — s ohledem na P1, P2, P3.
+
+**Důkaz hotovosti:** test, který projde **celou cestou** odeslání přes atrapu serveru a ověří,
+že hodnota je **v souboru fronty**. Test volající `applyServerProgress` přímo tuhle vadu
+nenajde — takhle byla otestovaná celou dobu, co nefungovala.
+
+### T2 — Převzetí nahrávky *(Danovo rozhodnutí 6: hned, ne nakonec)*
+
+IPC kanál + tlačítko u konkrétní položky, které přepíše `ownerFingerprint` aktuálním otiskem.
+Mantinel 2 a past P6 platí bez výjimky. V UI musí být vidět, že přebíráš nahrávku patřící
+jinému účtu.
+
+**Tímhle se odblokují ty tři nahrávky ze sekce 3** — je to jediná část zadání s okamžitým
+užitkem pro uživatele.
+
+Zvaž i druhou opravu: aby `prepareRecoveredRecording` otisk nastavovalo. Ale pozor — „vlastník
+je snapshot z okamžiku nahrávání" je záměr, takže brát aktuální přihlášení při obnově **mění
+pravidlo**. Je-li to podle tebe správně, **napiš to jako návrh do sekce 12 a nech rozhodnout
+Dana.**
+
+### T3 — Datová vrstva dashboardu
+
+IPC kanál vracející spojený pohled: položky fronty + nahrávky na disku bez položky (včetně
+duchů po retenci, viz sekce 5). Guard odesílatele povinný; `queue:retry` rozšířit i na
+odesílatele `"settings"`.
+
+### T4 — Ověření proti serveru
+
+Pro položky se známým `recordingId` volej `GET /api/nahravky/uploads/{recordingId}` a porovnej.
+Odpověď nese `state` (`"normalized"`/`"stored"` = hotovo), `missing`, `declaredBytes`, `sha256`.
+
+🔴 **Ověřování nesmí běžet v pollingu.** Navrhni ho jako akci uživatele nebo jako ověření při
+otevření obrazovky s výsledkem v mezipaměti a viditelným časem posledního ověření. **Napiš,
+kam mezipaměť ukládáš** (a ať to není nové úložiště historie — rozhodnutí 5). **A spočítej,
+kolik dotazů to v nejhorším za hodinu udělá** — nezapomeň na P1 (dvě stopy = dva dotazy).
+
+### T5 — Zbylé akce a UI
+
+„Poslat znovu" (per položka, viz sekce 3 — u vlastnických blokací je to no-op, tak to
+uživateli neslibuj), „Smazat nahrávku" (nevratné → potvrzení; cesty z **`tracks`**),
+„Otevřít složku" (`shell.showItemInFolder`, ověř, že cesta leží uvnitř adresáře nahrávek).
+Obrazovka v Nastavení podle sekce 4.
+
+### T6 — Vydání verze *(Danovo rozhodnutí 7)*
+
+Viz sekce 11 — má vlastní pravidla a vlastní seznam toho, co potřebuješ od Dana.
+
+---
+
+## 9. Hotovo znamená
+
+1. `npm run gates` zelené — **všechny čtyři brány**. Před PR ještě `npm run gates:clean`.
 2. Každá nová funkce má test, který **selže, když ji rozbiješ**. Ověř to: zásah do
-   implementace → test musí zčervenat. Tenhle repo má doloženou historii testů, které
-   **držely vadu na místě** (test vyžadoval zakázanou hlavičku; test tvrdil, že
-   `clientRecordingId` se rovná řetězci, který server odmítá; strop pumpy šel přepsat na 1000
-   a sada zůstala zelená). Test, který jen opisuje implementaci, není měřidlo.
+   implementace → test musí zčervenat. Tenhle repo má doloženou historii testů, které vadu
+   **držely na místě** (test vyžadoval zakázanou hlavičku; test tvrdil, že `clientRecordingId`
+   se rovná řetězci, který server odmítá; strop pumpy šel přepsat na 1000 a sada zůstala
+   zelená). Test, který opisuje implementaci, není měřidlo.
 3. Žádný nový IPC kanál bez kontroly odesílatele.
-4. Mazání a převzetí mají v UI potvrzení a jdou vždy jen na jednu konkrétní položku.
-5. V reportu uveď: co jsi změnil, **co jsi neudělal a proč**, kolik dotazů na server tvoje
-   řešení v nejhorším za hodinu udělá, a každou věc, kterou jsi musel rozhodnout za Dana.
-
----
-
-## 9. Pasti tohohle repa (ušetří ti to kolo)
-
-- **`tracks` × `trackPaths`** — viz sekce 5. Nejdražší záměna v projektu.
-- **Fronta má dvě čtení „potřebuje člověka"** — používej `queueItemRequiresHumanAction`,
-  nepiš si třetí.
-- **`net.fetch` (Electron/Chromium) × `globalThis.fetch` (Node)** se chovají různě. Chromium
-  odmítne zakázané hlavičky (`Content-Length`) chybou `net::ERR_INVALID_ARGUMENT` **před
-  odesláním** a protistrana nemá co zaznamenat; Node je propustí. Upload jede přes `net.fetch`.
-  **Nepřidávej hlavičky ručně.**
-- **Chybám z Chromia chybí `code` i `cause`** — příčina je jen v textu zprávy.
-- **Dokumentace v `docs/server-modul/` je ZASTARALÁ.** Popisuje `POST /api/desktop/recordings`,
-  `PUT …/tracks/{kind}`, `POST …/complete` — **takové routy neexistují.** Platí
-  `/api/nahravky/uploads` a jediný zdroj pravdy je kód (`electron/upload-client.cjs`,
-  `electron/companies.cjs`). `KONTRAKT.md §7` (ř. 119–150) to sám přiznává; zbytek dokumentu
-  ne. Nenech se tím poslat špatným směrem.
-- **Vitest umí vypsat „N passed" a vedle toho řádek `Errors`.** Kontroluj i ten.
-- **Aplikace má jednoinstanční zámek** — druhá instance start vůbec nerozjede.
-- **`pgrep -f <cesta>` chytá i vlastní shell skripty**, které tu cestu mají v příkazu.
-  Nehledej podle toho běžící instance.
+4. Mazání a převzetí mají potvrzení a jdou vždy jen na jednu konkrétní položku.
+5. Sekce 12 je aktuální — včetně rozhodnutí, která jsi udělal za Dana.
+6. V PR uveď: co jsi změnil, **co jsi neudělal a proč**, a kolik dotazů na server tvoje řešení
+   v nejhorším za hodinu udělá.
 
 ---
 
 ## 10. Jak pracovat — git, brány, CI
 
-Tohle zadání počítá s tím, že **pracuješ samostatně**: Dan otevře složku, řekne „pokračuj
-v práci" a ty commituješ, pushuješ a zakládáš PR sám, bez ptaní na každý krok.
-
 **Git:**
 
 - Větev z `main`. `AGENTS.md:14` chce prefix `feat/` · `fix/` · `docs/` — v posledních ~130 PR
-  se to většinou nedodržuje a **nekontroluje to žádná brána**, takže je to zvyk, ne pravidlo.
+  se to většinou nedodržuje a nekontroluje to žádná brána, takže je to zvyk, ne pravidlo.
 - **Commit message anglicky, dokumentace a komentáře česky** (`AGENTS.md:8–9`).
-- `main` **není chráněný** (ověřeno přes GitHub API: žádný required check, žádný ruleset),
-  takže přímý push technicky projde. **Ale zavedená praxe je PR + squash merge** — 140 PR,
-  všechny takhle. Drž se jí.
-- `AGENTS.md:16–20`: izolovanou práci zakládej v `.claude/worktrees/<účel>`, **jeden
-  zapisovatel = jeden worktree**, a po převzetí práce worktree odstraň a větev smaž.
+- `main` **není chráněný** (ověřeno přes GitHub API), takže přímý push projde. **Ale zavedená
+  praxe je PR + squash merge** — 140 PR, všechny takhle. Drž se jí.
+- `AGENTS.md:16–20`: izolovanou práci zakládej v `.claude/worktrees/<účel>`, **jeden zapisovatel
+  = jeden worktree**, po převzetí worktree odstraň a větev smaž.
 - `AGENTS.md:24`: *„Cizí změny v pracovním stromě nevracej, nepřebírej ani neuklízej."*
-  Když najdeš v repu necommitnutou cizí práci, **nech ji být a napiš to**.
 
-**Brány:**
-
-`npm run gates` = `lint` → `typecheck` → `test:unit` → `preskocene`, v tomhle pořadí
+**Brány:** `npm run gates` = `lint` → `typecheck` → `test:unit` → `preskocene`
 (`package.json:76`). Výčet je **jediný** a hlídá to `tests/brany-workflow.test.js` — vydávací
-workflow si ho kdysi opisoval zvlášť, rozešlo se to a vydání jelo o jednu kontrolu chudší než
-obyčejný push. **Nevypisuj si vlastní seznam bran nikde.**
+workflow si ho kdysi opisoval zvlášť, rozešlo se to a vydání jelo o kontrolu chudší.
+**Nevypisuj si vlastní seznam bran nikde.** `npm run gates:clean` pustí totéž nad čistým
+klonem.
 
-`npm run gates:clean` pustí totéž nad **čistým klonem** v dočasném adresáři (`npm ci` + gates
-+ build). Použij ho před PR — lokální běh měří tvůj pracovní strom včetně necommitnutých
-souborů a starých `node_modules`.
+🔴 **`ui-smoke` a `audio-smoke` nespouštěj.** Potřebují GUI, zvuk a oprávnění Záznam obrazovky.
+V CI jsou přítomné, ale trvale vypnuté (`if: ${{ false }}`, `.github/workflows/ci.yml:42–49`) —
+**je to záměr** (`AGENTS.md:35–36`: *„V CI ani v sandboxu neběží; spouští je člověk na svém
+Macu."*).
 
-🔴 **`ui-smoke` a `audio-smoke` nespouštěj.** Potřebují GUI, fyzický zvuk a systémové
-oprávnění Záznam obrazovky. V CI jsou fyzicky přítomné, ale trvale vypnuté (`if: ${{ false }}`
-v `.github/workflows/ci.yml:42–49`) — **je to záměr, ne nedodělek** (`AGENTS.md:35–36`:
-*„V CI ani v sandboxu neběží; spouští je člověk na svém Macu."*). Nezapínej je a neobcházej.
+**CI:** `ci.yml` běží na `ubuntu-latest`, `npm run gates` + `npm run build`, ~75 s.
+🔴 **Nepřesouvej ho na self-hosted runner.** Do 9. 9. 2026 běžel na Danově Macu a bylo to
+zrušené z důvodu zapsaného v tom souboru (ř. 22–26): repo je veřejné, `pull_request` nemá
+omezení, takže kdokoli si udělá fork, přidá soubor do `tests/` a jeho kód se spustí na stroji,
+kde leží podpisový certifikát firmy a klíče k produkci.
 
-**CI:** `ci.yml` běží na `ubuntu-latest` (GitHub-hosted), spouští `npm run gates` a `npm run
-build`, trvá ~75 s. 🔴 **Nepřesouvej ho na self-hosted runner.** Do 9. 9. 2026 běžel na Danově
-Macu a bylo to zrušené z bezpečnostního důvodu zapsaného přímo v tom souboru (ř. 22–26): repo
-je veřejné, `pull_request` nemá omezení, takže kdokoli si udělá fork, přidá soubor do `tests/`
-a jeho kód se spustí na stroji, kde leží podpisový certifikát firmy a klíče k produkci.
-
-**Zelenou CI čti přes `gh pr view --json statusCheckRollup`** — musí být aspoň jeden check,
-všechny `COMPLETED`/`SUCCESS`, a hlavička PR musí sedět na tvůj poslední commit. Prázdný
-seznam checků **není slabší zelená, je to nezměřeno**.
-
-⚠️ **Vitest umí vypsat „N passed" a vedle toho řádek `Errors`.** Čti oba.
+**Zelenou CI čti přes `gh pr view --json statusCheckRollup`** — aspoň jeden check, všechny
+`COMPLETED`/`SUCCESS`, hlavička PR na tvém posledním commitu. Prázdný seznam checků **není
+slabší zelená, je to nezměřeno**. ⚠️ Vitest umí vypsat „N passed" a vedle toho řádek `Errors` —
+čti oba.
 
 ---
 
-## 11. 🔴 „Nasazení" u téhle aplikace zatím NEEXISTUJE
+## 11. T6 — Vydání verze
 
-Kdyby ti někdo řekl „dotáhni to až na produkci", tohle je stav, na který narazíš. Změřeno
-14. 9. 2026, ne převzato z dokumentace:
+Dan chce, aby se to dotáhlo až k vydané verzi. Tady je stav, změřený 14. 9. 2026:
 
 - `.github/workflows/release-macos.yml` se spouští **jen na tag `v*`**, běží na `macos-14`,
   sám podepíše i notarizuje. **Nikdy neproběhl** — v repu je **0 tagů a 0 releases**.
+- Před buildem ověřuje, že tag odpovídá `v${package.json.version}` a že existuje pět tajemství
+  (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`).
 - `package.json:54–60` publikuje přes `provider: "generic"` na `https://stahnout.ludone.cz/desktop/`.
-- 🔴 **Krok, který tam ten soubor nahraje, v repu není.** Žádné `scp`, `rsync`, `curl --upload`,
-  S3 ani sftp — nikde. A `electron-builder` u providera `generic` s `--publish always`
-  **mlčky neudělá nic**. Takže i kdyby dnes někdo pushnul tag, balíček by zůstal v běžci.
-- Aplikace přitom auto-update **umí** (`electron/main.cjs:3180`, `electron-updater`, s pojistkou
-  proti restartu uprostřed nahrávání). Chybí jen ta poslední míle.
+- 🔴 **Krok, který ten soubor nahraje, v repu není.** Žádné `scp`, `rsync`, `curl --upload`,
+  S3 ani sftp. A `electron-builder` u providera `generic` s `--publish always` **mlčky neudělá
+  nic** — neselže, jen nenahraje.
+- `scripts/package-mac.mjs:133–135` naopak **správně shodí** publikaci nepodepsaného nebo
+  nenotarizovaného buildu. Tuhle pojistku nech být.
+- Aplikace auto-update **umí** (`main.cjs:3180`, `electron-updater`, včetně pojistky proti
+  restartu uprostřed nahrávání).
 
-**Co to pro tebe znamená:** „hotovo" v tomhle zadání končí **zeleným PR mergnutým do `main`**.
-Vydání verze je samostatná, dosud nepostavená věc. Kdyby ji Dan chtěl, je to vlastní úkol —
-včetně toho chybějícího nahrávacího kroku a úpravy `tests/packaging.test.js`, který tvar
-publikace kontroluje. **Nestav to mimochodem u dashboardu.**
+**Co po tobě chci:** postavit ten chybějící nahrávací krok do `release-macos.yml` a upravit
+`tests/packaging.test.js`, který tvar publikace kontroluje.
+
+🔴 **Co NEMŮŽEŠ udělat sám a musíš si vyžádat od Dana** — napiš mu to do sekce 12 a pokračuj
+zatím na tom, co na tom nezávisí:
+
+1. **Jak se na `stahnout.ludone.cz` nahrává** — SSH/rsync? S3-kompatibilní úložiště? nginx
+   s tokenem? Bez odpovědi si to nevymýšlej; špatná volba znamená vyhozenou práci.
+2. **Přístupové tajemství k tomu serveru** jako GitHub Secret. **Ty ho nikdy neuvidíš a nesmíš
+   o něj žádat v textu** — Dan ho nastaví sám přes `gh secret set`.
+3. **Jestli je pět podpisových tajemství už nastavených.** Bez nich workflow spadne hned na
+   startu. To si ověří Dan, ne ty.
+
+⚠️ **Tag pushuje Dan, ne ty.** Vydání je nevratné a vidí ho celý tým; tvoje práce končí tím,
+že je cesta hotová a ověřená nasucho.
 
 ---
 
 ## 12. Stav práce — tohle udržuj ty
 
-Dan bude tenhle projekt otevírat opakovaně a říkat „pokračuj v práci". **Nemáš paměť mezi
-běhy — pamatuje za tebe tenhle soubor.** Proto platí: úkol není hotový commitem kódu, ale až
-commitem kódu **plus zápisem do téhle tabulky**. Piš do ní pravdu včetně toho, co nevyšlo;
-tabulka, která lže, je horší než žádná.
+Dan bude projekt otevírat opakovaně a říkat „pokračuj v práci". **Nemáš paměť mezi běhy —
+pamatuje za tebe tenhle soubor.** Úkol není hotový commitem kódu, ale commitem kódu **plus
+zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 
 | úkol | stav | commit / PR | poznámka |
 |---|---|---|---|
-| T1 — uložit `recordingId` z odpovědi serveru | ⬜ nezačato | — | předpoklad pro T3 |
-| T2 — datová vrstva dashboardu (IPC) | ⬜ nezačato | — | guard odesílatele povinný |
-| T3 — ověření proti serveru | ⬜ nezačato | — | závisí na T1 |
-| T4 — čtyři akce u položky | ⬜ nezačato | — | převzetí jen per-položka |
-| T5 — UI obrazovka v Nastavení | ⬜ nezačato | — | rozhodnout šířku okna a kolizi se „Záznamy" |
+| T0 — rozšířit povrch fronty | ⬜ nezačato | — | jinak vznikne třikrát narychlo |
+| T1 — uložit `recordingId` | ⬜ nezačato | — | pasti P1, P2, P3 |
+| T2 — převzetí nahrávky | ⬜ nezačato | — | **odblokuje tři čekající nahrávky**; past P6 |
+| T3 — datová vrstva dashboardu | ⬜ nezačato | — | guard odesílatele povinný |
+| T4 — ověření proti serveru | ⬜ nezačato | — | závisí na T1; rozpočet dotazů |
+| T5 — zbylé akce a UI | ⬜ nezačato | — | rozhodnout šířku okna a kolizi se „Záznamy" |
+| T6 — vydání verze | ⬜ nezačato | — | blokuje otázka na Dana, sekce 11 |
 
 Značky: ⬜ nezačato · 🔵 rozpracováno · ✅ hotovo a mergnuto · 🔴 zablokováno (napiš čím).
 
-**Když skončíš běh uprostřed práce**, dopiš pod tabulku odstavec „Kde jsem skončil":
-co je rozdělané, v jaké větvi, co jsi zrovna zkoušel a co je další krok. Příští běh začíná
-přečtením téhle sekce.
+**Když skončíš běh uprostřed**, dopiš pod tabulku „Kde jsem skončil": co je rozdělané, v jaké
+větvi, co jsi zkoušel, co je další krok.
 
-**Rozhodnutí, která uděláš za Dana, zapisuj sem taky** — jedním řádkem, co a proč. Tichý
-default je vada; Dan má právo je přehlasovat, ale musí o nich vědět.
+**Rozhodnutí za Dana i otázky na něj zapisuj sem** — jedním řádkem, co a proč. Tichý default
+je vada.
 
 ---
 
-## 13. Jak pracovat — obecně
+## 13. Pasti tohohle repa
 
-- Když narazíš na něco, co jde vyřešit jen změnou serveru, **zastav se a napiš to** (sekce 1).
+- **`tracks` × `trackPaths`** — nejdražší záměna v projektu (sekce 5).
+- **`net.fetch` (Electron/Chromium) × `globalThis.fetch` (Node)** se chovají různě. Chromium
+  odmítne zakázané hlavičky (`Content-Length`) chybou `net::ERR_INVALID_ARGUMENT` **před
+  odesláním** a protistrana nemá co zaznamenat; Node je propustí. Upload jede přes `net.fetch`.
+  **Nepřidávej hlavičky ručně.** Chybám z Chromia navíc chybí `code` i `cause` — příčina je
+  jen v textu.
+- **Dokumentace v `docs/server-modul/` je ZASTARALÁ.** Popisuje `POST /api/desktop/recordings`,
+  `PUT …/tracks/{kind}`, `POST …/complete` — **takové routy neexistují.** Platí
+  `/api/nahravky/uploads`; jediný zdroj pravdy je kód. `KONTRAKT.md §7` (ř. 119–150) to sám
+  přiznává, zbytek dokumentu ne.
+- **Aplikace má jednoinstanční zámek** — druhá instance start vůbec nerozjede.
+- **`pgrep -f <cesta>` chytá i vlastní shell skripty**, které tu cestu mají v příkazu.
+- **macOS nemá `timeout`** (`AGENTS.md:42`). Stav příkazu měř **před** rourou.
+- **Odesílání je za přepínačem** `DESKTOP_UPLOAD_ENABLED`; bez něj se nic neposílá.
+
+---
+
+## 14. Jak pracovat — obecně
+
+- Když narazíš na něco, co jde vyřešit jen změnou serveru, **zastav se a napiš to** (mantinel 1).
 - Když najdeš, že tohle zadání někde neodpovídá kódu, **věř kódu a rozpor pojmenuj** —
   podklady jsou měřené 14. 9. 2026 a repo mezitím žije.
-- Když si nejsi jistý produktovým rozhodnutím (co má uživatel vidět, jak se co jmenuje),
-  **zvol variantu, zapiš ji do sekce 12 a pokračuj**. Neblokuj celou práci kvůli jedné otázce.
-- Hotovou práci **commitni a pushni**. Netrackovaný soubor na konci běhu je vada, ne stav —
-  v jiném repu tahle nedbalost nechala ležet 176 souborů, o kterých nikdo nevěděl.
+- Když si nejsi jistý produktovým rozhodnutím, **zvol variantu, zapiš ji do sekce 12
+  a pokračuj**. Neblokuj celou práci kvůli jedné otázce — kromě těch, které sekce 11 výslovně
+  označuje jako otázky na Dana.
+- Hotovou práci **commitni a pushni**. Netrackovaný soubor na konci běhu je vada, ne stav.
