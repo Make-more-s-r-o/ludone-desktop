@@ -575,7 +575,7 @@ zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 | úkol | stav | commit / PR | poznámka |
 |---|---|---|---|
 | T0 — rozšířit povrch fronty | 🔵 hotovo ve větvi | `7edb09a` | Bezpečná projekce nese `createdAt`, `durationMs`, skutečnou `sizeBytes`, per-stopový `server` a `blockReason`; chybějící data jsou `null`, ne odhad. |
-| T1 — uložit `recordingId` | 🔵 hotovo ve větvi | tento commit | `recordingId` a bajty se ukládají per stopu, společné `sessionId` do fronty. INIT se fsyncuje před dalším HTTP krokem; restart i částečný úspěch jsou pokryté mocked E2E testy nad `outgoing.json`. |
+| T1 — uložit `recordingId` | 🔵 hotovo ve větvi | `3ca71da` | `recordingId` a bajty se ukládají per stopu, společné `sessionId` do fronty. INIT se fsyncuje před dalším HTTP krokem; restart i částečný úspěch jsou pokryté mocked E2E testy nad `outgoing.json`. |
 | T2 — převzetí nahrávky | ⬜ nezačato | — | **odblokuje tři čekající nahrávky**; past P6 |
 | T3 — datová vrstva dashboardu | ⬜ nezačato | — | guard odesílatele povinný |
 | T4 — ověření proti serveru | ⬜ nezačato | — | závisí na T1; rozpočet dotazů |
