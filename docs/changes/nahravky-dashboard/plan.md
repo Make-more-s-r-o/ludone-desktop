@@ -50,6 +50,7 @@ Desktop už nahrává a obsahuje upload klienta, ale uživatelská cesta z Finde
 | T-05 | NRD-05, NRD-06 | Sol integrace/UI | T-04 | Consent, automatika jen nových záznamů a per-item akce. |
 | T-A1 | NRD-07 | Sol auth | — | Finder default, scope a bezpečná obnova `invalid_client`. |
 | T-A3 | NRD-07 | Sol firma | T-A2; wiring až po T5 | Controller nabídky, explicitní UI volba a atomická vazba na skutečnou relaci. |
+| T-A4 | NRD-07, NRD-01, NRD-06 | Sol firma | T-05, T-A3 | Skutečné Settings/IPC a trvalá firma uploadu před INIT; změna globální firmy nepřesune rozpracované stopy. |
 | T-R1 | NRD-01 | Sol fronta | T-03 | `429` neubírá pokus a respektuje společné `Retry-After`. |
 | T-06 | NRD-08 | Sol vydání | — pro přípravu; T-05, T-A1 a T-R1 pro release | Validace, archiv pro review, bezpečné SCP, feed poslední, stav aktualizace v UI. |
 | M-01 | všechny | Astra | všechny implementace | Review diffu, `gates`, `gates:clean`, evidence a přejímka. |
@@ -60,7 +61,7 @@ Přesný graf a aktuální vlastnictví hotspotů je v [DAG](tasks/DAG.md). `ele
 
 1. Převzít integrované T-00, T-01, T-A1, updater a T-06; T-02 už běží podle lintnutého packetu.
 2. Po přijetí T-02 pokračovat T-03, potom T-R1 a T-04. Závislé změny fronty a main procesu mají jednoho zapisovatele a integrují se postupně.
-3. T-05 spojí consent, akce a hotový přehled. Nezávisle vznikne T-A3 základ výběru firmy; jeho main/preload/Settings zapojení přijde sekvenčně po T5 a před finální přejímkou.
+3. T-05 spojí consent, akce a hotový přehled. T-A3 základ výběru firmy je přijatý; T-A4 zapojí main/preload/Settings sekvenčně po T5 a před finální přejímkou.
 4. T-06 lze reviewovat průběžně, ale veřejné vydání čeká na přijetí funkčního řetězce, publikační konfiguraci, zálohu klíče a Danův tag.
 5. Koordinátor provede finální review, brány a předání Danovi k živému testu.
 
@@ -73,6 +74,7 @@ Přesný graf a aktuální vlastnictví hotspotů je v [DAG](tasks/DAG.md). `ele
 | T-03/T-04 | Dashboard testy a mock server bez zápisu | Poškození není empty; GET stavy a obě stopy jsou rozlišitelné. |
 | T-05/T-R1 | Consent/retry/delete testy a 429 mock | Staré položky se samy nerozešlou; pumpa respektuje serverový limit. |
 | T-A1 | Auth/IPC testy, potom Danův Finder login | Testy jsou 🧪; živé přihlášení teprve dává ✅. |
+| T-A3/T-A4 | Skutečný company CAS, mock nabídka, Settings/IPC a restart uploadu | Výběr neodesílá, pin je durable před INIT, změna firmy nemění initialized upload. |
 | T-06 | Release validátor, mocked SSH publication a veřejná read-only kontrola | Testy jsou 🧪; signed/notarized instalace a update na Macu teprve dávají ✅. |
 | M-01 | `npm run gates` a `npm run gates:clean` | Oba příkazy exit 0, doslovné výpisy archivované. |
 

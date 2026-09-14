@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T22:04:06.099Z",
+    "updatedAt": "2026-09-14T22:08:31.143Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -314,10 +314,30 @@
       "packet": "tasks/T-A3.md",
       "worktree": ".claude/worktrees/nahravky-firma",
       "report": "evidence/tasks/T-A3.report.json"
+    },
+    {
+      "id": "T-A4",
+      "title": "Zapojení firmy a ochrana rozpracovaného uploadu",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-05",
+        "T-A3"
+      ],
+      "packet": "tasks/T-A4.md"
     }
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T22:08:31.143Z",
+      "text": "T5 první plná brána odhalila 22 starých transportních fixtures bez explicitního consentu. Allowlist rozšířen o dva testovací soubory; ochrany neztracení dat a retence se nemění. T-A4 packet připraven, čeká na T5."
+    },
+    {
+      "at": "2026-09-14T22:07:59.404Z",
+      "text": "Byl zalozen task T-A4: Zapojení firmy a ochrana rozpracovaného uploadu."
+    },
     {
       "at": "2026-09-14T22:04:06.099Z",
       "text": "T-A3 přijatý po root review a plné bráně 1452 PASS. T5 dokončuje consent a bezpečné akce, následný T-A4 zapojí volbu firmy do Nastavení."

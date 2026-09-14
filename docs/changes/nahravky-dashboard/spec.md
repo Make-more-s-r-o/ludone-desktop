@@ -152,6 +152,18 @@ Umožní uživateli obdržet ověřenou aktualizaci z existujícího feedu a vid
 **When** uživatel dokončí OAuth tok
 **Then** relace má správný issuer/resource/upload scope a odmítnutý klient neznovupoužije starý refresh token.
 
+#### AC-07.2 — více firem bez terminálu
+
+**Given** přihlášený účet má více dostupných firem a žádnou uloženou volbu
+**When** uživatel v Nastavení načte skutečnou nabídku a výslovně uloží jednu firmu
+**Then** zapíše se její GUID pouze stejné platné relaci; nevznikne automatické odeslání starých nahrávek.
+
+#### AC-07.3 — rozpracovaný upload nemění firmu
+
+**Given** upload má trvale připnutou firmu a serverová ID první stopy
+**When** uživatel změní globální firmu nebo aplikaci restartuje
+**Then** automatické pokračování zachová původní firmu a session. Initialized legacy bez známé firmy zůstane před HTTP zablokované; explicitní oprava odmítnuté zero-ID položky respektuje D16.
+
 ### NRD-08
 
 #### AC-08.1 — atomické vydání
