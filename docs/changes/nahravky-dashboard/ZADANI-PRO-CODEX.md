@@ -68,7 +68,7 @@ nahrávku má celou a znormalizovanou. **„Synchronizováno" podle naší front
 |---|---|
 | `electron/preload.cjs:193–194` | vystavené jen `listQueue` a `retryQueue` |
 | `electron/main.cjs:2540, 2548` | IPC kanály jen `queue:list` a `queue:retry` |
-| `src/features/queue/QueueCard.jsx:117–135` | pouhý text `role="alert"`, **žádné tlačítko** |
+| `src/features/queue/QueueCard.jsx:121–138` | pouhý text `role="alert"`, **žádné tlačítko** |
 
 **Kořen je hlouběji než v UI.** `prepareRecoveredRecording` (`electron/queue.cjs:458–565`)
 vrací objekt `{ manifest, manifestPath, trackPaths, recoveredIncomplete?, sourceManifestPath? }`
@@ -145,9 +145,9 @@ Obsah **vytáhni do vlastní komponenty** a jen ji naimportuj — vzor je `Setti
 
 **Jak renderer čte data: pollingem, ne událostí.** `App.jsx:39` drží `queueSnapshot`,
 `refreshQueueStatus()` (ř. 172–191) volá `window.ludone.listQueue()`, a `useEffect`
-(ř. 226–245) to opakuje rekurzivním `setTimeout` každou **1 s**
+(ř. 225–245) to opakuje rekurzivním `setTimeout` každou **1 s**
 (`QUEUE_REFRESH_INTERVAL_MS`, ř. 11) — vždy až po dokončení předchozího dotazu. Navíc
-okamžitý refresh na `visibilitychange` (ř. 207–217) a při změně
+okamžitý refresh na `visibilitychange` (ř. 208–217) a při změně
 `recording.active`/`tracking.active` (ř. 219–223).
 
 🔴 **Tenhle vzor na dashboard NEPŘEBÍREJ beze změny.** Sekundový polling je v pořádku pro
@@ -243,12 +243,12 @@ tajemství ≥32 B, výstup `"sha256:<hex64>"`. Snímá se **při startu nahráv
 (`main.cjs:1488`) — tedy je to snímek okamžiku pořízení, ne aktuálního přihlášení.
 Aktuální otisk pro porovnání dá `readCurrentQueueOwnerFingerprint()` (`main.cjs:2242–2254`).
 
-**Kompletní IPC povrch dnes** má 50 kanálů; pro tebe jsou podstatné `queue:list`
+**Kompletní IPC povrch dnes** má 46 kanálů; pro tebe jsou podstatné `queue:list`
 (`main.cjs:2540`) a `queue:retry` (`main.cjs:2548`), vystavené v `preload.cjs:193–194`.
 
 🔴 **Každý nový IPC kanál musí projít kontrolou odesílatele.** V repu na to je
 `handleValidated`/`onValidated` (`main.cjs:300–321`) a celá testovací sada
-`tests/ipc-sender-guard.test.js` (21 testů). `AGENTS.md:53–54` říká, že přihlášení, tokeny,
+`tests/ipc-sender-guard.test.js` (20 testů). `AGENTS.md:53–54` říká, že přihlášení, tokeny,
 idempotence fronty a **kontrola odesílatele IPC** vyžadují review nad diffem. Kanál bez
 guardu je bezpečnostní vada, ne opomenutí.
 
@@ -256,10 +256,10 @@ guardu je bezpečnostní vada, ne opomenutí.
 
 | soubor | testů | co drží |
 |---|---|---|
-| `tests/queue.test.js` | 69 | logika fronty, vlastnictví (ř. 206), stavový automat (657), obnova osiřelých (1467) |
-| `tests/queue-wiring.test.js` | 252 | zapojení do `main.cjs`, produkční fronta (3795) |
-| `tests/upload-client.test.js` | 46 | kontrakt uploadu, vlastník před odesláním (230) |
-| `tests/ipc-sender-guard.test.js` | 21 | ochrana IPC |
+| `tests/queue.test.js` | 96 | logika fronty, vlastnictví (ř. 206), stavový automat (657), obnova osiřelých (1467) |
+| `tests/queue-wiring.test.js` | 241 | zapojení do `main.cjs`, produkční fronta (3795) |
+| `tests/upload-client.test.js` | 66 | kontrakt uploadu, vlastník před odesláním (230) |
+| `tests/ipc-sender-guard.test.js` | 20 | ochrana IPC |
 | `tests/settings.test.js` | — | vzor pro UI test s interakcí |
 
 **Brány** (`package.json`): `npm run gates` = `lint` (eslint) → `typecheck`
@@ -408,7 +408,7 @@ funguje (lišta, nahrávání, stavy), musí fungovat dál.
 - **Dokumentace v `docs/server-modul/` je ZASTARALÁ.** Popisuje `POST /api/desktop/recordings`,
   `PUT …/tracks/{kind}`, `POST …/complete` — **takové routy neexistují.** Platí
   `/api/nahravky/uploads` a jediný zdroj pravdy je kód (`electron/upload-client.cjs`,
-  `electron/companies.cjs`). `KONTRAKT.md §7` (ř. 119–159) to sám přiznává; zbytek dokumentu
+  `electron/companies.cjs`). `KONTRAKT.md §7` (ř. 119–150) to sám přiznává; zbytek dokumentu
   ne. Nenech se tím poslat špatným směrem.
 - **Vitest umí vypsat „N passed" a vedle toho řádek `Errors`.** Kontroluj i ten.
 - **Aplikace má jednoinstanční zámek** — druhá instance start vůbec nerozjede.

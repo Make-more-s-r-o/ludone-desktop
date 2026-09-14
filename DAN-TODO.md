@@ -19,7 +19,7 @@ kódu, ne odhadem:
 |---|---|
 | `electron/preload.cjs:193–194` | vystavené jen `listQueue` a `retryQueue` |
 | `electron/main.cjs:2540, 2548` | IPC kanály jen `queue:list` a `queue:retry` |
-| `src/features/queue/QueueCard.jsx:117–135` | pouhý text `role="alert"`, **žádné tlačítko** |
+| `src/features/queue/QueueCard.jsx:121–138` | pouhý text `role="alert"`, **žádné tlačítko** |
 
 **Příčina je hlouběji než v UI.** `prepareRecoveredRecording` (`electron/queue.cjs:458–565`)
 při obnově nahrávky **nikdy nenastaví `ownerFingerprint`**. Zůstane `null`, takže
