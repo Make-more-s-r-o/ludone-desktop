@@ -582,8 +582,9 @@ Aktuální implementační větev je `feat/nahravky-dokonceni`, [draft PR #141](
 | T3 — datová vrstva dashboardu | 🧪 integrováno, testy zelené | `0b3f36b` | Queue + primární manifesty, ghost/partial/invalid stavy, bez cest a sítě. Root plná brána: 1388 zelených testů, tři původní skipy, exit 0. |
 | T-R1 — limity serveru | 🧪 integrováno, testy zelené | `0addac6` | Trvalý 429 cooldown, zachování attempts, restart a oddělení časových položek. Root plná brána: 1401 zelených testů, tři původní skipy, exit 0. |
 | T4 — ověření proti serveru | 🧪 integrováno, testy zelené | `9b233c8` | Ruční GET známých ID, per-track shoda, 60s cache a 30 GET/h procesu. Root brána 1433 PASS, tři původní skipy, exit 0; nezávislé review bez doložených P1/P2. |
-| T5 — zbylé akce a UI | 🟡 implementuje Sol | packet T-05 | Per-item souhlas, automatika nových nahrávek, obnova retry, název, koš, Finder a přímé Nastavení bez loginu. |
+| T5 — zbylé akce a UI | 🧪 integrováno; ⚠️ opravy CI | `e225880`, `eefc259`, PR #141 | Per-item souhlas, automatika nových nahrávek, obnova retry, název, koš, Finder a přímé Nastavení bez loginu. Místní integrace 1488 PASS; CI chyby a jejich opravy jsou v STAV.md. |
 | T-A1 + T-A2 — auth | 🧪 integrováno, testy zelené | `f9dd296`, `ccb47e7`, `445fe9f` | Finder default upload scope a výhradní userinfo identita; poslední root auth sady 87/87. |
+| T-A3 + T-A4 — firma uploadu | 🧪 základ přijat; 🟡 zapojení běží | `0340c8e`, packet T-A4 | Výběr firmy v Nastavení, vazba na relaci a trvalá firma před prvním INIT. T-A4 ještě není převzaté. |
 | T6 — vydání verze | 🧪 kód připraven; 🟡 publikace čeká | PR #141 | Verze 0.1.2, podpis/notarizace vložené aplikace, metadata a atomická SSH publikace s veřejnou HTTPS kontrolou. Čeká konfigurace, záloha klíče, Danův tag a skutečná přejímka. |
 
 Stavy dle AGENTS.md: ✅ ověřeno naostro · 🧪 zelené testy · ⛔ neověřeno · 🟡 podmíněně platné nebo čekající na uvedené ověření · ⚠️ varování. Nic v této tabulce nedokládá skutečný zvuk nebo produkční upload.
@@ -591,7 +592,7 @@ Stavy dle AGENTS.md: ✅ ověřeno naostro · 🧪 zelené testy · ⛔ neověř
 ### T2 — integrační poznámka pro T5
 
 Převzetí nastaví bezpečný lokální hold přes `requiresHumanAction` a důvod „Převzatá nahrávka
-čeká na volbu odeslání“. T5 musí přidat výslovné rozhodnutí o uploadu (`held` → schváleno);
+čeká na volbu odeslání“. Integrované T5 přidává výslovné rozhodnutí o uploadu (`held` → schváleno);
 samotné převzetí vlastnictví nesmí tento hold odstranit ani spustit pumpu. Malé okno Nastavení
 zůstalo 448 × 676 bodů, protože pět záložek i kompaktní seznam se do něj vejdou bez změny
 rozměrů.
@@ -615,9 +616,9 @@ aby se stará relace tvářila jako přihlášená. `kontrolniNula`: žádný no
 zásah do LuTracku, serveru nebo designu a žádné ostré přihlášení. Doslovný výpis `npm run
 gates` s exit kódem 0 je v `dukazy/nahravky-dashboard-2026-09-14/auth/REPORT.md`.
 
-⚠️ Tohle samo nezapíná `DESKTOP_UPLOAD_ENABLED`: čerstvá packaged aplikace má vypínač fronty
-stále vypnutý. Navazující UI/default změna jej musí uživateli zpřístupnit, jinak správný auth
-token existuje, ale pumpa odesílání se nerozběhne.
+Samotná etapa auth ještě transport nezapínala. **Integrované T5 už podle D11 zpřístupňuje
+ruční odeslání bez shellových proměnných.** Přepínač v Nastavení řídí pouze automatiku
+nových nahrávek; explicitní `DESKTOP_UPLOAD_ENABLED=false` nebo vadná hodnota transport blokuje.
 
 ### T6 — kde práce skončila 14. 9. 2026
 
@@ -669,7 +670,7 @@ T5 převzato 15. 9. z `e225880`: root plná brána 1469 PASS a tři původní sk
 
 15. 9. navíc potvrzeno D15: účet s více firmami neměl v aplikaci výběr firmy a vyžadoval terminálovou proměnnou. T-A3 (`0340c8e`) připravil bezpečný selector a atomický zápis firmy; root plná brána 1452 PASS a tři původní skipy, exit 0. Zapojení do Nastavení a ochrana již inicializovaných uploadů při změně firmy ještě čekají na T-A4 po T5. Samostatný selector není vydaná ani živě ověřená funkce.
 
-Dan 14. 9. výslovně schválil dokončení přihlášení a odesílání z Finderu i volitelnou automatiku. Rozhodnutí D3/D10/D11 nahrazují dřívější odložení přepínače: T-A1 zapnul odpovídající scope a zdroj identity společně. T5 zpřístupní manuální odeslání schválené položky bez shellového nastavení; uložený přepínač bude pouze automatika nových nahrávek. Explicitní false/invalid transportní proměnná zůstane tvrdou stopkou. Další souhlas s tímto rozsahem se nevyžaduje.
+Dan 14. 9. výslovně schválil dokončení přihlášení a odesílání z Finderu i volitelnou automatiku. Rozhodnutí D3/D10/D11 nahrazují dřívější odložení přepínače: T-A1 zapnul odpovídající scope a zdroj identity společně. T5 zpřístupňuje manuální odeslání schválené položky bez shellového nastavení; uložený přepínač řídí pouze automatiku nových nahrávek. Explicitní false/invalid transportní proměnná zůstává tvrdou stopkou. Další souhlas s tímto rozsahem se nevyžaduje.
 
 Pro veřejné vydání stále chybí potvrzení zálohy klíče a publikační GitHub konfigurace. Starý updater z 0.1.1 může ověřit doručení 0.1.2; nové zobrazení dostupné verze/průběhu v 0.1.2 vyžaduje budoucí Danem schválenou vyšší verzi. Podrobný krátký postup je v [OVERENI-NA-MACU.md](OVERENI-NA-MACU.md).
 
