@@ -16,6 +16,7 @@
 | T-A2 | T-A1 | Oprava identity zjištěná nezávislým review; před přejímkou. |
 | T-A3 | T-A2 | Samostatný controller a komponenta firmy; zapojení sdílených hotspotů až po T5. |
 | T-A4 | T-05, T-A3 | Zapojení výběru firmy a durable upload firmy až po přijetí consentu a samostatného základu. |
+| T-I1 | T-05 | Integrační oprava popisků stavu a krátkého ID; jen renderer bez sdílených hotspotů T-A4. |
 | T-R1 | T-03 | Chování 429 se doplní po hotovém lokálním store a před serverovým ověřením. |
 | T-06 | — | Příprava vydání je nezávislá; zveřejnění má vlastní brány. |
 
@@ -51,8 +52,9 @@ Aktuální etapa sdílených hotspotů je T-A4; T-05 byl převzat z `e225880` a 
 | `electron/main.test.cjs` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | Testovací sibling hlavního procesu. |
 | `electron/preload.cjs` | T-A4 | T-03 → T-04 → T-05 → T-A4 | Úzké mosty dashboardu, ověření a akcí. |
 | `electron/preload.test.cjs` | T-A4 | T-03 → T-04 → T-05 → T-A4 | Testovací sibling preloadu. |
-| `src/features/recordings/RecordingsDashboard.jsx` | T-05 | T-03 → T-04 → T-05 | Lokální přehled, serverové výsledky a akce. |
-| `src/features/recordings/RecordingsDashboard.test.jsx` | T-05 | T-03 → T-04 → T-05 | Testovací sibling dashboardu. |
+| `src/features/recordings/RecordingsDashboard.jsx` | T-I1 | T-03 → T-04 → T-05 → T-I1 | Pouze pravdivé popisky fronty a krátké ID bez změny akcí. |
+| `src/features/recordings/RecordingsDashboard.test.jsx` | T-I1 | T-03 → T-04 → T-05 → T-I1 | Testovací sibling dashboardu. |
+| `tests/recordings-status.test.js` | T-I1 | T-I1 | Regrese popisků bez kolize s testy T-A4. |
 | `src/styles.css` | T-05 | T-03 → T-04 → T-05 | Jen existující tokeny a kompozice. |
 | `electron/recordings-dashboard.cjs` | T-A4 | T-03 → T-05 → T-A4 | T-A4 pouze pevné vysvětlení chyb firmy v bezpečné projekci. |
 | `electron/recordings-dashboard.test.cjs` | T-A4 | T-03 → T-05 → T-A4 | Testovací sibling diskového snapshotu. |
@@ -92,6 +94,7 @@ Aktuální etapa sdílených hotspotů je T-A4; T-05 byl převzat z `e225880` a 
 | T-A2 | `tasks/T-A2.md` | Sol userinfo review oprava |
 | T-A3 | `tasks/T-A3.md` | Sol bezpečný výběr firmy — samostatný základ |
 | T-A4 | `tasks/T-A4.md` | Sol skutečný výběr firmy a zachování firmy rozpracovaného uploadu |
+| T-I1 | `tasks/T-I1.md` | Sol pravdivé popisky a identifikace nahrávky |
 | T-06 | `tasks/T-06.md` | Sol vydání — zpětný přehled |
 
 Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.
