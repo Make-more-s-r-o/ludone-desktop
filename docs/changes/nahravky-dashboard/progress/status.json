@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T22:55:51.379Z",
+    "updatedAt": "2026-09-14T23:03:29.386Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -32,7 +32,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "T-R1 převzat z 0addac6, plná brána 1401 zelených testů a tři původní skipy. T-05 doplní plánování odložených schválených pokusů; živý upload čeká na Mac.",
+      "nextStep": "Trvalá ID, 429 pauzy, consent a pin firmy jsou integrované. Čistý klon 475c77b prošel; restart a skutečné odeslání čekají na Mac.",
       "evidence": []
     },
     {
@@ -56,7 +56,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Lokální přehled převzat z 0b3f36b; vlastní plná brána 1388 zelených testů, 3 původní skipy. Živé použití čeká na Mac.",
+      "nextStep": "Lokální přehled a pravdivé popisky T-I1 přijaty. Krátké ID odpovídá dialogu; skutečné použití s nahrávkami čeká na Mac.",
       "evidence": []
     },
     {
@@ -68,7 +68,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "T4 integrováno, root brána 1433 PASS a 3 původní skipy, exit 0. Navazuje T5; ostré ověření serveru čeká na Dana.",
+      "nextStep": "Ruční ověření známých ID je integrované. Čistý klon prošel; shodu obou stop proti produkčnímu serveru ověří Dan.",
       "evidence": []
     },
     {
@@ -80,7 +80,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "T5 převzato z e225880, root plná brána 1469 PASS. Ukládání/send/keep a future-only automatika mají testy; skutečné nahrávání ověří Dan.",
+      "nextStep": "Send/keep a automatika pouze nových nahrávek integrovány; potvrzení uložení nečeká na síť. Skutečné nahrávání ověří Dan.",
       "evidence": []
     },
     {
@@ -92,7 +92,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Per-item akce T5 přijaté po review. Zbývá T-A4 ochrana firmy, integrační GUI průchod a Danovo živé ověření.",
+      "nextStep": "Per-item akce a ochrana firmy integrovány po review. Zrušení koše, skutečný Finder a ruční retry čekají na Mac.",
       "evidence": []
     },
     {
@@ -104,7 +104,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "T-A3 převzato z 0340c8e, root plná brána 1452 PASS a 3 původní skipy. T-A4 po T5 zapojí skutečný výběr firmy a ochranu rozpracovaných uploadů; Finder login stále čeká na live test.",
+      "nextStep": "T-A4 c25ef2a zapojilo výběr firmy do Nastavení a atomickou vazbu na relaci. Finder login a produkční upload stále čekají na živý test.",
       "evidence": []
     },
     {
@@ -116,7 +116,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Nastavit publikační hodnoty, potvrdit zálohu klíče a po dokončení funkcí vytvořit signed build; Dan pak pushne tag a živě ověří instalaci i update.",
+      "nextStep": "Vydávací workflow a updater jsou připravené. Chybí potvrzení zálohy klíče a publikační GitHub hodnoty; Dan poté pushne tag a ověří instalaci/aktualizaci.",
       "evidence": []
     }
   ],
@@ -344,8 +344,53 @@
       "report": "evidence/tasks/T-I1.report.json"
     }
   ],
-  "evidence": [],
+  "evidence": [
+    {
+      "id": "EV1",
+      "kind": "test",
+      "label": "Finální čistý klon a GUI přejímka",
+      "value": "1505 PASS, 3 původní skipy, gates i build exit 0; živé audio a release neověřené.",
+      "ref": "475c77bf",
+      "href": "../../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md"
+    }
+  ],
   "latestChanges": [
+    {
+      "at": "2026-09-14T23:03:29.386Z",
+      "text": "Byl přidán důkaz EV1: Finální čistý klon a GUI přejímka."
+    },
+    {
+      "at": "2026-09-14T23:03:29.104Z",
+      "text": "T-A4 a T-I1 přijaty po review. Čistý klon 475c77b prošel gates i buildem: 1505 PASS, 3 původní skipy. Finální GUI: Nastavení a odhlášený selector čitelné. Podpis/publikace a Mac audio přejímka stále čekají."
+    },
+    {
+      "at": "2026-09-14T23:03:28.819Z",
+      "text": "Funkce NRD-08 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T23:03:28.540Z",
+      "text": "Funkce NRD-07 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T23:03:28.253Z",
+      "text": "Funkce NRD-06 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T23:03:27.972Z",
+      "text": "Funkce NRD-05 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T23:03:27.692Z",
+      "text": "Funkce NRD-04 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T23:03:27.389Z",
+      "text": "Funkce NRD-03 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T23:03:27.067Z",
+      "text": "Funkce NRD-01 byla aktualizována."
+    },
     {
       "at": "2026-09-14T22:55:51.379Z",
       "text": "Fáze se změnila z „execution“ na „review_delivery“."

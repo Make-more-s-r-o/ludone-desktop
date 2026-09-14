@@ -582,9 +582,9 @@ Aktuální implementační větev je `feat/nahravky-dokonceni`, [draft PR #141](
 | T3 — datová vrstva dashboardu | 🧪 integrováno, testy zelené | `0b3f36b` | Queue + primární manifesty, ghost/partial/invalid stavy, bez cest a sítě. Root plná brána: 1388 zelených testů, tři původní skipy, exit 0. |
 | T-R1 — limity serveru | 🧪 integrováno, testy zelené | `0addac6` | Trvalý 429 cooldown, zachování attempts, restart a oddělení časových položek. Root plná brána: 1401 zelených testů, tři původní skipy, exit 0. |
 | T4 — ověření proti serveru | 🧪 integrováno, testy zelené | `9b233c8` | Ruční GET známých ID, per-track shoda, 60s cache a 30 GET/h procesu. Root brána 1433 PASS, tři původní skipy, exit 0; nezávislé review bez doložených P1/P2. |
-| T5 — zbylé akce a UI | 🧪 integrováno; ⚠️ opravy CI | `e225880`, `eefc259`, PR #141 | Per-item souhlas, automatika nových nahrávek, obnova retry, název, koš, Finder a přímé Nastavení bez loginu. Místní integrace 1488 PASS; CI chyby a jejich opravy jsou v STAV.md. |
+| T5 — zbylé akce a UI | 🧪 integrováno, čistý klon zelený | `e225880`, `eefc259`, PR #141 | Per-item souhlas, automatika nových nahrávek, obnova retry, název, koš, Finder a přímé Nastavení bez loginu. Finální čistý klon 1505 PASS; původní CI chyby opravené, historie je v STAV.md. |
 | T-A1 + T-A2 — auth | 🧪 integrováno, testy zelené | `f9dd296`, `ccb47e7`, `445fe9f` | Finder default upload scope a výhradní userinfo identita; poslední root auth sady 87/87. |
-| T-A3 + T-A4 — firma uploadu | 🧪 základ přijat; 🟡 zapojení běží | `0340c8e`, packet T-A4 | Výběr firmy v Nastavení, vazba na relaci a trvalá firma před prvním INIT. T-A4 ještě není převzaté. |
+| T-A3 + T-A4 — firma uploadu | 🧪 integrováno, testy zelené | `0340c8e`, `c25ef2a` | Výběr firmy v Nastavení, vazba na relaci a trvalá firma před prvním INIT. Restart i změna globální firmy zachovají původní upload. |
 | T6 — vydání verze | 🧪 kód připraven; 🟡 publikace čeká | PR #141 | Verze 0.1.2, podpis/notarizace vložené aplikace, metadata a atomická SSH publikace s veřejnou HTTPS kontrolou. Čeká konfigurace, záloha klíče, Danův tag a skutečná přejímka. |
 
 Stavy dle AGENTS.md: ✅ ověřeno naostro · 🧪 zelené testy · ⛔ neověřeno · 🟡 podmíněně platné nebo čekající na uvedené ověření · ⚠️ varování. Nic v této tabulce nedokládá skutečný zvuk nebo produkční upload.
@@ -668,7 +668,7 @@ s exit kódem 0; doslovné výpisy jsou v
 
 T5 převzato 15. 9. z `e225880`: root plná brána 1469 PASS a tři původní skipy, exit 0. Obě volby po nahrávání, trvalý název/consent, per-item send/retry, obnovený retry timer, koš/reveal a přímé Nastavení jsou integrované. Nezávislé review potvrdilo opravy duplicitního manifestu a sdíleného audia. Jde o 🧪, skutečný zvuk a produkční upload čekají na Mac.
 
-15. 9. navíc potvrzeno D15: účet s více firmami neměl v aplikaci výběr firmy a vyžadoval terminálovou proměnnou. T-A3 (`0340c8e`) připravil bezpečný selector a atomický zápis firmy; root plná brána 1452 PASS a tři původní skipy, exit 0. Zapojení do Nastavení a ochrana již inicializovaných uploadů při změně firmy ještě čekají na T-A4 po T5. Samostatný selector není vydaná ani živě ověřená funkce.
+15. 9. navíc potvrzeno D15: účet s více firmami neměl v aplikaci výběr firmy a vyžadoval terminálovou proměnnou. T-A3 (`0340c8e`) připravil bezpečný selector a atomický zápis firmy; root plná brána 1452 PASS a tři původní skipy, exit 0. T-A4 (`c25ef2a`) už zapojilo Nastavení a ochranu inicializovaných uploadů; root plná brána 1503 PASS, následný společný čistý klon s I1 1505 PASS. Funkce není vydaná ani živě ověřená.
 
 Dan 14. 9. výslovně schválil dokončení přihlášení a odesílání z Finderu i volitelnou automatiku. Rozhodnutí D3/D10/D11 nahrazují dřívější odložení přepínače: T-A1 zapnul odpovídající scope a zdroj identity společně. T5 zpřístupňuje manuální odeslání schválené položky bez shellového nastavení; uložený přepínač řídí pouze automatiku nových nahrávek. Explicitní false/invalid transportní proměnná zůstává tvrdou stopkou. Další souhlas s tímto rozsahem se nevyžaduje.
 

@@ -1,6 +1,6 @@
 # Implementační plán — LuDone Desktop
 
-> **Aktualizace 14. 9. 2026:** Následující etapový plán vznikl 24. 8. a zůstává historickým
+> **Aktualizace 15. 9. 2026:** Následující etapový plán vznikl 24. 8. a zůstává historickým
 > základem rozhodnutí. Dnešní implementační běh má vlastní autoritativní [stav](docs/changes/nahravky-dashboard/STAV.md),
 > [specifikaci](docs/changes/nahravky-dashboard/spec.md), [plán](docs/changes/nahravky-dashboard/plan.md)
 > a [DAG](docs/changes/nahravky-dashboard/tasks/DAG.md). Kód už je na integrační větvi, GitHub

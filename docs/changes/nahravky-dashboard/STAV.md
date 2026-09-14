@@ -1,47 +1,38 @@
-# Stav běhu `nahravky-dashboard` — odkud pokračovat
+# Stav běhu `nahravky-dashboard`
 
-**Aktualizováno 15. 9. 2026.** Kanonický strojový stav je [progress/status.json](progress/status.json); [HTML přehled](progress/index.html) je jeho generovaná projekce.
+**Aktualizováno 15. 9. 2026.** Implementace je převzatá v [draft PR #141](https://github.com/Make-more-s-r-o/ludone-desktop/pull/141), větev `feat/nahravky-dokonceni`. Veřejné vydání čeká na podmínky níže. [Masterplan](progress/index.html) odděluje implementaci, dostupnost a ověření.
 
-## Co je integrované
+## Dokončená implementace
 
-- 🧪 **T-00 — bezpečná projekce fronty:** integrováno, regresní testy zelené; report je v `evidence/tasks/T0.report.json`.
-- 🧪 **T-01 — trvalé per-track výsledky:** po review integrovány commity `fdb4535` a `53ca859`; 417 cílených testů zelených. Živý upload se tím neověřil.
-- 🧪 **T-A1/T-A2 — přihlášení a upload scope:** integrováno a otestováno; reporty jsou v `evidence/tasks/A1.report.json` a `evidence/tasks/T-A2.report.json`. Oprava `445fe9f` po nezávislém review přijímá upload identitu výhradně z userinfo; root auth sady 87/87. Přihlášení z Finderu dosud nemá live důkaz.
-- 🧪 **T-02 — výslovné převzetí:** integrováno v `a25bd5c`; koordinátor před převzetím samostatně spustil 440 dotčených testů, exit 0. Report a review jsou v `evidence/tasks/T-02.report.json` a `dukazy/nahravky-dashboard-2026-09-14/T2/`.
-- 🧪 **T-03 — lokální přehled:** převzato z `0b3f36b`; skutečný diskový snapshot rozlišuje kompletní, částečné a chybějící soubory i neplatný manifest. Samostatná plná brána koordinátora: exit 0, 1388 zelených testů a tři původní baseline skipy. Report a review jsou v `evidence/tasks/T-03.report.json` a `dukazy/nahravky-dashboard-2026-09-14/T3/`.
-
-Žádné z těchto tvrzení není důkaz reálného zvuku. Agentní běh `ui-smoke` ani `audio-smoke` nespouštěl.
-
-## Co právě navazuje
-
-1. 🧪 **T-R1 — limity serveru:** převzato z `0addac6`; vlastní plná brána koordinátora 1401 zelených testů, tři původní skipy, exit 0. Pauza přežije restart i přepnutí účtu a neubírá pokus.
-2. 🧪 **T-04 — ruční serverové ověření:** převzato z `9b233c8`, root plná brána 1433 zelených testů, tři původní skipy, exit 0. **T-05** následně převzato z `e225880`: vlastní plná brána koordinátora 1469 PASS a tři původní skipy, exit 0. Obsahuje consent, uložený název, jednotlivé akce, bezpečný koš/reveal a plánování retry; dva konkrétní P2 z nezávislého review byly opravené a znovu zkontrolované. Předává hotspoty T-A4 podle [DAG](tasks/DAG.md).
-3. 🧪 **Updater a T-06:** implementace je integrovaná včetně veřejné HTTPS kontroly po SSH (`2499dbb`). Koordinátorova brána skončila exit 0: 1341 testů zelených a tři známé baseline skipy. Podepsaný build ani veřejná verze nevznikly.
-4. 🧪 **T-A3 — základ výběru firmy:** převzatý z `0340c8e`; koordinátorova plná brána 1452 PASS, tři původní skipy, exit 0. Samostatný selector a bezpečný zápis stejné relace zatím nejsou připojené do Nastavení. **T-A4 naváže po T5**: skutečný IPC/fetch adapter a ochrana rozpracovaných uploadů při změně firmy. D15 řeší doloženou chybějící cestu pro účet s více firmami ve Finderu.
-
-Izolovaný unpackaged GUI průchod není produkční login ani audio smoke. Oprava návratu z initial onboardingu do reauthenticate je integrovaná v `9158ae6`; opětovné otevření 14. 9. ve 22:19 ukázalo odpovídající odhlášenou obrazovku. T-05 už doplnilo přímé Nastavení také v tomto stavu; nový GUI průchod následuje po integraci.
-
-Rozpracované změny jsou v [draft PR #141](https://github.com/Make-more-s-r-o/ludone-desktop/pull/141). Finální souhrnná brána a čistý klon přijdou po zbývající implementaci.
-
-⚠️ CI na `c21eca6` po integraci T5 selhalo: pět testů mělo chybnou časovou fixture
-závislou na pásmu hostitele a jeden narazil na `ENOTEMPTY` při úklidu fronty.
-Časová fixture je opravená (59 PASS v UTC i Europe/Prague); lifecycle fronty řeší
-T-A4. Nové zelené CI zatím čeká. [Doslovné důkazy](../../../dukazy/nahravky-dashboard-2026-09-14/integrace/ci-opravy/review.md).
-
-## Co blokuje jen veřejné vydání
-
-| Blokovaná část | Čeká na |
+| Část | Výsledek a důkaz |
 |---|---|
-| Podepsaný a notarizovaný build | Potvrzení zálohy podpisového klíče ve firemním správci hesel. |
-| Publikace na existující download hosting | Nastavené GitHub Secrets/Variables pro SSH přenos a přijetí finálního workflow. |
-| Release 0.1.2 | Dokončený funkční řetězec, zelené finální brány a Danův tag. |
-| Stav ✅ pro instalaci a update | Danův skutečný test na Macu. |
+| T0–T1, R1 | Bezpečná projekce, trvalá per-track ID/session/progress, obnova fronty a restartovatelná 429 pauza. |
+| T2 | Výslovné převzetí s identitou, revizí a nativním potvrzením; reset serverového stavu a zachování held. |
+| T3–T4 | Lokální přehled kompletních/částečných/chybějících dat; ruční porovnání známých ID s velikostí, SHA-256 a stavem obou stop. |
+| T5 | Send/keep, trvalý název a consent, automatika jen nových nahrávek, per-item retry, bezpečný koš a Finder. Uložení nečeká na dokončení sítě. |
+| A1–A4 | Finder upload scope, identita z userinfo, výběr firmy v Nastavení a trvalá firma před prvním INIT. Změna globální firmy nepřesune rozpracovaný upload. |
+| I1 | Pravdivé stavové popisky, datum a krátké ID pro korelaci s potvrzovacím dialogem. |
+| T6 | Verze 0.1.2, kontrolované podepsání/notarizace, release metadata a SSH workflow s feedem posledním; viditelná dostupnost a průběh aktualizace. |
 
-Stávající veřejný feed verze 0.1.1 a jeho čtyři balíčky byly read-only ověřeny HTTP 200. Neprokazuje to novou implementaci, nový updater ani budoucí cílovou cestu.
+🧪 **Finální čistý klon `475c77bf`: 1505 PASS, tři původní skipy, lint, typecheck, kontrola baseline i build — exit 0.** [Doslovný výpis](../../../dukazy/nahravky-dashboard-2026-09-14/final/gates-clean.log) a [review/přejímka](../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md).
 
-## Autoritativní zdroje
+Převzaté poslední zdroje: T-A4 `c25ef2a` a T-I1 `d6bdfdd`. Root před commitem samostatně ověřil T-A4 1503 testy a I1 17 cílenými testy. Reporty i skutečné sabotáže jsou v `evidence/tasks/` a `dukazy/nahravky-dashboard-2026-09-14/`.
 
-- Produktový rozsah: [intent](intent.md) a [zadání](ZADANI-PRO-CODEX.md).
-- Chování: [specifikace](spec.md) a [rozhodnutí](decisions.md).
-- Realizace: [plán](plan.md), [DAG](tasks/DAG.md) a lintnuté packety.
-- Historie původní desktopové etapy: [desktop-v1](../desktop-v1/STAV.md); jde o historický snapshot, ne dnešní stav.
+⚠️ Starší CI na `c21eca6` selhalo: časová fixture a cleanup před dokončením startup pumpy. Obě příčiny jsou opravené bez oslabení asercí nebo úklidových výjimek. [Původní důkazy](../../../dukazy/nahravky-dashboard-2026-09-14/integrace/ci-opravy/review.md) jsou zachované; finální GitHub CI po pushi se zaznamená zvlášť.
+
+🟡 **Nativní GUI 0.1.2**: samostatný profil s vypnutým transportem, dostupná Nastavení bez loginu, čitelný Účet s firmou a prázdný přehled. Aplikace po kontrole ukončená. Nejde o produkční login, zvuk nebo ruční akce nad reálnými nahrávkami. `ui-smoke` a `audio-smoke` agent nespouštěl.
+
+## Co čeká na Dana
+
+| Část | Nutná podmínka |
+|---|---|
+| Podepsaný a notarizovaný build | Potvrzená záloha `.p12` včetně hesla ve firemním správci hesel. |
+| Publikace na download hosting | GitHub SSH Secrets/Variables podle [T6-VYDANI.md](T6-VYDANI.md); host, účet a přístup se nehádají. |
+| Release 0.1.2 | Kontrola PR a finální tag, který pushuje výhradně Dan. |
+| ✅ živé ověření | [Krátký postup na Macu](OVERENI-NA-MACU.md): Finder login, nahrávání, obě stopy, instalace a update. |
+
+Stávající veřejný feed 0.1.1 a jeho čtyři balíčky byly read-only ověřeny HTTP 200. Nová verze tím nebyla publikována. Přechod 0.1.1 → 0.1.2 ověří doručení přes původní updater; nové hlášení dostupnosti a průběhu v 0.1.2 potřebuje další schválenou vyšší verzi.
+
+## Procesní hranice
+
+Global masterplan lint ponechává známý C2: chybí hook artifact `artifacts/design/approved.json`. Rozsah a odložení redesignu schválil uživatel explicitním goalem (D10); žádné schválení ani výjimka nebyly vyrobené. Jednotlivé implementační packety prošly lintem. Známé malé TOCTOU okno systémového koše je popsané v [T5 review](../../../dukazy/nahravky-dashboard-2026-09-14/T5/root-review.md).

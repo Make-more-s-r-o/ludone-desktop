@@ -1,8 +1,8 @@
 # Co čeká na Dana — LuDone Desktop
 
 > **Aktuální běh 15. 9. 2026:** Vývoj probíhá v [PR #141](https://github.com/Make-more-s-r-o/ludone-desktop/pull/141).
-> Přihlášení, consent, fronta a dashboard jsou implementované; dokončuje se zapojení firmy
-> a finální přejímka. Datované popisy vad níže jsou původní zadání, nikoli stav tohoto PR.
+> Přihlášení, consent, fronta, dashboard a výběr firmy jsou implementované; čistý klon
+> prošel 1505 testy i sestavením. Veřejné vydání a živá přejímka čekají. Datované popisy vad níže jsou původní zadání, nikoli stav tohoto PR.
 > Aktuální [stav a důkazy](docs/changes/nahravky-dashboard/STAV.md) rozlišují kód, testy a živé ověření.
 > Na Danovi zůstává potvrzení firemní zálohy podpisového klíče, doplnění publikačních
 > GitHub hodnot podle [postupu vydání](docs/changes/nahravky-dashboard/T6-VYDANI.md),

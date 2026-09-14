@@ -1,0 +1,12 @@
+NÁLEZ [C2] artifacts/design/approved.json:1 — (artefakt požadovaný tierem chybí nebo má chybný typ)
+  Náprava: Doplň soubor `artifacts/design/approved.json` požadovaný pro tier L.
+NÁLEZ [C6] evidence/tasks/T-A4.report.json:47 — "Root normalizoval duplicitní vložený sender log na odkaz na nezměněný verzovaný doslovný log. Masterplan C6 chybně rozpoznal zdrojový výraz url.[TAJEMSTVÍ SKRYTO] prázdný řetězec jako heslo; žádné heslo se zde nevyskytuje a žádná brána ani evidence nebyla odstraněna. Původní inline report je zachován v c25ef2a."
+  Náprava: Odstraň heslo z artefaktu, hodnotu zneplatni a používej jen bezpečný odkaz na secret.
+SOUHRN: 13 packetů, 28 pravidel a 40 souborů prověřeno; 2 nálezů.
+
+EXIT_CODE=1
+NÁLEZ [C2] artifacts/design/approved.json:1 — (artefakt požadovaný tierem chybí nebo má chybný typ)
+  Náprava: Doplň soubor `artifacts/design/approved.json` požadovaný pro tier L.
+SOUHRN: 13 packetů, 28 pravidel a 40 souborů prověřeno; 1 nálezů.
+
+FINAL_EXIT_CODE=1
