@@ -609,6 +609,27 @@ gates` s exit kódem 0 je v `dukazy/nahravky-dashboard-2026-09-14/auth/REPORT.md
 stále vypnutý. Navazující UI/default změna jej musí uživateli zpřístupnit, jinak správný auth
 token existuje, ale pumpa odesílání se nerozběhne.
 
+### Viditelná automatická aktualizace — větev `fix/nahravky-prihlaseni`
+
+🧪 **Stav dostupnosti a stahování je hotový v commitu `f3d802a`, čeká na integraci.**
+Zabalená aplikace dál kontroluje vydání automaticky po startu a každých šest hodin. Panel
+nově převezme z události `update-available` bezpečně omezenou verzi, oznámí dostupnost a při
+`download-progress` ukáže skutečné celé procento z `electron-updater`. Po dokončení zůstává
+dosavadní hláška o stažené verzi. Pořadové číslo stavu dál brání tomu, aby opožděný počáteční
+snapshot přepsal novější živou událost.
+
+Bezpečnostní brána instalace se nezměnila: restart dál čeká na konec nahrávání, dokončení
+uložení, LuTrack, serializační bariéru odchozí fronty a nezměněnou generaci aktivity. Nevznikl
+nový IPC kanál, ruční restart ani tlačítko kontroly; metadata verze se před logem a rendererem
+omezují na běžný krátký tvar a procento se zaokrouhlí a omezí na rozsah 0–100.
+
+`premisaPlatila`: ano — hlavní proces dosud publikoval jen staženou verzi a opakované selhání,
+takže uživatel během automatického stažení neviděl dostupnost ani průběh. `kontrolniNula`:
+žádný zásah do auth, LuTracku, fronty, backendu, vydávacího workflow ani designu a žádná živá
+aktualizace. Zaměřená sonda main → skutečný preload/IPC → React i celé `npm run gates` skončily
+s exit kódem 0; doslovné výpisy jsou v
+`dukazy/nahravky-dashboard-2026-09-14/updater/REPORT.md`.
+
 ### ❓ Otevřená otázka na Dana (zeptej se hned, ale neblokuj tím práci)
 
 🔴 **Odesílání se dnes v běžně spuštěné aplikaci nedá zapnout vůbec.** `DESKTOP_UPLOAD_ENABLED`
