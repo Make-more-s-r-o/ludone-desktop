@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T21:24:24.883Z",
+    "updatedAt": "2026-09-14T21:37:45.991Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -17,10 +17,10 @@
     "requires": []
   },
   "summary": {
-    "done": 5,
+    "done": 6,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 3
+    "notStarted": 2
   },
   "features": [
     {
@@ -64,11 +64,11 @@
       "name": "Porovnání serveru",
       "whatItGives": "Uživatel rozliší stav fronty od ověřeného výsledku na serveru.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "committed",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Sol implementuje výslovné ověření známých per-track ID nad přijatým T-R1; žádný polling nebo INIT pro lookup.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "T4 integrováno, root brána 1433 PASS a 3 původní skipy, exit 0. Navazuje T5; ostré ověření serveru čeká na Dana.",
       "evidence": []
     },
     {
@@ -236,20 +236,21 @@
       "id": "T-04",
       "title": "Ověření na serveru",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-R1"
       ],
       "packet": "tasks/T-04.md",
-      "worktree": ".claude/worktrees/nahravky-overeni"
+      "worktree": ".claude/worktrees/nahravky-overeni",
+      "report": "evidence/tasks/T-04.report.json"
     },
     {
       "id": "T-05",
       "title": "Akce a odesílání",
       "executor": "codex",
-      "state": "pending",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-04"
       ],
@@ -303,6 +304,22 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T21:37:45.991Z",
+      "text": "T4 převzato z 9b233c8: root plná brána 1433 PASS, tři původní skipy, exit 0; nezávislé review bez doložených P1/P2. T5 předáno Sol pro trvalý souhlas, jednotlivé akce a obnovu retry."
+    },
+    {
+      "at": "2026-09-14T21:37:45.658Z",
+      "text": "Task T-05 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-14T21:37:11.311Z",
+      "text": "Funkce NRD-04 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T21:37:11.010Z",
+      "text": "Task T-04 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T21:24:24.883Z",
       "text": "D14: ruční ověření obnovené nahrávky smí použít pouze existující známý recovery sidecar se shodnou identitou a cestami primárního manifestu; čtení nic neobnovuje ani nepřepisuje."

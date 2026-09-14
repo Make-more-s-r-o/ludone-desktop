@@ -30,7 +30,7 @@
     "401_403": "auth_error",
     "sitova_chyba": "network_error"
   },
-  "novychTestu": 28,
+  "novychTestu": 32,
   "sabotaze": [
     {
       "nazev": "Vyřazené porovnání lokálního a serverového sha256",
@@ -58,5 +58,18 @@
     "UI invaliduje zobrazené ověření při každém loadu a generation guard zabrání zapsání pending výsledku po refreshi nebo změně auth stavu.",
     "Recovery regrese simuluje chybějící audio při zachovaných serverových ID. Neověřuje skutečnou applyOutboundQueueRetention, protože ta u eligible complete položky odstraní celý queue row; zbylý orphan bez ID je neověřitelný a neposílá GET.",
     "Read-only Git self-check skončil exit 0 a ukázal pouze soubory z T-04 allowlistu."
-  ]
+  ],
+  "rootVerification": {
+    "state": "tests-green",
+    "sourceCommit": "9b233c8",
+    "integratedAt": "0078c9350320ea105c4c665c8eb09d5c31445089",
+    "command": "npm run gates",
+    "exitCode": 0,
+    "passedTests": 1433,
+    "baselineSkippedTests": 3,
+    "evidence": "dukazy/nahravky-dashboard-2026-09-14/T4/root-gates-final.log",
+    "initialFailure": "První root brána: ReferenceError v izolované logout fixture, protože nedodala novou závislost invalidateRecordingVerifier. Fixture doplněna včetně assertion pořadí invalidace před logout; runtime se kvůli testu nezměnil.",
+    "newTestsCount": "32 = rozdíl mezi přijatou plnou bránou 1401 a novou plnou bránou 1433; opravuje původní ruční odhad 28.",
+    "workerEvidenceLimit": "Worker uváděl cílených 517 testů, ale jejich úplný výpis neuložil do povolených logů. Autoritativním doslovným důkazem je nová plná root brána."
+  }
 }
