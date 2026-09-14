@@ -12,6 +12,7 @@ import {
   QUEUE_STATES,
   UPLOAD_DISABLED_REASON,
   applyServerProgress,
+  claimRecording,
   createQueue,
   enqueueRecording,
   enqueueTimeEntry,
@@ -1278,7 +1279,33 @@ describe("stavový automat fronty", () => {
         },
       },
       blockReason: null,
+      ownership: "unavailable",
     });
+  });
+
+  it("projekce odliší neznámého, vlastního a cizího vlastníka bez zveřejnění otisku", () => {
+    const currentOwner = `sha256:${"a".repeat(64)}`;
+    const otherOwner = `sha256:${"b".repeat(64)}`;
+    const queue = createQueue();
+    queue.items = [
+      { ...oneItemQueue("11111111-1111-4111-8111-111111111111").items[0], ownerFingerprint: null },
+      {
+        ...oneItemQueue("22222222-2222-4222-8222-222222222222").items[0],
+        lastFailureReason: "unauthorized",
+        ownerFingerprint: currentOwner,
+        requiresHumanAction: true,
+      },
+      { ...oneItemQueue("33333333-3333-4333-8333-333333333333").items[0], ownerFingerprint: otherOwner },
+    ];
+
+    const view = reduceQueueForRenderer(queue, currentOwner);
+
+    expect(view.map((item) => item.ownership)).toEqual(["unknown", "current", "other"]);
+    expect(view[0]).not.toHaveProperty("requiresHumanAction");
+    expect(JSON.stringify(view)).not.toContain(currentOwner);
+    expect(JSON.stringify(view)).not.toContain(otherOwner);
+    expect(reduceQueueForRenderer(queue).map((item) => item.ownership))
+      .toEqual(["unknown", "unavailable", "unavailable"]);
   });
 
   it("projekce zpřístupní jen bezpečná serverová pole a přesný důvod blokace", () => {
@@ -1589,6 +1616,110 @@ describe("stavový automat fronty", () => {
 });
 
 describe("trvalé uložení fronty", () => {
+  it("potvrzené převzetí změní jedinou položku, vyčistí cizí serverová ID a zůstane držené", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-claim-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const firstId = recording().manifest.clientRecordingId;
+    const secondId = "3d4e7b61-e3d4-483c-94cc-a512454f6976";
+    const oldOwner = `sha256:${"a".repeat(64)}`;
+    const newOwner = `sha256:${"b".repeat(64)}`;
+    const queue = oneItemQueue(firstId);
+    queue.items.push(oneItemQueue(secondId).items[0]);
+    queue.items[0] = {
+      ...queue.items[0],
+      lastFailureReason: "Nahrávka patří jinému účtu",
+      ownerFingerprint: oldOwner,
+      requiresHumanAction: true,
+      server: {
+        sessionId: SERVER_SESSION_ID,
+        tracks: {
+          microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 },
+          system: { recordingId: SERVER_SYSTEM_ID, uploadedBytes: 240 },
+        },
+      },
+    };
+    queue.items[1] = { ...queue.items[1], ownerFingerprint: oldOwner };
+    await saveQueueAtomically(queuePath, queue);
+    const send = vi.fn();
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      const before = await store.list(oldOwner);
+      const result = await store.claimRecording(firstId, before[0].revision, newOwner, {
+        guard: vi.fn(async () => true),
+      });
+      const persisted = await loadQueue(queuePath);
+
+      expect(result).toMatchObject({ claimed: true, item: { id: firstId } });
+      expect(result.item).not.toHaveProperty("ownerFingerprint");
+      expect(JSON.stringify(result)).not.toContain(directory);
+      expect(persisted.items[0]).toMatchObject({
+        attempts: 0,
+        clientRecordingId: firstId,
+        ownerFingerprint: newOwner,
+        requiresHumanAction: true,
+        state: QUEUE_STATES.WAITING,
+      });
+      expect(persisted.items[0].lastFailureReason).toMatch(/volbu odeslání/u);
+      expect(persisted.items[0].server).toEqual({
+        sessionId: null,
+        tracks: {
+          microphone: { recordingId: null, uploadedBytes: 0 },
+          system: { recordingId: null, uploadedBytes: 0 },
+        },
+      });
+      expect(persisted.items[0].manifestPath).toBe(queue.items[0].manifestPath);
+      expect(persisted.items[0].tracks).toEqual(queue.items[0].tracks);
+      expect(persisted.items[1]).toEqual(queue.items[1]);
+      expect(send).not.toHaveBeenCalled();
+
+      const reopened = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send,
+      });
+      await expect(reopened.list(newOwner)).resolves.toEqual(result.items);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("stale revision a zamítnutý guard nezapíšou převzetí", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-claim-stale-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const owner = `sha256:${"b".repeat(64)}`;
+    const queue = oneItemQueue();
+    queue.items[0] = {
+      ...queue.items[0],
+      ownerFingerprint: null,
+      lastFailureReason: "Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem",
+      requiresHumanAction: true,
+    };
+    await saveQueueAtomically(queuePath, queue);
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      const [snapshot] = await store.list();
+      await expect(store.claimRecording(queue.items[0].clientRecordingId, `sha256:${"0".repeat(64)}`, owner, {
+        guard: vi.fn(async () => true),
+      })).rejects.toThrow(/neaktuální/u);
+      await expect(store.claimRecording(queue.items[0].clientRecordingId, snapshot.revision, owner, {
+        guard: vi.fn(async () => false),
+      })).rejects.toThrow(/identit/u);
+      expect(await loadQueue(queuePath)).toEqual(queue);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it.each([
     ["jednostopé", ["microphone"], "microphone"],
     ["dvoustopé", ["microphone", "system"], null],
@@ -1682,6 +1813,38 @@ describe("trvalé uložení fronty", () => {
       "sync:r",
       "close:r",
     ]);
+  });
+});
+
+describe("čisté převzetí nahrávky", () => {
+  it.each([QUEUE_STATES.SENDING, QUEUE_STATES.SENT])("odmítne stav %s", (state) => {
+    const queue = oneItemQueue();
+    queue.items[0] = { ...queue.items[0], state };
+    expect(() => claimRecording(
+      queue,
+      queue.items[0].clientRecordingId,
+      `sha256:${"b".repeat(64)}`,
+    )).toThrow(/odesíl|odeslan/u);
+  });
+
+  it.each([null, "", "sha256:kratke", `sha256:${"G".repeat(64)}`])(
+    "odmítne neplatný otisk %j",
+    (ownerFingerprint) => {
+      expect(() => claimRecording(
+        oneItemQueue(),
+        recording().manifest.clientRecordingId,
+        ownerFingerprint,
+      )).toThrow(/otisk/u);
+    },
+  );
+
+  it("odmítne převzetí pod už uloženého vlastníka", () => {
+    const owner = `sha256:${"b".repeat(64)}`;
+    const queue = oneItemQueue();
+    queue.items[0] = { ...queue.items[0], ownerFingerprint: owner };
+
+    expect(() => claimRecording(queue, queue.items[0].clientRecordingId, owner))
+      .toThrow(/už patří/u);
   });
 });
 

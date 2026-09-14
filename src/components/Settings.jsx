@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { countLabel } from "../lib/count-label.js";
+import { RecordingsDashboard } from "../features/recordings/RecordingsDashboard.jsx";
 import {
   CheckIcon,
   CloseIcon,
@@ -20,6 +21,7 @@ const SETTINGS_TABS = Object.freeze([
   { id: "account", label: "Účet" },
   { id: "audio", label: "Zvuk" },
   { id: "recordings", label: "Záznamy" },
+  { id: "recordingQueue", label: "Nahrávky" },
   { id: "diagnostics", label: "Diagnostika" },
 ]);
 const AUTH_ENVIRONMENTS = Object.freeze([
@@ -851,6 +853,27 @@ export function SettingsApp() {
               <div><strong>Fronta</strong><small>{queueText}</small></div>
             </div>
           </section>
+        </section>
+
+        <section
+          id="settings-panel-recordingQueue"
+          className="settings-tab-panel"
+          role="tabpanel"
+          aria-labelledby="settings-tab-recordingQueue"
+          hidden={activeTab !== "recordingQueue"}
+        >
+          {activeTab === "recordingQueue" && (
+            <section className="settings-group" aria-labelledby="recording-queue-settings-title">
+              <div className="settings-group__heading">
+                <span><CloudIcon /></span>
+                <div>
+                  <p className="eyebrow">Lokální fronta</p>
+                  <h2 id="recording-queue-settings-title">Nahrávky</h2>
+                </div>
+              </div>
+              <RecordingsDashboard authState={account.state} />
+            </section>
+          )}
         </section>
 
         <section

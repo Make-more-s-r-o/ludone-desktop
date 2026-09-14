@@ -2216,7 +2216,7 @@ svg {
 .settings-tabs {
   display: flex;
   align-items: stretch;
-  gap: 18px;
+  gap: 12px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-elevated);
@@ -2521,6 +2521,77 @@ svg {
   color: var(--muted-foreground);
   font-size: 10px;
   line-height: 1.5;
+}
+
+.recordings-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.recordings-dashboard__intro,
+.recordings-dashboard__notice,
+.recordings-dashboard__empty,
+.recordings-dashboard__error p,
+.recordings-dashboard > [role="status"] {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.recordings-dashboard__notice,
+.recordings-dashboard__error {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-elevated-2);
+}
+
+.recordings-dashboard__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.recordings-dashboard__list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recording-queue-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 11px;
+  background: var(--card);
+}
+
+.recording-queue-card > strong {
+  font-size: 11.5px;
+}
+
+.recording-queue-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  color: var(--muted-foreground);
+  font-size: 9.5px;
+}
+
+.recording-queue-card > p {
+  margin: 0;
+  color: var(--panel-wait);
+  font-size: 9.5px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .diagnostics-card {

@@ -9,6 +9,7 @@ const RECOVERY_MANIFEST_MAX_BYTES = 1024 * 1024;
 const RECOVERY_TRACK_MAX_BYTES = 512 * 1024 * 1024;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const QUEUE_OWNER_FINGERPRINT_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const QUEUE_OWNER_FINGERPRINT_DOMAIN = Object.freeze([
   "cz.ludone.desktop",
   "queue-owner",
@@ -55,6 +56,10 @@ function safeNonEmptyString(value) {
 
 function safeUploadedBytes(value) {
   return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+
+function queueItemRevision(item) {
+  return `sha256:${createHash("sha256").update(JSON.stringify(item), "utf8").digest("hex")}`;
 }
 
 function normalizeStoredServer(item) {
@@ -763,6 +768,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     for (const name of [
       "enqueueRecording",
       "enqueueTimeEntry",
+      "claimRecording",
       "processNext",
       "queueItemRequiresHumanAction",
       "reduceQueueForRenderer",
@@ -839,7 +845,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     }
   }
 
-  async function reduceForRenderer(queueModule, queue) {
+  async function reduceForRenderer(queueModule, queue, currentOwnerFingerprint = null) {
     const items = await Promise.all(queue.items.map(async (item) => {
       const [sizeBytes, metadata] = await Promise.all([
         recordingSizeBytes(item),
@@ -849,10 +855,11 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
         ...item,
         createdAt: metadata?.createdAt ?? null,
         durationMs: metadata?.durationMs ?? null,
+        revision: queueItemRevision(item),
         sizeBytes,
       };
     }));
-    return queueModule.reduceQueueForRenderer({ ...queue, items });
+    return queueModule.reduceQueueForRenderer({ ...queue, items }, currentOwnerFingerprint);
   }
 
   async function ensureLoaded() {
@@ -899,6 +906,51 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       const result = queueModule.enqueueTimeEntry(await ensureLoaded(), entry);
       if (result.added) await commit(result.queue);
       return result;
+    });
+  }
+
+  function claimRecording(clientRecordingId, expectedRevision, ownerFingerprint, options = {}) {
+    if (typeof clientRecordingId !== "string" || !UUID_PATTERN.test(clientRecordingId)) {
+      throw new TypeError("clientRecordingId musí být GUID");
+    }
+    if (typeof expectedRevision !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)) {
+      throw new TypeError("expectedRevision musí být platná revize");
+    }
+    if (
+      typeof ownerFingerprint !== "string"
+      || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(ownerFingerprint)
+    ) {
+      throw new TypeError("ownerFingerprint musí být platný otisk vlastníka");
+    }
+    if (typeof options?.guard !== "function") {
+      throw new TypeError("options.guard musí být funkce");
+    }
+
+    return serialize(async () => {
+      const queueModule = await loadQueueModule();
+      const queue = await ensureLoaded();
+      const currentItem = queue.items.find(
+        (item) => item.clientRecordingId === clientRecordingId,
+      );
+      if (!currentItem) throw new Error("nahrávka ve frontě nebyla nalezena");
+      if (queueItemRevision(currentItem) !== expectedRevision) {
+        throw new Error("Snímek nahrávky je neaktuální; načtěte seznam znovu");
+      }
+      const claimed = queueModule.claimRecording(queue, clientRecordingId, ownerFingerprint);
+      const allowed = await options.guard(Object.freeze({
+        clientRecordingId,
+        revision: expectedRevision,
+      }));
+      if (allowed !== true) {
+        throw new Error("Aktuální identitu nelze bezpečně potvrdit");
+      }
+      await commit(claimed.queue);
+      const items = await reduceForRenderer(queueModule, claimed.queue, ownerFingerprint);
+      return {
+        claimed: true,
+        item: items.find((item) => item.id === clientRecordingId),
+        items,
+      };
     });
   }
 
@@ -949,10 +1001,19 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
-  function list() {
+  function list(currentOwnerFingerprint = null) {
+    if (
+      currentOwnerFingerprint !== null
+      && (
+        typeof currentOwnerFingerprint !== "string"
+        || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(currentOwnerFingerprint)
+      )
+    ) {
+      throw new TypeError("currentOwnerFingerprint musí být platný otisk nebo null");
+    }
     return serialize(async () => {
       const queueModule = await loadQueueModule();
-      return reduceForRenderer(queueModule, await ensureLoaded());
+      return reduceForRenderer(queueModule, await ensureLoaded(), currentOwnerFingerprint);
     });
   }
 
@@ -983,7 +1044,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
-  return Object.freeze({ enqueueRecording, enqueueTimeEntry, list, pump, retry });
+  return Object.freeze({ claimRecording, enqueueRecording, enqueueTimeEntry, list, pump, retry });
 }
 
 module.exports = {

@@ -42,6 +42,8 @@ async function renderSettings({
     fileName: "ludone-diagnostika-2026-09-03-130500.txt",
   }),
   identity = () => Promise.resolve({ name: "Ada Lovelace", email: "ada@ludone.cz" }),
+  listQueue = () => Promise.resolve([]),
+  claimRecording = () => Promise.resolve({ claimed: false, items: [] }),
   logout = () => Promise.resolve({ signedOutLocally: true, serverRevoked: true, reason: null }),
   openAtLogin = () => Promise.resolve(true),
   origin = () => Promise.resolve(ORIGIN),
@@ -80,6 +82,8 @@ async function renderSettings({
     getDiagnostics: vi.fn(diagnostics),
     getDockVisible: vi.fn(dockVisible),
     getOpenAtLogin: vi.fn(openAtLogin),
+    listQueue: vi.fn(listQueue),
+    claimRecording: vi.fn(claimRecording),
     exportDiagnostics: vi.fn(exportDiagnostics),
     logout: logoutMock,
     setAuthOrigin: setAuthOriginMock,
@@ -300,8 +304,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("čtyři části Nastavení", () => {
-  it("vykreslí přesně čtyři přístupné záložky a přepíná jejich obsah", async () => {
+describe("pět částí Nastavení", () => {
+  it("vykreslí přesně pět přístupných záložek a přepíná jejich obsah", async () => {
     const settings = await renderSettings();
     try {
       const tablist = settings.document.querySelector('[role="tablist"]');
@@ -311,10 +315,12 @@ describe("čtyři části Nastavení", () => {
         "Účet",
         "Zvuk",
         "Záznamy",
+        "Nahrávky",
         "Diagnostika",
       ]);
       expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual([
         "true",
+        "false",
         "false",
         "false",
         "false",
@@ -347,9 +353,60 @@ describe("čtyři části Nastavení", () => {
         "false",
         "false",
         "false",
+        "false",
         "true",
       ]);
       expect(settings.document.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(1);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("kliknutí na záložku Nahrávky a její akci předá přesný snímek", async () => {
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const revision = `sha256:${"a".repeat(64)}`;
+    const item = {
+      id,
+      kind: "recording",
+      state: "ceka",
+      revision,
+      requiresHumanAction: true,
+      ownership: "other",
+      blockReason: "queue_owner_unknown",
+      createdAt: "2026-09-14T10:00:00.000Z",
+      durationMs: 65_000,
+      sizeBytes: 2_500_000,
+    };
+    const settings = await renderSettings({
+      listQueue: () => Promise.resolve([item]),
+      claimRecording: () => Promise.resolve({
+        claimed: true,
+        items: [{
+          ...item,
+          revision: `sha256:${"b".repeat(64)}`,
+          blockReason: "Převzatá nahrávka čeká na volbu odeslání",
+          ownership: "current",
+        }],
+      }),
+    });
+    try {
+      await expectAccountState(settings, "signed-in");
+      await selectTab(settings, "Nahrávky");
+      await vi.waitFor(() => {
+        expect(settings.document.querySelector(".recording-queue-card")).toBeTruthy();
+      });
+      const button = [...settings.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.trim() === "Převzít pod svůj účet");
+      expect(button).toBeDefined();
+      await React.act(async () => {
+        button.click();
+        await Promise.resolve();
+      });
+      await vi.waitFor(() => expect(settings.ludone.claimRecording).toHaveBeenCalledOnce());
+      expect(settings.ludone.claimRecording).toHaveBeenCalledWith(id, revision);
+      expect(settings.ludone.listQueue).toHaveBeenCalledOnce();
+      expect(settings.ludone.getDiagnostics).not.toHaveBeenCalled();
+      expect(settings.document.body.textContent).toContain("Převzatá nahrávka čeká");
     } finally {
       await settings.cleanup();
     }

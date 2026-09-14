@@ -1,0 +1,500 @@
+SABOTÁŽ 1: odstraněná kontrola revize položky
+PŘÍKAZ: npx vitest run tests/queue.test.js -t 'stale revision a zamítnutý guard'
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-prevzeti
+
+ ❯ tests/queue.test.js (113 tests | 1 failed | 112 skipped) 36ms
+   ↓ vlastník nahrávky v perzistentní frontě > ukládá jen stabilní doménově oddělený SHA-256 otisk, ne čitelnou identitu
+   ↓ vlastník nahrávky v perzistentní frontě > bez tajemství se otisk NEODVODÍ — musí vyjít null
+   ↓ vlastník nahrávky v perzistentní frontě > produkční store přidá otisk k dvoustopé i jednostopé položce
+   ↓ vlastník nahrávky v perzistentní frontě > anonymní enqueue zapíše null a pozdější opakování jej nepřivlastní
+   ↓ vlastník nahrávky v perzistentní frontě > starou položku schématu v1 bez pole vlastníka načte beze ztráty jako neznámou
+   ↓ produkční čtení killswitchů > 'nenastavený vypínač nahrávek zůstane …'
+   ↓ produkční čtení killswitchů > 'false ve vypínači nahrávek zůstane di…'
+   ↓ produkční čtení killswitchů > 'nepřesné TRUE vypínač nahrávek nezapne'
+   ↓ produkční čtení killswitchů > 'přesný řetězec true zapne nahrávky'
+   ↓ produkční čtení killswitchů > 'produkčně zapnutý časový vypínač nepo…'
+   ↓ produkční čtení killswitchů > 'nenastavený vypínač času zůstane disa…'
+   ↓ produkční čtení killswitchů > 'false ve vypínači času zůstane disabl…'
+   ↓ produkční čtení killswitchů > 'nepřesné TRUE vypínač času nezapne'
+   ↓ produkční čtení killswitchů > 'přesný řetězec true zapne čas'
+   ↓ produkční čtení killswitchů > 'produkčně zapnutý vypínač nahrávek ne…'
+   ↓ killswitch odchozí fronty > s nenastaveným DESKTOP_UPLOAD_ENABLED záměrně nic neodešle
+   ↓ killswitch odchozí fronty > s hodnotou false nic neodešle a vrátí důvod vypnutí
+   ↓ killswitch odchozí fronty > s hodnotou true zavolá pouze mockovanou odesílací vrstvu
+   ↓ killswitch odchozí fronty > jiná pravdivostní hodnota odesílání nezapne
+   ↓ killswitch odchozí fronty > časová položka používá samostatný zapnutý vypínač
+   ↓ killswitch odchozí fronty > zapnutý vypínač času nepovolí nahrávku
+   ↓ killswitch odchozí fronty > zapnutý vypínač nahrávek nepovolí časovou položku
+   ↓ killswitch odchozí fronty > boolean true časový vypínač fail-closed nezapne
+   ↓ killswitch odchozí fronty > blokovaná položka má přednost před položkou čekající na čas
+   ↓ stavový automat fronty > zařazená nahrávka nese rozlišovač typu
+   ↓ stavový automat fronty > zařazený časový záznam nese typ time a klíč z B5
+   ↓ stavový automat fronty > časový záznam se sazbou se odmítne
+   ↓ stavový automat fronty > do časové položky se nedostane žádné pole se sazbou
+   ↓ stavový automat fronty > dvojí zařazení stejného clientTimeEntryId vytvoří jedinou položku
+   ↓ stavový automat fronty > dvojí zařazení stejného clientRecordingId vytvoří jedinou položku
+   ↓ stavový automat fronty > produkční store zařadí jednostopu pravdivě a idempotentně
+   ↓ stavový automat fronty > shodné ID jiné položky nesmí předstírat idempotentní obnovu nahrávky
+   ↓ stavový automat fronty > neúspěch ponechá položku ve frontě a zvýší počet pokusů
+   ↓ stavový automat fronty > sentAt vznikne až po dokončení odesílání
+   ↓ stavový automat fronty > 🔴 po 429 počká přesně tolik, kolik řekl server, ne podle vlastního rozvrhu
+   ↓ stavový automat fronty > retry prodlevu počítá až od dokončení neúspěšného pokusu
+   ↓ stavový automat fronty > po vyčerpání pokusů označí položku jako selhalo a nesmaže ji
+   ↓ stavový automat fronty > vrátí selhalo do ceka bez změny důvodu, vlastníka (sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) a vstupní fronty
+   ↓ stavový automat fronty > vrátí selhalo do ceka bez změny důvodu, vlastníka (null) a vstupní fronty
+   ↓ stavový automat fronty > vrácení položky ve stavu ceka ponechá původní frontu i položku
+   ↓ stavový automat fronty > vrácení položky ve stavu odesila ponechá původní frontu i položku
+   ↓ stavový automat fronty > vrácení položky ve stavu odeslano ponechá původní frontu i položku
+   ↓ stavový automat fronty > vrácená položka se opravdu dostane k dalšímu pokusu, ne jen do stavu ceka
+   ↓ stavový automat fronty > kód rodiny vlastnictví se ručním vrácením neobejde
+   ↓ stavový automat fronty > starší česká hláška se ručním vrácením neobejde
+   ↓ stavový automat fronty > vrácení neznámého clientRecordingId odmítne a frontu nezmění
+   ↓ stavový automat fronty > po selhání permanent umožní nový pokus s obnoveným rozpočtem pokusů
+   ↓ stavový automat fronty > po selhání retryable umožní nový pokus s obnoveným rozpočtem pokusů
+   ↓ stavový automat fronty > opakování používá rostoucí exponenciální prodlevu s pevným stropem
+   ↓ stavový automat fronty > offsety obou stop vždy převezme ze serveru místo lokálního odhadu
+   ↓ stavový automat fronty > ukládá recordingId po stopách a odmítne pozdější změnu ID nebo session
+   ↓ stavový automat fronty > odmítne neplatné nebo společné recordingId dvou stop
+   ↓ stavový automat fronty > propustí ověřený návrat senderu do výsledku i per-stopového stavu fronty
+   ↓ stavový automat fronty > výsledek senderu nesmí uložit neexistující stopu ani označit položku jako odeslanou
+   ↓ stavový automat fronty > postup k neznámé nahrávce odmítne a frontu nezmění
+   ↓ stavový automat fronty > vyžaduje killswitch v podpisu spolu s odesílací vrstvou
+   ↓ stavový automat fronty > trvalá chyba skončí při prvním pokusu a neopakuje se pětkrát
+   ↓ stavový automat fronty > pauza invalid_grant nespotřebuje pokus
+   ↓ stavový automat fronty > starší položka bez kind se čte jako nahrávka
+   ↓ stavový automat fronty > pohled pro renderer neobsahuje absolutní cesty ani manifest
+   ↓ stavový automat fronty > projekce odliší neznámého, vlastního a cizího vlastníka bez zveřejnění otisku
+   ↓ stavový automat fronty > projekce zpřístupní jen bezpečná serverová pole a přesný důvod blokace
+   ↓ stavový automat fronty > NEZNÁMÝ vlastnický důvod se bere jako čekající na člověka: queue_owner_revoked
+   ↓ stavový automat fronty > NEZNÁMÝ vlastnický důvod se bere jako čekající na člověka: session_owner_expired
+   ↓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Nahrávka patří jinému účtu
+   ↓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem
+   ↓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Identitu aktuálního přihlášení nelze ověřit
+   ↓ stavový automat fronty > nevybraná firma je čekání na člověka, ne tiché stání fronty
+   ↓ stavový automat fronty > nedosažitelný seznam firem je opakovatelný a frontu nezastaví
+   ↓ stavový automat fronty > insufficient_scope (HTTP 403) je čekání na člověka, ne tichá nekonečná smyčka
+   ↓ stavový automat fronty > položka pauznutá na insufficient_scope se další pumpou sama nezkusí
+   ↓ stavový automat fronty > nahrávku bez vlastníka přeskočí a odešle další v pořadí
+   ↓ stavový automat fronty > když jsou všechny připravené bez vlastníka, označí je všechny a nic neodešle
+   ↓ stavový automat fronty > 🔴 chyba přihlášení pump ZASTAVÍ a zbytek fronty vůbec nezkouší
+   ↓ stavový automat fronty > neznámý důvod pauzy pump taky zastaví (fail-closed)
+   ↓ stavový automat fronty > libovolná jiná pauza se slovem owner nepatří bez výslovného kontraktu člověku
+   ↓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Vlastník databáze je potvrzen, ale server není dostupný
+   ↓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Identitu zařízení se po přihlášení nepodařilo načíst
+   ↓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Nahrávka se kvůli síti nepřiřadila jinému účtu
+   ↓ stavový automat fronty > další pumpa položku čekající na člověka sama znovu nezkouší
+   ↓ trvalé uložení fronty > potvrzené převzetí změní jedinou položku, vyčistí cizí serverová ID a zůstane držené
+   × trvalé uložení fronty > stale revision a zamítnutý guard nezapíšou převzetí 35ms
+     → promise resolved "{ claimed: true, item: { …(14) }, …(1) }" instead of rejecting
+   ↓ trvalé uložení fronty > staré jednostopé serverové schéma načte beze lži o stopě
+   ↓ trvalé uložení fronty > staré dvoustopé serverové schéma načte beze lži o stopě
+   ↓ trvalé uložení fronty > po restartu zachová data a doplní neznámého vlastníka
+   ↓ trvalé uložení fronty > atomický zápis fsyncne data i adresář
+   ↓ čisté převzetí nahrávky > odmítne stav odesila
+   ↓ čisté převzetí nahrávky > odmítne stav odeslano
+   ↓ čisté převzetí nahrávky > odmítne neplatný otisk null
+   ↓ čisté převzetí nahrávky > odmítne neplatný otisk ""
+   ↓ čisté převzetí nahrávky > odmítne neplatný otisk "sha256:kratke"
+   ↓ čisté převzetí nahrávky > odmítne neplatný otisk "sha256:GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+   ↓ čisté převzetí nahrávky > odmítne převzetí pod už uloženého vlastníka
+   ↓ obnova osiřelých nahrávek > obnoví dokončenou jednostopu bez vymyšleného systémového souboru
+   ↓ obnova osiřelých nahrávek > dvojí obnova nevytvoří dvě položky
+   ↓ obnova osiřelých nahrávek > poškozený manifest obnovu nezastaví, zůstane ležet a neprozradí název
+   ↓ obnova osiřelých nahrávek > incomplete manifest opraví do uploadovatelného sidecaru a originál zachová
+   ↓ obnova osiřelých nahrávek > jednu nulovou stopu zařadí jako chráněný raw incomplete záznam
+   ↓ obnova osiřelých nahrávek > complete manifest s jednou nulovou stopou obnoví do viditelné fronty
+   ↓ obnova osiřelých nahrávek > obě nulové stopy incomplete manifestu nechá na disku bez položky
+   ↓ obnova osiřelých nahrávek > complete stopu nad upload limitem zařadí bez čtení celého souboru
+   ↓ obnova osiřelých nahrávek > selhání zápisu obnovené položky nezamění za vadný manifest
+   ↓ obnova osiřelých nahrávek > existující sidecar přijme jen při přesně shodném bezpečném obsahu
+   ↓ perzistentní pumpa fronty > po selhání fsync adresáře znovu načte stav po dokončeném rename
+   ↓ perzistentní pumpa fronty > serializuje souběžná zařazení bez ztráty položky
+   ↓ perzistentní pumpa fronty > trvalý první pokus uloží s attempts 1 a další pumpy ho neopakují
+   ↓ perzistentní pumpa fronty > 🔴 jedna pumpa pošle víc nahrávek, ale zastaví se na první systémové chybě
+   ↓ perzistentní pumpa fronty > 🔴 pumpa řekne, KOLIK odeslala, ne jen jak dopadla poslední
+   ↓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší
+   ↓ perzistentní pumpa fronty > ruční retry vynuluje prodlevu, uloží ji a hned probudí pumpu
+   ↓ perzistentní pumpa fronty > ruční retry přeskočí vlastníka čekajícího na člověka a opravdu odešle běžnou položku
+   ↓ perzistentní pumpa fronty > renderer dostane přesný součet skutečných souborů, ne velikost odhadem z manifestu
+   ↓ perzistentní pumpa fronty > pumpa s vypnutými přepínači položku zachová bez pokusu
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/queue.test.js > trvalé uložení fronty > stale revision a zamítnutý guard nezapíšou převzetí
+AssertionError: promise resolved "{ claimed: true, item: { …(14) }, …(1) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "claimed": true,
++   "item": {
++     "attempts": 0,
++     "blockReason": "Převzatá nahrávka čeká na volbu odeslání",
++     "createdAt": null,
++     "durationMs": null,
++     "id": "9e586e55-d688-43f1-8a80-a3d61e754f3e",
++     "kind": "recording",
++     "lastFailureReason": "Převzatá nahrávka čeká na volbu odeslání",
++     "nextAttemptAt": null,
++     "ownership": "current",
++     "requiresHumanAction": true,
++     "revision": "sha256:02f8623fe630470c7074ac870208a893c9807eb6ac3d5e4cc07a2b2a0aab683f",
++     "server": {
++       "sessionId": null,
++       "tracks": {
++         "microphone": {
++           "recordingId": null,
++           "uploadedBytes": 0,
++         },
++         "system": {
++           "recordingId": null,
++           "uploadedBytes": 0,
++         },
++       },
++     },
++     "sizeBytes": null,
++     "state": "ceka",
++   },
++   "items": [
++     {
++       "attempts": 0,
++       "blockReason": "Převzatá nahrávka čeká na volbu odeslání",
++       "createdAt": null,
++       "durationMs": null,
++       "id": "9e586e55-d688-43f1-8a80-a3d61e754f3e",
++       "kind": "recording",
++       "lastFailureReason": "Převzatá nahrávka čeká na volbu odeslání",
++       "nextAttemptAt": null,
++       "ownership": "current",
++       "requiresHumanAction": true,
++       "revision": "sha256:02f8623fe630470c7074ac870208a893c9807eb6ac3d5e4cc07a2b2a0aab683f",
++       "server": {
++         "sessionId": null,
++         "tracks": {
++           "microphone": {
++             "recordingId": null,
++             "uploadedBytes": 0,
++           },
++           "system": {
++             "recordingId": null,
++             "uploadedBytes": 0,
++           },
++         },
++       },
++       "sizeBytes": null,
++       "state": "ceka",
++     },
++   ],
+  }
+
+ ❯ tests/queue.test.js:1713:10
+    1711|       await expect(store.claimRecording(queue.items[0].clientRecording…
+    1712|         guard: vi.fn(async () => true),
+    1713|       })).rejects.toThrow(/neaktuální/u);
+       |          ^
+    1714|       await expect(store.claimRecording(queue.items[0].clientRecording…
+    1715|         guard: vi.fn(async () => false),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 112 skipped (113)
+   Start at  22:10:51
+   Duration  542ms (transform 67ms, setup 11ms, collect 84ms, tests 36ms, environment 0ms, prepare 110ms)
+
+EXIT_CODE=1
+
+SABOTÁŽ 2: odstraněná kontrola aktuálního vlastníka při stejné auth generation
+PŘÍKAZ: npx vitest run tests/queue-wiring.test.js -t 'změna účtu během potvrzení se stejnou auth generation'
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-prevzeti
+
+ ❯ tests/queue-wiring.test.js (253 tests | 1 failed | 252 skipped) 103ms
+   ↓ zapojení systémových nastavení > samostatný preload výstrahy vystaví jedinou akci a volá nový kanál bez payloadu
+   ↓ zapojení systémových nastavení > výstražné okno přes vlastní kanál zapne a uloží ikonu v Docku
+   ↓ zapojení systémových nastavení > chybu zapnutí Docku předá přes skutečný handler a preload až rendereru
+   ↓ zapojení systémových nastavení > tentýž záchranný kanál odmítne panel i Nastavení bez změny Docku
+   ↓ zapojení systémových nastavení > výstražné okno ztratí nový kanál po změně URL nebo mimo hlavní rám
+   ↓ zapojení systémových nastavení > zapnutý Dock uplatní při startu před vytvořením prvního okna
+   ↓ zapojení systémových nastavení > vypnutý Dock zachová dnešní chování a skryje jej před prvním oknem
+   ↓ zapojení systémových nastavení > přepnutí Docku za běhu uloží boolean a uplatní změnu hned
+   ↓ zapojení systémových nastavení > při chybě nativní změny vrátí uloženou volbu do předchozího stavu
+   ↓ zapojení systémových nastavení > po selhání změny Docku i zápisu návratu čte skutečnou viditelnost
+   ↓ zapojení systémových nastavení > po selhání změny Docku i nativního návratu čte skutečnou viditelnost
+   ↓ zapojení systémových nastavení > mimo macOS čte volbu Docku z úložiště bez nativního API
+   ↓ zapojení systémových nastavení > uložený Dock přežije nový hlavní proces a platí už při jeho startu
+   ↓ zapojení systémových nastavení > autostart předá macOS správnou hodnotu a čte jeho skutečný stav
+   ↓ zapojení systémových nastavení > nové IPC kanály odmítnou jiný payload než právě jeden boolean
+   ↓ zapojení systémových nastavení > kliknutí na viditelnou ikonu v Docku zpřístupní už existující panel
+   ↓ zapojení systémových nastavení > preload mapuje čtyři metody na přesné kanály a setter pustí jen boolean
+   ↓ zapojení systémových nastavení > preload odmítne porušení boolean kontraktu v odpovědi hlavního procesu
+   ↓ uložený vypínač odesílání v hlavním procesu > čerstvá zabalená aplikace má odesílání vypnuté a nezapisuje výchozí volby
+   ↓ uložený vypínač odesílání v hlavním procesu > uložený vypínač přežije restart zabalené aplikace i mezilehlou změnu Docku
+   ↓ uložený vypínač odesílání v hlavním procesu > uloženou volbu true přebije prostředí "false" na false i po zápisu
+   ↓ uložený vypínač odesílání v hlavním procesu > uloženou volbu false přebije prostředí "true" na true i po zápisu
+   ↓ uložený vypínač odesílání v hlavním procesu > uloženou volbu true přebije prostředí "" na false i po zápisu
+   ↓ uložený vypínač odesílání v hlavním procesu > uloženou volbu true přebije prostředí "TRUE" na false i po zápisu
+   ↓ uložený vypínač odesílání v hlavním procesu > uloženou volbu true přebije prostředí "1" na false i po zápisu
+   ↓ uložený vypínač odesílání v hlavním procesu > uloženou volbu true přebije prostředí "true " na false i po zápisu
+   ↓ uložený vypínač odesílání v hlavním procesu > poškozený soubor {rozbitý JSON nezapne vypínač ani neshodí start
+   ↓ uložený vypínač odesílání v hlavním procesu > poškozený soubor {"schemaVersion":1,"uploadEnabled":"true"} nezapne vypínač ani neshodí start
+   ↓ uložený vypínač odesílání v hlavním procesu > IPC zápis se projeví v pumpě, opakování i soupisu jediné instance fronty
+   ↓ uložený vypínač odesílání v hlavním procesu > IPC odmítne cizí okno, podřízený rám, neplatný boolean i argumenty navíc
+   ↓ uložený vypínač odesílání v hlavním procesu > preload vystaví úzké booleanské kanály a odmítne vadné vstupy i odpovědi
+   ↓ kopírování probíhající přihlašovací adresy > panel zkopíruje právě probíhající adresu ze stavu hlavního procesu
+   ↓ kopírování probíhající přihlašovací adresy > bez probíhající nebo s cizí adresou nic nezmění a vrátí neúspěch
+   ↓ kopírování probíhající přihlašovací adresy > odmítne cizího odesílatele i textový payload a preload žádný text neposílá
+   ↓ kopírování probíhající přihlašovací adresy > chybu nativní schránky vrátí bez zapsání citlivé adresy do logu
+   ↓ zjištění uložené OAuth session > starou mcp:read relaci zachová pro bezpečný přepis, ale nepustí ji do upload identity
+   ↓ zjištění uložené OAuth session > nový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů
+   ↓ zjištění uložené OAuth session > vypršelá relace přes skutečné IPC ukáže vypršení v obou oknech a zůstane na disku
+   ↓ zjištění uložené OAuth session > hlavní proces vrací pro chybějící, platnou a poškozenou session jen boolean
+   ↓ zjištění uložené OAuth session > při nedostupném bezpečném úložišti selže zavřeně
+   ↓ zjištění uložené OAuth session > kanál odmítne jiné okno stejným validačním wrapperem jako ostatní
+   ↓ zjištění uložené OAuth session > během souběžného odhlášení počká na stabilní výsledek
+   ↓ zjištění uložené OAuth session > stav session odmítne payload a session z jiného prostředí
+   ↓ zjištění uložené OAuth session > přepne prostředí a odhlásí jako jediný stabilní přechod
+   ↓ zjištění uložené OAuth session > atomické přepnutí odmítne cizí okno i neplatný payload před logoutem
+   ↓ zjištění uložené OAuth session > neúspěšný atomický logout ponechá prostředí i stabilní session
+   ↓ zjištění uložené OAuth session > po lokálním odhlášení a chybě zápisu originu vrátí pravdivý stav a probudí panel
+   ↓ zjištění uložené OAuth session > rozpracované čtení po neúspěšném odhlášení vrátí stabilní true
+   ↓ zjištění uložené OAuth session > preload volá getter bez argumentů a odpověď nijak nerozšiřuje
+   ↓ zjištění uložené OAuth session > každý pokus o odhlášení pozastaví panel a po výsledku ho znovu probudí
+   ↓ zjištění uložené OAuth session > preload předá bezdatové probuzení a po odhlášení odběratele jej odstraní
+   ↓ zjištění uložené OAuth session > kanál identity vrátí nastavení jen jméno a e-mail z platné šifrované session
+   ↓ zjištění uložené OAuth session > kanál identity rozliší chybějící session, chybějící jméno a nečitelnou identitu
+   ↓ zjištění uložené OAuth session > origin vrací validovanou konfiguraci a identitu nespojí se session jiného originu
+   ↓ zjištění uložené OAuth session > uložené labs přežije restart hlavního procesu
+   ↓ zjištění uložené OAuth session > kanál odmítne cizí HTTPS origin a prostředí nezmění
+   ↓ zjištění uložené OAuth session > kanál odmítne labs s cestou a prostředí nezmění
+   ↓ zjištění uložené OAuth session > kanál odmítne labs s lomítkem a prostředí nezmění
+   ↓ zjištění uložené OAuth session > kanál odmítne holý hostname a prostředí nezmění
+   ↓ zjištění uložené OAuth session > kanál odmítne číslo a prostředí nezmění
+   ↓ zjištění uložené OAuth session > kanál odmítne null a prostředí nezmění
+   ↓ zjištění uložené OAuth session > kanál odmítne chybějící hodnota a prostředí nezmění
+   ↓ zjištění uložené OAuth session > kanál odmítne argument navíc a prostředí nezmění
+   ↓ zjištění uložené OAuth session > kanál změny prostředí přijme jen okno settings
+   ↓ zjištění uložené OAuth session > kanál změnu odmítne, dokud auth:logout neodstraní uloženou session
+   ↓ zjištění uložené OAuth session > přímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+   ↓ zjištění uložené OAuth session > souběžný neúspěšný logout nesmí změně prostředí skrýt uloženou session
+   ↓ zjištění uložené OAuth session > během rozpracované změny prostředí nelze zahájit novou aktivitu
+   ↓ zjištění uložené OAuth session > LUDONE_ORIGIN má přednost, ale uloženou volbu nepřepíše
+   ↓ zjištění uložené OAuth session > stejná instance fronty použije po přepnutí nový efektivní origin
+   ↓ zjištění uložené OAuth session > změnu prostředí odmítne, dokud dobíhá upload, a ponechá jediný store
+   ↓ zjištění uložené OAuth session > produkční adaptér předá upload klientu callback pro durable serverový postup
+   ↓ zjištění uložené OAuth session > změnu prostředí odmítne, dokud handover drží původní origin
+   ↓ zjištění uložené OAuth session > preload předá identity a origin přes oddělené bezargumentové kanály
+   ↓ zjištění uložené OAuth session > preload atomické přepnutí validuje a z odpovědi propustí jen veřejná pole
+   ↓ zjištění uložené OAuth session > preload cizí origin odmítne ještě před IPC
+   ↓ výška panelu podle obsahu > výšku pod rozumným minimem ořízne na 180 bodů a šířku nechá 366
+   ↓ výška panelu podle obsahu > výšku nad monitorem ořízne pod spodní hranu pracovní plochy
+   ↓ výška panelu podle obsahu > po skutečné změně výšky panel znovu přilepí pod ikonu
+   ↓ výška panelu podle obsahu > po změně parametrů monitoru hned omezí a pak obnoví přirozenou výšku
+   ↓ výška panelu podle obsahu > stejná výška podruhé nespustí další změnu ani přepozicování
+   ↓ výška panelu podle obsahu > kanál přijme právě jednu konečnou číselnou výšku
+   ↓ výška panelu podle obsahu > preload posílá hlavnímu procesu pouze číslo
+   ↓ výška panelu podle obsahu > preload nečíselnou výšku do IPC vůbec neodešle
+   ↓ výška panelu podle obsahu > preload čte stav oprávnění samostatným read-only kanálem
+   ↓ šablonové ikony v liště > neutrální stav použije šablonový obraz a při změně motivu ho nepřepíná
+   ↓ šablonové ikony v liště > aktivní stav tracking použije šablonu se stejnými bajty v obou motivech
+   ↓ šablonové ikony v liště > aktivní stav recording použije šablonu se stejnými bajty v obou motivech
+   ↓ šablonové ikony v liště > aktivní stav recording-tracking použije šablonu se stejnými bajty v obou motivech
+   ↓ šablonové ikony v liště > aktivní stav recording-audio-lost použije šablonu se stejnými bajty v obou motivech
+   ↓ šablonové ikony v liště > aktivní stav recording-microphone-only použije šablonu se stejnými bajty v obou motivech
+   ↓ viditelnost ikony a klikání na lištu > u stavu naměřená položka ve výřezu vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu tatáž položka na displeji bez výřezu vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu displej bez výřezu se spodním Dockem vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu položka odsunutá vlevo před 45 % šířky vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu položka napravo od původní hranice při Docku vlevo vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu naměřená poloha na displeji s posunutým počátkem vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu položka v pravé části lišty na displeji s výřezem vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu vysoká lišta externího displeje vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu položka s nesmyslnou výškou přesahující lištu vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu položka odsunutá vlevo, ale mimo horní lištu vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu nesmyslné rozměry displeje vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > u stavu chybějící rozměry displeje vytvoří očekávaný počet oken
+   ↓ viditelnost ikony a klikání na lištu > geometrii vztáhne k displeji odpovídajícímu položce, ne k primárnímu
+   ↓ viditelnost ikony a klikání na lištu > počká na ustálení a u pravděpodobně nevykreslené ikony ukáže varování bez fokusu
+   ↓ viditelnost ikony a klikání na lištu > varuje i těsně vlevo od přesné hranice 45 %
+   ↓ viditelnost ikony a klikání na lištu > u stavu ikona vpravo mlčí
+   ↓ viditelnost ikony a klikání na lištu > u stavu přesně na konzervativní hranici mlčí
+   ↓ viditelnost ikony a klikání na lištu > u stavu nulová šířka mlčí
+   ↓ viditelnost ikony a klikání na lištu > u stavu nezjistitelné rozměry mlčí
+   ↓ viditelnost ikony a klikání na lištu > při výjimce z tray.getBounds zaloguje důvod a vrátí se bez varovného okna
+   ↓ viditelnost ikony a klikání na lištu > při výjimce z screen.getDisplayMatching zaloguje důvod a vrátí se bez varovného okna
+   ↓ viditelnost ikony a klikání na lištu > varuje nejvýš jednou za spuštění i po zavření okna
+   ↓ viditelnost ikony a klikání na lištu > pravý klik otevře schválené popup menu a panel nechá být
+   ↓ viditelnost ikony a klikání na lištu > Spustit LuTrack povolí až po připraveném panelu a běžnou rychlou cestu zachová
+   ↓ viditelnost ikony a klikání na lištu > opožděný report během změny session rychlou akci neoživí
+   ↓ viditelnost ikony a klikání na lištu > běžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů
+   ↓ viditelnost ikony a klikání na lištu > rychlé akce předá panelu jediným validovaným kanálem i před jeho odběrem
+   ↓ viditelnost ikony a klikání na lištu > čekající rychlou akci nepřenese do nové generace rendereru
+   ↓ viditelnost ikony a klikání na lištu > preload po registraci vyzvedne i dříve čekající rychlé akce
+   ↓ viditelnost ikony a klikání na lištu > preload po výjimce prvního příkazu doručí druhý i třetí s rozestupy a vyzvedne další dávku
+   ↓ viditelnost ikony a klikání na lištu > levý klik dál otevře a napozicuje panel, nikoli kontextové menu
+   ↓ průběžný titulek lišty > bez běžící aktivity nechá vedle ikony prázdný text a nezaloží interval
+   ↓ průběžný titulek lišty > při nahrávání ukazuje rostoucí čas přesně ve tvaru panelového formatElapsed
+   ↓ průběžný titulek lišty > výpadek zvuku změní stav, zachová čas, odmítne ne-boolean a po obnově vrátí nahrávání
+   ↓ průběžný titulek lišty > boolean výpadku nevytvoří systémovou stopu v nahrávání jen s mikrofonem
+   ↓ průběžný titulek lišty > při LuTracku ukazuje čas od náběžné hrany faktu z dnešního rendereru
+   ↓ průběžný titulek lišty > posun hodin zpět nesmí do lišty napsat záporný čas
+   ↓ průběžný titulek lišty > při souběhu ukazuje oba časy a po konci nahrávání jediný čas LuTracku
+   ↓ průběžný titulek lišty > dlouhý souběh zůstane jednoznačný a nepřekročí třináct znaků
+   ↓ průběžný titulek lišty > po zastavení nahrávání titulek vyprázdní a interval zruší
+   ↓ průběžný titulek lišty > při nezměněném textu setTitle znovu nevolá
+   ↓ průběžný titulek lišty > při ukončení aplikace timer uklidí a už jej znovu nezaloží
+   ↓ produkční zapojení odchozí fronty > hlavní proces načítá modul fronty ze src/lib
+   ↓ produkční zapojení odchozí fronty > dokončení nahrávky zařazuje do fronty
+   ↓ produkční zapojení odchozí fronty > po startu aplikace proběhne pumpa produkční fronty bez testového override
+   ↓ produkční zapojení odchozí fronty > vypnutý killswitch upload klienta ani nevytvoří, ani nespustí
+   ↓ produkční zapojení odchozí fronty > preload vystavuje validační kanály fronty
+   ↓ produkční zapojení odchozí fronty > preload převzetí propustí jen jako GUID a revizi
+   ↓ produkční zapojení odchozí fronty > pojmenování přes preload předá časování, GUID i název na přesné IPC kanály
+   ↓ produkční zapojení odchozí fronty > preload předá potvrzení ztráty stereo exportu jen jeho úzkému IPC kanálu
+   ↓ produkční zapojení odchozí fronty > preload předá hlavnímu procesu přesný seznam vznikajících stop
+   ↓ produkční zapojení odchozí fronty > IPC fronty používá předepsané role odesílatele
+   ↓ produkční zapojení odchozí fronty > potvrzené převzetí získá vlastníka z platné session, ověří guard a nevolá server
+   ↓ produkční zapojení odchozí fronty > zrušení dialogu a cizí IPC odesílatel nezpůsobí převzetí
+   ↓ produkční zapojení odchozí fronty > převzetí s chybějící nebo expirovanou session odmítne bez obnovy a bez dialogu
+   × produkční zapojení odchozí fronty > změna účtu během potvrzení se stejnou auth generation nezapíše převzetí 101ms
+     → expected [Function] to throw error matching /během potvrzení změnil/u but got 'Cannot read properties of undefined (…'
+   ↓ produkční zapojení odchozí fronty > IPC převzetí odmítne neplatný payload i argument navíc před dialogem
+   ↓ produkční zapojení odchozí fronty > stale snímek a nahrávku aktuálního vlastníka odmítne ještě před dialogem
+   ↓ produkční zapojení odchozí fronty > navigaci okna během čekání na serializovaný claim odmítne jeho vnitřní guard
+   ↓ produkční zapojení odchozí fronty > queue:list označí vypnuté odesílání podle druhu položky a fail-closed prostředí
+   ↓ produkční zapojení odchozí fronty > zaregistrované dokončení nahrávky ji zpřístupní přes queue:list
+   ↓ produkční zapojení odchozí fronty > čekající položku z vlastního store promítne do lišty, když nic neběží
+   ↓ produkční zapojení odchozí fronty > persistovanou čekající frontu ukáže už před dlouhou obnovou při startu
+   ↓ produkční zapojení odchozí fronty > vlastník nahrávky se otiskne ze session při jejím začátku bez čitelného e-mailu
+   ↓ produkční zapojení odchozí fronty > odhlášeně začatou nahrávku nepřivlastní session, která vznikne před dokončením
+   ↓ produkční zapojení odchozí fronty > jednostopá session vytvoří jen mikrofonní originál, projde frontou i exportem
+   ↓ produkční zapojení odchozí fronty > odmítne 'prázdnou session' ještě před vytvořením souborů
+   ↓ produkční zapojení odchozí fronty > odmítne 'session bez mikrofonu' ještě před vytvořením souborů
+   ↓ produkční zapojení odchozí fronty > odmítne 'neznámý zdroj' ještě před vytvořením souborů
+   ↓ produkční zapojení odchozí fronty > selhání zápisu fronty není rendereru hlášeno jako úspěch
+   ↓ produkční zapojení odchozí fronty > start obnoví osiřelý manifest do perzistentní fronty
+   ↓ produkční zapojení odchozí fronty > 🔴 z logu pumpy jde poznat, KOLIK se odeslalo
+   ↓ produkční zapojení odchozí fronty > 🔴 instance bez zámku nesmí sáhnout na frontu
+   ↓ produkční zapojení odchozí fronty > čekající obnova nezdrží vytvoření ikony, panelu ani dokončení startu
+   ↓ produkční zapojení odchozí fronty > nové nahrávání počká na obnovu a nemůže se stát jejím falešným sirotkem
+   ↓ produkční zapojení odchozí fronty > nové nahrávání neprojde ani v okně mezi panelem a dokončením retence
+   ↓ produkční zapojení odchozí fronty > nahrávání čekající na obnovu se po zahájeném quitu už nerozběhne
+   ↓ produkční zapojení odchozí fronty > prošlý access token neposkytne uploadu jako platný kontext
+   ↓ produkční zapojení odchozí fronty > úspěšné nové přihlášení znovu probudí pozastavenou frontu
+   ↓ produkční zapojení odchozí fronty > pojmenování použije pro handover uložený labs origin a jeden stereo soubor
+   ↓ produkční zapojení odchozí fronty > chyba pojmenovaného exportu nezapíše název schůzky do logu
+   ↓ produkční zapojení odchozí fronty > start aplikace zavolá pumpu fronty právě jednou
+   ↓ produkční zapojení odchozí fronty > po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+   ↓ produkční zapojení odchozí fronty > selhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+   ↓ produkční zapojení odchozí fronty > při DESKTOP_TIME_ENABLED=undefined nezařadí žádný časový záznam
+   ↓ produkční zapojení odchozí fronty > při DESKTOP_TIME_ENABLED=false nezařadí žádný časový záznam
+   ↓ produkční zapojení odchozí fronty > při DESKTOP_TIME_ENABLED=1 nezařadí žádný časový záznam
+   ↓ produkční zapojení odchozí fronty > při startu použije uložený sedmidenní výběr a odstraní starou odeslanou kopii
+   ↓ produkční zapojení odchozí fronty > retenční log nezveřejní cestu ani název schůzky
+   ↓ produkční zapojení odchozí fronty > při startu čeká s retenčním čtením na skutečné dokončení loadFile
+   ↓ produkční zapojení odchozí fronty > při chybě načtení pokračuje start bez čtení a bez mazání
+   ↓ produkční zapojení odchozí fronty > při zavření okna pokračuje start bez čtení a bez mazání
+   ↓ produkční zapojení odchozí fronty > při zničení rendereru pokračuje start bez čtení a bez mazání
+   ↓ produkční zapojení odchozí fronty > po pěti sekundách ukončí čekání na nenačtené okno fail-closed
+   ↓ produkční zapojení odchozí fronty > po jedné sekundě ukončí neodpovídající čtení rendereru fail-closed
+   ↓ produkční zapojení odchozí fronty > po změně dokumentu během čtení zachová data fail-closed
+   ↓ produkční zapojení odchozí fronty > chybějící politika retence nesmaže žádná data
+   ↓ produkční zapojení odchozí fronty > nečitelná politika retence nesmaže žádná data
+   ↓ produkční zapojení odchozí fronty > nedostupná politika retence nesmaže žádná data
+   ↓ produkční zapojení odchozí fronty > neznámá politika retence nesmaže žádná data
+   ↓ produkční zapojení odchozí fronty > selhání načtení retenční fronty nezastaví start ani její pumpu
+   ↓ produkční zapojení odchozí fronty > store fronty se nezpřístupní, dokud startupová retence nedokončí zápis
+   ↓ výslovná volba stránky přes exportní IPC > 501 jednotek přes preload odmítne, zachová soubory a po opravě export zopakuje
+   ↓ výslovná volba stránky přes exportní IPC > přenese openUploadPage=false přes skutečný preload až ke kopii
+   ↓ výslovná volba stránky přes exportní IPC > přenese openUploadPage=true přes skutečný preload až ke kopii
+   ↓ výslovná volba stránky přes exportní IPC > odmítne neplatnou nebo chybějící volbu undefined bez vedlejších účinků
+   ↓ výslovná volba stránky přes exportní IPC > odmítne neplatnou nebo chybějící volbu "Starý název" bez vedlejších účinků
+   ↓ výslovná volba stránky přes exportní IPC > odmítne neplatnou nebo chybějící volbu {} bez vedlejších účinků
+   ↓ výslovná volba stránky přes exportní IPC > odmítne neplatnou nebo chybějící volbu {"openUploadPage":"false"} bez vedlejších účinků
+   ↓ výslovná volba stránky přes exportní IPC > odmítne neplatnou nebo chybějící volbu {"openUploadPage":null} bez vedlejších účinků
+   ↓ výslovná volba stránky přes exportní IPC > Jen uložit dokončí i odložený quit bez otevření prohlížeče
+   ↓ soukromí chyb stereo exportu > systémová chyba s cestou neukáže v panelu cestu, příponu ani název schůzky
+   ↓ soukromí chyb stereo exportu > vlastní chyba o probíhajícím exportu projde beze změny
+   ↓ soukromí chyb stereo exportu > odmítnutý souběžný export nesmí uvolnit ten první
+   ↓ soukromí chyb stereo exportu > každá vrácená hláška končí ujištěním o zachovaných stopách
+   ↓ soukromí chyb stereo exportu > do logu zapíše jen kód systémové chyby, nikdy její syrovou zprávu
+   ↓ bezpečné ukončení aplikace > quit i updater odvozují veškerou blokaci nahrávání z jednoho predikátu
+   ↓ bezpečné ukončení aplikace > quit počká na potvrzení názvu a připraveného stereo exportu
+   ↓ bezpečné ukončení aplikace > quit timeout neodpojí pojmenování zahájené před dokončením stereo exportu
+   ↓ bezpečné ukončení aplikace > při nahrávání odloží quit, čistě dokončí session a zachová její data
+   ↓ bezpečné ukončení aplikace > po 15 sekundách nedokončeného zastavení quit přesto vynutí a hlasitě zaloguje
+   ↓ bezpečné ukončení aplikace > bez nahrávání a LuTracku nechá quit proběhnout okamžitě
+   ↓ bezpečné ukončení aplikace > před quitem čistě zastaví i LuTrack v hlavním procesu
+   ↓ bezpečné ukončení aplikace > odloží quit vyvolaný až během lokálního enqueue dokončené nahrávky
+   ↓ bezpečné ukončení aplikace > při ENOSPC během quitu nechá renderer zobrazit chybu před druhým potvrzením
+   ↓ bezpečné ukončení aplikace > selhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+   ↓ bezpečné ukončení aplikace > počká na rozpracovaný start LuTracku a pak jej čistě zastaví
+   ↓ bezpečné ukončení aplikace > neočekávaný výsledek zastavení LuTracku vynutí quit a hlasitě jej zaloguje
+   ↓ bezpečné ukončení aplikace > neúspěšnou stereo finalizaci během quitu ukáže a čeká na výslovné potvrzení
+   ↓ bezpečné ukončení aplikace > po pozdním potvrzení znovu použije graceful timeout pro jinou visící agendu
+   ↓ bezpečné ukončení aplikace > neúspěšná stereo finalizace mimo quit zachová dosavadní chování
+   ↓ bezpečné ukončení aplikace > chyba stereo exportu nesmí přerušit dosud běžící zápis fronty
+   ↓ bezpečné ukončení aplikace > chyba finálního manifestu zachová stereo a nezamkne budoucí quit
+   ↓ bezpečné ukončení aplikace > pád vlastníka uvolní export až po finalizaci a nejistý stereo soubor zachová
+   ↓ produkční zapojení automatických aktualizací > zkontroluje vydání po startu a znovu po šesti hodinách
+   ↓ produkční zapojení automatických aktualizací > restart počká i na pojmenování a export uložené nahrávky
+   ↓ produkční zapojení automatických aktualizací > běžící LuTrack odloží restart a po zastavení jej uplatní
+   ↓ produkční zapojení automatických aktualizací > odloží restart i pro LuTrack hlášený současným panelem
+   ↓ produkční zapojení automatických aktualizací > počká i na právě zapisovaný start LuTracku
+   ↓ produkční zapojení automatických aktualizací > nepřehlédne LuTrack spuštěný až během kontroly odchozí fronty
+   ↓ produkční zapojení automatických aktualizací > čeká po finalizaci nahrávky na serializační bariéru fronty
+   ↓ produkční zapojení automatických aktualizací > bez aktivity uplatní staženou aktualizaci právě jednou
+   ↓ produkční zapojení automatických aktualizací > při předání instalace dovolí zavřít panel a nepřijme novou aktivitu
+   ↓ produkční zapojení automatických aktualizací > ošetří odmítnutí downloadPromise bez nezachycené chyby
+   ↓ produkční zapojení automatických aktualizací > po asynchronní chybě instalace bezpečně dovolí další pokus
+   ↓ produkční zapojení automatických aktualizací > v zabaleném E2E běhu updater vůbec nespustí
+   ↓ selhání otevření prohlížeče z menu lišty > když prohlížeč nejde otevřít, řekne to dialogem a nabídne adresu
+   ↓ selhání otevření prohlížeče z menu lišty > když se prohlížeč otevře, žádný dialog nevyskočí
+   ↓ plošná pojistka nad každým webContents > zakáže navigaci mimo vlastní dokumenty a vlastní pustí
+   ↓ plošná pojistka nad každým webContents > nové okno nikdy neotevře; https pošle do systémového prohlížeče
+   ↓ plošná pojistka nad každým webContents > odmítne připojení <webview>
+   ↓ viditelnost automatických aktualizací v panelu > verze je přítomná bez interakce (dokončený onboarding: true)
+   ↓ viditelnost automatických aktualizací v panelu > verze je přítomná bez interakce (dokončený onboarding: false)
+   ↓ viditelnost automatických aktualizací v panelu > dostupnost a skutečný průběh projdou z updater události přes IPC do živého panelu
+   ↓ viditelnost automatických aktualizací v panelu > opožděný počáteční snapshot nepřepíše novější událost o dostupné verzi
+   ↓ viditelnost automatických aktualizací v panelu > stažení doručí verzi do živého panelu a recording dál blokuje instalaci
+   ↓ viditelnost automatických aktualizací v panelu > stažení doručí verzi do živého panelu a tracking dál blokuje instalaci
+   ↓ viditelnost automatických aktualizací v panelu > panel otevřený až po stažení vyzvedne uložený stav přes preload
+   ↓ viditelnost automatických aktualizací v panelu > jedna ani dvě chyby nevarují; třetí varuje a úspěch hlášku i počítadlo vynuluje
+   ↓ viditelnost automatických aktualizací v panelu > jednotlivé chyby oddělené úspěchem se nesčítají
+   ↓ viditelnost automatických aktualizací v panelu > opakované odmítnutí downloadPromise se také dostane do panelu
+   ↓ viditelnost automatických aktualizací v panelu > aktualizační IPC odmítne cizí frame i neočekávaný payload
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/queue-wiring.test.js > produkční zapojení odchozí fronty > změna účtu během potvrzení se stejnou auth generation nezapíše převzetí
+AssertionError: expected [Function] to throw error matching /během potvrzení změnil/u but got 'Cannot read properties of undefined (…'
+
+- Expected: 
+/během potvrzení změnil/u
+
++ Received: 
+"Cannot read properties of undefined (reading 'items')"
+
+ ❯ tests/queue-wiring.test.js:4168:5
+    4166|     finishDialog({ response: 1 });
+    4167| 
+    4168|     await expect(result).rejects.toThrow(/během potvrzení změnil/u);
+       |     ^
+    4169|     expect(claimRecording).not.toHaveBeenCalled();
+    4170|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 252 skipped (253)
+   Start at  22:11:19
+   Duration  1.52s (transform 260ms, setup 12ms, collect 978ms, tests 103ms, environment 0ms, prepare 65ms)
+
+EXIT_CODE=1

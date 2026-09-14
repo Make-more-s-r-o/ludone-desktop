@@ -576,13 +576,21 @@ zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 |---|---|---|---|
 | T0 — rozšířit povrch fronty | 🔵 hotovo ve větvi | `7edb09a` | Bezpečná projekce nese `createdAt`, `durationMs`, skutečnou `sizeBytes`, per-stopový `server` a `blockReason`; chybějící data jsou `null`, ne odhad. |
 | T1 — uložit `recordingId` | 🔵 hotovo ve větvi | `3ca71da` | `recordingId` a bajty se ukládají per stopu, společné `sessionId` do fronty. INIT se fsyncuje před dalším HTTP krokem; restart i částečný úspěch jsou pokryté mocked E2E testy nad `outgoing.json`. |
-| T2 — převzetí nahrávky | ⬜ nezačato | — | **odblokuje tři čekající nahrávky**; past P6 |
+| T2 — převzetí nahrávky | 🔵 hotovo ve větvi | commit doplní koordinátor | Jednotlivé převzetí používá revizi položky, aktuální lokální auth identitu a dvojitou generační/owner/sender kontrolu. Native dialog ukazuje datum a krátké ID. Projekce rozlišuje `unknown/current/other/unavailable`; převzatá položka zůstane lokálně držená a sama se neodešle. |
 | T3 — datová vrstva dashboardu | ⬜ nezačato | — | guard odesílatele povinný |
 | T4 — ověření proti serveru | ⬜ nezačato | — | závisí na T1; rozpočet dotazů |
 | T5 — zbylé akce a UI | ⬜ nezačato | — | rozhodnout šířku okna a kolizi se „Záznamy" |
 | T6 — vydání verze | 🔵 rozpracováno | `5094cce`, `de1bea4`, `d27eb25`, `c275523`, `5a7a1ab` | cesta i verze `0.1.2` jsou připravené; čeká nastavení SSH konfigurace, potvrzení zálohy klíče, Danův tag a ostrý test |
 
 Značky: ⬜ nezačato · 🔵 rozpracováno · ✅ hotovo a mergnuto · 🔴 zablokováno (napiš čím).
+
+### T2 — integrační poznámka pro T5
+
+Převzetí nastaví bezpečný lokální hold přes `requiresHumanAction` a důvod „Převzatá nahrávka
+čeká na volbu odeslání“. T5 musí přidat výslovné rozhodnutí o uploadu (`held` → schváleno);
+samotné převzetí vlastnictví nesmí tento hold odstranit ani spustit pumpu. Malé okno Nastavení
+zůstalo 448 × 676 bodů, protože pět záložek i kompaktní seznam se do něj vejdou bez změny
+rozměrů.
 
 ### Auth packaged aplikace — větev `fix/nahravky-prihlaseni`
 

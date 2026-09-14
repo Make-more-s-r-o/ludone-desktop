@@ -1,0 +1,14 @@
+OBNOVENÝ KÓD: legitimní převzetí, cizí IPC odesílatel a zrušení dialogu
+PŘÍKAZ: npx vitest run tests/queue.test.js tests/queue-wiring.test.js -t 'potvrzené převzetí změní jedinou|potvrzené převzetí získá|zrušení dialogu'
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-prevzeti
+
+ ✓ tests/queue.test.js (113 tests | 112 skipped) 47ms
+ ✓ tests/queue-wiring.test.js (253 tests | 251 skipped) 67ms
+
+ Test Files  2 passed (2)
+      Tests  3 passed | 363 skipped (366)
+   Start at  22:11:46
+   Duration  1.51s (transform 324ms, setup 21ms, collect 1.27s, tests 113ms, environment 0ms, prepare 184ms)
+
+EXIT_CODE=0

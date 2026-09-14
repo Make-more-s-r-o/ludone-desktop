@@ -340,6 +340,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "panel:set-content-height",
       "permission:request",
       "permission:status",
+      "queue:claim-recording",
       "queue:list",
       "queue:retry",
       "recording:append",
