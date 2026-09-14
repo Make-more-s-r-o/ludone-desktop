@@ -581,9 +581,32 @@ zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 | T3 — datová vrstva dashboardu | ⬜ nezačato | — | guard odesílatele povinný |
 | T4 — ověření proti serveru | ⬜ nezačato | — | závisí na T1; rozpočet dotazů |
 | T5 — zbylé akce a UI | ⬜ nezačato | — | rozhodnout šířku okna a kolizi se „Záznamy" |
-| T6 — vydání verze | ⬜ nezačato | — | blokuje otázka na Dana, sekce 11 |
+| T6 — vydání verze | 🔵 rozpracováno | `5094cce`, `de1bea4`, `d27eb25`, `c275523`, `5a7a1ab` | cesta i verze `0.1.2` jsou připravené; čeká nastavení SSH konfigurace, potvrzení zálohy klíče, Danův tag a ostrý test |
 
 Značky: ⬜ nezačato · 🔵 rozpracováno · ✅ hotovo a mergnuto · 🔴 zablokováno (napiš čím).
+
+### T6 — kde práce skončila 14. 9. 2026
+
+Read-only dohledání v `LuDone/DAN-TODO.md:1311–1318,15643–15655` našlo dříve zvolený
+transport: `scp` stávajícím klíčem. Živý vhost dnes čte provizorní adresář
+`/opt/makemore-data/nginx/hub/stahnout/desktop/`; původně navržená cesta
+`/opt/makemore-data/stahnout/desktop/` nevznikla. Workflow proto přijímá cílovou cestu
+výslovně přes `DOWNLOAD_SSH_PATH` a žádnou si tiše nedosazuje.
+
+Release workflow je připravený v commitech `5094cce`, `de1bea4`, `d27eb25` a `c275523`:
+vyrobí metadata a blockmapy,
+ověří jejich velikosti a hashe, zkontroluje skutečný Developer ID podpis, stapling a Gatekeeper,
+uloží sadu do GitHub Actions ke kontrole a teprve potom ji přenese do dočasného adresáře.
+Na serveru znovu ověří SHA-256, přesune verzované soubory a `latest-mac.yml` zveřejní poslední
+atomickým přejmenováním. Připnutý `known_hosts` je povinný; `ssh-keyscan` se nepoužívá.
+
+🟡 **T6 není hotové ani vydané.** Pět Apple secrets sice podle dřívějšího měření existuje,
+ale v repozitáři není doložené, že `.p12` má zálohu ve firemním správci hesel. Workflow se proto
+zastaví před prvním použitím klíče, dokud není repo variable
+`MAC_SIGNING_KEY_BACKUP_CONFIRMED=true`. Verze je v commitu `5a7a1ab` koordinovaně zvýšená
+z `0.1.1` na `0.1.2`. Dále čeká vytvoření SSH variables/secrets podle
+[`T6-VYDANI.md`](T6-VYDANI.md), Danův tag a ostrý test instalace i aktualizace. Aktuální
+`0.1.1` už na feedu leží; stejnou verzi s jiným obsahem workflow odmítne přepsat.
 
 ### ❓ Otevřená otázka na Dana (zeptej se hned, ale neblokuj tím práci)
 
