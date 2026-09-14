@@ -55,7 +55,7 @@ Platný `Retry-After` má přednost. Když chybí nebo je neplatný, použij př
 
 ### Perzistentní cooldown vlastníka
 
-Rozšiř existující `outgoing.json` o volitelné top-level pole `uploadCooldowns: [{ ownerFingerprint, retryAt }]`. Vše zůstává pod existující safe HMAC integritou. Validuj tvar, fingerprint i timestamp fail-closed; vadný záznam nesmí být potichu zahozen ani nahrazen prázdnou hodnotou. Expirované záznamy ukliď až uvnitř atomické store mutace, ne při read-only čtení.
+Rozšiř existující `outgoing.json` o volitelné top-level pole `uploadCooldowns: [{ ownerFingerprint, retryAt }]`. Vlastníka určuje existující HMAC fingerprint; soubor fronty tím není kryptograficky podepsaný. Validuj tvar, fingerprint i timestamp fail-closed; vadný záznam nesmí být potichu zahozen ani nahrazen prázdnou hodnotou. Expirované záznamy ukliď až uvnitř atomické store mutace, ne při read-only čtení.
 
 Udržuj současně cooldowny více vlastníků. Logout, claim ani retry cooldown nemažou. Návrat ownera A po práci ownera B musí dál respektovat dosud platný blok A.
 
@@ -63,7 +63,7 @@ Store `pump` i `retry` přijmou current owner. Před každým send a před ručn
 
 ### Zapojení main procesu
 
-Všechny existující vstupy pumpy po restartu, loginu a dalších lifecycle událostech i ruční `queue:retry` předají store právě platný current owner stejným způsobem. Bez platného ownera nic neposílej ani neresetuj. Nepřidávej nový auth flow, IPC kanál, UI nebo timer; cooldown se vyhodnotí při existujícím vstupu.
+Všechny existující vstupy pumpy po restartu, loginu a dalších lifecycle událostech i ruční `queue:retry` předají store právě platný current owner stejným způsobem. Bez platného ownera nahrávky neposílej ani neresetuj. Nové omezení je pro nahrávky; zachovej existující chování časových položek a jejich oddělený killswitch. Nepřidávej nový auth flow, IPC kanál, UI nebo timer; cooldown se vyhodnotí při existujícím vstupu.
 
 ## Akceptace
 

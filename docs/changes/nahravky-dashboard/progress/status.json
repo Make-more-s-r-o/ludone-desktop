@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:10:54.471Z",
+    "updatedAt": "2026-09-14T20:14:30.740Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -236,7 +236,7 @@
       "state": "pending",
       "attempts": 0,
       "deps": [
-        "T-03"
+        "T-R1"
       ],
       "packet": "tasks/T-04.md"
     },
@@ -268,9 +268,9 @@
       "state": "pending",
       "attempts": 0,
       "deps": [
-        "T-02"
+        "T-03"
       ],
-      "packet": "ZADANI-PRO-CODEX.md"
+      "packet": "tasks/T-R1.md"
     },
     {
       "id": "T-06",
@@ -284,6 +284,10 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:14:30.740Z",
+      "text": "Převzat packet trvalého 429 cooldownu. Kvůli společné frontě bude implementace pokračovat postupně T-03 → T-R1 → T-04."
+    },
     {
       "at": "2026-09-14T20:10:54.471Z",
       "text": "Packet T-04 je převzatý; příprava ověření na serveru zachovává limity i po novém přihlášení. Rozpracovaná implementace je v draft PR #141."

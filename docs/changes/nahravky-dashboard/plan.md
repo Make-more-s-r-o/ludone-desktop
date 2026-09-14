@@ -46,10 +46,10 @@ Desktop už nahrává a obsahuje upload klienta, ale uživatelská cesta z Finde
 | T-01 | NRD-01 | Sol fronta | T-00 | Per-track ID/session přežijí částečný úspěch a restart. |
 | T-02 | NRD-02 | Sol převzetí | T-01 | Platná identita, potvrzení, stale revision a IPC guard. |
 | T-03 | NRD-03 | Sol dashboard | T-02 | Fronta, osiřelé/chybějící soubory a poškozená data mají vlastní stavy. |
-| T-04 | NRD-04 | Sol dashboard | T-03 | Jen GET známých ID, obě stopy, cache, 404/429/auth/network stavy. |
+| T-04 | NRD-04 | Sol dashboard | T-R1 | Jen GET známých ID, obě stopy, cache, 404/429/auth/network stavy. |
 | T-05 | NRD-05, NRD-06 | Sol integrace/UI | T-04 | Consent, automatika jen nových záznamů a per-item akce. |
 | T-A1 | NRD-07 | Sol auth | — | Finder default, scope a bezpečná obnova `invalid_client`. |
-| T-R1 | NRD-01 | Sol fronta | T-02 | `429` neubírá pokus a respektuje společné `Retry-After`. |
+| T-R1 | NRD-01 | Sol fronta | T-03 | `429` neubírá pokus a respektuje společné `Retry-After`. |
 | T-06 | NRD-08 | Sol vydání | — pro přípravu; T-05, T-A1 a T-R1 pro release | Validace, archiv pro review, bezpečné SCP, feed poslední, stav aktualizace v UI. |
 | M-01 | všechny | Astra | všechny implementace | Review diffu, `gates`, `gates:clean`, evidence a přejímka. |
 
@@ -58,7 +58,7 @@ Přesný graf a aktuální vlastnictví hotspotů je v [DAG](tasks/DAG.md). `ele
 ## Pořadí
 
 1. Převzít integrované T-00, T-01, T-A1, updater a T-06; T-02 už běží podle lintnutého packetu.
-2. Po přijetí T-02 připravit a lintnout packet T-03, potom pokračovat T-04; T-R1 může navázat souběžně jen bez sdíleného hotspotu.
+2. Po přijetí T-02 pokračovat T-03, potom T-R1 a T-04. Závislé změny fronty a main procesu mají jednoho zapisovatele a integrují se postupně.
 3. T-05 spojí consent, akce a hotový přehled.
 4. T-06 lze reviewovat průběžně, ale veřejné vydání čeká na přijetí funkčního řetězce, publikační konfiguraci, zálohu klíče a Danův tag.
 5. Koordinátor provede finální review, brány a předání Danovi k živému testu.
