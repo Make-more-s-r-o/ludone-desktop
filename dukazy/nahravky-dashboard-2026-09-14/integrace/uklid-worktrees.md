@@ -31,3 +31,15 @@ Zdroj `0340c8e1076eb8b59bfcc9d176f9aa74f57e400a` je přijatý běžným merge a 
 # T-05 — 15. 9. 2026
 
 Zdroj `e225880ec2f8fff1ba7c4460d3436d000fdde8ae` je přijatý běžným merge a dosažitelný z integrační větve. Šest původních T5 logů bylo před úklidem byte-for-byte shodných s verzovaným archivem. Původní report (před root opravou počtu testů) zůstává v původním commitu. Čistý worker strom byl odstraněný přes `git worktree remove`; `git branch -d feat/nahravky-akce` skončilo exit 0, bez force. T-A4 pokračuje v novém stromu z `77543cb`.
+
+## Závěrečný úklid A4 a I1 — 15. 9. 2026
+
+Po přijetí A4 `c25ef2a` a I1 `d6bdfdd` koordinátor ověřil čistý status obou workerů,
+ancestor vazbu zdrojových commitů na HEAD a byte shodu všech čtyř A4 a dvou I1 logů
+s verzovaným integračním archivem. Původní reporty zůstávají ve zdrojových commitech;
+A4 inline sender log je v aktuálním reportu nahrazen odkazem na totožný úplný log
+kvůli falešnému C6 nad kontrolou prázdného hesla v URL, nikoli odstraněn.
+
+Worktree `nahravky-firma-zapojeni` a `nahravky-popisky` i jejich lokální větve byly
+bez force bezpečně odstraněny. Zůstává hlavní strom a integrační větev; cizí větve
+ani hlavní pracovní strom se neměnily. GUI ověřovací proces je ukončený.
