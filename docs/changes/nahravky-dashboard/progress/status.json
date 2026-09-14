@@ -5,14 +5,14 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T22:49:34.750Z",
+    "updatedAt": "2026-09-14T22:55:51.379Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
     "audiences": [],
     "outOfScope": []
   },
-  "phase": "execution",
+  "phase": "review_delivery",
   "guard": {
     "requires": []
   },
@@ -169,14 +169,14 @@
     {
       "id": "execution",
       "name": "Implementace",
-      "status": "current",
-      "detail": "Tato fáze právě probíhá."
+      "status": "done",
+      "detail": "Fáze je dokončena."
     },
     {
       "id": "review_delivery",
       "name": "Kontrola a dodání",
-      "status": "upcoming",
-      "detail": "Tato fáze teprve přijde."
+      "status": "current",
+      "detail": "Tato fáze právě probíhá."
     },
     {
       "id": "archive",
@@ -320,30 +320,44 @@
       "id": "T-A4",
       "title": "Zapojení firmy a ochrana rozpracovaného uploadu",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-05",
         "T-A3"
       ],
       "packet": "tasks/T-A4.md",
-      "worktree": ".claude/worktrees/nahravky-firma-zapojeni"
+      "worktree": ".claude/worktrees/nahravky-firma-zapojeni",
+      "report": "evidence/tasks/T-A4.report.json"
     },
     {
       "id": "T-I1",
       "title": "Pravdivé stavy a identifikace nahrávky",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-05"
       ],
       "packet": "tasks/T-I1.md",
-      "worktree": ".claude/worktrees/nahravky-popisky"
+      "worktree": ".claude/worktrees/nahravky-popisky",
+      "report": "evidence/tasks/T-I1.report.json"
     }
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T22:55:51.379Z",
+      "text": "Fáze se změnila z „execution“ na „review_delivery“."
+    },
+    {
+      "at": "2026-09-14T22:55:51.072Z",
+      "text": "Task T-A4 má nově stav „completed“."
+    },
+    {
+      "at": "2026-09-14T22:55:28.409Z",
+      "text": "Task T-I1 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T22:49:34.750Z",
       "text": "Task T-I1 má nově stav „dispatched“."

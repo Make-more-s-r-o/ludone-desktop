@@ -1,0 +1,34 @@
+
+> ludone-desktop-prototype@0.1.2 test:unit
+> vitest run tests/recordings-status.test.js tests/recordings-dashboard.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-popisky
+
+ ✓ tests/recordings-status.test.js (2 tests) 75ms
+ ✓ tests/recordings-dashboard.test.js (15 tests) 175ms
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  00:53:39
+   Duration  900ms (transform 46ms, setup 17ms, collect 938ms, tests 250ms, environment 0ms, prepare 92ms)
+
+
+EXIT_CODE=0
+
+> ludone-desktop-prototype@0.1.2 test:unit
+> vitest run tests/recordings-status.test.js tests/recordings-dashboard.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-popisky
+
+ ✓ tests/recordings-status.test.js (2 tests) 80ms
+ ✓ tests/recordings-dashboard.test.js (15 tests) 182ms
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  00:54:56
+   Duration  971ms (transform 71ms, setup 12ms, collect 1.07s, tests 262ms, environment 0ms, prepare 109ms)
+
+
+FINAL_EXIT_CODE=0
