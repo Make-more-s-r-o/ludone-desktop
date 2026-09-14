@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 2,
+  "tier": "L",
+  "project": {
+    "id": "nahravky-dashboard",
+    "name": "LuDone Desktop – dokončení nahrávek",
+    "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
+    "updatedAt": "2026-09-14T19:21:14.829Z",
+    "planVersion": "draft",
+    "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
+    "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
+    "audiences": [],
+    "outOfScope": []
+  },
+  "phase": "execution",
+  "guard": {
+    "requires": [
+      "design-approved",
+      "plan-approved"
+    ]
+  },
+  "summary": {
+    "done": 0,
+    "inProgress": 0,
+    "blocked": 0,
+    "notStarted": 9
+  },
+  "features": [
+    {
+      "id": "NAHRAVKY-DASHBOARD-01",
+      "name": "LuDone Desktop – dokončení nahrávek",
+      "whatItGives": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Sol implementuje T0/T1, přihlášení a vydání; následuje převzetí T2.",
+      "evidence": []
+    },
+    {
+      "id": "NRD-01",
+      "name": "Úplná a obnovitelná fronta",
+      "whatItGives": "Nahrávka si zachová identitu každé odesílané stopy.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "evidence": []
+    },
+    {
+      "id": "NRD-02",
+      "name": "Výslovné převzetí",
+      "whatItGives": "Uživatel odblokuje jednu vlastní nahrávku s potvrzením.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "evidence": []
+    },
+    {
+      "id": "NRD-03",
+      "name": "Lokální přehled",
+      "whatItGives": "Uživatel pozná, co skutečně leží na Macu.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "evidence": []
+    },
+    {
+      "id": "NRD-04",
+      "name": "Porovnání serveru",
+      "whatItGives": "Uživatel rozliší stav fronty od ověřeného výsledku na serveru.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "evidence": []
+    },
+    {
+      "id": "NRD-05",
+      "name": "Odeslání podle volby",
+      "whatItGives": "Uživatel rozhodne o odeslání každé nové nahrávky.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "evidence": []
+    },
+    {
+      "id": "NRD-06",
+      "name": "Akce nad záznamem",
+      "whatItGives": "Konkrétní nahrávku lze bezpečně spravovat a otevřít na webu.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "evidence": []
+    },
+    {
+      "id": "NRD-07",
+      "name": "Produkční přihlášení",
+      "whatItGives": "Nahrávání a upload fungují bez shellového nastavení.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "evidence": []
+    },
+    {
+      "id": "NRD-08",
+      "name": "Vydání a aktualizace",
+      "whatItGives": "Nová podepsaná verze je připravená k vydání a aplikace hlásí aktualizaci.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "evidence": []
+    }
+  ],
+  "screens": [],
+  "openQuestions": [],
+  "decisions": [],
+  "milestones": [
+    {
+      "id": "intent",
+      "name": "Záměr",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "project_context",
+      "name": "Kontext projektu",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "discovery",
+      "name": "Zjištění",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "outcome_contract",
+      "name": "Kontrakt výsledku",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "design",
+      "name": "Návrh",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "spec",
+      "name": "Specifikace",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "plan",
+      "name": "Plán",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "execution",
+      "name": "Implementace",
+      "status": "current",
+      "detail": "Tato fáze právě probíhá."
+    },
+    {
+      "id": "review_delivery",
+      "name": "Kontrola a dodání",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    },
+    {
+      "id": "archive",
+      "name": "Archiv",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T0",
+      "title": "Projekce fronty",
+      "executor": "codex",
+      "state": "dispatched",
+      "attempts": 0,
+      "deps": [],
+      "packet": "ZADANI-PRO-CODEX.md"
+    },
+    {
+      "id": "T1",
+      "title": "Trvalé výsledky uploadu",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T0"
+      ],
+      "packet": "ZADANI-PRO-CODEX.md"
+    },
+    {
+      "id": "T2",
+      "title": "Explicitní převzetí",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T1"
+      ],
+      "packet": "ZADANI-PRO-CODEX.md"
+    },
+    {
+      "id": "T3",
+      "title": "Lokální dashboard",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T2"
+      ],
+      "packet": "ZADANI-PRO-CODEX.md"
+    },
+    {
+      "id": "T4",
+      "title": "Ověření na serveru",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T3"
+      ],
+      "packet": "ZADANI-PRO-CODEX.md"
+    },
+    {
+      "id": "T5",
+      "title": "Akce a odesílání",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T4"
+      ],
+      "packet": "ZADANI-PRO-CODEX.md"
+    },
+    {
+      "id": "A1",
+      "title": "Přihlášení a upload scope",
+      "executor": "codex",
+      "state": "dispatched",
+      "attempts": 0,
+      "deps": [],
+      "packet": "ZADANI-PRO-CODEX.md"
+    },
+    {
+      "id": "R1",
+      "title": "Limity fronty",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T2"
+      ],
+      "packet": "ZADANI-PRO-CODEX.md"
+    },
+    {
+      "id": "T6",
+      "title": "Příprava vydání a aktualizace",
+      "executor": "codex",
+      "state": "dispatched",
+      "attempts": 0,
+      "deps": [],
+      "packet": "ZADANI-PRO-CODEX.md"
+    }
+  ],
+  "evidence": [],
+  "latestChanges": [
+    {
+      "at": "2026-09-14T19:21:14.829Z",
+      "text": "Běh spuštěn podle Danem vloženého goalu. Publikační protokol SCP doložen v dokumentaci LuDone. Nové instalačky ani update dosud neověřené na Macu."
+    },
+    {
+      "at": "2026-09-14T19:21:14.337Z",
+      "text": "Byl zalozen task T6: Příprava vydání a aktualizace."
+    },
+    {
+      "at": "2026-09-14T19:21:13.956Z",
+      "text": "Byl zalozen task R1: Limity fronty."
+    },
+    {
+      "at": "2026-09-14T19:21:13.584Z",
+      "text": "Byl zalozen task A1: Přihlášení a upload scope."
+    },
+    {
+      "at": "2026-09-14T19:21:13.211Z",
+      "text": "Byl zalozen task T5: Akce a odesílání."
+    },
+    {
+      "at": "2026-09-14T19:21:12.840Z",
+      "text": "Byl zalozen task T4: Ověření na serveru."
+    },
+    {
+      "at": "2026-09-14T19:21:12.365Z",
+      "text": "Byl zalozen task T3: Lokální dashboard."
+    },
+    {
+      "at": "2026-09-14T19:21:11.936Z",
+      "text": "Byl zalozen task T2: Explicitní převzetí."
+    },
+    {
+      "at": "2026-09-14T19:21:11.533Z",
+      "text": "Byl zalozen task T1: Trvalé výsledky uploadu."
+    },
+    {
+      "at": "2026-09-14T19:21:11.113Z",
+      "text": "Byl zalozen task T0: Projekce fronty."
+    },
+    {
+      "at": "2026-09-14T19:21:10.403Z",
+      "text": "Byla zalozena funkce NRD-08: Vydání a aktualizace."
+    },
+    {
+      "at": "2026-09-14T19:21:09.852Z",
+      "text": "Byla zalozena funkce NRD-07: Produkční přihlášení."
+    },
+    {
+      "at": "2026-09-14T19:21:09.364Z",
+      "text": "Byla zalozena funkce NRD-06: Akce nad záznamem."
+    },
+    {
+      "at": "2026-09-14T19:21:08.982Z",
+      "text": "Byla zalozena funkce NRD-05: Odeslání podle volby."
+    },
+    {
+      "at": "2026-09-14T19:21:08.539Z",
+      "text": "Byla zalozena funkce NRD-04: Porovnání serveru."
+    },
+    {
+      "at": "2026-09-14T19:21:08.066Z",
+      "text": "Byla zalozena funkce NRD-03: Lokální přehled."
+    },
+    {
+      "at": "2026-09-14T19:21:07.372Z",
+      "text": "Byla zalozena funkce NRD-02: Výslovné převzetí."
+    },
+    {
+      "at": "2026-09-14T19:21:06.052Z",
+      "text": "Byla zalozena funkce NRD-01: Úplná a obnovitelná fronta."
+    },
+    {
+      "at": "2026-09-14T19:21:05.004Z",
+      "text": "Funkce NAHRAVKY-DASHBOARD-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T19:21:03.713Z",
+      "text": "Fáze se změnila z „plan“ na „execution“."
+    },
+    {
+      "at": "2026-09-14T19:20:14.683Z",
+      "text": "Stav byl převeden na schéma v2."
+    }
+  ],
+  "tryNow": [],
+  "notes": [],
+  "hub": {
+    "repo": "nahravky-integrace",
+    "path": "docs/changes/nahravky-dashboard"
+  }
+}
