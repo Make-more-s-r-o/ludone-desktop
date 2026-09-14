@@ -5,6 +5,10 @@ const workflow = readFileSync(
   new URL("../.github/workflows/release-macos.yml", import.meta.url),
   "utf8",
 );
+const remotePublish = readFileSync(
+  new URL("../scripts/publish-release-remote.sh", import.meta.url),
+  "utf8",
+);
 
 describe("publikace macOS releasu", () => {
   it("nepoužije podpisový klíč bez potvrzené firemní zálohy", () => {
@@ -28,8 +32,9 @@ describe("publikace macOS releasu", () => {
     expect(workflow).toContain("StrictHostKeyChecking=yes");
     expect(workflow).toContain("DOWNLOAD_SSH_KNOWN_HOSTS");
     expect(workflow).not.toContain("ssh-keyscan");
-    const packageMove = workflow.indexOf('mv -- "$file" "$publish_path/$file"');
-    const metadataMove = workflow.indexOf('mv -f -- latest-mac.yml "$publish_path/latest-mac.yml"');
+    expect(workflow).toContain("< scripts/publish-release-remote.sh");
+    const packageMove = remotePublish.indexOf('mv "$file" "$publish_path/$file"');
+    const metadataMove = remotePublish.indexOf('mv -f latest-mac.yml "$publish_path/latest-mac.yml"');
     expect(packageMove).toBeGreaterThan(-1);
     expect(metadataMove).toBeGreaterThan(packageMove);
   });

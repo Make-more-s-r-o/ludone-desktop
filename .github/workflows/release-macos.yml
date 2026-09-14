@@ -63,14 +63,19 @@ jobs:
           const missing = required.filter((name) => !process.env[name]?.trim());
           if (missing.length > 0) throw new Error(`V release prostředí chybí: ${missing.join(", ")}`);
           const simpleValue = /^[A-Za-z0-9._-]+$/;
-          if (!simpleValue.test(process.env.DOWNLOAD_SSH_HOST)) throw new Error("DOWNLOAD_SSH_HOST má neplatný tvar");
-          if (!simpleValue.test(process.env.DOWNLOAD_SSH_USER)) throw new Error("DOWNLOAD_SSH_USER má neplatný tvar");
+          if (!simpleValue.test(process.env.DOWNLOAD_SSH_HOST) || process.env.DOWNLOAD_SSH_HOST.startsWith("-")) {
+            throw new Error("DOWNLOAD_SSH_HOST má neplatný tvar");
+          }
+          if (!simpleValue.test(process.env.DOWNLOAD_SSH_USER) || process.env.DOWNLOAD_SSH_USER.startsWith("-")) {
+            throw new Error("DOWNLOAD_SSH_USER má neplatný tvar");
+          }
           const port = process.env.DOWNLOAD_SSH_PORT || "22";
           if (!/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
             throw new Error("DOWNLOAD_SSH_PORT má neplatný tvar");
           }
           const publishPath = process.env.DOWNLOAD_SSH_PATH;
-          if (!/^\/[A-Za-z0-9._/-]+$/.test(publishPath) || publishPath === "/" || publishPath.includes("//")) {
+          const unsafeSegment = publishPath.split("/").some((part) => part === "." || part === "..");
+          if (!/^\/[A-Za-z0-9._/-]+$/.test(publishPath) || publishPath === "/" || publishPath.includes("//") || unsafeSegment) {
             throw new Error("DOWNLOAD_SSH_PATH musí být úzká absolutní cesta bez shellových znaků");
           }
           NODE
@@ -170,26 +175,6 @@ jobs:
           # Verze a blockmapy se zpřístupní první. latest-mac.yml se přesune až
           # nakonec jedním rename, takže klient nikdy neuvidí metadata k neúplné sadě.
           ssh "${ssh_options[@]}" "$target" \
-            "sh -s -- ${DOWNLOAD_SSH_PATH%/} $staging_name ${files[*]}" <<'REMOTE'
-          set -eu
-          publish_path=$1
-          staging_path="$publish_path/$2"
-          shift 2
-          cd "$staging_path"
-          sha256sum -c SHA256SUMS
-          chmod 0644 -- "$@"
-          for file do
-            [ "$file" = "latest-mac.yml" ] && continue
-            if [ -e "$publish_path/$file" ]; then
-              [ "$(sha256sum "$file" | cut -d ' ' -f 1)" = "$(sha256sum "$publish_path/$file" | cut -d ' ' -f 1)" ] \
-                || { echo "Cílový $file už existuje s jiným obsahem" >&2; exit 1; }
-              rm -- "$file"
-            else
-              mv -- "$file" "$publish_path/$file"
-            fi
-          done
-          mv -f -- latest-mac.yml "$publish_path/latest-mac.yml"
-          rm -- SHA256SUMS
-          rmdir -- "$staging_path"
-          REMOTE
+            "sh -s -- ${DOWNLOAD_SSH_PATH%/} $staging_name ${files[*]}" \
+            < scripts/publish-release-remote.sh
           echo "Publikace verze $version proběhla; latest-mac.yml byl zveřejněn jako poslední."
