@@ -16,21 +16,23 @@
 | T-R1 | T-02 | Chování 429 se doplní po serializovaném převzetí. |
 | T-06 | — | Příprava vydání je nezávislá; zveřejnění má vlastní brány. |
 
-## Hotspoty
+## Hotspoty pro T-03 po přijetí T-02
 
-Vlastnictví je pro nejbližší dispatch `T-02`; koordinátor ho před každým dalším packetem přidělí znovu.
+Dokud T-02 běží, zůstávají jeho hotspoty výhradně jeho. Následující vlastnictví začne platit až po přijetí a integraci T-02; teprve potom smí koordinátor dispatchovat T-03.
 
 | Soubor | Vlastník | Poznámka |
 |---|---|---|
-| `electron/main.cjs` | T-02 | Jen helpery a IPC fronty; bloky auth a updateru jsou při tomto dispatchu read-only. |
-| `electron/preload.cjs` | T-02 | Jen queue most. |
-| `src/components/Settings.jsx` | T-02 | Jediný renderer worker. |
-| `src/styles.css` | T-02 | Jen styly přehledu se stávajícími tokeny. |
+| `electron/queue.cjs` | T-03 | Serializovaný getter; queue a claim kontrakty zůstávají zachované. |
+| `electron/main.cjs` | T-03 | Jen queue/dashboard IPC; auth, updater a ostatní bloky jsou read-only. |
+| `electron/preload.cjs` | T-03 | Jen most lokálního přehledu a případně existující retry. |
+| `src/features/recordings/RecordingsDashboard.jsx` | T-03 | Rozšíření komponenty po T-02 při zachování claim UI. |
+| `src/styles.css` | T-03 | Jen styly lokálního přehledu se stávajícími tokeny. |
 
 ## Packety a executor
 
 | Task | Packet | Executor |
 |---|---|---|
 | T-02 | `tasks/T-02.md` | Sol převzetí |
+| T-03 | `tasks/T-03.md` | Sol dashboard |
 
 Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.
