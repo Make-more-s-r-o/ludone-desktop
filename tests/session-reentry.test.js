@@ -42,6 +42,8 @@ async function click(element, view) {
  *   initialSession?: boolean,
  *   hasAuthSession?: () => Promise<boolean>,
  *   getAuthSessionState?: () => Promise<string>,
+ *   onboardingComplete?: boolean,
+ *   requestPermission?: (permission: string) => Promise<object>,
  *   switchAuthOrigin?: (nextOrigin: string) => Promise<{
  *     signedOutLocally: boolean,
  *     serverRevoked: boolean,
@@ -58,6 +60,8 @@ async function renderWindows({
   getAuthSessionState,
   initialOrigin = PRODUCTION_ORIGIN,
   initialSession = false,
+  onboardingComplete = true,
+  requestPermission = vi.fn(),
   switchAuthOrigin: switchAuthOriginImplementation,
   withSettings = false,
 } = {}) {
@@ -65,7 +69,9 @@ async function renderWindows({
     '<div id="panel-root"></div><div id="settings-root"></div>',
     { url: "https://ludone.test" },
   );
-  dom.window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
+  if (onboardingComplete) {
+    dom.window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
+  }
 
   let authOrigin = initialOrigin;
   let sessionExists = initialSession;
@@ -119,7 +125,7 @@ async function renderWindows({
     }),
     listQueue: vi.fn().mockResolvedValue([]),
     openSettings: vi.fn(),
-    requestPermission: vi.fn(),
+    requestPermission,
     getAuthIdentity: vi.fn(async () => (sessionExists ? USER : null)),
     getAuthOrigin: vi.fn(async () => authOrigin),
     setAuthOrigin,
@@ -196,6 +202,35 @@ afterEach(async () => {
 });
 
 describe("návrat do aplikace po ztrátě session", () => {
+  it("dokončení úvodního průvodce bez platné relace otevře nový přihlašovací krok", async () => {
+    const panel = await renderWindows({
+      beginAuthResult: { ok: true, user: USER },
+      getAuthSessionState: async () => "none",
+      onboardingComplete: false,
+      requestPermission: async (permission) => permission === "microphone"
+        ? { granted: true, status: "granted" }
+        : { granted: false, status: "denied" },
+    });
+
+    await click(buttonWithText(panel.document, "Začít"), panel.view);
+    await click(buttonWithText(panel.document, "Přihlásit v prohlížeči"), panel.view);
+    for (const permissionButton of [...panel.document.querySelectorAll('[data-testid="permission-action"]')]) {
+      await click(permissionButton, panel.view);
+    }
+    await click(buttonWithText(panel.document, "Pokračovat"), panel.view);
+    expect(buttonWithText(panel.document, "Otevřít můj panel")).toBeDefined();
+
+    // Autoritativní kontrola může relaci ztratit ještě před dokončením průvodce.
+    await React.act(async () => {
+      await new Promise((resolve) => panel.view.setTimeout(resolve, 1_100));
+    });
+    await click(buttonWithText(panel.document, "Otevřít můj panel"), panel.view);
+
+    await waitForReauthentication(panel);
+    expect(panel.document.querySelector(".done-step")).toBeNull();
+    expect(buttonWithText(panel.document, "Přihlásit v prohlížeči")).toBeDefined();
+  });
+
   it("po dokončeném onboardingu a bez session nabídne jediný přihlašovací krok", async () => {
     const panel = await renderWindows();
 

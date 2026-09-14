@@ -271,7 +271,7 @@ export function App() {
   if (!onboardingComplete && !recordingControlsAvailable) {
     return (
       <PanelContentHeightReporter>
-        <Onboarding onAuthenticated={rememberUser} onComplete={completeOnboarding} />
+        <Onboarding key="initial-onboarding" onAuthenticated={rememberUser} onComplete={completeOnboarding} />
       </PanelContentHeightReporter>
     );
   }
@@ -279,7 +279,7 @@ export function App() {
   if (sessionExists === false && !recordingControlsAvailable) {
     return (
       <PanelContentHeightReporter>
-        <Onboarding reauthenticate sessionExpired={sessionState === "expired"} onAuthenticated={rememberUser} />
+        <Onboarding key="reauthentication" reauthenticate sessionExpired={sessionState === "expired"} onAuthenticated={rememberUser} />
       </PanelContentHeightReporter>
     );
   }
