@@ -36,17 +36,20 @@ získat. Pouhá existence `MAC_CSC_LINK` na GitHubu tuto podmínku nesplňuje.
 
 1. Ověří shodu tagu s `package.json`, potvrzenou zálohu a úplnou release konfiguraci.
 2. Spustí jedinou společnou bránu `npm run gates`.
-3. Podepíše a notarizuje DMG i ZIP pro `arm64` a `x64`.
+3. Podepíše a notarizuje aplikaci, kterou vloží do DMG i ZIP pro `arm64` a `x64`.
 4. Ověří bundle id `cz.ludone.desktop`, verzi, architekturu, Developer ID podpis, stapling,
    Gatekeeper a hashe v `latest-mac.yml`.
 5. Uloží čtyři balíčky, čtyři blockmapy, updater metadata, manifest a `SHA256SUMS` jako
    GitHub Actions artifact na 30 dní.
 6. Přenese feed přes `scp` s povinným `StrictHostKeyChecking=yes`, na serveru znovu ověří
    SHA-256 a zveřejní `latest-mac.yml` až jako poslední soubor.
+7. Přes veřejné HTTPS porovná přesný obsah metadat s vydanou verzí a pomocí HEAD ověří
+   dostupnost i velikost všech osmi balíčků a blockmap. Nesprávný cílový adresář tak
+   nezůstane skrytý za úspěšným SSH přenosem.
 
 Souběžná vydání jsou zamčená. Při chybě přenosu zůstává starý `latest-mac.yml`, takže klienti
 nezačnou stahovat neúplnou sadu. Úspěch workflow znamená, že přenos i finální přejmenování prošly;
-samotné vytvoření balíčků se za publikaci nevydává.
+včetně veřejné dostupnosti; samotné vytvoření balíčků se za publikaci nevydává.
 
 ## Postup pro první instalaci a aktualizaci
 

@@ -178,3 +178,5 @@ jobs:
             "sh -s -- ${DOWNLOAD_SSH_PATH%/} $staging_name ${files[*]}" \
             < scripts/publish-release-remote.sh
           echo "Publikace verze $version proběhla; latest-mac.yml byl zveřejněn jako poslední."
+      - name: Ověření veřejného feedu a souborů
+        run: node scripts/verify-published-release.mjs

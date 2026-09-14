@@ -1,0 +1,46 @@
+MUTACE: vypnuta kontrola SHA-256 veřejných metadat; všechny HEAD odpovědi zůstávají korektní.
+$ npx vitest run tests/verify-published-release.test.js -t nepřijme starý feed
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace
+
+ ❯ tests/verify-published-release.test.js (7 tests | 1 failed | 6 skipped) 7ms
+   ↓ veřejná dostupnost vydání po SSH přenosu > porovná přesný veřejný feed a velikosti všech osmi souborů bez stahování balíčků
+   × veřejná dostupnost vydání po SSH přenosu > nepřijme starý feed se stejnou délkou 7ms
+     → promise resolved "undefined" instead of rejecting
+   ↓ veřejná dostupnost vydání po SSH přenosu > nepřijme chybějící veřejný soubor
+   ↓ veřejná dostupnost vydání po SSH přenosu > odmítne nesprávnou velikost 122
+   ↓ veřejná dostupnost vydání po SSH přenosu > odmítne nesprávnou velikost 123oops
+   ↓ veřejná dostupnost vydání po SSH přenosu > odmítne nesprávnou velikost 
+   ↓ veřejná dostupnost vydání po SSH přenosu > síťová chyba nepředstírá dostupné vydání
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/verify-published-release.test.js > veřejná dostupnost vydání po SSH přenosu > nepřijme starý feed se stejnou délkou
+AssertionError: promise resolved "undefined" instead of rejecting
+
+- Expected: 
+Error {
+  "message": "rejected promise",
+}
+
++ Received: 
+undefined
+
+ ❯ tests/verify-published-release.test.js:40:68
+     38|     const fetchImpl = vi.fn(async (url) => url.endsWith("latest-mac.ym…
+     39|       ? new Response("version: 0.1.1\n") : responseFor(url));
+     40|     await expect(verifyPublishedRelease(validation, { fetchImpl })).re…
+       |                                                                    ^
+     41|     expect(fetchImpl).toHaveBeenCalledTimes(1);
+     42|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 skipped (7)
+   Start at  21:53:48
+   Duration  360ms (transform 41ms, setup 12ms, collect 18ms, tests 7ms, environment 0ms, prepare 89ms)
+
+
+EXIT_CODE=1

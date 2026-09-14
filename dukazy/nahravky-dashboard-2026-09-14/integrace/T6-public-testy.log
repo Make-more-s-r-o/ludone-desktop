@@ -1,0 +1,44 @@
+$ npx eslint scripts/verify-published-release.mjs tests/verify-published-release.test.js tests/release-workflow.test.js
+
+EXIT_CODE=0
+
+$ npm run typecheck
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+EXIT_CODE=0
+
+$ npx vitest run tests/verify-published-release.test.js tests/release-workflow.test.js tests/brany-workflow.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace
+
+ ✓ tests/brany-workflow.test.js (5 tests) 5ms
+ ✓ tests/verify-published-release.test.js (7 tests) 45ms
+ ✓ tests/release-workflow.test.js (4 tests) 4ms
+
+ Test Files  3 passed (3)
+      Tests  16 passed (16)
+   Start at  21:52:47
+   Duration  1.55s (transform 137ms, setup 346ms, collect 243ms, tests 54ms, environment 0ms, prepare 792ms)
+
+
+EXIT_CODE=0
+
+PO OBNOVENÍ MUTACE
+$ npx vitest run tests/verify-published-release.test.js tests/release-workflow.test.js tests/brany-workflow.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace
+
+ ✓ tests/release-workflow.test.js (4 tests) 2ms
+ ✓ tests/brany-workflow.test.js (5 tests) 3ms
+ ✓ tests/verify-published-release.test.js (7 tests) 6ms
+
+ Test Files  3 passed (3)
+      Tests  16 passed (16)
+   Start at  21:53:48
+   Duration  271ms (transform 46ms, setup 22ms, collect 59ms, tests 12ms, environment 0ms, prepare 188ms)
+
+
+EXIT_CODE=0

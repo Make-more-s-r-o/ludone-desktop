@@ -38,4 +38,11 @@ describe("publikace macOS releasu", () => {
     expect(packageMove).toBeGreaterThan(-1);
     expect(metadataMove).toBeGreaterThan(packageMove);
   });
+
+  it("ověří veřejné HTTPS až po dokončení publikace přes SSH", () => {
+    const publish = workflow.indexOf("< scripts/publish-release-remote.sh");
+    const publicCheck = workflow.indexOf("run: node scripts/verify-published-release.mjs");
+    expect(publish).toBeGreaterThan(-1);
+    expect(publicCheck).toBeGreaterThan(publish);
+  });
 });
