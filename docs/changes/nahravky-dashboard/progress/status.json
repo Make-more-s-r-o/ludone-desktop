@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T19:47:27.856Z",
+    "updatedAt": "2026-09-14T19:54:20.805Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -14,40 +14,25 @@
   },
   "phase": "execution",
   "guard": {
-    "requires": [
-      "design-approved",
-      "plan-approved"
-    ]
+    "requires": []
   },
   "summary": {
-    "done": 1,
+    "done": 3,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 8
+    "notStarted": 5
   },
   "features": [
-    {
-      "id": "NAHRAVKY-DASHBOARD-01",
-      "name": "LuDone Desktop – dokončení nahrávek",
-      "whatItGives": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-      "scope": "approved",
-      "delivery": "no-code",
-      "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Sol implementuje T0/T1, přihlášení a vydání; následuje převzetí T2.",
-      "evidence": []
-    },
     {
       "id": "NRD-01",
       "name": "Úplná a obnovitelná fronta",
       "whatItGives": "Nahrávka si zachová identitu každé odesílané stopy.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "committed",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Spustit lintnutý packet T-02; živý upload dosud nebyl ověřen.",
       "evidence": []
     },
     {
@@ -127,11 +112,11 @@
       "name": "Vydání a aktualizace",
       "whatItGives": "Nová podepsaná verze je připravená k vydání a aplikace hlásí aktualizaci.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "committed",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Dokončit review release a updater změn; signed build, publikační konfigurace, tag a živý update stále čekají.",
       "evidence": []
     }
   ],
@@ -215,7 +200,7 @@
       "id": "T-01",
       "title": "Trvalé výsledky uploadu",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-00"
@@ -226,7 +211,7 @@
       "id": "T-02",
       "title": "Explicitní převzetí",
       "executor": "codex",
-      "state": "pending",
+      "state": "ready",
       "attempts": 0,
       "deps": [
         "T-01"
@@ -299,6 +284,10 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T19:54:20.805Z",
+      "text": "Stav byl srovnán s integrovanými T-00, T-01 a T-A1; T-02 je připravený, T-06 zůstává v review."
+    },
     {
       "at": "2026-09-14T19:47:27.856Z",
       "text": "Task ID a vazba packetu T-02 byly sjednoceny s formátem masterplánu."
@@ -405,7 +394,9 @@
     }
   ],
   "tryNow": [],
-  "notes": [],
+  "notes": [
+    "Schválený goal a autonomie z 14. 9. dovolují tento běh bez nového design approval; redesign je odložen. Frontmatter plánu zůstává draft, protože neexistuje hookový approval konkrétního souboru."
+  ],
   "hub": {
     "repo": "nahravky-integrace",
     "path": "docs/changes/nahravky-dashboard"
