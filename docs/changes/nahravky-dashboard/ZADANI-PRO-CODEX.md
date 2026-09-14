@@ -417,10 +417,107 @@ funguje (lišta, nahrávání, stavy), musí fungovat dál.
 
 ---
 
-## 10. Jak pracovat
+## 10. Jak pracovat — git, brány, CI
 
-- Větev z `main`, malé commity, **commit message anglicky**, dokumentace a komentáře **česky**.
-- Před commitem `npm run gates`. Necommituj s červenou branou.
+Tohle zadání počítá s tím, že **pracuješ samostatně**: Dan otevře složku, řekne „pokračuj
+v práci" a ty commituješ, pushuješ a zakládáš PR sám, bez ptaní na každý krok.
+
+**Git:**
+
+- Větev z `main`. `AGENTS.md:14` chce prefix `feat/` · `fix/` · `docs/` — v posledních ~130 PR
+  se to většinou nedodržuje a **nekontroluje to žádná brána**, takže je to zvyk, ne pravidlo.
+- **Commit message anglicky, dokumentace a komentáře česky** (`AGENTS.md:8–9`).
+- `main` **není chráněný** (ověřeno přes GitHub API: žádný required check, žádný ruleset),
+  takže přímý push technicky projde. **Ale zavedená praxe je PR + squash merge** — 140 PR,
+  všechny takhle. Drž se jí.
+- `AGENTS.md:16–20`: izolovanou práci zakládej v `.claude/worktrees/<účel>`, **jeden
+  zapisovatel = jeden worktree**, a po převzetí práce worktree odstraň a větev smaž.
+- `AGENTS.md:24`: *„Cizí změny v pracovním stromě nevracej, nepřebírej ani neuklízej."*
+  Když najdeš v repu necommitnutou cizí práci, **nech ji být a napiš to**.
+
+**Brány:**
+
+`npm run gates` = `lint` → `typecheck` → `test:unit` → `preskocene`, v tomhle pořadí
+(`package.json:76`). Výčet je **jediný** a hlídá to `tests/brany-workflow.test.js` — vydávací
+workflow si ho kdysi opisoval zvlášť, rozešlo se to a vydání jelo o jednu kontrolu chudší než
+obyčejný push. **Nevypisuj si vlastní seznam bran nikde.**
+
+`npm run gates:clean` pustí totéž nad **čistým klonem** v dočasném adresáři (`npm ci` + gates
++ build). Použij ho před PR — lokální běh měří tvůj pracovní strom včetně necommitnutých
+souborů a starých `node_modules`.
+
+🔴 **`ui-smoke` a `audio-smoke` nespouštěj.** Potřebují GUI, fyzický zvuk a systémové
+oprávnění Záznam obrazovky. V CI jsou fyzicky přítomné, ale trvale vypnuté (`if: ${{ false }}`
+v `.github/workflows/ci.yml:42–49`) — **je to záměr, ne nedodělek** (`AGENTS.md:35–36`:
+*„V CI ani v sandboxu neběží; spouští je člověk na svém Macu."*). Nezapínej je a neobcházej.
+
+**CI:** `ci.yml` běží na `ubuntu-latest` (GitHub-hosted), spouští `npm run gates` a `npm run
+build`, trvá ~75 s. 🔴 **Nepřesouvej ho na self-hosted runner.** Do 9. 9. 2026 běžel na Danově
+Macu a bylo to zrušené z bezpečnostního důvodu zapsaného přímo v tom souboru (ř. 22–26): repo
+je veřejné, `pull_request` nemá omezení, takže kdokoli si udělá fork, přidá soubor do `tests/`
+a jeho kód se spustí na stroji, kde leží podpisový certifikát firmy a klíče k produkci.
+
+**Zelenou CI čti přes `gh pr view --json statusCheckRollup`** — musí být aspoň jeden check,
+všechny `COMPLETED`/`SUCCESS`, a hlavička PR musí sedět na tvůj poslední commit. Prázdný
+seznam checků **není slabší zelená, je to nezměřeno**.
+
+⚠️ **Vitest umí vypsat „N passed" a vedle toho řádek `Errors`.** Čti oba.
+
+---
+
+## 11. 🔴 „Nasazení" u téhle aplikace zatím NEEXISTUJE
+
+Kdyby ti někdo řekl „dotáhni to až na produkci", tohle je stav, na který narazíš. Změřeno
+14. 9. 2026, ne převzato z dokumentace:
+
+- `.github/workflows/release-macos.yml` se spouští **jen na tag `v*`**, běží na `macos-14`,
+  sám podepíše i notarizuje. **Nikdy neproběhl** — v repu je **0 tagů a 0 releases**.
+- `package.json:54–60` publikuje přes `provider: "generic"` na `https://stahnout.ludone.cz/desktop/`.
+- 🔴 **Krok, který tam ten soubor nahraje, v repu není.** Žádné `scp`, `rsync`, `curl --upload`,
+  S3 ani sftp — nikde. A `electron-builder` u providera `generic` s `--publish always`
+  **mlčky neudělá nic**. Takže i kdyby dnes někdo pushnul tag, balíček by zůstal v běžci.
+- Aplikace přitom auto-update **umí** (`electron/main.cjs:3180`, `electron-updater`, s pojistkou
+  proti restartu uprostřed nahrávání). Chybí jen ta poslední míle.
+
+**Co to pro tebe znamená:** „hotovo" v tomhle zadání končí **zeleným PR mergnutým do `main`**.
+Vydání verze je samostatná, dosud nepostavená věc. Kdyby ji Dan chtěl, je to vlastní úkol —
+včetně toho chybějícího nahrávacího kroku a úpravy `tests/packaging.test.js`, který tvar
+publikace kontroluje. **Nestav to mimochodem u dashboardu.**
+
+---
+
+## 12. Stav práce — tohle udržuj ty
+
+Dan bude tenhle projekt otevírat opakovaně a říkat „pokračuj v práci". **Nemáš paměť mezi
+běhy — pamatuje za tebe tenhle soubor.** Proto platí: úkol není hotový commitem kódu, ale až
+commitem kódu **plus zápisem do téhle tabulky**. Piš do ní pravdu včetně toho, co nevyšlo;
+tabulka, která lže, je horší než žádná.
+
+| úkol | stav | commit / PR | poznámka |
+|---|---|---|---|
+| T1 — uložit `recordingId` z odpovědi serveru | ⬜ nezačato | — | předpoklad pro T3 |
+| T2 — datová vrstva dashboardu (IPC) | ⬜ nezačato | — | guard odesílatele povinný |
+| T3 — ověření proti serveru | ⬜ nezačato | — | závisí na T1 |
+| T4 — čtyři akce u položky | ⬜ nezačato | — | převzetí jen per-položka |
+| T5 — UI obrazovka v Nastavení | ⬜ nezačato | — | rozhodnout šířku okna a kolizi se „Záznamy" |
+
+Značky: ⬜ nezačato · 🔵 rozpracováno · ✅ hotovo a mergnuto · 🔴 zablokováno (napiš čím).
+
+**Když skončíš běh uprostřed práce**, dopiš pod tabulku odstavec „Kde jsem skončil":
+co je rozdělané, v jaké větvi, co jsi zrovna zkoušel a co je další krok. Příští běh začíná
+přečtením téhle sekce.
+
+**Rozhodnutí, která uděláš za Dana, zapisuj sem taky** — jedním řádkem, co a proč. Tichý
+default je vada; Dan má právo je přehlasovat, ale musí o nich vědět.
+
+---
+
+## 13. Jak pracovat — obecně
+
 - Když narazíš na něco, co jde vyřešit jen změnou serveru, **zastav se a napiš to** (sekce 1).
 - Když najdeš, že tohle zadání někde neodpovídá kódu, **věř kódu a rozpor pojmenuj** —
   podklady jsou měřené 14. 9. 2026 a repo mezitím žije.
+- Když si nejsi jistý produktovým rozhodnutím (co má uživatel vidět, jak se co jmenuje),
+  **zvol variantu, zapiš ji do sekce 12 a pokračuj**. Neblokuj celou práci kvůli jedné otázce.
+- Hotovou práci **commitni a pushni**. Netrackovaný soubor na konci běhu je vada, ne stav —
+  v jiném repu tahle nedbalost nechala ležet 176 souborů, o kterých nikdo nevěděl.
