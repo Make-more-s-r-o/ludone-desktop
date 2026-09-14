@@ -235,10 +235,13 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
     try {
       await selectTab(settings, "Zvuk");
       const panel = settings.document.querySelector('[role="tabpanel"]:not([hidden])');
-      expect(panel?.querySelector('[role="switch"]')).toBeNull();
+      expect(panel?.querySelectorAll('[role="switch"]')).toHaveLength(1);
+      expect(panel?.querySelector('[role="switch"]')?.getAttribute("aria-label"))
+        .toBe("Automaticky odesílat nové nahrávky");
       expect(panel?.textContent).not.toContain("Ostatní hovory");
       expect(panel?.textContent).not.toContain("Nejdřív se zeptat");
       expect(panel?.textContent).toContain("Nahrávání spouštíš ručně.");
+      expect(panel?.textContent).toContain("Platí jen pro nahrávky zahájené po zapnutí.");
       expect(settings.localStorage.setItem).not.toHaveBeenCalled();
     } finally {
       await settings.cleanup();

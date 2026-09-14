@@ -31,6 +31,10 @@ function normalizeRecordingItem(value) {
   return {
     id: value.id,
     revision,
+    fileRevision: typeof value.fileRevision === "string" && REVISION_PATTERN.test(value.fileRevision)
+      ? value.fileRevision : null,
+    title: safeText(value.title),
+    uploadIntent: value.uploadIntent === "approved" ? "approved" : "held",
     state: safeText(value.state) ?? "neznámý",
     createdAt,
     durationMs: safeNonNegativeInteger(value.durationMs),
@@ -45,6 +49,9 @@ function normalizeRecordingItem(value) {
       .includes(value.localState) ? value.localState : "invalid-manifest",
     localReason: safeText(value.localReason),
     canClaim: value.allowedActions?.claim === true,
+    canDelete: value.allowedActions?.delete === true,
+    canRetry: value.allowedActions?.retry === true,
+    canSend: value.allowedActions?.send === true,
   };
 }
 
@@ -145,6 +152,7 @@ export function RecordingsDashboard({ authState }) {
     state: "loading", items: [], unreadableCount: 0, message: "",
   });
   const [claimingId, setClaimingId] = useState(null);
+  const [actingId, setActingId] = useState(null);
   const [verifyingId, setVerifyingId] = useState(null);
   const [verificationById, setVerificationById] = useState({});
   const [verificationErrorById, setVerificationErrorById] = useState({});
@@ -268,6 +276,30 @@ export function RecordingsDashboard({ authState }) {
   };
 
   const disabledExplanation = accountExplanation(authState);
+  const runAction = async (item, method) => {
+    if (actingId !== null || !item.fileRevision || (method !== "deleteRecording"
+      && method !== "revealRecording" && !item.revision)
+      || typeof window.ludone?.[method] !== "function") return;
+    setActingId(item.id);
+    try {
+      const result = await window.ludone[method]({
+        id: item.id, queueRev: item.revision, fileRev: item.fileRevision,
+      });
+      await load();
+      if (result?.outcome === "partial_failure" && active.current) {
+        setVerificationErrorById((current) => ({
+          ...current,
+          [item.id]: "Část souborů se nepodařilo přesunout. Zbývající soubory i záznam ve frontě zůstaly zachované.",
+        }));
+      }
+    } catch {
+      if (active.current) setVerificationErrorById((current) => ({
+        ...current, [item.id]: "Akci nelze provést nad neaktuální nahrávkou. Obnov přehled.",
+      }));
+    } finally {
+      if (active.current) setActingId(null);
+    }
+  };
 
   return (
     <div className="recordings-dashboard" data-testid="recordings-dashboard">
@@ -310,7 +342,7 @@ export function RecordingsDashboard({ authState }) {
               && item.revision && item.localState !== "invalid-manifest";
             return (
               <li className="recording-queue-card" key={item.id} data-recording-id={item.id}>
-                <strong>{formatCreatedAt(item.createdAt)}</strong>
+                <strong>{item.title ?? formatCreatedAt(item.createdAt)}</strong>
                 <div className="recording-queue-card__facts">
                   <span>{item.source === "orphan" ? "Jen na Macu" : "Ve frontě"}</span>
                   <span>{formatDuration(item.durationMs)}</span>
@@ -319,6 +351,7 @@ export function RecordingsDashboard({ authState }) {
                 <p className={`recording-queue-card__local recording-queue-card__local--${item.localState}`}>
                   {LOCAL_STATE_LABELS[item.localState]}
                 </p>
+                <p>{item.uploadIntent === "approved" ? "Schváleno k odeslání" : "Zůstává na Macu"}</p>
                 <p>{item.localReason ?? item.blockReason ?? (item.source === "orphan"
                   ? "Nahrávka není ve frontě a nemá dostupnou akci."
                   : "Nahrávka čeká ve frontě.")}</p>
@@ -341,6 +374,26 @@ export function RecordingsDashboard({ authState }) {
                   >
                     {verifyingId === item.id ? "Ověřuji…" : "Ověřit v LuDone"}
                   </button>
+                )}
+                {item.canSend && (
+                  <button type="button" className="button button--small"
+                    disabled={authState !== "signed-in" || actingId !== null}
+                    onClick={() => void runAction(item, "sendRecording")}>Uložit a odeslat</button>
+                )}
+                {item.canRetry && (
+                  <button type="button" className="button button--small"
+                    disabled={authState !== "signed-in" || actingId !== null}
+                    onClick={() => void runAction(item, "retryRecording")}>Zkusit znovu</button>
+                )}
+                {item.fileRevision && item.localState !== "invalid-manifest" && (
+                  <button type="button" className="button button--small"
+                    disabled={actingId !== null}
+                    onClick={() => void runAction(item, "revealRecording")}>Ukázat ve Finderu</button>
+                )}
+                {item.canDelete && (
+                  <button type="button" className="button button--small"
+                    disabled={actingId !== null}
+                    onClick={() => void runAction(item, "deleteRecording")}>Přesunout do koše</button>
                 )}
                 {verification && (
                   <div className="recording-queue-card__verification" aria-label="Výsledek serverového ověření">

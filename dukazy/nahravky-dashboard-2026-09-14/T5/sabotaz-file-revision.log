@@ -1,0 +1,51 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-akce
+
+ ❯ tests/recording-actions.test.js (14 tests | 1 failed | 13 skipped) 61ms
+   ↓ bezpečné lokální akce nahrávky > přesune audio, známý sidecar a manifest poslední a teprve pak odstraní queue řádek
+   × bezpečné lokální akce nahrávky > změněný manifest po snapshotu odmítne před prvním košem 61ms
+     → promise resolved "{ outcome: 'deleted' }" instead of rejecting
+   ↓ bezpečné lokální akce nahrávky > sidecar se stejným UUID a názvem stopy, ale jiným obsahem odmítne
+   ↓ bezpečné lokální akce nahrávky > incomplete primary s platným complete sidecarem smaže zbytky i bez audia a hashování
+   ↓ bezpečné lokální akce nahrávky > dva orphan manifesty se stejným UUID odmítne jako nejednoznačný cíl
+   ↓ bezpečné lokální akce nahrávky > nesmaže audio, na které odkazuje jiný bezpečný primární manifest
+   ↓ bezpečné lokální akce nahrávky > nesmaže audio sdílené jinou queue položkou s chybějícím manifestem
+   ↓ bezpečné lokální akce nahrávky > změna guardu během preflightu zastaví první koš a zachová queue řádek
+   ↓ bezpečné lokální akce nahrávky > částečná chyba koše ponechá queue položku i primární manifest
+   ↓ bezpečné lokální akce nahrávky > reveal vrátí jen čerstvou přímou audio stopu a stale revize nic neukáže
+   ↓ durable souhlas nahrávky > read-only přehled legacy intent undefined nezapíše, první transport jej atomicky drží
+   ↓ durable souhlas nahrávky > read-only přehled legacy intent neplatny nezapíše, první transport jej atomicky drží
+   ↓ durable souhlas nahrávky > deduplikace neschválí held a auth loss uloží title stále jako held
+   ↓ durable souhlas nahrávky > fresh guard schválí právě jednu položku a title přežije restart storu
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/recording-actions.test.js > bezpečné lokální akce nahrávky > změněný manifest po snapshotu odmítne před prvním košem
+AssertionError: promise resolved "{ outcome: 'deleted' }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "outcome": "deleted",
+  }
+
+ ❯ tests/recording-actions.test.js:100:8
+     98|       guard: async () => true,
+     99|       trashItem,
+    100|     })).rejects.toThrow(/neaktuální|změnily/u);
+       |        ^
+    101|     expect(trashItem).not.toHaveBeenCalled();
+    102|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 13 skipped (14)
+   Start at  00:22:19
+   Duration  331ms (transform 43ms, setup 9ms, collect 33ms, tests 61ms, environment 0ms, prepare 58ms)
+
+TEST_EXIT_CODE=1

@@ -40,7 +40,9 @@ function audioSamples(amplitude, target) {
  *   deferDisplayCapture?: boolean,
  *   getPermissionStatus?: ReturnType<typeof vi.fn>,
  *   microphoneAmplitude?: number,
+ *   openSettings?: ReturnType<typeof vi.fn>,
  *   pendingAuthUrl?: import("vitest").Mock,
+ *   props?: Record<string, unknown>,
  *   rejectFirstDisplayCapture?: boolean,
  *   requestPermission?: ReturnType<typeof vi.fn>,
  *   systemAmplitude?: number,
@@ -61,6 +63,7 @@ async function renderOnboarding(options = {}) {
       status: "granted",
     }),
     microphoneAmplitude = 0,
+    openSettings = vi.fn(),
     rejectFirstDisplayCapture = false,
     requestPermission = vi.fn().mockResolvedValue({
       granted: true,
@@ -201,6 +204,7 @@ async function renderOnboarding(options = {}) {
       cancelAuth,
       copyPendingAuthUrl,
       getPermissionStatus,
+      openSettings,
       pendingAuthUrl,
       requestPermission,
     },
@@ -221,6 +225,7 @@ async function renderOnboarding(options = {}) {
     root.render(React.createElement(Onboarding, {
       onAuthenticated: vi.fn(),
       onComplete: vi.fn(),
+      ...options.props,
     }));
   });
   let unmounted = false;
@@ -241,6 +246,7 @@ async function renderOnboarding(options = {}) {
     getPermissionStatus,
     getUserMedia,
     microphoneTrack,
+    openSettings,
     requestPermission,
     resolveDisplayCapture: () => displayCapture.resolve(systemStream),
     systemTrack,
@@ -313,6 +319,26 @@ afterEach(async () => {
 });
 
 describe("dva chybějící kroky onboardingu", () => {
+  it.each([false, true])(
+    "standalone reauthentication se stavem expired=%s otevře Nastavení bez auth requestu",
+    async (sessionExpired) => {
+      const panel = await renderOnboarding({
+        props: { reauthenticate: true, sessionExpired },
+      });
+      const settings = panel.document.querySelector('[data-testid="reauth-settings"]');
+      expect(settings?.textContent).toBe("Nastavení");
+      await panel.click(settings);
+      expect(panel.openSettings).toHaveBeenCalledOnce();
+      expect(panel.beginAuth).not.toHaveBeenCalled();
+    },
+  );
+
+  it("embedded reauthentication odkaz Nastavení neduplikuje", async () => {
+    const panel = await renderOnboarding({
+      props: { embedded: true, reauthenticate: true, sessionExpired: true },
+    });
+    expect(panel.document.querySelector('[data-testid="reauth-settings"]')).toBeNull();
+  });
   it("během OAuth ukáže samostatné čekání a dovolí otevřít nový pokus", async () => {
     const firstAttempt = deferred();
     const secondAttempt = deferred();

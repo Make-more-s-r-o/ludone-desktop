@@ -8,6 +8,27 @@ const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 
+function requireRecordingAction(value, queueRevisionRequired = false) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || typeof value.id !== "string" || !QUEUE_ITEM_ID_PATTERN.test(value.id)
+    || (queueRevisionRequired && typeof value.queueRev !== "string")
+    || (value.queueRev !== null
+      && (typeof value.queueRev !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(value.queueRev)))
+    || typeof value.fileRev !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(value.fileRev)) {
+    throw new TypeError("Akce nahrávky vyžaduje GUID a platné revize");
+  }
+  return { id: value.id, queueRev: value.queueRev, fileRev: value.fileRev };
+}
+
+function requireRecordingDecision(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || !["send", "keep"].includes(value.decision)
+    || typeof value.recordingName !== "string") {
+    throw new TypeError("Rozhodnutí nahrávky vyžaduje název a volbu send nebo keep");
+  }
+  return { recordingName: value.recordingName, decision: value.decision };
+}
+
 function requireAuthOrigin(value) {
   if (!AUTH_ORIGINS.includes(value)) {
     throw new TypeError("Hodnota prostředí musí být jeden ze dvou známých originů");
@@ -197,12 +218,16 @@ contextBridge.exposeInMainWorld("ludone", {
     ipcRenderer.invoke("recording:finish-export", sessionId, outcome),
   confirmRecordingExportFailure: (sessionId) =>
     ipcRenderer.invoke("recording:confirm-export-failure", sessionId),
-  // Druhý argument nese { recordingName, openUploadPage } — most ho jen předává dál,
-  // rozhodnutí o otevření nahrávací stránky patří volajícímu a hlavní proces ho vymáhá.
+  saveRecordingDecision: (clientRecordingId, volby) =>
+    ipcRenderer.invoke("recording:save-decision", clientRecordingId, requireRecordingDecision(volby)),
   exportRecording: (clientRecordingId, volby) =>
     ipcRenderer.invoke("recording:export", clientRecordingId, volby),
   listQueue: () => ipcRenderer.invoke("queue:list"),
   listLocalRecordings: () => ipcRenderer.invoke("recordings:list-local"),
+  sendRecording: (value) => ipcRenderer.invoke("recordings:send", requireRecordingAction(value, true)),
+  retryRecording: (value) => ipcRenderer.invoke("recordings:retry", requireRecordingAction(value, true)),
+  deleteRecording: (value) => ipcRenderer.invoke("recordings:delete", requireRecordingAction(value)),
+  revealRecording: (value) => ipcRenderer.invoke("recordings:reveal", requireRecordingAction(value)),
   verifyRecording: (clientRecordingId, expectedRevision) => {
     requireRecordingReference(clientRecordingId, expectedRevision);
     return ipcRenderer.invoke("recordings:verify", clientRecordingId, expectedRevision);

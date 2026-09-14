@@ -15,6 +15,7 @@ afterEach(() => {
 
 function items(state, count) {
   return Array.from({ length: count }, () => ({
+    kind: "time",
     state,
     requiresHumanAction: false,
     sizeBytes: 1,

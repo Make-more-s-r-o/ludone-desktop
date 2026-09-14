@@ -414,7 +414,12 @@ async function preflightRecording(item) {
       "permanent",
     );
   }
-  return Object.freeze({ clientRecordingId, manifest, tracks: Object.freeze(tracks) });
+  return Object.freeze({
+    clientRecordingId,
+    manifest,
+    title: safeString(item.title),
+    tracks: Object.freeze(tracks),
+  });
 }
 
 function normalizedOwnerFingerprint(value) {
@@ -738,7 +743,7 @@ function initPayload(recording, track, context, sessionId) {
     sessionId: safeString(sessionId) || safeString(recording.manifest.sessionId) || null,
     sha256: track.sha256,
     startedAt,
-    title: titleForTrack(recording.manifest, track.trackKind),
+    title: titleForTrack({ ...recording.manifest, title: recording.title }, track.trackKind),
     visibility: recording.manifest.visibility === "company" ? "company" : "private",
   };
 }

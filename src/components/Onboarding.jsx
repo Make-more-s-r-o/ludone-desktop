@@ -418,7 +418,14 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   }
 
   if (authFailure) {
-    return <AuthErrorScreen busy={authBusy} onRetry={beginAuth} reason={authFailure} embedded={embedded} />;
+    return <>
+      <AuthErrorScreen busy={authBusy} onRetry={beginAuth} reason={authFailure} embedded={embedded} />
+      {reauthenticate && !embedded && (
+        <button type="button" className="panel-settings-button"
+          data-testid="reauth-settings"
+          onClick={() => window.ludone.openSettings()}>Nastavení</button>
+      )}
+    </>;
   }
 
   const Container = embedded ? "section" : "main";
@@ -667,6 +674,11 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
             Otevřít můj panel <ArrowRightIcon />
           </button>
         </section>
+      )}
+      {reauthenticate && !embedded && (
+        <button type="button" className="panel-settings-button"
+          data-testid="reauth-settings"
+          onClick={() => window.ludone.openSettings()}>Nastavení</button>
       )}
     </Container>
   );

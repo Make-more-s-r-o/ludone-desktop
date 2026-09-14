@@ -672,7 +672,7 @@ describe("schválený klidový panel", () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([
       {
         id: "cekajici-nahravka",
-        kind: "recording",
+        kind: "time",
         lastFailureReason: "Síť není dostupná",
         nextAttemptAt,
         sizeBytes: 412 * megabyte,
@@ -727,7 +727,7 @@ describe("schválený klidový panel", () => {
       const retryQueue = vi.fn();
       const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([{
         id: "cekajici-nahravka",
-        kind: "recording",
+        kind: "time",
         lastFailureReason: null,
         nextAttemptAt,
         sendingDisabledReason: UPLOAD_DISABLED_REASON,
@@ -773,7 +773,7 @@ describe("schválený klidový panel", () => {
     const listQueue = vi.fn()
       .mockResolvedValueOnce([{
         id: "cekajici-nahravka",
-        kind: "recording",
+        kind: "time",
         lastFailureReason: "Síť není dostupná",
         nextAttemptAt: Date.now() + 60_000,
         sizeBytes: 1024,
@@ -782,7 +782,7 @@ describe("schválený klidový panel", () => {
       .mockResolvedValueOnce([])
       .mockResolvedValue([{
         id: "pozdejsi-nahravka",
-        kind: "recording",
+        kind: "time",
         nextAttemptAt: Date.now() + 60_000,
         sizeBytes: 2048,
         state: "ceka",
@@ -849,7 +849,7 @@ describe("schválený klidový panel", () => {
       const reason = "Server je dočasně nedostupný";
       const item = {
         id: "cekajici-nahravka",
-        kind: "recording",
+        kind: "time",
         lastFailureReason: reason,
         nextAttemptAt: Date.now() + 60_000,
         sizeBytes: 1024,
@@ -904,7 +904,7 @@ describe("schválený klidový panel", () => {
     async (outcome, reason, expectedMessage) => {
       const item = {
         id: "cekajici-nahravka",
-        kind: "recording",
+        kind: "time",
         lastFailureReason: null,
         nextAttemptAt: Date.now() + 60_000,
         sizeBytes: 1024,
@@ -944,7 +944,7 @@ describe("schválený klidový panel", () => {
     const reason = "Server je dočasně nedostupný";
     const item = {
       id: "cekajici-nahravka",
-      kind: "recording",
+      kind: "time",
       lastFailureReason: reason,
       nextAttemptAt: Date.now() + 60_000,
       sizeBytes: 1024,
@@ -989,7 +989,7 @@ describe("schválený klidový panel", () => {
     const reason = "Žádná položka není připravená";
     const item = {
       id: "cekajici-nahravka",
-      kind: "recording",
+      kind: "time",
       lastFailureReason: null,
       nextAttemptAt: Date.now() + 60_000,
       sizeBytes: 1024,
@@ -1031,7 +1031,7 @@ describe("schválený klidový panel", () => {
     const reason = "Server je dočasně nedostupný";
     const originalItem = {
       id: "puvodni-nahravka",
-      kind: "recording",
+      kind: "time",
       lastFailureReason: reason,
       nextAttemptAt: Date.now() + 60_000,
       sizeBytes: 1024,
@@ -1098,7 +1098,7 @@ describe("schválený klidový panel", () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([
       {
         id: "bezne-cekani",
-        kind: "recording",
+        kind: "time",
         lastFailureReason: "Síť není dostupná",
         nextAttemptAt: Date.now() + 2 * 60_000,
         sizeBytes: 10 * 1024 * 1024,

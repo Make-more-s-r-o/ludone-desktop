@@ -264,6 +264,7 @@ export function SettingsApp() {
   );
   const dock = useSystemBooleanSetting("getDockVisible", "setDockVisible");
   const login = useSystemBooleanSetting("getOpenAtLogin", "setOpenAtLogin");
+  const automaticUpload = useSystemBooleanSetting("getUploadEnabled", "setUploadEnabled");
   const update = (key, value) => {
     const nextSettings = { ...settings, [key]: value };
     setSettings(nextSettings);
@@ -799,6 +800,16 @@ export function SettingsApp() {
             </div>
             <div className="settings-row settings-row--static">
               <div><strong>Nahrávání spouštíš ručně.</strong></div>
+            </div>
+            <div className="settings-row">
+              <div>
+                <strong>Automaticky odesílat nové nahrávky</strong>
+                <small>Platí jen pro nahrávky zahájené po zapnutí. Starší záznamy se nezmění.</small>
+              </div>
+              <Toggle checked={automaticUpload.value}
+                disabled={!automaticUpload.loaded || automaticUpload.busy}
+                onChange={automaticUpload.update}
+                label="Automaticky odesílat nové nahrávky" />
             </div>
           </section>
 
