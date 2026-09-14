@@ -13,6 +13,7 @@
 | T-04 | T-R1 | Serverové ověření navazuje až po 429 ochraně kvůli sdíleným hotspotům. |
 | T-05 | T-04 | Akce a volba odeslání navazují na pravdivé stavy přehledu. |
 | T-A1 | — | Přihlášení se integruje nezávisle. |
+| T-A2 | T-A1 | Oprava identity zjištěná nezávislým review; před přejímkou. |
 | T-R1 | T-03 | Chování 429 se doplní po hotovém lokálním store a před serverovým ověřením. |
 | T-06 | — | Příprava vydání je nezávislá; zveřejnění má vlastní brány. |
 
@@ -22,6 +23,10 @@ Aktuální etapa je T-R1; T-03 byl převzat z `0b3f36b`. Tabulka jmenuje právě
 
 | Soubor | Aktuální vlastník | Pořadí předání | Poznámka |
 |---|---|---|---|
+| `electron/auth.cjs` | T-A2 | T-A1 → T-A2 | Izolovaná oprava userinfo fallbacku; main a queue jsou read-only. |
+| `tests/auth-identity-fallback.test.js` | T-A2 | T-A1 → T-A2 | Regrese skutečného controlleru a uložené session. |
+| `tests/auth-controller-wiring.test.js` | T-A2 | T-A1 → T-A2 | Auth wiring. |
+| `tests/auth-refresh.test.js` | T-A2 | T-A1 → T-A2 | Zachování důvěryhodné identity při refreshi. |
 | `src/lib/queue.js` | T-R1 | T-R1 → T-05 | T-03 soubor nemění; T-R1 jej převezme po integraci T-03. |
 | `src/lib/queue.test.js` | T-R1 | T-R1 → T-05 | Testovací sibling čisté queue logiky. |
 | `electron/queue.cjs` | T-R1 | T-03 → T-R1 → T-04 → T-05 | Store, dashboard detail, cooldown, verify target a consent postupně. |
@@ -58,6 +63,7 @@ Aktuální etapa je T-R1; T-03 byl převzat z `0b3f36b`. Tabulka jmenuje právě
 | T-04 | `tasks/T-04.md` | Sol serverové ověření |
 | T-05 | `tasks/T-05.md` | Sol consent a per-item akce |
 | T-A1 | `tasks/T-A1.md` | Sol auth — zpětný přehled |
+| T-A2 | `tasks/T-A2.md` | Sol userinfo review oprava |
 | T-06 | `tasks/T-06.md` | Sol vydání — zpětný přehled |
 
 Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.

@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:47:42.200Z",
+    "updatedAt": "2026-09-14T20:53:35.081Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -284,10 +284,30 @@
       "attempts": 0,
       "deps": [],
       "packet": "tasks/T-06.md"
+    },
+    {
+      "id": "T-A2",
+      "title": "Oprava userinfo fallbacku po review",
+      "executor": "codex",
+      "state": "dispatched",
+      "attempts": 1,
+      "deps": [
+        "T-A1"
+      ],
+      "packet": "tasks/T-A2.md",
+      "worktree": ".claude/worktrees/nahravky-userinfo"
     }
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:53:35.081Z",
+      "text": "Task T-A2 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-14T20:53:04.039Z",
+      "text": "Nezávislé auth review zjistilo fallback tokenové identity při chybě userinfo. Přidán ohraničený T-A2 se skutečnou controller/session regresí; refresh zachová ověřenou identitu."
+    },
     {
       "at": "2026-09-14T20:47:42.200Z",
       "text": "Doplněny chybějící podklady a zpětně označené packety již realizovaných etap; status je propojen s konkrétními packety. Schválení artefaktů se zpětně nevyrábí."
