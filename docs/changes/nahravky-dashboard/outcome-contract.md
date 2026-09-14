@@ -64,7 +64,7 @@ Kontrakt popisuje pozorovatelné výsledky schválené cesty „nahrát → rozh
 | `timeout/offline` | Stav zůstane lokální/queued; automatické opakování respektuje uložený termín a žádný polling dashboardu nevzniká. |
 | `invalid input` | Title, ID, revize, cesta nebo serverová odpověď se odmítne bez syrových hodnot a bez mutace. |
 | `conflict/concurrency` | Změna ownera/revize/session během dialogu či awaitu zahodí starý záměr a vyžádá refresh. |
-| `forbidden/redacted` | Renderer nevidí token, owner fingerprint ani cesty; cizí položka nemá send/delete. |
+| `forbidden/redacted` | Renderer nevidí token, owner fingerprint ani cesty; cizí položka nemá odeslání; lokální koš používá samostatnou kontrolu bezpečných souborů. |
 | `disabled/degraded` | Bez auth zůstane lokální přehled a Nastavení; podpis/publish bez konfigurace nezačne. |
 | `retry/rollback` | Retry je per item, 429 zachová attempts a release při selhání ponechá starý feed. |
 | `archived/superseded` | Desktop nezakládá archiv; sent/odstraněná položka se znovu nevytvoří a starší feed je po povýšení nahrazený. |
@@ -80,7 +80,7 @@ Kontrakt popisuje pozorovatelné výsledky schválené cesty „nahrát → rozh
 
 ## Idempotence, souběh a degradace
 
-- Stejná nahrávka/stopa zachovává stabilní identitu; opakovaný send nepřidá duplicitní INIT a partial progress přežije restart.
+- Stejná nahrávka/stopa zachovává stabilní identitu; idempotentní opakování INIT nevytvoří další serverovou nahrávku a partial progress přežije restart.
 - Store mutace mají jedno pořadí. Dvojklik, změna ownera nebo stale revize skončí jedním vítězem a bezpečným refresh/no-op výsledkem.
 - 429 blokuje vlastníka do autoritativního termínu bez spotřeby attempts; síť/5xx je retryable, auth/quota paused a neplatný vstup permanent nebo unavailable podle přesné třídy.
 - Bez serveru funguje lokální přehled, uložení a reveal. Bez loginu nelze claim/send/verify, ale Nastavení zůstává dostupné.

@@ -18,16 +18,16 @@
 
 ## Hotspoty a globální vlastnictví sdílených souborů
 
-Aktuální etapa je T-03. Tabulka jmenuje právě jednoho současného vlastníka a závazné pořadí budoucího předání. Není to autorizace souběhu: další vlastník začne zapisovat až po převzetí a integraci předchozí etapy.
+Aktuální etapa je T-R1; T-03 byl převzat z `0b3f36b`. Tabulka jmenuje právě jednoho vlastníka a závazné pořadí předání. U souborů mimo aktivní packet zůstává poslední přijatý vlastník jako záznam předání; žádný worker do nich nyní nezapisuje. Není to autorizace souběhu: další vlastník začne zapisovat až po převzetí a integraci předchozí etapy.
 
 | Soubor | Aktuální vlastník | Pořadí předání | Poznámka |
 |---|---|---|---|
 | `src/lib/queue.js` | T-R1 | T-R1 → T-05 | T-03 soubor nemění; T-R1 jej převezme po integraci T-03. |
 | `src/lib/queue.test.js` | T-R1 | T-R1 → T-05 | Testovací sibling čisté queue logiky. |
-| `electron/queue.cjs` | T-03 | T-03 → T-R1 → T-04 → T-05 | Store, dashboard detail, cooldown, verify target a consent postupně. |
-| `electron/queue.test.cjs` | T-03 | T-03 → T-R1 → T-04 → T-05 | Testovací sibling store. |
-| `electron/main.cjs` | T-03 | T-03 → T-R1 → T-04 → T-05 | IPC a lifecycle bloky se předávají sekvenčně. |
-| `electron/main.test.cjs` | T-03 | T-03 → T-R1 → T-04 → T-05 | Testovací sibling hlavního procesu. |
+| `electron/queue.cjs` | T-R1 | T-03 → T-R1 → T-04 → T-05 | Store, dashboard detail, cooldown, verify target a consent postupně. |
+| `electron/queue.test.cjs` | T-R1 | T-03 → T-R1 → T-04 → T-05 | Testovací sibling store. |
+| `electron/main.cjs` | T-R1 | T-03 → T-R1 → T-04 → T-05 | IPC a lifecycle bloky se předávají sekvenčně. |
+| `electron/main.test.cjs` | T-R1 | T-03 → T-R1 → T-04 → T-05 | Testovací sibling hlavního procesu. |
 | `electron/preload.cjs` | T-03 | T-03 → T-04 → T-05 | Úzké mosty dashboardu, ověření a akcí. |
 | `electron/preload.test.cjs` | T-03 | T-03 → T-04 → T-05 | Testovací sibling preloadu. |
 | `src/features/recordings/RecordingsDashboard.jsx` | T-03 | T-03 → T-04 → T-05 | Lokální přehled, serverové výsledky a akce. |
@@ -35,8 +35,8 @@ Aktuální etapa je T-03. Tabulka jmenuje právě jednoho současného vlastník
 | `src/styles.css` | T-03 | T-03 → T-04 → T-05 | Jen existující tokeny a kompozice. |
 | `electron/recordings-dashboard.cjs` | T-03 | T-03 → T-05 | Trusted diskový snapshot a pozdější akce. |
 | `electron/recordings-dashboard.test.cjs` | T-03 | T-03 → T-05 | Testovací sibling diskového snapshotu. |
-| `tests/queue.test.js` | T-03 | T-03 → T-R1 → T-04 → T-05 | Sdílené queue a store regrese. |
-| `tests/queue-wiring.test.js` | T-03 | T-03 → T-R1 → T-04 → T-05 | Sdílené main/IPC wiring regrese. |
+| `tests/queue.test.js` | T-R1 | T-03 → T-R1 → T-04 → T-05 | Sdílené queue a store regrese. |
+| `tests/queue-wiring.test.js` | T-R1 | T-03 → T-R1 → T-04 → T-05 | Sdílené main/IPC wiring regrese. |
 | `tests/ipc-sender-guard.test.js` | T-03 | T-03 → T-04 → T-05 | Ochrana odesílatele nových kanálů. |
 | `tests/recordings-dashboard.test.js` | T-03 | T-03 → T-04 → T-05 | Integrační renderer test dashboardu. |
 | `tests/settings.test.js` | T-03 | T-03 → T-05 | T-03 jej vlastní po review `19b89b4`; T-05 naváže později. |

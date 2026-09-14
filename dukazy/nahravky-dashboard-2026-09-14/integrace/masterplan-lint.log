@@ -1,0 +1,6 @@
+PŘÍKAZ: node /Users/dan/.claude/skills/masterplan/scripts/mp-lint.mjs nahravky-dashboard
+NÁLEZ [C2] artifacts/design/approved.json:1 — (artefakt požadovaný tierem chybí nebo má chybný typ)
+  Náprava: Doplň soubor `artifacts/design/approved.json` požadovaný pro tier L.
+SOUHRN: 9 packetů, 28 pravidel a 29 souborů prověřeno; 1 nálezů.
+
+EXIT_CODE=1

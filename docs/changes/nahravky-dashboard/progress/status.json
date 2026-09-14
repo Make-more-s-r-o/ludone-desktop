@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:46:31.996Z",
+    "updatedAt": "2026-09-14T20:47:42.200Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -193,7 +193,7 @@
       "state": "completed",
       "attempts": 0,
       "deps": [],
-      "packet": "ZADANI-PRO-CODEX.md",
+      "packet": "tasks/T-00.md",
       "report": "evidence/tasks/T0.report.json"
     },
     {
@@ -205,7 +205,7 @@
       "deps": [
         "T-00"
       ],
-      "packet": "ZADANI-PRO-CODEX.md"
+      "packet": "tasks/T-01.md"
     },
     {
       "id": "T-02",
@@ -261,7 +261,7 @@
       "state": "completed",
       "attempts": 0,
       "deps": [],
-      "packet": "ZADANI-PRO-CODEX.md",
+      "packet": "tasks/T-A1.md",
       "report": "evidence/tasks/A1.report.json"
     },
     {
@@ -283,11 +283,15 @@
       "state": "completed",
       "attempts": 0,
       "deps": [],
-      "packet": "ZADANI-PRO-CODEX.md"
+      "packet": "tasks/T-06.md"
     }
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:47:42.200Z",
+      "text": "Doplněny chybějící podklady a zpětně označené packety již realizovaných etap; status je propojen s konkrétními packety. Schválení artefaktů se zpětně nevyrábí."
+    },
     {
       "at": "2026-09-14T20:46:31.996Z",
       "text": "Task T-R1 má nově stav „dispatched“."
