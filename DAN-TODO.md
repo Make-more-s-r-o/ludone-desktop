@@ -53,6 +53,34 @@ Danova rozhodnutí, ze kterých zadání vychází:
    otevřít složku se souborem — **a všechny musí být vidět v UI**.
 4. **Rozsah UI:** volná ruka včetně Nastavení (Codex smí přepracovat i stávající panel).
 
+### 🔴 Nález, který tvoje rozhodnutí č. 2 částečně blokuje
+
+Chtěls porovnávat se serverem. **Změřeno, že to dnes nejde postavit celé** — a je to ze dvou
+třetin naše chyba, ne serveru:
+
+- **Server nemá endpoint, který by vypsal tvoje nahrávky**, ani takový, který odpoví na dotaz
+  podle `clientRecordingId`. Stav umí vrátit **jen podle `recordingId`, které přiděluje on sám**
+  (`GET /api/nahravky/uploads/{recordingId}`, strop 120/h **sdílený s webem**, pevné hodinové okno,
+  klíčem je uživatel).
+- **A to `recordingId` si neukládáme.** Funkce `applyServerProgress` (`src/lib/queue.js:342–356`)
+  je hotová **i otestovaná**, ale **nevolá ji nikdo** — v `electron/*.cjs` není jediné volání.
+  Proto má odeslaná položka dodnes `server.recordingId: null`, přestože server nahrávku má.
+
+⇒ **Zapojení té funkce je první úkol v zadání**, ne vylepšení. Od té chvíle půjde porovnat
+každou novou nahrávku. **U starých už `recordingId` nevznikne**, takže u nich dashboard řekne
+„na serveru neověřeno" — a nebude je barvit na zeleno podle toho, co si myslí fronta. Přesně
+ten omyl tě tenhle týden třikrát poslal špatným směrem.
+
+📨 **Pro serverovou session (ne pro Codexe):** chybí čtecí endpoint pro výpis nahrávek uživatele,
+případně dotaz podle `clientRecordingId`. Bez něj desktop nedokáže dohledat nic, co sám právě
+neodeslal. Až s nimi budeš mluvit, tohle je ta prosba.
+
+⚠️ **Jedna věc k rozhodnutí, až se k tomu vrátíš:** okno Nastavení je **448 px široké a pevné**
+(`electron/main.cjs:1058–1064`) a záložka „Záznamy" už existuje — řeší ale něco jiného (jak
+dlouho se soubory drží na disku). Dashboard je buď pátá záložka vedle ní, nebo se obě slijí;
+dvě různé věci se stejným jménem v Nastavení být nemají. Zadání to po Codexovi chce rozhodnout
+a napsat, ale poslední slovo je tvoje.
+
 ---
 
 ## ✅ ROZHODNUTO 14. 9. — repo zůstává VEŘEJNÉ (bylo: nejvyšší priorita)
