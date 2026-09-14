@@ -81,6 +81,15 @@ describe("release artefakty", () => {
     await expect(validateReleaseArtifacts(fixture.root)).rejects.toThrow(/velikost|SHA-512/);
   });
 
+  it("odmítne velikost s přilepeným nečíselným obsahem", async () => {
+    const fixture = await releaseFixture();
+    const metadataPath = path.join(fixture.root, fixture.expected.metadata);
+    const metadata = await readFile(metadataPath, "utf8");
+    await writeFile(metadataPath, metadata.replace(/size: (\d+)/, "size: $1abc"));
+
+    await expect(validateReleaseArtifacts(fixture.root)).rejects.toThrow(/velikost/);
+  });
+
   it("odmítne neúplnou sadu blockmap", async () => {
     const fixture = await releaseFixture();
     await rm(path.join(fixture.root, fixture.expected.blockmaps[0]));
