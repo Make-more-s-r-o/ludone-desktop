@@ -665,6 +665,8 @@ s exit kódem 0; doslovné výpisy jsou v
 
 ### Původní otázka na zapnutí uploadu — vyřešena vloženým goalem
 
+T5 převzato 15. 9. z `e225880`: root plná brána 1469 PASS a tři původní skipy, exit 0. Obě volby po nahrávání, trvalý název/consent, per-item send/retry, obnovený retry timer, koš/reveal a přímé Nastavení jsou integrované. Nezávislé review potvrdilo opravy duplicitního manifestu a sdíleného audia. Jde o 🧪, skutečný zvuk a produkční upload čekají na Mac.
+
 15. 9. navíc potvrzeno D15: účet s více firmami neměl v aplikaci výběr firmy a vyžadoval terminálovou proměnnou. T-A3 (`0340c8e`) připravil bezpečný selector a atomický zápis firmy; root plná brána 1452 PASS a tři původní skipy, exit 0. Zapojení do Nastavení a ochrana již inicializovaných uploadů při změně firmy ještě čekají na T-A4 po T5. Samostatný selector není vydaná ani živě ověřená funkce.
 
 Dan 14. 9. výslovně schválil dokončení přihlášení a odesílání z Finderu i volitelnou automatiku. Rozhodnutí D3/D10/D11 nahrazují dřívější odložení přepínače: T-A1 zapnul odpovídající scope a zdroj identity společně. T5 zpřístupní manuální odeslání schválené položky bez shellového nastavení; uložený přepínač bude pouze automatika nových nahrávek. Explicitní false/invalid transportní proměnná zůstane tvrdou stopkou. Další souhlas s tímto rozsahem se nevyžaduje.

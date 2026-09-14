@@ -8,7 +8,7 @@
     "hromadnychSchvaleniNeboRetry": 0,
     "serverDeleteRequestu": 0,
     "produkcnichRequestu": 0,
-    "rawCestVRendereruNeboReportu": 0
+    "citlivychCestVRendereru": 0
   },
   "kontrolniNula": {
     "souboruMimoAllowlist": 0,
@@ -24,7 +24,7 @@
     "Rendererové projekce nově očekávají title/uploadIntent a per-item akce s queueRev/fileRev; vlastní held položka není vydávána za chybné vlastnictví.",
     "Text volby Jen uložit byl podle kontraktu nahrazen Nechat na Macu a obě volby zachovávají zadaný title."
   ],
-  "novychTestu": 37,
+  "novychTestu": 36,
   "sabotaze": [
     {
       "nazev": "Legacy položka se dočasně auto-schválila.",
@@ -61,6 +61,7 @@
     "Plná npm run gates byla spuštěna právě jednou. První běh skončil 24 známými consent fixture pády; po schváleném rozšíření allowlistu byly pouze transportní fixture výslovně nastaveny na approved a opravy byly ověřeny cílenými běhy.",
     "Finální cílená sada měla 647/647 PASS; lint a typecheck skončily exit 0.",
     "Delete odmítá duplicitní UUID, audio sdílené jiným bezpečným primárním manifestem i jinou queue položkou bez manifestu; incomplete primary s platným sidecarem lze uklidit i při chybějícím audiu bez hashování.",
-    "Žádný server DELETE, produkční request, instalace, GUI ani Git zápis nebyl proveden."
+    "Žádný server DELETE, produkční request, instalace, GUI ani Git zápis nebyl proveden.",
+    "Koordinátor opravil počet podle vlastního plného běhu: 1469 − 1433 = 36 nových případů. Doslovné testovací logy obsahují syntetické dočasné cesty; nejsou tvrzením nulových cest v reportu."
   ]
 }

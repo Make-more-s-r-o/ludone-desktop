@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T22:08:31.143Z",
+    "updatedAt": "2026-09-14T22:27:51.508Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -17,10 +17,10 @@
     "requires": []
   },
   "summary": {
-    "done": 6,
+    "done": 8,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 2
+    "notStarted": 0
   },
   "features": [
     {
@@ -76,11 +76,11 @@
       "name": "Odeslání podle volby",
       "whatItGives": "Uživatel rozhodne o odeslání každé nové nahrávky.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "committed",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "T5 převzato z e225880, root plná brána 1469 PASS. Ukládání/send/keep a future-only automatika mají testy; skutečné nahrávání ověří Dan.",
       "evidence": []
     },
     {
@@ -88,11 +88,11 @@
       "name": "Akce nad záznamem",
       "whatItGives": "Konkrétní nahrávku lze bezpečně spravovat a otevřít na webu.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "committed",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Per-item akce T5 přijaté po review. Zbývá T-A4 ochrana firmy, integrační GUI průchod a Danovo živé ověření.",
       "evidence": []
     },
     {
@@ -249,13 +249,14 @@
       "id": "T-05",
       "title": "Akce a odesílání",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-04"
       ],
       "packet": "tasks/T-05.md",
-      "worktree": ".claude/worktrees/nahravky-akce"
+      "worktree": ".claude/worktrees/nahravky-akce",
+      "report": "evidence/tasks/T-05.report.json"
     },
     {
       "id": "T-A1",
@@ -330,6 +331,22 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T22:27:51.508Z",
+      "text": "T5 převzato z e225880 po opravených P2 a root gates1469. Společná T5+A3 integrační brána má 1488 PASS, 3 původní skipy, exit0. T-A4 přebírá hotspoty pro poslední funkční zapojení firmy."
+    },
+    {
+      "at": "2026-09-14T22:27:16.652Z",
+      "text": "Funkce NRD-06 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T22:27:16.366Z",
+      "text": "Funkce NRD-05 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T22:27:16.059Z",
+      "text": "Task T-05 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T22:08:31.143Z",
       "text": "T5 první plná brána odhalila 22 starých transportních fixtures bez explicitního consentu. Allowlist rozšířen o dva testovací soubory; ochrany neztracení dat a retence se nemění. T-A4 packet připraven, čeká na T5."
