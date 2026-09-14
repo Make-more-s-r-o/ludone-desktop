@@ -3916,6 +3916,7 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(preloadCode).toContain('ipcRenderer.invoke("queue:claim-recording"');
     expect(preloadCode).toContain('ipcRenderer.invoke("queue:list")');
     expect(preloadCode).toContain('ipcRenderer.invoke("queue:retry")');
+    expect(preloadCode).toContain('ipcRenderer.invoke("recordings:list-local")');
   });
 
   it("preload převzetí propustí jen jako GUID a revizi", async () => {
@@ -3933,6 +3934,14 @@ describe("produkční zapojení odchozí fronty", () => {
       expect(() => preload.api.claimRecording(...payload)).toThrow(/GUID.*revizi/u);
     }
     expect(preload.invoke).toHaveBeenCalledOnce();
+  });
+
+  it("preload načte lokální přehled jediným úzkým IPC voláním", async () => {
+    const snapshot = { items: [], unreadableCount: 0 };
+    const preload = loadPreload(snapshot);
+
+    await expect(preload.api.listLocalRecordings()).resolves.toBe(snapshot);
+    expect(preload.invoke).toHaveBeenCalledExactlyOnceWith("recordings:list-local");
   });
 
   it("pojmenování přes preload předá časování, GUID i název na přesné IPC kanály", async () => {
@@ -3984,6 +3993,7 @@ describe("produkční zapojení odchozí fronty", () => {
   it("IPC fronty používá předepsané role odesílatele", () => {
     expect(mainCode).toContain('handleValidated("queue:claim-recording", ["settings"]');
     expect(mainCode).toContain('handleValidated("queue:list", ["panel", "settings"]');
+    expect(mainCode).toContain('handleValidated("recordings:list-local", ["settings"]');
     expect(mainCode).toContain('handleValidated("queue:retry", ["panel"]');
   });
 
@@ -5124,6 +5134,69 @@ describe("produkční zapojení odchozí fronty", () => {
     await harness.runReady();
     await vi.waitFor(() => expect(pump).toHaveBeenCalledTimes(1));
     expect(createOutboundQueueStore).toHaveBeenCalledTimes(1);
+  });
+
+  it("lokální přehled projde z disku přes store a chráněné IPC bez recovery nebo sítě", async () => {
+    const queueStoreModule = actualRequire("./queue.cjs");
+    const recoverOrphanedRecordings = vi.fn(async () => ({
+      alreadyQueued: 0, failed: 0, recovered: 0, skipped: 0,
+    }));
+    const createOutboundQueueStore = vi.fn((dependencies) => (
+      queueStoreModule.createOutboundQueueStore(dependencies)
+    ));
+    const harness = await loadMain({ createOutboundQueueStore, recoverOrphanedRecordings });
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const manifestPath = path.join(recordingsDirectory, "ipc.manifest.json");
+    await mkdir(recordingsDirectory, { recursive: true });
+    const manifest = {
+      schemaVersion: 1,
+      clientRecordingId: id,
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      state: "complete",
+      tracks: {
+        microphone: {
+          fileName: "ipc-microphone.webm",
+          sha256: "a".repeat(64),
+          sizeBytes: 0,
+          startedAt: "2026-09-14T10:00:00.000Z",
+          endedAt: "2026-09-14T10:00:01.000Z",
+        },
+      },
+    };
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await writeFile(path.join(recordingsDirectory, "ipc-microphone.webm"), Buffer.alloc(0));
+    const setupStore = queueStoreModule.createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    await setupStore.enqueueRecording({
+      manifest,
+      manifestPath,
+      trackPaths: { microphone: path.join(recordingsDirectory, "ipc-microphone.webm") },
+    });
+
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const listLocal = harness.ipcHandlers.get("recordings:list-local");
+    await expect(Promise.resolve().then(() => listLocal(panelEvent)))
+      .rejects.toThrow(/nedůvěryhodný odesílatel/u);
+    await expect(listLocal(settingsEvent)).resolves.toMatchObject({
+      unreadableCount: 0,
+      items: [{
+        id,
+        source: "queue",
+        localState: "complete-audio",
+        sizeBytes: 0,
+        revision: expect.stringMatching(/^sha256:/u),
+        fileRevision: expect.stringMatching(/^sha256:/u),
+      }],
+    });
+    expect(recoverOrphanedRecordings).toHaveBeenCalledOnce();
+    expect(harness.electron.net.fetch).not.toHaveBeenCalled();
   });
 
   it("po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam", async () => {

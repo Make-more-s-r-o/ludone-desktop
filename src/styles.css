@@ -2564,6 +2564,11 @@ svg {
   list-style: none;
 }
 
+.recordings-dashboard__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .recording-queue-card {
   display: flex;
   flex-direction: column;
@@ -2592,6 +2597,21 @@ svg {
   font-size: 9.5px;
   line-height: 1.4;
   overflow-wrap: anywhere;
+}
+
+.recording-queue-card__local {
+  font-weight: 600;
+}
+
+.recording-queue-card__local--complete-audio {
+  color: var(--panel-ok);
+}
+
+.recording-queue-card__local--partial-audio,
+.recording-queue-card__local--missing-audio,
+.recording-queue-card__local--invalid-manifest,
+.recording-queue-card--invalid > p {
+  color: var(--panel-wait);
 }
 
 .diagnostics-card {

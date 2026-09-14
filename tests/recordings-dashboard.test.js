@@ -18,6 +18,10 @@ const ITEM = Object.freeze({
   createdAt: "2026-09-14T10:00:00.000Z",
   durationMs: 65_000,
   sizeBytes: 2_500_000,
+  source: "queue",
+  localState: "complete-audio",
+  fileRevision: `sha256:${"c".repeat(64)}`,
+  allowedActions: { claim: true, delete: false, retry: false, send: false },
   path: "/tajne/porada.webm",
   ownerFingerprint: `sha256:${"f".repeat(64)}`,
 });
@@ -37,17 +41,21 @@ function deferred() {
  *   authState?: string,
  *   claimRecording?: (...args: any[]) => Promise<any>,
  *   listQueue?: () => Promise<any[]>,
+ *   listLocalRecordings?: () => Promise<any>,
  * }} options
  */
 async function renderDashboard({
   authState = "signed-in",
   claimRecording = () => Promise.resolve({ claimed: false, items: [ITEM] }),
-  listQueue = () => Promise.resolve([ITEM]),
+  listQueue,
+  listLocalRecordings = listQueue
+    ? async () => ({ items: await listQueue(), unreadableCount: 0 })
+    : () => Promise.resolve({ items: [ITEM], unreadableCount: 0 }),
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const ludone = {
     claimRecording: vi.fn(claimRecording),
-    listQueue: vi.fn(listQueue),
+    listLocalRecordings: vi.fn(listLocalRecordings),
   };
   Object.defineProperty(dom.window, "ludone", { configurable: true, value: ludone });
   vi.stubGlobal("React", React);
@@ -60,7 +68,7 @@ async function renderDashboard({
   await React.act(async () => {
     root.render(React.createElement(RecordingsDashboard, { authState }));
   });
-  await vi.waitFor(() => expect(ludone.listQueue).toHaveBeenCalledOnce());
+  await vi.waitFor(() => expect(ludone.listLocalRecordings).toHaveBeenCalledOnce());
   return {
     document: dom.window.document,
     ludone,
@@ -138,7 +146,15 @@ describe("dashboard fronty nahrávek", () => {
 
   it("ukáže bezpečná fakta a dvojklik odešle jediný přesný claim", async () => {
     const pending = deferred();
-    const dashboard = await renderDashboard({ claimRecording: () => pending.promise });
+    const listQueue = vi.fn()
+      .mockResolvedValueOnce([ITEM])
+      .mockResolvedValue([{
+        ...ITEM,
+        ownership: "current",
+        blockReason: "Převzatá nahrávka čeká na volbu odeslání",
+        allowedActions: { ...ITEM.allowedActions, claim: false },
+      }]);
+    const dashboard = await renderDashboard({ claimRecording: () => pending.promise, listQueue });
     try {
       await vi.waitFor(() => expect(claimButton(dashboard)).toBeDefined());
       const button = claimButton(dashboard);
@@ -214,7 +230,64 @@ describe("dashboard fronty nahrávek", () => {
         await Promise.resolve();
       });
       await vi.waitFor(() => expect(listQueue).toHaveBeenCalledTimes(2));
-      expect(dashboard.document.body.textContent).toContain("Ve frontě nejsou žádné nahrávky");
+      expect(dashboard.document.body.textContent).toContain("nejsou žádné nahrávky k zobrazení");
+      expect(dashboard.document.querySelector('[role="alert"]')).toBeNull();
+    } finally {
+      await dashboard.cleanup();
+    }
+  });
+
+  it("ruční obnovení vykreslí retention ghost, vadný souhrn a potom prázdný stav", async () => {
+    const listLocalRecordings = vi.fn()
+      .mockResolvedValueOnce({
+        items: [{
+          ...ITEM,
+          id: "11111111-1111-4111-8111-111111111111",
+          source: "orphan",
+          state: "orphan",
+          ownership: "unavailable",
+          revision: null,
+          sizeBytes: null,
+          localState: "missing-audio",
+          allowedActions: { claim: false, delete: false, retry: false, send: false },
+        }],
+        unreadableCount: 1,
+      })
+      .mockResolvedValueOnce({ items: [], unreadableCount: 0 });
+    const dashboard = await renderDashboard({ listLocalRecordings });
+    try {
+      await vi.waitFor(() => expect(dashboard.document.body.textContent).toContain("Zvukové soubory chybí"));
+      expect(dashboard.document.body.textContent).toContain("Jen na Macu");
+      expect(dashboard.document.body.textContent).toContain("Poškozená data bez bezpečné identity");
+      expect(dashboard.document.querySelectorAll(".recording-queue-card button")).toHaveLength(0);
+      const refresh = [...dashboard.document.querySelectorAll("button")]
+        .find((button) => button.textContent.trim() === "Obnovit přehled");
+      await React.act(async () => {
+        refresh.click();
+        await Promise.resolve();
+      });
+      await vi.waitFor(() => expect(listLocalRecordings).toHaveBeenCalledTimes(2));
+      expect(dashboard.document.body.textContent).toContain("nejsou žádné nahrávky k zobrazení");
+    } finally {
+      await dashboard.cleanup();
+    }
+  });
+
+  it("chyba prvního načtení není prázdný stav a tlačítko ji opraví", async () => {
+    const listLocalRecordings = vi.fn()
+      .mockRejectedValueOnce(new Error("rozbitý outgoing.json"))
+      .mockResolvedValueOnce({ items: [ITEM], unreadableCount: 0 });
+    const dashboard = await renderDashboard({ listLocalRecordings });
+    try {
+      await vi.waitFor(() => expect(dashboard.document.querySelector('[role="alert"]')).not.toBeNull());
+      expect(dashboard.document.body.textContent).not.toContain("nejsou žádné nahrávky k zobrazení");
+      const retry = [...dashboard.document.querySelectorAll("button")]
+        .find((button) => button.textContent.trim() === "Načíst znovu");
+      await React.act(async () => {
+        retry.click();
+        await Promise.resolve();
+      });
+      await vi.waitFor(() => expect(dashboard.document.body.textContent).toContain("Zvuk je kompletní"));
       expect(dashboard.document.querySelector('[role="alert"]')).toBeNull();
     } finally {
       await dashboard.cleanup();

@@ -141,6 +141,300 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("read-only lokální přehled nahrávek", () => {
+  const ids = {
+    queue: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+    orphan: "11111111-1111-4111-8111-111111111111",
+    invalid: "22222222-2222-4222-8222-222222222222",
+  };
+
+  function localManifest(id, microphoneName, systemName = null) {
+    const tracks = {
+      microphone: {
+        fileName: microphoneName,
+        sha256: "a".repeat(64),
+        sizeBytes: 1,
+        startedAt: "2026-09-14T10:00:00.000Z",
+        endedAt: "2026-09-14T10:00:01.000Z",
+      },
+    };
+    if (systemName !== null) tracks.system = { ...tracks.microphone, fileName: systemName };
+    return {
+      schemaVersion: 1,
+      clientRecordingId: id,
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      state: "complete",
+      tracks,
+    };
+  }
+
+  it("spojí frontu s orphan manifesty, ignoruje sidecar a rozliší úplnost i nulový soubor", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queueManifestPath = path.join(recordingsDirectory, "queue.manifest.json");
+    const orphanManifestPath = path.join(recordingsDirectory, "orphan.manifest.json");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      const queueManifest = localManifest(ids.queue, "queue-mic.webm", "queue-system.webm");
+      await fs.promises.writeFile(queueManifestPath, JSON.stringify(queueManifest));
+      await fs.promises.writeFile(path.join(recordingsDirectory, "queue-mic.webm"), "mikrofon");
+      await store.enqueueRecording({
+        manifest: queueManifest,
+        manifestPath: queueManifestPath,
+        trackPaths: {
+          microphone: path.join(recordingsDirectory, "queue-mic.webm"),
+          system: path.join(recordingsDirectory, "queue-system.webm"),
+        },
+      });
+
+      const orphanManifest = localManifest(ids.orphan, "orphan-zero.webm");
+      await fs.promises.writeFile(orphanManifestPath, JSON.stringify(orphanManifest));
+      await fs.promises.writeFile(path.join(recordingsDirectory, "orphan-zero.webm"), Buffer.alloc(0));
+      await fs.promises.writeFile(
+        `${orphanManifestPath}.recovered-upload-v1.json`,
+        JSON.stringify(orphanManifest),
+      );
+
+      const snapshot = await store.listLocalRecordings();
+      expect(snapshot.items).toHaveLength(2);
+      expect(snapshot.items.find((item) => item.id === ids.queue)).toMatchObject({
+        source: "queue",
+        localState: "partial-audio",
+        revision: expect.stringMatching(/^sha256:/u),
+        fileRevision: expect.stringMatching(/^sha256:/u),
+      });
+      expect(snapshot.items.find((item) => item.id === ids.orphan)).toMatchObject({
+        source: "orphan",
+        localState: "complete-audio",
+        sizeBytes: 0,
+        revision: null,
+        allowedActions: { claim: false, delete: false, retry: false, send: false },
+      });
+      expect(snapshot.unreadableCount).toBe(0);
+      expect(JSON.stringify(snapshot)).not.toContain(directory);
+      expect(JSON.stringify(snapshot)).not.toContain("ownerFingerprint");
+
+      const persisted = JSON.parse(await fs.promises.readFile(queuePath, "utf8"));
+      persisted.items[0].state = "selhalo";
+      persisted.items[0].nextAttemptAt = 123_456;
+      persisted.items[0].lastFailureReason = `token-like /Users/utocnik/${"s".repeat(48)}`;
+      await fs.promises.writeFile(queuePath, JSON.stringify(persisted));
+      const sanitized = await store.listLocalRecordings();
+      expect(sanitized.items.find((item) => item.id === ids.queue).blockReason)
+        .toBe("Předchozí pokus se nezdařil.");
+      expect(sanitized.items.find((item) => item.id === ids.queue).nextAttemptAt).toBe(123_456);
+      expect(JSON.stringify(sanitized)).not.toContain("token-like");
+      expect(JSON.stringify(sanitized)).not.toContain("/Users/utocnik");
+
+      for (const inheritedObjectKey of ["__proto__", "constructor"]) {
+        persisted.items[0].lastFailureReason = inheritedObjectKey;
+        await fs.promises.writeFile(queuePath, JSON.stringify(persisted));
+        const protectedSnapshot = await store.listLocalRecordings();
+        const protectedReason = protectedSnapshot.items.find((item) => item.id === ids.queue)
+          .blockReason;
+        expect(protectedReason).toBe("Předchozí pokus se nezdařil.");
+        expect(typeof protectedReason).toBe("string");
+      }
+
+      await fs.promises.writeFile(queueManifestPath, JSON.stringify({
+        ...queueManifest,
+        clientRecordingId: ids.invalid,
+      }));
+      const mismatched = await store.listLocalRecordings();
+      expect(mismatched.items.find((item) => item.id === ids.queue)).toMatchObject({
+        localState: "invalid-manifest",
+        allowedActions: { claim: false, delete: false, retry: false, send: false },
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("odliší missing a invalid manifest, neuhodne ID a fileRevision reaguje na disk", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-invalid-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      const orphanPath = path.join(recordingsDirectory, "missing.manifest.json");
+      await fs.promises.writeFile(orphanPath, JSON.stringify(localManifest(ids.orphan, "missing.webm")));
+      await fs.promises.writeFile(
+        path.join(recordingsDirectory, "invalid.manifest.json"),
+        JSON.stringify({ ...localManifest(ids.invalid, "../unik.webm"), tracks: {
+          microphone: { ...localManifest(ids.invalid, "x").tracks.microphone, fileName: "../unik.webm" },
+        } }),
+      );
+      await fs.promises.writeFile(path.join(recordingsDirectory, "broken.manifest.json"), "{tajna-cesta:/tmp/x");
+
+      const first = await store.listLocalRecordings();
+      expect(first.items.find((item) => item.id === ids.orphan)).toMatchObject({
+        localState: "missing-audio",
+        sizeBytes: null,
+      });
+      expect(first.items.find((item) => item.id === ids.invalid)).toMatchObject({
+        localState: "invalid-manifest",
+        fileRevision: expect.stringMatching(/^sha256:/u),
+      });
+      expect(first.unreadableCount).toBe(1);
+      expect(JSON.stringify(first)).not.toContain("tajna-cesta");
+      expect(JSON.stringify(first)).not.toContain("../unik.webm");
+
+      await fs.promises.writeFile(path.join(recordingsDirectory, "missing.webm"), "nový zvuk");
+      const second = await store.listLocalRecordings();
+      expect(second.items.find((item) => item.id === ids.orphan)).toMatchObject({
+        localState: "complete-audio",
+        sizeBytes: 10,
+      });
+      expect(second.items.find((item) => item.id === ids.orphan).fileRevision)
+        .not.toBe(first.items.find((item) => item.id === ids.orphan).fileRevision);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("rozbitou frontu odmítne před scanem a nic na disku nezmění", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-queue-error-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(path.dirname(queuePath), { recursive: true });
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.writeFile(queuePath, JSON.stringify({ schemaVersion: 1, items: [] }));
+      const orphanPath = path.join(recordingsDirectory, "orphan.manifest.json");
+      await fs.promises.writeFile(orphanPath, JSON.stringify(localManifest(ids.orphan, "zero.webm")));
+      await expect(store.listLocalRecordings()).resolves.toMatchObject({ unreadableCount: 0 });
+      await fs.promises.writeFile(queuePath, "{rozbita-fronta");
+      const beforeQueue = await fs.promises.readFile(queuePath, "utf8");
+      const beforeManifest = await fs.promises.readFile(orphanPath, "utf8");
+
+      await expect(store.listLocalRecordings()).rejects.toThrow();
+      expect(await fs.promises.readFile(queuePath, "utf8")).toBe(beforeQueue);
+      expect(await fs.promises.readFile(orphanPath, "utf8")).toBe(beforeManifest);
+      expect(await fs.promises.readdir(recordingsDirectory)).toEqual(["orphan.manifest.json"]);
+      await expect(store.enqueueRecording({})).rejects.toThrow(/JSON/u);
+      expect(await fs.promises.readFile(queuePath, "utf8")).toBe(beforeQueue);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("symlink a podadresář nesmí vytvořit použitelnou orphan kartu", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-symlink-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const outside = path.join(directory, "outside.manifest.json");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.mkdir(path.join(recordingsDirectory, "nested"));
+      await fs.promises.writeFile(outside, JSON.stringify(localManifest(ids.orphan, "x.webm")));
+      await fs.promises.symlink(outside, path.join(recordingsDirectory, "link.manifest.json"));
+      await fs.promises.writeFile(
+        path.join(recordingsDirectory, "nested", "ignored.manifest.json"),
+        JSON.stringify(localManifest(ids.invalid, "x.webm")),
+      );
+
+      const snapshot = await store.listLocalRecordings();
+      expect(snapshot.items).toEqual([]);
+      expect(snapshot.unreadableCount).toBe(1);
+      expect(JSON.stringify(snapshot)).not.toContain(directory);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("queue řádek bez UUID skončí jen v unreadableCount", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-bad-id-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    try {
+      await fs.promises.mkdir(path.dirname(queuePath), { recursive: true });
+      await fs.promises.mkdir(path.join(directory, "nahravky"));
+      await fs.promises.writeFile(queuePath, JSON.stringify({
+        schemaVersion: 1,
+        items: [{
+          clientRecordingId: "/Users/utocnik/token-like",
+          kind: "recording",
+          state: "ceka",
+          attempts: 0,
+          nextAttemptAt: null,
+          lastFailureReason: "secret",
+          manifestPath: "/Users/utocnik/secret.manifest.json",
+          tracks: {},
+        }],
+      }));
+      const store = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      const snapshot = await store.listLocalRecordings();
+      expect(snapshot).toEqual({ items: [], unreadableCount: 1 });
+      expect(JSON.stringify(snapshot)).not.toContain("utocnik");
+      expect(JSON.stringify(snapshot)).not.toContain("secret");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("odmítne symlink kořene před čtením a nadlimitní manifest jen bezpečně sečte", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-root-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const targetDirectory = path.join(directory, "cil");
+    try {
+      await fs.promises.mkdir(path.dirname(queuePath), { recursive: true });
+      await fs.promises.writeFile(queuePath, JSON.stringify({ schemaVersion: 1, items: [] }));
+      await fs.promises.mkdir(targetDirectory);
+      await fs.promises.symlink(targetDirectory, recordingsDirectory);
+      const unsafeStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      await expect(unsafeStore.listLocalRecordings()).rejects.toThrow(/adresář nahrávek/u);
+
+      await fs.promises.unlink(recordingsDirectory);
+      await fs.promises.mkdir(recordingsDirectory);
+      await fs.promises.writeFile(
+        path.join(recordingsDirectory, "oversize.manifest.json"),
+        Buffer.alloc((1024 * 1024) + 1, 123),
+      );
+      const safeStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      await expect(safeStore.listLocalRecordings()).resolves.toEqual({
+        items: [],
+        unreadableCount: 1,
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+});
+
 function recording(clientRecordingId = "9e586e55-d688-43f1-8a80-a3d61e754f3e") {
   const startedAt = "2026-08-25T08:00:00.000Z";
   const endedAt = "2026-08-25T08:30:00.000Z";

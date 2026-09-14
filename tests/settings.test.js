@@ -42,7 +42,7 @@ async function renderSettings({
     fileName: "ludone-diagnostika-2026-09-03-130500.txt",
   }),
   identity = () => Promise.resolve({ name: "Ada Lovelace", email: "ada@ludone.cz" }),
-  listQueue = () => Promise.resolve([]),
+  listLocalRecordings = () => Promise.resolve({ items: [], unreadableCount: 0 }),
   claimRecording = () => Promise.resolve({ claimed: false, items: [] }),
   logout = () => Promise.resolve({ signedOutLocally: true, serverRevoked: true, reason: null }),
   openAtLogin = () => Promise.resolve(true),
@@ -82,7 +82,7 @@ async function renderSettings({
     getDiagnostics: vi.fn(diagnostics),
     getDockVisible: vi.fn(dockVisible),
     getOpenAtLogin: vi.fn(openAtLogin),
-    listQueue: vi.fn(listQueue),
+    listLocalRecordings: vi.fn(listLocalRecordings),
     claimRecording: vi.fn(claimRecording),
     exportDiagnostics: vi.fn(exportDiagnostics),
     logout: logoutMock,
@@ -376,17 +376,26 @@ describe("pět částí Nastavení", () => {
       createdAt: "2026-09-14T10:00:00.000Z",
       durationMs: 65_000,
       sizeBytes: 2_500_000,
+      source: "queue",
+      localState: "complete-audio",
+      fileRevision: `sha256:${"c".repeat(64)}`,
+      allowedActions: { claim: true, delete: false, retry: false, send: false },
     };
+    const claimedItem = {
+      ...item,
+      revision: `sha256:${"b".repeat(64)}`,
+      blockReason: "Převzatá nahrávka čeká na volbu odeslání",
+      ownership: "current",
+      allowedActions: { claim: false, delete: false, retry: false, send: false },
+    };
+    const listLocalRecordings = vi.fn()
+      .mockResolvedValueOnce({ items: [item], unreadableCount: 0 })
+      .mockResolvedValue({ items: [claimedItem], unreadableCount: 0 });
     const settings = await renderSettings({
-      listQueue: () => Promise.resolve([item]),
+      listLocalRecordings,
       claimRecording: () => Promise.resolve({
         claimed: true,
-        items: [{
-          ...item,
-          revision: `sha256:${"b".repeat(64)}`,
-          blockReason: "Převzatá nahrávka čeká na volbu odeslání",
-          ownership: "current",
-        }],
+        items: [claimedItem],
       }),
     });
     try {
@@ -404,7 +413,8 @@ describe("pět částí Nastavení", () => {
       });
       await vi.waitFor(() => expect(settings.ludone.claimRecording).toHaveBeenCalledOnce());
       expect(settings.ludone.claimRecording).toHaveBeenCalledWith(id, revision);
-      expect(settings.ludone.listQueue).toHaveBeenCalledOnce();
+      expect(settings.ludone.listLocalRecordings).toHaveBeenCalledTimes(2);
+      expect(listLocalRecordings).toHaveBeenCalledTimes(2);
       expect(settings.ludone.getDiagnostics).not.toHaveBeenCalled();
       expect(settings.document.body.textContent).toContain("Převzatá nahrávka čeká");
     } finally {

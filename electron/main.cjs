@@ -2607,6 +2607,13 @@ handleValidated("queue:list", ["panel", "settings"], async () => {
   updateOutboundQueueTrayFact(items);
   return items;
 });
+handleValidated("recordings:list-local", ["settings"], async () => {
+  const currentOwnerFingerprint = await readCurrentValidQueueOwnerFingerprint();
+  const snapshot = await (await getOutboundQueueStore())
+    .listLocalRecordings(currentOwnerFingerprint);
+  const items = await addQueueSendingAvailability(snapshot.items);
+  return { ...snapshot, items };
+});
 handleValidated("queue:claim-recording", ["settings"], async (
   event,
   clientRecordingId,

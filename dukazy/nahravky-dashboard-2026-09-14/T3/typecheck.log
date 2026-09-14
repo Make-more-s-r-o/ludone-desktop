@@ -1,0 +1,6 @@
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+EXIT_CODE=0
