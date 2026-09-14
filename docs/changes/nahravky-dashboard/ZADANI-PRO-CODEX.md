@@ -585,6 +585,30 @@ zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 
 Značky: ⬜ nezačato · 🔵 rozpracováno · ✅ hotovo a mergnuto · 🔴 zablokováno (napiš čím).
 
+### Auth packaged aplikace — větev `fix/nahravky-prihlaseni`
+
+🧪 **Auth část je hotová v commitech `99ac8e7` a `e2e7ed7`, čeká na integraci a bezpečnostní
+review diffu.** Packaged aplikace bez shellových proměnných nově žádá samostatný scope
+`nahravky:upload` a identitu výhradně z `userinfo` stejného issueru. Stará relace se scope
+`mcp:read` zůstane zachovaná do úspěšného interaktivního přihlášení, ale hlavní proces ji
+nepustí do identity, otisku vlastníka ani uploadu; nový login ji atomicky přepíše a kvůli
+neshodě issuer/resource/scope provede novou dynamickou registraci.
+
+`invalid_client` z token endpointu i z validovaného loopback callbacku zneplatní právě
+odpovídající uloženou relaci. Kód pak nepoužije starý refresh token znovu a nespouští
+automatický login; nový klient vznikne až při dalším výslovném přihlášení člověka. OAuth
+chybové kódy jdou do zprávy jen přes pevný allowlist, `error_description` ani neznámý
+`body.error` se do UI či logu nepropíše.
+
+`premisaPlatila`: ano — bez env přepínače běžel starý scope a pouhá shoda issueru stačila,
+aby se stará relace tvářila jako přihlášená. `kontrolniNula`: žádný nový IPC kanál, žádný
+zásah do LuTracku, serveru nebo designu a žádné ostré přihlášení. Doslovný výpis `npm run
+gates` s exit kódem 0 je v `dukazy/nahravky-dashboard-2026-09-14/auth/REPORT.md`.
+
+⚠️ Tohle samo nezapíná `DESKTOP_UPLOAD_ENABLED`: čerstvá packaged aplikace má vypínač fronty
+stále vypnutý. Navazující UI/default změna jej musí uživateli zpřístupnit, jinak správný auth
+token existuje, ale pumpa odesílání se nerozběhne.
+
 ### ❓ Otevřená otázka na Dana (zeptej se hned, ale neblokuj tím práci)
 
 🔴 **Odesílání se dnes v běžně spuštěné aplikaci nedá zapnout vůbec.** `DESKTOP_UPLOAD_ENABLED`
