@@ -1,0 +1,144 @@
+SABOTÁŽ: createdAt: safeNullableString(item.createdAt), -> createdAt: null,
+$ npx vitest run tests/queue.test.js -t projekce zpřístupní
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace
+
+ ❯ tests/queue.test.js (97 tests | 1 failed | 96 skipped) 13ms
+   ↓ vlastník nahrávky v perzistentní frontě > ukládá jen stabilní doménově oddělený SHA-256 otisk, ne čitelnou identitu
+   ↓ vlastník nahrávky v perzistentní frontě > bez tajemství se otisk NEODVODÍ — musí vyjít null
+   ↓ vlastník nahrávky v perzistentní frontě > produkční store přidá otisk k dvoustopé i jednostopé položce
+   ↓ vlastník nahrávky v perzistentní frontě > anonymní enqueue zapíše null a pozdější opakování jej nepřivlastní
+   ↓ vlastník nahrávky v perzistentní frontě > starou položku schématu v1 bez pole vlastníka načte beze ztráty jako neznámou
+   ↓ produkční čtení killswitchů > 'nenastavený vypínač nahrávek zůstane …'
+   ↓ produkční čtení killswitchů > 'false ve vypínači nahrávek zůstane di…'
+   ↓ produkční čtení killswitchů > 'nepřesné TRUE vypínač nahrávek nezapne'
+   ↓ produkční čtení killswitchů > 'přesný řetězec true zapne nahrávky'
+   ↓ produkční čtení killswitchů > 'produkčně zapnutý časový vypínač nepo…'
+   ↓ produkční čtení killswitchů > 'nenastavený vypínač času zůstane disa…'
+   ↓ produkční čtení killswitchů > 'false ve vypínači času zůstane disabl…'
+   ↓ produkční čtení killswitchů > 'nepřesné TRUE vypínač času nezapne'
+   ↓ produkční čtení killswitchů > 'přesný řetězec true zapne čas'
+   ↓ produkční čtení killswitchů > 'produkčně zapnutý vypínač nahrávek ne…'
+   ↓ killswitch odchozí fronty > s nenastaveným DESKTOP_UPLOAD_ENABLED záměrně nic neodešle
+   ↓ killswitch odchozí fronty > s hodnotou false nic neodešle a vrátí důvod vypnutí
+   ↓ killswitch odchozí fronty > s hodnotou true zavolá pouze mockovanou odesílací vrstvu
+   ↓ killswitch odchozí fronty > jiná pravdivostní hodnota odesílání nezapne
+   ↓ killswitch odchozí fronty > časová položka používá samostatný zapnutý vypínač
+   ↓ killswitch odchozí fronty > zapnutý vypínač času nepovolí nahrávku
+   ↓ killswitch odchozí fronty > zapnutý vypínač nahrávek nepovolí časovou položku
+   ↓ killswitch odchozí fronty > boolean true časový vypínač fail-closed nezapne
+   ↓ killswitch odchozí fronty > blokovaná položka má přednost před položkou čekající na čas
+   ↓ stavový automat fronty > zařazená nahrávka nese rozlišovač typu
+   ↓ stavový automat fronty > zařazený časový záznam nese typ time a klíč z B5
+   ↓ stavový automat fronty > časový záznam se sazbou se odmítne
+   ↓ stavový automat fronty > do časové položky se nedostane žádné pole se sazbou
+   ↓ stavový automat fronty > dvojí zařazení stejného clientTimeEntryId vytvoří jedinou položku
+   ↓ stavový automat fronty > dvojí zařazení stejného clientRecordingId vytvoří jedinou položku
+   ↓ stavový automat fronty > produkční store zařadí jednostopu pravdivě a idempotentně
+   ↓ stavový automat fronty > shodné ID jiné položky nesmí předstírat idempotentní obnovu nahrávky
+   ↓ stavový automat fronty > neúspěch ponechá položku ve frontě a zvýší počet pokusů
+   ↓ stavový automat fronty > sentAt vznikne až po dokončení odesílání
+   ↓ stavový automat fronty > 🔴 po 429 počká přesně tolik, kolik řekl server, ne podle vlastního rozvrhu
+   ↓ stavový automat fronty > retry prodlevu počítá až od dokončení neúspěšného pokusu
+   ↓ stavový automat fronty > po vyčerpání pokusů označí položku jako selhalo a nesmaže ji
+   ↓ stavový automat fronty > vrátí selhalo do ceka bez změny důvodu, vlastníka (sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) a vstupní fronty
+   ↓ stavový automat fronty > vrátí selhalo do ceka bez změny důvodu, vlastníka (null) a vstupní fronty
+   ↓ stavový automat fronty > vrácení položky ve stavu ceka ponechá původní frontu i položku
+   ↓ stavový automat fronty > vrácení položky ve stavu odesila ponechá původní frontu i položku
+   ↓ stavový automat fronty > vrácení položky ve stavu odeslano ponechá původní frontu i položku
+   ↓ stavový automat fronty > vrácená položka se opravdu dostane k dalšímu pokusu, ne jen do stavu ceka
+   ↓ stavový automat fronty > kód rodiny vlastnictví se ručním vrácením neobejde
+   ↓ stavový automat fronty > starší česká hláška se ručním vrácením neobejde
+   ↓ stavový automat fronty > vrácení neznámého clientRecordingId odmítne a frontu nezmění
+   ↓ stavový automat fronty > po selhání permanent umožní nový pokus s obnoveným rozpočtem pokusů
+   ↓ stavový automat fronty > po selhání retryable umožní nový pokus s obnoveným rozpočtem pokusů
+   ↓ stavový automat fronty > opakování používá rostoucí exponenciální prodlevu s pevným stropem
+   ↓ stavový automat fronty > offsety obou stop vždy převezme ze serveru místo lokálního odhadu
+   ↓ stavový automat fronty > postup k neznámé nahrávce odmítne a frontu nezmění
+   ↓ stavový automat fronty > vyžaduje killswitch v podpisu spolu s odesílací vrstvou
+   ↓ stavový automat fronty > trvalá chyba skončí při prvním pokusu a neopakuje se pětkrát
+   ↓ stavový automat fronty > pauza invalid_grant nespotřebuje pokus
+   ↓ stavový automat fronty > starší položka bez kind se čte jako nahrávka
+   ↓ stavový automat fronty > pohled pro renderer neobsahuje absolutní cesty ani manifest
+   × stavový automat fronty > projekce zpřístupní jen bezpečná serverová pole a přesný důvod blokace 12ms
+     → expected { …(12) } to match object { …(5) }
+(7 matching properties omitted from actual)
+   ↓ stavový automat fronty > NEZNÁMÝ vlastnický důvod se bere jako čekající na člověka: queue_owner_revoked
+   ↓ stavový automat fronty > NEZNÁMÝ vlastnický důvod se bere jako čekající na člověka: session_owner_expired
+   ↓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Nahrávka patří jinému účtu
+   ↓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem
+   ↓ stavový automat fronty > rozpozná už uložený vlastnický důvod bez nového příznaku: Identitu aktuálního přihlášení nelze ověřit
+   ↓ stavový automat fronty > nevybraná firma je čekání na člověka, ne tiché stání fronty
+   ↓ stavový automat fronty > nedosažitelný seznam firem je opakovatelný a frontu nezastaví
+   ↓ stavový automat fronty > insufficient_scope (HTTP 403) je čekání na člověka, ne tichá nekonečná smyčka
+   ↓ stavový automat fronty > položka pauznutá na insufficient_scope se další pumpou sama nezkusí
+   ↓ stavový automat fronty > nahrávku bez vlastníka přeskočí a odešle další v pořadí
+   ↓ stavový automat fronty > když jsou všechny připravené bez vlastníka, označí je všechny a nic neodešle
+   ↓ stavový automat fronty > 🔴 chyba přihlášení pump ZASTAVÍ a zbytek fronty vůbec nezkouší
+   ↓ stavový automat fronty > neznámý důvod pauzy pump taky zastaví (fail-closed)
+   ↓ stavový automat fronty > libovolná jiná pauza se slovem owner nepatří bez výslovného kontraktu člověku
+   ↓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Vlastník databáze je potvrzen, ale server není dostupný
+   ↓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Identitu zařízení se po přihlášení nepodařilo načíst
+   ↓ stavový automat fronty > volná podobnost historické zprávy nevytvoří lidský zásah: Nahrávka se kvůli síti nepřiřadila jinému účtu
+   ↓ stavový automat fronty > další pumpa položku čekající na člověka sama znovu nezkouší
+   ↓ trvalé uložení fronty > po restartu zachová data a doplní neznámého vlastníka
+   ↓ trvalé uložení fronty > atomický zápis fsyncne data i adresář
+   ↓ obnova osiřelých nahrávek > obnoví dokončenou jednostopu bez vymyšleného systémového souboru
+   ↓ obnova osiřelých nahrávek > dvojí obnova nevytvoří dvě položky
+   ↓ obnova osiřelých nahrávek > poškozený manifest obnovu nezastaví, zůstane ležet a neprozradí název
+   ↓ obnova osiřelých nahrávek > incomplete manifest opraví do uploadovatelného sidecaru a originál zachová
+   ↓ obnova osiřelých nahrávek > jednu nulovou stopu zařadí jako chráněný raw incomplete záznam
+   ↓ obnova osiřelých nahrávek > complete manifest s jednou nulovou stopou obnoví do viditelné fronty
+   ↓ obnova osiřelých nahrávek > obě nulové stopy incomplete manifestu nechá na disku bez položky
+   ↓ obnova osiřelých nahrávek > complete stopu nad upload limitem zařadí bez čtení celého souboru
+   ↓ obnova osiřelých nahrávek > selhání zápisu obnovené položky nezamění za vadný manifest
+   ↓ obnova osiřelých nahrávek > existující sidecar přijme jen při přesně shodném bezpečném obsahu
+   ↓ perzistentní pumpa fronty > po selhání fsync adresáře znovu načte stav po dokončeném rename
+   ↓ perzistentní pumpa fronty > serializuje souběžná zařazení bez ztráty položky
+   ↓ perzistentní pumpa fronty > trvalý první pokus uloží s attempts 1 a další pumpy ho neopakují
+   ↓ perzistentní pumpa fronty > 🔴 jedna pumpa pošle víc nahrávek, ale zastaví se na první systémové chybě
+   ↓ perzistentní pumpa fronty > 🔴 pumpa řekne, KOLIK odeslala, ne jen jak dopadla poslední
+   ↓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší
+   ↓ perzistentní pumpa fronty > ruční retry vynuluje prodlevu, uloží ji a hned probudí pumpu
+   ↓ perzistentní pumpa fronty > ruční retry přeskočí vlastníka čekajícího na člověka a opravdu odešle běžnou položku
+   ↓ perzistentní pumpa fronty > renderer dostane přesný součet skutečných souborů, ne velikost odhadem z manifestu
+   ↓ perzistentní pumpa fronty > pumpa s vypnutými přepínači položku zachová bez pokusu
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/queue.test.js > stavový automat fronty > projekce zpřístupní jen bezpečná serverová pole a přesný důvod blokace
+AssertionError: expected { …(12) } to match object { …(5) }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -1,8 +1,8 @@
+  {
+    "blockReason": "Nahrávka patří jinému účtu",
+-   "createdAt": "2026-08-25T08:00:00.000Z",
++   "createdAt": null,
+    "durationMs": 1800000,
+    "server": {
+      "sessionId": "session-1",
+      "tracks": {
+        "microphone": {
+
+ ❯ tests/queue.test.js:1181:18
+    1179|     const [view] = reduceQueueForRenderer(queue);
+    1180| 
+    1181|     expect(view).toMatchObject({
+       |                  ^
+    1182|       blockReason: "Nahrávka patří jinému účtu",
+    1183|       createdAt: "2026-08-25T08:00:00.000Z",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 96 skipped (97)
+   Start at  21:29:48
+   Duration  382ms (transform 63ms, setup 8ms, collect 84ms, tests 13ms, environment 0ms, prepare 48ms)
+
+
+EXIT_CODE=1

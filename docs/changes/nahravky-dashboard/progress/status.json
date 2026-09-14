@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T19:23:21.020Z",
+    "updatedAt": "2026-09-14T19:31:00.356Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -20,10 +20,10 @@
     ]
   },
   "summary": {
-    "done": 0,
+    "done": 1,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 9
+    "notStarted": 8
   },
   "features": [
     {
@@ -115,11 +115,11 @@
       "name": "Produkční přihlášení",
       "whatItGives": "Nahrávání a upload fungují bez shellového nastavení.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "committed",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Implementace a nezávislé ověření dle plan.md.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Ověřit přihlášení z nové aplikace na Danově Macu; odesílání dokončí navazující consent.",
       "evidence": []
     },
     {
@@ -270,10 +270,11 @@
       "id": "A1",
       "title": "Přihlášení a upload scope",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 0,
       "deps": [],
-      "packet": "ZADANI-PRO-CODEX.md"
+      "packet": "ZADANI-PRO-CODEX.md",
+      "report": "evidence/tasks/A1.report.json"
     },
     {
       "id": "R1",
@@ -298,6 +299,14 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T19:31:00.356Z",
+      "text": "Funkce NRD-07 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T19:30:59.916Z",
+      "text": "Task A1 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T19:23:21.020Z",
       "text": "Task T1 má nově stav „dispatched“."
