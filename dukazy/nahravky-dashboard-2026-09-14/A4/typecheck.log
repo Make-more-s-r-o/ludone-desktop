@@ -1,0 +1,41 @@
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+electron/upload-client.cjs(986,34): error TS2554: Expected 0 arguments, but got 1.
+tests/queue-wiring.test.js(7955,7): error TS2322: Type 'Mock<() => Promise<{ companies: string; defaultCompanyId: any; }>>' is not assignable to type 'Mock<() => Promise<{ companies: { id: string; name: string; }[]; defaultCompanyId: string; }>>'.
+  Types of property 'mock' are incompatible.
+    Type 'MockContext<() => Promise<{ companies: string; defaultCompanyId: any; }>>' is not assignable to type 'MockContext<() => Promise<{ companies: { id: string; name: string; }[]; defaultCompanyId: string; }>>'.
+      Type '() => Promise<{ companies: string; defaultCompanyId: any; }>' is not assignable to type '() => Promise<{ companies: { id: string; name: string; }[]; defaultCompanyId: string; }>'.
+        Type 'Promise<{ companies: string; defaultCompanyId: any; }>' is not assignable to type 'Promise<{ companies: { id: string; name: string; }[]; defaultCompanyId: string; }>'.
+          Type '{ companies: string; defaultCompanyId: any; }' is not assignable to type '{ companies: { id: string; name: string; }[]; defaultCompanyId: string; }'.
+            Types of property 'companies' are incompatible.
+              Type 'string' is not assignable to type '{ id: string; name: string; }[]'.
+EXIT_CODE=1
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+EXIT_CODE=0
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+tests/queue-wiring.test.js(7976,7): error TS2322: Type '(value: any) => void' is not assignable to type '() => void'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+FINAL_EXIT_CODE=1
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+FINAL_EXIT_CODE=0
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+POST_REVIEW_EXIT_CODE=0
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+FINAL_EXIT_CODE=0

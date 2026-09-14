@@ -19,6 +19,7 @@ import {
   enqueueTimeEntry,
   killswitchNameForKind,
   processNext,
+  rebindCompanyOutOfScopeItem,
   queueItemRequiresHumanAction,
   reduceQueueForRenderer,
   retryDelayMs,
@@ -1410,6 +1411,58 @@ describe("stavový automat fronty", () => {
     expect(retryDelayMs(2, policy, () => 0)).toBe(200);
     expect(retryDelayMs(3, policy, () => 1)).toBe(350);
     expect(retryDelayMs(8, policy, () => 0)).toBe(350);
+  });
+
+  it("připne firmu jediným pre-init eventem a zachová ji v dalším progressu", () => {
+    const queued = oneItemQueue();
+    const companyTabidooId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const pinned = applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      companyTabidooId,
+    });
+    const initialized = applyServerProgress(pinned.queue, pinned.item.clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    });
+    expect(initialized.item.server.companyTabidooId).toBe(companyTabidooId);
+    expect(() => applyServerProgress(initialized.queue, initialized.item.clientRecordingId, {
+      companyTabidooId: "765a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+    })).toThrow(/po zahájení/u);
+    expect(() => applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      companyTabidooId,
+      track: "microphone",
+    })).toThrow(/samostatný/u);
+  });
+
+  it("explicitní retry přepne firmu jen bez serverových ID a zachová initialized pin", () => {
+    const oldCompany = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const newCompany = "765a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const queued = oneItemQueue();
+    queued.items[0] = {
+      ...queued.items[0],
+      lastFailureReason: "company_out_of_scope (HTTP 403)",
+      server: { ...queued.items[0].server, companyTabidooId: oldCompany },
+      state: QUEUE_STATES.FAILED,
+    };
+    const rebound = rebindCompanyOutOfScopeItem(
+      queued,
+      queued.items[0].clientRecordingId,
+      newCompany,
+    );
+    expect(rebound.item.server.companyTabidooId).toBe(newCompany);
+
+    const initialized = applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    });
+    const blocked = rebindCompanyOutOfScopeItem(
+      initialized.queue,
+      initialized.item.clientRecordingId,
+      newCompany,
+    );
+    expect(blocked.item.server.companyTabidooId).toBe(oldCompany);
+    expect(blocked.item.server.tracks.microphone.recordingId).toBe(SERVER_MICROPHONE_ID);
   });
 
   it("offsety obou stop vždy převezme ze serveru místo lokálního odhadu", () => {
@@ -2920,6 +2973,118 @@ describe("perzistentní pumpa fronty", () => {
         nextAttemptAt: null,
         state: QUEUE_STATES.FAILED,
       });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("store retry přepne 403 pin jen zero-ID položce a initialized položku neodešle", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-company-rebind-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const manifestPath = path.join(recordingsDirectory, "rebind.manifest.json");
+    const microphonePath = path.join(recordingsDirectory, "rebind-microphone.webm");
+    const oldCompany = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const newCompany = "765a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const bytes = Buffer.from("mikrofon");
+    const manifest = {
+      schemaVersion: 1,
+      clientRecordingId: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      state: "complete",
+      tracks: {
+        microphone: {
+          fileName: path.basename(microphonePath),
+          sha256: createHash("sha256").update(bytes).digest("hex"),
+          sizeBytes: bytes.byteLength,
+          startedAt: "2026-09-14T10:00:00.000Z",
+          endedAt: "2026-09-14T10:00:01.000Z",
+        },
+      },
+    };
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.writeFile(manifestPath, JSON.stringify(manifest));
+      await fs.promises.writeFile(microphonePath, bytes);
+      const seedStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      await enqueueApproved(seedStore, {
+        manifest,
+        manifestPath,
+        ownerFingerprint: CURRENT_OWNER,
+        trackPaths: { microphone: microphonePath },
+      });
+      const seeded = await loadQueue(queuePath);
+      const failedZero = {
+        ...seeded,
+        items: [{
+          ...seeded.items[0],
+          attempts: 1,
+          lastFailureReason: "company_out_of_scope (HTTP 403)",
+          nextAttemptAt: null,
+          requiresHumanAction: true,
+          server: { ...seeded.items[0].server, companyTabidooId: oldCompany },
+          state: QUEUE_STATES.FAILED,
+        }],
+      };
+      await saveQueueAtomically(queuePath, failedZero);
+      const sendZero = vi.fn(async (item) => {
+        expect(item.server.companyTabidooId).toBe(newCompany);
+      });
+      const zeroStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: sendZero,
+      });
+      const zeroSnapshot = (await zeroStore.listLocalRecordings(CURRENT_OWNER)).items[0];
+      await zeroStore.actOnRecording({
+        clientRecordingId: manifest.clientRecordingId,
+        currentOwnerFingerprint: CURRENT_OWNER,
+        expectedFileRevision: zeroSnapshot.fileRevision,
+        expectedRevision: zeroSnapshot.revision,
+        getCurrentCompany: async () => newCompany,
+        guard: async () => true,
+        killswitches: killswitches(ENABLED_SETTING),
+        mode: "retry",
+      });
+      expect(sendZero).toHaveBeenCalledOnce();
+      expect((await loadQueue(queuePath)).items[0].server.companyTabidooId).toBe(newCompany);
+
+      const initialized = {
+        ...failedZero,
+        items: [{
+          ...failedZero.items[0],
+          server: {
+            ...failedZero.items[0].server,
+            companyTabidooId: undefined,
+            sessionId: SERVER_SESSION_ID,
+          },
+        }],
+      };
+      await saveQueueAtomically(queuePath, initialized);
+      const sendInitialized = vi.fn();
+      const initializedStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: sendInitialized,
+      });
+      const initializedSnapshot = (await initializedStore.listLocalRecordings(CURRENT_OWNER)).items[0];
+      await expect(initializedStore.actOnRecording({
+        clientRecordingId: manifest.clientRecordingId,
+        currentOwnerFingerprint: CURRENT_OWNER,
+        expectedFileRevision: initializedSnapshot.fileRevision,
+        expectedRevision: initializedSnapshot.revision,
+        getCurrentCompany: async () => newCompany,
+        guard: async () => true,
+        killswitches: killswitches(ENABLED_SETTING),
+        mode: "retry",
+      })).rejects.toThrow(/Inicializovanou nahrávku/u);
+      expect(sendInitialized).not.toHaveBeenCalled();
+      expect((await loadQueue(queuePath)).items[0].server.sessionId).toBe(SERVER_SESSION_ID);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

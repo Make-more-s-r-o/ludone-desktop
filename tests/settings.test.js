@@ -42,6 +42,9 @@ async function renderSettings({
     fileName: "ludone-diagnostika-2026-09-03-130500.txt",
   }),
   identity = () => Promise.resolve({ name: "Ada Lovelace", email: "ada@ludone.cz" }),
+  listUploadCompanies = () => Promise.resolve({
+    companies: [], selectedCompanyId: null, offerToken: "11111111-1111-4111-8111-111111111111",
+  }),
   listLocalRecordings = () => Promise.resolve({ items: [], unreadableCount: 0 }),
   claimRecording = () => Promise.resolve({ claimed: false, items: [] }),
   logout = () => Promise.resolve({ signedOutLocally: true, serverRevoked: true, reason: null }),
@@ -56,6 +59,9 @@ async function renderSettings({
   }>)} */ (undefined),
   setDockVisible = (value) => Promise.resolve(value),
   setOpenAtLogin = (value) => Promise.resolve(value),
+  selectUploadCompany = (_offerToken, companyId) => Promise.resolve({
+    saved: true, selectedCompanyId: companyId,
+  }),
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const style = dom.window.document.createElement("style");
@@ -83,6 +89,7 @@ async function renderSettings({
     getDockVisible: vi.fn(dockVisible),
     getOpenAtLogin: vi.fn(openAtLogin),
     listLocalRecordings: vi.fn(listLocalRecordings),
+    listUploadCompanies: vi.fn(listUploadCompanies),
     claimRecording: vi.fn(claimRecording),
     exportDiagnostics: vi.fn(exportDiagnostics),
     logout: logoutMock,
@@ -90,6 +97,7 @@ async function renderSettings({
     switchAuthOrigin: vi.fn(switchAuthOriginImplementation),
     setDockVisible: vi.fn(setDockVisible),
     setOpenAtLogin: vi.fn(setOpenAtLogin),
+    selectUploadCompany: vi.fn(selectUploadCompany),
   };
   Object.defineProperty(dom.window, "localStorage", {
     configurable: true,
@@ -480,10 +488,10 @@ describe("pět částí Nastavení", () => {
       expect(environmentSelect?.getAttribute("aria-describedby"))
         .toBe("settings-environment-explanation");
       expect(settings.document.body.textContent).toContain(
-        "Na produkci modul nahrávek schválně není. Na labs ho uvidí jen admin.",
+        "Prostředí určuje server, ke kterému se tento Mac přihlašuje a odesílá data.",
       );
       expect(settings.document.body.textContent).toContain(
-        "Prostředí se během dne často aktualizuje.",
+        "Lokální nahrávky zůstanou uložené. Dříve schválené pokračují po přihlášení.",
       );
 
       const logoutButton = [...settings.document.querySelectorAll("button")]
@@ -935,6 +943,40 @@ describe("pět částí Nastavení", () => {
 });
 
 describe("pravdivá identita v Nastavení", () => {
+  it("výběr firmy se načte jen klikem a uloží explicitní ID bez odeslání fronty", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const settings = await renderSettings({
+      listUploadCompanies: async () => ({
+        companies: [{ id: companyId, name: "Make more s.r.o." }],
+        selectedCompanyId: null,
+        offerToken: "11111111-1111-4111-8111-111111111111",
+      }),
+    });
+    try {
+      await expectAccountState(settings, "signed-in");
+      expect(settings.ludone.listUploadCompanies).not.toHaveBeenCalled();
+      const load = [...settings.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Načíst firmy"));
+      await React.act(async () => load.click());
+      const select = settings.document.querySelector("#upload-company");
+      expect(select.value).toBe("");
+      await React.act(async () => {
+        select.value = companyId;
+        select.dispatchEvent(new settings.document.defaultView.Event("change", { bubbles: true }));
+      });
+      const save = [...settings.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Uložit firmu"));
+      await React.act(async () => save.click());
+      expect(settings.ludone.selectUploadCompany).toHaveBeenCalledExactlyOnceWith(
+        "11111111-1111-4111-8111-111111111111",
+        companyId,
+      );
+      expect(settings.ludone.listLocalRecordings).not.toHaveBeenCalled();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
   it("vykreslí skutečné jméno, e-mail, odvozený avatar a nakonfigurovaný origin", async () => {
     const settings = await renderSettings();
     try {

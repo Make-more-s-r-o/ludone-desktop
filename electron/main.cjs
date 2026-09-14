@@ -47,6 +47,7 @@ const {
 } = require("./queue.cjs");
 const { createRecordingUploadSend } = require("./upload-client.cjs");
 const { createRecordingVerifier } = require("./recording-verification.cjs");
+const { createUploadCompanySelectionController } = require("./upload-company-selection.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
   AUTH_ORIGINS,
@@ -95,6 +96,8 @@ const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const AUTH_COPY_PENDING_URL_CHANNEL = "auth:copy-pending-url";
 const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+const OFFER_TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
 const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
@@ -460,9 +463,12 @@ let authAttemptsInFlight = 0;
 let authLogoutsInFlight = 0;
 let authOriginChangeInFlight = false;
 let authSessionGeneration = 0;
+let uploadCompanyGeneration = 0;
+let uploadCompanySelectionEpoch = 0;
 let authSessionTransitionPromise = null;
 let claimDialogGeneration = 0;
 let recordingVerifier;
+let uploadCompanySelectionController;
 const activeAuthAttempts = new Set();
 const AUTH_CANCEL_CHANNEL = "auth:cancel";
 
@@ -1089,8 +1095,12 @@ function createSettingsWindow() {
   });
 
   settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), { hash: "settings" });
+  settingsWindow.webContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
+    if (isMainFrame) invalidateUploadCompanySelection();
+  });
   settingsWindow.once("ready-to-show", () => settingsWindow.show());
   settingsWindow.on("closed", () => {
+    invalidateUploadCompanySelection();
     settingsWindow = undefined;
   });
 }
@@ -2218,6 +2228,7 @@ async function resolveUploadCompanyId(storedSession) {
       accessToken: storedSession.accessToken,
       fetchImpl: globalThis.fetch,
       issuer: storedSession.issuer,
+      requireValidPayload: true,
       trustedRemoteEndpoint,
     }),
     onNote: (zprava) => console.log(`[upload] ${zprava}`),
@@ -2232,9 +2243,11 @@ async function resolveUploadCompanyId(storedSession) {
 }
 
 async function recordingUploadContext() {
+  const generation = authSessionGeneration;
   const storedSession = await readUsableAuthSession();
-  if (storedAuthSessionState(storedSession) !== "valid") return null;
+  if (generation !== authSessionGeneration || storedAuthSessionState(storedSession) !== "valid") return null;
   const firma = await resolveUploadCompanyId(storedSession);
+  if (generation !== authSessionGeneration) return null;
   return {
     accessToken: storedSession.accessToken,
     companyTabidooId: firma.companyTabidooId,
@@ -2244,6 +2257,23 @@ async function recordingUploadContext() {
     deviceLabel: app.getName?.() ?? "LuDone Desktop",
     issuer: storedSession.issuer,
     ownerFingerprint: deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get()),
+    resetRejectedCompany: async (expectedCompanyId) => {
+      const reset = await updateStoredAuthSessionCompany({
+        app,
+        safeStorage,
+        companyTabidooId: null,
+        expectedCompanyId,
+        storedSession,
+        guard: () => generation === authSessionGeneration
+          && authAttemptsInFlight === 0 && authLogoutsInFlight === 0
+          && !authOriginChangeInFlight && authSessionTransitionPromise === null,
+      });
+      if (reset !== null) {
+        uploadCompanyGeneration += 1;
+        invalidateUploadCompanySelection();
+      }
+      return reset !== null;
+    },
   };
 }
 
@@ -2351,6 +2381,98 @@ function getRecordingVerifier() {
 
 function invalidateRecordingVerifier() {
   recordingVerifier?.invalidate();
+}
+
+async function readUploadCompanySelectionContext() {
+  const generation = authSessionGeneration;
+  if (authAttemptsInFlight > 0 || authLogoutsInFlight > 0 || authOriginChangeInFlight
+    || authSessionTransitionPromise !== null) return null;
+  const storedSession = await readUsableAuthSession();
+  if (generation !== authSessionGeneration || authAttemptsInFlight > 0 || authLogoutsInFlight > 0
+    || authOriginChangeInFlight || authSessionTransitionPromise !== null
+    || storedAuthSessionState(storedSession) !== "valid"
+    || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE) return null;
+  const ownerFingerprint = deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
+  if (typeof ownerFingerprint !== "string" || ownerFingerprint.length === 0) return null;
+  return Object.freeze({
+    generation,
+    issuer: storedSession.issuer,
+    ownerFingerprint,
+    resource: storedSession.resource,
+    scope: storedSession.scope,
+    storedSession,
+  });
+}
+
+async function isUploadCompanySelectionContextCurrent(context) {
+  try {
+    if (!context || context.generation !== authSessionGeneration
+      || context.issuer !== resolveCurrentAuthIssuer() || context.scope !== UPLOAD_SCOPE
+      || context.resource !== `${context.issuer}/api/mcp`
+      || authAttemptsInFlight > 0 || authLogoutsInFlight > 0 || authOriginChangeInFlight
+      || authSessionTransitionPromise !== null) return false;
+    const storedSession = await readStoredAuthSession();
+    return context.generation === authSessionGeneration
+      && authAttemptsInFlight === 0 && authLogoutsInFlight === 0 && !authOriginChangeInFlight
+      && authSessionTransitionPromise === null
+      && storedAuthSessionState(storedSession) === "valid"
+      && storedSessionMatchesCurrentAuth(storedSession)
+      && storedSession.accessToken === context.storedSession.accessToken
+      && deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get())
+        === context.ownerFingerprint;
+  } catch {
+    return false;
+  }
+}
+
+function getUploadCompanySelectionController() {
+  if (!uploadCompanySelectionController) {
+    uploadCompanySelectionController = createUploadCompanySelectionController({
+      readContext: readUploadCompanySelectionContext,
+      isContextCurrent: isUploadCompanySelectionContextCurrent,
+      fetchOffer: (context, { signal }) => fetchCompanies({
+        accessToken: context.storedSession.accessToken,
+        fetchImpl: globalThis.fetch,
+        issuer: context.issuer,
+        requireValidPayload: true,
+        signal,
+        trustedRemoteEndpoint,
+      }),
+      commitChoice: async ({ context, companyId, guard }) => (await updateStoredAuthSessionCompany({
+        app,
+        safeStorage,
+        companyTabidooId: companyId,
+        storedSession: context.storedSession,
+        guard,
+      })) !== null,
+      now: Date.now,
+      randomUUID,
+    });
+  }
+  return uploadCompanySelectionController;
+}
+
+function invalidateUploadCompanySelection() {
+  uploadCompanySelectionEpoch += 1;
+  uploadCompanySelectionController?.invalidate();
+}
+
+function uploadCompanyRequester(event) {
+  return `settings:${event.sender.id}`;
+}
+
+function uploadCompanyGuard(event, generation, selectionEpoch) {
+  return () => {
+    try {
+      requireTrustedSender(event, ["settings"]);
+      return generation === authSessionGeneration
+        && selectionEpoch === uploadCompanySelectionEpoch && authAttemptsInFlight === 0
+        && authLogoutsInFlight === 0 && !authOriginChangeInFlight
+        && authSessionTransitionPromise === null;
+    } catch {
+      return false;
+    }
+  };
 }
 
 // Převzetí je čistě lokální akce. Záměrně nevolá readUsableAuthSession(), protože
@@ -2603,7 +2725,7 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
     console.log(`[recording-export] Uloženo ${result.clientRecordingId}; ${timingDetail}.`);
     const queueOutcome = decided.approved ? "queued" : "saved_local";
     if (decided.approved) {
-      await pumpOutboundQueue();
+      void pumpOutboundQueue();
     }
     return {
       ok: true,
@@ -2794,6 +2916,7 @@ async function runRecordingQueueAction(event, payload, mode) {
     throw new Error("Pro odeslání je nutné platné přihlášení");
   }
   const owner = await readStableClaimOwnerSnapshot();
+  const companyGeneration = uploadCompanyGeneration;
   if (owner.ownerFingerprint !== usableOwnerFingerprint) {
     throw new Error("Přihlášení se během přípravy odeslání změnilo");
   }
@@ -2801,7 +2924,7 @@ async function runRecordingQueueAction(event, payload, mode) {
     try {
       requireTrustedSender(event, ["settings"]);
       const latest = await readStableClaimOwnerSnapshot();
-      return sameClaimOwnerSnapshot(owner, latest);
+      return sameClaimOwnerSnapshot(owner, latest) && companyGeneration === uploadCompanyGeneration;
     } catch {
       return false;
     }
@@ -2814,6 +2937,17 @@ async function runRecordingQueueAction(event, payload, mode) {
     mode,
     killswitches: queueKillswitches(),
     guard,
+    getCurrentCompany: async () => {
+      const context = await recordingUploadContext();
+      requireTrustedSender(event, ["settings"]);
+      if (context?.ownerFingerprint !== owner.ownerFingerprint
+        || typeof context.companyTabidooId !== "string"
+        || !COMPANY_ID_PATTERN.test(context.companyTabidooId)
+        || companyGeneration !== uploadCompanyGeneration) {
+        throw new Error("Pro opravu není vybraná platná firma stejného účtu");
+      }
+      return context.companyTabidooId;
+    },
   });
   updateOutboundQueueTrayFact(result);
   await refreshOutboundQueueRetrySchedule();
@@ -4246,6 +4380,36 @@ handleValidated("auth:session-state", ["panel", "settings"], async (_event, ...e
 
 handleValidated("auth:identity", ["settings"], () => readStoredAuthIdentity());
 
+handleValidated("upload-companies:list", ["settings"], (event, ...extraPayload) => {
+  requireNoPayload("upload-companies:list", extraPayload);
+  const generation = authSessionGeneration;
+  const selectionEpoch = uploadCompanySelectionEpoch;
+  return getUploadCompanySelectionController().load({
+    requesterKey: uploadCompanyRequester(event),
+    guard: uploadCompanyGuard(event, generation, selectionEpoch),
+  });
+});
+
+handleValidated("upload-companies:select", ["settings"],
+  async (event, offerToken, companyId, ...extraPayload) => {
+    if (extraPayload.length > 0 || typeof offerToken !== "string"
+      || !OFFER_TOKEN_PATTERN.test(offerToken) || typeof companyId !== "string"
+      || !COMPANY_ID_PATTERN.test(companyId)) {
+      throw new TypeError("Výběr firmy přijímá právě platný token nabídky a GUID firmy");
+    }
+    const generation = authSessionGeneration;
+    const selectionEpoch = uploadCompanySelectionEpoch;
+    const result = await getUploadCompanySelectionController().select({
+      requesterKey: uploadCompanyRequester(event),
+      offerToken,
+      companyId,
+      guard: uploadCompanyGuard(event, generation, selectionEpoch),
+    });
+    uploadCompanyGeneration += 1;
+    invalidateUploadCompanySelection();
+    return result;
+  });
+
 handleValidated("auth:origin", ["settings"], (_event, ...extraPayload) => {
   requireNoPayload("auth:origin", extraPayload);
   return resolveCurrentAuthIssuer();
@@ -4298,6 +4462,7 @@ handleValidated("auth:set-origin", ["settings"], async (_event, authOrigin, ...e
     await authOriginStore.set(authOrigin);
     authSessionGeneration += 1;
     invalidateRecordingVerifier();
+    invalidateUploadCompanySelection();
     return resolveCurrentAuthIssuer();
   } finally {
     authOriginChangeInFlight = false;
@@ -4351,6 +4516,7 @@ handleValidated("auth:begin", ["panel"], async () => {
   if (result?.ok === true) {
     authSessionGeneration += 1;
     invalidateRecordingVerifier();
+    invalidateUploadCompanySelection();
     appState.acceptRendererSignIn = true;
     appState.signedIn = true;
     refreshTray();
@@ -4394,6 +4560,7 @@ function blockedAuthLogoutResult() {
 async function executeAuthLogout() {
   authSessionGeneration += 1;
   invalidateRecordingVerifier();
+  invalidateUploadCompanySelection();
   authLogoutsInFlight += 1;
   try {
     const result = await logoutAuthController.logout();

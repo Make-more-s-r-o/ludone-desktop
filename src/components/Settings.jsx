@@ -12,6 +12,7 @@ import {
 } from "./Icons.jsx";
 import { Toggle } from "./Toggle.jsx";
 import { SettingsAudioTest } from "./SettingsAudioTest.jsx";
+import { UploadCompanySelector } from "./UploadCompanySelector.jsx";
 
 const STORAGE_KEY = "ludone.prototype.settings";
 const DEFAULTS = {
@@ -711,9 +712,9 @@ export function SettingsApp() {
               className="settings-hint settings-environment-hint"
               data-testid="settings-environment-explanation"
             >
-              Na produkci modul nahrávek schválně není. Na labs ho uvidí jen admin.
-              {" "}Prostředí se během dne často aktualizuje.
+              Prostředí určuje server, ke kterému se tento Mac přihlašuje a odesílá data.
             </p>
+            <UploadCompanySelector authState={{ ...account, issuer: destination.origin }} />
             <div
               className="destination-row"
               data-testid="settings-destination"
@@ -739,7 +740,9 @@ export function SettingsApp() {
               >
                 {logoutState.state === "busy" ? "Odhlašuji…" : "Odhlásit tento Mac"}
               </button>
-              <small>Fronta zůstane a odešle se po dalším přihlášení.</small>
+              <small>
+                Lokální nahrávky zůstanou uložené. Dříve schválené pokračují po přihlášení.
+              </small>
             </div>
             {logoutState.message && (
               <p

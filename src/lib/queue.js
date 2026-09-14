@@ -35,6 +35,7 @@ export const DEFAULT_RETRY_POLICY = Object.freeze({
 });
 
 const PROJECT_GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const QUEUE_OWNER_FINGERPRINT_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 
 export const CLAIMED_RECORDING_HOLD_REASON = "Převzatá nahrávka čeká na volbu odeslání";
@@ -162,7 +163,7 @@ function failureRequiresHumanAction(error) {
   // 🔴 Nevybraná firma taky není o vlastnictví, ale opakování ji nespraví — spraví ji jedině
   // člověk. Bez tohohle příznaku by položka zůstala jako obyčejné „čeká“ a panel by neukázal
   // ŽÁDNOU příčinu: uživatel by viděl frontu, která se nehýbe, a nevěděl proč.
-  if (error?.code === "company_not_chosen") return true;
+  if (error?.code === "company_not_chosen" || error?.code === "company_binding_missing") return true;
   // Konkrétní kódy vlastní upload klient. Fronta jejich společný kontrakt
   // vyhodnotí jednou a rendereru pošle už jen význam, ne druhý seznam kódů.
   return failureCodeRequiresHumanAction(error?.code);
@@ -220,6 +221,9 @@ function emptyServerProgress() {
 function normalizedStoredServer(item) {
   const normalized = emptyServerProgress();
   const server = item.server && typeof item.server === "object" ? item.server : {};
+  if (typeof server.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(server.companyTabidooId)) {
+    normalized.companyTabidooId = server.companyTabidooId;
+  }
   normalized.sessionId = safeGuid(server.sessionId);
   for (const track of ["microphone", "system"]) {
     const progress = server.tracks?.[track];
@@ -240,6 +244,13 @@ function normalizedStoredServer(item) {
     }
   }
   return normalized;
+}
+
+function hasInitializedServerProgress(server) {
+  return server.sessionId !== null || server.legacyRecordingId !== undefined
+    || Object.values(server.tracks).some(
+      (progress) => progress.recordingId !== null || progress.uploadedBytes > 0,
+    );
 }
 
 function safeUploadedBytes(value) {
@@ -510,6 +521,28 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
 
   const originalItem = queue.items[index];
   const server = normalizedStoredServer(originalItem);
+  const progressKeys = Object.keys(serverProgress).sort();
+  if (progressKeys.length === 1 && progressKeys[0] === "companyTabidooId") {
+    const companyTabidooId = serverProgress.companyTabidooId;
+    if (typeof companyTabidooId !== "string" || !COMPANY_ID_PATTERN.test(companyTabidooId)) {
+      throw new TypeError("serverProgress.companyTabidooId musí být platný GUID malými písmeny");
+    }
+    const hasServerProgress = server.sessionId !== null
+      || server.legacyRecordingId !== undefined
+      || Object.values(server.tracks).some(
+        (progress) => progress.recordingId !== null || progress.uploadedBytes > 0,
+      );
+    if (hasServerProgress) throw new Error("firmu nelze připnout po zahájení uploadu");
+    if (server.companyTabidooId !== undefined && server.companyTabidooId !== companyTabidooId) {
+      throw new Error("firmu již připnuté nahrávky nelze změnit");
+    }
+    server.companyTabidooId = companyTabidooId;
+    const item = { ...originalItem, server };
+    return { item, queue: replaceItem(queue, index, item) };
+  }
+  if (Object.prototype.hasOwnProperty.call(serverProgress, "companyTabidooId")) {
+    throw new TypeError("připnutí firmy musí být samostatný progress event");
+  }
   const track = serverProgress.track;
 
   // Starý čistý kontrakt zůstává čitelný pro položky schématu v1. Jediný identifikátor
@@ -602,6 +635,29 @@ export function retryFailedItem(queue, clientRecordingId) {
     requiresHumanAction: false,
     state: QUEUE_STATES.WAITING,
   };
+  return { item, queue: replaceItem(queue, index, item) };
+}
+
+/** Výslovná oprava pouze firmy odmítnuté serverem, ještě před vznikem serverových ID. */
+export function rebindCompanyOutOfScopeItem(queue, clientRecordingId, companyTabidooId) {
+  requireQueue(queue);
+  requireNonEmptyString(clientRecordingId, "clientRecordingId");
+  if (typeof companyTabidooId !== "string" || !COMPANY_ID_PATTERN.test(companyTabidooId)) {
+    throw new TypeError("companyTabidooId musí být platný GUID malými písmeny");
+  }
+  const index = queue.items.findIndex((item) => item.clientRecordingId === clientRecordingId);
+  if (index === -1) throw new Error("položka fronty nebyla nalezena");
+  const originalItem = queue.items[index];
+  const rejectedCompany = originalItem.lastFailureReason === "company_out_of_scope (HTTP 403)"
+    || originalItem.lastFailureReason === "403 company_out_of_scope";
+  if (originalItem.state !== QUEUE_STATES.FAILED || !rejectedCompany) {
+    return { item: originalItem, queue };
+  }
+  const server = normalizedStoredServer(originalItem);
+  if (server.companyTabidooId === companyTabidooId) return { item: originalItem, queue };
+  if (hasInitializedServerProgress(server)) return { item: originalItem, queue };
+  server.companyTabidooId = companyTabidooId;
+  const item = { ...originalItem, server };
   return { item, queue: replaceItem(queue, index, item) };
 }
 

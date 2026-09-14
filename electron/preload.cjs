@@ -7,6 +7,40 @@ const AUTH_ORIGINS = Object.freeze([
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+const OFFER_TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+
+function requireUploadCompanyOffer(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || !Array.isArray(value.companies) || typeof value.offerToken !== "string"
+    || !OFFER_TOKEN_PATTERN.test(value.offerToken)
+    || (value.selectedCompanyId !== null && !COMPANY_ID_PATTERN.test(value.selectedCompanyId))) {
+    throw new TypeError("Hlavní proces nevrátil platnou nabídku firem");
+  }
+  const seen = new Set();
+  const companies = value.companies.map((company) => {
+    if (!company || typeof company !== "object" || Array.isArray(company)
+      || typeof company.id !== "string" || !COMPANY_ID_PATTERN.test(company.id)
+      || typeof company.name !== "string" || company.name.length < 1 || company.name.length > 160
+      || company.name.trim() !== company.name || seen.has(company.id)) {
+      throw new TypeError("Hlavní proces vrátil neplatnou firmu");
+    }
+    seen.add(company.id);
+    return { id: company.id, name: company.name };
+  });
+  if (value.selectedCompanyId !== null && !seen.has(value.selectedCompanyId)) {
+    throw new TypeError("Vybraná firma není v nabídce");
+  }
+  return { companies, offerToken: value.offerToken, selectedCompanyId: value.selectedCompanyId };
+}
+
+function requireUploadCompanySelection(value, companyId) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || value.saved !== true || value.selectedCompanyId !== companyId) {
+    throw new TypeError("Hlavní proces nepotvrdil výběr firmy");
+  }
+  return { saved: true, selectedCompanyId: companyId };
+}
 
 function requireRecordingAction(value, queueRevisionRequired = false) {
   if (!value || typeof value !== "object" || Array.isArray(value)
@@ -196,6 +230,16 @@ contextBridge.exposeInMainWorld("ludone", {
       .then(requireAuthOriginSwitchResponse);
   },
   logout: () => ipcRenderer.invoke("auth:logout"),
+  listUploadCompanies: () => ipcRenderer.invoke("upload-companies:list")
+    .then(requireUploadCompanyOffer),
+  selectUploadCompany: (offerToken, companyId) => {
+    if (typeof offerToken !== "string" || !OFFER_TOKEN_PATTERN.test(offerToken)
+      || typeof companyId !== "string" || !COMPANY_ID_PATTERN.test(companyId)) {
+      throw new TypeError("Výběr firmy vyžaduje platný token nabídky a GUID firmy");
+    }
+    return ipcRenderer.invoke("upload-companies:select", offerToken, companyId)
+      .then((value) => requireUploadCompanySelection(value, companyId));
+  },
   getDeviceName: () => ipcRenderer.invoke("settings:get-device-name"),
   getDockVisible: () => getBooleanSetting("settings:get-dock-visible"),
   setDockVisible: (value) => setBooleanSetting("settings:set-dock-visible", value),

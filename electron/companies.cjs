@@ -29,6 +29,7 @@ function companiesError(status, code) {
  *   accessToken: string,
  *   fetchImpl: (input: string, options?: Record<string, any>) => Promise<any>,
  *   issuer: string,
+ *   requireValidPayload?: boolean,
  *   signal?: AbortSignal,
  *   trustedRemoteEndpoint: (value: string, issuer: string, name: string) => string,
  * }} options
@@ -66,6 +67,13 @@ async function fetchCompanies(options) {
   }
 
   const payload = await response.json();
+  if (options.requireValidPayload === true && (!payload || typeof payload !== "object" || Array.isArray(payload)
+    || !Array.isArray(payload.companies)
+    || (payload.defaultCompanyId !== null && typeof payload.defaultCompanyId !== "string"))) {
+    throw Object.assign(new Error("Server vrátil neplatnou nabídku firem"), {
+      code: "invalid_company_offer",
+    });
+  }
   return {
     companies: Array.isArray(payload?.companies) ? payload.companies : [],
     // `null` je legitimní odpověď: server ji pošle vždy, když má člověk v rozsahu víc firem.

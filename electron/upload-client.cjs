@@ -462,7 +462,25 @@ function normalizedContext(context, manifest, expectedOrigin, item) {
     throw localError("session_not_found", "Přihlášení patří jinému serveru", "paused");
   }
   requireMatchingQueueOwner(item, context);
-  const companyTabidooId = safeString(context.companyTabidooId)
+  const pinnedCompanyId = safeString(item?.server?.companyTabidooId);
+  const hasServerProgress = safeString(item?.server?.sessionId) !== ""
+    || safeString(item?.server?.recordingId) !== ""
+    || safeString(item?.server?.legacyRecordingId) !== ""
+    || Object.values(item?.server?.tracks ?? {}).some((progress) => (
+      safeString(progress?.recordingId) !== "" || Number(progress?.uploadedBytes) > 0
+    ))
+    || safeString(manifest.sessionId) !== "";
+  if (pinnedCompanyId === "" && hasServerProgress) {
+    throw localError(
+      "company_binding_missing",
+      "Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení",
+      "paused",
+    );
+  }
+  if (pinnedCompanyId !== "" && !COMPANY_ID_PATTERN.test(pinnedCompanyId)) {
+    throw localError("company_binding_missing", "Uložená firma nahrávky není platná", "paused");
+  }
+  const companyTabidooId = pinnedCompanyId || safeString(context.companyTabidooId)
     || safeString(manifest.companyTabidooId);
   if (!COMPANY_ID_PATTERN.test(companyTabidooId)) {
     // 🔴 Dva různé světy, které dřív splývaly do jedné hlášky — a ta hláška lhala.
@@ -496,6 +514,10 @@ function normalizedContext(context, manifest, expectedOrigin, item) {
     accessToken: context.accessToken,
     companyTabidooId,
     deviceLabel,
+    companyWasPinned: pinnedCompanyId !== "",
+    resetRejectedCompany: typeof context.resetRejectedCompany === "function"
+      ? context.resetRejectedCompany
+      : async () => false,
   });
 }
 
@@ -940,7 +962,9 @@ function createRecordingUploadSend({
   }
   const uploadOrigin = normalizedOrigin(origin);
 
-  return async function sendRecording(item, reportServerProgress = async () => {}) {
+  return async function sendRecording(item, reportServerProgress = async (progress) => {
+    void progress;
+  }) {
     if (typeof reportServerProgress !== "function") {
       throw new TypeError("reportServerProgress musí být funkce");
     }
@@ -959,6 +983,10 @@ function createRecordingUploadSend({
       throw localError("session_missing", "Přihlášení pro upload nelze načíst", "paused");
     }
     const context = normalizedContext(rawContext, recording.manifest, uploadOrigin, item);
+    if (!context.companyWasPinned) {
+      // Durable callback musí doběhnout dřív, než vznikne první INIT request.
+      await reportServerProgress(Object.freeze({ companyTabidooId: context.companyTabidooId }));
+    }
     const request = createRequester({
       accessToken: context.accessToken,
       fetchImpl,
@@ -972,13 +1000,24 @@ function createRecordingUploadSend({
     let sessionId = safeString(item?.server?.sessionId)
       || safeString(recording.manifest.sessionId)
       || null;
-    for (const track of recording.tracks) {
-      const uploaded = await uploadTrack({
-        context, logger, recording, reportServerProgress, request, sessionId, track,
-      });
-      sessionId = uploaded.sessionId ?? sessionId;
-      uploads.push(uploaded);
-      quotaWarning ||= uploaded.quotaWarning;
+    try {
+      for (const track of recording.tracks) {
+        const uploaded = await uploadTrack({
+          context, logger, recording, reportServerProgress, request, sessionId, track,
+        });
+        sessionId = uploaded.sessionId ?? sessionId;
+        uploads.push(uploaded);
+        quotaWarning ||= uploaded.quotaWarning;
+      }
+    } catch (error) {
+      if (error?.code === "company_out_of_scope") {
+        try {
+          await context.resetRejectedCompany(context.companyTabidooId);
+        } catch {
+          // Původní serverová chyba zůstává autoritou; reset je podmíněný recovery krok.
+        }
+      }
+      throw error;
     }
     return Object.freeze({ completedUploads: uploads.length, quotaWarning, uploads });
   };
