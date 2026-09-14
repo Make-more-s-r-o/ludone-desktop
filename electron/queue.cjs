@@ -1,7 +1,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { createHash, createHmac, randomUUID } = require("node:crypto");
-const { createLocalRecordingsSnapshot } = require("./recordings-dashboard.cjs");
+const {
+  createLocalRecordingsSnapshot,
+  readStableRegularFile: readStableDashboardFile,
+} = require("./recordings-dashboard.cjs");
 
 const QUEUE_SCHEMA_VERSION = 1;
 const RECOVERABLE_MANIFEST_STATES = new Set(["complete", "incomplete"]);
@@ -1145,6 +1148,191 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
+  function getRecordingVerificationTarget(
+    clientRecordingId,
+    expectedRevision,
+    currentOwnerFingerprint,
+  ) {
+    if (typeof clientRecordingId !== "string" || !UUID_PATTERN.test(clientRecordingId)) {
+      throw new TypeError("clientRecordingId musí být GUID");
+    }
+    if (typeof expectedRevision !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)) {
+      throw new TypeError("expectedRevision musí být platná revize");
+    }
+    if (
+      typeof currentOwnerFingerprint !== "string"
+      || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(currentOwnerFingerprint)
+    ) {
+      throw new TypeError("currentOwnerFingerprint musí být platný otisk");
+    }
+
+    return serialize(async () => {
+      let queue;
+      try {
+        queue = await loadQueue(filePath);
+      } catch (error) {
+        currentQueue = undefined;
+        loaded = false;
+        throw error;
+      }
+      currentQueue = queue;
+      loaded = true;
+      const queueModule = await loadQueueModule();
+      const queueItems = reduceForLocalDashboard(queueModule, queue, currentOwnerFingerprint);
+      const firstSnapshot = await createLocalRecordingsSnapshot({
+        queue, queueItems, recordingsDirectory,
+      });
+      const projected = firstSnapshot.items.find((candidate) => candidate.id === clientRecordingId);
+      const item = queue.items.find((candidate) => (
+        (candidate.kind ?? "recording") === "recording"
+        && candidate.clientRecordingId === clientRecordingId
+      ));
+      if (
+        !item
+        || !projected
+        || projected.source !== "queue"
+        || projected.revision !== expectedRevision
+        || typeof projected.fileRevision !== "string"
+        || !QUEUE_ITEM_REVISION_PATTERN.test(projected.fileRevision)
+        || projected.localState === "invalid-manifest"
+      ) throw new Error("Snímek nahrávky je neaktuální; načtěte seznam znovu");
+      if (item.ownerFingerprint !== currentOwnerFingerprint) {
+        throw new Error("Nahrávka nepatří aktuálnímu účtu");
+      }
+
+      const configuredRoot = path.resolve(recordingsDirectory);
+      const canonicalRoot = await fs.promises.realpath(configuredRoot);
+      const rawPrimaryPath = item.sourceManifestPath ?? item.manifestPath;
+      const rawUploadPath = item.manifestPath;
+      if (typeof rawPrimaryPath !== "string" || typeof rawUploadPath !== "string") {
+        throw new Error("Manifest není dostupný");
+      }
+      const resolvedPrimaryPath = path.resolve(rawPrimaryPath);
+      const resolvedUploadPath = path.resolve(rawUploadPath);
+      for (const candidate of [resolvedPrimaryPath, resolvedUploadPath]) {
+        if (
+          path.dirname(candidate) !== configuredRoot
+          && path.dirname(candidate) !== canonicalRoot
+        ) throw new Error("Manifest neleží v adresáři nahrávek");
+      }
+      if (
+        resolvedUploadPath !== resolvedPrimaryPath
+        && resolvedUploadPath !== `${resolvedPrimaryPath}.recovered-upload-v1.json`
+      ) throw new Error("Uploadovací manifest není známý recovery sidecar");
+      const primaryPath = path.join(canonicalRoot, path.basename(resolvedPrimaryPath));
+      const uploadPath = path.join(canonicalRoot, path.basename(resolvedUploadPath));
+      const primaryRead = await readStableDashboardFile(primaryPath, RECOVERY_MANIFEST_MAX_BYTES);
+      const uploadRead = uploadPath === primaryPath
+        ? primaryRead
+        : await readStableDashboardFile(uploadPath, RECOVERY_MANIFEST_MAX_BYTES);
+      const primaryManifest = JSON.parse(primaryRead.contents);
+      const manifest = JSON.parse(uploadRead.contents);
+      if (
+        !primaryManifest || typeof primaryManifest !== "object" || Array.isArray(primaryManifest)
+        || !manifest || typeof manifest !== "object" || Array.isArray(manifest)
+        || primaryManifest.schemaVersion !== 1 || manifest.schemaVersion !== 1
+        || primaryManifest.clientRecordingId !== clientRecordingId
+        || manifest.clientRecordingId !== clientRecordingId
+        || !["complete", "incomplete"].includes(primaryManifest.state)
+        || !["complete", "incomplete"].includes(manifest.state)
+        || !primaryManifest.tracks || typeof primaryManifest.tracks !== "object"
+        || Array.isArray(primaryManifest.tracks)
+        || !manifest.tracks || typeof manifest.tracks !== "object" || Array.isArray(manifest.tracks)
+        || primaryManifest.createdAt !== manifest.createdAt
+      ) throw new Error("Primární manifest není platný");
+      const trackNames = Object.keys(manifest.tracks);
+      const primaryTrackNames = Object.keys(primaryManifest.tracks);
+      if (
+        trackNames.length < 1
+        || trackNames.length > 2
+        || !trackNames.includes("microphone")
+        || trackNames.some((name) => !["microphone", "system"].includes(name))
+        || [...primaryTrackNames].sort().join("|") !== [...trackNames].sort().join("|")
+        || Object.keys(item.tracks ?? {}).sort().join("|") !== [...trackNames].sort().join("|")
+      ) throw new Error("Primární manifest nemá očekávané stopy");
+
+      const trustedTracks = {};
+      for (const name of ["microphone", "system"]) {
+        if (!trackNames.includes(name)) continue;
+        const manifestTrack = manifest.tracks[name];
+        const storedRecordingId = item.server?.tracks?.[name]?.recordingId;
+        const recordingId = typeof storedRecordingId === "string"
+          && UUID_PATTERN.test(storedRecordingId)
+          ? storedRecordingId
+          : null;
+        if (
+          !manifestTrack
+          || typeof manifestTrack !== "object"
+          || Array.isArray(manifestTrack)
+          || typeof manifestTrack.fileName !== "string"
+          || path.basename(manifestTrack.fileName) !== manifestTrack.fileName
+          || !Number.isSafeInteger(manifestTrack.sizeBytes)
+          || manifestTrack.sizeBytes < 0
+          || (recordingId === null
+            ? manifestTrack.sha256 !== null
+              && (typeof manifestTrack.sha256 !== "string"
+                || !/^[a-f0-9]{64}$/u.test(manifestTrack.sha256))
+            : manifestTrack.sizeBytes <= 0
+              || typeof manifestTrack.sha256 !== "string"
+              || !/^[a-f0-9]{64}$/u.test(manifestTrack.sha256))
+        ) throw new Error("Primární manifest obsahuje neplatnou stopu");
+        const primaryTrack = primaryManifest.tracks[name];
+        if (
+          !primaryTrack
+          || typeof primaryTrack !== "object"
+          || Array.isArray(primaryTrack)
+          || primaryTrack.fileName !== manifestTrack.fileName
+          || (Number.isSafeInteger(primaryTrack.sizeBytes)
+            && primaryTrack.sizeBytes > 0
+            && primaryTrack.sizeBytes !== manifestTrack.sizeBytes)
+          || (typeof primaryTrack.sha256 === "string"
+            && /^[a-f0-9]{64}$/u.test(primaryTrack.sha256)
+            && primaryTrack.sha256 !== manifestTrack.sha256)
+        ) throw new Error("Recovery sidecar nesouhlasí s primárním manifestem");
+        const queueTrackPath = path.resolve(item.tracks[name]);
+        if (
+          (path.dirname(queueTrackPath) !== configuredRoot
+            && path.dirname(queueTrackPath) !== canonicalRoot)
+          || path.basename(queueTrackPath) !== manifestTrack.fileName
+        ) throw new Error("Cesta stopy není důvěryhodná");
+        try {
+          const trackStats = await fs.promises.lstat(path.join(
+            canonicalRoot,
+            path.basename(queueTrackPath),
+          ));
+          if (!trackStats.isFile() || trackStats.isSymbolicLink()) {
+            throw new Error("Cesta stopy není bezpečný soubor");
+          }
+        } catch (error) {
+          if (error?.code !== "ENOENT") throw error;
+        }
+        trustedTracks[name] = Object.freeze({
+          recordingId,
+          declaredBytes: manifestTrack.sizeBytes,
+          sha256: manifestTrack.sha256,
+        });
+      }
+      const secondSnapshot = await createLocalRecordingsSnapshot({
+        queue, queueItems, recordingsDirectory,
+      });
+      const currentProjected = secondSnapshot.items.find(
+        (candidate) => candidate.id === clientRecordingId,
+      );
+      if (
+        !currentProjected
+        || currentProjected.revision !== expectedRevision
+        || currentProjected.fileRevision !== projected.fileRevision
+        || currentProjected.localState === "invalid-manifest"
+      ) throw new Error("Primární manifest se během ověření změnil");
+      return Object.freeze({
+        id: clientRecordingId,
+        ownerFingerprint: currentOwnerFingerprint,
+        revision: expectedRevision,
+        tracks: Object.freeze(trustedTracks),
+      });
+    });
+  }
+
   function retry(killswitches, currentOwnerFingerprint = null) {
     requireCurrentOwnerFingerprint(currentOwnerFingerprint);
     return serialize(async () => {
@@ -1185,6 +1373,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     claimRecording,
     enqueueRecording,
     enqueueTimeEntry,
+    getRecordingVerificationTarget,
     list,
     listLocalRecordings,
     pump,

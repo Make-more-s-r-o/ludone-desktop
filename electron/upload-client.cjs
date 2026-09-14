@@ -502,6 +502,11 @@ function safeJson(response) {
 }
 
 function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
+  const requestOrigin = normalizedOrigin(origin);
+  if (typeof accessToken !== "string" || accessToken.trim().length === 0) {
+    throw new TypeError("accessToken musí být neprázdný řetězec");
+  }
+  if (typeof fetchImpl !== "function") throw new TypeError("fetchImpl musí být funkce");
   /**
    * @param {string} pathname
    * @param {{
@@ -511,6 +516,36 @@ function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
    * }} [options]
    */
   return async function request(pathname, { body, headers = {}, method = "GET" } = {}) {
+    if (
+      typeof pathname !== "string"
+      || !pathname.startsWith("/")
+      || pathname.startsWith("//")
+      || /[\\]/u.test(pathname)
+    ) {
+      throw new TypeError("Cesta požadavku musí být relativní k povolenému originu");
+    }
+    let target;
+    try {
+      target = new URL(pathname, requestOrigin);
+    } catch {
+      throw new TypeError("Cesta požadavku není platná");
+    }
+    if (
+      target.origin !== requestOrigin
+      || target.username !== ""
+      || target.password !== ""
+      || target.search !== ""
+      || target.hash !== ""
+      || target.pathname !== pathname
+    ) {
+      throw new TypeError("Cesta požadavku opouští povolený origin");
+    }
+    if (!headers || typeof headers !== "object" || Array.isArray(headers)) {
+      throw new TypeError("Hlavičky požadavku musí být objekt");
+    }
+    if (Object.keys(headers).some((name) => ["authorization", "cookie"].includes(name.toLowerCase()))) {
+      throw new TypeError("Chráněnou hlavičku Authorization ani Cookie nelze přepsat");
+    }
     const abortController = new AbortController();
     let timeoutId;
     const timeout = new Promise((resolve, reject) => {
@@ -523,7 +558,7 @@ function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
     let exchange;
     try {
       exchange = await Promise.race([
-        Promise.resolve(fetchImpl(new URL(pathname, origin).toString(), {
+        Promise.resolve(fetchImpl(target.toString(), {
           body,
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -949,6 +984,7 @@ module.exports = {
   RECORDING_CHUNK_BYTES,
   RECORDING_MAX_BYTES,
   RecordingUploadError,
+  createRequester,
   createRecordingUploadSend,
   deriveUploadIdentity,
   failureClassForCode,

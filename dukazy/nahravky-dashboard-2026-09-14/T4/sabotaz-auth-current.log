@@ -1,0 +1,81 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-overeni
+
+ ❯ tests/recording-verification.test.js (20 tests | 1 failed | 19 skipped) 62ms
+   ↓ bezpečný HTTP requester > posílá Bearer a redirect:error na přesnou relativní cestu
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target https://utocnik.test/api před fetch
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target //utocnik.test/api před fetch
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target /api/../admin před fetch
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target /api?token=ven před fetch
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target /api#cast před fetch
+   ↓ bezpečný HTTP requester > odmítne přepsání chráněné hlavičky Authorization
+   ↓ bezpečný HTTP requester > odmítne přepsání chráněné hlavičky authorization
+   ↓ bezpečný HTTP requester > odmítne přepsání chráněné hlavičky Cookie
+   ↓ bezpečný HTTP requester > odmítne přepsání chráněné hlavičky cookie
+   ↓ ruční ověření nahrávky > dual a single udělají přesně 2 a 1 GET a legacy bez ID nula
+   ↓ ruční ověření nahrávky > rozliší serverové stavy a bezpečné neshody
+   ↓ ruční ověření nahrávky > 404, auth, síť a 429 jsou bezpečně odlišené; po 429 druhou stopu neposílá
+   ↓ ruční ověření nahrávky > cache 60 s, dedupe a atomický limit 30 GET fungují bez překročení
+   ↓ ruční ověření nahrávky > invalid owner/scope/resource/token/current guard nepošlou žádný fetch
+   ↓ ruční ověření nahrávky > změna účtu po awaitu a explicitní invalidate zahodí pending výsledek
+   × ruční ověření nahrávky > změna účtu po síťovém awaitu zahodí výsledek i bez explicitní invalidace 62ms
+     → promise resolved "{ …(4) }" instead of rejecting
+   ↓ ruční ověření nahrávky > 429 přijaté během logoutu zůstane pro stejného vlastníka i po invalidate
+   ↓ ruční ověření nahrávky > 429 z paralelního řádku zastaví další dosud nezahájenou stopu stejného vlastníka
+   ↓ ruční ověření nahrávky > cooldown zapsaný během await current guardu zastaví bezprostředně následující GET
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/recording-verification.test.js > ruční ověření nahrávky > změna účtu po síťovém awaitu zahodí výsledek i bez explicitní invalidace
+AssertionError: promise resolved "{ …(4) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "id": "22222222-2222-4222-8222-222222222222",
++   "revision": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
++   "tracks": {
++     "microphone": {
++       "mismatchFields": [],
++       "status": "complete",
++     },
++   },
++   "verifiedAt": "2026-09-14T12:00:00.000Z",
+  }
+
+ ❯ tests/recording-verification.test.js:253:26
+    251|     setup.current.value = false;
+    252|     finish(response(200, { state: "stored", missing: [], declaredBytes…
+    253|     await expect(pending).rejects.toMatchObject({ code: "context_chang…
+       |                          ^
+    254|   });
+    255| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 skipped (20)
+   Start at  23:30:30
+   Duration  375ms (transform 37ms, setup 10ms, collect 30ms, tests 62ms, environment 0ms, prepare 54ms)
+
+
+EXIT_CODE=1
+
+OBNOVENA_OCHRANA_A_KONTROLNI_CESTY
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-overeni
+
+ ✓ tests/recording-verification.test.js (20 tests | 15 skipped) 182ms
+ ✓ tests/queue-wiring.test.js (260 tests | 259 skipped) 48ms
+
+ Test Files  2 passed (2)
+      Tests  6 passed | 274 skipped (280)
+   Start at  23:30:53
+   Duration  1.20s (transform 273ms, setup 24ms, collect 982ms, tests 230ms, environment 0ms, prepare 123ms)
+
+
+EXIT_CODE=0

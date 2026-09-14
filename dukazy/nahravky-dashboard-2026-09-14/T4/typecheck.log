@@ -1,0 +1,33 @@
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+tests/queue.test.js(3292,41): error TS2339: Property 'microphone' does not exist on type 'Readonly<{}>'.
+tests/queue.test.js(3293,34): error TS2339: Property 'microphone' does not exist on type 'Readonly<{}>'.
+tests/queue.test.js(3349,29): error TS2339: Property 'system' does not exist on type 'Readonly<{}>'.
+tests/recording-verification.test.js(117,54): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(123,69): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: null; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(146,71): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(156,71): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(162,22): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(181,46): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(182,46): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(186,40): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(190,48): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(203,40): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(232,50): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(246,50): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(259,50): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(268,59): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(286,48): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+tests/recording-verification.test.js(326,34): error TS2741: Property 'system' is missing in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; }' but required in type '{ microphone: { recordingId: string; declaredBytes: number; sha256: string; }; system: { recordingId: string; declaredBytes: number; sha256: string; }; }'.
+
+EXIT_CODE=1
+
+RETRY_AFTER_TEST_TYPE_FIX
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+EXIT_CODE=0

@@ -42,6 +42,8 @@ function deferred() {
  *   claimRecording?: (...args: any[]) => Promise<any>,
  *   listQueue?: () => Promise<any[]>,
  *   listLocalRecordings?: () => Promise<any>,
+ *   verifyRecording?: (...args: any[]) => Promise<any>,
+ *   openRecordingInLuDone?: (...args: any[]) => Promise<any>,
  * }} options
  */
 async function renderDashboard({
@@ -51,11 +53,15 @@ async function renderDashboard({
   listLocalRecordings = listQueue
     ? async () => ({ items: await listQueue(), unreadableCount: 0 })
     : () => Promise.resolve({ items: [ITEM], unreadableCount: 0 }),
+  verifyRecording = () => Promise.resolve({}),
+  openRecordingInLuDone = () => Promise.resolve({ opened: true }),
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const ludone = {
     claimRecording: vi.fn(claimRecording),
     listLocalRecordings: vi.fn(listLocalRecordings),
+    verifyRecording: vi.fn(verifyRecording),
+    openRecordingInLuDone: vi.fn(openRecordingInLuDone),
   };
   Object.defineProperty(dom.window, "ludone", { configurable: true, value: ludone });
   vi.stubGlobal("React", React);
@@ -89,6 +95,89 @@ afterEach(() => {
 });
 
 describe("dashboard fronty nahrávek", () => {
+  it("server nevolá při renderu ani refreshi a ověří obě stopy jen po ručním kliku", async () => {
+    const currentItem = { ...ITEM, ownership: "current", allowedActions: { ...ITEM.allowedActions, claim: false } };
+    const verifyRecording = vi.fn(async () => ({
+      id: ID,
+      revision: REVISION,
+      verifiedAt: "2026-09-14T12:00:00.000Z",
+      tracks: {
+        microphone: { status: "complete", mismatchFields: [] },
+        system: { status: "mismatch", mismatchFields: ["sha256"] },
+      },
+    }));
+    const dashboard = await renderDashboard({
+      listLocalRecordings: () => Promise.resolve({ items: [currentItem], unreadableCount: 0 }),
+      verifyRecording,
+    });
+    try {
+      expect(verifyRecording).not.toHaveBeenCalled();
+      const refresh = [...dashboard.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Obnovit přehled"));
+      await React.act(async () => refresh.click());
+      expect(verifyRecording).not.toHaveBeenCalled();
+      const verifyButton = [...dashboard.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Ověřit v LuDone"));
+      await React.act(async () => verifyButton.click());
+      await vi.waitFor(() => expect(verifyRecording).toHaveBeenCalledExactlyOnceWith(ID, REVISION));
+      expect(dashboard.document.body.textContent).toContain("Mikrofon: Na serveru je úplná");
+      expect(dashboard.document.body.textContent).toContain("Systémový zvuk: Serverová data se neshodují");
+      expect(dashboard.document.body.textContent).toContain("Ověřeno");
+    } finally {
+      await dashboard.cleanup();
+    }
+  });
+
+  it("refresh změněné revize odstraní dřívější serverový výsledek", async () => {
+    const nextRevision = `sha256:${"b".repeat(64)}`;
+    const listLocalRecordings = vi.fn()
+      .mockResolvedValueOnce({ items: [{ ...ITEM, ownership: "current" }], unreadableCount: 0 })
+      .mockResolvedValue({ items: [{ ...ITEM, ownership: "current", revision: nextRevision }], unreadableCount: 0 });
+    const dashboard = await renderDashboard({
+      listLocalRecordings,
+      verifyRecording: async () => ({
+        id: ID, revision: REVISION, verifiedAt: "2026-09-14T12:00:00.000Z",
+        tracks: { microphone: { status: "complete", mismatchFields: [] } },
+      }),
+    });
+    try {
+      const button = () => [...dashboard.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.includes("Ověřit v LuDone"));
+      await React.act(async () => button().click());
+      await vi.waitFor(() => expect(dashboard.document.body.textContent).toContain("Na serveru je úplná"));
+      const refresh = [...dashboard.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.includes("Obnovit přehled"));
+      await React.act(async () => refresh.click());
+      await vi.waitFor(() => expect(listLocalRecordings).toHaveBeenCalledTimes(2));
+      expect(dashboard.document.body.textContent).not.toContain("Na serveru je úplná");
+    } finally {
+      await dashboard.cleanup();
+    }
+  });
+
+  it("pending ověření po refreshi nesmí zapsat výsledek staré revize", async () => {
+    const pending = deferred();
+    const dashboard = await renderDashboard({
+      listLocalRecordings: () => Promise.resolve({ items: [{ ...ITEM, ownership: "current" }], unreadableCount: 0 }),
+      verifyRecording: () => pending.promise,
+    });
+    try {
+      const verifyButton = [...dashboard.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.includes("Ověřit v LuDone"));
+      await React.act(async () => verifyButton.click());
+      const refresh = [...dashboard.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.includes("Obnovit přehled"));
+      await React.act(async () => refresh.click());
+      await React.act(async () => pending.resolve({
+        id: ID, revision: REVISION, verifiedAt: "2026-09-14T12:00:00.000Z",
+        tracks: { microphone: { status: "complete", mismatchFields: [] } },
+      }));
+      expect(dashboard.document.body.textContent).not.toContain("Na serveru je úplná");
+    } finally {
+      await dashboard.cleanup();
+    }
+  });
+
   it("nabídne převzetí neznámého vlastníka bez chyby, ale ne vlastní 401", async () => {
     const dashboard = await renderDashboard({
       listQueue: () => Promise.resolve([
@@ -109,7 +198,8 @@ describe("dashboard fronty nahrávek", () => {
     try {
       await vi.waitFor(() => expect(claimButton(dashboard)).toBeDefined());
       expect(dashboard.document.querySelectorAll(".recording-queue-card")).toHaveLength(2);
-      expect(dashboard.document.querySelectorAll(".recording-queue-card button")).toHaveLength(1);
+      expect([...dashboard.document.querySelectorAll(".recording-queue-card button")]
+        .filter((button) => button.textContent.includes("Převzít pod svůj účet"))).toHaveLength(1);
     } finally {
       await dashboard.cleanup();
     }

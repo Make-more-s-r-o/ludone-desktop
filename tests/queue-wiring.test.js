@@ -3944,6 +3944,66 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(preload.invoke).toHaveBeenCalledExactlyOnceWith("recordings:list-local");
   });
 
+  it("preload ověření a otevření propustí jen GUID, revizi a známou stopu", async () => {
+    const { api, invoke } = loadPreload({ opened: true });
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const revision = `sha256:${"a".repeat(64)}`;
+    await api.verifyRecording(id, revision);
+    await api.openRecordingInLuDone(id, revision, "microphone");
+    expect(invoke).toHaveBeenNthCalledWith(1, "recordings:verify", id, revision);
+    expect(invoke).toHaveBeenNthCalledWith(2, "recordings:open-web", id, revision, "microphone");
+    expect(() => api.verifyRecording("ne-guid", revision)).toThrow(/GUID/u);
+    expect(() => api.openRecordingInLuDone(id, revision, "cizí")).toThrow(/známou stopu/u);
+    expect(invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it("ruční serverové ověření jde přes trusted store a open-web URL skládá jen main", async () => {
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const recordingId = "11111111-1111-4111-8111-111111111111";
+    const revision = `sha256:${"a".repeat(64)}`;
+    const getRecordingVerificationTarget = vi.fn(async (_id, _revision, ownerFingerprint) => ({
+      id,
+      revision,
+      ownerFingerprint,
+      tracks: { microphone: { recordingId, declaredBytes: 12, sha256: "b".repeat(64) } },
+    }));
+    const store = {
+      claimRecording: vi.fn(), enqueueRecording: vi.fn(), enqueueTimeEntry: vi.fn(),
+      getRecordingVerificationTarget,
+      list: vi.fn(async () => []), listLocalRecordings: vi.fn(async () => ({ items: [], unreadableCount: 0 })),
+      pump: vi.fn(async () => ({ outcome: "idle" })), retry: vi.fn(),
+    };
+    const harness = await loadMain({ createOutboundQueueStore: () => store });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+    });
+    harness.electron.net.fetch.mockResolvedValue({
+      ok: true, status: 200, headers: new Headers(),
+      json: vi.fn(async () => ({
+        state: "stored", missing: [], declaredBytes: 12, sha256: "B".repeat(64),
+      })),
+    });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const verify = harness.ipcHandlers.get("recordings:verify");
+    const openWeb = harness.ipcHandlers.get("recordings:open-web");
+    await expect(verify(settingsEvent, id, revision)).resolves.toMatchObject({
+      tracks: { microphone: { status: "complete" } },
+    });
+    expect(harness.electron.net.fetch).toHaveBeenCalledExactlyOnceWith(
+      `https://app.ludone.cz/api/nahravky/uploads/${recordingId}`,
+      expect.objectContaining({ method: "GET", redirect: "error" }),
+    );
+    await expect(openWeb(settingsEvent, id, revision, "microphone")).resolves.toEqual({ opened: true });
+    expect(harness.electron.shell.openExternal).toHaveBeenCalledWith(
+      `https://app.ludone.cz/nahravky/${recordingId}`,
+    );
+    await expect(Promise.resolve().then(() => verify(settingsEvent, id, revision, "navíc")))
+      .rejects.toThrow(/GUID.*revizi/u);
+    expect(() => verify(panelEvent, id, revision)).toThrow(/nedůvěryhodný/u);
+    expect(() => openWeb(panelEvent, id, revision, "microphone")).toThrow(/nedůvěryhodný/u);
+  });
+
   it("pojmenování přes preload předá časování, GUID i název na přesné IPC kanály", async () => {
     const { api, invoke } = loadPreload({ ok: true });
     const timing = {

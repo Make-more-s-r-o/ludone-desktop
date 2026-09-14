@@ -2614,6 +2614,38 @@ svg {
   color: var(--panel-wait);
 }
 
+.recording-queue-card__verification {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 9.5px;
+}
+
+.recording-queue-card__track {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recording-queue-card__track[data-status="complete"] {
+  color: var(--panel-ok);
+}
+
+.recording-queue-card__track[data-status="mismatch"],
+.recording-queue-card__track[data-status="server_failed"],
+.recording-queue-card__verification-error {
+  color: var(--panel-bad);
+}
+
+.recording-queue-card__verification > small {
+  color: var(--muted-foreground);
+}
+
 .diagnostics-card {
   display: flex;
   flex-direction: column;

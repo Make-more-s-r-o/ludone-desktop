@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const RECORDING_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const VERIFICATION_STATUSES = new Set([
+  "complete", "incomplete", "server_failed", "mismatch", "invalid_response",
+  "not_verified", "not_found_for_account", "rate_limited", "local_rate_limited",
+  "auth_error", "network_error",
+]);
 
 function safeText(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -53,6 +58,29 @@ function normalizeSnapshot(value) {
   };
 }
 
+function normalizeVerification(value, item) {
+  if (
+    !value || typeof value !== "object" || Array.isArray(value)
+    || value.id !== item.id || value.revision !== item.revision
+    || typeof value.verifiedAt !== "string" || !Number.isFinite(Date.parse(value.verifiedAt))
+    || !value.tracks || typeof value.tracks !== "object" || Array.isArray(value.tracks)
+  ) throw new TypeError("Hlavní proces nevrátil platné ověření nahrávky");
+  const tracks = {};
+  for (const track of ["microphone", "system"]) {
+    const result = value.tracks[track];
+    if (!result) continue;
+    if (
+      typeof result !== "object" || Array.isArray(result)
+      || !VERIFICATION_STATUSES.has(result.status)
+      || !Array.isArray(result.mismatchFields)
+      || result.mismatchFields.some((field) => !["declared_bytes", "sha256", "missing_chunks"].includes(field))
+    ) throw new TypeError("Hlavní proces nevrátil platný výsledek stopy");
+    tracks[track] = { status: result.status, mismatchFields: [...new Set(result.mismatchFields)] };
+  }
+  if (Object.keys(tracks).length === 0) throw new TypeError("Ověření neobsahuje žádnou stopu");
+  return { tracks, verifiedAt: value.verifiedAt };
+}
+
 function formatCreatedAt(value) {
   if (!value) return "Datum není známé";
   return new Intl.DateTimeFormat("cs-CZ", {
@@ -96,18 +124,42 @@ const LOCAL_STATE_LABELS = Object.freeze({
   "invalid-manifest": "Data nahrávky jsou poškozená",
 });
 
+const VERIFICATION_LABELS = Object.freeze({
+  complete: "Na serveru je úplná a shoduje se",
+  incomplete: "Na serveru ještě není úplná",
+  server_failed: "Server zpracování označil jako neúspěšné",
+  mismatch: "Serverová data se neshodují s lokálním manifestem",
+  invalid_response: "Server vrátil neplatnou odpověď",
+  not_verified: "Na serveru nelze ověřit bez známého ID",
+  not_found_for_account: "Pro tento účet server záznam nenašel",
+  rate_limited: "Server dočasně omezil další ověřování",
+  local_rate_limited: "Hodinový limit ručního ověřování je vyčerpaný",
+  auth_error: "Ověření vyžaduje nové platné přihlášení",
+  network_error: "Server se nepodařilo kontaktovat",
+});
+
+const TRACK_LABELS = Object.freeze({ microphone: "Mikrofon", system: "Systémový zvuk" });
+
 export function RecordingsDashboard({ authState }) {
   const [view, setView] = useState({
     state: "loading", items: [], unreadableCount: 0, message: "",
   });
   const [claimingId, setClaimingId] = useState(null);
+  const [verifyingId, setVerifyingId] = useState(null);
+  const [verificationById, setVerificationById] = useState({});
+  const [verificationErrorById, setVerificationErrorById] = useState({});
   const active = useRef(true);
   const claimInFlight = useRef(false);
   const loadGeneration = useRef(0);
+  const verificationGeneration = useRef(0);
   const previousAuthState = useRef(authState);
 
   const load = useCallback(() => {
     const requestGeneration = ++loadGeneration.current;
+    verificationGeneration.current += 1;
+    setVerificationById({});
+    setVerificationErrorById({});
+    setVerifyingId(null);
     const listLocalRecordings = window.ludone?.listLocalRecordings;
     if (typeof listLocalRecordings !== "function") {
       setView({ state: "error", items: [], unreadableCount: 0, message: "Přehled nahrávek není dostupný." });
@@ -138,8 +190,52 @@ export function RecordingsDashboard({ authState }) {
   useEffect(() => {
     if (previousAuthState.current === authState) return;
     previousAuthState.current = authState;
+    setVerificationById({});
+    setVerificationErrorById({});
     void load();
   }, [authState, load]);
+
+  const verify = async (item) => {
+    if (
+      verifyingId !== null || authState !== "signed-in" || !item.revision
+      || typeof window.ludone?.verifyRecording !== "function"
+    ) return;
+    const actionGeneration = verificationGeneration.current;
+    setVerifyingId(item.id);
+    setVerificationErrorById((current) => ({ ...current, [item.id]: null }));
+    try {
+      const raw = await window.ludone.verifyRecording(item.id, item.revision);
+      const result = normalizeVerification(raw, item);
+      if (active.current && actionGeneration === verificationGeneration.current) {
+        setVerificationById((current) => ({ ...current, [item.id]: result }));
+      }
+    } catch {
+      if (active.current && actionGeneration === verificationGeneration.current) {
+        setVerificationErrorById((current) => ({
+          ...current,
+          [item.id]: "Serverové ověření se nepodařilo. Lokální nahrávka zůstává beze změny.",
+        }));
+      }
+    } finally {
+      if (active.current && actionGeneration === verificationGeneration.current) {
+        setVerifyingId(null);
+      }
+    }
+  };
+
+  const openWeb = async (item, track) => {
+    if (typeof window.ludone?.openRecordingInLuDone !== "function" || !item.revision) return;
+    try {
+      await window.ludone.openRecordingInLuDone(item.id, item.revision, track);
+    } catch {
+      if (active.current) {
+        setVerificationErrorById((current) => ({
+          ...current,
+          [item.id]: "Detail v LuDone se nepodařilo otevřít.",
+        }));
+      }
+    }
+  };
 
   const claim = async (item) => {
     if (
@@ -209,6 +305,9 @@ export function RecordingsDashboard({ authState }) {
             const claimable = item.source === "queue" && item.canClaim
               && ["unknown", "other"].includes(item.ownership)
               && ["ceka", "selhalo"].includes(item.state);
+            const verification = verificationById[item.id];
+            const canVerify = item.source === "queue" && item.ownership === "current"
+              && item.revision && item.localState !== "invalid-manifest";
             return (
               <li className="recording-queue-card" key={item.id} data-recording-id={item.id}>
                 <strong>{formatCreatedAt(item.createdAt)}</strong>
@@ -232,6 +331,40 @@ export function RecordingsDashboard({ authState }) {
                   >
                     {claimingId === item.id ? "Přebírám…" : "Převzít pod svůj účet"}
                   </button>
+                )}
+                {canVerify && (
+                  <button
+                    type="button"
+                    className="button button--small"
+                    disabled={authState !== "signed-in" || verifyingId !== null}
+                    onClick={() => void verify(item)}
+                  >
+                    {verifyingId === item.id ? "Ověřuji…" : "Ověřit v LuDone"}
+                  </button>
+                )}
+                {verification && (
+                  <div className="recording-queue-card__verification" aria-label="Výsledek serverového ověření">
+                    {Object.entries(verification.tracks).map(([track, result]) => (
+                      <div className="recording-queue-card__track" key={track} data-status={result.status}>
+                        <span><strong>{TRACK_LABELS[track]}</strong>: {VERIFICATION_LABELS[result.status]}</span>
+                        {result.status === "complete" && (
+                          <button
+                            type="button"
+                            className="button button--small"
+                            onClick={() => void openWeb(item, track)}
+                          >
+                            Otevřít v LuDone
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <small>Ověřeno {formatCreatedAt(verification.verifiedAt)}</small>
+                  </div>
+                )}
+                {verificationErrorById[item.id] && (
+                  <p className="recording-queue-card__verification-error" role="alert">
+                    {verificationErrorById[item.id]}
+                  </p>
                 )}
               </li>
             );

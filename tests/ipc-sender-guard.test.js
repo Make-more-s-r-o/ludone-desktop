@@ -353,6 +353,8 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "recording:finish",
       "recording:finish-export",
       "recordings:list-local",
+      "recordings:open-web",
+      "recordings:verify",
       "settings:close",
       "settings:get-dock-visible",
       "settings:get-device-name",
