@@ -75,6 +75,33 @@ ten omyl tě tenhle týden třikrát poslal špatným směrem.
 případně dotaz podle `clientRecordingId`. Bez něj desktop nedokáže dohledat nic, co sám právě
 neodeslal. Až s nimi budeš mluvit, tohle je ta prosba.
 
+### ✅ Zadání prošlo kritikou — a ta našla tvoje vlastní rozhodnutí, které ho rušilo
+
+Nechal jsem zadání přečíst jako vykonavatel („dokázal bys podle toho pracovat bez doptávání?").
+Odpověď byla *„začít ano, dokončit ne"*. Čtyři věci z toho stály za rozhodnutí a tys je 14. 9.
+rozhodl:
+
+| co našla | tvoje rozhodnutí |
+|---|---|
+| `ROZHODNUTI.md:27–28` (**A11**: „dashboardy patří do webu", **A12**: „archiv nahrávek NE") — zadání je tiše přebíjelo | **A11 platí dál.** Dashboard ukazuje jen **živé** nahrávky, žádné nové úložiště historie. |
+| „Poslat znovu" těm třem nahrávkám **nepomůže** — vlastnické chyby je nechají ve stavu `ceka`, a opakování se týká jen `selhalo` | **Převzetí se staví hned po datové vrstvě**, ne jako poslední akce. |
+| Nasazení neexistuje (0 tagů, chybí nahrávací krok) | **Dotáhnout až k vydání verze** — sekce 11 zadání říká, co k tomu potřebuju od tebe. |
+| `electron/retention.cjs` maže odeslané nahrávky **i s položkou fronty** po 7 dnech — v zadání nebyl ani zmíněný | Vyřešeno rozhodnutím o A11: co retence smaže, zmizí i z dashboardu, a je to správně. |
+
+🔴 **Dvě věci, které z toho pro tebe plynou, i když jsi je nezadával:**
+
+1. **Retence čte svou politiku z `localStorage` panelového rendereru** — hlavní proces si ji
+   bere tak, že v tom rendereru spustí JavaScript (`main.cjs:2082–2087`), a každá chyba čtení
+   znamená „nic nemaž". ⇒ Kdyby Codex při přepracování panelu ten klíč rozbil, **retence se
+   tiše vypne a žádná brána si toho nevšimne**. Zapsal jsem to do zadání jako past.
+2. **„U koho nahrávka vznikla" v UI nepůjde ukázat.** Otisk vlastníka je jednosměrný HMAC
+   a jméno ani e-mail se do fronty záměrně neukládají (`electron/queue.cjs:73–79`). Uvidíš jen
+   „patří jinému účtu". Je to ústupek proti tvému rozhodnutí, ať o něm víš.
+
+Zadání teď obsahuje **devět konkrétních pastí** (`recordingId` je per stopu, ne per nahrávku ·
+jednostopá nahrávka shodí ukládání výsledku · volání fronty zevnitř odesílání zatuhne · a dál),
+na kterých by se implementace jinak zasekla — každá je změřená v kódu, ne vymyšlená.
+
 ⚠️ **Jedna věc k rozhodnutí, až se k tomu vrátíš:** okno Nastavení je **448 px široké a pevné**
 (`electron/main.cjs:1058–1064`) a záložka „Záznamy" už existuje — řeší ale něco jiného (jak
 dlouho se soubory drží na disku). Dashboard je buď pátá záložka vedle ní, nebo se obě slijí;
