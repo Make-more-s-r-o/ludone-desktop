@@ -34,5 +34,6 @@ Dokud T-03 není přijatý a integrovaný, zůstávají jeho hotspoty výhradně
 | T-03 | `tasks/T-03.md` | Sol dashboard |
 | T-R1 | `tasks/T-R1.md` | Sol 429 cooldown |
 | T-04 | `tasks/T-04.md` | Sol serverové ověření |
+| T-05 | `tasks/T-05.md` | Sol consent a per-item akce |
 
 Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.
