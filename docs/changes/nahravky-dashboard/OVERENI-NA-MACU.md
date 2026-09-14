@@ -1,6 +1,6 @@
 # Ruční ověření dashboardu nahrávek na Macu
 
-Tento postup je příprava pro Dana po dokončení a integraci T-05. Sám o sobě nedokládá živou funkčnost. Před použitím root porovná názvy tlačítek a pořadí kroků se skutečným finálním UI.
+Tento postup je příprava pro Dana po dokončení a integraci T-05 a T-A4. Sám o sobě nedokládá živou funkčnost. Před použitím root porovná názvy tlačítek a pořadí kroků se skutečným finálním UI.
 
 Použij jen vlastní postradatelná testovací data. Nahraj přibližně 30 sekund syntetické řeči a systémového zvuku, nikdy schůzku ani cizí obsah. Do veřejného Gitu neukládej audio, tokeny, e-mail, plná serverová UUID, lokální cesty ani hodnoty release secrets. V protokolu stačí krátké ID z UI, například posledních šest znaků.
 
@@ -25,6 +25,7 @@ Před začátkem vypni automatické odesílání a poznamenej si jednu starší 
 | # | Krok | PASS poznáš podle | Stav |
 |---|---|---|---|
 | 1 | Na standalone obrazovce po odhlášení nebo expiraci nejdřív otevři a zavři Nastavení. Potom se přihlas přes produkční `app.ludone.cz`. | Nastavení je dostupné i bez přihlášení a jeho otevření samo neposílá upload; přihlášení skončí zpět v aplikaci. | ☐ ⛔ |
+| 1a | V části Účet načti firmy, při více firmách výslovně vyber svou testovací firmu a ulož ji. | Seznam pochází ze skutečné nabídky; bez uložené volby nezačíná první firmou. Výběr neodešle žádnou starší nahrávku. | ☐ ⛔ |
 | 2 | Po přihlášení chvíli sleduj dříve uloženou položku při vypnuté automatice. Nic u ní nepotvrzuj. | Stará `held` položka se sama nezačne odesílat a nevznikne nové serverové ID. | ☐ ⛔ |
 | 3 | Nahraj vlastní 30s syntetickou ukázku mikrofonu a systémového zvuku, zadej neškodný název a zvol „Nechat na Macu“. Restartuj aplikaci z Finderu. | Obě lokální stopy jsou po restartu v přehledu, název zůstal a položka není odeslaná. | ☐ ⛔ |
 | 4 | Pořiď druhou syntetickou ukázku a zvol „Uložit a odeslat“. | UI nejdřív pravdivě ukáže uložení/frontu; položka se neoznačí jako serverově ověřená jen přijetím k odeslání. | ☐ ⛔ |

@@ -25,3 +25,6 @@ Některá odstranění přerušil nově vznikající `.DS_Store`. U zbytku strom
 Po merge `0078c935` a zelené root bráně 1433 PASS byla větev `feat/nahravky-overeni` se zdrojovým commitem `9b233c8` ověřena jako předek integrace. Čtyři původní worker logy byly byte-for-byte shodné s integračním archivem. Root report navíc obsahuje plný doslovný obsah těchto logů a vlastní přejímku. Čistý strom `nahravky-overeni` a jeho větev byly odstraněny; první pokus o `branch -d` z main správně odmítl smazání, následný příkaz z integrační větve po kontrole předka uspěl bez force.
 
 Aktivní zůstaly pouze `nahravky-integrace` a `nahravky-akce` (T5), vedle nedotčeného výchozího main. Původní T4 commit je stále dosažitelný z integrační historie a pushnutého PR.
+# T-A3 — 15. 9. 2026
+
+Zdroj `0340c8e1076eb8b59bfcc9d176f9aa74f57e400a` je přijatý běžným merge a dosažitelný z integrační větve. Čtyři původní worker logy byly před úklidem ověřeny byte-for-byte proti verzovanému archivu A3; původní report je také v historii. Pracovní strom byl čistý. `git worktree remove` a následné `git branch -d feat/nahravky-vyber-firmy` skončily exit 0, bez force. Nové T-A4 dostane samostatný strom až po T5.
