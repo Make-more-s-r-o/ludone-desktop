@@ -29,6 +29,12 @@ Aktuální etapa je T-04; T-R1 byl převzat z `0addac6` a T-A2 z `445fe9f`. Tabu
 | `tests/auth-refresh.test.js` | T-A2 | T-A1 → T-A2 | Zachování důvěryhodné identity při refreshi. |
 | `src/lib/queue.js` | T-R1 | T-R1 → T-05 | T-03 soubor nemění; T-R1 jej převezme po integraci T-03. |
 | `src/lib/queue.test.js` | T-R1 | T-R1 → T-05 | Testovací sibling čisté queue logiky. |
+| `src/lib/panel.js` | T-05 | T-05 | Pravdivé shrnutí held/ownership a původní panel fronty. |
+| `src/lib/panel.test.js` | T-05 | T-05 | Testovací sibling shrnutí panelu. |
+| `src/features/queue/QueueCard.jsx` | T-05 | T-05 | Jednotlivé akce nahrávek místo starého hromadného retry. |
+| `src/features/queue/QueueCard.test.jsx` | T-05 | T-05 | Testovací sibling karty fronty. |
+| `tests/queue-card-labels.test.js` | T-05 | T-05 | Existující regresní testy významu štítků. |
+| `tests/idle-panel.test.js` | T-05 | T-05 | Existující integrační průchod panelem. |
 | `electron/queue.cjs` | T-04 | T-03 → T-R1 → T-04 → T-05 | Store, dashboard detail, cooldown, verify target a consent postupně. |
 | `electron/queue.test.cjs` | T-04 | T-03 → T-R1 → T-04 → T-05 | Testovací sibling store. |
 | `electron/main.cjs` | T-04 | T-03 → T-R1 → T-04 → T-05 | IPC a lifecycle bloky se předávají sekvenčně. |
