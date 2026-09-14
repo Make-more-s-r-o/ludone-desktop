@@ -18,6 +18,11 @@ function parseScalar(source) {
   return value;
 }
 
+function parseSize(source) {
+  const value = source.trim();
+  return /^(?:0|[1-9]\d*)$/.test(value) ? Number(value) : Number.NaN;
+}
+
 export function parseMacUpdateMetadata(source) {
   const metadata = { files: [] };
   let currentFile = null;
@@ -33,7 +38,7 @@ export function parseMacUpdateMetadata(source) {
     const fileProperty = line.match(/^[ ]{4}(sha512|size):\s*(.+)$/);
     if (fileProperty && currentFile) {
       currentFile[fileProperty[1]] = fileProperty[1] === "size"
-        ? Number.parseInt(fileProperty[2], 10)
+        ? parseSize(fileProperty[2])
         : parseScalar(fileProperty[2]);
       continue;
     }
