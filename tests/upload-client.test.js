@@ -135,7 +135,8 @@ async function recordingFixture({
       // Cesty musí odpovídat stopám v manifestu — fronta na neshodu upozorní.
       trackPaths: { microphone: microphonePath, system: systemPath },
     }, Date.parse(ENDED_AT));
-  const item = { ...queued.item, ownerFingerprint: OWNER_A };
+  // Transportní testy pracují s položkou, kterou už uživatel jednotlivě schválil.
+  const item = { ...queued.item, ownerFingerprint: OWNER_A, uploadIntent: "approved" };
   return {
     item,
     manifest,
@@ -178,6 +179,18 @@ function recordingInput(fixture) {
       ...(fixture.manifest.tracks.system ? { system: fixture.systemPath } : {}),
     },
   };
+}
+
+async function enqueueApprovedRecording(store, input) {
+  const queued = await store.enqueueRecording(input);
+  await store.decideRecording(
+    queued.item.clientRecordingId,
+    OWNER_A,
+    null,
+    true,
+    { guard: async () => true },
+  );
+  return queued;
 }
 
 describe("pravdivá hláška, když firma pro upload není", () => {
@@ -777,7 +790,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
       queueModulePromise: import("../src/lib/queue.js"),
       send,
     });
-    await store.enqueueRecording(recordingInput(fixture));
+    await enqueueApprovedRecording(store, recordingInput(fixture));
 
     const result = await store.pump({
       DESKTOP_TIME_ENABLED: undefined,
@@ -835,7 +848,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
       queueModulePromise: import("../src/lib/queue.js"),
       send: createSend(fetchImpl).send,
     });
-    await firstStore.enqueueRecording(recordingInput(fixture));
+    await enqueueApprovedRecording(firstStore, recordingInput(fixture));
 
     void firstStore.pump(
       { DESKTOP_TIME_ENABLED: undefined, DESKTOP_UPLOAD_ENABLED: "true" },
@@ -919,7 +932,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
       queueModulePromise: import("../src/lib/queue.js"),
       send: createSend(fetchImpl).send,
     });
-    await store.enqueueRecording(recordingInput(fixture));
+    await enqueueApprovedRecording(store, recordingInput(fixture));
 
     await expect(store.pump({
       DESKTOP_TIME_ENABLED: undefined,
@@ -937,10 +950,21 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
       },
     });
 
-    await expect(store.retry({
+    const loadedRetryQueue = await queueStore.loadQueue(queuePath);
+    const retryQueue = {
+      ...loadedRetryQueue,
+      items: loadedRetryQueue.items.map((item) => item.clientRecordingId
+        === fixture.manifest.clientRecordingId ? { ...item, nextAttemptAt: null } : item),
+    };
+    const retryResult = await processNext(retryQueue, {
       DESKTOP_TIME_ENABLED: undefined,
       DESKTOP_UPLOAD_ENABLED: "true",
-    }, OWNER_A)).resolves.toMatchObject({ outcome: "sent" });
+    }, createSend(fetchImpl).send, {
+      currentOwnerFingerprint: OWNER_A,
+      persistProgress: (nextQueue) => queueStore.saveQueueAtomically(queuePath, nextQueue),
+    });
+    expect(retryResult).toMatchObject({ outcome: "sent" });
+    await queueStore.saveQueueAtomically(queuePath, retryResult.queue);
     const completed = JSON.parse(await readFile(queuePath, "utf8")).items[0];
     expect(completed.server).toEqual({
       sessionId: partial.server.sessionId,

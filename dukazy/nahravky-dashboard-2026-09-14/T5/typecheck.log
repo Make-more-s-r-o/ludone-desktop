@@ -1,0 +1,16 @@
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+EXIT_CODE=0
+
+> ludone-desktop-prototype@0.1.2 lint
+> eslint .
+
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+FINAL_LINT_EXIT_CODE=0
+FINAL_TYPECHECK_EXIT_CODE=0

@@ -217,7 +217,7 @@ describe("read-only lokální přehled nahrávek", () => {
         localState: "complete-audio",
         sizeBytes: 0,
         revision: null,
-        allowedActions: { claim: false, delete: false, retry: false, send: false },
+        allowedActions: { claim: false, delete: true, retry: false, send: false },
       });
       expect(snapshot.unreadableCount).toBe(0);
       expect(JSON.stringify(snapshot)).not.toContain(directory);
@@ -504,7 +504,21 @@ function microphoneOnlyRecording(
 }
 
 function oneItemQueue(clientRecordingId) {
-  return enqueueRecording(createQueue(), recording(clientRecordingId), 1_777_000_000_000).queue;
+  const queue = enqueueRecording(createQueue(), recording(clientRecordingId), 1_777_000_000_000).queue;
+  queue.items[0] = { ...queue.items[0], uploadIntent: "approved" };
+  return queue;
+}
+
+async function enqueueApproved(store, value) {
+  const queued = await store.enqueueRecording(value);
+  await store.decideRecording(
+    queued.item.clientRecordingId,
+    value.ownerFingerprint ?? null,
+    "",
+    true,
+    { guard: async () => true },
+  );
+  return queued;
 }
 
 describe("vlastník nahrávky v perzistentní frontě", () => {
@@ -731,12 +745,12 @@ function killswitches(upload = process.env.DESKTOP_UPLOAD_ENABLED, time = proces
 
 const PRODUCTION_KILLSWITCH_CASES = [
   {
-    label: "nenastavený vypínač nahrávek zůstane disabled",
+    label: "bez env smí projít jednotlivě schválená nahrávka",
     environmentName: "DESKTOP_UPLOAD_ENABLED",
     queueFactory: oneItemQueue,
     value: undefined,
-    expectedOutcome: "disabled",
-    expectedCalls: 0,
+    expectedOutcome: "sent",
+    expectedCalls: 1,
   },
   {
     label: "false ve vypínači nahrávek zůstane disabled",
@@ -763,12 +777,12 @@ const PRODUCTION_KILLSWITCH_CASES = [
     expectedCalls: 1,
   },
   {
-    label: "produkčně zapnutý časový vypínač nepovolí nahrávku",
+    label: "zapnutý časový vypínač nemění schválenou nahrávku",
     environmentName: "DESKTOP_TIME_ENABLED",
     queueFactory: oneItemQueue,
     value: ENABLED_SETTING,
-    expectedOutcome: "disabled",
-    expectedCalls: 0,
+    expectedOutcome: "sent",
+    expectedCalls: 1,
   },
   {
     label: "nenastavený vypínač času zůstane disabled",
@@ -1659,6 +1673,8 @@ describe("stavový automat fronty", () => {
       },
       blockReason: null,
       ownership: "unavailable",
+      title: null,
+      uploadIntent: "approved",
     });
   });
 
@@ -1849,14 +1865,18 @@ describe("stavový automat fronty", () => {
   const uploadEnabled = () => ({
     [killswitchNameForKind(QUEUE_ITEM_KINDS.RECORDING)]: ENABLED_SETTING,
   });
-  const queueWithRecordings = (ids) => ids.reduce(
+  const queueWithRecordings = (ids) => {
+    const queue = ids.reduce(
     (accumulated, id, order) => enqueueRecording(
       accumulated,
       recording(id),
       1_777_000_000_000 + order,
     ).queue,
-    createQueue(),
-  );
+      createQueue(),
+    );
+    queue.items = queue.items.map((item) => ({ ...item, uploadIntent: "approved" }));
+    return queue;
+  };
   const PRVNI = "11111111-1111-4111-8111-111111111111";
   const DRUHA = "22222222-2222-4222-8222-222222222222";
   const TRETI = "33333333-3333-4333-8333-333333333333";
@@ -2589,7 +2609,8 @@ describe("perzistentní pumpa fronty", () => {
     const stored = createQueue();
     for (const id of [firstId, secondId]) {
       const queued = enqueueRecording(stored, recording(id), now).item;
-      stored.items.push({ ...queued, attempts: id === firstId ? 4 : 0, ownerFingerprint: CURRENT_OWNER });
+      stored.items.push({ ...queued, attempts: id === firstId ? 4 : 0,
+        ownerFingerprint: CURRENT_OWNER, uploadIntent: "approved" });
     }
     await saveQueueAtomically(queuePath, stored);
     const send = vi.fn(async () => {
@@ -2622,7 +2643,7 @@ describe("perzistentní pumpa fronty", () => {
       await expect(restarted.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER))
         .resolves.toMatchObject({ outcome: "rate_limited" });
       await expect(restarted.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER))
-        .resolves.toMatchObject({ outcome: "rate_limited" });
+        .resolves.toMatchObject({ outcome: "idle" });
       expect(restartedSend).not.toHaveBeenCalled();
       expect(await loadQueue(queuePath)).toEqual(persisted);
     } finally {
@@ -2643,8 +2664,8 @@ describe("perzistentní pumpa fronty", () => {
     await saveQueueAtomically(queuePath, {
       ...queue,
       items: [
-        { ...aItem, ownerFingerprint: ownerA },
-        { ...bItem, ownerFingerprint: ownerB },
+        { ...aItem, ownerFingerprint: ownerA, uploadIntent: "approved" },
+        { ...bItem, ownerFingerprint: ownerB, uploadIntent: "approved" },
       ],
       uploadCooldowns: [{ ownerFingerprint: ownerA, retryAt: now + 60_000 }],
     });
@@ -2670,7 +2691,7 @@ describe("perzistentní pumpa fronty", () => {
       const expiryQueuePath = path.join(directory, "expiry", "outgoing.json");
       await saveQueueAtomically(expiryQueuePath, {
         ...queue,
-        items: [{ ...aItem, ownerFingerprint: ownerA }],
+        items: [{ ...aItem, ownerFingerprint: ownerA, uploadIntent: "approved" }],
         uploadCooldowns: [{ ownerFingerprint: ownerA, retryAt: now - 1 }],
       });
       const expirySend = vi.fn(async () => {});
@@ -2777,7 +2798,7 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(ownedRecording());
+      await enqueueApproved(store, ownedRecording());
       await expect(store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER))
         .resolves.toMatchObject({ outcome: "rate_limited" });
       expect((await loadQueue(queuePath)).uploadCooldowns).toEqual([{
@@ -2886,7 +2907,7 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(ownedRecording());
+      await enqueueApproved(store, ownedRecording());
       await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
       for (let pass = 0; pass < 4; pass += 1) {
         await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
@@ -2934,10 +2955,10 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(ownedRecording(prvni));
-      await store.enqueueRecording(ownedRecording(druha));
-      await store.enqueueRecording(ownedRecording(treti));
-      await store.enqueueRecording(ownedRecording(ctvrta));
+      await enqueueApproved(store, ownedRecording(prvni));
+      await enqueueApproved(store, ownedRecording(druha));
+      await enqueueApproved(store, ownedRecording(treti));
+      await enqueueApproved(store, ownedRecording(ctvrta));
 
       const vysledek = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
@@ -2976,9 +2997,9 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(ownedRecording("5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"));
-      await store.enqueueRecording(ownedRecording("6b2c3d4e-5f6a-4b7c-8d8e-0f1a2b3c4d5e"));
-      await store.enqueueRecording(ownedRecording("7c3d4e5f-6a7b-4c8d-8e9f-1a2b3c4d5e6f"));
+      await enqueueApproved(store, ownedRecording("5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"));
+      await enqueueApproved(store, ownedRecording("6b2c3d4e-5f6a-4b7c-8d8e-0f1a2b3c4d5e"));
+      await enqueueApproved(store, ownedRecording("7c3d4e5f-6a7b-4c8d-8e9f-1a2b3c4d5e6f"));
 
       const vysledek = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
@@ -3012,7 +3033,7 @@ describe("perzistentní pumpa fronty", () => {
 
     try {
       for (let poradi = 0; poradi < 25; poradi += 1) {
-        await store.enqueueRecording(
+        await enqueueApproved(store,
           ownedRecording(`00000000-0000-4000-8000-${String(poradi).padStart(12, "0")}`),
         );
       }
@@ -3032,7 +3053,7 @@ describe("perzistentní pumpa fronty", () => {
     }
   });
 
-  it("ruční retry vynuluje prodlevu, uloží ji a hned probudí pumpu", async () => {
+  it("stará hromadná retry cesta už nahrávku znovu neodešle", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-retry-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");
     const send = vi.fn()
@@ -3045,26 +3066,25 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(ownedRecording());
+      await enqueueApproved(store, ownedRecording());
       const first = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
       expect(first.outcome).toBe("retry_scheduled");
       expect((await loadQueue(queuePath)).items[0].nextAttemptAt).not.toBeNull();
 
       const retried = await store.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
-      expect(retried.outcome).toBe("sent");
-      expect(send).toHaveBeenCalledTimes(2);
+      expect(retried.outcome).toBe("idle");
+      expect(send).toHaveBeenCalledTimes(1);
       expect((await loadQueue(queuePath)).items[0]).toMatchObject({
-        attempts: 2,
-        nextAttemptAt: null,
-        state: QUEUE_STATES.SENT,
+        attempts: 1,
+        state: QUEUE_STATES.WAITING,
       });
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
   });
 
-  it("ruční retry přeskočí vlastníka čekajícího na člověka a opravdu odešle běžnou položku", async () => {
+  it("stará hromadná retry cesta neodešle ani běžnou nahrávku vedle lidské blokace", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-human-retry-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");
     const firstId = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
@@ -3084,21 +3104,20 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(ownedRecording(firstId));
+      await enqueueApproved(store, ownedRecording(firstId));
       expect((await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER)).outcome).toBe("paused");
       const humanBefore = (await loadQueue(queuePath)).items[0];
-      await store.enqueueRecording(ownedRecording(secondId));
+      await enqueueApproved(store, ownedRecording(secondId));
 
       const retried = await store.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
-      expect(retried.outcome).toBe("sent");
-      expect(send).toHaveBeenCalledTimes(2);
-      expect(send.mock.calls[1][0].clientRecordingId).toBe(secondId);
+      expect(retried.outcome).toBe("idle");
+      expect(send).toHaveBeenCalledTimes(1);
       const persisted = await loadQueue(queuePath);
       expect(persisted.items[0]).toEqual(humanBefore);
       expect(persisted.items[1]).toMatchObject({
         clientRecordingId: secondId,
-        state: QUEUE_STATES.SENT,
+        state: QUEUE_STATES.WAITING,
       });
     } finally {
       await rm(directory, { recursive: true, force: true });
@@ -3159,7 +3178,7 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(ownedRecording());
+      await enqueueApproved(store, ownedRecording());
       const result = await store.pump(killswitches(), CURRENT_OWNER);
 
       expect(result).toMatchObject({ outcome: "disabled" });

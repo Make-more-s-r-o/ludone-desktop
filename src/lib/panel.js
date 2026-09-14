@@ -60,7 +60,7 @@ export function queuePanelSummary(items, now = Date.now()) {
   const waiting = pending.filter((item) => item.state === "ceka");
   const humanAction = waiting.filter((item) => item.requiresHumanAction === true);
   const ordinaryWaiting = waiting.filter((item) => item.requiresHumanAction !== true);
-  const retryableWaiting = ordinaryWaiting.filter((item) => (
+  const retryableWaiting = ordinaryWaiting.filter((item) => item.kind === "time" && (
     typeof item.sendingDisabledReason !== "string"
     || item.sendingDisabledReason.trim().length === 0
   ));
@@ -97,6 +97,9 @@ export function queuePanelSummary(items, now = Date.now()) {
     humanReasons,
     nextAttemptAt: nextAttempts.length > 0 ? Math.min(...nextAttempts) : null,
     retryableWaitingCount: retryableWaiting.length,
+    recordingActionCount: pending.filter((item) => (item.kind ?? "recording") === "recording").length,
+    heldRecordingCount: pending.filter((item) => (item.kind ?? "recording") === "recording"
+      && item.uploadIntent === "held").length,
     sendingDisabledReasons,
     sendingCount: pending.filter((item) => item.state === "odesila").length,
     sizeBytes: completeSize(waiting),

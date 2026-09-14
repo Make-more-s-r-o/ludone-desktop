@@ -1,0 +1,222 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-akce
+
+ ❯ tests/recording-actions.test.js (14 tests | 2 failed | 12 skipped) 85ms
+   ↓ bezpečné lokální akce nahrávky > přesune audio, známý sidecar a manifest poslední a teprve pak odstraní queue řádek
+   ↓ bezpečné lokální akce nahrávky > změněný manifest po snapshotu odmítne před prvním košem
+   ↓ bezpečné lokální akce nahrávky > sidecar se stejným UUID a názvem stopy, ale jiným obsahem odmítne
+   ↓ bezpečné lokální akce nahrávky > incomplete primary s platným complete sidecarem smaže zbytky i bez audia a hashování
+   ↓ bezpečné lokální akce nahrávky > dva orphan manifesty se stejným UUID odmítne jako nejednoznačný cíl
+   ↓ bezpečné lokální akce nahrávky > nesmaže audio, na které odkazuje jiný bezpečný primární manifest
+   ↓ bezpečné lokální akce nahrávky > nesmaže audio sdílené jinou queue položkou s chybějícím manifestem
+   ↓ bezpečné lokální akce nahrávky > změna guardu během preflightu zastaví první koš a zachová queue řádek
+   ↓ bezpečné lokální akce nahrávky > částečná chyba koše ponechá queue položku i primární manifest
+   ↓ bezpečné lokální akce nahrávky > reveal vrátí jen čerstvou přímou audio stopu a stale revize nic neukáže
+   × durable souhlas nahrávky > read-only přehled legacy intent undefined nezapíše, první transport jej atomicky drží 55ms
+     → expected "spy" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st spy call:
+
+    Array [
+      Object {
+        "attempts": 1,
+        "clientRecordingId": "11111111-1111-4111-8111-111111111111",
+        "enqueuedAt": "2026-09-14T22:21:50.968Z",
+        "kind": "recording",
+        "lastFailureReason": null,
+        "manifestPath": "/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-recording-actions-wdLOQ8/nahravky/porada.manifest.json",
+        "nextAttemptAt": null,
+        "ownerFingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "requiresHumanAction": false,
+        "sentAt": null,
+        "server": Object {
+          "sessionId": null,
+          "tracks": Object {
+            "microphone": Object {
+              "recordingId": null,
+              "uploadedBytes": 0,
+            },
+            "system": Object {
+              "recordingId": null,
+              "uploadedBytes": 0,
+            },
+          },
+        },
+        "state": "odesila",
+        "tracks": Object {
+          "microphone": "/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-recording-actions-wdLOQ8/nahravky/porada-microphone.webm",
+        },
+        "uploadIntent": "approved",
+      },
+      [Function reportServerProgress],
+    ]
+
+
+Number of calls: 1
+
+   × durable souhlas nahrávky > read-only přehled legacy intent neplatny nezapíše, první transport jej atomicky drží 30ms
+     → expected "spy" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st spy call:
+
+    Array [
+      Object {
+        "attempts": 1,
+        "clientRecordingId": "11111111-1111-4111-8111-111111111111",
+        "enqueuedAt": "2026-09-14T22:21:51.011Z",
+        "kind": "recording",
+        "lastFailureReason": null,
+        "manifestPath": "/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-recording-actions-ugt0jk/nahravky/porada.manifest.json",
+        "nextAttemptAt": null,
+        "ownerFingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "requiresHumanAction": false,
+        "sentAt": null,
+        "server": Object {
+          "sessionId": null,
+          "tracks": Object {
+            "microphone": Object {
+              "recordingId": null,
+              "uploadedBytes": 0,
+            },
+            "system": Object {
+              "recordingId": null,
+              "uploadedBytes": 0,
+            },
+          },
+        },
+        "state": "odesila",
+        "tracks": Object {
+          "microphone": "/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-recording-actions-ugt0jk/nahravky/porada-microphone.webm",
+        },
+        "uploadIntent": "approved",
+      },
+      [Function reportServerProgress],
+    ]
+
+
+Number of calls: 1
+
+   ↓ durable souhlas nahrávky > deduplikace neschválí held a auth loss uloží title stále jako held
+   ↓ durable souhlas nahrávky > fresh guard schválí právě jednu položku a title přežije restart storu
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/recording-actions.test.js > durable souhlas nahrávky > read-only přehled legacy intent undefined nezapíše, první transport jej atomicky drží
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st spy call:
+
+    Array [
+      Object {
+        "attempts": 1,
+        "clientRecordingId": "11111111-1111-4111-8111-111111111111",
+        "enqueuedAt": "2026-09-14T22:21:50.968Z",
+        "kind": "recording",
+        "lastFailureReason": null,
+        "manifestPath": "/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-recording-actions-wdLOQ8/nahravky/porada.manifest.json",
+        "nextAttemptAt": null,
+        "ownerFingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "requiresHumanAction": false,
+        "sentAt": null,
+        "server": Object {
+          "sessionId": null,
+          "tracks": Object {
+            "microphone": Object {
+              "recordingId": null,
+              "uploadedBytes": 0,
+            },
+            "system": Object {
+              "recordingId": null,
+              "uploadedBytes": 0,
+            },
+          },
+        },
+        "state": "odesila",
+        "tracks": Object {
+          "microphone": "/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-recording-actions-wdLOQ8/nahravky/porada-microphone.webm",
+        },
+        "uploadIntent": "approved",
+      },
+      [Function reportServerProgress],
+    ]
+
+
+Number of calls: 1
+
+ ❯ tests/recording-actions.test.js:320:24
+    318| 
+    319|       await restarted.pump({ DESKTOP_UPLOAD_ENABLED: "true" }, OWNER);
+    320|       expect(send).not.toHaveBeenCalled();
+       |                        ^
+    321|       expect((await queueStore.loadQueue(value.queuePath)).items[0].up…
+    322|     },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/recording-actions.test.js > durable souhlas nahrávky > read-only přehled legacy intent neplatny nezapíše, první transport jej atomicky drží
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st spy call:
+
+    Array [
+      Object {
+        "attempts": 1,
+        "clientRecordingId": "11111111-1111-4111-8111-111111111111",
+        "enqueuedAt": "2026-09-14T22:21:51.011Z",
+        "kind": "recording",
+        "lastFailureReason": null,
+        "manifestPath": "/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-recording-actions-ugt0jk/nahravky/porada.manifest.json",
+        "nextAttemptAt": null,
+        "ownerFingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "requiresHumanAction": false,
+        "sentAt": null,
+        "server": Object {
+          "sessionId": null,
+          "tracks": Object {
+            "microphone": Object {
+              "recordingId": null,
+              "uploadedBytes": 0,
+            },
+            "system": Object {
+              "recordingId": null,
+              "uploadedBytes": 0,
+            },
+          },
+        },
+        "state": "odesila",
+        "tracks": Object {
+          "microphone": "/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-recording-actions-ugt0jk/nahravky/porada-microphone.webm",
+        },
+        "uploadIntent": "approved",
+      },
+      [Function reportServerProgress],
+    ]
+
+
+Number of calls: 1
+
+ ❯ tests/recording-actions.test.js:320:24
+    318| 
+    319|       await restarted.pump({ DESKTOP_UPLOAD_ENABLED: "true" }, OWNER);
+    320|       expect(send).not.toHaveBeenCalled();
+       |                        ^
+    321|       expect((await queueStore.loadQueue(value.queuePath)).items[0].up…
+    322|     },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 12 skipped (14)
+   Start at  00:21:50
+   Duration  368ms (transform 42ms, setup 7ms, collect 31ms, tests 85ms, environment 0ms, prepare 64ms)
+
+TEST_EXIT_CODE=1

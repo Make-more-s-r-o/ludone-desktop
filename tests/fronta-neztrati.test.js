@@ -37,6 +37,7 @@ function frontaSJednouPolozkou() {
       clientRecordingId: "schuzka-1",
       manifestPath: "/tmp/schuzka-1/manifest.json",
       ownerFingerprint: `sha256:${"a".repeat(64)}`,
+      uploadIntent: "approved",
       tracks: [{ kind: "microphone", path: "/tmp/schuzka-1/mikrofon.webm" }],
       enqueuedAt: 1_777_000_000_000,
       nextAttemptAt: 0,

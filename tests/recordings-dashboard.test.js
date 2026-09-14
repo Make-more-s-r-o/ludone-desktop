@@ -40,6 +40,7 @@ function deferred() {
  * @param {{
  *   authState?: string,
  *   claimRecording?: (...args: any[]) => Promise<any>,
+ *   deleteRecording?: (...args: any[]) => Promise<any>,
  *   listQueue?: () => Promise<any[]>,
  *   listLocalRecordings?: () => Promise<any>,
  *   verifyRecording?: (...args: any[]) => Promise<any>,
@@ -49,6 +50,7 @@ function deferred() {
 async function renderDashboard({
   authState = "signed-in",
   claimRecording = () => Promise.resolve({ claimed: false, items: [ITEM] }),
+  deleteRecording = () => Promise.resolve({ outcome: "deleted" }),
   listQueue,
   listLocalRecordings = listQueue
     ? async () => ({ items: await listQueue(), unreadableCount: 0 })
@@ -59,6 +61,7 @@ async function renderDashboard({
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const ludone = {
     claimRecording: vi.fn(claimRecording),
+    deleteRecording: vi.fn(deleteRecording),
     listLocalRecordings: vi.fn(listLocalRecordings),
     verifyRecording: vi.fn(verifyRecording),
     openRecordingInLuDone: vi.fn(openRecordingInLuDone),
@@ -95,6 +98,32 @@ afterEach(() => {
 });
 
 describe("dashboard fronty nahrávek", () => {
+  it("částečný koš zobrazí zachování souborů i queue položky", async () => {
+    const deletable = {
+      ...ITEM,
+      ownership: "current",
+      allowedActions: { ...ITEM.allowedActions, claim: false, delete: true },
+    };
+    const deleteRecording = vi.fn(async () => ({ outcome: "partial_failure" }));
+    const dashboard = await renderDashboard({
+      deleteRecording,
+      listLocalRecordings: async () => ({ items: [deletable], unreadableCount: 0 }),
+    });
+    try {
+      const button = [...dashboard.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.trim() === "Přesunout do koše");
+      await React.act(async () => button.click());
+      await vi.waitFor(() => expect(dashboard.document.body.textContent)
+        .toContain("Zbývající soubory i záznam ve frontě zůstaly zachované."));
+      expect(deleteRecording).toHaveBeenCalledExactlyOnceWith({
+        id: ID,
+        queueRev: REVISION,
+        fileRev: ITEM.fileRevision,
+      });
+    } finally {
+      await dashboard.cleanup();
+    }
+  });
   it("server nevolá při renderu ani refreshi a ověří obě stopy jen po ručním kliku", async () => {
     const currentItem = { ...ITEM, ownership: "current", allowedActions: { ...ITEM.allowedActions, claim: false } };
     const verifyRecording = vi.fn(async () => ({
@@ -339,7 +368,7 @@ describe("dashboard fronty nahrávek", () => {
           revision: null,
           sizeBytes: null,
           localState: "missing-audio",
-          allowedActions: { claim: false, delete: false, retry: false, send: false },
+          allowedActions: { claim: false, delete: true, retry: false, send: false },
         }],
         unreadableCount: 1,
       })
@@ -349,7 +378,11 @@ describe("dashboard fronty nahrávek", () => {
       await vi.waitFor(() => expect(dashboard.document.body.textContent).toContain("Zvukové soubory chybí"));
       expect(dashboard.document.body.textContent).toContain("Jen na Macu");
       expect(dashboard.document.body.textContent).toContain("Poškozená data bez bezpečné identity");
-      expect(dashboard.document.querySelectorAll(".recording-queue-card button")).toHaveLength(0);
+      expect([...dashboard.document.querySelectorAll(".recording-queue-card button")]
+        .map((button) => button.textContent.trim())).toEqual([
+        "Ukázat ve Finderu",
+        "Přesunout do koše",
+      ]);
       const refresh = [...dashboard.document.querySelectorAll("button")]
         .find((button) => button.textContent.trim() === "Obnovit přehled");
       await React.act(async () => {

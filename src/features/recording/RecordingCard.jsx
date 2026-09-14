@@ -363,14 +363,18 @@ export function RecordingCard({
           setSavedRecording(saved);
         }
       }
+      if (saved?.automaticUpload === true) {
+        const defaultName = suggestedRecordingName(saved.startedAt);
+        await exportSavedRecording(saved, defaultName, "send");
+      }
       return saved;
     })();
     return runtime.finishPromise;
   }
 
-  async function exportSavedRecording(name, openUploadPage) {
-    if (!savedRecording || exporting) return;
-    if (openUploadPage && !canSend) return;
+  async function exportSavedRecording(recording, name, decision) {
+    if (!recording || exporting) return;
+    if (decision === "send" && !canSend) return;
     if (name.trim().length > MAX_UPLOAD_NAME_UTF16_UNITS) {
       setExportError("Název je příliš dlouhý. Zkraťte ho.");
       return;
@@ -378,17 +382,24 @@ export function RecordingCard({
     setExporting(true);
     setExportError(null);
     try {
-      const result = await window.ludone.exportRecording(
-        savedRecording.clientRecordingId,
-        { recordingName: name, openUploadPage },
-      );
+      const modernDecision = window.ludone.saveRecordingDecision;
+      const result = typeof modernDecision === "function"
+        ? await modernDecision(recording.clientRecordingId, { recordingName: name, decision })
+        : await window.ludone.exportRecording(recording.clientRecordingId, {
+          recordingName: name, openUploadPage: decision === "send",
+        });
       if (!result?.ok) throw new Error(result?.message || "Export se nepodařil");
       setSavedRecording(null);
       setRecordingName("");
       setQuitExportFailure(null);
+      const deliveryDetail = result.outcome === "queued"
+        ? "Nahrávka čeká ve frontě k odeslání."
+        : result.outcome === "saved_local"
+          ? "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."
+          : "";
       setNotice({
         type: "success",
-        text: `Soubor ${result.fileName} je uložený ve Stažených. Přehrajete ho v prohlížeči nebo ve VLC.`,
+        text: `Soubor ${result.fileName} je uložený ve Stažených. ${deliveryDetail} Přehrajete ho v prohlížeči nebo ve VLC.`,
       });
     } catch (error) {
       setExportError(describeError(error));
@@ -810,7 +821,7 @@ export function RecordingCard({
           aria-busy={exporting}
           onSubmit={(event) => {
             event.preventDefault();
-            void exportSavedRecording(recordingName, true);
+            void exportSavedRecording(savedRecording, recordingName, "send");
           }}
         >
           <div role="status" aria-live="polite">
@@ -881,9 +892,9 @@ export function RecordingCard({
                 className="recording-saved__skip"
                 data-testid="skip-recording-name"
                 disabled={exporting}
-                onClick={() => exportSavedRecording("", false)}
+                onClick={() => exportSavedRecording(savedRecording, recordingName, "keep")}
               >
-                Jen uložit
+                Nechat na Macu
               </button>
             </>
           )}

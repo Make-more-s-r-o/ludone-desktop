@@ -97,6 +97,9 @@ async function createQueuedRecording({
     manifestPath,
     trackPaths: { microphone: microphonePath, system: systemPath },
   }, recordedAt - 1_000).queue;
+  queued.items = queued.items.map((item) => item.clientRecordingId === clientRecordingId
+    ? { ...item, uploadIntent: "approved" }
+    : item);
 
   return {
     queue: queued,

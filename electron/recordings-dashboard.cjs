@@ -279,6 +279,8 @@ function safeProjectedItem(projected) {
       ? projected.ownership : "unavailable",
     requiresHumanAction: projected.requiresHumanAction === true,
     blockReason: safeQueueReason(projected.blockReason ?? projected.lastFailureReason),
+    title: typeof projected.title === "string" ? projected.title : "",
+    uploadIntent: projected.uploadIntent === "approved" ? "approved" : "held",
   };
 }
 
@@ -366,9 +368,13 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
           && inspected.localState !== "missing-audio"
           && ["ceka", "selhalo"].includes(projected.state)
           && ["unknown", "other"].includes(projected.ownership),
-        delete: false,
-        retry: false,
-        send: false,
+        delete: !inspected.invalid && projected.state !== "odesila",
+        retry: !inspected.invalid && inspected.localState !== "missing-audio"
+          && projected.ownership === "current" && projected.uploadIntent === "approved"
+          && projected.state === "selhalo",
+        send: !inspected.invalid && inspected.localState !== "missing-audio"
+          && projected.ownership === "current" && projected.state === "ceka"
+          && projected.uploadIntent === "held",
       },
     });
   }
@@ -405,7 +411,7 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       localState: inspected.invalid ? "invalid-manifest" : inspected.localState,
       localReason: inspected.invalid ? "Primární manifest nelze bezpečně přečíst." : null,
       fileRevision: inspected.fileRevision ?? null,
-      allowedActions: { claim: false, delete: false, retry: false, send: false },
+      allowedActions: { claim: false, delete: !inspected.invalid, retry: false, send: false },
     });
   }
   return { items, unreadableCount };

@@ -38,6 +38,7 @@ const PROJECT_GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9
 const QUEUE_OWNER_FINGERPRINT_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 
 export const CLAIMED_RECORDING_HOLD_REASON = "Převzatá nahrávka čeká na volbu odeslání";
+export const RECORDING_UPLOAD_INTENTS = Object.freeze({ HELD: "held", APPROVED: "approved" });
 
 function requireObject(value, field) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -339,6 +340,7 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
     sentAt: null,
     server: emptyServerProgress(),
     state: QUEUE_STATES.WAITING,
+    uploadIntent: RECORDING_UPLOAD_INTENTS.HELD,
     ...(sourceManifestPath !== manifestPath ? { sourceManifestPath } : {}),
     tracks,
   };
@@ -411,6 +413,13 @@ export function reduceQueueForRenderer(queue, currentOwnerFingerprint = null) {
     id: item.clientRecordingId,
     kind: item.kind ?? QUEUE_ITEM_KINDS.RECORDING,
     state: item.state,
+    ...((item.kind ?? QUEUE_ITEM_KINDS.RECORDING) === QUEUE_ITEM_KINDS.RECORDING
+      ? { uploadIntent: item.uploadIntent === RECORDING_UPLOAD_INTENTS.APPROVED
+          ? RECORDING_UPLOAD_INTENTS.APPROVED : RECORDING_UPLOAD_INTENTS.HELD }
+      : {}),
+    ...((item.kind ?? QUEUE_ITEM_KINDS.RECORDING) === QUEUE_ITEM_KINDS.RECORDING
+      ? { title: safeNullableString(item.title) }
+      : {}),
     attempts: item.attempts,
     nextAttemptAt: item.nextAttemptAt,
     lastFailureReason: item.lastFailureReason,
@@ -483,6 +492,7 @@ export function claimRecording(queue, clientRecordingId, ownerFingerprint) {
     sentAt: null,
     server: emptyServerProgress(),
     state: QUEUE_STATES.WAITING,
+    uploadIntent: RECORDING_UPLOAD_INTENTS.HELD,
   };
   return { item, queue: replaceItem(queue, index, item) };
 }
@@ -671,9 +681,14 @@ export async function processNext(queue, killswitches, send, options = {}) {
   }
   const waitingItems = queue.items
     .map((item, index) => ({ item, index }))
-    .filter(({ item }) => item.state === QUEUE_STATES.WAITING);
+    .filter(({ item }) => item.state === QUEUE_STATES.WAITING)
+    .filter(({ item }) => options.clientRecordingId === undefined
+      || item.clientRecordingId === options.clientRecordingId)
+    .filter(({ item }) => options.kind === undefined || item.kind === options.kind);
   const automaticWaitingItems = waitingItems.filter(
-    ({ item }) => !queueItemRequiresHumanAction(item),
+    ({ item }) => !queueItemRequiresHumanAction(item)
+      && ((item.kind ?? QUEUE_ITEM_KINDS.RECORDING) !== QUEUE_ITEM_KINDS.RECORDING
+        || item.uploadIntent === RECORDING_UPLOAD_INTENTS.APPROVED),
   );
   const isEnabled = (item) => {
     try {
