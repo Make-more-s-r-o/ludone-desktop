@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:02:28.481Z",
+    "updatedAt": "2026-09-14T20:10:54.471Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -227,7 +227,7 @@
       "deps": [
         "T-02"
       ],
-      "packet": "ZADANI-PRO-CODEX.md"
+      "packet": "tasks/T-03.md"
     },
     {
       "id": "T-04",
@@ -238,7 +238,7 @@
       "deps": [
         "T-03"
       ],
-      "packet": "ZADANI-PRO-CODEX.md"
+      "packet": "tasks/T-04.md"
     },
     {
       "id": "T-05",
@@ -284,6 +284,14 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:10:54.471Z",
+      "text": "Packet T-04 je převzatý; příprava ověření na serveru zachovává limity i po novém přihlášení. Rozpracovaná implementace je v draft PR #141."
+    },
+    {
+      "at": "2026-09-14T20:03:18.240Z",
+      "text": "T-03 má připravený packet lokálního přehledu; dispatch čeká na přijetí T-02."
+    },
     {
       "at": "2026-09-14T20:02:28.481Z",
       "text": "Integrační review potvrdilo frontu a updater; veřejná kontrola vydání je v 2499dbb, návrat do přihlášení v 9158ae6 a oprava runtime js-yaml v 5e2ff84. T2 pokračuje v bezpečnostním review, bez živého uploadu nebo vydání."
