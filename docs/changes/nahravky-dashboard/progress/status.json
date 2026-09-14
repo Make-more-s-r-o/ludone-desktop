@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T19:57:14.148Z",
+    "updatedAt": "2026-09-14T20:02:28.481Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -284,6 +284,10 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:02:28.481Z",
+      "text": "Integrační review potvrdilo frontu a updater; veřejná kontrola vydání je v 2499dbb, návrat do přihlášení v 9158ae6 a oprava runtime js-yaml v 5e2ff84. T2 pokračuje v bezpečnostním review, bez živého uploadu nebo vydání."
+    },
     {
       "at": "2026-09-14T19:57:14.148Z",
       "text": "T-02 byl dispatchován; updater a T-06 jsou integrované s koordinátorovou bránou 1341 testů."
