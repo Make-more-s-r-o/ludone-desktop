@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T19:21:14.829Z",
+    "updatedAt": "2026-09-14T19:23:21.020Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -205,17 +205,18 @@
       "id": "T0",
       "title": "Projekce fronty",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 0,
       "deps": [],
-      "packet": "ZADANI-PRO-CODEX.md"
+      "packet": "ZADANI-PRO-CODEX.md",
+      "report": "evidence/tasks/T0.report.json"
     },
     {
       "id": "T1",
       "title": "Trvalé výsledky uploadu",
       "executor": "codex",
-      "state": "pending",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T0"
       ],
@@ -297,6 +298,14 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T19:23:21.020Z",
+      "text": "Task T1 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-14T19:23:20.248Z",
+      "text": "Task T0 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T19:21:14.829Z",
       "text": "Běh spuštěn podle Danem vloženého goalu. Publikační protokol SCP doložen v dokumentaci LuDone. Nové instalačky ani update dosud neověřené na Macu."
