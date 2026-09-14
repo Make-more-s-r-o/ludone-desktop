@@ -6,7 +6,7 @@
 
 - 🧪 **T-00 — bezpečná projekce fronty:** integrováno, regresní testy zelené; report je v `evidence/tasks/T0.report.json`.
 - 🧪 **T-01 — trvalé per-track výsledky:** po review integrovány commity `fdb4535` a `53ca859`; 417 cílených testů zelených. Živý upload se tím neověřil.
-- 🧪 **T-A1 — přihlášení a upload scope:** integrováno a otestováno; report je v `evidence/tasks/A1.report.json`. Přihlášení z Finderu dosud nemá live důkaz.
+- 🧪 **T-A1/T-A2 — přihlášení a upload scope:** integrováno a otestováno; reporty jsou v `evidence/tasks/A1.report.json` a `evidence/tasks/T-A2.report.json`. Oprava `445fe9f` po nezávislém review přijímá upload identitu výhradně z userinfo; root auth sady 87/87. Přihlášení z Finderu dosud nemá live důkaz.
 - 🧪 **T-02 — výslovné převzetí:** integrováno v `a25bd5c`; koordinátor před převzetím samostatně spustil 440 dotčených testů, exit 0. Report a review jsou v `evidence/tasks/T-02.report.json` a `dukazy/nahravky-dashboard-2026-09-14/T2/`.
 - 🧪 **T-03 — lokální přehled:** převzato z `0b3f36b`; skutečný diskový snapshot rozlišuje kompletní, částečné a chybějící soubory i neplatný manifest. Samostatná plná brána koordinátora: exit 0, 1388 zelených testů a tři původní baseline skipy. Report a review jsou v `evidence/tasks/T-03.report.json` a `dukazy/nahravky-dashboard-2026-09-14/T3/`.
 

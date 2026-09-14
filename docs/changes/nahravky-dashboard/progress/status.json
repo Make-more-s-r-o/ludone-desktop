@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:53:35.081Z",
+    "updatedAt": "2026-09-14T21:00:21.260Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -104,7 +104,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Ověřit přihlášení z nové aplikace na Danově Macu; odesílání dokončí navazující consent.",
+      "nextStep": "T-A2 převzat z 445fe9f; 87 auth regresí koordinátora zelených. Identita uploadu je výhradně z userinfo; Finder login čeká na Mac.",
       "evidence": []
     },
     {
@@ -289,17 +289,30 @@
       "id": "T-A2",
       "title": "Oprava userinfo fallbacku po review",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-A1"
       ],
       "packet": "tasks/T-A2.md",
-      "worktree": ".claude/worktrees/nahravky-userinfo"
+      "worktree": ".claude/worktrees/nahravky-userinfo",
+      "report": "evidence/tasks/T-A2.report.json"
     }
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T21:00:21.260Z",
+      "text": "Funkce NRD-07 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T20:58:42.884Z",
+      "text": "Funkce NRD-07 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T20:58:42.581Z",
+      "text": "Task T-A2 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T20:53:35.081Z",
       "text": "Task T-A2 má nově stav „dispatched“."

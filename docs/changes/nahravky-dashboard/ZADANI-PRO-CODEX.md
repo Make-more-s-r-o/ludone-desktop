@@ -572,17 +572,21 @@ Dan bude projekt otevírat opakovaně a říkat „pokračuj v práci". **Nemá�
 pamatuje za tebe tenhle soubor.** Úkol není hotový commitem kódu, ale commitem kódu **plus
 zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 
+Aktuální implementační větev je `feat/nahravky-dokonceni`, [draft PR #141](https://github.com/Make-more-s-r-o/ludone-desktop/pull/141). Strojový stav a historie jsou v [masterplánu](progress/index.html); navazující práce je v [STAV.md](STAV.md).
+
 | úkol | stav | commit / PR | poznámka |
 |---|---|---|---|
-| T0 — rozšířit povrch fronty | 🔵 hotovo ve větvi | `7edb09a` | Bezpečná projekce nese `createdAt`, `durationMs`, skutečnou `sizeBytes`, per-stopový `server` a `blockReason`; chybějící data jsou `null`, ne odhad. |
-| T1 — uložit `recordingId` | 🔵 hotovo ve větvi | `3ca71da` | `recordingId` a bajty se ukládají per stopu, společné `sessionId` do fronty. INIT se fsyncuje před dalším HTTP krokem; restart i částečný úspěch jsou pokryté mocked E2E testy nad `outgoing.json`. |
-| T2 — převzetí nahrávky | 🔵 hotovo ve větvi | commit doplní koordinátor | Jednotlivé převzetí používá revizi položky, aktuální lokální auth identitu a dvojitou generační/owner/sender kontrolu. Native dialog ukazuje datum a krátké ID. Projekce rozlišuje `unknown/current/other/unavailable`; převzatá položka zůstane lokálně držená a sama se neodešle. |
-| T3 — datová vrstva dashboardu | ⬜ nezačato | — | guard odesílatele povinný |
-| T4 — ověření proti serveru | ⬜ nezačato | — | závisí na T1; rozpočet dotazů |
-| T5 — zbylé akce a UI | ⬜ nezačato | — | rozhodnout šířku okna a kolizi se „Záznamy" |
-| T6 — vydání verze | 🔵 rozpracováno | `5094cce`, `de1bea4`, `d27eb25`, `c275523`, `5a7a1ab` | cesta i verze `0.1.2` jsou připravené; čeká nastavení SSH konfigurace, potvrzení zálohy klíče, Danův tag a ostrý test |
+| T0 — rozšířit povrch fronty | 🧪 integrováno, testy zelené | PR #141 | Bezpečná projekce metadata a serverových ID; neznámé hodnoty zůstávají null. |
+| T1 — uložit recordingId | 🧪 integrováno, testy zelené | `fdb4535`, `53ca859` | Per-track ID/session/progress se uloží před dalším HTTP krokem; restart otestován na dočasném disku. |
+| T2 — převzetí nahrávky | 🧪 integrováno, testy zelené | `a25bd5c` | Jednotlivé potvrzení a čerstvá identita/revize/odesílatel; samo nic neodešle. Root ověřil 440 dotčených testů. |
+| T3 — datová vrstva dashboardu | 🧪 integrováno, testy zelené | `0b3f36b` | Queue + primární manifesty, ghost/partial/invalid stavy, bez cest a sítě. Root plná brána: 1388 zelených testů, tři původní skipy, exit 0. |
+| T-R1 — limity serveru | 🟡 implementace prochází review | samostatný Sol worktree | Trvalý 429 cooldown, zachování attempts, restart a oddělení časových položek. |
+| T4 — ověření proti serveru | ⛔ ještě neimplementováno | packet T-04 | Naváže po T-R1; ruční GET známých ID, samostatný stav obou stop a lokální rozpočet dotazů. |
+| T5 — zbylé akce a UI | ⛔ ještě neimplementováno | packet T-05 | Per-item souhlas, automatika nových nahrávek, obnova retry, název, koš, Finder a přímé Nastavení bez loginu. |
+| T-A1 + T-A2 — auth | 🧪 integrováno, testy zelené | `f9dd296`, `ccb47e7`, `445fe9f` | Finder default upload scope a výhradní userinfo identita; poslední root auth sady 87/87. |
+| T6 — vydání verze | 🧪 kód připraven; 🟡 publikace čeká | PR #141 | Verze 0.1.2, podpis/notarizace vložené aplikace, metadata a atomická SSH publikace s veřejnou HTTPS kontrolou. Čeká konfigurace, záloha klíče, Danův tag a skutečná přejímka. |
 
-Značky: ⬜ nezačato · 🔵 rozpracováno · ✅ hotovo a mergnuto · 🔴 zablokováno (napiš čím).
+Stavy dle AGENTS.md: ✅ ověřeno naostro · 🧪 zelené testy · ⛔ neověřeno · 🟡 podmíněně platné nebo čekající na uvedené ověření · ⚠️ varování. Nic v této tabulce nedokládá skutečný zvuk nebo produkční upload.
 
 ### T2 — integrační poznámka pro T5
 
@@ -594,8 +598,7 @@ rozměrů.
 
 ### Auth packaged aplikace — větev `fix/nahravky-prihlaseni`
 
-🧪 **Auth část je hotová v commitech `99ac8e7` a `e2e7ed7`, čeká na integraci a bezpečnostní
-review diffu.** Packaged aplikace bez shellových proměnných nově žádá samostatný scope
+🧪 **Auth je po review integrovaný (`f9dd296`, `ccb47e7`); T-A2 v `445fe9f` navíc odstranil fallback tokenové identity při chybě či neúplném userinfo.** Packaged aplikace bez shellových proměnných nově žádá samostatný scope
 `nahravky:upload` a identitu výhradně z `userinfo` stejného issueru. Stará relace se scope
 `mcp:read` zůstane zachovaná do úspěšného interaktivního přihlášení, ale hlavní proces ji
 nepustí do identity, otisku vlastníka ani uploadu; nový login ji atomicky přepíše a kvůli
@@ -624,7 +627,7 @@ transport: `scp` stávajícím klíčem. Živý vhost dnes čte provizorní adre
 `/opt/makemore-data/stahnout/desktop/` nevznikla. Workflow proto přijímá cílovou cestu
 výslovně přes `DOWNLOAD_SSH_PATH` a žádnou si tiše nedosazuje.
 
-Release workflow je připravený v commitech `5094cce`, `de1bea4`, `d27eb25` a `c275523`:
+Release workflow je integrovaný v PR #141 včetně veřejné kontroly `2499dbb`:
 vyrobí metadata a blockmapy,
 ověří jejich velikosti a hashe, zkontroluje skutečný Developer ID podpis, stapling a Gatekeeper,
 uloží sadu do GitHub Actions ke kontrole a teprve potom ji přenese do dočasného adresáře.
@@ -634,14 +637,14 @@ atomickým přejmenováním. Připnutý `known_hosts` je povinný; `ssh-keyscan`
 🟡 **T6 není hotové ani vydané.** Pět Apple secrets sice podle dřívějšího měření existuje,
 ale v repozitáři není doložené, že `.p12` má zálohu ve firemním správci hesel. Workflow se proto
 zastaví před prvním použitím klíče, dokud není repo variable
-`MAC_SIGNING_KEY_BACKUP_CONFIRMED=true`. Verze je v commitu `5a7a1ab` koordinovaně zvýšená
+`MAC_SIGNING_KEY_BACKUP_CONFIRMED=true`. Verze je v integračním commitu `5259d57` koordinovaně zvýšená
 z `0.1.1` na `0.1.2`. Dále čeká vytvoření SSH variables/secrets podle
 [`T6-VYDANI.md`](T6-VYDANI.md), Danův tag a ostrý test instalace i aktualizace. Aktuální
 `0.1.1` už na feedu leží; stejnou verzi s jiným obsahem workflow odmítne přepsat.
 
 ### Viditelná automatická aktualizace — větev `fix/nahravky-prihlaseni`
 
-🧪 **Stav dostupnosti a stahování je hotový v commitu `f3d802a`, čeká na integraci.**
+🧪 **Stav dostupnosti a stahování je integrovaný v `14e9d6f`, důkazy v `0e1589a`.**
 Zabalená aplikace dál kontroluje vydání automaticky po startu a každých šest hodin. Panel
 nově převezme z události `update-available` bezpečně omezenou verzi, oznámí dostupnost a při
 `download-progress` ukáže skutečné celé procento z `electron-updater`. Po dokončení zůstává
@@ -660,28 +663,11 @@ aktualizace. Zaměřená sonda main → skutečný preload/IPC → React i celé
 s exit kódem 0; doslovné výpisy jsou v
 `dukazy/nahravky-dashboard-2026-09-14/updater/REPORT.md`.
 
-### ❓ Otevřená otázka na Dana (zeptej se hned, ale neblokuj tím práci)
+### Původní otázka na zapnutí uploadu — vyřešena vloženým goalem
 
-🔴 **Odesílání se dnes v běžně spuštěné aplikaci nedá zapnout vůbec.** `DESKTOP_UPLOAD_ENABLED`
-je proměnná prostředí a zabalená `.app` spuštěná z Finderu dědí prostředí `launchd`, ne shellu
-(`main.cjs:2156–2174`, `desktopKillswitch`). **Vrstva pod přepínačem je hotová** — IPC
-`settings:get-upload-enabled` / `settings:set-upload-enabled` (`main.cjs:1989–1996`) i most
-v preloadu (`preload.cjs:172–173`) — ale **v `src/**` je nikdo nevolá**, takže v Nastavení
-žádné zaškrtávátko není. Vzor, jak ho napojit, je `useSystemBooleanSetting` (`Settings.jsx:188`,
-použitý na ř. 263–264 pro dock a spuštění při přihlášení).
+Dan 14. 9. výslovně schválil dokončení přihlášení a odesílání z Finderu i volitelnou automatiku. Rozhodnutí D3/D10/D11 nahrazují dřívější odložení přepínače: T-A1 zapnul odpovídající scope a zdroj identity společně. T5 zpřístupní manuální odeslání schválené položky bez shellového nastavení; uložený přepínač bude pouze automatika nových nahrávek. Explicitní false/invalid transportní proměnná zůstane tvrdou stopkou. Další souhlas s tímto rozsahem se nevyžaduje.
 
-**Proč se to ptám a nedělám sám:** Dan to má v `DAN-TODO.md` jako vědomě odložené rozhodnutí —
-*„Tlačítko je zásah do schváleného návrhu"* (bod 28.2). Mantinel 7 zakazuje takové rozhodnutí
-obejít.
-
-⚠️ **Dopad na tuhle práci:** bez toho přepínače bude dashboard ukazovat frontu, kterou uživatel
-nemá jak rozjet. Postav ho, **jakmile Dan řekne ano** — je to práce řádově na hodiny a dělá
-rozdíl mezi funkcí a výkladní skříní.
-
-*(Souvisí druhý přepínač `LUDONE_UPLOAD_SCOPE_ENABLED`, taky výchozí vypnutý. Ten nech být:
-`main.cjs:3234–3248` u něj vysvětluje, že zapíná dvě věci najednou schválně a rozdělit je nelze —
-upload-only token do MCP nesmí, takže by e-mail zůstal `null`, otisk vlastníka prázdný a každá
-nahrávka by se pauzla na `session_owner_unknown`.)*
+Pro veřejné vydání stále chybí potvrzení zálohy klíče a publikační GitHub konfigurace. Starý updater z 0.1.1 může ověřit doručení 0.1.2; nové zobrazení dostupné verze/průběhu v 0.1.2 vyžaduje budoucí Danem schválenou vyšší verzi. Podrobný krátký postup je v [OVERENI-NA-MACU.md](OVERENI-NA-MACU.md).
 
 **Když skončíš běh uprostřed**, dopiš pod tabulku „Kde jsem skončil": co je rozdělané, v jaké
 větvi, co jsi zkoušel, co je další krok.
