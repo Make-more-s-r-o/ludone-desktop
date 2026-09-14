@@ -43,3 +43,9 @@ kvůli falešnému C6 nad kontrolou prázdného hesla v URL, nikoli odstraněn.
 Worktree `nahravky-firma-zapojeni` a `nahravky-popisky` i jejich lokální větve byly
 bez force bezpečně odstraněny. Zůstává hlavní strom a integrační větev; cizí větve
 ani hlavní pracovní strom se neměnily. GUI ověřovací proces je ukončený.
+
+První odstranění A4 nahlásilo `Directory not empty`: Git už worktree odregistroval,
+ale macOS zanechal jediný `.DS_Store` (6148 B). Koordinátor nejdřív vypsal všechny
+zbývající soubory a ověřil, že jde pouze o tento systémový soubor. Potom odstranil
+přesně jej a prázdný adresář, následně bezpečně smazal již začleněnou větev A4.
+Žádný důkaz ani zdrojový soubor v tomto zbytku nebyl.

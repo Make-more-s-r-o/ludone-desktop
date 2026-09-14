@@ -1,0 +1,4 @@
+$ node /Users/dan/.claude/skills/masterplan/scripts/mp-progress.mjs nahravky-dashboard --check
+NÁLEZ: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace/docs/changes/nahravky-dashboard/progress/index.html není bajtově shodný s čerstvým renderem status.json.
+
+EXIT_CODE=1
