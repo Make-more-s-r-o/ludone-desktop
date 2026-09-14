@@ -115,7 +115,7 @@ describe("kontrakt electron-builderu", () => {
       APPLE_API_KEY_ID: "APPLE-ID-SENTINEL",
       APPLE_API_ISSUER: "APPLE-ISSUER-SENTINEL",
     };
-    const { capture, result } = await runPackage(secrets, ["--publish", "always"]);
+    const { capture, result } = await runPackage(secrets, ["--release"]);
 
     expect(result.status, result.stderr).toBe(0);
     expect(capture.args).toEqual(expect.arrayContaining(["--publish", "always"]));
@@ -126,12 +126,14 @@ describe("kontrakt electron-builderu", () => {
     for (const secret of Object.values(secrets)) {
       expect(`${result.stdout}\n${result.stderr}`).not.toContain(secret);
     }
+    expect(result.stdout).toContain("nic nebylo přeneseno");
+    expect(result.stdout).not.toContain("publikování=always");
   });
 
   // Spouští balicí skript jako PODPROCES; 5 s je málo, jakmile na stroji běží cokoli
   // dalšího. Aserce beze změny, mění se jen přiznaná cena.
   it("nepodepsaný plán nikdy nepublikuje release", async () => {
-    const { capturePath, result } = await runPackage({}, ["--publish", "always"]);
+    const { capturePath, result } = await runPackage({}, ["--release"]);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("publikovat");
