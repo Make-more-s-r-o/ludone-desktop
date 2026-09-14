@@ -9,3 +9,5 @@
 - Původní neúspěšný lint/typecheck i dvě reálné sabotáže zůstávají archivované. Testovací tokenové řetězce ve výpisu sabotovaného fixture jsou smyšlené hodnoty, nikoli přístupy k účtu.
 - 🟡 Základ je přijatý; teprve T-A4 po T5 vloží selector do Nastavení a zapojí IPC. Existující fetchCompanies normalizuje vadnou 200 odpověď; navazující adapter musí zachovat možnost ji odmítnout.
 - ⛔ Neověřeno na produkčním účtu, z Finderu ani v instalovaném balíčku. Tato přejímka nevytváří live důkaz zvuku nebo uploadu.
+
+GitHub CI po pushi integračního `8d0001235b043470101a5a98761d84fa171ebb1c` skončilo `success`, běh [34902840665](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34902840665). Doslovná strukturovaná odpověď je v `ci.json`. Nové T5/T-A4 změny v tomto výsledku ještě nejsou.
