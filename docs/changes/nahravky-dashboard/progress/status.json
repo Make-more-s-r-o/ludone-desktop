@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T21:13:36.483Z",
+    "updatedAt": "2026-09-14T21:24:24.883Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -303,6 +303,10 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T21:24:24.883Z",
+      "text": "D14: ruční ověření obnovené nahrávky smí použít pouze existující známý recovery sidecar se shodnou identitou a cestami primárního manifestu; čtení nic neobnovuje ani nepřepisuje."
+    },
     {
       "at": "2026-09-14T21:13:36.483Z",
       "text": "T-03, T-R1 a T-A2 mají společné CI SUCCESS na ea338b5. Osm převzatých worktrees a jejich větve byly odstraněny po ověření archivovaných důkazů; původní commity zůstávají dosažitelné v historii."
