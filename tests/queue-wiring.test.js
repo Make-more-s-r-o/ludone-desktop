@@ -7539,7 +7539,9 @@ describe("produkční zapojení automatických aktualizací", () => {
     await finishing;
     await expect(pendingExport).resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
     await vi.advanceTimersByTimeAsync(30_000);
-    expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce();
+    // Virtuální čas nedokončuje skutečné čtení disku ve store.load().
+    // Po uvolnění fronty čekáme na přesný výsledek celé restartovací bariéry.
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
     expect(list).toHaveBeenCalled();
   });
 
