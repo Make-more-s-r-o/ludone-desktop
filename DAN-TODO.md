@@ -9,6 +9,54 @@ Historie se nemaže, přestěhovala se do [`DAN-TODO-archiv.md`](DAN-TODO-archiv
 
 ---
 
+## 🔴 TVOJE CESTA „nahraju → odeslat → analýza na app.ludone.cz" DNES NEFUNGUJE (14. 9.)
+
+Ptal ses: *„Otevřu appku verzi 0.11, nahraju zvuk, dám odeslat a ukončit po nahrání, nahraje se
+na app.ludone, tam zmáčknu analýzu — funguje to a je otestované?"* **Změřeno, ne odhadnuto:
+láme se to na čtyřech místech.**
+
+| krok | skutečnost |
+|---|---|
+| „verze 0.11" | Verze je **`0.1.1`**. V `release/` leží balíčky z **10. 9.** (arm64 i x64). Vydaná verze neexistuje — **0 tagů, 0 releases**. |
+| „odeslat a ukončit po nahrání" | **Takové tlačítko není.** Po nahrávání jsou dvě: **„Uložit a odeslat"** a **„Jen uložit"** (`RecordingCard.jsx:877, 883`). |
+| „Uložit a odeslat" = odešle to | 🔴 **Ne.** Zkopíruje stereo WAV do **Stažených** a **otevře prohlížeč** na `/nahravky/nahrat` (`recording-export.cjs:173–174, 323`). Nahrání pak děláš **ty rukou ve webu**. |
+| „nahraje se na app.ludone.cz" | ⚠️ **Nevím to jistě a nebudu předstírat, že ano.** V repu jsou dva protichůdné zápisy: `Settings.jsx:711` i ř. 1508 říkají „na produkci modul schválně není" (`enabled_envs = {labs}`), ale ř. 1538–1541 z 8. 9. říká **„modul UŽ NENÍ labs-only, dnes přepnut na `{labs,prod}`"**. Živě jsem to nezměřil — **produkční MCP chce nové přihlášení**. Jisté je jen tohle: k 8. 9. měla produkce **0 nahrávek** a z desktopu tam nikdy nešel jediný požadavek. |
+| „zmáčknu analýzu" | Na žádné nahrávce z desktopu **nikdy neproběhla**. Změřeno dnes přes MCP: všech 6 desktopových nahrávek má `transcriptState: "none"`. Nahrávky z jiné cesty mají `done`/`failed`, takže funkce žije — jen na tuhle cestu ji nikdo nepustil. |
+
+**Automatické odesílání frontou (to, co jsme dnes zprovoznili) je něco jiného než ta tlačítka** —
+běží na pozadí po každém nahrávání. Ale:
+
+🔴 **V zabalené `.app` spuštěné z Finderu ho nelze zapnout.** `DESKTOP_UPLOAD_ENABLED` je proměnná
+prostředí a `.app` dědí prostředí `launchd`, ne tvého shellu. **UI přepínač neexistuje** — vrstva
+pod ním je hotová (IPC `settings:get/set-upload-enabled`, `main.cjs:1989–1996`, i most v preloadu),
+ale **v `src/**` ji nikdo nevolá**. Je to tvoje vědomě odložené rozhodnutí (bod 28.2: *„Tlačítko
+je zásah do schváleného návrhu"*) — dokud ho neuděláš, odesílání z běžně spuštěné appky nejde
+zapnout vůbec.
+
+🔴 **Výchozí prostředí je produkce** (`settings.cjs:7`), kde modul nahrávek není. Přepnutí na labs
+v Nastavení **tě odhlásí z tohohle Macu** a při odesílání fronty ho appka odmítne.
+
+**Co tedy dnes funguje, když to chceš vyzkoušet celé:** spustit ze zdrojáku z terminálu, ne
+z Finderu:
+
+```
+DESKTOP_UPLOAD_ENABLED=true LUDONE_UPLOAD_SCOPE_ENABLED=true LUDONE_ORIGIN=https://labs.ludone.cz npm start
+```
+
+Pak nahrávka odejde sama do fronty a fronta ji pošle na **labs**. Analýzu si na labs zkus
+a napiš, co udělá — to je jediná část, kterou z terminálu neověřím.
+
+⚠️ **Druhý přepínač je stejně důležitý:** `LUDONE_UPLOAD_SCOPE_ENABLED` je **výchozí vypnutý**
+a bez něj si appka bere identitu z MCP místo z `userinfo`. Kód u něj sám varuje, že rozdělit ty
+dvě věci nejde: upload-only token do MCP nesmí (403), takže by e-mail zůstal `null`, otisk
+vlastníka prázdný a **každá nahrávka by se pauzla na `session_owner_unknown`**.
+
+✅ **Dobrá zpráva k vydání:** ověřeno, že **všech pět podpisových a notarizačních tajemství na
+GitHubu je** (od 8. 9.) a workflow je má správně namapované (`MAC_CSC_LINK` → `CSC_LINK`).
+Vydávací cestě tedy chybí opravdu **jen** ten krok, který balíček nahraje na `stahnout.ludone.cz`.
+
+---
+
 ## 🔴 SLEPÁ ULIČKA: vlastnictví nahrávky NEJDE z aplikace potvrdit (14. 9. 2026)
 
 **Opravuji vlastní radu.** Psal jsem ti „potvrď vlastníka nahrávky" a ukazoval na panel.
