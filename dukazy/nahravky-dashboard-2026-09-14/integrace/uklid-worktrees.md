@@ -28,3 +28,6 @@ Aktivní zůstaly pouze `nahravky-integrace` a `nahravky-akce` (T5), vedle nedot
 # T-A3 — 15. 9. 2026
 
 Zdroj `0340c8e1076eb8b59bfcc9d176f9aa74f57e400a` je přijatý běžným merge a dosažitelný z integrační větve. Čtyři původní worker logy byly před úklidem ověřeny byte-for-byte proti verzovanému archivu A3; původní report je také v historii. Pracovní strom byl čistý. `git worktree remove` a následné `git branch -d feat/nahravky-vyber-firmy` skončily exit 0, bez force. Nové T-A4 dostane samostatný strom až po T5.
+# T-05 — 15. 9. 2026
+
+Zdroj `e225880ec2f8fff1ba7c4460d3436d000fdde8ae` je přijatý běžným merge a dosažitelný z integrační větve. Šest původních T5 logů bylo před úklidem byte-for-byte shodných s verzovaným archivem. Původní report (před root opravou počtu testů) zůstává v původním commitu. Čistý worker strom byl odstraněný přes `git worktree remove`; `git branch -d feat/nahravky-akce` skončilo exit 0, bez force. T-A4 pokračuje v novém stromu z `77543cb`.
