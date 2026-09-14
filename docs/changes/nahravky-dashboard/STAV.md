@@ -8,13 +8,14 @@
 - 🧪 **T-01 — trvalé per-track výsledky:** po review integrovány commity `fdb4535` a `53ca859`; 417 cílených testů zelených. Živý upload se tím neověřil.
 - 🧪 **T-A1 — přihlášení a upload scope:** integrováno a otestováno; report je v `evidence/tasks/A1.report.json`. Přihlášení z Finderu dosud nemá live důkaz.
 - 🧪 **T-02 — výslovné převzetí:** integrováno v `a25bd5c`; koordinátor před převzetím samostatně spustil 440 dotčených testů, exit 0. Report a review jsou v `evidence/tasks/T-02.report.json` a `dukazy/nahravky-dashboard-2026-09-14/T2/`.
+- 🧪 **T-03 — lokální přehled:** převzato z `0b3f36b`; skutečný diskový snapshot rozlišuje kompletní, částečné a chybějící soubory i neplatný manifest. Samostatná plná brána koordinátora: exit 0, 1388 zelených testů a tři původní baseline skipy. Report a review jsou v `evidence/tasks/T-03.report.json` a `dukazy/nahravky-dashboard-2026-09-14/T3/`.
 
 Žádné z těchto tvrzení není důkaz reálného zvuku. Agentní běh `ui-smoke` ani `audio-smoke` nespouštěl.
 
 ## Co právě navazuje
 
-1. **T-03 — lokální přehled:** Sol implementuje ve vlastním worktree ze základu `a25bd5c`. Packet [tasks/T-03.md](tasks/T-03.md) prošel lintem: 28 pravidel, nula nálezů.
-2. **T-R1 → T-04 → T-05:** navážou postupně podle [DAG](tasks/DAG.md); sdílejí serializovanou frontu a hlavní proces.
+1. **T-R1 — limity serveru:** další Sol implementuje trvalou pauzu pro účet po HTTP 429. Packet [tasks/T-R1.md](tasks/T-R1.md) prošel lintem: 28 pravidel, nula nálezů.
+2. **T-04 → T-05:** navážou postupně podle [DAG](tasks/DAG.md); sdílejí serializovanou frontu a hlavní proces.
 3. 🧪 **Updater a T-06:** implementace je integrovaná včetně veřejné HTTPS kontroly po SSH (`2499dbb`). Koordinátorova brána skončila exit 0: 1341 testů zelených a tři známé baseline skipy. Podepsaný build ani veřejná verze nevznikly.
 
 Izolovaný unpackaged GUI průchod není produkční login ani audio smoke. Oprava návratu z initial onboardingu do reauthenticate je integrovaná v `9158ae6`; opětovné otevření 14. 9. ve 22:19 ukázalo odpovídající odhlášenou obrazovku. T-05 doplní přímé Nastavení také v tomto stavu.

@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T20:44:56.791Z",
+    "updatedAt": "2026-09-14T20:46:31.996Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -17,10 +17,10 @@
     "requires": []
   },
   "summary": {
-    "done": 4,
+    "done": 5,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 4
+    "notStarted": 3
   },
   "features": [
     {
@@ -52,11 +52,11 @@
       "name": "Lokální přehled",
       "whatItGives": "Uživatel pozná, co skutečně leží na Macu.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "committed",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Sol implementuje read-only přehled nad a25bd5c; root review hlídá bezpečné souborové cesty a pravdivé lokální stavy.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Lokální přehled převzat z 0b3f36b; vlastní plná brána 1388 zelených testů, 3 původní skipy. Živé použití čeká na Mac.",
       "evidence": []
     },
     {
@@ -223,13 +223,14 @@
       "id": "T-03",
       "title": "Lokální dashboard",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-02"
       ],
       "packet": "tasks/T-03.md",
-      "worktree": ".claude/worktrees/nahravky-dashboard"
+      "worktree": ".claude/worktrees/nahravky-dashboard",
+      "report": "evidence/tasks/T-03.report.json"
     },
     {
       "id": "T-04",
@@ -267,12 +268,13 @@
       "id": "T-R1",
       "title": "Limity fronty",
       "executor": "codex",
-      "state": "pending",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-03"
       ],
-      "packet": "tasks/T-R1.md"
+      "packet": "tasks/T-R1.md",
+      "worktree": ".claude/worktrees/nahravky-limity"
     },
     {
       "id": "T-06",
@@ -286,6 +288,18 @@
   ],
   "evidence": [],
   "latestChanges": [
+    {
+      "at": "2026-09-14T20:46:31.996Z",
+      "text": "Task T-R1 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-14T20:46:31.365Z",
+      "text": "Funkce NRD-03 byla aktualizována."
+    },
+    {
+      "at": "2026-09-14T20:46:30.486Z",
+      "text": "Task T-03 má nově stav „completed“."
+    },
     {
       "at": "2026-09-14T20:44:56.791Z",
       "text": "Review T-03 rozšířilo allowlist o skutečnou Settings fixture nového lokálního API; produkční fallback na neověřený listQueue se odstraňuje."
