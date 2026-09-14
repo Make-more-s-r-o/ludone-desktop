@@ -9,7 +9,7 @@ Historie se nemaže, přestěhovala se do [`DAN-TODO-archiv.md`](DAN-TODO-archiv
 
 ---
 
-## 🔴🔴 NEJVYŠŠÍ PRIORITA (10. 9. 2026 večer) — veřejné repo obsahuje návod na živé systémy
+## ✅ ROZHODNUTO 14. 9. — repo zůstává VEŘEJNÉ (bylo: nejvyšší priorita)
 
 **Změřeno dnes na HEAD `d58e663`, ne převzato z auditu:** `gh repo view` → repo je
 **PUBLIC** (`Make-more-s-r-o/ludone-desktop`). A v HEAD (ne jen v historii) leží čitelný
@@ -40,8 +40,16 @@ je oprava těch živých děr, na které jede serverová session):
 ```
 gh repo edit Make-more-s-r-o/ludone-desktop --visibility private
 ```
-Rozhodni: (a) private teď + redakce K1–K5 z HEAD než zase public, nebo (b) nechat public,
-protože jsou to tvé vlastní systémy a bereš to. Serverová session mezitím opravuje ty živé díry.
+✅ **ROZHODNUTO (Dan, 14. 9. 2026): repo zůstává veřejné, K1–K5 se neredigují.** Jsou to jeho
+vlastní systémy a bere to. **Tohle už NENÍ otevřený nález** — kdokoli to příště najde, ať to
+nehlásí znovu jako problém.
+
+⚠️ Pro pořádek, ať je rozhodnutí dohledatelné i s tím, co vážilo: Dan měl při rozhodování
+před sebou výčet K1–K5 (trvalý OAuth klient zvenčí, scope `mcp:read` se zápisem, pět edge
+funkcí LuTracku bez ověření na money-path, neodvolané klíče po deaktivaci, trvale veřejné
+upload prefixy). Dřívější schválení publikace tenhle obsah nevážilo — tohle ano.
+
+*(Původní zadání k rozhodnutí, ponecháno jako kontext: Rozhodni: (a) private teď + redakce K1–K5 z HEAD než zase public, nebo (b) nechat public, protože jsou to tvé vlastní systémy a bereš to. Serverová session mezitím opravuje ty živé díry.)*
 
 **Druhá věc ze stejného auditu:** `dukazy/nahravani-2026-08-21/**/*-mikrofon.webm` jsou
 **dvě skutečné 5s nahrávky pokoje** (trackované, veřejné), a `.gitignore:41` o nich tvrdí,
@@ -285,6 +293,31 @@ do běžícího okna — tedy přesně tam, kam nemá.
 🔴 **A ještě jednou to samé poučení:** `retryAfterMs` jsem nejdřív přiřazoval až po vytvoření
 chyby. JavaScriptu nedeklarované pole nevadí, takže **všech 1305 testů bylo zelených** —
 a odmítl to až `tsc`. Dnes už popáté: každá brána vidí jinou třídu vad.
+
+## 📋 ROZHODNUTO 14. 9. — tři věci k doprogramování (nic z toho nehoří)
+
+Dan rozhodl, implementace kdykoli později. Zadání je tu hotové, ať se o tom nemusí znovu mluvit.
+
+**1. `429` přestane ubírat pokus.** Dnes `rate_limited` spadá do běžné retry větve, takže
+ubírá jeden z pěti pokusů — a při hodinovém okně může nahrávka skončit jako `selhalo`, i když
+s ní nic nebylo. ⇒ Vytáhnout `rate_limited` z rozpočtu pokusů: položka počká, kolik server
+řekne (to už čteme, PR #140), a zkusí to znovu, **aniž by pokus spotřebovala**.
+🔴 Pozor při implementaci: nesmí se tím otevřít nekonečná smyčka — pumpa se po `429` musí
+pořád zastavit celá, ne pokračovat na další položku (ten limit je společný pro celý účet).
+
+**2. Při `invalid_client` se appka přeregistruje.** Dnes se uložené `client_id` znovupoužije,
+kdykoli sedí issuer, resource a scope, a nikdy se neptá, jestli klient ještě žije — nová
+registrace se pak nespustí **nikdy**. ⇒ Když server odmítne `invalid_client`, zahodit uložené
+`client_id` a projít dynamickou registrací znovu.
+🔴 Pozor: **neopakovat obnovu se starým refresh tokenem** — server má detekci opakovaného
+použití, která odvolá celou rodinu tokenů a uživatele odhlásí. Odmítnutí klienta je jiná věc
+než odmítnutí tokenu.
+
+**3. Umožnit převzetí nahrávky z cizího otisku vlastníka.** Dvě položky (`8087dd1a` 64 min,
+`53ab63fc` 2 m 47 s) vznikly pod jiným přihlášením a dnes je neodešle nic.
+🔴 Ta vlastnická pojistka tam **není náhodou** — brání tomu, aby se cizí nahrávka tiše nahrála
+pod tvým účtem. ⇒ Převzetí proto **výslovným úkonem člověka u konkrétní položky**, ne
+automaticky a ne hromadně. Po převzetí se přepíše otisk vlastníka a položka jde normální cestou.
 
 ### ✅ Fronta vyčištěná — smazáno 32 testovacích nahrávek (14. 9.)
 
