@@ -259,6 +259,9 @@ function safeQueueReason(value) {
     unauthorized: "Odeslání čeká na nové přihlášení.",
     insufficient_scope: "Přihlášení nemá oprávnění k odeslání.",
     company_not_chosen: "Před odesláním je potřeba vybrat firmu.",
+    company_binding_missing: "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
+    company_out_of_scope: "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
+    "company_out_of_scope (HTTP 403)": "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
   };
   return Object.hasOwn(known, value) ? known[value] : "Předchozí pokus se nezdařil.";
 }

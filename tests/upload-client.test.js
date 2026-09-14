@@ -801,6 +801,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     expect(result.odeslanoVDavce, JSON.stringify(result)).toBe(1);
     expect(persisted.state).toBe(QUEUE_STATES.SENT);
     expect(persisted.server).toEqual({
+      companyTabidooId: COMPANY_ID,
       sessionId: expect.any(String),
       tracks: {
         microphone: {
@@ -817,7 +818,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     });
   });
 
-  it("po pádu hned po INITu restart naváže stejnou session a dopíše obě stopy", async () => {
+  it("po mic INITu restart s globální firmou B zachová pin A i session obou stop", async () => {
     const fixture = await recordingFixture();
     const queuePath = path.join(
       path.dirname(fixture.manifestPath),
@@ -860,6 +861,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
       attempts: 0,
       state: QUEUE_STATES.WAITING,
       server: {
+        companyTabidooId: COMPANY_ID,
         sessionId: expect.any(String),
         tracks: {
           microphone: { recordingId: serverRecordingId(1), uploadedBytes: 0 },
@@ -871,7 +873,13 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     const restartedStore = queueStore.createOutboundQueueStore({
       filePath: queuePath,
       queueModulePromise: import("../src/lib/queue.js"),
-      send: createSend(fetchImpl).send,
+      send: createSend(fetchImpl, createLogger(), {
+        getUploadContext: vi.fn(async () => ({
+          accessToken: TOKEN,
+          companyTabidooId: "765a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+          ownerFingerprint: OWNER_A,
+        })),
+      }).send,
     });
     await expect(restartedStore.pump({
       DESKTOP_TIME_ENABLED: undefined,
@@ -903,6 +911,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     expect(initBodies[0].sessionId).toBeNull();
     expect(initBodies.slice(1).every((body) => body.sessionId === afterInit.server.sessionId))
       .toBe(true);
+    expect(initBodies.every((body) => body.companyTabidooId === COMPANY_ID)).toBe(true);
   });
 
   it("po úspěšné první stopě a výpadku druhé zachová oba serverové klíče pro retry", async () => {
@@ -940,6 +949,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     }, OWNER_A)).resolves.toMatchObject({ outcome: "retry_scheduled", odeslanoVDavce: 0 });
     const partial = JSON.parse(await readFile(queuePath, "utf8")).items[0];
     expect(partial.server).toEqual({
+      companyTabidooId: COMPANY_ID,
       sessionId: expect.any(String),
       tracks: {
         microphone: {
@@ -967,6 +977,7 @@ describe("výsledek uploadu v perzistentním souboru fronty", () => {
     await queueStore.saveQueueAtomically(queuePath, retryResult.queue);
     const completed = JSON.parse(await readFile(queuePath, "utf8")).items[0];
     expect(completed.server).toEqual({
+      companyTabidooId: COMPANY_ID,
       sessionId: partial.server.sessionId,
       tracks: {
         microphone: {
@@ -1075,6 +1086,30 @@ describe("kontrakt INITu nativní a prohlížečové cesty", () => {
 });
 
 describe("mapování serverových chyb do tříd fronty", () => {
+  it("403 company_out_of_scope podmíněně resetuje přesně odmítnutý globální výběr", async () => {
+    const fixture = await recordingFixture({ microphoneOnly: true });
+    const resetRejectedCompany = vi.fn(async () => true);
+    const item = {
+      ...fixture.item,
+      server: { ...fixture.item.server, companyTabidooId: COMPANY_ID },
+    };
+    const { send } = createSend(vi.fn(async () => fakeResponse(403, {
+      code: "company_out_of_scope",
+    })), createLogger(), {
+      getUploadContext: vi.fn(async () => ({
+        accessToken: TOKEN,
+        companyTabidooId: COMPANY_ID,
+        ownerFingerprint: OWNER_A,
+        resetRejectedCompany,
+      })),
+    });
+    await expect(send(item)).rejects.toMatchObject({
+      code: "company_out_of_scope",
+      failureClass: "permanent",
+    });
+    expect(resetRejectedCompany).toHaveBeenCalledExactlyOnceWith(COMPANY_ID);
+  });
+
   it("🔴 429 s hlavičkou Retry-After nese pauzu určenou serverem", async () => {
     // Bez téhle hodnoty bychom po odmítnutí opakovali podle vlastního rozvrhu — za 30 s,
     // 60 s, 120 s — tedy UVNITŘ okna, které ještě běží. Každý takový pokus se serveru do
@@ -1334,11 +1369,60 @@ describe("mapování serverových chyb do tříd fronty", () => {
       message: "Server nevrátil sessionId",
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(reportServerProgress).not.toHaveBeenCalled();
+    expect(reportServerProgress).toHaveBeenCalledExactlyOnceWith({ companyTabidooId: COMPANY_ID });
   });
 });
 
 describe("resumable upload", () => {
+  it("🔴 awaitne durable pin a při chybě persist neudělá žádný HTTP request", async () => {
+    const fixture = await recordingFixture({ microphoneOnly: true });
+    const fetchImpl = vi.fn();
+    const { send } = createSend(fetchImpl);
+    const persist = vi.fn(async () => { throw new Error("disk je plný"); });
+
+    await expect(send(fixture.item, persist)).rejects.toThrow("disk je plný");
+    expect(persist).toHaveBeenCalledExactlyOnceWith({ companyTabidooId: COMPANY_ID });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("initialized legacy bez pinu zablokuje před HTTP", async () => {
+    const fixture = await recordingFixture({ microphoneOnly: true });
+    const fetchImpl = vi.fn();
+    const initialized = {
+      ...fixture.item,
+      server: {
+        ...fixture.item.server,
+        sessionId: "10000000-0000-4000-8000-000000000001",
+      },
+    };
+    const { send } = createSend(fetchImpl);
+    await expect(send(initialized)).rejects.toMatchObject({
+      code: "company_binding_missing",
+      failureClass: "paused",
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("uložený pin má přednost před novou globální firmou", async () => {
+    const fixture = await recordingFixture({ microphoneOnly: true });
+    const server = createStatefulServer();
+    const pinned = {
+      ...fixture.item,
+      server: { ...fixture.item.server, companyTabidooId: COMPANY_ID },
+    };
+    const jinaFirma = "765a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const { send } = createSend(server.fetchImpl, createLogger(), {
+      getUploadContext: vi.fn(async () => ({
+        accessToken: TOKEN,
+        companyTabidooId: jinaFirma,
+        ownerFingerprint: OWNER_A,
+      })),
+    });
+    await send(pinned);
+    const init = server.fetchImpl.mock.calls.find(([, options]) => options.method === "POST");
+    expect(JSON.parse(init[1].body).companyTabidooId).toBe(COMPANY_ID);
+  });
+
   it("po výpadku zopakuje stejný init, přečte stav a neodesílá hotovou část znovu", async () => {
     const microphoneBytes = Buffer.alloc(CONTRACT_CHUNK_BYTES + 31, 0x2a);
     const fixture = await recordingFixture({ microphoneBytes });

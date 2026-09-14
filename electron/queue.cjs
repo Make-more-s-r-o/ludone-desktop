@@ -14,6 +14,7 @@ const RECOVERY_TRACK_MAX_BYTES = 512 * 1024 * 1024;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const QUEUE_OWNER_FINGERPRINT_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const QUEUE_OWNER_FINGERPRINT_DOMAIN = Object.freeze([
   "cz.ludone.desktop",
   "queue-owner",
@@ -124,6 +125,9 @@ function normalizeStoredServer(item) {
       },
     },
   };
+  if (typeof stored.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(stored.companyTabidooId)) {
+    server.companyTabidooId = stored.companyTabidooId;
+  }
   const itemTracks = Object.keys(item.tracks ?? {});
   const legacyRecordingId = safeNonEmptyString(stored.recordingId ?? stored.legacyRecordingId);
   if (legacyRecordingId !== null) {
@@ -1090,7 +1094,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
   }
 
   function actOnRecording({ clientRecordingId, expectedRevision, expectedFileRevision,
-    currentOwnerFingerprint, mode, killswitches, guard }) {
+    currentOwnerFingerprint, mode, killswitches, guard, getCurrentCompany }) {
     if (typeof clientRecordingId !== "string" || !UUID_PATTERN.test(clientRecordingId)) {
       throw new TypeError("clientRecordingId musí být GUID");
     }
@@ -1102,6 +1106,9 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     if (!new Set(["send", "retry"]).has(mode)) throw new TypeError("Neplatná akce nahrávky");
     if (!killswitches || typeof killswitches !== "object") throw new TypeError("Chybí killswitche");
     if (typeof guard !== "function") throw new TypeError("Akce vyžaduje aktuální guard");
+    if (getCurrentCompany !== undefined && typeof getCurrentCompany !== "function") {
+      throw new TypeError("getCurrentCompany musí být funkce");
+    }
     return serialize(async () => {
       const queueModule = await loadQueueModule();
       const loadedQueue = await loadQueue(filePath, { includeMigration: true });
@@ -1132,6 +1139,24 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       if (cooldown) return { outcome: "rate_limited", retryAt: cooldown.retryAt, items: snapshot.items };
       let item = original;
       if (mode === "retry") {
+        if (original.lastFailureReason === "company_out_of_scope (HTTP 403)"
+          || original.lastFailureReason === "403 company_out_of_scope") {
+          if (typeof getCurrentCompany !== "function") {
+            throw new Error("Pro opravu firmy chybí aktuální výběr");
+          }
+          const companyTabidooId = await getCurrentCompany();
+          if (await guard() !== true) throw new Error("Aktuální identitu nelze bezpečně potvrdit");
+          const rebound = queueModule.rebindCompanyOutOfScopeItem(
+            queue,
+            clientRecordingId,
+            companyTabidooId,
+          );
+          queue = rebound.queue;
+          item = rebound.item;
+          if (item === original && item.server?.companyTabidooId !== companyTabidooId) {
+            throw new Error("Inicializovanou nahrávku nelze přesunout do jiné firmy");
+          }
+        }
         const retried = queueModule.retryFailedItem(queue, clientRecordingId);
         queue = retried.queue;
         item = retried.item;

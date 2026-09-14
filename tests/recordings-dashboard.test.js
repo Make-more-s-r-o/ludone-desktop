@@ -1,4 +1,8 @@
 import * as React from "react";
+import { mkdtemp, rm } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -7,6 +11,7 @@ import { RecordingsDashboard } from "../src/features/recordings/RecordingsDashbo
 
 const ID = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
 const REVISION = `sha256:${"a".repeat(64)}`;
+const actualRequire = createRequire(import.meta.url);
 const ITEM = Object.freeze({
   id: ID,
   kind: "recording",
@@ -98,6 +103,48 @@ afterEach(() => {
 });
 
 describe("dashboard fronty nahrávek", () => {
+  it("initialized nahrávce bez pinu ukáže bezpečný pokyn k volbě firmy", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "ludone-company-binding-"));
+    try {
+      const { createLocalRecordingsSnapshot } = actualRequire("../electron/recordings-dashboard.cjs");
+      const manifestPath = path.join(root, "chybi.manifest.json");
+      const snapshot = await createLocalRecordingsSnapshot({
+        queue: {
+          items: [{
+            clientRecordingId: ID,
+            kind: "recording",
+            manifestPath,
+            tracks: { microphone: path.join(root, "chybi-microphone.webm") },
+          }],
+        },
+        queueItems: [{ ...ITEM, blockReason: "company_binding_missing" }],
+        recordingsDirectory: root,
+      });
+      expect(snapshot.items[0].blockReason)
+        .toBe("U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.");
+      expect(snapshot.items[0].blockReason).not.toContain("company_binding_missing");
+
+      for (const blockReason of ["company_out_of_scope", "company_out_of_scope (HTTP 403)"]) {
+        const rejected = await createLocalRecordingsSnapshot({
+          queue: {
+            items: [{
+              clientRecordingId: ID,
+              kind: "recording",
+              manifestPath,
+              tracks: { microphone: path.join(root, "chybi-microphone.webm") },
+            }],
+          },
+          queueItems: [{ ...ITEM, blockReason }],
+          recordingsDirectory: root,
+        });
+        expect(rejected.items[0].blockReason)
+          .toBe("Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.");
+      }
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
   it("částečný koš zobrazí zachování souborů i queue položky", async () => {
     const deletable = {
       ...ITEM,

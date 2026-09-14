@@ -382,12 +382,21 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "tray-space-warning:enable-dock",
       // Nové čtení stavu; odmítnutí cizího rámu i payloadu měří queue-wiring.test.js.
       "updater:get-state",
+      "upload-companies:list",
+      "upload-companies:select",
     ].sort());
     expect(registrations.filter(({ registration }) => registration.startsWith("ipcMain."))).toEqual([]);
     expect(functionSource(mainSource, "handleValidated")).toContain("requireTrustedSender");
     expect(functionSource(mainSource, "onValidated")).toContain("requireTrustedSender");
     expect(functionSource(mainSource, "installMediaHandlers")).toContain("isAllowedMediaPermission");
     expect(functionSource(mainSource, "installMediaHandlers")).toContain("isTrustedPanelFrame");
+  });
+
+  it("🔴 výběr firmy přijímá jen hlavní rám okna Nastavení", () => {
+    expect(mainSource).toContain(
+      'handleValidated("upload-companies:select", ["settings"],',
+    );
+    expect(mainSource).toContain("requireTrustedSender(event, [\"settings\"])");
   });
 
   it("inventarizuje přesně čtyři boolean fakta přijímaná tray kanálem", () => {
