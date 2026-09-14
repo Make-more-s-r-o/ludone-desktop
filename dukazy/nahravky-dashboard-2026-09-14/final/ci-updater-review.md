@@ -24,5 +24,4 @@ Oprava mění pouze čekání na přesný pozitivní výsledek přes existujíc�
 `vi.waitFor`. Zachována aserce **nula restartů před uvolněním** a **přesně jeden po
 uvolnění**, žádná změna timeoutu, baseline nebo produkčního kódu. Stejný vzor již
 používá sousední test bariéry. 🧪 Celých 270 queue-wiring testů v UTC prošlo, exit 0
-(`updater-bariera-oprava.log`). Následuje nový čistý klon a CI; předchozí neúspěch
-se nezahlazuje.
+(`updater-bariera-oprava.log`). Nový čistý klon nad `33938351` i GitHub CI `34907553077` prošly s 1505 PASS a buildem; předchozí neúspěch zůstává zachovaný.

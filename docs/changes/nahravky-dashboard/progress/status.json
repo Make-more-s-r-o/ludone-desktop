@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T23:03:29.386Z",
+    "updatedAt": "2026-09-14T23:14:10.084Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -32,7 +32,7 @@
       "exposure": "unavailable",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Trvalá ID, 429 pauzy, consent a pin firmy jsou integrované. Čistý klon 475c77b prošel; restart a skutečné odeslání čekají na Mac.",
+      "nextStep": "Trvalá ID, 429 pauzy, consent a pin firmy jsou integrované. Čistý klon i GitHub CI na 33938351 prošly; skutečné odeslání čeká na Mac.",
       "evidence": []
     },
     {
@@ -352,9 +352,29 @@
       "value": "1505 PASS, 3 původní skipy, gates i build exit 0; živé audio a release neověřené.",
       "ref": "475c77bf",
       "href": "../../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md"
+    },
+    {
+      "id": "EV2",
+      "kind": "test",
+      "label": "Přejímka po opravě CI čekání",
+      "value": "33938351: čistý klon a GitHub CI 34907553077 zelené, 1505 PASS a build.",
+      "ref": "33938351",
+      "href": "../../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-14T23:14:10.084Z",
+      "text": "Přejímka uzavřená: čistý klon 33938351 a CI 34907553077 prošly s 1505 PASS a buildem. Veřejné vydání čeká na doložené GitHub release hodnoty, potvrzení zálohy klíče, Danův tag a živý test na Macu."
+    },
+    {
+      "at": "2026-09-14T23:13:43.671Z",
+      "text": "Byl přidán důkaz EV2: Přejímka po opravě CI čekání."
+    },
+    {
+      "at": "2026-09-14T23:13:43.374Z",
+      "text": "Funkce NRD-01 byla aktualizována."
+    },
     {
       "at": "2026-09-14T23:03:29.386Z",
       "text": "Byl přidán důkaz EV1: Finální čistý klon a GUI přejímka."

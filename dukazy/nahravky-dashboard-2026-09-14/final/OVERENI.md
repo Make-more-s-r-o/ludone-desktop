@@ -1,17 +1,17 @@
 ---
 kind: verification
-ref: 475c77bf
+ref: 33938351
 verdict: partial
-measuredAt: 2026-09-14T22:58:10Z
+measuredAt: 2026-09-14T23:13:43.290030+00:00
 scope: [T0–T6, T-A4, T-I1]
 measuredFrom: [čistý klon s novým npm ci, nativní GUI izolované aplikace]
 ---
 
 # Integrační přejímka před vydáním
 
-🧪 **`npm run gates:clean` exit 0** nad `475c77bf`: čistý klon, nové npm ci,
+🧪 **`npm run gates:clean` exit 0** nad `33938351`: čistý klon, nové npm ci,
 lint, typecheck, **1505 PASS**, tři původní skipy, kontrola baseline a build.
-Doslovný výstup je v `gates-clean.log`. Kontroly ani baseline nebyly oslabené.
+Doslovný výstup je v `gates-clean-after-ci.log` (původní běh nad `475c77bf` zůstává v `gates-clean.log`). Kontroly ani baseline nebyly oslabené.
 Výsledná A4 byla navíc před commitem nezávisle ověřena 1503 testy; T-I1 přidává dva testy.
 
 🟡 **Nativní GUI 15. 9. 00:57–00:58, verze 0.1.2:** nový root build exit 0
@@ -63,4 +63,4 @@ síť ani zvuk. Review a dílčí důkazy jsou ve složkách jednotlivých etap.
 - Známá hranice bezpečného koše: po posledním ověření FD zůstává malé TOCTOU okno
   systémového `shell.trashItem(path)`; detaily v `T5/root-review.md`.
 
-Aktuální GitHub CI po finálním pushi se ověří zvlášť; tento dokument jeho úspěch nepředjímá.
+🧪 **GitHub CI 34907553077 na `33938351` skončilo success:** 1505 PASS, tři původní skipy a build. Metadata `ci-green.json`, úplný doslovný log `ci-green.log`. Druhý CI nález a oprava pouze testovacího čekání jsou popsané v `ci-updater-review.md`; negativní i přesná pozitivní aserce zůstaly. Runtime se proti GUI pozorovanému nad `475c77bf` nezměnil. Pozdější commity archivují pouze dokumentaci a důkazy.

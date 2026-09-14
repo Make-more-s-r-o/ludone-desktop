@@ -14,11 +14,11 @@
 | I1 | Pravdivé stavové popisky, datum a krátké ID pro korelaci s potvrzovacím dialogem. |
 | T6 | Verze 0.1.2, kontrolované podepsání/notarizace, release metadata a SSH workflow s feedem posledním; viditelná dostupnost a průběh aktualizace. |
 
-🧪 **Finální čistý klon `475c77bf`: 1505 PASS, tři původní skipy, lint, typecheck, kontrola baseline i build — exit 0.** [Doslovný výpis](../../../dukazy/nahravky-dashboard-2026-09-14/final/gates-clean.log) a [review/přejímka](../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md).
+🧪 **Finální čistý klon `33938351`: 1505 PASS, tři původní skipy, lint, typecheck, kontrola baseline i build — exit 0.** [Doslovný výpis](../../../dukazy/nahravky-dashboard-2026-09-14/final/gates-clean-after-ci.log) a [review/přejímka](../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md).
 
 Převzaté poslední zdroje: T-A4 `c25ef2a` a T-I1 `d6bdfdd`. Root před commitem samostatně ověřil T-A4 1503 testy a I1 17 cílenými testy. Reporty i skutečné sabotáže jsou v `evidence/tasks/` a `dukazy/nahravky-dashboard-2026-09-14/`.
 
-⚠️ Starší CI na `c21eca6` selhalo: časová fixture a cleanup před dokončením startup pumpy. Obě příčiny jsou opravené bez oslabení asercí nebo úklidových výjimek. [Původní důkazy](../../../dukazy/nahravky-dashboard-2026-09-14/integrace/ci-opravy/review.md) jsou zachované; finální GitHub CI po pushi se zaznamená zvlášť.
+⚠️ Starší CI na `c21eca6` selhalo: časová fixture a cleanup před dokončením startup pumpy. Obě příčiny jsou opravené bez oslabení asercí nebo úklidových výjimek. [Původní důkazy](../../../dukazy/nahravky-dashboard-2026-09-14/integrace/ci-opravy/review.md) jsou zachované; pozdější časově citlivá aserce updateru je rovněž opravená bez změny runtime. **Finální [GitHub CI 34907553077](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34907553077) na `33938351` prošlo**, 1505 PASS a build. Metadata a celý log jsou ve `final/ci-green.*`.
 
 🟡 **Nativní GUI 0.1.2**: samostatný profil s vypnutým transportem, dostupná Nastavení bez loginu, čitelný Účet s firmou a prázdný přehled. Aplikace po kontrole ukončená. Nejde o produkční login, zvuk nebo ruční akce nad reálnými nahrávkami. `ui-smoke` a `audio-smoke` agent nespouštěl.
 
