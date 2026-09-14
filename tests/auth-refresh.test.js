@@ -171,6 +171,36 @@ describe("obnova access tokenu", () => {
     });
   });
 
+  it("invalid_client zneplatní uloženého klienta a starý refresh token už znovu nepoužije", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      const safeStorage = fakeSafeStorage();
+      const logger = fakeLogger();
+      const session = vyprselaRelace("invalid-client");
+      const blobPath = await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async (url) => (jeDiscovery(url) ? discoveryResponse() : {
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "invalid_client" }),
+      }));
+
+      await expect(refreshStoredAuthSession({
+        app, safeStorage, storedSession: session, fetchImpl, logger,
+      })).resolves.toBeNull();
+
+      expect(fs.existsSync(blobPath)).toBe(false);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(logger.warn).toHaveBeenCalledWith("[auth] Obnova relace selhala: reason=invalid-client");
+
+      // Přímý opožděný čtenář může pořád držet starý snímek v paměti. Na síť už s ním
+      // nesmí: chybějící soubor relace jej zastaví před druhou výměnou refresh tokenu.
+      await expect(refreshStoredAuthSession({
+        app, safeStorage, storedSession: session, fetchImpl, logger,
+      })).resolves.toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(session.refreshToken);
+    });
+  });
+
   it("tentýž už neúspěšný refresh token se podruhé nezkouší", async () => {
     await vDocasnemAppData(async ({ app }) => {
       const safeStorage = fakeSafeStorage();

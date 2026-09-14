@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const require = createRequire(import.meta.url);
 const {
   IDENTITY_LOOKUP_DEADLINE_MS,
+  UPLOAD_SCOPE,
   createAuthController,
   tokenSessionFilePath,
 } = require("../electron/auth.cjs");
@@ -95,6 +96,11 @@ class CallbackLoopbackServer extends EventEmitter {
  *     json?: () => Promise<unknown>,
  *   }>,
  *   tokenResponse?: Record<string, unknown>,
+ *   tokenHandler?: (input: string | URL, init: RequestInit) => Promise<{
+ *     ok: boolean,
+ *     status: number,
+ *     json?: () => Promise<unknown>,
+ *   }>,
  * }} [options]
  */
 async function createHarness(options = {}) {
@@ -106,6 +112,7 @@ async function createHarness(options = {}) {
     mcpHandler = async () => jsonResponse(MCP_RESPONSE),
     userinfoHandler = async () => jsonResponse({ sub: "42", email: "dan@ludone.cz", name: null }),
     tokenResponse = TOKEN_RESPONSE,
+    tokenHandler = async () => jsonResponse(tokenResponse),
   } = options;
   const appData = options.appData ?? await mkdtemp(path.join(tmpdir(), "ludone-auth-identity-"));
   temporaryRoots.add(appData);
@@ -128,7 +135,7 @@ async function createHarness(options = {}) {
       return jsonResponse({ client_id: REGISTERED_CLIENT_ID });
     }
     if (url.pathname === "/api/mcp/oauth/token") {
-      return jsonResponse(tokenResponse);
+      return tokenHandler(input, init);
     }
     if (url.pathname === "/api/mcp") {
       return mcpHandler(input, init);
@@ -334,6 +341,31 @@ describe("znovupoužití uloženého OAuth klienta", () => {
       .toBe(CLIENT_ID);
     expect((await readSession(second)).clientId).toBe(CLIENT_ID);
   });
+
+  it("invalid_client zahodí jen cache starého klienta a další interaktivní login provede DCR", async () => {
+    const first = await createHarness({ clientId: null });
+    await expect(completeLogin(first)).resolves.toMatchObject({ ok: true });
+
+    const rejected = await createHarness({
+      appData: first.app.getPath(),
+      clientId: null,
+      tokenHandler: async () => jsonResponse(
+        { error: "invalid_client", error_description: "citlivý popis se neukládá" },
+        { ok: false, status: 401 },
+      ),
+    });
+    await expect(completeLogin(rejected)).rejects.toThrow(/invalid_client/u);
+    await expect(readFile(tokenSessionFilePath(rejected.app))).rejects.toMatchObject({ code: "ENOENT" });
+    expect(rejected.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(0);
+
+    const recovered = await createHarness({ appData: first.app.getPath(), clientId: null });
+    await expect(completeLogin(recovered)).resolves.toMatchObject({ ok: true });
+    expect(recovered.fetchImpl.mock.calls.filter(([input]) => (
+      new URL(input).pathname === "/api/mcp/oauth/register"
+    ))).toHaveLength(1);
+  });
 });
 
 describe("best-effort identita po OAuth přihlášení", () => {
@@ -460,6 +492,7 @@ describe("identita z userinfo endpointu (upload scope)", () => {
   it("vezme e-mail z userinfo a ludone_ping vůbec nezavolá", async () => {
     const harness = await createHarness({
       identityEndpoint: USERINFO,
+      scope: UPLOAD_SCOPE,
       userinfoHandler: async () => jsonResponse({ sub: "7", email: "upload@makemore.cz", name: "Up Loader" }),
       // Kdyby se přesto sáhlo na MCP, je to poplach: upload-only token tam nemá co dělat.
       mcpHandler: async () => { throw new Error("ludone_ping se u upload identity nesmí volat"); },
@@ -493,6 +526,7 @@ describe("identita z userinfo endpointu (upload scope)", () => {
   it("když userinfo spadne a token nemá MCP práva, login přežije s prázdnou identitou", async () => {
     const harness = await createHarness({
       identityEndpoint: USERINFO,
+      scope: UPLOAD_SCOPE,
       userinfoHandler: async () => jsonResponse({ error: "boom" }, { ok: false, status: 500 }),
       // Upload-only token na MCP: 403. Best-effort fallback nesmí shodit login.
       mcpHandler: async () => jsonResponse({ error: "insufficient_scope" }, { ok: false, status: 403 }),
@@ -504,11 +538,15 @@ describe("identita z userinfo endpointu (upload scope)", () => {
     });
     expect((await readSession(harness)).identity).toEqual({ name: null, email: null });
     expect(harness.revocationCalls()).toBe(0);
+    expect(harness.fetchImpl.mock.calls.filter(
+      ([input]) => new URL(input).pathname === "/api/mcp",
+    )).toHaveLength(0);
   });
 
   it("uloží e-mail z userinfo bytově beze změny (lokální část se nelowercasuje)", async () => {
     const harness = await createHarness({
       identityEndpoint: USERINFO,
+      scope: UPLOAD_SCOPE,
       userinfoHandler: async () => jsonResponse({ sub: "9", email: "Dan.Jirotka@makemore.cz", name: null }),
       mcpHandler: async () => { throw new Error("MCP se nemá volat"); },
     });
@@ -517,5 +555,19 @@ describe("identita z userinfo endpointu (upload scope)", () => {
     // Otisk vlastníka (queue.cjs) lowercasuje jen doménu; kdybychom lokální část zmršili tady,
     // rozešel by se otisk mezi dvěma přihlášeními téhož člověka → falešný queue_owner_mismatch.
     expect((await readSession(harness)).identity.email).toBe("Dan.Jirotka@makemore.cz");
+  });
+
+  it("upload scope bez přesného userinfo endpointu odmítne před síťovým voláním", async () => {
+    await expect(createHarness({
+      identityEndpoint: `${ISSUER}/api/mcp/oauth/jiny-endpoint`,
+      scope: UPLOAD_SCOPE,
+    })).rejects.toThrow(/userinfo/u);
+  });
+
+  it("userinfo endpoint s MCP scope odmítne, aby se identity kontrakty nesmíchaly", async () => {
+    await expect(createHarness({
+      identityEndpoint: USERINFO,
+      scope: "mcp:read",
+    })).rejects.toThrow(/výhradně/u);
   });
 });

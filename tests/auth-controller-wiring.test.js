@@ -162,7 +162,8 @@ describe("zapojení skutečného OAuth controlleru", () => {
     expect(calls[0]).toMatchObject({ issuer, clientId, app: fakeApp, safeStorage: fakeSafeStorage });
     expect(calls[0].coordinator).toBe(fakeCoordinator);
     expect(calls[0].timeoutMs).toBeUndefined();
-    expect(calls[0].scope).toBeUndefined();
+    expect(calls[0].scope).toBe("nahravky:upload");
+    expect(calls[0].identityEndpoint).toBe(`${issuer}/api/mcp/oauth/userinfo`);
     expect(calls[0].resource).toBeUndefined();
   });
 
@@ -186,7 +187,7 @@ describe("zapojení skutečného OAuth controlleru", () => {
     },
   );
 
-  it("hodnota jiná než \"true\" (např. \"false\") nechá dnešní chování", async () => {
+  it("výslovné false ponechá vývojový návrat k MCP přihlášení", async () => {
     const calls = [];
     const handler = compiledAuthWiring(successfulController(calls))(
       dependencies({ env: { LUDONE_UPLOAD_SCOPE_ENABLED: "false" } }),
@@ -194,6 +195,16 @@ describe("zapojení skutečného OAuth controlleru", () => {
     await expect(handler()).resolves.toMatchObject({ ok: true });
     expect(calls[0].scope).toBeUndefined();
     expect(calls[0].identityEndpoint).toBeUndefined();
+  });
+
+  it.each(["TRUE", "1", "ano"])("neplatnou hodnotu %s odmítne místo tichého přepnutí scope", async (value) => {
+    const createController = vi.fn();
+    const handler = compiledAuthWiring(createController)(dependencies({
+      env: { LUDONE_UPLOAD_SCOPE_ENABLED: value },
+    }));
+
+    await expect(handler()).resolves.toEqual({ ok: false, duvod: "neznama" });
+    expect(createController).not.toHaveBeenCalled();
   });
 
   it.each([
