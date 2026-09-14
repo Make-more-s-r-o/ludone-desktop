@@ -1,0 +1,66 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-overeni
+
+ ❯ tests/recording-verification.test.js (20 tests | 1 failed | 19 skipped) 10ms
+   ↓ bezpečný HTTP requester > posílá Bearer a redirect:error na přesnou relativní cestu
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target https://utocnik.test/api před fetch
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target //utocnik.test/api před fetch
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target /api/../admin před fetch
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target /api?token=ven před fetch
+   ↓ bezpečný HTTP requester > odmítne nebezpečný target /api#cast před fetch
+   ↓ bezpečný HTTP requester > odmítne přepsání chráněné hlavičky Authorization
+   ↓ bezpečný HTTP requester > odmítne přepsání chráněné hlavičky authorization
+   ↓ bezpečný HTTP requester > odmítne přepsání chráněné hlavičky Cookie
+   ↓ bezpečný HTTP requester > odmítne přepsání chráněné hlavičky cookie
+   ↓ ruční ověření nahrávky > dual a single udělají přesně 2 a 1 GET a legacy bez ID nula
+   × ruční ověření nahrávky > rozliší serverové stavy a bezpečné neshody 10ms
+     → expected 'complete' to be 'mismatch' // Object.is equality
+   ↓ ruční ověření nahrávky > 404, auth, síť a 429 jsou bezpečně odlišené; po 429 druhou stopu neposílá
+   ↓ ruční ověření nahrávky > cache 60 s, dedupe a atomický limit 30 GET fungují bez překročení
+   ↓ ruční ověření nahrávky > invalid owner/scope/resource/token/current guard nepošlou žádný fetch
+   ↓ ruční ověření nahrávky > změna účtu po awaitu a explicitní invalidate zahodí pending výsledek
+   ↓ ruční ověření nahrávky > změna účtu po síťovém awaitu zahodí výsledek i bez explicitní invalidace
+   ↓ ruční ověření nahrávky > 429 přijaté během logoutu zůstane pro stejného vlastníka i po invalidate
+   ↓ ruční ověření nahrávky > 429 z paralelního řádku zastaví další dosud nezahájenou stopu stejného vlastníka
+   ↓ ruční ověření nahrávky > cooldown zapsaný během await current guardu zastaví bezprostředně následující GET
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/recording-verification.test.js > ruční ověření nahrávky > rozliší serverové stavy a bezpečné neshody
+AssertionError: expected 'complete' to be 'mismatch' // Object.is equality
+
+Expected: "mismatch"
+Received: "complete"
+
+ ❯ tests/recording-verification.test.js:150:47
+    148|         microphone: { recordingId: ID, declaredBytes: 12, sha256: SHA …
+    149|       }));
+    150|       expect(result.tracks.microphone.status).toBe(expected[index]);
+       |                                               ^
+    151|     }
+    152|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 skipped (20)
+   Start at  23:29:56
+   Duration  394ms (transform 71ms, setup 13ms, collect 42ms, tests 10ms, environment 0ms, prepare 86ms)
+
+
+EXIT_CODE=1
+
+OBNOVENA_OCHRANA
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-overeni
+
+ ✓ tests/recording-verification.test.js (20 tests | 19 skipped) 5ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 19 skipped (20)
+   Start at  23:30:52
+   Duration  355ms (transform 44ms, setup 12ms, collect 33ms, tests 5ms, environment 0ms, prepare 80ms)
+
+
+EXIT_CODE=0

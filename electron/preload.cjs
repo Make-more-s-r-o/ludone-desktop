@@ -60,6 +60,15 @@ function setBooleanSetting(channel, value) {
   return ipcRenderer.invoke(channel, value).then(requireBooleanSettingResponse);
 }
 
+function requireRecordingReference(clientRecordingId, expectedRevision) {
+  if (
+    typeof clientRecordingId !== "string"
+    || !QUEUE_ITEM_ID_PATTERN.test(clientRecordingId)
+    || typeof expectedRevision !== "string"
+    || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
+  ) throw new TypeError("Akce vyžaduje GUID nahrávky a platnou revizi");
+}
+
 function onAuthSessionChanged(callback) {
   if (typeof callback !== "function") {
     throw new TypeError("Odběratel změny přihlášení musí být funkce");
@@ -194,6 +203,17 @@ contextBridge.exposeInMainWorld("ludone", {
     ipcRenderer.invoke("recording:export", clientRecordingId, volby),
   listQueue: () => ipcRenderer.invoke("queue:list"),
   listLocalRecordings: () => ipcRenderer.invoke("recordings:list-local"),
+  verifyRecording: (clientRecordingId, expectedRevision) => {
+    requireRecordingReference(clientRecordingId, expectedRevision);
+    return ipcRenderer.invoke("recordings:verify", clientRecordingId, expectedRevision);
+  },
+  openRecordingInLuDone: (clientRecordingId, expectedRevision, track) => {
+    requireRecordingReference(clientRecordingId, expectedRevision);
+    if (!["microphone", "system"].includes(track)) {
+      throw new TypeError("Otevření vyžaduje známou stopu");
+    }
+    return ipcRenderer.invoke("recordings:open-web", clientRecordingId, expectedRevision, track);
+  },
   claimRecording: (clientRecordingId, expectedRevision) => {
     if (
       typeof clientRecordingId !== "string"

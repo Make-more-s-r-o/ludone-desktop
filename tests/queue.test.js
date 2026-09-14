@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import queueStore from "../electron/queue.cjs";
+import verification from "../electron/recording-verification.cjs";
 import { createManifest } from "../src/lib/manifest.js";
 import {
   FAILURE_CLASSES,
@@ -3167,6 +3168,203 @@ describe("perzistentní pumpa fronty", () => {
         attempts: 0,
         state: QUEUE_STATES.WAITING,
       });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("trusted detail pro serverové ověření", () => {
+  it("čte čerstvý primární manifest podle row ID/revize a nevrací cesty", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-verification-target-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const manifestPath = path.join(recordingsDirectory, "meeting.manifest.json");
+    const microphonePath = path.join(recordingsDirectory, "meeting-microphone.webm");
+    const systemPath = path.join(recordingsDirectory, "meeting-system.webm");
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const owner = `sha256:${"a".repeat(64)}`;
+    const manifest = createManifest({
+      clientRecordingId: id,
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      tracks: {
+        microphone: {
+          fileName: path.basename(microphonePath),
+          sha256: "b".repeat(64), sizeBytes: 12,
+          startedAt: "2026-09-14T10:00:00.000Z", endedAt: "2026-09-14T10:00:01.000Z",
+        },
+        system: {
+          fileName: path.basename(systemPath),
+          sha256: "c".repeat(64), sizeBytes: 34,
+          startedAt: "2026-09-14T10:00:00.000Z", endedAt: "2026-09-14T10:00:01.000Z",
+        },
+      },
+    }, "complete");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await Promise.all([
+        fs.promises.writeFile(manifestPath, JSON.stringify(manifest)),
+        fs.promises.writeFile(microphonePath, "microphone"),
+        fs.promises.writeFile(systemPath, "system"),
+      ]);
+      await store.enqueueRecording({
+        manifest, manifestPath, ownerFingerprint: owner,
+        trackPaths: { microphone: microphonePath, system: systemPath },
+      });
+      const persisted = await loadQueue(queuePath);
+      persisted.items[0].server.tracks.microphone.recordingId = SERVER_MICROPHONE_ID;
+      persisted.items[0].server.tracks.system.recordingId = SERVER_SYSTEM_ID;
+      await saveQueueAtomically(queuePath, persisted);
+      const snapshot = await store.listLocalRecordings(owner);
+      const revision = snapshot.items[0].revision;
+
+      const trusted = await store.getRecordingVerificationTarget(id, revision, owner);
+      expect(trusted).toEqual({
+        id,
+        ownerFingerprint: owner,
+        revision,
+        tracks: {
+          microphone: { recordingId: SERVER_MICROPHONE_ID, declaredBytes: 12, sha256: "b".repeat(64) },
+          system: { recordingId: SERVER_SYSTEM_ID, declaredBytes: 34, sha256: "c".repeat(64) },
+        },
+      });
+      expect(JSON.stringify(trusted)).not.toContain(directory);
+      await expect(store.getRecordingVerificationTarget(id, `sha256:${"f".repeat(64)}`, owner))
+        .rejects.toThrow(/neaktuální/u);
+      await expect(store.getRecordingVerificationTarget(id, revision, `sha256:${"e".repeat(64)}`))
+        .rejects.toThrow(/nepatří/u);
+
+      await fs.promises.unlink(systemPath);
+      await fs.promises.symlink(microphonePath, systemPath);
+      await expect(store.getRecordingVerificationTarget(id, revision, owner))
+        .rejects.toThrow(/bezpečný soubor/u);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("recovery sidecar zachová deklarovaná data pro mock GET při chybějícím audiu a zachovaných serverových ID", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-verification-recovery-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(
+      recordingsDirectory,
+      undefined,
+      { staleMetadata: true, state: "incomplete" },
+    );
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await recoverOrphanedRecordings({
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      });
+      const queue = await loadQueue(queuePath);
+      queue.items[0].ownerFingerprint = CURRENT_OWNER;
+      queue.items[0].server.tracks.microphone.recordingId = SERVER_MICROPHONE_ID;
+      queue.items[0].server.tracks.system.recordingId = SERVER_SYSTEM_ID;
+      await saveQueueAtomically(queuePath, queue);
+      await Promise.all(Object.values(fixture.trackPaths).map((trackPath) => fs.promises.unlink(trackPath)));
+      const snapshot = await store.listLocalRecordings(CURRENT_OWNER);
+      const trusted = await store.getRecordingVerificationTarget(
+        fixture.manifest.clientRecordingId,
+        snapshot.items[0].revision,
+        CURRENT_OWNER,
+      );
+      const trustedTracks = /** @type {any} */ (trusted.tracks);
+      const fetchImpl = vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          state: "stored",
+          missing: [],
+          declaredBytes: trustedTracks.microphone.declaredBytes,
+          sha256: trustedTracks.microphone.sha256,
+        }),
+      }));
+      const verifier = verification.createRecordingVerifier({
+        fetchImpl,
+        getContext: async () => ({
+          accessToken: "token",
+          generation: 1,
+          issuer: "https://labs.ludone.cz",
+          ownerFingerprint: CURRENT_OWNER,
+          resource: "https://labs.ludone.cz/api/mcp",
+          scope: "nahravky:upload",
+        }),
+        isContextCurrent: () => true,
+        now: () => 1_000,
+      });
+      const result = await verifier.verify(trusted);
+      expect(result.tracks.microphone.status).toBe("complete");
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(JSON.stringify(trusted)).not.toContain(directory);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("legacy recovery bez ID a bez známého hashe vrátí not_verified a nula GET", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-verification-legacy-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(
+      recordingsDirectory,
+      undefined,
+      { staleMetadata: true, state: "incomplete" },
+    );
+    await fs.promises.writeFile(fixture.trackPaths.system, Buffer.alloc(0));
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await recoverOrphanedRecordings({
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      });
+      const queue = await loadQueue(queuePath);
+      queue.items[0].ownerFingerprint = CURRENT_OWNER;
+      await saveQueueAtomically(queuePath, queue);
+      const snapshot = await store.listLocalRecordings(CURRENT_OWNER);
+      const trusted = await store.getRecordingVerificationTarget(
+        fixture.manifest.clientRecordingId,
+        snapshot.items[0].revision,
+        CURRENT_OWNER,
+      );
+      const trustedTracks = /** @type {any} */ (trusted.tracks);
+      expect(trustedTracks.system).toMatchObject({ recordingId: null, declaredBytes: 0, sha256: null });
+      const fetchImpl = vi.fn();
+      const verifier = verification.createRecordingVerifier({
+        fetchImpl,
+        getContext: async () => ({
+          accessToken: "token", generation: 1, issuer: "https://labs.ludone.cz",
+          ownerFingerprint: CURRENT_OWNER, resource: "https://labs.ludone.cz/api/mcp",
+          scope: "nahravky:upload",
+        }),
+        isContextCurrent: () => true,
+        now: () => 1_000,
+      });
+      const result = await verifier.verify(trusted);
+      expect(result.tracks).toMatchObject({
+        microphone: { status: "not_verified" }, system: { status: "not_verified" },
+      });
+      expect(fetchImpl).not.toHaveBeenCalled();
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
