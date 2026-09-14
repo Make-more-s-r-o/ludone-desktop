@@ -585,6 +585,29 @@ zápisem sem**. Piš pravdu včetně toho, co nevyšlo.
 
 Značky: ⬜ nezačato · 🔵 rozpracováno · ✅ hotovo a mergnuto · 🔴 zablokováno (napiš čím).
 
+### ❓ Otevřená otázka na Dana (zeptej se hned, ale neblokuj tím práci)
+
+🔴 **Odesílání se dnes v běžně spuštěné aplikaci nedá zapnout vůbec.** `DESKTOP_UPLOAD_ENABLED`
+je proměnná prostředí a zabalená `.app` spuštěná z Finderu dědí prostředí `launchd`, ne shellu
+(`main.cjs:2156–2174`, `desktopKillswitch`). **Vrstva pod přepínačem je hotová** — IPC
+`settings:get-upload-enabled` / `settings:set-upload-enabled` (`main.cjs:1989–1996`) i most
+v preloadu (`preload.cjs:172–173`) — ale **v `src/**` je nikdo nevolá**, takže v Nastavení
+žádné zaškrtávátko není. Vzor, jak ho napojit, je `useSystemBooleanSetting` (`Settings.jsx:188`,
+použitý na ř. 263–264 pro dock a spuštění při přihlášení).
+
+**Proč se to ptám a nedělám sám:** Dan to má v `DAN-TODO.md` jako vědomě odložené rozhodnutí —
+*„Tlačítko je zásah do schváleného návrhu"* (bod 28.2). Mantinel 7 zakazuje takové rozhodnutí
+obejít.
+
+⚠️ **Dopad na tuhle práci:** bez toho přepínače bude dashboard ukazovat frontu, kterou uživatel
+nemá jak rozjet. Postav ho, **jakmile Dan řekne ano** — je to práce řádově na hodiny a dělá
+rozdíl mezi funkcí a výkladní skříní.
+
+*(Souvisí druhý přepínač `LUDONE_UPLOAD_SCOPE_ENABLED`, taky výchozí vypnutý. Ten nech být:
+`main.cjs:3234–3248` u něj vysvětluje, že zapíná dvě věci najednou schválně a rozdělit je nelze —
+upload-only token do MCP nesmí, takže by e-mail zůstal `null`, otisk vlastníka prázdný a každá
+nahrávka by se pauzla na `session_owner_unknown`.)*
+
 **Když skončíš běh uprostřed**, dopiš pod tabulku „Kde jsem skončil": co je rozdělané, v jaké
 větvi, co jsi zkoušel, co je další krok.
 
