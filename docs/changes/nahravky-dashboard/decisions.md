@@ -24,7 +24,6 @@
 
 ## Čeká na ověření
 
-Vydání 0.1.2 a instalace jsou doložené. Vydání 0.1.3 je podle D19 výslovně schválené a jeho
-workflow byl spuštěn; dokud běh neskončí a veřejné artefakty se neověří, nesmí se označit za
-vydané. Živý upload a aktualizace při rozpracované činnosti zůstávají neověřené. Opravy pro
-0.1.3 nejsou součástí již nainstalované 0.1.2.
+Vydání 0.1.3 je doložené úspěšným workflow 34948618429 a nezávislou veřejnou kontrolou.
+V době kontroly po vydání zůstává na Macu 0.1.2. Živý upload, aktualizace při rozpracované
+činnosti, skutečné oznámení a zvuk po instalaci nadále čekají na ověření.

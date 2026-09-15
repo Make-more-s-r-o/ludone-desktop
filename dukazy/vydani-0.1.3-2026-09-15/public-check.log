@@ -1,0 +1,13 @@
+$ node /tmp/ludone-check-public-013.mjs
+PASS veřejný feed: verze 0.1.3, správná sada balíčků a přesné poznámky vydání
+PASS LuDone-Desktop-0.1.3-arm64.dmg: HTTP 200, 112425330 B
+PASS LuDone-Desktop-0.1.3-arm64.dmg.blockmap: HTTP 200, 118553 B
+PASS LuDone-Desktop-0.1.3-arm64.zip: HTTP 200, 112133421 B
+PASS LuDone-Desktop-0.1.3-arm64.zip.blockmap: HTTP 200, 117954 B
+PASS LuDone-Desktop-0.1.3-x64.dmg: HTTP 200, 119616166 B
+PASS LuDone-Desktop-0.1.3-x64.dmg.blockmap: HTTP 200, 125227 B
+PASS LuDone-Desktop-0.1.3-x64.zip: HTTP 200, 119327834 B
+PASS LuDone-Desktop-0.1.3-x64.zip.blockmap: HTTP 200, 123455 B
+EXIT_CODE=0
+
+COMMAND_EXIT_CODE=0

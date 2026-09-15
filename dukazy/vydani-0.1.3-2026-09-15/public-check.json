@@ -1,0 +1,62 @@
+{
+  "version": "0.1.3",
+  "measuredAt": "2026-09-15T08:53:58.446Z",
+  "source": "https://stahnout.ludone.cz/desktop/",
+  "checks": [
+    {
+      "name": "LuDone-Desktop-0.1.3-arm64.dmg",
+      "status": 200,
+      "bytes": 112425330,
+      "metadataSizeMatched": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.3-arm64.dmg.blockmap",
+      "status": 200,
+      "bytes": 118553,
+      "metadataSizeMatched": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.3-arm64.zip",
+      "status": 200,
+      "bytes": 112133421,
+      "metadataSizeMatched": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.3-arm64.zip.blockmap",
+      "status": 200,
+      "bytes": 117954,
+      "metadataSizeMatched": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.3-x64.dmg",
+      "status": 200,
+      "bytes": 119616166,
+      "metadataSizeMatched": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.3-x64.dmg.blockmap",
+      "status": 200,
+      "bytes": 125227,
+      "metadataSizeMatched": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.3-x64.zip",
+      "status": 200,
+      "bytes": 119327834,
+      "metadataSizeMatched": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.3-x64.zip.blockmap",
+      "status": 200,
+      "bytes": 123455,
+      "metadataSizeMatched": false
+    }
+  ],
+  "metadata": {
+    "bytes": 1123,
+    "sha256": "a3732cd7f7d7fa5306e019815e792f9699f061684e83e0d33abfa05e36d6506a",
+    "releaseDate": "2026-09-15T08:51:03.643Z",
+    "releaseNotes": "Opravuje obnovení odesílání nahrávek, které čekaly na výběr firmy.\nPřidává přehledné upozornění na aktualizaci a jednorázové oznámení macOS.\nNové verze se stahují automaticky; instalaci spustíte tlačítkem Aktualizovat a můžete ji odložit.\n"
+  },
+  "verdict": "published"
+}

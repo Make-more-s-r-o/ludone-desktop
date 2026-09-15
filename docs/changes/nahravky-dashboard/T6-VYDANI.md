@@ -1,9 +1,14 @@
 # T6 — příprava a ostré ověření vydání macOS
 
+✅ **0.1.3 vydaná 15. 9. 2026 na výslovné pověření Dana (D19).**
+[Release 34948618429](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34948618429)
+a nezávislá veřejná kontrola prošly; [důkazy](../../../dukazy/vydani-0.1.3-2026-09-15/REPORT.md).
+Instalace a skutečný upload na Macu zůstávají samostatné.
+
 ✅ **Vydání 0.1.2 proběhlo 15. 9. 2026**: [běh 34941430582](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34941430582)
 na `f789f49` prošel podpisem, notarizací, publikací a veřejnou kontrolou. Záloha klíče
 je Danem potvrzená a následující jednorázová konfigurace už je nastavená.
-Opravy pro 0.1.3 se ověřují samostatně; příprava verze není její publikace.
+Vydání 0.1.2 je historický základ, dnešní aktuální verze je 0.1.3.
 
 ## Jednorázové nastavení GitHubu
 
@@ -54,10 +59,10 @@ včetně veřejné dostupnosti; samotné vytvoření balíčků se za publikaci 
 
 ## Historický postup vydání 0.1.2 a aktualizace z 0.1.1
 
-Následující kroky zachycují postup použitý pro již dokončený přechod `0.1.1 → 0.1.2`.
-Nejsou aktuálním návodem pro vydání 0.1.3. Bump byl v commitu `5259d57`; před tagem se
-ověřilo, že obsahuje také výsledky T0–T6. Tag `v0.1.2` vytvořil a pushnul Dan podle tehdejšího
-pověření.
+Následující kroky zachycují původně připravený postup pro přechod `0.1.1 → 0.1.2`.
+Jeho skutečný průchod není doložený a nejde o aktuální návod pro vydání 0.1.3. Bump
+byl připravený v commitu `5259d57`; před tagem bylo nutné zahrnout také výsledky T0–T6.
+Původní pověření vyhradilo push tagu Danovi; tento odstavec neurčuje skutečného autora pushnutí.
 
 1. Na testovacím Macu stáhni starší DMG pro správnou architekturu přes prohlížeč z
    `https://stahnout.ludone.cz/desktop/`. Přetažením nainstaluj aplikaci do `/Applications`.
@@ -81,7 +86,8 @@ Výsledek zapiš jako ✅ pouze tehdy, když projde stažení prohlížečem, pr
 nahrávka, automatický download, bezpečný restart a druhá skutečná nahrávka po aktualizaci.
 Samostatně archivuj doslovné výstupy HTTP, `spctl`, verze aplikace a akceptačního příkazu.
 
-Přechod `0.1.1 → 0.1.2` otestoval příjem balíčku původním updaterem. Aktuální postup pro
+Přechod `0.1.1 → 0.1.2` měl otestovat příjem balíčku původním updaterem; živý výsledek
+zůstává nedoložený. Aktuální postup pro
 vydání a přejímku 0.1.3 je v [OVERENI-NA-MACU.md](OVERENI-NA-MACU.md); historické kroky výše
 se pro něj neopakují jako autoritativní návod.
 
@@ -93,8 +99,8 @@ finálního runtime `20238192` i GitHub CI finálního PR `37f54e8` prošly. Ver
 `build/release-notes.md` jsou připravené. Dan 15. 9. výslovně pověřil koordinátora:
 „Ano, vydej 0.1.3 sám.“ Koordinátor proto smí vytvořit a pushnout tag `v0.1.3` a spustit
 již ověřené workflow; původní pravidlo, že tag pushuje Dan, je pro toto vydání nahrazené
-rozhodnutím D19. Workflow bylo spuštěno, ale 0.1.3 se nesmí označit za vydanou, dokud
-neskončí podpis, notarizace, publikace a veřejná kontrola. Žádné přístupové hodnoty se
+rozhodnutím D19. Workflow 34948618429 dokončil podpis, notarizaci, publikaci i veřejnou kontrolu;
+0.1.3 je vydaná. Žádné přístupové hodnoty se
 nemusí znovu nastavovat.
 
 Při každém dalším vydání aktualizuj také `build/release-notes.md` podle skutečných

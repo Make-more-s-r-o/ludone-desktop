@@ -1,0 +1,842 @@
+macos	Set up job	﻿2026-09-15T08:44:36.4275540Z Current runner version: '2.337.0'
+macos	Set up job	2026-09-15T08:44:36.4291760Z ##[group]Runner Image Provisioner
+macos	Set up job	2026-09-15T08:44:36.4292480Z Hosted Compute Agent
+macos	Set up job	2026-09-15T08:44:36.4293090Z Version: 20260828.587
+macos	Set up job	2026-09-15T08:44:36.4293680Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+macos	Set up job	2026-09-15T08:44:36.4294330Z Build Date: 2026-08-28T16:44:25Z
+macos	Set up job	2026-09-15T08:44:36.4294950Z Worker ID: {b3ffc9e8-13b2-4087-8b0c-2322a4cb6c36}
+macos	Set up job	2026-09-15T08:44:36.4295560Z Azure Region: westus
+macos	Set up job	2026-09-15T08:44:36.4296090Z ##[endgroup]
+macos	Set up job	2026-09-15T08:44:36.4297210Z ##[group]Operating System
+macos	Set up job	2026-09-15T08:44:36.4297740Z macOS
+macos	Set up job	2026-09-15T08:44:36.4298200Z 14.8.9
+macos	Set up job	2026-09-15T08:44:36.4298660Z 23J631
+macos	Set up job	2026-09-15T08:44:36.4299130Z ##[endgroup]
+macos	Set up job	2026-09-15T08:44:36.4299630Z ##[group]Runner Image
+macos	Set up job	2026-09-15T08:44:36.4300180Z Image: macos-14-arm64
+macos	Set up job	2026-09-15T08:44:36.4300710Z Version: 20260831.0302.1
+macos	Set up job	2026-09-15T08:44:36.4301660Z Included Software: https://github.com/actions/runner-images/blob/macos-14-arm64/20260831.0302/images/macos/macos-14-arm64-Readme.md
+macos	Set up job	2026-09-15T08:44:36.4303070Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-14-arm64%2F20260831.0302
+macos	Set up job	2026-09-15T08:44:36.4303900Z ##[endgroup]
+macos	Set up job	2026-09-15T08:44:36.4304880Z ##[group]GITHUB_TOKEN Permissions
+macos	Set up job	2026-09-15T08:44:36.4306200Z Contents: read
+macos	Set up job	2026-09-15T08:44:36.4306730Z Metadata: read
+macos	Set up job	2026-09-15T08:44:36.4307250Z ##[endgroup]
+macos	Set up job	2026-09-15T08:44:36.4308770Z Secret source: Actions
+macos	Set up job	2026-09-15T08:44:36.4309570Z Cache mode: write
+macos	Set up job	2026-09-15T08:44:36.4310250Z Prepare workflow directory
+macos	Set up job	2026-09-15T08:44:36.4539010Z Prepare all required actions
+macos	Set up job	2026-09-15T08:44:36.4574910Z Getting action download info
+macos	Set up job	2026-09-15T08:44:36.9202010Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+macos	Set up job	2026-09-15T08:44:37.3798190Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+macos	Set up job	2026-09-15T08:44:37.5173710Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+macos	Set up job	2026-09-15T08:44:37.7412640Z Complete job name: macos
+macos	Run actions/checkout@v4	﻿2026-09-15T08:44:37.8265980Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8283740Z ##[group]Run actions/checkout@v4
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8287430Z with:
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8289860Z   persist-credentials: false
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8292120Z   repository: Make-more-s-r-o/ludone-desktop
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8300630Z   token: ***
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8301310Z   ssh-strict: true
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8301840Z   ssh-user: git
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8302330Z   clean: true
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8302980Z   sparse-checkout-cone-mode: true
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8303560Z   fetch-depth: 1
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8304060Z   fetch-tags: false
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8304590Z   show-progress: true
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8305230Z   lfs: false
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8305730Z   submodules: false
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8306300Z   set-safe-directory: true
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8306870Z   allow-unsafe-pr-checkout: false
+macos	Run actions/checkout@v4	2026-09-15T08:44:37.8308410Z ##[endgroup]
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4126740Z Syncing repository: Make-more-s-r-o/ludone-desktop
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4129770Z ##[group]Getting Git version info
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4131000Z Working directory is '/Users/runner/work/ludone-desktop/ludone-desktop'
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4134660Z [command]/opt/homebrew/bin/git version
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4445670Z git version 2.55.0
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4505430Z ##[endgroup]
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4515820Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/ca1dbd2b-522d-45d8-bfca-2ff9b11b3f53/.gitconfig'
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4519100Z Temporarily overriding HOME='/Users/runner/work/_temp/ca1dbd2b-522d-45d8-bfca-2ff9b11b3f53' before making global git config changes
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4522240Z Adding repository directory to the temporary git global config as a safe directory
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4525420Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/ludone-desktop/ludone-desktop
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4632110Z Deleting the contents of '/Users/runner/work/ludone-desktop/ludone-desktop'
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4641050Z ##[group]Initializing the repository
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.4661340Z [command]/opt/homebrew/bin/git init /Users/runner/work/ludone-desktop/ludone-desktop
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5005020Z hint: Using 'master' as the name for the initial branch. This default branch name
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5007680Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5010040Z hint: to use in all of your new repositories, which will suppress this warning,
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5012480Z hint: call:
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5013740Z hint:
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5020300Z hint: 	git config --global init.defaultBranch <name>
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5025620Z hint:
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5028520Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5033850Z hint: 'development'. The just-created branch can be renamed via this command:
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5045790Z hint:
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5048760Z hint: 	git branch -m <name>
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5051480Z hint:
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5055090Z hint: Disable this message with "git config set advice.defaultBranchName false"
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5060600Z Initialized empty Git repository in /Users/runner/work/ludone-desktop/ludone-desktop/.git/
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5070050Z [command]/opt/homebrew/bin/git remote add origin https://github.com/Make-more-s-r-o/ludone-desktop
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5106070Z ##[endgroup]
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5108280Z ##[group]Disabling automatic garbage collection
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5109990Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5198810Z ##[endgroup]
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5208860Z ##[group]Setting up auth
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5238120Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.5261210Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.6393970Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.6454000Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.7307680Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.7383230Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.8903250Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.8908240Z ##[endgroup]
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.8909840Z ##[group]Fetching the repository
+macos	Run actions/checkout@v4	2026-09-15T08:44:38.8912530Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +28a6563f9ceb533f5ddad41c20f808ee0c4edde8:refs/tags/v0.1.3
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8496330Z From https://github.com/Make-more-s-r-o/ludone-desktop
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8498500Z  * [new ref]         28a6563f9ceb533f5ddad41c20f808ee0c4edde8 -> v0.1.3
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8502810Z ##[endgroup]
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8504570Z ##[group]Determining the checkout info
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8506940Z ##[endgroup]
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8508080Z [command]/opt/homebrew/bin/git sparse-checkout disable
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8573550Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8640760Z ##[group]Checking out the ref
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.8644850Z [command]/opt/homebrew/bin/git checkout --progress --force refs/tags/v0.1.3
+macos	Run actions/checkout@v4	2026-09-15T08:44:39.9944150Z HEAD is now at 28a6563 Record merged 0.1.3 delivery evidence and release handoff (#143)
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.0001350Z ##[endgroup]
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.0073950Z [command]/opt/homebrew/bin/git log -1 --format=%H
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.0153570Z 28a6563f9ceb533f5ddad41c20f808ee0c4edde8
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.0187150Z ##[group]Removing auth
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.0213070Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.0267800Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.0971430Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.1018010Z http.https://github.com/.extraheader
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.1020360Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.1078890Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.1711050Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.1780440Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+macos	Run actions/checkout@v4	2026-09-15T08:44:40.2685120Z ##[endgroup]
+macos	Run actions/setup-node@v4	﻿2026-09-15T08:44:40.2851660Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.2853240Z ##[group]Run actions/setup-node@v4
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.2853570Z with:
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.2853810Z   node-version: 22
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.2854060Z   cache: npm
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.2854300Z   always-auth: false
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.2854560Z   check-latest: false
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.2857000Z   token: ***
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.2857260Z ##[endgroup]
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.4492770Z Found in cache @ /Users/runner/hostedtoolcache/node/22.23.2/arm64
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.4495330Z (node:2169) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.4497760Z ##[group]Environment details
+macos	Run actions/setup-node@v4	2026-09-15T08:44:40.4500060Z (Use `node --trace-deprecation ...` to show where the warning was created)
+macos	Run actions/setup-node@v4	2026-09-15T08:44:41.2513770Z node: v22.23.2
+macos	Run actions/setup-node@v4	2026-09-15T08:44:41.2515160Z npm: 10.9.8
+macos	Run actions/setup-node@v4	2026-09-15T08:44:41.2515880Z yarn: 1.22.22
+macos	Run actions/setup-node@v4	2026-09-15T08:44:41.2517750Z ##[endgroup]
+macos	Run actions/setup-node@v4	2026-09-15T08:44:41.2571660Z [command]/Users/runner/hostedtoolcache/node/22.23.2/arm64/bin/npm config get cache
+macos	Run actions/setup-node@v4	2026-09-15T08:44:41.4967340Z /Users/runner/.npm
+macos	Run actions/setup-node@v4	2026-09-15T08:44:41.8429670Z npm cache is not found
+macos	Run npm ci	﻿2026-09-15T08:44:41.8544250Z ##[group]Run npm ci
+macos	Run npm ci	2026-09-15T08:44:41.8544740Z ^[[36;1mnpm ci^[[0m
+macos	Run npm ci	2026-09-15T08:44:41.8666410Z shell: /bin/bash -e {0}
+macos	Run npm ci	2026-09-15T08:44:41.8666790Z ##[endgroup]
+macos	Run npm ci	2026-09-15T08:44:44.2205880Z npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+macos	Run npm ci	2026-09-15T08:44:44.4039760Z npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+macos	Run npm ci	2026-09-15T08:44:44.5152620Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+macos	Run npm ci	2026-09-15T08:44:45.4135300Z npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+macos	Run npm ci	2026-09-15T08:44:45.5246650Z npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+macos	Run npm ci	2026-09-15T08:44:45.7182400Z npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+macos	Run npm ci	2026-09-15T08:44:47.4196400Z npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+macos	Run npm ci	2026-09-15T08:44:48.9504700Z npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+macos	Run npm ci	2026-09-15T08:44:52.7402800Z 
+macos	Run npm ci	2026-09-15T08:44:52.7406770Z added 525 packages, and audited 526 packages in 11s
+macos	Run npm ci	2026-09-15T08:44:52.7408070Z 
+macos	Run npm ci	2026-09-15T08:44:52.7408420Z 98 packages are looking for funding
+macos	Run npm ci	2026-09-15T08:44:52.7409250Z   run `npm fund` for details
+macos	Run npm ci	2026-09-15T08:44:52.7617510Z 
+macos	Run npm ci	2026-09-15T08:44:52.7628500Z 5 vulnerabilities (3 moderate, 2 high)
+macos	Run npm ci	2026-09-15T08:44:52.7629120Z 
+macos	Run npm ci	2026-09-15T08:44:52.7629600Z To address all issues (including breaking changes), run:
+macos	Run npm ci	2026-09-15T08:44:52.7630370Z   npm audit fix --force
+macos	Run npm ci	2026-09-15T08:44:52.7631220Z 
+macos	Run npm ci	2026-09-15T08:44:52.7631610Z Run `npm audit` for details.
+macos	Ověření tagu, zálohy klíče a release konfigurace	﻿2026-09-15T08:44:52.8689590Z ##[group]Run node <<'NODE'
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8690280Z ^[[36;1mnode <<'NODE'^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8690750Z ^[[36;1mconst packageJson = require("./package.json");^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8691390Z ^[[36;1mconst expectedTag = `v${packageJson.version}`;^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8691900Z ^[[36;1mif (process.env.GITHUB_REF_NAME !== expectedTag) {^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8692710Z ^[[36;1m  throw new Error(`Tag ${process.env.GITHUB_REF_NAME} neodpovídá verzi ${expectedTag}`);^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8693350Z ^[[36;1m}^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8693900Z ^[[36;1mif (process.env.MAC_SIGNING_KEY_BACKUP_CONFIRMED !== "true") {^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8694740Z ^[[36;1m  throw new Error("Podpisový klíč se nesmí použít bez potvrzené zálohy ve firemním správci hesel");^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8695460Z ^[[36;1m}^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8695870Z ^[[36;1mconst required = [^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8696370Z ^[[36;1m  "CSC_LINK",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8696700Z ^[[36;1m  "CSC_KEY_PASSWORD",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8697210Z ^[[36;1m  "APPLE_API_KEY_P8",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8697800Z ^[[36;1m  "APPLE_API_KEY_ID",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8698240Z ^[[36;1m  "APPLE_API_ISSUER",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8698670Z ^[[36;1m  "DOWNLOAD_SSH_HOST",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8699130Z ^[[36;1m  "DOWNLOAD_SSH_USER",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8699560Z ^[[36;1m  "DOWNLOAD_SSH_PATH",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8699950Z ^[[36;1m  "DOWNLOAD_SSH_PRIVATE_KEY",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8700400Z ^[[36;1m  "DOWNLOAD_SSH_KNOWN_HOSTS",^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8700880Z ^[[36;1m];^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8701300Z ^[[36;1mconst missing = required.filter((name) => !process.env[name]?.trim());^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8702210Z ^[[36;1mif (missing.length > 0) throw new Error(`V release prostředí chybí: ${missing.join(", ")}`);^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8703030Z ^[[36;1mconst simpleValue = /^[A-Za-z0-9._-]+$/;^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8703680Z ^[[36;1mif (!simpleValue.test(process.env.DOWNLOAD_SSH_HOST) || process.env.DOWNLOAD_SSH_HOST.startsWith("-")) {^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8704530Z ^[[36;1m  throw new Error("DOWNLOAD_SSH_HOST má neplatný tvar");^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8704990Z ^[[36;1m}^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8705790Z ^[[36;1mif (!simpleValue.test(process.env.DOWNLOAD_SSH_USER) || process.env.DOWNLOAD_SSH_USER.startsWith("-")) {^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8706570Z ^[[36;1m  throw new Error("DOWNLOAD_SSH_USER má neplatný tvar");^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8711380Z ^[[36;1m}^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8711800Z ^[[36;1mconst port = process.env.DOWNLOAD_SSH_PORT || "22";^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8712520Z ^[[36;1mif (!/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535) {^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8713210Z ^[[36;1m  throw new Error("DOWNLOAD_SSH_PORT má neplatný tvar");^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8713830Z ^[[36;1m}^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8714300Z ^[[36;1mconst publishPath = process.env.DOWNLOAD_SSH_PATH;^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8715170Z ^[[36;1mconst unsafeSegment = publishPath.split("/").some((part) => part === "." || part === "..");^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8716100Z ^[[36;1mif (!/^\/[A-Za-z0-9._/-]+$/.test(publishPath) || publishPath === "/" || publishPath.includes("//") || unsafeSegment) {^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8717040Z ^[[36;1m  throw new Error("DOWNLOAD_SSH_PATH musí být úzká absolutní cesta bez shellových znaků");^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8717630Z ^[[36;1m}^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8718080Z ^[[36;1mNODE^[[0m
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8791070Z shell: /bin/bash -e {0}
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8791760Z env:
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8792180Z   MAC_SIGNING_KEY_BACKUP_CONFIRMED: true
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8816480Z   CSC_LINK: ***
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8816860Z   CSC_KEY_PASSWORD: ***
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8818280Z   APPLE_API_KEY_P8: ***
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8818680Z   APPLE_API_KEY_ID: ***
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8819170Z   APPLE_API_ISSUER: ***
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8819590Z   DOWNLOAD_SSH_HOST: data.ludone.cz
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8820160Z   DOWNLOAD_SSH_PORT: 22
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8820580Z   DOWNLOAD_SSH_USER: ludone-desktop-release
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8821150Z   DOWNLOAD_SSH_PATH: /opt/makemore-data/nginx/hub/stahnout/desktop/
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8823800Z   DOWNLOAD_SSH_PRIVATE_KEY: ***
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8827850Z   DOWNLOAD_SSH_KNOWN_HOSTS: ***
+macos	Ověření tagu, zálohy klíče a release konfigurace	2026-09-15T08:44:52.8828240Z ##[endgroup]
+macos	Run npm run gates	﻿2026-09-15T08:44:52.9832030Z ##[group]Run npm run gates
+macos	Run npm run gates	2026-09-15T08:44:52.9832380Z ^[[36;1mnpm run gates^[[0m
+macos	Run npm run gates	2026-09-15T08:44:52.9889950Z shell: /bin/bash -e {0}
+macos	Run npm run gates	2026-09-15T08:44:52.9890300Z ##[endgroup]
+macos	Run npm run gates	2026-09-15T08:44:53.1458560Z 
+macos	Run npm run gates	2026-09-15T08:44:53.1459480Z > ludone-desktop-prototype@0.1.3 gates
+macos	Run npm run gates	2026-09-15T08:44:53.1460140Z > npm run lint && npm run typecheck && npm run test:unit && npm run preskocene
+macos	Run npm run gates	2026-09-15T08:44:53.1460450Z 
+macos	Run npm run gates	2026-09-15T08:44:53.2878990Z 
+macos	Run npm run gates	2026-09-15T08:44:53.2987560Z > ludone-desktop-prototype@0.1.3 lint
+macos	Run npm run gates	2026-09-15T08:44:53.3088920Z > eslint .
+macos	Run npm run gates	2026-09-15T08:44:53.3189480Z 
+macos	Run npm run gates	2026-09-15T08:44:57.6117970Z 
+macos	Run npm run gates	2026-09-15T08:44:57.6221560Z > ludone-desktop-prototype@0.1.3 typecheck
+macos	Run npm run gates	2026-09-15T08:44:57.6321230Z > tsc --noEmit -p jsconfig.json
+macos	Run npm run gates	2026-09-15T08:44:57.6423130Z 
+macos	Run npm run gates	2026-09-15T08:44:58.6991980Z 
+macos	Run npm run gates	2026-09-15T08:44:58.7093360Z > ludone-desktop-prototype@0.1.3 test:unit
+macos	Run npm run gates	2026-09-15T08:44:58.7194560Z > vitest run
+macos	Run npm run gates	2026-09-15T08:44:58.7297080Z 
+macos	Run npm run gates	2026-09-15T08:44:59.2784740Z 
+macos	Run npm run gates	2026-09-15T08:44:59.2786990Z ^[[1m^[[46m RUN ^[[49m^[[22m ^[[36mv3.2.7 ^[[39m^[[90m/Users/runner/work/ludone-desktop/ludone-desktop^[[39m
+macos	Run npm run gates	2026-09-15T08:44:59.2787700Z 
+macos	Run npm run gates	2026-09-15T08:45:01.1117440Z  ^[[32m✓^[[39m tests/queue.test.js ^[[2m(^[[22m^[[2m134 tests^[[22m^[[2m)^[[22m^[[33m 1013^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:02.5329270Z  ^[[32m✓^[[39m tests/upload-client.test.js ^[[2m(^[[22m^[[2m77 tests^[[22m^[[2m)^[[22m^[[33m 1051^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:02.5331320Z    ^[[33m^[[2m✓^[[22m^[[39m resumable upload^[[2m > ^[[22mčásti všech stop posílá přísně sériově ^[[33m 335^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:02.7805030Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mzjištění uložené OAuth session^[[2m > ^[[22m^[[2mnový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů
+macos	Run npm run gates	2026-09-15T08:45:02.7928090Z ^[[22m^[[39m[auth] Obnova relace selhala: reason=refresh-failed
+macos	Run npm run gates	2026-09-15T08:45:02.8030030Z 
+macos	Run npm run gates	2026-09-15T08:45:02.9692090Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mzjištění uložené OAuth session^[[2m > ^[[22m^[[2mvypršelá relace přes skutečné IPC ukáže vypršení v obou oknech a zůstane na disku
+macos	Run npm run gates	2026-09-15T08:45:02.9794560Z ^[[22m^[[39m[auth] Obnova relace selhala: reason=refresh-failed
+macos	Run npm run gates	2026-09-15T08:45:02.9896610Z 
+macos	Run npm run gates	2026-09-15T08:45:03.1548440Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mzjištění uložené OAuth session^[[2m > ^[[22m^[[2mpřímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+macos	Run npm run gates	2026-09-15T08:45:03.1653140Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-mnSkzh/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:03.1755400Z 
+macos	Run npm run gates	2026-09-15T08:45:03.1860610Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mzjištění uložené OAuth session^[[2m > ^[[22m^[[2mpřímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+macos	Run npm run gates	2026-09-15T08:45:03.1964690Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-mnSkzh/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:03.2081290Z 
+macos	Run npm run gates	2026-09-15T08:45:03.5592130Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mviditelnost ikony a klikání na lištu^[[2m > ^[[22m^[[2mběžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů
+macos	Run npm run gates	2026-09-15T08:45:03.5696160Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-Jo0jUF/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:03.5798750Z 
+macos	Run npm run gates	2026-09-15T08:45:03.6233130Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mviditelnost ikony a klikání na lištu^[[2m > ^[[22m^[[2mpreload po výjimce prvního příkazu doručí druhý i třetí s rozestupy a vyzvedne další dávku
+macos	Run npm run gates	2026-09-15T08:45:03.6234650Z ^[[22m^[[39m[tray] Rychlou akci stop-recording se nepodařilo zpracovat: Odběratel prvního příkazu selhal
+macos	Run npm run gates	2026-09-15T08:45:03.6235380Z 
+macos	Run npm run gates	2026-09-15T08:45:04.8220790Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mprošlý access token neposkytne uploadu jako platný kontext
+macos	Run npm run gates	2026-09-15T08:45:04.8224470Z ^[[22m^[[39m[auth] Obnova relace selhala: reason=refresh-failed
+macos	Run npm run gates	2026-09-15T08:45:04.8225800Z 
+macos	Run npm run gates	2026-09-15T08:45:05.0639720Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mselhaná obnova expirované session předá null a nespustí recording send
+macos	Run npm run gates	2026-09-15T08:45:05.0651210Z ^[[22m^[[39m[auth] Obnova relace selhala: reason=refresh-failed
+macos	Run npm run gates	2026-09-15T08:45:05.0651890Z 
+macos	Run npm run gates	2026-09-15T08:45:05.5371590Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mpo trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+macos	Run npm run gates	2026-09-15T08:45:05.5376510Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-cUrMDW/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:05.5377200Z 
+macos	Run npm run gates	2026-09-15T08:45:05.5409640Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mpo trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+macos	Run npm run gates	2026-09-15T08:45:05.5413900Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-cUrMDW/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:05.5416670Z 
+macos	Run npm run gates	2026-09-15T08:45:05.5536380Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mselhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+macos	Run npm run gates	2026-09-15T08:45:05.5538520Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-ocSHYY/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:05.5539050Z 
+macos	Run npm run gates	2026-09-15T08:45:05.5590390Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mselhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+macos	Run npm run gates	2026-09-15T08:45:05.5693320Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-ocSHYY/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:05.5724310Z 
+macos	Run npm run gates	2026-09-15T08:45:06.7708670Z  ^[[32m✓^[[39m tests/recording-card.test.js ^[[2m(^[[22m^[[2m59 tests^[[22m^[[2m)^[[22m^[[33m 3422^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:06.7810030Z    ^[[33m^[[2m✓^[[22m^[[39m nahrávání při zneplatnění relace^[[2m > ^[[22mstav expired ponechá Stop i lokální uložení, ale zavře odesílání ^[[33m 435^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:07.1106870Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mbezpečné ukončení aplikace^[[2m > ^[[22m^[[2mselhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+macos	Run npm run gates	2026-09-15T08:45:07.1210810Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-UKJC9w/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:07.1285240Z 
+macos	Run npm run gates	2026-09-15T08:45:07.1287420Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mbezpečné ukončení aplikace^[[2m > ^[[22m^[[2mselhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+macos	Run npm run gates	2026-09-15T08:45:07.1289500Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-UKJC9w/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:07.1290090Z 
+macos	Run npm run gates	2026-09-15T08:45:07.6235260Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení automatických aktualizací^[[2m > ^[[22m^[[2mběžící LuTrack odloží restart a po zastavení jej uplatní
+macos	Run npm run gates	2026-09-15T08:45:07.6250560Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-ST7F6N/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:07.6257620Z 
+macos	Run npm run gates	2026-09-15T08:45:07.6285880Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení automatických aktualizací^[[2m > ^[[22m^[[2mběžící LuTrack odloží restart a po zastavení jej uplatní
+macos	Run npm run gates	2026-09-15T08:45:07.6289510Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-ST7F6N/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:07.6291640Z 
+macos	Run npm run gates	2026-09-15T08:45:08.3041240Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mviditelnost automatických aktualizací v panelu^[[2m > ^[[22m^[[2mstažení doručí verzi do živého panelu a tracking dál blokuje instalaci
+macos	Run npm run gates	2026-09-15T08:45:08.3043360Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mviditelnost automatických aktualizací v panelu^[[2m > ^[[22m^[[2mstažení doručí verzi do živého panelu a tracking dál blokuje instalaci
+macos	Run npm run gates	2026-09-15T08:45:08.3174090Z ^[[22m^[[39mAn update to App inside a test was not wrapped in act(...).
+macos	Run npm run gates	2026-09-15T08:45:08.3175380Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-main-queue-test-oWG3OX/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:08.3189700Z 
+macos	Run npm run gates	2026-09-15T08:45:08.3277350Z 
+macos	Run npm run gates	2026-09-15T08:45:08.3327410Z When testing, code that causes React state updates should be wrapped into act(...):
+macos	Run npm run gates	2026-09-15T08:45:08.3429480Z 
+macos	Run npm run gates	2026-09-15T08:45:08.3530760Z act(() => {
+macos	Run npm run gates	2026-09-15T08:45:08.3665120Z   /* fire events that update state */
+macos	Run npm run gates	2026-09-15T08:45:08.3795610Z });
+macos	Run npm run gates	2026-09-15T08:45:08.3911680Z /* assert on the output */
+macos	Run npm run gates	2026-09-15T08:45:08.4053220Z 
+macos	Run npm run gates	2026-09-15T08:45:08.4173470Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+macos	Run npm run gates	2026-09-15T08:45:08.4279920Z An update to App inside a test was not wrapped in act(...).
+macos	Run npm run gates	2026-09-15T08:45:08.4382310Z 
+macos	Run npm run gates	2026-09-15T08:45:08.4483980Z When testing, code that causes React state updates should be wrapped into act(...):
+macos	Run npm run gates	2026-09-15T08:45:08.4585250Z 
+macos	Run npm run gates	2026-09-15T08:45:08.4690490Z act(() => {
+macos	Run npm run gates	2026-09-15T08:45:08.4795310Z   /* fire events that update state */
+macos	Run npm run gates	2026-09-15T08:45:08.4902840Z });
+macos	Run npm run gates	2026-09-15T08:45:08.5010070Z /* assert on the output */
+macos	Run npm run gates	2026-09-15T08:45:08.5081090Z 
+macos	Run npm run gates	2026-09-15T08:45:08.5171380Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+macos	Run npm run gates	2026-09-15T08:45:08.5272600Z 
+macos	Run npm run gates	2026-09-15T08:45:08.5722540Z  ^[[32m✓^[[39m tests/queue-wiring.test.js ^[[2m(^[[22m^[[2m276 tests^[[22m^[[2m)^[[22m^[[33m 6879^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:09.4641720Z  ^[[32m✓^[[39m tests/idle-panel.test.js ^[[2m(^[[22m^[[2m44 tests^[[22m^[[2m)^[[22m^[[33m 1822^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:11.1537980Z ^[[90mstdout^[[2m | tests/tracking-timer.test.js^[[2m > ^[[22m^[[2mvypínač DESKTOP_TIME_ENABLED^[[2m > ^[[22m^[[2mprodukční wiring s hodnotou true skončí jako started
+macos	Run npm run gates	2026-09-15T08:45:11.1648060Z ^[[22m^[[39m[tracking] Uloženo: /var/folders/s6/5hzmn6lx4dz5nxs7k_0slzph0000gn/T/ludone-tracking-test-ts29ic/cas/casovac.json
+macos	Run npm run gates	2026-09-15T08:45:11.1755880Z 
+macos	Run npm run gates	2026-09-15T08:45:11.2341620Z  ^[[32m✓^[[39m tests/tracking-timer.test.js ^[[2m(^[[22m^[[2m58 tests^[[22m^[[2m)^[[22m^[[33m 472^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:11.6143530Z  ^[[32m✓^[[39m tests/recording-export.test.js ^[[2m(^[[22m^[[2m75 tests^[[22m^[[2m)^[[22m^[[32m 124^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:12.7308320Z  ^[[32m✓^[[39m tests/settings.test.js ^[[2m(^[[22m^[[2m46 tests^[[22m^[[2m)^[[22m^[[33m 3195^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:13.0850330Z  ^[[32m✓^[[39m tests/logout.test.js ^[[2m(^[[22m^[[2m23 tests^[[22m^[[2m | ^[[22m^[[33m1 skipped^[[39m^[[2m)^[[22m^[[32m 135^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:13.9139890Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":false} jako signed-out
+macos	Run npm run gates	2026-09-15T08:45:13.9141500Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.902Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+macos	Run npm run gates	2026-09-15T08:45:13.9240940Z ^[[90mstderr^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mpo pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session
+macos	Run npm run gates	2026-09-15T08:45:13.9241630Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9360780Z ^[[22m^[[39m[recording] Session uzavřena po události „pád rendereru“: mikrofon 0 B, systém 0 B.
+macos	Run npm run gates	2026-09-15T08:45:13.9362470Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true} jako idle
+macos	Run npm run gates	2026-09-15T08:45:13.9470420Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9588790Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.904Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9674530Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9676430Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"trackingOwners":[1]} jako tracking
+macos	Run npm run gates	2026-09-15T08:45:13.9679000Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.905Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9694660Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9696100Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false}]]} jako recording
+macos	Run npm run gates	2026-09-15T08:45:13.9701280Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.905Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9701930Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9703080Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1}]]} jako recording
+macos	Run npm run gates	2026-09-15T08:45:13.9704780Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.906Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9706320Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9707690Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"queueWaitingCount":1} jako queue-waiting
+macos	Run npm run gates	2026-09-15T08:45:13.9709840Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.906Z stav=queue-waiting nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=1 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9710540Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9711570Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"systemAudioLostOwners":[1]} jako idle
+macos	Run npm run gates	2026-09-15T08:45:13.9713130Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.907Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9713690Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9714960Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"systemAudioLostOwners":[1]} jako recording-audio-lost
+macos	Run npm run gates	2026-09-15T08:45:13.9718000Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.908Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9718560Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9719670Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]]} jako recording-tracking
+macos	Run npm run gates	2026-09-15T08:45:13.9721180Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.909Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9721730Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9723170Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako recording-audio-lost
+macos	Run npm run gates	2026-09-15T08:45:13.9724850Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.910Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=true fronta=2 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9725420Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9726300Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"trackingOwners":[1],"queueWaitingCount":2} jako tracking
+macos	Run npm run gates	2026-09-15T08:45:13.9727630Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.911Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=2 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9728090Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9729280Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":false,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako signed-out
+macos	Run npm run gates	2026-09-15T08:45:13.9731340Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.911Z stav=signed-out nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=2 přihlášen=false
+macos	Run npm run gates	2026-09-15T08:45:13.9731870Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9732780Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":true}]]} jako idle
+macos	Run npm run gates	2026-09-15T08:45:13.9734160Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.911Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9734690Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9735710Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1,"finalizePromise":{}}]]} jako idle
+macos	Run npm run gates	2026-09-15T08:45:13.9737110Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.911Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9737580Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9738390Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mjednostopé nahrávání odliší od plného nahrávání i výpadku: příprava
+macos	Run npm run gates	2026-09-15T08:45:13.9739670Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.911Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9740210Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9741120Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mjednostopé nahrávání odliší od plného nahrávání i výpadku: živá session
+macos	Run npm run gates	2026-09-15T08:45:13.9742600Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.912Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9743670Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9744600Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mjednostopé nahrávání odliší od plného nahrávání i výpadku: souběh s LuTrackem
+macos	Run npm run gates	2026-09-15T08:45:13.9746020Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.912Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=true fronta=2 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9746610Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9747730Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"preparing":[[1,{"cancelled":true,"sources":["microphone"]}]]}
+macos	Run npm run gates	2026-09-15T08:45:13.9749170Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.912Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9749730Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9750870Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"sessions":[["s",{"ownerId":1,"tracks":{},"finalizePromise":{}}]]}
+macos	Run npm run gates	2026-09-15T08:45:13.9752380Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.913Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9752840Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9753650Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mskutečný výpadek má přednost před přijatým jednostopým nahráváním
+macos	Run npm run gates	2026-09-15T08:45:13.9755040Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.913Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9755620Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9756530Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mpři souběhu spojí fakt LuTracku se skutečným nahráváním z hlavního procesu
+macos	Run npm run gates	2026-09-15T08:45:13.9758560Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.913Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9759960Z [tray] 2026-09-15T08:45:13.913Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9760440Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9761210Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mnechá lištu hlásit správný stav, ne ten poslední odeslaný
+macos	Run npm run gates	2026-09-15T08:45:13.9762610Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.913Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9763890Z [tray] 2026-09-15T08:45:13.913Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9765010Z [tray] 2026-09-15T08:45:13.913Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9765520Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9766220Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mNEODHLÁSÍ uživatele — session drží hlavní proces
+macos	Run npm run gates	2026-09-15T08:45:13.9767460Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.914Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9768600Z [tray] 2026-09-15T08:45:13.914Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9769040Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9769720Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mzapomene jen padlé okno, ostatní nechá běžet
+macos	Run npm run gates	2026-09-15T08:45:13.9770950Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.915Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9771490Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9772730Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mpo pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session
+macos	Run npm run gates	2026-09-15T08:45:13.9773930Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.915Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9775040Z [tray] 2026-09-15T08:45:13.915Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9775480Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9776170Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mlišta se překresluje jen při skutečné změně^[[2m > ^[[22m^[[2mstejný stav podruhé už obrázek nesahá
+macos	Run npm run gates	2026-09-15T08:45:13.9777280Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.916Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9777750Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9778430Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mlišta se překresluje jen při skutečné změně^[[2m > ^[[22m^[[2mzměna stavu obrázek i popisek přepíše
+macos	Run npm run gates	2026-09-15T08:45:13.9779550Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.917Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9780600Z [tray] 2026-09-15T08:45:13.917Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9781040Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9781840Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne hodnotu, která není boolean, a fakta NECHÁ být
+macos	Run npm run gates	2026-09-15T08:45:13.9783010Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.918Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9783670Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9784400Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2mprázdný objekt uživatele NEODHLÁSÍ
+macos	Run npm run gates	2026-09-15T08:45:13.9785780Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.919Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9786260Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9786970Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne undefined a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9788100Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.919Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9788560Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9789310Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne null a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9790530Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.919Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9790980Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9791680Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne "idle" a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9792810Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.919Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9793280Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9794010Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne 42 a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9795150Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.919Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9795590Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9796740Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"panelActionsAvailable":true,"signedIn":1,"systemAudioLost":false,"tracking":false} a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9798600Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.919Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9799060Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9799950Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"signedIn":true} a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9820830Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.919Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9821410Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9822270Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"signedIn":true,"tracking":false} a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9823890Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.920Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9824590Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9825870Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"state":"recording"} a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9827320Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.920Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9827780Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9828930Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"icon":"recording"} a nechá fakta být
+macos	Run npm run gates	2026-09-15T08:45:13.9831110Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.920Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9831590Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9832300Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2mplatnou čtveřici boolean přijme
+macos	Run npm run gates	2026-09-15T08:45:13.9833480Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.920Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+macos	Run npm run gates	2026-09-15T08:45:13.9834590Z [tray] 2026-09-15T08:45:13.920Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9835040Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9836000Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2mvýpadek přijme jen jako boolean, neplatný report stav nezmění a obnova vrátí nahrávání
+macos	Run npm run gates	2026-09-15T08:45:13.9837320Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.920Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9838700Z [tray] 2026-09-15T08:45:13.920Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9839830Z [tray] 2026-09-15T08:45:13.920Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+macos	Run npm run gates	2026-09-15T08:45:13.9840260Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9840920Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mprvní vykreslení lišty^[[2m > ^[[22m^[[2mnastaví obrázek i popisek, i když se stav nezměnil
+macos	Run npm run gates	2026-09-15T08:45:13.9842050Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.920Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+macos	Run npm run gates	2026-09-15T08:45:13.9842520Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9843080Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mprvní vykreslení lišty^[[2m > ^[[22m^[[2mpodruhé už na lištu nesahá
+macos	Run npm run gates	2026-09-15T08:45:13.9844170Z ^[[22m^[[39m[tray] 2026-09-15T08:45:13.921Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+macos	Run npm run gates	2026-09-15T08:45:13.9845100Z 
+macos	Run npm run gates	2026-09-15T08:45:13.9845530Z  ^[[32m✓^[[39m tests/tray-authority.test.js ^[[2m(^[[22m^[[2m81 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:14.3177100Z  ^[[32m✓^[[39m tests/retention.test.js ^[[2m(^[[22m^[[2m32 tests^[[22m^[[2m)^[[22m^[[32m 134^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:14.4445230Z  ^[[32m✓^[[39m tests/onboarding-missing-steps.test.js ^[[2m(^[[22m^[[2m23 tests^[[22m^[[2m)^[[22m^[[33m 2136^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:14.4547270Z    ^[[33m^[[2m✓^[[22m^[[39m dva chybějící kroky onboardingu^[[2m > ^[[22mpo skončení pokusu přestane neznámou adresu znovu zjišťovat ^[[33m 885^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:14.7394180Z  ^[[32m✓^[[39m tests/logout-safety.test.js ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 225^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:15.1340370Z  ^[[32m✓^[[39m tests/auth-controller-wiring.test.js ^[[2m(^[[22m^[[2m48 tests^[[22m^[[2m)^[[22m^[[32m 191^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:15.1392380Z  ^[[32m✓^[[39m tests/auth-identity-fallback.test.js ^[[2m(^[[22m^[[2m29 tests^[[22m^[[2m)^[[22m^[[33m 452^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:16.3143090Z  ^[[32m✓^[[39m tests/recordings-dashboard.test.js ^[[2m(^[[22m^[[2m17 tests^[[22m^[[2m)^[[22m^[[33m 390^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:18.0008830Z  ^[[32m✓^[[39m tests/renderer-failure-feedback.test.js ^[[2m(^[[22m^[[2m29 tests^[[22m^[[2m)^[[22m^[[33m 917^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:18.1902260Z  ^[[32m✓^[[39m tests/ipc-sender-guard.test.js ^[[2m(^[[22m^[[2m21 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:18.7565010Z  ^[[32m✓^[[39m tests/recording-verification.test.js ^[[2m(^[[22m^[[2m20 tests^[[22m^[[2m)^[[22m^[[33m 383^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:18.8015740Z  ^[[32m✓^[[39m tests/session-reentry.test.js ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[33m 2859^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:18.8017300Z    ^[[33m^[[2m✓^[[22m^[[39m návrat do aplikace po ztrátě session^[[2m > ^[[22mdokončení úvodního průvodce bez platné relace otevře nový přihlašovací krok ^[[33m 1250^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:18.8018650Z    ^[[33m^[[2m✓^[[22m^[[39m oznámení změny session mezi okny^[[2m > ^[[22motevřená okna zjistí vypršení bez změny fokusu a panel nabídne nové přihlášení ^[[33m 1161^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:19.3118180Z  ^[[32m✓^[[39m tests/recording-actions.test.js ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 249^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:19.3337310Z  ^[[32m✓^[[39m tests/auth-cancellation-storage.test.js ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[33m 357^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:19.5684020Z  ^[[32m✓^[[39m tests/ui-smoke.test.js ^[[2m(^[[22m^[[2m17 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:19.8106600Z  ^[[32m✓^[[39m tests/zapojeni-odhlaseni.test.js ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m | ^[[22m^[[33m1 skipped^[[39m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:20.0027300Z  ^[[32m✓^[[39m tests/tray-ikony.test.js ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[33m 436^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:20.0130760Z    ^[[33m^[[2m✓^[[22m^[[39m ikony v liště^[[2m > ^[[22mgenerátor opakovaně vyrobí přesně bajty uložené v repozitáři ^[[33m 404^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:20.1133300Z  ^[[32m✓^[[39m tests/auth-refresh.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 77^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:21.6035450Z  ^[[32m✓^[[39m tests/settings-audio-test.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[33m 740^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:21.9843720Z  ^[[32m✓^[[39m tests/settings-persistence.test.js ^[[2m(^[[22m^[[2m31 tests^[[22m^[[2m)^[[22m^[[32m 135^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:22.5306340Z  ^[[32m✓^[[39m tests/desktop-progress.test.js ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 368^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:24.1500670Z  ^[[32m✓^[[39m tests/packaging.test.js ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[33m 1430^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:24.1507830Z    ^[[33m^[[2m✓^[[22m^[[39m kontrakt electron-builderu^[[2m > ^[[22mbez podpisových proměnných provede nepodepsaný build plán a nespadne ^[[33m 702^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:24.1533160Z    ^[[33m^[[2m✓^[[22m^[[39m kontrakt electron-builderu^[[2m > ^[[22múplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší ^[[33m 666^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:25.6890150Z  ^[[32m✓^[[39m tests/auth-error-screens.test.js ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[33m 813^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:25.9213030Z  ^[[32m✓^[[39m tests/diagnostics.test.js ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 28^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:26.8840960Z  ^[[32m✓^[[39m tests/nazev-zarizeni.test.js ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 215^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:26.9781210Z  ^[[32m✓^[[39m tests/ikona-aplikace.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[33m 6755^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:26.9782840Z    ^[[33m^[[2m✓^[[22m^[[39m ikona aplikace^[[2m > ^[[22mbuild.mac.icon ukazuje na existující neprázdnou sadu ICNS ^[[33m 1815^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:26.9783870Z    ^[[33m^[[2m✓^[[22m^[[39m ikona aplikace^[[2m > ^[[22mgenerátor vytváří všech deset PNG a reprodukovatelné ICNS ^[[33m 1269^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:26.9785840Z    ^[[33m^[[2m✓^[[22m^[[39m ikona aplikace^[[2m > ^[[22mzměna sdílených bodů, šířky i plátna mění glyf aplikace i lišty ^[[33m 3068^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:26.9786990Z    ^[[33m^[[2m✓^[[22m^[[39m ikona aplikace^[[2m > ^[[22mbalení vytvoří chybějící ikonu dříve, než spustí electron-builder ^[[33m 602^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:27.1356550Z  ^[[32m✓^[[39m tests/volba-firmy-v-relaci.test.js ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 74^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:27.1991160Z  ^[[32m✓^[[39m tests/permissions.test.js ^[[2m(^[[22m^[[2m18 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:27.9458730Z  ^[[32m✓^[[39m tests/zkratky-bez-kryti.test.js ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 172^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:28.2019110Z  ^[[32m✓^[[39m tests/settings-audio-permissions.test.js ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:29.2518620Z  ^[[32m✓^[[39m tests/tracking-card.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[33m 1171^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:29.2621370Z    ^[[33m^[[2m✓^[[22m^[[39m LuTrack jako ukázka (compact=false)^[[2m > ^[[22mhned po vykreslení bez interakce viditelně říká, že se čas nikam neuloží ^[[33m 469^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:29.4562500Z  ^[[32m✓^[[39m tests/tray-space-warning.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 167^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:29.5032660Z  ^[[32m✓^[[39m tests/upload-company-selection.test.js ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 65^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:29.7088550Z  ^[[32m✓^[[39m tests/manifest.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:29.9436030Z  ^[[32m✓^[[39m tests/fronta-neztrati.test.js ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:30.1742960Z  ^[[32m✓^[[39m tests/zjisteni-firmy.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:30.4623420Z ^[[90mstdout^[[2m | tests/verify-macos-release.test.js^[[2m > ^[[22m^[[2mověření podepsaného macOS releasu^[[2m > ^[[22m^[[2mmapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+macos	Run npm run gates	2026-09-15T08:45:30.4724530Z ^[[22m^[[39mPASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.3-arm64.dmg
+macos	Run npm run gates	2026-09-15T08:45:30.4826210Z 
+macos	Run npm run gates	2026-09-15T08:45:30.4845510Z ^[[90mstdout^[[2m | tests/verify-macos-release.test.js^[[2m > ^[[22m^[[2mověření podepsaného macOS releasu^[[2m > ^[[22m^[[2mmapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+macos	Run npm run gates	2026-09-15T08:45:30.4847040Z ^[[22m^[[39mPASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.3-x64.dmg
+macos	Run npm run gates	2026-09-15T08:45:30.4847500Z 
+macos	Run npm run gates	2026-09-15T08:45:30.4849050Z ^[[90mstdout^[[2m | tests/verify-macos-release.test.js^[[2m > ^[[22m^[[2mověření podepsaného macOS releasu^[[2m > ^[[22m^[[2mmapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+macos	Run npm run gates	2026-09-15T08:45:30.4850490Z ^[[22m^[[39mPASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.3-arm64.zip
+macos	Run npm run gates	2026-09-15T08:45:30.4851040Z 
+macos	Run npm run gates	2026-09-15T08:45:30.4852030Z ^[[90mstdout^[[2m | tests/verify-macos-release.test.js^[[2m > ^[[22m^[[2mověření podepsaného macOS releasu^[[2m > ^[[22m^[[2mmapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+macos	Run npm run gates	2026-09-15T08:45:30.4853400Z ^[[22m^[[39mPASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.3-x64.zip
+macos	Run npm run gates	2026-09-15T08:45:30.4853940Z 
+macos	Run npm run gates	2026-09-15T08:45:30.4854510Z  ^[[32m✓^[[39m tests/verify-macos-release.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:30.5534890Z  ^[[32m✓^[[39m tests/recordings-status.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 159^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:30.8307350Z  ^[[32m✓^[[39m tests/proc-je-ticho.test.js ^[[2m(^[[22m^[[2m15 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:31.0678880Z  ^[[32m✓^[[39m tests/seznam-firem.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:31.2877640Z  ^[[32m✓^[[39m tests/queue-scheduler.test.js ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:31.4800310Z  ^[[32m✓^[[39m tests/upload-company-selector.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 194^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:31.5111610Z  ^[[32m✓^[[39m tests/auth-panel-blur-guard.test.js ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:31.7548000Z  ^[[32m✓^[[39m tests/release-artifacts.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 58^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:31.7759570Z  ^[[32m✓^[[39m tests/kalendar-zrusen.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[33m1 skipped^[[39m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:32.0253130Z  ^[[32m✓^[[39m tests/pisma.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:32.2771950Z  ^[[32m✓^[[39m tests/firma-pro-odeslani.test.js ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:32.3165450Z  ^[[32m✓^[[39m tests/publish-release-remote.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[33m 310^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:32.5651350Z  ^[[32m✓^[[39m tests/panel-blur-guard.test.js ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 2^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:32.6132830Z  ^[[32m✓^[[39m tests/fronta-symetrie.test.js ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 2^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:32.8604570Z  ^[[32m✓^[[39m tests/verify-published-release.test.js ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:32.8913460Z  ^[[32m✓^[[39m tests/auth-wait-lifecycle.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 89^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:33.1355880Z  ^[[32m✓^[[39m tests/oauth-state.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:33.1463350Z  ^[[32m✓^[[39m tests/opravneni-k-odesilani.test.js ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:33.3528190Z  ^[[32m✓^[[39m tests/release-workflow.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:33.5799150Z  ^[[32m✓^[[39m tests/brany-workflow.test.js ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:33.7978790Z  ^[[32m✓^[[39m tests/pkce.test.js ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:34.0140100Z  ^[[32m✓^[[39m tests/barvy.test.js ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:34.0711700Z  ^[[32m✓^[[39m tests/queue-card-labels.test.js ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 157^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:34.2845380Z  ^[[32m✓^[[39m tests/electron-verze.test.js ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:34.3611990Z  ^[[32m✓^[[39m tests/recording-order-guard.test.js ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 2^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:34.5853420Z  ^[[32m✓^[[39m tests/auth-timeout-guard.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 2^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:34.6155610Z  ^[[32m✓^[[39m tests/main-entry.test.js ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 91^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:35.3915710Z  ^[[32m✓^[[39m tests/zachyceni-zdroju.test.js ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+macos	Run npm run gates	2026-09-15T08:45:35.4121000Z 
+macos	Run npm run gates	2026-09-15T08:45:35.4136910Z ^[[2m Test Files ^[[22m ^[[1m^[[32m72 passed^[[39m^[[22m^[[90m (72)^[[39m
+macos	Run npm run gates	2026-09-15T08:45:35.4143540Z ^[[2m      Tests ^[[22m ^[[1m^[[32m1515 passed^[[39m^[[22m^[[2m | ^[[22m^[[33m3 skipped^[[39m^[[90m (1518)^[[39m
+macos	Run npm run gates	2026-09-15T08:45:35.4183250Z ^[[2m   Start at ^[[22m 08:44:59
+macos	Run npm run gates	2026-09-15T08:45:35.4294710Z ^[[2m   Duration ^[[22m 36.11s^[[2m (transform 947ms, setup 620ms, collect 14.52s, tests 40.43s, environment 588ms, prepare 4.22s)^[[22m
+macos	Run npm run gates	2026-09-15T08:45:35.4397180Z 
+macos	Run npm run gates	2026-09-15T08:45:35.7269210Z 
+macos	Run npm run gates	2026-09-15T08:45:35.7270050Z > ludone-desktop-prototype@0.1.3 preskocene
+macos	Run npm run gates	2026-09-15T08:45:35.7270540Z > node scripts/preskocene.mjs
+macos	Run npm run gates	2026-09-15T08:45:35.7271180Z 
+macos	Run npm run gates	2026-09-15T08:46:11.5944360Z [preskocene] 3 přeskočených, baseline 3 — v pořádku.
+macos	Příprava notářského klíče mimo repozitář	﻿2026-09-15T08:46:11.6374850Z ##[group]Run umask 077
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6375590Z ^[[36;1mumask 077^[[0m
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6375970Z ^[[36;1mkey_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"^[[0m
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6376500Z ^[[36;1mprintf '%s' "$APPLE_API_KEY_P8" > "$key_path"^[[0m
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6377210Z ^[[36;1mecho "APPLE_API_KEY=$key_path" >> "$GITHUB_ENV"^[[0m
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6517230Z shell: /bin/bash -e {0}
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6517820Z env:
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6519740Z   APPLE_API_KEY_P8: ***
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6520240Z   APPLE_API_KEY_ID: ***
+macos	Příprava notářského klíče mimo repozitář	2026-09-15T08:46:11.6520580Z ##[endgroup]
+macos	Podepsání, notarizace a ověření DMG + ZIP	﻿2026-09-15T08:46:11.7105840Z ##[group]Run npm run release:mac
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7106440Z ^[[36;1mnpm run release:mac^[[0m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7183050Z shell: /bin/bash -e {0}
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7183430Z env:
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7184200Z   APPLE_API_KEY: /Users/runner/work/_temp/AuthKey_***.p8
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7210610Z   CSC_LINK: ***
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7211130Z   CSC_KEY_PASSWORD: ***
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7211540Z   APPLE_API_KEY_ID: ***
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7212010Z   APPLE_API_ISSUER: ***
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.7212450Z ##[endgroup]
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.9230370Z 
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.9231060Z > ludone-desktop-prototype@0.1.3 release:mac
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.9232920Z > npm run build && node scripts/package-mac.mjs --release && node scripts/release-artifacts.mjs --write-review-files && node scripts/verify-macos-release.mjs
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:11.9233960Z 
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:12.0930360Z 
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:12.0932010Z > ludone-desktop-prototype@0.1.3 build
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:12.0934010Z > vite build
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:12.0934770Z 
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:12.3354910Z ^[[36mvite v7.3.6 ^[[32mbuilding client environment for production...^[[36m^[[39m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:12.3747210Z transforming...
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.0496280Z ^[[32m✓^[[39m 54 modules transformed.
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2409670Z rendering chunks...
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2510240Z computing gzip size...
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2616490Z ^[[2mdist/^[[22m^[[32mindex.html                                       ^[[39m^[[1m^[[2m  0.62 kB^[[22m^[[1m^[[22m^[[2m │ gzip:  0.37 kB^[[22m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2620060Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[32minstrument-sans-latin-ext-oUstOPQL.woff2  ^[[39m^[[1m^[[2m 11.09 kB^[[22m^[[1m^[[22m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2623320Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[32mpublic-sans-latin-ext-NN8edoJ2.woff2      ^[[39m^[[1m^[[2m 18.37 kB^[[22m^[[1m^[[22m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2626330Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[32mpublic-sans-latin-CcEC6YbM.woff2          ^[[39m^[[1m^[[2m 26.64 kB^[[22m^[[1m^[[22m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2640920Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[32minstrument-sans-latin-CclBWeUS.woff2      ^[[39m^[[1m^[[2m 29.90 kB^[[22m^[[1m^[[22m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2642290Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[35mindex-M1CDdI_Q.css                        ^[[39m^[[1m^[[2m 45.28 kB^[[22m^[[1m^[[22m^[[2m │ gzip:  8.20 kB^[[22m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2643370Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[36mindex-CQpLOk4p.js                         ^[[39m^[[1m^[[2m309.76 kB^[[22m^[[1m^[[22m^[[2m │ gzip: 93.56 kB^[[22m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.2643960Z ^[[32m✓ built in 909ms^[[39m
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:13.7479580Z Vygenerována ikona aplikace (8 bloků ICNS) do /Users/runner/work/ludone-desktop/ludone-desktop/build/ikona-aplikace/LuDone.icns
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:14.6530710Z   • electron-builder  version=26.15.3 os=23.6.0
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:14.6569590Z   • loaded configuration  file=package.json ("build" field)
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:15.4571090Z   • executing @electron/rebuild  electronVersion=39.8.10 arch=arm64 buildFromSource=false workspaceRoot=/Users/runner/work/ludone-desktop/ludone-desktop projectDir=./ appDir=./
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:15.4673280Z   • installing native dependencies  arch=arm64
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:15.6148330Z   • completed installing native dependencies
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:15.6197120Z   • packaging       platform=darwin arch=arm64 electron=39.8.10 appOutDir=release/mac-arm64
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:15.9181930Z   • downloaded      label=electron progress=100%
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:17.4896090Z   • downloaded electron zip extracted successfully  output=/Users/runner/work/ludone-desktop/ludone-desktop/release/mac-arm64
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:17.4907260Z   • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:17.5056590Z   • searching for node modules  pm=npm searchDir=/Users/runner/work/ludone-desktop/ludone-desktop
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:18.1652610Z   • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:46:18.4543950Z   • signing         file=release/mac-arm64/LuDone Desktop.app platform=darwin type=distribution identityName=Developer ID Application: Make more s.r.o (UF7G4Y6FS6) identityHash=4508772EE4C7AB033AC32E9DC98F5BA7EC840760 provisioningProfile=none
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.4452150Z   • notarization successful
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.4463300Z   • building        target=macOS zip arch=arm64 file=release/LuDone-Desktop-0.1.3-arm64.zip
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.4477040Z   • building        target=DMG arch=arm64 file=release/LuDone-Desktop-0.1.3-arm64.dmg
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.4515780Z   • executing @electron/rebuild  electronVersion=39.8.10 arch=x64 buildFromSource=false workspaceRoot=/Users/runner/work/ludone-desktop/ludone-desktop projectDir=./ appDir=./
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.4525240Z   • installing native dependencies  arch=x64
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.5966280Z   • downloaded      label=dmgbuild-bundle-arm64-75c8a6c.tar.gz progress=100%
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.7087320Z   • completed installing native dependencies
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.7135220Z   • packaging       platform=darwin arch=x64 electron=39.8.10 appOutDir=release/mac
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:15.8884570Z   • downloaded      label=electron progress=100%
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:20.0224990Z   • downloaded electron zip extracted successfully  output=/Users/runner/work/ludone-desktop/ludone-desktop/release/mac
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:20.0330270Z   • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:20.0428160Z   • searching for node modules  pm=npm searchDir=/Users/runner/work/ludone-desktop/ludone-desktop
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:21.3794570Z   • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:21.4351250Z   • signing         file=release/mac/LuDone Desktop.app platform=darwin type=distribution identityName=Developer ID Application: Make more s.r.o (UF7G4Y6FS6) identityHash=4508772EE4C7AB033AC32E9DC98F5BA7EC840760 provisioningProfile=none
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:32.9531970Z   • building block map  blockMapFile=release/LuDone-Desktop-0.1.3-arm64.zip.blockmap
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:48:42.2089660Z   • building block map  blockMapFile=release/LuDone-Desktop-0.1.3-arm64.dmg.blockmap
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:50:37.6283910Z   • notarization successful
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:50:37.6291760Z   • building        target=macOS zip arch=x64 file=release/LuDone-Desktop-0.1.3-x64.zip
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:50:37.6298290Z   • building        target=DMG arch=x64 file=release/LuDone-Desktop-0.1.3-x64.dmg
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:50:53.1398410Z   • building block map  blockMapFile=release/LuDone-Desktop-0.1.3-x64.dmg.blockmap
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:50:57.1323060Z   • building block map  blockMapFile=release/LuDone-Desktop-0.1.3-x64.zip.blockmap
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:03.6638120Z [balení] Audio-smoke cesta: /Users/runner/work/ludone-desktop/ludone-desktop/release/LuDone Desktop.app -> /Users/runner/work/ludone-desktop/ludone-desktop/release/mac-arm64/LuDone Desktop.app
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:03.6640160Z [balení] Hotovo: podepsané release artefakty a update metadata jsou připravené; nic nebylo přeneseno.
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:04.8954950Z PASS latest-mac.yml: verze 0.1.3, čtyři balíčky a jejich SHA-512
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:04.8956280Z PASS release artefakty: DMG + ZIP + blockmap pro arm64 a x64
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:04.8987850Z PASS review soubory: release-manifest.json + SHA256SUMS
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:16.5124640Z PASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.3-arm64.dmg
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:25.9670270Z PASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.3-x64.dmg
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:27.8946430Z PASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.3-arm64.zip
+macos	Podepsání, notarizace a ověření DMG + ZIP	2026-09-15T08:51:29.9934970Z PASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.3-x64.zip
+macos	Archiv podepsaných artefaktů před publikací	﻿2026-09-15T08:51:30.0350980Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0352420Z ##[group]Run actions/upload-artifact@v4
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0352830Z with:
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0353100Z   name: ludone-desktop-v0.1.3
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0353510Z   compression-level: 0
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0353860Z   if-no-files-found: error
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0354230Z   retention-days: 30
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0355050Z   path: release/LuDone-Desktop-*.dmg
+macos	Archiv podepsaných artefaktů před publikací	release/LuDone-Desktop-*.dmg.blockmap
+macos	Archiv podepsaných artefaktů před publikací	release/LuDone-Desktop-*.zip
+macos	Archiv podepsaných artefaktů před publikací	release/LuDone-Desktop-*.zip.blockmap
+macos	Archiv podepsaných artefaktů před publikací	release/latest-mac.yml
+macos	Archiv podepsaných artefaktů před publikací	release/release-manifest.json
+macos	Archiv podepsaných artefaktů před publikací	release/SHA256SUMS
+macos	Archiv podepsaných artefaktů před publikací	
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0355940Z   overwrite: false
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0356250Z   include-hidden-files: false
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0356630Z env:
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0357320Z   APPLE_API_KEY: /Users/runner/work/_temp/AuthKey_***.p8
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.0357920Z ##[endgroup]
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.3919320Z (node:49229) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.3922390Z (Use `node --trace-deprecation ...` to show where the warning was created)
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.4027940Z With the provided path, there will be 11 files uploaded
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.4030550Z Artifact name is valid!
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.4031790Z Root directory input is valid!
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.8480570Z Beginning upload of artifact content to blob storage
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:30.8586750Z (node:49229) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:31.7753600Z Uploaded bytes 8388608
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:31.7917530Z Uploaded bytes 16777216
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:31.9073520Z Uploaded bytes 25165824
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:31.9202740Z Uploaded bytes 33554432
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.0383830Z Uploaded bytes 41943040
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.1080820Z Uploaded bytes 50331648
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.1837060Z Uploaded bytes 58720256
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.1939600Z Uploaded bytes 67108864
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.2984820Z Uploaded bytes 75497472
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.3611250Z Uploaded bytes 83886080
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.4852320Z Uploaded bytes 92274688
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.5122060Z Uploaded bytes 100663296
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.5673820Z Uploaded bytes 109051904
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.6464390Z Uploaded bytes 117440512
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.7530700Z Uploaded bytes 125829120
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.7631320Z Uploaded bytes 134217728
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.8274310Z Uploaded bytes 142606336
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:32.9489530Z Uploaded bytes 150994944
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.0092840Z Uploaded bytes 159383552
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.0194330Z Uploaded bytes 167772160
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.0709190Z Uploaded bytes 176160768
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.1922740Z Uploaded bytes 184549376
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.2938140Z Uploaded bytes 192937984
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.3513720Z Uploaded bytes 201326592
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.5229770Z Uploaded bytes 209715200
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.5653760Z Uploaded bytes 218103808
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.5778580Z Uploaded bytes 226492416
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.8107250Z Uploaded bytes 234881024
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.9344660Z Uploaded bytes 243269632
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:33.9945230Z Uploaded bytes 251658240
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.0832760Z Uploaded bytes 260046848
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.2062520Z Uploaded bytes 268435456
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.2462340Z Uploaded bytes 276824064
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.3288230Z Uploaded bytes 285212672
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.4389210Z Uploaded bytes 293601280
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.5308290Z Uploaded bytes 301989888
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.5380550Z Uploaded bytes 310378496
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.6050940Z Uploaded bytes 318767104
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.7783660Z Uploaded bytes 327155712
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.8027700Z Uploaded bytes 335544320
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.8200080Z Uploaded bytes 343932928
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:34.8950210Z Uploaded bytes 352321536
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.0640030Z Uploaded bytes 360710144
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.0915790Z Uploaded bytes 369098752
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.1222310Z Uploaded bytes 377487360
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.1585380Z Uploaded bytes 385875968
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.3136120Z Uploaded bytes 394264576
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.3557410Z Uploaded bytes 402653184
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.4017010Z Uploaded bytes 411041792
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.4514040Z Uploaded bytes 419430400
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.5787880Z Uploaded bytes 427819008
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.6152560Z Uploaded bytes 436207616
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.6521720Z Uploaded bytes 444596224
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.7939880Z Uploaded bytes 452984832
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:35.8851000Z Uploaded bytes 461373440
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:36.6090380Z Uploaded bytes 463994264
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:36.6829150Z Finished uploading artifact content to blob storage!
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:36.6883740Z SHA256 digest of uploaded artifact zip is 6c52d6d5b3dc18c20c290eba9a69040e76b8dd92a43cd7eea7a5d26705d263a9
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:36.6951370Z Finalizing artifact upload
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:37.1066550Z Artifact ludone-desktop-v0.1.3.zip successfully finalized. Artifact ID 10388108540
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:37.1067630Z Artifact ludone-desktop-v0.1.3 has been successfully uploaded! Final size is 463994264 bytes. Artifact ID is 10388108540
+macos	Archiv podepsaných artefaktů před publikací	2026-09-15T08:51:37.1082010Z Artifact download URL: https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34948618429/artifacts/10388108540
+macos	Publikace na stahnout.ludone.cz	﻿2026-09-15T08:51:37.1287190Z ##[group]Run set -euo pipefail
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1288300Z ^[[36;1mset -euo pipefail^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1289020Z ^[[36;1mumask 077^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1289790Z ^[[36;1mssh_dir="$RUNNER_TEMP/ludone-release-ssh"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1290710Z ^[[36;1minstall -d -m 700 "$ssh_dir"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1291550Z ^[[36;1mprivate_key="$ssh_dir/id_release"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1292460Z ^[[36;1mknown_hosts="$ssh_dir/known_hosts"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1293520Z ^[[36;1mprintf '%s\n' "$DOWNLOAD_SSH_PRIVATE_KEY" > "$private_key"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1294690Z ^[[36;1mprintf '%s\n' "$DOWNLOAD_SSH_KNOWN_HOSTS" > "$known_hosts"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1296400Z ^[[36;1mchmod 600 "$private_key" "$known_hosts"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1297310Z ^[[36;1mport="${DOWNLOAD_SSH_PORT:-22}"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1298270Z ^[[36;1mtarget="${DOWNLOAD_SSH_USER}@${DOWNLOAD_SSH_HOST}"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1299200Z ^[[36;1mssh_options=(^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1299900Z ^[[36;1m  -i "$private_key"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1300630Z ^[[36;1m  -p "$port"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1301380Z ^[[36;1m  -o BatchMode=yes^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1302120Z ^[[36;1m  -o IdentitiesOnly=yes^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1302900Z ^[[36;1m  -o StrictHostKeyChecking=yes^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1303780Z ^[[36;1m  -o "UserKnownHostsFile=$known_hosts"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1304640Z ^[[36;1m  -o LogLevel=ERROR^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1305730Z ^[[36;1m)^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1306360Z ^[[36;1mscp_options=(^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1307090Z ^[[36;1m  -i "$private_key"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1307800Z ^[[36;1m  -P "$port"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1308910Z ^[[36;1m  -o BatchMode=yes^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1309680Z ^[[36;1m  -o IdentitiesOnly=yes^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1310360Z ^[[36;1m  -o StrictHostKeyChecking=yes^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1310770Z ^[[36;1m  -o "UserKnownHostsFile=$known_hosts"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1311140Z ^[[36;1m  -o LogLevel=ERROR^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1311380Z ^[[36;1m)^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1311750Z ^[[36;1mversion="$(node -p 'require("./package.json").version')"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1312220Z ^[[36;1mfiles=(^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1313250Z ^[[36;1m  "LuDone-Desktop-${version}-arm64.dmg"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1313660Z ^[[36;1m  "LuDone-Desktop-${version}-arm64.dmg.blockmap"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1314050Z ^[[36;1m  "LuDone-Desktop-${version}-arm64.zip"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1314680Z ^[[36;1m  "LuDone-Desktop-${version}-arm64.zip.blockmap"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1315070Z ^[[36;1m  "LuDone-Desktop-${version}-x64.dmg"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1315830Z ^[[36;1m  "LuDone-Desktop-${version}-x64.dmg.blockmap"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1316230Z ^[[36;1m  "LuDone-Desktop-${version}-x64.zip"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1316620Z ^[[36;1m  "LuDone-Desktop-${version}-x64.zip.blockmap"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1317150Z ^[[36;1m  "latest-mac.yml"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1317430Z ^[[36;1m)^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1317750Z ^[[36;1mstaging_name=".incoming-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1318190Z ^[[36;1mstaging_path="${DOWNLOAD_SSH_PATH%/}/$staging_name"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1318650Z ^[[36;1mssh "${ssh_options[@]}" "$target" "mkdir -p -- '$staging_path'"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1319090Z ^[[36;1mupload_paths=()^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1319450Z ^[[36;1mfor file in "${files[@]}"; do upload_paths+=("release/$file"); done^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1319870Z ^[[36;1mupload_paths+=("release/SHA256SUMS")^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1320310Z ^[[36;1mscp "${scp_options[@]}" -- "${upload_paths[@]}" "$target:$staging_path/"^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1321230Z ^[[36;1m# Verze a blockmapy se zpřístupní první. latest-mac.yml se přesune až^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1322460Z ^[[36;1m# nakonec jedním rename, takže klient nikdy neuvidí metadata k neúplné sadě.^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1323050Z ^[[36;1mssh "${ssh_options[@]}" "$target" \^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1323610Z ^[[36;1m  "sh -s -- ${DOWNLOAD_SSH_PATH%/} $staging_name ${files[*]}" \^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1324300Z ^[[36;1m  < scripts/publish-release-remote.sh^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1325590Z ^[[36;1mecho "Publikace verze $version proběhla; latest-mac.yml byl zveřejněn jako poslední."^[[0m
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1632670Z shell: /bin/bash -e {0}
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1632950Z env:
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1633390Z   APPLE_API_KEY: /Users/runner/work/_temp/AuthKey_***.p8
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1633820Z   DOWNLOAD_SSH_HOST: data.ludone.cz
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1634810Z   DOWNLOAD_SSH_PORT: 22
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1635170Z   DOWNLOAD_SSH_USER: ludone-desktop-release
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1635610Z   DOWNLOAD_SSH_PATH: /opt/makemore-data/nginx/hub/stahnout/desktop/
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1639090Z   DOWNLOAD_SSH_PRIVATE_KEY: ***
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1646330Z   DOWNLOAD_SSH_KNOWN_HOSTS: ***
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:51:37.1646720Z ##[endgroup]
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:29.3719180Z latest-mac.yml: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:29.5589350Z LuDone-Desktop-0.1.3-arm64.dmg: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:29.5689610Z LuDone-Desktop-0.1.3-arm64.dmg.blockmap: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:29.7421240Z LuDone-Desktop-0.1.3-arm64.zip: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:29.7421910Z LuDone-Desktop-0.1.3-arm64.zip.blockmap: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:29.9921030Z LuDone-Desktop-0.1.3-x64.dmg: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:29.9922180Z LuDone-Desktop-0.1.3-x64.dmg.blockmap: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:30.1978460Z LuDone-Desktop-0.1.3-x64.zip: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:30.1983630Z LuDone-Desktop-0.1.3-x64.zip.blockmap: OK
+macos	Publikace na stahnout.ludone.cz	2026-09-15T08:52:30.2236500Z Publikace verze 0.1.3 proběhla; latest-mac.yml byl zveřejněn jako poslední.
+macos	Ověření veřejného feedu a souborů	﻿2026-09-15T08:52:30.2334010Z ##[group]Run node scripts/verify-published-release.mjs
+macos	Ověření veřejného feedu a souborů	2026-09-15T08:52:30.2334800Z ^[[36;1mnode scripts/verify-published-release.mjs^[[0m
+macos	Ověření veřejného feedu a souborů	2026-09-15T08:52:30.2477910Z shell: /bin/bash -e {0}
+macos	Ověření veřejného feedu a souborů	2026-09-15T08:52:30.2478680Z env:
+macos	Ověření veřejného feedu a souborů	2026-09-15T08:52:30.2479580Z   APPLE_API_KEY: /Users/runner/work/_temp/AuthKey_***.p8
+macos	Ověření veřejného feedu a souborů	2026-09-15T08:52:30.2480180Z ##[endgroup]
+macos	Ověření veřejného feedu a souborů	2026-09-15T08:52:36.0451050Z PASS veřejný feed: metadata verze 0.1.3 a všech osm balíčků/blockmap jsou dostupné
+macos	Post Run actions/setup-node@v4	﻿2026-09-15T08:52:36.1589490Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+macos	Post Run actions/setup-node@v4	2026-09-15T08:52:36.1590660Z Post job cleanup.
+macos	Post Run actions/setup-node@v4	2026-09-15T08:52:36.4341260Z (node:50721) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+macos	Post Run actions/setup-node@v4	2026-09-15T08:52:36.4342500Z (Use `node --trace-deprecation ...` to show where the warning was created)
+macos	Post Run actions/setup-node@v4	2026-09-15T08:52:36.4568280Z [command]/opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/ludone-desktop/ludone-desktop --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+macos	Post Run actions/setup-node@v4	2026-09-15T08:52:37.4891210Z (node:50721) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+macos	Post Run actions/setup-node@v4	2026-09-15T08:52:38.4858770Z Sent 9961472 of 46965716 (21.2%), 9.5 MBs/sec
+macos	Post Run actions/setup-node@v4	2026-09-15T08:52:39.4040200Z Sent 46965716 of 46965716 (100.0%), 23.3 MBs/sec
+macos	Post Run actions/setup-node@v4	2026-09-15T08:52:39.7140960Z Cache saved with the key: node-cache-macOS-arm64-npm-2a12b1f742931a85fd9b4c08743004f63c21e17743b46316594feeb2d72a933b
+macos	Post Run actions/checkout@v4	﻿2026-09-15T08:52:39.7289110Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.7290400Z Post job cleanup.
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.8249720Z [command]/opt/homebrew/bin/git version
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.8438830Z git version 2.55.0
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.8456920Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/24a005f7-e621-4c72-8dc0-ec9b4ea14f02/.gitconfig'
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.8463870Z Temporarily overriding HOME='/Users/runner/work/_temp/24a005f7-e621-4c72-8dc0-ec9b4ea14f02' before making global git config changes
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.8464860Z Adding repository directory to the temporary git global config as a safe directory
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.8467550Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/ludone-desktop/ludone-desktop
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.8560410Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.8611540Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.9300620Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.9348450Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.9925300Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+macos	Post Run actions/checkout@v4	2026-09-15T08:52:39.9968960Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+macos	Complete job	﻿2026-09-15T08:52:40.0780900Z Cleaning up orphan processes
+macos	Complete job	2026-09-15T08:52:41.9382780Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

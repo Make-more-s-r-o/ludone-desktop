@@ -1,6 +1,6 @@
 # Ruční ověření dashboardu nahrávek na Macu
 
-Aktuální výchozí instalace je 0.1.2; připravená oprava má verzi 0.1.3. Tento postup sám o sobě nedokládá živou funkčnost. Názvy akcí odpovídají implementovanému UI.
+Aktuální výchozí instalace je 0.1.2; vydaná oprava má verzi 0.1.3. Tento postup sám o sobě nedokládá živou funkčnost. Názvy akcí odpovídají implementovanému UI.
 
 Použij jen vlastní postradatelná testovací data. Nahraj přibližně 30 sekund syntetické řeči a systémového zvuku, nikdy schůzku ani cizí obsah. Do veřejného Gitu neukládej audio, tokeny, e-mail, plná serverová UUID, lokální cesty ani hodnoty release secrets. V protokolu použij jedinečný neškodný název a krátké ID z UI (prvních osm znaků); stejný prefix používá potvrzovací dialog.
 

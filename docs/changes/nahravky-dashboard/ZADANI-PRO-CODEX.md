@@ -1,5 +1,7 @@
 # Dashboard nahrávek — zadání pro Codex
 
+**15. 9. 2026 — vydání:** Dan výslovně pověřil koordinátora vydáním 0.1.3 (D19). Tag `v0.1.3`, podpis, notarizace a veřejná publikace jsou dokončené; aktuální [stav a důkazy](STAV.md). Živá přejímka na Macu zůstává samostatná.
+
 **Pro koho:** externí vývojář (Codex / GPT) pracující **jen na téhle desktopové aplikaci**.
 **Repo:** `Make-more-s-r-o/ludone-desktop`, větev `main`. 🔴 **Repo je VEŘEJNÉ** — cokoli sem
 napíšeš, je veřejné okamžitě a nevratně.

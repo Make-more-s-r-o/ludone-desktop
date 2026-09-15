@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-15T08:39:16.601Z",
+    "updatedAt": "2026-09-15T08:58:02.678Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -32,7 +32,7 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
+      "nextStep": "Verze 0.1.3 je veřejně vydaná. Na Macu po vydání zatím 0.1.2; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -44,7 +44,7 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
+      "nextStep": "Verze 0.1.3 je veřejně vydaná. Na Macu po vydání zatím 0.1.2; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -56,7 +56,7 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
+      "nextStep": "Verze 0.1.3 je veřejně vydaná. Na Macu po vydání zatím 0.1.2; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -68,7 +68,7 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
+      "nextStep": "Verze 0.1.3 je veřejně vydaná. Na Macu po vydání zatím 0.1.2; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -80,7 +80,7 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
+      "nextStep": "Verze 0.1.3 je veřejně vydaná. Na Macu po vydání zatím 0.1.2; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -92,11 +92,12 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Oprava retry sloučená v PR #142 pro 0.1.3, čistý klon a CI zelené. Čeká publikace tagu a výslovné retry jedné testovací nahrávky na Macu.",
+      "nextStep": "Oprava retry je veřejně vydaná v 0.1.3. Po aktualizaci Macu uložit správnou firmu a výslovně zopakovat jednu vlastní testovací nahrávku; ověřit stav na serveru.",
       "evidence": [
         "EV3",
         "EV4",
-        "EV5"
+        "EV5",
+        "EV6"
       ]
     },
     {
@@ -108,7 +109,7 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
+      "nextStep": "Verze 0.1.3 je veřejně vydaná. Na Macu po vydání zatím 0.1.2; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -120,10 +121,11 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "0.1.3 sloučená v PR #142, čistý klon1515PASS a GitHub CI zelené. Tag si vyhradil Dan; publikační přístup je připravený. Nové chování se naostro ověří při další aktualizaci z 0.1.3.",
+      "nextStep": "0.1.3 vydaná: podpis, notarizace a veřejné HTTPS ověřené. Na Macu zatím 0.1.2; čeká skutečná instalace. Nový souhlas a oznámení se naostro ověří při další aktualizaci z 0.1.3.",
       "evidence": [
         "EV4",
-        "EV5"
+        "EV5",
+        "EV6"
       ]
     }
   ],
@@ -391,9 +393,57 @@
       "value": "0.1.3 sloučená v c1ca930; CI 34947710670 na finálním PR 37f54e8 success. Tag a živý Mac čekají.",
       "ref": "c1ca930",
       "href": "https://github.com/Make-more-s-r-o/ludone-desktop/pull/142"
+    },
+    {
+      "id": "EV6",
+      "kind": "deploy",
+      "label": "0.1.3 podepsaná a veřejně vydaná",
+      "value": "Tag v0.1.3 na 28a6563; release 34948618429 success. Nezávislé HTTPS: feed a poznámky správné, všech osm souborů HTTP 200. Instalace a živý upload neověřené.",
+      "ref": "28a6563",
+      "href": "../../../../dukazy/vydani-0.1.3-2026-09-15/REPORT.md"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-15T08:58:02.678Z",
+      "text": "Funkce NRD-07 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:58:02.377Z",
+      "text": "Funkce NRD-05 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:58:02.064Z",
+      "text": "Funkce NRD-04 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:58:01.742Z",
+      "text": "Funkce NRD-03 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:58:01.390Z",
+      "text": "Funkce NRD-02 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:58:01.064Z",
+      "text": "Funkce NRD-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:57:17.743Z",
+      "text": "Dan výslovně pověřil vydáním 0.1.3. Tag publikován, podepsání/notarizace obou architektur i veřejné instalačky a metadata ověřené. Žádný publikační blokátor nezůstal; čeká pouze skutečný průchod na Macu."
+    },
+    {
+      "at": "2026-09-15T08:57:17.142Z",
+      "text": "Funkce NRD-08 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:57:16.729Z",
+      "text": "Funkce NRD-06 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:57:15.910Z",
+      "text": "Byl přidán důkaz EV6: 0.1.3 podepsaná a veřejně vydaná."
+    },
     {
       "at": "2026-09-15T08:39:16.601Z",
       "text": "Funkce NRD-08 byla aktualizována."
