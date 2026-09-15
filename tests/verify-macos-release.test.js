@@ -65,15 +65,16 @@ function successfulCommandRunner() {
     }
     return "";
   });
-  return { calls, run };
+  const verifyEncoder = vi.fn(async (...arguments_) => arguments_.length);
+  return { calls, run, verifyEncoder };
 }
 
 describe("ověření podepsaného macOS releasu", () => {
   it("mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP", async () => {
     const root = await releaseFixture();
-    const { calls, run } = successfulCommandRunner();
+    const { calls, run, verifyEncoder } = successfulCommandRunner();
 
-    await verifyMacRelease(root, { platform: "darwin", run });
+    await verifyMacRelease(root, { platform: "darwin", run, verifyEncoder });
 
     const attaches = calls.filter(({ command, arguments_ }) => command === "hdiutil" && arguments_[0] === "attach");
     expect(attaches).toHaveLength(2);
@@ -85,11 +86,13 @@ describe("ověření podepsaného macOS releasu", () => {
       .map(({ arguments_ }) => arguments_.at(-1));
     expect(stapledTargets).toHaveLength(4);
     expect(stapledTargets.every((target) => target.endsWith("LuDone Desktop.app"))).toBe(true);
+    expect(verifyEncoder).toHaveBeenCalledTimes(4);
+    expect(verifyEncoder.mock.calls.map(([, arch]) => arch)).toEqual(["arm64", "x64", "arm64", "x64"]);
   });
 
   it("odpojí DMG a uklidí mount i při selhání kontroly aplikace", async () => {
     const root = await releaseFixture();
-    const { calls, run: baseRun } = successfulCommandRunner();
+    const { calls, run: baseRun, verifyEncoder } = successfulCommandRunner();
     const run = vi.fn((command, arguments_) => {
       if (command === "codesign" && arguments_[0] === "--verify") throw new Error("vadný podpis");
       return baseRun(command, arguments_);
@@ -100,7 +103,9 @@ describe("ověření podepsaného macOS releasu", () => {
       await rm(target, options);
     });
 
-    await expect(verifyMacRelease(root, { platform: "darwin", remove, run })).rejects.toThrow("vadný podpis");
+    await expect(verifyMacRelease(root, {
+      platform: "darwin", remove, run, verifyEncoder,
+    })).rejects.toThrow("vadný podpis");
 
     expect(calls.some(({ command, arguments_ }) => command === "hdiutil" && arguments_[0] === "detach")).toBe(true);
     expect(removed.some((target) => target.includes("ludone-release-dmg-"))).toBe(true);

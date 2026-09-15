@@ -1,0 +1,4 @@
+$ node scripts/prepare-media-encoder.mjs --check --arch all
+[encoder] FAIL: Zdrojový bundle obsahuje zastaralý prepare-media-encoder.mjs
+
+EXIT_CODE=1

@@ -1,0 +1,21 @@
+Media encoder: licenční oznámení
+================================
+
+FFmpeg 6.1.6 je v tomto sestavení šířen pod GNU Lesser General Public License,
+verze 2.1 nebo novější. LAME 3.100 je šířen pod GNU Lesser General Public
+License, verze 2.0 nebo novější.
+
+Úplné a odpovídající zdrojové kódy jsou přiloženy v adresáři `sources/`:
+
+- ffmpeg-6.1.6.tar.xz (obsahuje COPYING.LGPLv2.1),
+- lame-3.100.tar.gz (obsahuje COPYING),
+- prepare-media-encoder.mjs a media-encoder-lock.json.
+
+Copyright přísluší jednotlivým autorům FFmpeg a LAME. LuDone Desktop oba
+projekty neupravuje; build skript pouze vybírá potřebné komponenty. Znění licencí,
+copyright notices a informace o autorech jsou zachovány v přiložených původních
+zdrojových archivech.
+
+Zdrojové projekty:
+https://ffmpeg.org/
+https://lame.sourceforge.io/

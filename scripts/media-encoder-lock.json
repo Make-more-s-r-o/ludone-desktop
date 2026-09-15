@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "deploymentTarget": "12.0",
+  "ffmpeg": {
+    "version": "6.1.6",
+    "url": "https://ffmpeg.org/releases/ffmpeg-6.1.6.tar.xz",
+    "sha256": "d4fcb164028dd3beee5d92c0ac72e46aac6973c75ea12dc14de07bf8f407370a",
+    "license": "LGPL-2.1-or-later"
+  },
+  "lame": {
+    "version": "3.100",
+    "url": "https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz",
+    "sha256": "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e",
+    "license": "LGPL-2.0-or-later"
+  }
+}

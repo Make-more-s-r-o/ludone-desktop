@@ -1,12 +1,16 @@
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, lstat, mkdtemp, readFile, rm } from "node:fs/promises";
+import { constants } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expectedReleaseFileNames, validateReleaseArtifacts } from "./release-artifacts.mjs";
+import { machOCanonicalSha256 } from "./prepare-media-encoder.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packageManifest = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
+const encoderLock = JSON.parse(await readFile(path.join(projectRoot, "scripts", "media-encoder-lock.json"), "utf8"));
 
 export function runCommand(command, arguments_) {
   const result = spawnSync(command, arguments_, { encoding: "utf8" });
@@ -20,7 +24,93 @@ function plistValue(appPath, key, run) {
   return run("plutil", ["-extract", key, "raw", "-o", "-", path.join(appPath, "Contents", "Info.plist")]);
 }
 
-function verifyApp(appPath, expectedArch, run) {
+function teamIdentifier(signature, label) {
+  const match = signature.match(/(?:^|\n)TeamIdentifier=(\S+)/);
+  if (!match) throw new Error(`${label} nemá TeamIdentifier`);
+  return match[1];
+}
+
+async function fileDigest(filePath) {
+  return createHash("sha256").update(await readFile(filePath)).digest("hex");
+}
+
+async function regularExecutable(filePath) {
+  const info = await lstat(filePath);
+  if (!info.isFile() || info.isSymbolicLink() || (info.mode & 0o111) === 0) {
+    throw new Error("Přibalený media encoder není spustitelný běžný soubor");
+  }
+  await access(filePath, constants.X_OK);
+}
+
+export async function verifyBundledEncoder(appPath, expectedArch, appTeam, run = runCommand) {
+  const resources = path.join(appPath, "Contents", "Resources", "media-encoder");
+  const executable = path.join(resources, "ffmpeg");
+  await regularExecutable(executable);
+  const expectedMachArch = expectedArch === "x64" ? "x86_64" : expectedArch;
+  const architectures = run("lipo", ["-archs", executable]).split(/\s+/);
+  if (architectures.length !== 1 || architectures[0] !== expectedMachArch) {
+    throw new Error(`Media encoder obsahuje architektury ${architectures.join(", ")}, očekáváno ${expectedMachArch}`);
+  }
+  const build = JSON.parse(await readFile(path.join(resources, "BUILD.json"), "utf8"));
+  if (build.arch !== expectedArch
+    || build.ffmpeg?.version !== encoderLock.ffmpeg.version
+    || build.ffmpeg?.sha256 !== encoderLock.ffmpeg.sha256
+    || build.lame?.version !== encoderLock.lame.version
+    || build.lame?.sha256 !== encoderLock.lame.sha256) {
+    throw new Error("BUILD.json media encoderu neodpovídá připnutým zdrojům a architektuře");
+  }
+  if (build.machOCanonicalSha256 !== await machOCanonicalSha256(executable)) {
+    throw new Error("Kanonický Mach-O SHA-256 přibaleného media encoderu nesouhlasí s BUILD.json");
+  }
+  const configure = Array.isArray(build.configureArguments) ? build.configureArguments : [];
+  for (const required of [
+    "--disable-autodetect",
+    "--disable-everything",
+    "--enable-libmp3lame",
+    "--enable-decoder=opus",
+    "--enable-encoder=libmp3lame",
+  ]) {
+    if (!configure.includes(required)) throw new Error(`BUILD.json postrádá povinnou volbu ${required}`);
+  }
+  if (configure.some((value) => ["--enable-gpl", "--enable-nonfree", "--enable-version3"].includes(value))) {
+    throw new Error("Media encoder má nepovolenou licenční konfiguraci");
+  }
+  const packagedLock = JSON.parse(await readFile(path.join(resources, "media-encoder-lock.json"), "utf8"));
+  if (JSON.stringify(packagedLock) !== JSON.stringify(encoderLock)) {
+    throw new Error("Přibalený media-encoder-lock.json nesouhlasí s releasem");
+  }
+  for (const dependency of [encoderLock.ffmpeg, encoderLock.lame]) {
+    const archiveName = path.basename(new URL(dependency.url).pathname);
+    const archivePath = path.join(resources, "sources", archiveName);
+    if (await fileDigest(archivePath) !== dependency.sha256) {
+      throw new Error(`${archiveName} v přiložených zdrojích má nesprávný SHA-256`);
+    }
+  }
+  for (const notice of ["README.md", "LICENSE.txt"]) {
+    const info = await lstat(path.join(resources, notice));
+    if (!info.isFile() || info.isSymbolicLink() || info.size <= 0) {
+      throw new Error(`Media encoder postrádá ${notice}`);
+    }
+  }
+  run("codesign", ["--verify", "--strict", "--verbose=2", executable]);
+  const encoderSignature = run("codesign", ["--display", "--verbose=4", executable]);
+  if (!encoderSignature.includes("Authority=Developer ID Application:")
+    || teamIdentifier(encoderSignature, "Media encoder") !== appTeam) {
+    throw new Error("Media encoder nemá Developer ID podpis stejného týmu jako aplikace");
+  }
+  const libraries = run("otool", ["-L", executable]).split(/\r?\n/).slice(1).map((line) => line.trim().split(/\s+/)[0]).filter(Boolean);
+  const foreign = libraries.filter((library) => !library.startsWith("/usr/lib/")
+    && !library.startsWith("/System/Library/Frameworks/"));
+  if (foreign.length > 0) throw new Error(`Media encoder odkazuje na cizí dynamické knihovny: ${foreign.join(", ")}`);
+  if ((expectedArch === "x64" ? process.arch === "x64" : process.arch === "arm64")) {
+    const version = run(executable, ["-version"]).split(/\r?\n/, 1)[0];
+    if (!version.startsWith(`ffmpeg version ${encoderLock.ffmpeg.version}`)) {
+      throw new Error(`Media encoder hlásí jinou verzi: ${version}`);
+    }
+  }
+}
+
+async function verifyApp(appPath, expectedArch, run, verifyEncoder) {
   if (plistValue(appPath, "CFBundleIdentifier", run) !== packageManifest.build.appId) {
     throw new Error(`${path.basename(appPath)} obsahuje jiné bundle id`);
   }
@@ -38,28 +128,31 @@ function verifyApp(appPath, expectedArch, run) {
   if (!signature.includes("Authority=Developer ID Application:") || !/TeamIdentifier=\S+/.test(signature)) {
     throw new Error(`${path.basename(appPath)} nemá podpis Developer ID Application`);
   }
+  if (verifyEncoder) {
+    await verifyEncoder(appPath, expectedArch, teamIdentifier(signature, path.basename(appPath)), run);
+  }
   run("xcrun", ["stapler", "validate", appPath]);
   run("spctl", ["--assess", "--type", "exec", "--verbose=2", appPath]);
 }
 
-async function verifyZip(zipPath, expectedArch, { makeTemp, remove, run }) {
+async function verifyZip(zipPath, expectedArch, { makeTemp, remove, run, verifyEncoder }) {
   const extractionRoot = await makeTemp(path.join(tmpdir(), "ludone-release-zip-"));
   try {
     run("ditto", ["-x", "-k", zipPath, extractionRoot]);
-    verifyApp(path.join(extractionRoot, `${packageManifest.build.productName}.app`), expectedArch, run);
+    await verifyApp(path.join(extractionRoot, `${packageManifest.build.productName}.app`), expectedArch, run, verifyEncoder);
   } finally {
     await remove(extractionRoot, { recursive: true, force: true });
   }
 }
 
-async function verifyDmg(dmgPath, expectedArch, { makeTemp, remove, run }) {
+async function verifyDmg(dmgPath, expectedArch, { makeTemp, remove, run, verifyEncoder }) {
   const mountPoint = await makeTemp(path.join(tmpdir(), "ludone-release-dmg-"));
   let attached = false;
   try {
     run("hdiutil", ["verify", dmgPath]);
     run("hdiutil", ["attach", "-readonly", "-nobrowse", "-mountpoint", mountPoint, dmgPath]);
     attached = true;
-    verifyApp(path.join(mountPoint, `${packageManifest.build.productName}.app`), expectedArch, run);
+    await verifyApp(path.join(mountPoint, `${packageManifest.build.productName}.app`), expectedArch, run, verifyEncoder);
   } finally {
     try {
       if (attached) run("hdiutil", ["detach", mountPoint]);
@@ -76,6 +169,7 @@ export async function verifyMacRelease(directory, dependencies = {}) {
     makeTemp: dependencies.makeTemp ?? mkdtemp,
     remove: dependencies.remove ?? rm,
     run: dependencies.run ?? runCommand,
+    verifyEncoder: dependencies.verifyEncoder ?? verifyBundledEncoder,
   };
   await validateReleaseArtifacts(directory);
   const expected = expectedReleaseFileNames();

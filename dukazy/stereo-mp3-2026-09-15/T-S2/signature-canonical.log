@@ -1,0 +1,9 @@
+PASS arm64: compiler full SHA-256 ověřen proti BUILD=4d302172b6656621b360728c98ae4eba20fc11ba8c1b13bf7b4140894968c8fc
+PASS arm64: prepared ad-hoc full SHA-256=59dbca4bfd4a6bcdfaa9d2ea8a2b86492b52f79d2a450b5ca364dd3ae69cc6a0
+PASS arm64: re-signed full SHA-256=d0a627faaf475d52c43c9e2347d12253016fd31b5c1cdaabd480a648b81df1fe (odlišný)
+PASS arm64: canonical SHA-256=b1ef1b3c937c0a8dca3b53c576b38822054a547aa12c32494aa2b4aac5a843ff (před/po podpisu shodný)
+PASS x64: compiler full SHA-256 ověřen proti BUILD=171444f4907a3778dbdc89e6a5808355aa232c353a58628ca96247a7972a6327
+PASS x64: prepared ad-hoc full SHA-256=785ad301b3a054c8eb376d96b406a679711f02bdb10202daecb9c53d8805067b
+PASS x64: re-signed full SHA-256=82bb1bba6bab934416ff0f40ea32d58eb4b2e93f4b23eb669db791444e6dc4b8 (odlišný)
+PASS x64: canonical SHA-256=27c761be2b025c65da6b0dfc5a37b6499c5ce216400f329f8da944370fcf6fb5 (před/po podpisu shodný)
+EXIT_CODE=0

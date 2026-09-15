@@ -194,5 +194,18 @@ describe("kontrakt electron-builderu", () => {
     expect(config.files).toContain("src/pisma/**/*");
     expect(config.files.some((pattern) => /^(tests|docs|design)(?:\/|$)/.test(pattern))).toBe(false);
     expect(config.files).not.toContain("**/*");
+    expect(config.extraResources).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        from: ".runtime/media-encoder/ffmpeg-6.1.6/darwin-${arch}/ffmpeg",
+        to: "media-encoder/ffmpeg",
+      }),
+      expect.objectContaining({ to: "media-encoder/sources" }),
+      expect.objectContaining({
+        from: "build/media-encoder",
+        to: "media-encoder",
+        filter: expect.arrayContaining(["LICENSE.txt"]),
+      }),
+    ]));
+    expect(config.mac.binaries).toContain("Contents/Resources/media-encoder/ffmpeg");
   });
 });
