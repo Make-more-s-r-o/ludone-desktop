@@ -210,6 +210,9 @@ contextBridge.exposeInMainWorld("ludone", {
   },
   onAuthSessionChanged,
   getUpdateStatus: () => ipcRenderer.invoke("updater:get-state"),
+  checkForUpdates: () => ipcRenderer.invoke("updater:check-now"),
+  installUpdate: () => ipcRenderer.invoke("updater:install"),
+  deferUpdate: () => ipcRenderer.invoke("updater:defer"),
   onUpdateStatusChanged: (callback) => {
     if (typeof callback !== "function") {
       throw new TypeError("Odběratel stavu aktualizací musí být funkce");

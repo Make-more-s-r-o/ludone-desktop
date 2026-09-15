@@ -380,8 +380,11 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "tray:get-state",
       "tray:report-facts",
       "tray-space-warning:enable-dock",
+      "updater:check-now",
+      "updater:defer",
       // Nové čtení stavu; odmítnutí cizího rámu i payloadu měří queue-wiring.test.js.
       "updater:get-state",
+      "updater:install",
       "upload-companies:list",
       "upload-companies:select",
     ].sort());

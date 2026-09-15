@@ -548,6 +548,52 @@ svg {
   white-space: normal;
 }
 
+.application-update-status__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.application-update-status__actions .idle-feature-row__action:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
+.application-update-status__later,
+.application-update-status__check {
+  border: 0;
+  background: transparent;
+  color: var(--panel-subtle);
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.application-update-status__later:hover,
+.application-update-status__check:not(:disabled):hover {
+  color: var(--panel-text);
+}
+
+.application-update-status__manual {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 2px 4px 0;
+}
+
+.application-update-status__manual small {
+  color: var(--panel-subtle);
+  font-size: 10px;
+}
+
+.application-update-status__check:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 .idle-feature-row__notice--error {
   color: var(--panel-bad) !important;
 }

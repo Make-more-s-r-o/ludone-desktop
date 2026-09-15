@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AuthErrorScreen } from "./AuthErrorScreen.jsx";
-import { ApplicationVersion } from "./ApplicationUpdateStatus.jsx";
+import { ApplicationUpdateStatus, ApplicationVersion } from "./ApplicationUpdateStatus.jsx";
 import { RecordingTestStep } from "./RecordingTestStep.jsx";
 import { createStereoLevelSession } from "../lib/audio-levels.js";
 import { MICROPHONE_ONLY_TEXT } from "../features/recording/recording-copy.js";
@@ -440,6 +440,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
           {!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}
         </div>
       </div>
+      <ApplicationUpdateStatus showVersion={false} />
 
       {!reauthenticate && (
         <div className="step-track" aria-label={`Krok ${step + 1} z ${STEPS.length}`}>
