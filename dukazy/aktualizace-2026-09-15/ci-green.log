@@ -1,0 +1,540 @@
+gates	Set up job	﻿2026-09-15T08:34:33.8583372Z Current runner version: '2.337.0'
+gates	Set up job	2026-09-15T08:34:33.8619388Z ##[group]Runner Image Provisioner
+gates	Set up job	2026-09-15T08:34:33.8620772Z Hosted Compute Agent
+gates	Set up job	2026-09-15T08:34:33.8621879Z Version: 20260828.587
+gates	Set up job	2026-09-15T08:34:33.8623050Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+gates	Set up job	2026-09-15T08:34:33.8624288Z Build Date: 2026-08-28T16:44:25Z
+gates	Set up job	2026-09-15T08:34:33.8625821Z Worker ID: {1a87d3ae-1daa-49f5-9175-90014c807a6b}
+gates	Set up job	2026-09-15T08:34:33.8627063Z Azure Region: eastus
+gates	Set up job	2026-09-15T08:34:33.8628010Z ##[endgroup]
+gates	Set up job	2026-09-15T08:34:33.8630406Z ##[group]Operating System
+gates	Set up job	2026-09-15T08:34:33.8631435Z Ubuntu
+gates	Set up job	2026-09-15T08:34:33.8632380Z 24.04.5
+gates	Set up job	2026-09-15T08:34:33.8633271Z LTS
+gates	Set up job	2026-09-15T08:34:33.8634127Z ##[endgroup]
+gates	Set up job	2026-09-15T08:34:33.8635457Z ##[group]Runner Image
+gates	Set up job	2026-09-15T08:34:33.8636595Z Image: ubuntu-24.04
+gates	Set up job	2026-09-15T08:34:33.8637579Z Version: 20260907.300.1
+gates	Set up job	2026-09-15T08:34:33.8639391Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260907.300/images/ubuntu/Ubuntu2404-Readme.md
+gates	Set up job	2026-09-15T08:34:33.8642440Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260907.300
+gates	Set up job	2026-09-15T08:34:33.8644087Z ##[endgroup]
+gates	Set up job	2026-09-15T08:34:33.8646209Z ##[group]GITHUB_TOKEN Permissions
+gates	Set up job	2026-09-15T08:34:33.8649127Z Contents: read
+gates	Set up job	2026-09-15T08:34:33.8650424Z Metadata: read
+gates	Set up job	2026-09-15T08:34:33.8651412Z ##[endgroup]
+gates	Set up job	2026-09-15T08:34:33.8654478Z Secret source: Actions
+gates	Set up job	2026-09-15T08:34:33.8656325Z Cache mode: write
+gates	Set up job	2026-09-15T08:34:33.8657605Z Prepare workflow directory
+gates	Set up job	2026-09-15T08:34:33.9132696Z Prepare all required actions
+gates	Set up job	2026-09-15T08:34:33.9204184Z Getting action download info
+gates	Set up job	2026-09-15T08:34:34.1397654Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+gates	Set up job	2026-09-15T08:34:34.2567120Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+gates	Set up job	2026-09-15T08:34:34.4561678Z Complete job name: gates
+gates	Run actions/checkout@v4	﻿2026-09-15T08:34:34.5342871Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5351745Z ##[group]Run actions/checkout@v4
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5352517Z with:
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5353018Z   repository: Make-more-s-r-o/ludone-desktop
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5357265Z   token: ***
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5357713Z   ssh-strict: true
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5358156Z   ssh-user: git
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5358618Z   persist-credentials: true
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5359115Z   clean: true
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5359563Z   sparse-checkout-cone-mode: true
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5360089Z   fetch-depth: 1
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5360529Z   fetch-tags: false
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5360970Z   show-progress: true
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5361420Z   lfs: false
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5361842Z   submodules: false
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5362337Z   set-safe-directory: true
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5362852Z   allow-unsafe-pr-checkout: false
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.5363797Z ##[endgroup]
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6366467Z Syncing repository: Make-more-s-r-o/ludone-desktop
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6369249Z ##[group]Getting Git version info
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6370521Z Working directory is '/home/runner/work/ludone-desktop/ludone-desktop'
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6372324Z [command]/usr/bin/git version
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6422259Z git version 2.55.0
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6444978Z ##[endgroup]
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6460126Z Temporarily overriding HOME='/home/runner/work/_temp/524e0c09-a4bb-47e0-88ce-8dbfc750cb4e' before making global git config changes
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6462524Z Adding repository directory to the temporary git global config as a safe directory
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6465619Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ludone-desktop/ludone-desktop
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6518051Z Deleting the contents of '/home/runner/work/ludone-desktop/ludone-desktop'
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6523095Z ##[group]Initializing the repository
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6527763Z [command]/usr/bin/git init /home/runner/work/ludone-desktop/ludone-desktop
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6624610Z hint: Using 'master' as the name for the initial branch. This default branch name
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6629177Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6630700Z hint: to use in all of your new repositories, which will suppress this warning,
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6631974Z hint: call:
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6632692Z hint:
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6633561Z hint: 	git config --global init.defaultBranch <name>
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6634544Z hint:
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6635705Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6637249Z hint: 'development'. The just-created branch can be renamed via this command:
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6638520Z hint:
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6639176Z hint: 	git branch -m <name>
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6639969Z hint:
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6641012Z hint: Disable this message with "git config set advice.defaultBranchName false"
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6642769Z Initialized empty Git repository in /home/runner/work/ludone-desktop/ludone-desktop/.git/
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6644649Z [command]/usr/bin/git remote add origin https://github.com/Make-more-s-r-o/ludone-desktop
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6688365Z ##[endgroup]
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6689369Z ##[group]Disabling automatic garbage collection
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6692883Z [command]/usr/bin/git config --local gc.auto 0
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6725012Z ##[endgroup]
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6726300Z ##[group]Setting up auth
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6733972Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.6771849Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.7135548Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.7176886Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.7437223Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.7473329Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.7697424Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.7736830Z ##[endgroup]
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.7737781Z ##[group]Fetching the repository
+gates	Run actions/checkout@v4	2026-09-15T08:34:34.7747022Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +925cc92a4a77e513fef33142877edf65f490e7dc:refs/remotes/pull/142/merge
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8117796Z From https://github.com/Make-more-s-r-o/ludone-desktop
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8121759Z  * [new ref]         925cc92a4a77e513fef33142877edf65f490e7dc -> pull/142/merge
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8128985Z ##[endgroup]
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8131581Z ##[group]Determining the checkout info
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8134405Z ##[endgroup]
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8136414Z [command]/usr/bin/git sparse-checkout disable
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8192833Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8225397Z ##[group]Checking out the ref
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8227605Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/142/merge
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8879070Z Note: switching to 'refs/remotes/pull/142/merge'.
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8880975Z 
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8882276Z You are in 'detached HEAD' state. You can look around, make experimental
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8885038Z changes and commit them, and you can discard any commits you make in this
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8887743Z state without impacting any branches by switching back to a branch.
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8889112Z 
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8889812Z If you want to create a new branch to retain commits you create, you may
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8891395Z do so (now or later) by using -c with the switch command. Example:
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8892327Z 
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8892719Z   git switch -c <new-branch-name>
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8893461Z 
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8894011Z Or undo this operation with:
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8895014Z 
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8895895Z   git switch -
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8896770Z 
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8897744Z Turn off this advice by setting config variable advice.detachedHead to false
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8899092Z 
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8900648Z HEAD is now at 925cc92 Merge 37f54e884da0b942a1f424741b98a0fa58db4d0e into f789f49159cb5e8365aff4e09f9e710cc5170ce3
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8906243Z ##[endgroup]
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8940474Z [command]/usr/bin/git log -1 --format=%H
+gates	Run actions/checkout@v4	2026-09-15T08:34:35.8968423Z 925cc92a4a77e513fef33142877edf65f490e7dc
+gates	Run actions/setup-node@v4	﻿2026-09-15T08:34:35.9443399Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+gates	Run actions/setup-node@v4	2026-09-15T08:34:35.9449903Z ##[group]Run actions/setup-node@v4
+gates	Run actions/setup-node@v4	2026-09-15T08:34:35.9451095Z with:
+gates	Run actions/setup-node@v4	2026-09-15T08:34:35.9451968Z   node-version: 22
+gates	Run actions/setup-node@v4	2026-09-15T08:34:35.9452902Z   cache: npm
+gates	Run actions/setup-node@v4	2026-09-15T08:34:35.9453819Z   always-auth: false
+gates	Run actions/setup-node@v4	2026-09-15T08:34:35.9454797Z   check-latest: false
+gates	Run actions/setup-node@v4	2026-09-15T08:34:35.9465581Z   token: ***
+gates	Run actions/setup-node@v4	2026-09-15T08:34:35.9466502Z ##[endgroup]
+gates	Run actions/setup-node@v4	2026-09-15T08:34:36.0987001Z Found in cache @ /opt/hostedtoolcache/node/22.23.2/x64
+gates	Run actions/setup-node@v4	2026-09-15T08:34:36.0991438Z (node:2188) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+gates	Run actions/setup-node@v4	2026-09-15T08:34:36.0996492Z (Use `node --trace-deprecation ...` to show where the warning was created)
+gates	Run actions/setup-node@v4	2026-09-15T08:34:36.1000692Z ##[group]Environment details
+gates	Run actions/setup-node@v4	2026-09-15T08:34:37.9260758Z node: v22.23.2
+gates	Run actions/setup-node@v4	2026-09-15T08:34:37.9261241Z npm: 10.9.8
+gates	Run actions/setup-node@v4	2026-09-15T08:34:37.9261501Z yarn: 1.22.22
+gates	Run actions/setup-node@v4	2026-09-15T08:34:37.9262711Z ##[endgroup]
+gates	Run actions/setup-node@v4	2026-09-15T08:34:37.9291043Z [command]/opt/hostedtoolcache/node/22.23.2/x64/bin/npm config get cache
+gates	Run actions/setup-node@v4	2026-09-15T08:34:38.1725769Z /home/runner/.npm
+gates	Run actions/setup-node@v4	2026-09-15T08:34:38.2485335Z npm cache is not found
+gates	Run npm ci	﻿2026-09-15T08:34:38.2638714Z ##[group]Run npm ci
+gates	Run npm ci	2026-09-15T08:34:38.2639085Z ^[[36;1mnpm ci^[[0m
+gates	Run npm ci	2026-09-15T08:34:38.2686558Z shell: /usr/bin/bash -e {0}
+gates	Run npm ci	2026-09-15T08:34:38.2686912Z ##[endgroup]
+gates	Run npm ci	2026-09-15T08:34:40.9594940Z npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+gates	Run npm ci	2026-09-15T08:34:41.3050201Z npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+gates	Run npm ci	2026-09-15T08:34:41.3896873Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+gates	Run npm ci	2026-09-15T08:34:42.4204928Z npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+gates	Run npm ci	2026-09-15T08:34:42.5526413Z npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+gates	Run npm ci	2026-09-15T08:34:42.5737692Z npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+gates	Run npm ci	2026-09-15T08:34:43.7693142Z npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+gates	Run npm ci	2026-09-15T08:34:45.1039387Z npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+gates	Run npm ci	2026-09-15T08:34:48.1452423Z 
+gates	Run npm ci	2026-09-15T08:34:48.1453650Z added 526 packages, and audited 527 packages in 10s
+gates	Run npm ci	2026-09-15T08:34:48.1454681Z 
+gates	Run npm ci	2026-09-15T08:34:48.1455499Z 98 packages are looking for funding
+gates	Run npm ci	2026-09-15T08:34:48.1456340Z   run `npm fund` for details
+gates	Run npm ci	2026-09-15T08:34:48.1711034Z 
+gates	Run npm ci	2026-09-15T08:34:48.1712123Z 5 vulnerabilities (3 moderate, 2 high)
+gates	Run npm ci	2026-09-15T08:34:48.1712860Z 
+gates	Run npm ci	2026-09-15T08:34:48.1713633Z To address all issues (including breaking changes), run:
+gates	Run npm ci	2026-09-15T08:34:48.1714795Z   npm audit fix --force
+gates	Run npm ci	2026-09-15T08:34:48.1715772Z 
+gates	Run npm ci	2026-09-15T08:34:48.1716106Z Run `npm audit` for details.
+gates	Run npm run gates	﻿2026-09-15T08:34:48.2284611Z ##[group]Run npm run gates
+gates	Run npm run gates	2026-09-15T08:34:48.2284929Z ^[[36;1mnpm run gates^[[0m
+gates	Run npm run gates	2026-09-15T08:34:48.2323384Z shell: /usr/bin/bash -e {0}
+gates	Run npm run gates	2026-09-15T08:34:48.2323658Z ##[endgroup]
+gates	Run npm run gates	2026-09-15T08:34:48.3345453Z 
+gates	Run npm run gates	2026-09-15T08:34:48.3346272Z > ludone-desktop-prototype@0.1.3 gates
+gates	Run npm run gates	2026-09-15T08:34:48.3347473Z > npm run lint && npm run typecheck && npm run test:unit && npm run preskocene
+gates	Run npm run gates	2026-09-15T08:34:48.3347970Z 
+gates	Run npm run gates	2026-09-15T08:34:48.4290118Z 
+gates	Run npm run gates	2026-09-15T08:34:48.4290822Z > ludone-desktop-prototype@0.1.3 lint
+gates	Run npm run gates	2026-09-15T08:34:48.4291397Z > eslint .
+gates	Run npm run gates	2026-09-15T08:34:48.4291615Z 
+gates	Run npm run gates	2026-09-15T08:34:51.5983056Z 
+gates	Run npm run gates	2026-09-15T08:34:51.5983821Z > ludone-desktop-prototype@0.1.3 typecheck
+gates	Run npm run gates	2026-09-15T08:34:51.5984505Z > tsc --noEmit -p jsconfig.json
+gates	Run npm run gates	2026-09-15T08:34:51.5984752Z 
+gates	Run npm run gates	2026-09-15T08:34:52.3059782Z 
+gates	Run npm run gates	2026-09-15T08:34:52.3060573Z > ludone-desktop-prototype@0.1.3 test:unit
+gates	Run npm run gates	2026-09-15T08:34:52.3061183Z > vitest run
+gates	Run npm run gates	2026-09-15T08:34:52.3061364Z 
+gates	Run npm run gates	2026-09-15T08:34:52.6171391Z 
+gates	Run npm run gates	2026-09-15T08:34:52.6173936Z ^[[1m^[[46m RUN ^[[49m^[[22m ^[[36mv3.2.7 ^[[39m^[[90m/home/runner/work/ludone-desktop/ludone-desktop^[[39m
+gates	Run npm run gates	2026-09-15T08:34:52.6174925Z 
+gates	Run npm run gates	2026-09-15T08:34:54.1784369Z  ^[[32m✓^[[39m tests/queue.test.js ^[[2m(^[[22m^[[2m134 tests^[[22m^[[2m)^[[22m^[[33m 699^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:34:54.2228488Z  ^[[32m✓^[[39m tests/upload-client.test.js ^[[2m(^[[22m^[[2m77 tests^[[22m^[[2m)^[[22m^[[33m 789^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:34:55.6996730Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mzjištění uložené OAuth session^[[2m > ^[[22m^[[2mnový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů
+gates	Run npm run gates	2026-09-15T08:34:55.6998968Z ^[[22m^[[39m[auth] Obnova relace selhala: reason=refresh-failed
+gates	Run npm run gates	2026-09-15T08:34:55.7000053Z 
+gates	Run npm run gates	2026-09-15T08:34:56.0026742Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mzjištění uložené OAuth session^[[2m > ^[[22m^[[2mvypršelá relace přes skutečné IPC ukáže vypršení v obou oknech a zůstane na disku
+gates	Run npm run gates	2026-09-15T08:34:56.0046905Z ^[[22m^[[39m[auth] Obnova relace selhala: reason=refresh-failed
+gates	Run npm run gates	2026-09-15T08:34:56.0085605Z 
+gates	Run npm run gates	2026-09-15T08:34:56.3393120Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mzjištění uložené OAuth session^[[2m > ^[[22m^[[2mpřímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+gates	Run npm run gates	2026-09-15T08:34:56.3518347Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-K5H63D/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:34:56.3585557Z 
+gates	Run npm run gates	2026-09-15T08:34:56.3642268Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mzjištění uložené OAuth session^[[2m > ^[[22m^[[2mpřímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+gates	Run npm run gates	2026-09-15T08:34:56.3756653Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-K5H63D/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:34:56.3757399Z 
+gates	Run npm run gates	2026-09-15T08:34:56.8231716Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mviditelnost ikony a klikání na lištu^[[2m > ^[[22m^[[2mběžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů
+gates	Run npm run gates	2026-09-15T08:34:56.8256694Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-PBJkLi/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:34:56.8278692Z 
+gates	Run npm run gates	2026-09-15T08:34:56.8932104Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mviditelnost ikony a klikání na lištu^[[2m > ^[[22m^[[2mpreload po výjimce prvního příkazu doručí druhý i třetí s rozestupy a vyzvedne další dávku
+gates	Run npm run gates	2026-09-15T08:34:56.9009931Z ^[[22m^[[39m[tray] Rychlou akci stop-recording se nepodařilo zpracovat: Odběratel prvního příkazu selhal
+gates	Run npm run gates	2026-09-15T08:34:56.9020661Z 
+gates	Run npm run gates	2026-09-15T08:34:58.2286356Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mprošlý access token neposkytne uploadu jako platný kontext
+gates	Run npm run gates	2026-09-15T08:34:58.2316593Z ^[[22m^[[39m[auth] Obnova relace selhala: reason=refresh-failed
+gates	Run npm run gates	2026-09-15T08:34:58.2326427Z 
+gates	Run npm run gates	2026-09-15T08:34:58.3231130Z  ^[[32m✓^[[39m tests/idle-panel.test.js ^[[2m(^[[22m^[[2m44 tests^[[22m^[[2m)^[[22m^[[33m 2717^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:34:58.3233464Z    ^[[33m^[[2m✓^[[22m^[[39m schválený klidový panel^[[2m > ^[[22mpři zapnutém odesílání otevře frontu s časem dalšího pokusu a retry jako dosud ^[[33m 392^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:34:58.4847454Z ^[[90mstderr^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mselhaná obnova expirované session předá null a nespustí recording send
+gates	Run npm run gates	2026-09-15T08:34:58.4852179Z ^[[22m^[[39m[auth] Obnova relace selhala: reason=refresh-failed
+gates	Run npm run gates	2026-09-15T08:34:58.4853069Z 
+gates	Run npm run gates	2026-09-15T08:34:59.0117158Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mpo trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+gates	Run npm run gates	2026-09-15T08:34:59.0120725Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-wpSXeo/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:34:59.0123886Z 
+gates	Run npm run gates	2026-09-15T08:34:59.0151865Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mpo trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+gates	Run npm run gates	2026-09-15T08:34:59.0154884Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-wpSXeo/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:34:59.0156897Z 
+gates	Run npm run gates	2026-09-15T08:34:59.0232662Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mselhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+gates	Run npm run gates	2026-09-15T08:34:59.0237536Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-1wUNsy/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:34:59.0238165Z 
+gates	Run npm run gates	2026-09-15T08:34:59.0262828Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení odchozí fronty^[[2m > ^[[22m^[[2mselhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+gates	Run npm run gates	2026-09-15T08:34:59.0265000Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-1wUNsy/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:34:59.0266060Z 
+gates	Run npm run gates	2026-09-15T08:35:00.2005047Z  ^[[32m✓^[[39m tests/recording-card.test.js ^[[2m(^[[22m^[[2m59 tests^[[22m^[[2m)^[[22m^[[33m 4582^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:00.2009072Z    ^[[33m^[[2m✓^[[22m^[[39m nahrávání při zneplatnění relace^[[2m > ^[[22mstav expired ponechá Stop i lokální uložení, ale zavře odesílání ^[[33m 473^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:00.7209653Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mbezpečné ukončení aplikace^[[2m > ^[[22m^[[2mselhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+gates	Run npm run gates	2026-09-15T08:35:00.7211910Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-d6uaf7/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:35:00.7212840Z 
+gates	Run npm run gates	2026-09-15T08:35:00.7214840Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mbezpečné ukončení aplikace^[[2m > ^[[22m^[[2mselhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+gates	Run npm run gates	2026-09-15T08:35:00.7217183Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-d6uaf7/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:35:00.7217809Z 
+gates	Run npm run gates	2026-09-15T08:35:01.3008020Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení automatických aktualizací^[[2m > ^[[22m^[[2mběžící LuTrack odloží restart a po zastavení jej uplatní
+gates	Run npm run gates	2026-09-15T08:35:01.3026818Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-WgrntR/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:35:01.3027988Z 
+gates	Run npm run gates	2026-09-15T08:35:01.3077529Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mprodukční zapojení automatických aktualizací^[[2m > ^[[22m^[[2mběžící LuTrack odloží restart a po zastavení jej uplatní
+gates	Run npm run gates	2026-09-15T08:35:01.3096590Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-WgrntR/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:35:01.3105552Z 
+gates	Run npm run gates	2026-09-15T08:35:01.8354380Z ^[[90mstdout^[[2m | tests/tracking-timer.test.js^[[2m > ^[[22m^[[2mvypínač DESKTOP_TIME_ENABLED^[[2m > ^[[22m^[[2mprodukční wiring s hodnotou true skončí jako started
+gates	Run npm run gates	2026-09-15T08:35:01.8373349Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-tracking-test-oDka6s/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:35:01.8374640Z 
+gates	Run npm run gates	2026-09-15T08:35:01.9603038Z  ^[[32m✓^[[39m tests/tracking-timer.test.js ^[[2m(^[[22m^[[2m58 tests^[[22m^[[2m)^[[22m^[[32m 289^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:02.2280887Z ^[[90mstdout^[[2m | tests/queue-wiring.test.js^[[2m > ^[[22m^[[2mviditelnost automatických aktualizací v panelu^[[2m > ^[[22m^[[2mstažení doručí verzi do živého panelu a tracking dál blokuje instalaci
+gates	Run npm run gates	2026-09-15T08:35:02.2389419Z ^[[22m^[[39m[tracking] Uloženo: /tmp/ludone-main-queue-test-SVrnn6/cas/casovac.json
+gates	Run npm run gates	2026-09-15T08:35:02.2416143Z 
+gates	Run npm run gates	2026-09-15T08:35:02.5827192Z  ^[[32m✓^[[39m tests/queue-wiring.test.js ^[[2m(^[[22m^[[2m276 tests^[[22m^[[2m)^[[22m^[[33m 7699^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:02.5837673Z    ^[[33m^[[2m✓^[[22m^[[39m zjištění uložené OAuth session^[[2m > ^[[22mvypršelá relace přes skutečné IPC ukáže vypršení v obou oknech a zůstane na disku ^[[33m 331^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:02.6452719Z  ^[[32m✓^[[39m tests/recording-export.test.js ^[[2m(^[[22m^[[2m75 tests^[[22m^[[2m)^[[22m^[[32m 193^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:03.1867352Z  ^[[32m✓^[[39m tests/logout.test.js ^[[2m(^[[22m^[[2m23 tests^[[22m^[[2m | ^[[22m^[[33m1 skipped^[[39m^[[2m)^[[22m^[[32m 189^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:04.4362934Z  ^[[32m✓^[[39m tests/settings.test.js ^[[2m(^[[22m^[[2m46 tests^[[22m^[[2m)^[[22m^[[33m 4825^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:04.4365495Z    ^[[33m^[[2m✓^[[22m^[[39m poctivý výsledek odhlášení v Nastavení^[[2m > ^[[22mpotvrzené odhlášení na Macu i serveru zachová dosavadní úspěch ^[[33m 398^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:05.0587873Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":false} jako signed-out
+gates	Run npm run gates	2026-09-15T08:35:05.0590880Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.055Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+gates	Run npm run gates	2026-09-15T08:35:05.0591999Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0598479Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true} jako idle
+gates	Run npm run gates	2026-09-15T08:35:05.0601184Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.058Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0602581Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0604590Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"trackingOwners":[1]} jako tracking
+gates	Run npm run gates	2026-09-15T08:35:05.0607848Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.058Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0609103Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0619458Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false}]]} jako recording
+gates	Run npm run gates	2026-09-15T08:35:05.0622433Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.059Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0623801Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0626301Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1}]]} jako recording
+gates	Run npm run gates	2026-09-15T08:35:05.0629690Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.059Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0630986Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0632984Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"queueWaitingCount":1} jako queue-waiting
+gates	Run npm run gates	2026-09-15T08:35:05.0636205Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.060Z stav=queue-waiting nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=1 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0637538Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0639451Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"systemAudioLostOwners":[1]} jako idle
+gates	Run npm run gates	2026-09-15T08:35:05.0642234Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.060Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0643807Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0646728Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"systemAudioLostOwners":[1]} jako recording-audio-lost
+gates	Run npm run gates	2026-09-15T08:35:05.0650628Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.061Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0652622Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0655005Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]]} jako recording-tracking
+gates	Run npm run gates	2026-09-15T08:35:05.0658428Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.061Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0659822Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0663032Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako recording-audio-lost
+gates	Run npm run gates	2026-09-15T08:35:05.0667143Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.062Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=true fronta=2 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0668475Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0670545Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"trackingOwners":[1],"queueWaitingCount":2} jako tracking
+gates	Run npm run gates	2026-09-15T08:35:05.0673512Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.063Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=2 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0674851Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0677922Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":false,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako signed-out
+gates	Run npm run gates	2026-09-15T08:35:05.0681469Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.066Z stav=signed-out nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=2 přihlášen=false
+gates	Run npm run gates	2026-09-15T08:35:05.0682695Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0685453Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":true}]]} jako idle
+gates	Run npm run gates	2026-09-15T08:35:05.0688307Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.067Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0689488Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0691552Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2modvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1,"finalizePromise":{}}]]} jako idle
+gates	Run npm run gates	2026-09-15T08:35:05.0694405Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.067Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0695728Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0702097Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mjednostopé nahrávání odliší od plného nahrávání i výpadku: příprava
+gates	Run npm run gates	2026-09-15T08:35:05.0705059Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.068Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0706706Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0708697Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mjednostopé nahrávání odliší od plného nahrávání i výpadku: živá session
+gates	Run npm run gates	2026-09-15T08:35:05.0711535Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.070Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0713161Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0716209Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mjednostopé nahrávání odliší od plného nahrávání i výpadku: souběh s LuTrackem
+gates	Run npm run gates	2026-09-15T08:35:05.0719196Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.070Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=true fronta=2 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0720645Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0723102Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"preparing":[[1,{"cancelled":true,"sources":["microphone"]}]]}
+gates	Run npm run gates	2026-09-15T08:35:05.0726591Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.071Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0727885Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0730459Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"sessions":[["s",{"ownerId":1,"tracks":{},"finalizePromise":{}}]]}
+gates	Run npm run gates	2026-09-15T08:35:05.0733619Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.072Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0734806Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0736936Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mskutečný výpadek má přednost před přijatým jednostopým nahráváním
+gates	Run npm run gates	2026-09-15T08:35:05.0739844Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.072Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0741111Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0743173Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mstav vlastní hlavní proces, ne renderer^[[2m > ^[[22m^[[2mpři souběhu spojí fakt LuTracku se skutečným nahráváním z hlavního procesu
+gates	Run npm run gates	2026-09-15T08:35:05.0746348Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.073Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0748918Z [tray] 2026-09-15T08:35:05.073Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0750143Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0758714Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mnechá lištu hlásit správný stav, ne ten poslední odeslaný
+gates	Run npm run gates	2026-09-15T08:35:05.0761450Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.074Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0764141Z [tray] 2026-09-15T08:35:05.074Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0767174Z [tray] 2026-09-15T08:35:05.074Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0768302Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0769837Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mNEODHLÁSÍ uživatele — session drží hlavní proces
+gates	Run npm run gates	2026-09-15T08:35:05.0772389Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.075Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0774865Z ^[[90mstderr^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mpo pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session
+gates	Run npm run gates	2026-09-15T08:35:05.0777823Z [tray] 2026-09-15T08:35:05.075Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0779001Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0780433Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mzapomene jen padlé okno, ostatní nechá běžet
+gates	Run npm run gates	2026-09-15T08:35:05.0783298Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.075Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0784592Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0786601Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mpád rendereru^[[2m > ^[[22m^[[2mpo pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session
+gates	Run npm run gates	2026-09-15T08:35:05.0789424Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.076Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0791967Z [tray] 2026-09-15T08:35:05.076Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0793110Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0794698Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mlišta se překresluje jen při skutečné změně^[[2m > ^[[22m^[[2mstejný stav podruhé už obrázek nesahá
+gates	Run npm run gates	2026-09-15T08:35:05.0797569Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.077Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0798752Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0800367Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mlišta se překresluje jen při skutečné změně^[[2m > ^[[22m^[[2mzměna stavu obrázek i popisek přepíše
+gates	Run npm run gates	2026-09-15T08:35:05.0802955Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.077Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0805842Z [tray] 2026-09-15T08:35:05.078Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0807607Z ^[[22m^[[39m[recording] Session uzavřena po události „pád rendereru“: mikrofon 0 B, systém 0 B.
+gates	Run npm run gates	2026-09-15T08:35:05.0808525Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0835695Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne hodnotu, která není boolean, a fakta NECHÁ být
+gates	Run npm run gates	2026-09-15T08:35:05.0838539Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.081Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0843997Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0846169Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2mprázdný objekt uživatele NEODHLÁSÍ
+gates	Run npm run gates	2026-09-15T08:35:05.0847474Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0850544Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.082Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0851868Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0853603Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne undefined a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0856574Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.082Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0858125Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0859814Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne null a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0868774Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.083Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0881279Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0883040Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne "idle" a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0902073Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.083Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0903267Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0904807Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne 42 a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0907684Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.083Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0908700Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0910929Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"panelActionsAvailable":true,"signedIn":1,"systemAudioLost":false,"tracking":false} a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0913834Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.083Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0914914Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0916773Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"signedIn":true} a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0919303Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.084Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0920402Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0922230Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"signedIn":true,"tracking":false} a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0924687Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.084Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0926151Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0931127Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"state":"recording"} a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0934270Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.086Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0935655Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0938041Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2modmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"icon":"recording"} a nechá fakta být
+gates	Run npm run gates	2026-09-15T08:35:05.0940955Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.087Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0942116Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0943877Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2mplatnou čtveřici boolean přijme
+gates	Run npm run gates	2026-09-15T08:35:05.0946891Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.087Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+gates	Run npm run gates	2026-09-15T08:35:05.0949348Z [tray] 2026-09-15T08:35:05.087Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0950803Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0952967Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mkanál faktů nesmí být tray:set-state pod jiným jménem^[[2m > ^[[22m^[[2mvýpadek přijme jen jako boolean, neplatný report stav nezmění a obnova vrátí nahrávání
+gates	Run npm run gates	2026-09-15T08:35:05.0956248Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.088Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0958855Z [tray] 2026-09-15T08:35:05.088Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0961265Z [tray] 2026-09-15T08:35:05.088Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+gates	Run npm run gates	2026-09-15T08:35:05.0962374Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0963855Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mprvní vykreslení lišty^[[2m > ^[[22m^[[2mnastaví obrázek i popisek, i když se stav nezměnil
+gates	Run npm run gates	2026-09-15T08:35:05.0967039Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.088Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+gates	Run npm run gates	2026-09-15T08:35:05.0968261Z 
+gates	Run npm run gates	2026-09-15T08:35:05.0969611Z ^[[90mstdout^[[2m | tests/tray-authority.test.js^[[2m > ^[[22m^[[2mprvní vykreslení lišty^[[2m > ^[[22m^[[2mpodruhé už na lištu nesahá
+gates	Run npm run gates	2026-09-15T08:35:05.0973867Z ^[[22m^[[39m[tray] 2026-09-15T08:35:05.089Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+gates	Run npm run gates	2026-09-15T08:35:05.0975436Z 
+gates	Run npm run gates	2026-09-15T08:35:05.1048117Z  ^[[32m✓^[[39m tests/tray-authority.test.js ^[[2m(^[[22m^[[2m81 tests^[[22m^[[2m)^[[22m^[[32m 52^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:05.1498339Z  ^[[32m✓^[[39m tests/retention.test.js ^[[2m(^[[22m^[[2m32 tests^[[22m^[[2m)^[[22m^[[32m 267^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:05.7724285Z  ^[[32m✓^[[39m tests/logout-safety.test.js ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 209^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:05.9187099Z  ^[[32m✓^[[39m tests/auth-identity-fallback.test.js ^[[2m(^[[22m^[[2m29 tests^[[22m^[[2m)^[[22m^[[33m 330^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:06.2922713Z  ^[[32m✓^[[39m tests/auth-controller-wiring.test.js ^[[2m(^[[22m^[[2m48 tests^[[22m^[[2m)^[[22m^[[32m 213^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:06.8857933Z  ^[[32m✓^[[39m tests/onboarding-missing-steps.test.js ^[[2m(^[[22m^[[2m23 tests^[[22m^[[2m)^[[22m^[[33m 2750^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:06.8877201Z    ^[[33m^[[2m✓^[[22m^[[39m dva chybějící kroky onboardingu^[[2m > ^[[22mpo skončení pokusu přestane neznámou adresu znovu zjišťovat ^[[33m 919^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:07.6585883Z  ^[[32m✓^[[39m tests/recordings-dashboard.test.js ^[[2m(^[[22m^[[2m17 tests^[[22m^[[2m)^[[22m^[[33m 734^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:07.6605681Z    ^[[33m^[[2m✓^[[22m^[[39m dashboard fronty nahrávek^[[2m > ^[[22mčekající schválená nahrávka po volbě firmy nabídne skutečné Zkusit znovu ^[[33m 323^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:07.9208115Z  ^[[32m✓^[[39m tests/ipc-sender-guard.test.js ^[[2m(^[[22m^[[2m21 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:08.5740573Z  ^[[32m✓^[[39m tests/recording-verification.test.js ^[[2m(^[[22m^[[2m20 tests^[[22m^[[2m)^[[22m^[[33m 403^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:09.2357322Z  ^[[32m✓^[[39m tests/renderer-failure-feedback.test.js ^[[2m(^[[22m^[[2m29 tests^[[22m^[[2m)^[[22m^[[33m 1188^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:09.2674223Z  ^[[32m✓^[[39m tests/auth-cancellation-storage.test.js ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[33m 339^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:09.6353103Z  ^[[32m✓^[[39m tests/ui-smoke.test.js ^[[2m(^[[22m^[[2m17 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:09.8642269Z  ^[[32m✓^[[39m tests/recording-actions.test.js ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 232^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:10.1826055Z  ^[[32m✓^[[39m tests/zapojeni-odhlaseni.test.js ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m | ^[[22m^[[33m1 skipped^[[39m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:10.4172072Z  ^[[32m✓^[[39m tests/tray-ikony.test.js ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[33m 524^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:10.4226847Z    ^[[33m^[[2m✓^[[22m^[[39m ikony v liště^[[2m > ^[[22mgenerátor opakovaně vyrobí přesně bajty uložené v repozitáři ^[[33m 461^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:10.5157087Z  ^[[32m✓^[[39m tests/auth-refresh.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 55^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:10.6757645Z  ^[[32m✓^[[39m tests/session-reentry.test.js ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[33m 3274^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:10.6787231Z    ^[[33m^[[2m✓^[[22m^[[39m návrat do aplikace po ztrátě session^[[2m > ^[[22mdokončení úvodního průvodce bez platné relace otevře nový přihlašovací krok ^[[33m 1389^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:10.6806300Z    ^[[33m^[[2m✓^[[22m^[[39m oznámení změny session mezi okny^[[2m > ^[[22motevřená okna zjistí vypršení bez změny fokusu a panel nabídne nové přihlášení ^[[33m 1231^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:11.1957600Z  ^[[32m✓^[[39m tests/settings-persistence.test.js ^[[2m(^[[22m^[[2m31 tests^[[22m^[[2m)^[[22m^[[32m 126^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:11.8914470Z  ^[[32m✓^[[39m tests/desktop-progress.test.js ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 414^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:12.6198160Z  ^[[32m✓^[[39m tests/settings-audio-test.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[33m 900^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:14.3250619Z  ^[[32m✓^[[39m tests/packaging.test.js ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[33m 2150^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:14.3252378Z    ^[[33m^[[2m✓^[[22m^[[39m kontrakt electron-builderu^[[2m > ^[[22mbez podpisových proměnných provede nepodepsaný build plán a nespadne ^[[33m 1139^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:14.3253618Z    ^[[33m^[[2m✓^[[22m^[[39m kontrakt electron-builderu^[[2m > ^[[22múplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší ^[[33m 948^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:14.6826947Z  ^[[32m✓^[[39m tests/diagnostics.test.js ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 51^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:14.7162039Z  ^[[32m✓^[[39m tests/auth-error-screens.test.js ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[33m 1039^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:14.7165817Z    ^[[33m^[[2m✓^[[22m^[[39m chybové obrazovky přihlášení^[[2m > ^[[22mžádný z šesti důvodů nenechá panel prázdný ^[[33m 379^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:15.2175095Z  ^[[32m✓^[[39m tests/volba-firmy-v-relaci.test.js ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 97^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:15.5976018Z  ^[[32m✓^[[39m tests/permissions.test.js ^[[2m(^[[22m^[[2m18 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:16.2899337Z  ^[[32m✓^[[39m tests/nazev-zarizeni.test.js ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[33m 369^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:17.0317182Z  ^[[32m✓^[[39m tests/zkratky-bez-kryti.test.js ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[33m 335^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:17.0338915Z    ^[[33m^[[2m✓^[[22m^[[39m zkratky v liště nejsou slib bez krytí^[[2m > ^[[22mpřijatá zkratka se ukáže v nabídce, nepřijatá ne ^[[33m 327^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:17.3397096Z  ^[[32m✓^[[39m tests/settings-audio-permissions.test.js ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:18.9928692Z  ^[[32m✓^[[39m tests/tray-space-warning.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[33m 347^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:19.0617277Z  ^[[32m✓^[[39m tests/tracking-card.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[33m 1423^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:19.0619865Z    ^[[33m^[[2m✓^[[22m^[[39m LuTrack jako ukázka (compact=false)^[[2m > ^[[22mhned po vykreslení bez interakce viditelně říká, že se čas nikam neuloží ^[[33m 539^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:19.3590369Z  ^[[32m✓^[[39m tests/upload-company-selection.test.js ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 73^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:19.4338200Z  ^[[32m✓^[[39m tests/manifest.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:19.7326946Z  ^[[32m✓^[[39m tests/fronta-neztrati.test.js ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:20.1097526Z  ^[[32m✓^[[39m tests/zjisteni-firmy.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:20.4618407Z ^[[90mstdout^[[2m | tests/verify-macos-release.test.js^[[2m > ^[[22m^[[2mověření podepsaného macOS releasu^[[2m > ^[[22m^[[2mmapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+gates	Run npm run gates	2026-09-15T08:35:20.4646467Z ^[[22m^[[39mPASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.3-arm64.dmg
+gates	Run npm run gates	2026-09-15T08:35:20.4647394Z 
+gates	Run npm run gates	2026-09-15T08:35:20.4777192Z ^[[90mstdout^[[2m | tests/verify-macos-release.test.js^[[2m > ^[[22m^[[2mověření podepsaného macOS releasu^[[2m > ^[[22m^[[2mmapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+gates	Run npm run gates	2026-09-15T08:35:20.4796508Z ^[[22m^[[39mPASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.3-x64.dmg
+gates	Run npm run gates	2026-09-15T08:35:20.4819322Z 
+gates	Run npm run gates	2026-09-15T08:35:20.4854854Z ^[[90mstdout^[[2m | tests/verify-macos-release.test.js^[[2m > ^[[22m^[[2mověření podepsaného macOS releasu^[[2m > ^[[22m^[[2mmapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+gates	Run npm run gates	2026-09-15T08:35:20.4877062Z ^[[22m^[[39mPASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.3-arm64.zip
+gates	Run npm run gates	2026-09-15T08:35:20.4905633Z 
+gates	Run npm run gates	2026-09-15T08:35:20.4968239Z ^[[90mstdout^[[2m | tests/verify-macos-release.test.js^[[2m > ^[[22m^[[2mověření podepsaného macOS releasu^[[2m > ^[[22m^[[2mmapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+gates	Run npm run gates	2026-09-15T08:35:20.4984836Z ^[[22m^[[39mPASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.3-x64.zip
+gates	Run npm run gates	2026-09-15T08:35:20.4989169Z 
+gates	Run npm run gates	2026-09-15T08:35:20.5195662Z  ^[[32m✓^[[39m tests/verify-macos-release.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 91^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:20.9675581Z  ^[[32m✓^[[39m tests/recordings-status.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[33m 310^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:21.2797100Z  ^[[32m✓^[[39m tests/proc-je-ticho.test.js ^[[2m(^[[22m^[[2m15 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:21.5725616Z  ^[[32m✓^[[39m tests/seznam-firem.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:21.9062101Z  ^[[32m✓^[[39m tests/queue-scheduler.test.js ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:22.0723218Z  ^[[32m✓^[[39m tests/upload-company-selector.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 277^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:22.2066909Z  ^[[32m✓^[[39m tests/auth-panel-blur-guard.test.js ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:22.4847188Z  ^[[32m✓^[[39m tests/release-artifacts.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 89^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:22.5467179Z  ^[[32m✓^[[39m tests/kalendar-zrusen.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[33m1 skipped^[[39m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:22.8596866Z  ^[[32m✓^[[39m tests/pisma.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:22.8953888Z  ^[[32m✓^[[39m tests/publish-release-remote.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 67^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.0673661Z  ^[[32m✓^[[39m tests/ikona-aplikace.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[33m 12317^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.0676543Z    ^[[33m^[[2m✓^[[22m^[[39m ikona aplikace^[[2m > ^[[22mbuild.mac.icon ukazuje na existující neprázdnou sadu ICNS ^[[33m 3047^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.0681831Z    ^[[33m^[[2m✓^[[22m^[[39m ikona aplikace^[[2m > ^[[22mgenerátor vytváří všech deset PNG a reprodukovatelné ICNS ^[[33m 2496^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.0685996Z    ^[[33m^[[2m✓^[[22m^[[39m ikona aplikace^[[2m > ^[[22mzměna sdílených bodů, šířky i plátna mění glyf aplikace i lišty ^[[33m 5540^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.0688025Z    ^[[33m^[[2m✓^[[22m^[[39m ikona aplikace^[[2m > ^[[22mbalení vytvoří chybějící ikonu dříve, než spustí electron-builder ^[[33m 1232^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.2037990Z  ^[[32m✓^[[39m tests/firma-pro-odeslani.test.js ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.2239576Z  ^[[32m✓^[[39m tests/panel-blur-guard.test.js ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.4117301Z  ^[[32m✓^[[39m tests/fronta-symetrie.test.js ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.6103295Z  ^[[32m✓^[[39m tests/verify-published-release.test.js ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.6392232Z  ^[[32m✓^[[39m tests/auth-wait-lifecycle.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 53^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.7597058Z  ^[[32m✓^[[39m tests/oauth-state.test.js ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:23.9986812Z  ^[[32m✓^[[39m tests/opravneni-k-odesilani.test.js ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:24.0630994Z  ^[[32m✓^[[39m tests/release-workflow.test.js ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:24.3787048Z  ^[[32m✓^[[39m tests/brany-workflow.test.js ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:24.4717160Z  ^[[32m✓^[[39m tests/pkce.test.js ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:24.7127452Z  ^[[32m✓^[[39m tests/barvy.test.js ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:24.7735694Z  ^[[32m✓^[[39m tests/electron-verze.test.js ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:25.0502730Z  ^[[32m✓^[[39m tests/recording-order-guard.test.js ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:25.1757227Z  ^[[32m✓^[[39m tests/main-entry.test.js ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 99^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:25.3407477Z  ^[[32m✓^[[39m tests/auth-timeout-guard.test.js ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:25.3839340Z  ^[[32m✓^[[39m tests/queue-card-labels.test.js ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 291^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:26.2188368Z  ^[[32m✓^[[39m tests/zachyceni-zdroju.test.js ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+gates	Run npm run gates	2026-09-15T08:35:26.2525844Z 
+gates	Run npm run gates	2026-09-15T08:35:26.2536396Z ^[[2m Test Files ^[[22m ^[[1m^[[32m72 passed^[[39m^[[22m^[[90m (72)^[[39m
+gates	Run npm run gates	2026-09-15T08:35:26.2541814Z ^[[2m      Tests ^[[22m ^[[1m^[[32m1515 passed^[[39m^[[22m^[[2m | ^[[22m^[[33m3 skipped^[[39m^[[90m (1518)^[[39m
+gates	Run npm run gates	2026-09-15T08:35:26.2546216Z ^[[2m   Start at ^[[22m 08:34:52
+gates	Run npm run gates	2026-09-15T08:35:26.2548016Z ^[[2m   Duration ^[[22m 33.63s^[[2m (transform 1.70s, setup 871ms, collect 21.85s, tests 53.88s, environment 721ms, prepare 7.88s)^[[22m
+gates	Run npm run gates	2026-09-15T08:35:26.2549240Z 
+gates	Run npm run gates	2026-09-15T08:35:26.4814739Z 
+gates	Run npm run gates	2026-09-15T08:35:26.4815828Z > ludone-desktop-prototype@0.1.3 preskocene
+gates	Run npm run gates	2026-09-15T08:35:26.4816556Z > node scripts/preskocene.mjs
+gates	Run npm run gates	2026-09-15T08:35:26.4816812Z 
+gates	Run npm run gates	2026-09-15T08:35:59.8138272Z [preskocene] 3 přeskočených, baseline 3 — v pořádku.
+gates	Run npm run build	﻿2026-09-15T08:35:59.8347102Z ##[group]Run npm run build
+gates	Run npm run build	2026-09-15T08:35:59.8347408Z ^[[36;1mnpm run build^[[0m
+gates	Run npm run build	2026-09-15T08:35:59.8383702Z shell: /usr/bin/bash -e {0}
+gates	Run npm run build	2026-09-15T08:35:59.8383966Z ##[endgroup]
+gates	Run npm run build	2026-09-15T08:35:59.9346871Z 
+gates	Run npm run build	2026-09-15T08:35:59.9347452Z > ludone-desktop-prototype@0.1.3 build
+gates	Run npm run build	2026-09-15T08:35:59.9348163Z > vite build
+gates	Run npm run build	2026-09-15T08:35:59.9348341Z 
+gates	Run npm run build	2026-09-15T08:36:00.1466005Z ^[[36mvite v7.3.6 ^[[32mbuilding client environment for production...^[[36m^[[39m
+gates	Run npm run build	2026-09-15T08:36:00.2103048Z transforming...
+gates	Run npm run build	2026-09-15T08:36:01.2267810Z ^[[32m✓^[[39m 54 modules transformed.
+gates	Run npm run build	2026-09-15T08:36:01.4128123Z rendering chunks...
+gates	Run npm run build	2026-09-15T08:36:01.4205403Z computing gzip size...
+gates	Run npm run build	2026-09-15T08:36:01.4309777Z ^[[2mdist/^[[22m^[[32mindex.html                                       ^[[39m^[[1m^[[2m  0.62 kB^[[22m^[[1m^[[22m^[[2m │ gzip:  0.37 kB^[[22m
+gates	Run npm run build	2026-09-15T08:36:01.4311626Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[32minstrument-sans-latin-ext-oUstOPQL.woff2  ^[[39m^[[1m^[[2m 11.09 kB^[[22m^[[1m^[[22m
+gates	Run npm run build	2026-09-15T08:36:01.4313565Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[32mpublic-sans-latin-ext-NN8edoJ2.woff2      ^[[39m^[[1m^[[2m 18.37 kB^[[22m^[[1m^[[22m
+gates	Run npm run build	2026-09-15T08:36:01.4315804Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[32mpublic-sans-latin-CcEC6YbM.woff2          ^[[39m^[[1m^[[2m 26.64 kB^[[22m^[[1m^[[22m
+gates	Run npm run build	2026-09-15T08:36:01.4317579Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[32minstrument-sans-latin-CclBWeUS.woff2      ^[[39m^[[1m^[[2m 29.90 kB^[[22m^[[1m^[[22m
+gates	Run npm run build	2026-09-15T08:36:01.4319414Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[35mindex-M1CDdI_Q.css                        ^[[39m^[[1m^[[2m 45.28 kB^[[22m^[[1m^[[22m^[[2m │ gzip:  8.20 kB^[[22m
+gates	Run npm run build	2026-09-15T08:36:01.4321282Z ^[[2mdist/^[[22m^[[2massets/^[[22m^[[36mindex-D7PD5OvL.js                         ^[[39m^[[1m^[[2m309.76 kB^[[22m^[[1m^[[22m^[[2m │ gzip: 93.56 kB^[[22m
+gates	Run npm run build	2026-09-15T08:36:01.4322422Z ^[[32m✓ built in 1.26s^[[39m
+gates	Post Run actions/setup-node@v4	﻿2026-09-15T08:36:01.4804549Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+gates	Post Run actions/setup-node@v4	2026-09-15T08:36:01.4806100Z Post job cleanup.
+gates	Post Run actions/setup-node@v4	2026-09-15T08:36:01.6048956Z (node:6141) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+gates	Post Run actions/setup-node@v4	2026-09-15T08:36:01.6050192Z (Use `node --trace-deprecation ...` to show where the warning was created)
+gates	Post Run actions/setup-node@v4	2026-09-15T08:36:01.6302839Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/ludone-desktop/ludone-desktop --files-from manifest.txt --use-compress-program zstdmt
+gates	Post Run actions/setup-node@v4	2026-09-15T08:36:01.9041898Z (node:6141) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+gates	Post Run actions/setup-node@v4	2026-09-15T08:36:02.5475429Z Sent 49377117 of 49377117 (100.0%), 71.7 MBs/sec
+gates	Post Run actions/setup-node@v4	2026-09-15T08:36:02.6993567Z Cache saved with the key: node-cache-Linux-x64-npm-2a12b1f742931a85fd9b4c08743004f63c21e17743b46316594feeb2d72a933b
+gates	Post Run actions/checkout@v4	﻿2026-09-15T08:36:02.7169840Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.7171109Z Post job cleanup.
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8048591Z [command]/usr/bin/git version
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8094496Z git version 2.55.0
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8140475Z Temporarily overriding HOME='/home/runner/work/_temp/587feef9-c161-43ac-b3fd-f41afb7d9433' before making global git config changes
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8142120Z Adding repository directory to the temporary git global config as a safe directory
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8146959Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ludone-desktop/ludone-desktop
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8187495Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8226425Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8483021Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8514849Z http.https://github.com/.extraheader
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8530729Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8564267Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8821388Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gates	Post Run actions/checkout@v4	2026-09-15T08:36:02.8877475Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gates	Complete job	﻿2026-09-15T08:36:02.9270476Z Cleaning up orphan processes
+gates	Complete job	2026-09-15T08:36:02.9582647Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

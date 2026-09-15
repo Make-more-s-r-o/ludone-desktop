@@ -84,3 +84,17 @@ Přechod `0.1.1 → 0.1.2` testuje příjem balíčku původním updaterem. Nov�
 verzi a procentu stahování poběží až v `0.1.2`; její ostré ověření vyžaduje další schválenou
 vyšší verzi. Tento běh kvůli tomu nepřepisuje feed ani nevytváří další tag. Podrobný protokol
 je v [OVERENI-NA-MACU.md](OVERENI-NA-MACU.md).
+
+
+## Příprava 0.1.3 po PR #142
+
+Oprava retry a nové potvrzování aktualizací jsou sloučené v `c1ca930`. Čistý klon
+finálního runtime `20238192` i GitHub CI finálního PR `37f54e8` prošly. Verze a
+`build/release-notes.md` jsou připravené. Tag `v0.1.3` se vytvoří až po finálním
+pověření nebo jej podle původního goalu pushne Dan; tím se spustí již ověřené workflow.
+Žádné přístupové hodnoty se nemusí znovu nastavovat.
+
+Při každém dalším vydání aktualizuj také `build/release-notes.md` podle skutečných
+změn. Electron-builder jej vkládá do `releaseNotes` aktualizačních metadat; panel a
+oznámení z něj zobrazují krátký prostý text. Poznámky se nesmějí přebírat beze změny
+ze staršího vydání, pokud již nepopisují nový přínos.

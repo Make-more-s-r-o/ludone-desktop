@@ -1,5 +1,7 @@
 # Implementační plán — LuDone Desktop
 
+**15. 9. 2026 — patch 0.1.3:** PR #142 sloučen (`c1ca930`), finální čistý klon i GitHub CI zelené, 1515 PASS. Tag a živá přejímka na Macu zůstávají samostatné.
+
 > **Aktualizace 15. 9. 2026:** Následující etapový plán vznikl 24. 8. a zůstává historickým
 > základem rozhodnutí. Dnešní implementační běh má vlastní autoritativní [stav](docs/changes/nahravky-dashboard/STAV.md),
 > [specifikaci](docs/changes/nahravky-dashboard/spec.md), [plán](docs/changes/nahravky-dashboard/plan.md)
