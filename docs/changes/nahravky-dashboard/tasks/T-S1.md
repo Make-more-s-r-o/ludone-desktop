@@ -11,6 +11,7 @@ Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přiděle
 
 - **SMÍŠ MĚNIT VÝHRADNĚ:**
   - `electron/main.cjs`
+  - `electron/preload.cjs`
   - `electron/upload-client.cjs`
   - `electron/queue.cjs`
   - `electron/recording-export.cjs`
@@ -18,7 +19,6 @@ Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přiděle
   - `electron/recording-verification.cjs`
   - `src/lib/queue.js`
   - `src/lib/manifest.js`
-  - `electron/retention.cjs`
   - `electron/meeting-audio.cjs`
   - `src/features/recording/RecordingCard.jsx`
   - `src/features/recordings/RecordingsDashboard.jsx`
@@ -31,12 +31,12 @@ Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přiděle
   - `tests/recording-actions.test.js`
   - `tests/recording-card.test.js`
   - `tests/manifest.test.js`
-  - `tests/retention.test.js`
   - `tests/meeting-audio.test.js`
   - `tests/meeting-upload.test.js`
   - `dukazy/stereo-mp3-2026-09-15/T-S1/report.json`
 
   - `electron/main.test.cjs`
+  - `electron/preload.test.cjs`
   - `electron/upload-client.test.cjs`
   - `electron/queue.test.cjs`
   - `electron/recording-export.test.cjs`
@@ -44,12 +44,13 @@ Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přiděle
   - `electron/recording-verification.test.cjs`
   - `src/lib/queue.test.js`
   - `src/lib/manifest.test.js`
-  - `electron/retention.test.cjs`
   - `electron/meeting-audio.test.cjs`
   - `src/features/recording/RecordingCard.test.jsx`
   - `src/features/recordings/RecordingsDashboard.test.jsx`
 
 - Žádný backend, LuTrack, design/, produkční účet, soukromé audio ani ostrý upload. Owner, consent, IPC, idempotence a existující brány zůstávají. Root vlastní docs, T-S1 runtime a T-S2 balení; jejich soubory se nekříží. Nový soubor mimo allowlist předem dohodni s rootem.
+
+Retence byla během běhu vyčleněna do T-SR; T-S1 dál vlastní sdílené ověření derivátů a ruční koš.
 
 ## Implementace
 

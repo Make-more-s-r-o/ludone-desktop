@@ -9,7 +9,7 @@ Dan 15. 9. 2026 výslovně změnil výsledek: „na app.ludone jde jen jeden zá
 - Výsledný MP3 a jeho ověřitelná metadata se uloží trvale a atomicky před prvním síťovým INIT. Opakování použije stejné bajty, hash a identitu; jeden záznam má jedno serverové recordingId.
 - Odeslání, restart, výběr firmy, vlastnictví, retry, ověření, otevření na webu a lokální koš respektují jediný odeslaný soubor. Consent a ochrany IPC se nemění.
 - Staré kompletní záznamy bez zahájeného uploadu lze převést z původních stop, pokud jejich manifest poskytuje ověřené časové kotvy. Při nejistotě se upload zastaví s konkrétním důvodem. Neúplné záznamy se nevydávají za kompletní.
-- Rozpracované historické uploady se automaticky nepřevádějí na novou identitu; před dalším HTTP se bezpečně pozastaví. Již odeslané záznamy se zpětně nepřepisují ani nemažou. Žádný automatický návrat ke dvěma uploadům.
+- Za možné zahájení se považuje také uložený company pin nebo historie pokusu bez odpovědi; samotná nulová ID nejsou důkazem nulového HTTP. Migrační zábrana přežije i reset vlastnictví. Rozpracované historické uploady se automaticky nepřevádějí na novou identitu; před dalším HTTP se bezpečně pozastaví. Již odeslané záznamy se zpětně nepřepisují ani nemažou. Žádný automatický návrat ke dvěma uploadům.
 - Převod nevyžaduje Homebrew, PATH ani ruční instalaci. Balení pro oba Macy obsahuje odpovídající encoder a jeho licenční podklady; podpis musí zahrnout přibalený program.
 
 ## Kontext a konflikty
@@ -27,7 +27,8 @@ Dan 15. 9. 2026 výslovně změnil výsledek: „na app.ludone jde jen jeden zá
 | T-S0 | Astra | Tento doplněk, packety, stav, docs-first PR | — |
 | T-S1 | Sol runtime | Trvalý MP3, jedna identita, fronta a dashboard, regresní testy | T-S0 |
 | T-S2 | Sol balení | Přibalený encoder pro arm64/x64, ověření balíčku a podklady | T-S0 |
-| T-S3 | Astra + nezávislé Sol review | Integrace, brány, syntetický audio důkaz, PR a přejímka | T-S1, T-S2 |
+| T-SR | Sol retence | Bezpečný úklid derivátů se sdíleným preflightem T-S1 | T-S0; API T-S1 |
+| T-S3 | Astra + nezávislé Sol review | Integrace, brány, syntetický audio důkaz, PR a přejímka | T-S1, T-S2, T-SR |
 
 Runtime a balení mají oddělené worktree a allowlisty. Root vlastní dokumentaci, integraci a commity. Nový release tag není součástí pověření D19 pro 0.1.3.
 

@@ -1,0 +1,42 @@
+$ /usr/bin/time -l node dukazy/stereo-mp3-2026-09-15/native-hour-script.mjs
+PASS vytvořen hodinový syntetický stereo vstup
+{"conversionSeconds":22.402712875,"mp3Bytes":86401728}
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "mp3",
+            "sample_rate": "48000",
+            "channels": 2
+        }
+    ],
+    "format": {
+        "duration": "3600.007000"
+    }
+}
+PASS celý hodinový MP3 se dekóduje bez chyby; nejde o živou schůzku
+      130.79 real       125.37 user        10.72 sys
+            45940736  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               16782  page reclaims
+                1593  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                 628  voluntary context switches
+             2257216  involuntary context switches
+           506481114  instructions retired
+           237132844  cycles elapsed
+            15140808  peak memory footprint
+
+EXIT_CODE=0

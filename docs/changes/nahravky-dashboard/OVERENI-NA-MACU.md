@@ -80,3 +80,15 @@ zkouška nového souhlasu začíná až z nainstalované 0.1.3 proti další sch
 Příchod 0.1.3 do 0.1.2 stále řídí starý automatický updater. Nové čekání na kliknutí
 lze naostro prokázat až aktualizací z 0.1.3 na další schválenou verzi. Další vydání
 se nevytváří jen kvůli tomuto testu. Jednotkové testy se nezapisují jako živá přejímka.
+
+## Přejímka stereo MP3 — NRD-09 (po vydání navazující verze)
+
+Tento postup zatím není důkaz funkčnosti ani oznámení vydání. Produkčně je doložená 0.1.3; nový kód musí nejdřív projít integrací a vydáním.
+
+1. V Nastavení ověř verzi obsahující NRD-09 a správnou firmu. Nahraj krátkou schůzku: řekni „tohle je mikrofon“, nech protistranu říct „tohle je systémový zvuk“. Použij sluchátka, aby kontrolu nerušil přeslech z reproduktorů.
+2. Zvol „Uložit a odeslat“. Po dokončení má na webu vzniknout **jeden** záznam s názvem celé schůzky. Spusť přepis právě u něj; musí obsahovat obě strany ve správném pořadí.
+3. Zkontroluj výsledný MP3 ve sluchátkách: mikrofon vlevo, protistrana vpravo. Lokální originály mají zůstat dostupné podle nastavené retence.
+4. Druhou krátkou nahrávku nech na Macu, aplikaci zavři a znovu otevři. Z přehledu ji výslovně odešli; opět vznikne jen jeden záznam.
+5. Při jedné vlastní testovací nahrávce přeruš síť během odesílání, potom ji obnov a použij případné „Zkusit znovu“. Na webu nesmí vzniknout druhý záznam téže schůzky.
+
+Staré už odeslané dvě stopy se automaticky nemění. Starý rozpracovaný upload může vyžadovat samostatné vypořádání; jeho ID se při přechodu nesmějí zahodit a založit vedle nich další záznam.

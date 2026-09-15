@@ -1,0 +1,12 @@
+$ node scripts/akceptace/stereo-mp3-audio.mjs --module /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/electron/media-encoder.cjs --meeting-module /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-runtime/electron/meeting-audio.cjs
+{"scenario":"live","samples":576336,"left440":0.12127469073944908,"right880":0.12134232635362842,"bytes":289728}
+PASS živý stereo WebM → jediný MP3, kanály, délka, soukromí a ochrana přepsání
+{"scenario":"aligned","samples":576000,"left440":0.12120059342437259,"right880":0.12105686619172154,"bytes":289152}
+PASS dva původní soubory → zarovnaný stereo MP3
+{"scenario":"microphone-only","samples":576000,"left440":0.12120015179401307,"right880":0,"bytes":289152}
+PASS jen mikrofon → vlevo hlas, vpravo ticho
+PASS skutečný runtime helper → přibalený encoder → trvalá identita po restartu
+PASS původní soubory zůstaly bitově zachované
+FAILURES=0
+
+EXIT_CODE=0

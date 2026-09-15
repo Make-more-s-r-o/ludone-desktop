@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-15T10:46:14.499Z",
+    "updatedAt": "2026-09-15T11:14:39.218Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -377,23 +377,50 @@
       "id": "T-S1",
       "title": "Trvalý stereo MP3 a jediný upload",
       "executor": "codex",
-      "state": "ready",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-S0"
       ],
-      "packet": "tasks/T-S1.md"
+      "packet": "tasks/T-S1.md",
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-runtime"
     },
     {
       "id": "T-S2",
       "title": "Přibalený encoder pro oba Macy",
       "executor": "codex",
-      "state": "ready",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-S0"
       ],
-      "packet": "tasks/T-S2.md"
+      "packet": "tasks/T-S2.md",
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder"
+    },
+    {
+      "id": "T-SR",
+      "title": "Bezpečná retence stereo MP3",
+      "executor": "codex",
+      "state": "dispatched",
+      "attempts": 1,
+      "deps": [
+        "T-S0"
+      ],
+      "packet": "tasks/T-SR.md",
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-retention"
+    },
+    {
+      "id": "T-S3",
+      "title": "Integrace a přejímka stereo MP3",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-S1",
+        "T-S2",
+        "T-SR"
+      ],
+      "packet": "STEREO-MP3.md"
     }
   ],
   "evidence": [
@@ -447,6 +474,34 @@
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-15T11:14:39.218Z",
+      "text": "Byl zalozen task T-S3: Integrace a přejímka stereo MP3."
+    },
+    {
+      "at": "2026-09-15T11:14:38.489Z",
+      "text": "Task T-SR má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-15T11:14:37.918Z",
+      "text": "Byl zalozen task T-SR: Bezpečná retence stereo MP3."
+    },
+    {
+      "at": "2026-09-15T10:51:17.062Z",
+      "text": "Task T-S2 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-15T10:51:16.731Z",
+      "text": "Task T-S1 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-15T10:51:04.231Z",
+      "text": "Pro task T-S2 byl zaregistrován worktree /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder."
+    },
+    {
+      "at": "2026-09-15T10:51:03.736Z",
+      "text": "Pro task T-S1 byl zaregistrován worktree /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-runtime."
+    },
     {
       "at": "2026-09-15T10:46:14.499Z",
       "text": "Opraveny relativní cesty nových packetů přes transakční API mp-status."
