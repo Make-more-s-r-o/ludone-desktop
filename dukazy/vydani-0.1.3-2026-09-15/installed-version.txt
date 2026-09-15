@@ -1,0 +1,3 @@
+$ plutil -extract CFBundleShortVersionString raw -o - /Applications/LuDone Desktop.app/Contents/Info.plist
+0.1.2
+EXIT_CODE=0

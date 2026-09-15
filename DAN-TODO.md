@@ -1,8 +1,9 @@
 # Co čeká na Dana — LuDone Desktop
 
-> **Aktuální stav 15. 9. 2026:** PR #141 je sloučený a verze 0.1.2 publikovaná i nainstalovaná.
+> **Aktuální stav 15. 9. 2026:** 0.1.3 je publikovaná, podepsaná a notarizovaná pro oba typy Macu.
+> Read-only kontrola po vydání zatím ukazuje nainstalovanou 0.1.2.
 > Záloha podpisového klíče je potvrzená a release přístupy jsou nastavené.
-> Chybu chybějícího „Zkusit znovu“ řeší příprava 0.1.3 spolu se schváleným
+> Chybu chybějícího „Zkusit znovu“ řeší vydaná 0.1.3 spolu se schváleným
 > upozorněním na update a instalací po kliknutí. Aktuální [stav a důkazy](docs/changes/nahravky-dashboard/STAV.md)
 > oddělují vydání, testy a skutečné odeslání. Historické seznamy infrastruktury níže
 > nejsou dnešními úkoly pro Dana; zbývá skutečná přejímka na Macu.

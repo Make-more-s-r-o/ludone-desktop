@@ -1,6 +1,6 @@
 # Ruční ověření dashboardu nahrávek na Macu
 
-Aktuální výchozí instalace je 0.1.2; připravená oprava má verzi 0.1.3. Tento postup sám o sobě nedokládá živou funkčnost. Názvy akcí odpovídají implementovanému UI.
+Aktuální výchozí instalace je 0.1.2; vydaná oprava má verzi 0.1.3. Tento postup sám o sobě nedokládá živou funkčnost. Názvy akcí odpovídají implementovanému UI.
 
 Použij jen vlastní postradatelná testovací data. Nahraj přibližně 30 sekund syntetické řeči a systémového zvuku, nikdy schůzku ani cizí obsah. Do veřejného Gitu neukládej audio, tokeny, e-mail, plná serverová UUID, lokální cesty ani hodnoty release secrets. V protokolu použij jedinečný neškodný název a krátké ID z UI (prvních osm znaků); stejný prefix používá potvrzovací dialog.
 
@@ -41,8 +41,13 @@ HTTP 401, 429, vyčerpání limitu a chybové odpovědi se ověřují mocky. Nez
 
 Read-only kontrola z 15. 9. potvrzuje nainstalovanou 0.1.2. Starší 0.1.1 už pro tuto
 přejímku neinstaluj. Záloha podpisového klíče je potvrzená a GitHub publikační přístup
-je nastavený; znovu jej není potřeba hledat. Finální tag si Dan v původním zadání
-vyhradil, pokud později výslovně nepověří koordinátora jeho publikací.
+je nastavený; znovu jej není potřeba hledat.
+
+Původní vlastník tagu byl Dan. Pro `v0.1.3` platí jednorázová výjimka: Dan 15. 9.
+výslovně odpověděl „Ano, vydej 0.1.3 sám“, takže koordinátor smí tag vytvořit a pushnout
+a spustit podepsané vydání na `stahnout.ludone.cz`. Toto pověření samo nedokládá úspěšné
+vydání. Až dokončený workflow a veřejná kontrola dovolí označit publikaci za úspěšnou;
+živou instalaci a funkčnost dál potvrzuje člověk podle tohoto protokolu.
 
 1. Před vydáním dokonči a ulož rozpracovanou nahrávku a zastav měření času.
 2. Po publikaci 0.1.3 zkontroluje koordinátor úspěšný release workflow, podepsání,

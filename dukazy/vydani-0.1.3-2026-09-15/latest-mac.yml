@@ -1,0 +1,21 @@
+version: 0.1.3
+files:
+  - url: LuDone-Desktop-0.1.3-x64.zip
+    sha512: UbpMBrB/l5UF777SgZlF+WzARi2T5wWspK97feVn8i/UoBZErY8YFaX/PF5gNSwyAoqnIoby7V+nC+J2cgbtaA==
+    size: 119327834
+  - url: LuDone-Desktop-0.1.3-arm64.zip
+    sha512: 2XXUQD1UX690WPEm3Ae+IeYOpyaZjy1FIhym/PG3VCpBi3e0LNQnbemxIojK/hewiXQmuvjUf8xvueyedM/7Yg==
+    size: 112133421
+  - url: LuDone-Desktop-0.1.3-x64.dmg
+    sha512: d7bzXMm7wXV61+KRW2FH+EWMsPv4GopMia8DU2n8mr5eXyzgWE4QX7hSsEUOZq8MDBi+n9mXsBnJjkmYJOBBUg==
+    size: 119616166
+  - url: LuDone-Desktop-0.1.3-arm64.dmg
+    sha512: hZO/ZcDFWoYh2pZ0t3hzDvQJGvY9pUDUCOwvcIKAxMLv31rTAs0KOPvUt/RvI1suJ1ehhV2E2mO639YlSMiPyg==
+    size: 112425330
+path: LuDone-Desktop-0.1.3-x64.zip
+sha512: UbpMBrB/l5UF777SgZlF+WzARi2T5wWspK97feVn8i/UoBZErY8YFaX/PF5gNSwyAoqnIoby7V+nC+J2cgbtaA==
+releaseNotes: |
+  Opravuje obnovení odesílání nahrávek, které čekaly na výběr firmy.
+  Přidává přehledné upozornění na aktualizaci a jednorázové oznámení macOS.
+  Nové verze se stahují automaticky; instalaci spustíte tlačítkem Aktualizovat a můžete ji odložit.
+releaseDate: '2026-09-15T08:51:03.643Z'

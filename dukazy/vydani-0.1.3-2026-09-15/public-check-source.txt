@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import {readFile, writeFile, mkdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
+const root = '/Users/dan/Dev/ClaudeCode/ludone-desktop';
+const require = createRequire(`${root}/package.json`);
+const yaml = require('js-yaml');
+const base = 'https://stahnout.ludone.cz/desktop/';
+const evidence = '/tmp/ludone-release-013-evidence';
+await mkdir(evidence, {recursive:true});
+const result = {version:'0.1.3', measuredAt:new Date().toISOString(), source:base, checks:[]};
+try {
+  const response = await fetch(`${base}latest-mac.yml`, {redirect:'error', headers:{'Cache-Control':'no-cache'}, signal:AbortSignal.timeout(15000)});
+  assert.equal(response.status,200);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const metadata = yaml.load(bytes.toString('utf8'));
+  assert.equal(metadata.version,'0.1.3');
+  const packages = ['arm64','x64'].flatMap(arch=>['dmg','zip'].map(ext=>`LuDone-Desktop-0.1.3-${arch}.${ext}`));
+  assert.deepEqual(metadata.files.map(file=>file.url).sort(), [...packages].sort());
+  const expectedNotes = (await readFile(`${root}/build/release-notes.md`,'utf8')).trim();
+  assert.equal(metadata.releaseNotes.trim(),expectedNotes);
+  assert.ok(Number.isFinite(Date.parse(metadata.releaseDate)));
+  await writeFile(`${evidence}/latest-mac.yml`,bytes);
+  result.metadata = {bytes:bytes.length, sha256:createHash('sha256').update(bytes).digest('hex'), releaseDate:metadata.releaseDate, releaseNotes:metadata.releaseNotes};
+  console.log('PASS veřejný feed: verze 0.1.3, správná sada balíčků a přesné poznámky vydání');
+  const names = packages.flatMap(name=>[name,`${name}.blockmap`]);
+  const checks = await Promise.allSettled(names.map(async name=> {
+    const r = await fetch(`${base}${name}`,{method:'HEAD',redirect:'error',headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
+    assert.equal(r.status,200,`${name}: HTTP`);
+    const rawSize = r.headers.get('content-length');
+    assert.match(rawSize,/^[1-9][0-9]*$/u);
+    const size=Number(rawSize);
+    assert.ok(Number.isSafeInteger(size));
+    const entry=metadata.files.find(file=>file.url===name);
+    if(entry) {
+      assert.equal(size,entry.size,`${name}: velikost`);
+      assert.equal(Buffer.from(entry.sha512,'base64').length,64);
+    }
+    return {name,status:r.status,bytes:size,metadataSizeMatched:!!entry};
+  }));
+  for(let i=0;i<checks.length;i++) {
+    const check=checks[i];
+    if(check.status==='fulfilled') {
+      result.checks.push(check.value);
+      console.log(`PASS ${check.value.name}: HTTP 200, ${check.value.bytes} B`);
+    } else {
+      console.log(`FAIL ${names[i]}: ${check.reason.message}`);
+      result.checks.push({name:names[i],error:check.reason.message});
+    }
+  }
+  assert.ok(checks.every(check=>check.status==='fulfilled'));
+  result.verdict='published';
+} catch(error) {
+  result.verdict='failed';
+  result.error=error.message;
+  console.error(`FAIL ${error.message}`);
+  process.exitCode=1;
+} finally {
+  await writeFile(`${evidence}/public-check.json`,JSON.stringify(result,null,2)+'\n');
+  console.log(`EXIT_CODE=${process.exitCode??0}`);
+}

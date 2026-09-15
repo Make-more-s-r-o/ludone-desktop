@@ -1,21 +1,24 @@
 # Stav běhu `nahravky-dashboard`
 
-**Aktualizováno 15. 9. 2026.** PR #141 je sloučený a verze **0.1.2 je vydaná**.
-[Release 34941430582](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34941430582)
-na `f789f49` prošel včetně podpisu, notarizace a veřejné kontroly download feedu.
-Read-only kontrola potvrzuje instalaci 0.1.2 na Danově Macu. Skutečný upload ani
-aktualizační přechod tím nejsou ověřené.
+**Aktualizováno 15. 9. 2026: verze 0.1.3 je vydaná.** Tag `v0.1.3` ukazuje na
+`28a6563`; Dan jeho publikací výslovně pověřil koordinátora (D19).
 
-**0.1.3 sloučená, připravená k vydání** ([PR #142](https://github.com/Make-more-s-r-o/ludone-desktop/pull/142), `c1ca930`): oprava chybějícího retry pozastavených nahrávek a Danem
-schválené upozornění na aktualizace (proužek + jednorázové oznámení macOS,
-automatické stažení, instalace po kliknutí, možnost odložit).
+✅ [Release 34948618429](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34948618429)
+prošel podpisem, notarizací obou architektur, publikací a veřejnou kontrolou.
+Root nezávisle potvrdil feed 0.1.3, přesné poznámky a všech osm balíčků/blockmap.
+[Záznam a důkazy vydání](../../../dukazy/vydani-0.1.3-2026-09-15/REPORT.md).
 
-🧪 Finální čistý klon `20238192`: **1515 PASS, tři původní skipy, lint,
-typecheck, baseline i build — exit 0**. [Doslovný výpis](../../../dukazy/aktualizace-2026-09-15/gates-clean-final.log)
-a [review aktualizací](../../../dukazy/aktualizace-2026-09-15/REPORT.md).
-Souhlas je vázaný na verzi zobrazenou při kliknutí a lze jej odložit i během čekání.
-🧪 [GitHub CI 34947710670](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34947710670) prošlo nad finálním PR commitem `37f54e8`; PR #142 je sloučené.
-Tag 0.1.3 zatím není publikovaný; jeho finální push si Dan vyhradil v původním goalu.
+0.1.3 obsahuje opravu chybějícího retry pozastavených nahrávek a schválené ovládání
+aktualizací: proužek, jednorázové oznámení macOS, automatické stažení, instalaci po
+kliknutí a možnost odložit. Souhlas je vázaný na konkrétní zobrazenou verzi.
+
+🧪 Finální čistý klon runtime `20238192`: **1515 PASS, tři původní skipy, lint,
+typecheck, baseline a build — exit 0**. [Výpis](../../../dukazy/aktualizace-2026-09-15/gates-clean-final.log)
+a [review](../../../dukazy/aktualizace-2026-09-15/REPORT.md). PR #142 a #143 jsou sloučené,
+CI prošlo také nad release commitem `28a6563`.
+
+⛔ Na Macu po publikaci stále nainstalovaná 0.1.2. Skutečný update, produkční upload,
+zvuk a oznámení macOS se neodvozují z vydání ani unit testů.
 
 ## Dokončená implementace
 
@@ -27,7 +30,7 @@ Tag 0.1.3 zatím není publikovaný; jeho finální push si Dan vyhradil v půvo
 | T5 | Send/keep, trvalý název a consent, automatika jen nových nahrávek, per-item retry, bezpečný koš a Finder. Uložení nečeká na dokončení sítě. |
 | A1–A4 | Finder upload scope, identita z userinfo, výběr firmy v Nastavení a trvalá firma před prvním INIT. Změna globální firmy nepřesune rozpracovaný upload. |
 | I1 | Pravdivé stavové popisky, datum a krátké ID pro korelaci s potvrzovacím dialogem. |
-| T6 | Verze 0.1.2, kontrolované podepsání/notarizace, release metadata a SSH workflow s feedem posledním; viditelná dostupnost a průběh aktualizace. |
+| T6 | Vydaná 0.1.3 pro arm64/x64, podpis a notarizace, feed zveřejněný poslední; proužek, jednorázové oznámení a instalace na výslovnou akci. |
 
 🧪 **Finální čistý klon `33938351`: 1505 PASS, tři původní skipy, lint, typecheck, kontrola baseline i build — exit 0.** [Doslovný výpis](../../../dukazy/nahravky-dashboard-2026-09-14/final/gates-clean-after-ci.log) a [review/přejímka](../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md).
 
@@ -39,9 +42,9 @@ Převzaté poslední zdroje: T-A4 `c25ef2a` a T-I1 `d6bdfdd`. Root před commite
 
 ## Živá přejímka a aktuální blokace
 
-- ✅ Vydání 0.1.2: GitHub release workflow úspěšný; aplikace 0.1.2 nainstalovaná na Macu.
+- ✅ Vydání 0.1.3: release workflow a nezávislá veřejná kontrola úspěšné. Instalace na Macu zatím stále 0.1.2.
 - ⚠️ Čtyři schválené staré položky v 0.1.2 zůstaly `ceka` po chybě nevybrané firmy.
-  Dashboard chybně nenabízí retry. Oprava je součástí připravované 0.1.3.
+  Dashboard v 0.1.2 chybně nenabízí retry. Oprava je publikovaná v 0.1.3, živé opakování čeká.
 - ⛔ Úspěšný produkční upload a shoda obou stop zatím nedoloženy. Starší `odeslano`
   z 11. 9. bez serverového ID není důkaz uploadu v nové verzi.
 - ⛔ Aktualizace mezi dvěma verzemi a skutečná zvuková cesta po ní čekají na Mac.
