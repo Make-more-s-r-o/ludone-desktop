@@ -6,6 +6,7 @@ const path = require("node:path");
 const DAY_MS = 24 * 60 * 60 * 1_000;
 const HASH_BUFFER_BYTES = 1024 * 1024;
 const MAX_MANIFEST_BYTES = 1024 * 1024;
+const RECOVERY_SIDECAR_SUFFIX = ".recovered-upload-v1.json";
 const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
 
 const RETENTION_POLICIES = Object.freeze({
@@ -77,12 +78,14 @@ function safeErrorCode(error) {
 function isImmediateChild(root, candidate) {
   return typeof candidate === "string"
     && path.isAbsolute(candidate)
+    && path.resolve(candidate) === candidate
     && path.dirname(path.resolve(candidate)) === root;
 }
 
 async function readRegularJson(filePath) {
   const noFollow = fsConstants.O_NOFOLLOW ?? 0;
-  const handle = await open(filePath, fsConstants.O_RDONLY | noFollow);
+  const nonBlock = fsConstants.O_NONBLOCK ?? 0;
+  const handle = await open(filePath, fsConstants.O_RDONLY | noFollow | nonBlock);
   try {
     const before = await handle.stat();
     if (!before.isFile() || before.size < 1 || before.size > MAX_MANIFEST_BYTES) {
@@ -125,9 +128,10 @@ async function inspectTrackForDeletion(filePath, declared, source) {
   }
 
   const noFollow = fsConstants.O_NOFOLLOW ?? 0;
+  const nonBlock = fsConstants.O_NONBLOCK ?? 0;
   let handle;
   try {
-    handle = await open(filePath, fsConstants.O_RDONLY | noFollow);
+    handle = await open(filePath, fsConstants.O_RDONLY | noFollow | nonBlock);
   } catch (error) {
     const code = safeErrorCode(error);
     if (code === "ENOENT") return { ok: true, missing: true };
@@ -186,14 +190,83 @@ async function trackStillMatches(filePath, inspected) {
   }
 }
 
-async function verifyDeletionCandidate(candidate, recordingsRoot) {
+function sameManifestIdentity(primary, recovery) {
+  if (
+    !recovery
+    || typeof recovery !== "object"
+    || Array.isArray(recovery)
+    || recovery.schemaVersion !== primary.schemaVersion
+    || recovery.state !== primary.state
+    || recovery.clientRecordingId !== primary.clientRecordingId
+    || recovery.createdAt !== primary.createdAt
+    || recovery.closedAt !== primary.closedAt
+  ) return false;
+  const primarySources = Object.keys(primary.tracks ?? {}).sort();
+  const recoverySources = Object.keys(recovery.tracks ?? {}).sort();
+  if (primarySources.join("|") !== recoverySources.join("|")) return false;
+  return primarySources.every((source) => {
+    const left = primary.tracks[source];
+    const right = recovery.tracks[source];
+    return right
+      && typeof right === "object"
+      && !Array.isArray(right)
+      && ["fileName", "startedAt", "endedAt", "sizeBytes", "sha256"]
+        .every((field) => left?.[field] === right[field]);
+  });
+}
+
+async function inspectRegularPath(filePath, { allowMissing = false } = {}) {
+  const noFollow = fsConstants.O_NOFOLLOW ?? 0;
+  const nonBlock = fsConstants.O_NONBLOCK ?? 0;
+  let handle;
+  try {
+    handle = await open(filePath, fsConstants.O_RDONLY | noFollow | nonBlock);
+  } catch (error) {
+    if (allowMissing && safeErrorCode(error) === "ENOENT") {
+      return { ok: true, missing: true };
+    }
+    return { ok: false, error: { code: safeErrorCode(error) } };
+  }
+  try {
+    const opened = await handle.stat();
+    const current = await lstat(filePath);
+    if (
+      !opened.isFile()
+      || !current.isFile()
+      || current.isSymbolicLink()
+      || !sameFileStats(opened, current)
+    ) return { ok: false, error: { code: "UNSAFE_FILE" } };
+    return { ok: true, missing: false, stats: current };
+  } catch (error) {
+    return { ok: false, error: { code: safeErrorCode(error) } };
+  } finally {
+    await handle.close().catch(() => {});
+  }
+}
+
+function itemPaths(item) {
+  return [
+    item?.manifestPath,
+    item?.sourceManifestPath,
+    ...Object.values(item?.tracks ?? {}),
+    item?.delivery?.filePath,
+    item?.delivery?.masterPath,
+    item?.delivery?.sidecarPath,
+  ].filter((candidate) => typeof candidate === "string").map((candidate) => path.resolve(candidate));
+}
+
+async function verifyDeletionCandidate(candidate, recordingsRoot, queueItems) {
   const item = candidate.item;
+  const primaryPath = item.sourceManifestPath ?? item.manifestPath;
+  const recoverySidecarPath = `${primaryPath}${RECOVERY_SIDECAR_SUFFIX}`;
   if (
     !recordingsRoot
     || item.recoveredIncomplete === true
-    || typeof item.sourceManifestPath === "string"
+    || !isImmediateChild(recordingsRoot, primaryPath)
+    || !primaryPath.endsWith(".manifest.json")
     || !isImmediateChild(recordingsRoot, item.manifestPath)
-    || !item.manifestPath.endsWith(".manifest.json")
+    || (item.sourceManifestPath === undefined && item.manifestPath !== primaryPath)
+    || (item.sourceManifestPath !== undefined && item.manifestPath !== recoverySidecarPath)
     // 🔴 OBRANA DO HLOUBKY — odstranění TÉHLE řádky testy nezčervená, a je to v pořádku.
     // Zkoušeno 3. 9. pěti způsoby (cizí soubor, vnořený adresář, shodné jméno, bajtově
     // shodná kopie mimo kořen, i s předaným `recordingsDirectory`). Pokaždé zelená,
@@ -210,11 +283,11 @@ async function verifyDeletionCandidate(candidate, recordingsRoot) {
 
   let manifest;
   try {
-    const manifestStats = await lstat(item.manifestPath);
+    const manifestStats = await lstat(primaryPath);
     if (!manifestStats.isFile() || manifestStats.isSymbolicLink()) {
       return { ok: false, error: { code: "UNVERIFIED_RECORDING" } };
     }
-    manifest = await readRegularJson(item.manifestPath);
+    manifest = await readRegularJson(primaryPath);
   } catch (error) {
     return { ok: false, error: { code: safeErrorCode(error) } };
   }
@@ -243,7 +316,74 @@ async function verifyDeletionCandidate(candidate, recordingsRoot) {
   if (failedTrack) {
     return { ok: false, error: failedTrack.error };
   }
-  return { ok: true, inspectedTracks };
+
+  let recoverySidecar = null;
+  try {
+    recoverySidecar = await readRegularJson(recoverySidecarPath);
+  } catch (error) {
+    if (safeErrorCode(error) !== "ENOENT") {
+      return { ok: false, error: { code: "RECOVERY_SIDECAR_INVALID" } };
+    }
+  }
+  if (recoverySidecar !== null && !sameManifestIdentity(manifest, recoverySidecar)) {
+    return { ok: false, error: { code: "RECOVERY_SIDECAR_MISMATCH" } };
+  }
+  if (item.sourceManifestPath !== undefined && recoverySidecar === null) {
+    return { ok: false, error: { code: "RECOVERY_SIDECAR_MISSING" } };
+  }
+
+  let derivativePaths = [];
+  try {
+    const { verifyMeetingAudioForDeletion } = require("./meeting-audio.cjs");
+    derivativePaths = await verifyMeetingAudioForDeletion(item, recordingsRoot);
+  } catch (error) {
+    return {
+      ok: false,
+      error: { code: typeof error?.code === "string" ? error.code : "DELIVERY_INVALID" },
+    };
+  }
+  if (
+    !Array.isArray(derivativePaths)
+    || derivativePaths.some((filePath) => !isImmediateChild(recordingsRoot, filePath))
+    || new Set(derivativePaths).size !== derivativePaths.length
+  ) return { ok: false, error: { code: "DELIVERY_INVALID" } };
+
+  const derivativeFiles = derivativePaths.map((filePath) => ({ filePath, source: "delivery" }));
+  const rawFiles = candidate.files.map(({ filePath, source }, index) => ({
+    filePath,
+    source,
+    inspected: inspectedTracks[index],
+  }));
+  const sidecarFiles = [
+    ...derivativeFiles.filter(({ filePath }) => filePath.endsWith(".json")),
+    ...(recoverySidecar === null ? [] : [{ filePath: recoverySidecarPath, source: "recovery-sidecar" }]),
+  ];
+  const plannedFiles = [
+    ...derivativeFiles.filter(({ filePath }) => !filePath.endsWith(".json")),
+    ...rawFiles,
+    ...sidecarFiles,
+    { filePath: primaryPath, source: "manifest" },
+  ];
+  if (new Set(plannedFiles.map(({ filePath }) => filePath)).size !== plannedFiles.length) {
+    return { ok: false, error: { code: "UNVERIFIED_RECORDING" } };
+  }
+
+  const plannedSet = new Set(plannedFiles.map(({ filePath }) => path.resolve(filePath)));
+  const shared = queueItems.some((other) => other !== item
+    && itemPaths(other).some((filePath) => plannedSet.has(filePath)));
+  if (shared) return { ok: false, error: { code: "SHARED_RECORDING_FILE" } };
+
+  const inspectedFiles = [];
+  for (const file of plannedFiles) {
+    if (file.inspected) {
+      inspectedFiles.push(file.inspected);
+      continue;
+    }
+    const inspected = await inspectRegularPath(file.filePath);
+    if (!inspected.ok) return { ok: false, error: { ...inspected.error, source: file.source } };
+    inspectedFiles.push(inspected);
+  }
+  return { ok: true, plannedFiles, inspectedFiles };
 }
 
 /**
@@ -300,9 +440,9 @@ function planRetention(queue, policy, now) {
 }
 
 /**
- * @param {{ queue: { items?: Array<Record<string, unknown>> }, policy: unknown, now: number | Date, recordingsDirectory?: string }} options
+ * @param {{ queue: { items?: Array<Record<string, unknown>> }, policy: unknown, now: number | Date, recordingsDirectory?: string, unlinkFile?: typeof unlink }} options
  */
-async function applyRetention({ queue, policy, now, recordingsDirectory }) {
+async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkFile = unlink }) {
   const plan = planRetention(queue, policy, now);
   const deletedFiles = [];
   const deletedItems = [];
@@ -320,34 +460,43 @@ async function applyRetention({ queue, policy, now, recordingsDirectory }) {
   }
 
   for (const candidate of plan.toDelete) {
-    const verified = await verifyDeletionCandidate(candidate, recordingsRoot);
+    const items = Array.isArray(queue?.items) ? queue.items : [];
+    const verified = await verifyDeletionCandidate(candidate, recordingsRoot, items);
     if (!verified.ok) {
       errors.push(verified.error);
       continue;
     }
-    const stillMatches = await Promise.all(candidate.files.map(({ filePath }, index) => (
-      trackStillMatches(filePath, verified.inspectedTracks[index])
+    // Všechny cíle se znovu porovnají ještě před prvním unlinkem. Vadný poslední
+    // sidecar nebo derivát tak nemůže způsobit smazání už ověřeného originálu.
+    const stillMatches = await Promise.all(verified.plannedFiles.map(({ filePath }, index) => (
+      trackStillMatches(filePath, verified.inspectedFiles[index])
     )));
     const changedIndex = stillMatches.findIndex((matches) => !matches);
     if (changedIndex !== -1) {
       errors.push({
-        code: "TRACK_CHANGED",
-        source: candidate.files[changedIndex].source,
+        code: "FILE_CHANGED",
+        source: verified.plannedFiles[changedIndex].source,
       });
       continue;
     }
     let itemFailed = false;
-    for (let index = 0; index < candidate.files.length; index += 1) {
-      if (verified.inspectedTracks[index].missing) continue;
-      const { filePath, source } = candidate.files[index];
+    for (let index = 0; index < verified.plannedFiles.length; index += 1) {
+      if (verified.inspectedFiles[index].missing) continue;
+      const { filePath, source } = verified.plannedFiles[index];
       try {
-        await unlink(filePath);
+        if (!await trackStillMatches(filePath, verified.inspectedFiles[index])) {
+          itemFailed = true;
+          errors.push({ code: "FILE_CHANGED", source });
+          break;
+        }
+        await unlinkFile(filePath);
         deletedFiles.push(filePath);
       } catch (error) {
         const code = safeErrorCode(error);
         if (code !== "ENOENT") {
           itemFailed = true;
           errors.push({ code, source });
+          break;
         }
       }
     }

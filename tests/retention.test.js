@@ -7,13 +7,14 @@ import {
   mkdtemp,
   readFile,
   rm,
+  symlink,
   unlink,
   utimes,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import queueStore from "../electron/queue.cjs";
 import retention from "../electron/retention.cjs";
 import { createManifest } from "../src/lib/manifest.js";
@@ -131,6 +132,82 @@ async function createSentRecording({ queue = createQueue(), sentAt, ...recording
   };
 }
 
+async function createSentStereoRecording({ recoverySidecar = false, ...options } = {}) {
+  const recording = await createSentRecording({
+    sentAt: NOW - 8 * DAY_MS,
+    ...options,
+  });
+  const manifest = JSON.parse(await readFile(recording.manifestPath, "utf8"));
+  const basePath = recording.manifestPath.slice(0, -".manifest.json".length);
+  const masterPath = `${basePath}-stereo-master.webm`;
+  const deliveryPath = `${basePath}-stereo.mp3`;
+  const deliverySidecarPath = `${recording.manifestPath}.meeting-audio-v1.json`;
+  const recoverySidecarPath = `${recording.manifestPath}.recovered-upload-v1.json`;
+  const masterBytes = Buffer.from("stereo master mikrofon vlevo system vpravo");
+  const deliveryBytes = Buffer.from("hotovy stereo mp3");
+  const startedAt = manifest.createdAt;
+  const endedAt = manifest.closedAt;
+  const delivery = {
+    version: 1,
+    state: "ready",
+    source: "live-stereo",
+    captureSources: "microphone+system",
+    channels: 2,
+    channelMap: { left: "microphone", right: "system" },
+    clientRecordingId: manifest.clientRecordingId,
+    startedAt,
+    endedAt,
+    timing: {
+      durationMs: Date.parse(endedAt) - Date.parse(startedAt),
+      microphoneDelayMs: 0,
+      systemDelayMs: 0,
+    },
+    mime: "audio/mpeg",
+    filePath: deliveryPath,
+    sidecarPath: deliverySidecarPath,
+    masterPath,
+    masterSizeBytes: masterBytes.byteLength,
+    masterSha256: createHash("sha256").update(masterBytes).digest("hex"),
+    sizeBytes: deliveryBytes.byteLength,
+    sha256: createHash("sha256").update(deliveryBytes).digest("hex"),
+    encoderVersion: "test-encoder-1",
+  };
+  const sidecar = {
+    ...delivery,
+    filePath: path.basename(deliveryPath),
+    sidecarPath: path.basename(deliverySidecarPath),
+    masterPath: path.basename(masterPath),
+  };
+  await Promise.all([
+    writeFile(masterPath, masterBytes, { mode: 0o600 }),
+    writeFile(deliveryPath, deliveryBytes, { mode: 0o600 }),
+    writeFile(deliverySidecarPath, JSON.stringify(sidecar), { mode: 0o600 }),
+    ...(recoverySidecar
+      ? [writeFile(recoverySidecarPath, JSON.stringify(manifest), { mode: 0o600 })]
+      : []),
+  ]);
+  const queue = {
+    ...recording.queue,
+    items: recording.queue.items.map((item) => item.clientRecordingId === manifest.clientRecordingId
+      ? {
+        ...item,
+        delivery,
+        ...(recoverySidecar
+          ? { manifestPath: recoverySidecarPath, sourceManifestPath: recording.manifestPath }
+          : {}),
+      }
+      : item),
+  };
+  return {
+    ...recording,
+    queue,
+    masterPath,
+    deliveryPath,
+    deliverySidecarPath,
+    recoverySidecarPath,
+  };
+}
+
 
 // 🔴 Jednostopá nahrávka (bez povoleného systémového zvuku) je legitimní stav a do fronty
 // jde vlastní větví produkčního storu. Do 10. 9. 2026 na ni úklid NIKDY nesáhl, protože
@@ -198,7 +275,7 @@ describe("úklid jednostopé nahrávky", () => {
     });
 
     expect(existsSync(recording.microphonePath)).toBe(false);
-    expect(vysledek.deletedFiles).toEqual([recording.microphonePath]);
+    expect(vysledek.deletedFiles).toEqual([recording.microphonePath, recording.manifestPath]);
     expect(vysledek.errors).toEqual([]);
   });
 
@@ -537,15 +614,14 @@ describe("retence 7 dní", () => {
     expect(existsSync(recording.systemPath)).toBe(true);
   });
 
-  it("manifest zůstane na disku i po smazání obou stop", async () => {
+  it("manifest smaže až po obou stopách", async () => {
     const recording = await createSentRecording({ sentAt: NOW - 8 * DAY_MS });
-    const manifestBefore = await readFile(recording.manifestPath);
 
     expect(existsSync(recording.microphonePath)).toBe(true);
     expect(existsSync(recording.systemPath)).toBe(true);
     expect(existsSync(recording.manifestPath)).toBe(true);
 
-    await applyRetention({
+    const result = await applyRetention({
       queue: recording.queue,
       policy: RETENTION_POLICIES.DNI_7,
       now: NOW,
@@ -553,8 +629,8 @@ describe("retence 7 dní", () => {
 
     expect(existsSync(recording.microphonePath)).toBe(false);
     expect(existsSync(recording.systemPath)).toBe(false);
-    expect(existsSync(recording.manifestPath)).toBe(true);
-    expect(await readFile(recording.manifestPath)).toEqual(manifestBefore);
+    expect(existsSync(recording.manifestPath)).toBe(false);
+    expect(result.deletedFiles.at(-1)).toBe(recording.manifestPath);
   });
 
   it("smaže nahrávku přesně na hranici sedmi dnů", async () => {
@@ -792,6 +868,154 @@ describe("retence 7 dní", () => {
       null,
       null,
     ]);
+  });
+});
+
+describe("retence jediného stereo MP3", () => {
+  it("před prvním smazáním ověří všechny originály i deriváty", async () => {
+    const recording = await createSentStereoRecording();
+    const sidecar = JSON.parse(await readFile(recording.deliverySidecarPath, "utf8"));
+    await writeFile(recording.deliverySidecarPath, JSON.stringify({
+      ...sidecar,
+      timing: { ...sidecar.timing, systemDelayMs: sidecar.timing.systemDelayMs + 1 },
+    }), { mode: 0o600 });
+    const unlinkFile = vi.fn(unlink);
+
+    const result = await applyRetention({
+      queue: recording.queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+      unlinkFile,
+    });
+
+    expect(unlinkFile).not.toHaveBeenCalled();
+    for (const filePath of [
+      recording.masterPath,
+      recording.deliveryPath,
+      recording.microphonePath,
+      recording.systemPath,
+      recording.deliverySidecarPath,
+      recording.manifestPath,
+    ]) expect(existsSync(filePath), `${path.basename(filePath)} musí zůstat`).toBe(true);
+    expect(result.deletedItems).toEqual([]);
+  });
+
+  it("cizí přímou cestu podvrženou jako MP3 odmítne", async () => {
+    const recording = await createSentStereoRecording();
+    const foreignPath = path.join(temporaryDirectory, "cizi-stereo.mp3");
+    await writeFile(foreignPath, await readFile(recording.deliveryPath), { mode: 0o600 });
+    const queue = {
+      ...recording.queue,
+      items: recording.queue.items.map((item) => ({
+        ...item,
+        delivery: { ...item.delivery, filePath: foreignPath },
+      })),
+    };
+
+    const result = await applyRetention({
+      queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(foreignPath)).toBe(true);
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.masterPath)).toBe(true);
+    expect(result.deletedItems).toEqual([]);
+  });
+
+  it.each([
+    ["chybí", async (recording) => unlink(recording.deliveryPath)],
+    ["má jiný obsah", async (recording) => {
+      await writeFile(recording.deliveryPath, Buffer.from("podvrzeny stereo"), { mode: 0o600 });
+    }],
+  ])("%s-li ready MP3, nesmaže žádný soubor", async (_case, corrupt) => {
+    const recording = await createSentStereoRecording();
+    await corrupt(recording);
+
+    const result = await applyRetention({
+      queue: recording.queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    for (const filePath of [
+      recording.masterPath,
+      recording.microphonePath,
+      recording.systemPath,
+      recording.deliverySidecarPath,
+      recording.manifestPath,
+    ]) expect(existsSync(filePath), `${path.basename(filePath)} musí zůstat`).toBe(true);
+    expect(result.deletedFiles).toEqual([]);
+    expect(result.deletedItems).toEqual([]);
+  });
+
+  it("symlink místo ready MP3 blokuje úklid a nesmaže jeho cíl", async () => {
+    const recording = await createSentStereoRecording();
+    const sentinelPath = path.join(temporaryDirectory, "cizi-zvuk.mp3");
+    await writeFile(sentinelPath, await readFile(recording.deliveryPath), { mode: 0o600 });
+    await unlink(recording.deliveryPath);
+    await symlink(sentinelPath, recording.deliveryPath);
+
+    const result = await applyRetention({
+      queue: recording.queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(existsSync(sentinelPath)).toBe(true);
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.manifestPath)).toBe(true);
+    expect(result.deletedItems).toEqual([]);
+  });
+
+  it("smaže master, MP3, originály, oba sidecary a primární manifest jako poslední", async () => {
+    const recording = await createSentStereoRecording({ recoverySidecar: true });
+
+    const result = await applyRetention({
+      queue: recording.queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.deletedFiles).toEqual([
+      recording.masterPath,
+      recording.deliveryPath,
+      recording.microphonePath,
+      recording.systemPath,
+      recording.deliverySidecarPath,
+      recording.recoverySidecarPath,
+      recording.manifestPath,
+    ]);
+    expect(result.deletedItems).toEqual(recording.queue.items);
+    for (const filePath of result.deletedFiles) expect(existsSync(filePath)).toBe(false);
+  });
+
+  it("částečné selhání ponechá queue položku a nesmaže primární manifest", async () => {
+    const recording = await createSentStereoRecording();
+    const unlinkFile = vi.fn(async (filePath) => {
+      if (filePath === recording.microphonePath) {
+        throw Object.assign(new Error("simulovaná chyba disku"), { code: "EIO" });
+      }
+      await unlink(filePath);
+    });
+
+    const result = await applyRetention({
+      queue: recording.queue,
+      policy: RETENTION_POLICIES.DNI_7,
+      now: NOW,
+      unlinkFile,
+    });
+
+    expect(existsSync(recording.masterPath)).toBe(false);
+    expect(existsSync(recording.deliveryPath)).toBe(false);
+    expect(existsSync(recording.microphonePath)).toBe(true);
+    expect(existsSync(recording.deliverySidecarPath)).toBe(true);
+    expect(existsSync(recording.manifestPath)).toBe(true);
+    expect(result.errors).toContainEqual({ code: "EIO", source: "microphone" });
+    expect(result.deletedItems).toEqual([]);
+    expect(result.keptItems).toEqual(recording.queue.items);
   });
 });
 
