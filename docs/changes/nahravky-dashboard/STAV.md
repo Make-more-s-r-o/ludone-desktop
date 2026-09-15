@@ -6,7 +6,7 @@ na `f789f49` prošel včetně podpisu, notarizace a veřejné kontroly download 
 Read-only kontrola potvrzuje instalaci 0.1.2 na Danově Macu. Skutečný upload ani
 aktualizační přechod tím nejsou ověřené.
 
-**Implementováno pro 0.1.3, před vydáním:** oprava chybějícího retry pozastavených nahrávek a Danem
+**0.1.3 sloučená, připravená k vydání** ([PR #142](https://github.com/Make-more-s-r-o/ludone-desktop/pull/142), `c1ca930`): oprava chybějícího retry pozastavených nahrávek a Danem
 schválené upozornění na aktualizace (proužek + jednorázové oznámení macOS,
 automatické stažení, instalace po kliknutí, možnost odložit).
 
@@ -14,7 +14,8 @@ automatické stažení, instalace po kliknutí, možnost odložit).
 typecheck, baseline i build — exit 0**. [Doslovný výpis](../../../dukazy/aktualizace-2026-09-15/gates-clean-final.log)
 a [review aktualizací](../../../dukazy/aktualizace-2026-09-15/REPORT.md).
 Souhlas je vázaný na verzi zobrazenou při kliknutí a lze jej odložit i během čekání.
-GitHub CI a sloučení jsou navazující kroky.
+🧪 [GitHub CI 34947710670](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34947710670) prošlo nad finálním PR commitem `37f54e8`; PR #142 je sloučené.
+Tag 0.1.3 zatím není publikovaný; jeho finální push si Dan vyhradil v původním goalu.
 
 ## Dokončená implementace
 

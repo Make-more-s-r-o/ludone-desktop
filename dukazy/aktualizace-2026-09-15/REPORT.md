@@ -2,7 +2,7 @@
 kind: verification
 ref: 20238192
 verdict: tests-green
-measuredAt: 2026-09-15T08:22:00Z
+measuredAt: 2026-09-15T08:36:37Z
 scope:
   - updater-consent
   - update-banner
@@ -13,6 +13,8 @@ measuredFrom:
   - gates-clean.log
   - gates-clean-final.log
   - root-sabotaz-verze.log
+  - ci-green.json
+  - ci-green.log
 ---
 
 # Viditelné aktualizace a souhlas s instalací
@@ -101,3 +103,18 @@ stavové události. Jiné stažené verzi souhlas nenáleží.
 Vrácení souhlasu k aktuální verzi bez porovnání očekávané způsobilo skutečný
 **FAIL, exit 1** (`root-sabotaz-verze.log`); runtime byl přesně obnoven. Původní
 asynchronní kontrola po bezpečnostní bariéře zůstává součástí výsledku.
+
+
+## GitHub CI a sloučení
+
+🧪 [CI 34947710670](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34947710670)
+na finálním PR commitu `37f54e884da0b942a1f424741b98a0fa58db4d0e` je COMPLETED/SUCCESS,
+brány a build dokončené. Celý výpis a metadata jsou v `ci-green.log` a `ci-green.json`.
+[PR #142](https://github.com/Make-more-s-r-o/ludone-desktop/pull/142) byl sloučen
+15. 9. v 08:36:37 UTC jako `c1ca930d6bda63c28b226f2798324de1744cd2f5`.
+Kontrola `git diff --exit-code main HEAD` potvrdila shodu převzatého stromu.
+
+🟡 Verze 0.1.3 je připravená k vydání, tag zatím nebyl publikován. Produkční feed
+nadále poskytuje dříve vydanou 0.1.2. Hranice finálního tagu vychází z Danova goalu
+(D8), nikoli z chybějícího podpisového nebo publikačního přístupu. Skutečné přijetí
+notifikace, instalace a produkční upload čekají na výše popsaný průchod na Macu.
