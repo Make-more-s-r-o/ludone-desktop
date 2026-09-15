@@ -21,7 +21,7 @@ Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přiděle
   - `electron/retention.cjs`
   - `electron/meeting-audio.cjs`
   - `src/features/recording/RecordingCard.jsx`
-  - `src/features/recording/RecordingsDashboard.jsx`
+  - `src/features/recordings/RecordingsDashboard.jsx`
   - `tests/queue-wiring.test.js`
   - `tests/queue.test.js`
   - `tests/upload-client.test.js`
@@ -47,7 +47,7 @@ Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přiděle
   - `electron/retention.test.cjs`
   - `electron/meeting-audio.test.cjs`
   - `src/features/recording/RecordingCard.test.jsx`
-  - `src/features/recording/RecordingsDashboard.test.jsx`
+  - `src/features/recordings/RecordingsDashboard.test.jsx`
 
 - Žádný backend, LuTrack, design/, produkční účet, soukromé audio ani ostrý upload. Owner, consent, IPC, idempotence a existující brány zůstávají. Root vlastní docs, T-S1 runtime a T-S2 balení; jejich soubory se nekříží. Nový soubor mimo allowlist předem dohodni s rootem.
 
