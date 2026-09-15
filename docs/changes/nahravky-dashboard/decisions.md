@@ -22,6 +22,8 @@
 | D18 | Proužek s přínosem a jednorázové oznámení macOS; automatické stažení, instalace po kliknutí, možnost odložit. | Obě výslovné Danovy odpovědi 15. 9. Zachovat kontrolu po startu a šesti hodinách a bezpečné dokončení nahrávání, uložení, fronty a časovače. |
 | D19 | Koordinátor smí vytvořit a pushnout tag `v0.1.3` a spustit tím podepsané vydání na `stahnout.ludone.cz`. | Dan 15. 9. výslovně: „Ano, vydej 0.1.3 sám.“ Jde o jednorázové pověření pro 0.1.3; živou instalaci, zvuk a update dál ověřuje Dan na Macu. |
 
+| D20 | Jedna schůzka se odesílá jako jeden stereo MP3: mikrofon vlevo, systém vpravo; původní stopy zůstanou na Macu. | Dan 15. 9. výslovně žádá jeden záznam na app.ludone a následně formát MP3. Nahrazuje dvoustopý upload v P1/P5; podrobnosti a přechod starých položek viz [STEREO-MP3](STEREO-MP3.md). |
+
 ## Čeká na ověření
 
 Vydání 0.1.3 je doložené úspěšným workflow 34948618429 a nezávislou veřejnou kontrolou.

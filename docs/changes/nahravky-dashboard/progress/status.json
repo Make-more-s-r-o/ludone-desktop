@@ -5,14 +5,14 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-15T08:58:02.678Z",
+    "updatedAt": "2026-09-15T10:46:14.499Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
     "audiences": [],
     "outOfScope": []
   },
-  "phase": "review_delivery",
+  "phase": "execution",
   "guard": {
     "requires": []
   },
@@ -20,7 +20,7 @@
     "done": 8,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 0
+    "notStarted": 1
   },
   "features": [
     {
@@ -127,6 +127,18 @@
         "EV5",
         "EV6"
       ]
+    },
+    {
+      "id": "NRD-09",
+      "name": "Jedna schůzka v jednom stereo MP3",
+      "whatItGives": "Celý rozhovor se odešle společně, mikrofon vlevo a systém vpravo.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Implementovat trvalý stereo MP3, jeden upload a ověřit restart i přibalený encoder.",
+      "evidence": []
     }
   ],
   "screens": [],
@@ -178,14 +190,14 @@
     {
       "id": "execution",
       "name": "Implementace",
-      "status": "done",
-      "detail": "Fáze je dokončena."
+      "status": "current",
+      "detail": "Tato fáze právě probíhá."
     },
     {
       "id": "review_delivery",
       "name": "Kontrola a dodání",
-      "status": "current",
-      "detail": "Tato fáze právě probíhá."
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
     },
     {
       "id": "archive",
@@ -351,6 +363,37 @@
       "packet": "tasks/T-I1.md",
       "worktree": ".claude/worktrees/nahravky-popisky",
       "report": "evidence/tasks/T-I1.report.json"
+    },
+    {
+      "id": "T-S0",
+      "title": "Kontrakt jednoho stereo MP3",
+      "executor": "claude",
+      "state": "completed",
+      "attempts": 0,
+      "deps": [],
+      "packet": "STEREO-MP3.md"
+    },
+    {
+      "id": "T-S1",
+      "title": "Trvalý stereo MP3 a jediný upload",
+      "executor": "codex",
+      "state": "ready",
+      "attempts": 0,
+      "deps": [
+        "T-S0"
+      ],
+      "packet": "tasks/T-S1.md"
+    },
+    {
+      "id": "T-S2",
+      "title": "Přibalený encoder pro oba Macy",
+      "executor": "codex",
+      "state": "ready",
+      "attempts": 0,
+      "deps": [
+        "T-S0"
+      ],
+      "packet": "tasks/T-S2.md"
     }
   ],
   "evidence": [
@@ -404,6 +447,30 @@
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-15T10:46:14.499Z",
+      "text": "Opraveny relativní cesty nových packetů přes transakční API mp-status."
+    },
+    {
+      "at": "2026-09-15T10:44:45.323Z",
+      "text": "Fáze se změnila z „review_delivery“ na „execution“."
+    },
+    {
+      "at": "2026-09-15T10:44:44.876Z",
+      "text": "Byl zalozen task T-S2: Přibalený encoder pro oba Macy."
+    },
+    {
+      "at": "2026-09-15T10:44:44.550Z",
+      "text": "Byl zalozen task T-S1: Trvalý stereo MP3 a jediný upload."
+    },
+    {
+      "at": "2026-09-15T10:44:44.212Z",
+      "text": "Byl zalozen task T-S0: Kontrakt jednoho stereo MP3."
+    },
+    {
+      "at": "2026-09-15T10:43:47.650Z",
+      "text": "Byla zalozena funkce NRD-09: Jedna schůzka v jednom stereo MP3."
+    },
     {
       "at": "2026-09-15T08:58:02.678Z",
       "text": "Funkce NRD-07 byla aktualizována."

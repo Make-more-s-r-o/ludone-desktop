@@ -1,4 +1,6 @@
 # Záměr: dokončení nahrávek v LuDone Desktop
+> **Doplnění 15. 9. — D20 / NRD-09:** Dan schválil jediný stereo MP3 a jeden serverový záznam za schůzku. [Kontrakt a plán](STEREO-MP3.md) mají pro tento nový rozsah přednost před historickými per-track uploady níže. Implementace zatím čeká; produkčně vydaná je 0.1.3.
+
 
 Dan schválil tento běh v konverzaci Codex 14. 9. 2026 vložením celého goalu a následným pokynem pokračovat samostatně. Tier L odpovídá více etapám, bezpečnostnímu převzetí vlastnictví a doplnění UI. Záměr se znovu neotevírá.
 

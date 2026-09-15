@@ -1,4 +1,6 @@
 # Stav běhu `nahravky-dashboard`
+> **Doplnění 15. 9. — D20 / NRD-09:** Dan schválil jediný stereo MP3 a jeden serverový záznam za schůzku. [Kontrakt a plán](STEREO-MP3.md) mají pro tento nový rozsah přednost před historickými per-track uploady níže. Implementace zatím čeká; produkčně vydaná je 0.1.3.
+
 
 **Aktualizováno 15. 9. 2026: verze 0.1.3 je vydaná.** Tag `v0.1.3` ukazuje na
 `28a6563`; Dan jeho publikací výslovně pověřil koordinátora (D19).

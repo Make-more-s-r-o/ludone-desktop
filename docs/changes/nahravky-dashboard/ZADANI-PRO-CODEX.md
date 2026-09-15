@@ -1,4 +1,6 @@
 # Dashboard nahrávek — zadání pro Codex
+> **Doplnění 15. 9. — D20 / NRD-09:** Dan schválil jediný stereo MP3 a jeden serverový záznam za schůzku. [Kontrakt a plán](STEREO-MP3.md) mají pro tento nový rozsah přednost před historickými per-track uploady níže. Implementace zatím čeká; produkčně vydaná je 0.1.3.
+
 
 **15. 9. 2026 — vydání:** Dan výslovně pověřil koordinátora vydáním 0.1.3 (D19). Tag `v0.1.3`, podpis, notarizace a veřejná publikace jsou dokončené; aktuální [stav a důkazy](STAV.md). Živá přejímka na Macu zůstává samostatná.
 
