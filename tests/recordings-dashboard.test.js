@@ -1,5 +1,5 @@
 import * as React from "react";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -50,6 +50,7 @@ function deferred() {
  *   listLocalRecordings?: () => Promise<any>,
  *   verifyRecording?: (...args: any[]) => Promise<any>,
  *   openRecordingInLuDone?: (...args: any[]) => Promise<any>,
+ *   retryRecording?: (...args: any[]) => Promise<any>,
  * }} options
  */
 async function renderDashboard({
@@ -62,6 +63,7 @@ async function renderDashboard({
     : () => Promise.resolve({ items: [ITEM], unreadableCount: 0 }),
   verifyRecording = () => Promise.resolve({}),
   openRecordingInLuDone = () => Promise.resolve({ opened: true }),
+  retryRecording = () => Promise.resolve({ outcome: "sent" }),
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const ludone = {
@@ -70,6 +72,7 @@ async function renderDashboard({
     listLocalRecordings: vi.fn(listLocalRecordings),
     verifyRecording: vi.fn(verifyRecording),
     openRecordingInLuDone: vi.fn(openRecordingInLuDone),
+    retryRecording: vi.fn(retryRecording),
   };
   Object.defineProperty(dom.window, "ludone", { configurable: true, value: ludone });
   vi.stubGlobal("React", React);
@@ -103,6 +106,92 @@ afterEach(() => {
 });
 
 describe("dashboard fronty nahrávek", () => {
+  it("čekající schválená nahrávka po volbě firmy nabídne skutečné Zkusit znovu", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "ludone-company-retry-ui-"));
+    const manifestPath = path.join(root, "ceka.manifest.json");
+    const microphonePath = path.join(root, "ceka-microphone.webm");
+    const manifest = {
+      schemaVersion: 1,
+      clientRecordingId: ID,
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      state: "complete",
+      tracks: {
+        microphone: {
+          fileName: path.basename(microphonePath),
+          sha256: "a".repeat(64),
+          sizeBytes: 8,
+          startedAt: "2026-09-14T10:00:00.000Z",
+          endedAt: "2026-09-14T10:00:01.000Z",
+        },
+      },
+    };
+    try {
+      await Promise.all([
+        writeFile(manifestPath, JSON.stringify(manifest)),
+        writeFile(microphonePath, "mikrofon"),
+      ]);
+      const { createLocalRecordingsSnapshot } = actualRequire("../electron/recordings-dashboard.cjs");
+      const queue = { items: [{
+        clientRecordingId: ID,
+        kind: "recording",
+        manifestPath,
+        tracks: { microphone: microphonePath },
+      }] };
+      const projected = {
+        ...ITEM,
+        ownership: "current",
+        uploadIntent: "approved",
+        blockReason: "company_not_chosen",
+        allowedActions: undefined,
+      };
+      const snapshot = await createLocalRecordingsSnapshot({
+        queue,
+        queueItems: [projected],
+        recordingsDirectory: root,
+      });
+      expect(snapshot.items[0]).toMatchObject({
+        allowedActions: { retry: true, send: false },
+        localState: "complete-audio",
+        ownership: "current",
+        requiresHumanAction: true,
+        state: "ceka",
+        uploadIntent: "approved",
+      });
+      for (const protectedItem of [
+        { ...projected, uploadIntent: "held" },
+        { ...projected, state: "odesila" },
+        { ...projected, state: "odeslano" },
+        { ...projected, ownership: "other" },
+        { ...projected, ownership: "unknown" },
+      ]) {
+        const protectedSnapshot = await createLocalRecordingsSnapshot({
+          queue, queueItems: [protectedItem], recordingsDirectory: root,
+        });
+        expect(protectedSnapshot.items[0].allowedActions.retry).toBe(false);
+      }
+
+      const dashboard = await renderDashboard({
+        listLocalRecordings: async () => snapshot,
+      });
+      try {
+        const retry = [...dashboard.document.querySelectorAll("button")]
+          .find((button) => button.textContent.trim() === "Zkusit znovu");
+        expect(retry).toBeDefined();
+        await React.act(async () => retry.click());
+        await vi.waitFor(() => expect(dashboard.ludone.retryRecording).toHaveBeenCalledExactlyOnceWith({
+          id: ID,
+          queueRev: REVISION,
+          fileRev: snapshot.items[0].fileRevision,
+        }));
+      } finally {
+        await dashboard.cleanup();
+      }
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
   it("initialized nahrávce bez pinu ukáže bezpečný pokyn k volbě firmy", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "ludone-company-binding-"));
     try {

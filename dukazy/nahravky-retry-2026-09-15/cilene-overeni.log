@@ -1,0 +1,64 @@
+$ ../../../node_modules/.bin/eslint electron/recordings-dashboard.cjs tests/recordings-dashboard.test.js tests/queue.test.js
+EXIT_CODE=0
+
+$ ../../../node_modules/.bin/tsc --noEmit -p jsconfig.json
+tests/queue.test.js(2700,47): error TS2741: Property 'getCurrentCompany' is missing in type '{ clientRecordingId: string; currentOwnerFingerprint: string; expectedFileRevision: any; expectedRevision: any; guard: () => Promise<boolean>; killswitches: { DESKTOP_UPLOAD_ENABLED: unknown; DESKTOP_TIME_ENABLED: unknown; }; mode: string; }' but required in type '{ clientRecordingId: any; currentOwnerFingerprint: any; expectedFileRevision: any; expectedRevision: any; getCurrentCompany: any; guard: any; killswitches: any; mode: any; }'.
+tests/queue.test.js(2721,53): error TS2741: Property 'getCurrentCompany' is missing in type '{ clientRecordingId: string; currentOwnerFingerprint: string; expectedFileRevision: any; expectedRevision: any; guard: () => Promise<boolean>; killswitches: { DESKTOP_UPLOAD_ENABLED: unknown; DESKTOP_TIME_ENABLED: unknown; }; mode: string; }' but required in type '{ clientRecordingId: any; currentOwnerFingerprint: any; expectedFileRevision: any; expectedRevision: any; getCurrentCompany: any; guard: any; killswitches: any; mode: any; }'.
+EXIT_CODE=1
+
+$ ../../../node_modules/.bin/vitest run tests/recordings-dashboard.test.js tests/queue.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-obnoveni-po-firme
+
+ ✓ tests/recordings-dashboard.test.js (17 tests) 200ms
+ ✓ tests/queue.test.js (134 tests) 1346ms
+   ✓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší  516ms
+
+ Test Files  2 passed (2)
+      Tests  151 passed (151)
+   Start at  09:57:36
+   Duration  1.62s (transform 99ms, setup 14ms, collect 690ms, tests 1.55s, environment 0ms, prepare 72ms)
+
+EXIT_CODE=0
+
+$ ../../../node_modules/.bin/eslint electron/recordings-dashboard.cjs tests/recordings-dashboard.test.js tests/queue.test.js (po opravě fixture)
+EXIT_CODE=0
+
+$ ../../../node_modules/.bin/tsc --noEmit -p jsconfig.json (po opravě fixture)
+EXIT_CODE=0
+
+$ ../../../node_modules/.bin/vitest run tests/recordings-dashboard.test.js tests/queue.test.js (po opravě fixture)
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-obnoveni-po-firme
+
+ ✓ tests/recordings-dashboard.test.js (17 tests) 243ms
+ ✓ tests/queue.test.js (134 tests) 1728ms
+   ✓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší  675ms
+
+ Test Files  2 passed (2)
+      Tests  151 passed (151)
+   Start at  09:57:55
+   Duration  2.05s (transform 115ms, setup 25ms, collect 751ms, tests 1.97s, environment 0ms, prepare 84ms)
+
+EXIT_CODE=0
+
+$ ../../../node_modules/.bin/vitest run tests/recordings-dashboard.test.js tests/queue.test.js (finální)
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-obnoveni-po-firme
+
+ ✓ tests/recordings-dashboard.test.js (17 tests) 236ms
+ ✓ tests/queue.test.js (134 tests) 1734ms
+   ✓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší  680ms
+
+ Test Files  2 passed (2)
+      Tests  151 passed (151)
+   Start at  09:58:21
+   Duration  2.04s (transform 141ms, setup 18ms, collect 862ms, tests 1.97s, environment 0ms, prepare 75ms)
+
+EXIT_CODE=0
+
+$ ../../../node_modules/.bin/eslint electron/recordings-dashboard.cjs tests/recordings-dashboard.test.js tests/queue.test.js (finální)
+EXIT_CODE=0
+
+$ ../../../node_modules/.bin/tsc --noEmit -p jsconfig.json (finální)
+EXIT_CODE=0

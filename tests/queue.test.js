@@ -285,10 +285,12 @@ describe("read-only lokální přehled nahrávek", () => {
       expect(first.items.find((item) => item.id === ids.orphan)).toMatchObject({
         localState: "missing-audio",
         sizeBytes: null,
+        allowedActions: { retry: false },
       });
       expect(first.items.find((item) => item.id === ids.invalid)).toMatchObject({
         localState: "invalid-manifest",
         fileRevision: expect.stringMatching(/^sha256:/u),
+        allowedActions: { retry: false },
       });
       expect(first.unreadableCount).toBe(1);
       expect(JSON.stringify(first)).not.toContain("tajna-cesta");
@@ -2652,6 +2654,96 @@ describe("obnova osiřelých nahrávek", () => {
 });
 
 describe("perzistentní pumpa fronty", () => {
+  it("po restartu ruční retry obnoví schválenou nahrávku pauznutou volbou firmy", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-company-retry-restart-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    try {
+      const fixture = await writeRecoverableRecording(recordingsDirectory);
+      const firstStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(async () => {
+          throw Object.assign(
+            new Error("Není vybraná firma, pod kterou se má nahrávka odeslat"),
+            { code: "company_not_chosen", failureClass: FAILURE_CLASSES.PAUSED },
+          );
+        }),
+      });
+      await enqueueApproved(firstStore, { ...fixture, ownerFingerprint: CURRENT_OWNER });
+      await expect(firstStore.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER))
+        .resolves.toMatchObject({ outcome: "paused" });
+
+      const paused = await loadQueue(queuePath);
+      expect(paused.items[0]).toMatchObject({
+        ownerFingerprint: CURRENT_OWNER,
+        uploadIntent: "approved",
+        requiresHumanAction: true,
+        state: "ceka",
+      });
+      const preserved = {
+        manifestPath: paused.items[0].manifestPath,
+        ownerFingerprint: paused.items[0].ownerFingerprint,
+        tracks: paused.items[0].tracks,
+      };
+
+      const send = vi.fn(async () => undefined);
+      const retryAt = Date.now() + 60_000;
+      await saveQueueAtomically(queuePath, {
+        ...paused,
+        uploadCooldowns: [{ ownerFingerprint: CURRENT_OWNER, retryAt }],
+      });
+      const coolingDown = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send,
+      });
+      const coolingSnapshot = (await coolingDown.listLocalRecordings(CURRENT_OWNER)).items[0];
+      await expect(coolingDown.actOnRecording({
+        clientRecordingId: fixture.manifest.clientRecordingId,
+        currentOwnerFingerprint: CURRENT_OWNER,
+        expectedFileRevision: coolingSnapshot.fileRevision,
+        expectedRevision: coolingSnapshot.revision,
+        getCurrentCompany: async () => "765a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+        guard: async () => true,
+        killswitches: killswitches(ENABLED_SETTING),
+        mode: "retry",
+      })).resolves.toMatchObject({ outcome: "rate_limited", retryAt });
+      expect(send).not.toHaveBeenCalled();
+      expect((await loadQueue(queuePath)).items[0]).toEqual(paused.items[0]);
+
+      await saveQueueAtomically(queuePath, { ...paused, uploadCooldowns: [] });
+      const restarted = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send,
+      });
+      const snapshot = (await restarted.listLocalRecordings(CURRENT_OWNER)).items[0];
+      expect(snapshot.allowedActions).toMatchObject({ retry: true, send: false });
+
+      const result = await restarted.actOnRecording({
+        clientRecordingId: fixture.manifest.clientRecordingId,
+        currentOwnerFingerprint: CURRENT_OWNER,
+        expectedFileRevision: snapshot.fileRevision,
+        expectedRevision: snapshot.revision,
+        getCurrentCompany: async () => "765a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+        guard: async () => true,
+        killswitches: killswitches(ENABLED_SETTING),
+        mode: "retry",
+      });
+      expect(result.outcome).toBe("sent");
+      expect(send).toHaveBeenCalledOnce();
+      const sent = (await loadQueue(queuePath)).items[0];
+      expect(sent).toMatchObject({ ...preserved, requiresHumanAction: false, state: "odeslano" });
+      expect(await fs.promises.readFile(fixture.manifestPath, "utf8")).toBe(JSON.stringify(fixture.manifest));
+      await expect(Promise.all(Object.values(fixture.trackPaths).map(
+        (trackPath) => fs.promises.stat(trackPath),
+      ))).resolves.toHaveLength(2);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("429 atomicky uloží queue i cooldown a restart ani ruční retry nepošlou request", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-restart-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");

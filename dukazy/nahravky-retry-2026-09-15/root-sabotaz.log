@@ -1,0 +1,62 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-obnoveni-po-firme
+
+ ❯ tests/recordings-dashboard.test.js (17 tests | 1 failed | 16 skipped) 12ms
+   × dashboard fronty nahrávek > čekající schválená nahrávka po volbě firmy nabídne skutečné Zkusit znovu 11ms
+     → expected { …(20) } to match object { allowedActions: { …(2) }, …(5) }
+(16 matching properties omitted from actual)
+   ↓ dashboard fronty nahrávek > initialized nahrávce bez pinu ukáže bezpečný pokyn k volbě firmy
+   ↓ dashboard fronty nahrávek > částečný koš zobrazí zachování souborů i queue položky
+   ↓ dashboard fronty nahrávek > server nevolá při renderu ani refreshi a ověří obě stopy jen po ručním kliku
+   ↓ dashboard fronty nahrávek > refresh změněné revize odstraní dřívější serverový výsledek
+   ↓ dashboard fronty nahrávek > pending ověření po refreshi nesmí zapsat výsledek staré revize
+   ↓ dashboard fronty nahrávek > nabídne převzetí neznámého vlastníka bez chyby, ale ne vlastní 401
+   ↓ dashboard fronty nahrávek > nulovou velikost zobrazí jako 0 B a neplete ji s chybějící hodnotou
+   ↓ dashboard fronty nahrávek > jiný účet může znovu převzít dosud drženou nahrávku
+   ↓ dashboard fronty nahrávek > ukáže bezpečná fakta a dvojklik odešle jediný přesný claim
+   ↓ dashboard fronty nahrávek > zrušené potvrzení ponechá položku i její akci beze změny
+   ↓ dashboard fronty nahrávek > chyba převzetí nabídne čerstvé načtení a odliší jej od prázdného seznamu
+   ↓ dashboard fronty nahrávek > ruční obnovení vykreslí retention ghost, vadný souhrn a potom prázdný stav
+   ↓ dashboard fronty nahrávek > chyba prvního načtení není prázdný stav a tlačítko ji opraví
+   ↓ dashboard fronty nahrávek > stav signed-out vysvětlí blokaci a tlačítko zakáže
+   ↓ dashboard fronty nahrávek > stav expired vysvětlí blokaci a tlačítko zakáže
+   ↓ dashboard fronty nahrávek > stav unknown vysvětlí blokaci a tlačítko zakáže
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/recordings-dashboard.test.js > dashboard fronty nahrávek > čekající schválená nahrávka po volbě firmy nabídne skutečné Zkusit znovu
+AssertionError: expected { …(20) } to match object { allowedActions: { …(2) }, …(5) }
+(16 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -1,8 +1,8 @@
+  {
+    "allowedActions": {
+-     "retry": true,
++     "retry": false,
+      "send": false,
+    },
+    "localState": "complete-audio",
+    "ownership": "current",
+    "requiresHumanAction": true,
+
+ ❯ tests/recordings-dashboard.test.js:153:33
+    151|         recordingsDirectory: root,
+    152|       });
+    153|       expect(snapshot.items[0]).toMatchObject({
+       |                                 ^
+    154|         allowedActions: { retry: true, send: false },
+    155|         localState: "complete-audio",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 skipped (17)
+   Start at  10:01:29
+   Duration  744ms (transform 37ms, setup 7ms, collect 576ms, tests 12ms, environment 0ms, prepare 35ms)
+
+
+EXIT_CODE=1

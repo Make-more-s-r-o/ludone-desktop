@@ -374,7 +374,8 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
         delete: !inspected.invalid && projected.state !== "odesila",
         retry: !inspected.invalid && inspected.localState !== "missing-audio"
           && projected.ownership === "current" && projected.uploadIntent === "approved"
-          && projected.state === "selhalo",
+          && (projected.state === "selhalo"
+            || (projected.state === "ceka" && projected.requiresHumanAction === true)),
         send: !inspected.invalid && inspected.localState !== "missing-audio"
           && projected.ownership === "current" && projected.state === "ceka"
           && projected.uploadIntent === "held",
