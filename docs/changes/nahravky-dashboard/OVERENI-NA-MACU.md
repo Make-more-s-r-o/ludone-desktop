@@ -1,6 +1,6 @@
 # Ruční ověření dashboardu nahrávek na Macu
 
-Tento postup je příprava pro Dana po dokončení a integraci T-05 a T-A4. Sám o sobě nedokládá živou funkčnost. Před použitím root porovná názvy tlačítek a pořadí kroků se skutečným finálním UI.
+Aktuální výchozí instalace je 0.1.2; připravená oprava má verzi 0.1.3. Tento postup sám o sobě nedokládá živou funkčnost. Názvy akcí odpovídají implementovanému UI.
 
 Použij jen vlastní postradatelná testovací data. Nahraj přibližně 30 sekund syntetické řeči a systémového zvuku, nikdy schůzku ani cizí obsah. Do veřejného Gitu neukládej audio, tokeny, e-mail, plná serverová UUID, lokální cesty ani hodnoty release secrets. V protokolu použij jedinečný neškodný název a krátké ID z UI (prvních osm znaků); stejný prefix používá potvrzovací dialog.
 
@@ -37,23 +37,26 @@ Převzetí staré položky jiného vlastníka proveď pouze tehdy, když Dan vý
 
 HTTP 401, 429, vyčerpání limitu a chybové odpovědi se ověřují mocky. Nezkoušej je ručním opakováním requestů proti produkci a nezatěžuj sdílený limit 120 GET/h/user.
 
-## Instalace a aktualizace dvou verzí
+## Aktualizace současné instalace 0.1.2 na 0.1.3
 
-Tato část začíná až po přijetí T-05 a finální kontrole release diffu. Verze `0.1.1` je starší výchozí instalace stažená prohlížečem; nikdy ji nezapisuj jako „staženou aktualizaci“. Aktualizací je až novější verze publikovaná aktuálním T6 workflow.
+Read-only kontrola z 15. 9. potvrzuje nainstalovanou 0.1.2. Starší 0.1.1 už pro tuto
+přejímku neinstaluj. Záloha podpisového klíče je potvrzená a GitHub publikační přístup
+je nastavený; znovu jej není potřeba hledat. Finální tag si Dan v původním zadání
+vyhradil, pokud později výslovně nepověří koordinátora jeho publikací.
 
-Před tagem musí být podpisový `.p12` včetně hesla ověřený ve firemním správci hesel a GitHub musí mít úplné `DOWNLOAD_SSH_*` variables/secrets. Dan jako jediný vytvoří a pushne finální tag. Workflow musí nejdřív podepsat a notarizovat aplikaci, ověřit artefakty a až potom publikovat verzované soubory a `latest-mac.yml` jako poslední.
+1. Před vydáním dokonči a ulož rozpracovanou nahrávku a zastav měření času.
+2. Po publikaci 0.1.3 zkontroluje koordinátor úspěšný release workflow, podepsání,
+   notarizaci, verzované soubory i veřejný feed. Existence feedu není důkaz instalace.
+3. Spusť současnou aplikaci 0.1.2 z Finderu. Její updater kontroluje dostupnou verzi
+   a stáhne ji. Tato starší verze ještě instaluje automaticky po uvolnění bariér;
+   tlačítka Aktualizovat/Později se v ní zpětně neobjeví.
+4. Po restartu ověř v aplikaci číslo 0.1.3, zachované přihlášení a oprávnění. Proveď
+   krátkou syntetickou nahrávku obou stop a níže uvedenou zkoušku opraveného retry.
 
-| # | Krok | PASS poznáš podle | Stav |
-|---|---|---|---|
-| 1 | Před publikací nové verze stáhni přes prohlížeč správný DMG `0.1.1`, nainstaluj jej přetažením do `/Applications` a spusť z Finderu. | Gatekeeper aplikaci přijme bez obcházení ochrany a aplikace skutečně ukazuje `0.1.1`. Jde o baseline instalaci, ne update. | ☐ ⛔ |
-| 2 | Po záloze klíče a nastavení SSH hodnot nech Dana pushnout tag vyšší verze. V Actions otevři právě tento běh T6. | Zelené jsou podpis/notarizace, validace, review artifact, SCP publikace i veřejná HTTPS kontrola feedu a všech balíčků/blockmap. | ☐ ⛔ |
-| 3 | Po publikaci spusť starší aplikaci znovu, aby zkontrolovala feed, a vyčkej na stažení vyšší verze. | Původní `0.1.1` hlásí až staženou aktualizaci; nové hlášení dostupnosti a průběhu ještě neobsahuje. Existence feedu se nezapisuje jako stažená nebo nainstalovaná aktualizace. | ☐ ⛔ |
-| 4 | Pro zkoušku bariéry spusť postradatelnou nahrávku obou stop už během stahování a ponech ji aktivní přes dokončení aktualizace; potom dokonči uložení. U staré 0.1.1 průběh stahování není vidět, proto je tento pokus časově podmíněný. | Aplikace se během nahrávání ani ukládání nerestartuje. Restart se uvolní až po dokončení bariéry. Pokud stažení skončí ve stavu idle dřív, než nahrávání zahájíš, appka může ihned restartovat; bod zůstává `⛔` a zopakuje se s další schválenou dvojicí verzí. | ☐ ⛔ |
-| 5 | Nech odložený restart dokončit a aplikaci znovu otevři z Finderu. | Aplikace ukazuje novou verzi, zachovala přihlášení a macOS znovu nežádá už udělená oprávnění. Krátká syntetická nahrávka obou stop po update funguje. | ☐ ⛔ |
-
-Přechod `0.1.1 → 0.1.2` ověřuje doručení nového balíčku přes původní updater. Nové hlášení dostupnosti, průběhu stahování a jeho nové propojení s UI lze naostro ověřit až z nainstalované `0.1.2` proti další Danem schválené vyšší verzi; tu kvůli testu tento běh sám nezveřejňuje. Tento druhý průchod zatím zůstává `⛔`.
-
-Příslušný přechod označ `✅` pouze tehdy, když prošla baseline instalace, podpis a notarizace nové verze, veřejná publikace, viditelný update, bariéra během nahrávání/ukládání a nové číslo po restartu. Pokud některý pozorovaný stav chybí, ponech jej `⛔`; nedoplňuj výsledek z unit testu nebo z existence souboru na feedu.
+Bariéru aktualizace během nahrávání označ jako ověřenou pouze tehdy, pokud nahrávání
+skutečně běželo přes dokončení stahování a aplikace počkala až na uložení. Pokud se
+aktualizace stihla nainstalovat dříve, zůstává tato část ⛔ neověřená. Následující
+zkouška nového souhlasu začíná až z nainstalované 0.1.3 proti další schválené verzi.
 
 ## Přejímka opravy a upozornění od verze 0.1.3
 

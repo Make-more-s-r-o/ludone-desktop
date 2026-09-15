@@ -10,6 +10,7 @@ measuredFrom:
   - root-targeted.log
   - root-sabotaz-odklad.log
   - integrace-gates-after-layout.log
+  - gates-clean.log
 ---
 
 # Viditelné aktualizace a souhlas s instalací
@@ -29,6 +30,10 @@ odesílatele a nepřijímá payload. Historie oznámení využívá stávající
 - První společné brány: **1 FAIL, exit 1**, zachyceno v `integrace-gates.log`. Ruční kontrola vložila třetí přímý prvek mezi dvě agendy panelu. Produkční rozložení bylo opraveno: aktualizace leží mezi hlavičkou a rolovatelnými agendami; původní test zůstal beze změny.
 - Opakované společné brány: **1514 PASS, 3 původní skipy; lint, typecheck, kontrola baseline — exit 0**. Build **exit 0**. Doslovný výpis `integrace-gates-after-layout.log`. Existující React act varování v activity UI testech jsou ve výpisu zachována.
 - Sol implementace a nezávislé review doplnilo trvalou historii více verzí a odstranění zastaralé chyby akce. Root zkontroloval diff a explicitně otestoval odložení uprostřed bezpečnostní bariéry.
+
+🧪 Povinný čistý klon commitu `b04bd29b`: **1514 PASS, tři původní skipy, lint,
+typecheck, baseline a build; `npm run gates:clean` exit 0**. Doslovný výpis je
+v `gates-clean.log`. Následující commit přidává pouze dokumentaci a důkazy.
 
 ## Omezená vizuální kontrola
 

@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-15T08:23:07.319Z",
+    "updatedAt": "2026-09-15T08:26:13.409Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -92,8 +92,10 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "0.1.2 má potvrzenou chybu retry po chybějící firmě. Oprava pro 0.1.3 prošla 165 cílenými testy a sabotáží; čeká společná přejímka a vydání.",
-      "evidence": []
+      "nextStep": "0.1.3 opravuje retry po nevybrané firmě; cílené testy, sabotáž, společné brány a čistý klon zelené. Čeká PR/CI/vydání a živý upload.",
+      "evidence": [
+        "EV3"
+      ]
     },
     {
       "id": "NRD-07",
@@ -116,8 +118,10 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Release 0.1.2 a instalace doloženy. Pro 0.1.3 se připravuje schválený proužek, oznámení macOS a instalace po kliknutí; skutečný aktualizační přechod čeká.",
-      "evidence": []
+      "nextStep": "0.1.2 úspěšně vydaná. 0.1.3 přidává banner, oznámení jednou na verzi a instalaci po kliknutí s odložením; 1514 testů a čistý klon zelené. Čeká PR/CI/vydání; nový updater vyžaduje živý přechod z 0.1.3 na další schválenou verzi.",
+      "evidence": [
+        "EV3"
+      ]
     }
   ],
   "screens": [],
@@ -371,6 +375,14 @@
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-15T08:26:13.409Z",
+      "text": "Funkce NRD-08 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:26:13.084Z",
+      "text": "Funkce NRD-06 byla aktualizována."
+    },
     {
       "at": "2026-09-15T08:23:07.319Z",
       "text": "Patch 0.1.3 implementovaný a společné brány zelené. Review a přejímka čistého klonu před PR; produkce stále 0.1.2. Nové potvrzování instalace čeká živé ověření při dalším schváleném vydání."

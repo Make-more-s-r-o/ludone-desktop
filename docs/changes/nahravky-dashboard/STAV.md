@@ -12,7 +12,8 @@ automatické stažení, instalace po kliknutí, možnost odložit).
 
 🧪 Společné brány 0.1.3: **1514 PASS, tři původní skipy, lint, typecheck, baseline
 i build — exit 0**. [Report aktualizací](../../../dukazy/aktualizace-2026-09-15/REPORT.md).
-Čistý klon a GitHub CI jsou samostatné navazující kontroly.
+🧪 Čistý klon `b04bd29b` prošel týmiž branami a buildem, **exit 0**
+([doslovný výpis](../../../dukazy/aktualizace-2026-09-15/gates-clean.log)). GitHub CI je navazující kontrola.
 
 ## Dokončená implementace
 
