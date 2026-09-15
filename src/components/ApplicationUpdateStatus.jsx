@@ -63,11 +63,11 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
     ? status.downloadPercent
     : null;
 
-  const runAction = (name) => {
+  const runAction = (name, ...args) => {
     const action = window.ludone?.[name];
     if (typeof action !== "function") return;
     setActionFailed(false);
-    Promise.resolve().then(() => action()).then((next) => {
+    Promise.resolve().then(() => action(...args)).then((next) => {
       applyStatus(next);
     }).catch(() => setActionFailed(true));
   };
@@ -117,7 +117,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
                   className="idle-feature-row__action"
                   data-testid="update-install"
                   disabled={status.installRequested === true}
-                  onClick={() => runAction("installUpdate")}
+                  onClick={() => runAction("installUpdate", downloadedVersion)}
                 >
                   {status.installRequested ? "Čekám na bezpečný okamžik…" : "Aktualizovat"}
                 </button>

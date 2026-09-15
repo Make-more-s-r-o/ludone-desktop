@@ -3899,11 +3899,23 @@ handleValidated("updater:check-now", ["panel", "settings"], (_event, ...extraPay
   return checkForApplicationUpdate({ manual: true });
 });
 
-handleValidated("updater:install", ["panel", "settings"], (_event, ...extraPayload) => {
-  requireNoPayload("updater:install", extraPayload);
-  if (!downloadedUpdatePending || !updateStatus.downloadedVersion) return { ...updateStatus };
+handleValidated("updater:install", ["panel", "settings"], (_event, payload, ...extraPayload) => {
+  if (
+    extraPayload.length > 0
+    || !payload
+    || typeof payload !== "object"
+    || Array.isArray(payload)
+    || Object.keys(payload).join("|") !== "expectedVersion"
+    || typeof payload.expectedVersion !== "string"
+    || normalizeUpdateVersion(payload.expectedVersion) !== payload.expectedVersion
+  ) throw new TypeError("Instalace vyžaduje právě jednu platnou očekávanou verzi");
+  if (
+    !downloadedUpdatePending
+    || !updateStatus.downloadedVersion
+    || payload.expectedVersion !== updateStatus.downloadedVersion
+  ) return { ...updateStatus };
   updateInstallRequestGeneration += 1;
-  installRequestedForVersion = updateStatus.downloadedVersion;
+  installRequestedForVersion = payload.expectedVersion;
   publishUpdateStatus({ installRequested: true, installDeferred: false });
   ensureUpdateInstallRetry();
   void tryInstallDownloadedUpdate();

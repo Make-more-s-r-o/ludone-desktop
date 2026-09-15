@@ -7299,7 +7299,7 @@ describe("produkční zapojení automatických aktualizací", () => {
 
     autoUpdater.emit("update-downloaded", { version: "1.2.3" });
     blockList = true;
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "1.2.3" });
     await listStarted;
     harness.ipcHandlers.get("updater:defer")(event);
     releaseList();
@@ -7311,6 +7311,33 @@ describe("produkční zapojení automatických aktualizací", () => {
       installRequested: false,
       installDeferred: true,
     });
+  });
+
+  it("souhlas se zobrazenou verzí A nepřenese na mezitím staženou verzi B", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const contents = harness.windows[0].webContents;
+    const event = { sender: contents, senderFrame: contents.mainFrame };
+    const install = harness.ipcHandlers.get("updater:install");
+
+    autoUpdater.emit("update-downloaded", { version: "1.2.3" });
+    const shownVersion = harness.ipcHandlers.get("updater:get-state")(event).downloadedVersion;
+    expect(shownVersion).toBe("1.2.3");
+    autoUpdater.emit("update-downloaded", { version: "1.2.4" });
+
+    expect(install(event, { expectedVersion: shownVersion })).toMatchObject({
+      downloadedVersion: "1.2.4",
+      installRequested: false,
+    });
+    await Promise.resolve();
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+    expect(install(event, { expectedVersion: "1.2.4" })).toMatchObject({
+      downloadedVersion: "1.2.4",
+      installRequested: true,
+    });
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
   });
 
   it("zobrazí nativní oznámení nejvýš jednou pro verzi i po restartu", async () => {
@@ -7369,7 +7396,7 @@ describe("produkční zapojení automatických aktualizací", () => {
     await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
 
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
     autoUpdater.emit("update-available", { version: "0.1.1" });
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
     expect(harness.ipcHandlers.get("updater:get-state")(event).installRequested).toBe(true);
@@ -7424,7 +7451,7 @@ describe("produkční zapojení automatických aktualizací", () => {
 
     await startTracking(event, { projectId: PROJECT_A, note: null });
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
     await vi.advanceTimersByTimeAsync(90_000);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 
@@ -7444,7 +7471,7 @@ describe("produkční zapojení automatických aktualizací", () => {
 
     reportFacts(event, { panelActionsAvailable: true, signedIn: true, systemAudioLost: false, tracking: true });
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
     await vi.advanceTimersByTimeAsync(90_000);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 
@@ -7517,7 +7544,7 @@ describe("produkční zapojení automatických aktualizací", () => {
     const starting = startTracking(event, { projectId: PROJECT_A, note: null });
     await startEntered;
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
     await vi.advanceTimersByTimeAsync(60_000);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 
@@ -7600,7 +7627,7 @@ describe("produkční zapojení automatických aktualizací", () => {
 
     blockNextList = true;
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
     await listStarted;
     const starting = startTracking(event, { projectId: PROJECT_A, note: null });
     await trackingStarted;
@@ -7661,7 +7688,7 @@ describe("produkční zapojení automatických aktualizací", () => {
     const { sessionId } = await begin(event);
     await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
 
     const finishing = finish(event, sessionId, {
       microphone: {
@@ -7709,7 +7736,10 @@ describe("produkční zapojení automatických aktualizací", () => {
     await Promise.resolve();
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
     const contents = harness.windows[0].webContents;
-    harness.ipcHandlers.get("updater:install")({ sender: contents, senderFrame: contents.mainFrame });
+    harness.ipcHandlers.get("updater:install")(
+      { sender: contents, senderFrame: contents.mainFrame },
+      { expectedVersion: "0.1.1" },
+    );
 
     await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1));
   });
@@ -7723,7 +7753,7 @@ describe("produkční zapojení automatických aktualizací", () => {
     const begin = harness.ipcHandlers.get("recording:begin");
 
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
     await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
 
     expect(() => begin(event)).toThrow(/ukončuje/);
@@ -7756,11 +7786,11 @@ describe("produkční zapojení automatických aktualizací", () => {
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
     const contents = harness.windows[0].webContents;
     const event = { sender: contents, senderFrame: contents.mainFrame };
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
     await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
     autoUpdater.emit("error", new Error("nativní instalace selhala"));
     autoUpdater.emit("update-downloaded", { version: "0.1.1" });
-    harness.ipcHandlers.get("updater:install")(event);
+    harness.ipcHandlers.get("updater:install")(event, { expectedVersion: "0.1.1" });
 
     await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(2));
   });
@@ -8076,6 +8106,11 @@ describe("viditelnost automatických aktualizací v panelu", () => {
       await React.act(async () => {
         panel.document.querySelector('[data-testid="update-install"]')?.click();
       });
+      expect(panel.ipcRenderer.invoke).toHaveBeenCalledWith(
+        "updater:install",
+        { expectedVersion: "4.5.6" },
+      );
+      expect(() => panel.api.installUpdate(" 4.5.6")).toThrow(/platnou očekávanou verzi/u);
       // Tři další pokusy o bezpečný restart nesmějí přerušit skutečnou aktivitu mainu.
       await React.act(async () => vi.advanceTimersByTimeAsync(90_000));
       expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
@@ -8191,11 +8226,27 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     const harness = await loadMain();
     await harness.runReady();
     const contents = harness.windows[0].webContents;
-    for (const channel of ["updater:get-state", "updater:check-now", "updater:install", "updater:defer"]) {
+    const event = { sender: contents, senderFrame: contents.mainFrame };
+    for (const channel of ["updater:get-state", "updater:check-now", "updater:defer"]) {
       const handler = harness.ipcHandlers.get(channel);
       expect(() => handler({ sender: contents, senderFrame: { url: "https://cizi.example" } })).toThrow();
-      expect(() => handler({ sender: contents, senderFrame: contents.mainFrame }, "navíc")).toThrow();
+      expect(() => handler(event, "navíc")).toThrow();
     }
+    const install = harness.ipcHandlers.get("updater:install");
+    expect(() => install(
+      { sender: contents, senderFrame: { url: "https://cizi.example" } },
+      { expectedVersion: "1.2.3" },
+    )).toThrow();
+    for (const payload of [
+      undefined,
+      { expectedVersion: null },
+      "1.2.3",
+      { expectedVersion: " 1.2.3" },
+      { expectedVersion: "1.2.3", revision: 4 },
+      { version: "1.2.3" },
+    ]) expect(() => install(event, payload)).toThrow(/právě jednu platnou/u);
+    expect(() => install(event, { expectedVersion: "1.2.3" }, "navíc"))
+      .toThrow(/právě jednu platnou/u);
   });
 
   it("skutečné settings IPC načte nabídku a uloží explicitní firmu stejné relace", async () => {
