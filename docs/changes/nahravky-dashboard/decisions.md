@@ -9,7 +9,7 @@
 | D5 | Převzetí jen potvrzeným klikem u jediné položky, s platnou aktuální identitou. | Zadání T2; žádné automatické připsání vlastníka při obnově. |
 | D6 | Serverové ověření na výslovnou akci, mezipaměť v paměti hlavního procesu, bez nového archivu. | Implementační rozhodnutí; GET limit sdílí desktop s webem i uploadem. Přesný rozpočet bude doložen s T4. |
 | D7 | Existující instalační hosting používá SCP; přístupové hodnoty pouze z GitHub Secrets/Variables. | Read-only průzkum LuDone/DAN-TODO.md doložil SCP a statický adresář; hodnoty tajemství se nečtou ani neukládají do repozitáře. |
-| D8 | Finální tag a zveřejnění aktualizace provede Dan po převzetí. | Výslovná hranice vloženého goalu a zadání §11. |
+| D8 | Finální tag a zveřejnění aktualizace měl podle původního pověření provést Dan po převzetí. | Historická hranice vloženého goalu a zadání §11; pro vydání 0.1.3 ji nahrazuje D19. |
 | D9 | Použít masterplan skill pro stav, evidenci a přehled. | Dan 14. 9.: „pak masterplan taky aktualizuj podle skillu“. Projektový overlay chybí, používá se univerzální proces s předností už schváleného goalu a AGENTS.md. |
 | D10 | Nevytvářet nové schválení designu ani znovu žádat potvrzení plánu. | Dan schválil samostatnou implementaci funkcí a výslovně odložil redesign. L0 kontrakt níže popisuje autorizované chování; žádný falešný hookový approval se nevyrábí. |
 | D11 | Souhlas s odesláním se ukládá u každé nahrávky jako `held` nebo `approved`; legacy a recovery jsou bez souhlasu. | Ruční odeslání musí fungovat i při vypnuté automatice a přežít restart. Uložená volba `uploadEnabled` bude určovat jen automatiku nových nahrávek; explicitní proměnná prostředí zůstává tvrdou transportní stopkou. Samotné zapnutí automatiky staré položky neschválí. |
@@ -20,7 +20,11 @@
 | D16 | Před prvním INIT trvale připnout firmu k uploadu; automatické pokračování ji nemění. | Klient při každém pokusu opakuje idempotentní INIT, proto pouhé uložení recordingId nezabrání použití nové globální firmy pro další stopu. Interní server.companyTabidooId se uloží přes existující durable progress před HTTP. Legacy initialized bez známé firmy se bezpečně zablokuje. Výslovné retry po company_out_of_scope může změnit pin jen při nulových serverových ID/session/progress; již přijatý explicitní claim vlastníka dál resetuje celý serverový stav a drží nahrávku bez consentu. |
 | D17 | Retry také pro vlastní schválenou čekající nahrávku vyžadující ruční zásah. | Dan 15. 9. nahlásil chybějící tlačítko; read-only kontrola potvrdila mezeru po nevybrané firmě. Výběr firmy sám nic neodešle a kontroly akce zůstávají. |
 | D18 | Proužek s přínosem a jednorázové oznámení macOS; automatické stažení, instalace po kliknutí, možnost odložit. | Obě výslovné Danovy odpovědi 15. 9. Zachovat kontrolu po startu a šesti hodinách a bezpečné dokončení nahrávání, uložení, fronty a časovače. |
+| D19 | Koordinátor smí vytvořit a pushnout tag `v0.1.3` a spustit tím podepsané vydání na `stahnout.ludone.cz`. | Dan 15. 9. výslovně: „Ano, vydej 0.1.3 sám.“ Jde o jednorázové pověření pro 0.1.3; živou instalaci, zvuk a update dál ověřuje Dan na Macu. |
 
 ## Čeká na ověření
 
-Vydání 0.1.2 a instalace jsou doložené. Živý upload a aktualizace při rozpracované činnosti zůstávají neověřené. Opravy pro 0.1.3 nejsou součástí již nainstalované 0.1.2.
+Vydání 0.1.2 a instalace jsou doložené. Vydání 0.1.3 je podle D19 výslovně schválené a jeho
+workflow byl spuštěn; dokud běh neskončí a veřejné artefakty se neověří, nesmí se označit za
+vydané. Živý upload a aktualizace při rozpracované činnosti zůstávají neověřené. Opravy pro
+0.1.3 nejsou součástí již nainstalované 0.1.2.

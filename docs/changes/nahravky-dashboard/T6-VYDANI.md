@@ -52,11 +52,12 @@ Souběžná vydání jsou zamčená. Při chybě přenosu zůstává starý `lat
 nezačnou stahovat neúplnou sadu. Úspěch workflow znamená, že přenos i finální přejmenování prošly;
 včetně veřejné dostupnosti; samotné vytvoření balíčků se za publikaci nevydává.
 
-## Postup pro první instalaci a aktualizaci
+## Historický postup vydání 0.1.2 a aktualizace z 0.1.1
 
-Test používá dvě po sobě jdoucí verze: živou `0.1.1` a připravenou `0.1.2`. Bump je v commitu
-`5259d57`; před tagem je nutné ověřit, že obsahuje také výsledky T0–T6.
-Tag vždy vytváří a pushuje Dan.
+Následující kroky zachycují postup použitý pro již dokončený přechod `0.1.1 → 0.1.2`.
+Nejsou aktuálním návodem pro vydání 0.1.3. Bump byl v commitu `5259d57`; před tagem se
+ověřilo, že obsahuje také výsledky T0–T6. Tag `v0.1.2` vytvořil a pushnul Dan podle tehdejšího
+pověření.
 
 1. Na testovacím Macu stáhni starší DMG pro správnou architekturu přes prohlížeč z
    `https://stahnout.ludone.cz/desktop/`. Přetažením nainstaluj aplikaci do `/Applications`.
@@ -80,19 +81,21 @@ Výsledek zapiš jako ✅ pouze tehdy, když projde stažení prohlížečem, pr
 nahrávka, automatický download, bezpečný restart a druhá skutečná nahrávka po aktualizaci.
 Samostatně archivuj doslovné výstupy HTTP, `spctl`, verze aplikace a akceptačního příkazu.
 
-Přechod `0.1.1 → 0.1.2` testuje příjem balíčku původním updaterem. Nová informace o dostupné
-verzi a procentu stahování poběží až v `0.1.2`; její ostré ověření vyžaduje další schválenou
-vyšší verzi. Tento běh kvůli tomu nepřepisuje feed ani nevytváří další tag. Podrobný protokol
-je v [OVERENI-NA-MACU.md](OVERENI-NA-MACU.md).
+Přechod `0.1.1 → 0.1.2` otestoval příjem balíčku původním updaterem. Aktuální postup pro
+vydání a přejímku 0.1.3 je v [OVERENI-NA-MACU.md](OVERENI-NA-MACU.md); historické kroky výše
+se pro něj neopakují jako autoritativní návod.
 
 
 ## Příprava 0.1.3 po PR #142
 
 Oprava retry a nové potvrzování aktualizací jsou sloučené v `c1ca930`. Čistý klon
 finálního runtime `20238192` i GitHub CI finálního PR `37f54e8` prošly. Verze a
-`build/release-notes.md` jsou připravené. Tag `v0.1.3` se vytvoří až po finálním
-pověření nebo jej podle původního goalu pushne Dan; tím se spustí již ověřené workflow.
-Žádné přístupové hodnoty se nemusí znovu nastavovat.
+`build/release-notes.md` jsou připravené. Dan 15. 9. výslovně pověřil koordinátora:
+„Ano, vydej 0.1.3 sám.“ Koordinátor proto smí vytvořit a pushnout tag `v0.1.3` a spustit
+již ověřené workflow; původní pravidlo, že tag pushuje Dan, je pro toto vydání nahrazené
+rozhodnutím D19. Workflow bylo spuštěno, ale 0.1.3 se nesmí označit za vydanou, dokud
+neskončí podpis, notarizace, publikace a veřejná kontrola. Žádné přístupové hodnoty se
+nemusí znovu nastavovat.
 
 Při každém dalším vydání aktualizuj také `build/release-notes.md` podle skutečných
 změn. Electron-builder jej vkládá do `releaseNotes` aktualizačních metadat; panel a
