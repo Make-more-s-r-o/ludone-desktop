@@ -1,6 +1,6 @@
 ---
 kind: verification
-ref: 4332e4a + integrační úprava rozložení
+ref: 20238192
 verdict: tests-green
 measuredAt: 2026-09-15T08:22:00Z
 scope:
@@ -11,6 +11,8 @@ measuredFrom:
   - root-sabotaz-odklad.log
   - integrace-gates-after-layout.log
   - gates-clean.log
+  - gates-clean-final.log
+  - root-sabotaz-verze.log
 ---
 
 # Viditelné aktualizace a souhlas s instalací
@@ -23,7 +25,9 @@ Opakovaná kontrola téže verze nezmění souhlas; nová verze jej nepřebírá
 Proužek obsahuje skutečné poznámky vydání převedené na krátký prostý text. Oznámení
 macOS si pamatuje již oznámené verze přes restart. Kliknutí na oznámení otevírá panel.
 Ruční kontrola nedeklaruje aktuálnost bez výsledku updateru. Nové IPC má omezené
-odesílatele a nepřijímá payload. Historie oznámení využívá stávající atomické nastavení.
+odesílatele. Instalace přijímá pouze očekávanou zobrazenou verzi, kterou main
+porovná se skutečně staženou; kontrola a odložení nepřijímají payload. Historie
+oznámení využívá stávající atomické nastavení.
 
 - Root: čtyři cílené testové soubory, **350 PASS, exit 0** (`root-targeted.log`).
 - Sabotáž odstraněním opětovné kontroly požadavku po asynchronní bariéře: relevantní test **FAIL, exit 1** (`root-sabotaz-odklad.log`). Zdroj byl přesně obnoven. Filtrované testy nejsou změnou baseline.
@@ -33,7 +37,8 @@ odesílatele a nepřijímá payload. Historie oznámení využívá stávající
 
 🧪 Povinný čistý klon commitu `b04bd29b`: **1514 PASS, tři původní skipy, lint,
 typecheck, baseline a build; `npm run gates:clean` exit 0**. Doslovný výpis je
-v `gates-clean.log`. Následující commit přidává pouze dokumentaci a důkazy.
+v `gates-clean.log`. Commit `8ea4410` přidal pouze dokumentaci a důkazy. Po následném nálezu review
+proběhl nový finální čistý klon, viz níže.
 
 ## Omezená vizuální kontrola
 
@@ -50,3 +55,49 @@ ověřené naostro. `ui-smoke` ani `audio-smoke` agent nespouštěl. Přechod 0.
 
 `premisaPlatila: true`. `kontrolniNula`: 0 skutečných instalací v náhledu,
 0 produkčních uploadů, 0 změn backendu/LuTracku/designu a 0 oslabených bran.
+
+
+## Závěrečné review a citlivost měřidel
+
+1. Správnost: root review retry a updater stavových přechodů, nezávislé Sol review
+   celého výsledného diffu. Nález P2: původní install IPC nepotvrdilo verzi viděnou
+   uživatelem. Oprava `20238192` nese přesně očekávanou verzi, odmítne zastaralý
+   souhlas a vrátí čerstvý stav. Root přezkoumal diff a potvrdil regresní test
+   vlastní sabotáží; žádný nevyřešený P1/P2 v tomto diffu nezůstal.
+2. Bezpečnost a oprávnění: kontrola odesílatele IPC zůstává, nové akce jsou pouze
+   v důvěryhodném panelu a Nastavení. Síťová, přihlašovací ani podpisová oprávnění
+   se touto opravou nerozšiřují.
+3. Kritické invarianty: retry drží vlastníka/consent/cooldown a nemění identitu
+   nahrávky; instalace zachovává bariéry probíhající činnosti, odložení ruší souhlas.
+4. Intent/spec: Dan zvolil proužek, jednorázové oznámení a instalaci po kliknutí
+   s odložením. Automatická kontrola a stahování zůstávají. Backend se nemění.
+5. Plán/architektura: stávající updater, IPC, atomické nastavení a přehled; žádný
+   nový transport, fronta ani serverová funkcionalita.
+6. Design: samostatný redesign je mimo rozsah na výslovný pokyn Dana. Použity
+   existující komponenty/styly a vizuálně proklikán omezený syntetický náhled.
+7. Důkazy: doslovné výpisy včetně prvního integračního selhání a sabotáží. Zelené
+   mocky se nevydávají za macOS oznámení, instalaci ani produkční upload.
+8. Přehled: masterplan odděluje skutečně vydanou 0.1.2 od patch přípravy 0.1.3,
+   stav testů a živou přejímku. Záloha klíče a publikační přístup nejsou opětovný úkol.
+
+### Proč to není chyba měřidla
+
+Retry vychází z původního manifestu/obnovené fronty a projde do konkrétní UI akce.
+Při návratu starého predikátu skutečně selže. Asynchronní zkouška updateru odstraní
+produkční kontrolu souhlasu a odhalí skutečné nežádoucí volání quitAndInstall.
+Nejde pouze o kontrolu textu zdrojového souboru. Původní panelový test se neoslabil:
+chybná třetí agenda byla opravena přesunutím aktualizací do samostatného prostoru.
+
+
+## Finální přejímka opravy verze souhlasu
+
+🧪 `20238192`: **1515 PASS, 3 původní skipy, lint/typecheck/baseline/build,
+`npm run gates:clean` exit 0**. Doslovný výpis `gates-clean-final.log`.
+Root nezávisle zkontroloval renderer → preload → main, úzký tvar payloadu,
+zachování všech původních bezpečnostních testů a přesné předání viděné verze.
+Revize stavového snapshotu se neposílá: nezměněná verze zůstává platná i při nové
+stavové události. Jiné stažené verzi souhlas nenáleží.
+
+Vrácení souhlasu k aktuální verzi bez porovnání očekávané způsobilo skutečný
+**FAIL, exit 1** (`root-sabotaz-verze.log`); runtime byl přesně obnoven. Původní
+asynchronní kontrola po bezpečnostní bariéře zůstává součástí výsledku.

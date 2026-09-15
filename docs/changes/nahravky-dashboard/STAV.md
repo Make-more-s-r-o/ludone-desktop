@@ -10,10 +10,11 @@ aktualizační přechod tím nejsou ověřené.
 schválené upozornění na aktualizace (proužek + jednorázové oznámení macOS,
 automatické stažení, instalace po kliknutí, možnost odložit).
 
-🧪 Společné brány 0.1.3: **1514 PASS, tři původní skipy, lint, typecheck, baseline
-i build — exit 0**. [Report aktualizací](../../../dukazy/aktualizace-2026-09-15/REPORT.md).
-🧪 Čistý klon `b04bd29b` prošel týmiž branami a buildem, **exit 0**
-([doslovný výpis](../../../dukazy/aktualizace-2026-09-15/gates-clean.log)). GitHub CI je navazující kontrola.
+🧪 Finální čistý klon `20238192`: **1515 PASS, tři původní skipy, lint,
+typecheck, baseline i build — exit 0**. [Doslovný výpis](../../../dukazy/aktualizace-2026-09-15/gates-clean-final.log)
+a [review aktualizací](../../../dukazy/aktualizace-2026-09-15/REPORT.md).
+Souhlas je vázaný na verzi zobrazenou při kliknutí a lze jej odložit i během čekání.
+GitHub CI a sloučení jsou navazující kroky.
 
 ## Dokončená implementace
 
