@@ -6,6 +6,9 @@
 
 | Task | Závisí na | Důvod |
 |---|---|---|
+| T-S0 | — | Kontrakt D20 před implementací. |
+| T-S1 | T-S0 | Trvalý MP3 a jediný upload. |
+| T-S2 | T-S0 | Přibalený encoder. |
 | T-00 | — | Bezpečná projekce je základ dalších operací fronty. |
 | T-01 | T-00 | Trvalý výsledek uploadu rozšiřuje projekci. |
 | T-02 | T-01 | Převzetí navazuje na trvalý stav položky; `T-01` už zahrnuje `T-00`. |
@@ -83,6 +86,9 @@ Aktuální etapa sdílených hotspotů je T-A4; T-05 byl převzat z `e225880` a 
 
 | Task | Packet | Executor |
 |---|---|---|
+| T-S0 | `STEREO-MP3.md` | Astra dokumentace |
+| T-S1 | `tasks/T-S1.md` | Sol runtime |
+| T-S2 | `tasks/T-S2.md` | Sol balení |
 | T-00 | `tasks/T-00.md` | Sol fronta — zpětný přehled |
 | T-01 | `tasks/T-01.md` | Sol fronta — zpětný přehled |
 | T-02 | `tasks/T-02.md` | Sol převzetí |
@@ -98,3 +104,9 @@ Aktuální etapa sdílených hotspotů je T-A4; T-05 byl převzat z `e225880` a 
 | T-06 | `tasks/T-06.md` | Sol vydání — zpětný přehled |
 
 Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.
+
+## D20 — stereo MP3 (15. 9.)
+
+`T-S0 (dokumentace) → T-S1 (Sol runtime) + T-S2 (Sol balení) → T-S3 (Astra integrace/review)`
+
+Nové hotspoty a allowlisty stanoví packety [T-S1](T-S1.md) a [T-S2](T-S2.md). Jejich vlastnictví pro tento běh nahrazuje dokončené historické etapy. Feature NRD-09; root jediný píše docs/stav a commituje.

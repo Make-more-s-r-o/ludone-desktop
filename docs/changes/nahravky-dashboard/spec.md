@@ -1,4 +1,6 @@
 # Specifikace — dokončení nahrávek (`nahravky-dashboard`)
+> **Doplnění 15. 9. — D20 / NRD-09:** Dan schválil jediný stereo MP3 a jeden serverový záznam za schůzku. [Kontrakt a plán](STEREO-MP3.md) mají pro tento nový rozsah přednost před historickými per-track uploady níže. Implementace zatím čeká; produkčně vydaná je 0.1.3.
+
 
 Stav: schválený rozsah běhu, realizace probíhá · datum: 14. 9. 2026.
 
