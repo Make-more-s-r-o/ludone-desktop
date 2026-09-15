@@ -1,0 +1,11 @@
+{
+  "measuredAt": "2026-09-15T07:53:15.380097+00:00",
+  "installedVersion": "0.1.2",
+  "approvedWaitingCompanyItems": 4,
+  "blockedItemsWithServerIds": 0,
+  "installedRetryRequiresFailedState": true,
+  "installedSendRequiresHeldConsent": true,
+  "mutations": 0,
+  "audioRead": false,
+  "secretsRead": false
+}

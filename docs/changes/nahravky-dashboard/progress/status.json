@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-14T23:14:10.084Z",
+    "updatedAt": "2026-09-15T08:23:07.319Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -28,11 +28,11 @@
       "name": "Úplná a obnovitelná fronta",
       "whatItGives": "Nahrávka si zachová identitu každé odesílané stopy.",
       "scope": "approved",
-      "delivery": "committed",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Trvalá ID, 429 pauzy, consent a pin firmy jsou integrované. Čistý klon i GitHub CI na 33938351 prošly; skutečné odeslání čeká na Mac.",
+      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -40,11 +40,11 @@
       "name": "Výslovné převzetí",
       "whatItGives": "Uživatel odblokuje jednu vlastní nahrávku s potvrzením.",
       "scope": "approved",
-      "delivery": "committed",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Převzato v a25bd5c, 440 cílených testů koordinátora. Native potvrzení ještě ověří Dan na Macu.",
+      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -52,11 +52,11 @@
       "name": "Lokální přehled",
       "whatItGives": "Uživatel pozná, co skutečně leží na Macu.",
       "scope": "approved",
-      "delivery": "committed",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Lokální přehled a pravdivé popisky T-I1 přijaty. Krátké ID odpovídá dialogu; skutečné použití s nahrávkami čeká na Mac.",
+      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -64,11 +64,11 @@
       "name": "Porovnání serveru",
       "whatItGives": "Uživatel rozliší stav fronty od ověřeného výsledku na serveru.",
       "scope": "approved",
-      "delivery": "committed",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Ruční ověření známých ID je integrované. Čistý klon prošel; shodu obou stop proti produkčnímu serveru ověří Dan.",
+      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -76,11 +76,11 @@
       "name": "Odeslání podle volby",
       "whatItGives": "Uživatel rozhodne o odeslání každé nové nahrávky.",
       "scope": "approved",
-      "delivery": "committed",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Send/keep a automatika pouze nových nahrávek integrovány; potvrzení uložení nečeká na síť. Skutečné nahrávání ověří Dan.",
+      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -88,11 +88,11 @@
       "name": "Akce nad záznamem",
       "whatItGives": "Konkrétní nahrávku lze bezpečně spravovat a otevřít na webu.",
       "scope": "approved",
-      "delivery": "committed",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Per-item akce a ochrana firmy integrovány po review. Zrušení koše, skutečný Finder a ruční retry čekají na Mac.",
+      "nextStep": "0.1.2 má potvrzenou chybu retry po chybějící firmě. Oprava pro 0.1.3 prošla 165 cílenými testy a sabotáží; čeká společná přejímka a vydání.",
       "evidence": []
     },
     {
@@ -100,11 +100,11 @@
       "name": "Produkční přihlášení",
       "whatItGives": "Nahrávání a upload fungují bez shellového nastavení.",
       "scope": "approved",
-      "delivery": "committed",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "T-A4 c25ef2a zapojilo výběr firmy do Nastavení a atomickou vazbu na relaci. Finder login a produkční upload stále čekají na živý test.",
+      "nextStep": "Verze 0.1.2 je vydaná a nainstalovaná; živé ověření této funkce a produkčního uploadu zůstává samostatné.",
       "evidence": []
     },
     {
@@ -112,11 +112,11 @@
       "name": "Vydání a aktualizace",
       "whatItGives": "Nová podepsaná verze je připravená k vydání a aplikace hlásí aktualizaci.",
       "scope": "approved",
-      "delivery": "committed",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Vydávací workflow a updater jsou připravené. Chybí potvrzení zálohy klíče a publikační GitHub hodnoty; Dan poté pushne tag a ověří instalaci/aktualizaci.",
+      "nextStep": "Release 0.1.2 a instalace doloženy. Pro 0.1.3 se připravuje schválený proužek, oznámení macOS a instalace po kliknutí; skutečný aktualizační přechod čeká.",
       "evidence": []
     }
   ],
@@ -360,9 +360,69 @@
       "value": "33938351: čistý klon a GitHub CI 34907553077 zelené, 1505 PASS a build.",
       "ref": "33938351",
       "href": "../../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md"
+    },
+    {
+      "id": "EV3",
+      "kind": "verification",
+      "label": "Oprava retry a aktualizace 0.1.3",
+      "value": "1514 testů PASS, lint/typecheck/baseline/build exit 0; cílené testy a skutečné sabotáže. Živý upload a instalace neověřené.",
+      "ref": "4332e4a",
+      "href": "../../../../dukazy/aktualizace-2026-09-15/REPORT.md"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-15T08:23:07.319Z",
+      "text": "Patch 0.1.3 implementovaný a společné brány zelené. Review a přejímka čistého klonu před PR; produkce stále 0.1.2. Nové potvrzování instalace čeká živé ověření při dalším schváleném vydání."
+    },
+    {
+      "at": "2026-09-15T08:23:06.982Z",
+      "text": "Byl přidán důkaz EV3: Oprava retry a aktualizace 0.1.3."
+    },
+    {
+      "at": "2026-09-15T08:23:06.652Z",
+      "text": "Fáze se změnila z „execution“ na „review_delivery“."
+    },
+    {
+      "at": "2026-09-15T08:05:30.401Z",
+      "text": "Fáze se změnila z „review_delivery“ na „execution“."
+    },
+    {
+      "at": "2026-09-15T08:04:01.728Z",
+      "text": "Funkce NRD-08 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:04:01.477Z",
+      "text": "Funkce NRD-07 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:04:01.228Z",
+      "text": "Funkce NRD-06 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:04:00.980Z",
+      "text": "Funkce NRD-05 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:04:00.730Z",
+      "text": "Funkce NRD-04 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:04:00.479Z",
+      "text": "Funkce NRD-03 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:04:00.233Z",
+      "text": "Funkce NRD-02 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:03:59.976Z",
+      "text": "Funkce NRD-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-15T08:02:33.389Z",
+      "text": "Verze 0.1.2 je vydaná a nainstalovaná (release 34941430582). Dan našel chybějící retry při pozastavení kvůli firmě; úzká oprava má 165 cílených testů a sabotáž prokázala regresi. Pro 0.1.3 přibude také schválený proužek, oznámení macOS a instalace aktualizace po kliknutí."
+    },
     {
       "at": "2026-09-14T23:14:10.084Z",
       "text": "Přejímka uzavřená: čistý klon 33938351 a CI 34907553077 prošly s 1505 PASS a buildem. Veřejné vydání čeká na doložené GitHub release hodnoty, potvrzení zálohy klíče, Danův tag a živý test na Macu."

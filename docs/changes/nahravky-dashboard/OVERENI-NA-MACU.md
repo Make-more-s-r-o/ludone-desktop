@@ -54,3 +54,21 @@ Před tagem musí být podpisový `.p12` včetně hesla ověřený ve firemním 
 Přechod `0.1.1 → 0.1.2` ověřuje doručení nového balíčku přes původní updater. Nové hlášení dostupnosti, průběhu stahování a jeho nové propojení s UI lze naostro ověřit až z nainstalované `0.1.2` proti další Danem schválené vyšší verzi; tu kvůli testu tento běh sám nezveřejňuje. Tento druhý průchod zatím zůstává `⛔`.
 
 Příslušný přechod označ `✅` pouze tehdy, když prošla baseline instalace, podpis a notarizace nové verze, veřejná publikace, viditelný update, bariéra během nahrávání/ukládání a nové číslo po restartu. Pokud některý pozorovaný stav chybí, ponech jej `⛔`; nedoplňuj výsledek z unit testu nebo z existence souboru na feedu.
+
+## Přejímka opravy a upozornění od verze 0.1.3
+
+1. V Účet načíst firmy, vybrat a uložit správnou firmu. V Nahrávky obnovit přehled.
+   U vlastní dříve schválené položky pozastavené kvůli firmě musí být „Zkusit znovu“.
+2. Zvolit tuto akci u jedné vlastní testovací položky. Po dokončení ručně ověřit
+   stav na serveru přes „Ověřit v LuDone“. `held` položku tímto testem neodesílat.
+3. V nové verzi ručně zkontrolovat aktualizace: musí být vidět skutečný výsledek
+   kontroly. Odpojená síť nesmí skončit hláškou, že je aplikace aktuální.
+4. Až bude schválené další vydání, ověřit proužek s jeho skutečným přínosem a jedno
+   oznámení macOS. Opakovaná kontrola stejné verze ani restart nesmějí oznámení opakovat.
+5. Po stažení se aplikace sama nerestartuje. „Později“ ponechá připomínku; klik
+   „Aktualizovat“ dovolí instalaci až po dokončení nahrávání, uložení a dalších bariér.
+   Odložení během čekání musí připravený restart zrušit.
+
+Příchod 0.1.3 do 0.1.2 stále řídí starý automatický updater. Nové čekání na kliknutí
+lze naostro prokázat až aktualizací z 0.1.3 na další schválenou verzi. Další vydání
+se nevytváří jen kvůli tomuto testu. Jednotkové testy se nezapisují jako živá přejímka.

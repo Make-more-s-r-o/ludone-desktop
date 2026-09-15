@@ -334,8 +334,8 @@ export function App() {
           <ApplicationVersion />
         </header>
 
+        <ApplicationUpdateStatus showVersion={false} allowManualCheck />
         <div className="panel-scroll">
-          <ApplicationUpdateStatus showVersion={false} allowManualCheck />
           {panelActionsAvailable && queueSnapshot.unavailable && (
             <p className="queue-retry-feedback" role="alert">
               Stav fronty není dostupný. Počet čekajících záznamů není známý.

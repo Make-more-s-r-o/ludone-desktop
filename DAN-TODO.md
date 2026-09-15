@@ -1,12 +1,11 @@
 # Co čeká na Dana — LuDone Desktop
 
-> **Aktuální běh 15. 9. 2026:** Vývoj probíhá v [PR #141](https://github.com/Make-more-s-r-o/ludone-desktop/pull/141).
-> Přihlášení, consent, fronta, dashboard a výběr firmy jsou implementované; čistý klon
-> prošel 1505 testy i sestavením. Veřejné vydání a živá přejímka čekají. Datované popisy vad níže jsou původní zadání, nikoli stav tohoto PR.
-> Aktuální [stav a důkazy](docs/changes/nahravky-dashboard/STAV.md) rozlišují kód, testy a živé ověření.
-> Na Danovi zůstává potvrzení firemní zálohy podpisového klíče, doplnění publikačních
-> GitHub hodnot podle [postupu vydání](docs/changes/nahravky-dashboard/T6-VYDANI.md),
-> finální tag a [krátké ověření na Macu](docs/changes/nahravky-dashboard/OVERENI-NA-MACU.md).
+> **Aktuální stav 15. 9. 2026:** PR #141 je sloučený a verze 0.1.2 publikovaná i nainstalovaná.
+> Záloha podpisového klíče je potvrzená a release přístupy jsou nastavené.
+> Chybu chybějícího „Zkusit znovu“ řeší příprava 0.1.3 spolu se schváleným
+> upozorněním na update a instalací po kliknutí. Aktuální [stav a důkazy](docs/changes/nahravky-dashboard/STAV.md)
+> oddělují vydání, testy a skutečné odeslání. Historické seznamy infrastruktury níže
+> nejsou dnešními úkoly pro Dana; zbývá skutečná přejímka na Macu.
 
 **Přerovnáno 7. 9. 2026.** Soubor měl 58 sekcí a 1870 řádků od 24. srpna; většina už byla
 vyřízená, ale nebylo to poznat. 🔴 **Tři položky, které vypadaly otevřeně, jsem ověřil

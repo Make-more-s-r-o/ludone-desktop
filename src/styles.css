@@ -479,6 +479,19 @@ svg {
   text-align: right;
 }
 
+.panel.window-surface:has(> .application-update-status) {
+  grid-template-rows: 52px auto minmax(0, 1fr) 34px;
+}
+
+.panel.window-surface > .application-update-status {
+  min-width: 0;
+  padding: 0 14px;
+}
+
+.panel.window-surface:has(.recording-card--saved):has(> .application-update-status) {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .application-update-status .feature-card {
   margin-top: 8px;
 }
