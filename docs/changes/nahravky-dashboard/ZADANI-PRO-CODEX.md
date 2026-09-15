@@ -568,6 +568,8 @@ zatím na tom, co na tom nezávisí:
 
 ## 12. Stav práce — tohle udržuj ty
 
+> **Aktualizace 15. 9.:** PR #141 je sloučený a 0.1.2 vydaná i nainstalovaná. Starší formulace „čeká na vydání“ níže jsou historické. Oprava retry a schválené upozornění na update se připravují pro 0.1.3; aktuální stav je ve [STAV.md](STAV.md).
+
 Dan bude projekt otevírat opakovaně a říkat „pokračuj v práci". **Nemáš paměť mezi běhy —
 pamatuje za tebe tenhle soubor.** Úkol není hotový commitem kódu, ale commitem kódu **plus
 zápisem sem**. Piš pravdu včetně toho, co nevyšlo.

@@ -1,6 +1,20 @@
 # Stav běhu `nahravky-dashboard`
 
-**Aktualizováno 15. 9. 2026.** Implementace je převzatá v [draft PR #141](https://github.com/Make-more-s-r-o/ludone-desktop/pull/141), větev `feat/nahravky-dokonceni`. Veřejné vydání čeká na podmínky níže. [Masterplan](progress/index.html) odděluje implementaci, dostupnost a ověření.
+**Aktualizováno 15. 9. 2026.** PR #141 je sloučený a verze **0.1.2 je vydaná**.
+[Release 34941430582](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34941430582)
+na `f789f49` prošel včetně podpisu, notarizace a veřejné kontroly download feedu.
+Read-only kontrola potvrzuje instalaci 0.1.2 na Danově Macu. Skutečný upload ani
+aktualizační přechod tím nejsou ověřené.
+
+**Implementováno pro 0.1.3, před vydáním:** oprava chybějícího retry pozastavených nahrávek a Danem
+schválené upozornění na aktualizace (proužek + jednorázové oznámení macOS,
+automatické stažení, instalace po kliknutí, možnost odložit).
+
+🧪 Finální čistý klon `20238192`: **1515 PASS, tři původní skipy, lint,
+typecheck, baseline i build — exit 0**. [Doslovný výpis](../../../dukazy/aktualizace-2026-09-15/gates-clean-final.log)
+a [review aktualizací](../../../dukazy/aktualizace-2026-09-15/REPORT.md).
+Souhlas je vázaný na verzi zobrazenou při kliknutí a lze jej odložit i během čekání.
+GitHub CI a sloučení jsou navazující kroky.
 
 ## Dokončená implementace
 
@@ -22,16 +36,20 @@ Převzaté poslední zdroje: T-A4 `c25ef2a` a T-I1 `d6bdfdd`. Root před commite
 
 🟡 **Nativní GUI 0.1.2**: samostatný profil s vypnutým transportem, dostupná Nastavení bez loginu, čitelný Účet s firmou a prázdný přehled. Aplikace po kontrole ukončená. Nejde o produkční login, zvuk nebo ruční akce nad reálnými nahrávkami. `ui-smoke` a `audio-smoke` agent nespouštěl.
 
-## Co čeká na Dana
+## Živá přejímka a aktuální blokace
 
-| Část | Nutná podmínka |
-|---|---|
-| Podepsaný a notarizovaný build | Potvrzená záloha `.p12` včetně hesla ve firemním správci hesel. |
-| Publikace na download hosting | GitHub SSH Secrets/Variables podle [T6-VYDANI.md](T6-VYDANI.md); host, účet a přístup se nehádají. |
-| Release 0.1.2 | Kontrola PR a finální tag, který pushuje výhradně Dan. |
-| ✅ živé ověření | [Krátký postup na Macu](OVERENI-NA-MACU.md): Finder login, nahrávání, obě stopy, instalace a update. |
+- ✅ Vydání 0.1.2: GitHub release workflow úspěšný; aplikace 0.1.2 nainstalovaná na Macu.
+- ⚠️ Čtyři schválené staré položky v 0.1.2 zůstaly `ceka` po chybě nevybrané firmy.
+  Dashboard chybně nenabízí retry. Oprava je součástí připravované 0.1.3.
+- ⛔ Úspěšný produkční upload a shoda obou stop zatím nedoloženy. Starší `odeslano`
+  z 11. 9. bez serverového ID není důkaz uploadu v nové verzi.
+- ⛔ Aktualizace mezi dvěma verzemi a skutečná zvuková cesta po ní čekají na Mac.
+  Příchod 0.1.3 řídí ještě updater 0.1.2; novou instalaci po kliknutí lze naostro
+  ověřit až při dalším schváleném vydání.
 
-Stávající veřejný feed 0.1.1 a jeho čtyři balíčky byly read-only ověřeny HTTP 200. Nová verze tím nebyla publikována. Přechod 0.1.1 → 0.1.2 ověří doručení přes původní updater; nové hlášení dostupnosti a průběhu v 0.1.2 potřebuje další schválenou vyšší verzi.
+Záloha podpisového klíče byla Danem potvrzena a publikační konfigurace už existuje.
+Nevyžaduje se znovu. [Postup na Macu](OVERENI-NA-MACU.md) doplňuje aktuální
+[report opravy](../../../dukazy/nahravky-retry-2026-09-15/REPORT.md).
 
 ## Procesní hranice
 

@@ -1,0 +1,15 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-obnoveni-po-firme
+
+ ✓ tests/recording-actions.test.js (14 tests) 669ms
+ ✓ tests/recordings-dashboard.test.js (17 tests) 204ms
+ ✓ tests/queue.test.js (134 tests) 2036ms
+   ✓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší  661ms
+
+ Test Files  3 passed (3)
+      Tests  165 passed (165)
+   Start at  10:00:06
+   Duration  2.45s (transform 184ms, setup 32ms, collect 985ms, tests 2.91s, environment 0ms, prepare 344ms)
+
+
+EXIT_CODE=0

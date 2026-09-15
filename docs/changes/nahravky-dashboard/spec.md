@@ -193,3 +193,23 @@ Produktová Q tento běh neblokuje. Veřejné vydání čeká na nastavení publ
 - Historický `desktop-v1` označoval automatický sync jako odložený a endpointy za neživé. Schválený běh z 14. 9. a read-only ověřený serverový kontrakt tuto hranici pro současnou změnu nahrazují.
 - Historický plán uváděl čekání na Apple Developer Program a neveřejný GitHub. Dnešní doložený stav je veřejný repozitář s existujícími názvy podpisových secrets; nový signed/notarized build, záloha klíče a veřejné vydání však stále ověřené nejsou.
 - Starý stav spojoval „kód existuje“, „testy prošly“ a „je vydáno“. Aktuální přehled drží delivery, exposure a verification odděleně.
+
+## Doplnění přejímky 15. 9. — NRD-06 a NRD-08
+
+Dan ve vydané 0.1.2 nahlásil chybějící retry a následně výslovně zvolil proužek plus
+jednorázové oznámení macOS a instalaci až po kliknutí s možností odložení (D17/D18).
+
+- Vlastní schválená nahrávka ve stavu `ceka`, pozastavená pro ruční zásah, nabídne
+  „Zkusit znovu“. Akce po restartu zachová ochranu revize, vlastníka, dat a cooldownu.
+- Kontrola aktualizací zůstane automatická po startu a každých šest hodin; ruční
+  „Zkontrolovat aktualizace“ ukáže probíhající kontrolu a skutečný výsledek, při chybě
+  nesmí tvrdit, že je aplikace aktuální. Souběžné/spamující kliky se sloučí či omezí.
+- Proužek zobrazí dostupnou verzi a skutečný stručný přínos z metadat vydání jako text.
+  Neznámé nebo chybějící poznámky se nenahrazují vymyšlenými vlastnostmi.
+- Jedno oznámení macOS připomene konkrétní verzi; kontrola ani restart ho znovu nepošle.
+  Otevření oznámení nesmí samo instalovat aktualizaci.
+- Stažení nespustí instalaci. „Aktualizovat“ ji vyžádá, „Později“ odloží i čekající
+  požadavek. Souhlas se nesmí přenést na jinou verzi. Nová činnost nebo odložení během
+  asynchronní kontroly bezpečného restartu instalaci zablokují.
+- Žádná instalace během nahrávání, jeho ukládání, serializace fronty nebo běžícího
+  časovače. Dev/E2E nic nekontroluje, nestahuje ani nenotifikuje naostro.

@@ -9,6 +9,7 @@ const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][
 const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const OFFER_TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+const UPDATE_VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/u;
 
 function requireUploadCompanyOffer(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
@@ -210,6 +211,14 @@ contextBridge.exposeInMainWorld("ludone", {
   },
   onAuthSessionChanged,
   getUpdateStatus: () => ipcRenderer.invoke("updater:get-state"),
+  checkForUpdates: () => ipcRenderer.invoke("updater:check-now"),
+  installUpdate: (expectedVersion) => {
+    if (typeof expectedVersion !== "string" || !UPDATE_VERSION_PATTERN.test(expectedVersion)) {
+      throw new TypeError("Instalace vyžaduje platnou očekávanou verzi");
+    }
+    return ipcRenderer.invoke("updater:install", { expectedVersion });
+  },
+  deferUpdate: () => ipcRenderer.invoke("updater:defer"),
   onUpdateStatusChanged: (callback) => {
     if (typeof callback !== "function") {
       throw new TypeError("Odběratel stavu aktualizací musí být funkce");

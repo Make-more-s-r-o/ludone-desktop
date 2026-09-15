@@ -1,8 +1,9 @@
 # T6 — příprava a ostré ověření vydání macOS
 
-Stav k 14. 9. 2026: 🟡 cesta pro `0.1.2` je připravená a testy jsou zelené, ale automatický
-přenos ještě neproběhl. Verze `0.1.1` je na živém feedu z dřívějšího ručního nahrání. Stejnou
-verzi s jiným obsahem workflow záměrně odmítne přepsat.
+✅ **Vydání 0.1.2 proběhlo 15. 9. 2026**: [běh 34941430582](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34941430582)
+na `f789f49` prošel podpisem, notarizací, publikací a veřejnou kontrolou. Záloha klíče
+je Danem potvrzená a následující jednorázová konfigurace už je nastavená.
+Opravy pro 0.1.3 se ověřují samostatně; příprava verze není její publikace.
 
 ## Jednorázové nastavení GitHubu
 

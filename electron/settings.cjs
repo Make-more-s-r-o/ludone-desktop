@@ -8,6 +8,7 @@ const AUTH_ORIGINS = Object.freeze([
   DEFAULT_AUTH_ORIGIN,
   "https://labs.ludone.cz",
 ]);
+const UPDATE_VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/u;
 
 function report(log, message) {
   try {
@@ -154,24 +155,41 @@ function createApplicationSettingsStore({ filePath, log = console.warn } = {}) {
     throw new TypeError("Logger nastavení aplikace musí být funkce");
   }
 
-  const keys = new Set(["dockVisible", "uploadEnabled"]);
+  const booleanKeys = new Set(["dockVisible", "uploadEnabled"]);
+  const versionListKeys = new Set(["notifiedUpdateVersions"]);
   function requireKey(key) {
-    if (!keys.has(key)) throw new TypeError("Neznámý klíč nastavení aplikace");
+    if (!booleanKeys.has(key) && !versionListKeys.has(key)) {
+      throw new TypeError("Neznámý klíč nastavení aplikace");
+    }
   }
 
   // Čtení nic nezapisuje. Starší soubor může obsahovat jen Dock; chybějící nebo
-  // typově poškozená hodnota je vypnuto, zapíná výhradně skutečný boolean true.
+  // typově poškozený boolean je vypnuto. Historie oznámení přijme jen úzké verze.
   let settings = readApplicationSettings(filePath, log);
   return Object.freeze({
     get(key) {
       requireKey(key);
-      return Object.prototype.hasOwnProperty.call(settings, key) && settings[key] === true;
+      if (booleanKeys.has(key)) {
+        return Object.prototype.hasOwnProperty.call(settings, key) && settings[key] === true;
+      }
+      if (!Array.isArray(settings[key])) return [];
+      const versions = settings[key];
+      return versions.every((value) => (
+        typeof value === "string" && UPDATE_VERSION_PATTERN.test(value)
+      )) && new Set(versions).size === versions.length ? [...versions] : [];
     },
     async set(key, nextValue) {
       requireKey(key);
-      if (typeof nextValue !== "boolean") {
+      if (booleanKeys.has(key) && typeof nextValue !== "boolean") {
         throw new TypeError("Nastavení aplikace musí být boolean");
       }
+      if (versionListKeys.has(key) && (
+        !Array.isArray(nextValue)
+        || nextValue.some((value) => (
+          typeof value !== "string" || !UPDATE_VERSION_PATTERN.test(value)
+        ))
+        || new Set(nextValue).size !== nextValue.length
+      )) throw new TypeError("Historie oznámených aktualizací nemá platný tvar");
       // Volba je malá a mění se vzácně. Dokončený synchronní atomický zápis před
       // návratem brání tomu, aby okamžité Cmd+Q předběhlo uložení.
       const nextSettings = { ...settings, schemaVersion: SCHEMA_VERSION, [key]: nextValue };

@@ -3,8 +3,8 @@
 > **Aktualizace 15. 9. 2026:** Následující etapový plán vznikl 24. 8. a zůstává historickým
 > základem rozhodnutí. Dnešní implementační běh má vlastní autoritativní [stav](docs/changes/nahravky-dashboard/STAV.md),
 > [specifikaci](docs/changes/nahravky-dashboard/spec.md), [plán](docs/changes/nahravky-dashboard/plan.md)
-> a [DAG](docs/changes/nahravky-dashboard/tasks/DAG.md). Kód už je na integrační větvi, GitHub
-> není prázdný ani neveřejný a příprava release neznamená publikovanou verzi. Staré věty níže
+> a [DAG](docs/changes/nahravky-dashboard/tasks/DAG.md). PR #141 je na main a verze 0.1.2
+> byla publikovaná. Pro 0.1.3 se připravuje oprava retry a schválené ovládání aktualizací. Staré věty níže
 > čti v datovaném kontextu, ne jako současný stav.
 
 Vzniklo **24. 8. 2026** z ultracode analýzy (15 agentů, ~1,8 M tokenů) nad kódem, výzkumem,

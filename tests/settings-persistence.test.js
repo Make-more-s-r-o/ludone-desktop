@@ -202,3 +202,40 @@ describe("perzistence vypínače odesílání ve společném nastavení", () => 
     expect(await readdir(path.dirname(filePath))).toEqual(["aplikace.json"]);
   });
 });
+
+describe("perzistence jednorázového oznámení aktualizace", () => {
+  it("uloží jen úzký tvar verze a zachová ostatní volby", async () => {
+    const { createApplicationSettingsStore } = loadSettingsModule();
+    const filePath = await temporarySettingsPath();
+    const firstProcess = createApplicationSettingsStore({ filePath, log: vi.fn() });
+    await firstProcess.set("uploadEnabled", true);
+
+    await expect(firstProcess.set("notifiedUpdateVersions", ["1.2.3-beta.1", "1.2.4"]))
+      .resolves.toEqual(["1.2.3-beta.1", "1.2.4"]);
+
+    const secondProcess = createApplicationSettingsStore({ filePath, log: vi.fn() });
+    expect(secondProcess.get("notifiedUpdateVersions")).toEqual(["1.2.3-beta.1", "1.2.4"]);
+    expect(secondProcess.get("uploadEnabled")).toBe(true);
+    await expect(secondProcess.set("notifiedUpdateVersions", ["1.2.4", "<script>"]))
+      .rejects.toThrow(/platný tvar/u);
+    expect(secondProcess.get("notifiedUpdateVersions")).toEqual(["1.2.3-beta.1", "1.2.4"]);
+  });
+
+  it("poškozenou hodnotu ignoruje bez přepsání souboru", async () => {
+    const { createApplicationSettingsStore } = loadSettingsModule();
+    const filePath = await temporarySettingsPath();
+    const contents = JSON.stringify({
+      schemaVersion: 1,
+      dockVisible: true,
+      notifiedUpdateVersions: ["1.2.3", "verze s mezerou"],
+    });
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, contents);
+
+    const store = createApplicationSettingsStore({ filePath, log: vi.fn() });
+
+    expect(store.get("notifiedUpdateVersions")).toEqual([]);
+    expect(store.get("dockVisible")).toBe(true);
+    expect(await readFile(filePath, "utf8")).toBe(contents);
+  });
+});

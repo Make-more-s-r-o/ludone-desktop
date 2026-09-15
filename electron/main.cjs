@@ -11,6 +11,7 @@ const {
   nativeImage,
   nativeTheme,
   net,
+  Notification,
   protocol,
   safeStorage,
   screen,
@@ -3645,6 +3646,8 @@ handleValidated("tracking:resolve-recovered", ["panel"], (_event, payload) => {
 // v zabalené aplikaci, takže vývoj, unit testy ani GUI měřidla nemohou sáhnout na síť.
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1_000;
 const UPDATE_INSTALL_RETRY_MS = 30_000;
+const UPDATE_MANUAL_CHECK_COOLDOWN_MS = 30_000;
+const UPDATE_BENEFIT_MAX_LENGTH = 180;
 // Tři po sobě selhané kontroly při šestihodinovém intervalu znamenají nejméně
 // 12 hodin potíží v jednom běhu aplikace. Jednorázový výpadek tak uživatele neruší.
 const UPDATE_CHECK_FAILURE_THRESHOLD = 3;
@@ -3655,10 +3658,15 @@ let updateStatus = {
   downloading: false,
   downloadPercent: null,
   downloadedVersion: null,
+  benefit: null,
   checkFailed: false,
+  manualCheckAvailable: false,
+  manualCheckState: "idle",
+  installRequested: false,
+  installDeferred: false,
 };
 
-handleValidated("updater:get-state", ["panel"], (_event, ...extraPayload) => {
+handleValidated("updater:get-state", ["panel", "settings"], (_event, ...extraPayload) => {
   requireNoPayload("updater:get-state", extraPayload);
   return { ...updateStatus };
 });
@@ -3689,13 +3697,47 @@ function normalizeUpdatePercent(value) {
   return Math.round(Math.min(100, Math.max(0, value)));
 }
 
+function normalizeUpdateBenefit(releaseNotes, version) {
+  let value = null;
+  if (typeof releaseNotes === "string") value = releaseNotes;
+  else if (Array.isArray(releaseNotes)) {
+    const matching = releaseNotes.find((entry) => (
+      normalizeUpdateVersion(entry?.version) === version && typeof entry?.note === "string"
+    ));
+    value = matching?.note ?? null;
+  }
+  if (typeof value !== "string") return null;
+  const withoutControls = Array.from(value).map((character) => {
+    const codePoint = character.codePointAt(0);
+    return codePoint < 32 || (codePoint >= 127 && codePoint <= 159) ? " " : character;
+  }).join("");
+  const plainText = withoutControls
+    .replace(/<[^>]*>/gu, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/gu, "$1")
+    .replace(/[*_`~]/gu, "")
+    .replace(/(?:^|\s)[#>+-]+(?=\s|$)/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+  if (!plainText) return null;
+  const characters = Array.from(plainText);
+  return characters.length <= UPDATE_BENEFIT_MAX_LENGTH
+    ? plainText
+    : `${characters.slice(0, UPDATE_BENEFIT_MAX_LENGTH - 1).join("")}…`;
+}
+
 let autoUpdateClient;
 let updateCheckInFlight = false;
+let manualUpdateCheckInFlight = false;
+let manualUpdateCheckOutcomeObserved = false;
+let lastManualUpdateCheckAt = Number.NEGATIVE_INFINITY;
 let updateInstallAttemptInFlight = false;
 let updateInstallCommitted = false;
 let downloadedUpdatePending = false;
 let updateInstallRetryTimer;
 let updateRelevantActivityGeneration = 0;
+let updateInstallRequestGeneration = 0;
+let installRequestedForVersion = null;
+const notifiedUpdateVersions = new Set(applicationSettingsStore.get("notifiedUpdateVersions"));
 
 function noteUpdateRelevantActivity(channel) {
   if (
@@ -3763,8 +3805,12 @@ async function updateRestartIsSafe() {
 }
 
 async function tryInstallDownloadedUpdate() {
+  const requestedVersion = installRequestedForVersion;
+  const requestGeneration = updateInstallRequestGeneration;
   if (
     !downloadedUpdatePending
+    || !requestedVersion
+    || requestedVersion !== updateStatus.downloadedVersion
     || updateInstallAttemptInFlight
     || updateInstallCommitted
     || !autoUpdateClient
@@ -3773,6 +3819,13 @@ async function tryInstallDownloadedUpdate() {
   updateInstallAttemptInFlight = true;
   try {
     if (!(await updateRestartIsSafe())) return;
+    // Uživatel může během asynchronní bariéry zvolit „Později“ nebo může dorazit
+    // jiná verze. Starý souhlas proto po awaitu znovu ověříme.
+    if (
+      requestGeneration !== updateInstallRequestGeneration
+      || installRequestedForVersion !== requestedVersion
+      || updateStatus.downloadedVersion !== requestedVersion
+    ) return;
     updateInstallCommitted = true;
     downloadedUpdatePending = false;
     clearUpdateInstallRetry();
@@ -3792,9 +3845,12 @@ async function tryInstallDownloadedUpdate() {
   }
 }
 
-async function checkForApplicationUpdate() {
-  if (!autoUpdateClient || updateCheckInFlight) return;
+async function checkForApplicationUpdate({ manual = false } = {}) {
+  if (!autoUpdateClient || updateCheckInFlight) return { ...updateStatus };
   updateCheckInFlight = true;
+  manualUpdateCheckInFlight = manual;
+  manualUpdateCheckOutcomeObserved = false;
+  publishUpdateStatus({ manualCheckState: manual ? "checking" : "idle" });
   try {
     const result = await autoUpdateClient.checkForUpdates();
     await result?.downloadPromise;
@@ -3810,9 +3866,87 @@ async function checkForApplicationUpdate() {
     if (consecutiveUpdateCheckFailures >= UPDATE_CHECK_FAILURE_THRESHOLD) {
       publishUpdateStatus({ checkFailed: true });
     }
+    if (manualUpdateCheckInFlight) publishUpdateStatus({ manualCheckState: "failed" });
     console.error(`[updater] Kontrola aktualizace selhala: ${error.message}`);
   } finally {
+    if (
+      manualUpdateCheckInFlight
+      && !manualUpdateCheckOutcomeObserved
+      && updateStatus.manualCheckState === "checking"
+    ) {
+      publishUpdateStatus({ manualCheckState: "failed" });
+    }
     updateCheckInFlight = false;
+    manualUpdateCheckInFlight = false;
+  }
+  return { ...updateStatus };
+}
+
+handleValidated("updater:check-now", ["panel", "settings"], (_event, ...extraPayload) => {
+  requireNoPayload("updater:check-now", extraPayload);
+  if (!autoUpdateClient) return { ...updateStatus };
+  const now = Date.now();
+  if (now - lastManualUpdateCheckAt < UPDATE_MANUAL_CHECK_COOLDOWN_MS) {
+    return { ...updateStatus };
+  }
+  lastManualUpdateCheckAt = now;
+  if (updateCheckInFlight) {
+    manualUpdateCheckInFlight = true;
+    manualUpdateCheckOutcomeObserved = false;
+    publishUpdateStatus({ manualCheckState: "checking" });
+    return { ...updateStatus };
+  }
+  return checkForApplicationUpdate({ manual: true });
+});
+
+handleValidated("updater:install", ["panel", "settings"], (_event, payload, ...extraPayload) => {
+  if (
+    extraPayload.length > 0
+    || !payload
+    || typeof payload !== "object"
+    || Array.isArray(payload)
+    || Object.keys(payload).join("|") !== "expectedVersion"
+    || typeof payload.expectedVersion !== "string"
+    || normalizeUpdateVersion(payload.expectedVersion) !== payload.expectedVersion
+  ) throw new TypeError("Instalace vyžaduje právě jednu platnou očekávanou verzi");
+  if (
+    !downloadedUpdatePending
+    || !updateStatus.downloadedVersion
+    || payload.expectedVersion !== updateStatus.downloadedVersion
+  ) return { ...updateStatus };
+  updateInstallRequestGeneration += 1;
+  installRequestedForVersion = payload.expectedVersion;
+  publishUpdateStatus({ installRequested: true, installDeferred: false });
+  ensureUpdateInstallRetry();
+  void tryInstallDownloadedUpdate();
+  return { ...updateStatus };
+});
+
+handleValidated("updater:defer", ["panel", "settings"], (_event, ...extraPayload) => {
+  requireNoPayload("updater:defer", extraPayload);
+  updateInstallRequestGeneration += 1;
+  installRequestedForVersion = null;
+  clearUpdateInstallRetry();
+  if (updateStatus.downloadedVersion) {
+    publishUpdateStatus({ installRequested: false, installDeferred: true });
+  }
+  return { ...updateStatus };
+});
+
+async function notifyAboutAvailableUpdate(version, benefit) {
+  if (notifiedUpdateVersions.has(version) || !Notification?.isSupported?.()) return;
+  try {
+    const notification = new Notification({
+      title: `Je dostupná nová verze LuDone ${version}`,
+      body: benefit || "Novou verzi můžeš nainstalovat z panelu LuDone.",
+    });
+    notification.on("click", showPanel);
+    notification.show();
+    // Paměť brání duplicitě i při chybě disku; atomický store ji drží přes restart.
+    notifiedUpdateVersions.add(version);
+    await applicationSettingsStore.set("notifiedUpdateVersions", [...notifiedUpdateVersions]);
+  } catch (error) {
+    console.error(`[updater] Oznámení aktualizace se nepodařilo zobrazit nebo uložit: ${error.message}`);
   }
 }
 
@@ -3836,14 +3970,38 @@ async function initializeAutoUpdates() {
   autoUpdateClient.autoDownload = true;
   // Aktualizaci nikdy nenecháme vynutit při quit události mimo naši kontrolu aktivity.
   autoUpdateClient.autoInstallOnAppQuit = false;
+  publishUpdateStatus({ manualCheckAvailable: true });
   autoUpdateClient.on("update-available", (info) => {
     const version = normalizeUpdateVersion(info?.version) || "neznámá";
+    const benefit = version === "neznámá" ? null : normalizeUpdateBenefit(info?.releaseNotes, version);
+    if (manualUpdateCheckInFlight) manualUpdateCheckOutcomeObserved = true;
+    const sameDownloadedVersion = updateStatus.downloadedVersion === version;
+    if (updateStatus.downloadedVersion && !sameDownloadedVersion) {
+      updateInstallRequestGeneration += 1;
+      installRequestedForVersion = null;
+      downloadedUpdatePending = false;
+      clearUpdateInstallRetry();
+    }
+    if (sameDownloadedVersion) {
+      publishUpdateStatus({
+        benefit: benefit || updateStatus.benefit,
+        manualCheckState: "idle",
+      });
+      if (version !== "neznámá") void notifyAboutAvailableUpdate(version, benefit);
+      return;
+    }
     console.log(`[updater] Verze ${version} je dostupná; začíná stahování.`);
     publishUpdateStatus({
       availableVersion: version,
+      downloadedVersion: null,
+      benefit,
       downloading: false,
       downloadPercent: null,
+      manualCheckState: "idle",
+      installRequested: false,
+      installDeferred: false,
     });
+    if (version !== "neznámá") void notifyAboutAvailableUpdate(version, benefit);
   });
   autoUpdateClient.on("download-progress", (progress) => {
     publishUpdateStatus({
@@ -3852,25 +4010,43 @@ async function initializeAutoUpdates() {
     });
   });
   autoUpdateClient.on("update-not-available", () => {
+    if (manualUpdateCheckInFlight) manualUpdateCheckOutcomeObserved = true;
     if (downloadedUpdatePending) return;
     publishUpdateStatus({
       availableVersion: null,
       downloading: false,
       downloadPercent: null,
+      manualCheckState: manualUpdateCheckInFlight ? "current" : "idle",
     });
   });
   autoUpdateClient.on("update-downloaded", (info) => {
     const version = normalizeUpdateVersion(info?.version) || "neznámá";
-    console.log(`[updater] Verze ${version} je stažená; čekám na bezpečný restart.`);
+    const sameDownloadedVersion = updateStatus.downloadedVersion === version;
+    const existingBenefit = updateStatus.availableVersion === version
+      || updateStatus.downloadedVersion === version
+      ? updateStatus.benefit
+      : null;
+    const benefit = version === "neznámá"
+      ? existingBenefit
+      : normalizeUpdateBenefit(info?.releaseNotes, version) || existingBenefit;
+    console.log(`[updater] Verze ${version} je stažená; čekám na potvrzení instalace.`);
     publishUpdateStatus({
       availableVersion: null,
       downloading: false,
       downloadPercent: null,
       downloadedVersion: version,
+      benefit,
+      installRequested: sameDownloadedVersion ? updateStatus.installRequested : false,
+      installDeferred: sameDownloadedVersion ? updateStatus.installDeferred : false,
+      manualCheckState: "idle",
     });
+    if (!sameDownloadedVersion) {
+      updateInstallRequestGeneration += 1;
+      installRequestedForVersion = null;
+    }
     downloadedUpdatePending = true;
-    ensureUpdateInstallRetry();
-    void tryInstallDownloadedUpdate();
+    if (installRequestedForVersion === version) ensureUpdateInstallRetry();
+    else clearUpdateInstallRetry();
   });
   autoUpdateClient.on("error", (error) => {
     console.error(`[updater] Chyba aktualizace: ${error?.message || "neznámá chyba"}`);
