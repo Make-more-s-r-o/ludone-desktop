@@ -130,7 +130,7 @@ jobs:
           install -d -m 700 "$ssh_dir"
           private_key="$ssh_dir/id_release"
           known_hosts="$ssh_dir/known_hosts"
-          printf '%s' "$DOWNLOAD_SSH_PRIVATE_KEY" > "$private_key"
+          printf '%s\n' "$DOWNLOAD_SSH_PRIVATE_KEY" > "$private_key"
           printf '%s\n' "$DOWNLOAD_SSH_KNOWN_HOSTS" > "$known_hosts"
           chmod 600 "$private_key" "$known_hosts"
           port="${DOWNLOAD_SSH_PORT:-22}"

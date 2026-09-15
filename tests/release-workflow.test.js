@@ -32,6 +32,7 @@ describe("publikace macOS releasu", () => {
     expect(workflow).toContain("StrictHostKeyChecking=yes");
     expect(workflow).toContain("DOWNLOAD_SSH_KNOWN_HOSTS");
     expect(workflow).not.toContain("ssh-keyscan");
+    expect(workflow).toContain("printf '%s\\n' \"$DOWNLOAD_SSH_PRIVATE_KEY\" > \"$private_key\"");
     expect(workflow).toContain("< scripts/publish-release-remote.sh");
     const packageMove = remotePublish.indexOf('mv "$file" "$publish_path/$file"');
     const metadataMove = remotePublish.indexOf('mv -f latest-mac.yml "$publish_path/latest-mac.yml"');
