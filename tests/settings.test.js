@@ -42,6 +42,11 @@ async function renderSettings({
     fileName: "ludone-diagnostika-2026-09-03-130500.txt",
   }),
   identity = () => Promise.resolve({ name: "Ada Lovelace", email: "ada@ludone.cz" }),
+  listUploadCompanies = () => Promise.resolve({
+    companies: [], selectedCompanyId: null, offerToken: "11111111-1111-4111-8111-111111111111",
+  }),
+  listLocalRecordings = () => Promise.resolve({ items: [], unreadableCount: 0 }),
+  claimRecording = () => Promise.resolve({ claimed: false, items: [] }),
   logout = () => Promise.resolve({ signedOutLocally: true, serverRevoked: true, reason: null }),
   openAtLogin = () => Promise.resolve(true),
   origin = () => Promise.resolve(ORIGIN),
@@ -54,6 +59,9 @@ async function renderSettings({
   }>)} */ (undefined),
   setDockVisible = (value) => Promise.resolve(value),
   setOpenAtLogin = (value) => Promise.resolve(value),
+  selectUploadCompany = (_offerToken, companyId) => Promise.resolve({
+    saved: true, selectedCompanyId: companyId,
+  }),
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const style = dom.window.document.createElement("style");
@@ -80,12 +88,16 @@ async function renderSettings({
     getDiagnostics: vi.fn(diagnostics),
     getDockVisible: vi.fn(dockVisible),
     getOpenAtLogin: vi.fn(openAtLogin),
+    listLocalRecordings: vi.fn(listLocalRecordings),
+    listUploadCompanies: vi.fn(listUploadCompanies),
+    claimRecording: vi.fn(claimRecording),
     exportDiagnostics: vi.fn(exportDiagnostics),
     logout: logoutMock,
     setAuthOrigin: setAuthOriginMock,
     switchAuthOrigin: vi.fn(switchAuthOriginImplementation),
     setDockVisible: vi.fn(setDockVisible),
     setOpenAtLogin: vi.fn(setOpenAtLogin),
+    selectUploadCompany: vi.fn(selectUploadCompany),
   };
   Object.defineProperty(dom.window, "localStorage", {
     configurable: true,
@@ -231,10 +243,13 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
     try {
       await selectTab(settings, "Zvuk");
       const panel = settings.document.querySelector('[role="tabpanel"]:not([hidden])');
-      expect(panel?.querySelector('[role="switch"]')).toBeNull();
+      expect(panel?.querySelectorAll('[role="switch"]')).toHaveLength(1);
+      expect(panel?.querySelector('[role="switch"]')?.getAttribute("aria-label"))
+        .toBe("Automaticky odesílat nové nahrávky");
       expect(panel?.textContent).not.toContain("Ostatní hovory");
       expect(panel?.textContent).not.toContain("Nejdřív se zeptat");
       expect(panel?.textContent).toContain("Nahrávání spouštíš ručně.");
+      expect(panel?.textContent).toContain("Platí jen pro nahrávky zahájené po zapnutí.");
       expect(settings.localStorage.setItem).not.toHaveBeenCalled();
     } finally {
       await settings.cleanup();
@@ -300,8 +315,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("čtyři části Nastavení", () => {
-  it("vykreslí přesně čtyři přístupné záložky a přepíná jejich obsah", async () => {
+describe("pět částí Nastavení", () => {
+  it("vykreslí přesně pět přístupných záložek a přepíná jejich obsah", async () => {
     const settings = await renderSettings();
     try {
       const tablist = settings.document.querySelector('[role="tablist"]');
@@ -311,10 +326,12 @@ describe("čtyři části Nastavení", () => {
         "Účet",
         "Zvuk",
         "Záznamy",
+        "Nahrávky",
         "Diagnostika",
       ]);
       expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual([
         "true",
+        "false",
         "false",
         "false",
         "false",
@@ -347,9 +364,70 @@ describe("čtyři části Nastavení", () => {
         "false",
         "false",
         "false",
+        "false",
         "true",
       ]);
       expect(settings.document.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(1);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("kliknutí na záložku Nahrávky a její akci předá přesný snímek", async () => {
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const revision = `sha256:${"a".repeat(64)}`;
+    const item = {
+      id,
+      kind: "recording",
+      state: "ceka",
+      revision,
+      requiresHumanAction: true,
+      ownership: "other",
+      blockReason: "queue_owner_unknown",
+      createdAt: "2026-09-14T10:00:00.000Z",
+      durationMs: 65_000,
+      sizeBytes: 2_500_000,
+      source: "queue",
+      localState: "complete-audio",
+      fileRevision: `sha256:${"c".repeat(64)}`,
+      allowedActions: { claim: true, delete: false, retry: false, send: false },
+    };
+    const claimedItem = {
+      ...item,
+      revision: `sha256:${"b".repeat(64)}`,
+      blockReason: "Převzatá nahrávka čeká na volbu odeslání",
+      ownership: "current",
+      allowedActions: { claim: false, delete: false, retry: false, send: false },
+    };
+    const listLocalRecordings = vi.fn()
+      .mockResolvedValueOnce({ items: [item], unreadableCount: 0 })
+      .mockResolvedValue({ items: [claimedItem], unreadableCount: 0 });
+    const settings = await renderSettings({
+      listLocalRecordings,
+      claimRecording: () => Promise.resolve({
+        claimed: true,
+        items: [claimedItem],
+      }),
+    });
+    try {
+      await expectAccountState(settings, "signed-in");
+      await selectTab(settings, "Nahrávky");
+      await vi.waitFor(() => {
+        expect(settings.document.querySelector(".recording-queue-card")).toBeTruthy();
+      });
+      const button = [...settings.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.trim() === "Převzít pod svůj účet");
+      expect(button).toBeDefined();
+      await React.act(async () => {
+        button.click();
+        await Promise.resolve();
+      });
+      await vi.waitFor(() => expect(settings.ludone.claimRecording).toHaveBeenCalledOnce());
+      expect(settings.ludone.claimRecording).toHaveBeenCalledWith(id, revision);
+      expect(settings.ludone.listLocalRecordings).toHaveBeenCalledTimes(2);
+      expect(listLocalRecordings).toHaveBeenCalledTimes(2);
+      expect(settings.ludone.getDiagnostics).not.toHaveBeenCalled();
+      expect(settings.document.body.textContent).toContain("Převzatá nahrávka čeká");
     } finally {
       await settings.cleanup();
     }
@@ -410,10 +488,10 @@ describe("čtyři části Nastavení", () => {
       expect(environmentSelect?.getAttribute("aria-describedby"))
         .toBe("settings-environment-explanation");
       expect(settings.document.body.textContent).toContain(
-        "Na produkci modul nahrávek schválně není. Na labs ho uvidí jen admin.",
+        "Prostředí určuje server, ke kterému se tento Mac přihlašuje a odesílá data.",
       );
       expect(settings.document.body.textContent).toContain(
-        "Prostředí se během dne často aktualizuje.",
+        "Lokální nahrávky zůstanou uložené. Dříve schválené pokračují po přihlášení.",
       );
 
       const logoutButton = [...settings.document.querySelectorAll("button")]
@@ -865,6 +943,40 @@ describe("čtyři části Nastavení", () => {
 });
 
 describe("pravdivá identita v Nastavení", () => {
+  it("výběr firmy se načte jen klikem a uloží explicitní ID bez odeslání fronty", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const settings = await renderSettings({
+      listUploadCompanies: async () => ({
+        companies: [{ id: companyId, name: "Make more s.r.o." }],
+        selectedCompanyId: null,
+        offerToken: "11111111-1111-4111-8111-111111111111",
+      }),
+    });
+    try {
+      await expectAccountState(settings, "signed-in");
+      expect(settings.ludone.listUploadCompanies).not.toHaveBeenCalled();
+      const load = [...settings.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Načíst firmy"));
+      await React.act(async () => load.click());
+      const select = settings.document.querySelector("#upload-company");
+      expect(select.value).toBe("");
+      await React.act(async () => {
+        select.value = companyId;
+        select.dispatchEvent(new settings.document.defaultView.Event("change", { bubbles: true }));
+      });
+      const save = [...settings.document.querySelectorAll("button")]
+        .find((button) => button.textContent.includes("Uložit firmu"));
+      await React.act(async () => save.click());
+      expect(settings.ludone.selectUploadCompany).toHaveBeenCalledExactlyOnceWith(
+        "11111111-1111-4111-8111-111111111111",
+        companyId,
+      );
+      expect(settings.ludone.listLocalRecordings).not.toHaveBeenCalled();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
   it("vykreslí skutečné jméno, e-mail, odvozený avatar a nakonfigurovaný origin", async () => {
     const settings = await renderSettings();
     try {

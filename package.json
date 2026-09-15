@@ -1,6 +1,6 @@
 {
   "name": "ludone-desktop-prototype",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Make more s.r.o.",
   "private": true,
   "description": "Klikatelná kostra menu-bar spouštěče LuDone Desktop",
@@ -65,7 +65,7 @@
     "ikony:aplikace": "node scripts/tray-ikony.mjs --app",
     "start": "electron .",
     "package:mac": "npm run build && node scripts/package-mac.mjs",
-    "release:mac": "npm run build && node scripts/package-mac.mjs --publish always",
+    "release:mac": "npm run build && node scripts/package-mac.mjs --release && node scripts/release-artifacts.mjs --write-review-files && node scripts/verify-macos-release.mjs",
     "progress": "node scripts/desktop-progress.mjs",
     "vzorky": "electron scripts/vzorky-exportu.mjs",
     "test:audio": "node scripts/audio-smoke.mjs",

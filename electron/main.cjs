@@ -31,11 +31,13 @@ const {
   createPermissionRequestHandler,
   createPermissionStatusHandler,
   refreshStoredAuthSession,
+  sessionMatchesAuthContext,
   tokenSessionFilePath,
   trustedRemoteEndpoint,
   updateStoredAuthSessionCompany,
 } = require("./auth.cjs");
 const { fetchCompanies } = require("./companies.cjs");
+const { createQueueScheduler } = require("./queue-scheduler.cjs");
 const {
   createOutboundQueueStore,
   deriveQueueOwnerFingerprint,
@@ -44,6 +46,8 @@ const {
   saveQueueAtomically,
 } = require("./queue.cjs");
 const { createRecordingUploadSend } = require("./upload-client.cjs");
+const { createRecordingVerifier } = require("./recording-verification.cjs");
+const { createUploadCompanySelectionController } = require("./upload-company-selection.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
   AUTH_ORIGINS,
@@ -90,6 +94,10 @@ const TRAY_COMMAND_CHANNEL = "tray:command";
 const TRAY_SPACE_WARNING_URL = "ludone://tray-warning/index.html#tray-space-warning";
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const AUTH_COPY_PENDING_URL_CHANNEL = "auth:copy-pending-url";
+const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+const OFFER_TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
 const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
@@ -455,7 +463,12 @@ let authAttemptsInFlight = 0;
 let authLogoutsInFlight = 0;
 let authOriginChangeInFlight = false;
 let authSessionGeneration = 0;
+let uploadCompanyGeneration = 0;
+let uploadCompanySelectionEpoch = 0;
 let authSessionTransitionPromise = null;
+let claimDialogGeneration = 0;
+let recordingVerifier;
+let uploadCompanySelectionController;
 const activeAuthAttempts = new Set();
 const AUTH_CANCEL_CHANNEL = "auth:cancel";
 
@@ -1082,8 +1095,12 @@ function createSettingsWindow() {
   });
 
   settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), { hash: "settings" });
+  settingsWindow.webContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
+    if (isMainFrame) invalidateUploadCompanySelection();
+  });
   settingsWindow.once("ready-to-show", () => settingsWindow.show());
   settingsWindow.on("closed", () => {
+    invalidateUploadCompanySelection();
     settingsWindow = undefined;
   });
 }
@@ -1485,6 +1502,7 @@ async function createRecordingSession(event, sources) {
   try {
     // Vlastník je snapshot ze začátku nahrávání. Pozdější přihlášení nesmí
     // anonymně pořízenou nahrávku automaticky přivlastnit prvnímu účtu.
+    const automaticUpload = applicationSettingsStore.get("uploadEnabled");
     const ownerFingerprint = await readCurrentQueueOwnerFingerprint();
     const timestamp = startedAt.toISOString().replace(/[:.]/g, "-");
     const sessionId = randomUUID();
@@ -1526,6 +1544,7 @@ async function createRecordingSession(event, sources) {
       ownerId,
       owner: event.sender,
       ownerFingerprint,
+      automaticUpload,
       startedAt: startedAt.toISOString(),
       tracks,
       manifest,
@@ -1541,6 +1560,8 @@ async function createRecordingSession(event, sources) {
       sessionId,
       ownerId,
       owner: event.sender,
+      ownerFingerprint,
+      automaticUpload,
       track: exportTrack,
       manifestPath,
       exportInFlight: false,
@@ -1577,7 +1598,7 @@ async function createRecordingSession(event, sources) {
       ? "Připraven mikrofonní soubor"
       : "Připraveny oddělené soubory";
     console.log(`[recording] ${preparationMessage} s prefixem ${prefix}.`);
-    return { sessionId, startedAt: recordingSession.startedAt };
+    return { sessionId, startedAt: recordingSession.startedAt, automaticUpload };
   } catch (error) {
     await Promise.allSettled([...tracks.values()].map(async (track) => {
       await track.handle.close();
@@ -1988,7 +2009,7 @@ handleValidated(
 );
 handleValidated("settings:get-upload-enabled", ["settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-upload-enabled", extraPayload);
-  return queueKillswitches().DESKTOP_UPLOAD_ENABLED === "true";
+  return applicationSettingsStore.get("uploadEnabled");
 });
 handleValidated("settings:set-upload-enabled", ["settings"], (_event, value, ...extraPayload) => {
   requireBooleanPayload("settings:set-upload-enabled", value, extraPayload);
@@ -2029,6 +2050,7 @@ handleValidated("recording:finish-export", ["panel"], async (event, sessionId, o
 
 let outboundQueueStore;
 let outboundQueueSendsInFlight = 0;
+let outboundQueueScheduler;
 let markOutboundQueueRecoveryReady = () => {};
 const outboundQueueRecoveryReady = new Promise((resolve) => {
   markOutboundQueueRecoveryReady = resolve;
@@ -2154,23 +2176,19 @@ async function applyOutboundQueueRetention(panelStartup) {
   }
 }
 
-function desktopKillswitch(environmentValue, settingKey, store = applicationSettingsStore) {
-  // Pořadí: existující proměnná prostředí (i prázdná či neplatná) přebíjí uloženou
-  // volbu; jinak platí uložený boolean. Chybějící či neplatná volba je vypnuto.
-  // Fronta přijímá zapnutí výhradně jako přesný řetězec "true".
-  if (environmentValue !== undefined) return environmentValue;
-  return store.get(settingKey) ? "true" : "false";
+function desktopKillswitch(environmentValue) {
+  return environmentValue === undefined ? "true" : environmentValue;
 }
 
 async function setUploadEnabled(value) {
-  await applicationSettingsStore.set("uploadEnabled", value);
-  // IPC vrací účinný stav: vývojové prostředí může uloženou volbu dál přebíjet.
-  return queueKillswitches().DESKTOP_UPLOAD_ENABLED === "true";
+  return applicationSettingsStore.set("uploadEnabled", value);
 }
 
 function queueKillswitches() {
   return {
-    DESKTOP_UPLOAD_ENABLED: desktopKillswitch(process.env.DESKTOP_UPLOAD_ENABLED, "uploadEnabled"),
+    // Uložená automatika je souhlas jen pro novou session. Transport zastaví pouze
+    // výslovná env hodnota; bez ní rozhoduje durable uploadIntent položky.
+    DESKTOP_UPLOAD_ENABLED: desktopKillswitch(process.env.DESKTOP_UPLOAD_ENABLED),
     DESKTOP_TIME_ENABLED: timeTrackingKillswitch(),
   };
 }
@@ -2210,6 +2228,7 @@ async function resolveUploadCompanyId(storedSession) {
       accessToken: storedSession.accessToken,
       fetchImpl: globalThis.fetch,
       issuer: storedSession.issuer,
+      requireValidPayload: true,
       trustedRemoteEndpoint,
     }),
     onNote: (zprava) => console.log(`[upload] ${zprava}`),
@@ -2224,9 +2243,11 @@ async function resolveUploadCompanyId(storedSession) {
 }
 
 async function recordingUploadContext() {
+  const generation = authSessionGeneration;
   const storedSession = await readUsableAuthSession();
-  if (storedAuthSessionState(storedSession) !== "valid") return null;
+  if (generation !== authSessionGeneration || storedAuthSessionState(storedSession) !== "valid") return null;
   const firma = await resolveUploadCompanyId(storedSession);
+  if (generation !== authSessionGeneration) return null;
   return {
     accessToken: storedSession.accessToken,
     companyTabidooId: firma.companyTabidooId,
@@ -2236,13 +2257,30 @@ async function recordingUploadContext() {
     deviceLabel: app.getName?.() ?? "LuDone Desktop",
     issuer: storedSession.issuer,
     ownerFingerprint: deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get()),
+    resetRejectedCompany: async (expectedCompanyId) => {
+      const reset = await updateStoredAuthSessionCompany({
+        app,
+        safeStorage,
+        companyTabidooId: null,
+        expectedCompanyId,
+        storedSession,
+        guard: () => generation === authSessionGeneration
+          && authAttemptsInFlight === 0 && authLogoutsInFlight === 0
+          && !authOriginChangeInFlight && authSessionTransitionPromise === null,
+      });
+      if (reset !== null) {
+        uploadCompanyGeneration += 1;
+        invalidateUploadCompanySelection();
+      }
+      return reset !== null;
+    },
   };
 }
 
 async function readCurrentQueueOwnerFingerprint() {
   try {
     const storedSession = await readStoredAuthSession();
-    if (storedSession === null || storedSession.issuer !== resolveCurrentAuthIssuer()) {
+    if (!storedSessionMatchesCurrentAuth(storedSession)) {
       return null;
     }
     return deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
@@ -2253,10 +2291,251 @@ async function readCurrentQueueOwnerFingerprint() {
   }
 }
 
+async function readUsableQueueOwnerFingerprint() {
+  try {
+    const storedSession = await readUsableAuthSession();
+    if (storedAuthSessionState(storedSession) !== "valid") return null;
+    return deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
+  } catch {
+    return null;
+  }
+}
+
+async function readRecordingVerificationContext() {
+  const generation = authSessionGeneration;
+  if (
+    authAttemptsInFlight > 0
+    || authLogoutsInFlight > 0
+    || authOriginChangeInFlight
+    || authSessionTransitionPromise !== null
+  ) return null;
+  const storedSession = await readUsableAuthSession();
+  if (
+    generation !== authSessionGeneration
+    || authAttemptsInFlight > 0
+    || authLogoutsInFlight > 0
+    || authOriginChangeInFlight
+    || authSessionTransitionPromise !== null
+    || storedAuthSessionState(storedSession) !== "valid"
+    || !storedSessionMatchesCurrentAuth(storedSession)
+  ) return null;
+  const ownerFingerprint = deriveQueueOwnerFingerprint(
+    storedSession,
+    queueOwnerSecretStore.get(),
+  );
+  if (typeof ownerFingerprint !== "string" || ownerFingerprint.length === 0) return null;
+  return Object.freeze({
+    accessToken: storedSession.accessToken,
+    generation,
+    issuer: storedSession.issuer,
+    ownerFingerprint,
+    resource: storedSession.resource,
+    scope: storedSession.scope,
+  });
+}
+
+async function isRecordingVerificationContextCurrent(context) {
+  try {
+    if (!(
+      context
+      && context.generation === authSessionGeneration
+      && context.issuer === resolveCurrentAuthIssuer()
+      && context.resource === `${context.issuer}/api/mcp`
+      && context.scope === UPLOAD_SCOPE
+      && authAttemptsInFlight === 0
+      && authLogoutsInFlight === 0
+      && !authOriginChangeInFlight
+      && authSessionTransitionPromise === null
+    )) return false;
+    const storedSession = await readStoredAuthSession();
+    if (
+      context.generation !== authSessionGeneration
+      || authAttemptsInFlight > 0
+      || authLogoutsInFlight > 0
+      || authOriginChangeInFlight
+      || authSessionTransitionPromise !== null
+      || storedAuthSessionState(storedSession) !== "valid"
+      || !storedSessionMatchesCurrentAuth(storedSession)
+      || storedSession.accessToken !== context.accessToken
+    ) return false;
+    return deriveQueueOwnerFingerprint(
+      storedSession,
+      queueOwnerSecretStore.get(),
+    ) === context.ownerFingerprint;
+  } catch {
+    return false;
+  }
+}
+
+function getRecordingVerifier() {
+  if (!recordingVerifier) {
+    recordingVerifier = createRecordingVerifier({
+      fetchImpl: (...args) => net.fetch(...args),
+      getContext: readRecordingVerificationContext,
+      isContextCurrent: isRecordingVerificationContextCurrent,
+      now: Date.now,
+    });
+  }
+  return recordingVerifier;
+}
+
+function invalidateRecordingVerifier() {
+  recordingVerifier?.invalidate();
+}
+
+async function readUploadCompanySelectionContext() {
+  const generation = authSessionGeneration;
+  if (authAttemptsInFlight > 0 || authLogoutsInFlight > 0 || authOriginChangeInFlight
+    || authSessionTransitionPromise !== null) return null;
+  const storedSession = await readUsableAuthSession();
+  if (generation !== authSessionGeneration || authAttemptsInFlight > 0 || authLogoutsInFlight > 0
+    || authOriginChangeInFlight || authSessionTransitionPromise !== null
+    || storedAuthSessionState(storedSession) !== "valid"
+    || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE) return null;
+  const ownerFingerprint = deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
+  if (typeof ownerFingerprint !== "string" || ownerFingerprint.length === 0) return null;
+  return Object.freeze({
+    generation,
+    issuer: storedSession.issuer,
+    ownerFingerprint,
+    resource: storedSession.resource,
+    scope: storedSession.scope,
+    storedSession,
+  });
+}
+
+async function isUploadCompanySelectionContextCurrent(context) {
+  try {
+    if (!context || context.generation !== authSessionGeneration
+      || context.issuer !== resolveCurrentAuthIssuer() || context.scope !== UPLOAD_SCOPE
+      || context.resource !== `${context.issuer}/api/mcp`
+      || authAttemptsInFlight > 0 || authLogoutsInFlight > 0 || authOriginChangeInFlight
+      || authSessionTransitionPromise !== null) return false;
+    const storedSession = await readStoredAuthSession();
+    return context.generation === authSessionGeneration
+      && authAttemptsInFlight === 0 && authLogoutsInFlight === 0 && !authOriginChangeInFlight
+      && authSessionTransitionPromise === null
+      && storedAuthSessionState(storedSession) === "valid"
+      && storedSessionMatchesCurrentAuth(storedSession)
+      && storedSession.accessToken === context.storedSession.accessToken
+      && deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get())
+        === context.ownerFingerprint;
+  } catch {
+    return false;
+  }
+}
+
+function getUploadCompanySelectionController() {
+  if (!uploadCompanySelectionController) {
+    uploadCompanySelectionController = createUploadCompanySelectionController({
+      readContext: readUploadCompanySelectionContext,
+      isContextCurrent: isUploadCompanySelectionContextCurrent,
+      fetchOffer: (context, { signal }) => fetchCompanies({
+        accessToken: context.storedSession.accessToken,
+        fetchImpl: globalThis.fetch,
+        issuer: context.issuer,
+        requireValidPayload: true,
+        signal,
+        trustedRemoteEndpoint,
+      }),
+      commitChoice: async ({ context, companyId, guard }) => (await updateStoredAuthSessionCompany({
+        app,
+        safeStorage,
+        companyTabidooId: companyId,
+        storedSession: context.storedSession,
+        guard,
+      })) !== null,
+      now: Date.now,
+      randomUUID,
+    });
+  }
+  return uploadCompanySelectionController;
+}
+
+function invalidateUploadCompanySelection() {
+  uploadCompanySelectionEpoch += 1;
+  uploadCompanySelectionController?.invalidate();
+}
+
+function uploadCompanyRequester(event) {
+  return `settings:${event.sender.id}`;
+}
+
+function uploadCompanyGuard(event, generation, selectionEpoch) {
+  return () => {
+    try {
+      requireTrustedSender(event, ["settings"]);
+      return generation === authSessionGeneration
+        && selectionEpoch === uploadCompanySelectionEpoch && authAttemptsInFlight === 0
+        && authLogoutsInFlight === 0 && !authOriginChangeInFlight
+        && authSessionTransitionPromise === null;
+    } catch {
+      return false;
+    }
+  };
+}
+
+// Převzetí je čistě lokální akce. Záměrně nevolá readUsableAuthSession(), protože
+// ten může obnovovat token po síti. Neplatná relace se zde odmítne a UI vyžádá přihlášení.
+async function readStableClaimOwnerSnapshot() {
+  const generation = authSessionGeneration;
+  if (
+    authAttemptsInFlight > 0
+    || authLogoutsInFlight > 0
+    || authOriginChangeInFlight
+    || authSessionTransitionPromise !== null
+  ) {
+    throw new Error("Identita se právě mění; zkuste převzetí znovu");
+  }
+  const storedSession = await readStoredAuthSession();
+  if (
+    generation !== authSessionGeneration
+    || authAttemptsInFlight > 0
+    || authLogoutsInFlight > 0
+    || authOriginChangeInFlight
+    || authSessionTransitionPromise !== null
+    || storedAuthSessionState(storedSession) !== "valid"
+  ) {
+    throw new Error("Pro převzetí je nutné platné přihlášení");
+  }
+  const ownerFingerprint = deriveQueueOwnerFingerprint(
+    storedSession,
+    queueOwnerSecretStore.get(),
+  );
+  if (typeof ownerFingerprint !== "string" || ownerFingerprint.length === 0) {
+    throw new Error("Přihlášenou identitu nelze bezpečně ověřit");
+  }
+  return Object.freeze({ generation, ownerFingerprint });
+}
+
+function sameClaimOwnerSnapshot(first, second) {
+  return first.generation === second.generation
+    && first.ownerFingerprint === second.ownerFingerprint;
+}
+
+async function readCurrentValidQueueOwnerFingerprint() {
+  try {
+    return (await readStableClaimOwnerSnapshot()).ownerFingerprint;
+  } catch {
+    return null;
+  }
+}
+
+function claimRecordingDialogLabel(item) {
+  let dateLabel = "neznámého data";
+  if (typeof item.createdAt === "string" && Number.isFinite(Date.parse(item.createdAt))) {
+    dateLabel = new Intl.DateTimeFormat("cs-CZ", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(item.createdAt));
+  }
+  return `${dateLabel} · ID ${item.id.slice(0, 8)}`;
+}
+
 function createQueueSend() {
   // Store fronty zůstává po celý běh jediný. Konkrétní sender se vytvoří až pro
   // jednotlivý pokus, aby po bezpečném přepnutí použil právě platný origin.
-  return async (item) => {
+  return async (item, reportServerProgress) => {
     if (authOriginChangeInFlight) {
       const error = new Error("Změna prostředí právě probíhá");
       error.failureClass = "paused";
@@ -2270,7 +2549,7 @@ function createQueueSend() {
         logger: console,
         origin: resolveCurrentAuthIssuer(),
       });
-      return await send(item);
+      return await send(item, reportServerProgress);
     } finally {
       outboundQueueSendsInFlight -= 1;
     }
@@ -2309,7 +2588,8 @@ async function recoverOutboundRecordings() {
 async function pumpOutboundQueue() {
   try {
     const store = await getOutboundQueueStore();
-    const result = await store.pump(queueKillswitches());
+    const currentOwnerFingerprint = await readUsableQueueOwnerFingerprint();
+    const result = await store.pump(queueKillswitches(), currentOwnerFingerprint);
     updateOutboundQueueTrayFact(result);
     // Nejdřív KOLIK se odeslalo, teprve pak PROČ pumpa skončila. Opačné pořadí (jen důvod
     // konce) svedlo 11. 9. 2026 k závěru, že se neodeslalo nic, ačkoli odešly tři nahrávky.
@@ -2319,7 +2599,28 @@ async function pumpOutboundQueue() {
   } catch (error) {
     console.error(`[queue] Pumpa selhala: ${error.stack || error.message}`);
     return { outcome: "error", reason: error.message };
+  } finally {
+    if (outboundQueueScheduler) await refreshOutboundQueueRetrySchedule();
   }
+}
+
+function getOutboundQueueScheduler() {
+  if (!outboundQueueScheduler) {
+    outboundQueueScheduler = createQueueScheduler({
+      readNextRetryAt: async () => {
+        const owner = await readUsableQueueOwnerFingerprint();
+        return (await getOutboundQueueStore()).nextRecordingRetryAt(owner);
+      },
+      run: pumpOutboundQueue,
+    });
+  }
+  return outboundQueueScheduler;
+}
+
+function refreshOutboundQueueRetrySchedule() {
+  return getOutboundQueueScheduler().refresh().catch((error) => {
+    console.error(`[queue] Obnovení retry časovače selhalo: ${error.message}`);
+  });
 }
 
 async function waitForRecordingExportStage(exportStage) {
@@ -2357,21 +2658,21 @@ function logRecordingExportFailure(error) {
 /**
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {string} clientRecordingId
- * @param {{ recordingName?: string, openUploadPage: boolean }} options
+ * @param {{ recordingName?: string, decision: "send" | "keep" }} options
  */
 async function exportCompletedRecording(event, clientRecordingId, options) {
   const exportStage = ownedRecordingExportStage(event, clientRecordingId);
-  if (!options || typeof options.openUploadPage !== "boolean") {
-    throw new TypeError("openUploadPage musí být výslovně boolean");
+  if (!options || !["send", "keep"].includes(options.decision)) {
+    throw new TypeError("Rozhodnutí musí být send nebo keep");
   }
-  const { recordingName, openUploadPage } = options;
+  const { recordingName, decision } = options;
   let claimedExport = false;
   try {
     validateUploadRecordingName(recordingName);
     if (authOriginChangeInFlight) {
       throw new RecordingExportUserError("Handover nelze zahájit během změny prostředí");
     }
-    if (exportStage.releaseRequested) {
+    if (exportStage.releaseRequested && !deferredQuitRequest && !downloadedUpdatePending) {
       throw new RecordingExportUserError("Stereo export už není dostupný");
     }
     if (exportStage.exportInFlight) {
@@ -2389,22 +2690,46 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
       downloadsDirectory: app.getPath("downloads"),
       manifest,
       openExternal: (url) => shell.openExternal(url),
-      openUploadPage,
+      openUploadPage: false,
       origin: resolveCurrentAuthIssuer(),
       recordingName,
       stagePath: exportStage.track.filePath,
       stereoTiming: exportStage.timing,
     });
+    const store = await getOutboundQueueStore();
+    const decided = await store.decideRecording(
+      clientRecordingId,
+      exportStage.ownerFingerprint,
+      recordingName,
+      decision === "send",
+      {
+        guard: async () => {
+          try {
+            requireTrustedSender(event, ["panel"]);
+            return exportStage.ownerFingerprint !== null
+              && await readUsableQueueOwnerFingerprint() === exportStage.ownerFingerprint;
+          } catch {
+            return false;
+          }
+        },
+      },
+    );
     await fs.promises.unlink(exportStage.track.filePath).catch(() => {});
     recordingExportStages.delete(clientRecordingId);
     armDeferredQuitTimeout(deferredQuitRequest);
     void maybeCompleteDeferredQuit();
+    void tryInstallDownloadedUpdate();
     const timingDetail = result.trackStartDeltaMs === null
       ? "jednostopý režim bez porovnání stop"
       : `rozdíl startů ${result.trackStartDeltaMs} ms`;
     console.log(`[recording-export] Uloženo ${result.clientRecordingId}; ${timingDetail}.`);
+    const queueOutcome = decided.approved ? "queued" : "saved_local";
+    if (decided.approved) {
+      void pumpOutboundQueue();
+    }
     return {
       ok: true,
+      outcome: queueOutcome,
       clientRecordingId: result.clientRecordingId,
       fileName: result.fileName,
       format: result.format,
@@ -2490,7 +2815,7 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
       }
       throw error;
     }
-    return result;
+    return { ...result, automaticUpload: recordingSession.automaticUpload };
   } finally {
     // Quit smí pokračovat až po dokončení manifestu i lokálního enqueue. Samostatná
     // evidence kryje mezeru, kdy už session zmizela z mapy, ale enqueue ještě běží.
@@ -2536,18 +2861,320 @@ handleValidated("recording:confirm-export-failure", ["panel"], async (
     await maybeCompleteDeferredQuit();
     return { confirmed: true };
 });
-handleValidated("recording:export", ["panel"], exportCompletedRecording);
+handleValidated("recording:save-decision", ["panel"], (
+  event,
+  clientRecordingId,
+  options,
+  ...extraPayload
+) => {
+  if (extraPayload.length > 0 || !options || typeof options !== "object"
+    || Array.isArray(options)
+    || Object.keys(options).sort().join("|") !== "decision|recordingName") {
+    throw new TypeError("Save decision přijímá právě GUID, název a rozhodnutí");
+  }
+  return exportCompletedRecording(event, clientRecordingId, options);
+});
+handleValidated("recording:export", ["panel"], async (event, clientRecordingId, options) => {
+  if (!options || typeof options.openUploadPage !== "boolean") {
+    throw new TypeError("openUploadPage musí být výslovně boolean");
+  }
+  return exportCompletedRecording(event, clientRecordingId, {
+    recordingName: options?.recordingName,
+    decision: options?.openUploadPage === true ? "send" : "keep",
+  });
+});
 handleValidated("queue:list", ["panel", "settings"], async () => {
   await waitForOutboundQueueRecovery();
+  const currentOwnerFingerprint = await readCurrentValidQueueOwnerFingerprint();
   const items = await addQueueSendingAvailability(
-    await (await getOutboundQueueStore()).list(),
+    await (await getOutboundQueueStore()).list(currentOwnerFingerprint),
   );
   updateOutboundQueueTrayFact(items);
   return items;
 });
+handleValidated("recordings:list-local", ["settings"], async () => {
+  const currentOwnerFingerprint = await readCurrentValidQueueOwnerFingerprint();
+  const snapshot = await (await getOutboundQueueStore())
+    .listLocalRecordings(currentOwnerFingerprint);
+  const items = await addQueueSendingAvailability(snapshot.items);
+  return { ...snapshot, items };
+});
+async function runRecordingQueueAction(event, payload, mode) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)
+    || Object.keys(payload).sort().join("|") !== "fileRev|id|queueRev"
+    || typeof payload.id !== "string" || !QUEUE_ITEM_ID_PATTERN.test(payload.id)
+    || typeof payload.queueRev !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(payload.queueRev)
+    || typeof payload.fileRev !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(payload.fileRev)) {
+    throw new TypeError("Akce nahrávky očekává GUID a platné revize");
+  }
+  // Ruční send/retry smí před lokálním stabilním snapshotem jednou obnovit token.
+  // Samotný claim zůstává čistě lokální a tuto cestu nepoužívá.
+  requireTrustedSender(event, ["settings"]);
+  const usableOwnerFingerprint = await readUsableQueueOwnerFingerprint();
+  requireTrustedSender(event, ["settings"]);
+  if (usableOwnerFingerprint === null) {
+    throw new Error("Pro odeslání je nutné platné přihlášení");
+  }
+  const owner = await readStableClaimOwnerSnapshot();
+  const companyGeneration = uploadCompanyGeneration;
+  if (owner.ownerFingerprint !== usableOwnerFingerprint) {
+    throw new Error("Přihlášení se během přípravy odeslání změnilo");
+  }
+  const guard = async () => {
+    try {
+      requireTrustedSender(event, ["settings"]);
+      const latest = await readStableClaimOwnerSnapshot();
+      return sameClaimOwnerSnapshot(owner, latest) && companyGeneration === uploadCompanyGeneration;
+    } catch {
+      return false;
+    }
+  };
+  const result = await (await getOutboundQueueStore()).actOnRecording({
+    clientRecordingId: payload.id,
+    expectedRevision: payload.queueRev,
+    expectedFileRevision: payload.fileRev,
+    currentOwnerFingerprint: owner.ownerFingerprint,
+    mode,
+    killswitches: queueKillswitches(),
+    guard,
+    getCurrentCompany: async () => {
+      const context = await recordingUploadContext();
+      requireTrustedSender(event, ["settings"]);
+      if (context?.ownerFingerprint !== owner.ownerFingerprint
+        || typeof context.companyTabidooId !== "string"
+        || !COMPANY_ID_PATTERN.test(context.companyTabidooId)
+        || companyGeneration !== uploadCompanyGeneration) {
+        throw new Error("Pro opravu není vybraná platná firma stejného účtu");
+      }
+      return context.companyTabidooId;
+    },
+  });
+  updateOutboundQueueTrayFact(result);
+  await refreshOutboundQueueRetrySchedule();
+  return result;
+}
+handleValidated("recordings:send", ["settings"], (event, payload, ...extraPayload) => {
+  if (extraPayload.length > 0) throw new TypeError("Kanál recordings:send přijímá jeden payload");
+  return runRecordingQueueAction(event, payload, "send");
+});
+handleValidated("recordings:retry", ["settings"], (event, payload, ...extraPayload) => {
+  if (extraPayload.length > 0) throw new TypeError("Kanál recordings:retry přijímá jeden payload");
+  return runRecordingQueueAction(event, payload, "retry");
+});
+function validRecordingFileActionPayload(payload) {
+  return payload && typeof payload === "object" && !Array.isArray(payload)
+    && Object.keys(payload).sort().join("|") === "fileRev|id|queueRev"
+    && typeof payload.id === "string" && QUEUE_ITEM_ID_PATTERN.test(payload.id)
+    && (payload.queueRev === null
+      || (typeof payload.queueRev === "string" && QUEUE_ITEM_REVISION_PATTERN.test(payload.queueRev)))
+    && typeof payload.fileRev === "string" && QUEUE_ITEM_REVISION_PATTERN.test(payload.fileRev);
+}
+function recordingFileActionGuard(event) {
+  try {
+    requireTrustedSender(event, ["settings"]);
+    return recordingOwnersPreparing.size === 0 && recordingSessions.size === 0
+      && recordingCompletionsInFlight.size === 0
+      && recordingExportStages.size === 0 && outboundQueueSendsInFlight === 0;
+  } catch { return false; }
+}
+handleValidated("recordings:delete", ["settings"], async (event, payload, ...extraPayload) => {
+  if (extraPayload.length > 0 || !validRecordingFileActionPayload(payload)) {
+    throw new TypeError("Kanál recordings:delete očekává GUID a platné revize");
+  }
+  const snapshot = await (await getOutboundQueueStore()).listLocalRecordings(null);
+  const row = snapshot.items.find((item) => item.id === payload.id
+    && item.revision === payload.queueRev && item.fileRevision === payload.fileRev);
+  if (!row || row.allowedActions?.delete !== true) throw new Error("Nahrávku už nelze smazat");
+  const response = await dialog.showMessageBox(settingsWindow, {
+    type: "warning",
+    title: "Přesunout nahrávku do koše?",
+    message: "Přesunout tuto nahrávku do koše?",
+    detail: `${claimRecordingDialogLabel(row)}. Tato akce nemaže nic na serveru.`,
+    buttons: ["Zrušit", "Přesunout do koše"], cancelId: 0, defaultId: 0, noLink: true,
+  });
+  if (response.response !== 1) return { outcome: "cancelled" };
+  return (await getOutboundQueueStore()).deleteRecording({
+    clientRecordingId: payload.id,
+    expectedRevision: payload.queueRev,
+    expectedFileRevision: payload.fileRev,
+    trashItem: (filePath) => shell.trashItem(filePath),
+    guard: async () => recordingFileActionGuard(event),
+  });
+});
+handleValidated("recordings:reveal", ["settings"], async (event, payload, ...extraPayload) => {
+  if (extraPayload.length > 0 || !validRecordingFileActionPayload(payload)) {
+    throw new TypeError("Kanál recordings:reveal očekává GUID a platné revize");
+  }
+  const result = await (await getOutboundQueueStore()).revealRecording({
+    clientRecordingId: payload.id,
+    expectedRevision: payload.queueRev,
+    expectedFileRevision: payload.fileRev,
+    guard: async () => recordingFileActionGuard(event),
+  });
+  if (!recordingFileActionGuard(event)) throw new Error("Akci už nelze bezpečně potvrdit");
+  if (result.outcome === "shown") shell.showItemInFolder(result.filePath);
+  return { outcome: result.outcome };
+});
+handleValidated("recordings:verify", ["settings"], async (
+  event,
+  clientRecordingId,
+  expectedRevision,
+  ...extraPayload
+) => {
+  if (
+    extraPayload.length > 0
+    || typeof clientRecordingId !== "string"
+    || !QUEUE_ITEM_ID_PATTERN.test(clientRecordingId)
+    || typeof expectedRevision !== "string"
+    || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
+  ) throw new TypeError("Kanál recordings:verify očekává GUID a platnou revizi");
+  const context = await readRecordingVerificationContext();
+  if (!await isRecordingVerificationContextCurrent(context)) {
+    throw new Error("Pro ověření je nutné platné přihlášení");
+  }
+  const target = await (await getOutboundQueueStore()).getRecordingVerificationTarget(
+    clientRecordingId,
+    expectedRevision,
+    context.ownerFingerprint,
+  );
+  requireTrustedSender(event, ["settings"]);
+  if (!await isRecordingVerificationContextCurrent(context)) {
+    throw new Error("Přihlášení se během ověření změnilo");
+  }
+  const result = await getRecordingVerifier().verify(target);
+  requireTrustedSender(event, ["settings"]);
+  if (!await isRecordingVerificationContextCurrent(context)) {
+    throw new Error("Přihlášení se během ověření změnilo");
+  }
+  return result;
+});
+handleValidated("recordings:open-web", ["settings"], async (
+  event,
+  clientRecordingId,
+  expectedRevision,
+  track,
+  ...extraPayload
+) => {
+  if (
+    extraPayload.length > 0
+    || typeof clientRecordingId !== "string"
+    || !QUEUE_ITEM_ID_PATTERN.test(clientRecordingId)
+    || typeof expectedRevision !== "string"
+    || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
+    || !["microphone", "system"].includes(track)
+  ) throw new TypeError("Kanál recordings:open-web očekává GUID, revizi a známou stopu");
+  const context = await readRecordingVerificationContext();
+  if (!await isRecordingVerificationContextCurrent(context)) {
+    throw new Error("Pro otevření je nutné platné přihlášení");
+  }
+  const target = await (await getOutboundQueueStore()).getRecordingVerificationTarget(
+    clientRecordingId,
+    expectedRevision,
+    context.ownerFingerprint,
+  );
+  requireTrustedSender(event, ["settings"]);
+  if (!await isRecordingVerificationContextCurrent(context)) {
+    throw new Error("Přihlášení se během otevírání změnilo");
+  }
+  const recordingId = target.tracks[track]?.recordingId;
+  if (typeof recordingId !== "string" || !QUEUE_ITEM_ID_PATTERN.test(recordingId)) {
+    throw new Error("Stopa nemá známý serverový detail");
+  }
+  const detailUrl = new URL(`/nahravky/${recordingId}`, context.issuer);
+  await shell.openExternal(detailUrl.href);
+  requireTrustedSender(event, ["settings"]);
+  if (!await isRecordingVerificationContextCurrent(context)) {
+    throw new Error("Přihlášení se během otevírání změnilo");
+  }
+  return { opened: true };
+});
+handleValidated("queue:claim-recording", ["settings"], async (
+  event,
+  clientRecordingId,
+  expectedRevision,
+  ...extraPayload
+) => {
+  if (
+    extraPayload.length > 0
+    || typeof clientRecordingId !== "string"
+    || !QUEUE_ITEM_ID_PATTERN.test(clientRecordingId)
+    || typeof expectedRevision !== "string"
+    || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
+  ) {
+    throw new TypeError("Kanál queue:claim-recording očekává GUID a platnou revizi");
+  }
+
+  await waitForOutboundQueueRecovery();
+  const dialogGeneration = ++claimDialogGeneration;
+  const confirmedOwner = await readStableClaimOwnerSnapshot();
+  const store = await getOutboundQueueStore();
+  const currentItems = await store.list(confirmedOwner.ownerFingerprint);
+  const currentItem = currentItems.find((item) => item.id === clientRecordingId);
+  if (
+    !currentItem
+    || currentItem.kind !== "recording"
+    || currentItem.revision !== expectedRevision
+    || !["ceka", "selhalo"].includes(currentItem.state)
+    || !["unknown", "other"].includes(currentItem.ownership)
+  ) {
+    throw new Error("Nahrávku už nelze převzít; načtěte seznam znovu");
+  }
+  const confirmation = await dialog.showMessageBox(settingsWindow, {
+    type: "warning",
+    title: "Převzít nahrávku?",
+    message: "Převzít tuto nahrávku pod svůj účet?",
+    detail: `Nahrávka ${claimRecordingDialogLabel(currentItem)} vznikla pod jiným nebo neověřeným účtem. Převzetí ji neodešle.`,
+    buttons: ["Zrušit", "Převzít"],
+    cancelId: 0,
+    defaultId: 0,
+    noLink: true,
+  });
+  if (confirmation.response !== 1 || dialogGeneration !== claimDialogGeneration) {
+    return {
+      claimed: false,
+      items: await addQueueSendingAvailability(currentItems),
+    };
+  }
+
+  // Modal dovolí rendereru navigovat i účtu se mezitím změnit. Ověřujeme obojí
+  // znovu těsně před serializovaným zápisem a ještě jednou uvnitř jeho guardu.
+  requireTrustedSender(event, ["settings"]);
+  const currentOwner = await readStableClaimOwnerSnapshot();
+  if (!sameClaimOwnerSnapshot(currentOwner, confirmedOwner)) {
+    throw new Error("Účet se během potvrzení změnil; načtěte seznam znovu");
+  }
+  const storeResult = await store.claimRecording(
+    clientRecordingId,
+    expectedRevision,
+    confirmedOwner.ownerFingerprint,
+    {
+      guard: async () => {
+        if (dialogGeneration !== claimDialogGeneration) return false;
+        try {
+          requireTrustedSender(event, ["settings"]);
+          const latestOwner = await readStableClaimOwnerSnapshot();
+          requireTrustedSender(event, ["settings"]);
+          return sameClaimOwnerSnapshot(latestOwner, confirmedOwner);
+        } catch {
+          return false;
+        }
+      },
+    },
+  );
+  const result = {
+    ...storeResult,
+    items: await addQueueSendingAvailability(storeResult.items),
+  };
+  updateOutboundQueueTrayFact(result.items);
+  return result;
+});
 handleValidated("queue:retry", ["panel"], async () => {
   await waitForOutboundQueueRecovery();
-  const storeResult = await (await getOutboundQueueStore()).retry(queueKillswitches());
+  const currentOwnerFingerprint = await readUsableQueueOwnerFingerprint();
+  const storeResult = await (await getOutboundQueueStore()).retry(
+    queueKillswitches(),
+    currentOwnerFingerprint,
+  );
   const result = {
     ...storeResult,
     items: await addQueueSendingAvailability(storeResult.items),
@@ -3022,7 +3649,14 @@ const UPDATE_INSTALL_RETRY_MS = 30_000;
 // 12 hodin potíží v jednom běhu aplikace. Jednorázový výpadek tak uživatele neruší.
 const UPDATE_CHECK_FAILURE_THRESHOLD = 3;
 let consecutiveUpdateCheckFailures = 0;
-let updateStatus = { revision: 0, downloadedVersion: null, checkFailed: false };
+let updateStatus = {
+  revision: 0,
+  availableVersion: null,
+  downloading: false,
+  downloadPercent: null,
+  downloadedVersion: null,
+  checkFailed: false,
+};
 
 handleValidated("updater:get-state", ["panel"], (_event, ...extraPayload) => {
   requireNoPayload("updater:get-state", extraPayload);
@@ -3040,6 +3674,19 @@ function publishUpdateStatus(changes) {
     // Selhání oznámení nesmí změnit průchod bezpečnostní branou restartu.
     console.error(`[updater] Stav se nepodařilo předat panelu: ${error.message}`);
   }
+}
+
+function normalizeUpdateVersion(value) {
+  if (typeof value !== "string") return null;
+  const version = value.trim();
+  // Hodnota přichází z metadat vydání a končí v UI i logu. Propustíme jen běžný
+  // tvar verze, aby metadata nemohla podstrčit řídicí znaky nebo libovolný text.
+  return /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/.test(version) ? version : null;
+}
+
+function normalizeUpdatePercent(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.round(Math.min(100, Math.max(0, value)));
 }
 
 let autoUpdateClient;
@@ -3157,6 +3804,9 @@ async function checkForApplicationUpdate() {
     // electron-updater tutéž chybu také emituje jako „error“. Počítáme ji jen zde,
     // jednou za kontrolu včetně jejího stahování, nikoli podruhé v listeneru.
     consecutiveUpdateCheckFailures += 1;
+    if (!downloadedUpdatePending) {
+      publishUpdateStatus({ downloading: false, downloadPercent: null });
+    }
     if (consecutiveUpdateCheckFailures >= UPDATE_CHECK_FAILURE_THRESHOLD) {
       publishUpdateStatus({ checkFailed: true });
     }
@@ -3186,10 +3836,38 @@ async function initializeAutoUpdates() {
   autoUpdateClient.autoDownload = true;
   // Aktualizaci nikdy nenecháme vynutit při quit události mimo naši kontrolu aktivity.
   autoUpdateClient.autoInstallOnAppQuit = false;
+  autoUpdateClient.on("update-available", (info) => {
+    const version = normalizeUpdateVersion(info?.version) || "neznámá";
+    console.log(`[updater] Verze ${version} je dostupná; začíná stahování.`);
+    publishUpdateStatus({
+      availableVersion: version,
+      downloading: false,
+      downloadPercent: null,
+    });
+  });
+  autoUpdateClient.on("download-progress", (progress) => {
+    publishUpdateStatus({
+      downloading: true,
+      downloadPercent: normalizeUpdatePercent(progress?.percent),
+    });
+  });
+  autoUpdateClient.on("update-not-available", () => {
+    if (downloadedUpdatePending) return;
+    publishUpdateStatus({
+      availableVersion: null,
+      downloading: false,
+      downloadPercent: null,
+    });
+  });
   autoUpdateClient.on("update-downloaded", (info) => {
-    const version = typeof info?.version === "string" ? info.version : "neznámá";
+    const version = normalizeUpdateVersion(info?.version) || "neznámá";
     console.log(`[updater] Verze ${version} je stažená; čekám na bezpečný restart.`);
-    publishUpdateStatus({ downloadedVersion: version });
+    publishUpdateStatus({
+      availableVersion: null,
+      downloading: false,
+      downloadPercent: null,
+      downloadedVersion: version,
+    });
     downloadedUpdatePending = true;
     ensureUpdateInstallRetry();
     void tryInstallDownloadedUpdate();
@@ -3232,22 +3910,25 @@ function resolveAuthClientId(env) {
   return value.trim();
 }
 
-// 🔴 JEDEN přepínač zapíná DVĚ věci najednou, a to schválně: appka začne žádat scope
+// 🔴 JEDEN přepínač řídí DVĚ věci najednou, a to schválně: appka žádá scope
 // `nahravky:upload` A identitu si vezme z userinfo místo z MCP. Rozdělit je nesmíme —
 // upload-only token do MCP nesmí (403), takže scope bez userinfo by nechal e-mail natrvalo
 // null, otisk vlastníka prázdný a KAŽDÁ nahrávka by se při odeslání pauzla na
-// `session_owner_unknown`. Default (nenastaveno / cokoli jiného než "true") = dnešní chování
-// beze změny (mcp:read + MCP identita), aby merge nic nerozbil, dokud userinfo nenaběhne na
-// labs a Dan přepínač vědomě nezapne. Vzor 1:1 podle resolveAuthClientId.
+// `session_owner_unknown`. Userinfo i nový scope už byly ověřené naostro 11. 9.; proto je
+// nenastavená hodnota produkční default. Přesné "false" zůstává jako řízený vývojový návrat
+// ke starému MCP přihlášení, nikdy však nevzniká samo při spuštění packaged .app z Finderu.
 function resolveUploadScopeEnabled(env) {
   const value = env?.LUDONE_UPLOAD_SCOPE_ENABLED;
   if (value === undefined || (typeof value === "string" && value.trim().length === 0)) {
-    return false;
+    return true;
   }
   if (typeof value !== "string") {
     throw new Error("Přepínač LUDONE_UPLOAD_SCOPE_ENABLED má neplatný typ");
   }
-  return value.trim() === "true";
+  const normalized = value.trim();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  throw new Error("Přepínač LUDONE_UPLOAD_SCOPE_ENABLED má neplatnou hodnotu");
 }
 
 // Cesta userinfo je pevná součást kontraktu se serverem (potvrzeno serverovou session
@@ -3289,6 +3970,19 @@ function resolveAuthIssuer(env, storedOrigin = "https://app.ludone.cz") {
 
 function resolveCurrentAuthIssuer() {
   return resolveAuthIssuer(process.env, authOriginStore.get());
+}
+
+function currentAuthContext() {
+  const issuer = resolveCurrentAuthIssuer();
+  return {
+    issuer,
+    resource: `${issuer}/api/mcp`,
+    scope: resolveUploadScopeEnabled(process.env) ? UPLOAD_SCOPE : "mcp:read",
+  };
+}
+
+function storedSessionMatchesCurrentAuth(storedSession) {
+  return sessionMatchesAuthContext(storedSession, currentAuthContext());
 }
 
 function createAuthBeginHandler(createController) {
@@ -3586,7 +4280,7 @@ async function readStoredAuthSession() {
 async function hasStoredAuthSession() {
   try {
     const storedSession = await readStoredAuthSession();
-    return storedSession !== null && storedSession.issuer === resolveCurrentAuthIssuer();
+    return storedSessionMatchesCurrentAuth(storedSession);
   } catch {
     return false;
   }
@@ -3595,7 +4289,7 @@ async function hasStoredAuthSession() {
 // Přítomnost šifrované relace není doklad platnosti; stejnou podmínku používá UI
 // i odesílání, a to i po pokusu o obnovu.
 function storedAuthSessionState(storedSession) {
-  if (storedSession === null || storedSession.issuer !== resolveCurrentAuthIssuer()) return "none";
+  if (!storedSessionMatchesCurrentAuth(storedSession)) return "none";
   return typeof storedSession.accessToken === "string"
     && storedSession.accessToken.trim().length > 0
     && Number.isFinite(storedSession.accessExpiresAt)
@@ -3661,8 +4355,7 @@ async function readStoredAuthIdentity() {
     throw new Error("Identitu právě ověřuje probíhající přihlášení");
   }
 
-  const configuredOrigin = resolveCurrentAuthIssuer();
-  if (storedSession.issuer !== configuredOrigin) return null;
+  if (!storedSessionMatchesCurrentAuth(storedSession)) return null;
 
   const name = normalizedIdentityPart(storedSession.identity?.name);
   const email = normalizedIdentityPart(storedSession.identity?.email);
@@ -3686,6 +4379,36 @@ handleValidated("auth:session-state", ["panel", "settings"], async (_event, ...e
 });
 
 handleValidated("auth:identity", ["settings"], () => readStoredAuthIdentity());
+
+handleValidated("upload-companies:list", ["settings"], (event, ...extraPayload) => {
+  requireNoPayload("upload-companies:list", extraPayload);
+  const generation = authSessionGeneration;
+  const selectionEpoch = uploadCompanySelectionEpoch;
+  return getUploadCompanySelectionController().load({
+    requesterKey: uploadCompanyRequester(event),
+    guard: uploadCompanyGuard(event, generation, selectionEpoch),
+  });
+});
+
+handleValidated("upload-companies:select", ["settings"],
+  async (event, offerToken, companyId, ...extraPayload) => {
+    if (extraPayload.length > 0 || typeof offerToken !== "string"
+      || !OFFER_TOKEN_PATTERN.test(offerToken) || typeof companyId !== "string"
+      || !COMPANY_ID_PATTERN.test(companyId)) {
+      throw new TypeError("Výběr firmy přijímá právě platný token nabídky a GUID firmy");
+    }
+    const generation = authSessionGeneration;
+    const selectionEpoch = uploadCompanySelectionEpoch;
+    const result = await getUploadCompanySelectionController().select({
+      requesterKey: uploadCompanyRequester(event),
+      offerToken,
+      companyId,
+      guard: uploadCompanyGuard(event, generation, selectionEpoch),
+    });
+    uploadCompanyGeneration += 1;
+    invalidateUploadCompanySelection();
+    return result;
+  });
 
 handleValidated("auth:origin", ["settings"], (_event, ...extraPayload) => {
   requireNoPayload("auth:origin", extraPayload);
@@ -3737,6 +4460,9 @@ handleValidated("auth:set-origin", ["settings"], async (_event, authOrigin, ...e
     requireIdleAuthOriginChange();
 
     await authOriginStore.set(authOrigin);
+    authSessionGeneration += 1;
+    invalidateRecordingVerifier();
+    invalidateUploadCompanySelection();
     return resolveCurrentAuthIssuer();
   } finally {
     authOriginChangeInFlight = false;
@@ -3788,6 +4514,9 @@ handleValidated("auth:begin", ["panel"], async () => {
     activeAuthAttempts.delete(attempt);
   }
   if (result?.ok === true) {
+    authSessionGeneration += 1;
+    invalidateRecordingVerifier();
+    invalidateUploadCompanySelection();
     appState.acceptRendererSignIn = true;
     appState.signedIn = true;
     refreshTray();
@@ -3830,6 +4559,8 @@ function blockedAuthLogoutResult() {
 
 async function executeAuthLogout() {
   authSessionGeneration += 1;
+  invalidateRecordingVerifier();
+  invalidateUploadCompanySelection();
   authLogoutsInFlight += 1;
   try {
     const result = await logoutAuthController.logout();
@@ -4037,7 +4768,10 @@ app.whenReady().then(async () => {
       console.error("[queue] Obnova nahrávek neočekávaně selhala; start pokračuje.");
     })
     .finally(markOutboundQueueRecoveryReady)
-    .then(() => pumpOutboundQueue());
+    .then(async () => {
+      await pumpOutboundQueue();
+      await refreshOutboundQueueRetrySchedule();
+    });
   await initializeAutoUpdates();
   const hardStop = Number.parseInt(process.env.LUDONE_E2E_HARD_STOP_MS || "", 10);
   if (IS_TEST_RUN && Number.isFinite(hardStop) && hardStop > 0) {
@@ -4057,6 +4791,7 @@ app.on("activate", () => {
 });
 
 app.on("before-quit", (event) => {
+  outboundQueueScheduler?.stop();
   clearTimeout(trayVisibilityTimer);
   trayVisibilityTimer = undefined;
   stopTrayTitleUpdates();

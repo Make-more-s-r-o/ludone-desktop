@@ -1,0 +1,47 @@
+{
+  "summary": "Vznikl serializovaný read-only lokální snapshot fronty a primárních manifestů s bezpečnými stavy complete-audio, partial-audio, missing-audio a invalid-manifest. Snapshot deduplikuje primární manifest a recovery sidecar, nevrací cesty, fingerprinty ani syrové chyby, drží queue revision a přidává fileRevision. Nastavení jej čte výhradně přes nový sender-guarded IPC recordings:list-local a preload listLocalRecordings; React zachovává claim z T-02 a přidává refresh, samostatný empty/error stav, orphan a retention-ghost karty.",
+  "premisaPlatila": true,
+  "premisaPoznamka": "Integrační HEAD a25bd5c obsahoval store.list(currentOwnerFingerprint) a store.claimRecording(id, revision, owner, { guard }). Nový listLocalRecordings používá stejnou serializaci, ale outgoing.json znovu čte z disku a při chybě invaliduje cache. Claim kontrakt ani held chování nebyly změněny.",
+  "volbaIdentityNeplatnehoOrphanu": "unreadableCount; neplatné UUID ani neidentifikovatelný manifest nevytvoří řádek nebo akci a žádná cesta se nepoužije jako identita",
+  "ocekavanePocty": {
+    "serverovychRequestuPriListu": 0,
+    "mutaciFrontyPriListu": 0,
+    "duplicitPrimarnihoManifestuASidecaru": 0,
+    "rawCestVRendereru": 0
+  },
+  "kontrolniNula": {
+    "souboruMimoAllowlist": 0,
+    "zmenBackenduLuTrackDesign": 0,
+    "novychAkciT04T05": 0,
+    "pridanychExemptMarkeruSkipuBaseline": 0,
+    "gitZapisu": 0
+  },
+  "novychTestu": 10,
+  "sabotaze": [
+    {
+      "nazev": "Vynechaný orphan scan",
+      "ocekavano": "Diskový integrační test musí zčervenat, protože orphan/retention-ghost karta zmizí; po obnovení musí zůstat zelený.",
+      "vysledek": "Sabotáž exit 1: očekávané 2 položky, nalezena 1. Obnovená implementace exit 0: 1 test passed.",
+      "doslovnyVystup": "PŘÍKAZ: npx vitest run tests/queue.test.js -t 'spojí frontu s orphan manifesty'\nFAIL tests/queue.test.js > read-only lokální přehled nahrávek > spojí frontu s orphan manifesty, ignoruje sidecar a rozliší úplnost i nulový soubor\nAssertionError: expected [ { …(18) } ] to have a length of 2 but got 1\nTest Files 1 failed (1)\nTests 1 failed | 117 skipped (118)\nEXIT_CODE=1\nOBNOVENÁ IMPLEMENTACE — MUSÍ ZŮSTAT ZELENÁ\nTest Files 1 passed (1)\nTests 1 passed | 118 skipped (119)\nEXIT_CODE=0"
+    },
+    {
+      "nazev": "Raw cesta v orphan projekci",
+      "ocekavano": "Bezpečnostní test musí zčervenat při přidání rawPath; po obnovení musí celý read-only blok zůstat zelený.",
+      "vysledek": "Sabotáž exit 1: serializovaný snapshot obsahoval dočasnou absolutní cestu. Obnovená implementace exit 0: 6 testů passed.",
+      "doslovnyVystup": "PŘÍKAZ: npx vitest run tests/queue.test.js -t 'spojí frontu s orphan manifesty'\nFAIL tests/queue.test.js > read-only lokální přehled nahrávek > spojí frontu s orphan manifesty, ignoruje sidecar a rozliší úplnost i nulový soubor\nAssertionError: expected JSON snapshot not to contain absolute temporary directory\nTest Files 1 failed (1)\nTests 1 failed | 117 skipped (118)\nEXIT_CODE=1\nOBNOVENÁ IMPLEMENTACE — MUSÍ ZŮSTAT ZELENÁ\nTest Files 1 passed (1)\nTests 6 passed | 113 skipped (119)\nEXIT_CODE=0"
+    }
+  ],
+  "doslovnyVystupTestu": "PŘÍKAZ: npm run typecheck\n> ludone-desktop-prototype@0.1.2 typecheck\n> tsc --noEmit -p jsconfig.json\nEXIT_CODE=0\n\nPŘÍKAZ: npm run gates\nTest Files 2 failed | 64 passed (66)\nTests 2 failed | 1384 passed | 3 skipped (1389)\nFAIL tests/packaging.test.js: timeout 5000ms\nFAIL tests/settings.test.js: stará fixture volala listQueue místo nového snapshot API; fixture byla následně opravena, bez runtime fallbacku\nEXIT_CODE=1\n\nFINÁLNÍ CÍLENÉ OVĚŘENÍ PO OPRAVÁCH\nPŘÍKAZ: npx vitest run tests/queue.test.js tests/queue-wiring.test.js tests/ipc-sender-guard.test.js tests/recordings-dashboard.test.js tests/settings.test.js\nTest Files 5 passed (5)\nTests 450 passed (450)\nEXIT_CODE=0\n\nPŘÍKAZ: npx vitest run tests/packaging.test.js\nTest Files 1 passed (1)\nTests 6 passed (6)\nEXIT_CODE=0\n\nDODATEČNÁ PŘEJÍMKA — JEDINÝ NOVÝ SNAPSHOT KONTRAKT A SAFE OBJECT KEYS\nPŘÍKAZ: npx vitest run tests/queue.test.js tests/recordings-dashboard.test.js tests/settings.test.js tests/queue-wiring.test.js tests/ipc-sender-guard.test.js\nTest Files 5 passed (5)\nTests 450 passed (450)\nEXIT_CODE=0\nPŘÍKAZ: npm run typecheck\n> tsc --noEmit -p jsconfig.json\nEXIT_CODE=0\n\nPŘÍKAZ: npx eslint electron/recordings-dashboard.cjs electron/queue.cjs electron/main.cjs electron/preload.cjs src/features/recordings/RecordingsDashboard.jsx tests/queue.test.js tests/queue-wiring.test.js tests/ipc-sender-guard.test.js tests/recordings-dashboard.test.js\nEXIT_CODE=0",
+  "coJsemNEOVERIL": [
+    "Skutečnou macOS GUI plochu Nastavení; ui-smoke se podle packetu nespouštěl.",
+    "Reálný zvuk, produkční přihlášení ani server; list nevytváří žádný request.",
+    "Opakovaný celý npm run gates po opravách; packet dovolil po jednorázové plné bráně jen cílené ověření. Původní plná brána měla jeden opravený T-03 test a jednorázový packaging timeout, který samostatný běh následně ověřil zeleně."
+  ],
+  "notes": [
+    "Kompletní doslovné výstupy jsou v dukazy/nahravky-dashboard-2026-09-14/T3/typecheck.log, gates.log, sabotaz-orphan-scan.log a sabotaz-bezpecnost.log.",
+    "Manifest i stopy se čtou jen jako přímé soubory kanonického kořene přes lstat, O_NOFOLLOW a O_NONBLOCK; manifest má omezený read a stabilní stat kontrolu.",
+    "fileRevision hashují pouze malý manifest a bezpečné stat údaje stop, nikdy celý zvuk."
+    ,"Původní settings test fixture používala T-02 API listQueue. Fixture nyní poskytuje skutečný T-03 kontrakt {items, unreadableCount}; produkční komponenta nemá legacy fallback."
+    ,"Mapování známých důvodů používá Object.hasOwn; regresní hodnoty __proto__ a constructor vracejí bezpečnou obecnou hlášku typu string."
+  ]
+}

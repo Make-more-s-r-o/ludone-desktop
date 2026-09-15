@@ -1,0 +1,16 @@
+
+> ludone-desktop-prototype@0.1.1 test:unit
+> vitest run tests/upload-client.test.js -t výsledek uploadu v perzistentním souboru fronty
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-fronta
+
+ ✓ tests/upload-client.test.js (71 tests | 67 skipped) 243ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed | 67 skipped (71)
+   Start at  21:35:54
+   Duration  592ms (transform 54ms, setup 8ms, collect 70ms, tests 243ms, environment 0ms, prepare 72ms)
+
+
+EXIT_CODE=0

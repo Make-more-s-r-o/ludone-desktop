@@ -1,0 +1,252 @@
+PREMISA — REGRESE NAD PŮVODNÍM KÓDEM (OČEKÁVANÝ RED)
+PŘÍKAZ: npx vitest run tests/auth-identity-fallback.test.js -t 'legacy větev|userinfo'
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-userinfo
+
+ ❯ tests/auth-identity-fallback.test.js (29 tests | 4 failed | 20 skipped) 160ms
+   ↓ znovupoužití uloženého OAuth klienta > při druhém přihlášení použije uloženého klienta bez nové registrace
+   ↓ znovupoužití uloženého OAuth klienta > při změně issuer zaregistruje nového klienta
+   ↓ znovupoužití uloženého OAuth klienta > při změně scope zaregistruje nového klienta
+   ↓ znovupoužití uloženého OAuth klienta > samotná neshoda uloženého issuer stačí k nové registraci
+   ↓ znovupoužití uloženého OAuth klienta > samotná neshoda uloženého resource stačí k nové registraci
+   ↓ znovupoužití uloženého OAuth klienta > session chybějící nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > session prázdná nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > session poškozená nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > session s neplatným schématem nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > chyba čtení uložené session nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > chyba dešifrování session nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > options.clientId z prostředí přebije uloženého klienta bez registrace
+   ↓ znovupoužití uloženého OAuth klienta > invalid_client zahodí jen cache starého klienta a další interaktivní login provede DCR
+   ↓ znovupoužití uloženého OAuth klienta > invalid_client z autorizace přes loopback zneplatní stejnou cache jako token endpoint
+   ↓ znovupoužití uloženého OAuth klienta > neznámý body.error ani error_description nepropustí ze serveru do zprávy
+   ✓ best-effort identita po OAuth přihlášení > legacy větev bez resolveru dál přijme identitu z token response 27ms
+   ↓ best-effort identita po OAuth přihlášení > token bez identity přesto uloží jako úspěšnou session
+   ↓ best-effort identita po OAuth přihlášení > získá e-mail přes přesné JSON-RPC volání ludone_ping a neloguje ani refresh token
+   ↓ best-effort identita po OAuth přihlášení > při chybě MCP uloží session s neznámou identitou
+   ↓ best-effort identita po OAuth přihlášení > po deadline MCP požadavku přihlášení dokončí a požadavek abortuje
+   ↓ best-effort identita po OAuth přihlášení > při nesmyslné MCP odpovědi zachová prázdné hodnoty jako null
+   ✓ identita z userinfo endpointu (upload scope) > vezme e-mail z userinfo a ludone_ping vůbec nezavolá 19ms
+   × identita z userinfo endpointu (upload scope) > když userinfo spadne a token nemá MCP práva, login přežije s prázdnou identitou 26ms
+     → expected { ok: true, user: { …(2) } } to deeply equal { Object (ok, user) }
+   × identita z userinfo endpointu (upload scope) > částečný userinfo nedoplní 'jméno' z token response 19ms
+     → expected { ok: true, user: { …(2) } } to deeply equal { ok: true, user: { …(2) } }
+   × identita z userinfo endpointu (upload scope) > částečný userinfo nedoplní 'e-mail' z token response 19ms
+     → expected { ok: true, user: { …(2) } } to deeply equal { ok: true, …(1) }
+   × identita z userinfo endpointu (upload scope) > deadline userinfo uloží neznámou identitu, abortuje request a nevolá MCP 23ms
+     → expected { ok: true, user: { …(2) } } to deeply equal { Object (ok, user) }
+   ✓ identita z userinfo endpointu (upload scope) > uloží e-mail z userinfo bytově beze změny (lokální část se nelowercasuje) 24ms
+   ✓ identita z userinfo endpointu (upload scope) > upload scope bez přesného userinfo endpointu odmítne před síťovým voláním 2ms
+   ✓ identita z userinfo endpointu (upload scope) > userinfo endpoint s MCP scope odmítne, aby se identity kontrakty nesmíchaly 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/auth-identity-fallback.test.js > identita z userinfo endpointu (upload scope) > když userinfo spadne a token nemá MCP práva, login přežije s prázdnou identitou
+AssertionError: expected { ok: true, user: { …(2) } } to deeply equal { Object (ok, user) }
+
+- Expected
++ Received
+
+  {
+    "ok": true,
+    "user": {
+-     "email": null,
+-     "name": null,
++     "email": "tokenova-identita@example.invalid",
++     "name": "Tokenová identita",
+    },
+  }
+
+ ❯ tests/auth-identity-fallback.test.js:611:5
+    609|     });
+    610| 
+    611|     await expect(completeLogin(harness)).resolves.toEqual({
+       |     ^
+    612|       ok: true,
+    613|       user: { name: null, email: null },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/auth-identity-fallback.test.js > identita z userinfo endpointu (upload scope) > částečný userinfo nedoplní 'jméno' z token response
+AssertionError: expected { ok: true, user: { …(2) } } to deeply equal { ok: true, user: { …(2) } }
+
+- Expected
++ Received
+
+  {
+    "ok": true,
+    "user": {
+      "email": "userinfo@example.invalid",
+-     "name": null,
++     "name": "Tokenová identita",
+    },
+  }
+
+ ❯ tests/auth-identity-fallback.test.js:641:5
+    639|     });
+    640| 
+    641|     await expect(completeLogin(harness)).resolves.toEqual({ ok: true, …
+       |     ^
+    642|     expect((await readSession(harness)).identity).toEqual(expected);
+    643|     expect(harness.fetchImpl.mock.calls.filter(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/auth-identity-fallback.test.js > identita z userinfo endpointu (upload scope) > částečný userinfo nedoplní 'e-mail' z token response
+AssertionError: expected { ok: true, user: { …(2) } } to deeply equal { ok: true, …(1) }
+
+- Expected
++ Received
+
+  {
+    "ok": true,
+    "user": {
+-     "email": null,
++     "email": "tokenova-identita@example.invalid",
+      "name": "Userinfo identita",
+    },
+  }
+
+ ❯ tests/auth-identity-fallback.test.js:641:5
+    639|     });
+    640| 
+    641|     await expect(completeLogin(harness)).resolves.toEqual({ ok: true, …
+       |     ^
+    642|     expect((await readSession(harness)).identity).toEqual(expected);
+    643|     expect(harness.fetchImpl.mock.calls.filter(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/auth-identity-fallback.test.js > identita z userinfo endpointu (upload scope) > deadline userinfo uloží neznámou identitu, abortuje request a nevolá MCP
+AssertionError: expected { ok: true, user: { …(2) } } to deeply equal { Object (ok, user) }
+
+- Expected
++ Received
+
+  {
+    "ok": true,
+    "user": {
+-     "email": null,
+-     "name": null,
++     "email": "tokenova-identita@example.invalid",
++     "name": "Tokenová identita",
+    },
+  }
+
+ ❯ tests/auth-identity-fallback.test.js:670:5
+    668|     await vi.advanceTimersByTimeAsync(IDENTITY_LOOKUP_DEADLINE_MS);
+    669| 
+    670|     await expect(pending).resolves.toEqual({
+       |     ^
+    671|       ok: true,
+    672|       user: { name: null, email: null },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 5 passed | 20 skipped (29)
+   Start at  22:55:21
+   Duration  462ms (transform 28ms, setup 8ms, collect 23ms, tests 160ms, environment 0ms, prepare 56ms)
+
+EXIT_CODE=1
+
+OPRAVA — STEJNÉ REGRESE (GREEN)
+PŘÍKAZ: npx vitest run tests/auth-identity-fallback.test.js -t 'legacy větev|userinfo'
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-userinfo
+
+ ✓ tests/auth-identity-fallback.test.js (29 tests | 20 skipped) 150ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed | 20 skipped (29)
+   Start at  22:55:41
+   Duration  368ms (transform 25ms, setup 7ms, collect 18ms, tests 150ms, environment 0ms, prepare 60ms)
+
+EXIT_CODE=0
+
+SABOTÁŽ — OBNOVENÁ TOKENOVÁ IDENTITA V EXPLICITNÍ VĚTVI (OČEKÁVANÝ RED)
+PŘÍKAZ: npx vitest run tests/auth-identity-fallback.test.js -t 'když userinfo spadne'
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-userinfo
+
+ ❯ tests/auth-identity-fallback.test.js (29 tests | 1 failed | 28 skipped) 32ms
+   ↓ znovupoužití uloženého OAuth klienta > při druhém přihlášení použije uloženého klienta bez nové registrace
+   ↓ znovupoužití uloženého OAuth klienta > při změně issuer zaregistruje nového klienta
+   ↓ znovupoužití uloženého OAuth klienta > při změně scope zaregistruje nového klienta
+   ↓ znovupoužití uloženého OAuth klienta > samotná neshoda uloženého issuer stačí k nové registraci
+   ↓ znovupoužití uloženého OAuth klienta > samotná neshoda uloženého resource stačí k nové registraci
+   ↓ znovupoužití uloženého OAuth klienta > session chybějící nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > session prázdná nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > session poškozená nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > session s neplatným schématem nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > chyba čtení uložené session nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > chyba dešifrování session nebrání registraci a dokončení přihlášení
+   ↓ znovupoužití uloženého OAuth klienta > options.clientId z prostředí přebije uloženého klienta bez registrace
+   ↓ znovupoužití uloženého OAuth klienta > invalid_client zahodí jen cache starého klienta a další interaktivní login provede DCR
+   ↓ znovupoužití uloženého OAuth klienta > invalid_client z autorizace přes loopback zneplatní stejnou cache jako token endpoint
+   ↓ znovupoužití uloženého OAuth klienta > neznámý body.error ani error_description nepropustí ze serveru do zprávy
+   ↓ best-effort identita po OAuth přihlášení > legacy větev bez resolveru dál přijme identitu z token response
+   ↓ best-effort identita po OAuth přihlášení > token bez identity přesto uloží jako úspěšnou session
+   ↓ best-effort identita po OAuth přihlášení > získá e-mail přes přesné JSON-RPC volání ludone_ping a neloguje ani refresh token
+   ↓ best-effort identita po OAuth přihlášení > při chybě MCP uloží session s neznámou identitou
+   ↓ best-effort identita po OAuth přihlášení > po deadline MCP požadavku přihlášení dokončí a požadavek abortuje
+   ↓ best-effort identita po OAuth přihlášení > při nesmyslné MCP odpovědi zachová prázdné hodnoty jako null
+   ↓ identita z userinfo endpointu (upload scope) > vezme e-mail z userinfo a ludone_ping vůbec nezavolá
+   × identita z userinfo endpointu (upload scope) > když userinfo spadne a token nemá MCP práva, login přežije s prázdnou identitou 32ms
+     → expected { ok: true, user: { …(2) } } to deeply equal { Object (ok, user) }
+   ↓ identita z userinfo endpointu (upload scope) > částečný userinfo nedoplní 'jméno' z token response
+   ↓ identita z userinfo endpointu (upload scope) > částečný userinfo nedoplní 'e-mail' z token response
+   ↓ identita z userinfo endpointu (upload scope) > deadline userinfo uloží neznámou identitu, abortuje request a nevolá MCP
+   ↓ identita z userinfo endpointu (upload scope) > uloží e-mail z userinfo bytově beze změny (lokální část se nelowercasuje)
+   ↓ identita z userinfo endpointu (upload scope) > upload scope bez přesného userinfo endpointu odmítne před síťovým voláním
+   ↓ identita z userinfo endpointu (upload scope) > userinfo endpoint s MCP scope odmítne, aby se identity kontrakty nesmíchaly
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/auth-identity-fallback.test.js > identita z userinfo endpointu (upload scope) > když userinfo spadne a token nemá MCP práva, login přežije s prázdnou identitou
+AssertionError: expected { ok: true, user: { …(2) } } to deeply equal { Object (ok, user) }
+
+- Expected
++ Received
+
+  {
+    "ok": true,
+    "user": {
+-     "email": null,
+-     "name": null,
++     "email": "tokenova-identita@example.invalid",
++     "name": "Tokenová identita",
+    },
+  }
+
+ ❯ tests/auth-identity-fallback.test.js:611:5
+    609|     });
+    610| 
+    611|     await expect(completeLogin(harness)).resolves.toEqual({
+       |     ^
+    612|       ok: true,
+    613|       user: { name: null, email: null },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 28 skipped (29)
+   Start at  22:55:55
+   Duration  259ms (transform 29ms, setup 7ms, collect 18ms, tests 32ms, environment 0ms, prepare 60ms)
+
+EXIT_CODE=1
+
+SABOTÁŽ OBNOVENA — STEJNÁ REGRESE (GREEN)
+PŘÍKAZ: npx vitest run tests/auth-identity-fallback.test.js -t 'když userinfo spadne'
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-userinfo
+
+ ✓ tests/auth-identity-fallback.test.js (29 tests | 28 skipped) 31ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 28 skipped (29)
+   Start at  22:56:04
+   Duration  339ms (transform 28ms, setup 8ms, collect 27ms, tests 31ms, environment 0ms, prepare 48ms)
+
+EXIT_CODE=0

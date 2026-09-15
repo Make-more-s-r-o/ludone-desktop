@@ -1,0 +1,12 @@
+{
+  "task": "A1",
+  "premisaPlatila": true,
+  "kontrolniNula": { "backendChanges": 0, "designChanges": 0, "weakenedGates": 0, "liveLogins": 0 },
+  "commits": ["f9dd296", "ccb47e7", "c0cc32e"],
+  "review": "Koordinátor zkontroloval auth diff. První review zachytilo neomezený error text a chybějící invalid_client z loopback callbacku; obojí opraveno a regresně zamknuto.",
+  "tests": [
+    { "command": "npx vitest run tests/auth-identity-fallback.test.js tests/auth-refresh.test.js tests/auth-controller-wiring.test.js tests/queue-wiring.test.js tests/ipc-sender-guard.test.js", "exitCode": 0, "passed": 345, "log": "../../../../../dukazy/nahravky-dashboard-2026-09-14/integrace/A1-testy.log" },
+    { "command": "Sabotáž allowlistu OAuth error code", "exitCode": 1, "expectedFailure": true, "log": "../../../../../dukazy/nahravky-dashboard-2026-09-14/integrace/A1-sabotaz.log" }
+  ],
+  "verification": "tests-green"
+}

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -416,7 +416,11 @@ function fakeElectron(userDataPath, {
     dialog: {
       showMessageBox: vi.fn(async () => ({ response: 0 })),
     },
-    shell: { openExternal: vi.fn(async () => undefined) },
+    shell: {
+      openExternal: vi.fn(async () => undefined),
+      showItemInFolder: vi.fn((filePath) => { void filePath; }),
+      trashItem: vi.fn(async (filePath) => { void filePath; }),
+    },
     systemPreferences: {
       askForMediaAccess: vi.fn(async () => false),
       getMediaAccessStatus: vi.fn(() => "denied"),
@@ -501,6 +505,7 @@ function fakeElectron(userDataPath, {
  *   applyRetention?: (...args: any[]) => Promise<any>,
  *   autoUpdater?: EventEmitter & Record<string, any>,
  *   createAuthController?: (...args: any[]) => any,
+ *   updateStoredAuthSessionCompany?: (...args: any[]) => Promise<any>,
  *   createAuthOriginStore?: (...args: any[]) => any,
  *   createDockVisibilityStore?: (...args: any[]) => any,
  *   createLogoutController?: (...args: any[]) => any,
@@ -532,6 +537,7 @@ async function loadMain({
   applyRetention,
   autoUpdater,
   createAuthController,
+  updateStoredAuthSessionCompany,
   createAuthOriginStore,
   createDockVisibilityStore,
   createLogoutController,
@@ -582,11 +588,14 @@ async function loadMain({
   const injectedRequire = (specifier) => {
     if (specifier === "electron") return harness.electron;
     if (specifier === "electron-updater" && autoUpdater) return { autoUpdater };
-    if (specifier === "./auth.cjs" && (createAuthController || createLogoutController)) {
+    if (specifier === "./auth.cjs" && (
+      createAuthController || createLogoutController || updateStoredAuthSessionCompany
+    )) {
       return {
         ...actualRequire("./auth.cjs"),
         ...(createAuthController ? { createAuthController } : {}),
         ...(createLogoutController ? { createLogoutController } : {}),
+        ...(updateStoredAuthSessionCompany ? { updateStoredAuthSessionCompany } : {}),
       };
     }
     if (specifier === "./settings.cjs" && (createAuthOriginStore || createDockVisibilityStore)) {
@@ -938,17 +947,27 @@ function openSettingsAndCreateEvent(harness) {
 function storedAuthSession({
   identity = { name: "Ada Lovelace", email: "ada@ludone.cz" },
   issuer = "https://app.ludone.cz",
+  scope = "nahravky:upload",
 } = {}) {
   return {
     v: 1,
     issuer,
     clientId: "desktop-client",
     resource: `${issuer}/api/mcp`,
-    scope: "mcp:read",
+    scope,
     accessToken: "TAJNY-ACCESS-TOKEN",
     refreshToken: "TAJNY-REFRESH-TOKEN",
     identity,
   };
+}
+
+async function writeStoredAuthSession(harness, session) {
+  const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+  await mkdir(path.dirname(tokenPath), { recursive: true });
+  await writeFile(
+    tokenPath,
+    harness.electron.safeStorage.encryptString(JSON.stringify(session)),
+  );
 }
 
 function memoryDockVisibilityStore(initialValue) {
@@ -1432,7 +1451,7 @@ describe("uložený vypínač odesílání v hlavním procesu", () => {
     [true, "TRUE", false],
     [true, "1", false],
     [true, "true ", false],
-  ])("uloženou volbu %s přebije prostředí %j na %s i po zápisu", async (stored, env, effective) => {
+  ])("getter zachová uloženou volbu %s i při transportním prostředí %j", async (stored, env) => {
     const firstProcess = await loadMain();
     await firstProcess.runReady();
     const firstEvent = openSettingsAndCreateEvent(firstProcess).settingsEvent;
@@ -1447,9 +1466,9 @@ describe("uložený vypínač odesílání v hlavním procesu", () => {
     await overridden.runReady();
     const { settingsEvent } = openSettingsAndCreateEvent(overridden);
     for (const { suffix } of switches) {
-      expect(overridden.ipcHandlers.get(`settings:get-${suffix}`)(settingsEvent)).toBe(effective);
+      expect(overridden.ipcHandlers.get(`settings:get-${suffix}`)(settingsEvent)).toBe(stored);
       await expect(overridden.ipcHandlers.get(`settings:set-${suffix}`)(settingsEvent, stored))
-        .resolves.toBe(effective);
+        .resolves.toBe(stored);
     }
 
     const restarted = await loadMain({ userDataPath: firstProcess.userDataPath });
@@ -1491,19 +1510,19 @@ describe("uložený vypínač odesílání v hlavním procesu", () => {
     const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
     await vi.waitFor(() => expect(store.pump).toHaveBeenCalledOnce());
     expect(store.pump).toHaveBeenLastCalledWith({
-      DESKTOP_UPLOAD_ENABLED: "false", DESKTOP_TIME_ENABLED: undefined,
-    });
+      DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined,
+    }, null);
 
     for (const upload of [true, false]) {
       await harness.ipcHandlers.get("settings:set-upload-enabled")(settingsEvent, upload);
       await harness.ipcHandlers.get("queue:retry")(panelEvent);
 
       expect(store.retry).toHaveBeenLastCalledWith({
-        DESKTOP_UPLOAD_ENABLED: String(upload), DESKTOP_TIME_ENABLED: undefined,
-      });
+        DESKTOP_UPLOAD_ENABLED: "true", DESKTOP_TIME_ENABLED: undefined,
+      }, null);
       const listed = await harness.ipcHandlers.get("queue:list")(panelEvent);
       expect(listed.map((item) => item.sendingDisabledReason)).toEqual([
-        upload ? undefined : UPLOAD_DISABLED_REASON,
+        undefined,
         UPLOAD_DISABLED_REASON,
       ]);
     }
@@ -1531,6 +1550,32 @@ describe("uložený vypínač odesílání v hlavním procesu", () => {
     }
     await expect(readFile(path.join(harness.userDataPath, "nastaveni", "aplikace.json")))
       .rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("automatiku snapshotne při začátku session a pozdější toggle finish nezmění", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const begin = harness.ipcHandlers.get("recording:begin");
+    const append = harness.ipcHandlers.get("recording:append");
+    const finish = harness.ipcHandlers.get("recording:finish");
+
+    const started = await begin(panelEvent);
+    expect(started.automaticUpload).toBe(false);
+    await harness.ipcHandlers.get("settings:set-upload-enabled")(settingsEvent, true);
+    await append(panelEvent, started.sessionId, "microphone", 0, Uint8Array.from([1]).buffer);
+    await append(panelEvent, started.sessionId, "system", 0, Uint8Array.from([2]).buffer);
+    const completed = await finish(panelEvent, started.sessionId, {
+      microphone: {
+        startedAt: "2026-09-15T00:00:00.000Z",
+        endedAt: "2026-09-15T00:00:01.000Z",
+      },
+      system: {
+        startedAt: "2026-09-15T00:00:00.025Z",
+        endedAt: "2026-09-15T00:00:01.025Z",
+      },
+    });
+    expect(completed.automaticUpload).toBe(false);
   });
 
   it("preload vystaví úzké booleanské kanály a odmítne vadné vstupy i odpovědi", async () => {
@@ -1684,6 +1729,28 @@ describe("kopírování probíhající přihlašovací adresy", () => {
 });
 
 describe("zjištění uložené OAuth session", () => {
+  it("starou mcp:read relaci zachová pro bezpečný přepis, ale nepustí ji do upload identity", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await mkdir(path.dirname(tokenPath), { recursive: true });
+    const oldBlob = harness.electron.safeStorage.encryptString(JSON.stringify({
+      ...storedAuthSession({ scope: "mcp:read" }),
+      accessExpiresAt: Date.now() + 60_000,
+    }));
+    await writeFile(tokenPath, oldBlob);
+
+    await expect(harness.ipcHandlers.get("auth:has-session")(panelEvent)).resolves.toBe(false);
+    await expect(harness.ipcHandlers.get("auth:session-state")(panelEvent)).resolves.toBe("none");
+    await expect(harness.ipcHandlers.get("auth:identity")(settingsEvent)).resolves.toBeNull();
+    expect(await readFile(tokenPath)).toEqual(oldBlob);
+
+    // Migrace je dokončená až úspěšným interaktivním loginem, který relaci atomicky
+    // přepíše. Do té doby se starý token nemaže ani neobnovuje a UI vyžádá přihlášení.
+    expect(harness.electron.safeStorage.decryptString).toHaveBeenCalled();
+  });
+
   it("nový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů", async () => {
     // 🔴 Tenhle test sahal na SKUTEČNOU síť. Vypršelá relace spustí obnovu tokenu a ta bere
     // `globalThis.fetch`, protože `main.cjs` jí žádnou atrapu nepředává. Produkční kód
@@ -1757,7 +1824,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
       accessToken: "TESTOVACI-ACCESS",
       refreshToken: "TESTOVACI-REFRESH",
       accessExpiresAt: Date.now() - 60_000,
@@ -1832,7 +1899,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
     };
     await writeFile(tokenPath, harness.electron.safeStorage.encryptString(JSON.stringify({
       ...completeMetadata,
@@ -1900,7 +1967,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
       accessToken: "TOKEN-V-NEDOSTUPNEM-ULOZISTI",
     })));
     harness.electron.safeStorage.isEncryptionAvailable.mockReturnValue(false);
@@ -1944,7 +2011,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
       accessToken: "TOKEN-PRED-ODHLASENIM",
     })));
 
@@ -2144,7 +2211,7 @@ describe("zjištění uložené OAuth session", () => {
       issuer: "https://app.ludone.cz",
       clientId: "desktop-client",
       resource: "https://app.ludone.cz/api/mcp",
-      scope: "mcp:read",
+      scope: "nahravky:upload",
       accessToken: "TOKEN-PRED-ODHLASENIM",
     })));
 
@@ -2633,6 +2700,69 @@ describe("zjištění uložené OAuth session", () => {
       "https://labs.ludone.cz",
     )).resolves.toBe("https://labs.ludone.cz");
     expect(createOutboundQueueStore).toHaveBeenCalledOnce();
+  });
+
+  it("produkční adaptér předá upload klientu callback pro durable serverový postup", async () => {
+    let queueSend;
+    const uploadSend = vi.fn(async () => undefined);
+    const createRecordingUploadSend = vi.fn(() => uploadSend);
+    const createOutboundQueueStore = vi.fn((options) => {
+      queueSend = options.send;
+      return {
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(async () => ({ outcome: "idle" })),
+      };
+    });
+    const harness = await loadMain({ createOutboundQueueStore, createRecordingUploadSend });
+    await harness.runReady();
+    const reportServerProgress = vi.fn();
+
+    await queueSend({ id: "nahravka" }, reportServerProgress);
+
+    expect(uploadSend).toHaveBeenCalledExactlyOnceWith(
+      { id: "nahravka" },
+      reportServerProgress,
+    );
+  });
+
+  it("pozdní 403 z kontextu A nesmaže mezitím uloženou firmu B", async () => {
+    const firmaA = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const firmaB = "765a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    let queueSend;
+    let capturedContext;
+    const createRecordingUploadSend = vi.fn((options) => vi.fn(async () => {
+      capturedContext = await options.getUploadContext();
+    }));
+    const createOutboundQueueStore = vi.fn((options) => {
+      queueSend = options.send;
+      return {
+        enqueueRecording: vi.fn(), enqueueTimeEntry: vi.fn(), list: vi.fn(async () => []),
+        pump: vi.fn(async () => ({ outcome: "idle" })), retry: vi.fn(async () => ({ outcome: "idle" })),
+      };
+    });
+    const harness = await loadMain({ createOutboundQueueStore, createRecordingUploadSend });
+    const sessionA = {
+      ...storedAuthSession(), companyTabidooId: firmaA, accessExpiresAt: Date.now() + 60_000,
+    };
+    await writeStoredAuthSession(harness, sessionA);
+    await harness.runReady();
+    await queueSend({ id: "nahravka" }, vi.fn());
+    expect(capturedContext.companyTabidooId).toBe(firmaA);
+
+    await actualRequire("./auth.cjs").updateStoredAuthSessionCompany({
+      app: harness.electron.app,
+      safeStorage: harness.electron.safeStorage,
+      companyTabidooId: firmaB,
+      storedSession: sessionA,
+    });
+    await expect(capturedContext.resetRejectedCompany(firmaA)).resolves.toBe(false);
+
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    const stored = JSON.parse(harness.electron.safeStorage.decryptString(await readFile(tokenPath)));
+    expect(stored.companyTabidooId).toBe(firmaB);
   });
 
   it("změnu prostředí odmítne, dokud handover drží původní origin", async () => {
@@ -3821,7 +3951,19 @@ describe("produkční zapojení odchozí fronty", () => {
   it("vypnutý killswitch upload klienta ani nevytvoří, ani nespustí", async () => {
     const uploadSend = vi.fn();
     const createRecordingUploadSend = vi.fn(() => uploadSend);
+    let pumpFinished;
+    const createOutboundQueueStore = vi.fn((dependencies) => {
+      const store = actualRequire("./queue.cjs").createOutboundQueueStore(dependencies);
+      return Object.freeze({
+        ...store,
+        pump: (...args) => {
+          pumpFinished = store.pump(...args);
+          return pumpFinished;
+        },
+      });
+    });
     const harness = await loadMain({
+      createOutboundQueueStore,
       createRecordingUploadSend,
       env: { DESKTOP_UPLOAD_ENABLED: "false" },
     });
@@ -3852,11 +3994,124 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(createRecordingUploadSend).not.toHaveBeenCalled();
     expect(uploadSend).not.toHaveBeenCalled();
     expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    await harness.ipcHandlers.get("recordings:list-local")(settingsEvent);
+    await vi.waitFor(() => expect(pumpFinished).toBeInstanceOf(Promise));
+    await pumpFinished;
   });
 
-  it("preload vystavuje oba validační kanály fronty", () => {
+  it("preload vystavuje validační kanály fronty", () => {
+    expect(preloadCode).toContain('ipcRenderer.invoke("queue:claim-recording"');
     expect(preloadCode).toContain('ipcRenderer.invoke("queue:list")');
     expect(preloadCode).toContain('ipcRenderer.invoke("queue:retry")');
+    expect(preloadCode).toContain('ipcRenderer.invoke("recordings:list-local")');
+  });
+
+  it("preload převzetí propustí jen jako GUID a revizi", async () => {
+    const preload = loadPreload({ claimed: true, items: [] });
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const revision = `sha256:${"a".repeat(64)}`;
+
+    await expect(preload.api.claimRecording(id, revision)).resolves.toMatchObject({ claimed: true });
+    expect(preload.invoke).toHaveBeenCalledExactlyOnceWith(
+      "queue:claim-recording",
+      id,
+      revision,
+    );
+    for (const payload of [["ne-guid", revision], [id, "stará-revize"], [null, revision]]) {
+      expect(() => preload.api.claimRecording(...payload)).toThrow(/GUID.*revizi/u);
+    }
+    expect(preload.invoke).toHaveBeenCalledOnce();
+  });
+
+  it("preload načte lokální přehled jediným úzkým IPC voláním", async () => {
+    const snapshot = { items: [], unreadableCount: 0 };
+    const preload = loadPreload(snapshot);
+
+    await expect(preload.api.listLocalRecordings()).resolves.toBe(snapshot);
+    expect(preload.invoke).toHaveBeenCalledExactlyOnceWith("recordings:list-local");
+  });
+
+  it("preload save-decision a akce nahrávky propustí jen přesný validovaný payload", async () => {
+    const { api, invoke } = loadPreload({ ok: true });
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const queueRev = `sha256:${"a".repeat(64)}`;
+    const fileRev = `sha256:${"b".repeat(64)}`;
+    await api.saveRecordingDecision(id, {
+      decision: "send", recordingName: "Porada", tajne: "zahodit",
+    });
+    await api.sendRecording({ id, queueRev, fileRev, tajne: "zahodit" });
+    await api.deleteRecording({ id, queueRev: null, fileRev, tajne: "zahodit" });
+
+    expect(invoke.mock.calls).toEqual([
+      ["recording:save-decision", id, { decision: "send", recordingName: "Porada" }],
+      ["recordings:send", { id, queueRev, fileRev }],
+      ["recordings:delete", { id, queueRev: null, fileRev }],
+    ]);
+    expect(() => api.sendRecording({ id, queueRev: null, fileRev })).toThrow(/revize/u);
+    expect(() => api.saveRecordingDecision(id, { decision: "cizí", recordingName: "Porada" }))
+      .toThrow(/Rozhodnutí/u);
+    expect(invoke).toHaveBeenCalledTimes(3);
+  });
+
+  it("preload ověření a otevření propustí jen GUID, revizi a známou stopu", async () => {
+    const { api, invoke } = loadPreload({ opened: true });
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const revision = `sha256:${"a".repeat(64)}`;
+    await api.verifyRecording(id, revision);
+    await api.openRecordingInLuDone(id, revision, "microphone");
+    expect(invoke).toHaveBeenNthCalledWith(1, "recordings:verify", id, revision);
+    expect(invoke).toHaveBeenNthCalledWith(2, "recordings:open-web", id, revision, "microphone");
+    expect(() => api.verifyRecording("ne-guid", revision)).toThrow(/GUID/u);
+    expect(() => api.openRecordingInLuDone(id, revision, "cizí")).toThrow(/známou stopu/u);
+    expect(invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it("ruční serverové ověření jde přes trusted store a open-web URL skládá jen main", async () => {
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const recordingId = "11111111-1111-4111-8111-111111111111";
+    const revision = `sha256:${"a".repeat(64)}`;
+    const getRecordingVerificationTarget = vi.fn(async (_id, _revision, ownerFingerprint) => ({
+      id,
+      revision,
+      ownerFingerprint,
+      tracks: { microphone: { recordingId, declaredBytes: 12, sha256: "b".repeat(64) } },
+    }));
+    const store = {
+      claimRecording: vi.fn(), enqueueRecording: vi.fn(), enqueueTimeEntry: vi.fn(),
+      getRecordingVerificationTarget,
+      list: vi.fn(async () => []), listLocalRecordings: vi.fn(async () => ({ items: [], unreadableCount: 0 })),
+      pump: vi.fn(async () => ({ outcome: "idle" })), retry: vi.fn(),
+    };
+    const harness = await loadMain({ createOutboundQueueStore: () => store });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+    });
+    harness.electron.net.fetch.mockResolvedValue({
+      ok: true, status: 200, headers: new Headers(),
+      json: vi.fn(async () => ({
+        state: "stored", missing: [], declaredBytes: 12, sha256: "B".repeat(64),
+      })),
+    });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const verify = harness.ipcHandlers.get("recordings:verify");
+    const openWeb = harness.ipcHandlers.get("recordings:open-web");
+    await expect(verify(settingsEvent, id, revision)).resolves.toMatchObject({
+      tracks: { microphone: { status: "complete" } },
+    });
+    expect(harness.electron.net.fetch).toHaveBeenCalledExactlyOnceWith(
+      `https://app.ludone.cz/api/nahravky/uploads/${recordingId}`,
+      expect.objectContaining({ method: "GET", redirect: "error" }),
+    );
+    await expect(openWeb(settingsEvent, id, revision, "microphone")).resolves.toEqual({ opened: true });
+    expect(harness.electron.shell.openExternal).toHaveBeenCalledWith(
+      `https://app.ludone.cz/nahravky/${recordingId}`,
+    );
+    await expect(Promise.resolve().then(() => verify(settingsEvent, id, revision, "navíc")))
+      .rejects.toThrow(/GUID.*revizi/u);
+    expect(() => verify(panelEvent, id, revision)).toThrow(/nedůvěryhodný/u);
+    expect(() => openWeb(panelEvent, id, revision, "microphone")).toThrow(/nedůvěryhodný/u);
   });
 
   it("pojmenování přes preload předá časování, GUID i název na přesné IPC kanály", async () => {
@@ -3906,8 +4161,302 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 
   it("IPC fronty používá předepsané role odesílatele", () => {
+    expect(mainCode).toContain('handleValidated("queue:claim-recording", ["settings"]');
     expect(mainCode).toContain('handleValidated("queue:list", ["panel", "settings"]');
+    expect(mainCode).toContain('handleValidated("recordings:list-local", ["settings"]');
     expect(mainCode).toContain('handleValidated("queue:retry", ["panel"]');
+  });
+
+  it("potvrzené převzetí získá vlastníka z platné session, ověří guard a nevolá server", async () => {
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const revision = `sha256:${"a".repeat(64)}`;
+    const heldItem = {
+      id,
+      kind: "recording",
+      revision: `sha256:${"b".repeat(64)}`,
+      requiresHumanAction: true,
+      ownership: "current",
+      state: "ceka",
+    };
+    const candidateItem = {
+      ...heldItem,
+      createdAt: "2026-09-14T10:00:00.000Z",
+      ownership: "other",
+      revision,
+    };
+    const claimRecording = vi.fn(async (
+      clientRecordingId,
+      expectedRevision,
+      ownerFingerprint,
+      { guard },
+    ) => {
+      if (await guard() !== true) throw new Error("guard odmítl převzetí");
+      expect(ownerFingerprint).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      return { claimed: true, item: heldItem, items: [heldItem] };
+    });
+    const store = {
+      claimRecording,
+      enqueueRecording: vi.fn(),
+      enqueueTimeEntry: vi.fn(),
+      list: vi.fn(async () => [candidateItem]),
+      pump: vi.fn(async () => ({ outcome: "idle" })),
+      retry: vi.fn(),
+    };
+    const harness = await loadMain({ createOutboundQueueStore: () => store });
+    const session = { ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000 };
+    await writeStoredAuthSession(harness, session);
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+    harness.electron.net.fetch.mockClear();
+
+    await expect(harness.ipcHandlers.get("queue:claim-recording")(
+      settingsEvent,
+      id,
+      revision,
+    )).resolves.toEqual({ claimed: true, item: heldItem, items: [heldItem] });
+
+    expect(claimRecording).toHaveBeenCalledOnce();
+    expect(claimRecording.mock.calls[0].slice(0, 3)).toEqual([
+      id,
+      revision,
+      otiskVlastnika(harness, session),
+    ]);
+    expect(harness.electron.dialog.showMessageBox).toHaveBeenCalledWith(
+      harness.windows[1],
+      expect.objectContaining({
+        buttons: ["Zrušit", "Převzít"],
+        defaultId: 0,
+        detail: expect.stringMatching(/9e586e55.*neodešle/u),
+      }),
+    );
+    expect(store.list).toHaveBeenCalledWith(otiskVlastnika(harness, session));
+    expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+    expect(store.pump).toHaveBeenCalledOnce();
+  });
+
+  it("zrušení dialogu a cizí IPC odesílatel nezpůsobí převzetí", async () => {
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const revision = `sha256:${"a".repeat(64)}`;
+    const claimRecording = vi.fn();
+    const candidateItem = {
+      id,
+      kind: "recording",
+      ownership: "unknown",
+      revision,
+      state: "ceka",
+    };
+    const store = {
+      claimRecording,
+      enqueueRecording: vi.fn(),
+      enqueueTimeEntry: vi.fn(),
+      list: vi.fn(async () => [candidateItem]),
+      pump: vi.fn(async () => ({ outcome: "idle" })),
+      retry: vi.fn(),
+    };
+    const harness = await loadMain({ createOutboundQueueStore: () => store });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const claim = harness.ipcHandlers.get("queue:claim-recording");
+
+    await expect(claim(settingsEvent, id, revision)).resolves.toMatchObject({
+      claimed: false,
+      items: [candidateItem],
+    });
+    expect(() => claim(panelEvent, id, revision)).toThrow(/nedůvěryhodný odesílatel/u);
+    expect(claimRecording).not.toHaveBeenCalled();
+  });
+
+  it("převzetí s chybějící nebo expirovanou session odmítne bez obnovy a bez dialogu", async () => {
+    const fetchImpl = vi.fn(async () => { throw new Error("Převzetí nesmí obnovovat token"); });
+    vi.stubGlobal("fetch", fetchImpl);
+    for (const session of [null, {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() - 1,
+    }]) {
+      const claimRecording = vi.fn();
+      const pump = vi.fn(async () => ({ outcome: "idle" }));
+      const harness = await loadMain({
+        createOutboundQueueStore: () => ({
+          claimRecording,
+          enqueueRecording: vi.fn(),
+          enqueueTimeEntry: vi.fn(),
+          list: vi.fn(async () => []),
+          pump,
+          retry: vi.fn(),
+        }),
+      });
+      await harness.runReady();
+      // Startupová transportní pumpa může token obnovit. Tady měříme samostatné
+      // lokální převzetí, takže expiraci nastavíme až po dokončeném startupu.
+      await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+      if (session) await writeStoredAuthSession(harness, session);
+      const { settingsEvent } = openSettingsAndCreateEvent(harness);
+      harness.electron.net.fetch.mockClear();
+
+      await expect(harness.ipcHandlers.get("queue:claim-recording")(
+        settingsEvent,
+        "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+        `sha256:${"a".repeat(64)}`,
+      )).rejects.toThrow(/platné přihlášení/u);
+      expect(claimRecording).not.toHaveBeenCalled();
+      expect(harness.electron.dialog.showMessageBox).not.toHaveBeenCalled();
+      expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+      expect(fetchImpl).not.toHaveBeenCalled();
+    }
+  });
+
+  it("změna účtu během potvrzení se stejnou auth generation nezapíše převzetí", async () => {
+    const claimRecording = vi.fn();
+    const candidateItem = {
+      id: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+      kind: "recording",
+      ownership: "other",
+      revision: `sha256:${"a".repeat(64)}`,
+      state: "ceka",
+    };
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        claimRecording,
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => [candidateItem]),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(),
+      }),
+    });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession({ identity: { name: "Ada", email: "ada@ludone.cz" } }),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    let finishDialog;
+    harness.electron.dialog.showMessageBox.mockImplementationOnce(() => new Promise((resolve) => {
+      finishDialog = resolve;
+    }));
+    const result = harness.ipcHandlers.get("queue:claim-recording")(
+      settingsEvent,
+      "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+      `sha256:${"a".repeat(64)}`,
+    );
+    await vi.waitFor(() => expect(finishDialog).toBeTypeOf("function"));
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession({ identity: { name: "Grace", email: "grace@ludone.cz" } }),
+      accessToken: "JINY-ACCESS-TOKEN",
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    finishDialog({ response: 1 });
+
+    await expect(result).rejects.toThrow(/během potvrzení změnil/u);
+    expect(claimRecording).not.toHaveBeenCalled();
+  });
+
+  it("IPC převzetí odmítne neplatný payload i argument navíc před dialogem", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const claim = harness.ipcHandlers.get("queue:claim-recording");
+    const revision = `sha256:${"a".repeat(64)}`;
+
+    for (const args of [
+      ["ne-guid", revision],
+      ["9e586e55-d688-43f1-8a80-a3d61e754f3e", "stará"],
+      ["9e586e55-d688-43f1-8a80-a3d61e754f3e", revision, "navíc"],
+    ]) {
+      await expect(Promise.resolve().then(() => claim(settingsEvent, ...args)))
+        .rejects.toThrow(/GUID.*revizi/u);
+    }
+    expect(harness.electron.dialog.showMessageBox).not.toHaveBeenCalled();
+  });
+
+  it("stale snímek a nahrávku aktuálního vlastníka odmítne ještě před dialogem", async () => {
+    const currentId = "11111111-1111-4111-8111-111111111111";
+    const staleId = "22222222-2222-4222-8222-222222222222";
+    const revision = `sha256:${"a".repeat(64)}`;
+    const claimRecording = vi.fn();
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        claimRecording,
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => [
+          { id: currentId, kind: "recording", ownership: "current", revision, state: "ceka" },
+          {
+            id: staleId,
+            kind: "recording",
+            ownership: "other",
+            revision: `sha256:${"b".repeat(64)}`,
+            state: "ceka",
+          },
+        ]),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(),
+      }),
+    });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const claim = harness.ipcHandlers.get("queue:claim-recording");
+
+    await expect(claim(settingsEvent, currentId, revision)).rejects.toThrow(/nelze převzít/u);
+    await expect(claim(settingsEvent, staleId, revision)).rejects.toThrow(/nelze převzít/u);
+    expect(harness.electron.dialog.showMessageBox).not.toHaveBeenCalled();
+    expect(claimRecording).not.toHaveBeenCalled();
+  });
+
+  it("navigaci okna během čekání na serializovaný claim odmítne jeho vnitřní guard", async () => {
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const revision = `sha256:${"a".repeat(64)}`;
+    let navigateSettings = () => {};
+    let wrote = false;
+    const claimRecording = vi.fn(async (_id, _revision, _owner, { guard }) => {
+      navigateSettings();
+      if (await guard() !== true) throw new Error("Aktuální identitu nelze bezpečně potvrdit");
+      wrote = true;
+      return { claimed: true, items: [] };
+    });
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        claimRecording,
+        enqueueRecording: vi.fn(),
+        enqueueTimeEntry: vi.fn(),
+        list: vi.fn(async () => [{
+          id,
+          kind: "recording",
+          ownership: "other",
+          revision,
+          state: "ceka",
+        }]),
+        pump: vi.fn(async () => ({ outcome: "idle" })),
+        retry: vi.fn(),
+      }),
+    });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    navigateSettings = () => {
+      settingsEvent.senderFrame.url = "https://neduveryhodny.example/";
+    };
+    harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+
+    await expect(harness.ipcHandlers.get("queue:claim-recording")(
+      settingsEvent,
+      id,
+      revision,
+    )).rejects.toThrow(/identitu nelze bezpečně/u);
+    expect(claimRecording).toHaveBeenCalledOnce();
+    expect(wrote).toBe(false);
   });
 
   it("queue:list označí vypnuté odesílání podle druhu položky a fail-closed prostředí", async () => {
@@ -3915,7 +4464,7 @@ describe("produkční zapojení odchozí fronty", () => {
       {
         env: {},
         kind: "recording",
-        expectedReason: UPLOAD_DISABLED_REASON,
+        expectedReason: undefined,
       },
       {
         env: { DESKTOP_UPLOAD_ENABLED: "false" },
@@ -4197,7 +4746,13 @@ describe("produkční zapojení odchozí fronty", () => {
     ));
     expect(queue.items).toHaveLength(1);
     expect(Object.keys(queue.items[0].tracks)).toEqual(["microphone"]);
-    expect(queue.items[0].server.uploadedBytes).toEqual({ microphone: 0 });
+    expect(queue.items[0].server).toEqual({
+      sessionId: null,
+      tracks: {
+        microphone: { recordingId: null, uploadedBytes: 0 },
+        system: { recordingId: null, uploadedBytes: 0 },
+      },
+    });
     await expect(list(event)).resolves.toEqual([
       expect.objectContaining({ id: sessionId, kind: "recording", state: "ceka" }),
     ]);
@@ -4591,7 +5146,11 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 
   it("úspěšné nové přihlášení znovu probudí pozastavenou frontu", async () => {
-    const pump = vi.fn(async () => ({ outcome: "idle" }));
+    const pump = vi.fn(async (killswitches, ownerFingerprint) => {
+      void killswitches;
+      void ownerFingerprint;
+      return { outcome: "idle" };
+    });
     const harness = await loadMain({
       createOutboundQueueStore: () => ({
         enqueueRecording: vi.fn(),
@@ -4610,6 +5169,110 @@ describe("produkční zapojení odchozí fronty", () => {
     await expect(harness.ipcHandlers.get("auth:begin")(event))
       .resolves.toMatchObject({ ok: true });
     await vi.waitFor(() => expect(pump).toHaveBeenCalledTimes(2));
+    expect(pump.mock.calls[0][1]).toBeNull();
+    expect(pump.mock.calls[1][1]).toBeNull();
+  });
+
+  it("startup i ruční retry předají stejný platný current owner", async () => {
+    const items = [];
+    const pump = vi.fn(async (killswitches, ownerFingerprint) => {
+      void killswitches;
+      void ownerFingerprint;
+      return { outcome: "idle" };
+    });
+    const retry = vi.fn(async (killswitches, ownerFingerprint) => {
+      void killswitches;
+      void ownerFingerprint;
+      return { items, outcome: "idle", reason: null };
+    });
+    const store = {
+      enqueueRecording: vi.fn(),
+      enqueueTimeEntry: vi.fn(),
+      list: vi.fn(async () => items),
+      pump,
+      retry,
+    };
+    const harness = await loadMain({ createOutboundQueueStore: () => store });
+    const session = { ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000 };
+    await writeStoredAuthSession(harness, session);
+    await harness.runReady();
+    await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+    const panelContents = harness.windows[0].webContents;
+    const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
+    await harness.ipcHandlers.get("queue:retry")(panelEvent);
+
+    const owner = otiskVlastnika(harness, session);
+    expect(pump).toHaveBeenCalledWith(expect.any(Object), owner);
+    expect(retry).toHaveBeenCalledWith(expect.any(Object), owner);
+  });
+
+  it("startup obnoví expirovanou session před předáním current owner pumpě", async () => {
+    const fetchImpl = vi.fn(async (input) => ({
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => String(input).includes(".well-known") ? {
+        issuer: "https://app.ludone.cz",
+        authorization_endpoint: "https://app.ludone.cz/api/oauth/authorize",
+        token_endpoint: "https://app.ludone.cz/api/oauth/token",
+        registration_endpoint: "https://app.ludone.cz/api/oauth/register",
+        code_challenge_methods_supported: ["S256"],
+      } : {
+        access_token: "OBNOVENY-ACCESS-TOKEN",
+        refresh_token: "OBNOVENY-REFRESH-TOKEN",
+        token_type: "Bearer",
+        expires_in: 3600,
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchImpl);
+    const pump = vi.fn(async (killswitches, ownerFingerprint) => {
+      void killswitches;
+      void ownerFingerprint;
+      return { outcome: "idle" };
+    });
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording: vi.fn(), enqueueTimeEntry: vi.fn(), list: vi.fn(async () => []),
+        pump, retry: vi.fn(),
+      }),
+    });
+    const expired = {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() - 1,
+      refreshToken: "T-R1-REFRESH-USPECH",
+    };
+    await writeStoredAuthSession(harness, expired);
+    await harness.runReady();
+    await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(pump.mock.calls[0][1]).toBe(otiskVlastnika(harness, expired));
+  });
+
+  it("selhaná obnova expirované session předá null a nespustí recording send", async () => {
+    const fetchImpl = vi.fn(async () => { throw new Error("síť nedostupná"); });
+    vi.stubGlobal("fetch", fetchImpl);
+    const recordingSend = vi.fn();
+    const pump = vi.fn(async (_killswitches, ownerFingerprint) => {
+      if (ownerFingerprint !== null) await recordingSend();
+      return { outcome: "paused" };
+    });
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({
+        enqueueRecording: vi.fn(), enqueueTimeEntry: vi.fn(), list: vi.fn(async () => []),
+        pump, retry: vi.fn(),
+      }),
+    });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() - 1,
+      refreshToken: "T-R1-REFRESH-SELHANI",
+    });
+    await harness.runReady();
+    await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(pump.mock.calls[0][1]).toBeNull();
+    expect(recordingSend).not.toHaveBeenCalled();
   });
 
   it("pojmenování použije pro handover uložený labs origin a jeden stereo soubor", async () => {
@@ -4670,16 +5333,7 @@ describe("produkční zapojení odchozí fronty", () => {
       .filter((message) => typeof message === "string" && message.startsWith("[recording-export]"));
     expect(exportLogs).toEqual([expect.stringContaining(sessionId)]);
     expect(exportLogs.join("\n")).not.toContain("Porada");
-    expect(harness.electron.shell.openExternal).toHaveBeenCalledWith(
-      "https://labs.ludone.cz/nahravky/nahrat"
-      + `?clientRecordingId=${sessionId}`
-      + "&startedAt=2026-09-02T12%3A00%3A00.100Z"
-      + "&endedAt=2026-09-02T12%3A30%3A00.525Z"
-      // Název jde do formuláře v podobě, kterou napsal člověk — do jména souboru
-      // se sanitizuje zvlášť. Serverová strana ho čte od PR LudoneApp#1120.
-      + "&nazev=Porada+%2F+provozu%3A+Q3"
-      + "&declaredCaptureSources=microphone%2Bsystem",
-    );
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
     await expect(readFile(path.join(harness.userDataPath, exported.fileName)))
       .resolves.toEqual(stereoWebmBytes());
     await expect(readFile(path.join(
@@ -4756,6 +5410,295 @@ describe("produkční zapojení odchozí fronty", () => {
     await harness.runReady();
     await vi.waitFor(() => expect(pump).toHaveBeenCalledTimes(1));
     expect(createOutboundQueueStore).toHaveBeenCalledTimes(1);
+  });
+
+  it("lokální přehled projde z disku přes store a chráněné IPC bez recovery nebo sítě", async () => {
+    const queueStoreModule = actualRequire("./queue.cjs");
+    const recoverOrphanedRecordings = vi.fn(async () => ({
+      alreadyQueued: 0, failed: 0, recovered: 0, skipped: 0,
+    }));
+    const createOutboundQueueStore = vi.fn((dependencies) => (
+      queueStoreModule.createOutboundQueueStore(dependencies)
+    ));
+    const harness = await loadMain({ createOutboundQueueStore, recoverOrphanedRecordings });
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const manifestPath = path.join(recordingsDirectory, "ipc.manifest.json");
+    await mkdir(recordingsDirectory, { recursive: true });
+    const manifest = {
+      schemaVersion: 1,
+      clientRecordingId: id,
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      state: "complete",
+      tracks: {
+        microphone: {
+          fileName: "ipc-microphone.webm",
+          sha256: "a".repeat(64),
+          sizeBytes: 0,
+          startedAt: "2026-09-14T10:00:00.000Z",
+          endedAt: "2026-09-14T10:00:01.000Z",
+        },
+      },
+    };
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await writeFile(path.join(recordingsDirectory, "ipc-microphone.webm"), Buffer.alloc(0));
+    const setupStore = queueStoreModule.createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    await setupStore.enqueueRecording({
+      manifest,
+      manifestPath,
+      trackPaths: { microphone: path.join(recordingsDirectory, "ipc-microphone.webm") },
+    });
+
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const listLocal = harness.ipcHandlers.get("recordings:list-local");
+    await expect(Promise.resolve().then(() => listLocal(panelEvent)))
+      .rejects.toThrow(/nedůvěryhodný odesílatel/u);
+    await expect(listLocal(settingsEvent)).resolves.toMatchObject({
+      unreadableCount: 0,
+      items: [{
+        id,
+        source: "queue",
+        localState: "complete-audio",
+        sizeBytes: 0,
+        revision: expect.stringMatching(/^sha256:/u),
+        fileRevision: expect.stringMatching(/^sha256:/u),
+      }],
+    });
+    expect(recoverOrphanedRecordings).toHaveBeenCalledOnce();
+    expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+  });
+
+  it("send projde skutečným preloadem a store schválí jen zvolenou held nahrávku i po obnově tokenu", async () => {
+    const uploadSend = vi.fn(async (item, reportServerProgress) => {
+      void item;
+      void reportServerProgress;
+    });
+    const harness = await loadMain({
+      createRecordingUploadSend: vi.fn(() => uploadSend),
+    });
+    const session = { ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000 };
+    await writeStoredAuthSession(harness, session);
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const second = await harness.ipcHandlers.get("recording:begin")(event);
+    await harness.ipcHandlers.get("recording:append")(
+      event,
+      second.sessionId,
+      "stereo",
+      0,
+      Uint8Array.from(stereoWebmBytes()).buffer,
+    );
+    const secondEndedAt = new Date(Date.parse(second.startedAt) + 1_000).toISOString();
+    await harness.ipcHandlers.get("recording:finish")(event, second.sessionId, {
+      microphone: { startedAt: second.startedAt, endedAt: secondEndedAt },
+      system: { startedAt: second.startedAt, endedAt: secondEndedAt },
+    });
+    await harness.ipcHandlers.get("recording:finish-export")(event, second.sessionId, {
+      succeeded: true,
+      timing: { startedAt: second.startedAt, endedAt: secondEndedAt },
+    });
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const snapshot = await harness.ipcHandlers.get("recordings:list-local")(settingsEvent);
+    const row = snapshot.items.find((item) => item.id === sessionId);
+    const untouchedRow = snapshot.items.find((item) => item.id === second.sessionId);
+    expect(row).toMatchObject({ id: sessionId, uploadIntent: "held" });
+    expect(untouchedRow).toMatchObject({ id: second.sessionId, uploadIntent: "held" });
+
+    const fetchImpl = vi.fn(async (input) => ({
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => String(input).includes(".well-known") ? {
+        issuer: "https://app.ludone.cz",
+        authorization_endpoint: "https://app.ludone.cz/api/oauth/authorize",
+        token_endpoint: "https://app.ludone.cz/api/oauth/token",
+        registration_endpoint: "https://app.ludone.cz/api/oauth/register",
+        code_challenge_methods_supported: ["S256"],
+      } : {
+        access_token: "OBNOVENY-ACCESS-TOKEN",
+        refresh_token: "OBNOVENY-REFRESH-TOKEN",
+        token_type: "Bearer",
+        expires_in: 3600,
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchImpl);
+    try {
+      await writeStoredAuthSession(harness, {
+        ...session,
+        accessExpiresAt: Date.now() - 1,
+      });
+      uploadSend.mockClear();
+      const preload = loadPreload((channel, payload) => {
+        const handler = harness.ipcHandlers.get(channel);
+        if (!handler) throw new Error(`Chybí handler ${channel}`);
+        return handler(settingsEvent, payload);
+      });
+      await expect(preload.api.sendRecording({
+        id: row.id,
+        queueRev: row.revision,
+        fileRev: row.fileRevision,
+        ignored: "renderer nesmí rozšířit payload",
+      })).resolves.toMatchObject({ outcome: "sent" });
+
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(uploadSend).toHaveBeenCalledOnce();
+      expect(uploadSend.mock.calls[0][0]).toMatchObject({
+        clientRecordingId: sessionId,
+        uploadIntent: "approved",
+      });
+      const persisted = JSON.parse(await readFile(queuePath, "utf8"));
+      expect(persisted.items.find((item) => item.clientRecordingId === sessionId)?.state)
+        .toBe("odeslano");
+      expect(persisted.items.find((item) => item.clientRecordingId === second.sessionId))
+        .toMatchObject({ state: "ceka", uploadIntent: "held" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("native delete zrušení, stale potvrzení a platné potvrzení drží skutečný store i koš", async () => {
+    const harness = await loadMain();
+    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+    await expect(exportRecording(event, sessionId, {
+      recordingName: "Lokální kopie", openUploadPage: false,
+    })).resolves.toMatchObject({ ok: true });
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const listLocal = harness.ipcHandlers.get("recordings:list-local");
+    const remove = harness.ipcHandlers.get("recordings:delete");
+    let row = (await listLocal(settingsEvent)).items.find((item) => item.id === sessionId);
+    const payload = () => ({ id: row.id, queueRev: row.revision, fileRev: row.fileRevision });
+
+    await expect(remove(settingsEvent, payload())).resolves.toEqual({ outcome: "cancelled" });
+    expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+
+    const queue = JSON.parse(await readFile(
+      path.join(harness.userDataPath, "queue", "outgoing.json"),
+      "utf8",
+    ));
+    const manifestPath = queue.items.find((item) => item.clientRecordingId === sessionId).manifestPath;
+    const originalManifest = await readFile(manifestPath, "utf8");
+    let finishDialog;
+    harness.electron.dialog.showMessageBox.mockImplementationOnce(() => new Promise((resolve) => {
+      finishDialog = resolve;
+    }));
+    const staleDelete = remove(settingsEvent, payload());
+    await vi.waitFor(() => expect(finishDialog).toBeTypeOf("function"));
+    const changedManifest = { ...JSON.parse(originalManifest), closedAt: null };
+    await writeFile(manifestPath, JSON.stringify(changedManifest));
+    finishDialog({ response: 1 });
+    await expect(staleDelete).rejects.toThrow(/neaktuální|změnily/u);
+    expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+
+    await writeFile(manifestPath, originalManifest);
+    row = (await listLocal(settingsEvent)).items.find((item) => item.id === sessionId);
+    harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+    await expect(remove(settingsEvent, payload())).resolves.toEqual({ outcome: "deleted" });
+    expect(harness.electron.shell.trashItem).toHaveBeenCalled();
+    expect(harness.electron.shell.trashItem.mock.calls.at(-1)[0]).toBe(path.join(
+      await realpath(path.dirname(manifestPath)),
+      path.basename(manifestPath),
+    ));
+    const persistedAfterDelete = JSON.parse(await readFile(
+      path.join(harness.userDataPath, "queue", "outgoing.json"),
+      "utf8",
+    ));
+    expect(persistedAfterDelete.items.find((item) => item.clientRecordingId === sessionId))
+      .toBeUndefined();
+  });
+
+  it("save-decision po exportní kopii a ztrátě auth uloží title jako held a neotevře web", async () => {
+    let harness;
+    const exportRecordingCopy = vi.fn(async ({ manifest, recordingName }) => {
+      const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+      await rm(tokenPath, { force: true });
+      return {
+        clientRecordingId: manifest.clientRecordingId,
+        endedAt: manifest.closedAt,
+        fileName: "porada.webm",
+        format: "webm",
+        startedAt: manifest.createdAt,
+        trackDurationDeltaMs: 0,
+        trackStartDeltaMs: 0,
+        recordingName,
+      };
+    });
+    harness = await loadMain({ exportRecordingCopy });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const decide = harness.ipcHandlers.get("recording:save-decision");
+    const options = { decision: "send", recordingName: "Porada výroby" };
+
+    await expect(Promise.resolve().then(() => decide(event, sessionId, options, "navíc")))
+      .rejects.toThrow(/právě GUID/u);
+    await expect(decide(event, sessionId, options)).resolves.toMatchObject({
+      ok: true,
+      outcome: "saved_local",
+      fileName: "porada.webm",
+    });
+    const queue = JSON.parse(await readFile(
+      path.join(harness.userDataPath, "queue", "outgoing.json"),
+      "utf8",
+    ));
+    expect(queue.items.find((item) => item.clientRecordingId === sessionId)).toMatchObject({
+      title: "Porada výroby",
+      uploadIntent: "held",
+    });
+    expect(exportRecordingCopy).toHaveBeenCalledOnce();
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+  });
+
+  it("save-decision vrátí queued po durable volbě ještě před dokončením upload pumpy", async () => {
+    /** @type {(value?: void) => void} */
+    let releasePump;
+    const pumpGate = new Promise((resolve) => {
+      releasePump = resolve;
+    });
+    const pump = vi.fn()
+      .mockResolvedValueOnce({ outcome: "idle" })
+      .mockImplementationOnce(() => pumpGate.then(() => ({ outcome: "idle" })));
+    const queueStoreModule = actualRequire("./queue.cjs");
+    const createOutboundQueueStore = vi.fn((dependencies) => ({
+      ...queueStoreModule.createOutboundQueueStore(dependencies),
+      pump,
+    }));
+    const exportRecordingCopy = vi.fn(async ({ manifest }) => ({
+      clientRecordingId: manifest.clientRecordingId,
+      endedAt: manifest.closedAt,
+      fileName: "porada.webm",
+      format: "webm",
+      startedAt: manifest.createdAt,
+      trackDurationDeltaMs: 0,
+      trackStartDeltaMs: 0,
+    }));
+    const harness = await loadMain({ createOutboundQueueStore, exportRecordingCopy });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+    const decision = harness.ipcHandlers.get("recording:save-decision")(
+      event,
+      sessionId,
+      { decision: "send", recordingName: "Porada výroby" },
+    );
+    await vi.waitFor(() => expect(pump).toHaveBeenCalledTimes(2));
+    const promptResult = await Promise.race([
+      decision.then(() => "resolved"),
+      new Promise((resolve) => setImmediate(() => resolve("pending"))),
+    ]);
+    expect(promptResult).toBe("resolved");
+    await expect(decision).resolves.toMatchObject({ ok: true, outcome: "queued" });
+
+    releasePump();
+    await pumpGate;
   });
 
   it("po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam", async () => {
@@ -5179,9 +6122,7 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     expect(Buffer.byteLength(result.fileName, "utf8")).toBeLessThanOrEqual(255);
     await expect(readFile(path.join(harness.userDataPath, result.fileName)))
       .resolves.toEqual(stereoWebmBytes());
-    expect(harness.electron.shell.openExternal).toHaveBeenCalledOnce();
-    const [[url]] = /** @type {any[][]} */ (harness.electron.shell.openExternal.mock.calls);
-    expect(new URL(url).searchParams.get("nazev")).toBe(corrected);
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
   });
 
   // Hlášený běh trval 6,27 s; lokální profil ~0,48 s (samotný preload ~2 ms).
@@ -5199,12 +6140,7 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     expect(result.ok).toBe(true);
     await expect(readFile(path.join(harness.userDataPath, result.fileName)))
       .resolves.toEqual(stereoWebmBytes());
-    expect(harness.electron.shell.openExternal).toHaveBeenCalledTimes(openUploadPage ? 1 : 0);
-    if (openUploadPage) {
-      expect(harness.electron.shell.openExternal).toHaveBeenCalledWith(
-        expect.stringContaining("/nahravky/nahrat?clientRecordingId="),
-      );
-    }
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
   }, 10_000);
 
   it.each([undefined, "Starý název", {}, { openUploadPage: "false" }, { openUploadPage: null }])(
@@ -5337,7 +6273,7 @@ describe("soukromí chyb stereo exportu", () => {
     expect(prvniVysledek.ok).toBe(true);
   });
 
-  it("každá vrácená hláška končí ujištěním o zachovaných stopách", async () => {
+  it("save decision webovou stránku neotevírá, takže její chyba export neovlivní", async () => {
     const harness = await loadMain();
     harness.electron.shell.openExternal.mockRejectedValueOnce(
       new Error("Prohlížeč se nepodařilo otevřít"),
@@ -5346,9 +6282,8 @@ describe("soukromí chyb stereo exportu", () => {
 
     const result = await exportRecording(event, sessionId, { recordingName: "Pohovor Novak", openUploadPage: true });
 
-    expect(result).toMatchObject({ ok: false, recordingExported: true });
-    expect(result.message).toContain("Soubor je uložený ve Stažených");
-    expect(result.message).toMatch(/Původní dvě stopy zůstaly uložené\.$/u);
+    expect(result).toMatchObject({ ok: true });
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
   });
 
   it("do logu zapíše jen kód systémové chyby, nikdy její syrovou zprávu", async () => {
@@ -5490,6 +6425,7 @@ describe("bezpečné ukončení aplikace", () => {
       };
     });
     const createOutboundQueueStore = vi.fn(() => ({
+      decideRecording: vi.fn(async () => ({ approved: false })),
       enqueueRecording,
       enqueueTimeEntry: vi.fn(),
       list: vi.fn(async () => []),
@@ -5667,6 +6603,7 @@ describe("bezpečné ukončení aplikace", () => {
     });
     const harness = await loadMain({
       createOutboundQueueStore: () => ({
+        decideRecording: vi.fn(async () => ({ approved: false })),
         enqueueRecording,
         enqueueTimeEntry: vi.fn(),
         list: vi.fn(async () => []),
@@ -6551,6 +7488,7 @@ describe("produkční zapojení automatických aktualizací", () => {
     });
     const list = vi.fn(() => queue.then(() => []));
     const createOutboundQueueStore = vi.fn(() => ({
+      decideRecording: vi.fn(() => queue.then(() => ({ approved: false }))),
       enqueueRecording,
       enqueueTimeEntry: vi.fn(),
       list,
@@ -6591,13 +7529,18 @@ describe("produkční zapojení automatických aktualizací", () => {
         },
       }),
     ]);
-    await expect(exportRecording(event, sessionId, { recordingName: "Porada provozu", openUploadPage: true }))
-      .resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
+    const pendingExport = exportRecording(event, sessionId, {
+      recordingName: "Porada provozu", openUploadPage: true,
+    });
     await vi.advanceTimersByTimeAsync(30_000);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 
     releaseEnqueue();
     await finishing;
+    await expect(pendingExport).resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
+    await vi.advanceTimersByTimeAsync(30_000);
+    // Virtuální čas nedokončuje skutečné čtení disku ve store.load().
+    // Po uvolnění fronty čekáme na přesný výsledek celé restartovací bariéry.
     await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
     expect(list).toHaveBeenCalled();
   });
@@ -6804,7 +7747,11 @@ describe("plošná pojistka nad každým webContents", () => {
 // Měření celé cesty main → skutečný preload → React; dosavadní restartové testy výš
 // zůstávají beze změny. Události updateru tu nejsou nahrazené textem pro renderer.
 describe("viditelnost automatických aktualizací v panelu", () => {
-  async function mountUpdatePanel(harness, { onboardingComplete = true, statusOnly = false } = {}) {
+  async function mountUpdatePanel(harness, {
+    onboardingComplete = true,
+    statusOnly = false,
+    initialUpdateStatus = null,
+  } = {}) {
     const dom = new JSDOM('<div id="root"></div>', {
       url: "https://ludone.test",
       pretendToBeVisual: true,
@@ -6816,6 +7763,7 @@ describe("viditelnost automatických aktualizací v panelu", () => {
         // Přihlášení není předmětem této sondy; aktualizační IPC běží celé naostro.
         if (channel === "auth:session-state") return "valid";
         if (channel === "auth:has-session") return true;
+        if (channel === "updater:get-state" && initialUpdateStatus) return initialUpdateStatus;
         return harness.ipcHandlers.get(channel)(event, ...payload);
       }),
       send: vi.fn(),
@@ -6863,8 +7811,71 @@ describe("viditelnost automatických aktualizací v panelu", () => {
       const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
       expect(panel.document.querySelector('[data-testid="application-version"]')?.textContent)
         .toBe(`Verze ${manifest.version}`);
+      expect(panel.document.querySelector('[data-testid="update-available"]')).toBeNull();
+      expect(panel.document.querySelector('[data-testid="update-downloading"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="update-downloaded"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="update-check-failed"]')).toBeNull();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("dostupnost a skutečný průběh projdou z updater události přes IPC do živého panelu", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness, { statusOnly: true });
+    try {
+      await React.act(async () => {
+        autoUpdater.emit("update-available", { version: "4.5.6" });
+      });
+      const available = panel.document.querySelector('[data-testid="update-available"]');
+      expect(available?.textContent).toContain("Je dostupná nová verze 4.5.6");
+      expect(available?.textContent).toContain("automaticky stáhne na pozadí");
+      expect(available?.getAttribute("role")).toBe("status");
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+
+      await React.act(async () => {
+        autoUpdater.emit("download-progress", { percent: 42.4 });
+      });
+      const downloading = panel.document.querySelector('[data-testid="update-downloading"]');
+      expect(downloading?.textContent).toContain("Stahuje se nová verze 4.5.6");
+      expect(downloading?.textContent).toContain("Staženo 42 %");
+      expect(panel.document.querySelector('[data-testid="update-available"]')).toBeNull();
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("opožděný počáteční snapshot nepřepíše novější událost o dostupné verzi", async () => {
+    let resolveInitialStatus;
+    const initialUpdateStatus = new Promise((resolve) => { resolveInitialStatus = resolve; });
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    const panel = await mountUpdatePanel(harness, { statusOnly: true, initialUpdateStatus });
+    try {
+      await React.act(async () => {
+        autoUpdater.emit("update-available", { version: "8.1.0" });
+      });
+      expect(panel.document.querySelector('[data-testid="update-available"]')?.textContent)
+        .toContain("8.1.0");
+
+      await React.act(async () => {
+        resolveInitialStatus({
+          revision: 0,
+          availableVersion: null,
+          downloading: false,
+          downloadPercent: null,
+          downloadedVersion: null,
+          checkFailed: false,
+        });
+        await initialUpdateStatus;
+        await Promise.resolve();
+      });
+      expect(panel.document.querySelector('[data-testid="update-available"]')?.textContent)
+        .toContain("8.1.0");
     } finally {
       await panel.close();
     }
@@ -6987,5 +7998,135 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     const readStatus = harness.ipcHandlers.get("updater:get-state");
     expect(() => readStatus({ sender: contents, senderFrame: { url: "https://cizi.example" } })).toThrow();
     expect(() => readStatus({ sender: contents, senderFrame: contents.mainFrame }, "navíc")).toThrow();
+  });
+
+  it("skutečné settings IPC načte nabídku a uloží explicitní firmu stejné relace", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const fetch = vi.fn(async (_url, options) => ({
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => ({
+        companies: [{ id: companyId, name: "Make more s.r.o." }],
+        defaultCompanyId: companyId,
+      })),
+      options,
+    }));
+    vi.stubGlobal("fetch", fetch);
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const session = { ...storedAuthSession(), accessExpiresAt: Date.now() + 600_000 };
+    await writeStoredAuthSession(harness, session);
+    const list = harness.ipcHandlers.get("upload-companies:list");
+    const select = harness.ipcHandlers.get("upload-companies:select");
+
+    const offer = await list(settingsEvent);
+    expect(offer).toMatchObject({
+      companies: [{ id: companyId, name: "Make more s.r.o." }],
+      selectedCompanyId: null,
+    });
+    await expect(select(settingsEvent, offer.offerToken, companyId)).resolves.toEqual({
+      saved: true,
+      selectedCompanyId: companyId,
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    for (const [, options] of fetch.mock.calls) {
+      expect(options).toMatchObject({ redirect: "error", signal: expect.any(AbortSignal) });
+      expect(options.headers.authorization).toBe(`Bearer ${session.accessToken}`);
+    }
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    const stored = JSON.parse(harness.electron.safeStorage.decryptString(await readFile(tokenPath)));
+    expect(stored.companyTabidooId).toBe(companyId);
+    expect(JSON.stringify(offer)).not.toMatch(/accessToken|ownerFingerprint|TAJNY/u);
+
+    fetch.mockResolvedValueOnce(/** @type {any} */ ({
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => ({ companies: "vadný tvar", defaultCompanyId: null })),
+    }));
+    await expect(list(settingsEvent)).rejects.toMatchObject({ code: "invalid_company_offer" });
+
+    expect(() => select(panelEvent, offer.offerToken, companyId)).toThrow(/nedůvěryhodný/u);
+    expect(() => select({ ...settingsEvent, senderFrame: {} }, offer.offerToken, companyId))
+      .toThrow(/nedůvěryhodný/u);
+    await expect(select(settingsEvent, offer.offerToken, companyId, "navíc"))
+      .rejects.toThrow(/právě/u);
+  });
+
+  it("navigace Nastavení zneplatní výběr čekající uvnitř company CAS", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    /** @type {(value?: void) => void} */
+    let releaseCommit;
+    const commitGate = new Promise((resolve) => {
+      releaseCommit = resolve;
+    });
+    let writes = 0;
+    const updateStoredAuthSessionCompany = vi.fn(async ({ guard }) => {
+      await commitGate;
+      if (!guard()) return null;
+      writes += 1;
+      return { companyTabidooId: companyId };
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => ({
+        companies: [{ id: companyId, name: "Make more s.r.o." }],
+        defaultCompanyId: companyId,
+      })),
+    })));
+    const harness = await loadMain({ updateStoredAuthSessionCompany });
+    await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(),
+      accessExpiresAt: Date.now() + 600_000,
+    });
+    const offer = await harness.ipcHandlers.get("upload-companies:list")(settingsEvent);
+    const selection = harness.ipcHandlers.get("upload-companies:select")(
+      settingsEvent,
+      offer.offerToken,
+      companyId,
+    );
+    await vi.waitFor(() => expect(updateStoredAuthSessionCompany).toHaveBeenCalledOnce());
+    settingsEvent.sender.emit(
+      "did-start-navigation",
+      {},
+      "ludone://app/index.html#settings",
+      false,
+      true,
+    );
+    releaseCommit();
+
+    await expect(selection).rejects.toMatchObject({ code: "context_changed" });
+    expect(writes).toBe(0);
+  });
+
+  it("preload výběru firmy posílá přesně dva validované argumenty", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const offerToken = "11111111-1111-4111-8111-111111111111";
+    const preload = loadPreload((channel, ...payload) => {
+      void payload;
+      if (channel === "upload-companies:list") {
+        return { companies: [{ id: companyId, name: "Firma" }], selectedCompanyId: null, offerToken };
+      }
+      if (channel === "upload-companies:select") {
+        return { saved: true, selectedCompanyId: companyId };
+      }
+      throw new Error(`Neočekávaný kanál ${channel}`);
+    });
+    await expect(preload.api.listUploadCompanies()).resolves.toMatchObject({ offerToken });
+    await expect(preload.api.selectUploadCompany(offerToken, companyId)).resolves.toEqual({
+      saved: true,
+      selectedCompanyId: companyId,
+    });
+    expect(preload.invoke).toHaveBeenNthCalledWith(1, "upload-companies:list");
+    expect(preload.invoke).toHaveBeenNthCalledWith(
+      2,
+      "upload-companies:select",
+      offerToken,
+      companyId,
+    );
+    expect(() => preload.api.selectUploadCompany("podvrh", companyId)).toThrow(/platný/u);
   });
 });

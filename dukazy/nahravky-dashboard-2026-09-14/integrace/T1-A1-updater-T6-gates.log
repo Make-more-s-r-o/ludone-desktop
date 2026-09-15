@@ -1,0 +1,319 @@
+$ npm run gates
+
+> ludone-desktop-prototype@0.1.2 gates
+> npm run lint && npm run typecheck && npm run test:unit && npm run preskocene
+
+
+> ludone-desktop-prototype@0.1.2 lint
+> eslint .
+
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+> ludone-desktop-prototype@0.1.2 test:unit
+> vitest run
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":false} jako signed-out
+[tray] 2026-09-14T19:43:10.453Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true} jako idle
+[tray] 2026-09-14T19:43:10.455Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1]} jako tracking
+[tray] 2026-09-14T19:43:10.455Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false}]]} jako recording
+[tray] 2026-09-14T19:43:10.455Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1}]]} jako recording
+[tray] 2026-09-14T19:43:10.456Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"queueWaitingCount":1} jako queue-waiting
+[tray] 2026-09-14T19:43:10.456Z stav=queue-waiting nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=1 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"systemAudioLostOwners":[1]} jako idle
+[tray] 2026-09-14T19:43:10.456Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"systemAudioLostOwners":[1]} jako recording-audio-lost
+[tray] 2026-09-14T19:43:10.456Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]]} jako recording-tracking
+[tray] 2026-09-14T19:43:10.456Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"preparing":[[1,{"cancelled":false,"sources":["microphone","system"]}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako recording-audio-lost
+[tray] 2026-09-14T19:43:10.457Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=true fronta=2 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"trackingOwners":[1],"queueWaitingCount":2} jako tracking
+[tray] 2026-09-14T19:43:10.457Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=2 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":false,"trackingOwners":[1],"preparing":[[1,{"cancelled":false}]],"queueWaitingCount":2,"systemAudioLostOwners":[1]} jako signed-out
+[tray] 2026-09-14T19:43:10.457Z stav=signed-out nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=2 přihlášen=false
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"preparing":[[1,{"cancelled":true}]]} jako idle
+[tray] 2026-09-14T19:43:10.457Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > odvodí stav {"signedIn":true,"sessions":[["s",{"ownerId":1,"finalizePromise":{}}]]} jako idle
+[tray] 2026-09-14T19:43:10.457Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: příprava
+[tray] 2026-09-14T19:43:10.457Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: živá session
+[tray] 2026-09-14T19:43:10.458Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > jednostopé nahrávání odliší od plného nahrávání i výpadku: souběh s LuTrackem
+[tray] 2026-09-14T19:43:10.458Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=true fronta=2 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > ukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"preparing":[[1,{"cancelled":true,"sources":["microphone"]}]]}
+[tray] 2026-09-14T19:43:10.458Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > ukončená jednostopá session nepřidá odznak jinému plnému nahrávání: {"sessions":[["s",{"ownerId":1,"tracks":{},"finalizePromise":{}}]]}
+[tray] 2026-09-14T19:43:10.458Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > skutečný výpadek má přednost před přijatým jednostopým nahráváním
+[tray] 2026-09-14T19:43:10.458Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=true lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > stav vlastní hlavní proces, ne renderer > při souběhu spojí fakt LuTracku se skutečným nahráváním z hlavního procesu
+[tray] 2026-09-14T19:43:10.458Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-14T19:43:10.458Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > pád rendereru > nechá lištu hlásit správný stav, ne ten poslední odeslaný
+[tray] 2026-09-14T19:43:10.459Z stav=recording-tracking nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+[tray] 2026-09-14T19:43:10.459Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+[tray] 2026-09-14T19:43:10.459Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > pád rendereru > NEODHLÁSÍ uživatele — session drží hlavní proces
+[tray] 2026-09-14T19:43:10.459Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+[tray] 2026-09-14T19:43:10.459Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > pád rendereru > zapomene jen padlé okno, ostatní nechá běžet
+[tray] 2026-09-14T19:43:10.459Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > pád rendereru > po pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session
+[tray] 2026-09-14T19:43:10.459Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-14T19:43:10.459Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stderr | tests/tray-authority.test.js > pád rendereru > po pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session
+[recording] Session uzavřena po události „pád rendereru“: mikrofon 0 B, systém 0 B.
+
+stdout | tests/tray-authority.test.js > lišta se překresluje jen při skutečné změně > stejný stav podruhé už obrázek nesahá
+[tray] 2026-09-14T19:43:10.459Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > lišta se překresluje jen při skutečné změně > změna stavu obrázek i popisek přepíše
+[tray] 2026-09-14T19:43:10.460Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-14T19:43:10.460Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne hodnotu, která není boolean, a fakta NECHÁ být
+[tray] 2026-09-14T19:43:10.462Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > prázdný objekt uživatele NEODHLÁSÍ
+[tray] 2026-09-14T19:43:10.462Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne undefined a nechá fakta být
+[tray] 2026-09-14T19:43:10.462Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne null a nechá fakta být
+[tray] 2026-09-14T19:43:10.462Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne "idle" a nechá fakta být
+[tray] 2026-09-14T19:43:10.462Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne 42 a nechá fakta být
+[tray] 2026-09-14T19:43:10.463Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":1,"systemAudioLost":false,"tracking":false} a nechá fakta být
+[tray] 2026-09-14T19:43:10.463Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"signedIn":true} a nechá fakta být
+[tray] 2026-09-14T19:43:10.463Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"signedIn":true,"tracking":false} a nechá fakta být
+[tray] 2026-09-14T19:43:10.464Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"state":"recording"} a nechá fakta být
+[tray] 2026-09-14T19:43:10.464Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > odmítne {"panelActionsAvailable":true,"signedIn":true,"systemAudioLost":false,"tracking":false,"icon":"recording"} a nechá fakta být
+[tray] 2026-09-14T19:43:10.465Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > platnou čtveřici boolean přijme
+[tray] 2026-09-14T19:43:10.466Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[tray] 2026-09-14T19:43:10.467Z stav=tracking nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=true fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > kanál faktů nesmí být tray:set-state pod jiným jménem > výpadek přijme jen jako boolean, neplatný report stav nezmění a obnova vrátí nahrávání
+[tray] 2026-09-14T19:43:10.467Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-14T19:43:10.467Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+[tray] 2026-09-14T19:43:10.467Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=true
+
+stdout | tests/tray-authority.test.js > první vykreslení lišty > nastaví obrázek i popisek, i když se stav nezměnil
+[tray] 2026-09-14T19:43:10.467Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+
+stdout | tests/tray-authority.test.js > první vykreslení lišty > podruhé už na lištu nesahá
+[tray] 2026-09-14T19:43:10.468Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+
+ ✓ tests/tray-authority.test.js (81 tests) 40ms
+ ✓ tests/logout.test.js (23 tests | 1 skipped) 770ms
+ ✓ tests/recording-export.test.js (75 tests) 748ms
+ ✓ tests/logout-safety.test.js (13 tests) 1368ms
+ ✓ tests/retention.test.js (32 tests) 1398ms
+ ✓ tests/idle-panel.test.js (44 tests) 1082ms
+stdout | tests/tracking-timer.test.js > vypínač DESKTOP_TIME_ENABLED > produkční wiring s hodnotou true skončí jako started
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-tracking-test-noi1iR/cas/casovac.json
+
+ ✓ tests/auth-controller-wiring.test.js (48 tests) 212ms
+stderr | tests/queue-wiring.test.js > zjištění uložené OAuth session > nový stav relace rozliší platnost, mez vypršení a chybějící relaci bez mazání tokenů
+[auth] Obnova relace selhala: reason=refresh-failed
+
+ ✓ tests/settings.test.js (44 tests) 1672ms
+ ✓ tests/onboarding-missing-steps.test.js (20 tests) 1711ms
+   ✓ dva chybějící kroky onboardingu > po skončení pokusu přestane neznámou adresu znovu zjišťovat  877ms
+ ✓ tests/tracking-timer.test.js (58 tests) 2573ms
+stderr | tests/queue-wiring.test.js > zjištění uložené OAuth session > vypršelá relace přes skutečné IPC ukáže vypršení v obou oknech a zůstane na disku
+[auth] Obnova relace selhala: reason=refresh-failed
+
+ ✓ tests/ui-smoke.test.js (17 tests) 15ms
+ ✓ tests/queue.test.js (103 tests) 3243ms
+   ✓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší  1411ms
+ ✓ tests/zapojeni-odhlaseni.test.js (12 tests | 1 skipped) 7ms
+ ✓ tests/ipc-sender-guard.test.js (20 tests) 7ms
+ ✓ tests/recording-card.test.js (54 tests) 2317ms
+ ✓ tests/auth-identity-fallback.test.js (25 tests) 2714ms
+ ✓ tests/auth-refresh.test.js (10 tests) 235ms
+ ✓ tests/tray-ikony.test.js (9 tests) 632ms
+   ✓ ikony v liště > generátor opakovaně vyrobí přesně bajty uložené v repozitáři  589ms
+ ✓ tests/upload-client.test.js (71 tests) 3741ms
+   ✓ výsledek uploadu v perzistentním souboru fronty > po úspěšné první stopě a výpadku druhé zachová oba serverové klíče pro retry  363ms
+stdout | tests/queue-wiring.test.js > zjištění uložené OAuth session > přímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-ZwAhSB/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > zjištění uložené OAuth session > přímý invoke změny prostředí neobejde blokaci běžícího LuTracku
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-ZwAhSB/cas/casovac.json
+
+ ✓ tests/auth-cancellation-storage.test.js (11 tests) 860ms
+ ✓ tests/diagnostics.test.js (6 tests) 51ms
+ ✓ tests/renderer-failure-feedback.test.js (29 tests) 1220ms
+ ✓ tests/permissions.test.js (18 tests) 8ms
+ ✓ tests/settings-persistence.test.js (29 tests) 517ms
+stdout | tests/queue-wiring.test.js > viditelnost ikony a klikání na lištu > běžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-NJ82P3/cas/casovac.json
+
+stderr | tests/queue-wiring.test.js > viditelnost ikony a klikání na lištu > preload po výjimce prvního příkazu doručí druhý i třetí s rozestupy a vyzvedne další dávku
+[tray] Rychlou akci stop-recording se nepodařilo zpracovat: Odběratel prvního příkazu selhal
+
+ ✓ tests/settings-audio-permissions.test.js (11 tests) 61ms
+ ✓ tests/session-reentry.test.js (11 tests) 1839ms
+   ✓ oznámení změny session mezi okny > otevřená okna zjistí vypršení bez změny fokusu a panel nabídne nové přihlášení  1163ms
+ ✓ tests/nazev-zarizeni.test.js (8 tests) 540ms
+ ✓ tests/zkratky-bez-kryti.test.js (9 tests) 278ms
+ ✓ tests/settings-audio-test.test.js (10 tests) 1114ms
+ ✓ tests/zjisteni-firmy.test.js (10 tests) 81ms
+ ✓ tests/fronta-neztrati.test.js (8 tests) 4ms
+ ✓ tests/manifest.test.js (10 tests) 102ms
+ ✓ tests/volba-firmy-v-relaci.test.js (11 tests) 727ms
+   ✓ uložení vybrané firmy do přihlašovací relace > zapíše firmu a ostatní pole relace nechá být  308ms
+ ✓ tests/auth-error-screens.test.js (13 tests) 1594ms
+   ✓ chybové obrazovky přihlášení > žádný z šesti důvodů nenechá panel prázdný  535ms
+ ✓ tests/seznam-firem.test.js (10 tests) 69ms
+ ✓ tests/proc-je-ticho.test.js (15 tests) 3ms
+ ✓ tests/auth-panel-blur-guard.test.js (6 tests) 3ms
+stdout | tests/verify-macos-release.test.js > ověření podepsaného macOS releasu > mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+PASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.2-arm64.dmg
+
+stdout | tests/verify-macos-release.test.js > ověření podepsaného macOS releasu > mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+PASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.2-x64.dmg
+
+stdout | tests/verify-macos-release.test.js > ověření podepsaného macOS releasu > mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+PASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.2-arm64.zip
+
+stdout | tests/verify-macos-release.test.js > ověření podepsaného macOS releasu > mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+PASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.2-x64.zip
+
+stderr | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > prošlý access token neposkytne uploadu jako platný kontext
+[auth] Obnova relace selhala: reason=refresh-failed
+
+ ✓ tests/tray-space-warning.test.js (4 tests) 483ms
+   ✓ upozornění na ikonu, která se nevešla do lišty > vykreslí samostatný přístupný stav a zachová obě původní rady  398ms
+ ✓ tests/kalendar-zrusen.test.js (4 tests | 1 skipped) 10ms
+ ✓ tests/verify-macos-release.test.js (2 tests) 374ms
+ ✓ tests/pisma.test.js (4 tests) 8ms
+ ✓ tests/release-artifacts.test.js (4 tests) 489ms
+ ✓ tests/tracking-card.test.js (10 tests) 1582ms
+   ✓ LuTrack jako ukázka (compact=false) > hned po vykreslení bez interakce viditelně říká, že se čas nikam neuloží  713ms
+ ✓ tests/firma-pro-odeslani.test.js (8 tests) 3ms
+ ✓ tests/desktop-progress.test.js (3 tests) 3601ms
+   ✓ 🧪 se nikdy nevykreslí jako ✅ a offline stránka má data uvnitř  1279ms
+   ✓ chybějící údaj i nezměřitelné živé fakty skončí jako ‚neměřeno‘  1001ms
+   ✓ dvojí běh generátoru vyrobí bajtově totožný soubor  1320ms
+ ✓ tests/panel-blur-guard.test.js (6 tests) 2ms
+ ✓ tests/fronta-symetrie.test.js (3 tests) 2ms
+ ✓ tests/auth-wait-lifecycle.test.js (2 tests) 68ms
+stdout | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-r27G52/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-r27G52/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > selhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-z8yIfz/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení odchozí fronty > selhání zařazení času za běhu otevře panel, i když se aplikace neukončuje
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-z8yIfz/cas/casovac.json
+
+ ✓ tests/opravneni-k-odesilani.test.js (14 tests) 6ms
+ ✓ tests/publish-release-remote.test.js (2 tests) 826ms
+   ✓ serverová část publikace > přesune verzované soubory před atomickou výměnou latest-mac.yml  605ms
+ ✓ tests/release-workflow.test.js (3 tests) 2ms
+ ✓ tests/oauth-state.test.js (10 tests) 14ms
+ ✓ tests/brany-workflow.test.js (5 tests) 5ms
+ ✓ tests/barvy.test.js (1 test) 2ms
+ ✓ tests/pkce.test.js (5 tests) 9ms
+ ✓ tests/recording-order-guard.test.js (1 test) 2ms
+ ✓ tests/electron-verze.test.js (3 tests) 3ms
+ ✓ tests/auth-timeout-guard.test.js (2 tests) 3ms
+ ✓ tests/main-entry.test.js (1 test) 191ms
+ ✓ tests/queue-card-labels.test.js (5 tests) 220ms
+ ✓ tests/zachyceni-zdroju.test.js (3 tests) 4ms
+ ✓ tests/packaging.test.js (6 tests) 5342ms
+   ✓ kontrakt electron-builderu > bez podpisových proměnných provede nepodepsaný build plán a nespadne  2611ms
+   ✓ kontrakt electron-builderu > úplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší  2686ms
+stdout | tests/queue-wiring.test.js > bezpečné ukončení aplikace > selhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-ulBeJm/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > bezpečné ukončení aplikace > selhání zařazení časového záznamu při ukončení otevře panel a vyžádá potvrzení
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-ulBeJm/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení automatických aktualizací > běžící LuTrack odloží restart a po zastavení jej uplatní
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-aNW0UH/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > produkční zapojení automatických aktualizací > běžící LuTrack odloží restart a po zastavení jej uplatní
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-aNW0UH/cas/casovac.json
+
+stdout | tests/queue-wiring.test.js > viditelnost automatických aktualizací v panelu > stažení doručí verzi do živého panelu a tracking dál blokuje instalaci
+[tracking] Uloženo: /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-main-queue-test-LuByE7/cas/casovac.json
+
+ ✓ tests/queue-wiring.test.js (245 tests) 9891ms
+   ✓ produkční zapojení odchozí fronty > zaregistrované dokončení nahrávky ji zpřístupní přes queue:list  336ms
+   ✓ produkční zapojení odchozí fronty > pojmenování použije pro handover uložený labs origin a jeden stereo soubor  315ms
+ ✓ tests/ikona-aplikace.test.js (4 tests) 8355ms
+   ✓ ikona aplikace > build.mac.icon ukazuje na existující neprázdnou sadu ICNS  3184ms
+   ✓ ikona aplikace > generátor vytváří všech deset PNG a reprodukovatelné ICNS  2657ms
+   ✓ ikona aplikace > změna sdílených bodů, šířky i plátna mění glyf aplikace i lišty  1717ms
+   ✓ ikona aplikace > balení vytvoří chybějící ikonu dříve, než spustí electron-builder  796ms
+
+ Test Files  64 passed (64)
+      Tests  1341 passed | 3 skipped (1344)
+   Start at  21:43:09
+   Duration  12.45s (transform 1.41s, setup 1.37s, collect 19.22s, tests 65.05s, environment 841ms, prepare 5.46s)
+
+
+> ludone-desktop-prototype@0.1.2 preskocene
+> node scripts/preskocene.mjs
+
+[preskocene] 3 přeskočených, baseline 3 — v pořádku.
+
+EXIT_CODE=0

@@ -9,6 +9,7 @@ import { App } from "../src/App.jsx";
 import { RecordingCard } from "../src/features/recording/RecordingCard.jsx";
 
 const SESSION_ID = "session-test-1";
+const DEFAULT_RECORDING_NAME = "2. září 2026, 14:00";
 const SMALL_WORK_AREA_HEIGHT = 400;
 const PANEL_TOP_BELOW_TRAY = 26;
 const PANEL_BOTTOM_MARGIN = 8;
@@ -78,8 +79,10 @@ function deferred() {
 function recordingResult() {
   return {
     clientRecordingId: SESSION_ID,
-    startedAt: "2026-09-02T12:00:00.010Z",
-    endedAt: "2026-09-02T12:30:00.020Z",
+    // Název používá místní čas uživatele; fixture proto začíná ve 14:00
+    // i na CI v UTC. Přesná aserce názvu zůstává stejná v každém pásmu.
+    startedAt: new Date(2026, 8, 2, 14, 0, 0, 10).toISOString(),
+    endedAt: new Date(2026, 8, 2, 14, 30, 0, 20).toISOString(),
     trackStartDeltaMs: 25,
     files: {
       microphone: { name: "microphone.webm", size: 4 },
@@ -98,6 +101,9 @@ const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží
  *   deferRecovery?: boolean,
  *   displayError?: Error | DOMException,
  *   finishRecordingExportResult?: Record<string, unknown>,
+ *   finishRecordingResult?: Record<string, unknown>,
+ *   modernDecision?: boolean,
+ *   modernDecisionOutcome?: "queued" | "saved_local",
  *   microphoneError?: Error | DOMException,
  *   queueItems?: Array<Record<string, unknown>>,
  *   renderApp?: boolean,
@@ -242,7 +248,7 @@ async function renderRecordingCard(options = {}) {
     )),
     appendRecordingChunk: vi.fn().mockResolvedValue({ sequence: 0, bytes: 4 }),
     finishRecording: vi.fn((_sessionId, trackTimings) => {
-      const result = recordingResult();
+      const result = { ...recordingResult(), ...options.finishRecordingResult };
       if (!trackTimings?.system) delete result.files.system;
       return Promise.resolve(result);
     }),
@@ -260,6 +266,13 @@ async function renderRecordingCard(options = {}) {
     reportTrayFacts: vi.fn(),
     runtime: { resetOnboarding: false },
   };
+  if (options.modernDecision) {
+    ludone.saveRecordingDecision = vi.fn().mockResolvedValue({
+      ok: true,
+      fileName: `LuDone-${SESSION_ID}.webm`,
+      outcome: options.modernDecisionOutcome ?? "queued",
+    });
+  }
   Object.defineProperty(dom.window, "ludone", { value: ludone });
 
   const recorders = [];
@@ -526,7 +539,7 @@ describe("nahrávání při zneplatnění relace", () => {
       expect(!send || send.disabled).toBe(true);
       await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
       expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
-        recordingName: "", openUploadPage: false,
+        recordingName: DEFAULT_RECORDING_NAME, openUploadPage: false,
       });
     } finally {
       await panel.cleanup();
@@ -544,6 +557,70 @@ async function enterRecordingName(panel, name) {
 }
 
 describe("RecordingCard", () => {
+
+  it.each([
+    ["send", "Uložit a odeslat", 'button[type="submit"]'],
+    ["keep", "Nechat na Macu", '[data-testid="skip-recording-name"]'],
+  ])("volba %s zachová title a použije nový save-decision kontrakt", async (
+    decision,
+    label,
+    selector,
+  ) => {
+    const panel = await renderRecordingCard({ modernDecision: true });
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await enterRecordingName(panel, "Porada výroby");
+      const button = panel.document.querySelector(selector);
+      expect(button.textContent.trim()).toBe(label);
+      await panel.click(button);
+      await panel.waitForPhase("idle");
+      expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        decision,
+        recordingName: "Porada výroby",
+      });
+      expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("automatický snapshot po finish spustí stejnou send cestu právě jednou", async () => {
+    const panel = await renderRecordingCard({
+      finishRecordingResult: { automaticUpload: true },
+      modernDecision: true,
+    });
+    try {
+      await startRecording(panel);
+      await panel.click(panel.currentButton());
+      await panel.waitForPhase("idle");
+      expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        decision: "send",
+        recordingName: DEFAULT_RECORDING_NAME,
+      });
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it.each(/** @type {const} */ ([
+    ["queued", "Nahrávka čeká ve frontě k odeslání."],
+    ["saved_local", "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."],
+  ]))("výsledek %s po uložení popíše pravdivě stav odeslání", async (outcome, message) => {
+    const panel = await renderRecordingCard({ modernDecision: true, modernDecisionOutcome: outcome });
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await enterRecordingName(panel, "Porada výroby");
+      await panel.click(panel.document.querySelector('button[type="submit"]'));
+      await panel.waitForPhase("idle");
+      expect(panel.document.querySelector('[role="status"]')?.textContent).toContain(message);
+      expect(panel.document.querySelector('[role="status"]')?.textContent)
+        .not.toContain("ověřeno na serveru");
+    } finally {
+      await panel.cleanup();
+    }
+  });
 
   it.each(["ř".repeat(501), "a".repeat(501), `a${"😀".repeat(250)}`])(
     "501 jednotek odmítne u pole, zachová uloženou nahrávku a dovolí opravu (%#)",
@@ -601,7 +678,7 @@ describe("RecordingCard", () => {
     },
   );
 
-  it("po odmítnutí dlouhého názvu dovolí Jen uložit bez názvu", async () => {
+  it("po odmítnutí dlouhého názvu dovolí Nechat na Macu s opraveným názvem", async () => {
     const panel = await renderRecordingCard();
     try {
       await startRecording(panel);
@@ -609,10 +686,11 @@ describe("RecordingCard", () => {
       await enterRecordingName(panel, "ř".repeat(501));
       await panel.click(panel.document.querySelector('button[type="submit"]'));
       expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
+      await enterRecordingName(panel, "Lokální porada");
       await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
       await panel.waitForPhase("idle");
       expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
-        recordingName: "", openUploadPage: false,
+        recordingName: "Lokální porada", openUploadPage: false,
       });
     } finally {
       await panel.cleanup();
@@ -1159,7 +1237,7 @@ describe("RecordingCard", () => {
       await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
       await panel.waitForPhase("idle");
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
-      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, { recordingName: "", openUploadPage: false });
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, { recordingName: DEFAULT_RECORDING_NAME, openUploadPage: false });
     } finally {
       restoreGeometry();
       await panel.cleanup();
@@ -1202,7 +1280,7 @@ describe("RecordingCard", () => {
     }
   });
 
-  it("Jen uložit neztratí dokončenou nahrávku a exportuje bez názvu", async () => {
+  it("Nechat na Macu neztratí dokončenou nahrávku a zachová název", async () => {
     const panel = await renderRecordingCard();
 
     try {
@@ -1214,7 +1292,7 @@ describe("RecordingCard", () => {
       await panel.waitForPhase("idle");
 
       expect(panel.ludone.finishRecording).toHaveBeenCalledTimes(1);
-      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, { recordingName: "", openUploadPage: false });
+      expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, { recordingName: DEFAULT_RECORDING_NAME, openUploadPage: false });
       const status = panel.document.querySelector('[data-recording-phase] [role="status"]');
       expect(status?.textContent?.trim().length).toBeGreaterThan(0);
       expect(status?.hidden).toBe(false);
@@ -1224,7 +1302,7 @@ describe("RecordingCard", () => {
   });
 
   it.each([
-    ["Jen uložit", '[data-testid="skip-recording-name"]', false],
+    ["Nechat na Macu", '[data-testid="skip-recording-name"]', false],
     ["Uložit a odeslat", 'button[type="submit"]', true],
   ])("%s potvrdí uložení ve Stažených a poradí přehrání WebM", async (label, selector, openUploadPage) => {
     const panel = await renderRecordingCard();
@@ -1237,7 +1315,7 @@ describe("RecordingCard", () => {
       await panel.waitForPhase("idle");
 
       expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
-        recordingName: openUploadPage ? expect.any(String) : "",
+        recordingName: expect.any(String),
         openUploadPage,
       });
       expect(panel.document.querySelector('[role="status"]')?.textContent)

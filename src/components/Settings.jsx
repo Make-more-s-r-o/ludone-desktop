@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { countLabel } from "../lib/count-label.js";
+import { RecordingsDashboard } from "../features/recordings/RecordingsDashboard.jsx";
 import {
   CheckIcon,
   CloseIcon,
@@ -11,6 +12,7 @@ import {
 } from "./Icons.jsx";
 import { Toggle } from "./Toggle.jsx";
 import { SettingsAudioTest } from "./SettingsAudioTest.jsx";
+import { UploadCompanySelector } from "./UploadCompanySelector.jsx";
 
 const STORAGE_KEY = "ludone.prototype.settings";
 const DEFAULTS = {
@@ -20,6 +22,7 @@ const SETTINGS_TABS = Object.freeze([
   { id: "account", label: "Účet" },
   { id: "audio", label: "Zvuk" },
   { id: "recordings", label: "Záznamy" },
+  { id: "recordingQueue", label: "Nahrávky" },
   { id: "diagnostics", label: "Diagnostika" },
 ]);
 const AUTH_ENVIRONMENTS = Object.freeze([
@@ -262,6 +265,7 @@ export function SettingsApp() {
   );
   const dock = useSystemBooleanSetting("getDockVisible", "setDockVisible");
   const login = useSystemBooleanSetting("getOpenAtLogin", "setOpenAtLogin");
+  const automaticUpload = useSystemBooleanSetting("getUploadEnabled", "setUploadEnabled");
   const update = (key, value) => {
     const nextSettings = { ...settings, [key]: value };
     setSettings(nextSettings);
@@ -708,9 +712,9 @@ export function SettingsApp() {
               className="settings-hint settings-environment-hint"
               data-testid="settings-environment-explanation"
             >
-              Na produkci modul nahrávek schválně není. Na labs ho uvidí jen admin.
-              {" "}Prostředí se během dne často aktualizuje.
+              Prostředí určuje server, ke kterému se tento Mac přihlašuje a odesílá data.
             </p>
+            <UploadCompanySelector authState={{ ...account, issuer: destination.origin }} />
             <div
               className="destination-row"
               data-testid="settings-destination"
@@ -736,7 +740,9 @@ export function SettingsApp() {
               >
                 {logoutState.state === "busy" ? "Odhlašuji…" : "Odhlásit tento Mac"}
               </button>
-              <small>Fronta zůstane a odešle se po dalším přihlášení.</small>
+              <small>
+                Lokální nahrávky zůstanou uložené. Dříve schválené pokračují po přihlášení.
+              </small>
             </div>
             {logoutState.message && (
               <p
@@ -798,6 +804,16 @@ export function SettingsApp() {
             <div className="settings-row settings-row--static">
               <div><strong>Nahrávání spouštíš ručně.</strong></div>
             </div>
+            <div className="settings-row">
+              <div>
+                <strong>Automaticky odesílat nové nahrávky</strong>
+                <small>Platí jen pro nahrávky zahájené po zapnutí. Starší záznamy se nezmění.</small>
+              </div>
+              <Toggle checked={automaticUpload.value}
+                disabled={!automaticUpload.loaded || automaticUpload.busy}
+                onChange={automaticUpload.update}
+                label="Automaticky odesílat nové nahrávky" />
+            </div>
           </section>
 
           <section className="settings-group" aria-labelledby="audio-settings-title">
@@ -851,6 +867,27 @@ export function SettingsApp() {
               <div><strong>Fronta</strong><small>{queueText}</small></div>
             </div>
           </section>
+        </section>
+
+        <section
+          id="settings-panel-recordingQueue"
+          className="settings-tab-panel"
+          role="tabpanel"
+          aria-labelledby="settings-tab-recordingQueue"
+          hidden={activeTab !== "recordingQueue"}
+        >
+          {activeTab === "recordingQueue" && (
+            <section className="settings-group" aria-labelledby="recording-queue-settings-title">
+              <div className="settings-group__heading">
+                <span><CloudIcon /></span>
+                <div>
+                  <p className="eyebrow">Lokální fronta</p>
+                  <h2 id="recording-queue-settings-title">Nahrávky</h2>
+                </div>
+              </div>
+              <RecordingsDashboard authState={account.state} />
+            </section>
+          )}
         </section>
 
         <section

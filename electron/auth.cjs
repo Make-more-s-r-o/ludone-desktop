@@ -29,6 +29,17 @@ const TOKEN_TEMP_FILE_PATTERN = /^\.oauth\.enc\.[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f
 const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const MCP_SCOPES = new Set(["mcp:read", "mcp:draft"]);
+const INVALID_CLIENT = "invalid_client";
+const SAFE_OAUTH_ERROR_CODES = new Set([
+  INVALID_CLIENT,
+  "invalid_request",
+  "unauthorized_client",
+  "access_denied",
+  "unsupported_response_type",
+  "invalid_scope",
+  "server_error",
+  "temporarily_unavailable",
+]);
 // 🔴 Oprávnění k odesílání nahrávek se smí žádat VÝHRADNĚ SAMO. Serverová session to
 // 10. 9. 2026 postavila jako tvrdou podmínku a má pro ni důvod: kdyby šlo požádat
 // „nahravky:upload mcp:read" najednou, vznikl by token, kterým jde současně nahrávat
@@ -127,10 +138,31 @@ function resolveAuthTimeout(value) {
   return timeoutMs;
 }
 
+function safeOAuthErrorCode(value) {
+  return typeof value === "string" && SAFE_OAUTH_ERROR_CODES.has(value) ? value : null;
+}
+
+function oauthResponseError(label, status, candidateCode) {
+  const oauthError = safeOAuthErrorCode(candidateCode);
+  const statusText = Number.isInteger(status) ? `HTTP ${status}` : null;
+  const detail = [statusText, oauthError].filter(Boolean).join(", ");
+  const error = new Error(`${label} selhal${detail ? ` (${detail})` : ""}`);
+  // Neenumerovat: diagnostika smí vypsat třídu a bezpečný kód, ne celé tělo odpovědi.
+  Object.defineProperty(error, "oauthError", { value: oauthError });
+  return error;
+}
+
 async function jsonResponse(fetchImpl, url, options, label) {
   const response = await fetchImpl(url, options);
   if (!response.ok) {
-    throw new Error(`${label} selhal (HTTP ${response.status})`);
+    let oauthError = null;
+    try {
+      const body = await response.json();
+      oauthError = safeOAuthErrorCode(body?.error);
+    } catch {
+      // OAuth chyba je volitelný strojový údaj. Stav HTTP zůstává zdrojem pravdy.
+    }
+    throw oauthResponseError(label, response.status, oauthError);
   }
   try {
     return await response.json();
@@ -249,7 +281,9 @@ async function createLoopbackListener(
     if (oauthError || !code) {
       sendBrowserResponse(response, 400, "Přihlášení nebylo dokončeno.");
       close();
-      rejectCode(new Error(oauthError ? `OAuth odmítl přihlášení: ${oauthError}` : "Chybí autorizační kód"));
+      rejectCode(oauthError
+        ? oauthResponseError("OAuth autorizace", undefined, oauthError)
+        : new Error("Chybí autorizační kód"));
       return;
     }
 
@@ -378,8 +412,13 @@ async function requestMcpIdentity(fetchImpl, issuer, accessToken, signal) {
 }
 
 async function resolveUserIdentity(options, fetchImpl, accessToken, tokenResponse, issuer) {
-  let identity = normalizeIdentity(tokenResponse);
   const hasConfiguredResolver = typeof options.resolveIdentity === "function" || options.identityEndpoint;
+  // Explicitní resolver je autorita pro identitu daného scope. Token response může nést
+  // stejně pojmenovaná, ale neověřená pole; při chybě ani částečné odpovědi jimi proto
+  // nesmíme doplnit userinfo. Legacy tok bez resolveru si původní fallback zachovává.
+  let identity = hasConfiguredResolver
+    ? normalizeIdentity(null)
+    : normalizeIdentity(tokenResponse);
   if (!hasConfiguredResolver && identity.email !== null) return identity;
 
   try {
@@ -389,7 +428,8 @@ async function resolveUserIdentity(options, fetchImpl, accessToken, tokenRespons
           const resolved = await options.resolveIdentity({ accessToken, issuer, signal });
           identity = mergeIdentity(normalizeIdentity(resolved), identity);
         } catch {
-          // Identita je pouze popisek; chyba resolveru nesmí zrušit vydaný token.
+          // Chyba identity nezruší vydaný token; bez ověřené identity ale nelze
+          // odvodit vlastníka nahrávky a povolit její odeslání.
         }
       } else if (options.identityEndpoint) {
         try {
@@ -404,11 +444,14 @@ async function resolveUserIdentity(options, fetchImpl, accessToken, tokenRespons
           }, "Načtení identity uživatele");
           identity = mergeIdentity(normalizeIdentity(result), identity);
         } catch {
-          // Když volitelný endpoint nedopoví, zůstane dostupná tokenová identita.
+          // Když autoritativní endpoint nedopoví, identita zůstane neznámá.
         }
       }
 
-      if (identity.email === null) {
+      // Explicitní resolver určuje identitní kontrakt daného scope. Upload-only token
+      // se po chybě userinfo nesmí poslat do MCP jako „fallback“: nemá pro něj oprávnění
+      // a vznikla by druhá, zavádějící identitní cesta.
+      if (!hasConfiguredResolver && identity.email === null) {
         try {
           const mcpIdentity = await requestMcpIdentity(fetchImpl, issuer, accessToken, signal);
           identity = mergeIdentity(identity, mcpIdentity);
@@ -750,6 +793,32 @@ function decryptStoredSession(safeStorage, encrypted) {
   }
 }
 
+function sessionMatchesAuthContext(session, { issuer, resource, scope }) {
+  return session?.issuer === issuer
+    && session.resource === resource
+    && session.scope === scope;
+}
+
+async function invalidateCachedClient({ app, safeStorage, expectedSession }) {
+  return withTokenStorageTransaction(async () => {
+    const storage = tokenStorageLocation(app);
+    await initializeTokenStorage(app, storage);
+    const encrypted = await readEncryptedSession(storage);
+    const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
+    if (
+      session === null
+      || session.issuer !== expectedSession?.issuer
+      || session.clientId !== expectedSession?.clientId
+      || session.resource !== expectedSession?.resource
+      || session.scope !== expectedSession?.scope
+    ) {
+      return false;
+    }
+    await removeEncryptedSession(storage);
+    return true;
+  });
+}
+
 function canRefreshSession(session) {
   return typeof session?.accessToken === "string"
     && session.accessToken.trim().length > 0
@@ -778,8 +847,8 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
   if (refreshSessionPromise !== null) return refreshSessionPromise;
 
   refreshSessionPromise = withTokenStorageTransaction(async () => {
+    const storage = tokenStorageLocation(app);
     try {
-      const storage = tokenStorageLocation(app);
       await initializeTokenStorage(app, storage);
       const encrypted = await readEncryptedSession(storage);
       const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
@@ -839,7 +908,17 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
       await persistEncryptedSession(safeStorage, refreshedSession, storage);
       failedRefreshToken = null;
       return refreshedSession;
-    } catch {
+    } catch (error) {
+      if (error?.oauthError === INVALID_CLIENT) {
+        // `invalid_client` potvrzuje, že uložené client_id už server nezná. Celá relace
+        // je proto cache neplatného klienta. Smažeme ji atomicky, ale NIKDY zde znovu
+        // nepoužijeme starý refresh token a nespouštíme automatický login. Nový klient
+        // vznikne až při dalším výslovném interaktivním přihlášení.
+        await removeEncryptedSession(storage);
+        failedRefreshToken = storedSession.refreshToken;
+        logRefreshFailure(logger, "invalid-client");
+        return null;
+      }
       // Uložené tokeny se ZÁMĚRNĚ nemažou. Selhání bývá dočasné (spící síť hned po
       // probuzení) a smazaný refresh token by zahodil relaci, která je pořád platná.
       // Relace zůstane vypršelá — fail-closed, ale bez ztráty údajů. Hlídají to testy
@@ -1167,6 +1246,14 @@ function createAuthController(options) {
   if (resource !== expectedResource) {
     throw new Error("E7 se smí autorizovat jen k MCP resource issueru");
   }
+  if (scope === UPLOAD_SCOPE) {
+    const expectedIdentityEndpoint = new URL("/api/mcp/oauth/userinfo", issuer).href;
+    if (options.identityEndpoint !== expectedIdentityEndpoint || options.resolveIdentity) {
+      throw new Error(`Oprávnění ${UPLOAD_SCOPE} vyžaduje identitu z userinfo svého issueru`);
+    }
+  } else if (options.identityEndpoint) {
+    throw new Error("Userinfo endpoint patří výhradně k oprávnění nahravky:upload");
+  }
 
   async function start() {
     const loginTicket = coordinator.captureLoginTicket();
@@ -1194,7 +1281,7 @@ function createAuthController(options) {
           const session = encrypted === null ? null : decryptStoredSession(safeStorage, encrypted);
           // Klient pro jiné prostředí nebo rozsah oprávnění by mohl použít oprávnění,
           // která uživatel neodsouhlasil; proto musí souhlasit issuer, resource i scope.
-          if (session?.issuer === issuer && session.resource === resource && session.scope === scope) {
+          if (sessionMatchesAuthContext(session, { issuer, resource, scope })) {
             clientId = requiredString(session.clientId, "clientId");
           }
         } catch {
@@ -1221,7 +1308,19 @@ function createAuthController(options) {
 
       const result = (async () => {
         try {
-          const code = await listener.codePromise;
+          let code;
+          try {
+            code = await listener.codePromise;
+          } catch (error) {
+            if (error?.oauthError === INVALID_CLIENT && options.clientId == null) {
+              await invalidateCachedClient({
+                app,
+                safeStorage,
+                expectedSession: { issuer, clientId, resource, scope },
+              });
+            }
+            throw error;
+          }
           if (listener.isCancelled()) throw cancelledAuthError();
           const tokenBody = oauth.buildTokenRequestBody({
             code,
@@ -1230,15 +1329,27 @@ function createAuthController(options) {
             clientId,
             resource,
           });
-          const tokenResponse = await jsonResponse(fetchImpl, endpoints.tokenEndpoint, {
-            method: "POST",
-            headers: {
-              accept: "application/json",
-              "content-type": "application/x-www-form-urlencoded",
-            },
-            redirect: "error",
-            body: tokenBody.toString(),
-          }, "Výměna autorizačního kódu");
+          let tokenResponse;
+          try {
+            tokenResponse = await jsonResponse(fetchImpl, endpoints.tokenEndpoint, {
+              method: "POST",
+              headers: {
+                accept: "application/json",
+                "content-type": "application/x-www-form-urlencoded",
+              },
+              redirect: "error",
+              body: tokenBody.toString(),
+            }, "Výměna autorizačního kódu");
+          } catch (error) {
+            if (error?.oauthError === INVALID_CLIENT && options.clientId == null) {
+              await invalidateCachedClient({
+                app,
+                safeStorage,
+                expectedSession: { issuer, clientId, resource, scope },
+              });
+            }
+            throw error;
+          }
           let rollbackStarted = false;
           let sessionPersisted = false;
           try {
@@ -1512,12 +1623,27 @@ const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
  *
  * @returns {Promise<object|null>} aktualizovaná relace, nebo `null`, když se neuložila
  */
-function updateStoredAuthSessionCompany({ app, safeStorage, companyTabidooId, storedSession }) {
+function updateStoredAuthSessionCompany({
+  app,
+  safeStorage,
+  companyTabidooId,
+  expectedCompanyId = undefined,
+  storedSession,
+  guard = undefined,
+}) {
+  const mazeFirmu = companyTabidooId === null;
   const firma = typeof companyTabidooId === "string" ? companyTabidooId : "";
-  if (!COMPANY_ID_PATTERN.test(firma)) {
+  if ((!mazeFirmu && !COMPANY_ID_PATTERN.test(firma))
+    || (mazeFirmu && !COMPANY_ID_PATTERN.test(expectedCompanyId ?? ""))) {
     // Nesmysl se do relace nezapisuje: odesílání by pak selhalo až na serveru a vypadalo
     // by to jako vada spojení, ne jako vadná uložená hodnota.
     return Promise.reject(new Error("Identifikátor firmy musí být GUID"));
+  }
+  if (!storedSession || typeof storedSession !== "object") {
+    return Promise.reject(new Error("Chybí snímek přihlašovací relace"));
+  }
+  if (guard !== undefined && typeof guard !== "function") {
+    return Promise.reject(new TypeError("Guard musí být synchronní funkce"));
   }
 
   return withTokenStorageTransaction(async () => {
@@ -1530,11 +1656,30 @@ function updateStoredAuthSessionCompany({ app, safeStorage, companyTabidooId, st
       session.issuer !== storedSession?.issuer
       || session.clientId !== storedSession?.clientId
       || session.resource !== storedSession?.resource
+      || session.scope !== UPLOAD_SCOPE
+      || storedSession.scope !== UPLOAD_SCOPE
+      || session.accessToken !== storedSession.accessToken
+      || typeof session.identity?.email !== "string"
+      || session.identity.email !== storedSession.identity?.email
+      || (session.identity.name ?? null) !== (storedSession.identity?.name ?? null)
     ) {
       return null;
     }
 
-    const updatedSession = { ...session, companyTabidooId: firma };
+    if (mazeFirmu && session.companyTabidooId !== expectedCompanyId) return null;
+    if (guard !== undefined) {
+      let guardPlati = false;
+      try {
+        guardPlati = guard() === true;
+      } catch {
+        return null;
+      }
+      if (!guardPlati) return null;
+    }
+
+    const updatedSession = { ...session };
+    if (mazeFirmu) delete updatedSession.companyTabidooId;
+    else updatedSession.companyTabidooId = firma;
     await persistEncryptedSession(safeStorage, updatedSession, storage);
     return updatedSession;
   });
@@ -1561,6 +1706,7 @@ module.exports = {
   resolveAuthTimeout,
   tokenSessionFilePath,
   tokenStorageDirectory,
+  sessionMatchesAuthContext,
   // Vystaveno schválně: `companies.cjs` si validaci originu nechává injektovat, aby v repu
   // nevznikla její třetí kopie. Dvě, které tu jsou (přihlášení a upload), se hlídají testy.
   trustedRemoteEndpoint,

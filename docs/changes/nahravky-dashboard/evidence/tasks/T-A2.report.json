@@ -1,0 +1,22 @@
+{
+  "summary": "Konkrétní oprava userinfo fallbacku.",
+  "premisaPlatila": true,
+  "premisaPoznamka": "Skutečný controller při HTTP 503, částečném userinfo i deadline přebíral syntetickou tokenovou identitu do výsledku a uložené relace. Explicitní resolver nyní začíná prázdnou identitou; legacy větev zůstala zachovaná a refresh dál uchovává dříve ověřenou uloženou identitu.",
+  "kontrolniNula": {
+    "souboruMimoAllowlist": 0,
+    "produkcnichRequestu": 0,
+    "pridanychSkipuBaseline": 0,
+    "gitZapisu": 0
+  },
+  "sabotaze": [
+    {
+      "nazev": "tokenová identita při userinfo failure",
+      "vysledek": "RED exit 1 po obnovení tokenové identity; GREEN exit 0 po obnovení opravy",
+      "doslovnyVystup": "dukazy/nahravky-dashboard-2026-09-14/A2/sabotaz.log"
+    }
+  ],
+  "doslovnyVystupTestu": "dukazy/nahravky-dashboard-2026-09-14/A2/testy.log (typecheck exit 0; 87 cílených auth testů exit 0)",
+  "coJsemNEOVERIL": [
+    "produkční přihlášení z Finderu"
+  ]
+}

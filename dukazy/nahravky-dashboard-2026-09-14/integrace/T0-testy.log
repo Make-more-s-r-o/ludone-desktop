@@ -1,0 +1,14 @@
+$ npx vitest run tests/queue.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace
+
+ ✓ tests/queue.test.js (97 tests) 876ms
+   ✓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší  424ms
+
+ Test Files  1 passed (1)
+      Tests  97 passed (97)
+   Start at  21:22:07
+   Duration  1.15s (transform 52ms, setup 7ms, collect 72ms, tests 876ms, environment 0ms, prepare 55ms)
+
+
+EXIT_CODE=0

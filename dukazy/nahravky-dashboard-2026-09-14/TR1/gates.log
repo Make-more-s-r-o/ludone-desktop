@@ -1,0 +1,29 @@
+
+> ludone-desktop-prototype@0.1.2 gates
+> npm run lint && npm run typecheck && npm run test:unit && npm run preskocene
+
+
+> ludone-desktop-prototype@0.1.2 lint
+> eslint .
+
+
+/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-limity/tests/queue-wiring.test.js
+  4744:31  error  '_killswitches' is defined but never used      no-unused-vars
+  4744:46  error  '_ownerFingerprint' is defined but never used  no-unused-vars
+  4972:31  error  '_killswitches' is defined but never used      no-unused-vars
+  4972:46  error  '_ownerFingerprint' is defined but never used  no-unused-vars
+  4997:31  error  '_killswitches' is defined but never used      no-unused-vars
+  4997:46  error  '_ownerFingerprint' is defined but never used  no-unused-vars
+  4998:32  error  '_killswitches' is defined but never used      no-unused-vars
+  4998:47  error  '_ownerFingerprint' is defined but never used  no-unused-vars
+  5040:31  error  '_killswitches' is defined but never used      no-unused-vars
+  5040:46  error  '_ownerFingerprint' is defined but never used  no-unused-vars
+
+/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-limity/tests/queue.test.js
+  2626:31  error  '_item' is defined but never used  no-unused-vars
+  2716:31  error  '_item' is defined but never used  no-unused-vars
+
+✖ 12 problems (12 errors, 0 warnings)
+
+
+EXIT_CODE=1

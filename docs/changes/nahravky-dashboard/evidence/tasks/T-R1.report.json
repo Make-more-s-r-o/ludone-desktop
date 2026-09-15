@@ -1,0 +1,54 @@
+{
+  "summary": "HTTP 429 u nahrávky vrací samostatný outcome rate_limited, neubírá attempts, zachová per-track progress a v témže atomickém zápisu uloží per-owner cooldown do outgoing.json. Pumpa i ruční retry před každým recording sendem používají právě platného nebo obnoveného vlastníka; restart, retry a přepnutí A→B→A dál respektují uložený blok. Expirovaný cooldown se uklízí jen v serializované mutaci. Timeentry kontrakt a oddělený killswitch zůstaly zachované.",
+  "premisaPlatila": true,
+  "premisaPoznamka": "Základ 4bbbd0a obsahoval T-03, schemaVersion 1, volitelný ownerFingerprint jako HMAC, per-track server progress a serializovaný file store. T-R1 přidal pouze volitelné top-level uploadCooldowns; schema verze, claim, list, dashboard a timeentry kontrakty zůstaly zachované.",
+  "znameOmezeniIdentity": "Server limituje podle user ID; desktopový cooldown je svázán s HMAC e-mailu a issueru a změna e-mailu může vytvořit nový fingerprint.",
+  "ocekavanePocty": {
+    "requestuPoPrvnim429VeStejnePumpe": 0,
+    "requestuBehemCooldownuPoRestartu": 0,
+    "prirustekAttemptsPo429": 0,
+    "produkcnichRequestu": 0
+  },
+  "kontrolniNula": {
+    "souboruMimoAllowlist": 0,
+    "novychDatabaziHistoriiAuthUI": 0,
+    "pridanychExemptMarkeruSkipuBaseline": 0,
+    "gitZapisu": 0
+  },
+  "namereneKlasifikace": {
+    "recordingHttp429": "rate_limited; attempts beze změny; platný interval max. 6 h, jinak fallback 60 min",
+    "timeHttp429": "retry_scheduled podle původního retryable kontraktu, bez owner cooldownu",
+    "networkA5xx": "retryable",
+    "http401A403AQuotaPaused": "paused bez spotřeby pokusu",
+    "http413TooLargeAInvalidInput": "permanent",
+    "casCooldownu": "retryAt se počítá od okamžiku přijetí 429, nikoli od zahájení requestu"
+  },
+  "novychTestu": 13,
+  "sabotaze": [
+    {
+      "nazev": "Vynechaná kontrola store cooldownu před sendem",
+      "ocekavano": "Restartovací test musí zčervenat, protože obnovená store instance dovolí zakázaný request.",
+      "vysledek": "Sabotáž zčervenala: 1 test failed, 125 skipped, exit kód 1. Po obnovení ochrany relevantní sada zůstala zelená.",
+      "doslovnyVystup": "FAIL tests/queue.test.js > perzistentní pumpa fronty > 429 atomicky uloží queue i cooldown a restart ani ruční retry nepošlou request\nAssertionError: expected { item: null, outcome: 'idle', …(3) } to match object { outcome: 'rate_limited' }\nTest Files 1 failed (1)\nTests 1 failed | 125 skipped (126)\nEXIT_CODE=1"
+    },
+    {
+      "nazev": "Ponechané zvýšené attempts po HTTP 429",
+      "ocekavano": "Regresní test s původní hodnotou attempts 4 musí zčervenat na hodnotě 5.",
+      "vysledek": "Sabotáž zčervenala: očekáváno attempts 4, naměřeno 5; 1 test failed, 125 skipped, exit kód 1. Kód byl obnoven.",
+      "doslovnyVystup": "FAIL tests/queue.test.js > stavový automat fronty > 429 zachová původní attempts i částečný per-track progress a bez intervalu čeká hodinu\n-     \"attempts\": 4,\n+     \"attempts\": 5,\nTest Files 1 failed (1)\nTests 1 failed | 125 skipped (126)\nEXIT_CODE=1"
+    }
+  ],
+  "doslovnyVystupTestu": "PŘÍKAZ: npm run typecheck\n> ludone-desktop-prototype@0.1.2 typecheck\n> tsc --noEmit -p jsconfig.json\nEXIT_CODE=0\n\nPŘÍKAZ: npm run gates\n> ludone-desktop-prototype@0.1.2 gates\n> npm run lint && npm run typecheck && npm run test:unit && npm run preskocene\n\n> ludone-desktop-prototype@0.1.2 lint\n> eslint .\n✖ 12 problems (12 errors, 0 warnings)\nEXIT_CODE=1\n\nOPRAVA PO JEDINÉ PLNÉ BRÁNĚ — CÍLENĚ\nPŘÍKAZ: npx eslint src/lib/queue.js electron/queue.cjs electron/main.cjs electron/upload-client.cjs tests/queue.test.js tests/queue-wiring.test.js tests/upload-client.test.js\nLINT_EXIT_CODE=0\nPŘÍKAZ: npm run typecheck\n> ludone-desktop-prototype@0.1.2 typecheck\n> tsc --noEmit -p jsconfig.json\nEXIT_CODE=0\nPŘÍKAZ: npx vitest run tests/queue.test.js tests/upload-client.test.js tests/queue-wiring.test.js -t '429|cooldown|current owner|obnoví expirovanou|selhaná obnova|network|síť|5xx|401|403|quota|permanent|progress|Retry-After|retryAfterSeconds'\nTest Files 3 passed (3)\nTests 31 passed | 426 skipped (457)\nTEST_EXIT_CODE=0\nDODATEČNÁ CÍLENÁ CLAIM KONTROLA\nTest Files 1 passed (1)\nTests 9 passed | 117 skipped (126)\nEXIT_CODE=0",
+  "coJsemNEOVERIL": [
+    "Po opravě lint nálezů jsem podle packetu neopakoval celý npm run gates; koordinátor provede následnou plnou bránu. Původní gates.log proto pravdivě končí exit kódem 1.",
+    "Skutečný server, ostrý účet, UI ani audio; všechny HTTP scénáře byly mockované.",
+    "Živé chování na Macu; stav je pouze 🧪 zelené cílené testy."
+  ],
+  "notes": [
+    "Doslovné úplné výstupy jsou v dukazy/nahravky-dashboard-2026-09-14/TR1/typecheck.log, gates.log, sabotaz-store-cooldown.log a sabotaz-attempts.log.",
+    "Read-only list expirovaný cooldown nemaže; cleanup probíhá až uvnitř serializované pump/retry mutace.",
+    "Claim zachovává všechny cooldowny a logout frontu nemutuje. Ruční retry cooldown ani attempts neresetuje.",
+    "Parser Retry-After přijímá jen celé kladné sekundy; řetězec 1neplatné je neplatný, platné integer tělo má fallback prioritu a horní mez zůstává 6 hodin.",
+    "Nebyl přidán timer; cooldown se vyhodnocuje jen při existujícím vstupu pumpy nebo retry."
+  ]
+}

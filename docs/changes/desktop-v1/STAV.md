@@ -1,5 +1,11 @@
 # Stav běhu — LuDone Desktop v1
 
+> **Historický snapshot, ne aktuální backlog.** Tento soubor popisuje běh z 1. 9. 2026 a
+> pozdější doplnění do 7. 9. Jeho tvrzení o čekání na Apple Developer Program, neveřejném
+> GitHubu, vypnutém uploadu a pořadí dalších B-story byla mezitím překonána. Aktuální stav
+> dokončení nahrávek je v [`../nahravky-dashboard/STAV.md`](../nahravky-dashboard/STAV.md).
+> Původních 17 funkcí a jejich tehdejší stav zůstávají zachované v `progress/status.json`.
+
 **Napsáno 1. 9. 2026 před compaction.** Kdo tohle čte s prázdným kontextem, nepotřebuje původní
 konverzaci. Čti odshora, je to seřazené podle toho, co potřebuješ dřív.
 

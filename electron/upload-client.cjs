@@ -127,13 +127,16 @@ function failureClassForStatus(status, code, payload) {
 const MAX_RETRY_AFTER_MS = 6 * 60 * 60 * 1000;
 
 function retryAfterMsFrom(response, payload) {
-  const zHlavicky = Number.parseInt(response?.headers?.get?.("retry-after") ?? "", 10);
+  const rawHlavicka = response?.headers?.get?.("retry-after");
+  const zHlavicky = typeof rawHlavicka === "string" && /^[1-9][0-9]*$/u.test(rawHlavicka)
+    ? Number(rawHlavicka)
+    : null;
   const zTela = payload?.retryAfterSeconds;
   let sekundy = null;
-  if (Number.isFinite(zHlavicky) && zHlavicky > 0) sekundy = zHlavicky;
-  else if (Number.isFinite(zTela) && zTela > 0) sekundy = zTela;
+  if (Number.isSafeInteger(zHlavicky) && zHlavicky > 0) sekundy = zHlavicky;
+  else if (Number.isSafeInteger(zTela) && zTela > 0) sekundy = zTela;
   if (sekundy === null) return undefined;
-  return Math.min(MAX_RETRY_AFTER_MS, Math.round(sekundy * 1000));
+  return Math.min(MAX_RETRY_AFTER_MS, sekundy * 1000);
 }
 
 function serverError(status, payload, retryAfterMs) {
@@ -411,7 +414,12 @@ async function preflightRecording(item) {
       "permanent",
     );
   }
-  return Object.freeze({ clientRecordingId, manifest, tracks: Object.freeze(tracks) });
+  return Object.freeze({
+    clientRecordingId,
+    manifest,
+    title: safeString(item.title),
+    tracks: Object.freeze(tracks),
+  });
 }
 
 function normalizedOwnerFingerprint(value) {
@@ -454,7 +462,25 @@ function normalizedContext(context, manifest, expectedOrigin, item) {
     throw localError("session_not_found", "Přihlášení patří jinému serveru", "paused");
   }
   requireMatchingQueueOwner(item, context);
-  const companyTabidooId = safeString(context.companyTabidooId)
+  const pinnedCompanyId = safeString(item?.server?.companyTabidooId);
+  const hasServerProgress = safeString(item?.server?.sessionId) !== ""
+    || safeString(item?.server?.recordingId) !== ""
+    || safeString(item?.server?.legacyRecordingId) !== ""
+    || Object.values(item?.server?.tracks ?? {}).some((progress) => (
+      safeString(progress?.recordingId) !== "" || Number(progress?.uploadedBytes) > 0
+    ))
+    || safeString(manifest.sessionId) !== "";
+  if (pinnedCompanyId === "" && hasServerProgress) {
+    throw localError(
+      "company_binding_missing",
+      "Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení",
+      "paused",
+    );
+  }
+  if (pinnedCompanyId !== "" && !COMPANY_ID_PATTERN.test(pinnedCompanyId)) {
+    throw localError("company_binding_missing", "Uložená firma nahrávky není platná", "paused");
+  }
+  const companyTabidooId = pinnedCompanyId || safeString(context.companyTabidooId)
     || safeString(manifest.companyTabidooId);
   if (!COMPANY_ID_PATTERN.test(companyTabidooId)) {
     // 🔴 Dva různé světy, které dřív splývaly do jedné hlášky — a ta hláška lhala.
@@ -488,6 +514,10 @@ function normalizedContext(context, manifest, expectedOrigin, item) {
     accessToken: context.accessToken,
     companyTabidooId,
     deviceLabel,
+    companyWasPinned: pinnedCompanyId !== "",
+    resetRejectedCompany: typeof context.resetRejectedCompany === "function"
+      ? context.resetRejectedCompany
+      : async () => false,
   });
 }
 
@@ -499,6 +529,11 @@ function safeJson(response) {
 }
 
 function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
+  const requestOrigin = normalizedOrigin(origin);
+  if (typeof accessToken !== "string" || accessToken.trim().length === 0) {
+    throw new TypeError("accessToken musí být neprázdný řetězec");
+  }
+  if (typeof fetchImpl !== "function") throw new TypeError("fetchImpl musí být funkce");
   /**
    * @param {string} pathname
    * @param {{
@@ -508,6 +543,36 @@ function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
    * }} [options]
    */
   return async function request(pathname, { body, headers = {}, method = "GET" } = {}) {
+    if (
+      typeof pathname !== "string"
+      || !pathname.startsWith("/")
+      || pathname.startsWith("//")
+      || /[\\]/u.test(pathname)
+    ) {
+      throw new TypeError("Cesta požadavku musí být relativní k povolenému originu");
+    }
+    let target;
+    try {
+      target = new URL(pathname, requestOrigin);
+    } catch {
+      throw new TypeError("Cesta požadavku není platná");
+    }
+    if (
+      target.origin !== requestOrigin
+      || target.username !== ""
+      || target.password !== ""
+      || target.search !== ""
+      || target.hash !== ""
+      || target.pathname !== pathname
+    ) {
+      throw new TypeError("Cesta požadavku opouští povolený origin");
+    }
+    if (!headers || typeof headers !== "object" || Array.isArray(headers)) {
+      throw new TypeError("Hlavičky požadavku musí být objekt");
+    }
+    if (Object.keys(headers).some((name) => ["authorization", "cookie"].includes(name.toLowerCase()))) {
+      throw new TypeError("Chráněnou hlavičku Authorization ani Cookie nelze přepsat");
+    }
     const abortController = new AbortController();
     let timeoutId;
     const timeout = new Promise((resolve, reject) => {
@@ -520,7 +585,7 @@ function createRequester({ accessToken, fetchImpl, origin, requestTimeoutMs }) {
     let exchange;
     try {
       exchange = await Promise.race([
-        Promise.resolve(fetchImpl(new URL(pathname, origin).toString(), {
+        Promise.resolve(fetchImpl(target.toString(), {
           body,
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -589,6 +654,14 @@ function validatedRecordingId(payload) {
     throw localError("invalid_response", "Server nevrátil recordingId", "retryable");
   }
   return recordingId;
+}
+
+function validatedSessionId(payload, previousSessionId) {
+  const sessionId = safeString(payload?.sessionId) || safeString(previousSessionId);
+  if (!UUID_PATTERN.test(sessionId)) {
+    throw localError("invalid_response", "Server nevrátil sessionId", "retryable");
+  }
+  return sessionId;
 }
 
 function verifyRemoteIdentity(payload, track, sizeField) {
@@ -692,7 +765,7 @@ function initPayload(recording, track, context, sessionId) {
     sessionId: safeString(sessionId) || safeString(recording.manifest.sessionId) || null,
     sha256: track.sha256,
     startedAt,
-    title: titleForTrack(recording.manifest, track.trackKind),
+    title: titleForTrack({ ...recording.manifest, title: recording.title }, track.trackKind),
     visibility: recording.manifest.visibility === "company" ? "company" : "private",
   };
 }
@@ -735,7 +808,15 @@ function verifyRemoteIdentityAndLog(payload, track, sizeField, logger, recording
   }
 }
 
-async function uploadTrack({ context, logger, recording, request, sessionId, track }) {
+async function uploadTrack({
+  context,
+  logger,
+  recording,
+  reportServerProgress,
+  request,
+  sessionId,
+  track,
+}) {
   const trackRequest = async (...args) => {
     try {
       return await request(...args);
@@ -762,11 +843,19 @@ async function uploadTrack({ context, logger, recording, request, sessionId, tra
   });
 
   const recordingId = validatedRecordingId(initialized);
-  // Schůzka přidělená serverem. Když ji nevrátí, držíme tu, se kterou jsme přišli — nikdy
-  // se nevracíme k `null`, protože tím by se druhá stopa odpojila od první.
-  const prirazenaSchuzka = safeString(initialized.sessionId)
-    || safeString(sessionId)
-    || null;
+  // Serverová cesta ověřená 8. 9. vrací po INITu UUID schůzky i pro první stopu, která
+  // poslala `null`. Bez něj nelze druhou stopu bezpečně připojit ani obnovit upload po pádu,
+  // proto odpověď odmítneme ještě před GETem a přenosem obsahu. Při idempotentním resume smí
+  // server hodnotu vynechat jen tehdy, když už ji klient přinesl z perzistentní fronty.
+  const prirazenaSchuzka = validatedSessionId(initialized, sessionId);
+  // INIT je okamžik, kdy už server zná oba klíče potřebné pro bezpečné navázání po pádu.
+  // Callback se awaitne ještě před GET a chunky; store tak může oba údaje fsyncnout v právě
+  // otevřené transakci a retry pak pokračuje přes tentýž idempotentní upload i session.
+  await reportServerProgress(Object.freeze({
+    recordingId,
+    sessionId: prirazenaSchuzka,
+    track: track.trackKind,
+  }));
   const quotaWarning = initialized.quotaWarning === true;
   if (quotaWarning) {
     safeLog(
@@ -783,9 +872,15 @@ async function uploadTrack({ context, logger, recording, request, sessionId, tra
     // navázání na rozdělané odeslání — kdyby tu chyběla, druhá stopa by se po restartu
     // připnula k `null` a schůzka by se rozpadla na dvě. Tady se to pozná nejhůř, protože
     // se to stane jen při opakování, ne při prvním průchodu.
-    return Object.freeze({
-      quotaWarning, recordingId, sessionId: prirazenaSchuzka, track: track.trackKind,
+    const result = Object.freeze({
+      quotaWarning,
+      recordingId,
+      sessionId: prirazenaSchuzka,
+      track: track.trackKind,
+      uploadedBytes: track.sizeBytes,
     });
+    await reportServerProgress(result);
+    return result;
   }
 
   // Záměrně sekvenční await v obyčejném for-of: proxy nesmí vidět souběžné části.
@@ -827,9 +922,15 @@ async function uploadTrack({ context, logger, recording, request, sessionId, tra
       "permanent",
     );
   }
-  return Object.freeze({
-    quotaWarning, recordingId, sessionId: prirazenaSchuzka, track: track.trackKind,
+  const result = Object.freeze({
+    quotaWarning,
+    recordingId,
+    sessionId: prirazenaSchuzka,
+    track: track.trackKind,
+    uploadedBytes: track.sizeBytes,
   });
+  await reportServerProgress(result);
+  return result;
 }
 
 /**
@@ -861,7 +962,12 @@ function createRecordingUploadSend({
   }
   const uploadOrigin = normalizedOrigin(origin);
 
-  return async function sendRecording(item) {
+  return async function sendRecording(item, reportServerProgress = async (progress) => {
+    void progress;
+  }) {
+    if (typeof reportServerProgress !== "function") {
+      throw new TypeError("reportServerProgress musí být funkce");
+    }
     if (item?.kind === "time") {
       throw localError(
         "time_upload_unavailable",
@@ -877,6 +983,10 @@ function createRecordingUploadSend({
       throw localError("session_missing", "Přihlášení pro upload nelze načíst", "paused");
     }
     const context = normalizedContext(rawContext, recording.manifest, uploadOrigin, item);
+    if (!context.companyWasPinned) {
+      // Durable callback musí doběhnout dřív, než vznikne první INIT request.
+      await reportServerProgress(Object.freeze({ companyTabidooId: context.companyTabidooId }));
+    }
     const request = createRequester({
       accessToken: context.accessToken,
       fetchImpl,
@@ -887,14 +997,27 @@ function createRecordingUploadSend({
     let quotaWarning = false;
     // Stopy jdou po sobě a schůzka se předává z jedné na druhou: první ji dostane od
     // serveru, každá další už ji posílá s sebou. Proto se tu drží mimo cyklus.
-    let sessionId = safeString(recording.manifest.sessionId) || null;
-    for (const track of recording.tracks) {
-      const uploaded = await uploadTrack({
-        context, logger, recording, request, sessionId, track,
-      });
-      sessionId = uploaded.sessionId ?? sessionId;
-      uploads.push(uploaded);
-      quotaWarning ||= uploaded.quotaWarning;
+    let sessionId = safeString(item?.server?.sessionId)
+      || safeString(recording.manifest.sessionId)
+      || null;
+    try {
+      for (const track of recording.tracks) {
+        const uploaded = await uploadTrack({
+          context, logger, recording, reportServerProgress, request, sessionId, track,
+        });
+        sessionId = uploaded.sessionId ?? sessionId;
+        uploads.push(uploaded);
+        quotaWarning ||= uploaded.quotaWarning;
+      }
+    } catch (error) {
+      if (error?.code === "company_out_of_scope") {
+        try {
+          await context.resetRejectedCompany(context.companyTabidooId);
+        } catch {
+          // Původní serverová chyba zůstává autoritou; reset je podmíněný recovery krok.
+        }
+      }
+      throw error;
     }
     return Object.freeze({ completedUploads: uploads.length, quotaWarning, uploads });
   };
@@ -905,6 +1028,7 @@ module.exports = {
   RECORDING_CHUNK_BYTES,
   RECORDING_MAX_BYTES,
   RecordingUploadError,
+  createRequester,
   createRecordingUploadSend,
   deriveUploadIdentity,
   failureClassForCode,

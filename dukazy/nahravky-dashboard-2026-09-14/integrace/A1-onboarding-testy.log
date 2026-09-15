@@ -1,0 +1,15 @@
+$ npx vitest run tests/session-reentry.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace
+
+ ✓ tests/session-reentry.test.js (12 tests) 2535ms
+   ✓ návrat do aplikace po ztrátě session > dokončení úvodního průvodce bez platné relace otevře nový přihlašovací krok  1182ms
+   ✓ oznámení změny session mezi okny > otevřená okna zjistí vypršení bez změny fokusu a panel nabídne nové přihlášení  1136ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  21:55:22
+   Duration  3.66s (transform 121ms, setup 12ms, collect 777ms, tests 2.53s, environment 0ms, prepare 53ms)
+
+
+EXIT_CODE=0

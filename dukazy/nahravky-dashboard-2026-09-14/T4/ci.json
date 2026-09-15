@@ -1,0 +1,18 @@
+{
+  "headSha": "88f17a5bf06f276c3e110f3f53566b2cd8239a45",
+  "status": "completed",
+  "conclusion": "success",
+  "runId": 34899958715,
+  "url": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34899958715",
+  "jobId": 104163269694,
+  "completedAt": "2026-09-14T21:40:04Z",
+  "verifiedSteps": [
+    "npm ci",
+    "npm run gates",
+    "npm run build"
+  ],
+  "manualStepsNotRun": [
+    "UI smoke (ruční checkpoint na Macu)",
+    "Audio smoke (ruční checkpoint na Macu)"
+  ]
+}

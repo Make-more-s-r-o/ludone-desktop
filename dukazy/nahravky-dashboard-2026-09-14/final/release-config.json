@@ -1,0 +1,19 @@
+{
+  "measuredOn": "2026-09-15",
+  "source": [
+    "gh variable list --json name",
+    "gh secret list --json name"
+  ],
+  "missingVariables": [
+    "DOWNLOAD_SSH_HOST",
+    "DOWNLOAD_SSH_PATH",
+    "DOWNLOAD_SSH_USER",
+    "MAC_SIGNING_KEY_BACKUP_CONFIRMED"
+  ],
+  "missingSecrets": [
+    "DOWNLOAD_SSH_KNOWN_HOSTS",
+    "DOWNLOAD_SSH_PRIVATE_KEY"
+  ],
+  "secretValuesRead": false,
+  "serverChanged": false
+}

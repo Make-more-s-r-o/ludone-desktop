@@ -340,6 +340,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "panel:set-content-height",
       "permission:request",
       "permission:status",
+      "queue:claim-recording",
       "queue:list",
       "queue:retry",
       "recording:append",
@@ -351,6 +352,14 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "recording:export",
       "recording:finish",
       "recording:finish-export",
+      "recording:save-decision",
+      "recordings:delete",
+      "recordings:list-local",
+      "recordings:open-web",
+      "recordings:retry",
+      "recordings:reveal",
+      "recordings:send",
+      "recordings:verify",
       "settings:close",
       "settings:get-dock-visible",
       "settings:get-device-name",
@@ -373,12 +382,21 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "tray-space-warning:enable-dock",
       // Nové čtení stavu; odmítnutí cizího rámu i payloadu měří queue-wiring.test.js.
       "updater:get-state",
+      "upload-companies:list",
+      "upload-companies:select",
     ].sort());
     expect(registrations.filter(({ registration }) => registration.startsWith("ipcMain."))).toEqual([]);
     expect(functionSource(mainSource, "handleValidated")).toContain("requireTrustedSender");
     expect(functionSource(mainSource, "onValidated")).toContain("requireTrustedSender");
     expect(functionSource(mainSource, "installMediaHandlers")).toContain("isAllowedMediaPermission");
     expect(functionSource(mainSource, "installMediaHandlers")).toContain("isTrustedPanelFrame");
+  });
+
+  it("🔴 výběr firmy přijímá jen hlavní rám okna Nastavení", () => {
+    expect(mainSource).toContain(
+      'handleValidated("upload-companies:select", ["settings"],',
+    );
+    expect(mainSource).toContain("requireTrustedSender(event, [\"settings\"])");
   });
 
   it("inventarizuje přesně čtyři boolean fakta přijímaná tray kanálem", () => {

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import queueStore from "../electron/queue.cjs";
+import verification from "../electron/recording-verification.cjs";
 import { createManifest } from "../src/lib/manifest.js";
 import {
   FAILURE_CLASSES,
@@ -12,11 +13,13 @@ import {
   QUEUE_STATES,
   UPLOAD_DISABLED_REASON,
   applyServerProgress,
+  claimRecording,
   createQueue,
   enqueueRecording,
   enqueueTimeEntry,
   killswitchNameForKind,
   processNext,
+  rebindCompanyOutOfScopeItem,
   queueItemRequiresHumanAction,
   reduceQueueForRenderer,
   retryDelayMs,
@@ -33,6 +36,10 @@ const {
 const ORIGINAL_UPLOAD_SETTING = process.env.DESKTOP_UPLOAD_ENABLED;
 const ORIGINAL_TIME_SETTING = process.env.DESKTOP_TIME_ENABLED;
 const ENABLED_SETTING = ["tr", "ue"].join("");
+const SERVER_MICROPHONE_ID = "00000000-0000-4000-8000-000000000001";
+const SERVER_SYSTEM_ID = "00000000-0000-4000-8000-000000000002";
+const SERVER_SESSION_ID = "00000000-0000-4000-8000-000000000101";
+const CURRENT_OWNER = `sha256:${"c".repeat(64)}`;
 const mainSource = fs.readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
 
 function sourceCodeMask(source) {
@@ -137,6 +144,300 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("read-only lokální přehled nahrávek", () => {
+  const ids = {
+    queue: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+    orphan: "11111111-1111-4111-8111-111111111111",
+    invalid: "22222222-2222-4222-8222-222222222222",
+  };
+
+  function localManifest(id, microphoneName, systemName = null) {
+    const tracks = {
+      microphone: {
+        fileName: microphoneName,
+        sha256: "a".repeat(64),
+        sizeBytes: 1,
+        startedAt: "2026-09-14T10:00:00.000Z",
+        endedAt: "2026-09-14T10:00:01.000Z",
+      },
+    };
+    if (systemName !== null) tracks.system = { ...tracks.microphone, fileName: systemName };
+    return {
+      schemaVersion: 1,
+      clientRecordingId: id,
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      state: "complete",
+      tracks,
+    };
+  }
+
+  it("spojí frontu s orphan manifesty, ignoruje sidecar a rozliší úplnost i nulový soubor", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queueManifestPath = path.join(recordingsDirectory, "queue.manifest.json");
+    const orphanManifestPath = path.join(recordingsDirectory, "orphan.manifest.json");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      const queueManifest = localManifest(ids.queue, "queue-mic.webm", "queue-system.webm");
+      await fs.promises.writeFile(queueManifestPath, JSON.stringify(queueManifest));
+      await fs.promises.writeFile(path.join(recordingsDirectory, "queue-mic.webm"), "mikrofon");
+      await store.enqueueRecording({
+        manifest: queueManifest,
+        manifestPath: queueManifestPath,
+        trackPaths: {
+          microphone: path.join(recordingsDirectory, "queue-mic.webm"),
+          system: path.join(recordingsDirectory, "queue-system.webm"),
+        },
+      });
+
+      const orphanManifest = localManifest(ids.orphan, "orphan-zero.webm");
+      await fs.promises.writeFile(orphanManifestPath, JSON.stringify(orphanManifest));
+      await fs.promises.writeFile(path.join(recordingsDirectory, "orphan-zero.webm"), Buffer.alloc(0));
+      await fs.promises.writeFile(
+        `${orphanManifestPath}.recovered-upload-v1.json`,
+        JSON.stringify(orphanManifest),
+      );
+
+      const snapshot = await store.listLocalRecordings();
+      expect(snapshot.items).toHaveLength(2);
+      expect(snapshot.items.find((item) => item.id === ids.queue)).toMatchObject({
+        source: "queue",
+        localState: "partial-audio",
+        revision: expect.stringMatching(/^sha256:/u),
+        fileRevision: expect.stringMatching(/^sha256:/u),
+      });
+      expect(snapshot.items.find((item) => item.id === ids.orphan)).toMatchObject({
+        source: "orphan",
+        localState: "complete-audio",
+        sizeBytes: 0,
+        revision: null,
+        allowedActions: { claim: false, delete: true, retry: false, send: false },
+      });
+      expect(snapshot.unreadableCount).toBe(0);
+      expect(JSON.stringify(snapshot)).not.toContain(directory);
+      expect(JSON.stringify(snapshot)).not.toContain("ownerFingerprint");
+
+      const persisted = JSON.parse(await fs.promises.readFile(queuePath, "utf8"));
+      persisted.items[0].state = "selhalo";
+      persisted.items[0].nextAttemptAt = 123_456;
+      persisted.items[0].lastFailureReason = `token-like /Users/utocnik/${"s".repeat(48)}`;
+      await fs.promises.writeFile(queuePath, JSON.stringify(persisted));
+      const sanitized = await store.listLocalRecordings();
+      expect(sanitized.items.find((item) => item.id === ids.queue).blockReason)
+        .toBe("Předchozí pokus se nezdařil.");
+      expect(sanitized.items.find((item) => item.id === ids.queue).nextAttemptAt).toBe(123_456);
+      expect(JSON.stringify(sanitized)).not.toContain("token-like");
+      expect(JSON.stringify(sanitized)).not.toContain("/Users/utocnik");
+
+      for (const inheritedObjectKey of ["__proto__", "constructor"]) {
+        persisted.items[0].lastFailureReason = inheritedObjectKey;
+        await fs.promises.writeFile(queuePath, JSON.stringify(persisted));
+        const protectedSnapshot = await store.listLocalRecordings();
+        const protectedReason = protectedSnapshot.items.find((item) => item.id === ids.queue)
+          .blockReason;
+        expect(protectedReason).toBe("Předchozí pokus se nezdařil.");
+        expect(typeof protectedReason).toBe("string");
+      }
+
+      await fs.promises.writeFile(queueManifestPath, JSON.stringify({
+        ...queueManifest,
+        clientRecordingId: ids.invalid,
+      }));
+      const mismatched = await store.listLocalRecordings();
+      expect(mismatched.items.find((item) => item.id === ids.queue)).toMatchObject({
+        localState: "invalid-manifest",
+        allowedActions: { claim: false, delete: false, retry: false, send: false },
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("odliší missing a invalid manifest, neuhodne ID a fileRevision reaguje na disk", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-invalid-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      const orphanPath = path.join(recordingsDirectory, "missing.manifest.json");
+      await fs.promises.writeFile(orphanPath, JSON.stringify(localManifest(ids.orphan, "missing.webm")));
+      await fs.promises.writeFile(
+        path.join(recordingsDirectory, "invalid.manifest.json"),
+        JSON.stringify({ ...localManifest(ids.invalid, "../unik.webm"), tracks: {
+          microphone: { ...localManifest(ids.invalid, "x").tracks.microphone, fileName: "../unik.webm" },
+        } }),
+      );
+      await fs.promises.writeFile(path.join(recordingsDirectory, "broken.manifest.json"), "{tajna-cesta:/tmp/x");
+
+      const first = await store.listLocalRecordings();
+      expect(first.items.find((item) => item.id === ids.orphan)).toMatchObject({
+        localState: "missing-audio",
+        sizeBytes: null,
+      });
+      expect(first.items.find((item) => item.id === ids.invalid)).toMatchObject({
+        localState: "invalid-manifest",
+        fileRevision: expect.stringMatching(/^sha256:/u),
+      });
+      expect(first.unreadableCount).toBe(1);
+      expect(JSON.stringify(first)).not.toContain("tajna-cesta");
+      expect(JSON.stringify(first)).not.toContain("../unik.webm");
+
+      await fs.promises.writeFile(path.join(recordingsDirectory, "missing.webm"), "nový zvuk");
+      const second = await store.listLocalRecordings();
+      expect(second.items.find((item) => item.id === ids.orphan)).toMatchObject({
+        localState: "complete-audio",
+        sizeBytes: 10,
+      });
+      expect(second.items.find((item) => item.id === ids.orphan).fileRevision)
+        .not.toBe(first.items.find((item) => item.id === ids.orphan).fileRevision);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("rozbitou frontu odmítne před scanem a nic na disku nezmění", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-queue-error-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(path.dirname(queuePath), { recursive: true });
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.writeFile(queuePath, JSON.stringify({ schemaVersion: 1, items: [] }));
+      const orphanPath = path.join(recordingsDirectory, "orphan.manifest.json");
+      await fs.promises.writeFile(orphanPath, JSON.stringify(localManifest(ids.orphan, "zero.webm")));
+      await expect(store.listLocalRecordings()).resolves.toMatchObject({ unreadableCount: 0 });
+      await fs.promises.writeFile(queuePath, "{rozbita-fronta");
+      const beforeQueue = await fs.promises.readFile(queuePath, "utf8");
+      const beforeManifest = await fs.promises.readFile(orphanPath, "utf8");
+
+      await expect(store.listLocalRecordings()).rejects.toThrow();
+      expect(await fs.promises.readFile(queuePath, "utf8")).toBe(beforeQueue);
+      expect(await fs.promises.readFile(orphanPath, "utf8")).toBe(beforeManifest);
+      expect(await fs.promises.readdir(recordingsDirectory)).toEqual(["orphan.manifest.json"]);
+      await expect(store.enqueueRecording({})).rejects.toThrow(/JSON/u);
+      expect(await fs.promises.readFile(queuePath, "utf8")).toBe(beforeQueue);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("symlink a podadresář nesmí vytvořit použitelnou orphan kartu", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-symlink-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const outside = path.join(directory, "outside.manifest.json");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.mkdir(path.join(recordingsDirectory, "nested"));
+      await fs.promises.writeFile(outside, JSON.stringify(localManifest(ids.orphan, "x.webm")));
+      await fs.promises.symlink(outside, path.join(recordingsDirectory, "link.manifest.json"));
+      await fs.promises.writeFile(
+        path.join(recordingsDirectory, "nested", "ignored.manifest.json"),
+        JSON.stringify(localManifest(ids.invalid, "x.webm")),
+      );
+
+      const snapshot = await store.listLocalRecordings();
+      expect(snapshot.items).toEqual([]);
+      expect(snapshot.unreadableCount).toBe(1);
+      expect(JSON.stringify(snapshot)).not.toContain(directory);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("queue řádek bez UUID skončí jen v unreadableCount", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-bad-id-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    try {
+      await fs.promises.mkdir(path.dirname(queuePath), { recursive: true });
+      await fs.promises.mkdir(path.join(directory, "nahravky"));
+      await fs.promises.writeFile(queuePath, JSON.stringify({
+        schemaVersion: 1,
+        items: [{
+          clientRecordingId: "/Users/utocnik/token-like",
+          kind: "recording",
+          state: "ceka",
+          attempts: 0,
+          nextAttemptAt: null,
+          lastFailureReason: "secret",
+          manifestPath: "/Users/utocnik/secret.manifest.json",
+          tracks: {},
+        }],
+      }));
+      const store = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      const snapshot = await store.listLocalRecordings();
+      expect(snapshot).toEqual({ items: [], unreadableCount: 1 });
+      expect(JSON.stringify(snapshot)).not.toContain("utocnik");
+      expect(JSON.stringify(snapshot)).not.toContain("secret");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("odmítne symlink kořene před čtením a nadlimitní manifest jen bezpečně sečte", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-local-dashboard-root-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const targetDirectory = path.join(directory, "cil");
+    try {
+      await fs.promises.mkdir(path.dirname(queuePath), { recursive: true });
+      await fs.promises.writeFile(queuePath, JSON.stringify({ schemaVersion: 1, items: [] }));
+      await fs.promises.mkdir(targetDirectory);
+      await fs.promises.symlink(targetDirectory, recordingsDirectory);
+      const unsafeStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      await expect(unsafeStore.listLocalRecordings()).rejects.toThrow(/adresář nahrávek/u);
+
+      await fs.promises.unlink(recordingsDirectory);
+      await fs.promises.mkdir(recordingsDirectory);
+      await fs.promises.writeFile(
+        path.join(recordingsDirectory, "oversize.manifest.json"),
+        Buffer.alloc((1024 * 1024) + 1, 123),
+      );
+      const safeStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      await expect(safeStore.listLocalRecordings()).resolves.toEqual({
+        items: [],
+        unreadableCount: 1,
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+});
+
 function recording(clientRecordingId = "9e586e55-d688-43f1-8a80-a3d61e754f3e") {
   const startedAt = "2026-08-25T08:00:00.000Z";
   const endedAt = "2026-08-25T08:30:00.000Z";
@@ -172,6 +473,10 @@ function recording(clientRecordingId = "9e586e55-d688-43f1-8a80-a3d61e754f3e") {
   };
 }
 
+function ownedRecording(clientRecordingId) {
+  return { ...recording(clientRecordingId), ownerFingerprint: CURRENT_OWNER };
+}
+
 function microphoneOnlyRecording(
   clientRecordingId = "6a47ca7f-77c7-4133-bc47-d813c2a1a874",
 ) {
@@ -200,7 +505,21 @@ function microphoneOnlyRecording(
 }
 
 function oneItemQueue(clientRecordingId) {
-  return enqueueRecording(createQueue(), recording(clientRecordingId), 1_777_000_000_000).queue;
+  const queue = enqueueRecording(createQueue(), recording(clientRecordingId), 1_777_000_000_000).queue;
+  queue.items[0] = { ...queue.items[0], uploadIntent: "approved" };
+  return queue;
+}
+
+async function enqueueApproved(store, value) {
+  const queued = await store.enqueueRecording(value);
+  await store.decideRecording(
+    queued.item.clientRecordingId,
+    value.ownerFingerprint ?? null,
+    "",
+    true,
+    { guard: async () => true },
+  );
+  return queued;
 }
 
 describe("vlastník nahrávky v perzistentní frontě", () => {
@@ -427,12 +746,12 @@ function killswitches(upload = process.env.DESKTOP_UPLOAD_ENABLED, time = proces
 
 const PRODUCTION_KILLSWITCH_CASES = [
   {
-    label: "nenastavený vypínač nahrávek zůstane disabled",
+    label: "bez env smí projít jednotlivě schválená nahrávka",
     environmentName: "DESKTOP_UPLOAD_ENABLED",
     queueFactory: oneItemQueue,
     value: undefined,
-    expectedOutcome: "disabled",
-    expectedCalls: 0,
+    expectedOutcome: "sent",
+    expectedCalls: 1,
   },
   {
     label: "false ve vypínači nahrávek zůstane disabled",
@@ -459,12 +778,12 @@ const PRODUCTION_KILLSWITCH_CASES = [
     expectedCalls: 1,
   },
   {
-    label: "produkčně zapnutý časový vypínač nepovolí nahrávku",
+    label: "zapnutý časový vypínač nemění schválenou nahrávku",
     environmentName: "DESKTOP_TIME_ENABLED",
     queueFactory: oneItemQueue,
     value: ENABLED_SETTING,
-    expectedOutcome: "disabled",
-    expectedCalls: 0,
+    expectedOutcome: "sent",
+    expectedCalls: 1,
   },
   {
     label: "nenastavený vypínač času zůstane disabled",
@@ -720,7 +1039,13 @@ describe("stavový automat fronty", () => {
       expect(second.added).toBe(false);
       const [item] = (await loadQueue(queuePath)).items;
       expect(item.tracks).toEqual({ microphone: "/nahravky/session-microphone.webm" });
-      expect(item.server.uploadedBytes).toEqual({ microphone: 0 });
+      expect(item.server).toEqual({
+        sessionId: null,
+        tracks: {
+          microphone: { recordingId: null, uploadedBytes: 0 },
+          system: { recordingId: null, uploadedBytes: 0 },
+        },
+      });
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -793,6 +1118,7 @@ describe("stavový automat fronty", () => {
         code: "rate_limited",
         failureClass: FAILURE_CLASSES.RETRYABLE,
         retryAfterMs: 90_000,
+        status: 429,
       });
     });
 
@@ -801,10 +1127,88 @@ describe("stavový automat fronty", () => {
       random: () => 0,
     });
 
-    expect(result.outcome).toBe("retry_scheduled");
-    expect(result.item.nextAttemptAt).toBe(now + 90_000);
-    // 🔴 Kontrola, že to opravdu není náš rozvrh: ten by dal now + 30 000.
-    expect(result.item.nextAttemptAt).not.toBe(now + 30_000);
+    expect(result).toMatchObject({
+      outcome: "rate_limited",
+      retryAt: now + 90_000,
+      item: { attempts: 0, nextAttemptAt: null, state: QUEUE_STATES.WAITING },
+    });
+  });
+
+  it("429 zachová původní attempts i částečný per-track progress a bez intervalu čeká hodinu", async () => {
+    const now = 1_777_000_001_000;
+    const queue = oneItemQueue();
+    queue.items[0].attempts = 4;
+    const result = await processNext(
+      queue,
+      killswitches(ENABLED_SETTING),
+      async (_item, reportProgress) => {
+        await reportProgress({
+          track: "microphone",
+          recordingId: SERVER_MICROPHONE_ID,
+          sessionId: SERVER_SESSION_ID,
+          uploadedBytes: 120,
+        });
+        throw Object.assign(new Error("jakýkoli text"), { status: 429 });
+      },
+      { now },
+    );
+
+    expect(result).toMatchObject({
+      outcome: "rate_limited",
+      retryAt: now + 60 * 60 * 1_000,
+      item: {
+        attempts: 4,
+        state: QUEUE_STATES.WAITING,
+        server: {
+          sessionId: SERVER_SESSION_ID,
+          tracks: { microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 } },
+        },
+      },
+    });
+  });
+
+  it("HTTP 429 u timeentry zachová původní retryable kontrakt bez rate_limited outcome", async () => {
+    const queued = enqueueTimeEntry(createQueue(), {
+      clientTimeEntryId: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+      projectId: "865a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+      startedAt: "2026-09-14T08:00:00.000Z",
+      endedAt: "2026-09-14T08:30:00.000Z",
+    }).queue;
+    const result = await processNext(
+      queued,
+      killswitches(undefined, ENABLED_SETTING),
+      async () => {
+        throw Object.assign(new Error("time limit"), { status: 429, retryAfterMs: 90_000 });
+      },
+      { now: 1_777_000_001_000, random: () => 0 },
+    );
+
+    expect(result).toMatchObject({
+      outcome: "retry_scheduled",
+      item: { attempts: 1, kind: QUEUE_ITEM_KINDS.TIME },
+    });
+    expect(result).not.toHaveProperty("retryAt");
+  });
+
+  it("cooldown na přesné hraně expirace není chyba a dovolí recording send", async () => {
+    const now = 1_777_000_001_000;
+    const send = vi.fn(async () => {});
+    const result = await processNext(
+      {
+        ...oneItemQueue(),
+        items: [{ ...oneItemQueue().items[0], ownerFingerprint: CURRENT_OWNER }],
+      },
+      killswitches(ENABLED_SETTING),
+      send,
+      {
+        currentOwnerFingerprint: CURRENT_OWNER,
+        now,
+        recordingCooldownRetryAt: now,
+      },
+    );
+
+    expect(result.outcome).toBe("sent");
+    expect(send).toHaveBeenCalledOnce();
   });
 
   it("retry prodlevu počítá až od dokončení neúspěšného pokusu", async () => {
@@ -995,7 +1399,7 @@ describe("stavový automat fronty", () => {
         attempts: 1,
         lastFailureReason: "server odmítl nahrávku",
         state: QUEUE_STATES.SENDING,
-      }));
+      }), expect.any(Function));
       expect(result.outcome).toBe("sent");
       expect(result.item.state).toBe(QUEUE_STATES.SENT);
     },
@@ -1009,25 +1413,196 @@ describe("stavový automat fronty", () => {
     expect(retryDelayMs(8, policy, () => 0)).toBe(350);
   });
 
+  it("připne firmu jediným pre-init eventem a zachová ji v dalším progressu", () => {
+    const queued = oneItemQueue();
+    const companyTabidooId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const pinned = applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      companyTabidooId,
+    });
+    const initialized = applyServerProgress(pinned.queue, pinned.item.clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    });
+    expect(initialized.item.server.companyTabidooId).toBe(companyTabidooId);
+    expect(() => applyServerProgress(initialized.queue, initialized.item.clientRecordingId, {
+      companyTabidooId: "765a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+    })).toThrow(/po zahájení/u);
+    expect(() => applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      companyTabidooId,
+      track: "microphone",
+    })).toThrow(/samostatný/u);
+  });
+
+  it("explicitní retry přepne firmu jen bez serverových ID a zachová initialized pin", () => {
+    const oldCompany = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const newCompany = "765a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const queued = oneItemQueue();
+    queued.items[0] = {
+      ...queued.items[0],
+      lastFailureReason: "company_out_of_scope (HTTP 403)",
+      server: { ...queued.items[0].server, companyTabidooId: oldCompany },
+      state: QUEUE_STATES.FAILED,
+    };
+    const rebound = rebindCompanyOutOfScopeItem(
+      queued,
+      queued.items[0].clientRecordingId,
+      newCompany,
+    );
+    expect(rebound.item.server.companyTabidooId).toBe(newCompany);
+
+    const initialized = applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    });
+    const blocked = rebindCompanyOutOfScopeItem(
+      initialized.queue,
+      initialized.item.clientRecordingId,
+      newCompany,
+    );
+    expect(blocked.item.server.companyTabidooId).toBe(oldCompany);
+    expect(blocked.item.server.tracks.microphone.recordingId).toBe(SERVER_MICROPHONE_ID);
+  });
+
   it("offsety obou stop vždy převezme ze serveru místo lokálního odhadu", () => {
     const queued = oneItemQueue();
     const first = applyServerProgress(queued, queued.items[0].clientRecordingId, {
-      recordingId: "server-recording-id",
+      recordingId: SERVER_MICROPHONE_ID,
       uploadedBytes: { microphone: 90, system: 180 },
     });
     const correctedByServer = applyServerProgress(
       first.queue,
       queued.items[0].clientRecordingId,
       {
-        recordingId: "server-recording-id",
+        recordingId: SERVER_MICROPHONE_ID,
         uploadedBytes: { microphone: 40, system: 80 },
       },
     );
 
     expect(correctedByServer.item.server).toEqual({
-      recordingId: "server-recording-id",
-      uploadedBytes: { microphone: 40, system: 80 },
+      legacyRecordingId: SERVER_MICROPHONE_ID,
+      sessionId: null,
+      tracks: {
+        microphone: { recordingId: null, uploadedBytes: 40 },
+        system: { recordingId: null, uploadedBytes: 80 },
+      },
     });
+  });
+
+  it("ukládá recordingId po stopách a odmítne pozdější změnu ID nebo session", () => {
+    const queued = oneItemQueue();
+    const microphone = applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    });
+    const completed = applyServerProgress(
+      microphone.queue,
+      queued.items[0].clientRecordingId,
+      {
+        recordingId: SERVER_MICROPHONE_ID,
+        sessionId: SERVER_SESSION_ID,
+        track: "microphone",
+        uploadedBytes: 120,
+      },
+    );
+
+    expect(completed.item.server).toEqual({
+      sessionId: SERVER_SESSION_ID,
+      tracks: {
+        microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 },
+        system: { recordingId: null, uploadedBytes: 0 },
+      },
+    });
+    expect(() => applyServerProgress(completed.queue, completed.item.clientRecordingId, {
+      recordingId: "00000000-0000-4000-8000-000000000099",
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    })).toThrow(/změnil recordingId/u);
+    expect(() => applyServerProgress(completed.queue, completed.item.clientRecordingId, {
+      recordingId: SERVER_SYSTEM_ID,
+      sessionId: "00000000-0000-4000-8000-000000000199",
+      track: "system",
+    })).toThrow(/změnil sessionId/u);
+  });
+
+  it("odmítne neplatné nebo společné recordingId dvou stop", () => {
+    const queued = oneItemQueue();
+    expect(() => applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      recordingId: "server-microphone",
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    })).toThrow(/recordingId musí být GUID/u);
+
+    const microphone = applyServerProgress(queued, queued.items[0].clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "microphone",
+    });
+    expect(() => applyServerProgress(microphone.queue, queued.items[0].clientRecordingId, {
+      recordingId: SERVER_MICROPHONE_ID,
+      sessionId: SERVER_SESSION_ID,
+      track: "system",
+    })).toThrow(/stejné recordingId dvěma stopám/u);
+  });
+
+  it("propustí ověřený návrat senderu do výsledku i per-stopového stavu fronty", async () => {
+    const sendResult = {
+      completedUploads: 2,
+      quotaWarning: false,
+      uploads: [
+        {
+          recordingId: SERVER_MICROPHONE_ID,
+          sessionId: SERVER_SESSION_ID,
+          track: "microphone",
+          uploadedBytes: 120,
+        },
+        {
+          recordingId: SERVER_SYSTEM_ID,
+          sessionId: SERVER_SESSION_ID,
+          track: "system",
+          uploadedBytes: 240,
+        },
+      ],
+    };
+
+    const result = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => sendResult,
+      { now: 1_777_000_001_000 },
+    );
+
+    expect(result).toMatchObject({ outcome: "sent", sendResult });
+    expect(result.item.server).toEqual({
+      sessionId: SERVER_SESSION_ID,
+      tracks: {
+        microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 },
+        system: { recordingId: SERVER_SYSTEM_ID, uploadedBytes: 240 },
+      },
+    });
+  });
+
+  it("výsledek senderu nesmí uložit neexistující stopu ani označit položku jako odeslanou", async () => {
+    const result = await processNext(
+      oneItemQueue(),
+      killswitches(ENABLED_SETTING),
+      async () => ({
+        completedUploads: 1,
+        uploads: [{
+          recordingId: "server-camera",
+          sessionId: SERVER_SESSION_ID,
+          track: "camera",
+          uploadedBytes: 10,
+        }],
+      }),
+      { now: 1_777_000_001_000, random: () => 0 },
+    );
+
+    expect(result.outcome).toBe("retry_scheduled");
+    expect(result.queue.items[0].state).toBe(QUEUE_STATES.WAITING);
+    expect(result.queue.items[0].server.tracks.microphone.recordingId).toBeNull();
   });
 
   // Postup pro nahrávku, která ve frontě NENÍ, znamená, že se rozešel stav klienta a serveru.
@@ -1139,7 +1714,88 @@ describe("stavový automat fronty", () => {
       attempts: 0,
       nextAttemptAt: null,
       lastFailureReason: null,
+      createdAt: null,
+      durationMs: null,
+      sizeBytes: null,
+      server: {
+        sessionId: null,
+        tracks: {
+          microphone: { recordingId: null, uploadedBytes: 0 },
+          system: { recordingId: null, uploadedBytes: 0 },
+        },
+      },
+      blockReason: null,
+      ownership: "unavailable",
+      title: null,
+      uploadIntent: "approved",
     });
+  });
+
+  it("projekce odliší neznámého, vlastního a cizího vlastníka bez zveřejnění otisku", () => {
+    const currentOwner = `sha256:${"a".repeat(64)}`;
+    const otherOwner = `sha256:${"b".repeat(64)}`;
+    const queue = createQueue();
+    queue.items = [
+      { ...oneItemQueue("11111111-1111-4111-8111-111111111111").items[0], ownerFingerprint: null },
+      {
+        ...oneItemQueue("22222222-2222-4222-8222-222222222222").items[0],
+        lastFailureReason: "unauthorized",
+        ownerFingerprint: currentOwner,
+        requiresHumanAction: true,
+      },
+      { ...oneItemQueue("33333333-3333-4333-8333-333333333333").items[0], ownerFingerprint: otherOwner },
+    ];
+
+    const view = reduceQueueForRenderer(queue, currentOwner);
+
+    expect(view.map((item) => item.ownership)).toEqual(["unknown", "current", "other"]);
+    expect(view[0]).not.toHaveProperty("requiresHumanAction");
+    expect(JSON.stringify(view)).not.toContain(currentOwner);
+    expect(JSON.stringify(view)).not.toContain(otherOwner);
+    expect(reduceQueueForRenderer(queue).map((item) => item.ownership))
+      .toEqual(["unknown", "unavailable", "unavailable"]);
+  });
+
+  it("projekce zpřístupní jen bezpečná serverová pole a přesný důvod blokace", () => {
+    const queue = oneItemQueue();
+    queue.items[0] = {
+      ...queue.items[0],
+      createdAt: "2026-08-25T08:00:00.000Z",
+      durationMs: 1_800_000,
+      sizeBytes: 360,
+      lastFailureReason: "Nahrávka patří jinému účtu",
+      requiresHumanAction: true,
+      server: {
+        sessionId: SERVER_SESSION_ID,
+        token: "nesmí ven",
+        tracks: {
+          microphone: {
+            recordingId: SERVER_MICROPHONE_ID,
+            uploadedBytes: 120,
+            signedUrl: "https://example.invalid/tajne",
+          },
+          system: { recordingId: SERVER_SYSTEM_ID, uploadedBytes: 240 },
+        },
+      },
+    };
+
+    const [view] = reduceQueueForRenderer(queue);
+
+    expect(view).toMatchObject({
+      blockReason: "Nahrávka patří jinému účtu",
+      createdAt: "2026-08-25T08:00:00.000Z",
+      durationMs: 1_800_000,
+      sizeBytes: 360,
+      server: {
+        sessionId: SERVER_SESSION_ID,
+        tracks: {
+          microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 },
+          system: { recordingId: SERVER_SYSTEM_ID, uploadedBytes: 240 },
+        },
+      },
+    });
+    expect(JSON.stringify(view)).not.toContain("nesmí ven");
+    expect(JSON.stringify(view)).not.toContain("signedUrl");
   });
 
   it.each(["queue_owner_revoked", "session_owner_expired"])(
@@ -1262,14 +1918,18 @@ describe("stavový automat fronty", () => {
   const uploadEnabled = () => ({
     [killswitchNameForKind(QUEUE_ITEM_KINDS.RECORDING)]: ENABLED_SETTING,
   });
-  const queueWithRecordings = (ids) => ids.reduce(
+  const queueWithRecordings = (ids) => {
+    const queue = ids.reduce(
     (accumulated, id, order) => enqueueRecording(
       accumulated,
       recording(id),
       1_777_000_000_000 + order,
     ).queue,
-    createQueue(),
-  );
+      createQueue(),
+    );
+    queue.items = queue.items.map((item) => ({ ...item, uploadIntent: "approved" }));
+    return queue;
+  };
   const PRVNI = "11111111-1111-4111-8111-111111111111";
   const DRUHA = "22222222-2222-4222-8222-222222222222";
   const TRETI = "33333333-3333-4333-8333-333333333333";
@@ -1408,6 +2068,152 @@ describe("stavový automat fronty", () => {
 });
 
 describe("trvalé uložení fronty", () => {
+  it("potvrzené převzetí změní jedinou položku, vyčistí cizí serverová ID a zůstane držené", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-claim-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const firstId = recording().manifest.clientRecordingId;
+    const secondId = "3d4e7b61-e3d4-483c-94cc-a512454f6976";
+    const oldOwner = `sha256:${"a".repeat(64)}`;
+    const newOwner = `sha256:${"b".repeat(64)}`;
+    const queue = oneItemQueue(firstId);
+    queue.items.push(oneItemQueue(secondId).items[0]);
+    queue.items[0] = {
+      ...queue.items[0],
+      lastFailureReason: "Nahrávka patří jinému účtu",
+      ownerFingerprint: oldOwner,
+      requiresHumanAction: true,
+      server: {
+        sessionId: SERVER_SESSION_ID,
+        tracks: {
+          microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 120 },
+          system: { recordingId: SERVER_SYSTEM_ID, uploadedBytes: 240 },
+        },
+      },
+    };
+    queue.items[1] = { ...queue.items[1], ownerFingerprint: oldOwner };
+    queue.uploadCooldowns = [{ ownerFingerprint: oldOwner, retryAt: Date.now() + 60_000 }];
+    await saveQueueAtomically(queuePath, queue);
+    const send = vi.fn();
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      const before = await store.list(oldOwner);
+      const result = await store.claimRecording(firstId, before[0].revision, newOwner, {
+        guard: vi.fn(async () => true),
+      });
+      const persisted = await loadQueue(queuePath);
+
+      expect(result).toMatchObject({ claimed: true, item: { id: firstId } });
+      expect(result.item).not.toHaveProperty("ownerFingerprint");
+      expect(JSON.stringify(result)).not.toContain(directory);
+      expect(persisted.items[0]).toMatchObject({
+        attempts: 0,
+        clientRecordingId: firstId,
+        ownerFingerprint: newOwner,
+        requiresHumanAction: true,
+        state: QUEUE_STATES.WAITING,
+      });
+      expect(persisted.items[0].lastFailureReason).toMatch(/volbu odeslání/u);
+      expect(persisted.items[0].server).toEqual({
+        sessionId: null,
+        tracks: {
+          microphone: { recordingId: null, uploadedBytes: 0 },
+          system: { recordingId: null, uploadedBytes: 0 },
+        },
+      });
+      expect(persisted.items[0].manifestPath).toBe(queue.items[0].manifestPath);
+      expect(persisted.items[0].tracks).toEqual(queue.items[0].tracks);
+      expect(persisted.items[1]).toEqual(queue.items[1]);
+      expect(persisted.uploadCooldowns).toEqual(queue.uploadCooldowns);
+      expect(send).not.toHaveBeenCalled();
+
+      const reopened = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send,
+      });
+      await expect(reopened.list(newOwner)).resolves.toEqual(result.items);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("stale revision a zamítnutý guard nezapíšou převzetí", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-claim-stale-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const owner = `sha256:${"b".repeat(64)}`;
+    const queue = oneItemQueue();
+    queue.items[0] = {
+      ...queue.items[0],
+      ownerFingerprint: null,
+      lastFailureReason: "Vlastník nahrávky není potvrzený; před odesláním je nutné potvrzení člověkem",
+      requiresHumanAction: true,
+    };
+    await saveQueueAtomically(queuePath, queue);
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+
+    try {
+      const [snapshot] = await store.list();
+      await expect(store.claimRecording(queue.items[0].clientRecordingId, `sha256:${"0".repeat(64)}`, owner, {
+        guard: vi.fn(async () => true),
+      })).rejects.toThrow(/neaktuální/u);
+      await expect(store.claimRecording(queue.items[0].clientRecordingId, snapshot.revision, owner, {
+        guard: vi.fn(async () => false),
+      })).rejects.toThrow(/identit/u);
+      expect(await loadQueue(queuePath)).toEqual(queue);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ["jednostopé", ["microphone"], "microphone"],
+    ["dvoustopé", ["microphone", "system"], null],
+  ])("staré %s serverové schéma načte beze lži o stopě", async (
+    _label,
+    trackKinds,
+    assignedTrack,
+  ) => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-server-migration-"));
+    const queuePath = path.join(directory, "outgoing.json");
+    const legacy = oneItemQueue();
+    legacy.items[0].tracks = Object.fromEntries(trackKinds.map((track) => [
+      track,
+      `/nahravky/${track}.webm`,
+    ]));
+    legacy.items[0].server = {
+      recordingId: "legacy-server-id",
+      uploadedBytes: { microphone: 11 },
+    };
+    await fs.promises.writeFile(queuePath, JSON.stringify(legacy));
+
+    try {
+      const [loaded] = (await loadQueue(queuePath)).items;
+      expect(loaded.server.tracks).toEqual({
+        microphone: {
+          recordingId: assignedTrack === "microphone" ? "legacy-server-id" : null,
+          uploadedBytes: 11,
+        },
+        system: { recordingId: null, uploadedBytes: 0 },
+      });
+      if (assignedTrack === null) {
+        expect(loaded.server.legacyRecordingId).toBe("legacy-server-id");
+      } else {
+        expect(loaded.server).not.toHaveProperty("legacyRecordingId");
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("po restartu zachová data a doplní neznámého vlastníka", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-restart-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");
@@ -1461,6 +2267,38 @@ describe("trvalé uložení fronty", () => {
       "sync:r",
       "close:r",
     ]);
+  });
+});
+
+describe("čisté převzetí nahrávky", () => {
+  it.each([QUEUE_STATES.SENDING, QUEUE_STATES.SENT])("odmítne stav %s", (state) => {
+    const queue = oneItemQueue();
+    queue.items[0] = { ...queue.items[0], state };
+    expect(() => claimRecording(
+      queue,
+      queue.items[0].clientRecordingId,
+      `sha256:${"b".repeat(64)}`,
+    )).toThrow(/odesíl|odeslan/u);
+  });
+
+  it.each([null, "", "sha256:kratke", `sha256:${"G".repeat(64)}`])(
+    "odmítne neplatný otisk %j",
+    (ownerFingerprint) => {
+      expect(() => claimRecording(
+        oneItemQueue(),
+        recording().manifest.clientRecordingId,
+        ownerFingerprint,
+      )).toThrow(/otisk/u);
+    },
+  );
+
+  it("odmítne převzetí pod už uloženého vlastníka", () => {
+    const owner = `sha256:${"b".repeat(64)}`;
+    const queue = oneItemQueue();
+    queue.items[0] = { ...queue.items[0], ownerFingerprint: owner };
+
+    expect(() => claimRecording(queue, queue.items[0].clientRecordingId, owner))
+      .toThrow(/už patří/u);
   });
 });
 
@@ -1814,6 +2652,216 @@ describe("obnova osiřelých nahrávek", () => {
 });
 
 describe("perzistentní pumpa fronty", () => {
+  it("429 atomicky uloží queue i cooldown a restart ani ruční retry nepošlou request", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-restart-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const now = 1_777_000_001_000;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    const firstId = recording().manifest.clientRecordingId;
+    const secondId = "3d4e7b61-e3d4-483c-94cc-a512454f6976";
+    const stored = createQueue();
+    for (const id of [firstId, secondId]) {
+      const queued = enqueueRecording(stored, recording(id), now).item;
+      stored.items.push({ ...queued, attempts: id === firstId ? 4 : 0,
+        ownerFingerprint: CURRENT_OWNER, uploadIntent: "approved" });
+    }
+    await saveQueueAtomically(queuePath, stored);
+    const send = vi.fn(async () => {
+      throw Object.assign(new Error("limit"), { status: 429, retryAfterMs: 90_000 });
+    });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      const limited = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
+      const persisted = await loadQueue(queuePath);
+      expect(limited).toMatchObject({ outcome: "rate_limited", odeslanoVDavce: 0 });
+      expect(send).toHaveBeenCalledOnce();
+      expect(persisted.items.map((item) => item.attempts)).toEqual([4, 0]);
+      expect(persisted.uploadCooldowns).toEqual([{
+        ownerFingerprint: CURRENT_OWNER,
+        retryAt: now + 90_000,
+      }]);
+      expect(limited.queue).toEqual(persisted);
+
+      const restartedSend = vi.fn();
+      const restarted = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: restartedSend,
+      });
+      await expect(restarted.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      await expect(restarted.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER))
+        .resolves.toMatchObject({ outcome: "idle" });
+      expect(restartedSend).not.toHaveBeenCalled();
+      expect(await loadQueue(queuePath)).toEqual(persisted);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("cooldowny zůstávají per-owner přes A→B→A a expirace se uklidí atomickou mutací", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-owners-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const ownerA = `sha256:${"a".repeat(64)}`;
+    const ownerB = `sha256:${"b".repeat(64)}`;
+    let now = 1_777_000_001_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const queue = createQueue();
+    const aItem = enqueueRecording(queue, recording(), now).item;
+    const bItem = enqueueRecording(queue, recording("3d4e7b61-e3d4-483c-94cc-a512454f6976"), now).item;
+    await saveQueueAtomically(queuePath, {
+      ...queue,
+      items: [
+        { ...aItem, ownerFingerprint: ownerA, uploadIntent: "approved" },
+        { ...bItem, ownerFingerprint: ownerB, uploadIntent: "approved" },
+      ],
+      uploadCooldowns: [{ ownerFingerprint: ownerA, retryAt: now + 60_000 }],
+    });
+    const send = vi.fn(async () => {});
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      await expect(store.pump(killswitches(ENABLED_SETTING), ownerA))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      expect(send).not.toHaveBeenCalled();
+      await expect(store.pump(killswitches(ENABLED_SETTING), ownerB))
+        .resolves.toMatchObject({ odeslanoVDavce: 1 });
+      expect(send).toHaveBeenCalledOnce();
+      await expect(store.pump(killswitches(ENABLED_SETTING), ownerA))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      expect(send).toHaveBeenCalledOnce();
+
+      now += 60_001;
+      const expiryQueuePath = path.join(directory, "expiry", "outgoing.json");
+      await saveQueueAtomically(expiryQueuePath, {
+        ...queue,
+        items: [{ ...aItem, ownerFingerprint: ownerA, uploadIntent: "approved" }],
+        uploadCooldowns: [{ ownerFingerprint: ownerA, retryAt: now - 1 }],
+      });
+      const expirySend = vi.fn(async () => {});
+      const expiryStore = createOutboundQueueStore({
+        filePath: expiryQueuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: expirySend,
+      });
+      await expect(expiryStore.pump(killswitches(ENABLED_SETTING), ownerA))
+        .resolves.toMatchObject({ odeslanoVDavce: 1 });
+      expect(expirySend).toHaveBeenCalledOnce();
+      expect((await loadQueue(expiryQueuePath)).uploadCooldowns).toEqual([]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("vadný cooldown se načte fail-closed a read-only list expirovaný záznam nemaže", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-validation-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    try {
+      await fs.promises.mkdir(path.dirname(queuePath), { recursive: true });
+      await fs.promises.writeFile(queuePath, JSON.stringify({
+        schemaVersion: 1,
+        items: [],
+        uploadCooldowns: [{ ownerFingerprint: "sha256:kratke", retryAt: Date.now() + 1_000 }],
+      }));
+      await expect(loadQueue(queuePath)).rejects.toThrow(/uploadCooldowns\.ownerFingerprint/u);
+      await fs.promises.writeFile(queuePath, JSON.stringify({
+        schemaVersion: 1,
+        items: [],
+        uploadCooldowns: [{ ownerFingerprint: [CURRENT_OWNER], retryAt: Date.now() + 1_000 }],
+      }));
+      await expect(loadQueue(queuePath)).rejects.toThrow(/uploadCooldowns\.ownerFingerprint/u);
+
+      const expired = {
+        schemaVersion: 1,
+        items: [],
+        uploadCooldowns: [{ ownerFingerprint: CURRENT_OWNER, retryAt: 1 }],
+      };
+      await fs.promises.writeFile(queuePath, JSON.stringify(expired));
+      const store = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      await store.list(CURRENT_OWNER);
+      expect(JSON.parse(await fs.promises.readFile(queuePath, "utf8"))).toEqual(expired);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("cooldown nahrávek neblokuje časovou položku s vlastním killswitchem", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-time-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const now = Date.now();
+    const time = enqueueTimeEntry(createQueue(), {
+      clientTimeEntryId: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+      projectId: "865a78f8-b47f-4bb8-8b34-f4ec07f6f516",
+      startedAt: "2026-09-14T08:00:00.000Z",
+      endedAt: "2026-09-14T08:30:00.000Z",
+    }, now).queue;
+    await saveQueueAtomically(queuePath, {
+      ...time,
+      uploadCooldowns: [{ ownerFingerprint: CURRENT_OWNER, retryAt: now + 60_000 }],
+    });
+    const send = vi.fn(async (item) => { void item; });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      const result = await store.pump(
+        killswitches(ENABLED_SETTING, ENABLED_SETTING),
+        CURRENT_OWNER,
+      );
+      expect(result.odeslanoVDavce).toBe(1);
+      expect(send).toHaveBeenCalledOnce();
+      expect(send.mock.calls[0][0].kind).toBe(QUEUE_ITEM_KINDS.TIME);
+      expect((await loadQueue(queuePath)).uploadCooldowns).toHaveLength(1);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("store ukotví cooldown na okamžik přijetí pomalé 429 odpovědi", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-cooldown-response-time-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const startedAt = 1_777_000_001_000;
+    const receivedAt = startedAt + 120_000;
+    let now = startedAt;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const send = vi.fn(async () => {
+      now = receivedAt;
+      throw Object.assign(new Error("limit"), { status: 429, retryAfterMs: 90_000 });
+    });
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send,
+    });
+
+    try {
+      await enqueueApproved(store, ownedRecording());
+      await expect(store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER))
+        .resolves.toMatchObject({ outcome: "rate_limited" });
+      expect((await loadQueue(queuePath)).uploadCooldowns).toEqual([{
+        ownerFingerprint: CURRENT_OWNER,
+        retryAt: receivedAt + 90_000,
+      }]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
   it("po selhání fsync adresáře znovu načte stav po dokončeném rename", async () => {
     const queuePath = "/virtual/queue/outgoing.json";
     const files = new Map();
@@ -1912,10 +2960,10 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording());
-      await store.pump(killswitches(ENABLED_SETTING));
+      await enqueueApproved(store, ownedRecording());
+      await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
       for (let pass = 0; pass < 4; pass += 1) {
-        await store.pump(killswitches(ENABLED_SETTING));
+        await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
       }
 
       expect(send).toHaveBeenCalledTimes(1);
@@ -1925,6 +2973,118 @@ describe("perzistentní pumpa fronty", () => {
         nextAttemptAt: null,
         state: QUEUE_STATES.FAILED,
       });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("store retry přepne 403 pin jen zero-ID položce a initialized položku neodešle", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-company-rebind-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const manifestPath = path.join(recordingsDirectory, "rebind.manifest.json");
+    const microphonePath = path.join(recordingsDirectory, "rebind-microphone.webm");
+    const oldCompany = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const newCompany = "765a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const bytes = Buffer.from("mikrofon");
+    const manifest = {
+      schemaVersion: 1,
+      clientRecordingId: "9e586e55-d688-43f1-8a80-a3d61e754f3e",
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      state: "complete",
+      tracks: {
+        microphone: {
+          fileName: path.basename(microphonePath),
+          sha256: createHash("sha256").update(bytes).digest("hex"),
+          sizeBytes: bytes.byteLength,
+          startedAt: "2026-09-14T10:00:00.000Z",
+          endedAt: "2026-09-14T10:00:01.000Z",
+        },
+      },
+    };
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.writeFile(manifestPath, JSON.stringify(manifest));
+      await fs.promises.writeFile(microphonePath, bytes);
+      const seedStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: vi.fn(),
+      });
+      await enqueueApproved(seedStore, {
+        manifest,
+        manifestPath,
+        ownerFingerprint: CURRENT_OWNER,
+        trackPaths: { microphone: microphonePath },
+      });
+      const seeded = await loadQueue(queuePath);
+      const failedZero = {
+        ...seeded,
+        items: [{
+          ...seeded.items[0],
+          attempts: 1,
+          lastFailureReason: "company_out_of_scope (HTTP 403)",
+          nextAttemptAt: null,
+          requiresHumanAction: true,
+          server: { ...seeded.items[0].server, companyTabidooId: oldCompany },
+          state: QUEUE_STATES.FAILED,
+        }],
+      };
+      await saveQueueAtomically(queuePath, failedZero);
+      const sendZero = vi.fn(async (item) => {
+        expect(item.server.companyTabidooId).toBe(newCompany);
+      });
+      const zeroStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: sendZero,
+      });
+      const zeroSnapshot = (await zeroStore.listLocalRecordings(CURRENT_OWNER)).items[0];
+      await zeroStore.actOnRecording({
+        clientRecordingId: manifest.clientRecordingId,
+        currentOwnerFingerprint: CURRENT_OWNER,
+        expectedFileRevision: zeroSnapshot.fileRevision,
+        expectedRevision: zeroSnapshot.revision,
+        getCurrentCompany: async () => newCompany,
+        guard: async () => true,
+        killswitches: killswitches(ENABLED_SETTING),
+        mode: "retry",
+      });
+      expect(sendZero).toHaveBeenCalledOnce();
+      expect((await loadQueue(queuePath)).items[0].server.companyTabidooId).toBe(newCompany);
+
+      const initialized = {
+        ...failedZero,
+        items: [{
+          ...failedZero.items[0],
+          server: {
+            ...failedZero.items[0].server,
+            companyTabidooId: undefined,
+            sessionId: SERVER_SESSION_ID,
+          },
+        }],
+      };
+      await saveQueueAtomically(queuePath, initialized);
+      const sendInitialized = vi.fn();
+      const initializedStore = createOutboundQueueStore({
+        filePath: queuePath,
+        queueModulePromise: import("../src/lib/queue.js"),
+        send: sendInitialized,
+      });
+      const initializedSnapshot = (await initializedStore.listLocalRecordings(CURRENT_OWNER)).items[0];
+      await expect(initializedStore.actOnRecording({
+        clientRecordingId: manifest.clientRecordingId,
+        currentOwnerFingerprint: CURRENT_OWNER,
+        expectedFileRevision: initializedSnapshot.fileRevision,
+        expectedRevision: initializedSnapshot.revision,
+        getCurrentCompany: async () => newCompany,
+        guard: async () => true,
+        killswitches: killswitches(ENABLED_SETTING),
+        mode: "retry",
+      })).rejects.toThrow(/Inicializovanou nahrávku/u);
+      expect(sendInitialized).not.toHaveBeenCalled();
+      expect((await loadQueue(queuePath)).items[0].server.sessionId).toBe(SERVER_SESSION_ID);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -1960,12 +3120,12 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording(prvni));
-      await store.enqueueRecording(recording(druha));
-      await store.enqueueRecording(recording(treti));
-      await store.enqueueRecording(recording(ctvrta));
+      await enqueueApproved(store, ownedRecording(prvni));
+      await enqueueApproved(store, ownedRecording(druha));
+      await enqueueApproved(store, ownedRecording(treti));
+      await enqueueApproved(store, ownedRecording(ctvrta));
 
-      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
       // Jediná pumpa sáhla na tři položky — dřív by to byla jedna a zbytek by čekal na
       // další spuštění appky.
@@ -2002,11 +3162,11 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording("5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"));
-      await store.enqueueRecording(recording("6b2c3d4e-5f6a-4b7c-8d8e-0f1a2b3c4d5e"));
-      await store.enqueueRecording(recording("7c3d4e5f-6a7b-4c8d-8e9f-1a2b3c4d5e6f"));
+      await enqueueApproved(store, ownedRecording("5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"));
+      await enqueueApproved(store, ownedRecording("6b2c3d4e-5f6a-4b7c-8d8e-0f1a2b3c4d5e"));
+      await enqueueApproved(store, ownedRecording("7c3d4e5f-6a7b-4c8d-8e9f-1a2b3c4d5e6f"));
 
-      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
       // Odeslaly se tři — a to musí být vidět, i když poslední průchod už nic nenašel.
       expect(vysledek.odeslanoVDavce).toBe(3);
@@ -2038,12 +3198,12 @@ describe("perzistentní pumpa fronty", () => {
 
     try {
       for (let poradi = 0; poradi < 25; poradi += 1) {
-        await store.enqueueRecording(
-          recording(`00000000-0000-4000-8000-${String(poradi).padStart(12, "0")}`),
+        await enqueueApproved(store,
+          ownedRecording(`00000000-0000-4000-8000-${String(poradi).padStart(12, "0")}`),
         );
       }
 
-      const vysledek = await store.pump(killswitches(ENABLED_SETTING));
+      const vysledek = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
       // Odešlo jich právě tolik, kolik strop dovolí — ne celá fronta.
       expect(send).toHaveBeenCalledTimes(20);
@@ -2058,7 +3218,7 @@ describe("perzistentní pumpa fronty", () => {
     }
   });
 
-  it("ruční retry vynuluje prodlevu, uloží ji a hned probudí pumpu", async () => {
+  it("stará hromadná retry cesta už nahrávku znovu neodešle", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-retry-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");
     const send = vi.fn()
@@ -2071,26 +3231,25 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording());
-      const first = await store.pump(killswitches(ENABLED_SETTING));
+      await enqueueApproved(store, ownedRecording());
+      const first = await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
       expect(first.outcome).toBe("retry_scheduled");
       expect((await loadQueue(queuePath)).items[0].nextAttemptAt).not.toBeNull();
 
-      const retried = await store.retry(killswitches(ENABLED_SETTING));
+      const retried = await store.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
-      expect(retried.outcome).toBe("sent");
-      expect(send).toHaveBeenCalledTimes(2);
+      expect(retried.outcome).toBe("idle");
+      expect(send).toHaveBeenCalledTimes(1);
       expect((await loadQueue(queuePath)).items[0]).toMatchObject({
-        attempts: 2,
-        nextAttemptAt: null,
-        state: QUEUE_STATES.SENT,
+        attempts: 1,
+        state: QUEUE_STATES.WAITING,
       });
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
   });
 
-  it("ruční retry přeskočí vlastníka čekajícího na člověka a opravdu odešle běžnou položku", async () => {
+  it("stará hromadná retry cesta neodešle ani běžnou nahrávku vedle lidské blokace", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-human-retry-"));
     const queuePath = path.join(directory, "queue", "outgoing.json");
     const firstId = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
@@ -2110,21 +3269,20 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording(firstId));
-      expect((await store.pump(killswitches(ENABLED_SETTING))).outcome).toBe("paused");
+      await enqueueApproved(store, ownedRecording(firstId));
+      expect((await store.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER)).outcome).toBe("paused");
       const humanBefore = (await loadQueue(queuePath)).items[0];
-      await store.enqueueRecording(recording(secondId));
+      await enqueueApproved(store, ownedRecording(secondId));
 
-      const retried = await store.retry(killswitches(ENABLED_SETTING));
+      const retried = await store.retry(killswitches(ENABLED_SETTING), CURRENT_OWNER);
 
-      expect(retried.outcome).toBe("sent");
-      expect(send).toHaveBeenCalledTimes(2);
-      expect(send.mock.calls[1][0].clientRecordingId).toBe(secondId);
+      expect(retried.outcome).toBe("idle");
+      expect(send).toHaveBeenCalledTimes(1);
       const persisted = await loadQueue(queuePath);
       expect(persisted.items[0]).toEqual(humanBefore);
       expect(persisted.items[1]).toMatchObject({
         clientRecordingId: secondId,
-        state: QUEUE_STATES.SENT,
+        state: QUEUE_STATES.WAITING,
       });
     } finally {
       await rm(directory, { recursive: true, force: true });
@@ -2138,6 +3296,7 @@ describe("perzistentní pumpa fronty", () => {
     const microphonePath = path.join(recordingsDirectory, "microphone.webm");
     const systemPath = path.join(recordingsDirectory, "system.webm");
     const item = recording();
+    item.manifestPath = path.join(recordingsDirectory, "recording.manifest.json");
     item.trackPaths = { microphone: microphonePath, system: systemPath };
     const store = createOutboundQueueStore({
       filePath: queuePath,
@@ -2147,6 +3306,7 @@ describe("perzistentní pumpa fronty", () => {
 
     try {
       await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await fs.promises.writeFile(item.manifestPath, JSON.stringify(item.manifest));
       await fs.promises.writeFile(microphonePath, Buffer.alloc(7));
       await fs.promises.writeFile(systemPath, Buffer.alloc(11));
       await store.enqueueRecording(item);
@@ -2158,11 +3318,15 @@ describe("perzistentní pumpa fronty", () => {
       });
       const view = await reopenedStore.list();
 
-      expect(view[0]).toMatchObject({ sizeBytes: 18 });
+      expect(view[0]).toMatchObject({
+        createdAt: "2026-08-25T08:00:00.000Z",
+        durationMs: 1_800_000,
+        sizeBytes: 18,
+      });
       expect(JSON.stringify(view)).not.toContain(directory);
 
       await fs.promises.unlink(systemPath);
-      expect((await reopenedStore.list())[0]).not.toHaveProperty("sizeBytes");
+      expect((await reopenedStore.list())[0]).toHaveProperty("sizeBytes", null);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -2179,8 +3343,8 @@ describe("perzistentní pumpa fronty", () => {
     });
 
     try {
-      await store.enqueueRecording(recording());
-      const result = await store.pump(killswitches());
+      await enqueueApproved(store, ownedRecording());
+      const result = await store.pump(killswitches(), CURRENT_OWNER);
 
       expect(result).toMatchObject({ outcome: "disabled" });
       expect(send).toHaveBeenCalledTimes(0);
@@ -2188,6 +3352,203 @@ describe("perzistentní pumpa fronty", () => {
         attempts: 0,
         state: QUEUE_STATES.WAITING,
       });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("trusted detail pro serverové ověření", () => {
+  it("čte čerstvý primární manifest podle row ID/revize a nevrací cesty", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-verification-target-"));
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const manifestPath = path.join(recordingsDirectory, "meeting.manifest.json");
+    const microphonePath = path.join(recordingsDirectory, "meeting-microphone.webm");
+    const systemPath = path.join(recordingsDirectory, "meeting-system.webm");
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const owner = `sha256:${"a".repeat(64)}`;
+    const manifest = createManifest({
+      clientRecordingId: id,
+      createdAt: "2026-09-14T10:00:00.000Z",
+      closedAt: "2026-09-14T10:00:01.000Z",
+      tracks: {
+        microphone: {
+          fileName: path.basename(microphonePath),
+          sha256: "b".repeat(64), sizeBytes: 12,
+          startedAt: "2026-09-14T10:00:00.000Z", endedAt: "2026-09-14T10:00:01.000Z",
+        },
+        system: {
+          fileName: path.basename(systemPath),
+          sha256: "c".repeat(64), sizeBytes: 34,
+          startedAt: "2026-09-14T10:00:00.000Z", endedAt: "2026-09-14T10:00:01.000Z",
+        },
+      },
+    }, "complete");
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await fs.promises.mkdir(recordingsDirectory, { recursive: true });
+      await Promise.all([
+        fs.promises.writeFile(manifestPath, JSON.stringify(manifest)),
+        fs.promises.writeFile(microphonePath, "microphone"),
+        fs.promises.writeFile(systemPath, "system"),
+      ]);
+      await store.enqueueRecording({
+        manifest, manifestPath, ownerFingerprint: owner,
+        trackPaths: { microphone: microphonePath, system: systemPath },
+      });
+      const persisted = await loadQueue(queuePath);
+      persisted.items[0].server.tracks.microphone.recordingId = SERVER_MICROPHONE_ID;
+      persisted.items[0].server.tracks.system.recordingId = SERVER_SYSTEM_ID;
+      await saveQueueAtomically(queuePath, persisted);
+      const snapshot = await store.listLocalRecordings(owner);
+      const revision = snapshot.items[0].revision;
+
+      const trusted = await store.getRecordingVerificationTarget(id, revision, owner);
+      expect(trusted).toEqual({
+        id,
+        ownerFingerprint: owner,
+        revision,
+        tracks: {
+          microphone: { recordingId: SERVER_MICROPHONE_ID, declaredBytes: 12, sha256: "b".repeat(64) },
+          system: { recordingId: SERVER_SYSTEM_ID, declaredBytes: 34, sha256: "c".repeat(64) },
+        },
+      });
+      expect(JSON.stringify(trusted)).not.toContain(directory);
+      await expect(store.getRecordingVerificationTarget(id, `sha256:${"f".repeat(64)}`, owner))
+        .rejects.toThrow(/neaktuální/u);
+      await expect(store.getRecordingVerificationTarget(id, revision, `sha256:${"e".repeat(64)}`))
+        .rejects.toThrow(/nepatří/u);
+
+      await fs.promises.unlink(systemPath);
+      await fs.promises.symlink(microphonePath, systemPath);
+      await expect(store.getRecordingVerificationTarget(id, revision, owner))
+        .rejects.toThrow(/bezpečný soubor/u);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("recovery sidecar zachová deklarovaná data pro mock GET při chybějícím audiu a zachovaných serverových ID", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-verification-recovery-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(
+      recordingsDirectory,
+      undefined,
+      { staleMetadata: true, state: "incomplete" },
+    );
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await recoverOrphanedRecordings({
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      });
+      const queue = await loadQueue(queuePath);
+      queue.items[0].ownerFingerprint = CURRENT_OWNER;
+      queue.items[0].server.tracks.microphone.recordingId = SERVER_MICROPHONE_ID;
+      queue.items[0].server.tracks.system.recordingId = SERVER_SYSTEM_ID;
+      await saveQueueAtomically(queuePath, queue);
+      await Promise.all(Object.values(fixture.trackPaths).map((trackPath) => fs.promises.unlink(trackPath)));
+      const snapshot = await store.listLocalRecordings(CURRENT_OWNER);
+      const trusted = await store.getRecordingVerificationTarget(
+        fixture.manifest.clientRecordingId,
+        snapshot.items[0].revision,
+        CURRENT_OWNER,
+      );
+      const trustedTracks = /** @type {any} */ (trusted.tracks);
+      const fetchImpl = vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          state: "stored",
+          missing: [],
+          declaredBytes: trustedTracks.microphone.declaredBytes,
+          sha256: trustedTracks.microphone.sha256,
+        }),
+      }));
+      const verifier = verification.createRecordingVerifier({
+        fetchImpl,
+        getContext: async () => ({
+          accessToken: "token",
+          generation: 1,
+          issuer: "https://labs.ludone.cz",
+          ownerFingerprint: CURRENT_OWNER,
+          resource: "https://labs.ludone.cz/api/mcp",
+          scope: "nahravky:upload",
+        }),
+        isContextCurrent: () => true,
+        now: () => 1_000,
+      });
+      const result = await verifier.verify(trusted);
+      expect(result.tracks.microphone.status).toBe("complete");
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(JSON.stringify(trusted)).not.toContain(directory);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("legacy recovery bez ID a bez známého hashe vrátí not_verified a nula GET", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-verification-legacy-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(
+      recordingsDirectory,
+      undefined,
+      { staleMetadata: true, state: "incomplete" },
+    );
+    await fs.promises.writeFile(fixture.trackPaths.system, Buffer.alloc(0));
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    try {
+      await recoverOrphanedRecordings({
+        logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+        manifestModulePromise: import("../src/lib/manifest.js"),
+        queueStore: store,
+        recordingsDirectory,
+      });
+      const queue = await loadQueue(queuePath);
+      queue.items[0].ownerFingerprint = CURRENT_OWNER;
+      await saveQueueAtomically(queuePath, queue);
+      const snapshot = await store.listLocalRecordings(CURRENT_OWNER);
+      const trusted = await store.getRecordingVerificationTarget(
+        fixture.manifest.clientRecordingId,
+        snapshot.items[0].revision,
+        CURRENT_OWNER,
+      );
+      const trustedTracks = /** @type {any} */ (trusted.tracks);
+      expect(trustedTracks.system).toMatchObject({ recordingId: null, declaredBytes: 0, sha256: null });
+      const fetchImpl = vi.fn();
+      const verifier = verification.createRecordingVerifier({
+        fetchImpl,
+        getContext: async () => ({
+          accessToken: "token", generation: 1, issuer: "https://labs.ludone.cz",
+          ownerFingerprint: CURRENT_OWNER, resource: "https://labs.ludone.cz/api/mcp",
+          scope: "nahravky:upload",
+        }),
+        isContextCurrent: () => true,
+        now: () => 1_000,
+      });
+      const result = await verifier.verify(trusted);
+      expect(result.tracks).toMatchObject({
+        microphone: { status: "not_verified" }, system: { status: "not_verified" },
+      });
+      expect(fetchImpl).not.toHaveBeenCalled();
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

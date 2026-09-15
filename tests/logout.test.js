@@ -551,6 +551,8 @@ describe("odhlášení", () => {
     // `refreshTray(); appState.signedIn = false;`, kde lišta počítá ze zastaralého faktu.
     const faktPriPrepoctu = [];
     const refreshTray = vi.fn(() => faktPriPrepoctu.push(appState.signedIn));
+    const invalidateRecordingVerifier = vi.fn();
+    const invalidateUploadCompanySelection = vi.fn();
     const app = {};
     const safeStorage = {};
     const logger = { error: vi.fn() };
@@ -592,6 +594,8 @@ describe("odhlášení", () => {
       "notifyPanelAuthSessionChanged",
       "runAuthSessionTransition",
       "requireNoPayload",
+      "invalidateRecordingVerifier",
+      "invalidateUploadCompanySelection",
       `"use strict"; ${registration}`,
     )(
       requireModule,
@@ -610,6 +614,8 @@ describe("odhlášení", () => {
       notifyPanelAuthSessionChanged,
       runAuthSessionTransition,
       requireNoPayload,
+      invalidateRecordingVerifier,
+      invalidateUploadCompanySelection,
     );
 
     expect(requireModule).toHaveBeenCalledWith("./auth.cjs");
@@ -643,6 +649,12 @@ describe("odhlášení", () => {
     const returned = await captured.handler();
     expect(returned).toBe(sentinel);
     expect(logout).toHaveBeenCalledOnce();
+    expect(invalidateRecordingVerifier).toHaveBeenCalledOnce();
+    expect(invalidateRecordingVerifier.mock.invocationCallOrder[0])
+      .toBeLessThan(logout.mock.invocationCallOrder[0]);
+    expect(invalidateUploadCompanySelection).toHaveBeenCalledOnce();
+    expect(invalidateUploadCompanySelection.mock.invocationCallOrder[0])
+      .toBeLessThan(logout.mock.invocationCallOrder[0]);
     expect(appState.signedIn, "odhlášení musí změnit FAKT, ne ikonu").toBe(false);
     expect(appState.acceptRendererSignIn).toBe(false);
     expect(refreshTray, "a nechat stav přepočítat").toHaveBeenCalledOnce();

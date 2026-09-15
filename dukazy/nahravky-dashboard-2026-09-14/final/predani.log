@@ -1,0 +1,36 @@
+$ node /Users/dan/.claude/skills/masterplan/scripts/mp-progress.mjs nahravky-dashboard --check
+NÁLEZ: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace/docs/changes/nahravky-dashboard/progress/index.html není bajtově shodný s čerstvým renderem status.json.
+
+EXIT_CODE=1
+
+Po odstranění registrovaných worktree se přehled přegeneroval veřejným mp-progress.
+$ node /Users/dan/.claude/skills/masterplan/scripts/mp-progress.mjs nahravky-dashboard --check
+ČISTO: Nebyl nalezen zdroj tokenů; použil se vestavěný neutrální fallback.
+ČISTO: Přehled /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace/docs/changes/nahravky-dashboard/progress/index.html je bajtově shodný (8 funkcí).
+
+EXIT_CODE=0
+$ git diff --check
+
+EXIT_CODE=0
+$ git diff --name-only 475c77bf HEAD
+DAN-TODO.md
+PLAN.md
+docs/changes/nahravky-dashboard/STAV.md
+docs/changes/nahravky-dashboard/ZADANI-PRO-CODEX.md
+docs/changes/nahravky-dashboard/evidence/tasks/T-A4.report.json
+docs/changes/nahravky-dashboard/progress/index.html
+docs/changes/nahravky-dashboard/progress/status.json
+dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md
+dukazy/nahravky-dashboard-2026-09-14/final/gates-clean.log
+dukazy/nahravky-dashboard-2026-09-14/final/gui-build.log
+dukazy/nahravky-dashboard-2026-09-14/final/masterplan-lint.log
+dukazy/nahravky-dashboard-2026-09-14/final/masterplan-prvni.log
+dukazy/nahravky-dashboard-2026-09-14/final/predani.log
+dukazy/nahravky-dashboard-2026-09-14/integrace/uklid-worktrees.md
+
+EXIT_CODE=0
+$ git worktree list
+/Users/dan/Dev/ClaudeCode/ludone-desktop                                       0109d0e [main]
+/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-integrace  42f922e [feat/nahravky-dokonceni]
+
+EXIT_CODE=0

@@ -1,0 +1,59 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-akce
+
+ ❯ tests/onboarding-missing-steps.test.js (23 tests | 2 failed | 21 skipped) 91ms
+   × dva chybějící kroky onboardingu > standalone reauthentication se stavem expired=false otevře Nastavení bez auth requestu 81ms
+     → expected undefined to be 'Nastavení' // Object.is equality
+   × dva chybějící kroky onboardingu > standalone reauthentication se stavem expired=true otevře Nastavení bez auth requestu 9ms
+     → expected undefined to be 'Nastavení' // Object.is equality
+   ↓ dva chybějící kroky onboardingu > embedded reauthentication odkaz Nastavení neduplikuje
+   ↓ dva chybějící kroky onboardingu > během OAuth ukáže samostatné čekání a dovolí otevřít nový pokus
+   ↓ dva chybějící kroky onboardingu > po zavření čekacího kroku už opožděné zrušení neotevře nový OAuth
+   ↓ dva chybějící kroky onboardingu > odliší němý mikrofon od živého systémového zvuku
+   ↓ dva chybějící kroky onboardingu > odliší němý systémový zvuk od živého mikrofonu
+   ↓ dva chybějící kroky onboardingu > jediný živý snímek neoznačí test za dokončený
+   ↓ dva chybějící kroky onboardingu > po ztrátě dříve slyšeného vstupu zruší úspěšný stav
+   ↓ dva chybějící kroky onboardingu > po odmítnutém zachytávání nabídne nový pokus
+   ↓ dva chybějící kroky onboardingu > při odchodu z testu zastaví obě stopy a zavře AudioContext
+   ↓ dva chybějící kroky onboardingu > uklidí získaný mikrofon i při odchodu během otevřeného systémového pickeru
+   ↓ dva chybějící kroky onboardingu > s povoleným mikrofonem pustí dál do jednostopého režimu
+   ↓ dva chybějící kroky onboardingu > po návratu z Nastavení systému obnoví oba stavy oprávnění
+   ↓ dva chybějící kroky onboardingu > přeskočený test označí závěr jako neověřený
+   ↓ dva chybějící kroky onboardingu > neúspěšný test označí závěr jako neověřený
+   ↓ dva chybějící kroky onboardingu > až po úspěšném testu obou kanálů ukáže Připraveno
+   ↓ dva chybějící kroky onboardingu > na čekací obrazovce ukáže adresu, kterou lze zkopírovat, když se prohlížeč neotevřel
+   ↓ dva chybějící kroky onboardingu > neúspěšné kopírování (výsledek false) řekne důvod a dovolí nový úspěšný pokus
+   ↓ dva chybějící kroky onboardingu > neúspěšné kopírování (odmítnuté IPC) řekne důvod a dovolí nový úspěšný pokus
+   ↓ dva chybějící kroky onboardingu > doplní adresu přihlášení, i když ji hlavní proces zveřejní později
+   ↓ dva chybějící kroky onboardingu > po skončení pokusu přestane neznámou adresu znovu zjišťovat
+   ↓ dva chybějící kroky onboardingu > po skončení zahodí zobrazenou adresu a nepřenese ji do dalšího pokusu
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/onboarding-missing-steps.test.js > dva chybějící kroky onboardingu > standalone reauthentication se stavem expired=false otevře Nastavení bez auth requestu
+ FAIL  tests/onboarding-missing-steps.test.js > dva chybějící kroky onboardingu > standalone reauthentication se stavem expired=true otevře Nastavení bez auth requestu
+AssertionError: expected undefined to be 'Nastavení' // Object.is equality
+
+- Expected: 
+"Nastavení"
+
++ Received: 
+undefined
+
+ ❯ tests/onboarding-missing-steps.test.js:329:37
+    327|       });
+    328|       const settings = panel.document.querySelector('[data-testid="rea…
+    329|       expect(settings?.textContent).toBe("Nastavení");
+       |                                     ^
+    330|       await panel.click(settings);
+    331|       expect(panel.openSettings).toHaveBeenCalledOnce();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 21 skipped (23)
+   Start at  00:22:43
+   Duration  876ms (transform 83ms, setup 8ms, collect 556ms, tests 91ms, environment 0ms, prepare 67ms)
+
+TEST_EXIT_CODE=1

@@ -136,6 +136,13 @@ export function QueueCard({ items, onRetry, onRetryFeedback, retryError: control
           </div>
         </div>
       )}
+      {summary.recordingActionCount > 0 && (
+        <div className="queue-card__secondary">
+          <strong>Nahrávky spravuješ jednotlivě v Nastavení.</strong>
+          <button type="button" className="button button--small"
+            onClick={() => window.ludone.openSettings()}>Otevřít nahrávky</button>
+        </div>
+      )}
 
       {summary.sendingCount > 0 && (
         <div className="queue-card__secondary" role="status">

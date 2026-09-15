@@ -15,7 +15,14 @@ export function ApplicationVersion({ withBuildDate = true }) {
 }
 
 export function ApplicationUpdateStatus({ showVersion = true }) {
-  const [status, setStatus] = useState({ revision: -1, downloadedVersion: null, checkFailed: false });
+  const [status, setStatus] = useState({
+    revision: -1,
+    availableVersion: null,
+    downloading: false,
+    downloadPercent: null,
+    downloadedVersion: null,
+    checkFailed: false,
+  });
 
   useEffect(() => {
     let active = true;
@@ -33,16 +40,43 @@ export function ApplicationUpdateStatus({ showVersion = true }) {
     };
   }, []);
 
-  if (!showVersion && !status.downloadedVersion && !status.checkFailed) return null;
+  const availableVersion = typeof status.availableVersion === "string" ? status.availableVersion : null;
+  const downloadedVersion = typeof status.downloadedVersion === "string" ? status.downloadedVersion : null;
+  const downloading = status.downloading === true;
+  const downloadPercent = Number.isInteger(status.downloadPercent)
+    && status.downloadPercent >= 0
+    && status.downloadPercent <= 100
+    ? status.downloadPercent
+    : null;
+
+  if (!showVersion && !availableVersion && !downloading && !downloadedVersion && !status.checkFailed) return null;
 
   return (
     <div className="application-update-status">
       {showVersion && <ApplicationVersion />}
       <div aria-live="polite" aria-atomic="true">
-        {status.downloadedVersion && (
+        {!downloadedVersion && downloading && (
+          <div className="feature-card idle-feature-row has-notice" role="status" data-testid="update-downloading">
+            <div className="idle-feature-row__copy">
+              <strong>{availableVersion ? `Stahuje se nová verze ${availableVersion}` : "Stahuje se nová verze"}</strong>
+              <small>{downloadPercent === null
+                ? "Stahování probíhá na pozadí. Po dokončení aplikace počká na bezpečný okamžik k instalaci."
+                : `Staženo ${downloadPercent} %. Po dokončení aplikace počká na bezpečný okamžik k instalaci.`}</small>
+            </div>
+          </div>
+        )}
+        {!downloadedVersion && !downloading && availableVersion && (
+          <div className="feature-card idle-feature-row has-notice" role="status" data-testid="update-available">
+            <div className="idle-feature-row__copy">
+              <strong>Je dostupná nová verze {availableVersion}</strong>
+              <small>Aplikace ji automaticky stáhne na pozadí. Pokud se to nepodaří, zkusí to později znovu.</small>
+            </div>
+          </div>
+        )}
+        {downloadedVersion && (
           <div className="feature-card idle-feature-row has-notice" role="status" data-testid="update-downloaded">
             <div className="idle-feature-row__copy">
-              <strong>Nová verze {status.downloadedVersion} je stažená</strong>
+              <strong>Nová verze {downloadedVersion} je stažená</strong>
               <small>Až dokončíš nahrávání, uložení nahrávky a měření času, aplikace se automaticky restartuje a aktualizuje.</small>
             </div>
           </div>

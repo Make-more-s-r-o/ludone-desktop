@@ -137,12 +137,14 @@ describe("obnova access tokenu", () => {
       expect(a).toBe(b);
       expect(a.accessToken).toBe("novy-access");
       expect(a.refreshToken).toBe("novy-refresh");
+      expect(a.identity).toEqual(session.identity);
       // Discovery + výměna = dvě volání. Bez sdílené brány by jich byly čtyři a server
       // by druhý pokus vyhodnotil jako znovupoužití — to je celé riziko R15.
       expect(fetchImpl).toHaveBeenCalledTimes(2);
       expect(await relaceNaDisku(safeStorage, blobPath)).toMatchObject({
         accessToken: "novy-access",
         refreshToken: "novy-refresh",
+        identity: session.identity,
       });
     });
   });
@@ -168,6 +170,36 @@ describe("obnova access tokenu", () => {
       expect(logger.warn).toHaveBeenCalledWith("[auth] Obnova relace selhala: reason=refresh-failed");
       expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(session.refreshToken);
       expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(session.accessToken);
+    });
+  });
+
+  it("invalid_client zneplatní uloženého klienta a starý refresh token už znovu nepoužije", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      const safeStorage = fakeSafeStorage();
+      const logger = fakeLogger();
+      const session = vyprselaRelace("invalid-client");
+      const blobPath = await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async (url) => (jeDiscovery(url) ? discoveryResponse() : {
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "invalid_client" }),
+      }));
+
+      await expect(refreshStoredAuthSession({
+        app, safeStorage, storedSession: session, fetchImpl, logger,
+      })).resolves.toBeNull();
+
+      expect(fs.existsSync(blobPath)).toBe(false);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(logger.warn).toHaveBeenCalledWith("[auth] Obnova relace selhala: reason=invalid-client");
+
+      // Přímý opožděný čtenář může pořád držet starý snímek v paměti. Na síť už s ním
+      // nesmí: chybějící soubor relace jej zastaví před druhou výměnou refresh tokenu.
+      await expect(refreshStoredAuthSession({
+        app, safeStorage, storedSession: session, fetchImpl, logger,
+      })).resolves.toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(session.refreshToken);
     });
   });
 

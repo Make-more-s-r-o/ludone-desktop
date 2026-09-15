@@ -1,0 +1,100 @@
+# Task DAG
+
+`T-00` → `T-01` → `T-02` → `T-03` → `T-R1` → `T-04` → `T-05` → `T-A4` → přejímka. `T-A1` → `T-A2` → `T-A3` také předchází T-A4. `T-06` připravuje vydání nezávisle, zveřejnění čeká na přejímku a Dana.
+
+## Závislosti
+
+| Task | Závisí na | Důvod |
+|---|---|---|
+| T-00 | — | Bezpečná projekce je základ dalších operací fronty. |
+| T-01 | T-00 | Trvalý výsledek uploadu rozšiřuje projekci. |
+| T-02 | T-01 | Převzetí navazuje na trvalý stav položky; `T-01` už zahrnuje `T-00`. |
+| T-03 | T-02 | Dashboard skládá frontu až po bezpečném převzetí. |
+| T-04 | T-R1 | Serverové ověření navazuje až po 429 ochraně kvůli sdíleným hotspotům. |
+| T-05 | T-04 | Akce a volba odeslání navazují na pravdivé stavy přehledu. |
+| T-A1 | — | Přihlášení se integruje nezávisle. |
+| T-A2 | T-A1 | Oprava identity zjištěná nezávislým review; před přejímkou. |
+| T-A3 | T-A2 | Samostatný controller a komponenta firmy; zapojení sdílených hotspotů až po T5. |
+| T-A4 | T-05, T-A3 | Zapojení výběru firmy a durable upload firmy až po přijetí consentu a samostatného základu. |
+| T-I1 | T-05 | Integrační oprava popisků stavu a krátkého ID; jen renderer bez sdílených hotspotů T-A4. |
+| T-R1 | T-03 | Chování 429 se doplní po hotovém lokálním store a před serverovým ověřením. |
+| T-06 | — | Příprava vydání je nezávislá; zveřejnění má vlastní brány. |
+
+## Hotspoty a globální vlastnictví sdílených souborů
+
+Aktuální etapa sdílených hotspotů je T-A4; T-05 byl převzat z `e225880` a T-A3 z `0340c8e`. Tabulka jmenuje právě jednoho vlastníka a závazné pořadí předání. U souborů mimo aktivní packet zůstává poslední přijatý vlastník jako záznam předání; žádný worker do nich nyní nezapisuje. Není to autorizace souběhu: další vlastník začne zapisovat až po převzetí a integraci předchozí etapy.
+
+| Soubor | Aktuální vlastník | Pořadí předání | Poznámka |
+|---|---|---|---|
+| `electron/auth.cjs` | T-A3 | T-A1 → T-A2 → T-A3 | Atomický zápis firmy vázaný na skutečnou session/identitu; main a queue jsou read-only. |
+| `electron/auth.test.cjs` | T-A3 | T-A3 | Testovací sibling auth CAS. |
+| `electron/upload-company-selection.cjs` | T-A3 | T-A3 | Samostatný controller nabídky a volby firmy. |
+| `electron/upload-company-selection.test.cjs` | T-A3 | T-A3 | Testovací sibling controlleru. |
+| `src/components/UploadCompanySelector.jsx` | T-A3 | T-A3 | Samostatná komponenta, zatím bez vložení do Settings. |
+| `src/components/UploadCompanySelector.test.jsx` | T-A3 | T-A3 | Testovací sibling komponenty. |
+| `tests/volba-firmy-v-relaci.test.js` | T-A3 | T-A3 | Skutečná token storage transakce. |
+| `tests/auth-identity-fallback.test.js` | T-A2 | T-A1 → T-A2 | Regrese skutečného controlleru a uložené session. |
+| `tests/auth-controller-wiring.test.js` | T-A2 | T-A1 → T-A2 | Auth wiring. |
+| `tests/auth-refresh.test.js` | T-A2 | T-A1 → T-A2 | Zachování důvěryhodné identity při refreshi. |
+| `src/lib/queue.js` | T-A4 | T-R1 → T-05 → T-A4 | T-03 soubor nemění; T-R1 jej převezme po integraci T-03. |
+| `src/lib/queue.test.js` | T-A4 | T-R1 → T-05 → T-A4 | Testovací sibling čisté queue logiky. |
+| `src/lib/panel.js` | T-05 | T-05 | Pravdivé shrnutí held/ownership a původní panel fronty. |
+| `src/lib/panel.test.js` | T-05 | T-05 | Testovací sibling shrnutí panelu. |
+| `src/features/queue/QueueCard.jsx` | T-05 | T-05 | Jednotlivé akce nahrávek místo starého hromadného retry. |
+| `src/features/queue/QueueCard.test.jsx` | T-05 | T-05 | Testovací sibling karty fronty. |
+| `tests/queue-card-labels.test.js` | T-05 | T-05 | Existující regresní testy významu štítků. |
+| `tests/idle-panel.test.js` | T-05 | T-05 | Existující integrační průchod panelem. |
+| `tests/fronta-neztrati.test.js` | T-05 | T-05 | Transportní fixture výslovně schválí upload; původní ochrany ztráty dat zůstávají. |
+| `tests/retention.test.js` | T-05 | T-05 | Retenční fixture výslovně schválí upload; pravidla mazání se nemění. |
+| `electron/queue.cjs` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | Store, dashboard detail, cooldown, verify target a consent postupně. |
+| `electron/queue.test.cjs` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | Testovací sibling store. |
+| `electron/main.cjs` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | IPC a lifecycle bloky se předávají sekvenčně. |
+| `electron/main.test.cjs` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | Testovací sibling hlavního procesu. |
+| `electron/preload.cjs` | T-A4 | T-03 → T-04 → T-05 → T-A4 | Úzké mosty dashboardu, ověření a akcí. |
+| `electron/preload.test.cjs` | T-A4 | T-03 → T-04 → T-05 → T-A4 | Testovací sibling preloadu. |
+| `src/features/recordings/RecordingsDashboard.jsx` | T-I1 | T-03 → T-04 → T-05 → T-I1 | Pouze pravdivé popisky fronty a krátké ID bez změny akcí. |
+| `src/features/recordings/RecordingsDashboard.test.jsx` | T-I1 | T-03 → T-04 → T-05 → T-I1 | Testovací sibling dashboardu. |
+| `tests/recordings-status.test.js` | T-I1 | T-I1 | Regrese popisků bez kolize s testy T-A4. |
+| `src/styles.css` | T-05 | T-03 → T-04 → T-05 | Jen existující tokeny a kompozice. |
+| `electron/recordings-dashboard.cjs` | T-A4 | T-03 → T-05 → T-A4 | T-A4 pouze pevné vysvětlení chyb firmy v bezpečné projekci. |
+| `electron/recordings-dashboard.test.cjs` | T-A4 | T-03 → T-05 → T-A4 | Testovací sibling diskového snapshotu. |
+| `tests/queue.test.js` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | Sdílené queue a store regrese. |
+| `tests/queue-wiring.test.js` | T-A4 | T-03 → T-R1 → T-04 → T-05 → T-A4 | Sdílené main/IPC wiring regrese. |
+| `tests/logout.test.js` | T-A4 | T-04 → T-05 → T-A4 | Fixture skutečného logout handleru přijímá nové závislosti; ochrany se zachovají. |
+| `tests/ipc-sender-guard.test.js` | T-A4 | T-03 → T-04 → T-05 → T-A4 | Ochrana odesílatele nových kanálů. |
+| `tests/recordings-dashboard.test.js` | T-A4 | T-03 → T-04 → T-05 → T-A4 | Integrační renderer test dashboardu a bezpečných důvodů firmy. |
+| `tests/settings.test.js` | T-A4 | T-03 → T-05 → T-A4 | T-03 jej vlastní po review `19b89b4`; T-05 naváže později. |
+| `src/components/Settings.jsx` | T-A4 | T-05 → T-A4 | T-02 je přijatý; do další změny soubor nikdo jiný nepřebírá. |
+| `src/components/Settings.test.jsx` | T-A4 | T-05 → T-A4 | Testovací sibling Nastavení. |
+| `electron/upload-client.cjs` | T-A4 | T-R1 → T-04 → T-05 → T-A4 | Strict Retry-After, requester export a title INIT postupně. |
+| `electron/upload-client.test.cjs` | T-A4 | T-R1 → T-04 → T-05 → T-A4 | Testovací sibling upload klienta. |
+| `tests/upload-client.test.js` | T-A4 | T-R1 → T-04 → T-05 → T-A4 | Sdílené HTTP a upload regrese. |
+
+| `electron/companies.cjs` | T-A4 | T-A4 | Samostatné zapojení firmy; práce začne až po T5. |
+| `electron/companies.test.cjs` | T-A4 | T-A4 | Samostatné zapojení firmy; práce začne až po T5. |
+| `src/lib/upload-company-resolution.js` | T-A4 | T-A4 | Samostatné zapojení firmy; práce začne až po T5. |
+| `src/lib/upload-company-resolution.test.js` | T-A4 | T-A4 | Samostatné zapojení firmy; práce začne až po T5. |
+| `tests/zjisteni-firmy.test.js` | T-A4 | T-A4 | Samostatné zapojení firmy; práce začne až po T5. |
+| `tests/firma-pro-odeslani.test.js` | T-A4 | T-A4 | Samostatné zapojení firmy; práce začne až po T5. |
+| `tests/upload-company-wiring.test.js` | T-A4 | T-A4 | Samostatné zapojení firmy; práce začne až po T5. |
+| `tests/upload-company-binding.test.js` | T-A4 | T-A4 | Samostatné zapojení firmy; práce začne až po T5. |
+
+## Packety a executor
+
+| Task | Packet | Executor |
+|---|---|---|
+| T-00 | `tasks/T-00.md` | Sol fronta — zpětný přehled |
+| T-01 | `tasks/T-01.md` | Sol fronta — zpětný přehled |
+| T-02 | `tasks/T-02.md` | Sol převzetí |
+| T-03 | `tasks/T-03.md` | Sol dashboard |
+| T-R1 | `tasks/T-R1.md` | Sol 429 cooldown |
+| T-04 | `tasks/T-04.md` | Sol serverové ověření |
+| T-05 | `tasks/T-05.md` | Sol consent a per-item akce |
+| T-A1 | `tasks/T-A1.md` | Sol auth — zpětný přehled |
+| T-A2 | `tasks/T-A2.md` | Sol userinfo review oprava |
+| T-A3 | `tasks/T-A3.md` | Sol bezpečný výběr firmy — samostatný základ |
+| T-A4 | `tasks/T-A4.md` | Sol skutečný výběr firmy a zachování firmy rozpracovaného uploadu |
+| T-I1 | `tasks/T-I1.md` | Sol pravdivé popisky a identifikace nahrávky |
+| T-06 | `tasks/T-06.md` | Sol vydání — zpětný přehled |
+
+Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.

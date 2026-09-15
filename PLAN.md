@@ -1,5 +1,12 @@
 # Implementační plán — LuDone Desktop
 
+> **Aktualizace 15. 9. 2026:** Následující etapový plán vznikl 24. 8. a zůstává historickým
+> základem rozhodnutí. Dnešní implementační běh má vlastní autoritativní [stav](docs/changes/nahravky-dashboard/STAV.md),
+> [specifikaci](docs/changes/nahravky-dashboard/spec.md), [plán](docs/changes/nahravky-dashboard/plan.md)
+> a [DAG](docs/changes/nahravky-dashboard/tasks/DAG.md). Kód už je na integrační větvi, GitHub
+> není prázdný ani neveřejný a příprava release neznamená publikovanou verzi. Staré věty níže
+> čti v datovaném kontextu, ne jako současný stav.
+
 Vzniklo **24. 8. 2026** z ultracode analýzy (15 agentů, ~1,8 M tokenů) nad kódem, výzkumem,
 rozhodnutími a repozitářem `ludone-app`. Nahrazuje odhady z `luplaud-vyzkum`, které byly psané
 před měřením.

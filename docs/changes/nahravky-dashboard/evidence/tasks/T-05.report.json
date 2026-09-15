@@ -1,0 +1,67 @@
+{
+  "summary": "Vznikl durable consent held/approved s atomickou legacy migrací, snapshot automatiky při startu session, obě save-decision volby s title a export-copy bez webu, jednotlivý send/retry s čerstvou identitou a revizemi, obnovitelný jediný retry timer, bezpečný koš/reveal a přímé Nastavení ve standalone reauth. Quit, updater, pendingSave, časové retry a T-04 verifier zůstaly zapojené.",
+  "premisaPlatila": true,
+  "premisaPoznamka": "Skutečné snapshoty používají revision/fileRevision a úzké IPC je překládá na queueRev/fileRev. T-04 getter a upload HTTP protokol zůstaly zachované. Výběr firmy bez storedCompanyId je výslovně navazující práce mimo T-05.",
+  "zbytkoveToctou": "Mezi posledním stabilním lstat/open/stat recheckem a shell.trashItem zůstává omezené TOCTOU. Riziko omezuje canonical přímý root s režimem 0700, serializace, O_NOFOLLOW/O_NONBLOCK, opakovaný sender/busy guard a opakovaná shoda inode/stat před každým přesunem.",
+  "ocekavanePocty": {
+    "requestuProHeldPolozku": 0,
+    "hromadnychSchvaleniNeboRetry": 0,
+    "serverDeleteRequestu": 0,
+    "produkcnichRequestu": 0,
+    "citlivychCestVRendereru": 0
+  },
+  "kontrolniNula": {
+    "souboruMimoAllowlist": 0,
+    "zmenBackenduLuTrackDesignHistorie": 0,
+    "novychExemptMarkeruSkipuBaseline": 0,
+    "gitZapisu": 0
+  },
+  "vecneZmeneneAssertions": [
+    "Transportní fixture ve fronta-neztrati nově nastavuje uploadIntent=approved; původní očekávání úspěšného odeslání a neztracení dat zůstalo.",
+    "Transportní fixture v retention nově schválí právě vytvořenou cílovou nahrávku; původní očekávání odeslání, retence a zachování dat zůstalo.",
+    "Starý hromadný queue:retry už u nahrávek neočekává reset/send; původní retry časových položek zůstává.",
+    "Export s volbou send už neočekává otevření upload stránky; obě volby používají lokální export-copy a explicitní outcome.",
+    "Rendererové projekce nově očekávají title/uploadIntent a per-item akce s queueRev/fileRev; vlastní held položka není vydávána za chybné vlastnictví.",
+    "Text volby Jen uložit byl podle kontraktu nahrazen Nechat na Macu a obě volby zachovávají zadaný title."
+  ],
+  "novychTestu": 36,
+  "sabotaze": [
+    {
+      "nazev": "Legacy položka se dočasně auto-schválila.",
+      "ocekavano": "Consent restart test musí zachytit zakázaný send.",
+      "vysledek": "Oba parametrické legacy případy zčervenaly; TEST_EXIT_CODE=1.",
+      "doslovnyVystup": "AssertionError: expected spy to not be called at all, but actually been called 1 times\nTest Files  1 failed (1)\nTests  2 failed | 12 skipped (14)\nTEST_EXIT_CODE=1"
+    },
+    {
+      "nazev": "Dočasně se odstranily fileRev/invalid rechecky delete snapshotu.",
+      "ocekavano": "Výměna manifestu musí zakázaně pokračovat ke koši a test musí zčervenat.",
+      "vysledek": "Delete se chybně vyhodnotil jako deleted; TEST_EXIT_CODE=1.",
+      "doslovnyVystup": "AssertionError: promise resolved { outcome: 'deleted' } instead of rejecting\nTest Files  1 failed (1)\nTests  1 failed | 13 skipped (14)\nTEST_EXIT_CODE=1"
+    },
+    {
+      "nazev": "Automatika se dočasně četla až při finish.",
+      "ocekavano": "Změna toggle během nahrávání musí vybrat špatný výsledek a test zčervenat.",
+      "vysledek": "Finish vrátil true místo snapshotnutého false; TEST_EXIT_CODE=1.",
+      "doslovnyVystup": "AssertionError: expected true to be false\nTest Files  1 failed (1)\nTests  1 failed | 264 skipped (265)\nTEST_EXIT_CODE=1"
+    },
+    {
+      "nazev": "Odkaz Nastavení se dočasně skryl ve standalone reauth.",
+      "ocekavano": "Klikací testy expired=false i expired=true musí zčervenat.",
+      "vysledek": "Oba standalone případy odkaz nenašly; TEST_EXIT_CODE=1.",
+      "doslovnyVystup": "AssertionError: expected undefined to be 'Nastavení'\nTest Files  1 failed (1)\nTests  2 failed | 21 skipped (23)\nTEST_EXIT_CODE=1"
+    }
+  ],
+  "doslovnyVystupTestu": "> ludone-desktop-prototype@0.1.2 typecheck\n> tsc --noEmit -p jsconfig.json\nFINAL_TYPECHECK_EXIT_CODE=0\n\nTest Files  11 passed (11)\nTests  647 passed (647)\nREPAIRED_TARGETED_EXIT_CODE=0\n\nTest Files  6 passed (6)\nTests  15 passed | 369 skipped (384)\nPOST_SABOTAGE_EXIT_CODE=0",
+  "coJsemNEOVERIL": [
+    "GUI ui-smoke a skutečný Finder/koš na Macu.",
+    "Audio smoke na skutečném Macu.",
+    "Produkční síť, účet a backend."
+  ],
+  "notes": [
+    "Plná npm run gates byla spuštěna právě jednou. První běh skončil 24 známými consent fixture pády; po schváleném rozšíření allowlistu byly pouze transportní fixture výslovně nastaveny na approved a opravy byly ověřeny cílenými běhy.",
+    "Finální cílená sada měla 647/647 PASS; lint a typecheck skončily exit 0.",
+    "Delete odmítá duplicitní UUID, audio sdílené jiným bezpečným primárním manifestem i jinou queue položkou bez manifestu; incomplete primary s platným sidecarem lze uklidit i při chybějícím audiu bez hashování.",
+    "Žádný server DELETE, produkční request, instalace, GUI ani Git zápis nebyl proveden.",
+    "Koordinátor opravil počet podle vlastního plného běhu: 1469 − 1433 = 36 nových případů. Doslovné testovací logy obsahují syntetické dočasné cesty; nejsou tvrzením nulových cest v reportu."
+  ]
+}

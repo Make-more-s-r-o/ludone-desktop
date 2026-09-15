@@ -6,7 +6,11 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-macos
+  cancel-in-progress: false
 
 jobs:
   macos:
@@ -20,13 +24,20 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Ověření tagu a release tajemství
+      - name: Ověření tagu, zálohy klíče a release konfigurace
         env:
+          MAC_SIGNING_KEY_BACKUP_CONFIRMED: ${{ vars.MAC_SIGNING_KEY_BACKUP_CONFIRMED }}
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          DOWNLOAD_SSH_HOST: ${{ vars.DOWNLOAD_SSH_HOST }}
+          DOWNLOAD_SSH_PORT: ${{ vars.DOWNLOAD_SSH_PORT }}
+          DOWNLOAD_SSH_USER: ${{ vars.DOWNLOAD_SSH_USER }}
+          DOWNLOAD_SSH_PATH: ${{ vars.DOWNLOAD_SSH_PATH }}
+          DOWNLOAD_SSH_PRIVATE_KEY: ${{ secrets.DOWNLOAD_SSH_PRIVATE_KEY }}
+          DOWNLOAD_SSH_KNOWN_HOSTS: ${{ secrets.DOWNLOAD_SSH_KNOWN_HOSTS }}
         run: |
           node <<'NODE'
           const packageJson = require("./package.json");
@@ -34,16 +45,38 @@ jobs:
           if (process.env.GITHUB_REF_NAME !== expectedTag) {
             throw new Error(`Tag ${process.env.GITHUB_REF_NAME} neodpovídá verzi ${expectedTag}`);
           }
+          if (process.env.MAC_SIGNING_KEY_BACKUP_CONFIRMED !== "true") {
+            throw new Error("Podpisový klíč se nesmí použít bez potvrzené zálohy ve firemním správci hesel");
+          }
           const required = [
             "CSC_LINK",
             "CSC_KEY_PASSWORD",
             "APPLE_API_KEY_P8",
             "APPLE_API_KEY_ID",
             "APPLE_API_ISSUER",
+            "DOWNLOAD_SSH_HOST",
+            "DOWNLOAD_SSH_USER",
+            "DOWNLOAD_SSH_PATH",
+            "DOWNLOAD_SSH_PRIVATE_KEY",
+            "DOWNLOAD_SSH_KNOWN_HOSTS",
           ];
           const missing = required.filter((name) => !process.env[name]?.trim());
-          if (missing.length > 0) {
-            throw new Error(`V release prostředí chybí: ${missing.join(", ")}`);
+          if (missing.length > 0) throw new Error(`V release prostředí chybí: ${missing.join(", ")}`);
+          const simpleValue = /^[A-Za-z0-9._-]+$/;
+          if (!simpleValue.test(process.env.DOWNLOAD_SSH_HOST) || process.env.DOWNLOAD_SSH_HOST.startsWith("-")) {
+            throw new Error("DOWNLOAD_SSH_HOST má neplatný tvar");
+          }
+          if (!simpleValue.test(process.env.DOWNLOAD_SSH_USER) || process.env.DOWNLOAD_SSH_USER.startsWith("-")) {
+            throw new Error("DOWNLOAD_SSH_USER má neplatný tvar");
+          }
+          const port = process.env.DOWNLOAD_SSH_PORT || "22";
+          if (!/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
+            throw new Error("DOWNLOAD_SSH_PORT má neplatný tvar");
+          }
+          const publishPath = process.env.DOWNLOAD_SSH_PATH;
+          const unsafeSegment = publishPath.split("/").some((part) => part === "." || part === "..");
+          if (!/^\/[A-Za-z0-9._/-]+$/.test(publishPath) || publishPath === "/" || publishPath.includes("//") || unsafeSegment) {
+            throw new Error("DOWNLOAD_SSH_PATH musí být úzká absolutní cesta bez shellových znaků");
           }
           NODE
       # 🔴 Vlastní výčet bran se tady jednou už rozešel s `ci.yml`: brána
@@ -60,11 +93,90 @@ jobs:
           key_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
           printf '%s' "$APPLE_API_KEY_P8" > "$key_path"
           echo "APPLE_API_KEY=$key_path" >> "$GITHUB_ENV"
-      - name: Podepsání, notarizace a publikování DMG + ZIP
+      - name: Podepsání, notarizace a ověření DMG + ZIP
         env:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          GH_TOKEN: ${{ github.token }}
         run: npm run release:mac
+      - name: Archiv podepsaných artefaktů před publikací
+        uses: actions/upload-artifact@v4
+        with:
+          name: ludone-desktop-${{ github.ref_name }}
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            release/LuDone-Desktop-*.dmg
+            release/LuDone-Desktop-*.dmg.blockmap
+            release/LuDone-Desktop-*.zip
+            release/LuDone-Desktop-*.zip.blockmap
+            release/latest-mac.yml
+            release/release-manifest.json
+            release/SHA256SUMS
+      - name: Publikace na stahnout.ludone.cz
+        env:
+          DOWNLOAD_SSH_HOST: ${{ vars.DOWNLOAD_SSH_HOST }}
+          DOWNLOAD_SSH_PORT: ${{ vars.DOWNLOAD_SSH_PORT }}
+          DOWNLOAD_SSH_USER: ${{ vars.DOWNLOAD_SSH_USER }}
+          DOWNLOAD_SSH_PATH: ${{ vars.DOWNLOAD_SSH_PATH }}
+          DOWNLOAD_SSH_PRIVATE_KEY: ${{ secrets.DOWNLOAD_SSH_PRIVATE_KEY }}
+          DOWNLOAD_SSH_KNOWN_HOSTS: ${{ secrets.DOWNLOAD_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          ssh_dir="$RUNNER_TEMP/ludone-release-ssh"
+          install -d -m 700 "$ssh_dir"
+          private_key="$ssh_dir/id_release"
+          known_hosts="$ssh_dir/known_hosts"
+          printf '%s' "$DOWNLOAD_SSH_PRIVATE_KEY" > "$private_key"
+          printf '%s\n' "$DOWNLOAD_SSH_KNOWN_HOSTS" > "$known_hosts"
+          chmod 600 "$private_key" "$known_hosts"
+          port="${DOWNLOAD_SSH_PORT:-22}"
+          target="${DOWNLOAD_SSH_USER}@${DOWNLOAD_SSH_HOST}"
+          ssh_options=(
+            -i "$private_key"
+            -p "$port"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=$known_hosts"
+            -o LogLevel=ERROR
+          )
+          scp_options=(
+            -i "$private_key"
+            -P "$port"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=$known_hosts"
+            -o LogLevel=ERROR
+          )
+          version="$(node -p 'require("./package.json").version')"
+          files=(
+            "LuDone-Desktop-${version}-arm64.dmg"
+            "LuDone-Desktop-${version}-arm64.dmg.blockmap"
+            "LuDone-Desktop-${version}-arm64.zip"
+            "LuDone-Desktop-${version}-arm64.zip.blockmap"
+            "LuDone-Desktop-${version}-x64.dmg"
+            "LuDone-Desktop-${version}-x64.dmg.blockmap"
+            "LuDone-Desktop-${version}-x64.zip"
+            "LuDone-Desktop-${version}-x64.zip.blockmap"
+            "latest-mac.yml"
+          )
+          staging_name=".incoming-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          staging_path="${DOWNLOAD_SSH_PATH%/}/$staging_name"
+          ssh "${ssh_options[@]}" "$target" "mkdir -p -- '$staging_path'"
+          upload_paths=()
+          for file in "${files[@]}"; do upload_paths+=("release/$file"); done
+          upload_paths+=("release/SHA256SUMS")
+          scp "${scp_options[@]}" -- "${upload_paths[@]}" "$target:$staging_path/"
+          # Verze a blockmapy se zpřístupní první. latest-mac.yml se přesune až
+          # nakonec jedním rename, takže klient nikdy neuvidí metadata k neúplné sadě.
+          ssh "${ssh_options[@]}" "$target" \
+            "sh -s -- ${DOWNLOAD_SSH_PATH%/} $staging_name ${files[*]}" \
+            < scripts/publish-release-remote.sh
+          echo "Publikace verze $version proběhla; latest-mac.yml byl zveřejněn jako poslední."
+      - name: Ověření veřejného feedu a souborů
+        run: node scripts/verify-published-release.mjs

@@ -1,0 +1,45 @@
+TYPECHECK
+$ npm run typecheck
+
+> ludone-desktop-prototype@0.1.2 typecheck
+> tsc --noEmit -p jsconfig.json
+
+EXIT=0
+
+CÍLENÉ TESTY
+$ npm run test:unit -- tests/recordings-status.test.js tests/recordings-dashboard.test.js
+
+> ludone-desktop-prototype@0.1.2 test:unit
+> vitest run tests/recordings-status.test.js tests/recordings-dashboard.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-popisky
+
+ ✓ tests/recordings-status.test.js (2 tests) 73ms
+ ✓ tests/recordings-dashboard.test.js (15 tests) 174ms
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  00:52:46
+   Duration  846ms (transform 43ms, setup 13ms, collect 910ms, tests 247ms, environment 0ms, prepare 81ms)
+
+EXIT=0
+
+REVIEW OPRAVA ZDROJOVÉHO ŠTÍTKU
+$ npm run test:unit -- tests/recordings-status.test.js tests/recordings-dashboard.test.js
+
+> ludone-desktop-prototype@0.1.2 test:unit
+> vitest run tests/recordings-status.test.js tests/recordings-dashboard.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-popisky
+
+ ✓ tests/recordings-status.test.js (2 tests) 75ms
+ ✓ tests/recordings-dashboard.test.js (15 tests) 172ms
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  00:54:14
+   Duration  867ms (transform 55ms, setup 18ms, collect 920ms, tests 247ms, environment 0ms, prepare 82ms)
+
+EXIT=0

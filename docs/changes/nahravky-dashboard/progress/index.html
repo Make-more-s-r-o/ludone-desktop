@@ -1,0 +1,1159 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="scripts/mp-progress.mjs">
+  <title>LuDone Desktop – dokončení nahrávek — přehled vývoje</title>
+  <style>
+:root {
+  --surface: oklch(0.975 0.005 80);
+  --surface-elevated: oklch(0.995 0.003 80);
+  --surface-elevated-2: oklch(0.95 0.01 80);
+  --on-surface: oklch(0.18 0.02 260);
+  --on-surface-muted: oklch(0.5 0.02 260);
+  --on-surface-subtle: oklch(0.18 0.02 260 / 59%);
+  --border: oklch(0.91 0.015 80);
+  --border-strong: oklch(0.18 0.02 260 / 18%);
+  --accent: oklch(0.55 0.2 260);
+  --accent-fg: oklch(0.985 0 0);
+  --success: oklch(0.465 0.2 145);
+  --warning: oklch(0.51 0.17 65);
+  --error: oklch(0.492 0.245 27.325);
+  --info: oklch(0.53 0.268 285.47);
+  --ring: oklch(0.55 0.2 260);
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+}
+
+.dark {
+  --surface: oklch(0.16 0 0);
+  --surface-elevated: oklch(0.22 0 0);
+  --surface-elevated-2: oklch(0.26 0 0);
+  --on-surface: oklch(0.985 0 0);
+  --on-surface-muted: oklch(0.708 0 0);
+  --on-surface-subtle: oklch(1 0 0 / 45%);
+  --border: oklch(1 0 0 / 10%);
+  --border-strong: oklch(1 0 0 / 20%);
+  --accent: oklch(0.985 0 0);
+  --accent-fg: oklch(0.145 0 0);
+  --success: oklch(0.62 0.2 145);
+  --warning: oklch(0.75 0.17 65);
+  --error: oklch(0.704 0.191 22.216);
+  --info: oklch(0.78 0.11 285);
+  --ring: oklch(0.556 0 0);
+}
+
+    * { box-sizing: border-box; }
+    html { --decide-offset: 104px; scroll-behavior: smooth; scroll-padding-top: var(--decide-offset); }
+    body { margin: 0; overflow-x: hidden; color: var(--on-surface, #202124); background: var(--surface, #f6f6f4); font-family: var(--font-sans, system-ui, sans-serif); font-size: 15px; line-height: 1.55; }
+    h1, h2, h3 { margin-top: 0; line-height: 1.16; text-wrap: balance; }
+    h1 { margin-bottom: 12px; font-size: clamp(2rem, 6vw, 3.4rem); }
+    h2 { margin-bottom: 0; font-size: clamp(1.4rem, 3vw, 2rem); }
+    h3 { margin-bottom: 8px; font-size: 1rem; }
+    p { margin-block: 0 10px; }
+    a { color: var(--accent, #185abc); text-underline-offset: 3px; }
+    code { overflow-wrap: anywhere; font-family: var(--font-mono, ui-monospace, monospace); font-size: .88em; }
+    button, a, summary, input { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible { outline: 3px solid var(--ring, #185abc); outline-offset: 3px; }
+    .skip-link { position: fixed; z-index: 20; top: 12px; left: 12px; transform: translateY(-180%); padding: 10px 14px; background: var(--accent, #185abc); color: var(--accent-fg, white); }
+    .skip-link:focus { transform: none; }
+    .wrap { width: min(1120px, calc(100% - 32px)); margin-inline: auto; }
+    .site-header { padding-block: clamp(42px, 8vw, 84px) 36px; border-bottom: 1px solid var(--border, #ddd); background: var(--surface-elevated, white); }
+    .header-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 10px; font-size: 0.85rem; }
+    .header-links a { color: var(--on-surface-muted); text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; }
+    .header-links a:hover { color: var(--on-surface); border-color: var(--border-strong); }
+    .header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+    .header-actions, .badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .goal { max-width: 70ch; color: var(--on-surface-muted, #555); font-size: 1.08rem; }
+    .eyebrow, .state-label, .id-label { margin-bottom: 5px; color: var(--accent, #185abc); font-size: .72rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; padding: 8px 14px; border: 1px solid var(--border-strong, #aaa); border-radius: var(--radius-sm, 4px); background: var(--surface-elevated, white); color: var(--on-surface, #202124); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+    .button:disabled { opacity: .55; cursor: not-allowed; }
+    .button-primary { border-color: var(--accent, #185abc); background: var(--accent, #185abc); color: var(--accent-fg, white); }
+    .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 22px; padding: 14px; border: 1px solid var(--border, #ddd); background: var(--surface, #f6f6f4); }
+    .meta span { display: block; color: var(--on-surface-muted, #555); font-size: .8rem; }
+    .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; border: 1px solid var(--border, #ddd); }
+    .summary > div { padding: 14px; border-right: 1px solid var(--border, #ddd); }
+    .summary > div:last-child { border-right: 0; }
+    .summary span { display: block; color: var(--on-surface-muted, #555); font-size: .76rem; }
+    .summary strong { display: block; font-size: 1.7rem; }
+    .status-banner, .notice { display: flex; gap: 12px; margin-top: 16px; padding: 13px 15px; border: 1px solid var(--border, #ddd); border-left: 4px solid var(--info, #2459a9); background: var(--surface, #f6f6f4); }
+    .status-stale { border-left-color: var(--error, #b3261e); color: var(--error, #b3261e); }
+    .status-unknown { border-left-color: var(--warning, #8a4b00); color: var(--warning, #8a4b00); }
+    main { padding-block: 50px; }
+    main > section { margin-top: 66px; scroll-margin-top: var(--decide-offset); }
+    main > section:first-child { margin-top: 0; }
+    .section-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; }
+    .section-number { flex: 0 0 auto; min-width: 30px; padding: 3px 8px; border-radius: var(--radius-sm, 4px); background: var(--accent, #185abc); color: var(--accent-fg, white); text-align: center; font-size: .78rem; font-weight: 750; }
+    .story-grid, .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .story, .card, .task, .decision, .evidence-card, .empty-panel { padding: 20px; border: 1px solid var(--border, #ddd); border-radius: var(--radius-sm, 4px); background: var(--surface-elevated, white); }
+    .story p, .card > p, .muted, .empty { color: var(--on-surface-muted, #555); }
+    ul, ol { margin-block: 8px 0; padding-left: 24px; }
+    li + li { margin-top: 5px; }
+    .milestones { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); padding: 0; list-style: none; }
+    .milestone { position: relative; min-width: 0; padding: 0 14px 18px 0; }
+    .milestone::before { content: ""; position: absolute; top: 9px; left: 18px; right: 0; height: 2px; background: var(--border-strong, #aaa); }
+    .milestone:last-child::before { display: none; }
+    .milestone-dot { position: relative; z-index: 1; display: block; width: 20px; height: 20px; margin-bottom: 10px; border: 2px solid var(--border-strong, #aaa); border-radius: 50%; background: var(--surface-elevated, white); }
+    .milestone-done .milestone-dot { border-color: var(--success, #147a3d); background: var(--success, #147a3d); }
+    .milestone-current .milestone-dot { border: 5px solid var(--accent, #185abc); }
+    .milestone-skipped .milestone-dot { border-color: var(--warning, #8a4b00); background: var(--warning, #8a4b00); }
+    .milestone p { color: var(--on-surface-muted, #555); font-size: .82rem; }
+    .skip-reason { color: var(--warning, #8a4b00) !important; }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .badge { flex: 0 0 auto; display: inline-flex; min-height: 25px; align-items: center; padding: 2px 8px; border: 1px solid currentColor; border-radius: var(--radius-sm, 4px); font-size: .76rem; font-weight: 750; }
+    .badge-neutral { color: var(--on-surface-muted, #555); }
+    .badge-info { color: var(--info, #2459a9); }
+    .badge-accent { color: var(--accent, #185abc); }
+    .badge-warning { color: var(--warning, #8a4b00); }
+    .badge-error { color: var(--error, #b3261e); }
+    .badge-success { color: var(--success, #147a3d); }
+    .badge-row { margin-top: 14px; }
+    .feature-card { display: flex; flex-direction: column; }
+    .blocker, .next, .notes { margin-top: 14px; padding: 12px; border-left: 3px solid var(--error, #b3261e); background: var(--surface-elevated-2, #eee); }
+    .next { border-left-color: var(--accent, #185abc); }
+    details { margin-top: 14px; border-top: 1px solid var(--border, #ddd); }
+    .feature-card details { margin-top: auto; }
+    summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+    summary::after { content: "+"; margin-left: auto; }
+    details[open] > summary::after { content: "−"; }
+    .key-values, .task-meta { margin: 0; }
+    .key-values > div, .task-meta > div { display: grid; grid-template-columns: minmax(110px, .35fr) minmax(0, 1fr); gap: 10px; padding-block: 8px; border-bottom: 1px solid var(--border, #ddd); }
+    dt { color: var(--on-surface-muted, #555); }
+    dd { margin: 0; }
+    .detail-list { padding-top: 12px; }
+    .task-list, .decision-list { display: grid; gap: 12px; }
+    .task-failed { border-left: 4px solid var(--error, #b3261e); }
+    .task-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; }
+    .task-meta > div { display: block; }
+    .circuit { display: block; margin-top: 12px; color: var(--error, #b3261e); }
+    .change-feed { margin: 0; list-style: none; padding: 0; }
+    .change-feed li { padding: 0 0 20px 20px; border-left: 2px solid var(--border-strong, #aaa); }
+    .change-feed time { color: var(--accent, #185abc); font-size: .8rem; font-weight: 750; }
+    .options { display: grid; gap: 8px; margin-top: 14px; }
+    .option { padding: 12px; border: 1px solid var(--border, #ddd); background: var(--surface, #f6f6f4); }
+    .option.recommended { border-color: var(--accent, #185abc); }
+    .screen-card { min-width: 0; margin: 0 0 16px; scroll-margin-top: var(--decide-offset); border: 1px solid var(--border, #ddd); border-radius: var(--radius-md, 8px); background: var(--surface-elevated, white); }
+    .screen-fold, .q-fold { margin: 0; border: 0; }
+    .screen-summary { min-width: 0; display: flex; flex-wrap: nowrap; gap: 9px; padding: 12px 16px; overflow: hidden; }
+    .screen-summary::after { flex: 0 0 auto; }
+    .screen-title { flex: 0 0 auto; font-weight: 800; }
+    .screen-summary code { flex: 0 0 auto; white-space: nowrap; }
+    .screen-short { min-width: 0; flex: 1 1 auto; overflow: hidden; color: var(--on-surface-muted, #555); text-overflow: ellipsis; white-space: nowrap; }
+    .screen-body { min-width: 0; padding: 4px 18px 18px; border-top: 1px solid var(--border, #ddd); }
+    .card-topline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .card-topline h3 { flex: 1 1 auto; margin: 0; }
+    .card-topline code { color: var(--on-surface-muted, #555); font-family: var(--font-mono, ui-monospace, monospace); font-size: .8rem; }
+    .before-after { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 16px; margin: 13px 0; align-self: start; }
+    .before-after figure { min-width: 0; margin: 0; }
+    .before-after figcaption { margin: 0 0 6px; color: var(--on-surface-muted, #555); font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
+    .shot { aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; border-radius: var(--radius-sm, 4px); background: var(--surface, #f6f6f4); color: var(--on-surface-muted, #555); text-align: center; }
+    .shot.placeholder { border: 2px dashed var(--border-strong, #aaa); }
+    .shot.text-only { padding: 18px; align-items: flex-start; justify-content: flex-start; overflow: auto; text-align: left; }
+    .shot.shot-layout { position: relative; display: block; min-height: 0; padding: 0; overflow: visible; aspect-ratio: auto; text-align: left; }
+    .schema-label { position: absolute; z-index: 2; top: 6px; right: 6px; background: var(--surface-elevated, white); }
+    .shot > a:not(.button) { width: 100%; height: 100%; }
+    .shot img { width: 100%; height: 100%; object-fit: cover; object-position: top; border: 1px solid var(--border, #ddd); border-radius: var(--radius-sm, 4px); }
+    .shot-today .shot-current { width: 100%; height: min(260px, 70vw); max-height: 260px; aspect-ratio: auto; }
+    .shot-today .shot-current img { object-fit: contain; object-position: center top; }
+    .current-preview { position: relative; display: block; color: inherit; text-decoration: none; }
+    .current-preview:focus-visible { outline: 3px solid var(--ring, #185abc); outline-offset: 2px; }
+    .current-preview-zoom { position: fixed; z-index: 30; top: 50%; left: 50%; box-sizing: border-box; width: auto; height: auto; max-width: 70vw; max-height: 80vh; padding: 8px; transform: translate(-50%, -50%); border: 1px solid var(--border-strong, #aaa); border-radius: var(--radius-sm, 4px); background: var(--surface-elevated, white); box-shadow: 0 12px 36px rgba(0,0,0,.3); object-fit: contain; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .14s ease; }
+    .current-preview:hover .current-preview-zoom, .current-preview:focus-visible .current-preview-zoom { opacity: 1; visibility: visible; }
+    .shot.shot-proposal { aspect-ratio: auto; min-height: 0; overflow: visible; }
+    .shot-proposal img, .after-pane img { width: 100%; height: auto; max-height: 60vh; object-fit: contain; object-position: center top; }
+    .shot-proposal > a:not(.button) { height: auto; }
+    .full-shot-link { display: inline-block; margin-top: 5px; font-size: .78rem; }
+    .screen-finding { margin: 3px 0 10px; color: var(--on-surface, #202124); }
+    .screen-nochange { margin: 7px 0 0; color: var(--on-surface-muted, #555); }
+    .after-tabs { display: inline-flex; max-width: 100%; gap: 4px; margin-left: 8px; overflow-x: auto; vertical-align: middle; }
+    .after-tabs button { flex: 0 0 auto; padding: 3px 8px; border: 1px solid var(--border-strong, #aaa); border-radius: 999px; background: var(--surface-elevated, white); color: var(--on-surface, #202124); font: inherit; font-size: .72rem; cursor: pointer; }
+    .after-tabs button[aria-selected="true"] { border-color: var(--accent, #185abc); background: var(--accent, #185abc); color: var(--accent-fg, white); }
+    .after-tabs button.fallback { border-style: dashed; border-color: var(--border-strong, #aaa); background: var(--surface-elevated-2, #eee); color: var(--on-surface-muted, #555); }
+    .after-label { font-weight: 700; text-transform: none; }
+    .after-panes { min-width: 0; display: grid; }
+    .after-pane { min-width: 0; display: grid; grid-area: 1 / 1; align-content: start; }
+    .after-pane[hidden] { display: grid !important; visibility: hidden; }
+    .pane-title { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 6px; font-size: .85rem; }
+    .pane-foot { margin: 8px 0 0; padding: 8px 10px; border-left: 3px solid var(--info, #2459a9); background: var(--surface-elevated-2, #eee); color: var(--on-surface-muted, #555); font-size: .82rem; }
+    .fallback-base { padding: 8px; border: 1px dashed var(--border-strong, #aaa); background: var(--surface, #f6f6f4); }
+    .fallback-base-label { margin: 0 0 7px; color: var(--on-surface-muted, #555); font-size: .78rem; font-weight: 750; }
+    .fallback-base-label span { font-weight: 500; }
+    .text-only-changes { margin-top: 8px; padding: 10px 12px; border-left: 3px solid var(--info, #2459a9); background: var(--surface-elevated-2, #eee); text-align: left; }
+    .pane-link { margin-top: 8px; }
+    .changes { color: var(--on-surface-muted, #555); font-size: .84rem; text-align: left; }
+    .screen-questions { width: 100%; min-width: 0; margin-top: 14px; }
+    .q { margin: 12px 0 0; scroll-margin-top: var(--decide-offset); border: 1px solid var(--border, #ddd); border-radius: var(--radius-sm, 4px); background: var(--surface, #f6f6f4); }
+    .q-summary { min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+    .q-title { min-width: 180px; flex: 1 1 280px; font-weight: 750; }
+    .q-where { min-width: 0; color: var(--on-surface-muted, #555); font-size: .8rem; font-weight: 500; }
+    .q-chosen { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--success, #147a3d); font-weight: 750; }
+    .q-chosen[hidden], .q-state[hidden] { display: none; }
+    .q-actions { display: flex; justify-content: flex-end; gap: 4px; padding: 0 10px 6px; }
+    .q-actions[hidden] { display: none; }
+    .link-button { min-height: 30px; padding: 2px 6px; border: 0; background: transparent; color: var(--accent, #185abc); font: inherit; text-decoration: underline; cursor: pointer; }
+    .q-fold > :not(summary) { margin-right: 12px; margin-left: 12px; }
+    .q-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-block: 10px; }
+    .q-option { box-sizing: border-box; width: 100%; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--border, #ddd); border-radius: var(--radius-sm, 4px); background: var(--surface-elevated, white); cursor: pointer; }
+    .q-option:has(input:checked) { border-color: var(--accent, #185abc); box-shadow: inset 3px 0 0 var(--accent, #185abc); }
+    .q-option:has(input:focus-visible) { outline: 3px solid var(--ring, #185abc); outline-offset: 2px; }
+    .q-option.recommended { border-color: var(--accent, #185abc); }
+    .q-option.rejected { opacity: .72; }
+    .q-option input { flex: 0 0 auto; margin: 0; accent-color: var(--accent, #185abc); }
+    .opt-code { flex: 0 0 auto; display: inline-flex; padding: 2px 7px; border: 1px solid currentColor; border-radius: var(--radius-sm, 4px); color: var(--accent, #185abc); font-family: var(--font-mono, ui-monospace, monospace); font-size: .76rem; font-weight: 800; }
+    .opt-body { min-width: 0; display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+    .opt-name { min-width: 0; flex: 0 1 auto; overflow-wrap: normal; word-break: normal; hyphens: none; }
+    .opt-tradeoff { min-width: min(100%, 18rem); flex: 1 1 22rem; color: var(--on-surface-muted, #555); font-size: .82rem; }
+    .opt-preview { flex: 0 0 auto; margin-left: auto; color: var(--on-surface-muted, #555); font-size: .9rem; cursor: help; }
+    .q-ref, .q-done { margin: 8px 0 0; padding: 8px 10px; border-top: 1px solid var(--border, #ddd); color: var(--on-surface-muted, #555); font-size: .85rem; }
+    .qcode { color: var(--accent, #185abc); font-family: var(--font-mono, ui-monospace, monospace); font-weight: 800; }
+    .q-impact { margin-bottom: 10px; }
+    .decision-impact { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin: 7px 0 0; font-size: .85rem; }
+    .decision-impact dt { color: var(--on-surface-muted, #555); font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; }
+    .decision-impact dd { margin: 0; }
+    .measured { margin: 5px 0 3px; color: var(--on-surface-muted, #555); font-size: .9rem; }
+    .wf-legend { margin-top: 7px; font-size: .72rem; }
+    .shot-after > .wf-legend[hidden] { display: block !important; visibility: hidden; }
+    .decision { scroll-margin-top: var(--decide-offset); border-left: 3px solid var(--success, #147a3d); }
+    .decision-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .decision-head h3 { flex: 1 1 240px; margin: 0; }
+    .mismatch { margin-top: 8px; }
+    .section-fold { margin: 0; padding: 0 18px 18px; border: 1px solid var(--border, #ddd); border-radius: var(--radius-sm, 4px); background: var(--surface-elevated, white); }
+    .section-fold-body { padding-top: 8px; }
+    #handoff { margin-top: 32px; padding: 18px; scroll-margin-top: var(--decide-offset); border: 1px solid var(--border-strong, #aaa); border-left: 4px solid var(--accent, #185abc); border-radius: var(--radius-md, 8px); background: var(--surface-elevated, white); }
+    .handoff-block { width: 100%; min-height: 70px; resize: vertical; padding: 10px; border: 1px solid var(--border-strong, #aaa); border-radius: var(--radius-sm, 4px); background: var(--surface, #f6f6f4); color: var(--on-surface, #202124); font: .88rem var(--font-mono, ui-monospace, monospace); }
+    .handoff-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .decide-bar { position: sticky; z-index: 10; top: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px max(16px, calc((100% - 1120px) / 2)); border-bottom: 1px solid var(--border, #ddd); background: color-mix(in oklab, var(--surface-elevated, white) 94%, transparent); backdrop-filter: blur(8px); }
+    .decide-bar .button { min-height: 38px; margin: 0; padding-block: 5px; }
+    .db-change { min-width: 0; flex: 1 1 250px; }
+    .db-change strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .db-count { flex: 0 0 auto; }
+    .db-status { flex: 1 0 100%; color: var(--on-surface-muted, #555); font-size: .78rem; text-align: right; }
+    .db-status:empty { display: none; }
+    .decide-bar.done .db-count { font-weight: 750; color: var(--success, #147a3d); }
+    .wf { --wf-bg:#f6f6f4; --wf-card:#fff; --wf-ink:#202124; --wf-muted:#555; --wf-line:#ddd; --wf-line-strong:#aaa; --wf-primary:#185abc; --wf-primary-fg:#fff; --wf-mark:#8a4b00; --wf-new:#147a3d; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-rows:min-content; gap:6px; position:relative; width:100%; min-height:0; padding:8px; overflow:visible; border:1px solid var(--wf-line); border-radius:4px; background:var(--wf-bg); color:var(--wf-ink); font-family:system-ui,sans-serif; font-size:.7rem; line-height:1.25; }
+    .dark .wf { --wf-bg:#202124; --wf-card:#2a2b2e; --wf-ink:#f6f6f4; --wf-muted:#aaa; --wf-line:#3a3b3f; --wf-line-strong:#555; --wf-primary:#8fb0ff; --wf-primary-fg:#202124; --wf-mark:#e2b263; --wf-new:#6fd08c; }
+    .wf-b { position:relative; min-height:34px; padding:5px 7px 6px; border:1px solid var(--wf-line-strong); border-radius:2px; background:var(--wf-card); overflow:hidden; }
+    .wf-s1{grid-column:span 1}.wf-s2{grid-column:span 2}.wf-s3{grid-column:span 3}.wf-s4{grid-column:1/-1}
+    .wf-type { display:block; color:var(--wf-muted); font-size:.58rem; letter-spacing:.06em; text-transform:uppercase; }
+    .wf-label { display:block; font-weight:600; overflow-wrap:anywhere; }
+    .wf-header { min-height:44px; border-width:0 0 3px; border-radius:0; background:transparent; } .wf-header .wf-label { font-size:.85rem; }
+    .wf-pills, .wf-btns { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+    .wf-btns { justify-content:flex-end; }
+    .wf-pill, .wf-btn { padding:1px 7px; border:1px solid var(--wf-line-strong); border-radius:999px; background:var(--wf-card); white-space:nowrap; }
+    .wf-btn { border-radius:3px; font-weight:600; } .wf-btn-primary { background:var(--wf-primary); border-color:var(--wf-primary); color:var(--wf-primary-fg); }
+    .wf-t { width:100%; border-collapse:collapse; margin-top:4px; font-size:.66rem; } .wf-t th, .wf-t td { max-width:11em; padding:2px 4px; overflow:hidden; border-bottom:1px solid var(--wf-line); text-align:left; text-overflow:ellipsis; white-space:nowrap; }
+    .wf-t th { color:var(--wf-muted); font-size:.56rem; letter-spacing:.05em; text-transform:uppercase; }
+    .wf-num { text-align:right !important; font-variant-numeric:tabular-nums; }
+    .wf-kpi { display:grid; grid-template-columns:repeat(auto-fit,minmax(60px,1fr)); gap:4px; } .wf-kpi-cell b { display:block; font-size:.95rem; font-variant-numeric:tabular-nums; }
+    .wf-list ul { margin:4px 0 0; padding-left:14px; } .wf-form .wf-field { display:grid; grid-template-columns:auto 1fr; gap:6px; align-items:center; margin-top:3px; } .wf-field i { height:11px; border:1px solid var(--wf-line-strong); border-radius:2px; background:var(--wf-bg); }
+    .wf-stepper .wf-pills .wf-pill:first-child, .wf-tabs .wf-pills .wf-pill:first-child { border-color:var(--wf-primary); background:var(--wf-primary); color:var(--wf-primary-fg); }
+    .wf-panel { background:var(--wf-bg); } .wf-note { border-style:dashed; background:transparent; color:var(--wf-muted); font-style:italic; }
+    .wf-dialog { position:absolute; z-index:1; inset:14% 12%; border-width:2px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+    .wf-badge { display:inline-block; margin-left:6px; padding:0 5px; border:1px solid var(--wf-line-strong); border-radius:3px; font-size:.56rem; font-weight:600; }
+    .wf-note-line { margin:4px 0 0; color:var(--wf-muted); font-size:.62rem; font-style:italic; }
+    .wf-new { border-color:var(--wf-new); box-shadow:inset 3px 0 0 var(--wf-new); }
+    .wf-changed { border-color:var(--wf-mark); box-shadow:inset 3px 0 0 var(--wf-mark); }
+    .wf-ghost { border-style:dashed; color:var(--wf-muted); opacity:.55; }
+    .wf-b[data-mark]::after { position:absolute; top:3px; right:4px; padding:0 4px; border-radius:999px; background:var(--wf-mark); color:var(--wf-primary-fg); content:attr(data-mark); font-size:.52rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+    .wf-new[data-mark]::after { background:var(--wf-new); } .wf-ghost[data-mark]::after { background:var(--wf-muted); }
+    .evidence-panel { padding: 0 18px 18px; border: 1px solid var(--border, #ddd); background: var(--surface-elevated, white); }
+    .evidence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 18px; }
+    .evidence-card h3 { margin-top: 8px; }
+    footer { padding-block: 24px; border-top: 1px solid var(--border, #ddd); color: var(--on-surface-muted, #555); font-size: .8rem; }
+    .dark { color-scheme: dark; }
+    @media (max-width: 760px) {
+      html { --decide-offset: 120px; }
+      .header-row, .card-top { display: grid; }
+      .story-grid, .card-grid, .summary, .meta { grid-template-columns: 1fr; }
+      .summary > div { border-right: 0; border-bottom: 1px solid var(--border, #ddd); }
+      .task-meta { grid-template-columns: 1fr; }
+      .milestones { grid-template-columns: 1fr; }
+      .milestone { display: grid; grid-template-columns: 20px 1fr; gap: 12px; padding-bottom: 24px; }
+      .milestone::before { top: 18px; bottom: 0; left: 9px; width: 2px; height: auto; }
+      .milestone > div { grid-column: 2; }
+      .before-after, .decision-impact { grid-template-columns: minmax(0, 1fr); }
+      .screen-summary { flex-wrap: wrap; }
+      .screen-short { display: -webkit-box; flex-basis: 100%; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+      .after-tabs { width: 100%; flex-wrap: wrap; margin: 5px 0 0; overflow-x: visible; }
+      .q-option { align-items: flex-start; }
+      .decide-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; padding: 7px 16px; }
+      .decide-bar .db-change { display: none; }
+      .decide-bar .db-count { grid-column: 1; grid-row: 1; white-space: nowrap; }
+      .decide-bar #db-next { grid-column: 2; grid-row: 1; white-space: nowrap; }
+      .decide-bar #db-copy { grid-column: 1; grid-row: 2; white-space: nowrap; }
+      .decide-bar .db-link { grid-column: 2; grid-row: 2; white-space: nowrap; text-align: right; }
+      .decide-bar .db-status { min-width: 0; grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; justify-content: flex-end; gap: 4px; overflow: hidden; white-space: nowrap; }
+      .decide-bar .db-status span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .decide-bar .db-status .link-button { flex: 0 0 auto; }
+      .decide-bar:has(.db-status:not(:empty)) .db-count,
+      .decide-bar:has(.db-status:not(:empty)) #db-next { display: none; }
+      .decide-bar .db-link { text-align: right; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .current-preview-zoom { transition: none; }
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+    @media print { .header-actions, .skip-link { display: none; } .card, .task, details { break-inside: avoid; } }
+  </style>
+</head>
+<body data-change-id="nahravky-dashboard" data-open-questions="0" data-phase="review_delivery" data-updated-at="2026-09-14T23:14:10.084Z">
+  <a class="skip-link" href="#main">Přeskočit na obsah</a>
+  <header class="site-header"><div class="wrap">
+    <nav class="header-links" aria-label="Navigace přehledu"><a href="../../">← Všechny změny</a><a href="../">Složka změny</a><a href="../STAV.md">STAV.md</a></nav>
+    <div class="header-row"><div><p class="eyebrow">Přehled vývoje</p><h1>LuDone Desktop – dokončení nahrávek</h1><p class="goal">Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.</p></div>
+      <div class="header-actions" role="group" aria-label="Nástroje přehledu"><button class="button" id="toggle-details" type="button" aria-expanded="false" aria-controls="fold-features fold-tasks fold-changes fold-decisions fold-evidence feature-details-0 feature-details-1 feature-details-2 feature-details-3 feature-details-4 feature-details-5 feature-details-6 feature-details-7 evidence-details">Rozbalit technické detaily</button><button class="button" id="toggle-theme" type="button">Přepnout motiv</button></div>
+    </div>
+    <div class="meta"><div><span>Aktualizováno</span><strong><time datetime="2026-09-14T23:14:10.084Z">15. 9. 2026 01:14</time> <span id="relative-age" aria-live="polite"></span></strong></div><div><span>Verze plánu</span><strong><code>draft</code></strong></div></div>
+    <div class="status-banner status-current"><strong>Přehled odpovídá poslednímu commitu.</strong></div>
+    <div class="summary" role="group" aria-label="Souhrn 8 funkcí">
+        <div><span>Napsané nebo dál</span><strong>8</strong></div><div><span>Právě rozpracované</span><strong>0</strong></div><div><span>Blokované</span><strong>0</strong></div><div><span>Zatím nezačaté</span><strong>0</strong></div>
+      </div>
+  </div></header>
+  <nav class="decide-bar done" id="decide-bar" aria-label="Rozhodování"><span class="db-change"><strong>LuDone Desktop – dokončení nahrávek</strong> <code>nahravky-integrace</code></span><span class="db-count">Vše rozhodnuto · 0 v archivu</span><a class="db-link" href="#decisions">Rozhodnuto</a><span class="db-status" role="status" aria-live="polite"></span></nav>
+  <main id="main" class="wrap">
+    <section id="what" aria-labelledby="what-title"><div class="section-heading">
+        <span class="section-number">1</span>
+        <div><p class="eyebrow">Smysl práce</p><h2 id="what-title">Co vzniká</h2></div>
+      </div><div class="story-grid"><article class="story"><h3>Problém</h3><p>Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.</p></article><article class="story"><h3>Cílový výsledek</h3><p>Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.</p></article><article class="story"><h3>Komu to pomáhá</h3><p class="empty">Nic není uvedeno.</p></article><article class="story"><h3>Vědomě mimo rozsah</h3><p class="empty">Nic není uvedeno.</p></article></div></section>
+    <section id="phase" aria-labelledby="phase-title"><div class="section-heading">
+        <span class="section-number">2</span>
+        <div><p class="eyebrow">Kde právě jsme</p><h2 id="phase-title">Aktuální fáze</h2></div>
+      </div><ol class="milestones">
+        <li class="milestone milestone-done">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Uzavřeno</span><h3>Záměr</h3><p>Fáze je dokončena.</p></div>
+            </li><li class="milestone milestone-done">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Uzavřeno</span><h3>Kontext projektu</h3><p>Fáze je dokončena.</p></div>
+            </li><li class="milestone milestone-done">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Uzavřeno</span><h3>Zjištění</h3><p>Fáze je dokončena.</p></div>
+            </li><li class="milestone milestone-done">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Uzavřeno</span><h3>Kontrakt výsledku</h3><p>Fáze je dokončena.</p></div>
+            </li><li class="milestone milestone-done">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Uzavřeno</span><h3>Návrh</h3><p>Fáze je dokončena.</p></div>
+            </li><li class="milestone milestone-done">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Uzavřeno</span><h3>Specifikace</h3><p>Fáze je dokončena.</p></div>
+            </li><li class="milestone milestone-done">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Uzavřeno</span><h3>Plán</h3><p>Fáze je dokončena.</p></div>
+            </li><li class="milestone milestone-done">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Uzavřeno</span><h3>Implementace</h3><p>Fáze je dokončena.</p></div>
+            </li><li class="milestone milestone-current" aria-current="step">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Teď</span><h3>Kontrola a dodání</h3><p>Tato fáze právě probíhá.</p></div>
+            </li><li class="milestone milestone-upcoming">
+              <span class="milestone-dot" aria-hidden="true"></span>
+              <div><span class="state-label">Čeká</span><h3>Archiv</h3><p>Tato fáze teprve přijde.</p></div>
+            </li>
+      </ol></section>
+    <section id="screens" aria-labelledby="screens-title"><div class="section-heading">
+        <span class="section-number">3</span>
+        <div><p class="eyebrow">Obrazovka po obrazovce</p><h2 id="screens-title">Dnes → Potom → rozhodnutí</h2></div>
+      </div><p class="empty-panel">Obrazovky se teprve popisují.</p></section>
+    <section id="features" aria-labelledby="features-title"><div class="section-heading">
+        <span class="section-number">4</span>
+        <div><p class="eyebrow">Čtyři nezávislé osy</p><h2 id="features-title">Funkce a stav</h2></div>
+      </div><details class="section-fold" id="fold-features"><summary>8 funkcí · 8 hotové</summary><div class="section-fold-body"><div class="card-grid feature-grid">
+        <article class="card feature-card">
+              <div class="card-top"><h3>Úplná a obnovitelná fronta</h3><span class="badge badge-warning">Testy zelené</span></div>
+              <p>Nahrávka si zachová identitu každé odesílané stopy.</p>
+              
+              <div class="next"><strong>Další krok</strong><p>Trvalá ID, 429 pauzy, consent a pin firmy jsou integrované. Čistý klon i GitHub CI na 33938351 prošly; skutečné odeslání čeká na Mac.</p></div>
+              <details id="feature-details-0"><summary>Technický stav a důkazy</summary>
+                <dl class="key-values"><div><dt>ID</dt><dd><code>NRD-01</code></dd></div>
+                  <div><dt>scope</dt><dd>Rozsah je schválený <code>approved</code></dd></div><div><dt>delivery</dt><dd>Změna je v commitu <code>committed</code></dd></div><div><dt>exposure</dt><dd>Výsledek není dostupný <code>unavailable</code></dd></div><div><dt>verification</dt><dd>Automatické testy jsou zelené <code>tests-green</code></dd></div>
+                </dl><div class="detail-list"><strong>Důkazy</strong><p class="empty">Zatím bez připojeného důkazu.</p></div>
+              </details>
+            </article><article class="card feature-card">
+              <div class="card-top"><h3>Výslovné převzetí</h3><span class="badge badge-warning">Testy zelené</span></div>
+              <p>Uživatel odblokuje jednu vlastní nahrávku s potvrzením.</p>
+              
+              <div class="next"><strong>Další krok</strong><p>Převzato v a25bd5c, 440 cílených testů koordinátora. Native potvrzení ještě ověří Dan na Macu.</p></div>
+              <details id="feature-details-1"><summary>Technický stav a důkazy</summary>
+                <dl class="key-values"><div><dt>ID</dt><dd><code>NRD-02</code></dd></div>
+                  <div><dt>scope</dt><dd>Rozsah je schválený <code>approved</code></dd></div><div><dt>delivery</dt><dd>Změna je v commitu <code>committed</code></dd></div><div><dt>exposure</dt><dd>Výsledek není dostupný <code>unavailable</code></dd></div><div><dt>verification</dt><dd>Automatické testy jsou zelené <code>tests-green</code></dd></div>
+                </dl><div class="detail-list"><strong>Důkazy</strong><p class="empty">Zatím bez připojeného důkazu.</p></div>
+              </details>
+            </article><article class="card feature-card">
+              <div class="card-top"><h3>Lokální přehled</h3><span class="badge badge-warning">Testy zelené</span></div>
+              <p>Uživatel pozná, co skutečně leží na Macu.</p>
+              
+              <div class="next"><strong>Další krok</strong><p>Lokální přehled a pravdivé popisky T-I1 přijaty. Krátké ID odpovídá dialogu; skutečné použití s nahrávkami čeká na Mac.</p></div>
+              <details id="feature-details-2"><summary>Technický stav a důkazy</summary>
+                <dl class="key-values"><div><dt>ID</dt><dd><code>NRD-03</code></dd></div>
+                  <div><dt>scope</dt><dd>Rozsah je schválený <code>approved</code></dd></div><div><dt>delivery</dt><dd>Změna je v commitu <code>committed</code></dd></div><div><dt>exposure</dt><dd>Výsledek není dostupný <code>unavailable</code></dd></div><div><dt>verification</dt><dd>Automatické testy jsou zelené <code>tests-green</code></dd></div>
+                </dl><div class="detail-list"><strong>Důkazy</strong><p class="empty">Zatím bez připojeného důkazu.</p></div>
+              </details>
+            </article><article class="card feature-card">
+              <div class="card-top"><h3>Porovnání serveru</h3><span class="badge badge-warning">Testy zelené</span></div>
+              <p>Uživatel rozliší stav fronty od ověřeného výsledku na serveru.</p>
+              
+              <div class="next"><strong>Další krok</strong><p>Ruční ověření známých ID je integrované. Čistý klon prošel; shodu obou stop proti produkčnímu serveru ověří Dan.</p></div>
+              <details id="feature-details-3"><summary>Technický stav a důkazy</summary>
+                <dl class="key-values"><div><dt>ID</dt><dd><code>NRD-04</code></dd></div>
+                  <div><dt>scope</dt><dd>Rozsah je schválený <code>approved</code></dd></div><div><dt>delivery</dt><dd>Změna je v commitu <code>committed</code></dd></div><div><dt>exposure</dt><dd>Výsledek není dostupný <code>unavailable</code></dd></div><div><dt>verification</dt><dd>Automatické testy jsou zelené <code>tests-green</code></dd></div>
+                </dl><div class="detail-list"><strong>Důkazy</strong><p class="empty">Zatím bez připojeného důkazu.</p></div>
+              </details>
+            </article><article class="card feature-card">
+              <div class="card-top"><h3>Odeslání podle volby</h3><span class="badge badge-warning">Testy zelené</span></div>
+              <p>Uživatel rozhodne o odeslání každé nové nahrávky.</p>
+              
+              <div class="next"><strong>Další krok</strong><p>Send/keep a automatika pouze nových nahrávek integrovány; potvrzení uložení nečeká na síť. Skutečné nahrávání ověří Dan.</p></div>
+              <details id="feature-details-4"><summary>Technický stav a důkazy</summary>
+                <dl class="key-values"><div><dt>ID</dt><dd><code>NRD-05</code></dd></div>
+                  <div><dt>scope</dt><dd>Rozsah je schválený <code>approved</code></dd></div><div><dt>delivery</dt><dd>Změna je v commitu <code>committed</code></dd></div><div><dt>exposure</dt><dd>Výsledek není dostupný <code>unavailable</code></dd></div><div><dt>verification</dt><dd>Automatické testy jsou zelené <code>tests-green</code></dd></div>
+                </dl><div class="detail-list"><strong>Důkazy</strong><p class="empty">Zatím bez připojeného důkazu.</p></div>
+              </details>
+            </article><article class="card feature-card">
+              <div class="card-top"><h3>Akce nad záznamem</h3><span class="badge badge-warning">Testy zelené</span></div>
+              <p>Konkrétní nahrávku lze bezpečně spravovat a otevřít na webu.</p>
+              
+              <div class="next"><strong>Další krok</strong><p>Per-item akce a ochrana firmy integrovány po review. Zrušení koše, skutečný Finder a ruční retry čekají na Mac.</p></div>
+              <details id="feature-details-5"><summary>Technický stav a důkazy</summary>
+                <dl class="key-values"><div><dt>ID</dt><dd><code>NRD-06</code></dd></div>
+                  <div><dt>scope</dt><dd>Rozsah je schválený <code>approved</code></dd></div><div><dt>delivery</dt><dd>Změna je v commitu <code>committed</code></dd></div><div><dt>exposure</dt><dd>Výsledek není dostupný <code>unavailable</code></dd></div><div><dt>verification</dt><dd>Automatické testy jsou zelené <code>tests-green</code></dd></div>
+                </dl><div class="detail-list"><strong>Důkazy</strong><p class="empty">Zatím bez připojeného důkazu.</p></div>
+              </details>
+            </article><article class="card feature-card">
+              <div class="card-top"><h3>Produkční přihlášení</h3><span class="badge badge-warning">Testy zelené</span></div>
+              <p>Nahrávání a upload fungují bez shellového nastavení.</p>
+              
+              <div class="next"><strong>Další krok</strong><p>T-A4 c25ef2a zapojilo výběr firmy do Nastavení a atomickou vazbu na relaci. Finder login a produkční upload stále čekají na živý test.</p></div>
+              <details id="feature-details-6"><summary>Technický stav a důkazy</summary>
+                <dl class="key-values"><div><dt>ID</dt><dd><code>NRD-07</code></dd></div>
+                  <div><dt>scope</dt><dd>Rozsah je schválený <code>approved</code></dd></div><div><dt>delivery</dt><dd>Změna je v commitu <code>committed</code></dd></div><div><dt>exposure</dt><dd>Výsledek není dostupný <code>unavailable</code></dd></div><div><dt>verification</dt><dd>Automatické testy jsou zelené <code>tests-green</code></dd></div>
+                </dl><div class="detail-list"><strong>Důkazy</strong><p class="empty">Zatím bez připojeného důkazu.</p></div>
+              </details>
+            </article><article class="card feature-card">
+              <div class="card-top"><h3>Vydání a aktualizace</h3><span class="badge badge-warning">Testy zelené</span></div>
+              <p>Nová podepsaná verze je připravená k vydání a aplikace hlásí aktualizaci.</p>
+              
+              <div class="next"><strong>Další krok</strong><p>Vydávací workflow a updater jsou připravené. Chybí potvrzení zálohy klíče a publikační GitHub hodnoty; Dan poté pushne tag a ověří instalaci/aktualizaci.</p></div>
+              <details id="feature-details-7"><summary>Technický stav a důkazy</summary>
+                <dl class="key-values"><div><dt>ID</dt><dd><code>NRD-08</code></dd></div>
+                  <div><dt>scope</dt><dd>Rozsah je schválený <code>approved</code></dd></div><div><dt>delivery</dt><dd>Změna je v commitu <code>committed</code></dd></div><div><dt>exposure</dt><dd>Výsledek není dostupný <code>unavailable</code></dd></div><div><dt>verification</dt><dd>Automatické testy jsou zelené <code>tests-green</code></dd></div>
+                </dl><div class="detail-list"><strong>Důkazy</strong><p class="empty">Zatím bez připojeného důkazu.</p></div>
+              </details>
+            </article>
+      </div></div></details></section>
+    <section id="tasks" aria-labelledby="tasks-title"><div class="section-heading">
+        <span class="section-number">5</span>
+        <div><p class="eyebrow">Prováděcí úkoly</p><h2 id="tasks-title">Co se staví</h2></div>
+      </div><details class="section-fold" id="fold-tasks"><summary>Co se staví (13)</summary><div class="section-fold-body"><div class="task-list">
+        <article class="task task-completed">
+              <div class="card-top"><h3>Projekce fronty</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>0</dd></div><div><dt>Packet</dt><dd><code>tasks/T-00.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Trvalé výsledky uploadu</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-01.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Explicitní převzetí</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-02.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Lokální dashboard</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-03.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Ověření na serveru</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-04.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Akce a odesílání</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-05.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Přihlášení a upload scope</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>0</dd></div><div><dt>Packet</dt><dd><code>tasks/T-A1.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Limity fronty</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-R1.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Příprava vydání a aktualizace</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>0</dd></div><div><dt>Packet</dt><dd><code>tasks/T-06.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Oprava userinfo fallbacku po review</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-A2.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Bezpečný základ výběru firmy</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-A3.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Zapojení firmy a ochrana rozpracovaného uploadu</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-A4.md</code></dd></div></dl>
+              
+            </article><article class="task task-completed">
+              <div class="card-top"><h3>Pravdivé stavy a identifikace nahrávky</h3><span class="badge badge-success">Dokončeno</span></div>
+              <dl class="task-meta"><div><dt>executor</dt><dd><code>codex</code></dd></div><div><dt>Pokusy</dt><dd>1</dd></div><div><dt>Packet</dt><dd><code>tasks/T-I1.md</code></dd></div></dl>
+              
+            </article>
+      </div></div></details></section>
+    <section id="changes" aria-labelledby="changes-title"><div class="section-heading">
+        <span class="section-number">6</span>
+        <div><p class="eyebrow">Nejnovější první</p><h2 id="changes-title">Co se změnilo od minule</h2></div>
+      </div><details class="section-fold" id="fold-changes"><summary>Co se změnilo (96)</summary><div class="section-fold-body"><ol class="change-feed"><li><time datetime="2026-09-14T23:14:10.084Z">15. 9. 2026 01:14</time><p>Přejímka uzavřená: čistý klon 33938351 a CI 34907553077 prošly s 1505 PASS a buildem. Veřejné vydání čeká na doložené GitHub release hodnoty, potvrzení zálohy klíče, Danův tag a živý test na Macu.</p></li><li><time datetime="2026-09-14T23:13:43.671Z">15. 9. 2026 01:13</time><p>Byl přidán důkaz EV2: Přejímka po opravě CI čekání.</p></li><li><time datetime="2026-09-14T23:13:43.374Z">15. 9. 2026 01:13</time><p>Funkce NRD-01 byla aktualizována.</p></li><li><time datetime="2026-09-14T23:03:29.386Z">15. 9. 2026 01:03</time><p>Byl přidán důkaz EV1: Finální čistý klon a GUI přejímka.</p></li><li><time datetime="2026-09-14T23:03:29.104Z">15. 9. 2026 01:03</time><p>T-A4 a T-I1 přijaty po review. Čistý klon 475c77b prošel gates i buildem: 1505 PASS, 3 původní skipy. Finální GUI: Nastavení a odhlášený selector čitelné. Podpis/publikace a Mac audio přejímka stále čekají.</p></li><li><time datetime="2026-09-14T23:03:28.819Z">15. 9. 2026 01:03</time><p>Funkce NRD-08 byla aktualizována.</p></li><li><time datetime="2026-09-14T23:03:28.540Z">15. 9. 2026 01:03</time><p>Funkce NRD-07 byla aktualizována.</p></li><li><time datetime="2026-09-14T23:03:28.253Z">15. 9. 2026 01:03</time><p>Funkce NRD-06 byla aktualizována.</p></li><li><time datetime="2026-09-14T23:03:27.972Z">15. 9. 2026 01:03</time><p>Funkce NRD-05 byla aktualizována.</p></li><li><time datetime="2026-09-14T23:03:27.692Z">15. 9. 2026 01:03</time><p>Funkce NRD-04 byla aktualizována.</p></li><li><time datetime="2026-09-14T23:03:27.389Z">15. 9. 2026 01:03</time><p>Funkce NRD-03 byla aktualizována.</p></li><li><time datetime="2026-09-14T23:03:27.067Z">15. 9. 2026 01:03</time><p>Funkce NRD-01 byla aktualizována.</p></li><li><time datetime="2026-09-14T22:55:51.379Z">15. 9. 2026 00:55</time><p>Fáze se změnila z „execution“ na „review_delivery“.</p></li><li><time datetime="2026-09-14T22:55:51.072Z">15. 9. 2026 00:55</time><p>Task T-A4 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T22:55:28.409Z">15. 9. 2026 00:55</time><p>Task T-I1 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T22:49:34.750Z">15. 9. 2026 00:49</time><p>Task T-I1 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T22:49:34.455Z">15. 9. 2026 00:49</time><p>Pro task T-I1 byl zaregistrován worktree .claude/worktrees/nahravky-popisky.</p></li><li><time datetime="2026-09-14T22:47:53.490Z">15. 9. 2026 00:47</time><p>Byl zalozen task T-I1: Pravdivé stavy a identifikace nahrávky.</p></li><li><time datetime="2026-09-14T22:42:57.733Z">15. 9. 2026 00:42</time><p>CI c21eca6: 6 FAIL; pět časových fixtures opraveno při zachování přesných asercí, 59 PASS v UTC i Europe/Prague. ENOTEMPTY lifecycle fronty předáno T-A4; finální CI čeká.</p></li><li><time datetime="2026-09-14T22:31:23.695Z">15. 9. 2026 00:31</time><p>T-A4 běží z 77543cb v samostatném stromu. GUI T5 potvrdilo přímé Nastavení bez přihlášení, prázdný přehled a přepínač automatiky on/off; nejde o ostrý audio/login důkaz. Dva staré texty Účtu předány T-A4.</p></li><li><time datetime="2026-09-14T22:28:05.515Z">15. 9. 2026 00:28</time><p>Task T-A4 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T22:28:05.087Z">15. 9. 2026 00:28</time><p>Pro task T-A4 byl zaregistrován worktree .claude/worktrees/nahravky-firma-zapojeni.</p></li><li><time datetime="2026-09-14T22:27:51.508Z">15. 9. 2026 00:27</time><p>T5 převzato z e225880 po opravených P2 a root gates1469. Společná T5+A3 integrační brána má 1488 PASS, 3 původní skipy, exit0. T-A4 přebírá hotspoty pro poslední funkční zapojení firmy.</p></li><li><time datetime="2026-09-14T22:27:16.652Z">15. 9. 2026 00:27</time><p>Funkce NRD-06 byla aktualizována.</p></li><li><time datetime="2026-09-14T22:27:16.366Z">15. 9. 2026 00:27</time><p>Funkce NRD-05 byla aktualizována.</p></li><li><time datetime="2026-09-14T22:27:16.059Z">15. 9. 2026 00:27</time><p>Task T-05 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T22:08:31.143Z">15. 9. 2026 00:08</time><p>T5 první plná brána odhalila 22 starých transportních fixtures bez explicitního consentu. Allowlist rozšířen o dva testovací soubory; ochrany neztracení dat a retence se nemění. T-A4 packet připraven, čeká na T5.</p></li><li><time datetime="2026-09-14T22:07:59.404Z">15. 9. 2026 00:07</time><p>Byl zalozen task T-A4: Zapojení firmy a ochrana rozpracovaného uploadu.</p></li><li><time datetime="2026-09-14T22:04:06.099Z">15. 9. 2026 00:04</time><p>T-A3 přijatý po root review a plné bráně 1452 PASS. T5 dokončuje consent a bezpečné akce, následný T-A4 zapojí volbu firmy do Nastavení.</p></li><li><time datetime="2026-09-14T22:04:05.781Z">15. 9. 2026 00:04</time><p>Funkce NRD-07 byla aktualizována.</p></li><li><time datetime="2026-09-14T22:04:05.453Z">15. 9. 2026 00:04</time><p>Task T-A3 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T21:52:41.065Z">14. 9. 2026 23:52</time><p>D15: více firem bez uložené volby dosud vyžaduje env z terminálu. T-A3 nezávisle připraví bezpečný controller, komponentu a atomický zápis stejné relace; sekvenční wiring naváže po T5 před finální přejímkou.</p></li><li><time datetime="2026-09-14T21:52:40.733Z">14. 9. 2026 23:52</time><p>Task T-A3 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T21:52:07.598Z">14. 9. 2026 23:52</time><p>Funkce NRD-07 byla aktualizována.</p></li><li><time datetime="2026-09-14T21:52:06.408Z">14. 9. 2026 23:52</time><p>Byl zalozen task T-A3: Bezpečný základ výběru firmy.</p></li><li><time datetime="2026-09-14T21:40:35.116Z">14. 9. 2026 23:40</time><p>Pro task T-05 byl zaregistrován worktree .claude/worktrees/nahravky-akce.</p></li><li><time datetime="2026-09-14T21:37:45.991Z">14. 9. 2026 23:37</time><p>T4 převzato z 9b233c8: root plná brána 1433 PASS, tři původní skipy, exit 0; nezávislé review bez doložených P1/P2. T5 předáno Sol pro trvalý souhlas, jednotlivé akce a obnovu retry.</p></li><li><time datetime="2026-09-14T21:37:45.658Z">14. 9. 2026 23:37</time><p>Task T-05 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T21:37:11.311Z">14. 9. 2026 23:37</time><p>Funkce NRD-04 byla aktualizována.</p></li><li><time datetime="2026-09-14T21:37:11.010Z">14. 9. 2026 23:37</time><p>Task T-04 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T21:24:24.883Z">14. 9. 2026 23:24</time><p>D14: ruční ověření obnovené nahrávky smí použít pouze existující známý recovery sidecar se shodnou identitou a cestami primárního manifestu; čtení nic neobnovuje ani nepřepisuje.</p></li><li><time datetime="2026-09-14T21:13:36.483Z">14. 9. 2026 23:13</time><p>T-03, T-R1 a T-A2 mají společné CI SUCCESS na ea338b5. Osm převzatých worktrees a jejich větve byly odstraněny po ověření archivovaných důkazů; původní commity zůstávají dosažitelné v historii.</p></li><li><time datetime="2026-09-14T21:05:16.765Z">14. 9. 2026 23:05</time><p>Funkce NRD-04 byla aktualizována.</p></li><li><time datetime="2026-09-14T21:05:16.463Z">14. 9. 2026 23:05</time><p>Task T-04 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T21:05:16.164Z">14. 9. 2026 23:05</time><p>Funkce NRD-01 byla aktualizována.</p></li><li><time datetime="2026-09-14T21:05:15.860Z">14. 9. 2026 23:05</time><p>Task T-R1 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T21:00:21.260Z">14. 9. 2026 23:00</time><p>Funkce NRD-07 byla aktualizována.</p></li><li><time datetime="2026-09-14T20:58:42.884Z">14. 9. 2026 22:58</time><p>Funkce NRD-07 byla aktualizována.</p></li><li><time datetime="2026-09-14T20:58:42.581Z">14. 9. 2026 22:58</time><p>Task T-A2 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T20:53:35.081Z">14. 9. 2026 22:53</time><p>Task T-A2 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T20:53:04.039Z">14. 9. 2026 22:53</time><p>Nezávislé auth review zjistilo fallback tokenové identity při chybě userinfo. Přidán ohraničený T-A2 se skutečnou controller/session regresí; refresh zachová ověřenou identitu.</p></li><li><time datetime="2026-09-14T20:47:42.200Z">14. 9. 2026 22:47</time><p>Doplněny chybějící podklady a zpětně označené packety již realizovaných etap; status je propojen s konkrétními packety. Schválení artefaktů se zpětně nevyrábí.</p></li><li><time datetime="2026-09-14T20:46:31.996Z">14. 9. 2026 22:46</time><p>Task T-R1 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T20:46:31.365Z">14. 9. 2026 22:46</time><p>Funkce NRD-03 byla aktualizována.</p></li><li><time datetime="2026-09-14T20:46:30.486Z">14. 9. 2026 22:46</time><p>Task T-03 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T20:44:56.791Z">14. 9. 2026 22:44</time><p>Review T-03 rozšířilo allowlist o skutečnou Settings fixture nového lokálního API; produkční fallback na neověřený listQueue se odstraňuje.</p></li><li><time datetime="2026-09-14T20:26:30.470Z">14. 9. 2026 22:26</time><p>Funkce NRD-03 byla aktualizována.</p></li><li><time datetime="2026-09-14T20:26:29.883Z">14. 9. 2026 22:26</time><p>Funkce NRD-01 byla aktualizována.</p></li><li><time datetime="2026-09-14T20:26:29.462Z">14. 9. 2026 22:26</time><p>Funkce NRD-02 byla aktualizována.</p></li><li><time datetime="2026-09-14T20:23:14.676Z">14. 9. 2026 22:23</time><p>Připraven packet souhlasu a bezpečných akcí včetně obnovení odložených pokusů fronty. Odesílání zachová dosavadní upload protokol; samostatné ověřování dashboardu zůstává ruční.</p></li><li><time datetime="2026-09-14T20:21:36.682Z">14. 9. 2026 22:21</time><p>T-02 převzato v a25bd5c; 440 testů koordinátora prošlo. T-03 implementuje Sol, další části jsou seřazené bez souběžných zápisů do fronty.</p></li><li><time datetime="2026-09-14T20:16:44.538Z">14. 9. 2026 22:16</time><p>Task T-03 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T20:16:44.151Z">14. 9. 2026 22:16</time><p>Task T-02 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T20:14:30.740Z">14. 9. 2026 22:14</time><p>Převzat packet trvalého 429 cooldownu. Kvůli společné frontě bude implementace pokračovat postupně T-03 → T-R1 → T-04.</p></li><li><time datetime="2026-09-14T20:10:54.471Z">14. 9. 2026 22:10</time><p>Packet T-04 je převzatý; příprava ověření na serveru zachovává limity i po novém přihlášení. Rozpracovaná implementace je v draft PR #141.</p></li><li><time datetime="2026-09-14T20:03:18.240Z">14. 9. 2026 22:03</time><p>T-03 má připravený packet lokálního přehledu; dispatch čeká na přijetí T-02.</p></li><li><time datetime="2026-09-14T20:02:28.481Z">14. 9. 2026 22:02</time><p>Integrační review potvrdilo frontu a updater; veřejná kontrola vydání je v 2499dbb, návrat do přihlášení v 9158ae6 a oprava runtime js-yaml v 5e2ff84. T2 pokračuje v bezpečnostním review, bez živého uploadu nebo vydání.</p></li><li><time datetime="2026-09-14T19:57:14.148Z">14. 9. 2026 21:57</time><p>T-02 byl dispatchován; updater a T-06 jsou integrované s koordinátorovou bránou 1341 testů.</p></li><li><time datetime="2026-09-14T19:55:36.348Z">14. 9. 2026 21:55</time><p>Masterplan odkazuje na aktuální běh; historický desktop-v1 zůstává zachovaný s 17 funkcemi.</p></li><li><time datetime="2026-09-14T19:54:20.805Z">14. 9. 2026 21:54</time><p>Stav byl srovnán s integrovanými T-00, T-01 a T-A1; T-02 je připravený, T-06 zůstává v review.</p></li><li><time datetime="2026-09-14T19:47:27.856Z">14. 9. 2026 21:47</time><p>Task ID a vazba packetu T-02 byly sjednoceny s formátem masterplánu.</p></li><li><time datetime="2026-09-14T19:31:00.356Z">14. 9. 2026 21:31</time><p>Funkce NRD-07 byla aktualizována.</p></li><li><time datetime="2026-09-14T19:30:59.916Z">14. 9. 2026 21:30</time><p>Task A1 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T19:23:21.020Z">14. 9. 2026 21:23</time><p>Task T1 má nově stav „dispatched“.</p></li><li><time datetime="2026-09-14T19:23:20.248Z">14. 9. 2026 21:23</time><p>Task T0 má nově stav „completed“.</p></li><li><time datetime="2026-09-14T19:21:14.829Z">14. 9. 2026 21:21</time><p>Běh spuštěn podle Danem vloženého goalu. Publikační protokol SCP doložen v dokumentaci LuDone. Nové instalačky ani update dosud neověřené na Macu.</p></li><li><time datetime="2026-09-14T19:21:14.337Z">14. 9. 2026 21:21</time><p>Byl zalozen task T6: Příprava vydání a aktualizace.</p></li><li><time datetime="2026-09-14T19:21:13.956Z">14. 9. 2026 21:21</time><p>Byl zalozen task R1: Limity fronty.</p></li><li><time datetime="2026-09-14T19:21:13.584Z">14. 9. 2026 21:21</time><p>Byl zalozen task A1: Přihlášení a upload scope.</p></li><li><time datetime="2026-09-14T19:21:13.211Z">14. 9. 2026 21:21</time><p>Byl zalozen task T5: Akce a odesílání.</p></li><li><time datetime="2026-09-14T19:21:12.840Z">14. 9. 2026 21:21</time><p>Byl zalozen task T4: Ověření na serveru.</p></li><li><time datetime="2026-09-14T19:21:12.365Z">14. 9. 2026 21:21</time><p>Byl zalozen task T3: Lokální dashboard.</p></li><li><time datetime="2026-09-14T19:21:11.936Z">14. 9. 2026 21:21</time><p>Byl zalozen task T2: Explicitní převzetí.</p></li><li><time datetime="2026-09-14T19:21:11.533Z">14. 9. 2026 21:21</time><p>Byl zalozen task T1: Trvalé výsledky uploadu.</p></li><li><time datetime="2026-09-14T19:21:11.113Z">14. 9. 2026 21:21</time><p>Byl zalozen task T0: Projekce fronty.</p></li><li><time datetime="2026-09-14T19:21:10.403Z">14. 9. 2026 21:21</time><p>Byla zalozena funkce NRD-08: Vydání a aktualizace.</p></li><li><time datetime="2026-09-14T19:21:09.852Z">14. 9. 2026 21:21</time><p>Byla zalozena funkce NRD-07: Produkční přihlášení.</p></li><li><time datetime="2026-09-14T19:21:09.364Z">14. 9. 2026 21:21</time><p>Byla zalozena funkce NRD-06: Akce nad záznamem.</p></li><li><time datetime="2026-09-14T19:21:08.982Z">14. 9. 2026 21:21</time><p>Byla zalozena funkce NRD-05: Odeslání podle volby.</p></li><li><time datetime="2026-09-14T19:21:08.539Z">14. 9. 2026 21:21</time><p>Byla zalozena funkce NRD-04: Porovnání serveru.</p></li><li><time datetime="2026-09-14T19:21:08.066Z">14. 9. 2026 21:21</time><p>Byla zalozena funkce NRD-03: Lokální přehled.</p></li><li><time datetime="2026-09-14T19:21:07.372Z">14. 9. 2026 21:21</time><p>Byla zalozena funkce NRD-02: Výslovné převzetí.</p></li><li><time datetime="2026-09-14T19:21:06.052Z">14. 9. 2026 21:21</time><p>Byla zalozena funkce NRD-01: Úplná a obnovitelná fronta.</p></li><li><time datetime="2026-09-14T19:21:05.004Z">14. 9. 2026 21:21</time><p>Funkce NAHRAVKY-DASHBOARD-01 byla aktualizována.</p></li><li><time datetime="2026-09-14T19:21:03.713Z">14. 9. 2026 21:21</time><p>Fáze se změnila z „plan“ na „execution“.</p></li><li><time datetime="2026-09-14T19:20:14.683Z">14. 9. 2026 21:20</time><p>Stav byl převeden na schéma v2.</p></li></ol></div></details></section>
+    <section id="decisions" aria-labelledby="decisions-title"><div class="section-heading">
+        <span class="section-number">7</span>
+        <div><p class="eyebrow">Uzavřené volby</p><h2 id="decisions-title">Rozhodnuto</h2></div>
+      </div><details class="section-fold" id="fold-decisions"><summary>Rozhodnuto (0)</summary><div class="section-fold-body"><p class="empty-panel">Žádná uzavřená rozhodnutí.</p></div></details></section>
+    <section id="evidence" aria-labelledby="evidence-title"><div class="section-heading">
+        <span class="section-number">8</span>
+        <div><p class="eyebrow">Dohledatelnost</p><h2 id="evidence-title">Důkazy a technické detaily</h2></div>
+      </div><details class="section-fold" id="fold-evidence"><summary>Důkazy a technické detaily (2)</summary><div class="section-fold-body"><details class="evidence-panel" id="evidence-details"><summary>Rozbalit důkazy, metadata a poznámky</summary><div class="evidence-body"><dl class="key-values"><div><dt>ID změny</dt><dd><code>nahravky-dashboard</code></dd></div><div><dt>Verze plánu</dt><dd><code>draft</code></dd></div></dl><div class="evidence-grid"><article class="evidence-card"><span class="badge badge-neutral">test</span><h3>Finální čistý klon a GUI přejímka</h3><a href="../../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md">1505 PASS, 3 původní skipy, gates i build exit 0; živé audio a release neověřené.</a><p><strong>Reference:</strong> <code>475c77bf</code></p></article><article class="evidence-card"><span class="badge badge-neutral">test</span><h3>Přejímka po opravě CI čekání</h3><a href="../../../../dukazy/nahravky-dashboard-2026-09-14/final/OVERENI.md">33938351: čistý klon a GitHub CI 34907553077 zelené, 1505 PASS a build.</a><p><strong>Reference:</strong> <code>33938351</code></p></article></div><div class="notes"><h3>Poznámky</h3><ul><li>Schválený goal a autonomie z 14. 9. dovolují tento běh bez nového design approval; redesign je odložen. Frontmatter plánu zůstává draft, protože neexistuje hookový approval konkrétního souboru.</li><li>Izolovaný unpackaged GUI průchod není live ověření produkčního přihlášení ani zvuku; oprava session re-entry má pouze zelené cílené testy.</li></ul></div></div></details></div></details></section>
+  </main>
+  <footer><div class="wrap">Přehled je projekce uloženého stavu. Automatické testy nejsou vydávány za živé ověření.</div></footer>
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const detailButton = document.getElementById("toggle-details");
+      const themeButton = document.getElementById("toggle-theme");
+      const decideBar = document.getElementById("decide-bar");
+      const store = (() => {
+        const get = (key, session = false) => {
+          try {
+            const target = session ? window.sessionStorage : window.localStorage;
+            return JSON.parse(target.getItem(key) ?? "null");
+          } catch {
+            return null;
+          }
+        };
+        const set = (key, value, session = false) => {
+          try {
+            const target = session ? window.sessionStorage : window.localStorage;
+            target.setItem(key, JSON.stringify(value));
+            return true;
+          } catch {
+            return false;
+          }
+        };
+        const del = (key, session = false) => {
+          try {
+            const target = session ? window.sessionStorage : window.localStorage;
+            target.removeItem(key);
+          } catch {}
+        };
+        return {
+          get: (key) => get(key),
+          set: (key, value) => set(key, value),
+          del: (key) => del(key),
+          getSession: (key) => get(key, true),
+          setSession: (key, value) => set(key, value, true),
+        };
+      })();
+      const changeId = document.body.dataset.changeId;
+      const KEY_PICKS = "mp:decisions:" + changeId;
+      const KEY_THEME = "mp:theme";
+      const KEY_SCROLL = "mp:scroll:" + changeId;
+      const syncDecideOffset = () => {
+        const height = decideBar?.getBoundingClientRect().height;
+        if (Number.isFinite(height) && height > 0) {
+          root.style.setProperty("--decide-offset", Math.ceil(height + 8) + "px");
+        }
+      };
+      syncDecideOffset();
+      if (decideBar && typeof ResizeObserver === "function") {
+        new ResizeObserver(syncDecideOffset).observe(decideBar);
+      } else {
+        window.addEventListener("resize", syncDecideOffset);
+      }
+      const questionSections = Array.from(document.querySelectorAll("section.q[data-question]"));
+      const questionById = new Map(questionSections.map((section) => [section.dataset.question, section]));
+      const decisions = Array.from(document.querySelectorAll("article.decision[data-question]"));
+      const archivedByQuestion = new Map(decisions.map((decision) => [decision.dataset.question, decision]));
+      const loaded = store.get(KEY_PICKS);
+      const picks = loaded && typeof loaded === "object" && !Array.isArray(loaded) ? loaded : {};
+      let picksChanged = loaded !== picks;
+      let recentQuestion = null;
+      const changedOptions = new Map();
+      const stalePicks = new Map();
+
+      for (const decision of decisions) {
+        const question = decision.dataset.question;
+        const pick = picks[question];
+        if (!pick) continue;
+        if (pick.o === decision.dataset.option) {
+          delete picks[question];
+          picksChanged = true;
+          continue;
+        }
+        const mismatch = decision.querySelector('[data-role="mismatch"]');
+        const message = question + " už rozhodl agent (" + decision.id + " → " + decision.dataset.option + "); tvá volba " + pick.o + " se nepoužila";
+        const messageNode = mismatch?.querySelector("[data-mismatch-message]");
+        if (messageNode) messageNode.textContent = message;
+        if (mismatch) {
+          mismatch.hidden = false;
+        }
+        stalePicks.set(question, { message, decision });
+      }
+
+      for (const [question, pick] of Object.entries(picks)) {
+        const section = questionById.get(question);
+        if (!section) {
+          if (!archivedByQuestion.has(question)) {
+            const expectedDecision = /^Qd+$/u.test(question)
+              ? document.getElementById("D" + question.slice(1))
+              : null;
+            const message = expectedDecision
+              ? question + " je v archivu (" + expectedDecision.id + ") bez zaznamenané volby; tvá volba " + (pick?.o ?? "?") + " se nedá porovnat"
+              : question + " už v přehledu není; tvá volba " + (pick?.o ?? "?") + " se nepoužila";
+            stalePicks.set(question, { message, decision: expectedDecision });
+          }
+          continue;
+        }
+        const validLetters = Array.from(section.querySelectorAll('input[type="radio"]')).map((input) => input.value);
+        if (!pick || typeof pick !== "object" || pick.n !== Number(section.dataset.options) || !validLetters.includes(pick.o)) {
+          delete picks[question];
+          picksChanged = true;
+          changedOptions.set(question, question + ": volby se změnily, vyber znovu");
+        }
+      }
+      if (picksChanged) store.set(KEY_PICKS, picks);
+      recentQuestion = Object.keys(picks).filter((question) => questionById.has(question)).at(-1) ?? null;
+
+      const controlledDetailIds = ["fold-features","fold-tasks","fold-changes","fold-decisions","fold-evidence","feature-details-0","feature-details-1","feature-details-2","feature-details-3","feature-details-4","feature-details-5","feature-details-6","feature-details-7","evidence-details"];
+      const details = controlledDetailIds.map((id) => document.getElementById(id)).filter(Boolean);
+      const syncDetails = () => {
+        const allOpen = details.length > 0 && details.every((item) => item.open);
+        detailButton?.setAttribute("aria-expanded", String(allOpen));
+        if (detailButton) detailButton.textContent = allOpen ? "Sbalit technické detaily" : "Rozbalit technické detaily";
+      };
+      details.forEach((item) => item.addEventListener("toggle", syncDetails));
+      detailButton?.addEventListener("click", () => {
+        const open = !details.every((item) => item.open);
+        details.forEach((item) => { item.open = open; });
+        syncDetails();
+      });
+      syncDetails();
+
+      const storedTheme = store.get(KEY_THEME);
+      if (storedTheme === "dark" || storedTheme === "light") {
+        root.classList.toggle("dark", storedTheme === "dark");
+      }
+      const syncThemeButton = () => {
+        if (themeButton) themeButton.textContent = root.classList.contains("dark") ? "Použít světlý motiv" : "Použít tmavý motiv";
+      };
+      themeButton?.addEventListener("click", () => {
+        root.classList.toggle("dark");
+        store.set(KEY_THEME, root.classList.contains("dark") ? "dark" : "light");
+        syncThemeButton();
+      });
+      syncThemeButton();
+
+      const selectedTabs = new Map();
+      const initialTabs = new Map();
+      for (const figure of document.querySelectorAll("figure.shot-after")) {
+        const tab = figure.querySelector('[role="tab"][aria-selected="true"]');
+        if (!tab) continue;
+        initialTabs.set(figure.dataset.afterFor, tab.dataset.afterDefault ? "default" : tab.dataset.afterTab);
+      }
+      let hoverPreview = null;
+      let pointerQuestion = null;
+      let pointerUnlockTimer = null;
+      let pointerPreviewDirty = false;
+      const renderedPickState = new Map();
+
+      const optionName = (question, letter) => questionById.get(question)?.querySelector('label[data-option="' + letter + '"] .opt-name')?.textContent?.trim() ?? "volba bez popisu";
+      const openPicks = () => questionSections
+        .map((section) => section.dataset.question)
+        .filter((question) => picks[question]);
+
+      const renderQuestions = (collapseQuestion = null) => {
+        for (const section of questionSections) {
+          const question = section.dataset.question;
+          const pick = picks[question];
+          const previouslyPicked = renderedPickState.get(question);
+          const fold = section.querySelector(".q-fold");
+          const state = section.querySelector('[data-role="q-state"]');
+          const chosen = section.querySelector('[data-role="q-chosen"]');
+          const actions = section.querySelector('[data-role="q-actions"]');
+          for (const input of section.querySelectorAll('input[type="radio"]')) input.checked = Boolean(pick && input.value === pick.o);
+          if (!pick) {
+            if (fold && previouslyPicked === true) fold.open = true;
+            if (state) state.hidden = false;
+            if (chosen) {
+              chosen.hidden = true;
+              chosen.replaceChildren();
+            }
+            if (actions) actions.hidden = true;
+            renderedPickState.set(question, false);
+            continue;
+          }
+          if (fold && (previouslyPicked === undefined || collapseQuestion === question)) fold.open = false;
+          if (state) state.hidden = true;
+          if (chosen) {
+            chosen.hidden = false;
+            chosen.textContent = "→ " + pick.o + " · " + optionName(question, pick.o);
+          }
+          if (actions) actions.hidden = false;
+          renderedPickState.set(question, true);
+        }
+      };
+
+      const renderReferences = () => {
+        for (const reference of document.querySelectorAll(".q-ref[data-question-ref]")) {
+          const pick = picks[reference.dataset.questionRef];
+          const badge = reference.querySelector('[data-role="q-state-ref"]');
+          if (badge) badge.textContent = pick ? "vybráno " + pick.o : "čeká na tebe";
+        }
+      };
+
+      const renderScreens = () => {
+        for (const screen of document.querySelectorAll(".screen-card[data-open]")) {
+          const ids = (screen.dataset.questions ?? "").split(" ").filter(Boolean);
+          const chosen = ids.filter((question) => picks[question]).length;
+          const waiting = ids.length - chosen;
+          const badge = screen.querySelector('[data-role="screen-pending"]');
+          if (!badge) continue;
+          badge.textContent = waiting + " " + (waiting === 1 ? "čeká" : "čekají") + (chosen ? " · " + chosen + " vybráno" : "");
+        }
+      };
+
+      const showPane = (figure, key) => {
+        const panes = Array.from(figure.querySelectorAll(".after-pane[data-pane]"));
+        const pane = panes.find((item) => item.dataset.pane === key) ?? panes.find((item) => item.dataset.pane === "default");
+        for (const item of panes) item.hidden = item !== pane;
+        const legend = figure.querySelector(".wf-legend");
+        if (legend) legend.hidden = !pane?.querySelector(".wf");
+        return pane;
+      };
+
+      const renderAfter = () => {
+        for (const figure of document.querySelectorAll("figure.shot-after")) {
+          const tabs = Array.from(figure.querySelectorAll('[role="tab"]'));
+          if (tabs.length === 0) {
+            showPane(figure, "default");
+            continue;
+          }
+          const questionTabs = tabs.filter((tab) => tab.dataset.afterTab);
+          const defaultTab = tabs.find((tab) => tab.dataset.afterDefault);
+          let active = null;
+          let isHover = false;
+          if (hoverPreview && questionTabs.some((tab) => tab.dataset.afterTab === hoverPreview.question) && figure.querySelector('[data-pane="' + hoverPreview.question + ":" + hoverPreview.letter + '"]')) {
+            active = questionTabs.find((tab) => tab.dataset.afterTab === hoverPreview.question);
+            isHover = true;
+          }
+          const selected = selectedTabs.get(figure.dataset.afterFor);
+          if (!active && selected) {
+            active = selected === "default"
+              ? defaultTab
+              : questionTabs.find((tab) => tab.dataset.afterTab === selected);
+          }
+          if (!active && recentQuestion) active = questionTabs.find((tab) => tab.dataset.afterTab === recentQuestion);
+          const initial = initialTabs.get(figure.dataset.afterFor);
+          if (!active && initial) {
+            active = initial === "default"
+              ? defaultTab
+              : questionTabs.find((tab) => tab.dataset.afterTab === initial);
+          }
+          if (!active) active = defaultTab ?? tabs[0];
+          const isDefault = Boolean(active.dataset.afterDefault);
+          const question = active.dataset.afterTab;
+          const letter = isDefault
+            ? null
+            : active.dataset.lockedOption ?? (isHover ? hoverPreview.letter : (picks[question]?.o ?? "A"));
+          for (const tab of tabs) {
+            const isSelected = tab === active;
+            tab.setAttribute("aria-selected", String(isSelected));
+            tab.tabIndex = isSelected ? 0 : -1;
+            const holder = tab.querySelector("[data-letter]");
+            const tabLetter = tab.dataset.lockedOption ?? (tab === active && isHover ? hoverPreview.letter : (picks[tab.dataset.afterTab]?.o ?? "A"));
+            if (holder) holder.textContent = tabLetter;
+            if (tab.dataset.afterTab) {
+              const controlledPane = figure.querySelector('[data-pane="' + tab.dataset.afterTab + ":" + tabLetter + '"]');
+              if (controlledPane?.id) tab.setAttribute("aria-controls", controlledPane.id);
+              const tabFallback = controlledPane?.dataset.fallback === "true";
+              tab.classList.toggle("fallback", tabFallback);
+              if (tabFallback) tab.title = "Bez vlastního náhledu — zobrazen výchozí návrh";
+              else tab.removeAttribute("title");
+            }
+          }
+          const pane = showPane(figure, isDefault ? "default" : question + ":" + letter);
+          if (pane?.id) active.setAttribute("aria-controls", pane.id);
+          const fallback = pane?.dataset.fallback === "true";
+          active.classList.toggle("fallback", fallback);
+          if (fallback) active.title = "Bez vlastního náhledu — zobrazen výchozí návrh";
+          const afterLabel = figure.querySelector('[data-role="after-label"]');
+          if (afterLabel) {
+            if (isDefault) {
+              afterLabel.textContent = afterLabel.dataset.defaultLabel ?? "výchozí návrh";
+            } else if (active.dataset.locked) {
+              afterLabel.textContent = active.dataset.afterLabel;
+            } else {
+              const suffix = picks[question]
+                ? "vybráno"
+                : pane?.dataset.recommended === "true"
+                  ? "doporučeno"
+                  : "náhled";
+              afterLabel.textContent = question + "·" + letter + " · " + suffix + (fallback ? " · náhled = výchozí návrh" : "");
+            }
+          }
+        }
+        pointerPreviewDirty = false;
+      };
+
+      const handoffValue = () => {
+        const pairs = openPicks()
+          .sort((left, right) => Number(left.slice(1)) - Number(right.slice(1)))
+          .map((question) => question + "=" + picks[question].o);
+        const textarea = document.getElementById("handoff-block");
+        return pairs.length > 0 && textarea ? textarea.dataset.prefix + " " + pairs.join("; ") : "";
+      };
+
+      const renderHandoff = () => {
+        const textarea = document.getElementById("handoff-block");
+        const list = document.getElementById("handoff-list");
+        const note = document.getElementById("handoff-note");
+        const value = handoffValue();
+        if (textarea) textarea.value = value;
+        if (list) {
+          list.replaceChildren();
+          for (const question of openPicks().sort((left, right) => Number(left.slice(1)) - Number(right.slice(1)))) {
+            const item = document.createElement("li");
+            item.textContent = question + " → " + picks[question].o + " · " + optionName(question, picks[question].o);
+            list.append(item);
+          }
+          for (const warning of changedOptions.values()) {
+            const item = document.createElement("li");
+            item.textContent = warning;
+            list.append(item);
+          }
+          for (const { message } of stalePicks.values()) {
+            const item = document.createElement("li");
+            item.textContent = message;
+            list.append(item);
+          }
+        }
+        const count = openPicks().length;
+        if (note) note.textContent = count ? count + " rozhodnutí připravená" : "Zatím nic nevybráno.";
+        for (const button of [document.getElementById("db-copy"), document.getElementById("handoff-copy")]) {
+          if (button) button.disabled = !value;
+        }
+      };
+
+      const renderBar = () => {
+        const chosen = openPicks().length;
+        const pending = questionSections.length - chosen;
+        const pendingNode = document.querySelector('.decide-bar [data-role="pending"]');
+        const chosenNode = document.querySelector('.decide-bar [data-role="chosen"]');
+        const next = document.getElementById("db-next");
+        if (pendingNode) pendingNode.textContent = String(pending);
+        if (chosenNode) chosenNode.textContent = String(chosen);
+        if (next) next.disabled = pending === 0;
+        renderStatus();
+      };
+
+      const render = (collapseQuestion = null) => {
+        renderQuestions(collapseQuestion);
+        renderReferences();
+        renderScreens();
+        renderAfter();
+        renderHandoff();
+        renderBar();
+      };
+
+      const cancelPointerUnlock = () => {
+        if (pointerUnlockTimer === null) return;
+        clearTimeout(pointerUnlockTimer);
+        pointerUnlockTimer = null;
+      };
+      const unlockPointer = (renderDirtyPreview = true) => {
+        cancelPointerUnlock();
+        pointerQuestion = null;
+        const shouldRender = pointerPreviewDirty;
+        pointerPreviewDirty = false;
+        if (renderDirtyPreview && shouldRender) renderAfter();
+      };
+      document.addEventListener("pointerdown", (event) => {
+        cancelPointerUnlock();
+        const option = event.target.closest?.("label.q-option[data-option]");
+        pointerQuestion = option?.closest("section.q")?.dataset.question ?? null;
+      });
+      document.addEventListener("pointerup", () => {
+        if (!pointerQuestion) return;
+        cancelPointerUnlock();
+        pointerUnlockTimer = setTimeout(() => {
+          pointerUnlockTimer = null;
+          pointerQuestion = null;
+          const shouldRender = pointerPreviewDirty;
+          pointerPreviewDirty = false;
+          if (shouldRender) renderAfter();
+        }, 0);
+      });
+      document.addEventListener("pointercancel", () => unlockPointer());
+
+      const revealPreview = (question) => {
+        requestAnimationFrame(() => {
+          const barBottom = document.getElementById("decide-bar")?.getBoundingClientRect().bottom ?? 0;
+          const candidates = Array.from(document.querySelectorAll("figure.shot-after"))
+            .filter((figure) => figure.querySelector('[data-pane^="' + question + ':"]'));
+          const primary = questionById.get(question)?.closest(".screen-card")?.querySelector("figure.shot-after");
+          const figure = candidates.includes(primary) ? primary : candidates[0];
+          if (!figure) return;
+          const rect = figure.getBoundingClientRect();
+          if (rect.top < barBottom + 8 || rect.bottom > window.innerHeight) {
+            figure.scrollIntoView({ block: "nearest" });
+          }
+        });
+      };
+
+      document.addEventListener("change", (event) => {
+        const input = event.target.closest?.('section.q input[type="radio"]');
+        if (!input) return;
+        const section = input.closest("section.q");
+        const question = section?.dataset.question;
+        if (!question) return;
+        delete picks[question];
+        picks[question] = { o: input.value, n: Number(section.dataset.options) };
+        changedOptions.delete(question);
+        recentQuestion = question;
+        selectedTabs.clear();
+        store.set(KEY_PICKS, picks);
+        const pointerSelection = pointerQuestion === question;
+        const keyboardSelection = input.matches?.(":focus-visible") && !pointerSelection;
+        const finishSelection = () => {
+          if (pointerSelection) unlockPointer(false);
+          else pointerQuestion = null;
+          render(keyboardSelection ? null : question);
+          if (!keyboardSelection) section.querySelector(".q-summary")?.focus({ preventScroll: true });
+          revealPreview(question);
+        };
+        if (pointerSelection) queueMicrotask(finishSelection);
+        else finishSelection();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        const input = event.target.closest?.('section.q input[type="radio"]');
+        if (input) pointerQuestion = null;
+        if (!input || event.key !== "Enter") return;
+        event.preventDefault();
+        input.click();
+      });
+
+      document.addEventListener("click", (event) => {
+        const change = event.target.closest?.("[data-change-question]");
+        if (change) {
+          event.preventDefault();
+          event.stopPropagation();
+          const fold = questionById.get(change.dataset.changeQuestion)?.querySelector(".q-fold");
+          if (fold) fold.open = true;
+          return;
+        }
+        const cancel = event.target.closest?.("[data-cancel-question]");
+        if (cancel) {
+          event.preventDefault();
+          event.stopPropagation();
+          delete picks[cancel.dataset.cancelQuestion];
+          recentQuestion = Object.keys(picks).filter((question) => questionById.has(question)).at(-1) ?? null;
+          selectedTabs.clear();
+          store.set(KEY_PICKS, picks);
+          render();
+          return;
+        }
+        const acknowledge = event.target.closest?.("[data-ack]");
+        if (acknowledge) {
+          const decision = acknowledge.closest("article.decision[data-question]");
+          if (decision) {
+            delete picks[decision.dataset.question];
+            stalePicks.delete(decision.dataset.question);
+            store.set(KEY_PICKS, picks);
+            const mismatch = decision.querySelector('[data-role="mismatch"]');
+            if (mismatch) mismatch.hidden = true;
+            render();
+          }
+          return;
+        }
+        const discard = event.target.closest?.("[data-discard-pick]");
+        if (discard) {
+          const question = discard.dataset.discardPick;
+          delete picks[question];
+          stalePicks.delete(question);
+          store.set(KEY_PICKS, picks);
+          const archived = archivedByQuestion.get(question);
+          const mismatch = archived?.querySelector('[data-role="mismatch"]');
+          if (mismatch) mismatch.hidden = true;
+          render();
+        }
+      });
+
+      for (const tab of document.querySelectorAll("[data-after-tab]")) {
+        tab.addEventListener("click", () => {
+          const figure = tab.closest("figure.shot-after");
+          if (!figure) return;
+          selectedTabs.set(figure.dataset.afterFor, tab.dataset.afterDefault ? "default" : tab.dataset.afterTab);
+          renderAfter();
+        });
+        tab.addEventListener("keydown", (event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          const tabs = Array.from(tab.closest('[role="tablist"]')?.querySelectorAll('[role="tab"]') ?? []);
+          if (tabs.length === 0) return;
+          event.preventDefault();
+          const current = tabs.indexOf(tab);
+          const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+          tabs[next].click();
+          tabs[next].focus();
+        });
+      }
+
+      for (const tab of document.querySelectorAll('[data-after-default]')) {
+        tab.addEventListener("click", () => {
+          const figure = tab.closest("figure.shot-after");
+          if (!figure) return;
+          selectedTabs.set(figure.dataset.afterFor, "default");
+          renderAfter();
+        });
+        tab.addEventListener("keydown", (event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          const tabs = Array.from(tab.closest('[role="tablist"]')?.querySelectorAll('[role="tab"]') ?? []);
+          if (tabs.length === 0) return;
+          event.preventDefault();
+          const current = tabs.indexOf(tab);
+          const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+          tabs[next].click();
+          tabs[next].focus();
+        });
+      }
+
+      for (const option of document.querySelectorAll("label.q-option[data-option]")) {
+        const section = option.closest("section.q");
+        const setPreview = () => {
+          if (hoverPreview?.question === section.dataset.question && hoverPreview.letter === option.dataset.option) return;
+          hoverPreview = { question: section.dataset.question, letter: option.dataset.option };
+          if (pointerQuestion) {
+            pointerPreviewDirty = true;
+            return;
+          }
+          renderAfter();
+        };
+        const clearPreview = () => {
+          if (!hoverPreview) return;
+          hoverPreview = null;
+          if (pointerQuestion) {
+            pointerPreviewDirty = true;
+            return;
+          }
+          renderAfter();
+        };
+        option.addEventListener("mouseenter", setPreview);
+        option.addEventListener("mouseleave", clearPreview);
+        option.addEventListener("focusin", setPreview);
+        option.addEventListener("focusout", (event) => {
+          if (!option.contains(event.relatedTarget)) clearPreview();
+        });
+      }
+
+      const statusNode = document.querySelector(".db-status");
+      const renderStatus = () => {
+        if (!statusNode) return;
+        statusNode.replaceChildren();
+        if (stalePicks.size > 0) {
+          for (const [question, { message }] of stalePicks) {
+            const text = document.createElement("span");
+            text.textContent = message + " ";
+            const discard = document.createElement("button");
+            discard.type = "button";
+            discard.className = "link-button";
+            discard.dataset.discardPick = question;
+            discard.textContent = "Zahodit";
+            statusNode.append(text, discard);
+          }
+          return;
+        }
+        const allChosen = questionSections.length > 0 && openPicks().length === questionSections.length;
+        statusNode.textContent = allChosen ? "Vše vybráno — zkopíruj blok" : "";
+      };
+      const copyBlock = async () => {
+        const textarea = document.getElementById("handoff-block");
+        const value = handoffValue();
+        if (!textarea || !value) return;
+        let copied = false;
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(value);
+            copied = true;
+          }
+        } catch {}
+        if (!copied) {
+          textarea.focus();
+          textarea.select();
+          try { copied = document.execCommand("copy"); } catch {}
+        }
+        const copyButtons = [document.getElementById("db-copy"), document.getElementById("handoff-copy")].filter(Boolean);
+        if (statusNode) statusNode.textContent = copied ? "Zkopírováno ✓" : "Označeno — zkopíruj Cmd+C";
+        if (copied) {
+          for (const button of copyButtons) button.textContent = "Zkopírováno ✓";
+          setTimeout(() => {
+            for (const button of copyButtons) button.textContent = "Zkopírovat pro chat";
+            renderStatus();
+          }, 1500);
+        }
+      };
+      document.getElementById("db-copy")?.addEventListener("click", copyBlock);
+      document.getElementById("handoff-copy")?.addEventListener("click", copyBlock);
+      document.getElementById("handoff-clear")?.addEventListener("click", () => {
+        if (!openPicks().length || !window.confirm("Zrušit všechny volby v prohlížeči?")) return;
+        for (const question of openPicks()) delete picks[question];
+        store.del(KEY_PICKS);
+        recentQuestion = null;
+        selectedTabs.clear();
+        render();
+      });
+      document.getElementById("db-next")?.addEventListener("click", () => {
+        const unanswered = questionSections.filter((section) => !picks[section.dataset.question]);
+        const target = unanswered.find((section) => section.getBoundingClientRect().top > 80) ?? unanswered[0];
+        if (!target) {
+          if (statusNode) statusNode.textContent = "Vše vybráno — zkopíruj blok";
+          return;
+        }
+        const questionFold = target.querySelector(".q-fold");
+        const screenFold = target.closest(".screen-fold");
+        if (screenFold) screenFold.open = true;
+        if (questionFold) questionFold.open = true;
+        target.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        target.querySelector('input[type="radio"]')?.focus({ preventScroll: true });
+      });
+
+      const restoredScroll = store.getSession(KEY_SCROLL);
+      if (Number.isFinite(restoredScroll)) requestAnimationFrame(() => window.scrollTo(0, restoredScroll));
+      let scrollQueued = false;
+      window.addEventListener("scroll", () => {
+        if (scrollQueued) return;
+        scrollQueued = true;
+        setTimeout(() => {
+          scrollQueued = false;
+          store.setSession(KEY_SCROLL, window.scrollY);
+        }, 250);
+      }, { passive: true });
+
+      const relativeAge = document.getElementById("relative-age");
+      const updatedAt = document.body.dataset.updatedAt;
+      const browserNow = performance.timeOrigin + performance.now();
+      const elapsedMinutes = Math.max(0, Math.floor((browserNow - Date.parse(updatedAt)) / 60000));
+      if (relativeAge && Number.isFinite(elapsedMinutes)) {
+        relativeAge.textContent = elapsedMinutes < 1
+          ? "(právě teď)"
+          : elapsedMinutes < 60
+            ? "(před " + elapsedMinutes + " min)"
+            : elapsedMinutes < 1440
+              ? "(před " + Math.floor(elapsedMinutes / 60) + " h)"
+              : "(před " + Math.floor(elapsedMinutes / 1440) + " dny)";
+      }
+      render();
+    })();
+  </script>
+</body>
+</html>

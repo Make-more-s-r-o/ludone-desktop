@@ -1,0 +1,119 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-firma-zapojeni
+
+ ❯ tests/upload-client.test.js (77 tests | 1 failed | 76 skipped) 30ms
+   ↓ pravdivá hláška, když firma pro upload není > 🔴 nedosažitelný seznam firem NEHLÁSÍ chybějící firmu a je opakovatelný
+   ↓ pravdivá hláška, když firma pro upload není > nevybraná firma čeká na člověka, ne na další pokus
+   ↓ pravdivá hláška, když firma pro upload není > bez udaného důvodu zůstává původní hláška beze změny
+   ↓ vlastník nahrávky před uploadem > položku pořízenou přihlášeným odešle pod toutéž session
+   ↓ vlastník nahrávky před uploadem > 🔴 každý požadavek zakazuje přesměrování
+   ↓ vlastník nahrávky před uploadem > 🔴 přesměrování pojmenuje, místo aby z něj udělalo obyčejný výpadek sítě
+   ↓ vlastník nahrávky před uploadem > u jiné síťové chyby doplní strojový kód, ale nic z požadavku
+   ↓ vlastník nahrávky před uploadem > 🔴 příčinu vytáhne i z vnořené chyby, kterou Node zabalí
+   ↓ vlastník nahrávky před uploadem > 🔴 pojmenuje krok uploadu, který spadl — metodu a cestu
+   ↓ vlastník nahrávky před uploadem > 🔴 pojmenuje i chromí chybu, která nemá code ani cause
+   ↓ vlastník nahrávky před uploadem > jiná session položku pozastaví, zachová a nic neodešle
+   ↓ vlastník nahrávky před uploadem > neznámého vlastníka nepřiřadí první přihlášené session a nechá jej čekat
+   ↓ vlastník nahrávky před uploadem > neověřená identita session je vidět jako čekání na potvrzení
+   ↓ vlastník nahrávky před uploadem > chybějící přihlášení se dál počítá jako běžné čekání
+   ↓ vlastník nahrávky před uploadem > starší položku bez pole vlastníka považuje za neznámou a neodešle ji
+   ↓ shodný obsah zvukových stop > ticho odmítne trvale před tokenem i prvním HTTP požadavkem bez úniku údajů
+   ↓ shodný obsah zvukových stop > netichý obsah odmítne trvale před tokenem i prvním HTTP požadavkem bez úniku údajů
+   ↓ shodný obsah zvukových stop > fronta shodné stopy označí jako selhání s důvodem a další pokus nenaplánuje
+   ↓ shodný obsah zvukových stop > různé otisky i při stejné velikosti odešle jako dvě úplné stopy
+   ↓ výsledek uploadu v perzistentním souboru fronty > jednostopý upload uloží per-stopové ID, session a bajty až do outgoing.json
+   ↓ výsledek uploadu v perzistentním souboru fronty > dvoustopý upload uloží per-stopové ID, session a bajty až do outgoing.json
+   ↓ výsledek uploadu v perzistentním souboru fronty > po pádu hned po INITu restart naváže stejnou session a dopíše obě stopy
+   ↓ výsledek uploadu v perzistentním souboru fronty > po úspěšné první stopě a výpadku druhé zachová oba serverové klíče pro retry
+   ↓ kontrakt INITu nativní a prohlížečové cesty > různý obsah stop: dvě stopy nemají shodný clientRecordingId ani při opakování
+   ↓ kontrakt INITu nativní a prohlížečové cesty > 🔴 druhá stopa se připne ke schůzce, kterou dostala první
+   ↓ mapování serverových chyb do tříd fronty > 403 company_out_of_scope podmíněně resetuje přesně odmítnutý globální výběr
+   ↓ mapování serverových chyb do tříd fronty > 🔴 429 s hlavičkou Retry-After nese pauzu určenou serverem
+   ↓ mapování serverových chyb do tříd fronty > když hlavička chybí, vezme se retryAfterSeconds z těla
+   ↓ mapování serverových chyb do tříd fronty > neuzná číselný prefix neplatné hlavičky a použije platné celé sekundy z těla
+   ↓ mapování serverových chyb do tříd fronty > mock HTTP 429 projde z klientovy chyby až do hodinového výsledku čisté fronty
+   ↓ mapování serverových chyb do tříd fronty > 🔴 nesmyslnou hodnotu ignoruje a spadne zpět na vlastní rozvrh
+   ↓ mapování serverových chyb do tříd fronty > HTTP 507 quota_exceeded frontu pozastaví a nikdy položku nevzdá
+   ↓ mapování serverových chyb do tříd fronty > quota_exceeded zachová všechny tři naměřené hodnoty kvóty
+   ↓ mapování serverových chyb do tříd fronty > HTTP 503: vypnuté úložiště čeká na člověka
+   ↓ mapování serverových chyb do tříd fronty > HTTP 503: přechodná chyba úložiště se opakuje
+   ↓ mapování serverových chyb do tříd fronty > HTTP 503: nedostupný registr firem se opakuje
+   ↓ mapování serverových chyb do tříd fronty > HTTP 503: neznámý důvod je fail-closed
+   ↓ mapování serverových chyb do tříd fronty > HTTP 503: samotné `retryable: false` nestačí k opakování
+   ↓ mapování serverových chyb do tříd fronty > HTTP 503: tělo bez kódu je přechodný výpadek, ne rozhodnutí aplikace
+   ↓ mapování serverových chyb do tříd fronty > unauthorized na posledním pokusu frontu pozastaví místo trvalého selhání
+   ↓ mapování serverových chyb do tříd fronty > idempotency_conflict je permanentní, neopakuje se a je hlasitě v logu
+   ↓ mapování serverových chyb do tříd fronty > kód storage_disabled dostane třídu paused
+   ↓ mapování serverových chyb do tříd fronty > kód session_missing dostane třídu paused
+   ↓ mapování serverových chyb do tříd fronty > kód session_not_found dostane třídu paused
+   ↓ mapování serverových chyb do tříd fronty > kód session_forbidden dostane třídu permanent
+   ↓ mapování serverových chyb do tříd fronty > kód company_out_of_scope dostane třídu permanent
+   ↓ mapování serverových chyb do tříd fronty > kód unsupported_content_type dostane třídu permanent
+   ↓ mapování serverových chyb do tříd fronty > kód too_large dostane třídu permanent
+   ↓ mapování serverových chyb do tříd fronty > kód invalid_input dostane třídu permanent
+   ↓ mapování serverových chyb do tříd fronty > kód sha256_mismatch dostane třídu permanent
+   ↓ mapování serverových chyb do tříd fronty > kód invalid_json dostane třídu retryable
+   ↓ mapování serverových chyb do tříd fronty > kód storage_failed dostane třídu retryable
+   ↓ mapování serverových chyb do tříd fronty > HTTP 503 bez aplikačního kódu zůstává přechodné
+   ↓ mapování serverových chyb do tříd fronty > HTTP 507 bez aplikačního kódu zůstává přechodné
+   ↓ mapování serverových chyb do tříd fronty > chybějící sessionId z INITu odmítne před přenosem obsahu
+   × resumable upload > 🔴 awaitne durable pin a při chybě persist neudělá žádný HTTP request 29ms
+     → expected [Function] to throw error including 'disk je plný' but got 'upload_failed (HTTP undefined)'
+   ↓ resumable upload > initialized legacy bez pinu zablokuje před HTTP
+   ↓ resumable upload > uložený pin má přednost před novou globální firmou
+   ↓ resumable upload > po výpadku zopakuje stejný init, přečte stav a neodesílá hotovou část znovu
+   ↓ resumable upload > po ztracené odpovědi finalizace uzná stav stored a nefinalizuje podruhé
+   ↓ resumable upload > části všech stop posílá přísně sériově
+   ↓ resumable upload > soubor nad 512 MiB odmítne před prvním HTTP požadavkem
+   ↓ resumable upload > starší položku fronty bez kind dál odešle jako nahrávku
+   ↓ resumable upload > stabilní klíč váže clientRecordingId, druh stopy a otisk obsahu
+   ↓ resumable upload > stejný otisk odliší v identitě podle druhu stopy
+   ↓ resumable upload > změna clientRecordingId nebo otisku vždy změní idempotenční klíč
+   ↓ resumable upload > jiný obsah téže stopy mění hlavičku, ale zachová clientRecordingId a odhalí rozpor
+   ↓ bezpečné dokončení a diagnostika > token se neposkládá do chyby ani do žádného logu
+   ↓ bezpečné dokončení a diagnostika > visící HTTP požadavek skončí sanitizovaným přechodným timeoutem
+   ↓ bezpečné dokončení a diagnostika > quotaWarning zaloguje a přesto dokončí obě stopy
+   ↓ bezpečné dokončení a diagnostika > úspěšné HTTP bez potvrzeného dokončení položku neoznačí jako odeslanou
+   ↓ bezpečné dokončení a diagnostika > samotný stav stored bez velikosti a otisku není potvrzení dokončení
+   ↓ bezpečné dokončení a diagnostika > jiná velikost ve finálním potvrzení je permanentní konflikt, ale soubory zůstanou
+   ↓ bezpečné dokončení a diagnostika > časovou položku nikdy nepošle na endpoint nahrávek
+   ↓ záchytná síť proti záměně nahrávky > odmítne dokončení, které vrátí cizí recordingId
+   ↓ záchytná síť proti záměně nahrávky > jednostopá nahrávka projde a nespadne na chybějící druhé stopě
+   ↓ záchytná síť proti záměně nahrávky > shodné recordingId nechá upload projít beze změny
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/upload-client.test.js > resumable upload > 🔴 awaitne durable pin a při chybě persist neudělá žádný HTTP request
+AssertionError: expected [Function] to throw error including 'disk je plný' but got 'upload_failed (HTTP undefined)'
+
+Expected: "disk je plný"
+Received: "upload_failed (HTTP undefined)"
+
+ ❯ tests/upload-client.test.js:1375:5
+    1373|     const persist = vi.fn(async () => { throw new Error("disk je plný"…
+    1374| 
+    1375|     await expect(send(fixture.item, persist)).rejects.toThrow("disk je…
+       |     ^
+    1376|     expect(persist).toHaveBeenCalledExactlyOnceWith({ companyTabidooId…
+    1377|     expect(fetchImpl).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 76 skipped (77)
+   Start at  00:48:11
+   Duration  360ms (transform 63ms, setup 8ms, collect 80ms, tests 30ms, environment 0ms, prepare 44ms)
+
+EXIT_CODE=1
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/nahravky-firma-zapojeni
+
+ ✓ tests/upload-client.test.js (77 tests | 76 skipped) 19ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 76 skipped (77)
+   Start at  00:48:22
+   Duration  334ms (transform 60ms, setup 7ms, collect 80ms, tests 19ms, environment 0ms, prepare 42ms)
+
+RESTORED_EXIT_CODE=0

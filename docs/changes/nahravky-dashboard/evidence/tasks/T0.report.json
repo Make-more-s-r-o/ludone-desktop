@@ -1,0 +1,11 @@
+{
+  "task": "T0",
+  "premisaPlatila": true,
+  "kontrolniNula": { "backendChanges": 0, "designChanges": 0, "weakenedGates": 0, "liveAudioRuns": 0 },
+  "commit": "5e9145f",
+  "review": "Koordinátor přečetl produkční diff i změny testů. Projekce má allowlist serverových polí, legacy ID nelze přiřadit oběma stopám, chybějící metadata zůstávají null.",
+  "tests": [
+    { "command": "npx vitest run tests/queue.test.js", "exitCode": 0, "passed": 97, "log": "../../../../../dukazy/nahravky-dashboard-2026-09-14/integrace/T0-testy.log" }
+  ],
+  "verification": "tests-green"
+}
