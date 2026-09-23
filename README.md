@@ -46,3 +46,5 @@ Pro syntetické ověření MP3 lze spustit `node scripts/akceptace/stereo-audio.
 Tato vývojová kontrola potřebuje plný testovací `ffmpeg` a `ffprobe` v PATH;
 vytváří pouze umělé tóny. Produkční aplikace PATH nepoužívá. Syntetické výsledky
 nejsou náhradou živé přejímky mikrofonu a schůzky na Macu.
+
+Lokální balení prováděj po vlastním `npm ci` v daném checkoutu. Dočasný symlink na cizí `node_modules` není podklad pro instalačku: builder může vynechat tranzitivní závislosti. Úplnost obou skutečných balíčků ověří například `node scripts/akceptace/stereo-package.mjs "release/mac-arm64/LuDone Desktop.app" arm64` a stejný příkaz pro `release/mac/LuDone Desktop.app` / `x64`. Tato kontrola nedokládá podpis, instalaci ani živý zvuk.

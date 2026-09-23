@@ -1,6 +1,6 @@
 # Ruční ověření dashboardu nahrávek na Macu
 
-Aktuální výchozí instalace je 0.1.2; vydaná oprava má verzi 0.1.3. Tento postup sám o sobě nedokládá živou funkčnost. Názvy akcí odpovídají implementovanému UI.
+Snapshot instalace z 15. 9. byl 0.1.2; publikovaná verze je 0.1.3. Pro navazující 0.1.4 použij nejdřív závěrečnou sekci NRD-09; předchozí kroky popisují přejímku 0.1.3. Tento postup sám o sobě nedokládá živou funkčnost. Názvy akcí odpovídají implementovanému UI.
 
 Použij jen vlastní postradatelná testovací data. Nahraj přibližně 30 sekund syntetické řeči a systémového zvuku, nikdy schůzku ani cizí obsah. Do veřejného Gitu neukládej audio, tokeny, e-mail, plná serverová UUID, lokální cesty ani hodnoty release secrets. V protokolu použij jedinečný neškodný název a krátké ID z UI (prvních osm znaků); stejný prefix používá potvrzovací dialog.
 
@@ -83,9 +83,9 @@ se nevytváří jen kvůli tomuto testu. Jednotkové testy se nezapisují jako �
 
 ## Přejímka stereo WebM/Opus — NRD-09 (po vydání navazující verze)
 
-Tento postup zatím není důkaz funkčnosti ani oznámení vydání. Produkčně je doložená 0.1.3; nový kód musí nejdřív projít integrací a vydáním.
+Tento postup zatím není důkaz funkčnosti ani oznámení vydání. Produkčně je doložená 0.1.3; nový kód je integrovaný, ale musí dokončit přejímku a schválené vydání.
 
-1. V Nastavení ověř verzi obsahující NRD-09 a správnou firmu. Nahraj krátkou schůzku: řekni „tohle je mikrofon“, nech protistranu říct „tohle je systémový zvuk“. Použij sluchátka, aby kontrolu nerušil přeslech z reproduktorů.
+1. Po schváleném vydání klikni v aplikaci 0.1.3 na „Aktualizovat“. Po restartu v Nastavení ověř verzi **0.1.4** a správnou firmu. Nahraj krátkou schůzku: řekni „tohle je mikrofon“, nech protistranu říct „tohle je systémový zvuk“. Použij sluchátka, aby kontrolu nerušil přeslech z reproduktorů.
 2. Zvol „Uložit a odeslat“. Po dokončení má na webu vzniknout **jeden** záznam s názvem celé schůzky. Spusť přepis právě u něj; musí obsahovat obě strany ve správném pořadí.
 3. Zkontroluj výsledný WebM ve sluchátkách: mikrofon vlevo, protistrana vpravo. Lokální originály mají zůstat dostupné podle nastavené retence.
 4. Druhou krátkou nahrávku nech na Macu, aplikaci zavři a znovu otevři. Z přehledu ji výslovně odešli; opět vznikne jen jeden záznam.

@@ -1,0 +1,12 @@
+$ node scripts/akceptace/stereo-audio.mjs --ffmpeg /tmp/ludone-opus-reference.eQ32QG/ffmpeg --ffprobe /tmp/ludone-opus-reference.eQ32QG/ffprobe
+{"scenario":"live","samples":576000,"left440":0.1249706259436563,"right880":0.1251231981755925,"bytes":202468}
+PASS živý stereo WebM → jediný WebM/Opus, kanály, délka, soukromí a ochrana přepsání
+{"scenario":"aligned","samples":576000,"left440":0.12493608371118153,"right880":0.12443193769140432,"bytes":201306}
+PASS dva původní soubory → zarovnaný stereo WebM/Opus
+{"scenario":"microphone-only","samples":576000,"left440":0.12495256511972146,"right880":2.692694272864957e-21,"bytes":199014}
+PASS jen mikrofon → vlevo hlas, vpravo ticho
+PASS skutečný runtime helper → přibalený encoder → trvalá identita po restartu
+PASS původní soubory zůstaly bitově zachované
+FAILURES=0
+
+EXIT_CODE=0

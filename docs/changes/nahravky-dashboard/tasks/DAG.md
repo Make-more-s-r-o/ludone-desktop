@@ -6,8 +6,8 @@
 
 | Task | Závisí na | Důvod |
 |---|---|---|
-| T-S0 | — | Kontrakt D20 před implementací. |
-| T-S1 | T-S0 | Trvalý MP3 a jediný upload. |
+| T-S0 | — | Kontrakt D20 s upřesněním formátu D21 před implementací. |
+| T-S1 | T-S0 | Trvalý WebM/Opus a jediný upload. |
 | T-S2 | T-S0 | Přibalený encoder. |
 | T-SR | T-S0 | Retence derivátů; sdílené API předává T-S1. |
 | T-S3 | T-S1, T-S2, T-SR | Integrace a nezávislá přejímka. |
@@ -109,7 +109,7 @@ Aktuální etapa sdílených hotspotů je T-A4; T-05 byl převzat z `e225880` a 
 
 Přesné vlastnictví souborů určuje packet a dispatch. `electron/main.cjs` se dělí pouze na explicitně vyjmenované bloky (auth / queue / updater). Žádné souběžné zápisy do jednoho stromu. Koordinátor píše integrační dokumenty, mění stav masterplánu a provádí přejímku.
 
-## D20 — stereo MP3 (15. 9.)
+## D20 / D21 — jediný stereo soubor (15. a 23. 9.)
 
 `T-S0 (dokumentace) → T-S1 (Sol runtime) + T-S2 (Sol balení) + T-SR (Sol retence) → T-S3 (Astra integrace/review)`
 

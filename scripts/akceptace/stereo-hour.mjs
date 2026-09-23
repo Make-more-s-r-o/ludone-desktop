@@ -41,6 +41,7 @@ try {
   const start = performance.now();
   await prepareStereoWebm({ stereoWebmPath: input, outputPath,
     ...(options["--resources"] ? { isPackaged: true, resourcesPath: path.resolve(options["--resources"]) } : {}) });
+  const remuxSeconds = (performance.now() - start) / 1000;
   const details = JSON.parse(await run(ffprobe, ["-v", "error", "-show_entries",
     "format=duration:stream=codec_name,channels,sample_rate", "-of", "json", outputPath], true));
   assert.equal(details.streams.length, 1);
@@ -48,7 +49,7 @@ try {
   assert.equal(details.streams[0].channels, 2);
   assert.equal(details.streams[0].sample_rate, "48000");
   assert(Math.abs(Number(details.format.duration) - 3600) < 0.1);
-  console.log(JSON.stringify({ remuxSeconds: (performance.now() - start) / 1000,
+  console.log(JSON.stringify({ remuxSeconds,
     inputBytes: (await stat(input)).size, outputBytes: (await stat(outputPath)).size, ...details }));
   await run(ffmpeg, ["-hide_banner", "-nostdin", "-nostats", "-loglevel", "error",
     "-xerror", "-i", outputPath, "-f", "null", "-"]);

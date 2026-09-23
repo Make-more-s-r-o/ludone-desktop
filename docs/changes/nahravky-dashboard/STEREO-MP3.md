@@ -19,7 +19,7 @@ Dan 15. 9. 2026 výslovně změnil výsledek: „na app.ludone jde jen jeden zá
 - Za možné zahájení se považuje také uložený company pin nebo historie pokusu bez odpovědi; samotná nulová ID nejsou důkazem nulového HTTP. Migrační zábrana přežije i reset vlastnictví. Rozpracované historické uploady se automaticky nepřevádějí na novou identitu; před dalším HTTP se bezpečně pozastaví. Již odeslané záznamy se zpětně nepřepisují ani nemažou. Žádný automatický návrat ke dvěma uploadům.
 - Převod nevyžaduje Homebrew, PATH ani ruční instalaci. Balení pro oba Macy obsahuje odpovídající encoder a jeho licenční podklady; podpis musí zahrnout přibalený program.
 
-## Kontext a konflikty
+## Výchozí stav před implementací (historický kontext)
 
 - `src/lib/stereo-recording.js`: mic→L/system→R a stabilní systémová větev již existují.
 - `electron/main.cjs`: stereo dnes žije v temp, fronta se zakládá z originálů a export se po rozhodnutí maže.
@@ -51,4 +51,4 @@ Runtime a balení mají oddělené worktree a allowlisty. Root vlastní dokument
 
 ## Stav
 
-🟡 Implementace se přizpůsobuje D21; dřívější MP3 důkazy zůstávají historické. Finální WebM přejímka čeká. Produkčně vydaná zůstává 0.1.3.
+🧪 D21 je implementované a review produktového diffu je uzavřené. Společné brány, build, E6, skutečný encoder nad syntetickým audiem a hodinový soubor prošly. Čistý klon, balení a CI jsou v závěrečné přejímce. [Aktuální důkazy](../../../dukazy/stereo-opus-2026-09-23/REPORT.md). Produkčně vydaná zůstává 0.1.3; živá schůzka a přepis 0.1.4 čekají na Dana.

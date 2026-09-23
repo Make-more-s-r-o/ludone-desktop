@@ -5,22 +5,22 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-23T09:57:20.241Z",
+    "updatedAt": "2026-09-23T10:17:32.333Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
     "audiences": [],
     "outOfScope": []
   },
-  "phase": "execution",
+  "phase": "review_delivery",
   "guard": {
     "requires": []
   },
   "summary": {
-    "done": 8,
+    "done": 9,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 1
+    "notStarted": 0
   },
   "features": [
     {
@@ -133,11 +133,11 @@
       "name": "Jedna schůzka v jednom stereo souboru",
       "whatItGives": "Celý rozhovor se odešle společně jako úsporný WebM/Opus; mikrofon vlevo, systém vpravo.",
       "scope": "approved",
-      "delivery": "no-code",
-      "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Dokončit D21 (WebM/Opus 96 kb/s), zopakovat integrační brány a nativní audio důkaz. MP3 důkazy 15. 9. jsou historické.",
+      "delivery": "coded",
+      "exposure": "local",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Dokončit přejímku lokálního balení, čistého klonu a CI; potom schválit tag 0.1.4 a ověřit živou schůzku na Macu.",
       "evidence": []
     }
   ],
@@ -190,14 +190,14 @@
     {
       "id": "execution",
       "name": "Implementace",
-      "status": "current",
-      "detail": "Tato fáze právě probíhá."
+      "status": "done",
+      "detail": "Fáze je dokončena."
     },
     {
       "id": "review_delivery",
       "name": "Kontrola a dodání",
-      "status": "upcoming",
-      "detail": "Tato fáze teprve přijde."
+      "status": "current",
+      "detail": "Tato fáze právě probíhá."
     },
     {
       "id": "archive",
@@ -377,7 +377,7 @@
       "id": "T-S1",
       "title": "Trvalý stereo Opus a jediný upload",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-S0"
@@ -389,7 +389,7 @@
       "id": "T-S2",
       "title": "Přibalený Opus nástroj pro oba Macy",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-S0"
@@ -413,8 +413,8 @@
       "id": "T-S3",
       "title": "Integrace a přejímka stereo MP3",
       "executor": "codex",
-      "state": "pending",
-      "attempts": 0,
+      "state": "dispatched",
+      "attempts": 1,
       "deps": [
         "T-S1",
         "T-S2",
@@ -474,6 +474,30 @@
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-23T10:17:32.333Z",
+      "text": "D21 je implementované: jeden stereo WebM/Opus se stabilní identitou. Root gates mají 1553 PASS a tři původní skipy, build/E6 i nativní syntetika včetně hodinového souboru prošly. Review uzavřelo dvě mezery v koši po pádu. Poslední test navíc pokrývá failed stav; čistý klon a balení následují."
+    },
+    {
+      "at": "2026-09-23T10:17:32.005Z",
+      "text": "Fáze se změnila z „execution“ na „review_delivery“."
+    },
+    {
+      "at": "2026-09-23T10:17:31.672Z",
+      "text": "Funkce NRD-09 byla aktualizována."
+    },
+    {
+      "at": "2026-09-23T10:17:31.297Z",
+      "text": "Task T-S3 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-23T10:17:30.913Z",
+      "text": "Task T-S2 má nově stav „completed“."
+    },
+    {
+      "at": "2026-09-23T10:17:10.664Z",
+      "text": "Task T-S1 má nově stav „completed“."
+    },
     {
       "at": "2026-09-23T09:57:20.241Z",
       "text": "D21: podle nového upřesnění zvolen WebM/Opus, 96 kb/s stereo. Serverový checkout e3e7dbac má podporu i přepisovou cestu; produkce a finální implementace zatím neověřeny."

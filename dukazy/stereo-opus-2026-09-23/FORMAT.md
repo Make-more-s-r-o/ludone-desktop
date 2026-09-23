@@ -25,6 +25,10 @@ Checkout `LuDone/ludone-app`, HEAD `e3e7dbac`; žádná serverová změna ani pr
 z tohoto čtení nevyplývají. Server zachová stereo, ale prompt nemá explicitní pravidlo
 pro rozpoznání mluvčího podle kanálu; to musí potvrdit skutečná přejímka.
 
+Oficiální Gemini dokumentace navíc uvádí `audio/webm` mezi podporovanými vstupy:
+https://ai.google.dev/gemini-api/docs/generate-content/audio
+To není měření výsledného společného přepisu schůzky.
+
 ## Podklad pro volbu kodeku
 
 Oficiální popis Opusu: https://opus-codec.org/ (řeč i obecné audio).

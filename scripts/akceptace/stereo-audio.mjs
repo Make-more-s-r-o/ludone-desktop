@@ -24,7 +24,7 @@ const encoderLocation = options["--resources"]
   ? { isPackaged: true, resourcesPath: path.resolve(options["--resources"]) }
   : {};
 const testFfmpeg = options["--ffmpeg"] ?? "ffmpeg";
-const testFfprobe = options["--ffprobe", "--resources"] ?? "ffprobe";
+const testFfprobe = options["--ffprobe"] ?? "ffprobe";
 const temporaryRoot = await mkdtemp(path.join(tmpdir(), "ludone-stereo-synthetic-"));
 let failures = 0;
 function run(executable, arguments_) {
@@ -119,8 +119,9 @@ try {
       recordingsDirectory: temporaryRoot, startedAt, endedAt, captureSources: "microphone+system" });
     const item = { attempts: 0, clientRecordingId, manifestPath, delivery, server: {}, state: "ceka",
       tracks: { microphone, system } };
-    const encoderOptions = { ...encoderLocation, recordingsDirectory: temporaryRoot,
-      projectRoot: options["--module"] ? path.resolve(path.dirname(options["--module"]), "..") : root };
+    const encoderOptions = { recordingsDirectory: temporaryRoot,
+      encoderOptions: { ...encoderLocation,
+        projectRoot: options["--module"] ? path.resolve(path.dirname(options["--module"]), "..") : root } };
     const ready = await ensureMeetingAudioReady(item, encoderOptions);
     assert.equal(ready.state, "ready");
     assert.equal(ready.mime, "audio/webm");
