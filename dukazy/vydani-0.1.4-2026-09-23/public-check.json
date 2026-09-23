@@ -1,0 +1,62 @@
+{
+  "version": "0.1.4",
+  "measuredAt": "2026-09-23T11:20:39.192Z",
+  "source": "https://stahnout.ludone.cz/desktop/",
+  "checks": [
+    {
+      "name": "LuDone-Desktop-0.1.4-arm64.dmg",
+      "status": 200,
+      "bytes": 134258502,
+      "metadataSizeMatched": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.4-arm64.dmg.blockmap",
+      "status": 200,
+      "bytes": 140441,
+      "metadataSizeMatched": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.4-arm64.zip",
+      "status": 200,
+      "bytes": 133952191,
+      "metadataSizeMatched": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.4-arm64.zip.blockmap",
+      "status": 200,
+      "bytes": 140294,
+      "metadataSizeMatched": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.4-x64.dmg",
+      "status": 200,
+      "bytes": 141521984,
+      "metadataSizeMatched": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.4-x64.dmg.blockmap",
+      "status": 200,
+      "bytes": 149877,
+      "metadataSizeMatched": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.4-x64.zip",
+      "status": 200,
+      "bytes": 141221721,
+      "metadataSizeMatched": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.4-x64.zip.blockmap",
+      "status": 200,
+      "bytes": 147117,
+      "metadataSizeMatched": false
+    }
+  ],
+  "metadata": {
+    "bytes": 1278,
+    "sha256": "213ddd7209a61056bf62fc08becfe576f303b6bd838342e2d01ff9117c7c7001",
+    "releaseDate": "2026-09-23T11:18:24.929Z",
+    "releaseNotes": "Celá schůzka se odesílá jako jeden stereo soubor: mikrofon vlevo, systémový zvuk vpravo.\nÚsporný formát WebM/Opus zachová nové nahrávky bez další ztrátové konverze. Soubor zůstává uložený na Macu pro pozdější odeslání a pokračování po restartu.\nPůvodní nahrávky zůstávají zachované podle nastavené retence. Staré rozpracované uploady se nepřevádějí automaticky na nový záznam.\n"
+  },
+  "verdict": "published"
+}

@@ -1,0 +1,5 @@
+Měřeno UTC: 2026-09-23T11:12:16.952933+00:00
+Metoda: read-only Info.plist /Applications/LuDone Desktop.app
+CFBundleShortVersionString=0.1.3
+CFBundleIdentifier=cz.ludone.desktop
+Aplikace se nespouštěla, neukončovala ani neinstalovala.

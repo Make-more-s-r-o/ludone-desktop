@@ -198,3 +198,7 @@ To dokládá kompatibilitu kódu, nikoli skutečný přepis či nasazenou verzi 
 Zdroje: `private-recording-storage.ts:21–40`, `normalize.ts:542–601`,
 `transcribe/run.ts:1770–1785`, `file-drop-zone.tsx:99–104` v serverovém checkoutu.
 D21 mění pouze formát a potřebnou konverzi v D20; bezpečnost fronty a jeden upload platí dál.
+
+## D22 — pověření k vydání 0.1.4 (23. 9. 2026)
+
+Dan odpověděl „Ano, tak vydej“ na výslovnou otázku, zda má koordinátor vydat připravenou 0.1.4. Koordinátor smí vytvořit a pushnout tag v0.1.4 a dokončit podepsané a notarizované vydání na stahnout.ludone.cz/desktop/ včetně aktualizačního feedu. Pověření samo nedokládá úspěšnou publikaci ani instalaci na Macu; ty vyžadují samostatné důkazy. Existující záloha klíče a přístupy se znovu nevyžadují.

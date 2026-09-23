@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-23T10:29:14.410Z",
+    "updatedAt": "2026-09-23T11:24:50.629Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -115,17 +115,18 @@
     {
       "id": "NRD-08",
       "name": "Vydání a aktualizace",
-      "whatItGives": "Nová podepsaná verze je připravená k vydání a aplikace hlásí aktualizaci.",
+      "whatItGives": "Podepsaná a notarizovaná 0.1.4 je dostupná pro oba Macy; aplikace nabídne aktualizaci a instalaci po kliknutí.",
       "scope": "approved",
       "delivery": "merged",
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "0.1.3 vydaná: podpis, notarizace a veřejné HTTPS ověřené. Na Macu zatím 0.1.2; čeká skutečná instalace. Nový souhlas a oznámení se naostro ověří při další aktualizaci z 0.1.3.",
+      "nextStep": "0.1.4 vydaná: podpis, notarizace a veřejné HTTPS ověřené. Před vydáním na Macu 0.1.3; skutečná instalace, oznámení a souhlas s aktualizací se ověří při přechodu na 0.1.4.",
       "evidence": [
         "EV4",
         "EV5",
-        "EV6"
+        "EV6",
+        "EV8"
       ]
     },
     {
@@ -134,12 +135,13 @@
       "whatItGives": "Celý rozhovor se odešle společně jako úsporný WebM/Opus; mikrofon vlevo, systém vpravo.",
       "scope": "approved",
       "delivery": "merged",
-      "exposure": "local",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "0.1.4 je na main, čistý klon i CI prošly. Čeká nové pověření k release tagu; potom podepsané vydání a krátká živá přejímka jednoho záznamu a přepisu na Macu.",
+      "nextStep": "0.1.4 je podepsaná, notarizovaná a veřejně vydaná. Z nainstalované 0.1.3 aktualizovat a ověřit skutečnou schůzku: jediný webový záznam a společný přepis obou stran.",
       "evidence": [
-        "EV7"
+        "EV7",
+        "EV8"
       ]
     }
   ],
@@ -480,9 +482,45 @@
       "label": "Stereo Opus: čistý klon, nativní zvuk a oba balíčky",
       "value": "1554 PASS, 3 původní skipy; build/E6; hodinový syntetický WebM; oba unsigned balíčky s kompletními závislostmi a packaged arm64 audio. Vše exit 0. Skutečná schůzka a release 0.1.4 neověřeny.",
       "ref": "../../../dukazy/stereo-opus-2026-09-23/REPORT.md"
+    },
+    {
+      "id": "EV8",
+      "kind": "deploy",
+      "label": "0.1.4 podepsaná a veřejně vydaná",
+      "value": "Tag v0.1.4 na cb47c75; release 35852937848 success, podpis a notarizace obou Maců. Nezávislé HTTPS: feed 0.1.4, přesné poznámky a osm souborů HTTP 200. Instalace a živý společný přepis neověřené.",
+      "ref": "cb47c7532e9cbc1c75c160f7528aadfc36f9d72f",
+      "href": "../../../../dukazy/vydani-0.1.4-2026-09-23/REPORT.md"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-23T11:24:50.629Z",
+      "text": "Přínos NRD-08 aktualizován z přípravy na skutečně publikovanou 0.1.4; živá instalace dál čeká."
+    },
+    {
+      "at": "2026-09-23T11:23:53.104Z",
+      "text": "D22 dokončeno: v0.1.4 na cb47c75, release 35852937848 success; podpis, notarizace a veřejný feed ověřené. NRD-09 je v produkci. Živá aktualizace z 0.1.3, upload a společný přepis čekají na Dana; testy nejsou označené za živý zvuk."
+    },
+    {
+      "at": "2026-09-23T11:23:49.109Z",
+      "text": "Funkce NRD-08 byla aktualizována."
+    },
+    {
+      "at": "2026-09-23T11:23:45.878Z",
+      "text": "Funkce NRD-09 byla aktualizována."
+    },
+    {
+      "at": "2026-09-23T11:23:20.916Z",
+      "text": "Byl přidán důkaz EV8: 0.1.4 podepsaná a veřejně vydaná."
+    },
+    {
+      "at": "2026-09-23T11:13:45.476Z",
+      "text": "D22: Dan výslovně pověřil vydáním 0.1.4. Před tagem prošlo opakované nezměněné CI cb47c75; původní časově citlivé selhání ukončení je archivované. Podepsané vydání 35852937848 nyní běží, publikaci zatím neoznačujeme za hotovou."
+    },
+    {
+      "at": "2026-09-23T11:13:45.062Z",
+      "text": "Funkce NRD-09 byla aktualizována."
+    },
     {
       "at": "2026-09-23T10:29:14.410Z",
       "text": "NRD-09 a T-S3 přijaty: PR #146 sloučen do main (5f915f4), CI 35848650479 nad c7f3ba5 zelené. 1554 PASS, oba lokální balíčky a syntetika včetně hodiny doložené. Release tag 0.1.4 není pushnutý, živé ověření čeká na Dana."

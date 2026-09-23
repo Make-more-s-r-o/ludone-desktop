@@ -1,5 +1,7 @@
 # Přejímka jednoho stereo WebM/Opus — 23. 9. 2026
 
+> **Navazující vydání 23. 9.:** po tomto technickém snapshotu Dan povolil tag (D22) a 0.1.4 byla úspěšně vydaná. [Samostatné důkazy publikace](../vydani-0.1.4-2026-09-23/REPORT.md). Níže zůstává původní stav před pověřením; živá zvuková přejímka stále čeká.
+
 Stav: 🧪 zelené testy. D21 mění formát D20 na jeden WebM/Opus s cílem 96 kb/s celkem, mikrofon L / systém R. Nový živý stereo záznam se pouze přebalí; Opus pakety zůstávají stejné. Bezpečné staré dvojice se zarovnají a převedou. Produkčně publikovaná zůstává 0.1.3.
 
 **PR [#146](https://github.com/Make-more-s-r-o/ludone-desktop/pull/146) sloučen do main jako `5f915f4aaa952171627e83a4ecf18b76a941948c`.** [GitHub CI 35848650479](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35848650479) nad přesným headem `c7f3ba566edaddce1a70e9e12998bf4da699a36d` prošlo; metadata a doslovný výpis jsou v `ci.json` a `ci.log`. Produktový obsah po squash merge je shodný.
