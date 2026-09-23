@@ -164,6 +164,9 @@ function failureRequiresHumanAction(error) {
   // člověk. Bez tohohle příznaku by položka zůstala jako obyčejné „čeká“ a panel by neukázal
   // ŽÁDNOU příčinu: uživatel by viděl frontu, která se nehýbe, a nevěděl proč.
   if (error?.code === "company_not_chosen" || error?.code === "company_binding_missing") return true;
+  if (typeof error?.code === "string" && (
+    error.code.startsWith("legacy_") || error.code.startsWith("delivery_")
+  )) return true;
   // Konkrétní kódy vlastní upload klient. Fronta jejich společný kontrakt
   // vyhodnotí jednou a rendereru pošle už jen význam, ne druhý seznam kódů.
   return failureCodeRequiresHumanAction(error?.code);
@@ -208,9 +211,11 @@ function requireUploadedBytes(uploadedBytes) {
   };
 }
 
-function emptyServerProgress() {
+/** @returns {any} */
+function emptyServerProgress(hasDelivery = false) {
   return {
     sessionId: null,
+    ...(hasDelivery ? { delivery: { recordingId: null, uploadedBytes: 0 } } : {}),
     tracks: {
       microphone: { recordingId: null, uploadedBytes: 0 },
       system: { recordingId: null, uploadedBytes: 0 },
@@ -219,12 +224,19 @@ function emptyServerProgress() {
 }
 
 function normalizedStoredServer(item) {
+  /** @type {any} */
   const normalized = emptyServerProgress();
   const server = item.server && typeof item.server === "object" ? item.server : {};
   if (typeof server.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(server.companyTabidooId)) {
     normalized.companyTabidooId = server.companyTabidooId;
   }
   normalized.sessionId = safeGuid(server.sessionId);
+  if (item.delivery !== undefined || server.delivery !== undefined) {
+    normalized.delivery = {
+      recordingId: safeGuid(server.delivery?.recordingId),
+      uploadedBytes: safeUploadedBytes(server.delivery?.uploadedBytes),
+    };
+  }
   for (const track of ["microphone", "system"]) {
     const progress = server.tracks?.[track];
     normalized.tracks[track] = {
@@ -248,6 +260,8 @@ function normalizedStoredServer(item) {
 
 function hasInitializedServerProgress(server) {
   return server.sessionId !== null || server.legacyRecordingId !== undefined
+    || server.delivery?.recordingId !== null && server.delivery?.recordingId !== undefined
+    || (server.delivery?.uploadedBytes ?? 0) > 0
     || Object.values(server.tracks).some(
       (progress) => progress.recordingId !== null || progress.uploadedBytes > 0,
     );
@@ -276,6 +290,10 @@ function serverForRenderer(item) {
 
   return {
     sessionId: safeGuid(server.sessionId),
+    ...(item.delivery !== undefined || server.delivery !== undefined ? { delivery: {
+      recordingId: safeGuid(server.delivery?.recordingId),
+      uploadedBytes: safeUploadedBytes(server.delivery?.uploadedBytes),
+    } } : {}),
     tracks: Object.fromEntries(["microphone", "system"].map((track) => {
       const trackProgress = perTrack[track] && typeof perTrack[track] === "object"
         ? perTrack[track]
@@ -325,6 +343,7 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
   }
   const recoveredIncomplete = recording.recoveredIncomplete === true;
   const tracks = normalizeTrackPaths(recording.trackPaths);
+  const delivery = recording.delivery === undefined ? undefined : requireObject(recording.delivery, "delivery");
   const existing = queue.items.find(
     (item) => item.clientRecordingId === manifest.clientRecordingId,
   );
@@ -334,6 +353,7 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
       && existing.manifestPath === manifestPath
       && existing.tracks?.microphone === tracks.microphone
       && existing.tracks?.system === tracks.system
+      && JSON.stringify(existing.delivery) === JSON.stringify(delivery)
       && (existing.recoveredIncomplete === true) === recoveredIncomplete;
     if (sameRecording) return { added: false, item: existing, queue };
     throw new Error("Kolize clientRecordingId s jinou položkou fronty");
@@ -349,11 +369,12 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
     nextAttemptAt: null,
     ...(recoveredIncomplete ? { recoveredIncomplete: true } : {}),
     sentAt: null,
-    server: emptyServerProgress(),
+    server: emptyServerProgress(Boolean(delivery)),
     state: QUEUE_STATES.WAITING,
     uploadIntent: RECORDING_UPLOAD_INTENTS.HELD,
     ...(sourceManifestPath !== manifestPath ? { sourceManifestPath } : {}),
     tracks,
+    ...(delivery ? { delivery } : {}),
   };
   return {
     added: true,
@@ -501,7 +522,7 @@ export function claimRecording(queue, clientRecordingId, ownerFingerprint) {
     ownerFingerprint,
     requiresHumanAction: true,
     sentAt: null,
-    server: emptyServerProgress(),
+    server: emptyServerProgress(Boolean(originalItem.delivery)),
     state: QUEUE_STATES.WAITING,
     uploadIntent: RECORDING_UPLOAD_INTENTS.HELD,
   };
@@ -529,6 +550,8 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
     }
     const hasServerProgress = server.sessionId !== null
       || server.legacyRecordingId !== undefined
+      || server.delivery?.recordingId !== null && server.delivery?.recordingId !== undefined
+      || (server.delivery?.uploadedBytes ?? 0) > 0
       || Object.values(server.tracks).some(
         (progress) => progress.recordingId !== null || progress.uploadedBytes > 0,
       );
@@ -542,6 +565,71 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
   }
   if (Object.prototype.hasOwnProperty.call(serverProgress, "companyTabidooId")) {
     throw new TypeError("připnutí firmy musí být samostatný progress event");
+  }
+  if (Object.prototype.hasOwnProperty.call(serverProgress, "delivery")) {
+    const delivery = requireObject(serverProgress.delivery, "serverProgress.delivery");
+    if (
+      !["pending", "ready"].includes(delivery.state)
+      || delivery.clientRecordingId !== originalItem.clientRecordingId
+      || delivery.mime !== "audio/mpeg"
+      || delivery.channels !== 2
+      || !delivery.channelMap
+      || delivery.channelMap.left !== "microphone"
+      || !["system", "silence"].includes(delivery.channelMap.right)
+      || typeof delivery.filePath !== "string"
+      || typeof delivery.sidecarPath !== "string"
+      || (delivery.state === "ready" && (
+        !Number.isSafeInteger(delivery.sizeBytes)
+        || delivery.sizeBytes <= 0
+        || typeof delivery.sha256 !== "string"
+        || !/^[a-f0-9]{64}$/u.test(delivery.sha256)
+      ))
+      || (delivery.state === "pending" && (
+        delivery.sizeBytes !== null || delivery.sha256 !== null || delivery.encoderVersion !== null
+      ))
+    ) {
+      throw new TypeError("serverProgress.delivery musí být platný descriptor MP3 stejné nahrávky");
+    }
+    if (
+      (server.delivery?.recordingId !== null && server.delivery?.recordingId !== undefined)
+      || (server.delivery?.uploadedBytes ?? 0) > 0
+    ) {
+      throw new Error("delivery nelze změnit po zahájení uploadu");
+    }
+    if (originalItem.delivery?.state === "ready" && delivery.state !== "ready") {
+      throw new Error("ready delivery nelze vrátit do pending stavu");
+    }
+    const item = { ...originalItem, delivery, server: {
+      ...server,
+      delivery: server.delivery ?? { recordingId: null, uploadedBytes: 0 },
+    } };
+    return { item, queue: replaceItem(queue, index, item) };
+  }
+  if (serverProgress.track === "delivery") {
+    if (originalItem.delivery?.state !== "ready") {
+      throw new TypeError("serverProgress.track delivery vyžaduje připravený MP3");
+    }
+    const recordingId = requireGuid(serverProgress.recordingId, "serverProgress.recordingId");
+    server.delivery ??= { recordingId: null, uploadedBytes: 0 };
+    if (server.delivery.recordingId !== null && server.delivery.recordingId !== recordingId) {
+      throw new Error("server změnil recordingId připraveného MP3");
+    }
+    const sessionId = serverProgress.sessionId === undefined
+      ? server.sessionId
+      : requireGuid(serverProgress.sessionId, "serverProgress.sessionId");
+    if (server.sessionId !== null && sessionId !== server.sessionId) {
+      throw new Error("server změnil sessionId už známé nahrávky");
+    }
+    const uploadedBytes = serverProgress.uploadedBytes === undefined
+      ? server.delivery.uploadedBytes
+      : serverProgress.uploadedBytes;
+    if (!Number.isSafeInteger(uploadedBytes) || uploadedBytes < 0) {
+      throw new TypeError("serverProgress.uploadedBytes musí být nezáporné celé číslo");
+    }
+    server.sessionId = sessionId;
+    server.delivery = { recordingId, uploadedBytes };
+    const item = { ...originalItem, server };
+    return { item, queue: replaceItem(queue, index, item) };
   }
   const track = serverProgress.track;
 
@@ -602,6 +690,39 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
     ...originalItem,
     server,
   };
+  return { item, queue: replaceItem(queue, index, item) };
+}
+
+/** Připojí lokálně připravený descriptor před prvním síťovým požadavkem. */
+export function attachRecordingDelivery(queue, clientRecordingId, delivery) {
+  requireQueue(queue);
+  requireObject(delivery, "delivery");
+  const index = queue.items.findIndex((item) => item.clientRecordingId === clientRecordingId);
+  if (index === -1) throw new Error("položka fronty nebyla nalezena");
+  const originalItem = queue.items[index];
+  if ((originalItem.kind ?? QUEUE_ITEM_KINDS.RECORDING) !== QUEUE_ITEM_KINDS.RECORDING) {
+    throw new Error("delivery lze připojit jen k nahrávce");
+  }
+  const server = normalizedStoredServer(originalItem);
+  if (
+    originalItem.delivery !== undefined
+    || server.sessionId !== null
+    || server.companyTabidooId !== undefined
+    || server.delivery?.recordingId !== null && server.delivery?.recordingId !== undefined
+    || (server.delivery?.uploadedBytes ?? 0) > 0
+  ) throw new Error("delivery nelze připojit po zahájení uploadu");
+  if (
+    !["pending", "ready"].includes(delivery.state)
+    || delivery.clientRecordingId !== clientRecordingId
+    || delivery.mime !== "audio/mpeg"
+    || delivery.channels !== 2
+    || delivery.channelMap?.left !== "microphone"
+    || !["system", "silence"].includes(delivery.channelMap?.right)
+  ) throw new TypeError("delivery má neplatný lokální descriptor");
+  const item = { ...originalItem, delivery, server: {
+    ...server,
+    delivery: server.delivery ?? { recordingId: null, uploadedBytes: 0 },
+  } };
   return { item, queue: replaceItem(queue, index, item) };
 }
 
@@ -817,13 +938,14 @@ export async function processNext(queue, killswitches, send, options = {}) {
     };
     let progressQueue = workingQueue;
     const reportServerProgress = async (serverProgress) => {
-      const previousServer = progressQueue.items[index].server;
+      const previousItem = progressQueue.items[index];
       const progressed = applyServerProgress(
         progressQueue,
         originalItem.clientRecordingId,
         serverProgress,
       );
-      if (JSON.stringify(progressed.item.server) === JSON.stringify(previousServer)) return;
+      if (JSON.stringify(progressed.item.server) === JSON.stringify(previousItem.server)
+        && JSON.stringify(progressed.item.delivery) === JSON.stringify(previousItem.delivery)) return;
       progressQueue = progressed.queue;
       // Persistuje se čekající položka, ne přechodný stav `odesila`. Když proces po fsync
       // spadne, nový běh ji smí bezpečně zvednout přes idempotentní INIT.
@@ -831,7 +953,9 @@ export async function processNext(queue, killswitches, send, options = {}) {
     };
 
     try {
-      const sendResult = await send(sendingItem, reportServerProgress);
+      const sendResult = await send(sendingItem, reportServerProgress, Object.freeze({
+        preAttemptItem: originalItem,
+      }));
       if (sendResult?.uploads !== undefined) {
         if (!Array.isArray(sendResult.uploads)) {
           throw new TypeError("sendResult.uploads musí být pole");
@@ -842,7 +966,10 @@ export async function processNext(queue, killswitches, send, options = {}) {
         ) {
           throw new TypeError("sendResult.completedUploads neodpovídá počtu stop");
         }
-        const expectedTracks = Object.keys(sendingItem.tracks ?? {}).sort();
+        const progressedItem = progressQueue.items[index];
+        const expectedTracks = progressedItem.delivery?.state === "ready"
+          ? ["delivery"]
+          : Object.keys(progressedItem.tracks ?? {}).sort();
         const reportedTracks = sendResult.uploads.map((upload) => upload?.track).sort();
         if (
           reportedTracks.length !== expectedTracks.length
@@ -857,6 +984,7 @@ export async function processNext(queue, killswitches, send, options = {}) {
       const sentAt = timestamp(options.now ?? Date.now(), "options.now");
       const sentItem = {
         ...sendingItem,
+        delivery: progressQueue.items[index].delivery,
         server: progressQueue.items[index].server,
         lastFailureReason: null,
         nextAttemptAt: null,
@@ -873,6 +1001,7 @@ export async function processNext(queue, killswitches, send, options = {}) {
     } catch (error) {
       const progressedSendingItem = {
         ...sendingItem,
+        delivery: progressQueue.items[index].delivery,
         server: progressQueue.items[index].server,
       };
       const failureClass = errorFailureClass(error);

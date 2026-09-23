@@ -4,7 +4,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 const SHA256_PATTERN = /^[0-9a-f]{64}$/iu;
 const REVISION_PATTERN = /^sha256:[0-9a-f]{64}$/u;
 const OWNER_PATTERN = /^sha256:[0-9a-f]{64}$/u;
-const TRACKS = Object.freeze(["microphone", "system"]);
+const TRACKS = Object.freeze(["delivery", "microphone", "system"]);
 const CACHE_TTL_MS = 60_000;
 const LIMIT_WINDOW_MS = 60 * 60 * 1_000;
 const MAX_GETS_PER_WINDOW = 30;
@@ -33,7 +33,12 @@ function normalizedTarget(value) {
     throw new TypeError("Trusted target ověření má neplatný tvar");
   }
   const names = Object.keys(value.tracks);
-  if (names.length < 1 || names.length > 2 || names.some((name) => !TRACKS.includes(name))) {
+  if (
+    names.length < 1
+    || names.length > 2
+    || names.some((name) => !TRACKS.includes(name))
+    || (names.includes("delivery") && names.length !== 1)
+  ) {
     throw new TypeError("Trusted target má neplatné stopy");
   }
   const tracks = {};

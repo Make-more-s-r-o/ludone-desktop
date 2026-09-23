@@ -1401,7 +1401,9 @@ describe("stavový automat fronty", () => {
         attempts: 1,
         lastFailureReason: "server odmítl nahrávku",
         state: QUEUE_STATES.SENDING,
-      }), expect.any(Function));
+      }), expect.any(Function), expect.objectContaining({
+        preAttemptItem: expect.objectContaining({ attempts: 0, state: QUEUE_STATES.WAITING }),
+      }));
       expect(result.outcome).toBe("sent");
       expect(result.item.state).toBe(QUEUE_STATES.SENT);
     },
@@ -2170,7 +2172,10 @@ describe("trvalé uložení fronty", () => {
       await expect(store.claimRecording(queue.items[0].clientRecordingId, snapshot.revision, owner, {
         guard: vi.fn(async () => false),
       })).rejects.toThrow(/identit/u);
-      expect(await loadQueue(queuePath)).toEqual(queue);
+      expect(await loadQueue(queuePath)).toEqual({
+        ...queue,
+        items: [{ ...queue.items[0], legacyDeliveryBarrier: true }],
+      });
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

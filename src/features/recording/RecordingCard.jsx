@@ -27,7 +27,7 @@ const RECORDING_TIMESLICE_MS = 1_000;
 // Shodné se serverem: String.length po trim(), tedy UTF-16 jednotky.
 // Mění se současně na serveru i v electron/recording-export.cjs.
 const MAX_UPLOAD_NAME_UTF16_UNITS = 500;
-const QUIT_EXPORT_FAILURE_CONSEQUENCE = "LuDone zůstává otevřené. Pokud ho teď ukončíte, dvoukanálový soubor už z aplikace nevyexportujete.";
+const QUIT_EXPORT_FAILURE_CONSEQUENCE = "LuDone zůstává otevřené. Originály i rozpracovaný stereo soubor zůstanou na Macu a převod můžete zopakovat po dalším spuštění.";
 
 function describeError(error) {
   if (!error) return "neznámá chyba";

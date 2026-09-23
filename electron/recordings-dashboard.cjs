@@ -190,7 +190,7 @@ function invalidRevision(marker, read = null) {
   return `sha256:${createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex")}`;
 }
 
-async function inspectManifest(recordingsDirectory, manifestPath) {
+async function inspectManifest(recordingsDirectory, manifestPath, derivativePaths = []) {
   const safePath = directChild(recordingsDirectory, manifestPath);
   if (safePath === null || !safePath.endsWith(".manifest.json")) {
     return { identifiedId: null, invalid: true, fileRevision: invalidRevision("unsafe-manifest") };
@@ -219,19 +219,23 @@ async function inspectManifest(recordingsDirectory, manifestPath) {
   const tracks = await Promise.all(validated.sources.map(
     (source) => inspectTrack(recordingsDirectory, validated.manifest.tracks[source].fileName),
   ));
-  const existing = tracks.filter((track) => track.exists);
-  const localState = existing.length === tracks.length
+  const derivatives = await Promise.all(derivativePaths.map((filePath) => (
+    inspectTrack(recordingsDirectory, path.basename(filePath))
+  )));
+  const allFiles = [...tracks, ...derivatives];
+  const existing = allFiles.filter((track) => track.exists);
+  const localState = existing.length === allFiles.length
     ? "complete-audio"
     : existing.length === 0 ? "missing-audio" : "partial-audio";
   const sizeBytes = existing.length > 0
     ? existing.reduce((sum, track) => sum + track.sizeBytes, 0)
-    : (tracks.length > 0 && localState === "complete-audio" ? 0 : null);
+    : (allFiles.length > 0 && localState === "complete-audio" ? 0 : null);
   return {
     identifiedId,
     invalid: false,
     createdAt: validated.manifest.createdAt,
     durationMs: durationFromManifest(validated.manifest, validated.sources),
-    fileRevision: revisionFor(read, tracks),
+    fileRevision: revisionFor(read, allFiles),
     localState,
     sizeBytes,
     sources: validated.sources,
@@ -239,6 +243,33 @@ async function inspectManifest(recordingsDirectory, manifestPath) {
       (source) => [source, validated.manifest.tracks[source].fileName],
     )),
   };
+}
+
+function deliveryFilesForSnapshot(item, root, configuredRoot) {
+  if (item.delivery === undefined) return [];
+  const delivery = item.delivery;
+  if (!delivery || typeof delivery !== "object" || Array.isArray(delivery)) return null;
+  const expectedBase = path.join(
+    root,
+    path.basename(path.resolve(item.sourceManifestPath ?? item.manifestPath)),
+  ).slice(0, -".manifest.json".length);
+  const candidates = [delivery.sidecarPath];
+  if (delivery.masterPath !== null) candidates.push(delivery.masterPath);
+  if (delivery.state === "ready") candidates.push(delivery.filePath);
+  if (
+    delivery.clientRecordingId !== item.clientRecordingId
+    || !["pending", "ready", "failed"].includes(delivery.state)
+    || delivery.channels !== 2
+    || delivery.mime !== "audio/mpeg"
+    || delivery.channelMap?.left !== "microphone"
+    || !["system", "silence"].includes(delivery.channelMap?.right)
+    || directChild(root, delivery.sidecarPath, configuredRoot) !== `${expectedBase}.manifest.json.meeting-audio-v1.json`
+    || directChild(root, delivery.filePath, configuredRoot) !== `${expectedBase}-stereo.mp3`
+    || (delivery.source === "live-stereo"
+      && directChild(root, delivery.masterPath, configuredRoot) !== `${expectedBase}-stereo-master.webm`)
+  ) return null;
+  const safe = candidates.map((candidate) => directChild(root, candidate, configuredRoot));
+  return safe.some((candidate) => candidate === null) || new Set(safe).size !== safe.length ? null : safe;
 }
 
 function safeQueueManifestPath(recordingsDirectory, configuredDirectory, item) {
@@ -262,6 +293,18 @@ function safeQueueReason(value) {
     company_binding_missing: "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
     company_out_of_scope: "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
     "company_out_of_scope (HTTP 403)": "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
+    "Starší nahrávka mohla být na serveru už založena; automatický převod by vytvořil další záznam":
+      "Starší nahrávka mohla být na serveru už založena. Automatické odeslání je pozastavené, aby nevznikl duplicitní záznam.",
+    "Nedokončenou obnovenou nahrávku nelze bezpečně převést na stereo MP3":
+      "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo MP3.",
+    "Nedokončenou nahrávku nelze bezpečně převést na stereo MP3":
+      "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo MP3.",
+    "MP3 po možném zahájení uploadu chybí; nesmí se znovu vytvořit s jinými bajty":
+      "MP3 po možném zahájení odeslání chybí. Nahrávka je pozastavená, aby se nezměnila její identita.",
+    "Uložený MP3 neodpovídá neměnné identitě připravené před uploadem":
+      "Uložený MP3 se změnil proti souboru připravenému před odesláním.",
+    "Stereo master se před převodem změnil":
+      "Stereo master se před převodem změnil; originály zůstávají uložené.",
   };
   return Object.hasOwn(known, value) ? known[value] : "Předchozí pokus se nezdařil.";
 }
@@ -335,13 +378,16 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
     if (!projected) continue;
     const primaryPath = safeQueueManifestPath(root, configuredRoot, rawItem);
     if (primaryPath !== null) representedPaths.add(primaryPath);
-    const inspected = primaryPath === null || !rootExists
+    const derivativePaths = primaryPath === null ? null
+      : deliveryFilesForSnapshot(rawItem, root, configuredRoot);
+    const inspected = primaryPath === null || !rootExists || derivativePaths === null
       ? {
         invalid: true,
         identifiedId: rawItem.clientRecordingId,
-        fileRevision: invalidRevision(primaryPath === null ? "unsafe-manifest" : "missing-root"),
+        fileRevision: invalidRevision(primaryPath === null || derivativePaths === null
+          ? "unsafe-manifest" : "missing-root"),
       }
-      : await inspectManifest(root, primaryPath);
+      : await inspectManifest(root, primaryPath, derivativePaths);
     if (inspected.identifiedId !== null && inspected.identifiedId !== rawItem.clientRecordingId) {
       inspected.invalid = true;
       inspected.localState = undefined;
@@ -366,6 +412,7 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       createdAt: inspected.createdAt ?? projected.createdAt ?? null,
       durationMs: inspected.durationMs ?? projected.durationMs ?? null,
       sizeBytes: inspected.invalid ? null : inspected.sizeBytes,
+      deliveryState: rawItem.delivery?.state ?? null,
       allowedActions: {
         claim: !inspected.invalid
           && inspected.localState !== "missing-audio"

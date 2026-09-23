@@ -1415,7 +1415,7 @@ describe("RecordingCard", () => {
           expect(alert?.getAttribute("role")).toBe("alert");
           expect(alert?.textContent).toContain("Původní dvě stopy zůstaly uložené");
           expect(alert?.textContent).toContain(
-            "dvoukanálový soubor už z aplikace nevyexportujete",
+            "Originály i rozpracovaný stereo soubor zůstanou na Macu",
           );
         });
       });

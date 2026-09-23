@@ -624,7 +624,13 @@ async function loadMain({
     ) {
       return {
         ...queueStoreModule,
-        ...(createOutboundQueueStore ? { createOutboundQueueStore } : {}),
+        ...(createOutboundQueueStore ? { createOutboundQueueStore: (...args) => {
+          const store = createOutboundQueueStore(...args);
+          if (typeof store.setRecordingDelivery !== "function") {
+            store.setRecordingDelivery = vi.fn(async () => undefined);
+          }
+          return store;
+        } } : {}),
         ...(loadQueue ? { loadQueue } : {}),
         ...(recoverOrphanedRecordings ? { recoverOrphanedRecordings } : {}),
       };
@@ -639,6 +645,58 @@ async function loadMain({
       return {
         ...actualRequire("./recording-export.cjs"),
         exportRecordingCopy,
+      };
+    }
+    if (specifier === "./meeting-audio.cjs") {
+      const meetingAudio = actualRequire("./meeting-audio.cjs");
+      return {
+        ...meetingAudio,
+        ensureMeetingAudioReady: (item, options) => {
+          if (typeof item.manifestPath !== "string" || !path.isAbsolute(item.manifestPath)) {
+            return Promise.resolve({
+              version: 1,
+              state: "ready",
+              source: "separate-tracks",
+              captureSources: "microphone",
+              channels: 2,
+              channelMap: { left: "microphone", right: "silence" },
+              clientRecordingId: item.clientRecordingId,
+              startedAt: "2026-09-15T08:00:00.000Z",
+              endedAt: "2026-09-15T08:00:01.000Z",
+              timing: { durationMs: 1_000, microphoneDelayMs: 0, systemDelayMs: 0 },
+              mime: "audio/mpeg",
+              filePath: `/tmp/${item.clientRecordingId}.mp3`,
+              sidecarPath: `/tmp/${item.clientRecordingId}.meeting-audio-v1.json`,
+              masterPath: null,
+              masterSizeBytes: null,
+              masterSha256: null,
+              sizeBytes: 14,
+              sha256: "a".repeat(64),
+              encoderVersion: "queue-wiring-test",
+            });
+          }
+          return meetingAudio.ensureMeetingAudioReady(item, {
+            ...options,
+            convertToStereoMp3: async ({ outputPath }) => {
+            const bytes = Buffer.concat([
+              Buffer.from("ID3\x04\x00\x00\x00\x00\x00\x00", "binary"),
+              Buffer.from([0xff, 0xfb]),
+              Buffer.from("mp3"),
+            ]);
+            await writeFile(outputPath, bytes);
+            return {
+              outputPath,
+              size: bytes.length,
+              sha256: createHash("sha256").update(bytes).digest("hex"),
+              mime: "audio/mpeg",
+              channels: 2,
+              channelMap: { left: "microphone", right: "preserved" },
+              source: item.delivery?.source ?? "separate-tracks",
+              encoderVersion: "queue-wiring-test",
+            };
+            },
+          });
+        },
       };
     }
     if (specifier === "./retention.cjs" && applyRetention) {
@@ -2732,13 +2790,24 @@ describe("zjištění uložené OAuth session", () => {
     const harness = await loadMain({ createOutboundQueueStore, createRecordingUploadSend });
     await harness.runReady();
     const reportServerProgress = vi.fn();
+    const clientRecordingId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
 
-    await queueSend({ id: "nahravka" }, reportServerProgress);
+    await queueSend({ clientRecordingId, id: "nahravka" }, reportServerProgress);
 
     expect(uploadSend).toHaveBeenCalledExactlyOnceWith(
-      { id: "nahravka" },
+      expect.objectContaining({
+        id: "nahravka",
+        delivery: expect.objectContaining({
+          clientRecordingId,
+          mime: "audio/mpeg",
+          state: "ready",
+        }),
+      }),
       reportServerProgress,
     );
+    expect(createRecordingUploadSend).toHaveBeenCalledWith(expect.objectContaining({
+      requireSingleDelivery: true,
+    }));
   });
 
   it("pozdní 403 z kontextu A nesmaže mezitím uloženou firmu B", async () => {
@@ -4744,6 +4813,7 @@ describe("produkční zapojení odchozí fronty", () => {
     const recordingFiles = await readdir(recordingsDirectory);
     expect(recordingFiles.filter((name) => name.endsWith(".webm"))).toEqual([
       saved.files.microphone.name,
+      expect.stringMatching(/-stereo-master\.webm$/u),
     ]);
     const manifestName = recordingFiles.find((name) => name.endsWith(".manifest.json"));
     const manifest = JSON.parse(await readFile(
@@ -4781,7 +4851,7 @@ describe("produkční zapojení odchozí fronty", () => {
     await expect(pendingExport).resolves.toMatchObject({
       ok: true,
       clientRecordingId: sessionId,
-      format: { container: "WebM", codec: "Opus", channels: 2 },
+      format: { container: "MP3", codec: "MP3", channels: 2 },
       trackStartDeltaMs: null,
       trackDurationDeltaMs: null,
     });
@@ -5336,7 +5406,7 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(exported).toMatchObject({
       ok: true,
       clientRecordingId: sessionId,
-      format: { container: "WebM", codec: "Opus", channels: 2 },
+      format: { container: "MP3", codec: "MP3", channels: 2 },
       trackStartDeltaMs: 25,
     });
     expect(exported.fileName).toContain("Porada-provozu-Q3");
@@ -5552,12 +5622,13 @@ describe("produkční zapojení odchozí fronty", () => {
         if (!handler) throw new Error(`Chybí handler ${channel}`);
         return handler(settingsEvent, payload);
       });
-      await expect(preload.api.sendRecording({
+      const sendResult = await preload.api.sendRecording({
         id: row.id,
         queueRev: row.revision,
         fileRev: row.fileRevision,
         ignored: "renderer nesmí rozšířit payload",
-      })).resolves.toMatchObject({ outcome: "sent" });
+      });
+      expect(sendResult).toMatchObject({ outcome: "sent" });
 
       expect(fetchImpl).toHaveBeenCalledTimes(2);
       expect(uploadSend).toHaveBeenCalledOnce();
