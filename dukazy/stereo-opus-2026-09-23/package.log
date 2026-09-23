@@ -1,0 +1,61 @@
+$ npm run package:mac (vlastní npm ci, prostředí bez CSC_* a APPLE_*)
+
+> ludone-desktop-prototype@0.1.4 package:mac
+> node scripts/prepare-media-encoder.mjs --check --arch all && npm run build && node scripts/package-mac.mjs
+
+/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-encoder-signature-583D4M/ffmpeg: replacing existing signature
+/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-encoder-signature-SR7TNI/ffmpeg: replacing existing signature
+[encoder] PASS: zdroje a binárky arm64, x64 odpovídají locku, hashi a architektuře.
+
+> ludone-desktop-prototype@0.1.4 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 54 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         0.62 kB │ gzip:  0.37 kB
+dist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB
+dist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB
+dist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB
+dist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB
+dist/assets/index-M1CDdI_Q.css                         45.28 kB │ gzip:  8.20 kB
+dist/assets/index-B8EmPyMt.js                         309.85 kB │ gzip: 93.61 kB
+✓ built in 482ms
+[balení] NEPODEPSANÝ build: podpis a notarizace jsou vypnuté; chybí CSC_LINK, CSC_KEY_PASSWORD.
+Vygenerována ikona aplikace (8 bloků ICNS) do /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration/build/ikona-aplikace/LuDone.icns
+  • electron-builder  version=26.15.3 os=27.0.0
+  • loaded configuration  file=package.json ("build" field)
+  • executing @electron/rebuild  electronVersion=39.8.10 arch=arm64 buildFromSource=false workspaceRoot=/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration projectDir=./ appDir=./
+  • installing native dependencies  arch=arm64
+  • completed installing native dependencies
+  • packaging       platform=darwin arch=arm64 electron=39.8.10 appOutDir=release/mac-arm64
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration/release/mac-arm64
+  • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+  • searching for node modules  pm=npm searchDir=/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration
+  • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+  • skipped macOS code signing  reason=identity explicitly is set to null
+  • building        target=macOS zip arch=arm64 file=release/LuDone-Desktop-0.1.4-arm64.zip
+  • building        target=DMG arch=arm64 file=release/LuDone-Desktop-0.1.4-arm64.dmg
+  • executing @electron/rebuild  electronVersion=39.8.10 arch=x64 buildFromSource=false workspaceRoot=/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • completed installing native dependencies
+  • packaging       platform=darwin arch=x64 electron=39.8.10 appOutDir=release/mac
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration/release/mac
+  • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+  • searching for node modules  pm=npm searchDir=/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration
+  • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+  • skipped macOS code signing  reason=identity explicitly is set to null
+  • building        target=macOS zip arch=x64 file=release/LuDone-Desktop-0.1.4-x64.zip
+  • building        target=DMG arch=x64 file=release/LuDone-Desktop-0.1.4-x64.dmg
+  • building block map  blockMapFile=release/LuDone-Desktop-0.1.4-arm64.zip.blockmap
+  • building block map  blockMapFile=release/LuDone-Desktop-0.1.4-x64.zip.blockmap
+  • building block map  blockMapFile=release/LuDone-Desktop-0.1.4-arm64.dmg.blockmap
+  • building block map  blockMapFile=release/LuDone-Desktop-0.1.4-x64.dmg.blockmap
+[balení] Audio-smoke cesta: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration/release/LuDone Desktop.app -> /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration/release/mac-arm64/LuDone Desktop.app
+[balení] Hotovo: lokální DMG + ZIP pro arm64 a x64; nic nebylo přeneseno.
+
+EXIT_CODE=0

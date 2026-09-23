@@ -1,7 +1,7 @@
 # Stav běhu `nahravky-dashboard`
-> **23. 9. — D21:** aktuální cílový formát je jeden stereo WebM/Opus (96 kb/s), mikrofon L / systém R. Nahrazuje požadavek MP3 z D20. Implementace a finální přejímka této změny běží; vydaná zůstává 0.1.3. [Aktuální kontrakt](STEREO-MP3.md).
+> **23. 9. — D21 / příprava 0.1.4:** jeden stereo WebM/Opus (96 kb/s), mikrofon L / systém R, je implementovaný a prošel review. 🧪 Čistý klon má **1554 PASS**, tři původní skipy; build/E6, oba lokální balíčky a syntetika včetně hodinového souboru prošly. PR/CI a vydání navazují; produkčně publikovaná zůstává 0.1.3. [Důkazy přejímky](../../../dukazy/stereo-opus-2026-09-23/REPORT.md), [kontrakt](STEREO-MP3.md). Živá schůzka a společný přepis čekají na Dana.
 
-> **Doplnění 15. 9. — D20 / NRD-09:** Dan schválil jediný stereo MP3 a jeden serverový záznam za schůzku. [Kontrakt a plán](STEREO-MP3.md) mají pro tento nový rozsah přednost před historickými per-track uploady níže. Implementace zatím čeká; produkčně vydaná je 0.1.3.
+> **Historické doplnění 15. 9. — D20 / NRD-09:** Dan schválil jediný stereo MP3 a jeden serverový záznam za schůzku. [Kontrakt a plán](STEREO-MP3.md) mají pro tento nový rozsah přednost před historickými per-track uploady níže. Implementace zatím čeká; produkčně vydaná je 0.1.3.
 
 
 **Aktualizováno 15. 9. 2026: verze 0.1.3 je vydaná.** Tag `v0.1.3` ukazuje na

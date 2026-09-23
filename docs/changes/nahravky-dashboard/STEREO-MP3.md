@@ -51,4 +51,4 @@ Runtime a balení mají oddělené worktree a allowlisty. Root vlastní dokument
 
 ## Stav
 
-🧪 D21 je implementované a review produktového diffu je uzavřené. Společné brány, build, E6, skutečný encoder nad syntetickým audiem a hodinový soubor prošly. Čistý klon, balení a CI jsou v závěrečné přejímce. [Aktuální důkazy](../../../dukazy/stereo-opus-2026-09-23/REPORT.md). Produkčně vydaná zůstává 0.1.3; živá schůzka a přepis 0.1.4 čekají na Dana.
+🧪 D21 je implementované a review produktového diffu je uzavřené. Společné brány, build, E6, skutečný encoder nad syntetickým audiem a hodinový soubor prošly. Čistý klon má 1554 PASS (tři původní skipy); oba lokální balíčky prošly včetně úplnosti závislostí a nativního testu z arm64 aplikace. PR a CI navazují. [Aktuální důkazy](../../../dukazy/stereo-opus-2026-09-23/REPORT.md). Produkčně vydaná zůstává 0.1.3; živá schůzka a přepis 0.1.4 čekají na Dana.

@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-23T10:17:32.333Z",
+    "updatedAt": "2026-09-23T10:24:13.229Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -137,8 +137,10 @@
       "exposure": "local",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Dokončit přejímku lokálního balení, čistého klonu a CI; potom schválit tag 0.1.4 a ověřit živou schůzku na Macu.",
-      "evidence": []
+      "nextStep": "Lokální přejímka je dokončená. Sloučit implementační PR po zeleném CI, poté nové pověření k tagu 0.1.4 a živá přejímka na Macu.",
+      "evidence": [
+        "EV7"
+      ]
     }
   ],
   "screens": [],
@@ -471,9 +473,24 @@
       "value": "Tag v0.1.3 na 28a6563; release 34948618429 success. Nezávislé HTTPS: feed a poznámky správné, všech osm souborů HTTP 200. Instalace a živý upload neověřené.",
       "ref": "28a6563",
       "href": "../../../../dukazy/vydani-0.1.3-2026-09-15/REPORT.md"
+    },
+    {
+      "id": "EV7",
+      "kind": "test",
+      "label": "Stereo Opus: čistý klon, nativní zvuk a oba balíčky",
+      "value": "1554 PASS, 3 původní skipy; build/E6; hodinový syntetický WebM; oba unsigned balíčky s kompletními závislostmi a packaged arm64 audio. Vše exit 0. Skutečná schůzka a release 0.1.4 neověřeny.",
+      "ref": "../../../dukazy/stereo-opus-2026-09-23/REPORT.md"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-23T10:24:13.229Z",
+      "text": "Funkce NRD-09 byla aktualizována."
+    },
+    {
+      "at": "2026-09-23T10:23:42.361Z",
+      "text": "Byl přidán důkaz EV7: Stereo Opus: čistý klon, nativní zvuk a oba balíčky."
+    },
     {
       "at": "2026-09-23T10:17:32.333Z",
       "text": "D21 je implementované: jeden stereo WebM/Opus se stabilní identitou. Root gates mají 1553 PASS a tři původní skipy, build/E6 i nativní syntetika včetně hodinového souboru prošly. Review uzavřelo dvě mezery v koši po pádu. Poslední test navíc pokrývá failed stav; čistý klon a balení následují."

@@ -10,11 +10,14 @@ Stav: 🧪 zelené testy. D21 mění formát D20 na jeden WebM/Opus s cílem 96 
 - Root + nezávislé Sol read-only review produktu na `e585b9197cedb2772430df190f803273c0c41a85`: žádný zbývající potvrzený P1/P2 v single uploadu, obnově identity, IPC, mazání nebo balení/podpisu encoderu. Následný `60b7e1e` pouze rozšiřuje regresi na failed stav.
 - Nezměněn backend, LuTrack ani cizí design. Testovací očekávání formátu a počtu uploadů se mění přímo podle D21; žádná výjimka, nový skip ani změna baseline.
 
-## Dosavadní důkazy
+## Důkazy přejímky
 
 | Kontrola | Výsledek |
 |---|---|
 | `npm run gates` | `gates.log`: 1553 PASS, 3 původní skipy, lint/typecheck/baseline, exit 0; před přidáním jedné další regrese failed. |
+| Čistý klon `7b76888f` | `gates-clean.log`: vlastní npm ci, 1554 PASS, 3 původní skipy, lint/typecheck/baseline/build; exit 0. |
+| Lokální balení obou Maců | `package.log`: DMG + ZIP arm64/x64, bez podpisových proměnných; exit 0. `package-arm64.log`, `package-x64.log`: všech 20 runtime balíčků uvnitř aplikace, architektura, hash encoderu a zdrojové archivy/notice; exit 0. |
+| Encoder ze skutečné `.app` | `packaged-native.log`: stejné syntetické audio a restart identity prošly přes moduly a Resources z arm64 aplikace; exit 0. |
 | Build / E6 | `build.log`, `E6.log`, exit 0. |
 | Nativní 12s syntetika | `native.log`: obě oddělené frekvence správně L/R, 576000 vzorků, mic-only R ticho, zarovnání 250 ms, stejné live Opus pakety, režim 0600, zákaz přepsání, nový proces znovu nepřevádí. Exit 0. |
 | Nativní hodinová syntetika | `hour.log`: jeden Opus stream, 48 kHz / 2 kanály, 3600.028 s, 60 522 228 B, přebalení 1.115 s, celé dekódování bez chyby. Exit 0. Velikost při VBR závisí na obsahu; 43 MB/h je nominální odhad, ne limit. |
@@ -26,7 +29,7 @@ Stav: 🧪 zelené testy. D21 mění formát D20 na jeden WebM/Opus s cílem 96 
 - `gates-initial.log`: nepoužitý parametr nového testu; opraven použitím URL v aserci, původní kontroly zachované.
 - `native-initial.log`: místní x64 referenční ffmpeg nešel spustit na arm64 bez Rosetty. `T-S2/test-reference.log` dokládá samostatný testovací arm64 build ze stejných ověřených zdrojů; shipping encoder se tím neměnil.
 - `native-harness-initial.log`: nová akceptace špatně četla parametr ffprobe. Opravena parametrizace a vnoření packaged encoder options; aserce neoslabeny.
-- `package-initial.log` / `package-audit-initial.log`: builder dokončil lokální balení, ale dočasný symlink na cizí node_modules způsobil chybějící runtime závislosti. `dependency-prepare.log` dokládá vlastní npm ci; finální balení a audit se opakují. Tyto instalačky nebyly publikované.
+- `package-initial.log` / `package-audit-initial.log`: builder dokončil lokální balení, ale dočasný symlink na cizí node_modules způsobil chybějící runtime závislosti. `dependency-prepare.log` dokládá vlastní npm ci; finální balení i audit obou architektur prošly. Tyto instalačky nebyly publikované.
 
 ## Co není ověřeno
 
