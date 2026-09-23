@@ -1,5 +1,7 @@
 # LuTrack · poznámky ke klikacímu návrhu
 
+> ⚠️ Upřesnění 23. 9. po prohlédnutí PWA: současný živý LuTrack existuje na `ludone.cz/time-tracking` a nabízí časovač i výkazy. Původní audit níže čte rozpracovaný modul nové `app.ludone.cz`; placeholder není důkazem neexistence současného LuTracku. API vhodné pro desktop se zatím neověřilo. Nový společný návrh je v [druhém kole](../round2/README.md).
+
 Tento soubor doprovází pouze lokální HTML simulaci. Stav návrhu: ⛔ neověřeno v produktu. Otevři `index.html` přímo v prohlížeči; scénáře a témata lze volit také přes `?scenario=ready&theme=light` (`ready|running|saved|blocked`, `light|professional|dark`). Okno má 448 × 676 px. Při integraci se použije společný `../shared-assets/tokens.css`; zde je v `assets/` jeho lokální kopie s fonty, aby proklik fungoval i samostatně. Jde o podvýběr DS tokenů, ne canonical knihovnu (zdroj kopie: `desktop-design-compare/docs/changes/desktop-redesign-2026-09-23/shared-assets/README.md`).
 
 ## Co proklik ukazuje

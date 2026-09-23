@@ -1,5 +1,7 @@
 # Příprava další verze LuDone Desktop
 
+> ⚠️ Upřesnění 23. 9. po prohlédnutí PWA: současný živý LuTrack existuje na `ludone.cz/time-tracking` a nabízí časovač i výkazy. Původní audit níže čte rozpracovaný modul nové `app.ludone.cz`; placeholder není důkazem neexistence současného LuTracku. API vhodné pro desktop se zatím neověřilo. Nový společný návrh je v [druhém kole](../round2/README.md).
+
 Stav k 23. 9. 2026. Jde o doporučení rozsahu, ne o schválené číslo verze, vydání nebo změnu produktu. Tento worktree obsahuje jen návrh budoucího ovládání.
 
 ## Základ rozhodnutí

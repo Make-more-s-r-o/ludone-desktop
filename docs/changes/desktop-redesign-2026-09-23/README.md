@@ -1,5 +1,7 @@
 # Porovnání návrhů LuDone Desktop
 
+**Navazující zadání:** Dan rozšířil cíl na celou zkušenost práce a schůzek. [Druhé kolo](round2/README.md) používá nový společný brief a živé pozorování stávající PWA LuTracku. První návrhy níže zůstávají zachované.
+
 Stav: hotové dva nezávislé HTML návrhy podle [stejného zadání](SHARED-BRIEF.md). Jde pouze o vizuální prototypy s fiktivními daty; ne o schválený vzhled ani vydání.
 
 Základ: 0.1.4 / main 2f142b3. Požadavek Dana z 23. 9. otevírá designové kolo po dokončení funkčního rozsahu. Původní design/ zůstává nedotčený. Astra a Claude Opus 5.5 dostali totožné scénáře a podklady; autoři neuvidí výstup druhého před dokončením.
