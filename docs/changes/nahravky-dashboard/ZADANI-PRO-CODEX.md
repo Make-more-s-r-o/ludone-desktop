@@ -1,5 +1,5 @@
 # Dashboard nahrávek — zadání pro Codex
-> **23. 9. — D21:** aktuální cílový formát je jeden stereo WebM/Opus (96 kb/s), mikrofon L / systém R. Nahrazuje požadavek MP3 z D20. Implementace a lokální přejímka této změny jsou hotové; PR/CI navazují; vydaná zůstává 0.1.3. [Aktuální kontrakt](STEREO-MP3.md).
+> **23. 9. — D21:** aktuální cílový formát je jeden stereo WebM/Opus (96 kb/s), mikrofon L / systém R. Nahrazuje požadavek MP3 z D20. Implementace, review a technická přejímka této změny jsou hotové; PR #146 je sloučené a CI zelené; vydaná zůstává 0.1.3. [Aktuální kontrakt](STEREO-MP3.md).
 
 > **Doplnění 15. 9. — D20 / NRD-09:** Dan schválil jediný stereo MP3 a jeden serverový záznam za schůzku. [Kontrakt a plán](STEREO-MP3.md) mají pro tento nový rozsah přednost před historickými per-track uploady níže. Implementace zatím čeká; produkčně vydaná je 0.1.3.
 

@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-23T10:24:13.229Z",
+    "updatedAt": "2026-09-23T10:29:14.410Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -133,11 +133,11 @@
       "name": "Jedna schůzka v jednom stereo souboru",
       "whatItGives": "Celý rozhovor se odešle společně jako úsporný WebM/Opus; mikrofon vlevo, systém vpravo.",
       "scope": "approved",
-      "delivery": "coded",
+      "delivery": "merged",
       "exposure": "local",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Lokální přejímka je dokončená. Sloučit implementační PR po zeleném CI, poté nové pověření k tagu 0.1.4 a živá přejímka na Macu.",
+      "nextStep": "0.1.4 je na main, čistý klon i CI prošly. Čeká nové pověření k release tagu; potom podepsané vydání a krátká živá přejímka jednoho záznamu a přepisu na Macu.",
       "evidence": [
         "EV7"
       ]
@@ -368,7 +368,7 @@
     },
     {
       "id": "T-S0",
-      "title": "Kontrakt jednoho stereo MP3",
+      "title": "Kontrakt jednoho stereo souboru",
       "executor": "claude",
       "state": "completed",
       "attempts": 0,
@@ -401,7 +401,7 @@
     },
     {
       "id": "T-SR",
-      "title": "Bezpečná retence stereo MP3",
+      "title": "Bezpečná retence jednoho stereo souboru",
       "executor": "codex",
       "state": "completed",
       "attempts": 1,
@@ -413,9 +413,9 @@
     },
     {
       "id": "T-S3",
-      "title": "Integrace a přejímka stereo MP3",
+      "title": "Integrace a přejímka stereo WebM/Opus",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-S1",
@@ -483,6 +483,10 @@
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-23T10:29:14.410Z",
+      "text": "NRD-09 a T-S3 přijaty: PR #146 sloučen do main (5f915f4), CI 35848650479 nad c7f3ba5 zelené. 1554 PASS, oba lokální balíčky a syntetika včetně hodiny doložené. Release tag 0.1.4 není pushnutý, živé ověření čeká na Dana."
+    },
     {
       "at": "2026-09-23T10:24:13.229Z",
       "text": "Funkce NRD-09 byla aktualizována."
