@@ -45,7 +45,7 @@ async function fixture() {
 }
 
 describe("jediný delivery asset schůzky", () => {
-  it("koš odmítne pending sidecar, pokud encoder již publikoval kanonický WebM", async () => {
+  it.each(["pending", "failed"])("koš odmítne %s sidecar, pokud encoder již publikoval kanonický WebM", async (state) => {
     const data = await fixture();
     const pending = await createLivePendingDelivery({
       captureSources: "microphone+system", clientRecordingId: data.id,
@@ -53,7 +53,12 @@ describe("jediný delivery asset schůzky", () => {
       masterPath: data.masterPath, recordingsDirectory: data.directory,
       startedAt: data.startedAt,
     });
-    const item = { attempts: 0, clientRecordingId: data.id, delivery: pending,
+    const delivery = { ...pending, state };
+    if (state === "failed") {
+      const sidecar = JSON.parse(await readFile(pending.sidecarPath, "utf8"));
+      await writeFile(pending.sidecarPath, JSON.stringify({ ...sidecar, state }));
+    }
+    const item = { attempts: 0, clientRecordingId: data.id, delivery,
       manifestPath: data.manifestPath, server: {}, state: "ceka",
       tracks: { microphone: data.microphonePath, system: data.systemPath } };
     await expect(verifyMeetingAudioForDeletion(item, data.directory))

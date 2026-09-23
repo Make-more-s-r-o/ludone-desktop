@@ -28,7 +28,7 @@
   ],
   "followup": {
     "summary": "Lint mocku opraven bez oslabení; pending/failed delivery s existujícím kanonickým WebM blokuje koš před první mutací.",
-    "doslovnyVystup": "\n> ludone-desktop-prototype@0.1.3 lint\n> eslint .\n\n\nEXIT_CODE=0\n\n\n> ludone-desktop-prototype@0.1.3 typecheck\n> tsc --noEmit -p jsconfig.json\n\n\nEXIT_CODE=0\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-runtime\n\n····················································\n\n Test Files  3 passed (3)\n      Tests  52 passed (52)\n   Start at  12:14:47\n   Duration  664ms (transform 87ms, setup 20ms, collect 147ms, tests 1.16s, environment 0ms, prepare 78ms)\n\n\nEXIT_CODE=0\n",
-    "testy": "3 soubory, 52 testů"
+    "doslovnyVystup": "\n> ludone-desktop-prototype@0.1.3 lint\n> eslint .\n\n\nEXIT_CODE=0\n\n\n> ludone-desktop-prototype@0.1.3 typecheck\n> tsc --noEmit -p jsconfig.json\n\n\nEXIT_CODE=0\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-runtime\n\n·····················································\n\n Test Files  3 passed (3)\n      Tests  53 passed (53)\n   Start at  12:15:42\n   Duration  1.89s (transform 110ms, setup 23ms, collect 266ms, tests 3.04s, environment 0ms, prepare 136ms)\n\n\nEXIT_CODE=0\n",
+    "testy": "3 soubory, 53 testů"
   }
 }
