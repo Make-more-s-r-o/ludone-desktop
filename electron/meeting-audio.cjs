@@ -659,6 +659,19 @@ async function verifyMeetingAudioForDeletion(item, recordingsDirectory) {
     if (delivery.sizeBytes !== descriptor.sizeBytes || delivery.sha256 !== descriptor.sha256) {
       throw new MeetingAudioError("delivery_identity_mismatch", "Stereo WebM se změnil", "permanent");
     }
+  } else {
+    // Encoder může publikovat výstup ještě před zápisem ready sidecaru. Koš nesmí
+    // odstranit originály a popis nahrávky, zatímco tento soubor zůstane skrytý.
+    try {
+      await fs.promises.lstat(descriptor.filePath);
+      throw new MeetingAudioError(
+        "delivery_unbound_output_unsafe",
+        "Rozpracovaný stereo WebM je na disku bez připravené identity; koš je pozastavený",
+        "permanent",
+      );
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
   }
   return [
     ...(descriptor.masterPath === null ? [] : [descriptor.masterPath]),

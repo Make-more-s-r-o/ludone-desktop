@@ -102,9 +102,12 @@ describe("bezpečný HTTP requester", () => {
 
 describe("ruční ověření nahrávky", () => {
   it("jediný stereo delivery ověří jedním GET podle jednoho serverového recordingId", async () => {
-    const fetchImpl = vi.fn(async (_url) => response(200, {
-      state: "stored", missing: [], declaredBytes: 12, sha256: SHA,
-    }));
+    const fetchImpl = vi.fn(async (url) => {
+      expect(new URL(url).pathname).toBe(`/api/nahravky/uploads/${ID}`);
+      return response(200, {
+        state: "stored", missing: [], declaredBytes: 12, sha256: SHA,
+      });
+    });
     const { instance } = verifier(fetchImpl);
     const result = await instance.verify(target({
       delivery: { recordingId: ID, declaredBytes: 12, sha256: SHA },

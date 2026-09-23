@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-runtime
+
+····················································
+
+ Test Files  3 passed (3)
+      Tests  52 passed (52)
+   Start at  12:14:47
+   Duration  664ms (transform 87ms, setup 20ms, collect 147ms, tests 1.16s, environment 0ms, prepare 78ms)
+
+
+EXIT_CODE=0

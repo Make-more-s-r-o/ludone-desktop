@@ -11,6 +11,7 @@ const {
   createLivePendingDelivery,
   ensureMeetingAudioReady,
   hasLegacyUploadEvidence,
+  verifyMeetingAudioForDeletion,
 } = require("../electron/meeting-audio.cjs");
 
 async function fixture() {
@@ -44,6 +45,25 @@ async function fixture() {
 }
 
 describe("jediný delivery asset schůzky", () => {
+  it("koš odmítne pending sidecar, pokud encoder již publikoval kanonický WebM", async () => {
+    const data = await fixture();
+    const pending = await createLivePendingDelivery({
+      captureSources: "microphone+system", clientRecordingId: data.id,
+      endedAt: data.endedAt, manifestPath: data.manifestPath,
+      masterPath: data.masterPath, recordingsDirectory: data.directory,
+      startedAt: data.startedAt,
+    });
+    const item = { attempts: 0, clientRecordingId: data.id, delivery: pending,
+      manifestPath: data.manifestPath, server: {}, state: "ceka",
+      tracks: { microphone: data.microphonePath, system: data.systemPath } };
+    await expect(verifyMeetingAudioForDeletion(item, data.directory))
+      .resolves.toEqual([pending.masterPath, pending.sidecarPath]);
+    await writeFile(pending.filePath, "publikovany-webm");
+    await expect(verifyMeetingAudioForDeletion(item, data.directory))
+      .rejects.toMatchObject({ code: "delivery_unbound_output_unsafe" });
+    expect(await readFile(pending.filePath, "utf8")).toBe("publikovany-webm");
+  });
+
   it("živý stereo master převede jednou, uloží neměnný hash a po restartu jej nepřekóduje", async () => {
     const data = await fixture();
     const pending = await createLivePendingDelivery({

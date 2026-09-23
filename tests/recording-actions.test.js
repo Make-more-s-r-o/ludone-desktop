@@ -153,6 +153,34 @@ describe("bezpečné lokální akce nahrávky", () => {
     ]);
     expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(0);
   });
+
+  it("ruční koš s pending sidecarem a již publikovaným WebM nesáhne na žádný soubor", async () => {
+    const value = await fixture();
+    const recordingsDirectory = path.dirname(value.audioPath);
+    const masterPath = path.join(recordingsDirectory, "porada-stereo-master.webm");
+    await writeFile(masterPath, "stereo-master");
+    const pending = await createLivePendingDelivery({
+      captureSources: "microphone", clientRecordingId: value.id,
+      startedAt: value.manifest.tracks.microphone.startedAt,
+      endedAt: value.manifest.tracks.microphone.endedAt,
+      manifestPath: value.manifestPath, masterPath, recordingsDirectory,
+    });
+    await value.store.setRecordingDelivery(value.id, pending);
+    await writeFile(pending.filePath, "publikovany-webm");
+    const row = (await value.store.listLocalRecordings()).items.find((item) => item.id === value.id);
+    const trashItem = vi.fn();
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      guard: async () => true,
+      trashItem,
+    })).rejects.toThrow(/bez připravené identity/u);
+    expect(trashItem).not.toHaveBeenCalled();
+    expect(await readFile(pending.filePath, "utf8")).toBe("publikovany-webm");
+    expect(await readFile(masterPath, "utf8")).toBe("stereo-master");
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
+  });
   it("přesune audio, známý sidecar a manifest poslední a teprve pak odstraní queue řádek", async () => {
     const value = await fixture({ sidecar: true });
     const canonicalRoot = await realpath(path.dirname(value.audioPath));
