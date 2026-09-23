@@ -18,7 +18,7 @@ Samostatná budoucí funkční etapa je skutečné zapojení desktopového UI Lu
 
 Oba autoři mají stejné zadání a lokální fonty/tokeny, každý svůj pracovní strom. Dan výslovně vybral dva klikatelné HTML prototypy. První kolo je nezávislé. Koordinátor sjednotí pouze prezentaci a opraví objektivní nedostatky před porovnáním; nemíchá vizuální nápady mezi autory. Přesné modely a starty eviduje PROVENANCE.json.
 
-Návrhy se nejdřív hodnotí anonymně jako A/B, autory lze odhalit. Hodnotí se každodenní použití 35 %, vizuální klid 25 %, jasnost stavů 20 %, LuDone identita 10 % a proveditelnost 10 %. Povinná funkce nesmí zmizet výměnou za hezčí screenshot. Volba návrhu ani tento prototyp nejsou schválením produkčního vydání.
+Na Danovo přání jsou autoři viditelní hned jako A/B; tlačítkem Skrýt autory lze porovnat anonymně. Hodnotí se každodenní použití 35 %, vizuální klid 25 %, jasnost stavů 20 %, LuDone identita 10 % a proveditelnost 10 %. Povinná funkce nesmí zmizet výměnou za hezčí screenshot. Volba návrhu ani tento prototyp nejsou schválením produkčního vydání.
 
 ## Doplnění macOS celku
 
@@ -26,6 +26,8 @@ Během tvorby Dan výslovně upřesnil ikonu, lištu, detail a historické inspi
 
 ## Převzetí a návrat k porovnání
 
-A = Claude Opus 5.5; B = Astra. Volbu zobrazuje tlačítko Odhalit autory. Otevři index.html nebo spusť místní server v této složce. focus.html umožní samostatné proklikávání ve skutečné šířce panelu/okna. Oba návrhy jsou převzaté po jednom kole objektivních oprav; původní estetika zůstala nezávislá. Důkazy jsou zachované také v dukazy/desktop-design-2026-09-23.
+A = Claude Opus 5.5; B = Astra. Jména jsou viditelná hned a lze je skrýt. Otevři index.html nebo spusť místní server v této složce. focus.html umožní samostatné proklikávání ve skutečné šířce panelu/okna. Oba návrhy jsou převzaté po jednom kole objektivních oprav; původní estetika zůstala nezávislá. Důkazy jsou zachované také v dukazy/desktop-design-2026-09-23.
 
-Dan následně autorizoval přípravu další verze a návrhu LuTracku. LuTrack proto vzniká jako oddělený budoucí pracovní tok, nikoli jako tvrzení, že současná aplikace ukládá čas na server. Design A/B zatím není vybraný a produkční změny nejsou v tomto běhu nasazené.
+Dan následně autorizoval přípravu další verze a návrhu LuTracku. [LuTrack od Solu](lutrack/index.html) je připravený jako oddělený budoucí pracovní tok, nikoli jako tvrzení, že současná aplikace ukládá čas na server. Design A/B zatím není vybraný a produkční změny nejsou v tomto běhu nasazené.
+
+[Plán další verze](lutrack/NEXT-RELEASE.md) rozlišuje design, klientský časovač a chybějící serverový kontrakt. Lokální porovnání lze znovu spustit příkazem `python3 -m http.server 53289 --bind 127.0.0.1` z této složky a otevřít http://127.0.0.1:53289/. Podklady jsou uložené v samostatné pracovní větvi, nikoli veřejně publikované.

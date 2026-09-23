@@ -25,3 +25,7 @@ Opus předal deset scénářů a tři témata; po nalezené chybě aktualizace a
 ⛔ Živé audio, skutečný upload, přihlášení, přepis, chování Docku/menu baru, nativní titulková lišta, VoiceOver a notarizovaný build s novým designem. Toto je návrh, nikoli změna nainstalované aplikace.
 
 🟡 Výběr vzhledu čeká na Dana. LuTrack je samostatný budoucí návrh pracovního toku; žádný serverový time sync se tímto během nezprovoznil. Fonty Brockmann jsou pouze lokální náhledové podklady a necommitují se. Open-source Public Sans má přiloženou OFL licenci.
+
+## Doplňkový LuTrack od Solu
+
+🧪 Čtyřstavový návrh a plán další verze jsou převzaté; konkrétní prokliky, integrační opravy a limity jsou v [LuTrack review](lutrack/ROOT-REVIEW.md). Jména autorů A/B se na Danovo přání zobrazují hned při otevření porovnání.

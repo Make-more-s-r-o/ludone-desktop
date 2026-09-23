@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="cs" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>LuTrack · návrh budoucího ovládání</title>
+  <link rel="stylesheet" href="./assets/tokens.css">
+  <link rel="stylesheet" href="../shared-assets/tokens.css">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <main class="presentation">
+    <nav class="preview-controls" aria-label="Stavy návrhu">
+      <div class="preview-label"><a href="../index.html">← Porovnání A/B</a> <span>·</span> LuTrack / Sol</div>
+      <div class="scenario-switch" role="group" aria-label="Vybrat scénář">
+        <button type="button" data-scenario="ready">Připraveno</button>
+        <button type="button" data-scenario="running">Běží</button>
+        <button type="button" data-scenario="saved">Místně uloženo</button>
+        <button type="button" data-scenario="blocked">Nedostupné</button>
+      </div>
+      <label class="theme-picker">Téma
+        <select id="theme-select" aria-label="Téma návrhu">
+          <option value="light">Light</option>
+          <option value="professional">Professional</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+    </nav>
+
+    <section class="desktop-window" aria-label="Simulace okna LuDone Desktop, 448 krát 676 bodů">
+      <div class="window-chrome" aria-hidden="true">
+        <div class="traffic-lights"><i></i><i></i><i></i></div>
+        <span>LuDone Desktop</span>
+        <span class="chrome-symbol">⌘</span>
+      </div>
+      <div class="window-body">
+        <header class="app-header">
+          <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="23" height="23" fill="none"><path d="M4 18 10 6 14 14 20 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="app-heading"><span class="eyebrow">LuDone Desktop</span><h1>LuTrack</h1></div>
+          <span class="header-tag">KONCEPT</span>
+        </header>
+        <p class="simulation-banner">Návrh budoucího LuTracku · simulace</p>
+        <div id="scene" class="scene" aria-live="off"></div>
+        <footer class="app-footer"><span class="footer-dot" aria-hidden="true"></span>Žádná data se neposílají do LuTracku</footer>
+      </div>
+    </section>
+    <p class="caption">Okno 448 × 676 px · fiktivní projekty · lokální proklik bez serveru</p>
+  </main>
+</body>
+</html>

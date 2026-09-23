@@ -1,3 +1,4 @@
 # Font Brockmann je pouze pro lokální náhled; toto kolo nepovoluje redistribuci licence.
 shared-assets/*.otf
 variants/**/assets/*.otf
+lutrack/assets/*.otf
