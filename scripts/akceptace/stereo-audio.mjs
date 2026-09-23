@@ -12,15 +12,19 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const options = {};
 for (let index = 2; index < process.argv.length; index += 2) {
   const name = process.argv[index];
-  assert(["--module", "--meeting-module", "--ffmpeg", "--ffprobe"].includes(name), `Neznámá volba ${name}`);
+  assert(["--module", "--meeting-module", "--ffmpeg", "--ffprobe", "--resources"].includes(name), `Neznámá volba ${name}`);
   assert(process.argv[index + 1], `Chybí hodnota ${name}`);
   options[name] = process.argv[index + 1];
 }
 const require = createRequire(import.meta.url);
-const { convertToStereoMp3 } = require(path.resolve(options["--module"] ?? path.join(root, "electron/media-encoder.cjs")));
-const { createLivePendingDelivery, ensureMeetingAudioReady } = require(path.resolve(options["--meeting-module"] ?? path.join(root, "electron/meeting-audio.cjs")));
+const { prepareStereoWebm } = require(path.resolve(options["--module"] ?? path.join(root, "electron/media-encoder.cjs")));
+const meetingModulePath = path.resolve(options["--meeting-module"] ?? path.join(root, "electron/meeting-audio.cjs"));
+const { createLivePendingDelivery, ensureMeetingAudioReady } = require(meetingModulePath);
+const encoderLocation = options["--resources"]
+  ? { isPackaged: true, resourcesPath: path.resolve(options["--resources"]) }
+  : {};
 const testFfmpeg = options["--ffmpeg"] ?? "ffmpeg";
-const testFfprobe = options["--ffprobe"] ?? "ffprobe";
+const testFfprobe = options["--ffprobe", "--resources"] ?? "ffprobe";
 const temporaryRoot = await mkdtemp(path.join(tmpdir(), "ludone-stereo-synthetic-"));
 let failures = 0;
 function run(executable, arguments_) {
@@ -55,17 +59,22 @@ function tone(samples, channel, frequency) {
   return 2 * Math.hypot(real, imaginary) / (to - from);
 }
 async function verify(name, inputs, microphoneOnly = false, delayed = false) {
-  const outputPath = path.join(temporaryRoot, `${name}.mp3`);
-  await convertToStereoMp3({ ...inputs, outputPath });
+  const outputPath = path.join(temporaryRoot, `${name}.webm`);
+  await prepareStereoWebm({ ...inputs, ...encoderLocation, outputPath });
   const metadata = JSON.parse(run(testFfprobe, ["-v", "error", "-show_streams", "-of", "json", outputPath]));
   assert.equal(metadata.streams.length, 1);
-  assert.equal(metadata.streams[0].codec_name, "mp3");
+  assert.equal(metadata.streams[0].codec_name, "opus");
   assert.equal(metadata.streams[0].channels, 2);
   assert.equal(metadata.streams[0].sample_rate, "48000");
+  if (inputs.stereoWebmPath) {
+    const packets = (file) => JSON.parse(run(testFfprobe, ["-v", "error", "-select_streams", "a:0",
+      "-show_packets", "-show_entries", "packet=data_hash", "-show_data_hash", "sha256", "-of", "json", file]));
+    assert.deepEqual(packets(outputPath), packets(inputs.stereoWebmPath), "Živé Opus pakety byly překódované");
+  }
   const pcm = run(testFfmpeg, ["-hide_banner", "-nostdin", "-loglevel", "error", "-xerror", "-i", outputPath, "-map", "0:a:0", "-f", "f32le", "-acodec", "pcm_f32le", "-"]);
   const samples = new Float32Array(pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.length));
   const sampleCount = samples.length / 2;
-  // Nejvýše jeden MP3 rámec; Xing/LAME metadata musí zachovat začátek a konec.
+  // Tolerance 24 ms na hranice kodeku; začátek a konec nesmí zkrátit rozhovor.
   assert(Math.abs(sampleCount - 12 * 48000) <= 1152, `Délka ${sampleCount} vzorků místo 576000`);
   assert(tone(samples, 0, 440) > 0.08, "Mikrofon není vlevo");
   assert(tone(samples, 0, 880) < 0.002, "Systémový tón pronikl doleva");
@@ -78,19 +87,19 @@ async function verify(name, inputs, microphoneOnly = false, delayed = false) {
     assert(rms(samples, 1, 0, Math.floor(0.15 * 48000)) < 0.002, "Chybí zpoždění systémové stopy");
     assert(rms(samples, 1, Math.floor(0.4 * 48000), 48000) > 0.05, "Systémová stopa po zpoždění chybí");
   }
-  assert.equal((await stat(outputPath)).mode & 0o777, 0o600, "MP3 má zůstat soukromý (0600)");
+  assert.equal((await stat(outputPath)).mode & 0o777, 0o600, "WebM/Opus má zůstat soukromý (0600)");
   const before = await sha(outputPath);
-  await assert.rejects(convertToStereoMp3({ ...inputs, outputPath }));
-  assert.equal(await sha(outputPath), before, "Opakovaný převod přepsal existující MP3");
+  await assert.rejects(prepareStereoWebm({ ...inputs, ...encoderLocation, outputPath }));
+  assert.equal(await sha(outputPath), before, "Opakovaný převod přepsal existující WebM/Opus");
   console.log(JSON.stringify({ scenario: name, samples: sampleCount, left440: tone(samples, 0, 440), right880: tone(samples, 1, 880), bytes: (await stat(outputPath)).size }));
 }
 try {
   run(testFfmpeg, [...base, "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=12", "-c:a", "libopus", microphone]);
   run(testFfmpeg, [...base, "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000:duration=11.75", "-ac", "2", "-c:a", "libopus", system]);
-  run(testFfmpeg, [...base, "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=12", "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000:duration=12", "-filter_complex", "[0:a][1:a]join=inputs=2:channel_layout=stereo:map=0.0-FL|1.0-FR[a]", "-map", "[a]", "-c:a", "libopus", stereo]);
+  run(testFfmpeg, [...base, "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=12", "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000:duration=12", "-filter_complex", "[0:a][1:a]join=inputs=2:channel_layout=stereo:map=0.0-FL|1.0-FR[a]", "-map", "[a]", "-c:a", "libopus", "-b:a", "96k", stereo]);
   const originalHashes = await Promise.all([microphone, system, stereo].map(sha));
-  await check("živý stereo WebM → jediný MP3, kanály, délka, soukromí a ochrana přepsání", () => verify("live", { stereoWebmPath: stereo }));
-  await check("dva původní soubory → zarovnaný stereo MP3", () => verify("aligned", { microphoneWebmPath: microphone, systemWebmPath: system, timing: { durationMs: 12000, microphoneDelayMs: 0, systemDelayMs: 250 } }, false, true));
+  await check("živý stereo WebM → jediný WebM/Opus, kanály, délka, soukromí a ochrana přepsání", () => verify("live", { stereoWebmPath: stereo }));
+  await check("dva původní soubory → zarovnaný stereo WebM/Opus", () => verify("aligned", { microphoneWebmPath: microphone, systemWebmPath: system, timing: { durationMs: 12000, microphoneDelayMs: 0, systemDelayMs: 250 } }, false, true));
   await check("jen mikrofon → vlevo hlas, vpravo ticho", () => verify("microphone-only", { microphoneWebmPath: microphone, timing: { durationMs: 12000 } }, true));
   await check("skutečný runtime helper → přibalený encoder → trvalá identita po restartu", async () => {
     const clientRecordingId = randomUUID();
@@ -110,21 +119,29 @@ try {
       recordingsDirectory: temporaryRoot, startedAt, endedAt, captureSources: "microphone+system" });
     const item = { attempts: 0, clientRecordingId, manifestPath, delivery, server: {}, state: "ceka",
       tracks: { microphone, system } };
-    const encoderOptions = { recordingsDirectory: temporaryRoot,
+    const encoderOptions = { ...encoderLocation, recordingsDirectory: temporaryRoot,
       projectRoot: options["--module"] ? path.resolve(path.dirname(options["--module"]), "..") : root };
     const ready = await ensureMeetingAudioReady(item, encoderOptions);
     assert.equal(ready.state, "ready");
-    assert.equal(ready.mime, "audio/mpeg");
+    assert.equal(ready.mime, "audio/webm");
     assert.equal(ready.sha256, await sha(ready.filePath));
     assert.equal(ready.sizeBytes, (await stat(ready.filePath)).size);
     // Nový proces uvidí pouze JSON; encoder při obnově už nesmí běžet.
     const restored = JSON.parse(JSON.stringify({ ...item, delivery: ready,
       server: { companyTabidooId: randomUUID(), delivery: { recordingId: randomUUID(), uploadedBytes: 1 } } }));
-    const reused = await ensureMeetingAudioReady(restored, { ...encoderOptions,
-      convertToStereoMp3: () => { throw new Error("Obnova znovu spustila encoder"); } });
+    const restorePath = path.join(temporaryRoot, "restore-state.json");
+    await writeFile(restorePath, JSON.stringify({ item: restored, options: encoderOptions }), { mode: 0o600 });
+    const reused = JSON.parse(run(process.execPath, ["-e", `
+      const { ensureMeetingAudioReady } = require(process.argv[1]);
+      const saved = JSON.parse(require("node:fs").readFileSync(process.argv[2], "utf8"));
+      ensureMeetingAudioReady(saved.item, { ...saved.options,
+        prepareStereoWebm: () => { throw new Error("Obnova znovu spustila encoder"); }
+      }).then(result => process.stdout.write(JSON.stringify(result)))
+        .catch(error => { console.error(error); process.exitCode = 1; });
+    `, meetingModulePath, restorePath]));
     assert.deepEqual(reused, ready);
     const metadata = JSON.parse(run(testFfprobe, ["-v", "error", "-show_streams", "-of", "json", ready.filePath]));
-    assert.equal(metadata.streams[0].codec_name, "mp3");
+    assert.equal(metadata.streams[0].codec_name, "opus");
     assert.equal(metadata.streams[0].channels, 2);
   });
   await check("původní soubory zůstaly bitově zachované", async () => assert.deepEqual(await Promise.all([microphone, system, stereo].map(sha)), originalHashes));

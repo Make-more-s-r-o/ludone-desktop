@@ -2,6 +2,8 @@
 
 Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přidělený strom. Nejdřív ověř `pwd`. Feature NRD-09, rozhodnutí D20, plný kontrakt [STEREO-MP3](../STEREO-MP3.md). T-S0 je dokumentační předpoklad. Helper kontrakt poskytuje T-S1; integraci vlastní T-S3.
 
+> D21 / 23. 9.: výsledný soubor je WebM/Opus 96 kb/s stereo. Nové živé audio se pouze přebalí bez překódování; staré dvojice se převádějí do Opusu. Starší odkazy na MP3 níže jsou pro tento běh překonané. API převodníku je `prepareStereoWebm`, MIME `audio/webm`.
+
 ## Mantinely
 
 - **NEDĚLEJ ŽÁDNOU ZÁPISOVOU GIT OPERACI**; jediný povolený Git příkaz je závěrečný read-only self-check v postupu.

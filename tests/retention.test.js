@@ -140,11 +140,11 @@ async function createSentStereoRecording({ recoverySidecar = false, ...options }
   const manifest = JSON.parse(await readFile(recording.manifestPath, "utf8"));
   const basePath = recording.manifestPath.slice(0, -".manifest.json".length);
   const masterPath = `${basePath}-stereo-master.webm`;
-  const deliveryPath = `${basePath}-stereo.mp3`;
+  const deliveryPath = `${basePath}-stereo.webm`;
   const deliverySidecarPath = `${recording.manifestPath}.meeting-audio-v1.json`;
   const recoverySidecarPath = `${recording.manifestPath}.recovered-upload-v1.json`;
   const masterBytes = Buffer.from("stereo master mikrofon vlevo system vpravo");
-  const deliveryBytes = Buffer.from("hotovy stereo mp3");
+  const deliveryBytes = Buffer.from("hotovy stereo opus");
   const startedAt = manifest.createdAt;
   const endedAt = manifest.closedAt;
   const delivery = {
@@ -162,7 +162,7 @@ async function createSentStereoRecording({ recoverySidecar = false, ...options }
       microphoneDelayMs: 0,
       systemDelayMs: 0,
     },
-    mime: "audio/mpeg",
+    mime: "audio/webm",
     filePath: deliveryPath,
     sidecarPath: deliverySidecarPath,
     masterPath,
@@ -871,7 +871,7 @@ describe("retence 7 dní", () => {
   });
 });
 
-describe("retence jediného stereo MP3", () => {
+describe("retence jediného stereo WebM/Opus", () => {
   it("před prvním smazáním ověří všechny originály i deriváty", async () => {
     const recording = await createSentStereoRecording();
     const sidecar = JSON.parse(await readFile(recording.deliverySidecarPath, "utf8"));
@@ -900,9 +900,9 @@ describe("retence jediného stereo MP3", () => {
     expect(result.deletedItems).toEqual([]);
   });
 
-  it("cizí přímou cestu podvrženou jako MP3 odmítne", async () => {
+  it("cizí přímou cestu podvrženou jako WebM/Opus odmítne", async () => {
     const recording = await createSentStereoRecording();
-    const foreignPath = path.join(temporaryDirectory, "cizi-stereo.mp3");
+    const foreignPath = path.join(temporaryDirectory, "cizi-stereo.webm");
     await writeFile(foreignPath, await readFile(recording.deliveryPath), { mode: 0o600 });
     const queue = {
       ...recording.queue,
@@ -929,7 +929,7 @@ describe("retence jediného stereo MP3", () => {
     ["má jiný obsah", async (recording) => {
       await writeFile(recording.deliveryPath, Buffer.from("podvrzeny stereo"), { mode: 0o600 });
     }],
-  ])("%s-li ready MP3, nesmaže žádný soubor", async (_case, corrupt) => {
+  ])("%s-li ready WebM/Opus, nesmaže žádný soubor", async (_case, corrupt) => {
     const recording = await createSentStereoRecording();
     await corrupt(recording);
 
@@ -950,9 +950,9 @@ describe("retence jediného stereo MP3", () => {
     expect(result.deletedItems).toEqual([]);
   });
 
-  it("symlink místo ready MP3 blokuje úklid a nesmaže jeho cíl", async () => {
+  it("symlink místo ready WebM/Opus blokuje úklid a nesmaže jeho cíl", async () => {
     const recording = await createSentStereoRecording();
-    const sentinelPath = path.join(temporaryDirectory, "cizi-zvuk.mp3");
+    const sentinelPath = path.join(temporaryDirectory, "cizi-zvuk.webm");
     await writeFile(sentinelPath, await readFile(recording.deliveryPath), { mode: 0o600 });
     await unlink(recording.deliveryPath);
     await symlink(sentinelPath, recording.deliveryPath);
@@ -969,7 +969,7 @@ describe("retence jediného stereo MP3", () => {
     expect(result.deletedItems).toEqual([]);
   });
 
-  it("smaže master, MP3, originály, oba sidecary a primární manifest jako poslední", async () => {
+  it("smaže master, WebM/Opus, originály, oba sidecary a primární manifest jako poslední", async () => {
     const recording = await createSentStereoRecording({ recoverySidecar: true });
 
     const result = await applyRetention({

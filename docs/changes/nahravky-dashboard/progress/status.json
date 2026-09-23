@@ -5,7 +5,7 @@
     "id": "nahravky-dashboard",
     "name": "LuDone Desktop – dokončení nahrávek",
     "goal": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
-    "updatedAt": "2026-09-15T11:14:39.218Z",
+    "updatedAt": "2026-09-23T09:57:20.241Z",
     "planVersion": "draft",
     "problem": "Desktop umí nahrávat a má upload klienta, ale běžná aplikace z Finderu nenabízí úplnou cestu od uložení k odeslání a spolehlivému přehledu výsledku. Staré blokované položky nelze výslovně převzít. Vydávací workflow nenahrává výsledné soubory na existující hosting.",
     "targetOutcome": "Spolehlivé nahrávání, odesílání a přehled na Macu, připravené vydání.",
@@ -130,14 +130,14 @@
     },
     {
       "id": "NRD-09",
-      "name": "Jedna schůzka v jednom stereo MP3",
-      "whatItGives": "Celý rozhovor se odešle společně, mikrofon vlevo a systém vpravo.",
+      "name": "Jedna schůzka v jednom stereo souboru",
+      "whatItGives": "Celý rozhovor se odešle společně jako úsporný WebM/Opus; mikrofon vlevo, systém vpravo.",
       "scope": "approved",
       "delivery": "no-code",
       "exposure": "unavailable",
       "verification": "unverified",
       "label": "Navrženo",
-      "nextStep": "Implementovat trvalý stereo MP3, jeden upload a ověřit restart i přibalený encoder.",
+      "nextStep": "Dokončit D21 (WebM/Opus 96 kb/s), zopakovat integrační brány a nativní audio důkaz. MP3 důkazy 15. 9. jsou historické.",
       "evidence": []
     }
   ],
@@ -375,7 +375,7 @@
     },
     {
       "id": "T-S1",
-      "title": "Trvalý stereo MP3 a jediný upload",
+      "title": "Trvalý stereo Opus a jediný upload",
       "executor": "codex",
       "state": "dispatched",
       "attempts": 1,
@@ -387,7 +387,7 @@
     },
     {
       "id": "T-S2",
-      "title": "Přibalený encoder pro oba Macy",
+      "title": "Přibalený Opus nástroj pro oba Macy",
       "executor": "codex",
       "state": "dispatched",
       "attempts": 1,
@@ -401,7 +401,7 @@
       "id": "T-SR",
       "title": "Bezpečná retence stereo MP3",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-S0"
@@ -474,6 +474,22 @@
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-23T09:57:20.241Z",
+      "text": "D21: podle nového upřesnění zvolen WebM/Opus, 96 kb/s stereo. Serverový checkout e3e7dbac má podporu i přepisovou cestu; produkce a finální implementace zatím neověřeny."
+    },
+    {
+      "at": "2026-09-15T11:27:55.142Z",
+      "text": "Task T-SR má nově stav „completed“."
+    },
+    {
+      "at": "2026-09-15T11:27:51.653Z",
+      "text": "Task T-S2 má nově stav „completed“."
+    },
+    {
+      "at": "2026-09-15T11:27:22.076Z",
+      "text": "Převzato balení 6a6a87a a retence 20d18e1. Skutečné syntetické MP3 a podpisové transformace prošly; finální integrace fronty a čisté brány ještě běží. Žádný nový release tag."
+    },
     {
       "at": "2026-09-15T11:14:39.218Z",
       "text": "Byl zalozen task T-S3: Integrace a přejímka stereo MP3."
