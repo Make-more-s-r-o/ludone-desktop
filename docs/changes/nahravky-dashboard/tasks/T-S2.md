@@ -2,6 +2,8 @@
 
 Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přidělený strom. Feature NRD-09, rozhodnutí D20, kontrakt [STEREO-MP3](../STEREO-MP3.md). Závisí na dokumentaci T-S0; T-S1 běží nezávisle, integrace T-S3.
 
+> D21 / 23. 9.: výsledný soubor je WebM/Opus 96 kb/s stereo. Nové živé audio se pouze přebalí bez překódování; staré dvojice se převádějí do Opusu. Starší odkazy na MP3 níže jsou pro tento běh překonané. API převodníku je `prepareStereoWebm`, MIME `audio/webm`.
+
 ## Mantinely
 
 - **NEDĚLEJ ŽÁDNOU ZÁPISOVOU GIT OPERACI**; jediný povolený Git příkaz je závěrečný read-only self-check v postupu.
@@ -21,6 +23,7 @@ Pracuješ ve worktree {{WORKTREE}}. Na začátku spusť `pwd` a ověř přiděle
   - `build/media-encoder/README.md`
   - `build/media-encoder/LICENSE.txt`
   - `tests/packaging.test.js`
+  - `tests/verify-macos-release.test.js`
   - `tests/media-encoder.test.js`
   - `tests/media-encoder-packaging.test.js`
   - `dukazy/stereo-mp3-2026-09-15/T-S2/report.json`

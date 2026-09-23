@@ -1,0 +1,6 @@
+
+> ludone-desktop-prototype@0.1.3 lint
+> eslint .
+
+
+EXIT_CODE=0

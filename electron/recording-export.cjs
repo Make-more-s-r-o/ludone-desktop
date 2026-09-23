@@ -63,6 +63,23 @@ function inspectOpusWebm(bytes) {
   return { container: "WebM", codec: "Opus", channels };
 }
 
+function inspectMp3(bytes) {
+  const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  let offset = buffer.subarray(0, 3).toString("ascii") === "ID3" && buffer.length >= 10
+    ? 10 + ((buffer[6] & 0x7f) << 21) + ((buffer[7] & 0x7f) << 14)
+      + ((buffer[8] & 0x7f) << 7) + (buffer[9] & 0x7f)
+    : 0;
+  let found = false;
+  for (; offset + 1 < buffer.length; offset += 1) {
+    if (buffer[offset] === 0xff && (buffer[offset + 1] & 0xe6) === 0xe2) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) throw new Error("Exportní soubor nemá platnou MP3 hlavičku");
+  return { container: "MP3", codec: "MP3", channels: 2 };
+}
+
 function recordingTimeline(manifestValue, stereoTiming) {
   const manifest = requiredManifest(manifestValue);
   const microphoneStartedAt = requiredTimestamp(
@@ -223,10 +240,10 @@ function truncateRecordingNameBytes(name, byteBudget) {
   return result.replace(/-+$/u, "");
 }
 
-function exportFileName(clientRecordingId, startedAt, recordingName) {
+function exportFileName(clientRecordingId, startedAt, recordingName, extension = ".webm") {
   const safeStartedAt = startedAt.replace(/[:.]/g, "-");
   const prefix = `LuDone-${safeStartedAt}-`;
-  const suffix = `${clientRecordingId}.webm`;
+  const suffix = `${clientRecordingId}${extension}`;
   const byteBudget = MAX_EXPORT_FILE_NAME_BYTES
     - Buffer.byteLength(`${prefix}-${suffix}`, "utf8")
     - EXPORT_FILE_NAME_RESERVE_BYTES;
@@ -307,11 +324,15 @@ async function exportRecordingCopy({
     endedAt: timeline.endedAt,
     nazev: recordingName,
   }, manifest);
-  const format = inspectOpusWebm(await readHeader(stagePath));
+  const extension = path.extname(stagePath).toLowerCase();
+  const format = extension === ".mp3"
+    ? inspectMp3(await readHeader(stagePath))
+    : inspectOpusWebm(await readHeader(stagePath));
   const fileName = exportFileName(
     manifest.clientRecordingId,
     timeline.startedAt,
     recordingName,
+    extension === ".mp3" ? ".mp3" : ".webm",
   );
   const downloadsRoot = path.resolve(downloadsDirectory);
   const filePath = path.join(downloadsRoot, fileName);
@@ -354,6 +375,7 @@ module.exports = {
   declaredCaptureSourcesFromManifest,
   exportRecordingCopy,
   inspectOpusWebm,
+  inspectMp3,
   recordingTimeline,
   sanitizeRecordingName,
   validateUploadRecordingName,

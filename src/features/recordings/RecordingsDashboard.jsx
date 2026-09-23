@@ -73,7 +73,7 @@ function normalizeVerification(value, item) {
     || !value.tracks || typeof value.tracks !== "object" || Array.isArray(value.tracks)
   ) throw new TypeError("Hlavní proces nevrátil platné ověření nahrávky");
   const tracks = {};
-  for (const track of ["microphone", "system"]) {
+  for (const track of ["delivery", "microphone", "system"]) {
     const result = value.tracks[track];
     if (!result) continue;
     if (
@@ -157,7 +157,11 @@ const VERIFICATION_LABELS = Object.freeze({
   network_error: "Server se nepodařilo kontaktovat",
 });
 
-const TRACK_LABELS = Object.freeze({ microphone: "Mikrofon", system: "Systémový zvuk" });
+const TRACK_LABELS = Object.freeze({
+  delivery: "Stereo MP3",
+  microphone: "Mikrofon",
+  system: "Systémový zvuk",
+});
 
 export function RecordingsDashboard({ authState }) {
   const [view, setView] = useState({

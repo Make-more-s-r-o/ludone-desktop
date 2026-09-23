@@ -1,6 +1,6 @@
 {
   "name": "ludone-desktop-prototype",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": "Make more s.r.o.",
   "private": true,
   "description": "Klikatelná kostra menu-bar spouštěče LuDone Desktop",
@@ -20,6 +20,32 @@
       "src/lib/**/*",
       "src/pisma/**/*"
     ],
+    "extraResources": [
+      {
+        "from": ".runtime/media-encoder/ffmpeg-6.1.6/darwin-${arch}/ffmpeg",
+        "to": "media-encoder/ffmpeg"
+      },
+      {
+        "from": ".runtime/media-encoder/ffmpeg-6.1.6/darwin-${arch}/BUILD.json",
+        "to": "media-encoder/BUILD.json"
+      },
+      {
+        "from": ".runtime/media-encoder/ffmpeg-6.1.6/sources",
+        "to": "media-encoder/sources"
+      },
+      {
+        "from": "build/media-encoder",
+        "to": "media-encoder",
+        "filter": [
+          "README.md",
+          "LICENSE.txt"
+        ]
+      },
+      {
+        "from": "scripts/media-encoder-lock.json",
+        "to": "media-encoder/media-encoder-lock.json"
+      }
+    ],
     "artifactName": "LuDone-Desktop-${version}-${arch}.${ext}",
     "mac": {
       "icon": "build/ikona-aplikace/LuDone.icns",
@@ -29,6 +55,9 @@
       "entitlementsInherit": "scripts/entitlements.mac.plist",
       "category": "public.app-category.productivity",
       "minimumSystemVersion": "12.0.0",
+      "binaries": [
+        "Contents/Resources/media-encoder/ffmpeg"
+      ],
       "target": [
         {
           "target": "dmg",
@@ -64,8 +93,9 @@
     "ikony": "node scripts/tray-ikony.mjs",
     "ikony:aplikace": "node scripts/tray-ikony.mjs --app",
     "start": "electron .",
-    "package:mac": "npm run build && node scripts/package-mac.mjs",
-    "release:mac": "npm run build && node scripts/package-mac.mjs --release && node scripts/release-artifacts.mjs --write-review-files && node scripts/verify-macos-release.mjs",
+    "package:mac": "node scripts/prepare-media-encoder.mjs --check --arch all && npm run build && node scripts/package-mac.mjs",
+    "prepare:media-encoder": "node scripts/prepare-media-encoder.mjs --arch all",
+    "release:mac": "node scripts/prepare-media-encoder.mjs --check --arch all && npm run build && node scripts/package-mac.mjs --release && node scripts/release-artifacts.mjs --write-review-files && node scripts/verify-macos-release.mjs",
     "progress": "node scripts/desktop-progress.mjs",
     "vzorky": "electron scripts/vzorky-exportu.mjs",
     "test:audio": "node scripts/audio-smoke.mjs",

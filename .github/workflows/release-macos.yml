@@ -84,6 +84,8 @@ jobs:
       # vydání jelo o jednu kontrolu chudší než každý push. Voláme proto TUTÉŽ
       # bránu; nový výčet se zase rozejde. Hlídá to `tests/brany-workflow.test.js`.
       - run: npm run gates
+      - name: Sestavení přibaleného Opus nástroje pro oba typy Macu
+        run: npm run prepare:media-encoder
       - name: Příprava notářského klíče mimo repozitář
         env:
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}

@@ -4,6 +4,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import queueStore from "../electron/queue.cjs";
+import meetingAudio from "../electron/meeting-audio.cjs";
+
+const { createLivePendingDelivery, ensureMeetingAudioReady } = meetingAudio;
 
 const OWNER = `sha256:${"a".repeat(64)}`;
 const roots = new Set();
@@ -64,6 +67,120 @@ async function fixture({ sidecar = false } = {}) {
 }
 
 describe("bezpečné lokální akce nahrávky", () => {
+  it("po pádu před navázáním stereo masteru koš zachová všechny soubory i queue řádek", async () => {
+    const value = await fixture();
+    const masterPath = path.join(path.dirname(value.audioPath), "porada-stereo-master.webm");
+    await writeFile(masterPath, "osiřelý-stereo-master");
+    const trashItem = vi.fn();
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: value.row.revision,
+      expectedFileRevision: value.row.fileRevision,
+      guard: async () => true,
+      trashItem,
+    })).rejects.toThrow(/není navázaný na frontu/u);
+    expect(trashItem).not.toHaveBeenCalled();
+    expect(await readFile(masterPath, "utf8")).toBe("osiřelý-stereo-master");
+    expect(await readFile(value.audioPath, "utf8")).toBe("bezpečný zvuk");
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
+  });
+
+  it("před zařazením do fronty souborový řádek s osiřelým masterem také nesmaže", async () => {
+    const value = await fixture();
+    const masterPath = path.join(path.dirname(value.audioPath), "porada-stereo-master.webm");
+    await writeFile(masterPath, "osiřelý-stereo-master");
+    const fileOnlyStore = queueStore.createOutboundQueueStore({
+      filePath: path.join(path.dirname(value.queuePath), "jina-fronta.json"),
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    const row = (await fileOnlyStore.listLocalRecordings()).items.find((item) => item.id === value.id);
+    expect(row.source).toBe("orphan");
+    const trashItem = vi.fn();
+    await expect(fileOnlyStore.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      guard: async () => true,
+      trashItem,
+    })).rejects.toThrow(/není navázaný na frontu/u);
+    expect(trashItem).not.toHaveBeenCalled();
+    expect(await readFile(masterPath, "utf8")).toBe("osiřelý-stereo-master");
+  });
+
+  it("smaže jeden připravený WebM, trvalý master, sidecar a originál pod stejnou revizí", async () => {
+    const value = await fixture();
+    const recordingsDirectory = path.dirname(value.audioPath);
+    const masterPath = path.join(recordingsDirectory, "porada-stereo-master.webm");
+    await writeFile(masterPath, "stereo-master");
+    const pending = await createLivePendingDelivery({
+      captureSources: "microphone", clientRecordingId: value.id,
+      startedAt: value.manifest.tracks.microphone.startedAt,
+      endedAt: value.manifest.tracks.microphone.endedAt,
+      manifestPath: value.manifestPath, masterPath, recordingsDirectory,
+    });
+    await value.store.setRecordingDelivery(value.id, pending);
+    const deliveryBytes = Buffer.from("stereo-webm-opus");
+    const ready = await ensureMeetingAudioReady({
+      attempts: 0, clientRecordingId: value.id, delivery: pending,
+      manifestPath: value.manifestPath, server: {}, state: "ceka",
+      tracks: { microphone: value.audioPath },
+    }, {
+      prepareStereoWebm: async ({ outputPath }) => {
+        await writeFile(outputPath, deliveryBytes);
+        return { outputPath, size: deliveryBytes.length,
+          mime: "audio/webm", channels: 2, encoderVersion: "test-delete" };
+      },
+      recordingsDirectory,
+    });
+    await value.store.setRecordingDelivery(value.id, ready);
+    const row = (await value.store.listLocalRecordings()).items.find((item) => item.id === value.id);
+    const trashed = [];
+    await value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      guard: async () => true,
+      trashItem: async (file) => { trashed.push(file); },
+    });
+    const root = await realpath(recordingsDirectory);
+    expect(trashed).toEqual([
+      path.join(root, path.basename(value.audioPath)),
+      masterPath,
+      ready.filePath,
+      ready.sidecarPath,
+      path.join(root, path.basename(value.manifestPath)),
+    ]);
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(0);
+  });
+
+  it("ruční koš s pending sidecarem a již publikovaným WebM nesáhne na žádný soubor", async () => {
+    const value = await fixture();
+    const recordingsDirectory = path.dirname(value.audioPath);
+    const masterPath = path.join(recordingsDirectory, "porada-stereo-master.webm");
+    await writeFile(masterPath, "stereo-master");
+    const pending = await createLivePendingDelivery({
+      captureSources: "microphone", clientRecordingId: value.id,
+      startedAt: value.manifest.tracks.microphone.startedAt,
+      endedAt: value.manifest.tracks.microphone.endedAt,
+      manifestPath: value.manifestPath, masterPath, recordingsDirectory,
+    });
+    await value.store.setRecordingDelivery(value.id, pending);
+    await writeFile(pending.filePath, "publikovany-webm");
+    const row = (await value.store.listLocalRecordings()).items.find((item) => item.id === value.id);
+    const trashItem = vi.fn();
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      guard: async () => true,
+      trashItem,
+    })).rejects.toThrow(/bez připravené identity/u);
+    expect(trashItem).not.toHaveBeenCalled();
+    expect(await readFile(pending.filePath, "utf8")).toBe("publikovany-webm");
+    expect(await readFile(masterPath, "utf8")).toBe("stereo-master");
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
+  });
   it("přesune audio, známý sidecar a manifest poslední a teprve pak odstraní queue řádek", async () => {
     const value = await fixture({ sidecar: true });
     const canonicalRoot = await realpath(path.dirname(value.audioPath));

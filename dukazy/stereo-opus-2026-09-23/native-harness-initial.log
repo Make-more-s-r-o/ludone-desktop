@@ -1,0 +1,21 @@
+$ node scripts/akceptace/stereo-audio.mjs --ffmpeg /tmp/ludone-opus-reference.eQ32QG/ffmpeg --ffprobe /tmp/ludone-opus-reference.eQ32QG/ffprobe
+FAIL živý stereo WebM → jediný WebM/Opus, kanály, délka, soukromí a ochrana přepsání: spawnSync ffprobe Unknown system error -86
+
+null !== 0
+
+FAIL dva původní soubory → zarovnaný stereo WebM/Opus: spawnSync ffprobe Unknown system error -86
+
+null !== 0
+
+FAIL jen mikrofon → vlevo hlas, vpravo ticho: spawnSync ffprobe Unknown system error -86
+
+null !== 0
+
+FAIL skutečný runtime helper → přibalený encoder → trvalá identita po restartu: spawnSync ffprobe Unknown system error -86
+
+null !== 0
+
+PASS původní soubory zůstaly bitově zachované
+FAILURES=4
+
+EXIT_CODE=1

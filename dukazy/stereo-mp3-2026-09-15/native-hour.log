@@ -1,0 +1,26 @@
+$ /usr/bin/time -l node /tmp/ludone-hour-stereo-proof.mjs
+PASS vytvořen hodinový syntetický stereo vstup
+{"conversionSeconds":25.224397750000005,"mp3Bytes":86401728}
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "mp3",
+            "sample_rate": "48000",
+            "channels": 2
+        }
+    ],
+    "format": {
+        "duration": "3600.007000"
+    }
+}
+PASS celý hodinový MP3 se dekóduje bez chyby; nejde o živou schůzku
+      120.37 real       120.66 user        11.10 sys
+time: sysctl kern.clockrate: Operation not permitted
+
+EXIT_CODE=1

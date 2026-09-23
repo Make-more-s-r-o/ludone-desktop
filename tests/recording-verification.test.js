@@ -101,6 +101,23 @@ describe("bezpečný HTTP requester", () => {
 });
 
 describe("ruční ověření nahrávky", () => {
+  it("jediný stereo delivery ověří jedním GET podle jednoho serverového recordingId", async () => {
+    const fetchImpl = vi.fn(async (url) => {
+      expect(new URL(url).pathname).toBe(`/api/nahravky/uploads/${ID}`);
+      return response(200, {
+        state: "stored", missing: [], declaredBytes: 12, sha256: SHA,
+      });
+    });
+    const { instance } = verifier(fetchImpl);
+    const result = await instance.verify(target({
+      delivery: { recordingId: ID, declaredBytes: 12, sha256: SHA },
+    }));
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(new URL(fetchImpl.mock.calls[0][0]).pathname)
+      .toBe(`/api/nahravky/uploads/${ID}`);
+    expect(result.tracks).toEqual({ delivery: { status: "complete", mismatchFields: [] } });
+  });
+
   it("dual a single udělají přesně 2 a 1 GET a legacy bez ID nula", async () => {
     const fetchImpl = vi.fn(async (url) => {
       const id = new URL(url).pathname.split("/").at(-1);

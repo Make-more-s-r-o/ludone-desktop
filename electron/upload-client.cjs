@@ -199,6 +199,7 @@ function assertUuid(value, fieldName) {
 
 function contentTypeForFile(filePath) {
   const extension = path.extname(filePath).toLowerCase();
+  if (extension === ".mp3") return "audio/mpeg";
   if (extension === ".webm") return "audio/webm";
   if (extension === ".ogg" || extension === ".opus") return "audio/ogg";
   if (extension === ".wav") return "audio/wav";
@@ -213,6 +214,7 @@ function contentTypeForFile(filePath) {
 function titleForTrack(manifest, trackKind) {
   const fallbackDate = safeString(manifest.createdAt) || "bez data";
   const base = safeString(manifest.title) || `Nahrávka ${fallbackDate}`;
+  if (trackKind === "delivery") return base.slice(0, 500);
   const suffix = trackKind === "microphone" ? " – mikrofon" : " – systémový zvuk";
   return `${base.slice(0, Math.max(1, 500 - suffix.length))}${suffix}`;
 }
@@ -351,9 +353,50 @@ async function preflightRecording(item) {
   if (!isPlainObject(item.tracks) || safeString(item.manifestPath) === "") {
     throw localError("invalid_input", "Položka fronty nemá soubory nahrávky", "permanent");
   }
-  const manifest = await readManifest(item.manifestPath);
+  const manifest = await readManifest(item.sourceManifestPath ?? item.manifestPath);
   if (manifest.clientRecordingId !== clientRecordingId || manifest.state !== "complete") {
     throw localError("invalid_input", "Manifest neodpovídá položce fronty", "permanent");
+  }
+
+  if (isPlainObject(item.delivery) && item.delivery.state === "ready") {
+    const delivery = item.delivery;
+    if (
+      delivery.version !== 1
+      || delivery.clientRecordingId !== clientRecordingId
+      || delivery.mime !== "audio/webm"
+      || delivery.channels !== 2
+      || delivery.channelMap?.left !== "microphone"
+      || !["system", "silence"].includes(delivery.channelMap?.right)
+      || !["microphone", "microphone+system"].includes(delivery.captureSources)
+      || (delivery.captureSources === "microphone+system") !== (delivery.channelMap.right === "system")
+    ) {
+      throw localError("invalid_input", "Delivery WebM má neplatný kontrakt kanálů", "permanent");
+    }
+    /** @type {any} */
+    const track = {
+      trackKind: "delivery",
+      ...await statTrack(delivery.filePath, {
+        endedAt: delivery.endedAt,
+        startedAt: delivery.startedAt,
+        sizeBytes: delivery.sizeBytes,
+        sha256: delivery.sha256,
+      }),
+      captureSources: delivery.captureSources,
+    };
+    const hashes = await hashFileByChunks(track.filePath, track.sizeBytes);
+    if (hashes.sha256 !== track.declaredSha256) {
+      throw localError("sha256_mismatch", "Otisk WebM neodpovídá připravené identitě", "permanent");
+    }
+    track.sha256 = hashes.sha256;
+    track.chunkHashes = hashes.chunkHashes;
+    track.chunkCount = hashes.chunkHashes.length;
+    track.identity = deriveUploadIdentity(clientRecordingId, "delivery", hashes.sha256);
+    return Object.freeze({
+      clientRecordingId,
+      manifest,
+      title: safeString(item.title),
+      tracks: Object.freeze([track]),
+    });
   }
 
   // 🔴 Sada stop se odvozuje z POLOŽKY, ne z konstanty. Nahrávka bez povoleného systémového
@@ -469,6 +512,8 @@ function normalizedContext(context, manifest, expectedOrigin, item) {
     || Object.values(item?.server?.tracks ?? {}).some((progress) => (
       safeString(progress?.recordingId) !== "" || Number(progress?.uploadedBytes) > 0
     ))
+    || safeString(item?.server?.delivery?.recordingId) !== ""
+    || Number(item?.server?.delivery?.uploadedBytes) > 0
     || safeString(manifest.sessionId) !== "";
   if (pinnedCompanyId === "" && hasServerProgress) {
     throw localError(
@@ -739,10 +784,12 @@ function initPayload(recording, track, context, sessionId) {
     chunkSize: RECORDING_CHUNK_BYTES,
     // Server rozlišuje samostatné uploady podle stopy, ne jen podle schůzky — a přijme
     // jen UUID, proto odvozené UUIDv5 (viz komentář u `UPLOAD_NAMESPACE_UUID` výš).
-    clientRecordingId: uuidV5(
-      UPLOAD_NAMESPACE_UUID,
-      `${recording.manifest.clientRecordingId}:${track.trackKind}`,
-    ),
+    clientRecordingId: track.trackKind === "delivery"
+      ? recording.manifest.clientRecordingId
+      : uuidV5(
+        UPLOAD_NAMESPACE_UUID,
+        `${recording.manifest.clientRecordingId}:${track.trackKind}`,
+      ),
     companyTabidooId: context.companyTabidooId,
     declaredBytes: track.sizeBytes,
     // 🔴 Tohle je údaj o SOUBORU, ne o schůzce — server drží jeden řádek na jeden soubor.
@@ -755,7 +802,9 @@ function initPayload(recording, track, context, sessionId) {
     // neznámou hodnotu tiše uložil jako NULL a jen zalogoval varování. Raději neposlat nic
     // než něco, co se zahodí bez hlesnutí. Rozlišení stop na tomhle poli nestojí — to dělá
     // `clientRecordingId`.
-    ...(track.trackKind === "microphone" ? { declaredCaptureSources: "microphone" } : {}),
+    ...(track.trackKind === "delivery"
+      ? { declaredCaptureSources: track.captureSources }
+      : track.trackKind === "microphone" ? { declaredCaptureSources: "microphone" } : {}),
     declaredMime: track.contentType,
     deviceLabel: context.deviceLabel,
     endedAt,
@@ -944,6 +993,7 @@ async function uploadTrack({
  *   },
  *   origin: string,
  *   requestTimeoutMs?: number,
+ *   requireSingleDelivery?: boolean,
  * }} options
  */
 function createRecordingUploadSend({
@@ -952,6 +1002,7 @@ function createRecordingUploadSend({
   logger = console,
   origin,
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+  requireSingleDelivery = false,
 }) {
   if (typeof fetchImpl !== "function") throw new TypeError("fetchImpl musí být funkce");
   if (typeof getUploadContext !== "function") {
@@ -972,6 +1023,13 @@ function createRecordingUploadSend({
       throw localError(
         "time_upload_unavailable",
         "Odesílání času zatím není zapojené",
+        "paused",
+      );
+    }
+    if (requireSingleDelivery && item?.delivery?.state !== "ready") {
+      throw localError(
+        "delivery_not_ready",
+        "Nahrávka nemá připravený jediný stereo WebM",
         "paused",
       );
     }

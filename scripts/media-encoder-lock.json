@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "deploymentTarget": "12.0",
+  "ffmpeg": {
+    "version": "6.1.6",
+    "url": "https://ffmpeg.org/releases/ffmpeg-6.1.6.tar.xz",
+    "sha256": "d4fcb164028dd3beee5d92c0ac72e46aac6973c75ea12dc14de07bf8f407370a",
+    "license": "LGPL-2.1-or-later"
+  },
+  "opus": {
+    "version": "1.6.1",
+    "url": "https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz",
+    "sha256": "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1",
+    "license": "BSD-3-Clause"
+  }
+}

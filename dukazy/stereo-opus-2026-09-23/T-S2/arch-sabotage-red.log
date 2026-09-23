@@ -1,0 +1,195 @@
+$ npx vitest run tests/packaging.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder
+
+ ❯ tests/packaging.test.js (6 tests | 4 failed) 148ms
+   × kontrakt electron-builderu > bez podpisových proměnných provede nepodepsaný build plán a nespadne 55ms
+     → file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89
+    throw new Error("Konfigurace balení neobsahuje media encoder vybraný podle architektury");
+          ^
+
+Error: Konfigurace balení neobsahuje media encoder vybraný podle architektury
+    at verifyConfig (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89:11)
+    at file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:136:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.22.0
+: expected 1 to be +0 // Object.is equality
+   × kontrakt electron-builderu > úplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší 48ms
+     → file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89
+    throw new Error("Konfigurace balení neobsahuje media encoder vybraný podle architektury");
+          ^
+
+Error: Konfigurace balení neobsahuje media encoder vybraný podle architektury
+    at verifyConfig (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89:11)
+    at file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:136:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.22.0
+: expected 1 to be +0 // Object.is equality
+   × kontrakt electron-builderu > nepodepsaný plán nikdy nepublikuje release 38ms
+     → expected 'file:///Users/dan/Dev/ClaudeCode/ludo…' to contain 'publikovat'
+   ✓ kontrakt electron-builderu > drží identitu, oba formáty, obě architektury a vlastní feed 1ms
+   ✓ kontrakt electron-builderu > drží název balíčku bez mezery, protože aktualizace selhává tiše 0ms
+   × kontrakt electron-builderu > balí jen runtime allowlist včetně zdrojů písem 5ms
+     → expected [ { …(2) }, { …(2) }, { …(2) }, …(2) ] to deeply equal ArrayContaining{…}
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/packaging.test.js > kontrakt electron-builderu > bez podpisových proměnných provede nepodepsaný build plán a nespadne
+AssertionError: file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89
+    throw new Error("Konfigurace balení neobsahuje media encoder vybraný podle architektury");
+          ^
+
+Error: Konfigurace balení neobsahuje media encoder vybraný podle architektury
+    at verifyConfig (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89:11)
+    at file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:136:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.22.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ verifyConfig scripts/package-mac.mjs:89:11
+ ❯ scripts/package-mac.mjs:136:1
+ ❯ tests/packaging.test.js:91:42
+     89|     const { capture, outputRoot, result } = await runPackage();
+     90| 
+     91|     expect(result.status, result.stderr).toBe(0);
+       |                                          ^
+     92|     expect(result.stderr).toContain("NEPODEPSANÝ");
+     93|     expect(result.stderr).toContain("CSC_LINK");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/packaging.test.js > kontrakt electron-builderu > úplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší
+AssertionError: file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89
+    throw new Error("Konfigurace balení neobsahuje media encoder vybraný podle architektury");
+          ^
+
+Error: Konfigurace balení neobsahuje media encoder vybraný podle architektury
+    at verifyConfig (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89:11)
+    at file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:136:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.22.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ verifyConfig scripts/package-mac.mjs:89:11
+ ❯ scripts/package-mac.mjs:136:1
+ ❯ tests/packaging.test.js:120:42
+    118|     const { capture, result } = await runPackage(secrets, ["--release"…
+    119| 
+    120|     expect(result.status, result.stderr).toBe(0);
+       |                                          ^
+    121|     expect(capture.args).toEqual(expect.arrayContaining(["--publish", …
+    122|     expect(capture.args).not.toContain("--config.mac.identity=null");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/packaging.test.js > kontrakt electron-builderu > nepodepsaný plán nikdy nepublikuje release
+AssertionError: expected 'file:///Users/dan/Dev/ClaudeCode/ludo…' to contain 'publikovat'
+
+- Expected
++ Received
+
+- publikovat
++ file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89
++     throw new Error("Konfigurace balení neobsahuje media encoder vybraný podle architektury");
++           ^
++
++ Error: Konfigurace balení neobsahuje media encoder vybraný podle architektury
++     at verifyConfig (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:89:11)
++     at file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/package-mac.mjs:136:1
++     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
++     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
++     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
++
++ Node.js v22.22.0
++
+
+ ❯ tests/packaging.test.js:139:27
+    137| 
+    138|     expect(result.status).not.toBe(0);
+    139|     expect(result.stderr).toContain("publikovat");
+       |                           ^
+    140|     await expect(readFile(capturePath, "utf8")).rejects.toMatchObject(…
+    141|   }, 30_000);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/packaging.test.js > kontrakt electron-builderu > balí jen runtime allowlist včetně zdrojů písem
+AssertionError: expected [ { …(2) }, { …(2) }, { …(2) }, …(2) ] to deeply equal ArrayContaining{…}
+
+- Expected
++ Received
+
+- ArrayContaining [
+-   ObjectContaining {
+-     "from": ".runtime/media-encoder/ffmpeg-6.1.6/darwin-${arch}/ffmpeg",
++ [
++   {
++     "from": ".runtime/media-encoder/ffmpeg-6.1.6/darwin-arm64/ffmpeg",
+      "to": "media-encoder/ffmpeg",
+    },
+-   ObjectContaining {
++   {
++     "from": ".runtime/media-encoder/ffmpeg-6.1.6/darwin-${arch}/BUILD.json",
++     "to": "media-encoder/BUILD.json",
++   },
++   {
++     "from": ".runtime/media-encoder/ffmpeg-6.1.6/sources",
+      "to": "media-encoder/sources",
+    },
+-   ObjectContaining {
+-     "filter": ArrayContaining [
++   {
++     "filter": [
++       "README.md",
+        "LICENSE.txt",
+      ],
+      "from": "build/media-encoder",
+      "to": "media-encoder",
++   },
++   {
++     "from": "scripts/media-encoder-lock.json",
++     "to": "media-encoder/media-encoder-lock.json",
+    },
+  ]
+
+ ❯ tests/packaging.test.js:197:35
+    195|     expect(config.files.some((pattern) => /^(tests|docs|design)(?:\/|$…
+    196|     expect(config.files).not.toContain("**/*");
+    197|     expect(config.extraResources).toEqual(expect.arrayContaining([
+       |                                   ^
+    198|       expect.objectContaining({
+    199|         from: ".runtime/media-encoder/ffmpeg-6.1.6/darwin-${arch}/ffmp…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 2 passed (6)
+   Start at  12:03:09
+   Duration  427ms (transform 23ms, setup 13ms, collect 22ms, tests 148ms, environment 0ms, prepare 46ms)
+
+EXIT CODE: 1

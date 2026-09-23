@@ -1,0 +1,9 @@
+file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/prepare-media-encoder.mjs:80
+    throw new Error("Mach-O neobsahuje platný LC_CODE_SIGNATURE");
+          ^
+
+Error: Mach-O neobsahuje platný LC_CODE_SIGNATURE
+    at machOCanonicalSha256 (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/scripts/prepare-media-encoder.mjs:80:11)
+    at async file:///private/tmp/t-s2-refresh.mjs:22:21
+
+Node.js v22.22.0

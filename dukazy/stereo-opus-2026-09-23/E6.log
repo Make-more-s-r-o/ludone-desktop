@@ -1,0 +1,8 @@
+$ bash scripts/akceptace/E6.sh
+PASS  permission:request už neobsahuje atrapu granted: true
+PASS  produkční permission:request používá exportovaný testovaný handler
+PASS  unit testy oprávnění jsou zelené
+---
+chyb: 0
+
+EXIT_CODE=0

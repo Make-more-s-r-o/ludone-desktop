@@ -1,0 +1,22 @@
+$ node scripts/akceptace/stereo-audio.mjs --module /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/electron/media-encoder.cjs --meeting-module /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-runtime/electron/meeting-audio.cjs
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: spawnSync ffmpeg Unknown system error -86
+
+null !== 0
+
+    at run (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration/scripts/akceptace/stereo-audio.mjs:32:10)
+    at file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-integration/scripts/akceptace/stereo-audio.mjs:97:3 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: null,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.0
+
+EXIT_CODE=1

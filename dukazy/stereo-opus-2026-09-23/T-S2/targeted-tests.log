@@ -1,0 +1,29 @@
+$ npx vitest run tests/media-encoder.test.js tests/media-encoder-packaging.test.js tests/packaging.test.js tests/verify-macos-release.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder
+
+stdout | tests/verify-macos-release.test.js > ověření podepsaného macOS releasu > mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+PASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.4-arm64.dmg
+
+ ✓ tests/media-encoder-packaging.test.js (4 tests) 22ms
+stdout | tests/verify-macos-release.test.js > ověření podepsaného macOS releasu > mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+PASS DMG obraz a vložená aplikace: LuDone-Desktop-0.1.4-x64.dmg
+
+stdout | tests/verify-macos-release.test.js > ověření podepsaného macOS releasu > mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+PASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.4-arm64.zip
+
+stdout | tests/verify-macos-release.test.js > ověření podepsaného macOS releasu > mapuje x64 na Mach-O x86_64 a ověří aplikace uvnitř read-only DMG i ZIP
+PASS ZIP aplikace, architektura, podpis a notarizace: LuDone-Desktop-0.1.4-x64.zip
+
+ ✓ tests/verify-macos-release.test.js (2 tests) 32ms
+ ✓ tests/media-encoder.test.js (7 tests) 254ms
+ ✓ tests/packaging.test.js (6 tests) 755ms
+   ✓ kontrakt electron-builderu > bez podpisových proměnných provede nepodepsaný build plán a nespadne  376ms
+   ✓ kontrakt electron-builderu > úplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší  351ms
+
+ Test Files  4 passed (4)
+      Tests  19 passed (19)
+   Start at  12:06:12
+   Duration  943ms (transform 48ms, setup 18ms, collect 84ms, tests 1.06s, environment 0ms, prepare 138ms)
+
+EXIT CODE: 0

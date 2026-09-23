@@ -1,0 +1,1667 @@
+$ FFmpeg 6.1.6 ARM64 reference configure + make ffmpeg ffprobe
+install prefix            /media-encoder-test
+source path               /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/ffmpeg-6.1.6
+C compiler                clang
+C library                 
+host C compiler           gcc
+host C library            
+ARCH                      c (generic)
+big-endian                no
+runtime cpu detection     yes
+debug symbols             no
+strip symbols             yes
+optimize for size         yes
+optimizations             yes
+static                    yes
+shared                    no
+postprocessing support    no
+network support           no
+threading support         pthreads
+safe bitstream reader     yes
+texi2html enabled         no
+perl enabled              yes
+pod2man enabled           yes
+makeinfo enabled          no
+makeinfo supports HTML    no
+xmllint enabled           yes
+
+External libraries:
+libopus
+
+External libraries providing hardware acceleration:
+
+Libraries:
+avcodec                 avfilter                avutil
+avdevice                avformat                swresample
+
+Programs:
+ffmpeg                  ffprobe
+
+Enabled decoders:
+opus
+
+Enabled encoders:
+libopus                 pcm_f32le
+
+Enabled hwaccels:
+
+Enabled parsers:
+opus
+
+Enabled demuxers:
+matroska
+
+Enabled muxers:
+data                    null
+matroska                webm
+
+Enabled protocols:
+file                    pipe
+
+Enabled filters:
+adelay                  asetpts                 pan
+aformat                 atrim                   sine
+anull                   format                  transpose
+anullsrc                hflip                   trim
+apad                    join                    vflip
+aresample               null
+
+Enabled bsfs:
+aac_adtstoasc           pgs_frame_merge         vp9_superframe
+
+Enabled indevs:
+lavfi
+
+Enabled outdevs:
+
+License: LGPL version 2.1 or later
+$ make -j4 ffmpeg ffprobe
+GEN	libavutil/libavutil.version
+GEN	libavcodec/libavcodec.version
+GEN	libavformat/libavformat.version
+GEN	libavfilter/libavfilter.version
+GEN	libavdevice/libavdevice.version
+GEN	libswresample/libswresample.version
+CC	libavdevice/alldevices.o
+CC	libavdevice/avdevice.o
+CC	libavdevice/lavfi.o
+CC	libavdevice/utils.o
+CC	libavfilter/af_adelay.o
+CC	libavdevice/version.o
+CC	libavfilter/af_aformat.o
+CC	libavfilter/af_anull.o
+CC	libavfilter/af_apad.o
+CC	libavfilter/af_aresample.o
+CC	libavfilter/af_join.o
+CC	libavfilter/af_pan.o
+CC	libavfilter/allfilters.o
+CC	libavfilter/asrc_anullsrc.o
+CC	libavfilter/asrc_sine.o
+CC	libavfilter/audio.o
+CC	libavfilter/avfilter.o
+CC	libavfilter/avfiltergraph.o
+CC	libavfilter/buffersink.o
+CC	libavfilter/buffersrc.o
+CC	libavfilter/ccfifo.o
+CC	libavfilter/colorspace.o
+CC	libavfilter/drawutils.o
+CC	libavfilter/fifo.o
+CC	libavfilter/formats.o
+CC	libavfilter/framepool.o
+CC	libavfilter/framequeue.o
+CC	libavfilter/graphdump.o
+CC	libavfilter/graphparser.o
+CC	libavfilter/pthread.o
+CC	libavfilter/setpts.o
+CC	libavfilter/trim.o
+CC	libavfilter/version.o
+CC	libavfilter/vf_format.o
+CC	libavfilter/vf_hflip.o
+CC	libavfilter/vf_null.o
+CC	libavfilter/vf_transpose.o
+CC	libavfilter/vf_vflip.o
+CC	libavfilter/video.o
+CC	libavformat/allformats.o
+CC	libavformat/av1.o
+CC	libavformat/avc.o
+CC	libavformat/avformat.o
+CC	libavformat/avio.o
+CC	libavformat/aviobuf.o
+CC	libavformat/avlanguage.o
+CC	libavformat/demux.o
+CC	libavformat/demux_utils.o
+CC	libavformat/dovi_isom.o
+CC	libavformat/dump.o
+CC	libavformat/dv.o
+CC	libavformat/file.o
+CC	libavformat/flac_picture.o
+CC	libavformat/flacenc_header.o
+CC	libavformat/format.o
+CC	libavformat/hevc.o
+CC	libavformat/id3v1.o
+CC	libavformat/id3v2.o
+CC	libavformat/isom_tags.o
+CC	libavformat/matroska.o
+CC	libavformat/matroskadec.o
+CC	libavformat/matroskaenc.o
+CC	libavformat/metadata.o
+CC	libavformat/mux.o
+CC	libavformat/mux_utils.o
+CC	libavformat/nullenc.o
+CC	libavformat/oggparsevorbis.o
+CC	libavformat/options.o
+CC	libavformat/os_support.o
+CC	libavformat/protocols.o
+CC	libavformat/qtpalette.o
+CC	libavformat/rawenc.o
+CC	libavformat/replaygain.o
+CC	libavformat/riff.o
+CC	libavformat/riffdec.o
+CC	libavformat/riffenc.o
+CC	libavformat/rmsipr.o
+CC	libavformat/sdp.o
+CC	libavformat/seek.o
+CC	libavformat/url.o
+CC	libavformat/utils.o
+CC	libavformat/version.o
+CC	libavformat/vorbiscomment.o
+CC	libavformat/wv.o
+CC	libavcodec/aac_adtstoasc_bsf.o
+CC	libavcodec/ac3_parser.o
+CC	libavcodec/adts_header.o
+CC	libavcodec/adts_parser.o
+CC	libavcodec/allcodecs.o
+CC	libavcodec/audio_frame_queue.o
+CC	libavcodec/avcodec.o
+CC	libavcodec/avdct.o
+CC	libavcodec/avfft.o
+CC	libavcodec/avpacket.o
+CC	libavcodec/bitstream.o
+CC	libavcodec/bitstream_filters.o
+CC	libavcodec/bsf.o
+CC	libavcodec/codec_desc.o
+CC	libavcodec/codec_par.o
+CC	libavcodec/d3d11va.o
+CC	libavcodec/decode.o
+CC	libavcodec/dirac.o
+CC	libavcodec/dv_profile.o
+CC	libavcodec/encode.o
+CC	libavcodec/faandct.o
+CC	libavcodec/faanidct.o
+CC	libavcodec/fdctdsp.o
+CC	libavcodec/frame_thread_encoder.o
+CC	libavcodec/get_buffer.o
+CC	libavcodec/idctdsp.o
+CC	libavcodec/imgconvert.o
+CC	libavcodec/jfdctfst.o
+CC	libavcodec/jfdctint.o
+CC	libavcodec/jni.o
+CC	libavcodec/jrevdct.o
+CC	libavcodec/libopus.o
+CC	libavcodec/libopusenc.o
+CC	libavcodec/mathtables.o
+CC	libavcodec/mediacodec.o
+CC	libavcodec/mpeg12framerate.o
+CC	libavcodec/mpeg4audio.o
+CC	libavcodec/mpeg4audio_sample_rates.o
+CC	libavcodec/options.o
+CC	libavcodec/opus_celt.o
+CC	libavcodec/opus_parse.o
+CC	libavcodec/opus_parser.o
+CC	libavcodec/opus_pvq.o
+CC	libavcodec/opus_rc.o
+CC	libavcodec/opus_silk.o
+CC	libavcodec/opusdec.o
+CC	libavcodec/opusdec_celt.o
+CC	libavcodec/opusdsp.o
+CC	libavcodec/opustab.o
+CC	libavcodec/parser.o
+CC	libavcodec/parsers.o
+CC	libavcodec/pcm.o
+CC	libavcodec/pgs_frame_merge_bsf.o
+CC	libavcodec/profiles.o
+src/libavcodec/pcm.c:251:20: warning: unused function 'pcm_decode_init' [-Wunused-function]
+  251 | static av_cold int pcm_decode_init(AVCodecContext *avctx)
+      |                    ^~~~~~~~~~~~~~~
+src/libavcodec/pcm.c:323:12: warning: unused function 'pcm_decode_frame' [-Wunused-function]
+  323 | static int pcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+      |            ^~~~~~~~~~~~~~~~
+CC	libavcodec/pthread.o
+2 warnings generated.
+CC	libavcodec/pthread_frame.o
+CC	libavcodec/pthread_slice.o
+CC	libavcodec/qsv_api.o
+CC	libavcodec/raw.o
+CC	libavcodec/refstruct.o
+CC	libavcodec/simple_idct.o
+CC	libavcodec/utils.o
+CC	libavcodec/version.o
+CC	libavcodec/vlc.o
+CC	libavcodec/vorbis_data.o
+CC	libavcodec/vorbis_parser.o
+CC	libavcodec/vp9_superframe_bsf.o
+CC	libavcodec/xiph.o
+CC	libavcodec/to_upper4.o
+CC	libswresample/audioconvert.o
+CC	libswresample/dither.o
+CC	libswresample/options.o
+CC	libswresample/rematrix.o
+CC	libswresample/resample.o
+CC	libswresample/resample_dsp.o
+CC	libswresample/swresample.o
+CC	libswresample/swresample_frame.o
+CC	libswresample/version.o
+CC	libavutil/adler32.o
+CC	libavutil/aes.o
+CC	libavutil/aes_ctr.o
+CC	libavutil/ambient_viewing_environment.o
+CC	libavutil/audio_fifo.o
+CC	libavutil/avsscanf.o
+CC	libavutil/avstring.o
+CC	libavutil/base64.o
+CC	libavutil/blowfish.o
+CC	libavutil/bprint.o
+CC	libavutil/buffer.o
+CC	libavutil/camellia.o
+CC	libavutil/cast5.o
+CC	libavutil/channel_layout.o
+CC	libavutil/cpu.o
+CC	libavutil/crc.o
+CC	libavutil/csp.o
+CC	libavutil/des.o
+CC	libavutil/detection_bbox.o
+CC	libavutil/dict.o
+CC	libavutil/display.o
+CC	libavutil/dovi_meta.o
+CC	libavutil/downmix_info.o
+CC	libavutil/encryption_info.o
+CC	libavutil/error.o
+CC	libavutil/eval.o
+CC	libavutil/executor.o
+CC	libavutil/fifo.o
+CC	libavutil/file.o
+src/libavutil/eval.c:522:13: warning: mixing declarations and code is incompatible with standards before C99 [-Wdeclaration-after-statement]
+  522 |     AVExpr *e = av_mallocz(sizeof(AVExpr));
+      |             ^
+CC	libavutil/file_open.o
+CC	libavutil/film_grain_params.o
+1 warning generated.
+CC	libavutil/fixed_dsp.o
+CC	libavutil/float_dsp.o
+CC	libavutil/frame.o
+CC	libavutil/hash.o
+CC	libavutil/hdr_dynamic_metadata.o
+CC	libavutil/hdr_dynamic_vivid_metadata.o
+CC	libavutil/hmac.o
+CC	libavutil/hwcontext.o
+CC	libavutil/hwcontext_stub.o
+CC	libavutil/imgutils.o
+CC	libavutil/integer.o
+CC	libavutil/intmath.o
+CC	libavutil/lfg.o
+CC	libavutil/lls.o
+CC	libavutil/log.o
+CC	libavutil/log2_tab.o
+CC	libavutil/lzo.o
+CC	libavutil/mastering_display_metadata.o
+CC	libavutil/mathematics.o
+CC	libavutil/md5.o
+CC	libavutil/mem.o
+CC	libavutil/murmur3.o
+CC	libavutil/opt.o
+CC	libavutil/parseutils.o
+CC	libavutil/pixdesc.o
+CC	libavutil/pixelutils.o
+CC	libavutil/random_seed.o
+CC	libavutil/rational.o
+CC	libavutil/rc4.o
+CC	libavutil/reverse.o
+CC	libavutil/ripemd.o
+CC	libavutil/samplefmt.o
+CC	libavutil/sha.o
+CC	libavutil/sha512.o
+CC	libavutil/slicethread.o
+CC	libavutil/spherical.o
+CC	libavutil/stereo3d.o
+CC	libavutil/tea.o
+CC	libavutil/threadmessage.o
+CC	libavutil/time.o
+CC	libavutil/timecode.o
+CC	libavutil/tree.o
+CC	libavutil/twofish.o
+CC	libavutil/tx.o
+CC	libavutil/tx_double.o
+CC	libavutil/tx_float.o
+CC	libavutil/tx_int32.o
+CC	libavutil/utils.o
+CC	libavutil/uuid.o
+CC	libavutil/version.o
+CC	libavutil/video_enc_params.o
+CC	libavutil/video_hint.o
+CC	libavutil/xga_font_data.o
+CC	libavutil/xtea.o
+AR	libavdevice/libavdevice.a
+AR	libavfilter/libavfilter.a
+AR	libavformat/libavformat.a
+AR	libavcodec/libavcodec.a
+AR	libswresample/libswresample.a
+CC	fftools/ffmpeg_dec.o
+CC	fftools/ffmpeg_demux.o
+CC	fftools/ffmpeg_enc.o
+CC	fftools/ffmpeg_filter.o
+src/fftools/ffmpeg_filter.c:1867:9: warning: variable 'fr' is used uninitialized whenever 'if' condition is true [-Wsometimes-uninitialized]
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/fftools/ffmpeg_filter.c:1913:26: note: uninitialized use occurs here
+ 1913 |     fps->framerate     = fr;
+      |                          ^~
+src/fftools/ffmpeg_filter.c:1867:5: note: remove the 'if' if its condition is always false
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1868 |         tb = tb.num ? tb : (AVRational){ 1, frame->sample_rate };
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1869 |         goto finish;
+      |         ~~~~~~~~~~~~
+ 1870 |     }
+      |     ~
+src/fftools/ffmpeg_filter.c:1847:5: note: variable 'fr' is declared here
+ 1847 |     AVRational fr;
+      |     ^
+CC	fftools/ffmpeg_hw.o
+CC	fftools/ffmpeg_mux.o
+CC	fftools/ffmpeg_mux_init.o
+1 warning generated.
+CC	fftools/ffmpeg_opt.o
+CC	fftools/objpool.o
+src/fftools/ffmpeg_mux_init.c:297:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  297 |         { ENC_STATS_FRAME_NUM_IN,   "ni",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:299:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  299 |         { ENC_STATS_TIMEBASE_IN,    "tbi",      0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:302:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  302 |         { ENC_STATS_PTS_IN,         "ptsi",     0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:303:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  303 |         { ENC_STATS_PTS_TIME_IN,    "ti",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:304:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  304 |         { ENC_STATS_DTS,            "dts",      0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:305:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  305 |         { ENC_STATS_DTS_TIME,       "dt",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:306:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  306 |         { ENC_STATS_SAMPLE_NUM,     "sn",       1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:307:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  307 |         { ENC_STATS_NB_SAMPLES,     "samp",     1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:308:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  308 |         { ENC_STATS_PKT_SIZE,       "size",     0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:309:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  309 |         { ENC_STATS_BITRATE,        "br",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:310:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  310 |         { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
+      |                                                    ^
+CC	fftools/sync_queue.o
+CC	fftools/thread_queue.o
+CC	fftools/cmdutils.o
+CC	fftools/opt_common.o
+CC	fftools/ffmpeg.o
+CC	fftools/ffprobe.o
+AR	libavutil/libavutil.a
+11 warnings generated.
+LD	ffmpeg_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffmpeg
+LD	ffprobe_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffprobe
+EXIT CODE: 0
+$ ffmpeg lavfi sine + join -> WebM/Opus
+[aist#0:0/pcm_s16le @ 0x78c901c180] Decoding requested, but no decoder found for: pcm_s16le
+[fc#0 @ 0x78c900c000] Error binding an input stream to complex filtergraph input join.
+Error initializing complex filters: Invalid argument
+EXIT CODE: 234
+$ reference reconfigure: enable PCM s16le decoder for lavfi sine
+install prefix            /media-encoder-test
+source path               src
+C compiler                clang
+C library                 
+host C compiler           gcc
+host C library            
+ARCH                      c (generic)
+big-endian                no
+runtime cpu detection     yes
+debug symbols             no
+strip symbols             yes
+optimize for size         yes
+optimizations             yes
+static                    yes
+shared                    no
+postprocessing support    no
+network support           no
+threading support         pthreads
+safe bitstream reader     yes
+texi2html enabled         no
+perl enabled              yes
+pod2man enabled           yes
+makeinfo enabled          no
+makeinfo supports HTML    no
+xmllint enabled           yes
+
+External libraries:
+libopus
+
+External libraries providing hardware acceleration:
+
+Libraries:
+avcodec                 avfilter                avutil
+avdevice                avformat                swresample
+
+Programs:
+ffmpeg                  ffprobe
+
+Enabled decoders:
+opus                    pcm_s16le
+
+Enabled encoders:
+libopus                 pcm_f32le
+
+Enabled hwaccels:
+
+Enabled parsers:
+opus
+
+Enabled demuxers:
+matroska
+
+Enabled muxers:
+data                    null
+matroska                webm
+
+Enabled protocols:
+file                    pipe
+
+Enabled filters:
+adelay                  asetpts                 pan
+aformat                 atrim                   sine
+anull                   format                  transpose
+anullsrc                hflip                   trim
+apad                    join                    vflip
+aresample               null
+
+Enabled bsfs:
+aac_adtstoasc           pgs_frame_merge         vp9_superframe
+
+Enabled indevs:
+lavfi
+
+Enabled outdevs:
+
+License: LGPL version 2.1 or later
+libavutil/avconfig.h is unchanged
+libavfilter/filter_list.c is unchanged
+libavcodec/parser_list.c is unchanged
+libavcodec/bsf_list.c is unchanged
+libavformat/demuxer_list.c is unchanged
+libavformat/muxer_list.c is unchanged
+libavdevice/indev_list.c is unchanged
+libavdevice/outdev_list.c is unchanged
+libavformat/protocol_list.c is unchanged
+$ make -j4 ffmpeg ffprobe
+CC	libavdevice/alldevices.o
+CC	libavdevice/lavfi.o
+CC	libavdevice/avdevice.o
+CC	libavdevice/utils.o
+CC	libavdevice/version.o
+CC	libavfilter/af_adelay.o
+CC	libavfilter/af_aformat.o
+CC	libavfilter/af_anull.o
+CC	libavfilter/af_apad.o
+CC	libavfilter/af_aresample.o
+CC	libavfilter/af_join.o
+CC	libavfilter/af_pan.o
+CC	libavfilter/allfilters.o
+CC	libavfilter/asrc_anullsrc.o
+CC	libavfilter/asrc_sine.o
+CC	libavfilter/audio.o
+CC	libavfilter/avfilter.o
+CC	libavfilter/avfiltergraph.o
+CC	libavfilter/buffersink.o
+CC	libavfilter/buffersrc.o
+CC	libavfilter/ccfifo.o
+CC	libavfilter/colorspace.o
+CC	libavfilter/drawutils.o
+CC	libavfilter/fifo.o
+CC	libavfilter/formats.o
+CC	libavfilter/framepool.o
+CC	libavfilter/framequeue.o
+CC	libavfilter/graphdump.o
+CC	libavfilter/graphparser.o
+CC	libavfilter/pthread.o
+CC	libavfilter/setpts.o
+CC	libavfilter/trim.o
+CC	libavfilter/version.o
+CC	libavfilter/vf_format.o
+CC	libavfilter/vf_hflip.o
+CC	libavfilter/vf_null.o
+CC	libavfilter/vf_transpose.o
+CC	libavfilter/vf_vflip.o
+CC	libavfilter/video.o
+CC	libavformat/allformats.o
+CC	libavformat/av1.o
+CC	libavformat/avc.o
+CC	libavformat/avformat.o
+CC	libavformat/avio.o
+CC	libavformat/aviobuf.o
+CC	libavformat/demux.o
+CC	libavformat/demux_utils.o
+CC	libavformat/dovi_isom.o
+CC	libavformat/dump.o
+CC	libavformat/dv.o
+CC	libavformat/file.o
+CC	libavformat/flac_picture.o
+CC	libavformat/flacenc_header.o
+CC	libavformat/format.o
+CC	libavformat/hevc.o
+CC	libavformat/id3v1.o
+CC	libavformat/id3v2.o
+CC	libavformat/isom_tags.o
+CC	libavformat/matroska.o
+CC	libavformat/matroskadec.o
+CC	libavformat/matroskaenc.o
+CC	libavformat/metadata.o
+CC	libavformat/mux.o
+CC	libavformat/mux_utils.o
+CC	libavformat/nullenc.o
+CC	libavformat/oggparsevorbis.o
+CC	libavformat/options.o
+CC	libavformat/qtpalette.o
+CC	libavformat/os_support.o
+CC	libavformat/rawenc.o
+CC	libavformat/replaygain.o
+CC	libavformat/riff.o
+CC	libavformat/riffdec.o
+CC	libavformat/riffenc.o
+CC	libavformat/sdp.o
+CC	libavformat/seek.o
+CC	libavformat/url.o
+CC	libavformat/utils.o
+CC	libavformat/version.o
+CC	libavformat/vorbiscomment.o
+CC	libavformat/wv.o
+CC	libavcodec/aac_adtstoasc_bsf.o
+CC	libavcodec/ac3_parser.o
+CC	libavcodec/adts_header.o
+CC	libavcodec/adts_parser.o
+CC	libavcodec/allcodecs.o
+CC	libavcodec/audio_frame_queue.o
+CC	libavcodec/avcodec.o
+CC	libavcodec/avdct.o
+CC	libavcodec/avpacket.o
+CC	libavcodec/bitstream.o
+CC	libavcodec/bitstream_filters.o
+CC	libavcodec/bsf.o
+CC	libavcodec/codec_desc.o
+CC	libavcodec/codec_par.o
+CC	libavcodec/d3d11va.o
+CC	libavcodec/decode.o
+CC	libavcodec/dirac.o
+CC	libavcodec/dv_profile.o
+CC	libavcodec/encode.o
+CC	libavcodec/faandct.o
+CC	libavcodec/faanidct.o
+CC	libavcodec/fdctdsp.o
+CC	libavcodec/frame_thread_encoder.o
+CC	libavcodec/get_buffer.o
+CC	libavcodec/idctdsp.o
+CC	libavcodec/imgconvert.o
+CC	libavcodec/jfdctint.o
+CC	libavcodec/jni.o
+CC	libavcodec/libopusenc.o
+CC	libavcodec/jrevdct.o
+CC	libavcodec/mathtables.o
+CC	libavcodec/mediacodec.o
+CC	libavcodec/mpeg4audio.o
+CC	libavcodec/options.o
+CC	libavcodec/opus_celt.o
+CC	libavcodec/opus_parse.o
+CC	libavcodec/opus_parser.o
+CC	libavcodec/opus_pvq.o
+CC	libavcodec/opus_rc.o
+CC	libavcodec/opus_silk.o
+CC	libavcodec/opusdec.o
+CC	libavcodec/opusdec_celt.o
+CC	libavcodec/opusdsp.o
+CC	libavcodec/opustab.o
+CC	libavcodec/parser.o
+CC	libavcodec/parsers.o
+CC	libavcodec/pcm.o
+CC	libavcodec/pgs_frame_merge_bsf.o
+CC	libavcodec/profiles.o
+CC	libavcodec/pthread.o
+CC	libavcodec/pthread_frame.o
+CC	libavcodec/pthread_slice.o
+CC	libavcodec/qsv_api.o
+CC	libavcodec/raw.o
+CC	libavcodec/refstruct.o
+CC	libavcodec/simple_idct.o
+CC	libavcodec/utils.o
+CC	libavcodec/version.o
+CC	libavcodec/vlc.o
+CC	libavcodec/vorbis_data.o
+CC	libavcodec/vorbis_parser.o
+CC	libavcodec/vp9_superframe_bsf.o
+CC	libavcodec/xiph.o
+CC	libavcodec/to_upper4.o
+CC	libswresample/audioconvert.o
+CC	libswresample/dither.o
+CC	libswresample/options.o
+CC	libswresample/rematrix.o
+CC	libswresample/resample.o
+CC	libswresample/resample_dsp.o
+CC	libswresample/swresample.o
+CC	libswresample/swresample_frame.o
+CC	libswresample/version.o
+CC	libavutil/adler32.o
+CC	libavutil/aes.o
+CC	libavutil/aes_ctr.o
+CC	libavutil/ambient_viewing_environment.o
+CC	libavutil/avsscanf.o
+CC	libavutil/avstring.o
+CC	libavutil/base64.o
+CC	libavutil/blowfish.o
+CC	libavutil/buffer.o
+CC	libavutil/camellia.o
+CC	libavutil/cast5.o
+CC	libavutil/channel_layout.o
+CC	libavutil/cpu.o
+CC	libavutil/crc.o
+CC	libavutil/des.o
+CC	libavutil/detection_bbox.o
+CC	libavutil/dict.o
+CC	libavutil/display.o
+CC	libavutil/downmix_info.o
+CC	libavutil/encryption_info.o
+CC	libavutil/error.o
+CC	libavutil/eval.o
+CC	libavutil/executor.o
+CC	libavutil/fifo.o
+CC	libavutil/file.o
+src/libavutil/eval.c:522:13: warning: mixing declarations and code is incompatible with standards before C99 [-Wdeclaration-after-statement]
+  522 |     AVExpr *e = av_mallocz(sizeof(AVExpr));
+      |             ^
+CC	libavutil/file_open.o
+CC	libavutil/film_grain_params.o
+CC	libavutil/fixed_dsp.o
+1 warning generated.
+CC	libavutil/float_dsp.o
+CC	libavutil/frame.o
+CC	libavutil/hash.o
+CC	libavutil/hdr_dynamic_metadata.o
+CC	libavutil/hdr_dynamic_vivid_metadata.o
+CC	libavutil/hwcontext.o
+CC	libavutil/hwcontext_stub.o
+CC	libavutil/imgutils.o
+CC	libavutil/integer.o
+CC	libavutil/intmath.o
+CC	libavutil/lfg.o
+CC	libavutil/lls.o
+CC	libavutil/log.o
+CC	libavutil/lzo.o
+CC	libavutil/mastering_display_metadata.o
+CC	libavutil/mathematics.o
+CC	libavutil/md5.o
+CC	libavutil/mem.o
+CC	libavutil/murmur3.o
+CC	libavutil/opt.o
+CC	libavutil/parseutils.o
+CC	libavutil/pixdesc.o
+CC	libavutil/pixelutils.o
+CC	libavutil/random_seed.o
+CC	libavutil/rational.o
+CC	libavutil/ripemd.o
+CC	libavutil/sha.o
+CC	libavutil/sha512.o
+CC	libavutil/slicethread.o
+CC	libavutil/stereo3d.o
+CC	libavutil/tea.o
+CC	libavutil/threadmessage.o
+CC	libavutil/time.o
+CC	libavutil/timecode.o
+CC	libavutil/twofish.o
+CC	libavutil/tx.o
+CC	libavutil/tx_double.o
+CC	libavutil/tx_float.o
+CC	libavutil/tx_int32.o
+CC	libavutil/utils.o
+CC	libavutil/version.o
+CC	libavutil/video_enc_params.o
+CC	libavutil/video_hint.o
+CC	libavutil/xga_font_data.o
+CC	libavutil/xtea.o
+CC	fftools/ffmpeg_dec.o
+CC	fftools/ffmpeg_demux.o
+CC	fftools/ffmpeg_enc.o
+CC	fftools/ffmpeg_filter.o
+CC	fftools/ffmpeg_hw.o
+CC	fftools/ffmpeg_mux.o
+src/fftools/ffmpeg_filter.c:1867:9: warning: variable 'fr' is used uninitialized whenever 'if' condition is true [-Wsometimes-uninitialized]
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/fftools/ffmpeg_filter.c:1913:26: note: uninitialized use occurs here
+ 1913 |     fps->framerate     = fr;
+      |                          ^~
+src/fftools/ffmpeg_filter.c:1867:5: note: remove the 'if' if its condition is always false
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1868 |         tb = tb.num ? tb : (AVRational){ 1, frame->sample_rate };
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1869 |         goto finish;
+      |         ~~~~~~~~~~~~
+ 1870 |     }
+      |     ~
+src/fftools/ffmpeg_filter.c:1847:5: note: variable 'fr' is declared here
+ 1847 |     AVRational fr;
+      |     ^
+CC	fftools/ffmpeg_mux_init.o
+src/fftools/ffmpeg_mux_init.c:297:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  297 |         { ENC_STATS_FRAME_NUM_IN,   "ni",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:299:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  299 |         { ENC_STATS_TIMEBASE_IN,    "tbi",      0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:302:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  302 |         { ENC_STATS_PTS_IN,         "ptsi",     0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:303:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  303 |         { ENC_STATS_PTS_TIME_IN,    "ti",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:304:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  304 |         { ENC_STATS_DTS,            "dts",      0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:305:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  305 |         { ENC_STATS_DTS_TIME,       "dt",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:306:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  306 |         { ENC_STATS_SAMPLE_NUM,     "sn",       1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:307:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  307 |         { ENC_STATS_NB_SAMPLES,     "samp",     1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:308:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  308 |         { ENC_STATS_PKT_SIZE,       "size",     0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:309:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  309 |         { ENC_STATS_BITRATE,        "br",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:310:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  310 |         { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
+      |                                                    ^
+CC	fftools/thread_queue.o
+CC	fftools/ffmpeg_opt.o
+1 warning generated.
+CC	fftools/cmdutils.o
+CC	fftools/opt_common.o
+CC	fftools/ffmpeg.o
+CC	fftools/ffprobe.o
+AR	libavdevice/libavdevice.a
+AR	libavfilter/libavfilter.a
+AR	libavformat/libavformat.a
+AR	libavcodec/libavcodec.a
+AR	libswresample/libswresample.a
+AR	libavutil/libavutil.a
+11 warnings generated.
+LD	ffmpeg_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffmpeg
+LD	ffprobe_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffprobe
+RECONFIGURE EXIT CODE: 0
+$ reference synthetic WebM/Opus fixture
+SYNTH EXIT CODE: 0
+$ ffprobe streams + packet SHA
+FFPROBE EXIT CODE: 0
+$ ffmpeg decode f32le and null
+[AVFormatContext @ 0x7ca7011180] Requested output format 'f32le' is not known.
+[out#0 @ 0x7ca6c40240] Error initializing the muxer for /tmp/ludone-opus-reference.eQ32QG/decoded.f32le: Invalid argument
+Error opening output file /tmp/ludone-opus-reference.eQ32QG/decoded.f32le.
+Error opening output files: Invalid argument
+F32LE EXIT CODE: 234
+$ reference reconfigure: enable pcm_f32le muxer
+install prefix            /media-encoder-test
+source path               src
+C compiler                clang
+C library                 
+host C compiler           gcc
+host C library            
+ARCH                      c (generic)
+big-endian                no
+runtime cpu detection     yes
+debug symbols             no
+strip symbols             yes
+optimize for size         yes
+optimizations             yes
+static                    yes
+shared                    no
+postprocessing support    no
+network support           no
+threading support         pthreads
+safe bitstream reader     yes
+texi2html enabled         no
+perl enabled              yes
+pod2man enabled           yes
+makeinfo enabled          no
+makeinfo supports HTML    no
+xmllint enabled           yes
+
+External libraries:
+libopus
+
+External libraries providing hardware acceleration:
+
+Libraries:
+avcodec                 avfilter                avutil
+avdevice                avformat                swresample
+
+Programs:
+ffmpeg                  ffprobe
+
+Enabled decoders:
+opus                    pcm_s16le
+
+Enabled encoders:
+libopus                 pcm_f32le
+
+Enabled hwaccels:
+
+Enabled parsers:
+opus
+
+Enabled demuxers:
+matroska
+
+Enabled muxers:
+data                    null                    webm
+matroska                pcm_f32le
+
+Enabled protocols:
+file                    pipe
+
+Enabled filters:
+adelay                  asetpts                 pan
+aformat                 atrim                   sine
+anull                   format                  transpose
+anullsrc                hflip                   trim
+apad                    join                    vflip
+aresample               null
+
+Enabled bsfs:
+aac_adtstoasc           pgs_frame_merge         vp9_superframe
+
+Enabled indevs:
+lavfi
+
+Enabled outdevs:
+
+License: LGPL version 2.1 or later
+libavutil/avconfig.h is unchanged
+libavfilter/filter_list.c is unchanged
+libavcodec/codec_list.c is unchanged
+libavcodec/parser_list.c is unchanged
+libavcodec/bsf_list.c is unchanged
+libavformat/demuxer_list.c is unchanged
+libavdevice/indev_list.c is unchanged
+libavdevice/outdev_list.c is unchanged
+libavformat/protocol_list.c is unchanged
+ffbuild/config.sh is unchanged
+$ make -j4 ffmpeg ffprobe
+CC	libavdevice/alldevices.o
+CC	libavdevice/avdevice.o
+CC	libavdevice/utils.o
+CC	libavdevice/lavfi.o
+CC	libavdevice/version.o
+CC	libavfilter/af_adelay.o
+CC	libavfilter/af_aformat.o
+CC	libavfilter/af_anull.o
+CC	libavfilter/af_apad.o
+CC	libavfilter/af_aresample.o
+CC	libavfilter/af_join.o
+CC	libavfilter/af_pan.o
+CC	libavfilter/allfilters.o
+CC	libavfilter/asrc_anullsrc.o
+CC	libavfilter/asrc_sine.o
+CC	libavfilter/audio.o
+CC	libavfilter/avfilter.o
+CC	libavfilter/avfiltergraph.o
+CC	libavfilter/buffersink.o
+CC	libavfilter/buffersrc.o
+CC	libavfilter/ccfifo.o
+CC	libavfilter/colorspace.o
+CC	libavfilter/drawutils.o
+CC	libavfilter/fifo.o
+CC	libavfilter/formats.o
+CC	libavfilter/framepool.o
+CC	libavfilter/framequeue.o
+CC	libavfilter/graphdump.o
+CC	libavfilter/graphparser.o
+CC	libavfilter/pthread.o
+CC	libavfilter/setpts.o
+CC	libavfilter/trim.o
+CC	libavfilter/version.o
+CC	libavfilter/vf_format.o
+CC	libavfilter/vf_hflip.o
+CC	libavfilter/vf_null.o
+CC	libavfilter/vf_transpose.o
+CC	libavfilter/vf_vflip.o
+CC	libavfilter/video.o
+CC	libavformat/allformats.o
+CC	libavformat/av1.o
+CC	libavformat/avc.o
+CC	libavformat/avformat.o
+CC	libavformat/avio.o
+CC	libavformat/aviobuf.o
+CC	libavformat/demux.o
+CC	libavformat/demux_utils.o
+CC	libavformat/dovi_isom.o
+CC	libavformat/dump.o
+CC	libavformat/dv.o
+CC	libavformat/file.o
+CC	libavformat/flac_picture.o
+CC	libavformat/flacenc_header.o
+CC	libavformat/hevc.o
+CC	libavformat/format.o
+CC	libavformat/id3v1.o
+CC	libavformat/id3v2.o
+CC	libavformat/isom_tags.o
+CC	libavformat/matroska.o
+CC	libavformat/matroskadec.o
+CC	libavformat/matroskaenc.o
+CC	libavformat/metadata.o
+CC	libavformat/mux.o
+CC	libavformat/mux_utils.o
+CC	libavformat/nullenc.o
+CC	libavformat/oggparsevorbis.o
+CC	libavformat/options.o
+CC	libavformat/pcmenc.o
+CC	libavformat/os_support.o
+CC	libavformat/qtpalette.o
+CC	libavformat/rawenc.o
+CC	libavformat/replaygain.o
+CC	libavformat/riff.o
+CC	libavformat/riffdec.o
+CC	libavformat/riffenc.o
+CC	libavformat/sdp.o
+CC	libavformat/seek.o
+CC	libavformat/url.o
+CC	libavformat/utils.o
+CC	libavformat/version.o
+CC	libavformat/vorbiscomment.o
+CC	libavformat/wv.o
+CC	libavcodec/aac_adtstoasc_bsf.o
+CC	libavcodec/ac3_parser.o
+CC	libavcodec/adts_header.o
+CC	libavcodec/adts_parser.o
+CC	libavcodec/allcodecs.o
+CC	libavcodec/audio_frame_queue.o
+CC	libavcodec/avcodec.o
+CC	libavcodec/avdct.o
+CC	libavcodec/avpacket.o
+CC	libavcodec/bitstream.o
+CC	libavcodec/bitstream_filters.o
+CC	libavcodec/bsf.o
+CC	libavcodec/codec_desc.o
+CC	libavcodec/codec_par.o
+CC	libavcodec/d3d11va.o
+CC	libavcodec/decode.o
+CC	libavcodec/dirac.o
+CC	libavcodec/dv_profile.o
+CC	libavcodec/encode.o
+CC	libavcodec/faandct.o
+CC	libavcodec/faanidct.o
+CC	libavcodec/fdctdsp.o
+CC	libavcodec/frame_thread_encoder.o
+CC	libavcodec/get_buffer.o
+CC	libavcodec/idctdsp.o
+CC	libavcodec/imgconvert.o
+CC	libavcodec/jfdctint.o
+CC	libavcodec/jni.o
+CC	libavcodec/jrevdct.o
+CC	libavcodec/libopusenc.o
+CC	libavcodec/mathtables.o
+CC	libavcodec/mediacodec.o
+CC	libavcodec/mpeg4audio.o
+CC	libavcodec/options.o
+CC	libavcodec/opus_celt.o
+CC	libavcodec/opus_parse.o
+CC	libavcodec/opus_parser.o
+CC	libavcodec/opus_pvq.o
+CC	libavcodec/opus_rc.o
+CC	libavcodec/opus_silk.o
+CC	libavcodec/opusdec.o
+CC	libavcodec/opusdec_celt.o
+CC	libavcodec/opusdsp.o
+CC	libavcodec/opustab.o
+CC	libavcodec/parser.o
+CC	libavcodec/parsers.o
+CC	libavcodec/pcm.o
+CC	libavcodec/pgs_frame_merge_bsf.o
+CC	libavcodec/profiles.o
+CC	libavcodec/pthread.o
+CC	libavcodec/pthread_frame.o
+CC	libavcodec/pthread_slice.o
+CC	libavcodec/qsv_api.o
+CC	libavcodec/raw.o
+CC	libavcodec/refstruct.o
+CC	libavcodec/simple_idct.o
+CC	libavcodec/utils.o
+CC	libavcodec/version.o
+CC	libavcodec/vlc.o
+CC	libavcodec/vorbis_data.o
+CC	libavcodec/vorbis_parser.o
+CC	libavcodec/vp9_superframe_bsf.o
+CC	libavcodec/xiph.o
+CC	libavcodec/to_upper4.o
+CC	libswresample/audioconvert.o
+CC	libswresample/dither.o
+CC	libswresample/options.o
+CC	libswresample/rematrix.o
+CC	libswresample/resample.o
+CC	libswresample/resample_dsp.o
+CC	libswresample/swresample.o
+CC	libswresample/swresample_frame.o
+CC	libswresample/version.o
+CC	libavutil/adler32.o
+CC	libavutil/aes.o
+CC	libavutil/aes_ctr.o
+CC	libavutil/ambient_viewing_environment.o
+CC	libavutil/avsscanf.o
+CC	libavutil/avstring.o
+CC	libavutil/base64.o
+CC	libavutil/blowfish.o
+CC	libavutil/buffer.o
+CC	libavutil/camellia.o
+CC	libavutil/cast5.o
+CC	libavutil/channel_layout.o
+CC	libavutil/cpu.o
+CC	libavutil/crc.o
+CC	libavutil/des.o
+CC	libavutil/detection_bbox.o
+CC	libavutil/dict.o
+CC	libavutil/display.o
+CC	libavutil/downmix_info.o
+CC	libavutil/encryption_info.o
+CC	libavutil/error.o
+CC	libavutil/eval.o
+CC	libavutil/executor.o
+CC	libavutil/fifo.o
+CC	libavutil/file.o
+src/libavutil/eval.c:522:13: warning: mixing declarations and code is incompatible with standards before C99 [-Wdeclaration-after-statement]
+  522 |     AVExpr *e = av_mallocz(sizeof(AVExpr));
+      |             ^
+CC	libavutil/file_open.o
+CC	libavutil/film_grain_params.o
+CC	libavutil/fixed_dsp.o
+1 warning generated.
+CC	libavutil/float_dsp.o
+CC	libavutil/frame.o
+CC	libavutil/hash.o
+CC	libavutil/hdr_dynamic_metadata.o
+CC	libavutil/hdr_dynamic_vivid_metadata.o
+CC	libavutil/hwcontext.o
+CC	libavutil/hwcontext_stub.o
+CC	libavutil/imgutils.o
+CC	libavutil/integer.o
+CC	libavutil/intmath.o
+CC	libavutil/lfg.o
+CC	libavutil/lls.o
+CC	libavutil/log.o
+CC	libavutil/lzo.o
+CC	libavutil/mastering_display_metadata.o
+CC	libavutil/mathematics.o
+CC	libavutil/md5.o
+CC	libavutil/mem.o
+CC	libavutil/murmur3.o
+CC	libavutil/opt.o
+CC	libavutil/parseutils.o
+CC	libavutil/pixdesc.o
+CC	libavutil/pixelutils.o
+CC	libavutil/random_seed.o
+CC	libavutil/rational.o
+CC	libavutil/ripemd.o
+CC	libavutil/sha.o
+CC	libavutil/sha512.o
+CC	libavutil/slicethread.o
+CC	libavutil/stereo3d.o
+CC	libavutil/tea.o
+CC	libavutil/threadmessage.o
+CC	libavutil/time.o
+CC	libavutil/timecode.o
+CC	libavutil/twofish.o
+CC	libavutil/tx.o
+CC	libavutil/tx_double.o
+CC	libavutil/tx_float.o
+CC	libavutil/tx_int32.o
+CC	libavutil/utils.o
+CC	libavutil/version.o
+CC	libavutil/video_enc_params.o
+CC	libavutil/video_hint.o
+CC	libavutil/xga_font_data.o
+CC	libavutil/xtea.o
+CC	fftools/ffmpeg_dec.o
+CC	fftools/ffmpeg_demux.o
+CC	fftools/ffmpeg_enc.o
+CC	fftools/ffmpeg_filter.o
+CC	fftools/ffmpeg_hw.o
+CC	fftools/ffmpeg_mux.o
+src/fftools/ffmpeg_filter.c:1867:9: warning: variable 'fr' is used uninitialized whenever 'if' condition is true [-Wsometimes-uninitialized]
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/fftools/ffmpeg_filter.c:1913:26: note: uninitialized use occurs here
+ 1913 |     fps->framerate     = fr;
+      |                          ^~
+src/fftools/ffmpeg_filter.c:1867:5: note: remove the 'if' if its condition is always false
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1868 |         tb = tb.num ? tb : (AVRational){ 1, frame->sample_rate };
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1869 |         goto finish;
+      |         ~~~~~~~~~~~~
+ 1870 |     }
+      |     ~
+src/fftools/ffmpeg_filter.c:1847:5: note: variable 'fr' is declared here
+ 1847 |     AVRational fr;
+      |     ^
+CC	fftools/ffmpeg_mux_init.o
+CC	fftools/ffmpeg_opt.o
+src/fftools/ffmpeg_mux_init.c:297:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  297 |         { ENC_STATS_FRAME_NUM_IN,   "ni",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:299:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  299 |         { ENC_STATS_TIMEBASE_IN,    "tbi",      0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:302:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  302 |         { ENC_STATS_PTS_IN,         "ptsi",     0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:303:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  303 |         { ENC_STATS_PTS_TIME_IN,    "ti",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:304:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  304 |         { ENC_STATS_DTS,            "dts",      0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:305:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  305 |         { ENC_STATS_DTS_TIME,       "dt",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:306:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  306 |         { ENC_STATS_SAMPLE_NUM,     "sn",       1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:307:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  307 |         { ENC_STATS_NB_SAMPLES,     "samp",     1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:308:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  308 |         { ENC_STATS_PKT_SIZE,       "size",     0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:309:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  309 |         { ENC_STATS_BITRATE,        "br",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:310:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  310 |         { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
+      |                                                    ^
+CC	fftools/thread_queue.o
+1 warning generated.
+CC	fftools/cmdutils.o
+CC	fftools/opt_common.o
+CC	fftools/ffmpeg.o
+CC	fftools/ffprobe.o
+AR	libavdevice/libavdevice.a
+AR	libavfilter/libavfilter.a
+AR	libavformat/libavformat.a
+AR	libavcodec/libavcodec.a
+AR	libswresample/libswresample.a
+AR	libavutil/libavutil.a
+11 warnings generated.
+LD	ffmpeg_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffmpeg
+LD	ffprobe_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffprobe
+RECONFIGURE EXIT CODE: 0
+$ reference synthetic WebM/Opus fixture
+SYNTH EXIT CODE: 0
+$ ffprobe streams + packet SHA
+FFPROBE EXIT CODE: 0
+$ ffmpeg decode f32le and null
+F32LE EXIT CODE: 0
+[aost#0:0 @ 0x7c10c1d400] Automatic encoder selection failed Default encoder for format null (codec pcm_s16le) is probably disabled. Please choose an encoder manually.
+[aost#0:0 @ 0x7c10c1d400] Error selecting an encoder
+Error opening output file -.
+Error opening output files: Encoder not found
+NULL EXIT CODE: 8
+$ reference reconfigure: enable default pcm_s16le encoder for null muxer
+install prefix            /media-encoder-test
+source path               src
+C compiler                clang
+C library                 
+host C compiler           gcc
+host C library            
+ARCH                      c (generic)
+big-endian                no
+runtime cpu detection     yes
+debug symbols             no
+strip symbols             yes
+optimize for size         yes
+optimizations             yes
+static                    yes
+shared                    no
+postprocessing support    no
+network support           no
+threading support         pthreads
+safe bitstream reader     yes
+texi2html enabled         no
+perl enabled              yes
+pod2man enabled           yes
+makeinfo enabled          no
+makeinfo supports HTML    no
+xmllint enabled           yes
+
+External libraries:
+libopus
+
+External libraries providing hardware acceleration:
+
+Libraries:
+avcodec                 avfilter                avutil
+avdevice                avformat                swresample
+
+Programs:
+ffmpeg                  ffprobe
+
+Enabled decoders:
+opus                    pcm_s16le
+
+Enabled encoders:
+libopus                 pcm_f32le               pcm_s16le
+
+Enabled hwaccels:
+
+Enabled parsers:
+opus
+
+Enabled demuxers:
+matroska
+
+Enabled muxers:
+data                    null                    webm
+matroska                pcm_f32le
+
+Enabled protocols:
+file                    pipe
+
+Enabled filters:
+adelay                  asetpts                 pan
+aformat                 atrim                   sine
+anull                   format                  transpose
+anullsrc                hflip                   trim
+apad                    join                    vflip
+aresample               null
+
+Enabled bsfs:
+aac_adtstoasc           pgs_frame_merge         vp9_superframe
+
+Enabled indevs:
+lavfi
+
+Enabled outdevs:
+
+License: LGPL version 2.1 or later
+libavutil/avconfig.h is unchanged
+libavfilter/filter_list.c is unchanged
+libavcodec/parser_list.c is unchanged
+libavcodec/bsf_list.c is unchanged
+libavformat/demuxer_list.c is unchanged
+libavformat/muxer_list.c is unchanged
+libavdevice/indev_list.c is unchanged
+libavdevice/outdev_list.c is unchanged
+libavformat/protocol_list.c is unchanged
+ffbuild/config.sh is unchanged
+$ make -j4 ffmpeg ffprobe
+CC	libavdevice/avdevice.o
+CC	libavdevice/alldevices.o
+CC	libavdevice/lavfi.o
+CC	libavdevice/utils.o
+CC	libavdevice/version.o
+CC	libavfilter/af_adelay.o
+CC	libavfilter/af_aformat.o
+CC	libavfilter/af_anull.o
+CC	libavfilter/af_apad.o
+CC	libavfilter/af_aresample.o
+CC	libavfilter/af_join.o
+CC	libavfilter/af_pan.o
+CC	libavfilter/allfilters.o
+CC	libavfilter/asrc_anullsrc.o
+CC	libavfilter/asrc_sine.o
+CC	libavfilter/audio.o
+CC	libavfilter/avfilter.o
+CC	libavfilter/avfiltergraph.o
+CC	libavfilter/buffersink.o
+CC	libavfilter/buffersrc.o
+CC	libavfilter/ccfifo.o
+CC	libavfilter/colorspace.o
+CC	libavfilter/drawutils.o
+CC	libavfilter/fifo.o
+CC	libavfilter/formats.o
+CC	libavfilter/framepool.o
+CC	libavfilter/framequeue.o
+CC	libavfilter/graphdump.o
+CC	libavfilter/graphparser.o
+CC	libavfilter/pthread.o
+CC	libavfilter/setpts.o
+CC	libavfilter/trim.o
+CC	libavfilter/version.o
+CC	libavfilter/vf_format.o
+CC	libavfilter/vf_hflip.o
+CC	libavfilter/vf_null.o
+CC	libavfilter/vf_transpose.o
+CC	libavfilter/vf_vflip.o
+CC	libavfilter/video.o
+CC	libavformat/allformats.o
+CC	libavformat/av1.o
+CC	libavformat/avc.o
+CC	libavformat/avformat.o
+CC	libavformat/avio.o
+CC	libavformat/aviobuf.o
+CC	libavformat/demux.o
+CC	libavformat/demux_utils.o
+CC	libavformat/dovi_isom.o
+CC	libavformat/dump.o
+CC	libavformat/dv.o
+CC	libavformat/file.o
+CC	libavformat/flac_picture.o
+CC	libavformat/flacenc_header.o
+CC	libavformat/format.o
+CC	libavformat/hevc.o
+CC	libavformat/id3v1.o
+CC	libavformat/id3v2.o
+CC	libavformat/isom_tags.o
+CC	libavformat/matroska.o
+CC	libavformat/matroskadec.o
+CC	libavformat/matroskaenc.o
+CC	libavformat/metadata.o
+CC	libavformat/mux.o
+CC	libavformat/mux_utils.o
+CC	libavformat/nullenc.o
+CC	libavformat/oggparsevorbis.o
+CC	libavformat/options.o
+CC	libavformat/os_support.o
+CC	libavformat/pcmenc.o
+CC	libavformat/qtpalette.o
+CC	libavformat/replaygain.o
+CC	libavformat/rawenc.o
+CC	libavformat/riff.o
+CC	libavformat/riffdec.o
+CC	libavformat/riffenc.o
+CC	libavformat/sdp.o
+CC	libavformat/seek.o
+CC	libavformat/url.o
+CC	libavformat/utils.o
+CC	libavformat/version.o
+CC	libavformat/vorbiscomment.o
+CC	libavformat/wv.o
+CC	libavcodec/aac_adtstoasc_bsf.o
+CC	libavcodec/ac3_parser.o
+CC	libavcodec/adts_header.o
+CC	libavcodec/adts_parser.o
+CC	libavcodec/allcodecs.o
+CC	libavcodec/audio_frame_queue.o
+CC	libavcodec/avcodec.o
+CC	libavcodec/avdct.o
+CC	libavcodec/avpacket.o
+CC	libavcodec/bitstream.o
+CC	libavcodec/bitstream_filters.o
+CC	libavcodec/bsf.o
+CC	libavcodec/codec_desc.o
+CC	libavcodec/codec_par.o
+CC	libavcodec/d3d11va.o
+CC	libavcodec/decode.o
+CC	libavcodec/dirac.o
+CC	libavcodec/dv_profile.o
+CC	libavcodec/encode.o
+CC	libavcodec/faandct.o
+CC	libavcodec/faanidct.o
+CC	libavcodec/fdctdsp.o
+CC	libavcodec/frame_thread_encoder.o
+CC	libavcodec/get_buffer.o
+CC	libavcodec/idctdsp.o
+CC	libavcodec/imgconvert.o
+CC	libavcodec/jfdctint.o
+CC	libavcodec/jni.o
+CC	libavcodec/jrevdct.o
+CC	libavcodec/libopusenc.o
+CC	libavcodec/mathtables.o
+CC	libavcodec/mediacodec.o
+CC	libavcodec/mpeg4audio.o
+CC	libavcodec/options.o
+CC	libavcodec/opus_celt.o
+CC	libavcodec/opus_parse.o
+CC	libavcodec/opus_parser.o
+CC	libavcodec/opus_pvq.o
+CC	libavcodec/opus_rc.o
+CC	libavcodec/opus_silk.o
+CC	libavcodec/opusdec.o
+CC	libavcodec/opusdec_celt.o
+CC	libavcodec/opusdsp.o
+CC	libavcodec/opustab.o
+CC	libavcodec/parser.o
+CC	libavcodec/parsers.o
+CC	libavcodec/pcm.o
+CC	libavcodec/pgs_frame_merge_bsf.o
+CC	libavcodec/profiles.o
+CC	libavcodec/pthread.o
+CC	libavcodec/pthread_slice.o
+CC	libavcodec/pthread_frame.o
+CC	libavcodec/qsv_api.o
+CC	libavcodec/raw.o
+CC	libavcodec/refstruct.o
+CC	libavcodec/simple_idct.o
+CC	libavcodec/utils.o
+CC	libavcodec/version.o
+CC	libavcodec/vlc.o
+CC	libavcodec/vorbis_data.o
+CC	libavcodec/vorbis_parser.o
+CC	libavcodec/vp9_superframe_bsf.o
+CC	libavcodec/xiph.o
+CC	libavcodec/to_upper4.o
+CC	libswresample/audioconvert.o
+CC	libswresample/dither.o
+CC	libswresample/options.o
+CC	libswresample/rematrix.o
+CC	libswresample/resample.o
+CC	libswresample/resample_dsp.o
+CC	libswresample/swresample.o
+CC	libswresample/swresample_frame.o
+CC	libswresample/version.o
+CC	libavutil/adler32.o
+CC	libavutil/aes.o
+CC	libavutil/aes_ctr.o
+CC	libavutil/ambient_viewing_environment.o
+CC	libavutil/avsscanf.o
+CC	libavutil/avstring.o
+CC	libavutil/base64.o
+CC	libavutil/blowfish.o
+CC	libavutil/buffer.o
+CC	libavutil/camellia.o
+CC	libavutil/cast5.o
+CC	libavutil/channel_layout.o
+CC	libavutil/cpu.o
+CC	libavutil/crc.o
+CC	libavutil/des.o
+CC	libavutil/detection_bbox.o
+CC	libavutil/dict.o
+CC	libavutil/display.o
+CC	libavutil/downmix_info.o
+CC	libavutil/encryption_info.o
+CC	libavutil/error.o
+CC	libavutil/eval.o
+CC	libavutil/executor.o
+CC	libavutil/fifo.o
+CC	libavutil/file.o
+src/libavutil/eval.c:522:13: warning: mixing declarations and code is incompatible with standards before C99 [-Wdeclaration-after-statement]
+  522 |     AVExpr *e = av_mallocz(sizeof(AVExpr));
+      |             ^
+CC	libavutil/file_open.o
+CC	libavutil/film_grain_params.o
+CC	libavutil/fixed_dsp.o
+1 warning generated.
+CC	libavutil/frame.o
+CC	libavutil/float_dsp.o
+CC	libavutil/hash.o
+CC	libavutil/hdr_dynamic_metadata.o
+CC	libavutil/hdr_dynamic_vivid_metadata.o
+CC	libavutil/hwcontext.o
+CC	libavutil/hwcontext_stub.o
+CC	libavutil/imgutils.o
+CC	libavutil/integer.o
+CC	libavutil/intmath.o
+CC	libavutil/lfg.o
+CC	libavutil/lls.o
+CC	libavutil/lzo.o
+CC	libavutil/log.o
+CC	libavutil/mastering_display_metadata.o
+CC	libavutil/mathematics.o
+CC	libavutil/md5.o
+CC	libavutil/mem.o
+CC	libavutil/murmur3.o
+CC	libavutil/opt.o
+CC	libavutil/parseutils.o
+CC	libavutil/pixdesc.o
+CC	libavutil/pixelutils.o
+CC	libavutil/random_seed.o
+CC	libavutil/rational.o
+CC	libavutil/ripemd.o
+CC	libavutil/sha.o
+CC	libavutil/sha512.o
+CC	libavutil/slicethread.o
+CC	libavutil/stereo3d.o
+CC	libavutil/tea.o
+CC	libavutil/threadmessage.o
+CC	libavutil/time.o
+CC	libavutil/timecode.o
+CC	libavutil/twofish.o
+CC	libavutil/tx.o
+CC	libavutil/tx_double.o
+CC	libavutil/tx_float.o
+CC	libavutil/tx_int32.o
+CC	libavutil/utils.o
+CC	libavutil/version.o
+CC	libavutil/video_enc_params.o
+CC	libavutil/video_hint.o
+CC	libavutil/xga_font_data.o
+CC	libavutil/xtea.o
+CC	fftools/ffmpeg_dec.o
+CC	fftools/ffmpeg_demux.o
+CC	fftools/ffmpeg_enc.o
+CC	fftools/ffmpeg_filter.o
+CC	fftools/ffmpeg_hw.o
+CC	fftools/ffmpeg_mux.o
+src/fftools/ffmpeg_filter.c:1867:9: warning: variable 'fr' is used uninitialized whenever 'if' condition is true [-Wsometimes-uninitialized]
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/fftools/ffmpeg_filter.c:1913:26: note: uninitialized use occurs here
+ 1913 |     fps->framerate     = fr;
+      |                          ^~
+src/fftools/ffmpeg_filter.c:1867:5: note: remove the 'if' if its condition is always false
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1868 |         tb = tb.num ? tb : (AVRational){ 1, frame->sample_rate };
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1869 |         goto finish;
+      |         ~~~~~~~~~~~~
+ 1870 |     }
+      |     ~
+src/fftools/ffmpeg_filter.c:1847:5: note: variable 'fr' is declared here
+ 1847 |     AVRational fr;
+      |     ^
+CC	fftools/ffmpeg_mux_init.o
+CC	fftools/ffmpeg_opt.o
+src/fftools/ffmpeg_mux_init.c:297:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  297 |         { ENC_STATS_FRAME_NUM_IN,   "ni",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:299:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  299 |         { ENC_STATS_TIMEBASE_IN,    "tbi",      0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:302:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  302 |         { ENC_STATS_PTS_IN,         "ptsi",     0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:303:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  303 |         { ENC_STATS_PTS_TIME_IN,    "ti",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:304:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  304 |         { ENC_STATS_DTS,            "dts",      0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:305:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  305 |         { ENC_STATS_DTS_TIME,       "dt",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:306:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  306 |         { ENC_STATS_SAMPLE_NUM,     "sn",       1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:307:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  307 |         { ENC_STATS_NB_SAMPLES,     "samp",     1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:308:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  308 |         { ENC_STATS_PKT_SIZE,       "size",     0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:309:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  309 |         { ENC_STATS_BITRATE,        "br",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:310:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  310 |         { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
+      |                                                    ^
+CC	fftools/thread_queue.o
+1 warning generated.
+CC	fftools/cmdutils.o
+CC	fftools/opt_common.o
+CC	fftools/ffmpeg.o
+CC	fftools/ffprobe.o
+AR	libavdevice/libavdevice.a
+AR	libavfilter/libavfilter.a
+AR	libavformat/libavformat.a
+AR	libavcodec/libavcodec.a
+AR	libswresample/libswresample.a
+AR	libavutil/libavutil.a
+11 warnings generated.
+LD	ffmpeg_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffmpeg
+LD	ffprobe_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffprobe
+RECONFIGURE EXIT CODE: 0
+$ final reference feature smoke
+SYNTH EXIT CODE: 0
+FFPROBE EXIT CODE: 0
+F32LE EXIT CODE: 0
+NULL EXIT CODE: 0
+DATA EXIT CODE: 0
+REFERENCE EXIT CODE: 0

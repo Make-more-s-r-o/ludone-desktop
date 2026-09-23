@@ -287,7 +287,7 @@ contextBridge.exposeInMainWorld("ludone", {
   },
   openRecordingInLuDone: (clientRecordingId, expectedRevision, track) => {
     requireRecordingReference(clientRecordingId, expectedRevision);
-    if (!["microphone", "system"].includes(track)) {
+    if (!["delivery", "microphone", "system"].includes(track)) {
       throw new TypeError("Otevření vyžaduje známou stopu");
     }
     return ipcRenderer.invoke("recordings:open-web", clientRecordingId, expectedRevision, track);

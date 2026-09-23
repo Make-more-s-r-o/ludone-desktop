@@ -72,16 +72,25 @@ function validateQueue(queue) {
     const ownerFingerprint = normalizeQueueOwnerFingerprint(item.ownerFingerprint);
     const server = normalizeStoredServer(item);
     const uploadIntent = item.uploadIntent === "approved" ? "approved" : "held";
+    const legacyDeliveryBarrier = item.legacyDeliveryBarrier === true
+      || (item.delivery === undefined && legacyUploadEvidence(item));
     if (
       Object.prototype.hasOwnProperty.call(item, "ownerFingerprint")
       && item.ownerFingerprint === ownerFingerprint
       && item.uploadIntent === uploadIntent
+      && (item.legacyDeliveryBarrier === true) === legacyDeliveryBarrier
       && JSON.stringify(item.server) === JSON.stringify(server)
     ) {
       return item;
     }
     changed = true;
-    return { ...item, ownerFingerprint, server, uploadIntent };
+    return {
+      ...item,
+      ownerFingerprint,
+      server,
+      uploadIntent,
+      ...(legacyDeliveryBarrier ? { legacyDeliveryBarrier: true } : {}),
+    };
   });
   return changed ? { ...queue, items } : queue;
 }
@@ -125,6 +134,15 @@ function normalizeStoredServer(item) {
       },
     },
   };
+  if (item.delivery !== undefined || stored.delivery !== undefined) {
+    server.delivery = {
+      recordingId: typeof stored.delivery?.recordingId === "string"
+        && UUID_PATTERN.test(stored.delivery.recordingId)
+        ? stored.delivery.recordingId
+        : null,
+      uploadedBytes: safeUploadedBytes(stored.delivery?.uploadedBytes),
+    };
+  }
   if (typeof stored.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(stored.companyTabidooId)) {
     server.companyTabidooId = stored.companyTabidooId;
   }
@@ -138,6 +156,26 @@ function normalizeStoredServer(item) {
     }
   }
   return server;
+}
+
+function legacyUploadEvidence(item) {
+  const stored = item?.server && typeof item.server === "object" ? item.server : {};
+  return (Number.isSafeInteger(item?.attempts) && item.attempts > 0)
+    || item?.state === "odesila"
+    || item?.state === "odeslano"
+    || (item?.sentAt !== null && item?.sentAt !== undefined)
+    || (item?.nextAttemptAt !== null && item?.nextAttemptAt !== undefined)
+    || (item?.lastFailureReason !== null && item?.lastFailureReason !== undefined
+      && item.lastFailureReason !== "Převzatá nahrávka čeká na volbu odeslání")
+    || typeof stored.companyTabidooId === "string"
+    || typeof stored.sessionId === "string"
+    || typeof stored.recordingId === "string"
+    || typeof stored.legacyRecordingId === "string"
+    || typeof stored.delivery?.recordingId === "string"
+    || Number(stored.delivery?.uploadedBytes) > 0
+    || Object.values(stored.tracks ?? {}).some((progress) => (
+      typeof progress?.recordingId === "string" || Number(progress?.uploadedBytes) > 0
+    ));
 }
 
 function normalizeQueueOwnerFingerprint(value) {
@@ -261,6 +299,10 @@ function enqueueMicrophoneOnlyRecording(queue, recording, now = Date.now()) {
   const normalizedTracks = {
     microphone: requiredNonEmptyString(trackPaths.microphone, "trackPaths.microphone"),
   };
+  const delivery = recording.delivery && typeof recording.delivery === "object"
+    && !Array.isArray(recording.delivery)
+    ? recording.delivery
+    : undefined;
   const existing = queue.items.find(
     (item) => item.clientRecordingId === manifest.clientRecordingId,
   );
@@ -270,6 +312,7 @@ function enqueueMicrophoneOnlyRecording(queue, recording, now = Date.now()) {
       && existing.manifestPath === manifestPath
       && existing.tracks?.microphone === normalizedTracks.microphone
       && Object.keys(existing.tracks ?? {}).length === 1
+      && JSON.stringify(existing.delivery) === JSON.stringify(delivery)
       && (existing.recoveredIncomplete === true) === recoveredIncomplete;
     if (sameRecording) return { added: false, item: existing, queue };
     throw new Error("Kolize clientRecordingId s jinou položkou fronty");
@@ -288,6 +331,7 @@ function enqueueMicrophoneOnlyRecording(queue, recording, now = Date.now()) {
     sentAt: null,
     server: {
       sessionId: null,
+      ...(delivery ? { delivery: { recordingId: null, uploadedBytes: 0 } } : {}),
       tracks: {
         microphone: { recordingId: null, uploadedBytes: 0 },
         system: { recordingId: null, uploadedBytes: 0 },
@@ -297,6 +341,7 @@ function enqueueMicrophoneOnlyRecording(queue, recording, now = Date.now()) {
     uploadIntent: "held",
     ...(sourceManifestPath !== manifestPath ? { sourceManifestPath } : {}),
     tracks: normalizedTracks,
+    ...(delivery ? { delivery } : {}),
   };
   return {
     added: true,
@@ -1009,6 +1054,19 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
+  function setRecordingDelivery(clientRecordingId, delivery) {
+    return serialize(async () => {
+      const queueModule = await loadQueueModule();
+      const queue = await ensureLoaded();
+      const current = queue.items.find((item) => item.clientRecordingId === clientRecordingId);
+      const progressed = current?.delivery
+        ? queueModule.applyServerProgress(queue, clientRecordingId, { delivery })
+        : queueModule.attachRecordingDelivery(queue, clientRecordingId, delivery);
+      await commit(progressed.queue);
+      return progressed.item;
+    });
+  }
+
   function claimRecording(clientRecordingId, expectedRevision, ownerFingerprint, options = {}) {
     if (typeof clientRecordingId !== "string" || !UUID_PATTERN.test(clientRecordingId)) {
       throw new TypeError("clientRecordingId musí být GUID");
@@ -1300,6 +1358,24 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
     }
+    let derivativePaths = [];
+    if (rawItem?.delivery) {
+      const { verifyMeetingAudioForDeletion } = require("./meeting-audio.cjs");
+      derivativePaths = await verifyMeetingAudioForDeletion(rawItem, path.resolve(recordingsDirectory));
+    }
+    const allTargetNames = new Set(
+      [...audioPaths, ...derivativePaths].map((candidate) => path.basename(candidate)),
+    );
+    const sharedDerivativeReference = queue.items.some((candidate) => (
+      candidate !== rawItem
+      && (candidate.kind ?? "recording") === "recording"
+      && [candidate.delivery?.filePath, candidate.delivery?.masterPath, candidate.delivery?.sidecarPath]
+        .some((candidatePath) => typeof candidatePath === "string"
+          && allTargetNames.has(path.basename(path.resolve(candidatePath))))
+    ));
+    if (sharedDerivativeReference) {
+      throw new Error("Soubor delivery používá také jiná queue položka");
+    }
     const latestQueueItems = reduceForLocalDashboard(queueModule, queue, null);
     const latestSnapshot = await createLocalRecordingsSnapshot({
       queue, queueItems: latestQueueItems, recordingsDirectory,
@@ -1309,7 +1385,15 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       || latestProjected.fileRevision !== expectedFileRevision) {
       throw new Error("Soubory nahrávky se během přípravy akce změnily");
     }
-    return { audioPaths, manifestPath: primaryPath, projected, queue, rawItem, sidecarPath };
+    return {
+      audioPaths,
+      derivativePaths,
+      manifestPath: primaryPath,
+      projected,
+      queue,
+      rawItem,
+      sidecarPath,
+    };
   }
 
   async function stableTrashStat(file) {
@@ -1347,7 +1431,26 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
       const target = await freshActionTarget(clientRecordingId, expectedRevision, expectedFileRevision);
       if (target.rawItem?.state === "odesila") throw new Error("Nahrávka se právě odesílá");
-      const planned = [...target.audioPaths, target.sidecarPath, target.manifestPath];
+      if (!target.rawItem?.delivery) {
+        const { descriptorPaths } = require("./meeting-audio.cjs");
+        const root = path.dirname(target.manifestPath);
+        const canonical = descriptorPaths(target.manifestPath, root);
+        const masterPath = target.manifestPath.slice(0, -".manifest.json".length)
+          + "-stereo-master.webm";
+        // Po pádu mezi zápisem stereo souboru a připojením delivery k frontě by
+        // smazání jen originálů nechalo soukromý master na disku bez záznamu v panelu.
+        for (const candidate of [canonical.filePath, canonical.sidecarPath, masterPath]) {
+          if (await stableTrashStat(candidate) !== null) {
+            throw new Error("Stereo soubor zatím není navázaný na frontu; koš jej nemůže bezpečně zahrnout");
+          }
+        }
+      }
+      const planned = [
+        ...target.audioPaths,
+        ...target.derivativePaths,
+        target.sidecarPath,
+        target.manifestPath,
+      ].filter((candidate, index, values) => values.indexOf(candidate) === index);
       const initial = await Promise.all(planned.map(stableTrashStat));
       try {
         for (let index = 0; index < planned.length; index += 1) {
@@ -1375,7 +1478,13 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     if (typeof guard !== "function") throw new TypeError("Reveal vyžaduje guard");
     return serialize(async () => {
       const target = await freshActionTarget(clientRecordingId, expectedRevision, expectedFileRevision);
-      for (const candidate of [...target.audioPaths, target.manifestPath]) {
+      const revealCandidates = [
+        ...target.derivativePaths.filter((candidate) => candidate.endsWith(".mp3")),
+        ...target.derivativePaths.filter((candidate) => candidate.endsWith(".webm")),
+        ...target.audioPaths,
+        target.manifestPath,
+      ];
+      for (const candidate of revealCandidates) {
         if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
         if (await stableTrashStat(candidate) !== null) {
           if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
@@ -1392,8 +1501,8 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     let before = withoutExpiredCooldowns(await ensureLoaded(), now);
     if (before !== currentQueue) await commit(before);
     const cooldown = activeCooldown(before, currentOwnerFingerprint, now);
-    const guardedSend = async (item, reportServerProgress) => {
-      if ((item.kind ?? "recording") !== "recording") return send(item, reportServerProgress);
+    const guardedSend = async (item, reportServerProgress, preparation) => {
+      if ((item.kind ?? "recording") !== "recording") return send(item, reportServerProgress, preparation);
       if (currentOwnerFingerprint === null) {
         throw Object.assign(new Error("Identitu aktuálního přihlášení nelze ověřit"), {
           code: "queue_owner_unknown",
@@ -1406,7 +1515,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
           failureClass: "paused",
         });
       }
-      return send(item, reportServerProgress);
+      return send(item, reportServerProgress, preparation);
     };
     const result = await queueModule.processNext(before, killswitches, guardedSend, {
       currentOwnerFingerprint,
@@ -1601,6 +1710,37 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
         || !manifest.tracks || typeof manifest.tracks !== "object" || Array.isArray(manifest.tracks)
         || primaryManifest.createdAt !== manifest.createdAt
       ) throw new Error("Primární manifest není platný");
+      if (item.delivery?.state === "ready") {
+        const { ensureMeetingAudioReady } = require("./meeting-audio.cjs");
+        const delivery = await ensureMeetingAudioReady(item, { recordingsDirectory });
+        const storedRecordingId = item.server?.delivery?.recordingId;
+        const recordingId = typeof storedRecordingId === "string"
+          && UUID_PATTERN.test(storedRecordingId) ? storedRecordingId : null;
+        const secondSnapshot = await createLocalRecordingsSnapshot({
+          queue, queueItems, recordingsDirectory,
+        });
+        const currentProjected = secondSnapshot.items.find(
+          (candidate) => candidate.id === clientRecordingId,
+        );
+        if (
+          !currentProjected
+          || currentProjected.revision !== expectedRevision
+          || currentProjected.fileRevision !== projected.fileRevision
+          || currentProjected.localState === "invalid-manifest"
+        ) throw new Error("Primární manifest se během ověření změnil");
+        return Object.freeze({
+          id: clientRecordingId,
+          ownerFingerprint: currentOwnerFingerprint,
+          revision: expectedRevision,
+          tracks: Object.freeze({
+            delivery: Object.freeze({
+              recordingId,
+              declaredBytes: delivery.sizeBytes,
+              sha256: delivery.sha256,
+            }),
+          }),
+        });
+      }
       const trackNames = Object.keys(manifest.tracks);
       const primaryTrackNames = Object.keys(primaryManifest.tracks);
       if (
@@ -1762,6 +1902,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     pump,
     revealRecording,
     retry,
+    setRecordingDelivery,
   });
 }
 

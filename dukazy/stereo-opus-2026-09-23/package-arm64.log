@@ -1,0 +1,7 @@
+$ node scripts/akceptace/stereo-package.mjs release/mac-arm64/LuDone Desktop.app arm64
+PASS celý strom runtime závislostí je uvnitř aplikace
+PASS správná architektura a nezměněný přibalený encoder
+PASS Opus a FFmpeg mají přiložené původní zdroje a licence
+FAILURES=0; kontrolovaných balíčků=20; podpis a živá schůzka neověřeny
+
+EXIT_CODE=0

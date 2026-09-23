@@ -1,0 +1,6 @@
+$ node scripts/akceptace/stereo-hour.mjs --ffmpeg /tmp/ludone-opus-reference.eQ32QG/ffmpeg --ffprobe /tmp/ludone-opus-reference.eQ32QG/ffprobe
+PASS vytvořen hodinový syntetický stereo Opus
+{"remuxSeconds":1.1149871670000029,"inputBytes":60522265,"outputBytes":60522228,"programs":[],"streams":[{"codec_name":"opus","sample_rate":"48000","channels":2}],"format":{"duration":"3600.028000"}}
+PASS celý hodinový WebM/Opus se dekóduje bez chyby; živá schůzka zůstává neověřená
+
+EXIT_CODE=0

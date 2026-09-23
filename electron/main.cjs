@@ -47,6 +47,10 @@ const {
   saveQueueAtomically,
 } = require("./queue.cjs");
 const { createRecordingUploadSend } = require("./upload-client.cjs");
+const {
+  createLivePendingDelivery,
+  ensureMeetingAudioReady,
+} = require("./meeting-audio.cjs");
 const { createRecordingVerifier } = require("./recording-verification.cjs");
 const { createUploadCompanySelectionController } = require("./upload-company-selection.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
@@ -1368,10 +1372,8 @@ async function openRecordingTrack(recordingsDirectory, prefix, source) {
   };
 }
 
-async function openRecordingExportStage(prefix) {
-  const exportDirectory = path.join(app.getPath("temp"), "ludone-exporty");
-  await fs.promises.mkdir(exportDirectory, { recursive: true, mode: 0o700 });
-  const filePath = path.join(exportDirectory, `${prefix}-stereo.webm`);
+async function openRecordingExportStage(recordingsDirectory, prefix) {
+  const filePath = path.join(recordingsDirectory, `${prefix}-stereo-master.webm`);
   const handle = await fs.promises.open(filePath, "wx", 0o600);
   return {
     source: "stereo",
@@ -1514,7 +1516,7 @@ async function createRecordingSession(event, sources) {
     for (const source of sources) {
       tracks.set(source, await openRecordingTrack(recordingsDirectory, prefix, source));
     }
-    exportTrack = await openRecordingExportStage(prefix);
+    exportTrack = await openRecordingExportStage(recordingsDirectory, prefix);
     if (preparation.cancelled || event.sender.isDestroyed()) {
       throw new Error("Příprava nahrávání byla zrušena při navigaci nebo pádu rendereru");
     }
@@ -1579,6 +1581,8 @@ async function createRecordingSession(event, sources) {
       resolveReady: resolveExportReady,
       result: null,
       timing: null,
+      delivery: null,
+      deliveryPromise: null,
       tracks,
     };
     recordingSession.destroyedListener = () => {
@@ -1775,6 +1779,11 @@ async function finalizeRecordingExportStage(sessionId, outcome, { preserveFile =
       exportStage.owner.removeListener("destroyed", exportStage.destroyedListener);
     }
     exportStage.resolveReady(exportStage.result);
+    if (exportStage.result.ok && exportStage.recordingFinishSucceeded) {
+      await persistLiveMeetingDelivery(exportStage).catch((error) => {
+        console.error(`[recording] Uložení identity stereo delivery selhalo: ${error.code ?? "IO_ERROR"}`);
+      });
+    }
     return exportStage.result;
   })().finally(() => {
     exportStage.finalizationSettled = true;
@@ -2536,7 +2545,7 @@ function claimRecordingDialogLabel(item) {
 function createQueueSend() {
   // Store fronty zůstává po celý běh jediný. Konkrétní sender se vytvoří až pro
   // jednotlivý pokus, aby po bezpečném přepnutí použil právě platný origin.
-  return async (item, reportServerProgress) => {
+  return async (item, reportServerProgress, preparation = {}) => {
     if (authOriginChangeInFlight) {
       const error = new Error("Změna prostředí právě probíhá");
       error.failureClass = "paused";
@@ -2544,13 +2553,31 @@ function createQueueSend() {
     }
     outboundQueueSendsInFlight += 1;
     try {
+      let uploadItem = item;
+      if ((item.kind ?? "recording") === "recording"
+        && typeof item.clientRecordingId === "string") {
+        const delivery = await ensureMeetingAudioReady(preparation.preAttemptItem ?? item, {
+          encoderOptions: {
+            isPackaged: app.isPackaged,
+            resourcesPath: process.resourcesPath,
+            projectRoot: path.resolve(__dirname, ".."),
+          },
+          onDescriptorPrepared: (prepared) => reportServerProgress({ delivery: prepared }),
+          recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
+        });
+        if (JSON.stringify(item.delivery) !== JSON.stringify(delivery)) {
+          await reportServerProgress({ delivery });
+          uploadItem = { ...item, delivery };
+        }
+      }
       const send = createRecordingUploadSend({
         fetchImpl: (...args) => net.fetch(...args),
         getUploadContext: recordingUploadContext,
         logger: console,
         origin: resolveCurrentAuthIssuer(),
+        requireSingleDelivery: true,
       });
-      return await send(item, reportServerProgress);
+      return await send(uploadItem, reportServerProgress);
     } finally {
       outboundQueueSendsInFlight -= 1;
     }
@@ -2635,6 +2662,34 @@ async function waitForRecordingExportStage(exportStage) {
   return Promise.race([exportStage.ready, timeout]).finally(() => clearTimeout(timeoutId));
 }
 
+function persistLiveMeetingDelivery(exportStage) {
+  if (!exportStage?.recordingFinishSucceeded || !exportStage.result?.ok) {
+    return Promise.resolve(exportStage?.delivery ?? null);
+  }
+  if (exportStage.delivery) return Promise.resolve(exportStage.delivery);
+  if (exportStage.deliveryPromise) return exportStage.deliveryPromise;
+  exportStage.deliveryPromise = (async () => {
+    const manifest = JSON.parse(await fs.promises.readFile(exportStage.manifestPath, "utf8"));
+    const timeline = completedRecordingTimeline(manifest.tracks);
+    const delivery = await createLivePendingDelivery({
+      captureSources: exportStage.tracks.has("system") ? "microphone+system" : "microphone",
+      clientRecordingId: exportStage.sessionId,
+      startedAt: timeline.startedAt,
+      endedAt: timeline.endedAt,
+      manifestPath: exportStage.manifestPath,
+      masterPath: exportStage.track.filePath,
+      recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
+    });
+    await (await getOutboundQueueStore()).setRecordingDelivery(exportStage.sessionId, delivery);
+    exportStage.delivery = delivery;
+    return delivery;
+  })().catch((error) => {
+    exportStage.deliveryPromise = null;
+    throw error;
+  });
+  return exportStage.deliveryPromise;
+}
+
 function recordingExportSystemCode(error) {
   const code = error && typeof error === "object" ? error.code : null;
   return typeof code === "string" && /^[A-Z][A-Z0-9_]*$/u.test(code) ? code : null;
@@ -2687,6 +2742,30 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
     if (manifest.clientRecordingId !== clientRecordingId) {
       throw new RecordingExportUserError("Identifikátor exportu nesouhlasí s manifestem");
     }
+    const persistedDelivery = exportStage.delivery ?? await persistLiveMeetingDelivery(exportStage);
+    if (!persistedDelivery) throw new RecordingExportUserError("Stereo delivery ještě není připravené");
+    const delivery = await ensureMeetingAudioReady({
+      attempts: 0,
+      clientRecordingId,
+      delivery: persistedDelivery,
+      manifestPath: exportStage.manifestPath,
+      ownerFingerprint: exportStage.ownerFingerprint,
+      server: {},
+      state: "ceka",
+      tracks: Object.fromEntries(
+        [...exportStage.tracks].map(([source, track]) => [source, track.filePath]),
+      ),
+    }, {
+      encoderOptions: {
+        isPackaged: app.isPackaged,
+        resourcesPath: process.resourcesPath,
+        projectRoot: path.resolve(__dirname, ".."),
+      },
+      recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
+    });
+    exportStage.delivery = delivery;
+    const store = await getOutboundQueueStore();
+    await store.setRecordingDelivery(clientRecordingId, delivery);
     const result = await exportRecordingCopy({
       downloadsDirectory: app.getPath("downloads"),
       manifest,
@@ -2694,10 +2773,9 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
       openUploadPage: false,
       origin: resolveCurrentAuthIssuer(),
       recordingName,
-      stagePath: exportStage.track.filePath,
+      stagePath: delivery.filePath,
       stereoTiming: exportStage.timing,
     });
-    const store = await getOutboundQueueStore();
     const decided = await store.decideRecording(
       clientRecordingId,
       exportStage.ownerFingerprint,
@@ -2715,7 +2793,6 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
         },
       },
     );
-    await fs.promises.unlink(exportStage.track.filePath).catch(() => {});
     recordingExportStages.delete(clientRecordingId);
     armDeferredQuitTimeout(deferredQuitRequest);
     void maybeCompleteDeferredQuit();
@@ -2783,6 +2860,7 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
 
     try {
       const store = await getOutboundQueueStore();
+      const exportStage = recordingExportStages.get(sessionId);
       const queued = await store.enqueueRecording({
         manifest: recordingSession.manifest,
         manifestPath: recordingSession.manifestPath,
@@ -2795,9 +2873,9 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
       if (queued.added) {
         console.log(`[queue] Zařazeno ${queued.item.clientRecordingId} (recording).`);
       }
-      const exportStage = recordingExportStages.get(sessionId);
       if (exportStage) {
         exportStage.recordingFinishSucceeded = true;
+        if (exportStage.result?.ok) await persistLiveMeetingDelivery(exportStage);
         releaseConfirmedRecordingExportFailure(exportStage);
       }
     } catch (error) {
@@ -3062,7 +3140,7 @@ handleValidated("recordings:open-web", ["settings"], async (
     || !QUEUE_ITEM_ID_PATTERN.test(clientRecordingId)
     || typeof expectedRevision !== "string"
     || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
-    || !["microphone", "system"].includes(track)
+    || !["delivery", "microphone", "system"].includes(track)
   ) throw new TypeError("Kanál recordings:open-web očekává GUID, revizi a známou stopu");
   const context = await readRecordingVerificationContext();
   if (!await isRecordingVerificationContextCurrent(context)) {

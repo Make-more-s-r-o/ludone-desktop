@@ -786,6 +786,8 @@ describe("RecordingCard", () => {
       expect(panel.phase()).toBe("recording");
       expect(panel.audioContexts).toHaveLength(1);
       expect(panel.recorders).toHaveLength(3);
+      expect(panel.recorders.map((recorder) => recorder.options.audioBitsPerSecond))
+        .toEqual([128_000, 128_000, 96_000]);
       expect(panel.ludone.beginRecording).toHaveBeenCalledWith(["microphone", "system"]);
       for (const meter of panel.document.querySelectorAll(".audio-level-meter")) {
         expect(meter.dataset.measurementState).toBe("unavailable");
@@ -1415,7 +1417,7 @@ describe("RecordingCard", () => {
           expect(alert?.getAttribute("role")).toBe("alert");
           expect(alert?.textContent).toContain("Původní dvě stopy zůstaly uložené");
           expect(alert?.textContent).toContain(
-            "dvoukanálový soubor už z aplikace nevyexportujete",
+            "Originály i rozpracovaný stereo soubor zůstanou na Macu",
           );
         });
       });

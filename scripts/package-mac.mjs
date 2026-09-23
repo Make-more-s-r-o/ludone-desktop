@@ -81,6 +81,19 @@ function verifyConfig(config) {
   if (!config.mac?.extendInfo?.NSAudioCaptureUsageDescription) {
     throw new Error("Konfigurace balení neobsahuje NSAudioCaptureUsageDescription");
   }
+  const encoderSource = ".runtime/media-encoder/ffmpeg-6.1.6/darwin-${arch}/ffmpeg";
+  const encoderResource = config.extraResources?.find(({ from, to }) => (
+    from === encoderSource && to === "media-encoder/ffmpeg"
+  ));
+  if (!encoderResource) {
+    throw new Error("Konfigurace balení neobsahuje media encoder vybraný podle architektury");
+  }
+  if (!config.extraResources?.some(({ to }) => to === "media-encoder/sources")) {
+    throw new Error("Konfigurace balení neobsahuje zdrojové podklady media encoderu");
+  }
+  if (!config.mac?.binaries?.includes("Contents/Resources/media-encoder/ffmpeg")) {
+    throw new Error("Konfigurace podpisu neobsahuje přibalený media encoder");
+  }
   const targets = new Map(config.mac.target?.map(({ target, arch }) => [target, arch]));
   for (const target of ["dmg", "zip"]) {
     if (JSON.stringify(targets.get(target)) !== JSON.stringify(["arm64", "x64"])) {
