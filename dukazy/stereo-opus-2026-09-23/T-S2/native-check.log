@@ -1,0 +1,5 @@
+$ node scripts/prepare-media-encoder.mjs --check --arch all
+/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-encoder-signature-ZKuKio/ffmpeg: replacing existing signature
+/var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/ludone-encoder-signature-JLuxsD/ffmpeg: replacing existing signature
+[encoder] PASS: zdroje a binárky arm64, x64 odpovídají locku, hashi a architektuře.
+EXIT CODE: 0

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { access, chmod, cp, lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, chmod, cp, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { spawn } from "node:child_process";
@@ -153,7 +154,7 @@ function target(arch) {
     : { clangArch: "x86_64", ffmpegArch: "x86_64", host: "x86_64-apple-darwin" };
 }
 
-export function ffmpegConfigureArguments({ arch, lamePrefix, deploymentTarget }) {
+export function ffmpegConfigureArguments({ arch, opusPrefix, deploymentTarget }) {
   const targetInfo = target(arch);
   const commonFlags = `-arch ${targetInfo.clangArch} -mmacosx-version-min=${deploymentTarget}`;
   return [
@@ -177,16 +178,16 @@ export function ffmpegConfigureArguments({ arch, lamePrefix, deploymentTarget })
     "--disable-ffprobe",
     "--disable-asm",
     "--enable-ffmpeg",
-    "--enable-libmp3lame",
+    "--enable-libopus",
     "--enable-decoder=opus",
-    "--enable-encoder=libmp3lame",
+    "--enable-encoder=libopus",
     "--enable-demuxer=matroska",
-    "--enable-muxer=mp3",
+    "--enable-muxer=webm",
     "--enable-parser=opus",
     "--enable-protocol=file,pipe",
     "--enable-filter=aformat,aresample,adelay,apad,atrim,asetpts,join,pan,anullsrc,abuffer,abuffersink",
-    `--extra-cflags=${commonFlags} -I${lamePrefix}/include`,
-    `--extra-ldflags=${commonFlags} -L${lamePrefix}/lib`,
+    `--extra-cflags=${commonFlags} -I${opusPrefix}/include/opus`,
+    `--extra-ldflags=${commonFlags} -L${opusPrefix}/lib`,
   ];
 }
 
@@ -204,36 +205,55 @@ async function buildArchitecture({ arch, lock, sourcesRoot, workRoot, outputRoot
     CC: "clang",
   };
   const buildRoot = path.join(workRoot, arch);
-  const lameSource = path.join(buildRoot, `lame-${lock.lame.version}`);
+  const opusSource = path.join(buildRoot, `opus-${lock.opus.version}`);
   const ffmpegSource = path.join(buildRoot, `ffmpeg-${lock.ffmpeg.version}`);
-  const lameBuild = path.join(buildRoot, "lame-build");
-  const lamePrefix = path.join(buildRoot, "lame-prefix");
+  const opusBuild = path.join(buildRoot, "opus-build");
+  const opusPrefix = path.join(buildRoot, "opus-prefix");
   const ffmpegBuild = path.join(buildRoot, "ffmpeg-build");
   await rm(buildRoot, { recursive: true, force: true });
   await mkdir(buildRoot, { recursive: true });
-  await run("tar", ["-xf", path.join(sourcesRoot, `lame-${lock.lame.version}.tar.gz`), "-C", buildRoot], { env: environment });
+  environment.TMPDIR = path.join(buildRoot, "tmp");
+  await mkdir(environment.TMPDIR, { mode: 0o700 });
+  await run("tar", ["-xf", path.join(sourcesRoot, `opus-${lock.opus.version}.tar.gz`), "-C", buildRoot], { env: environment });
   await run("tar", ["-xf", path.join(sourcesRoot, `ffmpeg-${lock.ffmpeg.version}.tar.xz`), "-C", buildRoot], { env: environment });
-  await mkdir(lameBuild);
+  await mkdir(opusBuild);
   const compileFlags = `-O2 -arch ${targetInfo.clangArch} -mmacosx-version-min=${deploymentTarget} -fno-common`;
-  await run(path.join(lameSource, "configure"), [
-    `--prefix=${lamePrefix}`,
+  await run(path.join(opusSource, "configure"), [
+    `--prefix=${opusPrefix}`,
     `--host=${targetInfo.host}`,
     "--disable-shared",
     "--enable-static",
-    "--disable-frontend",
-    "--disable-decoder",
-  ], { cwd: lameBuild, env: { ...environment, CFLAGS: compileFlags, LDFLAGS: compileFlags } });
-  // LAME 3.100 umí při cross buildu doplnit -march/-mtune=native. Přepsání na make
-  // command line drží skutečný target a brání přimíchání architektury build hosta.
-  await run("make", [`-j${jobs}`, `CFLAGS=${compileFlags}`], { cwd: lameBuild, env: environment });
-  await run("make", ["install", `CFLAGS=${compileFlags}`], { cwd: lameBuild, env: environment });
+    "--disable-extra-programs",
+    "--disable-doc",
+  ], { cwd: opusBuild, env: { ...environment, CFLAGS: compileFlags, LDFLAGS: compileFlags } });
+  await run("make", [`-j${jobs}`], { cwd: opusBuild, env: environment });
+  await run("make", ["install"], { cwd: opusBuild, env: environment });
   await mkdir(ffmpegBuild);
+  // FFmpeg vyžaduje pkg-config jen pro explicitně zapnutý libopus. Vlastní úzký
+  // adaptér čte právě tento staticky sestavený prefix a nepotřebuje Homebrew.
+  const pkgConfigDirectory = path.join(buildRoot, "pkg-config-bin");
+  await mkdir(pkgConfigDirectory);
+  const pkgConfig = path.join(pkgConfigDirectory, "pkg-config");
+  await writeFile(pkgConfig, `#!/bin/sh
+case " $* " in
+  *" --version "*) printf '1.0.0\\n'; exit 0 ;;
+esac
+case " $* " in *" opus "*|*" opus >= "*) ;; *) exit 1 ;; esac
+case " $* " in
+  *" --exists "*) exit 0 ;;
+  *" --cflags-only-I "*|*" --cflags "*) printf '%s\\n' "-I$OPUS_PREFIX/include/opus" ;;
+  *" --libs "*) printf '%s\\n' "-L$OPUS_PREFIX/lib -lopus" ;;
+  *" --variable=includedir "*) printf '%s\\n' "$OPUS_PREFIX/include" ;;
+  *) exit 1 ;;
+esac
+`, { mode: 0o700 });
   const configureArguments = ffmpegConfigureArguments({
     arch,
-    lamePrefix: path.relative(ffmpegBuild, lamePrefix),
+    opusPrefix: path.relative(ffmpegBuild, opusPrefix),
     deploymentTarget,
   });
-  await run(path.join(ffmpegSource, "configure"), configureArguments, { cwd: ffmpegBuild, env: environment });
+  await run(path.join(ffmpegSource, "configure"), configureArguments, { cwd: ffmpegBuild,
+    env: { ...environment, PATH: `${pkgConfigDirectory}:${environment.PATH}`, OPUS_PREFIX: opusPrefix } });
   await run("make", [`-j${jobs}`, "ffmpeg"], { cwd: ffmpegBuild, env: environment });
   const destination = path.join(outputRoot, `darwin-${arch}`);
   await rm(destination, { recursive: true, force: true });
@@ -253,7 +273,7 @@ async function buildArchitecture({ arch, lock, sourcesRoot, workRoot, outputRoot
     arch,
     deploymentTarget,
     ffmpeg: { version: lock.ffmpeg.version, sha256: lock.ffmpeg.sha256 },
-    lame: { version: lock.lame.version, sha256: lock.lame.sha256 },
+    opus: { version: lock.opus.version, sha256: lock.opus.sha256 },
     configureArguments,
     binarySha256: await sha256(path.join(destination, "ffmpeg")),
     machOCanonicalSha256: await machOCanonicalSha256(path.join(destination, "ffmpeg")),
@@ -272,8 +292,8 @@ export async function verifyPreparedArchitecture({ arch, lock, versionRoot }) {
   if (manifest.arch !== arch
     || manifest.ffmpeg?.version !== lock.ffmpeg.version
     || manifest.ffmpeg?.sha256 !== lock.ffmpeg.sha256
-    || manifest.lame?.version !== lock.lame.version
-    || manifest.lame?.sha256 !== lock.lame.sha256) {
+    || manifest.opus?.version !== lock.opus.version
+    || manifest.opus?.sha256 !== lock.opus.sha256) {
     throw new Error(`${arch}: BUILD.json neodpovídá připnutým zdrojům`);
   }
   const actualHash = await sha256(binary);
@@ -295,8 +315,27 @@ export async function verifyPreparedArchitecture({ arch, lock, versionRoot }) {
   return { binary, binarySha256: actualHash, canonicalSha256: canonicalHash, manifest };
 }
 
+export async function verifyNativeSignatureInvariance(binary) {
+  const proofRoot = await mkdtemp(path.join(tmpdir(), "ludone-encoder-signature-"));
+  const copy = path.join(proofRoot, "ffmpeg");
+  try {
+    await cp(binary, copy);
+    const before = await sha256(copy);
+    const canonical = await machOCanonicalSha256(copy);
+    await run("codesign", ["--force", "--sign", "-", "--timestamp=none", "--options", "runtime",
+      "--identifier", "cz.ludone.desktop.media-encoder.resign-proof-with-longer-identifier", copy], {
+      env: { PATH: "/usr/bin:/bin:/usr/sbin:/sbin", LC_ALL: "C", TMPDIR: proofRoot },
+    });
+    if (await sha256(copy) === before || await machOCanonicalSha256(copy) !== canonical) {
+      throw new Error("Kanonický Mach-O SHA-256 se změnil při skutečném opakovaném podpisu");
+    }
+  } finally {
+    await rm(proofRoot, { recursive: true, force: true });
+  }
+}
+
 async function verifyPreparedSources({ lock, sourcesRoot }) {
-  for (const dependency of [lock.ffmpeg, lock.lame]) {
+  for (const dependency of [lock.ffmpeg, lock.opus]) {
     const archive = path.join(sourcesRoot, path.basename(new URL(dependency.url).pathname));
     if (await sha256(archive) !== dependency.sha256) {
       throw new Error(`${path.basename(archive)} má nesprávný SHA-256`);
@@ -306,6 +345,14 @@ async function verifyPreparedSources({ lock, sourcesRoot }) {
     const info = await lstat(path.join(sourcesRoot, name));
     if (!info.isFile() || info.isSymbolicLink() || info.size <= 0) {
       throw new Error(`Zdrojový bundle postrádá běžný soubor ${name}`);
+    }
+  }
+  for (const oldArchive of ["lame-3.100.tar.gz", "opus-1.5.2.tar.gz"]) {
+    try {
+      await lstat(path.join(sourcesRoot, oldArchive));
+      throw new Error(`Zdrojový bundle stále obsahuje nepoužívaný archiv ${oldArchive}`);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
     }
   }
   if (!sourceBundleMode) {
@@ -333,16 +380,21 @@ export async function prepareMediaEncoder(options = {}) {
   const sourcesRoot = sourceBundleMode ? scriptDirectory : path.join(versionRoot, "sources");
   if (check) {
     await verifyPreparedSources({ lock, sourcesRoot });
-    for (const arch of selected) await verifyPreparedArchitecture({ arch, lock, versionRoot });
+    for (const arch of selected) {
+      const { binary } = await verifyPreparedArchitecture({ arch, lock, versionRoot });
+      await verifyNativeSignatureInvariance(binary);
+    }
     console.log(`[encoder] PASS: zdroje a binárky ${selected.join(", ")} odpovídají locku, hashi a architektuře.`);
     return;
   }
   const workRoot = path.join(versionRoot, "work");
   await mkdir(sourcesRoot, { recursive: true });
   const ffmpegArchive = path.join(sourcesRoot, `ffmpeg-${lock.ffmpeg.version}.tar.xz`);
-  const lameArchive = path.join(sourcesRoot, `lame-${lock.lame.version}.tar.gz`);
+  const opusArchive = path.join(sourcesRoot, `opus-${lock.opus.version}.tar.gz`);
   await downloadVerified(lock.ffmpeg, ffmpegArchive);
-  await downloadVerified(lock.lame, lameArchive);
+  await downloadVerified(lock.opus, opusArchive);
+  await rm(path.join(sourcesRoot, "lame-3.100.tar.gz"), { force: true });
+  await rm(path.join(sourcesRoot, "opus-1.5.2.tar.gz"), { force: true });
   if (!sourceBundleMode) {
     await cp(lockPath, path.join(sourcesRoot, "media-encoder-lock.json"));
     await cp(path.join(projectRoot, "build", "media-encoder", "README.md"), path.join(sourcesRoot, "README.md"));
@@ -362,7 +414,7 @@ export async function prepareMediaEncoder(options = {}) {
         console.warn(`[encoder] ${arch}: cache nelze použít (${error.message}); sestavuji znovu.`);
       }
     }
-    console.log(`[encoder] ${arch}: sestavuji FFmpeg ${lock.ffmpeg.version} + LAME ${lock.lame.version}.`);
+    console.log(`[encoder] ${arch}: sestavuji FFmpeg ${lock.ffmpeg.version} + Opus ${lock.opus.version}.`);
     await buildArchitecture({ arch, lock, sourcesRoot, workRoot, outputRoot: versionRoot, jobs });
     await verifyPreparedArchitecture({ arch, lock, versionRoot });
   }

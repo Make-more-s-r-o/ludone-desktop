@@ -1,8 +1,10 @@
 # Media encoder v LuDone Desktop
 
-Aplikace spouští tento program jako samostatný proces a používá jej pouze k převodu
-lokálního WebM/Opus záznamu na stereo MP3. Binárka je minimální sestavení FFmpeg
-6.1.6 s nativním Opus decoderem a staticky připojenou knihovnou LAME 3.100.
+Aplikace spouští tento program jako samostatný proces. Živé stereo WebM/Opus pouze
+přebalí do WebM s délkou záznamu bez nové ztrátové komprese. Starší oddělené stopy
+zarovná a zakóduje jako stereo Opus 96 kb/s (mikrofon vlevo, systém vpravo).
+Binárka je minimální sestavení FFmpeg 6.1.6 s nativním Opus decoderem a staticky
+připojenou knihovnou libopus 1.6.1.
 Nevyžaduje Homebrew, systémový `PATH` ani stažení za běhu.
 
 Přesné URL, SHA-256, verze a cíl macOS jsou v `media-encoder-lock.json`.
@@ -24,6 +26,6 @@ Binárky pak vzniknou v `sources/.runtime/media-encoder/ffmpeg-6.1.6/`.
 
 Výsledné binárky jsou v
 `.runtime/media-encoder/ffmpeg-6.1.6/darwin-{arm64,x64}/ffmpeg`.
-macOS systémové knihovny zůstávají dynamické; FFmpeg a LAME jsou vůči sobě
+macOS systémové knihovny zůstávají dynamické; FFmpeg a libopus jsou vůči sobě
 propojené staticky. Projekt nezapíná volby FFmpeg `--enable-gpl`,
 `--enable-version3` ani `--enable-nonfree`.

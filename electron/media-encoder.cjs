@@ -46,13 +46,12 @@ function seconds(milliseconds) {
 function commonOutputArguments(temporaryPath) {
   return [
     "-vn",
-    "-c:a", "libmp3lame",
-    "-b:a", "192k",
-    "-joint_stereo", "0",
-    "-write_xing", "1",
+    "-c:a", "libopus",
+    "-b:a", "96k",
+    "-vbr", "on",
+    "-ac", "2",
     "-map_metadata", "-1",
-    "-id3v2_version", "0",
-    "-f", "mp3",
+    "-f", "webm",
     temporaryPath,
   ];
 }
@@ -70,8 +69,7 @@ function conversionArguments({
       ...prefix,
       "-i", stereoWebmPath,
       "-map", "0:a:0",
-      "-af", "aresample=48000:async=1:first_pts=0,aformat=sample_fmts=s16:sample_rates=48000:channel_layouts=stereo",
-      ...commonOutputArguments(temporaryPath),
+      "-vn", "-c:a", "copy", "-map_metadata", "-1", "-f", "webm", temporaryPath,
     ];
   }
   if (!microphoneWebmPath) throw new Error("Převod vyžaduje stereo WebM nebo mikrofonní stopu");
@@ -167,7 +165,7 @@ function runEncoder(executable, arguments_, { signal, privatePaths, timeoutMs })
     });
     child.once("exit", (code, exitSignal) => {
       if (signal?.aborted) {
-        const error = Object.assign(new Error("Převod MP3 byl zrušen"), {
+        const error = Object.assign(new Error("Příprava WebM byla zrušena"), {
           code: "MEDIA_ENCODER_ABORTED",
         });
         error.name = "AbortError";
@@ -224,7 +222,7 @@ async function validateEncoder(executable) {
   await access(executable, constants.X_OK);
 }
 
-async function convertToStereoMp3(options) {
+async function prepareStereoWebm(options) {
   const {
     stereoWebmPath,
     microphoneWebmPath,
@@ -237,8 +235,8 @@ async function convertToStereoMp3(options) {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 6 * 60 * 60 * 1000) {
     throw new Error("Neplatný limit doby převodu");
   }
-  if (typeof outputPath !== "string" || path.extname(outputPath).toLowerCase() !== ".mp3") {
-    throw new Error("Výstup převodu musí být cesta s příponou .mp3");
+  if (typeof outputPath !== "string" || path.extname(outputPath).toLowerCase() !== ".webm") {
+    throw new Error("Výstup převodu musí být cesta s příponou .webm");
   }
   const executable = options.encoderPath ?? resolveMediaEncoderPath(options);
   await validateEncoder(executable);
@@ -249,23 +247,23 @@ async function convertToStereoMp3(options) {
   }
   try {
     await lstat(outputPath);
-    throw new Error("Výstupní MP3 už existuje");
+    throw new Error("Výstupní WebM už existuje");
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
   }
   try {
     await mkdir(path.dirname(outputPath), { recursive: true });
   } catch {
-    throw new Error("Adresář pro MP3 nelze připravit");
+    throw new Error("Adresář pro WebM nelze připravit");
   }
   let temporaryDirectory;
   try {
     temporaryDirectory = await mkdtemp(path.join(path.dirname(outputPath), ".media-encoder-"));
   } catch {
-    throw new Error("Soukromý dočasný adresář pro MP3 nelze vytvořit");
+    throw new Error("Soukromý dočasný adresář pro WebM nelze vytvořit");
   }
   await chmod(temporaryDirectory, 0o700);
-  const temporaryPath = path.join(temporaryDirectory, `${randomUUID()}.mp3`);
+  const temporaryPath = path.join(temporaryDirectory, `${randomUUID()}.webm`);
   const privatePaths = [stereoWebmPath, microphoneWebmPath, systemWebmPath, outputPath, temporaryPath, temporaryDirectory];
   let conversionResult;
   const cleanupWarnings = [];
@@ -280,7 +278,7 @@ async function convertToStereoMp3(options) {
     await runEncoder(executable, arguments_, { signal, privatePaths, timeoutMs });
     const result = await lstat(temporaryPath);
     if (!result.isFile() || result.isSymbolicLink() || result.size <= 0) {
-      throw new Error("Media encoder nevytvořil neprázdný běžný MP3 soubor");
+      throw new Error("Media encoder nevytvořil neprázdný běžný WebM soubor");
     }
     await chmod(temporaryPath, 0o600);
     await syncPath(temporaryPath);
@@ -293,15 +291,15 @@ async function convertToStereoMp3(options) {
     conversionResult = {
       outputPath,
       size: result.size,
-      mime: "audio/mpeg",
+      mime: "audio/webm",
       channels: 2,
       channelMap: { left: "microphone", right: systemWebmPath ? "system" : stereoWebmPath ? "preserved" : "silence" },
       source: stereoWebmPath ? "live-stereo" : "separate-tracks",
       encoderVersion: ENCODER_VERSION,
     };
   } catch (error) {
-    const message = redactedDiagnostic(error?.message || "Převod MP3 se nezdařil", privatePaths);
-    const safeError = Object.assign(new Error(message || "Převod MP3 se nezdařil"), {
+    const message = redactedDiagnostic(error?.message || "Příprava WebM se nezdařila", privatePaths);
+    const safeError = Object.assign(new Error(message || "Příprava WebM se nezdařila"), {
       code: error?.code,
       diagnostic: undefined,
     });
@@ -327,6 +325,6 @@ async function convertToStereoMp3(options) {
 module.exports = {
   ENCODER_VERSION,
   conversionArguments,
-  convertToStereoMp3,
+  prepareStereoWebm,
   resolveMediaEncoderPath,
 };

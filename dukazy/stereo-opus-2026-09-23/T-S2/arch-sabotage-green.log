@@ -1,0 +1,14 @@
+$ npx vitest run tests/packaging.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder
+
+ ✓ tests/packaging.test.js (6 tests) 741ms
+   ✓ kontrakt electron-builderu > bez podpisových proměnných provede nepodepsaný build plán a nespadne  353ms
+   ✓ kontrakt electron-builderu > úplná tajemství zapnou podpis a notarizaci, ale nikdy se nevypíší  360ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:03:20
+   Duration  897ms (transform 14ms, setup 7ms, collect 9ms, tests 741ms, environment 0ms, prepare 29ms)
+
+EXIT CODE: 0

@@ -1,0 +1,2239 @@
+$ node scripts/prepare-media-encoder.mjs --arch all --force
+[encoder] arm64: sestavuji FFmpeg 6.1.6 + Opus 1.6.1.
+checking whether make supports nested variables... yes
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for aarch64-apple-darwin-strip... no
+checking for strip... strip
+checking for a race-free mkdir -p... /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/install-sh -c -d
+checking for gawk... no
+checking for mawk... no
+checking for nawk... no
+checking for awk... awk
+checking whether make sets $(MAKE)... yes
+checking whether to enable maintainer-specific portions of Makefiles... yes
+checking build system type... aarch64-apple-darwin27.0.0
+checking host system type... aarch64-apple-darwin
+checking how to print strings... printf
+checking whether make supports the include directive... yes (GNU style)
+checking for aarch64-apple-darwin-gcc... clang
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether the compiler supports GNU C... yes
+checking whether clang accepts -g... yes
+checking for clang option to enable C11 features... none needed
+checking whether clang understands -c and -o together... yes
+checking dependency style of clang... gcc3
+checking for a sed that does not truncate output... /usr/bin/sed
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for fgrep... /usr/bin/grep -F
+checking for ld used by clang... /Library/Developer/CommandLineTools/usr/bin/ld
+checking if the linker (/Library/Developer/CommandLineTools/usr/bin/ld) is GNU ld... no
+checking for BSD- or MS-compatible name lister (nm)... no
+checking for aarch64-apple-darwin-dumpbin... no
+checking for aarch64-apple-darwin-link... no
+checking for dumpbin... no
+checking for link... link -dump
+checking the name lister (nm) interface... BSD nm
+checking whether ln -s works... yes
+checking the maximum length of command line arguments... sysctl: sysctl fmt -1 1024 1: Operation not permitted
+expr: syntax error
+expr: syntax error
+none
+checking how to convert aarch64-apple-darwin27.0.0 file names to aarch64-apple-darwin format... func_convert_file_noop
+checking how to convert aarch64-apple-darwin27.0.0 file names to toolchain format... func_convert_file_noop
+checking for /Library/Developer/CommandLineTools/usr/bin/ld option to reload object files... -r
+checking for aarch64-apple-darwin-file... no
+checking for file... file
+checking for aarch64-apple-darwin-objdump... no
+checking for objdump... objdump
+checking how to recognize dependent libraries... pass_all
+checking for aarch64-apple-darwin-dlltool... no
+checking for dlltool... no
+checking how to associate runtime and link libraries... printf %s\n
+checking for aarch64-apple-darwin-ar... no
+checking for ar... ar
+checking for archiver @FILE support... no
+checking for aarch64-apple-darwin-strip... strip
+checking for aarch64-apple-darwin-ranlib... no
+checking for ranlib... ranlib
+checking command to parse nm output from clang object... ok
+checking for sysroot... no
+checking for a working dd... /bin/dd
+checking how to truncate binary pipes... /bin/dd bs=4096 count=1
+checking for aarch64-apple-darwin-mt... no
+checking for mt... no
+checking if : is a manifest tool... no
+checking for aarch64-apple-darwin-dsymutil... no
+checking for dsymutil... dsymutil
+checking for aarch64-apple-darwin-nmedit... no
+checking for nmedit... nmedit
+checking for aarch64-apple-darwin-lipo... no
+checking for lipo... lipo
+checking for aarch64-apple-darwin-otool... no
+checking for otool... otool
+checking for aarch64-apple-darwin-otool64... no
+checking for otool64... no
+checking for -single_module linker flag... ld: warning: -single_module is obsolete
+no
+checking for -exported_symbols_list linker flag... yes
+checking for -force_load linker flag... yes
+checking for stdio.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for strings.h... yes
+checking for sys/stat.h... yes
+checking for sys/types.h... yes
+checking for unistd.h... yes
+checking for dlfcn.h... yes
+checking for objdir... .libs
+checking if clang supports -fno-rtti -fno-exceptions... yes
+checking for clang option to produce PIC... -fno-common -DPIC
+checking if clang PIC flag -fno-common -DPIC works... yes
+checking if clang static flag -static works... no
+checking if clang supports -c -o file.o... yes
+checking if clang supports -c -o file.o... (cached) yes
+checking whether the clang linker (/Library/Developer/CommandLineTools/usr/bin/ld) supports shared libraries... yes
+checking dynamic linker characteristics... darwin dyld
+checking how to hardcode library paths into programs... immediate
+checking whether stripping libraries is possible... yes
+checking if libtool supports shared libraries... yes
+checking whether to build shared libraries... no
+checking whether to build static libraries... yes
+checking for aarch64-apple-darwin-gcc... (cached) clang
+checking whether the compiler supports GNU C... (cached) yes
+checking whether clang accepts -g... (cached) yes
+checking for clang option to enable C11 features... (cached) none needed
+checking whether clang understands -c and -o together... (cached) yes
+checking dependency style of clang... (cached) gcc3
+checking for an ANSI C-conforming const... yes
+checking for inline... inline
+checking dependency style of clang... gcc3
+checking for C/C++ restrict keyword... __restrict
+checking for C99 variable-size arrays... yes
+checking how to run the C preprocessor... clang -E
+checking if compiler supports ARM Neon intrinsics... yes
+checking for NE10... no
+checking if compiler supports Aarch64 Neon intrinsics... yes
+checking if compiler supports Aarch64 dotprod intrinsics... yes
+checking argument osce training data... no
+checking if clang supports -fvisibility=hidden... yes
+checking whether to add -D_FORTIFY_SOURCE=2 to CFLAGS... yes
+checking if clang supports -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes... yes
+checking for lrintf... yes
+checking for lrint... yes
+checking for __malloc_hook... no
+checking for elf_aux_info... no
+checking that generated files are newer than configure... done
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating opus.pc
+config.status: creating opus-uninstalled.pc
+config.status: creating celt/arm/armopts.s
+config.status: creating doc/Makefile
+config.status: creating doc/Doxyfile
+config.status: creating config.h
+config.status: executing depfiles commands
+config.status: executing libtool commands
+configure:
+------------------------------------------------------------------------
+  opus 1.6.1:  Automatic configuration OK.
+
+    Compiler support:
+
+      C99 var arrays: ................ yes
+      C99 lrintf: .................... yes
+      Use alloca: .................... no (using var arrays)
+
+    General configuration:
+
+      Floating point support: ........ yes
+      Fast float approximations: ..... yes
+      Fixed point debugging: ......... no
+      Inline Assembly Optimizations: . No inline ASM for your platform, please send patches
+      External Assembly Optimizations: 
+      Intrinsics Optimizations: ...... ARM (NEON) (NEON Aarch64) (DOTPROD) (DOTPROD Aarch64)
+      Run-time CPU detection: ........ no
+      Custom modes: .................. no
+      Assertion checking: ............ no
+      Hardening: ..................... yes
+      Fuzzing: ....................... no
+      Check ASM: ..................... no
+
+      API documentation: ............. no
+      Extra programs: ................ no
+------------------------------------------------------------------------
+
+ Type "make; make install" to compile and install
+ Type "make check" to run the test suite
+
+/Library/Developer/CommandLineTools/usr/bin/make  all-recursive
+  CC       celt/bands.lo
+  CC       celt/celt_encoder.lo
+  CC       celt/celt.lo
+make[3]: Nothing to be done for `all'.
+  CC       celt/celt_decoder.lo
+  CC       celt/cwrs.lo
+  CC       celt/entcode.lo
+  CC       celt/entdec.lo
+  CC       celt/entenc.lo
+  CC       celt/kiss_fft.lo
+  CC       celt/laplace.lo
+  CC       celt/mathops.lo
+  CC       celt/mdct.lo
+  CC       celt/modes.lo
+  CC       celt/pitch.lo
+  CC       celt/quant_bands.lo
+  CC       celt/celt_lpc.lo
+  CC       celt/rate.lo
+  CC       celt/vq.lo
+  CC       celt/arm/celt_neon_intr.lo
+  CC       celt/arm/pitch_neon_intr.lo
+  CC       silk/CNG.lo
+  CC       silk/code_signs.lo
+  CC       silk/init_decoder.lo
+  CC       silk/decode_core.lo
+  CC       silk/decode_frame.lo
+  CC       silk/decode_parameters.lo
+  CC       silk/decode_indices.lo
+  CC       silk/decode_pulses.lo
+  CC       silk/decoder_set_fs.lo
+  CC       silk/dec_API.lo
+  CC       silk/enc_API.lo
+  CC       silk/encode_indices.lo
+  CC       silk/encode_pulses.lo
+  CC       silk/gain_quant.lo
+  CC       silk/interpolate.lo
+  CC       silk/LP_variable_cutoff.lo
+  CC       silk/NLSF_decode.lo
+  CC       silk/NSQ.lo
+  CC       silk/NSQ_del_dec.lo
+  CC       silk/PLC.lo
+  CC       silk/shell_coder.lo
+  CC       silk/tables_gain.lo
+  CC       silk/tables_LTP.lo
+  CC       silk/tables_NLSF_CB_NB_MB.lo
+  CC       silk/tables_NLSF_CB_WB.lo
+  CC       silk/tables_other.lo
+  CC       silk/tables_pitch_lag.lo
+  CC       silk/tables_pulses_per_block.lo
+  CC       silk/VAD.lo
+  CC       silk/control_audio_bandwidth.lo
+  CC       silk/quant_LTP_gains.lo
+  CC       silk/VQ_WMat_EC.lo
+  CC       silk/HP_variable_cutoff.lo
+  CC       silk/NLSF_encode.lo
+  CC       silk/NLSF_VQ.lo
+  CC       silk/NLSF_unpack.lo
+  CC       silk/NLSF_del_dec_quant.lo
+  CC       silk/process_NLSFs.lo
+  CC       silk/stereo_LR_to_MS.lo
+  CC       silk/stereo_MS_to_LR.lo
+  CC       silk/check_control_input.lo
+  CC       silk/control_SNR.lo
+  CC       silk/init_encoder.lo
+  CC       silk/control_codec.lo
+  CC       silk/A2NLSF.lo
+  CC       silk/ana_filt_bank_1.lo
+  CC       silk/biquad_alt.lo
+  CC       silk/bwexpander_32.lo
+  CC       silk/bwexpander.lo
+  CC       silk/debug.lo
+  CC       silk/decode_pitch.lo
+  CC       silk/inner_prod_aligned.lo
+  CC       silk/lin2log.lo
+  CC       silk/log2lin.lo
+  CC       silk/LPC_analysis_filter.lo
+  CC       silk/LPC_inv_pred_gain.lo
+  CC       silk/table_LSF_cos.lo
+  CC       silk/NLSF2A.lo
+  CC       silk/NLSF_stabilize.lo
+  CC       silk/NLSF_VQ_weights_laroia.lo
+  CC       silk/pitch_est_tables.lo
+  CC       silk/resampler.lo
+  CC       silk/resampler_down2_3.lo
+  CC       silk/resampler_down2.lo
+  CC       silk/resampler_private_AR2.lo
+  CC       silk/resampler_private_down_FIR.lo
+  CC       silk/resampler_private_up2_HQ.lo
+  CC       silk/resampler_private_IIR_FIR.lo
+  CC       silk/resampler_rom.lo
+  CC       silk/sigm_Q15.lo
+  CC       silk/sort.lo
+  CC       silk/sum_sqr_shift.lo
+  CC       silk/stereo_decode_pred.lo
+  CC       silk/stereo_encode_pred.lo
+  CC       silk/stereo_find_predictor.lo
+  CC       silk/stereo_quant_pred.lo
+  CC       silk/LPC_fit.lo
+  CC       silk/float/apply_sine_window_FLP.lo
+  CC       silk/float/corrMatrix_FLP.lo
+  CC       silk/float/encode_frame_FLP.lo
+  CC       silk/float/find_LPC_FLP.lo
+  CC       silk/float/find_LTP_FLP.lo
+  CC       silk/float/find_pitch_lags_FLP.lo
+  CC       silk/float/find_pred_coefs_FLP.lo
+  CC       silk/float/LPC_analysis_filter_FLP.lo
+  CC       silk/float/LTP_analysis_filter_FLP.lo
+  CC       silk/float/LTP_scale_ctrl_FLP.lo
+  CC       silk/float/noise_shape_analysis_FLP.lo
+  CC       silk/float/process_gains_FLP.lo
+  CC       silk/float/regularize_correlations_FLP.lo
+  CC       silk/float/residual_energy_FLP.lo
+  CC       silk/float/warped_autocorrelation_FLP.lo
+  CC       silk/float/wrappers_FLP.lo
+  CC       silk/float/autocorrelation_FLP.lo
+  CC       silk/float/burg_modified_FLP.lo
+  CC       silk/float/bwexpander_FLP.lo
+  CC       silk/float/energy_FLP.lo
+  CC       silk/float/inner_product_FLP.lo
+  CC       silk/float/k2a_FLP.lo
+  CC       silk/float/LPC_inv_pred_gain_FLP.lo
+  CC       silk/float/pitch_analysis_core_FLP.lo
+  CC       silk/float/scale_copy_vector_FLP.lo
+  CC       silk/float/scale_vector_FLP.lo
+  CC       silk/float/schur_FLP.lo
+  CC       silk/float/sort_FLP.lo
+  CC       silk/arm/biquad_alt_neon_intr.lo
+  CC       silk/arm/LPC_inv_pred_gain_neon_intr.lo
+  CC       silk/arm/NSQ_del_dec_neon_intr.lo
+  CC       silk/arm/NSQ_neon.lo
+  CC       src/opus.lo
+  CC       src/opus_decoder.lo
+  CC       src/opus_encoder.lo
+  CC       src/extensions.lo
+  CC       src/opus_multistream.lo
+  CC       src/opus_multistream_encoder.lo
+  CC       src/opus_multistream_decoder.lo
+  CC       src/repacketizer.lo
+  CC       src/opus_projection_encoder.lo
+  CC       src/opus_projection_decoder.lo
+  CC       src/mapping_matrix.lo
+  CC       src/analysis.lo
+  CC       src/mlp.lo
+  CC       src/mlp_data.lo
+  CCLD     libopus.la
+./libtool: line 11458: test: : integer expression expected
+./libtool: line 11458: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+/Library/Developer/CommandLineTools/usr/bin/make  install-recursive
+make[3]: Nothing to be done for `all'.
+ /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/install-sh -c -d '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/lib'
+ /bin/sh ./libtool   --mode=install /usr/bin/install -c   libopus.la '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/lib'
+libtool: install: /usr/bin/install -c .libs/libopus.lai /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/lib/libopus.la
+libtool: install: /usr/bin/install -c .libs/libopus.a /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/lib/libopus.a
+libtool: install: chmod 644 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/lib/libopus.a
+libtool: install: ranlib /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/lib/libopus.a
+make[5]: Nothing to be done for `install-exec-am'.
+make[5]: Nothing to be done for `install-data-am'.
+ /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/install-sh -c -d '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/share/aclocal'
+ /usr/bin/install -c -m 644 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/opus.m4 '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/share/aclocal'
+ /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/install-sh -c -d '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/lib/pkgconfig'
+ /usr/bin/install -c -m 644 opus.pc '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/lib/pkgconfig'
+ /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/install-sh -c -d '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/include/opus'
+ /usr/bin/install -c -m 644 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/include/opus.h /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/include/opus_multistream.h /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/include/opus_types.h /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/include/opus_defines.h /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-1.6.1/include/opus_projection.h '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/opus-prefix/include/opus'
+install prefix            /media-encoder
+source path               /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/arm64/ffmpeg-6.1.6
+C compiler                clang
+C library                 
+host C compiler           gcc
+host C library            
+ARCH                      c (generic)
+big-endian                no
+runtime cpu detection     yes
+debug symbols             no
+strip symbols             yes
+optimize for size         yes
+optimizations             yes
+static                    yes
+shared                    no
+postprocessing support    no
+network support           no
+threading support         pthreads
+safe bitstream reader     yes
+texi2html enabled         no
+perl enabled              yes
+pod2man enabled           yes
+makeinfo enabled          no
+makeinfo supports HTML    no
+xmllint enabled           yes
+
+External libraries:
+libopus
+
+External libraries providing hardware acceleration:
+
+Libraries:
+avcodec                 avformat                swresample
+avfilter                avutil
+
+Programs:
+ffmpeg
+
+Enabled decoders:
+opus
+
+Enabled encoders:
+libopus
+
+Enabled hwaccels:
+
+Enabled parsers:
+opus
+
+Enabled demuxers:
+matroska
+
+Enabled muxers:
+webm
+
+Enabled protocols:
+file                    pipe
+
+Enabled filters:
+adelay                  asetpts                 pan
+aformat                 atrim                   transpose
+anull                   format                  trim
+anullsrc                hflip                   vflip
+apad                    join
+aresample               null
+
+Enabled bsfs:
+
+Enabled indevs:
+
+Enabled outdevs:
+
+License: LGPL version 2.1 or later
+GEN	libavutil/libavutil.version
+GEN	libavcodec/libavcodec.version
+GEN	libavformat/libavformat.version
+GEN	libavfilter/libavfilter.version
+GEN	libswresample/libswresample.version
+CC	libavfilter/af_aformat.o
+CC	libavfilter/af_apad.o
+CC	libavfilter/af_anull.o
+CC	libavfilter/af_adelay.o
+CC	libavfilter/af_aresample.o
+CC	libavfilter/af_join.o
+CC	libavfilter/af_pan.o
+CC	libavfilter/allfilters.o
+CC	libavfilter/asrc_anullsrc.o
+CC	libavfilter/audio.o
+CC	libavfilter/avfilter.o
+CC	libavfilter/avfiltergraph.o
+CC	libavfilter/buffersink.o
+CC	libavfilter/buffersrc.o
+CC	libavfilter/ccfifo.o
+CC	libavfilter/colorspace.o
+CC	libavfilter/drawutils.o
+CC	libavfilter/fifo.o
+CC	libavfilter/formats.o
+CC	libavfilter/framepool.o
+CC	libavfilter/framequeue.o
+CC	libavfilter/graphdump.o
+CC	libavfilter/graphparser.o
+CC	libavfilter/pthread.o
+CC	libavfilter/setpts.o
+CC	libavfilter/trim.o
+CC	libavfilter/version.o
+CC	libavfilter/vf_format.o
+CC	libavfilter/vf_hflip.o
+CC	libavfilter/vf_null.o
+CC	libavfilter/vf_transpose.o
+CC	libavfilter/vf_vflip.o
+CC	libavfilter/video.o
+CC	libavformat/allformats.o
+CC	libavformat/av1.o
+CC	libavformat/avformat.o
+CC	libavformat/avio.o
+CC	libavformat/aviobuf.o
+CC	libavformat/avlanguage.o
+CC	libavformat/demux.o
+CC	libavformat/demux_utils.o
+CC	libavformat/dovi_isom.o
+CC	libavformat/dump.o
+CC	libavformat/dv.o
+CC	libavformat/file.o
+CC	libavformat/flac_picture.o
+CC	libavformat/format.o
+CC	libavformat/id3v1.o
+CC	libavformat/id3v2.o
+CC	libavformat/isom_tags.o
+CC	libavformat/matroska.o
+CC	libavformat/matroskadec.o
+CC	libavformat/matroskaenc.o
+CC	libavformat/metadata.o
+CC	libavformat/mux.o
+CC	libavformat/mux_utils.o
+CC	libavformat/oggparsevorbis.o
+CC	libavformat/options.o
+CC	libavformat/os_support.o
+CC	libavformat/protocols.o
+CC	libavformat/qtpalette.o
+CC	libavformat/replaygain.o
+CC	libavformat/riff.o
+CC	libavformat/riffdec.o
+CC	libavformat/rmsipr.o
+CC	libavformat/sdp.o
+CC	libavformat/seek.o
+CC	libavformat/url.o
+CC	libavformat/utils.o
+CC	libavformat/version.o
+CC	libavformat/vorbiscomment.o
+CC	libavcodec/ac3_parser.o
+CC	libavcodec/adts_parser.o
+CC	libavcodec/allcodecs.o
+CC	libavcodec/audio_frame_queue.o
+CC	libavcodec/avcodec.o
+CC	libavcodec/avdct.o
+CC	libavcodec/avfft.o
+CC	libavcodec/avpacket.o
+CC	libavcodec/bitstream.o
+CC	libavcodec/bitstream_filters.o
+CC	libavcodec/bsf.o
+CC	libavcodec/codec_desc.o
+CC	libavcodec/codec_par.o
+CC	libavcodec/d3d11va.o
+CC	libavcodec/decode.o
+CC	libavcodec/dirac.o
+CC	libavcodec/dv_profile.o
+CC	libavcodec/encode.o
+CC	libavcodec/faandct.o
+CC	libavcodec/faanidct.o
+CC	libavcodec/fdctdsp.o
+CC	libavcodec/frame_thread_encoder.o
+CC	libavcodec/get_buffer.o
+CC	libavcodec/idctdsp.o
+CC	libavcodec/imgconvert.o
+CC	libavcodec/jfdctfst.o
+CC	libavcodec/jfdctint.o
+CC	libavcodec/jni.o
+CC	libavcodec/jrevdct.o
+CC	libavcodec/libopus.o
+CC	libavcodec/libopusenc.o
+CC	libavcodec/mathtables.o
+CC	libavcodec/mediacodec.o
+CC	libavcodec/mpeg12framerate.o
+CC	libavcodec/options.o
+CC	libavcodec/opus_celt.o
+CC	libavcodec/opus_parse.o
+CC	libavcodec/opus_parser.o
+CC	libavcodec/opus_pvq.o
+CC	libavcodec/opus_rc.o
+CC	libavcodec/opus_silk.o
+CC	libavcodec/opusdec.o
+CC	libavcodec/opusdec_celt.o
+CC	libavcodec/opusdsp.o
+CC	libavcodec/opustab.o
+CC	libavcodec/parser.o
+CC	libavcodec/parsers.o
+CC	libavcodec/profiles.o
+CC	libavcodec/pthread.o
+CC	libavcodec/pthread_frame.o
+CC	libavcodec/pthread_slice.o
+CC	libavcodec/qsv_api.o
+CC	libavcodec/raw.o
+CC	libavcodec/refstruct.o
+CC	libavcodec/simple_idct.o
+CC	libavcodec/utils.o
+CC	libavcodec/version.o
+CC	libavcodec/vlc.o
+CC	libavcodec/vorbis_data.o
+CC	libavcodec/vorbis_parser.o
+CC	libavcodec/xiph.o
+CC	libavcodec/mpeg4audio_sample_rates.o
+CC	libavcodec/to_upper4.o
+CC	libswresample/audioconvert.o
+CC	libswresample/dither.o
+CC	libswresample/options.o
+CC	libswresample/rematrix.o
+CC	libswresample/resample.o
+CC	libswresample/resample_dsp.o
+CC	libswresample/swresample.o
+CC	libswresample/swresample_frame.o
+CC	libswresample/version.o
+CC	libavutil/adler32.o
+CC	libavutil/aes.o
+CC	libavutil/aes_ctr.o
+CC	libavutil/ambient_viewing_environment.o
+CC	libavutil/audio_fifo.o
+CC	libavutil/avsscanf.o
+CC	libavutil/avstring.o
+CC	libavutil/base64.o
+CC	libavutil/blowfish.o
+CC	libavutil/bprint.o
+CC	libavutil/buffer.o
+CC	libavutil/camellia.o
+CC	libavutil/cast5.o
+CC	libavutil/channel_layout.o
+CC	libavutil/cpu.o
+CC	libavutil/crc.o
+CC	libavutil/csp.o
+CC	libavutil/des.o
+CC	libavutil/detection_bbox.o
+CC	libavutil/dict.o
+CC	libavutil/display.o
+CC	libavutil/dovi_meta.o
+CC	libavutil/downmix_info.o
+CC	libavutil/encryption_info.o
+CC	libavutil/error.o
+CC	libavutil/eval.o
+CC	libavutil/executor.o
+CC	libavutil/fifo.o
+CC	libavutil/file.o
+src/libavutil/eval.c:522:13: warning: mixing declarations and code is incompatible with standards before C99 [-Wdeclaration-after-statement]
+  522 |     AVExpr *e = av_mallocz(sizeof(AVExpr));
+      |             ^
+CC	libavutil/file_open.o
+CC	libavutil/film_grain_params.o
+1 warning generated.
+CC	libavutil/fixed_dsp.o
+CC	libavutil/float_dsp.o
+CC	libavutil/frame.o
+CC	libavutil/hash.o
+CC	libavutil/hdr_dynamic_metadata.o
+CC	libavutil/hdr_dynamic_vivid_metadata.o
+CC	libavutil/hmac.o
+CC	libavutil/hwcontext.o
+CC	libavutil/hwcontext_stub.o
+CC	libavutil/imgutils.o
+CC	libavutil/integer.o
+CC	libavutil/intmath.o
+CC	libavutil/lfg.o
+CC	libavutil/lls.o
+CC	libavutil/log.o
+CC	libavutil/log2_tab.o
+CC	libavutil/lzo.o
+CC	libavutil/mastering_display_metadata.o
+CC	libavutil/mathematics.o
+CC	libavutil/md5.o
+CC	libavutil/mem.o
+CC	libavutil/murmur3.o
+CC	libavutil/opt.o
+CC	libavutil/parseutils.o
+CC	libavutil/pixdesc.o
+CC	libavutil/pixelutils.o
+CC	libavutil/random_seed.o
+CC	libavutil/rational.o
+CC	libavutil/rc4.o
+CC	libavutil/reverse.o
+CC	libavutil/ripemd.o
+CC	libavutil/samplefmt.o
+CC	libavutil/sha.o
+CC	libavutil/sha512.o
+CC	libavutil/slicethread.o
+CC	libavutil/spherical.o
+CC	libavutil/stereo3d.o
+CC	libavutil/tea.o
+CC	libavutil/threadmessage.o
+CC	libavutil/time.o
+CC	libavutil/timecode.o
+CC	libavutil/tree.o
+CC	libavutil/twofish.o
+CC	libavutil/tx.o
+CC	libavutil/tx_double.o
+CC	libavutil/tx_float.o
+CC	libavutil/tx_int32.o
+CC	libavutil/utils.o
+CC	libavutil/uuid.o
+CC	libavutil/version.o
+CC	libavutil/video_enc_params.o
+CC	libavutil/video_hint.o
+CC	libavutil/xga_font_data.o
+CC	libavutil/xtea.o
+AR	libavfilter/libavfilter.a
+AR	libavformat/libavformat.a
+AR	libavcodec/libavcodec.a
+CC	fftools/ffmpeg_dec.o
+AR	libswresample/libswresample.a
+CC	fftools/ffmpeg_demux.o
+CC	fftools/ffmpeg_enc.o
+CC	fftools/ffmpeg_filter.o
+src/fftools/ffmpeg_filter.c:1867:9: warning: variable 'fr' is used uninitialized whenever 'if' condition is true [-Wsometimes-uninitialized]
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/fftools/ffmpeg_filter.c:1913:26: note: uninitialized use occurs here
+ 1913 |     fps->framerate     = fr;
+      |                          ^~
+src/fftools/ffmpeg_filter.c:1867:5: note: remove the 'if' if its condition is always false
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1868 |         tb = tb.num ? tb : (AVRational){ 1, frame->sample_rate };
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1869 |         goto finish;
+      |         ~~~~~~~~~~~~
+ 1870 |     }
+      |     ~
+src/fftools/ffmpeg_filter.c:1847:5: note: variable 'fr' is declared here
+ 1847 |     AVRational fr;
+      |     ^
+CC	fftools/ffmpeg_hw.o
+CC	fftools/ffmpeg_mux.o
+CC	fftools/ffmpeg_mux_init.o
+1 warning generated.
+src/fftools/ffmpeg_mux_init.c:297:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  297 |         { ENC_STATS_FRAME_NUM_IN,   "ni",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:299:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  299 |         { ENC_STATS_TIMEBASE_IN,    "tbi",      0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:302:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  302 |         { ENC_STATS_PTS_IN,         "ptsi",     0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:303:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  303 |         { ENC_STATS_PTS_TIME_IN,    "ti",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:304:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  304 |         { ENC_STATS_DTS,            "dts",      0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:305:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  305 |         { ENC_STATS_DTS_TIME,       "dt",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:306:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  306 |         { ENC_STATS_SAMPLE_NUM,     "sn",       1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:307:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  307 |         { ENC_STATS_NB_SAMPLES,     "samp",     1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:308:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  308 |         { ENC_STATS_PKT_SIZE,       "size",     0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:309:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  309 |         { ENC_STATS_BITRATE,        "br",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:310:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  310 |         { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
+      |                                                    ^
+CC	fftools/ffmpeg_opt.o
+CC	fftools/objpool.o
+CC	fftools/sync_queue.o
+CC	fftools/thread_queue.o
+CC	fftools/cmdutils.o
+CC	fftools/opt_common.o
+CC	fftools/ffmpeg.o
+AR	libavutil/libavutil.a
+11 warnings generated.
+LD	ffmpeg_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffmpeg
+/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/darwin-arm64/ffmpeg: replacing existing signature
+[encoder] x64: sestavuji FFmpeg 6.1.6 + Opus 1.6.1.
+checking whether make supports nested variables... yes
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for x86_64-apple-darwin-strip... no
+checking for strip... strip
+checking for a race-free mkdir -p... /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/install-sh -c -d
+checking for gawk... no
+checking for mawk... no
+checking for nawk... no
+checking for awk... awk
+checking whether make sets $(MAKE)... yes
+checking whether to enable maintainer-specific portions of Makefiles... yes
+checking build system type... aarch64-apple-darwin27.0.0
+checking host system type... x86_64-apple-darwin
+checking how to print strings... printf
+checking whether make supports the include directive... yes (GNU style)
+checking for x86_64-apple-darwin-gcc... clang
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... yes
+checking for suffix of object files... o
+checking whether the compiler supports GNU C... yes
+checking whether clang accepts -g... yes
+checking for clang option to enable C11 features... none needed
+checking whether clang understands -c and -o together... yes
+checking dependency style of clang... gcc3
+checking for a sed that does not truncate output... /usr/bin/sed
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for fgrep... /usr/bin/grep -F
+checking for ld used by clang... /Library/Developer/CommandLineTools/usr/bin/ld
+checking if the linker (/Library/Developer/CommandLineTools/usr/bin/ld) is GNU ld... no
+checking for BSD- or MS-compatible name lister (nm)... no
+checking for x86_64-apple-darwin-dumpbin... no
+checking for x86_64-apple-darwin-link... no
+checking for dumpbin... no
+checking for link... link -dump
+configure: WARNING: using cross tools not prefixed with host triplet
+checking the name lister (nm) interface... BSD nm
+checking whether ln -s works... yes
+checking the maximum length of command line arguments... sysctl: sysctl fmt -1 1024 1: Operation not permitted
+expr: syntax error
+expr: syntax error
+none
+checking how to convert aarch64-apple-darwin27.0.0 file names to x86_64-apple-darwin format... func_convert_file_noop
+checking how to convert aarch64-apple-darwin27.0.0 file names to toolchain format... func_convert_file_noop
+checking for /Library/Developer/CommandLineTools/usr/bin/ld option to reload object files... -r
+checking for x86_64-apple-darwin-file... no
+checking for file... file
+checking for x86_64-apple-darwin-objdump... no
+checking for objdump... objdump
+checking how to recognize dependent libraries... pass_all
+checking for x86_64-apple-darwin-dlltool... no
+checking for dlltool... no
+checking how to associate runtime and link libraries... printf %s\n
+checking for x86_64-apple-darwin-ar... no
+checking for ar... ar
+checking for archiver @FILE support... no
+checking for x86_64-apple-darwin-strip... strip
+checking for x86_64-apple-darwin-ranlib... no
+checking for ranlib... ranlib
+checking command to parse nm output from clang object... ok
+checking for sysroot... no
+checking for a working dd... /bin/dd
+checking how to truncate binary pipes... /bin/dd bs=4096 count=1
+checking for x86_64-apple-darwin-mt... no
+checking for mt... no
+checking if : is a manifest tool... no
+checking for x86_64-apple-darwin-dsymutil... no
+checking for dsymutil... dsymutil
+checking for x86_64-apple-darwin-nmedit... no
+checking for nmedit... nmedit
+checking for x86_64-apple-darwin-lipo... no
+checking for lipo... lipo
+checking for x86_64-apple-darwin-otool... no
+checking for otool... otool
+checking for x86_64-apple-darwin-otool64... no
+checking for otool64... no
+checking for -single_module linker flag... ld: warning: -single_module is obsolete
+no
+checking for -exported_symbols_list linker flag... yes
+checking for -force_load linker flag... yes
+checking for stdio.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for strings.h... yes
+checking for sys/stat.h... yes
+checking for sys/types.h... yes
+checking for unistd.h... yes
+checking for dlfcn.h... yes
+checking for objdir... .libs
+checking if clang supports -fno-rtti -fno-exceptions... yes
+checking for clang option to produce PIC... -fno-common -DPIC
+checking if clang PIC flag -fno-common -DPIC works... yes
+checking if clang static flag -static works... no
+checking if clang supports -c -o file.o... yes
+checking if clang supports -c -o file.o... (cached) yes
+checking whether the clang linker (/Library/Developer/CommandLineTools/usr/bin/ld) supports shared libraries... yes
+checking dynamic linker characteristics... darwin dyld
+checking how to hardcode library paths into programs... immediate
+checking whether stripping libraries is possible... yes
+checking if libtool supports shared libraries... yes
+checking whether to build shared libraries... no
+checking whether to build static libraries... yes
+checking for x86_64-apple-darwin-gcc... (cached) clang
+checking whether the compiler supports GNU C... (cached) yes
+checking whether clang accepts -g... (cached) yes
+checking for clang option to enable C11 features... (cached) none needed
+checking whether clang understands -c and -o together... (cached) yes
+checking dependency style of clang... (cached) gcc3
+checking for an ANSI C-conforming const... yes
+checking for inline... inline
+checking dependency style of clang... gcc3
+checking for C/C++ restrict keyword... __restrict
+checking for C99 variable-size arrays... yes
+checking how to run the C preprocessor... clang -E
+checking if compiler supports SSE intrinsics... yes
+checking if compiler supports SSE2 intrinsics... yes
+checking if compiler supports SSE4.1 intrinsics... yes
+checking if compiler supports AVX2 intrinsics... no
+checking if compiler supports AVX2 intrinsics with -mavx -mfma -mavx2... yes
+checking How to get X86 CPU Info... Inline Assembly
+checking argument osce training data... no
+checking if clang supports -fvisibility=hidden... yes
+checking if clang supports -fstack-protector-strong... yes
+checking whether to add -D_FORTIFY_SOURCE=2 to CFLAGS... yes
+checking if clang supports -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes... yes
+checking for lrintf... yes
+checking for lrint... yes
+checking for __malloc_hook... no
+checking for elf_aux_info... no
+checking that generated files are newer than configure... done
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating opus.pc
+config.status: creating opus-uninstalled.pc
+config.status: creating celt/arm/armopts.s
+config.status: creating doc/Makefile
+config.status: creating doc/Doxyfile
+config.status: creating config.h
+config.status: executing depfiles commands
+config.status: executing libtool commands
+configure:
+------------------------------------------------------------------------
+  opus 1.6.1:  Automatic configuration OK.
+
+    Compiler support:
+
+      C99 var arrays: ................ yes
+      C99 lrintf: .................... yes
+      Use alloca: .................... no (using var arrays)
+
+    General configuration:
+
+      Floating point support: ........ yes
+      Fast float approximations: ..... yes
+      Fixed point debugging: ......... no
+      Inline Assembly Optimizations: . No inline ASM for your platform, please send patches
+      External Assembly Optimizations: 
+      Intrinsics Optimizations: ...... x86 SSE SSE2 SSE4.1 AVX2
+      Run-time CPU detection: ........ x86 AVX2
+      Custom modes: .................. no
+      Assertion checking: ............ no
+      Hardening: ..................... yes
+      Fuzzing: ....................... no
+      Check ASM: ..................... no
+
+      API documentation: ............. no
+      Extra programs: ................ no
+------------------------------------------------------------------------
+
+ Type "make; make install" to compile and install
+ Type "make check" to run the test suite
+
+/Library/Developer/CommandLineTools/usr/bin/make  all-recursive
+make[3]: Nothing to be done for `all'.
+  CC       celt/celt_encoder.lo
+  CC       celt/celt.lo
+  CC       celt/bands.lo
+  CC       celt/celt_decoder.lo
+  CC       celt/cwrs.lo
+  CC       celt/entcode.lo
+  CC       celt/entdec.lo
+  CC       celt/entenc.lo
+  CC       celt/kiss_fft.lo
+  CC       celt/laplace.lo
+  CC       celt/mathops.lo
+  CC       celt/mdct.lo
+  CC       celt/modes.lo
+  CC       celt/pitch.lo
+  CC       celt/celt_lpc.lo
+  CC       celt/quant_bands.lo
+  CC       celt/rate.lo
+  CC       celt/vq.lo
+  CC       celt/x86/x86cpu.lo
+  CC       celt/x86/x86_celt_map.lo
+  CC       celt/x86/pitch_sse.lo
+  CC       celt/x86/pitch_sse2.lo
+  CC       celt/x86/vq_sse2.lo
+  CC       celt/x86/celt_lpc_sse4_1.lo
+  CC       celt/x86/pitch_sse4_1.lo
+  CC       celt/x86/pitch_avx.lo
+  CC       silk/CNG.lo
+  CC       silk/code_signs.lo
+  CC       silk/init_decoder.lo
+  CC       silk/decode_core.lo
+  CC       silk/decode_frame.lo
+  CC       silk/decode_parameters.lo
+  CC       silk/decode_indices.lo
+  CC       silk/decode_pulses.lo
+  CC       silk/decoder_set_fs.lo
+  CC       silk/dec_API.lo
+  CC       silk/enc_API.lo
+  CC       silk/encode_indices.lo
+  CC       silk/encode_pulses.lo
+  CC       silk/gain_quant.lo
+  CC       silk/interpolate.lo
+  CC       silk/LP_variable_cutoff.lo
+  CC       silk/NLSF_decode.lo
+  CC       silk/NSQ.lo
+  CC       silk/NSQ_del_dec.lo
+  CC       silk/PLC.lo
+  CC       silk/shell_coder.lo
+  CC       silk/tables_gain.lo
+  CC       silk/tables_LTP.lo
+  CC       silk/tables_NLSF_CB_NB_MB.lo
+  CC       silk/tables_NLSF_CB_WB.lo
+  CC       silk/tables_other.lo
+  CC       silk/tables_pulses_per_block.lo
+  CC       silk/tables_pitch_lag.lo
+  CC       silk/VAD.lo
+  CC       silk/control_audio_bandwidth.lo
+  CC       silk/VQ_WMat_EC.lo
+  CC       silk/quant_LTP_gains.lo
+  CC       silk/HP_variable_cutoff.lo
+  CC       silk/NLSF_encode.lo
+  CC       silk/NLSF_VQ.lo
+  CC       silk/NLSF_unpack.lo
+  CC       silk/NLSF_del_dec_quant.lo
+  CC       silk/process_NLSFs.lo
+  CC       silk/stereo_LR_to_MS.lo
+  CC       silk/stereo_MS_to_LR.lo
+  CC       silk/check_control_input.lo
+  CC       silk/control_SNR.lo
+  CC       silk/init_encoder.lo
+  CC       silk/control_codec.lo
+  CC       silk/A2NLSF.lo
+  CC       silk/ana_filt_bank_1.lo
+  CC       silk/biquad_alt.lo
+  CC       silk/bwexpander_32.lo
+  CC       silk/bwexpander.lo
+  CC       silk/debug.lo
+  CC       silk/decode_pitch.lo
+  CC       silk/inner_prod_aligned.lo
+  CC       silk/lin2log.lo
+  CC       silk/log2lin.lo
+  CC       silk/LPC_analysis_filter.lo
+  CC       silk/LPC_inv_pred_gain.lo
+  CC       silk/table_LSF_cos.lo
+  CC       silk/NLSF2A.lo
+  CC       silk/NLSF_stabilize.lo
+  CC       silk/NLSF_VQ_weights_laroia.lo
+  CC       silk/pitch_est_tables.lo
+  CC       silk/resampler.lo
+  CC       silk/resampler_down2_3.lo
+  CC       silk/resampler_down2.lo
+  CC       silk/resampler_private_AR2.lo
+  CC       silk/resampler_private_down_FIR.lo
+  CC       silk/resampler_private_IIR_FIR.lo
+  CC       silk/resampler_private_up2_HQ.lo
+  CC       silk/resampler_rom.lo
+  CC       silk/sigm_Q15.lo
+  CC       silk/sort.lo
+  CC       silk/sum_sqr_shift.lo
+  CC       silk/stereo_decode_pred.lo
+  CC       silk/stereo_encode_pred.lo
+  CC       silk/stereo_find_predictor.lo
+  CC       silk/stereo_quant_pred.lo
+  CC       silk/LPC_fit.lo
+  CC       silk/float/apply_sine_window_FLP.lo
+  CC       silk/float/corrMatrix_FLP.lo
+  CC       silk/float/encode_frame_FLP.lo
+  CC       silk/float/find_LPC_FLP.lo
+  CC       silk/float/find_LTP_FLP.lo
+  CC       silk/float/find_pitch_lags_FLP.lo
+  CC       silk/float/find_pred_coefs_FLP.lo
+  CC       silk/float/LPC_analysis_filter_FLP.lo
+  CC       silk/float/LTP_analysis_filter_FLP.lo
+  CC       silk/float/LTP_scale_ctrl_FLP.lo
+  CC       silk/float/noise_shape_analysis_FLP.lo
+  CC       silk/float/process_gains_FLP.lo
+  CC       silk/float/regularize_correlations_FLP.lo
+  CC       silk/float/residual_energy_FLP.lo
+  CC       silk/float/warped_autocorrelation_FLP.lo
+  CC       silk/float/wrappers_FLP.lo
+  CC       silk/float/autocorrelation_FLP.lo
+  CC       silk/float/burg_modified_FLP.lo
+  CC       silk/float/bwexpander_FLP.lo
+  CC       silk/float/energy_FLP.lo
+  CC       silk/float/inner_product_FLP.lo
+  CC       silk/float/k2a_FLP.lo
+  CC       silk/float/LPC_inv_pred_gain_FLP.lo
+  CC       silk/float/pitch_analysis_core_FLP.lo
+  CC       silk/float/scale_copy_vector_FLP.lo
+  CC       silk/float/scale_vector_FLP.lo
+  CC       silk/float/schur_FLP.lo
+  CC       silk/float/sort_FLP.lo
+  CC       silk/x86/NSQ_sse4_1.lo
+  CC       silk/x86/NSQ_del_dec_sse4_1.lo
+  CC       silk/x86/VAD_sse4_1.lo
+  CC       silk/x86/VQ_WMat_EC_sse4_1.lo
+  CC       silk/float/x86/inner_product_FLP_avx2.lo
+  CC       silk/x86/x86_silk_map.lo
+  CC       silk/x86/NSQ_del_dec_avx2.lo
+  CC       src/opus.lo
+  CC       src/opus_decoder.lo
+  CC       src/opus_encoder.lo
+  CC       src/extensions.lo
+  CC       src/opus_multistream.lo
+  CC       src/opus_multistream_encoder.lo
+  CC       src/opus_multistream_decoder.lo
+  CC       src/repacketizer.lo
+  CC       src/opus_projection_encoder.lo
+  CC       src/opus_projection_decoder.lo
+  CC       src/mapping_matrix.lo
+  CC       src/analysis.lo
+  CC       src/mlp.lo
+  CC       src/mlp_data.lo
+  CCLD     libopus.la
+./libtool: line 11458: test: : integer expression expected
+./libtool: line 11458: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+./libtool: line 11494: test: : integer expression expected
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: .libs/libopus.a(debug.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/make  install-recursive
+make[3]: Nothing to be done for `all'.
+ /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/install-sh -c -d '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib'
+ /bin/sh ./libtool   --mode=install /usr/bin/install -c   libopus.la '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib'
+libtool: install: /usr/bin/install -c .libs/libopus.lai /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/libopus.la
+libtool: install: /usr/bin/install -c .libs/libopus.a /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/libopus.a
+libtool: install: chmod 644 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/libopus.a
+libtool: install: ranlib /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/libopus.a
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/libopus.a(pitch_sse2.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/libopus.a(celt_lpc_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/libopus.a(pitch_sse4_1.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/libopus.a(debug.o) has no symbols
+make[5]: Nothing to be done for `install-exec-am'.
+make[5]: Nothing to be done for `install-data-am'.
+ /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/install-sh -c -d '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/share/aclocal'
+ /usr/bin/install -c -m 644 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/opus.m4 '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/share/aclocal'
+ /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/install-sh -c -d '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/pkgconfig'
+ /usr/bin/install -c -m 644 opus.pc '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/lib/pkgconfig'
+ /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/install-sh -c -d '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/include/opus'
+ /usr/bin/install -c -m 644 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/include/opus.h /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/include/opus_multistream.h /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/include/opus_types.h /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/include/opus_defines.h /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-1.6.1/include/opus_projection.h '/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/opus-prefix/include/opus'
+install prefix            /media-encoder
+source path               /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6/work/x64/ffmpeg-6.1.6
+C compiler                clang
+C library                 
+host C compiler           gcc
+host C library            
+ARCH                      c (generic)
+big-endian                no
+runtime cpu detection     yes
+debug symbols             no
+strip symbols             yes
+optimize for size         yes
+optimizations             yes
+static                    yes
+shared                    no
+postprocessing support    no
+network support           no
+threading support         pthreads
+safe bitstream reader     yes
+texi2html enabled         no
+perl enabled              yes
+pod2man enabled           yes
+makeinfo enabled          no
+makeinfo supports HTML    no
+xmllint enabled           yes
+
+External libraries:
+libopus
+
+External libraries providing hardware acceleration:
+
+Libraries:
+avcodec                 avformat                swresample
+avfilter                avutil
+
+Programs:
+ffmpeg
+
+Enabled decoders:
+opus
+
+Enabled encoders:
+libopus
+
+Enabled hwaccels:
+
+Enabled parsers:
+opus
+
+Enabled demuxers:
+matroska
+
+Enabled muxers:
+webm
+
+Enabled protocols:
+file                    pipe
+
+Enabled filters:
+adelay                  asetpts                 pan
+aformat                 atrim                   transpose
+anull                   format                  trim
+anullsrc                hflip                   vflip
+apad                    join
+aresample               null
+
+Enabled bsfs:
+
+Enabled indevs:
+
+Enabled outdevs:
+
+License: LGPL version 2.1 or later
+GEN	libavutil/libavutil.version
+GEN	libavcodec/libavcodec.version
+GEN	libavformat/libavformat.version
+GEN	libavfilter/libavfilter.version
+GEN	libswresample/libswresample.version
+CC	libavfilter/af_adelay.o
+CC	libavfilter/af_aformat.o
+CC	libavfilter/af_apad.o
+CC	libavfilter/af_anull.o
+CC	libavfilter/af_aresample.o
+CC	libavfilter/af_join.o
+CC	libavfilter/af_pan.o
+CC	libavfilter/allfilters.o
+CC	libavfilter/asrc_anullsrc.o
+CC	libavfilter/audio.o
+CC	libavfilter/avfilter.o
+CC	libavfilter/avfiltergraph.o
+CC	libavfilter/buffersink.o
+CC	libavfilter/buffersrc.o
+CC	libavfilter/ccfifo.o
+CC	libavfilter/colorspace.o
+CC	libavfilter/drawutils.o
+CC	libavfilter/fifo.o
+CC	libavfilter/formats.o
+CC	libavfilter/framepool.o
+CC	libavfilter/framequeue.o
+CC	libavfilter/graphdump.o
+CC	libavfilter/graphparser.o
+CC	libavfilter/pthread.o
+CC	libavfilter/setpts.o
+CC	libavfilter/trim.o
+CC	libavfilter/version.o
+CC	libavfilter/vf_format.o
+CC	libavfilter/vf_hflip.o
+CC	libavfilter/vf_null.o
+CC	libavfilter/vf_transpose.o
+CC	libavfilter/vf_vflip.o
+CC	libavfilter/video.o
+CC	libavformat/allformats.o
+CC	libavformat/av1.o
+CC	libavformat/avformat.o
+CC	libavformat/avio.o
+CC	libavformat/aviobuf.o
+CC	libavformat/avlanguage.o
+CC	libavformat/demux.o
+CC	libavformat/demux_utils.o
+CC	libavformat/dovi_isom.o
+CC	libavformat/dump.o
+CC	libavformat/dv.o
+CC	libavformat/file.o
+CC	libavformat/flac_picture.o
+CC	libavformat/format.o
+CC	libavformat/id3v1.o
+CC	libavformat/id3v2.o
+CC	libavformat/isom_tags.o
+CC	libavformat/matroska.o
+CC	libavformat/matroskadec.o
+CC	libavformat/metadata.o
+CC	libavformat/matroskaenc.o
+CC	libavformat/mux.o
+CC	libavformat/mux_utils.o
+CC	libavformat/oggparsevorbis.o
+CC	libavformat/options.o
+CC	libavformat/os_support.o
+CC	libavformat/protocols.o
+CC	libavformat/qtpalette.o
+CC	libavformat/replaygain.o
+CC	libavformat/riff.o
+CC	libavformat/riffdec.o
+CC	libavformat/rmsipr.o
+CC	libavformat/sdp.o
+CC	libavformat/seek.o
+CC	libavformat/url.o
+CC	libavformat/utils.o
+CC	libavformat/version.o
+CC	libavformat/vorbiscomment.o
+CC	libavcodec/ac3_parser.o
+CC	libavcodec/adts_parser.o
+CC	libavcodec/allcodecs.o
+CC	libavcodec/audio_frame_queue.o
+CC	libavcodec/avcodec.o
+CC	libavcodec/avdct.o
+CC	libavcodec/avfft.o
+CC	libavcodec/avpacket.o
+CC	libavcodec/bitstream.o
+CC	libavcodec/bitstream_filters.o
+CC	libavcodec/bsf.o
+CC	libavcodec/codec_desc.o
+CC	libavcodec/codec_par.o
+CC	libavcodec/d3d11va.o
+CC	libavcodec/decode.o
+CC	libavcodec/dirac.o
+CC	libavcodec/dv_profile.o
+CC	libavcodec/encode.o
+CC	libavcodec/faandct.o
+CC	libavcodec/faanidct.o
+CC	libavcodec/fdctdsp.o
+CC	libavcodec/frame_thread_encoder.o
+CC	libavcodec/get_buffer.o
+CC	libavcodec/idctdsp.o
+CC	libavcodec/imgconvert.o
+CC	libavcodec/jfdctfst.o
+CC	libavcodec/jfdctint.o
+CC	libavcodec/jni.o
+CC	libavcodec/jrevdct.o
+CC	libavcodec/libopus.o
+CC	libavcodec/libopusenc.o
+CC	libavcodec/mathtables.o
+CC	libavcodec/mediacodec.o
+CC	libavcodec/mpeg12framerate.o
+CC	libavcodec/options.o
+CC	libavcodec/opus_celt.o
+CC	libavcodec/opus_parse.o
+CC	libavcodec/opus_parser.o
+CC	libavcodec/opus_pvq.o
+CC	libavcodec/opus_rc.o
+CC	libavcodec/opus_silk.o
+CC	libavcodec/opusdec.o
+CC	libavcodec/opusdec_celt.o
+CC	libavcodec/opusdsp.o
+CC	libavcodec/opustab.o
+CC	libavcodec/parser.o
+CC	libavcodec/parsers.o
+CC	libavcodec/profiles.o
+CC	libavcodec/pthread.o
+CC	libavcodec/pthread_frame.o
+CC	libavcodec/pthread_slice.o
+CC	libavcodec/qsv_api.o
+CC	libavcodec/raw.o
+CC	libavcodec/refstruct.o
+CC	libavcodec/simple_idct.o
+CC	libavcodec/utils.o
+CC	libavcodec/version.o
+CC	libavcodec/vlc.o
+CC	libavcodec/vorbis_data.o
+CC	libavcodec/vorbis_parser.o
+CC	libavcodec/xiph.o
+CC	libavcodec/mpeg4audio_sample_rates.o
+CC	libavcodec/to_upper4.o
+CC	libswresample/audioconvert.o
+CC	libswresample/dither.o
+CC	libswresample/options.o
+CC	libswresample/rematrix.o
+CC	libswresample/resample.o
+CC	libswresample/resample_dsp.o
+CC	libswresample/swresample.o
+CC	libswresample/swresample_frame.o
+CC	libswresample/version.o
+CC	libavutil/adler32.o
+CC	libavutil/aes.o
+CC	libavutil/aes_ctr.o
+CC	libavutil/ambient_viewing_environment.o
+CC	libavutil/audio_fifo.o
+CC	libavutil/avsscanf.o
+CC	libavutil/avstring.o
+CC	libavutil/base64.o
+CC	libavutil/blowfish.o
+CC	libavutil/bprint.o
+CC	libavutil/buffer.o
+CC	libavutil/camellia.o
+CC	libavutil/cast5.o
+CC	libavutil/channel_layout.o
+CC	libavutil/cpu.o
+CC	libavutil/crc.o
+CC	libavutil/csp.o
+CC	libavutil/des.o
+CC	libavutil/detection_bbox.o
+CC	libavutil/dict.o
+CC	libavutil/display.o
+CC	libavutil/dovi_meta.o
+CC	libavutil/downmix_info.o
+CC	libavutil/encryption_info.o
+CC	libavutil/error.o
+CC	libavutil/eval.o
+CC	libavutil/executor.o
+CC	libavutil/fifo.o
+src/libavutil/eval.c:522:13: warning: mixing declarations and code is incompatible with standards before C99 [-Wdeclaration-after-statement]
+  522 |     AVExpr *e = av_mallocz(sizeof(AVExpr));
+      |             ^
+CC	libavutil/file.o
+CC	libavutil/file_open.o
+CC	libavutil/film_grain_params.o
+1 warning generated.
+CC	libavutil/fixed_dsp.o
+CC	libavutil/float_dsp.o
+CC	libavutil/frame.o
+CC	libavutil/hash.o
+CC	libavutil/hdr_dynamic_metadata.o
+CC	libavutil/hdr_dynamic_vivid_metadata.o
+CC	libavutil/hmac.o
+CC	libavutil/hwcontext.o
+CC	libavutil/hwcontext_stub.o
+CC	libavutil/imgutils.o
+CC	libavutil/integer.o
+CC	libavutil/intmath.o
+CC	libavutil/lfg.o
+CC	libavutil/lls.o
+CC	libavutil/log.o
+CC	libavutil/log2_tab.o
+CC	libavutil/lzo.o
+CC	libavutil/mastering_display_metadata.o
+CC	libavutil/mathematics.o
+CC	libavutil/md5.o
+CC	libavutil/mem.o
+CC	libavutil/murmur3.o
+CC	libavutil/opt.o
+CC	libavutil/parseutils.o
+CC	libavutil/pixdesc.o
+CC	libavutil/pixelutils.o
+CC	libavutil/random_seed.o
+CC	libavutil/rational.o
+CC	libavutil/reverse.o
+CC	libavutil/rc4.o
+CC	libavutil/ripemd.o
+CC	libavutil/samplefmt.o
+CC	libavutil/sha.o
+CC	libavutil/sha512.o
+CC	libavutil/spherical.o
+CC	libavutil/slicethread.o
+CC	libavutil/stereo3d.o
+CC	libavutil/tea.o
+CC	libavutil/threadmessage.o
+CC	libavutil/time.o
+CC	libavutil/timecode.o
+CC	libavutil/tree.o
+CC	libavutil/twofish.o
+CC	libavutil/tx.o
+CC	libavutil/tx_double.o
+CC	libavutil/tx_float.o
+CC	libavutil/tx_int32.o
+CC	libavutil/utils.o
+CC	libavutil/uuid.o
+CC	libavutil/version.o
+CC	libavutil/video_enc_params.o
+CC	libavutil/video_hint.o
+CC	libavutil/xga_font_data.o
+CC	libavutil/xtea.o
+AR	libavfilter/libavfilter.a
+AR	libavformat/libavformat.a
+AR	libavcodec/libavcodec.a
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: libavformat/libavformat.a(os_support.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: libavcodec/libavcodec.a(profiles.o) has no symbols
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: libavformat/libavformat.a(os_support.o) has no symbols
+AR	libswresample/libswresample.a
+CC	fftools/ffmpeg_dec.o
+/Library/Developer/CommandLineTools/usr/bin/ranlib: file: libavcodec/libavcodec.a(profiles.o) has no symbols
+CC	fftools/ffmpeg_demux.o
+CC	fftools/ffmpeg_enc.o
+CC	fftools/ffmpeg_filter.o
+src/fftools/ffmpeg_filter.c:1867:9: warning: variable 'fr' is used uninitialized whenever 'if' condition is true [-Wsometimes-uninitialized]
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/fftools/ffmpeg_filter.c:1913:26: note: uninitialized use occurs here
+ 1913 |     fps->framerate     = fr;
+      |                          ^~
+src/fftools/ffmpeg_filter.c:1867:5: note: remove the 'if' if its condition is always false
+ 1867 |     if (ofilter->type == AVMEDIA_TYPE_AUDIO) {
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1868 |         tb = tb.num ? tb : (AVRational){ 1, frame->sample_rate };
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1869 |         goto finish;
+      |         ~~~~~~~~~~~~
+ 1870 |     }
+      |     ~
+src/fftools/ffmpeg_filter.c:1847:5: note: variable 'fr' is declared here
+ 1847 |     AVRational fr;
+      |     ^
+CC	fftools/ffmpeg_hw.o
+CC	fftools/ffmpeg_mux.o
+CC	fftools/ffmpeg_mux_init.o
+src/fftools/ffmpeg_mux_init.c:297:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  297 |         { ENC_STATS_FRAME_NUM_IN,   "ni",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:299:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  299 |         { ENC_STATS_TIMEBASE_IN,    "tbi",      0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:302:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  302 |         { ENC_STATS_PTS_IN,         "ptsi",     0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:303:55: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  303 |         { ENC_STATS_PTS_TIME_IN,    "ti",       0, 0, 1         },
+      |                                                       ^
+src/fftools/ffmpeg_mux_init.c:304:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  304 |         { ENC_STATS_DTS,            "dts",      0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:305:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  305 |         { ENC_STATS_DTS_TIME,       "dt",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:306:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  306 |         { ENC_STATS_SAMPLE_NUM,     "sn",       1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:307:49: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  307 |         { ENC_STATS_NB_SAMPLES,     "samp",     1               },
+      |                                                 ^
+src/fftools/ffmpeg_mux_init.c:308:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  308 |         { ENC_STATS_PKT_SIZE,       "size",     0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:309:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  309 |         { ENC_STATS_BITRATE,        "br",       0, 1            },
+      |                                                    ^
+src/fftools/ffmpeg_mux_init.c:310:52: warning: implicit truncation from 'int' to a one-bit wide bit-field changes value from 1 to -1 [-Wsingle-bit-bitfield-constant-conversion]
+  310 |         { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
+      |                                                    ^
+CC	fftools/ffmpeg_opt.o
+1 warning generated.
+CC	fftools/objpool.o
+CC	fftools/sync_queue.o
+CC	fftools/thread_queue.o
+CC	fftools/cmdutils.o
+CC	fftools/opt_common.o
+CC	fftools/ffmpeg.o
+AR	libavutil/libavutil.a
+11 warnings generated.
+LD	ffmpeg_g
+ld: warning: ignoring duplicate libraries: '-lm'
+ld: warning: search path 'libpostproc' not found
+ld: warning: search path 'libswscale' not found
+STRIP	ffmpeg
+[encoder] Hotovo: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-encoder/.runtime/media-encoder/ffmpeg-6.1.6
+EXIT CODE: 0

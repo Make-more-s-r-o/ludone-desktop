@@ -55,8 +55,8 @@ export async function verifyBundledEncoder(appPath, expectedArch, appTeam, run =
   if (build.arch !== expectedArch
     || build.ffmpeg?.version !== encoderLock.ffmpeg.version
     || build.ffmpeg?.sha256 !== encoderLock.ffmpeg.sha256
-    || build.lame?.version !== encoderLock.lame.version
-    || build.lame?.sha256 !== encoderLock.lame.sha256) {
+    || build.opus?.version !== encoderLock.opus.version
+    || build.opus?.sha256 !== encoderLock.opus.sha256) {
     throw new Error("BUILD.json media encoderu neodpovídá připnutým zdrojům a architektuře");
   }
   if (build.machOCanonicalSha256 !== await machOCanonicalSha256(executable)) {
@@ -66,9 +66,11 @@ export async function verifyBundledEncoder(appPath, expectedArch, appTeam, run =
   for (const required of [
     "--disable-autodetect",
     "--disable-everything",
-    "--enable-libmp3lame",
+    "--enable-libopus",
     "--enable-decoder=opus",
-    "--enable-encoder=libmp3lame",
+    "--enable-encoder=libopus",
+    "--enable-demuxer=matroska",
+    "--enable-muxer=webm",
   ]) {
     if (!configure.includes(required)) throw new Error(`BUILD.json postrádá povinnou volbu ${required}`);
   }
@@ -79,7 +81,7 @@ export async function verifyBundledEncoder(appPath, expectedArch, appTeam, run =
   if (JSON.stringify(packagedLock) !== JSON.stringify(encoderLock)) {
     throw new Error("Přibalený media-encoder-lock.json nesouhlasí s releasem");
   }
-  for (const dependency of [encoderLock.ffmpeg, encoderLock.lame]) {
+  for (const dependency of [encoderLock.ffmpeg, encoderLock.opus]) {
     const archiveName = path.basename(new URL(dependency.url).pathname);
     const archivePath = path.join(resources, "sources", archiveName);
     if (await fileDigest(archivePath) !== dependency.sha256) {
@@ -90,6 +92,28 @@ export async function verifyBundledEncoder(appPath, expectedArch, appTeam, run =
     const info = await lstat(path.join(resources, notice));
     if (!info.isFile() || info.isSymbolicLink() || info.size <= 0) {
       throw new Error(`Media encoder postrádá ${notice}`);
+    }
+  }
+  const sourceFiles = new Map([
+    ["README.md", path.join(projectRoot, "build", "media-encoder", "README.md")],
+    ["LICENSE.txt", path.join(projectRoot, "build", "media-encoder", "LICENSE.txt")],
+    ["media-encoder-lock.json", path.join(projectRoot, "scripts", "media-encoder-lock.json")],
+    ["prepare-media-encoder.mjs", path.join(projectRoot, "scripts", "prepare-media-encoder.mjs")],
+  ]);
+  for (const [name, original] of sourceFiles) {
+    const source = path.join(resources, "sources", name);
+    const info = await lstat(source);
+    if (!info.isFile() || info.isSymbolicLink() || info.size === 0
+      || await fileDigest(source) !== await fileDigest(original)) {
+      throw new Error(`Přibalený zdrojový soubor ${name} neodpovídá buildu`);
+    }
+  }
+  for (const oldArchive of ["lame-3.100.tar.gz", "opus-1.5.2.tar.gz"]) {
+    try {
+      await lstat(path.join(resources, "sources", oldArchive));
+      throw new Error(`Přibalené zdroje obsahují nepoužívaný archiv ${oldArchive}`);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
     }
   }
   run("codesign", ["--verify", "--strict", "--verbose=2", executable]);
