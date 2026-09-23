@@ -1,0 +1,140 @@
+{
+  "conclusion": "success",
+  "databaseId": 35852937848,
+  "headSha": "cb47c7532e9cbc1c75c160f7528aadfc36f9d72f",
+  "jobs": [
+    {
+      "completedAt": "2026-09-23T11:20:20Z",
+      "conclusion": "success",
+      "databaseId": 107154638312,
+      "name": "macos",
+      "startedAt": "2026-09-23T11:10:02Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-09-23T11:10:04Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-09-23T11:10:03Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:10:06Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-09-23T11:10:04Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:10:07Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 3,
+          "startedAt": "2026-09-23T11:10:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:10:18Z",
+          "conclusion": "success",
+          "name": "Run npm ci",
+          "number": 4,
+          "startedAt": "2026-09-23T11:10:07Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:10:18Z",
+          "conclusion": "success",
+          "name": "Ov\u011b\u0159en\u00ed tagu, z\u00e1lohy kl\u00ed\u010de a release konfigurace",
+          "number": 5,
+          "startedAt": "2026-09-23T11:10:18Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:11:30Z",
+          "conclusion": "success",
+          "name": "Run npm run gates",
+          "number": 6,
+          "startedAt": "2026-09-23T11:10:18Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:13:16Z",
+          "conclusion": "success",
+          "name": "Sestaven\u00ed p\u0159ibalen\u00e9ho Opus n\u00e1stroje pro oba typy Macu",
+          "number": 7,
+          "startedAt": "2026-09-23T11:11:30Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:13:16Z",
+          "conclusion": "success",
+          "name": "P\u0159\u00edprava not\u00e1\u0159sk\u00e9ho kl\u00ed\u010de mimo repozit\u00e1\u0159",
+          "number": 8,
+          "startedAt": "2026-09-23T11:13:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:18:53Z",
+          "conclusion": "success",
+          "name": "Podeps\u00e1n\u00ed, notarizace a ov\u011b\u0159en\u00ed DMG + ZIP",
+          "number": 9,
+          "startedAt": "2026-09-23T11:13:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:19:04Z",
+          "conclusion": "success",
+          "name": "Archiv podepsan\u00fdch artefakt\u016f p\u0159ed publikac\u00ed",
+          "number": 10,
+          "startedAt": "2026-09-23T11:18:53Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:20:06Z",
+          "conclusion": "success",
+          "name": "Publikace na stahnout.ludone.cz",
+          "number": 11,
+          "startedAt": "2026-09-23T11:19:04Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:20:12Z",
+          "conclusion": "success",
+          "name": "Ov\u011b\u0159en\u00ed ve\u0159ejn\u00e9ho feedu a soubor\u016f",
+          "number": 12,
+          "startedAt": "2026-09-23T11:20:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:20:15Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 23,
+          "startedAt": "2026-09-23T11:20:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:20:16Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 24,
+          "startedAt": "2026-09-23T11:20:15Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:20:18Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 25,
+          "startedAt": "2026-09-23T11:20:16Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35852937848/job/107154638312"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35852937848"
+}

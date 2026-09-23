@@ -1,10 +1,10 @@
 # Stav běhu `nahravky-dashboard`
-> **23. 9. — D21 / příprava 0.1.4:** jeden stereo WebM/Opus (96 kb/s), mikrofon L / systém R, je implementovaný a prošel review. 🧪 Čistý klon má **1554 PASS**, tři původní skipy; build/E6, oba lokální balíčky a syntetika včetně hodinového souboru prošly. PR [#146](https://github.com/Make-more-s-r-o/ludone-desktop/pull/146) je sloučený (`5f915f4`), [CI](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35848650479) prošlo. Kód 0.1.4 je připravený k vydání; tag čeká na nové pověření. Produkčně publikovaná zůstává 0.1.3. [Důkazy přejímky](../../../dukazy/stereo-opus-2026-09-23/REPORT.md), [kontrakt](STEREO-MP3.md). Živá schůzka a společný přepis čekají na Dana.
+> **23. 9. — vydaná 0.1.4 / D21–D22:** ✅ [release 35852937848](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35852937848) dokončil podpis, notarizaci a publikaci obou architektur. Nezávislá kontrola potvrdila feed 0.1.4, poznámky a dostupnost všech osmi balíčků/blockmap ([důkazy](../../../dukazy/vydani-0.1.4-2026-09-23/REPORT.md)). Jedna schůzka se odesílá jako jeden stereo WebM/Opus, mikrofon L / systém R. 🧪 1554 PASS a syntetická přejímka; ⛔ instalace z dosavadní 0.1.3, živý upload a společný přepis čekají na Dana. [Postup na Macu](OVERENI-NA-MACU.md#přejímka-stereo-webmopus--nrd-09-po-vydání-navazující-verze).
 
 > **Historické doplnění 15. 9. — D20 / NRD-09:** Dan schválil jediný stereo MP3 a jeden serverový záznam za schůzku. [Kontrakt a plán](STEREO-MP3.md) mají pro tento nový rozsah přednost před historickými per-track uploady níže. Implementace zatím čeká; produkčně vydaná je 0.1.3.
 
 
-**Aktualizováno 15. 9. 2026: verze 0.1.3 je vydaná.** Tag `v0.1.3` ukazuje na
+**Historický snapshot 15. 9. 2026: verze 0.1.3 je vydaná.** Tag `v0.1.3` ukazuje na
 `28a6563`; Dan jeho publikací výslovně pověřil koordinátora (D19).
 
 ✅ [Release 34948618429](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/34948618429)

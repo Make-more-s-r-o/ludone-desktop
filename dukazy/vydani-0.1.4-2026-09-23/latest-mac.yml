@@ -1,0 +1,21 @@
+version: 0.1.4
+files:
+  - url: LuDone-Desktop-0.1.4-x64.zip
+    sha512: yx1mESUX3dqQVGg6Kgsmqm3WSMy1r7b92nBAi6poZ5uDSBU/TEmndRX67CtsB+9A1bl53Qv1P5E8KO8VIFHmYw==
+    size: 141221721
+  - url: LuDone-Desktop-0.1.4-arm64.zip
+    sha512: 8IcGmouSTqeNUtgvtU52YMe2WAab/FUL2Ocfg6F79V5DLDWY9LtetPqJxN/E+vjwmxkYM1bEIaEFyYeP4RRW1w==
+    size: 133952191
+  - url: LuDone-Desktop-0.1.4-x64.dmg
+    sha512: dkQr3CJQ/Tok86BofWG/Pg2YrmDhk/vqc0fjiTTEIk/DqY9T2psjlCjxAC28HDTGLsnu+5Syfq1RQnGg5gn6HQ==
+    size: 141521984
+  - url: LuDone-Desktop-0.1.4-arm64.dmg
+    sha512: KI0eeY/u4eaUP2rglQUc5KrYEMu8IujXn+W4IHU7A+ogW0ijKpFSXYQzXCtdDzbCrHFCUf0C+7dQOMcpjl68zA==
+    size: 134258502
+path: LuDone-Desktop-0.1.4-x64.zip
+sha512: yx1mESUX3dqQVGg6Kgsmqm3WSMy1r7b92nBAi6poZ5uDSBU/TEmndRX67CtsB+9A1bl53Qv1P5E8KO8VIFHmYw==
+releaseNotes: |
+  Celá schůzka se odesílá jako jeden stereo soubor: mikrofon vlevo, systémový zvuk vpravo.
+  Úsporný formát WebM/Opus zachová nové nahrávky bez další ztrátové konverze. Soubor zůstává uložený na Macu pro pozdější odeslání a pokračování po restartu.
+  Původní nahrávky zůstávají zachované podle nastavené retence. Staré rozpracované uploady se nepřevádějí automaticky na nový záznam.
+releaseDate: '2026-09-23T11:18:24.929Z'

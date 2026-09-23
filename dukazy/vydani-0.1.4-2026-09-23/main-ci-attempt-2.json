@@ -1,0 +1,108 @@
+{
+  "attempt": 2,
+  "conclusion": "success",
+  "headSha": "cb47c7532e9cbc1c75c160f7528aadfc36f9d72f",
+  "jobs": [
+    {
+      "completedAt": "2026-09-23T11:08:54Z",
+      "conclusion": "success",
+      "databaseId": 107153870445,
+      "name": "gates",
+      "startedAt": "2026-09-23T11:07:25Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-09-23T11:07:27Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-09-23T11:07:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:07:29Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-09-23T11:07:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:07:31Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 3,
+          "startedAt": "2026-09-23T11:07:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:07:38Z",
+          "conclusion": "success",
+          "name": "Run npm ci",
+          "number": 4,
+          "startedAt": "2026-09-23T11:07:31Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:08:50Z",
+          "conclusion": "success",
+          "name": "Run npm run gates",
+          "number": 5,
+          "startedAt": "2026-09-23T11:07:38Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:08:52Z",
+          "conclusion": "success",
+          "name": "Run npm run build",
+          "number": 6,
+          "startedAt": "2026-09-23T11:08:50Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:08:52Z",
+          "conclusion": "skipped",
+          "name": "UI smoke (ru\u010dn\u00ed checkpoint na Macu)",
+          "number": 7,
+          "startedAt": "2026-09-23T11:08:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:08:52Z",
+          "conclusion": "skipped",
+          "name": "Audio smoke (ru\u010dn\u00ed checkpoint na Macu)",
+          "number": 8,
+          "startedAt": "2026-09-23T11:08:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:08:52Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 15,
+          "startedAt": "2026-09-23T11:08:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:08:52Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 16,
+          "startedAt": "2026-09-23T11:08:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-23T11:08:52Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 17,
+          "startedAt": "2026-09-23T11:08:52Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35849447839/job/107153870445"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35849447839"
+}

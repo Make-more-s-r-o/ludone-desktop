@@ -37,7 +37,7 @@ Dan 15. 9. 2026 výslovně změnil výsledek: „na app.ludone jde jen jeden zá
 | T-SR | Sol retence | Bezpečný úklid derivátů se sdíleným preflightem T-S1 | T-S0; API T-S1 |
 | T-S3 | Astra + nezávislé Sol review | Integrace, brány, syntetický audio důkaz, PR a přejímka | T-S1, T-S2, T-SR |
 
-Runtime a balení mají oddělené worktree a allowlisty. Root vlastní dokumentaci, integraci a commity. Nový release tag není součástí pověření D19 pro 0.1.3.
+Runtime a balení mají oddělené worktree a allowlisty. Root vlastní dokumentaci, integraci a commity. Nový release tag nebyl součástí pověření D19 pro 0.1.3; samostatné D22 následně výslovně povolilo vydání 0.1.4.
 
 ## Akceptace
 
@@ -51,4 +51,4 @@ Runtime a balení mají oddělené worktree a allowlisty. Root vlastní dokument
 
 ## Stav
 
-🧪 D21 je implementované a review produktového diffu je uzavřené. Společné brány, build, E6, skutečný encoder nad syntetickým audiem a hodinový soubor prošly. Čistý klon má 1554 PASS (tři původní skipy); oba lokální balíčky prošly včetně úplnosti závislostí a nativního testu z arm64 aplikace. PR #146 je sloučený a CI 35848650479 prošlo. Implementace a příprava 0.1.4 jsou dokončené. [Aktuální důkazy](../../../dukazy/stereo-opus-2026-09-23/REPORT.md). Produkčně vydaná zůstává 0.1.3; živá schůzka a přepis 0.1.4 čekají na Dana.
+🧪 D21 je implementované a review produktového diffu je uzavřené. Společné brány, build, E6, skutečný encoder nad syntetickým audiem a hodinový soubor prošly. Čistý klon má 1554 PASS (tři původní skipy); oba lokální balíčky prošly včetně úplnosti závislostí a nativního testu z arm64 aplikace. PR #146 je sloučený a CI 35848650479 prošlo. Implementace a příprava 0.1.4 jsou dokončené. [Aktuální důkazy](../../../dukazy/stereo-opus-2026-09-23/REPORT.md). ✅ 0.1.4 je podle D22 podepsaná, notarizovaná a veřejně vydaná; [release a HTTPS důkazy](../../../dukazy/vydani-0.1.4-2026-09-23/REPORT.md). Živá aktualizace, schůzka a přepis čekají na Dana.

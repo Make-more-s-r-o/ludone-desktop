@@ -1,6 +1,6 @@
 # Co čeká na Dana — LuDone Desktop
 
-**Navazující stereo WebM/Opus (D21):** implementace a příprava 0.1.4 jsou na main (PR #146), technické testy a CI prošly. Danovi zůstává [krátká živá přejímka](docs/changes/nahravky-dashboard/OVERENI-NA-MACU.md#přejímka-stereo-webmopus--nrd-09-po-vydání-navazující-verze) a rozhodnutí o novém release tagu. Níže uvedená kontrola nainstalované 0.1.2 je historický snapshot po vydání 0.1.3, nikoli nové měření tohoto běhu.
+**23. 9. 2026 — 0.1.4 je vydaná:** ✅ podpis, notarizace a veřejná publikace prošly. Pověření k tagu je vyřízené (D22), přístupy ani hesla znovu nehledat. Na Macu byla před vydáním zjištěna 0.1.3. Danovi zbývá **Nastavení → Zkontrolovat aktualizace → Aktualizovat**, potom [krátká živá přejímka](docs/changes/nahravky-dashboard/OVERENI-NA-MACU.md#přejímka-stereo-webmopus--nrd-09-po-vydání-navazující-verze): jeden webový záznam a přepis obou stran. Níže uvedené stavy instalace 0.1.2 a starších vydání jsou historické.
 
 > **Aktuální stav 15. 9. 2026:** 0.1.3 je publikovaná, podepsaná a notarizovaná pro oba typy Macu.
 > Read-only kontrola po vydání zatím ukazuje nainstalovanou 0.1.2.
