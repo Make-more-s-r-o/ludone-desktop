@@ -1,4 +1,11 @@
-# Jedna schůzka = jeden stereo MP3
+# Jedna schůzka = jeden stereo soubor
+
+> **23. 9. 2026 / D21:** Dan ponechal výběr formátu podle velikosti a účelu. Aktuální cíl
+> je **WebM/Opus, 96 kb/s stereo**, nové živé audio bez další ztrátové konverze. Název tohoto
+> dokumentu zůstává kvůli existujícím odkazům. Historické MP3 důkazy z 15. 9. nejsou důkazy
+> nového formátu; finální přejímka se zopakuje pro WebM. Zbytek kontraktu D20 (jediný upload,
+> identity, restart, owner/consent, bezpečné mazání, oba Macy) nadále platí.
+
 
 Dan 15. 9. 2026 výslovně změnil výsledek: „na app.ludone jde jen jeden záznam ze schůzky“ a doplnil formát MP3. Toto zadání nahrazuje oddělené produkční uploady popsané v P1/P5 a NRD-01. Rozsah je schválený konverzací; žádný hookový approval se nevyrábí. Navazuje na existující tier L a odložený redesign (D10).
 

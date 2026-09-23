@@ -181,3 +181,20 @@ Stav procesu lže.
 6. 🔴 **Nedokončený `codex login` smaže existující platný token.** Ověřeno časově: v 21:58
    `~/.codex/auth.json` existoval, po spuštění loginu, který zůstal viset na potvrzení
    v prohlížeči, zmizel. Obchvat: `CODEX_HOME` na Orca účet.
+
+
+## D21 — stereo Opus místo povinného MP3 (23. 9. 2026)
+
+Dan upřesnil, že formát má nejlépe odpovídat velikosti a přepisu, MP3 nebyl pevný požadavek.
+Jedna schůzka nadále znamená jeden stereo soubor a jeden serverový záznam (mikrofon L,
+systém R). Nové nahrávky budou WebM/Opus s cílovým tokem 96 kb/s, bez dalšího ztrátového
+překódování. Původní lokální stopy se zachovají podle retence. Bezpečné staré dvojice bez
+zahájeného uploadu lze spojit přibaleným převodníkem do stejného formátu; rozpracované
+historické uploady zůstávají chráněné migrační bariérou.
+
+Read-only checkout serveru `e3e7dbac` podporuje `audio/webm`, příponu `.webm` a maximum
+512 MiB. Normalizace kopíruje audio (`-c copy`) a přepis předává WebM službě Gemini.
+To dokládá kompatibilitu kódu, nikoli skutečný přepis či nasazenou verzi serveru.
+Zdroje: `private-recording-storage.ts:21–40`, `normalize.ts:542–601`,
+`transcribe/run.ts:1770–1785`, `file-drop-zone.tsx:99–104` v serverovém checkoutu.
+D21 mění pouze formát a potřebnou konverzi v D20; bezpečnost fronty a jeden upload platí dál.
