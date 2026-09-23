@@ -45,5 +45,31 @@
   ],
   "scope": "local future product prototypes only",
   "implementationApproved": false,
-  "sourceObservation": "Existing PWA ludone.cz/time-tracking, read-only; no personal screenshot or records copied"
+  "sourceObservation": "Existing PWA ludone.cz/time-tracking, read-only; no personal screenshot or records copied",
+  "iconAddendumSha256": "0636abef11a9e9d3657d6137df5cc9ce12507a3f057c9855a8ab3aaaf8946571",
+  "canonicalBrandAssets": {
+    "LuDone.svg": "dd15c49cb35f53b3d08e9a0b72ccb9378630df44493022557d82ac8a60d9f06a",
+    "LuDone-icon-iOS-Default-1024x1024@1x.png": "9c9572c4676fc721ceae4a46c7e7411273623209b2343828557d6050618a62fb",
+    "LuDone_favicon_32px.png": "96cd05a3dbea48da8fae3dcacb865f0c8a126ad0566a5365f77d065ab1d1782c",
+    "LuDone_favicon_128px.png": "051645ba22427c6b564235c22ec0b91e08ee18e07c9e32762fdbc9bf868e0e28"
+  },
+  "finalization": {
+    "date": "2026-09-23",
+    "agents": [
+      {
+        "authorVariant": "astra",
+        "model": "gpt-6-sol",
+        "effort": "medium"
+      },
+      {
+        "authorVariant": "opus",
+        "model": "gpt-6-sol",
+        "effort": "high"
+      }
+    ],
+    "authorRuntimeOutcome": "Original author dispatches interrupted by Orca runtime recovery; outputs preserved and finalized separately. Both terminal resources released.",
+    "rootIntegration": "Comparison, cache versioning, manual UI smoke, documentation; no product implementation.",
+    "evidence": "../../../../dukazy/desktop-experience-2026-09-23/ROOT-REVIEW.md",
+    "status": "ready for user design selection"
+  }
 }

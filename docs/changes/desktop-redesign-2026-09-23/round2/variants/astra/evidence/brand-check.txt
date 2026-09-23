@@ -1,0 +1,8 @@
+COMMAND node evidence/capture-brand.cjs
+PASS screenshot home light / assets loaded
+PASS screenshot meeting light / assets loaded
+PASS screenshot save light / assets loaded
+PASS screenshot day light / assets loaded
+PASS screenshot meeting dark / assets loaded
+PASS screenshot identity light / assets loaded
+EXIT 0

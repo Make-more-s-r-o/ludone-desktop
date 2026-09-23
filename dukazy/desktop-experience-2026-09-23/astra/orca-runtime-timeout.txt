@@ -1,0 +1,34 @@
+COMMAND node --check app.js
+EXIT 0
+PASS direct home / light / no horizontal overflow
+PASS direct working / light / no horizontal overflow
+PASS direct meeting / light / no horizontal overflow
+PASS direct save / light / no horizontal overflow
+PASS direct record-only / light / no horizontal overflow
+PASS direct day / light / no horizontal overflow
+PASS direct detail / light / no horizontal overflow
+PASS direct attention / light / no horizontal overflow
+PASS direct offline / light / no horizontal overflow
+PASS direct recovery / light / no horizontal overflow
+PASS direct settings / light / no horizontal overflow
+PASS direct update / light / no horizontal overflow
+PASS direct onboarding / light / no horizontal overflow
+PASS direct identity / light / no horizontal overflow
+PASS direct home / professional / no horizontal overflow
+PASS direct working / professional / no horizontal overflow
+PASS direct meeting / professional / no horizontal overflow
+PASS direct save / professional / no horizontal overflow
+PASS direct record-only / professional / no horizontal overflow
+PASS direct day / professional / no horizontal overflow
+PASS direct detail / professional / no horizontal overflow
+PASS direct attention / professional / no horizontal overflow
+PASS direct offline / professional / no horizontal overflow
+PASS direct recovery / professional / no horizontal overflow
+PASS direct settings / professional / no horizontal overflow
+PASS direct update / professional / no horizontal overflow
+PASS direct onboarding / professional / no horizontal overflow
+PASS direct identity / professional / no horizontal overflow
+PASS direct home / dark / no horizontal overflow
+PASS direct working / dark / no horizontal overflow
+FAIL {'id': 'local', 'ok': False, 'error': {'code': 'runtime_timeout', 'message': 'Timed out waiting for the Orca runtime to respond.'}, '_meta': {'runtimeId': None}}
+EXIT 1

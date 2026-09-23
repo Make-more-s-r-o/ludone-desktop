@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 1200">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#Nepojmenovaný_přechod_229);
+      }
+
+      .cls-2 {
+        fill: url(#Nepojmenovaný_přechod_38);
+        opacity: .12;
+      }
+
+      .cls-3 {
+        fill: url(#Nepojmenovaný_přechod_31);
+        opacity: .15;
+      }
+
+      .cls-4 {
+        fill: #fff;
+      }
+    </style>
+    <linearGradient id="Nepojmenovaný_přechod_229" data-name="Nepojmenovaný přechod 229" x1="600" y1="35.97" x2="600" y2="1164.6" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0d0d0d"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <radialGradient id="Nepojmenovaný_přechod_31" data-name="Nepojmenovaný přechod 31" cx="1696.01" cy="3205.21" fx="1696.01" fy="3606.24" r="855.01" gradientTransform="translate(2543.98 4635.32) rotate(-180) scale(1.15 1.29)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset=".28" stop-color="#fff" stop-opacity=".66"/>
+      <stop offset=".54" stop-color="#fff" stop-opacity=".38"/>
+      <stop offset=".75" stop-color="#fff" stop-opacity=".17"/>
+      <stop offset=".91" stop-color="#fff" stop-opacity=".05"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="Nepojmenovaný_přechod_38" data-name="Nepojmenovaný přechod 38" x1="600" y1="948.45" x2="600" y2="1291.96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".1" stop-color="#fff" stop-opacity=".06"/>
+      <stop offset=".29" stop-color="#fff" stop-opacity=".23"/>
+      <stop offset=".55" stop-color="#fff" stop-opacity=".5"/>
+      <stop offset=".88" stop-color="#fff" stop-opacity=".86"/>
+      <stop offset="1" stop-color="#fff"/>
+    </linearGradient>
+  </defs>
+  <g id="bg">
+    <rect class="cls-1" x="0" width="1200" height="1200"/>
+  </g>
+  <g id="shades">
+    <rect class="cls-3" x="-259.52" y="-346.88" width="1719.03" height="1719.03" transform="translate(1200 1025.27) rotate(180)"/>
+    <rect class="cls-2" x="-149.88" y="946.91" width="1499.76" height="470.44"/>
+  </g>
+  <g id="front">
+    <rect class="cls-4" x="363.43" y="479.05" width="615.7" height="103.05" transform="translate(-143.27 792.56) rotate(-56.15)"/>
+    <rect class="cls-4" x="352.1" y="457.81" width="103.05" height="403.78" transform="translate(-369.09 627.47) rotate(-56.15)"/>
+    <rect class="cls-4" x="618.07" y="771.07" width="403.78" height="103.05" transform="translate(-329.27 654.46) rotate(-36.77)"/>
+  </g>
+</svg>

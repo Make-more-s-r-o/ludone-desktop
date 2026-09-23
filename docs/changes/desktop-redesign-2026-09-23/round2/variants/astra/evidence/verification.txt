@@ -1,0 +1,97 @@
+COMMAND node evidence/verify-local.cjs
+PASS direct home / light / no horizontal overflow
+PASS direct working / light / no horizontal overflow
+PASS direct meeting / light / no horizontal overflow
+PASS direct save / light / no horizontal overflow
+PASS direct record-only / light / no horizontal overflow
+PASS direct day / light / no horizontal overflow
+PASS direct detail / light / no horizontal overflow
+PASS direct attention / light / no horizontal overflow
+PASS direct offline / light / no horizontal overflow
+PASS direct recovery / light / no horizontal overflow
+PASS direct settings / light / no horizontal overflow
+PASS direct update / light / no horizontal overflow
+PASS direct onboarding / light / no horizontal overflow
+PASS direct identity / light / no horizontal overflow
+PASS direct home / professional / no horizontal overflow
+PASS direct working / professional / no horizontal overflow
+PASS direct meeting / professional / no horizontal overflow
+PASS direct save / professional / no horizontal overflow
+PASS direct record-only / professional / no horizontal overflow
+PASS direct day / professional / no horizontal overflow
+PASS direct detail / professional / no horizontal overflow
+PASS direct attention / professional / no horizontal overflow
+PASS direct offline / professional / no horizontal overflow
+PASS direct recovery / professional / no horizontal overflow
+PASS direct settings / professional / no horizontal overflow
+PASS direct update / professional / no horizontal overflow
+PASS direct onboarding / professional / no horizontal overflow
+PASS direct identity / professional / no horizontal overflow
+PASS direct home / dark / no horizontal overflow
+PASS direct working / dark / no horizontal overflow
+PASS direct meeting / dark / no horizontal overflow
+PASS direct save / dark / no horizontal overflow
+PASS direct record-only / dark / no horizontal overflow
+PASS direct day / dark / no horizontal overflow
+PASS direct detail / dark / no horizontal overflow
+PASS direct attention / dark / no horizontal overflow
+PASS direct offline / dark / no horizontal overflow
+PASS direct recovery / dark / no horizontal overflow
+PASS direct settings / dark / no horizontal overflow
+PASS direct update / dark / no horizontal overflow
+PASS direct onboarding / dark / no horizontal overflow
+PASS direct identity / dark / no horizontal overflow
+PASS 1 hledání projektu
+PASS 1 zavření panelu zachová běh
+PASS 1 znovuotevření zachová stejný úsek
+PASS 2 souběh čas + zvuk
+PASS 2 stop zvuku nezastaví čas
+PASS 2 uložení + fronta při běhu práce
+PASS 2 stop času vytvoří čekající úsek
+PASS 2 serverové potvrzení času samostatně
+PASS 2 odesláno rozlišeno od ověřeno
+PASS 2 ověření dostupnosti
+PASS 3 ad hoc jen na Macu bez výkazu
+PASS 4 přepnutí zachová předchozí popis a projekt
+PASS 4 původní kontext nahrávky a firma beze změny
+PASS 4 stop času nezastaví nahrávku
+PASS 5 volba firmy sama nic neodešle
+PASS 5 samostatné potvrzení odeslání
+PASS 5 obnovení přihlášení neodešle starou nahrávku
+PASS 6 připojení se nerovná odeslání
+PASS 6 výsledky zvuku a času jsou nezávislé
+PASS 6 ověření po návratu sítě
+PASS 7 obnova nepřičítá noc ani neodesílá zvuk
+PASS 8 konkrétní cíl přepisu
+PASS 8 Finder s konkrétní kopií
+PASS 8 bezpečný koš pojmenuje dopad
+PASS 8 koš odebere pouze vybranou místní položku
+PASS 9 aktualizace blokována při souběhu
+PASS 9 samotné zastavení času neinstaluje
+PASS 9 aktualizace blokována při nedokončeném uložení
+PASS 9 dokončení obou činností není souhlas s restartem
+PASS 9 výslovný závěrečný restart
+PASS 10 onboarding vede k připravenému panelu
+PASS 10 Dock preference má odezvu
+PASS 10 změna tématu
+PASS 10 pět monochromatických stavů ve dvou lištách + čtyři velikosti
+PASS výpadek zdroje zachová obě činnosti
+PASS oprava zdroje nesmaže informaci o výpadku
+PASS výslovné převzetí bez automatického odeslání
+PASS limit serveru neobchází retry
+PASS retry až po skončení limitu
+PASS automatika pouze nové nahrávky
+PASS parent protokol validní scénář a téma
+PASS parent protokol odmítá cizí zdroj
+PASS parent protokol odmítá neplatný whitelist
+PASS review 1 změna firmy ruší souhlas fronty
+PASS review 1 refresh neodešle do změněné firmy
+PASS review 1 nový souhlas dovolí nový cíl
+PASS review 2 restart home nevymyslí čas
+PASS review 2 restart record-only nevymyslí čas
+PASS review 2 restart zachová zvuk bez výkazu
+PASS review 3 místní kontrola je jiný stav než chyba serveru
+PASS review 3 předání nehlásí neexistující odmítnutí
+PASS flows: 51 assertions
+PASS browser console: no page errors
+EXIT 0

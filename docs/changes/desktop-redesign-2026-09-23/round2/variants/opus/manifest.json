@@ -1,0 +1,14 @@
+{
+  "slug": "opus",
+  "concept": "Dvě stopy",
+  "thesis": "Práce a zvuk jsou dvě nezávislé stopy jednoho dne. Potkávají se v čase, ale nikdy si nepřepíšou projekt, firmu ani výkaz; panel ukazuje, co běží teď, okno ukazuje dnešek.",
+  "entry": "index.html",
+  "panelWidth": 416,
+  "panelHeight": 680,
+  "windowWidth": 700,
+  "windowHeight": 760,
+  "scenarios": ["home", "working", "meeting", "save", "record-only", "day", "detail", "attention", "offline", "recovery", "settings", "update", "onboarding", "identity"],
+  "themes": ["light", "professional", "dark"],
+  "notes": "NOTES.md",
+  "evidence": "evidence/"
+}
