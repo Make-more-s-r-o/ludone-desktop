@@ -83,7 +83,7 @@ se nevytváří jen kvůli tomuto testu. Jednotkové testy se nezapisují jako �
 
 ## Přejímka stereo WebM/Opus — NRD-09 (po vydání navazující verze)
 
-Tento postup zatím není důkaz funkčnosti ani oznámení vydání. Produkčně je doložená 0.1.3; nový kód je integrovaný, ale musí dokončit přejímku a schválené vydání.
+Tento postup zatím není důkaz funkčnosti ani oznámení vydání. Produkčně je doložená 0.1.3; nový kód 0.1.4 je na main po technické přejímce a zeleném CI. Čeká na pověření k novému tagu a následné podepsané vydání.
 
 1. Po schváleném vydání klikni v aplikaci 0.1.3 na „Aktualizovat“. Po restartu v Nastavení ověř verzi **0.1.4** a správnou firmu. Nahraj krátkou schůzku: řekni „tohle je mikrofon“, nech protistranu říct „tohle je systémový zvuk“. Použij sluchátka, aby kontrolu nerušil přeslech z reproduktorů.
 2. Zvol „Uložit a odeslat“. Po dokončení má na webu vzniknout **jeden** záznam s názvem celé schůzky. Spusť přepis právě u něj; musí obsahovat obě strany ve správném pořadí.

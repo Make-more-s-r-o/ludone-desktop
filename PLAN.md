@@ -1,6 +1,6 @@
 # Implementační plán — LuDone Desktop
 
-**Navazující 0.1.4 / D21:** implementovaná změna [jednoho stereo WebM/Opus za schůzku](docs/changes/nahravky-dashboard/STEREO-MP3.md). Runtime, balení a retence od Sol agentů jsou integrované a prošly review; probíhá finální přejímka. Stav ověření a přejímka jsou v masterplánu; tag nové verze zatím není povolený.
+**Navazující 0.1.4 / D21:** implementovaná změna [jednoho stereo WebM/Opus za schůzku](docs/changes/nahravky-dashboard/STEREO-MP3.md). Runtime, balení a retence od Sol agentů jsou integrované, technická přejímka i CI prošly a PR #146 je sloučený. Stav ověření a přejímka jsou v masterplánu; tag nové verze zatím není povolený.
 
 **15. 9. 2026 — patch 0.1.3:** PR #142 sloučen (`c1ca930`), finální čistý klon i GitHub CI zelené, 1515 PASS. Tag v0.1.3 je publikovaný; release 34948618429 i veřejná kontrola prošly. Zbývá živá přejímka na Macu.
 
