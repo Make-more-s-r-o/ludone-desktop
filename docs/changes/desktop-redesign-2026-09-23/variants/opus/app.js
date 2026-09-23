@@ -1,0 +1,1053 @@
+/* LuDone Desktop — návrh „Jedna věc teď“ (varianta opus).
+   Čistý JS bez buildu a bez sítě. Všechna data jsou fiktivní a všechny akce jen lokální simulace:
+   nic se nenahrává, neodesílá, nepřihlašuje ani neotevírá mimo tuto stránku. */
+(function () {
+  'use strict';
+
+  var SCENARIOS = ['idle', 'recording', 'saved', 'blocked-company', 'uploading', 'retry', 'settings', 'update', 'identity', 'detail'];
+  var THEMES = ['light', 'professional', 'dark'];
+  var WINDOW_SCENARIOS = ['uploading', 'retry', 'settings', 'identity', 'detail'];
+  var COMPANIES = ['Studio Sever', 'Ateliér Jih'];
+  var USER = 'Alex Novák';
+  var STEPS = ['Na Macu', 'Ve frontě', 'Odesláno', 'Ověřeno'];
+
+  /* ---------- ikony (inline SVG, 16 × 16) ---------- */
+  var P = {
+    settings: '<path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7"/><circle cx="11" cy="4.5" r="1.5"/><circle cx="5" cy="11.5" r="1.5"/>',
+    check: '<path d="M3 8.5l3 3 7-7"/>',
+    checkCircle: '<circle cx="8" cy="8" r="6.2"/><path d="M5.3 8.2l1.8 1.8 3.7-3.8"/>',
+    verified: '<path d="M8 1.8l5 1.9v3.9c0 3-2.1 5.3-5 6.6-2.9-1.3-5-3.6-5-6.6V3.7z"/><path d="M5.6 8l1.7 1.7 3.2-3.3"/>',
+    alert: '<path d="M8 2.2l6.2 11H1.8z"/><path d="M8 6.6v2.9M8 11.3v.1"/>',
+    up: '<path d="M8 13V3.5M4 7.3l4-4 4 4"/>',
+    laptop: '<rect x="2.5" y="3.5" width="11" height="7.5" rx=".6"/><path d="M1 13h14"/>',
+    clock: '<circle cx="8" cy="8" r="6.2"/><path d="M8 4.8V8l2.2 1.4"/>',
+    key: '<circle cx="5.2" cy="10.8" r="2.7"/><path d="M7.2 8.8L13 3M11 5l1.6 1.6M9.6 6.4l1.2 1.2"/>',
+    wifiOff: '<path d="M2 2l12 12M5.4 8.7a4 4 0 0 1 2.1-1M1.8 5.8a8.6 8.6 0 0 1 3-1.8M10.5 7.9c.3.2.6.4.8.7M8.4 4.1a8.6 8.6 0 0 1 5.8 1.7M8 12h.01"/>',
+    refresh: '<path d="M13 3.5v3h-3"/><path d="M12.7 6.5A5 5 0 1 0 12.2 10.5"/>',
+    chevR: '<path d="M6 3.5L10.5 8 6 12.5"/>',
+    more: '<path d="M3.5 8h.01M8 8h.01M12.5 8h.01" stroke-width="2.6"/>',
+    trash: '<path d="M2.8 4.3h10.4M6.3 4.3V2.8h3.4v1.5M4 4.3l.6 9h6.8l.6-9"/>',
+    folder: '<path d="M1.8 4.2c0-.5.4-.9.9-.9h3.3l1.4 1.5h5.9c.5 0 .9.4.9.9v6.9c0 .5-.4.9-.9.9H2.7c-.5 0-.9-.4-.9-.9z"/>',
+    external: '<path d="M9.5 2.5h4v4M13.5 2.5L7.5 8.5M12 9.5v3.3c0 .4-.3.7-.7.7H3.2c-.4 0-.7-.3-.7-.7V4.7c0-.4.3-.7.7-.7h3.3"/>',
+    user: '<circle cx="8" cy="5.5" r="2.7"/><path d="M2.8 13.6c.6-2.4 2.7-3.8 5.2-3.8s4.6 1.4 5.2 3.8"/>',
+    timer: '<circle cx="8" cy="9" r="5.2"/><path d="M8 6.3V9l1.8 1.1M6.3 1.8h3.4"/>',
+    x: '<path d="M4 4l8 8M12 4l-8 8"/>',
+    info: '<circle cx="8" cy="8" r="6.2"/><path d="M8 7.3v3.6M8 5.1v.1"/>',
+    download: '<path d="M8 2.5V10M4.5 6.8L8 10.3l3.5-3.5M2.8 13.3h10.4"/>',
+    hourglass: '<path d="M4 2h8M4 14h8M5 2c0 3 3 3.8 3 6s-3 3-3 6M11 2c0 3-3 3.8-3 6s3 3 3 6"/>',
+    list: '<path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/>',
+    mic: '<rect x="6" y="1.8" width="4" height="7.6" rx="2"/><path d="M3.6 7.6a4.4 4.4 0 0 0 8.8 0M8 12v2.2"/>',
+    chevL: '<path d="M10 3.5L5.5 8l4.5 4.5"/>',
+    building: '<path d="M3 14V3.2c0-.4.3-.7.7-.7h5.6c.4 0 .7.3.7.7V14M10 6.5h2.3c.4 0 .7.3.7.7V14M1.8 14h12.4M5.5 5h1.5M5.5 7.8h1.5M5.5 10.6h1.5"/>'
+  };
+  function ic(name, cls) {
+    return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 16 16" aria-hidden="true" focusable="false">' + P[name] + '</svg>';
+  }
+  var MARK = '<svg viewBox="0 0 22 22" aria-hidden="true" focusable="false"><rect width="22" height="22" rx="6" fill="currentColor"/>' +
+    '<path d="M4 18 10 6l4 8 6-5" transform="translate(4.5 4.5) scale(.5416667)" fill="none" stroke="var(--background)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* ---------- fiktivní data ---------- */
+  function rec(id) {
+    var base = {
+      tyden: { id: 'tyden', name: 'Týdenní domluva', meta: '23. 9. 2026 · 14:30 · 12:34 · 9,2 MB', dur: '12:34' },
+      web: { id: 'web', name: 'Návrh webu', meta: '6:08 · 4,5 MB', dur: '6:08' },
+      rozp: { id: 'rozp', name: 'Kontrola rozpočtu', meta: '8:42 · 6,4 MB', dur: '8:42' }
+    }[id];
+    return Object.assign({}, base);
+  }
+  function itemsFor(sc) {
+    var t = rec('tyden'), w = rec('web'), r = rec('rozp');
+    t.state = 'uploading'; t.pct = 42; t.company = 'Studio Sever'; t.own = true;
+    w.state = 'local'; r.state = 'auth';
+    if (sc === 'retry') { t.state = 'net'; t.pct = 0; }
+    if (sc === 'recording' || sc === 'saved' || sc === 'blocked-company') return [w, r];
+    return [t, w, r];
+  }
+
+  /* ---------- stav ---------- */
+  var S;
+  var timers = {};
+  function clearTimers() {
+    Object.keys(timers).forEach(function (k) { clearInterval(timers[k]); clearTimeout(timers[k]); });
+    timers = {};
+  }
+  function fresh(scenario, theme) {
+    clearTimers();
+    return {
+      scenario: scenario,
+      theme: theme,
+      company: scenario === 'blocked-company' ? null : 'Studio Sever',
+      companyNote: false,
+      destOpen: false,
+      name: 'Týdenní domluva',
+      nameError: '',
+      sysFail: false,
+      sysBusy: false,
+      busy: null,          // 'checking' | 'stopping'
+      flow: null,          // 'sending' | 'sent' | 'kept'
+      items: itemsFor(scenario),
+      tab: scenario === 'settings' ? 'ucet' : 'nahravky',
+      detailId: 'tyden',
+      detailFrom: 'uploading',
+      menu: null,
+      dialog: null,
+      toast: null,
+      focusNext: null,
+      track: { on: false, secs: 0 },
+      upd: { state: scenario === 'update' ? 'offer' : 'none', recording: false, saving: false },
+      set: {
+        autostart: true, dock: false, autoUpload: false, retention: '7', env: 'prod',
+        signedIn: true, audioTest: false, diag: null, check: null, refreshing: false
+      }
+    };
+  }
+
+  function readQuery() {
+    var q = new URLSearchParams(location.search);
+    var sc = q.get('scenario'), th = q.get('theme');
+    return {
+      scenario: SCENARIOS.indexOf(sc) >= 0 ? sc : 'idle',
+      theme: THEMES.indexOf(th) >= 0 ? th : 'light'
+    };
+  }
+
+  function item(id) { return S.items.filter(function (i) { return i.id === id; })[0]; }
+  function needsYou(i) { return ['net', 'auth', 'owner', 'company'].indexOf(i.state) >= 0; }
+  function inFlight(i) { return ['uploading', 'queued', 'limit', 'verifying'].indexOf(i.state) >= 0; }
+
+  /* ---------- sdílené kousky ---------- */
+  function sw(k, on, label, hint, act) {
+    return '<div class="kv"><span class="kv__k" id="lbl-' + k + '">' + label + (hint ? '<small>' + hint + '</small>' : '') + '</span>' +
+      '<button type="button" class="switch" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" aria-labelledby="lbl-' + k + '" data-act="' + act + '" data-k="sw-' + k + '">' +
+      '<span class="switch__state">' + (on ? 'Zapnuto' : 'Vypnuto') + '</span><span class="switch__track"></span></button></div>';
+  }
+
+  function trackHtml(it) {
+    var reached = 0, mode = 'is-here', pct = 100;
+    switch (it.state) {
+      case 'local': reached = 0; break;
+      case 'queued': reached = 1; break;
+      case 'uploading': reached = 2; mode = 'is-now'; pct = it.pct; break;
+      case 'sent': reached = 2; break;
+      case 'verifying': reached = 3; mode = 'is-now'; pct = 55; break;
+      case 'verified': reached = 3; mode = 'is-final'; break;
+      default: reached = 1; mode = 'is-blocked';
+    }
+    var desc = 'Průběh: ' + STEPS.map(function (s, i) {
+      return s + (i < reached ? ' hotovo' : i === reached ? (mode === 'is-blocked' ? ' zastaveno' : mode === 'is-now' ? ' probíhá' : ' zde') : ' zatím ne');
+    }).join(', ');
+    return '<ol class="track" aria-label="' + esc(desc) + '">' + STEPS.map(function (s, i) {
+      var cls = i < reached ? 'is-done' : i === reached ? mode : '';
+      var w = i < reached ? 100 : i === reached ? (mode === 'is-blocked' ? 0 : pct) : 0;
+      var lbl = i === reached && mode === 'is-now' ? (i === 2 ? 'Odesílá se' : 'Ověřuji') : s;
+      return '<li class="' + cls + '" aria-hidden="true"><span class="track__seg"><i data-pct-of="' + (i === reached ? it.id : '') + '" style="width:' + w + '%"></i></span><span>' + lbl + '</span></li>';
+    }).join('') + '</ol>';
+  }
+
+  /* Popis stavu jedné nahrávky: jedna věta + co můžeš udělat. */
+  function info(it) {
+    var co = it.company || S.company;
+    switch (it.state) {
+      case 'local': return { icon: 'laptop', tone: '', text: it.taken ? '<b>Převzato pod tvůj účet.</b> <span>Zatím se nikam neodeslalo.</span>' : '<b>Uloženo jen na Macu.</b> <span>Nikam se neodeslalo.</span>', main: ['send'], more: ['finder', 'trash'] };
+      case 'queued': return { icon: 'clock', tone: '', text: '<b>Ve frontě.</b> <span>Odešle se, jakmile to půjde.</span>', main: [], more: ['finder'] };
+      case 'uploading': return { icon: 'up', tone: '', text: '<b>Odesílá se do ' + esc(co || '') + '</b> <span class="num" data-pct-text="' + it.id + '">· ' + it.pct + ' %</span>', main: [], more: ['finder'] };
+      case 'sent': return { icon: 'checkCircle', tone: '', text: '<b>Odesláno do ' + esc(co || '') + '.</b> <span>Zatím neověřeno v LuDone.</span>', main: ['verify'], more: ['finder', 'trash'] };
+      case 'verifying': return { icon: 'refresh', tone: '', text: '<b>Ověřuji v LuDone…</b>', main: [], more: [] };
+      case 'verified': return { icon: 'verified', tone: 'ok', text: '<b>Ověřeno v LuDone.</b> <span>Na serveru je úplná a shoduje se.</span>', main: ['open'], more: ['finder', 'trash'] };
+      case 'net': return { icon: 'wifiOff', tone: 'warn', text: '<b>Čeká na síť.</b> <span>Tvoje nahrávka, odeslání jsi potvrdil. Další pokus proběhne sám, nebo to zkus hned.</span>', main: ['retry'], more: ['finder'] };
+      case 'auth': return { icon: 'key', tone: 'warn', text: '<b>Čeká na obnovení přihlášení.</b> <span>Po přihlášení se odešle sama.</span>', main: ['reauth'], more: ['finder'] };
+      case 'limit': return { icon: 'hourglass', tone: 'warn', text: '<b>Server teď další nahrávky nepřijímá.</b> <span>Po vypršení serverového limitu se odešle sama. Nic nemusíš dělat.</span>', main: [], more: ['finder'] };
+      case 'owner': return { icon: 'user', tone: 'warn', text: '<b>Vznikla pod jiným účtem.</b> <span>Než ji odešleš, převezmi ji. Převzetí samo nic neodešle.</span>', main: ['own'], more: ['finder', 'trash'] };
+      case 'company': return S.company
+        ? { icon: 'building', tone: 'warn', text: '<b>Firma je vybraná.</b> <span>Odešle se až na tvůj pokyn.</span>', main: ['send'], more: ['finder', 'trash'] }
+        : { icon: 'building', tone: 'warn', text: '<b>Chybí firma pro odeslání.</b> <span>Výběr firmy sám nic neodešle.</span>', main: ['pickco'], more: ['finder', 'trash'] };
+    }
+    return { icon: 'info', tone: '', text: '', main: [], more: [] };
+  }
+
+  var ACT = {
+    send: function (it) { return '<button type="button" class="btn btn--outline btn--sm" data-act="item-send" data-id="' + it.id + '" data-k="send-' + it.id + '">' + ic('up', 'i--sm') + 'Uložit a odeslat' + (S.company ? '' : '') + '</button>'; },
+    verify: function (it) { return '<button type="button" class="btn btn--outline btn--sm" data-act="item-verify" data-id="' + it.id + '" data-k="verify-' + it.id + '">' + ic('verified', 'i--sm') + 'Ověřit v LuDone</button>'; },
+    open: function (it) { return '<button type="button" class="btn btn--outline btn--sm" data-act="item-open" data-id="' + it.id + '" data-k="open-' + it.id + '">' + ic('external', 'i--sm') + 'Otevřít v LuDone</button>'; },
+    retry: function (it) { return '<button type="button" class="btn btn--primary btn--sm" data-act="item-retry" data-id="' + it.id + '" data-k="retry-' + it.id + '">' + ic('refresh', 'i--sm') + 'Zkusit znovu</button>'; },
+    reauth: function (it) { return '<button type="button" class="btn btn--outline btn--sm" data-act="item-reauth" data-id="' + it.id + '" data-k="reauth-' + it.id + '"' + (it.busy ? ' aria-disabled="true" aria-busy="true"' : '') + '>' + ic('key', 'i--sm') + (it.busy ? 'Přihlašuji…' : 'Obnovit přihlášení') + '</button>'; },
+    own: function (it) { return '<button type="button" class="btn btn--outline btn--sm" data-act="item-own" data-id="' + it.id + '" data-k="own-' + it.id + '">' + ic('user', 'i--sm') + 'Převzít pod svůj účet</button>'; },
+    pickco: function (it) { return '<button type="button" class="btn btn--outline btn--sm" data-act="tab" data-tab="ucet" data-k="pickco-' + it.id + '">' + ic('building', 'i--sm') + 'Vybrat firmu</button>'; }
+  };
+  var MORE = {
+    finder: function (it) { return '<button type="button" class="btn btn--ghost btn--sm" data-act="item-finder" data-id="' + it.id + '" data-k="finder-' + it.id + '">' + ic('folder', 'i--sm') + 'Ukázat ve Finderu</button>'; },
+    trash: function (it) { return '<button type="button" class="btn btn--ghost btn--sm danger" data-act="item-trash" data-id="' + it.id + '" data-k="trash-' + it.id + '">' + ic('trash', 'i--sm') + 'Přesunout do koše…</button>'; }
+  };
+
+  /* ---------- PANEL ---------- */
+  function panelHeader() {
+    return '<header class="bar">' +
+      '<span class="brand">' + MARK + '<span class="brand__name">LuDone</span></span>' +
+      '<span class="bar__who">' + (S.set.signedIn ? '<b>' + USER + '</b> · připojeno' : 'Nepřihlášeno') + '</span>' +
+      '<button type="button" class="btn btn--ghost btn--sm" data-act="open-settings" data-k="hdr-settings">' + ic('settings') + 'Nastavení</button>' +
+      '</header>';
+  }
+
+  function picker(name) {
+    return '<div class="picker" role="radiogroup" aria-label="Firma pro odesílání">' + COMPANIES.map(function (c, n) {
+      return '<label class="pick"><input type="radio" name="' + name + '" value="' + esc(c) + '" data-act="pick-company" data-k="co-' + name + '-' + n + '"' + (S.company === c ? ' checked' : '') + '>' +
+        '<span>' + esc(c) + '</span>' + (S.company === c ? '<span class="pick__meta">vybraná</span>' : '') + '</label>';
+    }).join('') + '</div>';
+  }
+
+  function dest(label) {
+    if (!S.company) {
+      return '<div class="note" role="group" aria-labelledby="dest-miss">' +
+        '<p class="note__title" id="dest-miss">' + ic('building') + 'Chybí firma pro odeslání</p>' +
+        '<p>Bez ní nevím, kam nahrávku poslat. Vyber ji tady — výběr sám nic neodešle a starší nahrávky nerozešle.</p>' +
+        picker('miss') + '</div>';
+    }
+    var h = '<div class="dest">' +
+      '<div><div class="dest__k">' + label + '</div><div class="dest__v">' + esc(S.company) + '<small>účet ' + USER + '</small></div></div>' +
+      '<button type="button" class="btn btn--ghost btn--sm" data-act="dest-toggle" aria-expanded="' + (S.destOpen ? 'true' : 'false') + '" data-k="dest-change">' + (S.destOpen ? 'Zavřít' : 'Změnit') + '</button>';
+    if (S.destOpen) {
+      h += picker('dest') + '<p class="hint" style="grid-column:1/-1">Platí pro další odesílání. Nic se tím neodešle.</p>';
+    } else if (S.companyNote) {
+      h += '<p class="saved-line" role="status">' + ic('check', 'i--sm') + 'Firma uložena. Nic se tím neodeslalo.</p>';
+    }
+    return h + '</div>';
+  }
+
+  function sourcesReady() {
+    return '<ul class="sources" aria-label="Připravenost zvuku">' +
+      '<li class="src"><span class="ch" title="Levý kanál">L</span><span class="src__name"><b>Tvůj hlas</b><small>Mikrofon</small></span><span class="src__state src__state--ok">' + ic('check', 'i--sm') + 'Připraveno</span></li>' +
+      '<li class="src"><span class="ch" title="Pravý kanál">R</span><span class="src__name"><b>Druhá strana hovoru</b><small>Zvuk z Macu</small></span><span class="src__state src__state--ok">' + ic('check', 'i--sm') + 'Připraveno</span></li>' +
+      '</ul>';
+  }
+
+  function heroIdle() {
+    var busy = S.busy === 'checking';
+    return '<section class="hero" aria-labelledby="h-main">' +
+      '<h1 class="title" id="h-main">' + (busy ? 'Kontroluji zvuk…' : 'Připraveno k nahrávání') + '</h1>' +
+      sourcesReady() +
+      dest('Nahrávka se odešle do') +
+      '<div class="actions"><button type="button" class="btn btn--primary btn--lg btn--block" data-act="start" data-k="start"' + (busy ? ' aria-disabled="true" aria-busy="true"' : '') + '>' +
+      '<span class="dot-rec" aria-hidden="true"></span>' + (busy ? 'Spouštím…' : 'Nahrát') + '</button></div>' +
+      '</section>';
+  }
+
+  function heroRecording() {
+    var f = S.sysFail, stopping = S.busy === 'stopping';
+    var h = '<section class="hero" aria-labelledby="h-main">' +
+      '<p class="state ' + (f ? 'state--warn' : 'state--rec') + '"><span class="rec-dot" aria-hidden="true"></span>' +
+      '<span id="h-main">' + (stopping ? 'Dokončuji nahrávku…' : f ? 'Nahrává se jen tvůj hlas' : 'Nahrává se') + '</span>' +
+      '<span class="state__aside">' + (S.company ? 'pro ' + esc(S.company) : 'firma zatím nevybraná') + '</span></p>' +
+      '<p class="timer" role="timer" aria-label="Délka nahrávky 12 minut 34 sekund">12:34</p>' +
+      '<ul class="sources" aria-label="Zdroje zvuku">' +
+      '<li class="src src--live"><span class="ch" title="Levý kanál">L</span><span class="src__name"><b>Tvůj hlas</b><small>Mikrofon</small></span>' +
+      '<span class="meter" role="img" aria-label="Mikrofon: signál přichází"><span class="meter__fill"></span></span><span class="src__state src__state--ok">' + ic('check', 'i--sm') + 'Slyším</span></li>' +
+      '<li class="src src--live"><span class="ch" title="Pravý kanál">R</span><span class="src__name"><b>Druhá strana</b><small>Zvuk z Macu</small></span>' +
+      (f ? '<span class="meter meter--r meter--dead" role="img" aria-label="Zvuk z Macu: stopa přerušena"><span class="meter__fill"></span></span><span class="src__state src__state--warn">' + ic('alert', 'i--sm') + 'Přerušeno</span>'
+         : '<span class="meter meter--r" role="img" aria-label="Zvuk z Macu: signál přichází"><span class="meter__fill"></span></span><span class="src__state src__state--ok">' + ic('check', 'i--sm') + 'Slyším</span>') +
+      '</li></ul>';
+    if (f) {
+      h += '<div class="note" role="alert"><p class="note__title">' + ic('alert') + 'Druhá strana hovoru se nenahrává</p>' +
+        '<p>Tvůj hlas ano. Pokračovat můžeš, ale ze schůzky bude jen půlka.</p>' +
+        '<div class="note__actions"><button type="button" class="btn btn--outline btn--sm" data-act="sys-restore" data-k="sys-restore"' + (S.sysBusy ? ' aria-disabled="true" aria-busy="true"' : '') + '>' + ic('refresh', 'i--sm') + (S.sysBusy ? 'Obnovuji…' : 'Zkusit obnovit') + '</button>' +
+        '<span class="hint">nebo ukonči a ulož, co už je nahrané</span></div></div>';
+    }
+    h += '<div class="actions"><button type="button" class="btn btn--primary btn--lg btn--block" data-act="stop" data-k="stop"' + (stopping ? ' aria-disabled="true" aria-busy="true"' : '') + '><span class="sq" aria-hidden="true"></span>' + (stopping ? 'Ukládám…' : 'Ukončit a uložit') + '</button></div>' +
+      '<div class="sim"><span class="sim__k">Simulace</span>' +
+      '<button type="button" class="switch" role="switch" aria-checked="' + (f ? 'true' : 'false') + '" data-act="sim-sys" data-k="sim-sys"><span>Výpadek zvuku z Macu</span><span class="switch__track"></span></button></div>' +
+      '</section>';
+    return h;
+  }
+
+  function heroSaved() {
+    var t = item('tyden');
+    if (S.flow && t) {
+      var title = S.flow === 'kept' ? 'Zůstává na tomto Macu' : S.flow === 'sent' ? 'Odesláno do ' + esc(S.company) : 'Odesílá se do ' + esc(S.company);
+      var text = S.flow === 'kept' ? esc(S.name) + ' se nikam neodeslala. Odeslat ji můžeš kdykoli v Nahrávkách na Macu.'
+        : S.flow === 'sent' ? 'Server nahrávku přijal. Ověření v LuDone najdeš v Nahrávkách — „odesláno“ ještě neznamená „ověřeno“.'
+        : 'Panel můžeš zavřít, odesílání poběží dál. Nahrávka zůstává i na Macu.';
+      return '<section class="hero" aria-labelledby="h-main">' +
+        '<p class="state state--ok">' + ic('checkCircle', 'i--sm') + 'Uloženo na Macu<span class="state__aside num">12:34 · 9,2 MB</span></p>' +
+        '<h1 class="title" id="h-main" role="status">' + title + '</h1>' +
+        '<div style="display:grid;gap:8px"><div class="rec__top"><span class="rec__name">' + esc(S.name) + '</span>' +
+        (S.flow === 'sending' ? '<span class="rec__meta num" data-pct-text="tyden">' + t.pct + ' %</span>' : '') + '</div>' + trackHtml(t) + '</div>' +
+        '<p class="hint">' + text + '</p>' +
+        '<div class="actions"><div class="actions__pair">' +
+        '<button type="button" class="btn btn--primary btn--lg" data-act="done" data-k="done">Hotovo</button>' +
+        '<button type="button" class="btn btn--outline btn--lg" data-act="open-recs" data-k="open-recs">Nahrávky na Macu</button>' +
+        '</div></div></section>';
+    }
+    var noCo = !S.company;
+    return '<section class="hero" aria-labelledby="h-main">' +
+      '<p class="state state--ok">' + ic('checkCircle', 'i--sm') + 'Uloženo na Macu<span class="state__aside num">12:34 · 9,2 MB</span></p>' +
+      '<h1 class="title" id="h-main">Pojmenuj a pošli</h1>' +
+      '<div class="field"><label class="field__label" for="rec-name">Název nahrávky</label>' +
+      '<input class="input" id="rec-name" data-k="name" data-act="name" maxlength="120" value="' + esc(S.name) + '" aria-describedby="rec-name-hint"' + (S.nameError ? ' aria-invalid="true"' : '') + '>' +
+      '<p class="hint" id="rec-name-hint"' + (S.nameError ? ' style="color:var(--err)" role="alert"' : '') + '>' + (S.nameError || 'Můžeš přepsat teď nebo později v LuDone.') + '</p></div>' +
+      dest('Odešle se do') +
+      '<div class="actions">' +
+      (noCo ? '<p class="actions__block" id="send-why">' + ic('alert', 'i--sm') + 'Odeslat půjde po výběru firmy výše.</p>' : '') +
+      '<div class="actions__pair">' +
+      '<button type="button" class="btn btn--primary btn--lg" data-act="save-send" data-k="send"' + (noCo ? ' disabled aria-describedby="send-why"' : '') + '>' + ic('up') + 'Uložit a odeslat</button>' +
+      '<button type="button" class="btn btn--outline btn--lg" data-act="save-keep" data-k="keep">Nechat na Macu</button></div>' +
+      '<div class="actions__why"><span>' + (noCo ? 'Zatím není kam.' : 'Pošle se do ' + esc(S.company) + '.') + '</span><span>Zůstane jen tady, odeslat jde později.</span></div>' +
+      '</div></section>';
+  }
+
+  /* Činnosti, na které musí instalace počkat (brief: nahrávání, ukládání, časovač). */
+  function blockers() {
+    var b = [];
+    if (S.upd.recording) b.push('nahrávání (ukonči a ulož ho)');
+    if (S.upd.saving) b.push('ukládání nahrávky');
+    if (S.track.on) b.push('ukázkový časovač LuTrack');
+    return b;
+  }
+  /* Již potvrzená aktualizace pokračuje, až nic neběží. Nikdy se nespustí bez předchozího „Aktualizovat“. */
+  function resumeUpdate() {
+    if (S.upd.state === 'waiting' && !blockers().length) {
+      S.upd.state = 'installing'; S.focusNext = 'upd-reset';
+      toast('Nic dalšího neběží — teprve teď se spouští potvrzená aktualizace (simulace).', 'check');
+    }
+  }
+
+  function heroUpdate() {
+    var u = S.upd;
+    var h = '';
+    if (u.state === 'offer' || u.state === 'waiting' || u.state === 'installing') {
+      h += '<section class="upd" aria-labelledby="h-upd">' +
+        '<div class="upd__head">' + ic('download') + '<div><h2 class="upd__title" id="h-upd">LuDone 0.1.5 je připravené</h2><p class="upd__ver num">Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4</p></div></div>' +
+        '<p class="upd__benefit">Přehlednější nahrávání a odesílání.</p>';
+      if (u.state === 'installing') {
+        h += '<p class="upd__wait" role="status">' + ic('refresh', 'i--sm') + '<span>Simulace: tady by se LuDone zavřelo a spustilo znovu ve verzi 0.1.5. Nic se neinstaluje.</span></p>' +
+          '<div class="upd__btns"><button type="button" class="btn btn--outline btn--sm" data-act="upd-reset" data-k="upd-reset">Vrátit ukázku</button></div>';
+      } else if (u.state === 'waiting') {
+        h += '<p class="upd__wait" role="status">' + ic('clock', 'i--sm') + '<span><b>Počká na bezpečný okamžik.</b> Nainstaluje se, až skončí: ' + blockers().join(', ') + '. Nic z toho nepřeruší.</span></p>' +
+          '<div class="upd__btns"><button type="button" class="btn btn--outline btn--sm" data-act="upd-later" data-k="upd-later">Později</button></div>';
+      } else {
+        h += '<p class="upd__why">Instalace LuDone na chvíli restartuje. Během nahrávání, ukládání nebo běžícího časovače počká, než skončí.</p>' +
+          '<div class="upd__btns"><button type="button" class="btn btn--outline btn--sm" data-act="upd-go" data-k="upd-go">' + ic('download', 'i--sm') + 'Aktualizovat</button>' +
+          '<button type="button" class="btn btn--ghost btn--sm" data-act="upd-later" data-k="upd-later">Později</button></div>';
+      }
+      /* Simulace jen nahrávání SPUSTÍ; ukončit ho jde jedině přes „Ukončit a uložit“, aby se nepřeskočilo uložení. */
+      h += (u.recording || u.saving
+        ? '<div class="sim"><span class="sim__k">Simulace</span><span>Nahrávání ukončíš tlačítkem „Ukončit a uložit“.</span></div>'
+        : '<div class="sim"><span class="sim__k">Simulace</span><button type="button" class="btn btn--ghost btn--sm" data-act="upd-rec" data-k="upd-rec">Spustit nahrávání</button></div>') +
+        '</section>';
+    }
+    if (u.saving) {
+      h += '<section class="hero" aria-labelledby="h-main"><p class="state state--ok" role="status"><span id="h-main">Dokončuji a ukládám nahrávku…</span></p>' +
+        '<div class="actions"><button type="button" class="btn btn--primary btn--lg btn--block" aria-disabled="true" aria-busy="true" data-k="upd-stop"><span class="sq" aria-hidden="true"></span>Ukládám…</button></div></section>';
+    } else if (u.recording) {
+      h += '<section class="hero" aria-labelledby="h-main">' +
+        '<div class="mini-rec"><span class="rec-dot" aria-hidden="true"></span><span><span class="sr" id="h-main">Nahrává se</span><span class="timer" role="timer" aria-label="Délka nahrávky 12 minut 34 sekund">12:34</span></span>' +
+        '<span class="hint">pro ' + esc(S.company || '') + '</span></div>' +
+        '<div class="actions"><button type="button" class="btn btn--primary btn--lg btn--block" data-act="upd-stop" data-k="upd-stop"><span class="sq" aria-hidden="true"></span>Ukončit a uložit</button></div></section>';
+    } else {
+      h += heroIdle();
+    }
+    return h;
+  }
+
+  function queueBlock() {
+    var live = S.items.filter(function (i) { return inFlight(i) || needsYou(i); });
+    var h = '<section class="rows" aria-labelledby="h-queue"><div class="rows__head"><h2 class="eyebrow" id="h-queue">Odesílání</h2>' +
+      '<button type="button" class="link" data-act="open-recs" data-k="q-all">Nahrávky na Macu (' + S.items.length + ')</button></div>';
+    if (!live.length) {
+      h += '<div class="row row--quiet"><span class="row__icon row__icon--ok">' + ic('checkCircle') + '</span><div class="row__main"><span class="row__title">Nic nečeká</span><span class="row__sub">Vše odeslané je na serveru.</span></div><span></span></div>';
+    }
+    live.forEach(function (it) {
+      var inf = info(it), act = '', sub = '';
+      if (it.state === 'uploading') sub = '<span class="num" data-pct-text="' + it.id + '">Odesílá se · ' + it.pct + ' %</span>';
+      if (it.state === 'queued') sub = 'Ve frontě';
+      if (it.state === 'verifying') sub = 'Ověřuji v LuDone…';
+      if (it.state === 'limit') sub = 'Čeká na serverový limit, odešle se sama';
+      if (it.state === 'net') { sub = 'Čeká na síť'; act = ACT.retry(it); }
+      if (it.state === 'auth') { sub = 'Čeká na obnovení přihlášení'; act = ACT.reauth(it); }
+      if (it.state === 'owner') { sub = 'Vznikla pod jiným účtem'; act = '<button type="button" class="btn btn--outline btn--sm" data-act="open-recs" data-k="own-open-' + it.id + '">Vyřešit</button>'; }
+      if (it.state === 'company') { sub = 'Chybí firma'; act = '<button type="button" class="btn btn--outline btn--sm" data-act="dest-open" data-k="co-open-' + it.id + '">Vybrat firmu</button>'; }
+      var warn = needsYou(it) || it.state === 'limit';
+      h += '<div class="row"><span class="row__icon' + (warn ? ' row__icon--warn' : '') + '">' + ic(inf.icon) + '</span>' +
+        '<div class="row__main"><span class="row__title">' + esc(it.name) + '</span><span class="row__sub' + (warn ? ' row__sub--warn' : '') + '">' + sub + '</span></div>' + (act || '<span></span>') +
+        (it.state === 'uploading' ? '<div class="prog" aria-hidden="true"><i data-pct-of="' + it.id + '" style="width:' + it.pct + '%"></i></div>' : '') +
+        '</div>';
+    });
+    return h + '</section>';
+  }
+
+  function trackRow() {
+    var t = S.track;
+    return '<section class="rows" aria-label="LuTrack" style="border-top:0"><div class="row">' +
+      '<span class="row__icon">' + ic('timer') + '</span>' +
+      '<div class="row__main" id="lutrack-desc"><span class="row__title">LuTrack<span class="tag">ukázka</span></span>' +
+      '<span class="row__sub">' + (t.on ? '<span class="num" data-tick="track">' + fmt(t.secs) + '</span> · čas se nikam neukládá' : 'Časovač je zatím jen ukázka, nic neukládá.') + '</span></div>' +
+      '<button type="button" class="btn btn--ghost btn--sm" role="switch" aria-checked="' + (t.on ? 'true' : 'false') + '" aria-describedby="lutrack-desc" data-act="track" data-k="track">' + (t.on ? 'Zastavit' : 'Spustit') + '</button>' +
+      '</div></section>';
+  }
+  function fmt(s) {
+    var m = Math.floor(s / 60), r = s % 60;
+    return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0') + ':' + String(r).padStart(2, '0');
+  }
+
+  function panel() {
+    var sc = S.scenario, hero;
+    if (sc === 'recording') hero = heroRecording();
+    else if (sc === 'saved' || sc === 'blocked-company') hero = heroSaved();
+    else if (sc === 'update') hero = heroUpdate();
+    else hero = heroIdle();
+    var later = sc === 'update' && S.upd.state === 'later';
+    return '<main class="view" data-view="panel" aria-label="LuDone panel">' + panelHeader() +
+      '<div class="scroll" data-scroll="panel">' + hero + queueBlock() + trackRow() + '</div>' +
+      '<div class="toast" role="status">' + (S.toast ? ic(S.toast.icon || 'info', 'i--sm') + '<span>' + S.toast.text + '</span>' : '') + '</div>' +
+      '<footer class="foot"><span class="num">LuDone 0.1.4</span><span class="foot__sp"></span>' +
+      (later ? '<button type="button" class="link" data-act="upd-show" data-k="upd-show">Verze 0.1.5 čeká</button>' : '<span>Návrh · fiktivní data</span>') +
+      '</footer>' + dialog() + '</main>';
+  }
+
+  /* ---------- OKNO NASTAVENÍ ---------- */
+  var TABS = [['nahravky', 'Nahrávky', 'list'], ['ucet', 'Účet a firma', 'building'], ['zvuk', 'Zvuk', 'mic'], ['pokrocile', 'Pokročilé', 'settings']];
+
+  /* Okno má nativní semafor macOS (titleBarStyle hiddenInset). Kolečka jsou jen zástupný obrázek. */
+  function chrome(title, withTabs) {
+    var h = '<div class="chrome"><div class="titlebar"><span class="lights" aria-hidden="true" title="Nativní ovladače okna macOS"><i></i><i></i><i></i></span>' +
+      '<span class="titlebar__t">' + title + '</span><span></span></div>';
+    if (withTabs) {
+      var attention = S.items.filter(needsYou).length;
+      var active = S.scenario === 'detail' ? 'nahravky' : S.tab;
+      h += '<nav class="toolbar" role="tablist" aria-label="Části nastavení">' + TABS.map(function (t) {
+        var sel = active === t[0];
+        return '<button type="button" role="tab" class="tbtn" id="tab-' + t[0] + '" aria-controls="tabpanel" aria-selected="' + sel + '" tabindex="' + (sel ? 0 : -1) + '" data-act="tab" data-tab="' + t[0] + '" data-k="tab-' + t[0] + '">' +
+          ic(t[2]) + '<span>' + t[1] + '</span>' +
+          (t[0] === 'nahravky' && attention ? '<span class="badge" aria-label="' + attention + ' potřebuje tvůj krok">' + attention + '</span>' : '') +
+          (t[0] === 'ucet' && !S.company ? '<span class="badge" aria-label="chybí firma">!</span>' : '') + '</button>';
+      }).join('') + '</nav>';
+    }
+    return h + '</div>';
+  }
+
+  function win() {
+    var sc = S.scenario, body, title, tabs = true;
+    if (sc === 'identity') { body = identityView(); title = 'Identita LuDone · návrh'; tabs = false; }
+    else if (sc === 'detail') { body = detailView(); title = item(S.detailId) ? esc(item(S.detailId).name) : 'Nahrávka'; }
+    else {
+      body = S.tab === 'ucet' ? tabAccount() : S.tab === 'zvuk' ? tabAudio() : S.tab === 'pokrocile' ? tabAdvanced() : tabRecordings();
+      title = 'Nastavení';
+    }
+    return '<main class="view" data-view="window" aria-label="' + (sc === 'identity' ? 'Identita LuDone' : 'Nastavení LuDone') + '">' +
+      chrome(title, tabs) +
+      '<div class="scroll win__body" id="tabpanel"' + (tabs ? ' role="tabpanel" aria-labelledby="tab-' + (sc === 'detail' ? 'nahravky' : S.tab) + '"' : '') + ' data-scroll="win">' + body + '</div>' +
+      '<footer class="win__foot">' +
+      (S.toast ? '<span class="foot__msg foot__msg--live" role="status">' + ic(S.toast.icon || 'info', 'i--sm') + '<span>' + S.toast.text + '</span></span>'
+               : '<span class="foot__msg" role="status">' + (sc === 'identity' ? 'Návrh ikon, ne produkční assety.' : 'Změny se ukládají automaticky.') + '</span>') +
+      '<button type="button" class="btn btn--outline btn--sm" data-act="close" data-k="done-win">Hotovo</button></footer>' +
+      dialog() + '</main>';
+  }
+
+  /* ---------- detail jedné nahrávky ---------- */
+  function serverState(it) {
+    return {
+      local: 'Neodesláno', queued: 'Ve frontě, na serveru zatím nic', uploading: 'Přenáší se · <span class="num" data-pct-text="' + it.id + '">' + it.pct + ' %</span>',
+      sent: 'Server soubor přijal, zatím neověřeno', verifying: 'Ověřuji…', verified: 'Ověřeno: úplná a shoduje se',
+      net: 'Na serveru nic — čeká na síť', auth: 'Na serveru nic — čeká na přihlášení', limit: 'Čeká na serverový limit',
+      owner: 'Na serveru nic — vznikla pod jiným účtem', company: 'Na serveru nic — chybí firma'
+    }[it.state] || '—';
+  }
+  function detailView() {
+    var it = item(S.detailId);
+    if (!it) return '<p class="hint" style="padding-top:16px">Nahrávka už na tomto Macu není.</p><button type="button" class="link" data-act="back" data-k="back">Zpět na nahrávky</button>';
+    var inf = info(it);
+    var date = it.id === 'tyden' ? '23. 9. 2026 · 14:30' : 'Datum v ukázce neuvedeno';
+    var sent = ['sent', 'verifying', 'verified'].indexOf(it.state) >= 0;
+    var keep = { '0': 'ihned po odeslání', '1': '24 hodin po odeslání', '7': '7 dní po odeslání', '30': '30 dní po odeslání', never: 'nikdy' }[S.set.retention];
+    var tone = inf.tone === 'warn' ? ' rec__status--warn' : inf.tone === 'ok' ? ' rec__status--ok' : '';
+    var main = inf.main.map(function (a) { return ACT[a](it); }).join('');
+    var h = '<div class="det">' +
+      '<button type="button" class="btn btn--ghost btn--sm det__back" data-act="back" data-k="back">' + ic('chevL', 'i--sm') + 'Všechny nahrávky</button>' +
+      '<div><h1 class="det__title">' + esc(it.name) + '</h1><p class="hint num">' + date + '</p></div>' +
+      trackHtml(it) +
+      '<p class="rec__status' + tone + '">' + ic(inf.icon, 'i--sm') + '<span>' + inf.text + '</span></p>' +
+      (main ? '<div class="rec__actions">' + main + '</div>' : '') +
+      '<section class="det__sec" aria-labelledby="det-mac"><h2 id="det-mac">' + ic('laptop', 'i--sm') + 'Na tomto Macu</h2><dl class="dl">' +
+      '<dt>Místní kopie</dt><dd>Kompletní, obě stopy</dd><dt>Délka</dt><dd>' + esc(it.dur) + '</dd><dt>Velikost</dt><dd>' + esc(it.meta.split(' · ').pop()) + '</dd>' +
+      '<dt>Umístění</dt><dd>Stažené</dd><dt>Smazání z Macu</dt><dd>' + (sent ? 'podle nastavení: ' + keep : 'nesmaže se, dokud se neodešle') + '</dd></dl>' +
+      '<div><button type="button" class="btn btn--ghost btn--sm" data-act="item-finder" data-id="' + it.id + '" data-k="det-finder">' + ic('folder', 'i--sm') + 'Ukázat ve Finderu</button></div></section>' +
+      '<section class="det__sec" aria-labelledby="det-srv"><h2 id="det-srv">' + ic('up', 'i--sm') + 'V LuDone</h2><dl class="dl">' +
+      '<dt>Cílová firma</dt><dd>' + esc(it.company || S.company || 'nevybraná') + '</dd><dt>Účet</dt><dd>' + USER + '</dd>' +
+      '<dt>Stav na serveru</dt><dd>' + serverState(it) + '</dd></dl></section>';
+    if (inf.more.indexOf('trash') >= 0) {
+      h += '<section class="det__sec"><div><button type="button" class="btn btn--ghost btn--sm danger" data-act="item-trash" data-id="' + it.id + '" data-k="trash-' + it.id + '">' + ic('trash', 'i--sm') + 'Přesunout do koše…</button></div>' +
+        '<p class="hint">Jen z tohoto Macu. Na serveru se nic nemaže.</p></section>';
+    }
+    if (it.state === 'uploading' || it.state === 'sent') {
+      h += '<div class="sim"><span class="sim__k">Simulace</span><button type="button" class="btn btn--ghost btn--sm" data-act="sim-finish" data-k="sim-finish">' + (it.state === 'sent' ? 'Hotovo — zkus Ověřit' : 'Dokončit odesílání') + '</button></div>';
+    }
+    return h + '</div>';
+  }
+
+  /* ---------- identita: ikona aplikace a ikony v liště ---------- */
+  var ZZ = 'M4.6 11.9 7.9 5.3l2.2 4.4 3.3-2.8';
+  var PULSE = 'M3 13.5 7.5 4.5l3 6 4.5-3.75';
+  var TRAY = {
+    /* klid = dnešní pulz LuDone beze změny tvaru */
+    idle: function () {
+      return '<path d="' + PULSE + '" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>';
+    },
+    'signed-out': function (u) {
+      return '<defs><mask id="s' + u + '"><rect width="18" height="18" fill="#fff"/><path d="M2.5 2.5 15.5 15.5" stroke="#000" stroke-width="3.6"/></mask></defs>' +
+        '<g mask="url(#s' + u + ')">' + TRAY.idle() + '</g><path d="M2.5 2.5 15.5 15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>';
+    },
+    recording: function (u) {
+      return '<defs><mask id="r' + u + '"><rect width="18" height="18" fill="#fff"/><path d="' + ZZ + '" fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></mask></defs>' +
+        '<rect x="1" y="1" width="16" height="16" rx="4.5" fill="currentColor" mask="url(#r' + u + ')"/>';
+    },
+    attention: function (u) {
+      return '<defs><mask id="a' + u + '"><rect width="18" height="18" fill="#fff"/><circle cx="14.6" cy="14.4" r="5.2" fill="#000"/></mask></defs>' +
+        '<g mask="url(#a' + u + ')">' + TRAY.idle() + '</g><path d="M14.6 10.5l3.3 6.2h-6.6z" fill="currentColor"/>';
+    },
+    'recording-attention': function (u) {
+      return '<defs><mask id="b' + u + '"><rect width="18" height="18" fill="#fff"/><path d="' + ZZ + '" fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14.6" cy="14.4" r="5.2" fill="#000"/></mask></defs>' +
+        '<rect x="1" y="1" width="16" height="16" rx="4.5" fill="currentColor" mask="url(#b' + u + ')"/><path d="M14.6 10.5l3.3 6.2h-6.6z" fill="currentColor"/>';
+    },
+    'recording-timer': function (u) {
+      return '<defs><mask id="t' + u + '"><rect width="18" height="18" fill="#fff"/><path d="' + ZZ + '" fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14.4" cy="14.4" r="5" fill="#000"/></mask></defs>' +
+        '<rect x="1" y="1" width="16" height="16" rx="4.5" fill="currentColor" mask="url(#t' + u + ')"/>' +
+        '<circle cx="14.4" cy="14.4" r="3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M14.4 12.9v1.6l1 .6" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>';
+    }
+  };
+  var TRAY_INFO = [
+    ['idle', 'Klid', 'Samotný pulz'],
+    ['recording', 'Nahrává se', 'Plný čtverec'],
+    ['attention', 'Potřebuje tě', 'Pulz + trojúhelník'],
+    ['recording-attention', 'Nahrává, ale chybí stopa', 'Plný + trojúhelník'],
+    ['recording-timer', 'Nahrává + ukázkový časovač', 'Plný + kroužek'],
+    ['signed-out', 'Odhlášeno', 'Pulz přeškrtnutý']
+  ];
+  var uid = 0;
+  function tray(kind, size) {
+    uid++;
+    return '<svg class="tray" viewBox="0 0 18 18" width="' + size + '" height="' + size + '" aria-hidden="true" focusable="false">' + TRAY[kind](uid) + '</svg>';
+  }
+  function identityView() {
+    var h = '<section class="sec"><div class="sec__head"><div><h2>Ikona aplikace</h2><p>Značka LuDone na tmavém čtverci, červená tečka říká „nahrávám“. Bez přechodů, čitelná i v 16 px.</p></div></div>' +
+      '<div class="id-icons">' +
+      [[128, 'app-icon.svg'], [64, 'app-icon.svg'], [32, 'app-icon-small.svg'], [16, 'app-icon-small.svg']].map(function (x) {
+        return '<figure><img src="assets/' + x[1] + '" width="' + x[0] + '" height="' + x[0] + '" alt="Ikona LuDone ' + x[0] + ' px"><figcaption class="num">' + x[0] + ' px</figcaption></figure>';
+      }).join('') + '</div>' +
+      '<p class="hint">128 a 64 px z <code>assets/app-icon.svg</code> (mřížka 1024, tělo 824), 32 a 16 px ze zjednodušené <code>app-icon-small.svg</code>.</p></section>';
+
+    h += '<section class="sec"><div class="sec__head"><div><h2>Ikona v liště</h2><p>Jednobarevná šablona, macOS ji sám obarví podle lišty. Stav pozná člověk podle tvaru, ne podle barvy.</p></div></div>' +
+      ['light', 'dark'].map(function (m) {
+        return '<div class="mb mb--' + m + '" role="img" aria-label="Lišta macOS, ' + (m === 'light' ? 'světlá' : 'tmavá') + ', ikony ve skutečné velikosti">' +
+          TRAY_INFO.map(function (t) { return tray(t[0], 18); }).join('') + '<span class="mb__clock">St 23. 9. 14:30</span></div>';
+      }).join('') +
+      '<ul class="tray-grid">' + TRAY_INFO.map(function (t) {
+        return '<li><span class="tray-big">' + tray(t[0], 44) + '</span><b>' + t[1] + '</b><small>' + t[2] + '</small></li>';
+      }).join('') + '</ul>' +
+      '<p class="hint">Soubory: <code>assets/tray-*.svg</code>, mřížka 18 × 18, tah 1,5. Stav „Potřebuje tě“ = chybí firma, vypršelé přihlášení, čeká na síť.</p></section>';
+
+    h += '<section class="sec"><h2>Kde co žije</h2>' +
+      '<dl class="dl dl--left"><dt>Panel v liště</dt><dd>Bez rámu a semaforu. Jen „co teď“: nahrát, uložit, kam se odešle, co čeká.</dd>' +
+      '<dt>Okno</dt><dd>Nativní semafor a panelová lišta záložek jako v nastavení macOS. Nahrávky, detail, účet, zvuk, pokročilé.</dd></dl></section>';
+    return h;
+  }
+
+  function tabRecordings() {
+    var h = '<section class="sec"><div class="sec__head"><div><h2>Nahrávky na tomto Macu</h2>' +
+      '<p>Jen to, co vzniklo na tomto Macu — týmový archiv je v LuDone. Převzetí ani výběr firmy nic neodešle.</p></div>' +
+      '<button type="button" class="btn btn--outline btn--sm" data-act="refresh" data-k="refresh"' + (S.set.refreshing ? ' aria-disabled="true" aria-busy="true"' : '') + '>' + ic('refresh', 'i--sm') + (S.set.refreshing ? 'Načítám…' : 'Obnovit přehled') + '</button></div>';
+    if (!S.items.length) {
+      h += '<p class="hint">Na tomto Macu nejsou žádné nahrávky k zobrazení.</p>';
+    }
+    h += '<ul class="recs">' + S.items.map(function (it) {
+      var inf = info(it);
+      var tone = inf.tone === 'warn' ? ' rec__status--warn' : inf.tone === 'ok' ? ' rec__status--ok' : '';
+      var main = inf.main.map(function (a) { return ACT[a](it); }).join('');
+      var more = inf.more.length ? '<span class="rec__more"><button type="button" class="btn btn--ghost btn--sm" aria-expanded="' + (S.menu === it.id) + '" aria-controls="menu-' + it.id + '" data-act="menu" data-id="' + it.id + '" data-k="more-' + it.id + '">' + ic('more') + 'Další<span class="sr"> akce pro ' + esc(it.name) + '</span></button>' +
+        (S.menu === it.id ? '<div class="menu" id="menu-' + it.id + '">' + inf.more.map(function (a) { return MORE[a](it); }).join('') + '</div>' : '') + '</span>' : '';
+      return '<li class="rec" aria-label="' + esc(it.name) + '">' +
+        '<div class="rec__top"><button type="button" class="rec__open" data-act="detail" data-id="' + it.id + '" data-k="detail-' + it.id + '"><span class="rec__name">' + esc(it.name) + '</span>' + ic('chevR', 'i--sm') + '<span class="sr">, otevřít detail</span></button><span class="rec__meta num">' + esc(it.meta) + '</span></div>' +
+        trackHtml(it) +
+        '<p class="rec__status' + tone + '">' + ic(inf.icon, 'i--sm') + '<span>' + inf.text + '</span></p>' +
+        ((main || more) ? '<div class="rec__actions">' + main + more + '</div>' : '') +
+        '</li>';
+    }).join('') + '</ul>';
+    h += '<details><summary class="hint" style="cursor:pointer">Co znamenají čtyři kroky</summary><div class="legend" style="margin-top:8px">' +
+      '<span><b>Na Macu</b>Soubor je jen tady.</span><span><b>Ve frontě</b>Schválené, čeká na odeslání.</span>' +
+      '<span><b>Odesláno</b>Server soubor přijal.</span><span><b>Ověřeno</b>LuDone potvrdil, že je úplná.</span></div></details>';
+    h += '</section>';
+
+    h += '<section class="sec"><h2>Uchovávání na Macu</h2>' +
+      '<div class="kv"><label class="kv__k" for="retention">Odeslané smazat z Macu<small>Neodeslané se samy nemažou nikdy.</small></label>' +
+      '<select class="select" id="retention" style="width:auto" data-act="retention" data-k="retention">' +
+      [['0', 'Ihned po odeslání'], ['1', '24 hodin po odeslání'], ['7', '7 dní po odeslání'], ['30', '30 dní po odeslání'], ['never', 'Nemazat']].map(function (o) {
+        return '<option value="' + o[0] + '"' + (S.set.retention === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+      }).join('') + '</select></div></section>';
+
+    h += '<section class="sec"><div class="sim sim--stack"><span class="sim__k">Simulace prototypu — nic skutečného</span><div class="sim__btns">' +
+      '<button type="button" class="btn btn--ghost btn--sm" data-act="sim-finish" data-k="sim-finish">Dokončit odesílání</button>' +
+      '<button type="button" class="btn btn--ghost btn--sm" data-act="sim-net" data-k="sim-net">Výpadek sítě</button>' +
+      '<button type="button" class="btn btn--ghost btn--sm" data-act="sim-owner" data-k="sim-owner">Položka jiného účtu</button>' +
+      '<button type="button" class="btn btn--ghost btn--sm" data-act="sim-limit" data-k="sim-limit">Serverový limit</button>' +
+      '<button type="button" class="btn btn--ghost btn--sm" data-act="sim-reset" data-k="sim-reset">Vrátit ukázku</button>' +
+      '</div></div></section>';
+    return h;
+  }
+
+  function tabAccount() {
+    var st = S.set;
+    var h = '<section class="sec"><div class="sec__head"><div><h2>Firma pro odesílání</h2><p>Kam se posílají nové nahrávky. Výběr firmy sám nic neodešle a starší nahrávky nerozešle.</p></div></div>';
+    if (!st.signedIn) {
+      h += '<p class="hint">Pro výběr firmy se přihlas.</p>';
+    } else {
+      if (!S.company) h += '<p class="actions__block">' + ic('alert', 'i--sm') + 'Firma není vybraná — nahrávky zatím nejde odeslat.</p>';
+      h += picker('acct');
+      if (S.companyNote) h += '<p class="saved-line" role="status">' + ic('check', 'i--sm') + 'Firma je uložená. Nic se tím neodeslalo.</p>';
+      var waiting = S.items.filter(function (i) { return i.state === 'company'; }).length;
+      if (S.company && waiting) h += '<p class="hint">' + waiting + ' starší nahrávka čeká na tvůj pokyn v Nahrávkách.</p>';
+    }
+    h += '<div class="kv"><span class="kv__k">Cílový prostor<small>Produkce</small></span><span class="kv__v num">' + (st.env === 'prod' ? 'app.ludone.cz' : 'labs.ludone.cz') + '</span></div></section>';
+
+    h += '<section class="sec"><h2>Přihlášení</h2>';
+    if (st.signedIn) {
+      h += '<div class="kv"><span class="kv__k">' + USER + '<small>Přihlášen na tomto Macu</small></span>' +
+        '<button type="button" class="btn btn--outline btn--sm" data-act="signout" data-k="signout">Odhlásit tento Mac</button></div>' +
+        '<p class="hint">Lokální nahrávky zůstanou uložené. Dříve schválené pokračují po přihlášení.</p>';
+    } else {
+      h += '<div class="kv"><span class="kv__k">Nikdo nepřihlášen<small>Přihlášení otevře prohlížeč</small></span>' +
+        '<button type="button" class="btn btn--primary btn--sm" data-act="signin" data-k="signin">Přihlásit se</button></div>';
+    }
+    h += '</section>';
+
+    h += '<section class="sec"><h2>Tento Mac</h2>' +
+      sw('autostart', st.autostart, 'Spouštět po přihlášení do systému', '', 'set-autostart') +
+      sw('dock', st.dock, 'Zobrazovat i ikonu v Docku', 'Když se ikona v liště schovává za výřez displeje.', 'set-dock') +
+      '</section>';
+    return h;
+  }
+
+  function tabAudio() {
+    var st = S.set;
+    var h = '<section class="sec"><div class="sec__head"><div><h2>Co se nahrává</h2><p>Jedna schůzka je jeden soubor: tvůj hlas vlevo, druhá strana vpravo.</p></div></div>' +
+      '<div class="kv"><span class="kv__k"><span><span class="ch" style="margin-right:8px">L</span>Tvůj hlas</span><small>Mikrofon</small></span><span class="kv__v kv__v--ok">' + ic('check', 'i--sm') + 'Povoleno</span></div>' +
+      '<div class="kv"><span class="kv__k"><span><span class="ch" style="margin-right:8px">R</span>Druhá strana hovoru</span><small>Zvuk z Macu · macOS ho vede jako Záznam obrazovky</small></span><span class="kv__v kv__v--ok">' + ic('check', 'i--sm') + 'Povoleno</span></div>' +
+      '<div><button type="button" class="btn btn--ghost btn--sm" data-act="sys-prefs" data-k="sys-prefs">' + ic('external', 'i--sm') + 'Otevřít Nastavení systému</button></div></section>';
+
+    h += '<section class="sec"><div class="sec__head"><div><h2>Zkouška zvuku</h2><p>Zkouška se neukládá. Spustí se až po kliknutí.</p></div>' +
+      '<button type="button" class="btn btn--outline btn--sm" data-act="audio-test" data-k="audio-test" aria-pressed="' + st.audioTest + '">' + (st.audioTest ? 'Zastavit zkoušku' : 'Spustit zkoušku') + '</button></div>';
+    if (st.audioTest) {
+      h += '<ul class="sources" aria-label="Zkouška zvuku">' +
+        '<li class="src src--live"><span class="ch">L</span><span class="src__name"><b>Tvůj hlas</b></span><span class="meter" role="img" aria-label="Mikrofon: signál přichází"><span class="meter__fill"></span></span><span class="src__state src__state--ok">Slyším</span></li>' +
+        '<li class="src src--live"><span class="ch">R</span><span class="src__name"><b>Zvuk z Macu</b></span><span class="meter meter--r" role="img" aria-label="Zvuk z Macu: signál přichází"><span class="meter__fill"></span></span><span class="src__state src__state--ok">Slyším</span></li></ul>' +
+        '<p class="hint">Pusť si na Macu cokoli se zvukem a promluv — oba řádky se mají hýbat.</p>';
+    }
+    h += '</section>';
+
+    h += '<section class="sec"><h2>Po uložení nahrávky</h2>' +
+      sw('auto', st.autoUpload, 'Automaticky odesílat nové nahrávky', 'Platí jen pro nahrávky zahájené po zapnutí. Starší nahrávky na Macu se tím neodešlou.', 'set-auto') +
+      '<p class="hint">Nahrávání vždy spouštíš ručně.</p></section>';
+    return h;
+  }
+
+  function tabAdvanced() {
+    var st = S.set;
+    var h = '<section class="sec"><div class="sec__head"><div><h2>Aktualizace</h2><p>Nová verze se ukáže v panelu. Instalaci vždy spouštíš ty.</p></div>' +
+      '<button type="button" class="btn btn--outline btn--sm" data-act="upd-check" data-k="upd-check"' + (st.check === 'busy' ? ' aria-disabled="true" aria-busy="true"' : '') + '>' + (st.check === 'busy' ? 'Kontroluji…' : 'Zkontrolovat aktualizace') + '</button></div>' +
+      '<div class="kv"><span class="kv__k">Nainstalovaná verze</span><span class="kv__v num">0.1.4</span></div>' +
+      (st.check === 'done' ? '<div class="kv"><p class="saved-line" role="status">' + ic('info', 'i--sm') + 'Nalezena ukázková verze 0.1.5. Nic se neinstaluje, dokud nezvolíš Aktualizovat.</p>' +
+        '<button type="button" class="btn btn--outline btn--sm" data-act="upd-offer" data-k="upd-offer">Zobrazit nabídku</button></div>' : '') + '</section>';
+
+    h += '<section class="sec"><div class="sec__head"><div><h2>Diagnostika</h2><p>Když něco nefunguje, tohle pošleš. Bez zvuku, tokenů a názvů schůzek.</p></div>' +
+      '<button type="button" class="btn btn--outline btn--sm" data-act="diag" data-k="diag">' + ic('download', 'i--sm') + 'Exportovat</button></div>' +
+      '<dl class="dl"><dt>Verze</dt><dd>0.1.4</dd><dt>Mikrofon</dt><dd>Povoleno</dd><dt>Zvuk z Macu</dt><dd>Povoleno</dd>' +
+      '<dt>Fronta</dt><dd>' + queueSummary() + '</dd></dl>' +
+      (st.diag ? '<p class="saved-line" role="status">' + ic('check', 'i--sm') + 'Simulace: soubor by se uložil do Stažených.</p>' : '') + '</section>';
+
+    h += '<section class="sec"><h2>Prostředí serveru</h2>' +
+      '<div class="kv"><label class="kv__k" for="env">Server<small>Běžně produkce. Labs je jen pro testování.</small></label>' +
+      '<select class="select" id="env" style="width:auto" data-act="env" data-k="env">' +
+      '<option value="prod"' + (st.env === 'prod' ? ' selected' : '') + '>Produkce · app.ludone.cz</option>' +
+      '<option value="labs"' + (st.env === 'labs' ? ' selected' : '') + '>Labs · labs.ludone.cz</option></select></div>' +
+      '<p class="hint">Přepnutí tě na tomto Macu odhlásí.</p></section>';
+    return h;
+  }
+
+  function queueSummary() {
+    var up = 0, wait = 0, fail = 0;
+    S.items.forEach(function (i) {
+      if (i.state === 'uploading') up++;
+      else if (i.state === 'queued' || i.state === 'limit' || i.state === 'auth' || i.state === 'owner' || i.state === 'company') wait++;
+      else if (i.state === 'net') fail++;
+    });
+    var p = [];
+    if (up) p.push(up + ' se odesílá');
+    if (wait) p.push(wait + ' čeká');
+    if (fail) p.push(fail + ' čeká na síť');
+    return p.length ? p.join(' · ') : 'Nic nečeká';
+  }
+
+  /* ---------- dialog ---------- */
+  function dialog() {
+    var d = S.dialog;
+    if (!d) return '';
+    var it = d.id ? item(d.id) : null, body;
+    if (d.kind === 'trash') {
+      body = '<h2 id="dlg-t">Přesunout nahrávku do koše?</h2>' +
+        '<div class="subject"><b>' + esc(it.name) + '</b><small class="num">' + esc(it.meta) + '</small></div>' +
+        '<p>Přesune se jen tato jedna nahrávka z tohoto Macu. Na serveru se nic nemaže.</p>' +
+        '<div class="dialog__btns"><button type="button" class="btn btn--outline" data-act="dlg-cancel" data-k="dlg-cancel">Zrušit</button>' +
+        '<button type="button" class="btn btn--danger" data-act="dlg-trash" data-k="dlg-ok">' + ic('trash', 'i--sm') + 'Přesunout do koše</button></div>';
+    } else if (d.kind === 'owner') {
+      body = '<h2 id="dlg-t">Převzít nahrávku pod svůj účet?</h2>' +
+        '<div class="subject"><b>' + esc(it.name) + '</b><small class="num">' + esc(it.meta) + ' · vznikla pod jiným účtem</small></div>' +
+        '<p>Převezme se jen tato nahrávka, na účet ' + USER + '. Převzetí ji neodešle — o odeslání rozhodneš potom.</p>' +
+        '<div class="dialog__btns"><button type="button" class="btn btn--outline" data-act="dlg-cancel" data-k="dlg-cancel">Zrušit</button>' +
+        '<button type="button" class="btn btn--primary" data-act="dlg-own" data-k="dlg-ok">Převzít</button></div>';
+    } else {
+      body = '<h2 id="dlg-t">Přepnout na ' + (d.env === 'labs' ? 'Labs' : 'produkci') + '?</h2>' +
+        '<p>Přepnutí tě odhlásí z tohoto Macu. Potom se budeš muset znovu přihlásit. Nahrávky na Macu zůstanou.</p>' +
+        '<div class="dialog__btns"><button type="button" class="btn btn--outline" data-act="dlg-cancel" data-k="dlg-cancel">Zrušit</button>' +
+        '<button type="button" class="btn btn--primary" data-act="dlg-env" data-k="dlg-ok">Přepnout a odhlásit</button></div>';
+    }
+    return '<div class="scrim" data-act="dlg-scrim"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">' + body + '</div></div>';
+  }
+
+  /* ---------- vykreslení ---------- */
+  var app = document.getElementById('app');
+  function render() {
+    var root = document.documentElement;
+    root.dataset.scenario = S.scenario;
+    root.dataset.theme = S.theme;
+    var ae = document.activeElement;
+    var key = ae && ae.dataset ? ae.dataset.k : null;
+    var selStart = ae && ae.tagName === 'INPUT' ? ae.selectionStart : null;
+    var scrolls = {};
+    app.querySelectorAll('[data-scroll]').forEach(function (el) { scrolls[el.dataset.scroll] = el.scrollTop; });
+
+    app.innerHTML = WINDOW_SCENARIOS.indexOf(S.scenario) >= 0 ? win() : panel();
+
+    app.querySelectorAll('[data-scroll]').forEach(function (el) {
+      if (scrolls[el.dataset.scroll] != null) el.scrollTop = scrolls[el.dataset.scroll];
+    });
+    var target = null;
+    if (S.dialog) target = app.querySelector('.dialog [data-k="dlg-cancel"]');
+    else if (S.focusNext) target = app.querySelector('[data-k="' + S.focusNext + '"]');
+    else if (key) target = app.querySelector('[data-k="' + key + '"]');
+    S.focusNext = null;
+    if (target && target !== document.activeElement && !(S.dialog && ae && ae.closest && ae.closest('.dialog'))) {
+      target.focus({ preventScroll: !S.dialog });
+      if (selStart != null && target.setSelectionRange) try { target.setSelectionRange(selStart, selStart); } catch (e) { /* nic */ }
+    }
+    notify();
+  }
+
+  var lastSent = '';
+  function notify() {
+    if (window.parent === window) return;
+    var sig = S.scenario + '|' + S.theme;
+    if (sig === lastSent) return;
+    lastSent = sig;
+    try { window.parent.postMessage({ type: 'ludone-design:state', scenario: S.scenario, theme: S.theme }, '*'); } catch (e) { /* nic */ }
+  }
+  function syncUrl() {
+    try {
+      var q = new URLSearchParams(location.search);
+      q.set('scenario', S.scenario); q.set('theme', S.theme);
+      history.replaceState(null, '', location.pathname + '?' + q.toString());
+    } catch (e) { /* file:// nebo sandbox */ }
+  }
+
+  function toast(text, icon) {
+    S.toast = { text: text, icon: icon || 'info' };
+    clearTimeout(timers.toast);
+    timers.toast = setTimeout(function () { S.toast = null; render(); }, 6000);
+  }
+
+  /* přechod uvnitř prototypu: drží data, ruší rozdělané */
+  function go(sc, opts) {
+    S.scenario = sc;
+    S.menu = null; S.dialog = null; S.busy = null; S.destOpen = false;
+    if (opts && opts.tab) S.tab = opts.tab;
+    if (sc === 'saved' || sc === 'blocked-company') { S.flow = (opts && opts.flow) || null; S.nameError = ''; }
+    syncUrl();
+    render();
+  }
+
+  /* simulovaný postup odesílání jedné položky */
+  function runUpload(id, from, done) {
+    var it = item(id);
+    if (!it) return;
+    it.state = 'uploading'; it.pct = from || 0;
+    clearInterval(timers['up-' + id]);
+    timers['up-' + id] = setInterval(function () {
+      var cur = item(id);
+      if (!cur || cur.state !== 'uploading') { clearInterval(timers['up-' + id]); return; }
+      cur.pct = Math.min(100, cur.pct + 4);
+      if (cur.pct >= 100) {
+        clearInterval(timers['up-' + id]);
+        cur.state = 'sent';
+        if (done) done(); else toast('„' + esc(cur.name) + '“ je odeslaná. Ověřit ji můžeš v LuDone.', 'checkCircle');
+        render();
+        return;
+      }
+      app.querySelectorAll('[data-pct-of="' + id + '"]').forEach(function (el) { el.style.width = cur.pct + '%'; });
+      app.querySelectorAll('[data-pct-text="' + id + '"]').forEach(function (el) {
+        el.textContent = el.textContent.indexOf('Odesílá') === 0 ? 'Odesílá se · ' + cur.pct + ' %' : el.textContent.indexOf('·') === 0 ? '· ' + cur.pct + ' %' : cur.pct + ' %';
+      });
+    }, 140);
+  }
+
+  function ensureTyden(state) {
+    var t = item('tyden');
+    if (!t) { t = rec('tyden'); t.own = true; S.items.unshift(t); }
+    t.name = S.name; t.company = S.company; t.state = state; t.pct = 0;
+    return t;
+  }
+
+  /* ---------- akce ---------- */
+  function onAct(act, el, ev) {
+    var id = el.dataset.id, it = id ? item(id) : null;
+    switch (act) {
+      case 'open-settings': go('settings', { tab: 'ucet' }); return;
+      case 'open-recs': go(S.scenario === 'retry' ? 'retry' : 'uploading', { tab: 'nahravky' }); return;
+      case 'close': go('idle'); return;
+      case 'done': S.flow = null; go('idle'); return;
+      case 'tab': S.tab = el.dataset.tab; S.menu = null; S.focusNext = 'tab-' + S.tab;
+        if (S.tab === 'nahravky') { go(S.scenario === 'retry' ? 'retry' : 'uploading', { tab: 'nahravky' }); return; }
+        go('settings', { tab: S.tab }); return;
+      case 'detail': S.detailFrom = S.scenario === 'retry' ? 'retry' : 'uploading'; S.detailId = id; S.focusNext = 'back'; go('detail'); return;
+      case 'back': S.focusNext = 'detail-' + S.detailId; go(S.detailFrom || 'uploading', { tab: 'nahravky' }); return;
+
+      case 'dest-toggle': S.destOpen = !S.destOpen; S.companyNote = false; S.focusNext = S.destOpen ? 'co-dest-' + Math.max(0, COMPANIES.indexOf(S.company)) : 'dest-change'; render(); return;
+      case 'dest-open':
+        if (!S.company) { S.focusNext = 'co-miss-0'; } else { S.destOpen = true; S.focusNext = 'co-dest-0'; }
+        var sc0 = app.querySelector('[data-scroll]'); if (sc0) sc0.scrollTop = 0;
+        render(); return;
+
+      case 'start':
+        if (S.scenario === 'update') { S.upd.recording = true; S.focusNext = 'upd-stop'; render(); return; }
+        S.busy = 'checking'; render();
+        timers.start = setTimeout(function () { S.busy = null; S.sysFail = false; S.focusNext = 'stop'; go('recording'); }, 700);
+        return;
+      case 'stop':
+        S.busy = 'stopping'; render();
+        timers.stop = setTimeout(function () {
+          S.busy = null;
+          if (S.set.autoUpload && S.company) {
+            ensureTyden('uploading'); S.focusNext = 'done';
+            go('saved', { flow: 'sending' });
+            runUpload('tyden', 0, function () { S.flow = 'sent'; });
+            toast('Automatické odesílání je zapnuté — nahrávka se rovnou odesílá.', 'up');
+            render();
+          } else {
+            S.focusNext = S.company ? 'send' : 'co-miss-0';
+            go(S.company ? 'saved' : 'blocked-company');
+          }
+        }, 800);
+        return;
+      case 'sim-sys': S.sysFail = !S.sysFail; S.focusNext = 'sim-sys'; render(); return;
+      case 'sys-restore':
+        S.sysBusy = true; render();
+        timers.sys = setTimeout(function () {
+          S.sysBusy = false; S.sysFail = false; S.focusNext = 'stop';
+          toast('Zvuk z Macu je zpět. Úsek bez něj v nahrávce zůstane.', 'check'); render();
+        }, 1000);
+        return;
+
+      case 'save-send':
+        if (!S.company) return;
+        if (!S.name.trim()) { S.nameError = 'Doplň název nahrávky.'; S.focusNext = 'name'; render(); return; }
+        ensureTyden('uploading'); S.flow = 'sending'; S.focusNext = 'done';
+        if (S.scenario === 'blocked-company') S.scenario = 'saved';
+        syncUrl(); render();
+        runUpload('tyden', 0, function () { S.flow = 'sent'; });
+        return;
+      case 'save-keep':
+        if (!S.name.trim()) { S.nameError = 'Doplň název nahrávky.'; S.focusNext = 'name'; render(); return; }
+        ensureTyden('local'); S.flow = 'kept'; S.focusNext = 'done'; render(); return;
+
+      case 'track':
+        S.track.on = !S.track.on;
+        clearInterval(timers.track);
+        if (S.track.on) {
+          S.track.secs = 0;
+          timers.track = setInterval(function () {
+            S.track.secs++;
+            var n = app.querySelector('[data-tick="track"]'); if (n) n.textContent = fmt(S.track.secs);
+          }, 1000);
+        } else {
+          toast('Časovač zastaven. Ukázka nic neuložila do LuTracku.', 'info');
+          resumeUpdate();
+        }
+        render(); return;
+
+      /* aktualizace */
+      case 'upd-go':
+        if (blockers().length) { S.upd.state = 'waiting'; S.focusNext = S.upd.recording ? 'upd-stop' : 'upd-later'; }
+        else { S.upd.state = 'installing'; S.focusNext = 'upd-reset'; }
+        render(); return;
+      case 'upd-later': S.upd.state = 'later'; S.focusNext = 'upd-show'; toast('Připomínka zůstane dole v panelu. Nic se neinstaluje samo.', 'clock'); render(); return;
+      case 'upd-show': S.upd.state = 'offer'; S.focusNext = 'upd-go'; render(); return;
+      case 'upd-reset': S.upd.state = 'offer'; S.focusNext = 'upd-go'; render(); return;
+      case 'upd-rec': if (S.upd.recording || S.upd.saving) return;
+        S.upd.recording = true; S.focusNext = 'upd-stop'; render(); return;
+      case 'upd-stop':
+        if (!S.upd.recording) return;
+        S.upd.recording = false; S.upd.saving = true; render();
+        timers.updSave = setTimeout(function () {
+          S.upd.saving = false; S.focusNext = 'start';
+          toast('Nahrávka uložena na Macu (simulace).', 'check');
+          resumeUpdate(); render();
+        }, 900);
+        return;
+
+      /* nahrávky */
+      case 'menu': S.menu = S.menu === id ? null : id; S.focusNext = S.menu ? (app.querySelector('#menu-' + id) ? null : null) : 'more-' + id; render();
+        if (S.menu) { var first = app.querySelector('#menu-' + id + ' button'); if (first) first.focus(); }
+        return;
+      case 'item-finder': S.menu = null; S.focusNext = 'more-' + id; toast('Simulace: Finder by ukázal soubor „' + esc(it.name) + '“.', 'folder'); render(); return;
+      case 'item-trash': S.menu = null; S.dialog = { kind: 'trash', id: id, ret: 'more-' + id }; render(); return;
+      case 'item-own': S.dialog = { kind: 'owner', id: id, ret: 'own-' + id }; render(); return;
+      case 'item-send':
+        if (!S.company) { it.state = 'company'; S.focusNext = 'pickco-' + id; render(); return; }
+        it.company = S.company; S.focusNext = 'more-' + id;
+        runUpload(id, 0); render(); return;
+      case 'item-retry': S.focusNext = 'more-' + id; runUpload(id, 0); toast('Zkouším znovu odeslat „' + esc(it.name) + '“.', 'refresh'); render(); return;
+      case 'item-reauth':
+        it.busy = true; render();
+        timers['auth-' + id] = setTimeout(function () {
+          var cur = item(id); if (!cur) return;
+          cur.busy = false; cur.state = 'queued';
+          toast('Simulace: přihlášení obnoveno. „' + esc(cur.name) + '“ je zpět ve frontě.', 'check');
+          S.focusNext = WINDOW_SCENARIOS.indexOf(S.scenario) >= 0 ? 'more-' + id : 'q-all';
+          render();
+        }, 1100);
+        return;
+      case 'item-verify':
+        it.state = 'verifying'; render();
+        timers['ver-' + id] = setTimeout(function () {
+          var cur = item(id); if (!cur) return;
+          cur.state = 'verified'; S.focusNext = 'open-' + id; render();
+        }, 1200);
+        return;
+      case 'item-open': toast('Simulace: otevřel by se detail v LuDone v prohlížeči. Nic se neotevírá.', 'external'); render(); return;
+
+      case 'dlg-cancel': var ret = S.dialog && S.dialog.ret; if (S.dialog && S.dialog.kind === 'env') S.set.env = S.set.env; S.dialog = null; S.focusNext = ret; render(); return;
+      case 'dlg-scrim': if (ev.target === el) { var r2 = S.dialog && S.dialog.ret; S.dialog = null; S.focusNext = r2; render(); } return;
+      case 'dlg-trash':
+        var nm = it ? it.name : item(S.dialog.id).name;
+        S.items = S.items.filter(function (i) { return i.id !== S.dialog.id; });
+        S.dialog = null; S.focusNext = 'refresh';
+        toast('„' + esc(nm) + '“ je v koši. Na serveru se nic nesmazalo.', 'trash');
+        if (S.scenario === 'detail') { go(S.detailFrom || 'uploading', { tab: 'nahravky' }); return; }
+        render(); return;
+      case 'dlg-own':
+        var o = item(S.dialog.id); o.state = 'local'; o.taken = true;
+        S.focusNext = 'send-' + o.id; S.dialog = null;
+        toast('Převzato. „' + esc(o.name) + '“ se neodeslala — rozhodni o ní sám.', 'user'); render(); return;
+      case 'dlg-env':
+        S.set.env = S.dialog.env; S.set.signedIn = false; S.dialog = null; S.focusNext = 'env';
+        toast('Aktivní prostředí: ' + (S.set.env === 'labs' ? 'Labs' : 'produkce') + '. Tento Mac je odhlášený (simulace).', 'info'); render(); return;
+
+      case 'refresh':
+        S.set.refreshing = true; render();
+        timers.refresh = setTimeout(function () { S.set.refreshing = false; S.focusNext = 'refresh'; toast('Přehled obnoven.', 'check'); render(); }, 700);
+        return;
+      case 'sim-finish': S.items.forEach(function (i) { if (i.state === 'uploading') { clearInterval(timers['up-' + i.id]); i.pct = 100; i.state = 'sent'; } }); S.focusNext = 'sim-finish'; render(); return;
+      case 'sim-net': var u = S.items.filter(function (i) { return i.state === 'uploading' || i.state === 'queued'; })[0];
+        if (u) { clearInterval(timers['up-' + u.id]); u.state = 'net'; u.pct = 0; } S.focusNext = 'sim-net'; render(); return;
+      case 'sim-owner': var r = item('rozp'); if (r) { r.state = 'owner'; } S.focusNext = 'sim-owner'; render(); return;
+      case 'sim-limit': var l = S.items.filter(function (i) { return i.state === 'queued' || i.state === 'uploading' || i.state === 'net'; })[0];
+        if (l) { clearInterval(timers['up-' + l.id]); l.state = 'limit'; } S.focusNext = 'sim-limit'; render(); return;
+      case 'sim-reset': S.items = itemsFor(S.scenario); S.focusNext = 'sim-reset'; render(); return;
+
+      /* nastavení */
+      case 'signout': S.set.signedIn = false; S.focusNext = 'signin'; toast('Tento Mac je odhlášený (simulace). Nahrávky na Macu zůstaly.', 'info'); render(); return;
+      case 'signin': S.set.signedIn = true; S.focusNext = 'signout'; toast('Simulace: přihlášení proběhlo v prohlížeči.', 'check'); render(); return;
+      case 'set-autostart': S.set.autostart = !S.set.autostart; render(); return;
+      case 'set-dock': S.set.dock = !S.set.dock; render(); return;
+      case 'set-auto': S.set.autoUpload = !S.set.autoUpload; render(); return;
+      case 'audio-test': S.set.audioTest = !S.set.audioTest; render(); return;
+      case 'sys-prefs': toast('Simulace: otevřelo by se Nastavení systému → Soukromí a zabezpečení.', 'external'); render(); return;
+      case 'upd-offer':
+        /* jen ukáže nabídku v panelu; volba Aktualizovat / Později zůstává na člověku */
+        if (S.upd.state === 'none' || S.upd.state === 'later') S.upd.state = 'offer';
+        S.focusNext = S.upd.state === 'offer' ? 'upd-go' : null; go('update'); return;
+      case 'upd-check':
+        S.set.check = 'busy'; render();
+        timers.check = setTimeout(function () { S.set.check = 'done'; S.focusNext = 'upd-check'; render(); }, 900);
+        return;
+      case 'diag': S.set.diag = true; render(); return;
+    }
+  }
+
+  app.addEventListener('click', function (ev) {
+    var el = ev.target.closest('[data-act]');
+    if (S.menu && !ev.target.closest('.rec__more')) { S.menu = null; if (!el) { render(); return; } }
+    if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
+    if (el.disabled || el.getAttribute('aria-disabled') === 'true') return;
+    onAct(el.dataset.act, el, ev);
+  });
+  app.addEventListener('change', function (ev) {
+    var el = ev.target;
+    if (el.dataset.act === 'pick-company') {
+      S.company = el.value; S.companyNote = true; S.destOpen = false;
+      S.focusNext = S.scenario === 'saved' || S.scenario === 'blocked-company' ? (S.flow ? 'done' : 'send') : WINDOW_SCENARIOS.indexOf(S.scenario) >= 0 ? el.dataset.k : 'dest-change';
+      render();
+    } else if (el.dataset.act === 'retention') {
+      S.set.retention = el.value; toast('Uloženo. Neodeslané nahrávky se dál nemažou.', 'check'); render();
+    } else if (el.dataset.act === 'env') {
+      var want = el.value; el.value = S.set.env;
+      if (want !== S.set.env) { S.dialog = { kind: 'env', env: want, ret: 'env' }; render(); }
+    }
+  });
+  app.addEventListener('input', function (ev) {
+    if (ev.target.dataset.act === 'name') {
+      S.name = ev.target.value;
+      if (S.nameError && S.name.trim()) { S.nameError = ''; render(); }
+    }
+  });
+  app.addEventListener('keydown', function (ev) {
+    var t = ev.target;
+    if (ev.key === 'Escape') {
+      if (S.dialog) { var ret = S.dialog.ret; S.dialog = null; S.focusNext = ret; render(); ev.preventDefault(); return; }
+      if (S.menu) { var m = S.menu; S.menu = null; S.focusNext = 'more-' + m; render(); ev.preventDefault(); return; }
+      if (S.destOpen) { S.destOpen = false; S.focusNext = 'dest-change'; render(); ev.preventDefault(); return; }
+    }
+    if (ev.key === 'Tab' && S.dialog) {
+      var f = app.querySelectorAll('.dialog button');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (ev.shiftKey && document.activeElement === first) { last.focus(); ev.preventDefault(); }
+      else if (!ev.shiftKey && document.activeElement === last) { first.focus(); ev.preventDefault(); }
+    }
+    if (t.getAttribute && t.getAttribute('role') === 'tab' && (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft' || ev.key === 'Home' || ev.key === 'End')) {
+      var ids = TABS.map(function (x) { return x[0]; });
+      var n = ids.indexOf(S.scenario === 'detail' ? 'nahravky' : S.tab);
+      n = ev.key === 'Home' ? 0 : ev.key === 'End' ? ids.length - 1 : (n + (ev.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length;
+      ev.preventDefault(); var nb = app.querySelector('[data-k="tab-' + ids[n] + '"]'); if (nb) onAct('tab', nb, ev);
+    }
+    if (t.dataset && t.dataset.act === 'name' && ev.key === 'Enter' && S.company) { onAct('save-send', t, ev); ev.preventDefault(); }
+  });
+
+  /* ---------- vnější kontrakt: query + postMessage od rodiče ---------- */
+  window.addEventListener('message', function (ev) {
+    if (window.parent === window || ev.source !== window.parent) return;
+    var d = ev.data;
+    if (!d || typeof d !== 'object' || d.type !== 'ludone-design:set') return;
+    var sc = SCENARIOS.indexOf(d.scenario) >= 0 ? d.scenario : null;
+    var th = THEMES.indexOf(d.theme) >= 0 ? d.theme : null;
+    if (!sc && !th) return;
+    if (sc) S = fresh(sc, th || S.theme);
+    else S.theme = th;
+    syncUrl();
+    render();
+  });
+
+  var q = readQuery();
+  S = fresh(q.scenario, q.theme);
+  render();
+})();

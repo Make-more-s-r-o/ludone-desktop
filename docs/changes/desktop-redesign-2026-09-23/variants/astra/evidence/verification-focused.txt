@@ -1,0 +1,26 @@
+PASS blocked-company/light: obě firmy jsou skutečné option
+PASS blocked-company/light: správná výchozí volba
+PASS blocked-company/light: volba Studia Sever neodesílá
+PASS blocked-company/professional: obě firmy jsou skutečné option
+PASS blocked-company/professional: správná výchozí volba
+PASS blocked-company/professional: volba Studia Sever neodesílá
+PASS blocked-company/dark: obě firmy jsou skutečné option
+PASS blocked-company/dark: správná výchozí volba
+PASS blocked-company/dark: volba Studia Sever neodesílá
+PASS settings/light: obě firmy jsou skutečné option
+PASS settings/light: správná výchozí volba
+PASS settings/light: volba Studia Sever neodesílá
+PASS settings/professional: obě firmy jsou skutečné option
+PASS settings/professional: správná výchozí volba
+PASS settings/professional: volba Studia Sever neodesílá
+PASS settings/dark: obě firmy jsou skutečné option
+PASS settings/dark: správná výchozí volba
+PASS settings/dark: volba Studia Sever neodesílá
+PASS Zapnutí automatiky nemění staré nahrávky
+PASS Stop s automatikou vloží právě jednu novou položku
+PASS Automatika zachová původní položky beze změny
+PASS Automatika dává srozumitelný výsledek
+PASS Bez firmy automatika neodešle a nabídne výběr
+FAIL Klávesnice: Enter spustí nahrávání
+FAIL Klávesnice: Enter spustí nahrávání
+EXIT CODE: 1

@@ -1,0 +1,27 @@
+COMMAND: ['orca', 'keypress', '--page', '8151c6ff-05fe-4f2c-8390-af768da9c110', '--key', 'Enter', '--json']
+{
+  "id": "f07cef31-455d-4544-b8d8-d5537fa7aadf",
+  "ok": true,
+  "result": {
+    "pressed": "Enter"
+  },
+  "_meta": {
+    "runtimeId": "33b0428d-0505-49d4-a9e0-86bf64118dbc"
+  }
+}
+
+EXIT CODE: 0
+COMMAND: ['orca', 'eval', '--page', '8151c6ff-05fe-4f2c-8390-af768da9c110', '--expression', 'JSON.stringify({keys:window.qaKeys,scenario:document.documentElement.dataset.scenario,focus:document.hasFocus()})', '--json']
+{
+  "id": "9640cd87-3a57-40e4-9b9d-868372194fbd",
+  "ok": true,
+  "result": {
+    "result": "{\"keys\":[],\"scenario\":\"idle\",\"focus\":false}",
+    "origin": "file:///Users/dan/orca/workspaces/ludone-desktop/desktop-design-astra/docs/changes/desktop-redesign-2026-09-23/variants/astra/index.html?scenario=idle&theme=light"
+  },
+  "_meta": {
+    "runtimeId": "33b0428d-0505-49d4-a9e0-86bf64118dbc"
+  }
+}
+
+EXIT CODE: 0

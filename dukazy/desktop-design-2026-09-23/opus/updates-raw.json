@@ -1,0 +1,18 @@
+{
+  "A1_after_update_with_timer": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Počká na bezpečný okamžik. Nainstaluje se, až skončí: ukázkový časovač LuTrack. Nic z toho nepřeruší. Později SIMULACE Spustit nahrávání",
+  "A2_after_timer_stop": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Simulace: tady by se LuDone zavřelo a spustilo znovu ve verzi 0.1.5. Nic se neinstaluje. Vrátit ukázku SIMULACE Spustit nahrávání",
+  "B0_sim_switch_count_while_recording": 0,
+  "B1_waiting": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Počká na bezpečný okamžik. Nainstaluje se, až skončí: nahrávání (ukonči a ulož ho), ukázkový časovač LuTrack. Nic z toho nepřeruší. Později SIMULACE Nahrávání ukončíš tlačítkem „Ukončit a uložit“.",
+  "B2_during_save": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Počká na bezpečný okamžik. Nainstaluje se, až skončí: ukládání nahrávky, ukázkový časovač LuTrack. Nic z toho nepřeruší. Později SIMULACE Nahrávání ukončíš tlačítkem „Ukončit a uložit“.",
+  "B2_save_button": "Ukládám…",
+  "B3_after_save_timer_running": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Počká na bezpečný okamžik. Nainstaluje se, až skončí: ukázkový časovač LuTrack. Nic z toho nepřeruší. Později SIMULACE Spustit nahrávání",
+  "B4_after_timer_stop": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Simulace: tady by se LuDone zavřelo a spustilo znovu ve verzi 0.1.5. Nic se neinstaluje. Vrátit ukázku SIMULACE Spustit nahrávání",
+  "C0_before_click": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Instalace LuDone na chvíli restartuje. Během nahrávání, ukládání nebo běžícího časovače počká, než skončí. Aktualizovat Později SIMULACE Spustit nahrávání",
+  "C1_after_click": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Simulace: tady by se LuDone zavřelo a spustilo znovu ve verzi 0.1.5. Nic se neinstaluje. Vrátit ukázku SIMULACE Spustit nahrávání",
+  "D1_offer_button": "Zobrazit nabídku",
+  "D2_scenario": "update",
+  "D2_offer": "LuDone 0.1.5 je připravené Ukázková nabídka, ne skutečné vydání · teď máš 0.1.4 Přehlednější nahrávání a odesílání. Instalace LuDone na chvíli restartuje. Během nahrávání, ukládání nebo běžícího časovače počká, než skončí. Aktualizovat Později SIMULACE Spustit nahrávání",
+  "D2_focus": "upd-go",
+  "D3_after_later_footer": "Verze 0.1.5 čeká",
+  "errors": []
+}
