@@ -260,11 +260,11 @@ function deliveryFilesForSnapshot(item, root, configuredRoot) {
     delivery.clientRecordingId !== item.clientRecordingId
     || !["pending", "ready", "failed"].includes(delivery.state)
     || delivery.channels !== 2
-    || delivery.mime !== "audio/mpeg"
+    || delivery.mime !== "audio/webm"
     || delivery.channelMap?.left !== "microphone"
     || !["system", "silence"].includes(delivery.channelMap?.right)
     || directChild(root, delivery.sidecarPath, configuredRoot) !== `${expectedBase}.manifest.json.meeting-audio-v1.json`
-    || directChild(root, delivery.filePath, configuredRoot) !== `${expectedBase}-stereo.mp3`
+    || directChild(root, delivery.filePath, configuredRoot) !== `${expectedBase}-stereo.webm`
     || (delivery.source === "live-stereo"
       && directChild(root, delivery.masterPath, configuredRoot) !== `${expectedBase}-stereo-master.webm`)
   ) return null;
@@ -293,16 +293,24 @@ function safeQueueReason(value) {
     company_binding_missing: "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
     company_out_of_scope: "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
     "company_out_of_scope (HTTP 403)": "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
+    "Nedokončenou obnovenou nahrávku nelze bezpečně převést na stereo WebM":
+      "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo WebM.",
+    "Nedokončenou nahrávku nelze bezpečně převést na stereo WebM":
+      "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo WebM.",
+    "WebM po možném zahájení uploadu chybí; nesmí se znovu vytvořit s jinými bajty":
+      "WebM po možném zahájení odeslání chybí. Nahrávka je pozastavená, aby se nezměnila její identita.",
+    "Uložený WebM neodpovídá neměnné identitě připravené před uploadem":
+      "Uložený WebM se změnil proti souboru připravenému před odesláním.",
+    "Připravenému souboru chybí trvalá identita v sidecaru":
+      "Připravenému souboru chybí ověřitelná identita. Odeslání je bezpečně pozastavené.",
+    "Delivery sidecar neodpovídá neměnné identitě této nahrávky":
+      "Uložená identita souboru nesouhlasí s nahrávkou. Odeslání je bezpečně pozastavené.",
+    "Ready delivery sidecar změnil neměnnou identitu WebM":
+      "Uložená identita připraveného souboru se změnila. Odeslání je bezpečně pozastavené.",
+    "Rozpracovaný WebM nelze bezpečně nahradit":
+      "Rozpracovaný soubor nelze bezpečně obnovit; původní stopy zůstávají uložené.",
     "Starší nahrávka mohla být na serveru už založena; automatický převod by vytvořil další záznam":
       "Starší nahrávka mohla být na serveru už založena. Automatické odeslání je pozastavené, aby nevznikl duplicitní záznam.",
-    "Nedokončenou obnovenou nahrávku nelze bezpečně převést na stereo MP3":
-      "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo MP3.",
-    "Nedokončenou nahrávku nelze bezpečně převést na stereo MP3":
-      "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo MP3.",
-    "MP3 po možném zahájení uploadu chybí; nesmí se znovu vytvořit s jinými bajty":
-      "MP3 po možném zahájení odeslání chybí. Nahrávka je pozastavená, aby se nezměnila její identita.",
-    "Uložený MP3 neodpovídá neměnné identitě připravené před uploadem":
-      "Uložený MP3 se změnil proti souboru připravenému před odesláním.",
     "Stereo master se před převodem změnil":
       "Stereo master se před převodem změnil; originály zůstávají uložené.",
   };

@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { describe, expect, it, vi } from "vitest";
-import { enqueueRecording, processNext } from "../src/lib/queue.js";
+import { applyServerProgress, claimRecording, enqueueRecording, processNext, retryFailedItem } from "../src/lib/queue.js";
 
 const require = createRequire(import.meta.url);
 const {
@@ -55,14 +55,14 @@ describe("jediný delivery asset schůzky", () => {
       recordingsDirectory: data.directory,
       startedAt: data.startedAt,
     });
-    const bytes = Buffer.from("ID3\x04\x00\x00\x00\x00\x00\x00\xff\xfbmp3");
+    const bytes = Buffer.from("ID3\x04\x00\x00\x00\x00\x00\x00\xff\xfbwebm");
     const convert = vi.fn(async ({ outputPath }) => {
       await writeFile(outputPath, bytes);
       return {
         outputPath,
         size: bytes.length,
         sha256: createHash("sha256").update(bytes).digest("hex"),
-        mime: "audio/mpeg",
+        mime: "audio/webm",
         channels: 2,
         channelMap: { left: "microphone", right: "system" },
         source: "live-stereo",
@@ -80,11 +80,11 @@ describe("jediný delivery asset schůzky", () => {
     };
 
     const ready = await ensureMeetingAudioReady(item, {
-      convertToStereoMp3: convert,
+      prepareStereoWebm: convert,
       recordingsDirectory: data.directory,
     });
     const afterRestart = await ensureMeetingAudioReady({ ...item, delivery: ready }, {
-      convertToStereoMp3: convert,
+      prepareStereoWebm: convert,
       recordingsDirectory: data.directory,
     });
 
@@ -92,7 +92,7 @@ describe("jediný delivery asset schůzky", () => {
     expect(afterRestart).toEqual(ready);
     expect(ready).toMatchObject({
       state: "ready",
-      mime: "audio/mpeg",
+      mime: "audio/webm",
       channels: 2,
       channelMap: { left: "microphone", right: "system" },
       captureSources: "microphone+system",
@@ -125,7 +125,7 @@ describe("jediný delivery asset schůzky", () => {
       server: { companyTabidooId: randomUUID() },
       state: "ceka",
       tracks: { microphone: data.microphonePath, system: data.systemPath },
-    }, { convertToStereoMp3: convert, recordingsDirectory: data.directory }))
+    }, { prepareStereoWebm: convert, recordingsDirectory: data.directory }))
       .rejects.toMatchObject({ code: "delivery_asset_missing_after_init" });
     expect(convert).not.toHaveBeenCalled();
   });
@@ -137,27 +137,81 @@ describe("jediný delivery asset schůzky", () => {
       endedAt: data.endedAt, manifestPath: data.manifestPath, masterPath: data.masterPath,
       recordingsDirectory: data.directory, startedAt: data.startedAt,
     });
-    const bytes = Buffer.from("ID3\x04\x00\x00\x00\x00\x00\x00\xff\xfbmp3");
+    const bytes = Buffer.from("ID3\x04\x00\x00\x00\x00\x00\x00\xff\xfbwebm");
     const convert = async ({ outputPath }) => {
       await writeFile(outputPath, bytes);
-      return { outputPath, size: bytes.length, mime: "audio/mpeg", channels: 2,
+      return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
         encoderVersion: "test-1" };
     };
     const item = { attempts: 0, clientRecordingId: data.id, delivery: pending,
       manifestPath: data.manifestPath, server: {}, state: "ceka",
       tracks: { microphone: data.microphonePath, system: data.systemPath } };
     const ready = await ensureMeetingAudioReady(item, {
-      convertToStereoMp3: convert, recordingsDirectory: data.directory,
+      prepareStereoWebm: convert, recordingsDirectory: data.directory,
     });
     const sidecar = JSON.parse(await readFile(ready.sidecarPath, "utf8"));
     sidecar.sha256 = "f".repeat(64);
     await writeFile(ready.sidecarPath, JSON.stringify(sidecar));
     await expect(ensureMeetingAudioReady({ ...item, delivery: ready }, {
-      convertToStereoMp3: vi.fn(), recordingsDirectory: data.directory,
+      prepareStereoWebm: vi.fn(), recordingsDirectory: data.directory,
     })).rejects.toMatchObject({ code: "delivery_identity_mismatch" });
   });
 
-  it("po pádu mezi publikací MP3 a sidecarem před HTTP překóduje z pevných zdrojů", async () => {
+  it("připravené bajty nelze ve frontě změnit a ztracený ready sidecar nezakládá novou identitu", async () => {
+    const data = await fixture();
+    const pending = await createLivePendingDelivery({
+      captureSources: "microphone+system", clientRecordingId: data.id,
+      endedAt: data.endedAt, manifestPath: data.manifestPath, masterPath: data.masterPath,
+      recordingsDirectory: data.directory, startedAt: data.startedAt,
+    });
+    const bytes = Buffer.from("stereo-webm");
+    const item = { attempts: 0, clientRecordingId: data.id, delivery: pending,
+      manifestPath: data.manifestPath, server: {}, state: "ceka",
+      tracks: { microphone: data.microphonePath, system: data.systemPath } };
+    const ready = await ensureMeetingAudioReady(item, {
+      prepareStereoWebm: async ({ outputPath }) => {
+        await writeFile(outputPath, bytes);
+        return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
+          encoderVersion: "test-immutable" };
+      }, recordingsDirectory: data.directory,
+    });
+    const queue = { schemaVersion: 1, items: [{ ...item, delivery: ready }] };
+    expect(() => applyServerProgress(queue, data.id, { delivery: {
+      ...ready, sha256: "f".repeat(64),
+    } })).toThrow(/neměnné bajty/u);
+    await unlink(ready.sidecarPath);
+    await expect(ensureMeetingAudioReady({ ...item, delivery: ready }, {
+      prepareStereoWebm: vi.fn(), recordingsDirectory: data.directory,
+    })).rejects.toMatchObject({ code: "delivery_identity_mismatch" });
+  });
+
+  it("lokální selhání převodu uloží pending před encoderem a po restartu se bezpečně opakuje", async () => {
+    const data = await fixture();
+    const item = { attempts: 0, clientRecordingId: data.id,
+      manifestPath: data.manifestPath, server: {}, state: "ceka",
+      tracks: { microphone: data.microphonePath, system: data.systemPath } };
+    let savedPending;
+    const firstConverter = vi.fn(async () => { throw new Error("encoder není dostupný"); });
+    await expect(ensureMeetingAudioReady(item, {
+      onDescriptorPrepared: async (descriptor) => { savedPending = descriptor; },
+      prepareStereoWebm: firstConverter,
+      recordingsDirectory: data.directory,
+    })).rejects.toThrow("encoder není dostupný");
+    expect(savedPending).toMatchObject({ state: "pending", mime: "audio/webm" });
+    const bytes = Buffer.from("opakovany-opus");
+    const ready = await ensureMeetingAudioReady({ ...item, attempts: 1, delivery: savedPending }, {
+      prepareStereoWebm: async ({ outputPath }) => {
+        await writeFile(outputPath, bytes);
+        return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
+          encoderVersion: "test-retry" };
+      },
+      recordingsDirectory: data.directory,
+    });
+    expect(ready.state).toBe("ready");
+    expect(await readFile(ready.filePath)).toEqual(bytes);
+  });
+
+  it("po pádu mezi publikací WebM a sidecarem před HTTP překóduje z pevných zdrojů", async () => {
     const data = await fixture();
     const pending = await createLivePendingDelivery({
       captureSources: "microphone+system", clientRecordingId: data.id,
@@ -168,14 +222,14 @@ describe("jediný delivery asset schůzky", () => {
     const replacement = Buffer.from("ID3\x04\x00\x00\x00\x00\x00\x00\xff\xfbnew");
     const convert = vi.fn(async ({ outputPath }) => {
       await writeFile(outputPath, replacement);
-      return { outputPath, size: replacement.length, mime: "audio/mpeg", channels: 2,
+      return { outputPath, size: replacement.length, mime: "audio/webm", channels: 2,
         encoderVersion: "test-recovery" };
     });
     const ready = await ensureMeetingAudioReady({
       attempts: 1, clientRecordingId: data.id, delivery: pending,
       manifestPath: data.manifestPath, server: {}, state: "ceka",
       tracks: { microphone: data.microphonePath, system: data.systemPath },
-    }, { convertToStereoMp3: convert, recordingsDirectory: data.directory });
+    }, { prepareStereoWebm: convert, recordingsDirectory: data.directory });
     expect(convert).toHaveBeenCalledOnce();
     expect(await readFile(ready.filePath)).toEqual(replacement);
   });
@@ -187,15 +241,15 @@ describe("jediný delivery asset schůzky", () => {
       endedAt: data.endedAt, manifestPath: data.manifestPath, masterPath: data.masterPath,
       recordingsDirectory: data.directory, startedAt: data.startedAt,
     });
-    const bytes = Buffer.from("obnovené-mp3");
+    const bytes = Buffer.from("obnovené-webm");
     const ready = await ensureMeetingAudioReady({
       attempts: 0, clientRecordingId: data.id, manifestPath: data.manifestPath,
       server: {}, state: "ceka",
       tracks: { microphone: data.microphonePath, system: data.systemPath },
     }, {
-      convertToStereoMp3: async ({ outputPath }) => {
+      prepareStereoWebm: async ({ outputPath }) => {
         await writeFile(outputPath, bytes);
-        return { outputPath, size: bytes.length, mime: "audio/mpeg", channels: 2,
+        return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
           encoderVersion: "test-orphan" };
       },
       recordingsDirectory: data.directory,
@@ -212,13 +266,13 @@ describe("jediný delivery asset schůzky", () => {
       trackPaths: { microphone: data.microphonePath, system: data.systemPath },
     });
     const queue = { ...enqueued.queue, items: [{ ...enqueued.item, uploadIntent: "approved" }] };
-    const bytes = Buffer.from("legacy-mp3");
+    const bytes = Buffer.from("legacy-webm");
     const result = await processNext(queue, { DESKTOP_UPLOAD_ENABLED: "true" },
       async (_sending, report, preparation) => {
         const delivery = await ensureMeetingAudioReady(preparation.preAttemptItem, {
-          convertToStereoMp3: async ({ outputPath }) => {
+          prepareStereoWebm: async ({ outputPath }) => {
             await writeFile(outputPath, bytes);
-            return { outputPath, size: bytes.length, mime: "audio/mpeg", channels: 2,
+            return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
               encoderVersion: "test-legacy" };
           },
           recordingsDirectory: data.directory,
@@ -229,6 +283,81 @@ describe("jediný delivery asset schůzky", () => {
     expect(result).toMatchObject({ outcome: "sent", item: {
       delivery: { state: "ready", source: "separate-tracks" },
       server: { delivery: { uploadedBytes: bytes.length } },
+    } });
+  });
+
+  it("čerstvě převzatá legacy nahrávka se může převést, zahájený starý upload zůstane blokovaný", async () => {
+    const data = await fixture();
+    const manifest = JSON.parse(await readFile(data.manifestPath, "utf8"));
+    const enqueued = enqueueRecording({ schemaVersion: 1, items: [] }, {
+      manifest, manifestPath: data.manifestPath,
+      trackPaths: { microphone: data.microphonePath, system: data.systemPath },
+    });
+    const owner = `sha256:${"a".repeat(64)}`;
+    const fresh = claimRecording(enqueued.queue, data.id, owner).item;
+    expect(fresh.legacyDeliveryBarrier).not.toBe(true);
+    const prepared = vi.fn();
+    await ensureMeetingAudioReady(fresh, {
+      onDescriptorPrepared: prepared,
+      prepareStereoWebm: async ({ outputPath }) => {
+        const bytes = Buffer.from("claimed-opus");
+        await writeFile(outputPath, bytes);
+        return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
+          encoderVersion: "test-claim" };
+      },
+      recordingsDirectory: data.directory,
+    });
+    expect(prepared).toHaveBeenCalledOnce();
+
+    const started = { ...enqueued.queue, items: [{ ...enqueued.item,
+      server: { ...enqueued.item.server, tracks: {
+        ...enqueued.item.server.tracks,
+        microphone: { recordingId: randomUUID(), uploadedBytes: 1 },
+      } },
+    }] };
+    const claimedStarted = claimRecording(started, data.id, owner).item;
+    expect(claimedStarted.legacyDeliveryBarrier).toBe(true);
+    await expect(ensureMeetingAudioReady(claimedStarted, {
+      prepareStereoWebm: vi.fn(), recordingsDirectory: data.directory,
+    })).rejects.toMatchObject({ code: "legacy_upload_may_have_started" });
+  });
+
+  it("selhání encoderu v durable frontě po restartu a ručním retry připraví stejné pending delivery", async () => {
+    const data = await fixture();
+    const manifest = JSON.parse(await readFile(data.manifestPath, "utf8"));
+    const enqueued = enqueueRecording({ schemaVersion: 1, items: [] }, {
+      manifest, manifestPath: data.manifestPath,
+      trackPaths: { microphone: data.microphonePath, system: data.systemPath },
+    });
+    const queue = { ...enqueued.queue, items: [{ ...enqueued.item, uploadIntent: "approved" }] };
+    let diskQueue;
+    const send = async (_sending, report, preparation) => {
+      const ready = await ensureMeetingAudioReady(preparation.preAttemptItem, {
+        onDescriptorPrepared: (descriptor) => report({ delivery: descriptor }),
+        prepareStereoWebm: async ({ outputPath }) => {
+          if (!diskQueue?.items[0]?.delivery) throw new Error("pending není trvalé");
+          if (diskQueue.items[0].state !== "selhalo") throw new Error("encoder není dostupný");
+          const bytes = Buffer.from("retry-opus");
+          await writeFile(outputPath, bytes);
+          return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
+            encoderVersion: "test-retry" };
+        },
+        recordingsDirectory: data.directory,
+      });
+      await report({ delivery: ready });
+      return { uploads: [{ track: "delivery", recordingId: randomUUID(), uploadedBytes: ready.sizeBytes }] };
+    };
+    const options = { now: Date.parse("2026-09-15T10:00:00.000Z"),
+      retryPolicy: { maxAttempts: 1 },
+      persistProgress: async (progress) => { diskQueue = structuredClone(progress); } };
+    const first = await processNext(queue, { DESKTOP_UPLOAD_ENABLED: "true" }, send, options);
+    expect(first).toMatchObject({ outcome: "failed", item: { delivery: { state: "pending" } } });
+    diskQueue = structuredClone(first.queue);
+    const resumed = retryFailedItem(diskQueue, data.id);
+    const second = await processNext(resumed.queue, { DESKTOP_UPLOAD_ENABLED: "true" }, send, options);
+    expect(second).toMatchObject({ outcome: "sent", item: {
+      delivery: { state: "ready", mime: "audio/webm" },
+      server: { delivery: { uploadedBytes: 10 } },
     } });
   });
 
@@ -258,7 +387,7 @@ describe("jediný delivery asset schůzky", () => {
       server: {},
       state: "ceka",
       tracks: { microphone: data.microphonePath, system: data.systemPath },
-    }, { convertToStereoMp3: vi.fn(), recordingsDirectory: data.directory }))
+    }, { prepareStereoWebm: vi.fn(), recordingsDirectory: data.directory }))
       .rejects.toMatchObject({ code: "legacy_incomplete" });
   });
 });

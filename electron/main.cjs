@@ -1780,7 +1780,7 @@ async function finalizeRecordingExportStage(sessionId, outcome, { preserveFile =
     }
     exportStage.resolveReady(exportStage.result);
     if (exportStage.result.ok && exportStage.recordingFinishSucceeded) {
-      void persistLiveMeetingDelivery(exportStage).catch((error) => {
+      await persistLiveMeetingDelivery(exportStage).catch((error) => {
         console.error(`[recording] Uložení identity stereo delivery selhalo: ${error.code ?? "IO_ERROR"}`);
       });
     }
@@ -2554,7 +2554,8 @@ function createQueueSend() {
     outboundQueueSendsInFlight += 1;
     try {
       let uploadItem = item;
-      if ((item.kind ?? "recording") === "recording") {
+      if ((item.kind ?? "recording") === "recording"
+        && typeof item.clientRecordingId === "string") {
         const delivery = await ensureMeetingAudioReady(preparation.preAttemptItem ?? item, {
           encoderOptions: {
             isPackaged: app.isPackaged,

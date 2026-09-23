@@ -552,7 +552,7 @@ export function RecordingCard({
       levelMonitor = createAudioLevelMonitor(sharedAudioContext.context);
       levelMonitor.replaceSource("microphone", microphoneRecordingStream);
       if (systemRecorder) levelMonitor.replaceSource("system", stereoCapture.systemStream);
-      const exportRecorder = new MediaRecorder(exportCapture.stream, options);
+      const exportRecorder = new MediaRecorder(exportCapture.stream, { ...options, audioBitsPerSecond: 96_000 });
       const sources = hasSystemAudio ? ["microphone", "system"] : ["microphone"];
       const persistence = await window.ludone.beginRecording(sources);
       runtime = {

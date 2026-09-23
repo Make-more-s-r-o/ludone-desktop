@@ -11,7 +11,7 @@ function response(payload) {
   return { ok: true, status: 200, headers: new Headers(), json: async () => payload };
 }
 
-describe("produkční upload jednoho stereo MP3", () => {
+describe("produkční upload jednoho stereo WebM", () => {
   it("odešle právě jeden INIT, jeden obsah a jedno dokončení se stabilní identitou schůzky", async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), "ludone-meeting-upload-"));
     const clientRecordingId = randomUUID();
@@ -23,7 +23,7 @@ describe("produkční upload jednoho stereo MP3", () => {
     const endedAt = "2026-09-15T09:00:00.000Z";
     const bytes = Buffer.from("ID3\x04\x00\x00\x00\x00\x00\x00\xff\xfbmeeting");
     const sha256 = createHash("sha256").update(bytes).digest("hex");
-    const filePath = path.join(directory, "meeting-stereo.mp3");
+    const filePath = path.join(directory, "meeting-stereo.webm");
     const manifestPath = path.join(directory, "meeting.manifest.json");
     await writeFile(filePath, bytes);
     await writeFile(manifestPath, JSON.stringify({
@@ -76,7 +76,7 @@ describe("produkční upload jednoho stereo MP3", () => {
         startedAt,
         endedAt,
         timing: { durationMs: 3_600_000, microphoneDelayMs: 0, systemDelayMs: 0 },
-        mime: "audio/mpeg",
+        mime: "audio/webm",
         filePath,
         sidecarPath: `${manifestPath}.meeting-audio-v1.json`,
         masterPath: path.join(directory, "meeting-stereo-master.webm"),
@@ -99,7 +99,7 @@ describe("produkční upload jednoho stereo MP3", () => {
     expect(init).toMatchObject({
       clientRecordingId,
       title: "Porada výroby",
-      declaredMime: "audio/mpeg",
+      declaredMime: "audio/webm",
       declaredCaptureSources: "microphone+system",
       sessionId: null,
     });

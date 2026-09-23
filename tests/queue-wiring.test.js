@@ -664,8 +664,8 @@ async function loadMain({
               startedAt: "2026-09-15T08:00:00.000Z",
               endedAt: "2026-09-15T08:00:01.000Z",
               timing: { durationMs: 1_000, microphoneDelayMs: 0, systemDelayMs: 0 },
-              mime: "audio/mpeg",
-              filePath: `/tmp/${item.clientRecordingId}.mp3`,
+              mime: "audio/webm",
+              filePath: `/tmp/${item.clientRecordingId}.webm`,
               sidecarPath: `/tmp/${item.clientRecordingId}.meeting-audio-v1.json`,
               masterPath: null,
               masterSizeBytes: null,
@@ -677,18 +677,14 @@ async function loadMain({
           }
           return meetingAudio.ensureMeetingAudioReady(item, {
             ...options,
-            convertToStereoMp3: async ({ outputPath }) => {
-            const bytes = Buffer.concat([
-              Buffer.from("ID3\x04\x00\x00\x00\x00\x00\x00", "binary"),
-              Buffer.from([0xff, 0xfb]),
-              Buffer.from("mp3"),
-            ]);
+            prepareStereoWebm: async ({ outputPath }) => {
+            const bytes = stereoWebmBytes();
             await writeFile(outputPath, bytes);
             return {
               outputPath,
               size: bytes.length,
               sha256: createHash("sha256").update(bytes).digest("hex"),
-              mime: "audio/mpeg",
+              mime: "audio/webm",
               channels: 2,
               channelMap: { left: "microphone", right: "preserved" },
               source: item.delivery?.source ?? "separate-tracks",
@@ -2799,7 +2795,7 @@ describe("zjištění uložené OAuth session", () => {
         id: "nahravka",
         delivery: expect.objectContaining({
           clientRecordingId,
-          mime: "audio/mpeg",
+          mime: "audio/webm",
           state: "ready",
         }),
       }),
@@ -4157,7 +4153,7 @@ describe("produkční zapojení odchozí fronty", () => {
       id,
       revision,
       ownerFingerprint,
-      tracks: { microphone: { recordingId, declaredBytes: 12, sha256: "b".repeat(64) } },
+      tracks: { delivery: { recordingId, declaredBytes: 12, sha256: "b".repeat(64) } },
     }));
     const store = {
       claimRecording: vi.fn(), enqueueRecording: vi.fn(), enqueueTimeEntry: vi.fn(),
@@ -4180,20 +4176,20 @@ describe("produkční zapojení odchozí fronty", () => {
     const verify = harness.ipcHandlers.get("recordings:verify");
     const openWeb = harness.ipcHandlers.get("recordings:open-web");
     await expect(verify(settingsEvent, id, revision)).resolves.toMatchObject({
-      tracks: { microphone: { status: "complete" } },
+      tracks: { delivery: { status: "complete" } },
     });
     expect(harness.electron.net.fetch).toHaveBeenCalledExactlyOnceWith(
       `https://app.ludone.cz/api/nahravky/uploads/${recordingId}`,
       expect.objectContaining({ method: "GET", redirect: "error" }),
     );
-    await expect(openWeb(settingsEvent, id, revision, "microphone")).resolves.toEqual({ opened: true });
+    await expect(openWeb(settingsEvent, id, revision, "delivery")).resolves.toEqual({ opened: true });
     expect(harness.electron.shell.openExternal).toHaveBeenCalledWith(
       `https://app.ludone.cz/nahravky/${recordingId}`,
     );
     await expect(Promise.resolve().then(() => verify(settingsEvent, id, revision, "navíc")))
       .rejects.toThrow(/GUID.*revizi/u);
     expect(() => verify(panelEvent, id, revision)).toThrow(/nedůvěryhodný/u);
-    expect(() => openWeb(panelEvent, id, revision, "microphone")).toThrow(/nedůvěryhodný/u);
+    expect(() => openWeb(panelEvent, id, revision, "delivery")).toThrow(/nedůvěryhodný/u);
   });
 
   it("pojmenování přes preload předá časování, GUID i název na přesné IPC kanály", async () => {
@@ -4851,7 +4847,7 @@ describe("produkční zapojení odchozí fronty", () => {
     await expect(pendingExport).resolves.toMatchObject({
       ok: true,
       clientRecordingId: sessionId,
-      format: { container: "MP3", codec: "MP3", channels: 2 },
+      format: { container: "WebM", codec: "Opus", channels: 2 },
       trackStartDeltaMs: null,
       trackDurationDeltaMs: null,
     });
@@ -4903,8 +4899,8 @@ describe("produkční zapojení odchozí fronty", () => {
         endedAt: "2026-09-03T04:00:01.025Z",
       },
     });
-    const exportDirectory = path.join(harness.userDataPath, "ludone-exporty");
-    const [exportName] = await readdir(exportDirectory);
+    const exportDirectory = path.join(harness.userDataPath, "nahravky");
+    const exportName = (await readdir(exportDirectory)).find((name) => name.endsWith("-stereo-master.webm"));
     harness.windows[0].hide();
     expect(harness.windows[0].isVisible()).toBe(false);
 
@@ -5406,7 +5402,7 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(exported).toMatchObject({
       ok: true,
       clientRecordingId: sessionId,
-      format: { container: "MP3", codec: "MP3", channels: 2 },
+      format: { container: "WebM", codec: "Opus", channels: 2 },
       trackStartDeltaMs: 25,
     });
     expect(exported.fileName).toContain("Porada-provozu-Q3");
@@ -5559,9 +5555,15 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 
   it("send projde skutečným preloadem a store schválí jen zvolenou held nahrávku i po obnově tokenu", async () => {
+    const serverRecordingId = "19e586e5-d688-43f1-8a80-a3d61e754f3e";
     const uploadSend = vi.fn(async (item, reportServerProgress) => {
-      void item;
-      void reportServerProgress;
+      expect(item.delivery).toMatchObject({
+        state: "ready", mime: "audio/webm", channels: 2,
+      });
+      const progress = { track: "delivery", recordingId: serverRecordingId,
+        uploadedBytes: item.delivery.sizeBytes };
+      await reportServerProgress(progress);
+      return { completedUploads: 1, uploads: [progress] };
     });
     const harness = await loadMain({
       createRecordingUploadSend: vi.fn(() => uploadSend),
@@ -5637,8 +5639,9 @@ describe("produkční zapojení odchozí fronty", () => {
         uploadIntent: "approved",
       });
       const persisted = JSON.parse(await readFile(queuePath, "utf8"));
-      expect(persisted.items.find((item) => item.clientRecordingId === sessionId)?.state)
-        .toBe("odeslano");
+      expect(persisted.items.find((item) => item.clientRecordingId === sessionId))
+        .toMatchObject({ state: "odeslano", delivery: { state: "ready",
+          mime: "audio/webm" }, server: { delivery: { recordingId: serverRecordingId } } });
       expect(persisted.items.find((item) => item.clientRecordingId === second.sessionId))
         .toMatchObject({ state: "ceka", uploadIntent: "held" });
     } finally {
@@ -6179,14 +6182,14 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     const { event, sessionId } = await prepareRecordingExport(harness);
     const { api, invoke } = loadPreload();
     invoke.mockImplementation((channel, ...args) => harness.ipcHandlers.get(channel)(event, ...args));
-    const directories = ["nahravky", "ludone-exporty"].map((name) => path.join(harness.userDataPath, name));
+    const directories = ["nahravky"].map((name) => path.join(harness.userDataPath, name));
     const originalFiles = (await Promise.all(directories.map(async (directory) => (
       Promise.all((await readdir(directory)).map(async (name) => {
         const filePath = path.join(directory, name);
         return { filePath, bytes: await readFile(filePath) };
       }))
     )))).flat();
-    expect(originalFiles).toHaveLength(4);
+    expect(originalFiles).toHaveLength(5);
 
     const rejected = await api.exportRecording(sessionId, {
       recordingName: "ř".repeat(501), openUploadPage: true,
@@ -7211,8 +7214,8 @@ describe("bezpečné ukončení aplikace", () => {
         endedAt: "2026-09-02T12:00:01.150Z",
       },
     });
-    const exportDirectory = path.join(harness.userDataPath, "ludone-exporty");
-    const [exportName] = await readdir(exportDirectory);
+    const exportDirectory = path.join(harness.userDataPath, "nahravky");
+    const exportName = (await readdir(exportDirectory)).find((name) => name.endsWith("-stereo-master.webm"));
 
     await expect(harness.ipcHandlers.get("recording:finish")(event, sessionId, {
       microphone: {
@@ -7259,8 +7262,8 @@ describe("bezpečné ukončení aplikace", () => {
         },
       },
     );
-    const exportDirectory = path.join(harness.userDataPath, "ludone-exporty");
-    const [exportName] = await readdir(exportDirectory);
+    const exportDirectory = path.join(harness.userDataPath, "nahravky");
+    const exportName = (await readdir(exportDirectory)).find((name) => name.endsWith("-stereo-master.webm"));
 
     panelContents.destroy();
     const quitEvent = { preventDefault: vi.fn() };

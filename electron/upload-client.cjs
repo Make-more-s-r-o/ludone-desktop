@@ -363,14 +363,14 @@ async function preflightRecording(item) {
     if (
       delivery.version !== 1
       || delivery.clientRecordingId !== clientRecordingId
-      || delivery.mime !== "audio/mpeg"
+      || delivery.mime !== "audio/webm"
       || delivery.channels !== 2
       || delivery.channelMap?.left !== "microphone"
       || !["system", "silence"].includes(delivery.channelMap?.right)
       || !["microphone", "microphone+system"].includes(delivery.captureSources)
       || (delivery.captureSources === "microphone+system") !== (delivery.channelMap.right === "system")
     ) {
-      throw localError("invalid_input", "Delivery MP3 má neplatný kontrakt kanálů", "permanent");
+      throw localError("invalid_input", "Delivery WebM má neplatný kontrakt kanálů", "permanent");
     }
     /** @type {any} */
     const track = {
@@ -385,7 +385,7 @@ async function preflightRecording(item) {
     };
     const hashes = await hashFileByChunks(track.filePath, track.sizeBytes);
     if (hashes.sha256 !== track.declaredSha256) {
-      throw localError("sha256_mismatch", "Otisk MP3 neodpovídá připravené identitě", "permanent");
+      throw localError("sha256_mismatch", "Otisk WebM neodpovídá připravené identitě", "permanent");
     }
     track.sha256 = hashes.sha256;
     track.chunkHashes = hashes.chunkHashes;
@@ -1029,7 +1029,7 @@ function createRecordingUploadSend({
     if (requireSingleDelivery && item?.delivery?.state !== "ready") {
       throw localError(
         "delivery_not_ready",
-        "Nahrávka nemá připravený jediný stereo MP3",
+        "Nahrávka nemá připravený jediný stereo WebM",
         "paused",
       );
     }

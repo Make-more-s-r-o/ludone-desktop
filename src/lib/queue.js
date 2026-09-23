@@ -516,6 +516,12 @@ export function claimRecording(queue, clientRecordingId, ownerFingerprint) {
 
   const item = {
     ...originalItem,
+    ...(originalItem.delivery === undefined && (
+      originalItem.legacyDeliveryBarrier === true
+      || hasInitializedServerProgress(serverForRenderer(originalItem))
+      || typeof originalItem.server?.companyTabidooId === "string"
+      || originalItem.attempts > 0
+    ) ? { legacyDeliveryBarrier: true } : {}),
     attempts: 0,
     lastFailureReason: CLAIMED_RECORDING_HOLD_REASON,
     nextAttemptAt: null,
@@ -571,7 +577,7 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
     if (
       !["pending", "ready"].includes(delivery.state)
       || delivery.clientRecordingId !== originalItem.clientRecordingId
-      || delivery.mime !== "audio/mpeg"
+      || delivery.mime !== "audio/webm"
       || delivery.channels !== 2
       || !delivery.channelMap
       || delivery.channelMap.left !== "microphone"
@@ -588,7 +594,7 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
         delivery.sizeBytes !== null || delivery.sha256 !== null || delivery.encoderVersion !== null
       ))
     ) {
-      throw new TypeError("serverProgress.delivery musí být platný descriptor MP3 stejné nahrávky");
+      throw new TypeError("serverProgress.delivery musí být platný descriptor WebM stejné nahrávky");
     }
     if (
       (server.delivery?.recordingId !== null && server.delivery?.recordingId !== undefined)
@@ -599,6 +605,10 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
     if (originalItem.delivery?.state === "ready" && delivery.state !== "ready") {
       throw new Error("ready delivery nelze vrátit do pending stavu");
     }
+    if (originalItem.delivery?.state === "ready"
+      && JSON.stringify(originalItem.delivery) !== JSON.stringify(delivery)) {
+      throw new Error("ready delivery má neměnné bajty a metadata");
+    }
     const item = { ...originalItem, delivery, server: {
       ...server,
       delivery: server.delivery ?? { recordingId: null, uploadedBytes: 0 },
@@ -607,12 +617,12 @@ export function applyServerProgress(queue, clientRecordingId, serverProgress) {
   }
   if (serverProgress.track === "delivery") {
     if (originalItem.delivery?.state !== "ready") {
-      throw new TypeError("serverProgress.track delivery vyžaduje připravený MP3");
+      throw new TypeError("serverProgress.track delivery vyžaduje připravený WebM");
     }
     const recordingId = requireGuid(serverProgress.recordingId, "serverProgress.recordingId");
     server.delivery ??= { recordingId: null, uploadedBytes: 0 };
     if (server.delivery.recordingId !== null && server.delivery.recordingId !== recordingId) {
-      throw new Error("server změnil recordingId připraveného MP3");
+      throw new Error("server změnil recordingId připraveného WebM");
     }
     const sessionId = serverProgress.sessionId === undefined
       ? server.sessionId
@@ -714,7 +724,7 @@ export function attachRecordingDelivery(queue, clientRecordingId, delivery) {
   if (
     !["pending", "ready"].includes(delivery.state)
     || delivery.clientRecordingId !== clientRecordingId
-    || delivery.mime !== "audio/mpeg"
+    || delivery.mime !== "audio/webm"
     || delivery.channels !== 2
     || delivery.channelMap?.left !== "microphone"
     || !["system", "silence"].includes(delivery.channelMap?.right)

@@ -45,7 +45,7 @@ function descriptorPaths(manifestPath, recordingsDirectory) {
   }
   const base = safeManifestPath.slice(0, -".manifest.json".length);
   return {
-    filePath: `${base}-stereo.mp3`,
+    filePath: `${base}-stereo.webm`,
     sidecarPath: `${safeManifestPath}.meeting-audio-v1.json`,
   };
 }
@@ -101,7 +101,7 @@ function pendingDescriptor({
       microphoneDelayMs: normalizedTiming.microphoneDelayMs,
       systemDelayMs: normalizedTiming.systemDelayMs,
     },
-    mime: "audio/mpeg",
+    mime: "audio/webm",
     filePath,
     sidecarPath,
     masterPath,
@@ -123,7 +123,7 @@ function validateDescriptor(value, recordingsDirectory) {
   const expectedRight = value.captureSources === "microphone+system" ? "system" : "silence";
   if (
     value.channels !== 2
-    || value.mime !== "audio/mpeg"
+    || value.mime !== "audio/webm"
     || value.channelMap?.left !== "microphone"
     || value.channelMap?.right !== expectedRight
   ) {
@@ -151,7 +151,7 @@ function validateDescriptor(value, recordingsDirectory) {
     masterSizeBytes: value.masterSizeBytes ?? null,
     masterSha256: value.masterSha256 ?? null,
   });
-  if (!descriptor.filePath.endsWith(".mp3") || !descriptor.sidecarPath.endsWith(".meeting-audio-v1.json")) {
+  if (!descriptor.filePath.endsWith(".webm") || !descriptor.sidecarPath.endsWith(".meeting-audio-v1.json")) {
     throw new TypeError("delivery má neplatnou příponu souboru");
   }
   if (value.state === "ready") {
@@ -300,7 +300,7 @@ async function discardUnboundOutput(filePath) {
     if (error?.code === "ENOENT") return;
     throw new MeetingAudioError(
       "delivery_unbound_output_unsafe",
-      "Rozpracovaný MP3 nelze bezpečně nahradit",
+      "Rozpracovaný WebM nelze bezpečně nahradit",
       "permanent",
     );
   }
@@ -315,6 +315,7 @@ function hasLegacyUploadEvidence(item) {
     || item?.sentAt !== null && item?.sentAt !== undefined
     || item?.nextAttemptAt !== null && item?.nextAttemptAt !== undefined
     || item?.lastFailureReason !== null && item?.lastFailureReason !== undefined
+      && item.lastFailureReason !== "Převzatá nahrávka čeká na volbu odeslání"
     || typeof server.companyTabidooId === "string"
     || typeof server.sessionId === "string"
     || typeof server.recordingId === "string"
@@ -338,7 +339,7 @@ async function manifestForLegacy(item, recordingsDirectory, { allowEmptyRaw = fa
   if (item.recoveredIncomplete === true) {
     throw new MeetingAudioError(
       "legacy_incomplete",
-      "Nedokončenou obnovenou nahrávku nelze bezpečně převést na stereo MP3",
+      "Nedokončenou obnovenou nahrávku nelze bezpečně převést na stereo WebM",
     );
   }
   const primaryPath = directChild(
@@ -350,7 +351,7 @@ async function manifestForLegacy(item, recordingsDirectory, { allowEmptyRaw = fa
   if (manifest.state !== "complete" || manifest.clientRecordingId !== item.clientRecordingId) {
     throw new MeetingAudioError(
       "legacy_incomplete",
-      "Nedokončenou nahrávku nelze bezpečně převést na stereo MP3",
+      "Nedokončenou nahrávku nelze bezpečně převést na stereo WebM",
     );
   }
   const sources = Object.keys(manifest.tracks ?? {}).sort();
@@ -439,13 +440,13 @@ async function createLivePendingDelivery({
 
 /**
  * @param {any} item
- * @param {{convertToStereoMp3?: Function, onDescriptorPrepared?: Function, encoderOptions?: {
+ * @param {{prepareStereoWebm?: Function, onDescriptorPrepared?: Function, encoderOptions?: {
  *   isPackaged?: boolean, resourcesPath?: string, projectRoot?: string,
  *   arch?: string, platform?: string
  * }, recordingsDirectory: string}} options
  */
 async function ensureMeetingAudioReady(item, {
-  convertToStereoMp3,
+  prepareStereoWebm,
   encoderOptions = {},
   onDescriptorPrepared,
   recordingsDirectory,
@@ -523,7 +524,7 @@ async function ensureMeetingAudioReady(item, {
     ) {
       throw new MeetingAudioError(
         "delivery_identity_mismatch",
-        "Ready delivery sidecar změnil neměnnou identitu MP3",
+        "Ready delivery sidecar změnil neměnnou identitu WebM",
         "permanent",
       );
     }
@@ -537,6 +538,13 @@ async function ensureMeetingAudioReady(item, {
     descriptor = sidecar;
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
+    if (descriptor.state === "ready" || hasDeliveryUploadEvidence(item)) {
+      throw new MeetingAudioError(
+        "delivery_identity_mismatch",
+        "Připravenému souboru chybí trvalá identita v sidecaru",
+        "permanent",
+      );
+    }
     await writeJsonAtomically(descriptor.sidecarPath, sidecarValue(descriptor));
   }
 
@@ -545,7 +553,7 @@ async function ensureMeetingAudioReady(item, {
     if (identity.sizeBytes !== descriptor.sizeBytes || identity.sha256 !== descriptor.sha256) {
       throw new MeetingAudioError(
         "delivery_identity_mismatch",
-        "Uložený MP3 neodpovídá neměnné identitě připravené před uploadem",
+        "Uložený WebM neodpovídá neměnné identitě připravené před uploadem",
         "permanent",
       );
     }
@@ -554,7 +562,7 @@ async function ensureMeetingAudioReady(item, {
   if (item.delivery ? hasDeliveryUploadEvidence(item) : hasLegacyUploadEvidence(item)) {
     throw new MeetingAudioError(
       "delivery_asset_missing_after_init",
-      "MP3 po možném zahájení uploadu chybí; nesmí se znovu vytvořit s jinými bajty",
+      "WebM po možném zahájení uploadu chybí; nesmí se znovu vytvořit s jinými bajty",
       "permanent",
     );
   }
@@ -573,14 +581,14 @@ async function ensureMeetingAudioReady(item, {
     await onDescriptorPrepared(descriptor);
   }
   // Encoder publikuje výstup atomickým hard-linkem ještě před sidecarem. Pád v tomto
-  // úzkém okně nechá MP3 bez identity; před jakýmkoli HTTP jej nesmíme převzít, ale
+  // úzkém okně nechá WebM bez identity; před jakýmkoli HTTP jej nesmíme převzít, ale
   // můžeme jej bezpečně zahodit a z neměnných originálů vytvořit znovu.
   await discardUnboundOutput(descriptor.filePath);
 
-  let converter = convertToStereoMp3;
+  let converter = prepareStereoWebm;
   if (typeof converter !== "function") {
     const encoderModulePath = path.join(__dirname, "media-encoder.cjs");
-    ({ convertToStereoMp3: converter } = require(encoderModulePath));
+    ({ prepareStereoWebm: converter } = require(encoderModulePath));
   }
   const converted = await converter({
     isPackaged: encoderOptions.isPackaged === true,
@@ -598,12 +606,12 @@ async function ensureMeetingAudioReady(item, {
   });
   const identity = await fileIdentity(descriptor.filePath);
   if (converted?.outputPath !== descriptor.filePath
-    || converted?.mime !== "audio/mpeg"
+    || converted?.mime !== "audio/webm"
     || converted?.channels !== 2
     || converted?.size !== identity.sizeBytes
     || typeof converted?.encoderVersion !== "string"
     || converted.encoderVersion.length === 0) {
-    throw new MeetingAudioError("encoder_result_invalid", "Encoder nepotvrdil neměnný stereo MP3", "permanent");
+    throw new MeetingAudioError("encoder_result_invalid", "Encoder nepotvrdil neměnný stereo WebM", "permanent");
   }
   const ready = {
     ...descriptor,
@@ -649,7 +657,7 @@ async function verifyMeetingAudioForDeletion(item, recordingsDirectory) {
   if (descriptor.state === "ready") {
     const delivery = await fileIdentity(descriptor.filePath);
     if (delivery.sizeBytes !== descriptor.sizeBytes || delivery.sha256 !== descriptor.sha256) {
-      throw new MeetingAudioError("delivery_identity_mismatch", "Stereo MP3 se změnil", "permanent");
+      throw new MeetingAudioError("delivery_identity_mismatch", "Stereo WebM se změnil", "permanent");
     }
   }
   return [

@@ -1,0 +1,36 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/stereo-runtime
+
+-x
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/meeting-upload.test.js > produkční upload jednoho stereo WebM > bez delivery produkční režim neudělá žádný HTTP request
+AssertionError: expected RecordingUploadError: clientRecordingId n… { …(2) } to match object { code: 'delivery_not_ready' }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+- {
+-   "code": "delivery_not_ready",
++ RecordingUploadError {
++   "code": "invalid_input",
+  }
+
+ ❯ tests/meeting-upload.test.js:122:5
+    120|       requireSingleDelivery: true,
+    121|     });
+    122|     await expect(send({ kind: "recording" })).rejects.toMatchObject({ …
+       |     ^
+    123|     expect(fetchImpl).not.toHaveBeenCalled();
+    124|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 skipped (2)
+   Start at  12:03:08
+   Duration  484ms (transform 83ms, setup 18ms, collect 89ms, tests 12ms, environment 0ms, prepare 76ms)
+

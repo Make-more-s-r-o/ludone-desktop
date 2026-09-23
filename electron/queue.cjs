@@ -165,7 +165,8 @@ function legacyUploadEvidence(item) {
     || item?.state === "odeslano"
     || (item?.sentAt !== null && item?.sentAt !== undefined)
     || (item?.nextAttemptAt !== null && item?.nextAttemptAt !== undefined)
-    || (item?.lastFailureReason !== null && item?.lastFailureReason !== undefined)
+    || (item?.lastFailureReason !== null && item?.lastFailureReason !== undefined
+      && item.lastFailureReason !== "Převzatá nahrávka čeká na volbu odeslání")
     || typeof stored.companyTabidooId === "string"
     || typeof stored.sessionId === "string"
     || typeof stored.recordingId === "string"
@@ -1430,6 +1431,20 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
       const target = await freshActionTarget(clientRecordingId, expectedRevision, expectedFileRevision);
       if (target.rawItem?.state === "odesila") throw new Error("Nahrávka se právě odesílá");
+      if (!target.rawItem?.delivery) {
+        const { descriptorPaths } = require("./meeting-audio.cjs");
+        const root = path.dirname(target.manifestPath);
+        const canonical = descriptorPaths(target.manifestPath, root);
+        const masterPath = target.manifestPath.slice(0, -".manifest.json".length)
+          + "-stereo-master.webm";
+        // Po pádu mezi zápisem stereo souboru a připojením delivery k frontě by
+        // smazání jen originálů nechalo soukromý master na disku bez záznamu v panelu.
+        for (const candidate of [canonical.filePath, canonical.sidecarPath, masterPath]) {
+          if (await stableTrashStat(candidate) !== null) {
+            throw new Error("Stereo soubor zatím není navázaný na frontu; koš jej nemůže bezpečně zahrnout");
+          }
+        }
+      }
       const planned = [
         ...target.audioPaths,
         ...target.derivativePaths,
@@ -1486,8 +1501,8 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     let before = withoutExpiredCooldowns(await ensureLoaded(), now);
     if (before !== currentQueue) await commit(before);
     const cooldown = activeCooldown(before, currentOwnerFingerprint, now);
-    const guardedSend = async (item, reportServerProgress) => {
-      if ((item.kind ?? "recording") !== "recording") return send(item, reportServerProgress);
+    const guardedSend = async (item, reportServerProgress, preparation) => {
+      if ((item.kind ?? "recording") !== "recording") return send(item, reportServerProgress, preparation);
       if (currentOwnerFingerprint === null) {
         throw Object.assign(new Error("Identitu aktuálního přihlášení nelze ověřit"), {
           code: "queue_owner_unknown",
@@ -1500,7 +1515,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
           failureClass: "paused",
         });
       }
-      return send(item, reportServerProgress);
+      return send(item, reportServerProgress, preparation);
     };
     const result = await queueModule.processNext(before, killswitches, guardedSend, {
       currentOwnerFingerprint,

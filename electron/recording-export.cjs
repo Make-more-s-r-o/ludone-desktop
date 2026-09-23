@@ -240,7 +240,7 @@ function truncateRecordingNameBytes(name, byteBudget) {
   return result.replace(/-+$/u, "");
 }
 
-function exportFileName(clientRecordingId, startedAt, recordingName, extension = ".mp3") {
+function exportFileName(clientRecordingId, startedAt, recordingName, extension = ".webm") {
   const safeStartedAt = startedAt.replace(/[:.]/g, "-");
   const prefix = `LuDone-${safeStartedAt}-`;
   const suffix = `${clientRecordingId}${extension}`;
