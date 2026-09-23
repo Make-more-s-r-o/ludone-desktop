@@ -1,0 +1,114 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - button "Návrh · simulace" [ref=e6] [cursor=pointer]
+    - generic [ref=e7]:
+      - img "Wi-Fi připojeno" [ref=e8]
+      - 'button "LuDone: nic neběží" [expanded] [ref=e11] [cursor=pointer]'
+      - generic [ref=e14]: St 23. 9. 10:14
+  - region "LuDone panel" [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e18]: LuDone
+      - generic [ref=e22]: St 23. 9.
+      - button "Den" [ref=e23] [cursor=pointer]
+      - button "Nahrávky na tomto Macu" [ref=e26] [cursor=pointer]
+      - button "Nastavení" [ref=e29] [cursor=pointer]
+    - generic [ref=e34]:
+      - region [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]: Práce
+          - generic [ref=e41]: nic neběží
+        - generic [ref=e42]:
+          - combobox "Najít projekt nebo akci" [ref=e46]
+          - generic [aria-hidden] [ref=e47]: /
+        - generic [ref=e48]:
+          - button "Pokračovat Podpora Ateliéru Jih · Odpověď na dotazy skončeno 9:32" [ref=e49] [cursor=pointer]:
+            - generic [ref=e50]: Pokračovat
+            - generic [ref=e51]:
+              - strong [ref=e52]: Podpora Ateliéru Jih
+              - text: · Odpověď na dotazy
+            - generic [ref=e53]: skončeno 9:32
+          - generic [ref=e54]: Přidělené projekty
+          - button "Podpora Ateliéru Jih Ateliér Jih klávesa 1" [ref=e55] [cursor=pointer]:
+            - generic [ref=e56]: Podpora Ateliéru Jih
+            - generic [ref=e57]: Ateliér Jih
+            - generic "klávesa 1" [ref=e58]: "1"
+          - button "Interní rozvoj Studio Sever klávesa 2" [ref=e59] [cursor=pointer]:
+            - generic [ref=e60]: Interní rozvoj
+            - generic [ref=e61]: Studio Sever
+            - generic "klávesa 2" [ref=e62]: "2"
+          - button "Web Studia Sever Studio Sever klávesa 3" [ref=e63] [cursor=pointer]:
+            - generic [ref=e64]: Web Studia Sever
+            - generic [ref=e65]: Studio Sever
+            - generic "klávesa 3" [ref=e66]: "3"
+      - region [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]: Zvuk
+          - generic [ref=e72]: připraveno
+        - generic [ref=e73]:
+          - button "Nahrát schůzku R" [ref=e74] [cursor=pointer]:
+            - text: Nahrát schůzku
+            - generic [ref=e76]: R
+          - generic [ref=e77]:
+            - generic [ref=e78]: Mikrofon
+            - generic [ref=e81]: Systémový zvuk
+        - paragraph [ref=e84]: Nevytvoří čas. Firmu vybereš po skončení, nebo nahrávku necháš jen na Macu.
+      - region [ref=e85]:
+        - generic [ref=e86]:
+          - heading "Čeká na tebe" [level=2] [ref=e87]
+          - generic [ref=e88]: "1"
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - button "Kontrola rozpočtu" [ref=e96] [cursor=pointer]
+            - text: · 8:42 · 6,4 MB
+          - paragraph [ref=e97]: Odeslání v 8:31 odmítnuto kvůli vypršelému přihlášení. Už jsi přihlášený — stačí odeslat znovu.
+          - generic [ref=e98]:
+            - button "Odeslat do Studio Sever" [ref=e99] [cursor=pointer]
+            - button "Nechat na Macu" [ref=e100] [cursor=pointer]
+      - region [ref=e101]:
+        - generic [ref=e102]:
+          - heading "Dnes" [level=2] [ref=e103]
+          - generic [ref=e104]: práce 1 h 25 min · schůzky 2
+          - button "Celý den" [ref=e105] [cursor=pointer]
+        - generic [aria-hidden] [ref=e106]:
+          - generic [ref=e107]: Práce
+          - generic [ref=e111]: Zvuk
+          - generic [ref=e115]:
+            - generic [ref=e116]: "7"
+            - generic [ref=e117]: "8"
+            - generic [ref=e118]: "9"
+            - generic [ref=e119]: "10"
+            - generic [ref=e120]: "11"
+            - generic [ref=e121]: "12"
+            - generic [ref=e122]: "13"
+        - list [ref=e123]:
+          - listitem [ref=e124]:
+            - button "Návrh webu 9:10 Na Macu 6:08 · Studio Sever · při práci" [ref=e125] [cursor=pointer]:
+              - generic [ref=e129]: Návrh webu
+              - generic [ref=e130]:
+                - generic [ref=e131]: 9:10
+                - generic [ref=e132]: Na Macu
+              - generic [ref=e135]: 6:08 · Studio Sever · při práci
+          - listitem [ref=e136]:
+            - button "Podpora Ateliéru Jih 8:52–9:32 Potvrzeno Odpověď na dotazy · 40 min" [ref=e137] [cursor=pointer]:
+              - generic [ref=e142]: Podpora Ateliéru Jih
+              - generic [ref=e143]:
+                - generic [ref=e144]: 8:52–9:32
+                - generic "LuTrack úsek přijal. Neznamená schválený výkaz." [ref=e145]: Potvrzeno
+              - generic [ref=e148]: Odpověď na dotazy · 40 min
+          - listitem [ref=e149]:
+            - button "Kontrola rozpočtu 8:20 Vyžaduje zásah 8:42 · Studio Sever · při práci" [ref=e150] [cursor=pointer]:
+              - generic [ref=e154]: Kontrola rozpočtu
+              - generic [ref=e155]:
+                - generic [ref=e156]: 8:20
+                - generic [ref=e157]: Vyžaduje zásah
+              - generic [ref=e161]: 8:42 · Studio Sever · při práci
+          - listitem [ref=e162]:
+            - button "Interní rozvoj 8:05–8:50 Potvrzeno Plán týdne · 45 min" [ref=e163] [cursor=pointer]:
+              - generic [ref=e168]: Interní rozvoj
+              - generic [ref=e169]:
+                - generic [ref=e170]: 8:05–8:50
+                - generic "LuTrack úsek přijal. Neznamená schválený výkaz." [ref=e171]: Potvrzeno
+              - generic [ref=e174]: Plán týdne · 45 min
+    - generic [ref=e175]:
+      - text: Čas potvrzen serverem
+      - button "LuDone 0.1.4" [ref=e179] [cursor=pointer]
