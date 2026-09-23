@@ -11,3 +11,5 @@ Tento review záznam není důkaz podpisu, publikace, instalace ani skutečného
 Závěrečný dokumentační review: lokální odkazy nových důkazů existují. `git diff --check` nad dokumentační změnou měl exit 0; po přidání doslovných GitHub logů vrací `git diff --cached --check` exit 2 výhradně kvůli jejich původním koncovým mezerám. Logy se kvůli kosmetice neupravují a žádné měřidlo ani pravidlo se nevypíná.
 
 Nezávislé závěrečné Sol review potvrdilo rozsah důkazů a funkční odkazy. Nález provozních SSH hodnot v release logu byl před commitem vyřešen přesnou redakcí osmi hodnot; [evidence redakce](REDACTION.md). Tajné klíče a tokeny už byly maskované runnerem.
+
+Kontrola `mp-progress nahravky-dashboard --check` po dokumentačním commitu nejprve hlásila exit 1: generátor porovnává čas statusu s časem libovolného posledního commitu, takže samotný commit důkazů přepnul očekávaný banner na zastaralý. Oficiální přegenerování HTML a opakovaný `--check` mají exit 0. Čas statusu se nefinguje a varovný banner zůstává; věcný obsah a důkazy vydání 0.1.4 jsou aktuální.
