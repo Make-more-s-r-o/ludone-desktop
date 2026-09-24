@@ -1,0 +1,17 @@
+PASS  src/lib/queue.js existuje a není prázdný
+PASS  electron/queue.cjs existuje a není prázdný
+PASS  unit testy queue jsou zelené
+PASS  jmenovitý test nenastaveného killswitche je fail-closed
+FAIL  vypínač odesílání je fail-closed i v produkční cestě (chování)
+      | sonda vypinac-odesilani-fail-closed selhala: undefined: z vypnutého prostředí vznikl zapnutý vypínač
+      | AssertionError [ERR_ASSERTION]: undefined: z vypnutého prostředí vznikl zapnutý vypínač
+      |     at vypinacOdesilaniFailClosed (file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-next-v0-1-5/scripts/akceptace/fronta-sondy.mjs:158:12)
+      |     at async file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-next-v0-1-5/scripts/akceptace/fronta-sondy.mjs:248:3
+PASS  .env.example drží killswitch odesílání vypnutý
+PASS  .env.example drží časový killswitch vypnutý
+PASS  nikde v repu není killswitch odesílání zapnutý
+PASS  nikde v repu není časový killswitch zapnutý
+PASS  chybějící hodnota časového killswitche nic nezaznamená (fail-closed)
+---
+chyb: 1
+EXIT_CODE=1
