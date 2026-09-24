@@ -1,6 +1,6 @@
 # Design manifest — LuDone Desktop 0.1.5
 
-**Stav:** schválený směr Astra, realizuje se omezený výřez · **datum:** 2026-09-24 · **hlavní artefakt:** `../../desktop-redesign-2026-09-23/round2/variants/astra/index.html`
+**Stav:** schválený směr Astra, realizuje se omezený výřez · **datum:** 2026-09-24 · **hlavní artefakt:** `../../../../desktop-redesign-2026-09-23/round2/variants/astra/index.html`
 
 **Věrnost implementačního výřezu:** L1 — upravuje existující panel, nastavení a přístup do přehledu; nevzniká nové sdílené UI ani kompletní redesign. Původní klikací prototypy round 2 mají vyšší interaktivní věrnost a zůstávají zachované.
 
@@ -15,7 +15,7 @@
 
 | ID | obrazovka a obsah | Dnes | Návrh | věrnost a důvod | canonical prvky / existující primitiva | nové prvky | approvalRequired |
 |---:|---|---|---|---|---|---|---|
-| panel | **Hlavní panel.** Značka, nahrávání, odkaz na Nahrávky a pravdivý neaktivní LuTrack. | **Dnes:** screenshot přiložený uživatelem 23. 9. 2026; runtime stav nepořízen. | **Návrh:** [Astra Nit dne](../../desktop-redesign-2026-09-23/round2/variants/astra/index.html) | L1 pro úzký implementační výřez, plný návrh je L2 v uloženém prototypu. | Oficiální LuDone SVG, existující recording card a styl panelu. | Žádný sdílený prvek. | `composition` |
+| panel | **Hlavní panel.** Značka, nahrávání, odkaz na Nahrávky a pravdivý neaktivní LuTrack. | **Dnes:** screenshot přiložený uživatelem 23. 9. 2026; runtime stav nepořízen. | **Návrh:** [Astra Nit dne](../../../../desktop-redesign-2026-09-23/round2/variants/astra/index.html) | L1 pro úzký implementační výřez, plný návrh je L2 v uloženém prototypu. | Oficiální LuDone SVG, existující recording card a styl panelu. | Žádný sdílený prvek. | `composition` |
 | settings | **Nastavení.** Širší levá navigace s ikonami a přímé otevření Nahrávek. | **Dnes:** screenshot přiložený uživatelem 23. 9. 2026; runtime stav nepořízen. | **Návrh:** Astra Identity/Settings stavy a Nahrávky z `round2/variants/astra/index.html`. | L1; zůstává existující okno a jeho obsah. | Stávající `SettingsApp`, canonical LuDone značka, stejné IPC brány. | Žádný sdílený prvek. | `composition` |
 | recordings | **Přehled nahrávek.** Lokální/odeslané položky a existující akce. | **Dnes:** existující přehled v Settings, bez nového živého screenshotu. | **Návrh:** `round2/variants/astra/index.html?scenario=recordings` a specifikace nahrávek. | L1; dashboard se funkčně nepřestavuje. | Současný dashboard a jeho existující tlačítka. | Žádný. | `composition` |
 

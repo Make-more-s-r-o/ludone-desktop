@@ -1,0 +1,28 @@
+{
+  "task": "T-03",
+  "summary": "Review, brány, sloučení a podepsané vydání 0.1.5 jsou dokončené; veřejný aktualizační feed i instalační balíky byly ověřeny.",
+  "premisaPlatila": true,
+  "premisaPoznamka": "Stávající podepisovací a publikační workflow vydalo tag v0.1.5 na stahnout.ludone.cz.",
+  "ocekavanePocty": {
+    "selhane_brany": 0,
+    "skipy_nad_baseline": 0
+  },
+  "kontrolniNula": {
+    "souboruMimoAllowlist": 0,
+    "pridanychExemptMarkeru": 0,
+    "gitOperaci": 0
+  },
+  "doslovnyVystupTestu": "Test Files 76 passed (76)\nTests 1557 passed | 3 skipped (1560)\n[preskocene] 3 přeskočených, baseline 3 — v pořádku.\nEXIT_CODE=0",
+  "coJsemNEOVERIL": [
+    "běžící GUI a vizuální podobu nainstalované verze na Danově Macu",
+    "skutečný systémový záznam zvuku",
+    "produkční upload z Danova Macu",
+    "zobrazení proužku/oznámení a ruční instalaci aktualizace na Danově Macu"
+  ],
+  "notes": [
+    "Git operace sloučení, tagu a publikace provedl koordinátor v rámci výslovně schváleného vydání; packet T-03 neprováděl žádné zakázané Git operace.",
+    "Samostatná historická E5 sonda skončila 7 PASS a 1 FAIL; rozpor se schváleným D3/D11 je popsán v evidence/acceptance/E5.log a evidence/review/review.md. Gate ani upload kód se neměnily.",
+    "PR #149 je sloučen, GitHub CI gates prošly, release workflow 35941431564 skončilo úspěchem a nezávislé veřejné HTTP ověření prošlo; viz evidence/release/release.md.",
+    "Veřejná distribuce je ověřená, ale uživatelská přejímka na Macu zůstává čekající; zelené testy ji nenahrazují."
+  ]
+}

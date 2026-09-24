@@ -1,0 +1,11 @@
+Independent public feed check 2026-09-24T01:25:10.507Z
+GET latest-mac.yml: HTTP 200; version: 0.1.5; bytes 1278
+HEAD LuDone-Desktop-0.1.5-x64.zip: HTTP 200; content-length 141242279
+HEAD LuDone-Desktop-0.1.5-arm64.zip: HTTP 200; content-length 133972756
+HEAD LuDone-Desktop-0.1.5-x64.dmg: HTTP 200; content-length 141547833
+HEAD LuDone-Desktop-0.1.5-arm64.dmg: HTTP 200; content-length 134280202
+HEAD LuDone-Desktop-0.1.5-x64.zip.blockmap: HTTP 200; content-length 147113
+HEAD LuDone-Desktop-0.1.5-arm64.zip.blockmap: HTTP 200; content-length 140317
+HEAD LuDone-Desktop-0.1.5-x64.dmg.blockmap: HTTP 200; content-length 148780
+HEAD LuDone-Desktop-0.1.5-arm64.dmg.blockmap: HTTP 200; content-length 140530
+EXIT_CODE=0

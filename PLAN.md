@@ -1,8 +1,8 @@
 # Implementační plán — LuDone Desktop
 
-**24. 9. 2026 — další verze 0.1.5, návrh Astra:** Dan zvolil „Nit dne“ a povolil samostatnou implementaci i vydání. Návrhy Astra i Opus zůstávají k porovnání. Implementován je přímý vstup do Nahrávek, značka LuDone, čitelné stavové ikony a neaktivní, pravdivý LuTrack placeholder. Plné brány prošly: 1 557 testů zelených a 3 původní skipy z baseline; produkční build prošel; nezávislé review dokončeno 🧪. Commit, PR, CI a vydání ještě čekají. Zvuk, upload a aktualizaci musí po instalaci ověřit Dan na skutečném Macu. Backend a web se nemění. Podrobnosti a důkazy jsou v [`desktop-astra-0-1-5/`](docs/changes/desktop-astra-0-1-5/).
+**24. 9. 2026 — vydaná 0.1.5, návrh Astra:** Dan zvolil „Nit dne“ a povolil samostatnou implementaci i vydání. PR #149 je sloučen v `46b313c`; tag `v0.1.5` prošel podepsaným a notarizovaným workflow. Nezávislá kontrola potvrdila veřejný feed i DMG/ZIP soubory pro arm64 a x64. Plné brány: 1 557 testů zelených a 3 původní skipy; produkční build prošel; nezávislé review dokončeno 🧪. Zvuk, upload, vizuální kontrolu a ruční instalaci aktualizace musí ověřit Dan na skutečném Macu. Backend a serverové napojení LuTracku se nemění. Podrobnosti a důkazy jsou v [archivu změny 0.1.5](docs/changes/_archive/desktop-astra-0-1-5/).
 
-**Rozsah LuTracku:** skutečné napojení zatím neexistuje a do 0.1.5 nepatří. Návrh budoucího propojeného toku je uložen v [`lutrack/NEXT-RELEASE.md`](docs/changes/desktop-redesign-2026-09-23/lutrack/NEXT-RELEASE.md); aplikace nesmí předstírat běžící časovač.
+**Rozsah LuTracku:** v 0.1.5 zůstává neaktivní a bez napojení na server. Klikací návrh budoucího společného toku je uložen v [`lutrack/NEXT-RELEASE.md`](docs/changes/desktop-redesign-2026-09-23/lutrack/NEXT-RELEASE.md); nejde o implementaci ani schválený API kontrakt.
 
 **24. 9. 2026 — stav 0.1.4:** předchozí verze je publikovaná, její přijetí a instalační kontrola byly potvrzené Danem. Skutečná zvuková cesta, upload a aktualizace pro 0.1.5 se vyznačí jako ✅ teprve po pozorování na jeho Macu.
 

@@ -5,14 +5,14 @@
     "id": "desktop-astra-0-1-5",
     "name": "LuDone Desktop 0.1.5: Astra Nit dne",
     "goal": "Doplnit každodenní LuDone Desktop podle schváleného směru Astra, zachovat oba návrhy, zpřehlednit přístup k nahrávkám a připravit další vydání bez integrace LuTracku.",
-    "updatedAt": "2026-09-24T01:00:35.565Z",
+    "updatedAt": "2026-09-24T01:32:26.527Z",
     "planVersion": "draft",
     "problem": "Záměr čeká na doplnění popisu problému.",
     "targetOutcome": "Doplnit každodenní LuDone Desktop podle schváleného směru Astra, zachovat oba návrhy, zpřehlednit přístup k nahrávkám a připravit další vydání bez integrace LuTracku.",
     "audiences": [],
     "outOfScope": []
   },
-  "phase": "review_delivery",
+  "phase": "archive",
   "guard": {
     "requires": []
   },
@@ -28,21 +28,19 @@
       "name": "LuDone Desktop 0.1.5: Astra Nit dne",
       "whatItGives": "Doplnit každodenní LuDone Desktop podle schváleného směru Astra, zachovat oba návrhy, zpřehlednit přístup k nahrávkám a připravit další vydání bez integrace LuTracku.",
       "scope": "approved",
-      "delivery": "coded",
-      "exposure": "local",
-      "verification": "tests-green",
-      "label": "Testy zelené",
-      "nextStep": "Sloučit PR #149 po zeleném CI; poté pushnout tag v0.1.5, ověřit signed/notarized release a veřejný feed.",
+      "delivery": "merged",
+      "exposure": "production",
+      "verification": "verified-live",
+      "label": "Dodáno",
+      "nextStep": "Na Danově Macu projít upozornění, odložení a ruční instalaci 0.1.5, potom krátký stereo záznam a jeden upload.",
       "evidence": [
         "EV3",
         "EV4",
         "EV5",
         "EV6",
-        "EV7",
-        "EV8",
-        "EV9",
-        "EV10",
-        "EV11"
+        "EV11",
+        "EV12",
+        "EV13"
       ]
     }
   ],
@@ -211,14 +209,14 @@
     {
       "id": "review_delivery",
       "name": "Kontrola a dodání",
-      "status": "current",
-      "detail": "Tato fáze právě probíhá."
+      "status": "done",
+      "detail": "Fáze je dokončena."
     },
     {
       "id": "archive",
       "name": "Archiv",
-      "status": "upcoming",
-      "detail": "Tato fáze teprve přijde."
+      "status": "current",
+      "detail": "Tato fáze právě probíhá."
     }
   ],
   "tasks": [
@@ -246,14 +244,15 @@
       "id": "T-03",
       "title": "Review a vydání 0.1.5",
       "executor": "codex",
-      "state": "dispatched",
+      "state": "completed",
       "attempts": 1,
       "deps": [
         "T-01",
         "T-02"
       ],
       "packet": "tasks/T-03.md",
-      "worktree": ".claude/worktrees/desktop-astra-next-v0-1-5"
+      "worktree": ".claude/worktrees/desktop-astra-next-v0-1-5",
+      "report": "evidence/tasks/T-03.report.json"
     }
   ],
   "evidence": [
@@ -341,9 +340,49 @@
       "value": "gates: pass, 1m37s; mergeStateStatus=CLEAN.",
       "ref": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35940764149/job/107447915008",
       "href": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35940764149"
+    },
+    {
+      "id": "EV12",
+      "kind": "deploy",
+      "label": "Podepsané vydání LuDone Desktop 0.1.5",
+      "value": "PR #149 sloučen do 46b313c; CI zelené; release workflow 35941431564 podepsal, notarizoval a zveřejnil balíky obou architektur.",
+      "ref": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35941431564",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35941431564"
+    },
+    {
+      "id": "EV13",
+      "kind": "verification",
+      "label": "Nezávislé ověření veřejného feedu a balíků",
+      "value": "GET latest-mac.yml: HTTP 200, version 0.1.5; osm arm64/x64 DMG, ZIP a blockmap HEAD: HTTP 200, kladná délka; exit 0.",
+      "ref": "evidence/release/public-feed-independent.log",
+      "href": "evidence/release/public-feed-independent.log"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-24T01:32:26.527Z",
+      "text": "Změna byla uzavřena a připravena k přesunu do archivu."
+    },
+    {
+      "at": "2026-09-24T01:30:57.155Z",
+      "text": "Task T-03 má nově stav „completed“."
+    },
+    {
+      "at": "2026-09-24T01:30:56.862Z",
+      "text": "v0.1.5 je sloučená a publikovaná; podepsané/notarizované balíky a veřejný feed jsou ověřené. Přejímka GUI, instalace, zvuku a uploadu na Danově Macu čeká."
+    },
+    {
+      "at": "2026-09-24T01:30:56.575Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-24T01:30:56.273Z",
+      "text": "Byl přidán důkaz EV13: Nezávislé ověření veřejného feedu a balíků."
+    },
+    {
+      "at": "2026-09-24T01:30:55.976Z",
+      "text": "Byl přidán důkaz EV12: Podepsané vydání LuDone Desktop 0.1.5."
+    },
     {
       "at": "2026-09-24T01:00:35.565Z",
       "text": "GitHub CI gates pro PR #149 prošly; PR je otevřený a čistě slučitelný. Tag čeká na merge."
@@ -565,6 +604,6 @@
   "notes": [],
   "hub": {
     "repo": "desktop-astra-next-v0-1-5",
-    "path": "docs/changes/desktop-astra-0-1-5"
+    "path": "docs/changes/_archive/desktop-astra-0-1-5"
   }
 }
