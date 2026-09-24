@@ -19,6 +19,7 @@ průběh je v `progress/status.json`; důkaz vydání je v `evidence/release/rel
 - `npm run build`: produkční sestavení rendereru prošlo, 55 modulů; exit 0. Stav 🧪.
 - Nezávislé review opravilo oba nálezy v předání záložky Nastavení a následné úplné brány prošly. Stav 🧪.
 - Podpis/notarizace a živá dostupnost distribučních souborů byly potvrzené vydávacím workflow a samostatným HTTP měřením. Stav ✅ pro vydání a feed.
+- Samostatné výpisy testů T-01/T-02 a typecheck byly zachovány vedle reportů; jejich přesné kopie i původní feed snapshot jsou navíc v [`dukazy/desktop-astra-0-1-5`](../../../../dukazy/desktop-astra-0-1-5/README.md).
 
 ## Co ještě potřebuje Danův Mac
 
