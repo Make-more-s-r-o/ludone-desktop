@@ -1,29 +1,31 @@
 # Masterplan LuDone Desktop — aktuální rozcestník
 
-**Aktualizováno 14. 9. 2026.** Proces nových a rozpracovaných změn řídí skill `masterplan`, `AGENTS.md` a vždy konkrétní adresář v `docs/changes/`. Dlouhý text verze 0.2 pod tímto rozcestníkem je zachovaný historický bootstrap; není dnešní plán projektu ani obecná autorita nad aktuálním skillem.
+**Aktualizováno 24. 9. 2026.** Proces nových a rozpracovaných změn řídí lokální skill `masterplan` (`~/.claude/skills/masterplan/SKILL.md`), `AGENTS.md` a autoritativní adresář konkrétní změny. Dlouhý text verze 0.2 pod tímto rozcestníkem je zachovaný historický bootstrap; není dnešní plán projektu ani obecná autorita nad aktuálním skillem.
 
 ## Co je aktuální
 
 | Oblast | Autoritativní stav | Praktický význam |
 |---|---|---|
-| Dokončení nahrávek | [`nahravky-dashboard/STAV.md`](changes/nahravky-dashboard/STAV.md) a [`progress/status.json`](changes/nahravky-dashboard/progress/status.json) | Aktivní běh. T-00, T-01 a T-A1 jsou integrované s testy; T-02 běží. T-03 až T-05 a T-R1 čekají. |
-| Vydání a aktualizace | Funkce NRD-08 v [`nahravky-dashboard/spec.md`](changes/nahravky-dashboard/spec.md) | Updater i T-06 jsou integrované a testované. Nový signed/notarized build ani verze 0.1.2 nebyly zveřejněny. |
-| Původní desktop v1 | [`desktop-v1/STAV.md`](changes/desktop-v1/STAV.md) | Historický snapshot z 1.–7. 9. Jeho 17 funkcí zůstává zachováno v původním českém schématu; nepoužívej jej pro dnešní postup. |
-| Dlouhodobý etapový plán | [`PLAN.md`](../PLAN.md) | Historický základ z 24. 8. s novou úvodní aktualizací; podrobný dnešní DAG je u aktivní změny. |
+| Desktop 0.1.5 / Astra | [`desktop-astra-0-1-5/STAV.md`](changes/desktop-astra-0-1-5/STAV.md) a [`progress/status.json`](changes/desktop-astra-0-1-5/progress/status.json) | Aktivní tier L. Implementace, plné brány (1 557 PASS, 3 původní skipy), produkční build a nezávislé review jsou 🧪. Commit, PR, CI a release čekají; skutečný zvuk, upload a aktualizaci ověří Dan na Macu. |
+| Návrhy celé aplikace | [`desktop-redesign-2026-09-23/round2/README.md`](changes/desktop-redesign-2026-09-23/round2/README.md) | Klikací varianty Astra i Opus zůstávají uložené pro pozdější přehodnocení. Pozdější návrh LuTracku není integrace ani backendový kontrakt. |
+| Dokončení nahrávek | [`nahravky-dashboard/STAV.md`](changes/nahravky-dashboard/STAV.md) a [`progress/status.json`](changes/nahravky-dashboard/progress/status.json) | Předchozí implementační běh a jeho původní stavové doklady. Pro nové UI použij změnu 0.1.5. |
+| Vydání a aktualizace | [`nahravky-dashboard/T6-VYDANI.md`](changes/nahravky-dashboard/T6-VYDANI.md) a [`PLAN.md`](../PLAN.md) | 0.1.4 je publikovaná. 0.1.5 ještě není vydaná; po zeleném CI naváže na stávající podepsané release workflow. |
+| Původní desktop v1 | [`desktop-v1/STAV.md`](changes/desktop-v1/STAV.md) | Historický snapshot z 1.–7. 9.; nepoužívej jej jako dnešní backlog. |
+| Dlouhodobý etapový plán | [`PLAN.md`](../PLAN.md) | Aktuální rozcestník k desktopové změně a zachovaný historický plán níže. |
 
 ## Dnešní korekce starých tvrzení
 
-- GitHub repozitář `Make-more-s-r-o/ludone-desktop` je veřejný a `main` má zelené CI; staré texty o lokálním, neveřejném nebo prázdném repozitáři jsou historie.
-- Názvy pěti podpisových secrets v GitHubu existují. Z toho nelze odvodit, že je podpisový klíč zálohovaný nebo že vznikl nový podepsaný build; obojí stále čeká na ověření.
-- Veřejný feed zatím obsluhuje verzi 0.1.1. Připravený release workflow, zelené testy ani SCP konfigurace samy neznamenají, že verze 0.1.2 byla publikována.
-- Automatický sync už není obecně „pozdější fáze“. Současný schválený běh ho zavádí s per-item consentem a bez zpětného odeslání starých nahrávek.
+- Repozitář `Make-more-s-r-o/ludone-desktop` je veřejný a `main` obsahuje vydanou 0.1.4; historické zmínky o 0.1.1/0.1.2 se vztahují ke staršímu stavu.
+- Stávající aktualizační mechanismus je součástí aplikace. Green CI, nalezené GitHub secrets ani připravená SCP konfigurace samy nepotvrzují podpis, notarizaci, publikaci ani úspěšnou instalaci.
+- Souhlas s odesíláním nahrávky po dokončení už odpovídá produkčnímu workflow; redesign ho nesmí měnit ani automaticky odesílat staré záznamy.
+- LuTrack se v této verzi nepřipojuje. Používej jen uložený budoucí UX návrh, dokud nebude služba skutečně připravená.
 
 ## Jak navázat
 
-1. Přečti `ROZHODNUTI.md` → `PLAN.md` → `DAN-TODO.md` → `docs/changes/nahravky-dashboard/STAV.md`.
-2. Stav implementace a ověření ber z `progress/status.json`; HTML je pouze generovaná projekce.
-3. Pro další task použij DAG a konkrétní lintnutý packet. Neobnovuj staré B-story z `desktop-v1` jako dnešní backlog.
-4. Zelené testy označuj 🧪. Podepsané vydání a update mají ✅ až po skutečné instalaci a aktualizaci na Macu.
+1. Přečti `ROZHODNUTI.md` → `PLAN.md` → `DAN-TODO.md` → aktuální `docs/changes/desktop-astra-0-1-5/STAV.md`.
+2. Stav implementace a ověření ber z `desktop-astra-0-1-5/progress/status.json`; HTML je pouze generovaná projekce.
+3. Dokonči T-03 podle [`desktop-astra-0-1-5/plan.md`](changes/desktop-astra-0-1-5/plan.md), ověř diff i CI a potom spusť podepsané vydání.
+4. Zelené testy označuj 🧪. Podepsané vydání, aktualizaci a zvuk označ ✅ až po skutečném pozorování v příslušném prostředí.
 
 ---
 

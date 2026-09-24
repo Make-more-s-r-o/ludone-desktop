@@ -1,0 +1,23 @@
+{
+  "task": "T-02",
+  "summary": "LuTrack zůstává pravdivě vypnutý; automatické testy nepotvrzují žádné serverové napojení.",
+  "premisaPlatila": true,
+  "kontrolniNula": {
+    "upravenych_runtime_souboru": 0,
+    "zmenenych_bran": 0,
+    "pouzitych_vyjimek": 0
+  },
+  "doslovnyVystupTestu": "Test Files 2 passed (2)\nTests 290 passed (290)\nEXIT_CODE=0",
+  "evidence": [
+    "evidence/tasks/T-02-tests.log",
+    "evidence/tasks/targeted-typecheck.log",
+    "evidence/tests/npm-gates.log"
+  ],
+  "coJsemNEOVERIL": [
+    "napojení na LuTrack, které zůstává mimo rozsah",
+    "skutečný lokální runtime LuTracku na Macu"
+  ],
+  "notes": [
+    "Archivní přejímka již dokončené etapy; budoucí návrh je klikací lokální simulace."
+  ]
+}

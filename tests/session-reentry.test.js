@@ -292,7 +292,7 @@ describe("návrat do aplikace po ztrátě session", () => {
     expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
   });
 
-  it("příkaz z lišty během znovupřihlášení se po přihlášení neprovede opožděně", async () => {
+  it("příkaz LuTracku z lišty během znovupřihlášení zůstane neaktivní", async () => {
     const panel = await renderWindows({
       beginAuthResult: { ok: true, user: USER },
     });
@@ -306,10 +306,11 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForSignedIn(panel);
 
     expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
-    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
+    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
+    expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
   });
 
-  it("starý příkaz z lišty se po odhlášení a novém přihlášení neopakuje", async () => {
+  it("příkaz LuTracku z lišty neaktivuje připravovanou kartu ani po přihlášení", async () => {
     const panel = await renderWindows({
       beginAuthResult: { ok: true, user: USER },
       initialSession: true,
@@ -321,13 +322,8 @@ describe("návrat do aplikace po ztrátě session", () => {
       panel.emitTrayCommand("start-tracking");
       await Promise.resolve();
     });
-    await vi.waitFor(() => {
-      expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).not.toBeNull();
-    });
-    await click(panel.document.querySelector('[aria-label="Zastavit LuTrack"]'), panel.view);
-    await vi.waitFor(() => {
-      expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
-    });
+    expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
+    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
 
     await click(buttonWithText(panel.document, "Odhlásit tento Mac"), panel.view);
     await waitForReauthentication(panel);
@@ -335,7 +331,7 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForSignedIn(panel);
 
     expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
-    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
+    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
   });
 
   it("návrat fokusu během čekání nepřeruší rozpracované znovupřihlášení", async () => {
@@ -367,7 +363,7 @@ describe("návrat do aplikace po ztrátě session", () => {
     expect(panel.ludone.cancelAuth).not.toHaveBeenCalled();
   });
 
-  it("po znovupřihlášení vrátí funkční panel a neopakuje onboarding", async () => {
+  it("po znovupřihlášení vrátí nahrávání a připravený LuTrack bez opakování onboardingu", async () => {
     const panel = await renderWindows({
       beginAuthResult: { ok: true, user: USER },
     });
@@ -377,19 +373,14 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForSignedIn(panel);
 
     expect([...panel.document.querySelectorAll('[data-testid="idle-action-row"] strong')]
-      .map((element) => element.textContent.trim())).toEqual(["Nahrávání", "LuTrack"]);
+      .map((element) => element.textContent.trim())).toEqual(["Nahrávání"]);
+    expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
     expect(panel.document.querySelector(".onboarding")).toBeNull();
     expect(panel.document.querySelector(".permission-step")).toBeNull();
     expect(panel.ludone.requestPermission).not.toHaveBeenCalled();
 
-    await click(panel.document.querySelector('[aria-label="Spustit LuTrack"]'), panel.view);
-    await vi.waitFor(() => {
-      expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).not.toBeNull();
-    });
-    await click(panel.document.querySelector('[aria-label="Zastavit LuTrack"]'), panel.view);
-    await vi.waitFor(() => {
-      expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
-    });
+    expect(panel.document.querySelector('[aria-label="Spustit nahrávání"]')).not.toBeNull();
+    expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
   });
 
   it("s platnou session zachová dosavadní panel beze změny", async () => {
@@ -397,7 +388,8 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForSignedIn(panel);
 
     expect([...panel.document.querySelectorAll('[data-testid="idle-action-row"] strong')]
-      .map((element) => element.textContent.trim())).toEqual(["Nahrávání", "LuTrack"]);
+      .map((element) => element.textContent.trim())).toEqual(["Nahrávání"]);
+    expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
     expect(panel.document.querySelector(".onboarding")).toBeNull();
     expect(panel.ludone.beginAuth).not.toHaveBeenCalled();
   });

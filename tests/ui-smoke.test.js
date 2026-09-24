@@ -29,7 +29,7 @@ const AUTH_SCREENS = [
 const PANEL_CHECKS = [
   "panel",
   "recording",
-  "tracking",
+  "future-tracking",
   "settings-account",
   "settings-audio",
   "settings-recordings",
@@ -39,14 +39,10 @@ const PANEL_CHECKS = [
 ];
 const PANEL_SCREENS = [
   "panel-idle",
+  "panel-lutrack-planned",
   "recording",
-  "recording-and-tracking",
   "recording-naming-before-skip",
-  "tracking-only",
-  "panel-idle-after-tracking",
-  "panel-configured",
-  "configured-tracking",
-  "panel-idle-after-configured-tracking",
+  "panel-idle-after-skip",
   "quick-recording",
   "recording-naming-before-submit",
   "panel-after-submit",

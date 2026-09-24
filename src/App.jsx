@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Onboarding } from "./components/Onboarding.jsx";
-import { LuDoneMark } from "./components/Icons.jsx";
+import { ArchiveIcon, SettingsIcon } from "./components/Icons.jsx";
 import { PanelContentHeightReporter } from "./components/PanelContentHeightReporter.jsx";
 import { ApplicationUpdateStatus, ApplicationVersion } from "./components/ApplicationUpdateStatus.jsx";
 import { RecordingCard } from "./features/recording/RecordingCard.jsx";
 import { QueueCard } from "./features/queue/QueueCard.jsx";
 import { TrackingCard } from "./features/tracking/TrackingCard.jsx";
 import { queueFooterStatus, queuePanelSummary } from "./lib/panel.js";
+import luDoneMark from "./assets/LuDone.svg";
 
 const ONBOARDING_KEY = "ludone.prototype.onboarding-complete";
 const QUEUE_REFRESH_INTERVAL_MS = 1_000;
@@ -294,9 +295,9 @@ export function App() {
         >
           <header className="panel-header">
             <div className="panel-identity">
-              <LuDoneMark size={22} variant="panel" />
+              <img className="panel-brand-mark" src={luDoneMark} alt="" />
               <span className="panel-identity__copy">
-                <strong>LuDone</strong>
+                <strong>LuDone Desktop</strong>
               </span>
             </div>
             <ApplicationVersion />
@@ -321,9 +322,9 @@ export function App() {
       >
         <header className="panel-header">
           <div className="panel-identity">
-            <LuDoneMark size={22} variant="panel" />
+            <img className="panel-brand-mark" src={luDoneMark} alt="" />
             <span className="panel-identity__copy">
-              <strong>LuDone</strong>
+              <strong>LuDone Desktop</strong>
               <small data-auth-state={sessionExists === true ? "signed-in" : sessionState ?? "checking"}>
                 {sessionExists === true
                   ? (user ? `${user.name} · připojeno` : "Přihlášeno")
@@ -370,6 +371,7 @@ export function App() {
           )}
           {panelActionsAvailable && <TrackingCard
             compact={bothActivitiesRunning}
+            disabled
             onActivityChange={handleTrackingChange}
             trayCommand={trayCommand}
           />}
@@ -399,14 +401,33 @@ export function App() {
               <span>{queueStatus.text}</span>
             </div>
           )}
-          <button
+          {panelActionsAvailable && (
+            <button
+              type="button"
+              className="panel-open-recordings"
+              onClick={() => window.ludone.openSettings("recordingQueue")}
+            >
+              <ArchiveIcon />
+              Nahrávky
+            </button>
+          )}
+          {panelActionsAvailable && <button
             type="button"
             className="panel-settings-button"
             aria-label="Otevřít nastavení"
-            onClick={() => window.ludone.openSettings()}
+            onClick={() => window.ludone.openSettings("account")}
           >
-            Nastavení
+            <SettingsIcon />
+          </button>}
+          {!panelActionsAvailable && (
+            <button
+              type="button"
+              className="panel-settings-button panel-settings-button--label"
+              onClick={() => window.ludone.openSettings("account")}
+            >
+              Nastavení
           </button>
+          )}
         </footer>
       </main>
     </PanelContentHeightReporter>

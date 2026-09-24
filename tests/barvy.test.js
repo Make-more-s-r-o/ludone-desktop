@@ -29,12 +29,22 @@ describe("schválená barevná paleta", () => {
     expect(rootBloky, "v CSS musí být právě jeden blok :root").toHaveLength(1);
     const root = rootBloky[0]?.[1];
     expect(root, "v CSS chybí blok :root").toBeDefined();
+    const svetlyMotiv = /@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*html\s*\{([^}]*)\}/.exec(stylyBezKomentaru)?.[1];
+    expect(svetlyMotiv, "světlý motiv musí mít vlastní přístupné sémantické barvy").toBeDefined();
+    const svetleBarvy = [
+      "--panel-accent: oklch(0.55 0.16 274);",
+      "--panel-ok: oklch(0.49 0.12 177);",
+      "--panel-wait: oklch(0.58 0.13 76);",
+      "--panel-bad: oklch(0.55 0.17 30);",
+    ];
     for (const deklarace of SEMANTICKE_BARVY) {
       expect(root, `${deklarace} musí být definovaná v :root`).toContain(deklarace);
       const nazev = deklarace.slice(0, deklarace.indexOf(":"));
       const bezpecnyNazev = nazev.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const definice = [...stylyBezKomentaru.matchAll(new RegExp(`${bezpecnyNazev}\\s*:`, "g"))];
-      expect(definice, `${nazev} nesmí přepsat druhá definice`).toHaveLength(1);
+      const svetlaDeklarace = svetleBarvy.find((barva) => barva.startsWith(`${nazev}:`));
+      expect(definice, `${nazev} má mít jen tmavou a schválenou světlou definici`).toHaveLength(2);
+      expect(svetlyMotiv).toContain(svetlaDeklarace);
     }
   });
 });

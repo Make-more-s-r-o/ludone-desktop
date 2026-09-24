@@ -507,25 +507,6 @@ async function assertRecordingElapsed(client) {
   observations.push({ check: "recording-elapsed", value: elapsed });
 }
 
-async function setPanelInputs(client) {
-  const result = await client.evaluate(`(() => {
-    const select = document.querySelector('.tracking-card select');
-    const input = document.querySelector('.tracking-card input');
-    select.value = 'Web · klientská zóna';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-    setter.call(input, 'Příprava demo flow');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-    return { project: select.value, description: input.value };
-  })()`);
-  if (result.project !== "Web · klientská zóna" || result.description !== "Příprava demo flow") {
-    throw new Error(`LuTrack vstupy se nepropsaly: ${JSON.stringify(result)}`);
-  }
-  observations.push({ action: "configure-tracking", ...result });
-  await delay(120);
-}
-
 async function assertRecordingNaming(client) {
   const state = await waitFor(
     () => client.evaluate(`(() => {
@@ -857,6 +838,23 @@ async function runPanelAndSettings(client) {
   await screenshot(client, "panel-idle");
   verifiedChecks.push("panel");
 
+  const futureTracking = await client.evaluate(`(() => {
+    const feature = document.querySelector('.future-feature');
+    return {
+      visible: Boolean(feature && feature.getClientRects().length),
+      prepared: feature?.textContent.includes('Připravujeme') === true,
+      interactive: Boolean(feature?.querySelector('button, input, select')),
+      startingAction: Boolean(document.querySelector('[aria-label="Spustit LuTrack"]')),
+    };
+  })()`);
+  if (!futureTracking.visible || !futureTracking.prepared
+    || futureTracking.interactive || futureTracking.startingAction) {
+    throw new Error(`Připravovaný LuTrack musí zůstat viditelný a bez ovládání: ${JSON.stringify(futureTracking)}`);
+  }
+  await screenshot(client, "panel-lutrack-planned");
+  observations.push({ check: "future-tracking", ...futureTracking });
+  verifiedChecks.push("future-tracking");
+
   await clickByText(client, "Spustit nahrávání", 0);
   await captureRecordingTransition(client, {
     checking: "recording-checking",
@@ -867,12 +865,6 @@ async function runPanelAndSettings(client) {
   await assertTray(client, "recording");
   await screenshot(client, "recording");
 
-  await clickByAria(client, "Spustit LuTrack");
-  await delay(1150);
-  await assertTray(client, "recording-tracking");
-  await assertText(client, "Stop");
-  await screenshot(client, "recording-and-tracking");
-
   await clickByText(client, "Ukončit a uložit", 0);
   await captureRecordingTransition(client, {
     saved: null,
@@ -881,30 +873,8 @@ async function runPanelAndSettings(client) {
   await assertRecordingNaming(client);
   await screenshot(client, "recording-naming-before-skip");
   await skipRecordingNaming(client);
-  await assertTray(client, "tracking");
-  await screenshot(client, "tracking-only");
-  await clickByAria(client, "Zastavit LuTrack");
   await assertTray(client, "idle");
-  await screenshot(client, "panel-idle-after-tracking");
-  verifiedChecks.push("tracking");
-
-  await setPanelInputs(client);
-  await screenshot(client, "panel-configured");
-  await clickByAria(client, "Spustit LuTrack");
-  await delay(1100);
-  const trackingValues = await client.evaluate(`(() => ({
-    project: document.querySelector('.tracking-card select').value,
-    description: document.querySelector('.tracking-card input').value,
-    locked: document.querySelector('.tracking-card select').disabled,
-  }))()`);
-  if (!trackingValues.locked || trackingValues.project !== "Web · klientská zóna") {
-    throw new Error(`Běžící LuTrack neuzamkl projekt: ${JSON.stringify(trackingValues)}`);
-  }
-  await assertTray(client, "tracking");
-  await screenshot(client, "configured-tracking");
-  await clickByAria(client, "Zastavit LuTrack");
-  await assertTray(client, "idle");
-  await screenshot(client, "panel-idle-after-configured-tracking");
+  await screenshot(client, "panel-idle-after-skip");
 
   await clickByText(client, "Spustit nahrávání", 0);
   await captureRecordingTransition(client, {

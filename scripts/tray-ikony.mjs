@@ -4,13 +4,14 @@ import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
 const PLATNO = 24;
-const PULZ = [
-  [4, 18],
-  [10, 6],
-  [14, 14],
-  [20, 9],
+// Tři tahy odpovídají přesnému znaku v dodaném LuDone.svg a náhledu Opusu.
+// Souřadnice jsou zmenšené do 24px plátna; tvar tak zůstane čitelný i v liště.
+const ZNAK_LUDONE = [
+  [[11.58, 15.7], [18.44, 5.5]],
+  [[9.22, 14.26], [15.92, 18.76]],
+  [[13.12, 18.86], [19.6, 14.04]],
 ];
-const SIRKA_PULZU = 2.2;
+const SIRKA_ZNAKU = 2.1;
 const STRED_ODZNAKU = [19, 18.5];
 const POLOMER_ODZNAKU = 2.5;
 const SIRKA_OBRYSU_ODZNAKU = 1.5;
@@ -20,6 +21,11 @@ const SIRKA_PRSTYNKU_ODZNAKU = 1.2;
 const CEKAJICI_TECKY = [[17.45, 18.5], [20.55, 18.5]];
 const POLOMER_CEKAJICI_TECKY = 1.05;
 const PRESKRTNUTI = [[4, 20], [20, 4]];
+const TROJUHELNIK_POZORNOST = [
+  [[19, 15.5], [21.7, 20.5]],
+  [[21.7, 20.5], [16.3, 20.5]],
+  [[16.3, 20.5], [19, 15.5]],
+];
 const STAVY = [
   "signed-out",
   "idle",
@@ -71,17 +77,6 @@ function vzdalenostOdUsecky(x, y, [[x1, y1], [x2, y2]]) {
   return Math.hypot(x - (x1 + poloha * dx), y - (y1 + poloha * dy));
 }
 
-function vzdalenostOdLomeneCary(x, y, body) {
-  let vzdalenost = Number.POSITIVE_INFINITY;
-  for (let index = 1; index < body.length; index += 1) {
-    vzdalenost = Math.min(
-      vzdalenost,
-      vzdalenostOdUsecky(x, y, [body[index - 1], body[index]]),
-    );
-  }
-  return vzdalenost;
-}
-
 function krytiPodepsaneVzdalenosti(vzdalenost, velikostPixelu) {
   return omez(0.5 - vzdalenost / velikostPixelu, 0, 1);
 }
@@ -89,13 +84,6 @@ function krytiPodepsaneVzdalenosti(vzdalenost, velikostPixelu) {
 function krytiTahu(x, y, usecka, sirka, velikostPixelu) {
   return krytiPodepsaneVzdalenosti(
     vzdalenostOdUsecky(x, y, usecka) - sirka / 2,
-    velikostPixelu,
-  );
-}
-
-function krytiLomeneCary(x, y, body, sirka, velikostPixelu) {
-  return krytiPodepsaneVzdalenosti(
-    vzdalenostOdLomeneCary(x, y, body) - sirka / 2,
     velikostPixelu,
   );
 }
@@ -194,26 +182,19 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
   const bodX = (x + 0.5) * velikostPixelu;
   const bodY = (y + 0.5) * velikostPixelu;
   const barvy = barvyStavu(motiv, stav);
-  // U výpadku končí pulz před posledním úsekem. Stav je díky tomu rozeznatelný
-  // i bez barvy, přesto zůstává věrný návrhovému glyfu a odznaku.
-  const pulzBody = stav === "recording-audio-lost" ? PULZ.slice(0, 3) : PULZ;
-  const pulz = krytiLomeneCary(
-    bodX,
-    bodY,
-    pulzBody,
-    SIRKA_PULZU,
-    velikostPixelu,
-  );
-  let hlavniKryti = pulz;
+  const znak = sjednoceniKryti(...ZNAK_LUDONE.map((usecka) => (
+    krytiTahu(bodX, bodY, usecka, SIRKA_ZNAKU, velikostPixelu)
+  )));
+  let hlavniKryti = znak;
 
   if (stav === "signed-out") {
     hlavniKryti = sjednoceniKryti(
-      pulz,
-      krytiTahu(bodX, bodY, PRESKRTNUTI, SIRKA_PULZU, velikostPixelu),
+      znak,
+      krytiTahu(bodX, bodY, PRESKRTNUTI, SIRKA_ZNAKU, velikostPixelu),
     );
   } else if (stav === "tracking") {
     hlavniKryti = sjednoceniKryti(
-      pulz,
+      znak,
       krytiPrstynku(
         bodX,
         bodY,
@@ -235,14 +216,18 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
   ].includes(stav)) {
     // Barevné kolečko má v souřadnicích návrhu poloměr 2,5. Obrys široký 1,5
     // kreslíme vně, aby nezmenšil čitelnou barevnou část odznaku.
-    const obrys = krytiPrstynku(
-      bodX,
-      bodY,
-      STRED_ODZNAKU,
-      POLOMER_ODZNAKU + SIRKA_OBRYSU_ODZNAKU / 2,
-      SIRKA_OBRYSU_ODZNAKU,
-      velikostPixelu,
-    );
+    const obrys = stav === "recording-audio-lost"
+      ? sjednoceniKryti(...TROJUHELNIK_POZORNOST.map((usecka) => (
+        krytiTahu(bodX, bodY, usecka, SIRKA_OBRYSU_ODZNAKU, velikostPixelu)
+      )))
+      : krytiPrstynku(
+        bodX,
+        bodY,
+        STRED_ODZNAKU,
+        POLOMER_ODZNAKU + SIRKA_OBRYSU_ODZNAKU / 2,
+        SIRKA_OBRYSU_ODZNAKU,
+        velikostPixelu,
+      );
     let odznak;
     if (stav === "recording-tracking") {
       odznak = krytiPrstynku(
@@ -256,6 +241,10 @@ function pixelStavu(x, y, rozmer, motiv, stav) {
     } else if (stav === "queue-waiting") {
       odznak = sjednoceniKryti(...CEKAJICI_TECKY.map((stred) => (
         krytiKruhu(bodX, bodY, stred, POLOMER_CEKAJICI_TECKY, velikostPixelu)
+      )));
+    } else if (stav === "recording-audio-lost") {
+      odznak = sjednoceniKryti(...TROJUHELNIK_POZORNOST.map((usecka) => (
+        krytiTahu(bodX, bodY, usecka, 0.85, velikostPixelu)
       )));
     } else {
       odznak = krytiKruhu(
@@ -352,16 +341,14 @@ function pixelAplikace(x, y, rozmer, barvy) {
   const vzdalenostPodkladu = Math.hypot(Math.max(qx, 0), Math.max(qy, 0))
     + Math.min(Math.max(qx, qy), 0) - polomer;
   const podklad = krytiPodepsaneVzdalenosti(vzdalenostPodkladu, velikostPixelu);
-  // Tentýž pulz, šířka a plátno jako v liště; pouze ho zmenšíme kolem středu,
+  // Značka aplikace zachovává tvar z lišty; zmenšíme ji kolem středu,
   // aby mezi tahem a hranou neprůhledného podkladu zůstal čitelný okraj.
   const meritko = 0.85;
-  const glyf = krytiLomeneCary(
-    (bodX - stred) / meritko + stred,
-    (bodY - stred) / meritko + stred,
-    PULZ,
-    SIRKA_PULZU,
-    velikostPixelu / meritko,
-  );
+  const xZnaku = (bodX - stred) / meritko + stred;
+  const yZnaku = (bodY - stred) / meritko + stred;
+  const glyf = sjednoceniKryti(...ZNAK_LUDONE.map((usecka) => (
+    krytiTahu(xZnaku, yZnaku, usecka, SIRKA_ZNAKU, velikostPixelu / meritko)
+  )));
   const pixel = prekryj(prekryj([0, 0, 0, 0], barvy.podklad, podklad), barvy.glyf, glyf);
   return [
     Math.round(pixel[0]), Math.round(pixel[1]), Math.round(pixel[2]),

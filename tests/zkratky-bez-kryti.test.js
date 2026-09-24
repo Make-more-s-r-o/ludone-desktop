@@ -57,26 +57,21 @@ function harness({ prijme }) {
   const spustene = [];
   const zaregistrovane = [];
   const build = Function(
-    "appState",
     "showPanel",
     "queueTrayCommand",
     "hasLiveRecording",
-    "canStartTrackingFromTray",
     "console",
     `"use strict";
      ${/^const GLOBALNI_ZKRATKY = [\s\S]*?\]\);/m.exec(mainCode)[0]}
      ${/^const prijateZkratky = [^;]+;/m.exec(mainCode)[0]}
      ${functionSource(mainCode, "zkratkaProAkci")}
-     ${functionSource(mainCode, "prepnoutTrackingZListy")}
      ${functionSource(mainCode, "spustAkciZkratky")}
      ${functionSource(mainCode, "registerGlobalShortcuts")}
      return { registerGlobalShortcuts, zkratkaProAkci, GLOBALNI_ZKRATKY };`,
   );
   const api = build(
-    { trackingOwners: new Set(), panelActionOwners: new Set(["panel"]), signedIn: true },
     () => spustene.push("panel"),
     (prikaz) => spustene.push(prikaz),
-    () => true,
     () => true,
     { log: () => {}, error: () => {} },
   );
@@ -92,12 +87,12 @@ function harness({ prijme }) {
 
 describe("zkratky v liště nejsou slib bez krytí", () => {
   it("přijatá zkratka se ukáže v nabídce, nepřijatá ne", () => {
-    const { api, shortcuts } = harness({ prijme: (z) => z !== "Control+Option+T" });
+    const { api, shortcuts } = harness({ prijme: (z) => z !== "Control+Option+L" });
 
-    expect(api.registerGlobalShortcuts(shortcuts)).toBe(2);
+    expect(api.registerGlobalShortcuts(shortcuts)).toBe(1);
     expect(api.zkratkaProAkci("stop-recording")).toBe("Control+Option+R");
-    expect(api.zkratkaProAkci("otevrit-panel")).toBe("Control+Option+L");
-    // Zabranou zkratku drží jiná aplikace — položka zůstane, popisek zmizí.
+    expect(api.zkratkaProAkci("otevrit-panel")).toBeUndefined();
+    // LuTrack je připravený na později, proto si zatím ani jeho zkratku nerezervujeme.
     expect(api.zkratkaProAkci("prepnout-tracking")).toBeUndefined();
   });
 
@@ -124,14 +119,14 @@ describe("zkratky v liště nejsou slib bez krytí", () => {
 
     for (const { handler } of zaregistrovane) handler();
 
-    expect(spustene).toEqual(["stop-recording", "start-tracking", "panel"]);
+    expect(spustene).toEqual(["stop-recording", "panel"]);
   });
 
   it("opakovaná registrace nezdvojí soupis přijatých zkratek", () => {
     const { api, shortcuts } = harness({ prijme: () => true });
 
-    expect(api.registerGlobalShortcuts(shortcuts)).toBe(3);
-    expect(api.registerGlobalShortcuts(shortcuts)).toBe(3);
+    expect(api.registerGlobalShortcuts(shortcuts)).toBe(2);
+    expect(api.registerGlobalShortcuts(shortcuts)).toBe(2);
   });
 
   it.each([

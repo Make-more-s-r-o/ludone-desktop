@@ -226,7 +226,7 @@ describe("ikony v liště", () => {
     }
   });
 
-  it("jednostopé nahrávání má tichý půlodznak odlišný od plného nahrávání i výpadku", () => {
+  it("jednostopé nahrávání má tichý půlodznak a zachová značku LuDone", () => {
     for (const motiv of MOTIVY) {
       for (const varianta of VARIANTY) {
         const soubor = cestaIkony(ADRESAR_IKON, motiv, "recording-microphone-only", varianta);
@@ -241,23 +241,25 @@ describe("ikony v liště", () => {
       const obrazek = dekodujPng(
         cestaIkony(ADRESAR_IKON, motiv, "recording-microphone-only", "@2x"),
       );
-      // Celý pulz jako při nahrávání, odznak vlevo subtle, vpravo průhledný.
-      expect(obrazek.pixel(29, 15)[3]).toBeGreaterThan(192);
+      // Značka zůstává celá; jen levá polovina odznaku označí mikrofonní stopu.
+      expect(obrazek.pixel(14, 22)[3]).toBeGreaterThan(192);
       expect(obrazek.pixel(26, 27)).toEqual([...BARVY[motiv]["signed-out"], 255]);
       expect(obrazek.pixel(30, 27)[3]).toBe(0);
     }
   });
 
-  it("stavové tvary zachovávají přeškrtnutí, tečku, prstýnek, dvojtečku i přerušený pulz", () => {
+  it("stavové tvary zachovávají značku, odznaky, kruh souběhu a výstražný trojúhelník", () => {
     const obrazky = Object.fromEntries(STAVY.map((stav) => [
       stav,
       dekodujPng(cestaIkony(ADRESAR_IKON, "dark", stav, "@2x")),
     ]));
     const kryti = (stav, x, y) => obrazky[stav].pixel(x, y)[3];
 
-    // Přeškrtnutí přidává tah mimo samotný pulz.
-    expect(kryti("signed-out", 30, 4)).toBeGreaterThan(128);
-    expect(kryti("idle", 30, 4)).toBe(0);
+    // Nepřihlášený stav i výpadek mají vlastní tvar, ne pouze jinou barvu.
+    expect(hashAlfy(cestaIkony(ADRESAR_IKON, "dark", "signed-out", "@2x")))
+      .not.toBe(hashAlfy(cestaIkony(ADRESAR_IKON, "dark", "idle", "@2x")));
+    expect(hashAlfy(cestaIkony(ADRESAR_IKON, "dark", "recording-audio-lost", "@2x")))
+      .not.toBe(hashAlfy(cestaIkony(ADRESAR_IKON, "dark", "recording", "@2x")));
     // Nahrávání má plnou tečku, čas a souběh průhledný střed prstýnku.
     expect(kryti("recording", 28, 27)).toBeGreaterThan(192);
     expect(kryti("tracking", 28, 27)).toBeLessThan(32);
@@ -266,10 +268,9 @@ describe("ikony v liště", () => {
     expect(kryti("queue-waiting", 26, 27)).toBeGreaterThan(192);
     expect(kryti("queue-waiting", 28, 27)).toBeLessThan(32);
     expect(kryti("queue-waiting", 31, 27)).toBeGreaterThan(192);
-    // Při ztrátě zvuku schází poslední úsek pulzu, odznak ale zůstává plný.
-    expect(kryti("recording", 29, 15)).toBeGreaterThan(192);
-    expect(kryti("recording-audio-lost", 29, 15)).toBe(0);
-    expect(kryti("recording-audio-lost", 28, 27)).toBeGreaterThan(192);
+    // Stav ztráty zvuku používá výstražný trojúhelník místo nahrávací tečky.
+    expect(hashAlfy(cestaIkony(ADRESAR_IKON, "dark", "recording-audio-lost", "@2x")))
+      .not.toBe(hashAlfy(cestaIkony(ADRESAR_IKON, "dark", "recording", "@2x")));
   });
 
   it("používá doslovné OKLCH barvy a převod se propíše do viditelných pixelů", () => {
@@ -297,7 +298,6 @@ describe("ikony v liště", () => {
         );
         expect(obsahujeBarvu(fronta, barvy.wait)).toBe(true);
         expect(obsahujeBarvu(vypadek, barvy.wait)).toBe(true);
-        expect(obsahujeBarvu(vypadek, barvy.recording)).toBe(true);
       }
     }
   });

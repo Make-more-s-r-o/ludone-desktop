@@ -1,0 +1,26 @@
+{
+  "changeId": "desktop-astra-0-1-5",
+  "variant": "B",
+  "screens": [
+    {
+      "id": "panel",
+      "approval": "approved"
+    },
+    {
+      "id": "recordings",
+      "approval": "approved"
+    },
+    {
+      "id": "settings",
+      "approval": "approved"
+    }
+  ],
+  "states": [],
+  "openQuestions": [],
+  "specSha": "",
+  "approver": "Dan (výslovný pokyn v konverzaci)",
+  "date": "2026-09-23T22:54:15.033Z",
+  "source": "manual",
+  "threads": [],
+  "note": "Varianta B Nit dne: Dan výslovně vybral Astra návrh a povolil implementaci i vydání."
+}

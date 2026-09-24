@@ -120,11 +120,11 @@ function installOnboardingGeometry(view) {
       const height = layout.borderTop
         + layout.rowHeights.reduce((sum, rowHeight) => sum + rowHeight, 0)
         + layout.borderBottom;
-      return new view.DOMRect(0, 0, 366, height);
+      return new view.DOMRect(0, 0, 400, height);
     }
     if (this.matches(".onboarding__content")) {
       const metrics = contentMetrics(this);
-      return new view.DOMRect(0, metrics?.top || 0, 366, metrics?.clientHeight || 0);
+      return new view.DOMRect(0, metrics?.top || 0, 400, metrics?.clientHeight || 0);
     }
     if (this.matches(".auth-step > .button--wide")) {
       const content = this.closest(".onboarding__content");
@@ -329,19 +329,20 @@ async function continueThroughRecordingTest(panel, click) {
 }
 
 describe("schválený klidový panel", () => {
-  it("obsahuje právě dva sbalené akční řádky a žádnou třetí agendu", async () => {
+  it("ukazuje nahrávání a připravovaný LuTrack bez třetí agendy", async () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
     try {
       const content = [...panel.document.querySelector(".panel-scroll").children];
       const rows = [...panel.document.querySelectorAll('[data-testid="idle-action-row"]')];
 
       expect(content).toHaveLength(2);
-      expect(content).toEqual(rows);
-      expect(rows).toHaveLength(2);
-      expect(rows.map((row) => row.querySelector("strong")?.textContent)).toEqual([
-        "Nahrávání",
-        "LuTrack",
-      ]);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.querySelector("strong")?.textContent).toBe("Nahrávání");
+      const futureFeature = panel.document.querySelector(".future-feature");
+      expect(content).toContain(futureFeature);
+      expect(futureFeature?.textContent).toContain("LuTrack");
+      expect(futureFeature?.textContent).toContain("Připravujeme");
+      expect(futureFeature?.querySelectorAll("button")).toHaveLength(0);
       expect(panel.document.querySelector(".global-status")).toBeNull();
       expect(panel.document.querySelector(".account-summary")).toBeNull();
       expect(panel.document.querySelector(".panel-close")).toBeNull();
@@ -366,7 +367,9 @@ describe("schválený klidový panel", () => {
       expect(header.textContent).toContain("LuDone");
       expect(header.textContent).not.toContain("Dan Jirotka");
       expect(header.querySelector("small")?.textContent.trim()).not.toBe("");
-      expect(header.querySelector('svg[viewBox="0 0 22 22"]')).not.toBeNull();
+      expect(header.querySelector(".panel-brand-mark")?.getAttribute("alt")).toBe("");
+      expect(panel.document.querySelectorAll(".panel-settings-button")).toHaveLength(1);
+      expect(panel.document.querySelectorAll(".panel-open-recordings")).toHaveLength(1);
       expect(hasAuthSession).toHaveBeenCalledOnce();
       expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
         panelActionsAvailable: true,
@@ -584,10 +587,8 @@ describe("schválený klidový panel", () => {
     try {
       expect(panel.document.querySelector('[data-testid="recording-daily-summary"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="tracking-daily-summary"]')).toBeNull();
-      // Jediný doprovodný text je upozornění před startem, žádný vymyšlený denní souhrn.
-      expect([...panel.document.querySelectorAll(".idle-feature-row__copy small")]
-        .map((element) => element.textContent.trim()))
-        .toEqual(["Uložení do LuTracku je zatím ukázkové."]);
+      expect(panel.document.querySelector(".future-feature")?.textContent)
+        .toContain("Časovač ještě není součástí desktopové verze.");
       expect(panel.document.querySelector(".panel-scroll").textContent).not.toContain("Dnes");
     } finally {
       await panel.cleanup();
@@ -598,18 +599,14 @@ describe("schválený klidový panel", () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
     try {
       const recordingButton = panel.document.querySelector('[aria-label="Spustit nahrávání"]');
-      const trackingButton = panel.document.querySelector('[aria-label="Spustit LuTrack"]');
-      const project = panel.document.querySelector(".tracking-card select");
-      const description = panel.document.querySelector(".tracking-card input");
+      const futureFeature = panel.document.querySelector(".future-feature");
       const settings = panel.document.querySelector('[aria-label="Otevřít nastavení"]');
 
       expect(recordingButton.querySelector('[aria-hidden="true"]').textContent).toBe("Nahrát");
       expect(recordingButton.textContent).toContain("Spustit nahrávání");
-      expect(trackingButton.textContent).toBe("Spustit");
-      expect(trackingButton.getAttribute("role")).toBe("switch");
-      expect(project.closest(".tracking-controls").hidden).toBe(true);
-      expect(description.closest(".description-field").hidden).toBe(true);
-      expect(settings.textContent).toBe("Nastavení");
+      expect(futureFeature?.textContent).toContain("Připravujeme");
+      expect(futureFeature?.querySelectorAll("button, input, select")).toHaveLength(0);
+      expect(settings.getAttribute("aria-label")).toBe("Otevřít nastavení");
     } finally {
       await panel.cleanup();
     }
@@ -711,7 +708,7 @@ describe("schválený klidový panel", () => {
       expect(screen?.textContent).toContain("412 MB · další pokus za 2 min");
       expect(screen?.querySelector('button[data-action="retry-queue"]')?.textContent)
         .toBe("Zkusit teď");
-      expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(2);
+      expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(1);
     } finally {
       await panel.cleanup();
     }
@@ -1193,7 +1190,7 @@ describe("schválený klidový panel", () => {
       expect(footer.tagName).toBe("DIV");
       footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
-      expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(2);
+      expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(1);
       expect(retryQueue).not.toHaveBeenCalled();
 
       const settings = panel.document.querySelector('[aria-label="Otevřít nastavení"]');
@@ -1206,7 +1203,7 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("viditelný panel přečte změnu background pumpy i během LuTracku", async () => {
+  it("viditelný panel přečte změnu background pumpy i s připravovaným LuTrackem", async () => {
     vi.useFakeTimers();
     const listQueue = vi.fn()
       .mockResolvedValueOnce([{ state: "ceka" }])
@@ -1226,13 +1223,7 @@ describe("schválený klidový panel", () => {
       expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
         .toBe("1 čeká");
 
-      const startTracking = panel.document.querySelector('[aria-label="Spustit LuTrack"]');
-      await React.act(async () => {
-        startTracking.dispatchEvent(new panel.document.defaultView.MouseEvent("click", {
-          bubbles: true,
-        }));
-      });
-      expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).not.toBeNull();
+      expect(panel.document.querySelector(".future-feature")?.querySelector("button")).toBeNull();
 
       await React.act(async () => {
         await vi.advanceTimersByTimeAsync(1_000);
@@ -1410,11 +1401,8 @@ describe("schválený klidový panel", () => {
       expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(240);
       expect(scrollContainer.scrollTop).toBe(37);
 
-      const start = panel.document.querySelector('[aria-label="Spustit LuTrack"]');
       scrollContainer.scrollTop = 51;
-      await React.act(async () => {
-        start.dispatchEvent(new domWindow.MouseEvent("click", { bubbles: true }));
-      });
+      panel.document.querySelector(".future-feature").setAttribute("data-measurement", "same-size");
       await flushMeasurements();
 
       expect(measurementCount).toBeGreaterThan(1);
@@ -1422,10 +1410,7 @@ describe("schválený klidový panel", () => {
       expect(scrollContainer.scrollTop).toBe(51);
 
       measuredHeight = 310;
-      const stop = panel.document.querySelector('[aria-label="Zastavit LuTrack"]');
-      await React.act(async () => {
-        stop.dispatchEvent(new domWindow.MouseEvent("click", { bubbles: true }));
-      });
+      panel.document.querySelector(".future-feature").setAttribute("data-measurement", "new-size");
       await flushMeasurements();
 
       expect(setPanelContentHeight).toHaveBeenCalledTimes(2);
@@ -1436,60 +1421,21 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("LuTrack před prvním spuštěním viditelně přizná ukázkové uložení", async () => {
-    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
-      configureWindow(view) {
-        const style = view.document.createElement("style");
-        style.textContent = RENDERER_STYLES;
-        view.document.head.append(style);
-      },
-    });
-
-    try {
-      const card = panel.document.querySelector('.tracking-card[data-activity-state="idle"]');
-      const notice = card.querySelector(".idle-feature-row__notice");
-      expect(notice?.textContent.trim()).toBe("Uložení do LuTracku je zatím ukázkové.");
-      expect(notice.closest('[hidden], .sr-only')).toBeNull();
-      const style = panel.document.defaultView.getComputedStyle(notice);
-      expect(style.display).not.toBe("none");
-      expect(style.visibility).toBe("visible");
-      expect(style.whiteSpace).toBe("normal");
-      expect(style.overflow).toBe("visible");
-      expect(card.querySelector('[aria-label="Spustit LuTrack"]').textContent).toBe("Spustit");
-      expect(card.querySelector('[aria-label="Spustit LuTrack"]').getAttribute("aria-checked"))
-        .toBe("false");
-    } finally {
-      await panel.cleanup();
-    }
-  });
-
-  it("kompaktní LuTrack zachová funkční přechod do běžícího stavu", async () => {
+  it("připravovaný LuTrack je viditelný a bez ovládání", async () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
 
     try {
-      const start = panel.document.querySelector('[aria-label="Spustit LuTrack"]');
-      await React.act(async () => {
-        start.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
-      });
-
-      const stop = panel.document.querySelector('[aria-label="Zastavit LuTrack"]');
-      expect(stop).not.toBeNull();
-      expect(panel.document.querySelector(".tracking-card select").disabled).toBe(true);
-      expect(panel.document.querySelector(".tracking-controls").hidden).toBe(false);
-
-      await React.act(async () => {
-        stop.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
-      });
-      const notice = panel.document.querySelector(".tracking-card .idle-feature-row__notice");
-      expect(notice.textContent).toContain("uložení do LuTracku je ukázkové");
-      expect(notice.classList.contains("sr-only")).toBe(false);
-      expect(notice.closest(".idle-feature-row").classList.contains("has-notice")).toBe(true);
+      const feature = panel.document.querySelector(".future-feature");
+      expect(feature?.textContent).toContain("Časovač ještě není součástí desktopové verze.");
+      expect(feature?.textContent).toContain("Připravujeme");
+      expect(feature?.querySelectorAll("button, input, select")).toHaveLength(0);
+      expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
     } finally {
       await panel.cleanup();
     }
   });
 
-  it("příkaz z kontextového menu spustí LuTrack bez otevírání panelové akce", async () => {
+  it("rychlé příkazy LuTracku nepřekročí neaktivní přípravu", async () => {
     let deliverCommand;
     const unsubscribe = vi.fn();
     const onTrayCommand = vi.fn((listener) => {
@@ -1505,51 +1451,15 @@ describe("schválený klidový panel", () => {
 
     try {
       await React.act(async () => deliverCommand("start-tracking"));
-
-      expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).not.toBeNull();
+      await React.act(async () => deliverCommand("stop-tracking"));
+      expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
+      expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
+      expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
       expect(onTrayCommand).toHaveBeenCalledOnce();
     } finally {
       await panel.cleanup();
     }
     expect(unsubscribe).toHaveBeenCalledOnce();
-  });
-
-  it("příkaz z kontextového menu LuTrack i ZASTAVÍ, nejen spustí", async () => {
-    // 🔴 Položka „Zastavit měření času" posílá `stop-tracking`. Testy hlavního procesu
-    // ověří, že se příkaz odeslal — ale ne, že na něj někdo zareagoval. Bez obsluhy
-    // v rendereru by se položka tvářila funkčně a nedělala nic. Proto se to musí měřit
-    // TADY, na straně, která příkaz přijímá.
-    let deliverCommand;
-    const onTrayCommand = vi.fn((listener) => {
-      deliverCommand = listener;
-      return vi.fn();
-    });
-    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
-      ludone: {
-        hasAuthSession: vi.fn().mockResolvedValue(true),
-        onTrayCommand,
-      },
-    });
-
-    try {
-      await React.act(async () => deliverCommand("start-tracking"));
-      expect(
-        panel.document.querySelector('[aria-label="Zastavit LuTrack"]'),
-        "LuTrack se měl rozeběhnout",
-      ).not.toBeNull();
-
-      await React.act(async () => deliverCommand("stop-tracking"));
-      expect(
-        panel.document.querySelector('[aria-label="Zastavit LuTrack"]'),
-        "po stop-tracking už LuTrack nesmí běžet",
-      ).toBeNull();
-      expect(
-        panel.document.querySelector('[aria-label="Spustit LuTrack"]'),
-        "má být zpátky nabídka spuštění",
-      ).not.toBeNull();
-    } finally {
-      await panel.cleanup();
-    }
   });
 
   it("nepřipravený onboarding znepřístupní rychlou akci a starý příkaz později nespustí", async () => {
@@ -1600,7 +1510,8 @@ describe("schválený klidový panel", () => {
         tracking: false,
       }));
 
-      expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).not.toBeNull();
+      expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
+      expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
       expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).toBeNull();
     } finally {
       await panel.cleanup();

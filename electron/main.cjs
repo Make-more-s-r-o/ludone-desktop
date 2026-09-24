@@ -89,8 +89,9 @@ const uploadCompanyModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "upload-company-resolution.js")).href
 );
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
-const PANEL_WIDTH = 366;
+const PANEL_WIDTH = 400;
 const PANEL_MIN_HEIGHT = 180;
+const PANEL_MAX_HEIGHT = 720;
 const PANEL_SCREEN_MARGIN = 8;
 const PANEL_LOAD_TIMEOUT_MS = 5_000;
 const TRAY_SETTLE_DELAY_MS = 2_000;
@@ -909,11 +910,15 @@ function constrainedPanelHeight(reportedHeight, maximumHeight) {
   );
 }
 
+function panelMaximumHeight(placement) {
+  return Math.min(placement.maximumHeight, PANEL_MAX_HEIGHT);
+}
+
 function positionPanel() {
   if (!panelWindow) return;
   const placement = panelPlacement();
   if (!placement) return;
-  const nextHeight = constrainedPanelHeight(panelContentHeight, placement.maximumHeight);
+  const nextHeight = constrainedPanelHeight(panelContentHeight, panelMaximumHeight(placement));
   const [, currentHeight] = panelWindow.getSize();
   if (currentHeight !== nextHeight) {
     panelWindow.setSize(PANEL_WIDTH, nextHeight, false);
@@ -934,7 +939,7 @@ function setPanelContentHeight(reportedHeight) {
   // Přirozenou výšku uchováváme i po clampu. Při přesunu ikony na jiný monitor
   // ji positionPanel znovu omezí podle nové pracovní plochy, případně obnoví.
   panelContentHeight = reportedHeight;
-  const nextHeight = constrainedPanelHeight(reportedHeight, placement.maximumHeight);
+  const nextHeight = constrainedPanelHeight(reportedHeight, panelMaximumHeight(placement));
   const [, currentHeight] = panelWindow.getSize();
   if (currentHeight === nextHeight) return nextHeight;
 
@@ -1066,20 +1071,21 @@ function createPanelWindow() {
   return { readyForRetention, webContents: panelContents, window: createdPanelWindow };
 }
 
-function createSettingsWindow() {
+function createSettingsWindow(initialTab = "account") {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send("settings:select-tab", initialTab);
     settingsWindow.show();
     settingsWindow.focus();
     return;
   }
 
   settingsWindow = new BrowserWindow({
-    width: 448,
-    height: 676,
-    minWidth: 448,
-    maxWidth: 448,
-    minHeight: 676,
-    maxHeight: 676,
+    width: 640,
+    height: 744,
+    minWidth: 640,
+    maxWidth: 640,
+    minHeight: 744,
+    maxHeight: 744,
     show: false,
     frame: false,
     transparent: false,
@@ -1099,7 +1105,10 @@ function createSettingsWindow() {
     },
   });
 
-  settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), { hash: "settings" });
+  settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), {
+    hash: "settings",
+    query: initialTab === "recordingQueue" ? { settingsTab: "recordingQueue" } : {},
+  });
   settingsWindow.webContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
     if (isMainFrame) invalidateUploadCompanySelection();
   });
@@ -1202,12 +1211,6 @@ async function openLuDoneInBrowser() {
   }
 }
 
-function canStartTrackingFromTray() {
-  return authSessionTransitionPromise === null
-    && appState.signedIn
-    && appState.panelActionOwners.size > 0;
-}
-
 // 🔴 Popisek zkratky, který nic nespustí, je slib bez krytí — a přesně to menu do
 // 10. 9. 2026 dělalo: nabízelo pět zkratek a `globalShortcut` se v celém repu nevolal
 // ani jednou. Aplikace navíc běží jako accessory (`LSUIElement`), takže nekreslí lištu
@@ -1222,7 +1225,6 @@ function canStartTrackingFromTray() {
 // LuDone ukradl všem ostatním aplikacím, takže by oprava jedné lži vyrobila horší vadu.
 const GLOBALNI_ZKRATKY = Object.freeze([
   { akce: "stop-recording", zkratka: "Control+Option+R" },
-  { akce: "prepnout-tracking", zkratka: "Control+Option+T" },
   { akce: "otevrit-panel", zkratka: "Control+Option+L" },
 ]);
 
@@ -1233,26 +1235,11 @@ function zkratkaProAkci(akce) {
   return prijateZkratky.get(akce);
 }
 
-function prepnoutTrackingZListy() {
-  const tracking = appState.trackingOwners.size > 0;
-  // Menu i zkratka můžou dorazit ve chvíli, kdy panel zrovna neexistuje nebo se mění
-  // relace. Zastaralý pokyn nepředáváme neexistující kartě; ukážeme aktuální stav.
-  if (!tracking && !canStartTrackingFromTray()) {
-    showPanel();
-    return;
-  }
-  queueTrayCommand(tracking ? "stop-tracking" : "start-tracking");
-}
-
 function spustAkciZkratky(akce) {
   if (akce === "stop-recording") {
     // Zkratka nesmí „ukončit" nahrávání, které neběží — z lišty to hlídá `enabled`,
     // globální zkratka žádné `enabled` nemá.
     if (hasLiveRecording()) queueTrayCommand("stop-recording");
-    return;
-  }
-  if (akce === "prepnout-tracking") {
-    prepnoutTrackingZListy();
     return;
   }
   if (akce === "otevrit-panel") showPanel();
@@ -1277,19 +1264,12 @@ function registerGlobalShortcuts(shortcuts = globalShortcut) {
 }
 
 function trayContextMenuTemplate() {
-  const tracking = appState.trackingOwners.size > 0;
   return [
     {
       label: "Ukončit nahrávání",
       accelerator: zkratkaProAkci("stop-recording"),
       enabled: hasLiveRecording(),
       click: () => queueTrayCommand("stop-recording"),
-    },
-    {
-      label: tracking ? "Zastavit měření času" : "Spustit LuTrack",
-      accelerator: zkratkaProAkci("prepnout-tracking"),
-      enabled: tracking || canStartTrackingFromTray(),
-      click: prepnoutTrackingZListy,
     },
     { type: "separator" },
     {
@@ -1969,7 +1949,13 @@ handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extra
   }
   return setPanelContentHeight(height);
 });
-onValidated("settings:open", ["panel"], () => createSettingsWindow());
+onValidated("settings:open", ["panel"], (_event, initialTab, ...extraPayload) => {
+  if (extraPayload.length > 0 || (initialTab !== undefined
+    && !["account", "recordingQueue"].includes(initialTab))) {
+    throw new TypeError("Nastavení lze otevřít jen v podporované části");
+  }
+  createSettingsWindow(initialTab ?? "account");
+});
 onValidated("settings:close", ["settings"], () => settingsWindow?.close());
 handleValidated("settings:get-device-name", ["settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-device-name", extraPayload);

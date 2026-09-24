@@ -13,6 +13,1697 @@
   <div id="app" class="stage"></div>
   <div id="sr" class="sr-only" aria-live="polite"></div>
   <noscript>Prototyp potřebuje JavaScript.</noscript>
-  <script src="app.js?v=44274326c79f"></script>
+  <script>
+/* LuDone Desktop — koncept „Dvě stopy". Klikací simulace, fiktivní data.
+   Žádné síťové požadavky, žádné systémové efekty: web, Finder i macOS jsou jen popsané předání. */
+'use strict';
+(function () {
+  const SCENARIOS = ['home', 'working', 'meeting', 'save', 'record-only', 'day', 'detail', 'attention',
+    'offline', 'recovery', 'settings', 'update', 'onboarding', 'identity'];
+  const THEMES = ['light', 'professional', 'dark'];
+  const PANEL = { w: 416, h: 680 };
+  const WIN = { w: 700, h: 760 };
+  const MB_PER_MIN = 0.732; // 12:34 → 9,2 MB; 6:08 → 4,5 MB; 8:42 → 6,4 MB
+
+  const FIRMS = { sever: 'Studio Sever', jih: 'Ateliér Jih' };
+  const PROJECTS = [
+    { id: 'web', name: 'Web Studia Sever', firm: 'sever', alloc: '18 h 40 min', descs: ['Příprava obsahu'] },
+    { id: 'int', name: 'Interní rozvoj', firm: 'sever', alloc: null, descs: ['Plán týdne'] },
+    { id: 'jih', name: 'Podpora Ateliéru Jih', firm: 'jih', alloc: null, descs: ['Odpověď na dotazy'] },
+  ];
+  const COMMANDS = [
+    { id: 'rec', keys: ['nahrat', 'nahravat', 'schuzka', 'zvuk'], label: 'Nahrát schůzku', sub: 'zvuk · nevytvoří čas' },
+    { id: 'day', keys: ['den', 'dnes', 'prehled'], label: 'Otevřít dnešní den', sub: 'okno' },
+    { id: 'recs', keys: ['nahravky'], label: 'Nahrávky na tomto Macu', sub: 'okno' },
+    { id: 'settings', keys: ['nastaveni'], label: 'Nastavení', sub: 'okno' },
+  ];
+  const KNOWN_TITLES = ['Týdenní domluva'];
+
+  // ---------- pomocníci ----------
+  const t = (h, m, s = 0) => h * 3600 + m * 60 + s;
+  const pad = n => String(n).padStart(2, '0');
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const clock = sec => { sec = ((Math.floor(sec) % 86400) + 86400) % 86400; return `${Math.floor(sec / 3600)}:${pad(Math.floor(sec / 60) % 60)}`; };
+  const hms = sec => { sec = Math.max(0, Math.floor(sec)); return `${Math.floor(sec / 3600)}:${pad(Math.floor(sec / 60) % 60)}:${pad(sec % 60)}`; };
+  const hm = sec => { sec = Math.max(0, Math.floor(sec)); return `${Math.floor(sec / 3600)}:${pad(Math.floor(sec / 60) % 60)}`; };
+  const ms = sec => { sec = Math.max(0, Math.floor(sec)); return `${Math.floor(sec / 60)}:${pad(sec % 60)}`; };
+  const dur = sec => { const m = Math.max(0, Math.round(sec / 60)); if (m < 60) return `${m} min`; const h = Math.floor(m / 60), r = m % 60; return r ? `${h} h ${r} min` : `${h} h`; };
+  const mb = x => `${x.toFixed(1).replace('.', ',')} MB`;
+  const sizeOf = sec => Math.round(sec / 60 * MB_PER_MIN * 10) / 10;
+  const proj = id => PROJECTS.find(p => p.id === id);
+  const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const parseTime = str => { const m = /^(\d{1,2})[:.](\d{2})$/.exec(String(str || '').trim()); if (!m) return null; const h = +m[1], mi = +m[2]; return h > 23 || mi > 59 ? null : t(h, mi); };
+  let uidN = 0;
+  const uid = p => `${p}-${++uidN}`;
+
+  const I = {
+    brand: '<img src="assets/LuDone.svg" alt="" aria-hidden="true">',
+    check: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.3 5 8.6l4.6-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    wait: '<svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 3.8V6l1.6 1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+    alert: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.4 11.2 10.5H.8Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 4.8v2.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="9" r=".75" fill="currentColor"/></svg>',
+    mac: '<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="2.3" width="8" height="5.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M.8 10h10.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
+    up: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 10V2.5M3 5.3 6 2.4l3 2.9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    dot: '<svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.2" fill="currentColor"/></svg>',
+    work: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.8" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.8v3.4l2.3 1.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    wave: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h1M5 5.5v5M8 3v10M11 5v6M14 8h-.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    search: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m10.5 10.5 3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    gear: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="11" cy="4.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="5" cy="11.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>',
+    win: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2 6h12" stroke="currentColor" stroke-width="1.4"/></svg>',
+    ext: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5h6.5V10M12.3 3.7 4 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    x: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    stop: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="4" width="8" height="8" fill="currentColor"/></svg>',
+    back: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    bolt: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2 4 9h4l-1 5 5-7H8z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+    wifi: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6.2a8.5 8.5 0 0 1 12 0M4.3 8.6a5.2 5.2 0 0 1 7.4 0M6.5 11a2 2 0 0 1 3 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    wifiOff: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6.2a8.5 8.5 0 0 1 12 0M4.3 8.6a5.2 5.2 0 0 1 7.4 0M6.5 11a2 2 0 0 1 3 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".35"/><path d="m3 2.5 10 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  };
+
+  function appIcon(size, desktop = false) {
+    // Dock / Finder drží originál DS beze změny; druhá varianta přidává jen malý roh.
+    return `<span class="appicon${desktop ? ' appicon--desktop' : ''}" style="width:${size}px;height:${size}px" aria-hidden="true"><img src="assets/LuDone.svg" width="${size}" height="${size}" alt=""></span>`;
+  }
+
+  // ---------- stav ----------
+  let S = null;
+  let timers = [];
+  let lastPosted = '';
+  const root = document.getElementById('app');
+
+  function later(ms_, fn, rerender = true) {
+    const id = setTimeout(() => {
+      timers = timers.filter(x => x !== id);
+      fn();
+      if (rerender) render();
+    }, ms_);
+    timers.push(id);
+  }
+
+  function tyden(over) {
+    return Object.assign({
+      id: 'r-tyden', title: 'Týdenní domluva', start: t(10, 47), dur: 754, size: 9.2, target: 'sever', targetSource: 'work',
+      state: 'verified', error: null, owner: 'alex',
+      log: { local: t(10, 59, 34), queued: t(10, 59, 40), sent: t(11, 0, 2), verified: t(11, 0, 5) },
+    }, over || {});
+  }
+
+  function base() {
+    return {
+      scenario: 'home', theme: 'light', view: 'panel', panelOpen: true, tab: 'den', detail: null, backTo: 'den',
+      sheet: null, focus: null, simOpen: false, toast: null, notif: null,
+      now: t(10, 14, 30), day: { short: 'St 23. 9.', long: 'Středa 23. září', week: 39 },
+      net: true, netSince: null, auth: 'ok', login: null, onboarding: null, firstRun: false,
+      work: null, draft: null, cmd: '', cmdIdx: 0, switching: false,
+      rec: null, pending: null, result: null,
+      segments: [
+        { id: 's-plan', projectId: 'int', desc: 'Plán týdne', start: t(8, 5), end: t(8, 50), sync: 'confirmed', confirmedAt: t(8, 50, 3) },
+        { id: 's-jih', projectId: 'jih', desc: 'Odpověď na dotazy', start: t(8, 52), end: t(9, 32), sync: 'confirmed', confirmedAt: t(9, 32, 2) },
+      ],
+      recordings: [
+        { id: 'r-kontrola', title: 'Kontrola rozpočtu', start: t(8, 20), dur: 8 * 60 + 42, size: 6.4, target: 'sever', targetSource: 'manual',
+          state: 'failed', error: 'login', owner: 'alex', failedAt: t(8, 31), log: { local: t(8, 29), queued: t(8, 29) } },
+        { id: 'r-navrh', title: 'Návrh webu', start: t(9, 10), dur: 6 * 60 + 8, size: 4.5, target: 'sever', targetSource: 'manual',
+          state: 'local', error: null, owner: 'alex', log: { local: t(9, 16, 10) } },
+      ],
+      update: { stage: 'none', progress: 0, version: '0.1.4' },
+      settings: { autoSend: false, autoSince: null, target: 'suggest', retention: '14', login: true, dock: 'window', mic: 'ok', sys: 'ok' },
+      recovery: null, filter: 'all', refreshedAt: t(10, 14), failNext: null,
+      add: null, edit: null, trashed: null, recent: ['jih', 'int', 'web'],
+    };
+  }
+
+  function liveWork(s, start) { s.work = { projectId: 'web', desc: 'Příprava obsahu', start }; s.recent = ['web', 'jih', 'int']; }
+  function liveRec(s, start, target) {
+    s.rec = { start, target: target || null, targetSource: target ? 'work' : 'none', sys: 'ok', lostAt: null, gaps: [], notice: null };
+  }
+
+  function loadScenario(name, theme) {
+    timers.forEach(clearTimeout); timers = [];
+    const s = base();
+    s.scenario = name; s.theme = theme;
+    switch (name) {
+      case 'home': break;
+      case 'working': s.now = t(10, 47); liveWork(s, t(10, 15)); break;
+      case 'meeting': s.now = t(10, 51, 12); liveWork(s, t(10, 15)); liveRec(s, t(10, 47), 'sever'); break;
+      case 'save':
+        s.now = t(10, 59, 34); liveWork(s, t(10, 15));
+        s.pending = { id: 'r-tyden', start: t(10, 47), dur: 754, size: 9.2, target: 'sever', targetSource: 'work', title: '', gaps: [], sysOff: false };
+        s.sheet = { type: 'save' }; s.focus = 'save-title'; break;
+      case 'record-only': s.now = t(12, 20); liveRec(s, t(12, 17, 55), null); break;
+      case 'day': case 'detail':
+        s.now = t(11, 5); liveWork(s, t(10, 15)); s.recordings.push(tyden());
+        s.view = 'window'; s.tab = 'den';
+        if (name === 'detail') { s.detail = { kind: 'rec', id: 'r-tyden' }; s.backTo = 'den'; }
+        break;
+      case 'attention':
+        s.now = t(11, 40); s.auth = 'expired';
+        s.segments.push({ id: 's-web', projectId: 'web', desc: 'Příprava obsahu', start: t(9, 45), end: t(10, 40), sync: 'pending' });
+        s.recordings.push(tyden({ state: 'failed', error: 'firm', target: null, targetSource: 'none', log: { local: t(10, 59, 34) } }));
+        s.recent = ['web', 'jih', 'int'];
+        break;
+      case 'offline':
+        s.now = t(10, 53); liveWork(s, t(10, 15)); liveRec(s, t(10, 47), 'sever'); s.net = false; s.netSince = t(10, 50); break;
+      case 'recovery':
+        s.day = { short: 'Čt 24. 9.', long: 'Čtvrtek 24. září', week: 39 };
+        s.now = t(8, 3); s.segments = []; s.auth = 'expired';
+        s.recordings.forEach(r => { r.prevDay = true; });
+        s.recovery = { projectId: 'web', desc: 'Příprava obsahu', start: t(16, 40), lastSeen: t(18, 12), restartAt: t(8, 3), prevDay: true, choice: 'last', custom: '18:12', again: false, err: null };
+        s.sheet = { type: 'recovery' }; s.recent = ['web', 'jih', 'int'];
+        break;
+      case 'settings': s.now = t(10, 47); liveWork(s, t(10, 15)); s.view = 'window'; s.tab = 'nastaveni'; break;
+      case 'update':
+        s.now = t(10, 51, 12); liveWork(s, t(10, 15)); liveRec(s, t(10, 47), 'sever');
+        s.update.stage = 'offered'; s.notif = { type: 'update' }; break;
+      case 'onboarding':
+        s.now = t(8, 2); s.segments = []; s.recordings = []; s.auth = 'none'; s.recent = ['web', 'int', 'jih'];
+        s.settings.mic = 'ask'; s.settings.sys = 'ask';
+        s.onboarding = { step: 1, wantTime: true, wantRec: true }; break;
+      case 'identity': s.now = t(10, 47); liveWork(s, t(10, 15)); s.view = 'window'; s.tab = 'identita'; break;
+      default: break;
+    }
+    S = s;
+    render();
+  }
+
+  // ---------- odvozené hodnoty ----------
+  const todaySegs = () => S.segments.filter(g => !g.prevDay);
+  function daySegs() {
+    const list = todaySegs().slice();
+    if (S.work) list.push({ id: 'live', projectId: S.work.projectId, desc: S.work.desc, start: S.work.start, end: S.now, live: true });
+    return list;
+  }
+  function dayRecs() {
+    const list = S.recordings.filter(r => !r.prevDay).slice();
+    if (S.pending) list.push(Object.assign({}, S.pending, { state: 'local', unsaved: true, title: S.pending.title || `Schůzka ${clock(S.pending.start)}` }));
+    if (S.rec) list.push({ id: 'live-rec', start: S.rec.start, dur: S.now - S.rec.start, live: true, target: S.rec.target });
+    return list;
+  }
+  const totalWork = () => daySegs().reduce((a, g) => a + (g.end - g.start), 0);
+  const recEnd = r => r.start + r.dur;
+  function overlapSegs(r) {
+    if (r.prevDay) return [];
+    const end = r.live ? S.now : recEnd(r);
+    return daySegs().filter(g => g.start < end && g.end > r.start);
+  }
+  function overlapRecs(g) {
+    return dayRecs().filter(r => r.start < g.end && (r.live ? S.now : recEnd(r)) > g.start);
+  }
+  function lastSegment() {
+    const list = todaySegs().slice().sort((a, b) => b.end - a.end);
+    return list[0] || null;
+  }
+  function lastDesc(pid) {
+    const g = S.segments.filter(x => x.projectId === pid).sort((a, b) => b.end - a.end)[0];
+    return g ? g.desc : proj(pid).descs[0];
+  }
+  const findRec = id => S.recordings.find(r => r.id === id);
+  const findSeg = id => S.segments.find(g => g.id === id);
+  const busyList = () => {
+    const l = [];
+    if (S.work) l.push('měření');
+    if (S.rec) l.push('nahrávání');
+    if (S.pending || S.recordings.some(r => r.state === 'uploading')) l.push('ukládání');
+    return l;
+  };
+  const isIdle = () => busyList().length === 0;
+  function needsCount() {
+    let n = S.recordings.filter(r => r.state === 'failed').length;
+    if (S.auth === 'expired') n++;
+    return n;
+  }
+
+  // ---------- fronta a server (simulace) ----------
+  function processQueue() {
+    if (!S.net || S.auth !== 'ok') return;
+    S.segments.filter(g => g.sync === 'pending' && !g._q).forEach(g => {
+      g._q = true;
+      later(1100, () => {
+        g._q = false;
+        if (!S.segments.includes(g) || !S.net || S.auth !== 'ok') return;
+        g.sync = 'confirmed'; g.confirmedAt = S.now;
+      });
+    });
+    S.recordings.filter(r => r.state === 'queued' && !r._q).forEach(upload);
+    S.recordings.filter(r => r.state === 'sent' && !r._v).forEach(verifyLater);
+  }
+  function upload(r) {
+    r._q = true; r.state = 'uploading'; r.progress = 0;
+    const step = () => {
+      if (!S.recordings.includes(r)) return;
+      if (!S.net) { r.state = 'queued'; r._q = false; r.progress = 0; render(); return; }
+      r.progress = Math.min(100, r.progress + 25);
+      if (r.progress >= 100) {
+        r._q = false;
+        if (S.failNext === 'limit') {
+          S.failNext = null; r.state = 'failed'; r.error = 'limit'; r.failedAt = S.now; render(); return;
+        }
+        r.state = 'sent'; r.log.sent = S.now; render();
+        verifyLater(r);
+        return;
+      }
+      render();
+      later(420, step, false);
+    };
+    later(420, step, false);
+  }
+  function verifyLater(r) {
+    r._v = true;
+    later(1500, () => {
+      r._v = false;
+      if (r.state === 'sent' && S.net && S.auth === 'ok') { r.state = 'verified'; r.log.verified = S.now; }
+    });
+  }
+  function sendRec(r) {
+    r.error = null; r.pick = null;
+    if (!r.target) { r.state = 'failed'; r.error = 'firm'; r.failedAt = S.now; return; }
+    if (S.auth !== 'ok') { r.state = 'failed'; r.error = 'login'; r.failedAt = S.now; return; }
+    r.state = 'queued'; r.log.queued = S.now;
+    processQueue();
+  }
+
+  // ---------- akce ----------
+  function toast(text, action, label) {
+    const id = uid('t');
+    S.toast = { id, text, action, label };
+    const sr = document.getElementById('sr');
+    if (sr) sr.textContent = text;
+    later(action ? 7000 : 4200, () => { if (S.toast && S.toast.id === id) S.toast = null; });
+  }
+
+  function startDraft() {
+    const d = S.draft; if (!d) return;
+    const p = proj(d.projectId);
+    let closed = null;
+    if (d.mode === 'switch' && S.work) closed = stopWork(true);
+    S.work = { projectId: d.projectId, desc: d.desc.trim(), start: S.now };
+    S.recent = [d.projectId].concat(S.recent.filter(x => x !== d.projectId));
+    S.draft = null; S.switching = false; S.cmd = ''; S.result = null; S.firstRun = false;
+    if (S.rec) {
+      if (S.rec.target !== p.firm) S.rec.notice = { from: S.rec.target, to: p.firm, project: p.name };
+      else S.rec.notice = { same: true, from: S.rec.target, project: p.name };
+    }
+    if (closed) toast(`Uloženo ${proj(closed.projectId).name} · ${closed.desc || 'bez popisu'} (${dur(closed.end - closed.start)}). Teď běží ${p.name}.`);
+    else toast(`Měřím ${p.name}. Panel můžeš zavřít, čas poběží dál.`);
+  }
+
+  function stopWork(silent) {
+    const w = S.work; if (!w) return null;
+    const g = { id: uid('s'), projectId: w.projectId, desc: w.desc, start: w.start, end: S.now, sync: 'pending' };
+    S.segments.push(g); S.work = null;
+    processQueue();
+    if (!silent) {
+      const recs = dayRecs().filter(r => !r.live && !r.unsaved && r.start < g.end && recEnd(r) > g.start);
+      if (recs.length) S.result = { segId: g.id, recIds: recs.map(r => r.id) };
+      toast(`Uloženo ${proj(g.projectId).name} · ${dur(g.end - g.start)}.`, 'resume', 'Pokračovat');
+    }
+    return g;
+  }
+
+  function recStart() {
+    if (S.rec) return;
+    if (S.pending) { S.sheet = { type: 'save' }; S.focus = 'save-title'; toast('Nejdřív ulož předchozí nahrávku, aby se neztratila.'); return; }
+    if (S.settings.mic !== 'ok') { toast('Mikrofon zatím nemá oprávnění. Povol ho u tlačítka Nahrát.'); return; }
+    let target = null, src = 'none';
+    if (S.settings.target === 'suggest' && S.work) { target = proj(S.work.projectId).firm; src = 'work'; }
+    else if (S.settings.target === 'sever' || S.settings.target === 'jih') { target = S.settings.target; src = 'default'; }
+    S.rec = { start: S.now, target, targetSource: src, sys: S.settings.sys === 'ok' ? 'ok' : 'off', lostAt: null, gaps: [], notice: null };
+    toast(S.work ? 'Nahrávám. Čas běží dál nezávisle.' : 'Nahrávám. Žádný čas se nevytváří.');
+  }
+
+  function recStop() {
+    const r = S.rec; if (!r) return;
+    const d = S.now - r.start;
+    const gaps = r.gaps.slice();
+    if (r.sys === 'lost') gaps.push([r.lostAt, S.now]);
+    S.pending = { id: uid('r'), start: r.start, dur: d, size: sizeOf(d), target: r.target, targetSource: r.targetSource, title: '', gaps, sysOff: r.sys === 'off' };
+    S.rec = null;
+    const auto = S.settings.autoSend && S.settings.autoSince != null && S.pending.start >= S.settings.autoSince && S.pending.target;
+    if (auto) {
+      const rec = finalizePending('send');
+      toast(`„${rec.title}" uložena a odeslána automaticky do ${FIRMS[rec.target]}.`, 'open-rec:' + rec.id, 'Přejmenovat');
+      return;
+    }
+    S.sheet = { type: 'save' }; S.focus = 'save-title';
+  }
+
+  function finalizePending(mode) {
+    const p = S.pending; if (!p) return null;
+    const r = { id: p.id, title: (p.title || '').trim() || `Schůzka ${clock(p.start)}`, start: p.start, dur: p.dur, size: p.size,
+      target: p.target, targetSource: p.targetSource, state: 'local', error: null, owner: 'alex', gaps: p.gaps, sysOff: p.sysOff,
+      log: { local: p.start + p.dur } };
+    if (!findRec(r.id)) S.recordings.push(r);
+    S.pending = null;
+    if (S.sheet && S.sheet.type === 'save') S.sheet = null;
+    if (mode === 'send') sendRec(r);
+    return r;
+  }
+
+  function openWindow(tab, detail) {
+    S.view = 'window'; S.simOpen = false;
+    if (tab) S.tab = tab;
+    S.detail = detail || null;
+    if (S.sheet && S.sheet.type !== 'save' && S.sheet.type !== 'recovery') S.sheet = null;
+  }
+
+  function handoff(kind, r) {
+    const map = {
+      week: `Prohlížeč by otevřel ludone.cz/time-tracking › Přehled, týden ${S.day.week}. Simulace — nic se neotevřelo.`,
+      recs: 'Prohlížeč by otevřel LuDone › Nahrávky (týmový archiv). Simulace — nic se neotevřelo.',
+      rec: r ? `Prohlížeč by otevřel LuDone › Nahrávky › „${r.title}" s přepisem a analýzou. Simulace.` : '',
+      finder: r ? `Finder by ukázal „${r.title}" ve složce Nahrávky LuDone. Simulace.` : '',
+      sys: 'Nastavení systému by se otevřelo v Soukromí › Záznam obrazovky a systémového zvuku. Simulace.',
+      mic: 'macOS by se zeptal na přístup k mikrofonu. Simulace: povoleno.',
+      diag: 'Diagnostika by se uložila na Plochu jako LuDone-diagnostika-2026-09-23.zip — bez zvuku a bez přihlašovacích údajů. Simulace.',
+    };
+    toast(map[kind]);
+  }
+
+  function act(a, d) {
+    const wasSim = S.simOpen;
+    if (S.simOpen && a !== 'sim-toggle' && !a.startsWith('sim-')) S.simOpen = false;
+    const r = d && d.id ? findRec(d.id) : null;
+    switch (a) {
+      case 'noop': return;
+      case 'desk': if (wasSim) break; if (S.view === 'panel' && S.panelOpen && !S.sheet) S.panelOpen = false; else return; break;
+      case 'toggle-panel':
+        if (S.view === 'window') { S.view = 'panel'; S.panelOpen = true; }
+        else S.panelOpen = !S.panelOpen;
+        S.simOpen = false; break;
+      case 'open-window': openWindow(d.tab); break;
+      case 'close-window': S.view = 'panel'; S.panelOpen = false; S.detail = null;
+        if (S.sheet && S.sheet.type !== 'save' && S.sheet.type !== 'recovery') S.sheet = null;
+        toast(S.work || S.rec ? 'Okno zavřené. Měření a nahrávání běží dál v liště.' : 'Okno zavřené. LuDone zůstává v liště.');
+        break;
+      case 'tab': S.tab = d.tab; S.detail = null; S.edit = null; break;
+      case 'back': S.detail = null; S.edit = null; S.tab = S.backTo || 'den'; break;
+      case 'open-detail':
+        if (d.id === 'live' || d.id === 'live-rec') { S.view = 'panel'; S.panelOpen = true; break; }
+        if (d.id && d.id === (S.pending && S.pending.id)) { S.view = 'panel'; S.panelOpen = true; break; }
+        S.backTo = S.view === 'window' ? (S.tab === 'identita' ? 'nastaveni' : S.tab) : 'den';
+        openWindow(S.backTo, { kind: d.kind, id: d.id }); S.edit = null; break;
+
+      // simulace prostředí
+      case 'sim-toggle': S.simOpen = !S.simOpen; break;
+      case 'sim-net-off': S.net = false; S.netSince = S.now; S.simOpen = false; toast('Síť vypadla. Vše dál běží a ukládá se na Mac.'); break;
+      case 'sim-net-on': {
+        S.net = true; S.netSince = null; S.simOpen = false;
+        const nSeg = S.segments.filter(g => g.sync === 'pending').length;
+        const nRec = S.recordings.filter(x => x.state === 'queued').length;
+        processQueue();
+        toast(nSeg || nRec ? `Síť je zpět. Odesílám frontu: ${nSeg} úsek(y) času, ${nRec} nahrávk(y). Místní položky „Na Macu" zůstávají.` : 'Síť je zpět. Nic nečekalo ve frontě.');
+        break;
+      }
+      case 'sim-restart': simRestart(); break;
+      case 'sim-sys-lost': if (S.rec) { S.rec.sys = 'lost'; S.rec.lostAt = S.now; } S.simOpen = false; break;
+      case 'sim-auth': S.auth = 'expired'; S.simOpen = false; toast('Přihlášení vypršelo. Nic se neztratí, jen čeká.'); break;
+      case 'sim-limit': S.failNext = 'limit'; S.simOpen = false; toast('Příští odeslání server odmítne kvůli velikosti.'); break;
+      case 'sim-owner': {
+        const x = S.recordings.find(y => y.id === 'r-navrh') || S.recordings.find(y => y.state === 'local');
+        if (x) { x.state = 'failed'; x.error = 'owner'; x.owner = 'other'; x.failedAt = S.now; toast(`„${x.title}" podle serveru patří jinému účtu.`); }
+        else toast('Není žádná místní nahrávka, na které to ukázat.');
+        S.simOpen = false; break;
+      }
+      case 'sim-update': S.update = { stage: 'offered', progress: 0, version: S.update.version }; S.notif = { type: 'update' }; S.simOpen = false; break;
+      case 'sim-time': S.now += 600; S.simOpen = false; toast('Čas posunut o 10 minut.'); break;
+
+      // práce
+      case 'cmd-pick': {
+        const list = results();
+        const item = list[+d.i];
+        if (item) pickResult(item);
+        break;
+      }
+      case 'recent': chooseProject(d.id); break;
+      case 'draft-clear': S.draft = null; S.focus = 'cmd'; break;
+      case 'desc-chip': if (S.draft) { S.draft.desc = d.desc; S.focus = 'draft-desc'; } break;
+      case 'start': startDraft(); break;
+      case 'resume': {
+        S.result = null;
+        const g = lastSegment(); if (!g || S.work) break;
+        S.draft = { projectId: g.projectId, desc: g.desc, mode: 'start' }; startDraft(); break;
+      }
+      case 'stop-work': stopWork(false); break;
+      case 'switch-open': S.switching = true; S.cmd = ''; S.draft = null; S.focus = 'cmd'; break;
+      case 'switch-cancel': S.switching = false; S.draft = null; S.cmd = ''; break;
+      case 'earlier-open': S.sheet = { type: 'earlier', min: null, custom: '', err: null }; break;
+      case 'earlier-pick': S.sheet.min = +d.min; S.sheet.custom = ''; S.sheet.err = null; break;
+      case 'earlier-apply': applyEarlier(); break;
+      case 'result-close': S.result = null; break;
+
+      // zvuk
+      case 'rec-start': recStart(); break;
+      case 'rec-stop': recStop(); break;
+      case 'rec-target': if (S.rec) { S.rec.target = d.firm === 'none' ? null : d.firm; S.rec.targetSource = 'manual'; S.rec.notice = null; } break;
+      case 'notice-keep': if (S.rec) S.rec.notice = null; break;
+      case 'notice-change': if (S.rec && S.rec.notice) { S.rec.target = S.rec.notice.to; S.rec.targetSource = 'manual'; toast(`Cíl nahrávky změněn na ${FIRMS[S.rec.notice.to]}. Odešle se až po tvém potvrzení.`); S.rec.notice = null; } break;
+      case 'sys-retry': if (S.rec) { S.rec.gaps.push([S.rec.lostAt, S.now]); S.rec.sys = 'ok'; S.rec.lostAt = null; toast(`Systémový zvuk znovu nahrává. Mezera ${S.rec.gaps.length ? 'je zapsaná v detailu' : ''}.`); } break;
+      case 'sys-mic-only': if (S.rec) { S.rec.gaps.push([S.rec.lostAt, null]); S.rec.sys = 'off'; S.rec.lostAt = null; } break;
+      case 'fix-sys': handoff('sys'); later(1200, () => { S.settings.sys = 'ok'; toast('Systémový zvuk povolen. Platí od příští nahrávky.'); }); break;
+      case 'fix-mic': handoff('mic'); S.settings.mic = 'ok'; break;
+
+      // uložení nahrávky
+      case 'save-target': if (S.pending) { S.pending.target = d.firm === 'none' ? null : d.firm; S.pending.targetSource = 'manual'; } break;
+      case 'title-chip': if (S.pending) { S.pending.title = d.title; S.focus = 'save-title'; } break;
+      case 'save-send': {
+        if (!S.pending || !S.pending.target || S.auth !== 'ok') break;
+        const x = finalizePending('send');
+        toast(S.net ? `„${x.title}" se odesílá do ${FIRMS[x.target]}.` : `„${x.title}" je ve frontě. Odešle se, až bude síť.`);
+        break;
+      }
+      case 'save-local': {
+        const x = finalizePending('local');
+        if (x) toast(`„${x.title}" zůstává jen na Macu. Odeslat ji můžeš kdykoli z přehledu.`);
+        break;
+      }
+
+      // čeká na tebe
+      case 'login-start': S.login = 'waiting'; toast('Prohlížeč by otevřel přihlášení LuDone. Simulace dokončí návrat za chvíli.');
+        later(2200, () => {
+          if (S.login !== 'waiting') return;
+          S.login = null; S.auth = 'ok';
+          toast('Přihlášeno jako Alex Novák. Čas se synchronizuje sám; nahrávky odešleš ty.');
+          processQueue();
+        });
+        break;
+      case 'login-cancel': S.login = null; break;
+      case 'need-firm': if (r) r.pick = d.firm; break;
+      case 'need-send': if (r && r.pick) { r.target = r.pick; r.targetSource = 'manual'; sendRec(r); toast(`„${r.title}" se odesílá do ${FIRMS[r.target]}.`); } break;
+      case 'need-retry': case 'det-retry': case 'det-send':
+        if (r) { if (r.owner !== 'alex') break; sendRec(r); if (r.state !== 'failed') toast(`„${r.title}" ${S.net ? 'se odesílá' : 'čeká ve frontě'} do ${FIRMS[r.target]}.`); }
+        break;
+      case 'need-local': if (r) { r.state = 'local'; r.error = null; r.pick = null; toast(`„${r.title}" zůstává na Macu.`); } break;
+
+      // detail
+      case 'det-target': if (r && r.owner === 'alex' && (r.state === 'local' || r.state === 'failed')) {
+        const next = d.firm === 'none' ? null : d.firm;
+        if (r.target !== next) { r.target = next; r.targetSource = 'manual'; r.state = 'local'; r.error = null; r.pick = null; toast('Cíl změněn jen na tomto Macu. K odeslání do nové firmy je potřeba nové potvrzení.'); }
+      } break;
+      case 'det-verify': if (r) { if (!S.net) { toast('Bez sítě nejde ověřit. Zkusím to, až bude připojení.'); break; } r._v = false; toast('Ověřuji v LuDone…'); verifyLater(r); } break;
+      case 'det-web': if (r) handoff('rec', r); break;
+      case 'det-finder': if (r) handoff('finder', r); break;
+      case 'det-trash': if (r) S.sheet = { type: 'trash', id: r.id }; break;
+      case 'trash-confirm': {
+        const x = findRec(S.sheet.id);
+        if (x) {
+          const idx = S.recordings.indexOf(x);
+          S.recordings.splice(idx, 1); S.trashed = { r: x, idx };
+          if (S.detail && S.detail.id === x.id) { S.detail = null; S.tab = S.backTo || 'den'; }
+          S.sheet = null;
+          toast(`„${x.title}" je v Koši macOS.`, 'trash-undo', 'Vrátit');
+        }
+        break;
+      }
+      case 'trash-undo': if (S.trashed) { S.recordings.splice(S.trashed.idx, 0, S.trashed.r); toast(`„${S.trashed.r.title}" je zpět.`); S.trashed = null; } break;
+      case 'owner-open': if (r) S.sheet = { type: 'owner', id: r.id }; break;
+      case 'owner-confirm': { const x = findRec(S.sheet.id); if (x) { x.owner = 'alex'; x.state = 'local'; x.error = null; toast(`„${x.title}" je teď tvoje a zůstává na Macu. Odeslat ji můžeš hned.`); } S.sheet = null; break; }
+      case 'seg-edit': { const g = findSeg(d.id); if (g) S.edit = { id: g.id, from: clock(g.start), to: clock(g.end), desc: g.desc, err: null }; break; }
+      case 'seg-edit-cancel': S.edit = null; break;
+      case 'seg-edit-save': saveEdit(); break;
+      case 'add-open': S.add = { projectId: S.recent[0], from: '', to: '', desc: '', err: null }; S.focus = 'add-from'; break;
+      case 'add-cancel': S.add = null; break;
+      case 'add-save': saveAdd(); break;
+      case 'web-week': handoff('week'); break;
+      case 'web-recs': handoff('recs'); break;
+      case 'refresh-list': {
+        S.refreshedAt = S.now;
+        if (!S.net) { toast('Bez sítě: přehled ukazuje jen stav na Macu.'); break; }
+        S.recordings.filter(x => x.state === 'sent').forEach(x => { x.state = 'verified'; x.log.verified = S.now; });
+        toast('Přehled obnoven proti LuDone. Místní položky se nezměnily.');
+        break;
+      }
+      case 'filter': S.filter = d.f; break;
+
+      // aktualizace
+      case 'upd-details': S.notif = null; if (S.view !== 'panel') { S.view = 'panel'; } S.panelOpen = true; S.sheet = { type: 'update' }; break;
+      case 'notif-close': S.notif = null; break;
+      case 'upd-prepare':
+        S.sheet = null; S.update.stage = 'downloading'; S.update.progress = 0;
+        { const step = () => { S.update.progress += 20; if (S.update.progress >= 100) { S.update.stage = 'ready'; render(); return; } render(); later(380, step, false); }; later(380, step, false); }
+        break;
+      case 'upd-later': S.sheet = null; S.update.stage = 'later'; S.notif = null; toast('Připomenu se zítra ráno. Aktualizace je i v Nastavení › O aplikaci.'); break;
+      case 'upd-install':
+        if (S.update.stage !== 'ready') break;
+        if (!isIdle()) { toast(`Instalace počká, až skončí: ${busyList().join(', ')}.`); break; }
+        S.update.stage = 'installing';
+        later(1800, () => { S.update.stage = 'done'; S.update.version = '0.1.5'; toast('LuDone 0.1.5 · Práce a schůzky na jednom místě.'); });
+        break;
+
+      // obnova po restartu
+      case 'rv-choice': S.recovery.choice = d.c; S.recovery.err = null; if (d.c === 'custom') S.focus = 'rv-custom'; break;
+      case 'rv-confirm': confirmRecovery(); break;
+
+      // onboarding
+      case 'ob-login': S.onboarding.waiting = true;
+        later(1800, () => { if (!S.onboarding) return; S.onboarding.waiting = false; S.auth = 'ok'; S.onboarding.step = 2; });
+        break;
+      case 'ob-cancel': S.onboarding.waiting = false; break;
+      case 'ob-want': S.onboarding[d.w] = !S.onboarding[d.w]; break;
+      case 'ob-next':
+        if (S.onboarding.step === 2 && S.onboarding.wantRec) S.onboarding.step = 3;
+        else finishOnboarding();
+        break;
+      case 'ob-mic': S.settings.mic = 'ok'; toast('macOS: mikrofon povolen (simulace).'); break;
+      case 'ob-sys': handoff('sys'); later(1200, () => { S.settings.sys = 'ok'; }); break;
+      case 'ob-finish': finishOnboarding(); break;
+
+      // nastavení
+      case 'set-toggle': {
+        const k = d.k; S.settings[k] = !S.settings[k];
+        if (k === 'autoSend') {
+          S.settings.autoSince = S.settings.autoSend ? S.now : null;
+          toast(S.settings.autoSend ? `Automatické odeslání platí pro nahrávky od ${clock(S.now)}. Starší položky na Macu zůstávají, kde jsou.` : 'Automatické odeslání vypnuto.');
+        }
+        break;
+      }
+      case 'set-target': S.settings.target = d.v; break;
+      case 'set-theme': S.theme = d.v; break;
+      case 'set-export': handoff('diag'); break;
+      case 'set-check':
+        if (S.update.stage === 'none' || S.update.stage === 'later') { S.update.stage = 'offered'; toast('Je k dispozici 0.1.5. Nabídka je v panelu.'); }
+        else if (S.update.stage === 'done') toast('Máš nejnovější verzi 0.1.5.');
+        else toast('Aktualizace 0.1.5 už je nabídnutá v panelu.');
+        break;
+      case 'set-logout': S.sheet = { type: 'logout' }; break;
+      case 'logout-confirm': S.auth = 'none'; S.sheet = null; toast('Odhlášeno. Na Macu nic nezmizelo; odesílání a synchronizace stojí.'); break;
+      case 'set-identity': S.tab = 'identita'; S.detail = null; break;
+      case 'sheet-close': S.sheet = null; break;
+      case 'sheet-dismiss':
+        if (!S.sheet) break;
+        if (S.sheet.type === 'recovery') return;
+        if (S.sheet.type === 'save') { act('save-local', {}); return; }
+        S.sheet = null; break;
+      case 'toast-action': {
+        const ta = S.toast && S.toast.action; S.toast = null;
+        if (!ta) break;
+        if (ta.startsWith('open-rec:')) { act('open-detail', { kind: 'rec', id: ta.slice(9) }); return; }
+        act(ta, {}); return;
+      }
+      default: return;
+    }
+    render();
+  }
+
+  function chooseProject(pid, desc) {
+    const mode = S.switching ? 'switch' : 'start';
+    S.draft = { projectId: pid, desc: desc != null && desc !== '' ? desc : lastDesc(pid), mode };
+    S.cmd = ''; S.cmdIdx = 0; S.focus = 'draft-desc';
+  }
+  function pickResult(item) {
+    if (item.kind === 'project') { chooseProject(item.id, item.desc); return; }
+    S.cmd = '';
+    if (item.id === 'rec') recStart();
+    else if (item.id === 'day') openWindow('den');
+    else if (item.id === 'recs') openWindow('nahravky');
+    else if (item.id === 'settings') openWindow('nastaveni');
+  }
+
+  function applyEarlier() {
+    const sh = S.sheet, w = S.work; if (!w) { S.sheet = null; return; }
+    const minStart = earliestStart();
+    let ns = null;
+    if (sh.custom) { ns = parseTime(sh.custom); if (ns == null) { sh.err = 'Zadej čas jako 10:05.'; return; } }
+    else if (sh.min) ns = w.start - sh.min * 60;
+    if (ns == null) { sh.err = 'Vyber, o kolik dřív.'; return; }
+    if (ns < minStart) { sh.err = `Nejdřív ${clock(minStart)} — tam končí předchozí úsek.`; return; }
+    if (ns >= S.now) { sh.err = 'Začátek musí být před teď.'; return; }
+    w.start = ns; S.sheet = null;
+    toast(`Začátek posunut na ${clock(ns)}. Úsek má ${dur(S.now - ns)}.`);
+  }
+  function earliestStart() {
+    const prev = todaySegs().filter(g => g.end <= (S.work ? S.work.start : S.now)).sort((a, b) => b.end - a.end)[0];
+    return prev ? prev.end : t(6, 0);
+  }
+
+  function saveEdit() {
+    const e = S.edit; const g = findSeg(e.id); if (!g) { S.edit = null; return; }
+    const a = parseTime(e.from), b = parseTime(e.to);
+    if (a == null || b == null) { e.err = 'Časy zadej jako 9:45.'; return; }
+    if (b <= a) { e.err = 'Konec musí být po začátku.'; return; }
+    if (b > S.now) { e.err = 'Konec nemůže být v budoucnosti.'; return; }
+    const clash = todaySegs().find(x => x !== g && x.start < b && x.end > a) || (S.work && S.work.start < b);
+    if (clash) { e.err = 'Úsek by se překrýval s jiným. Rozdělení a přesuny udělej na webu.'; return; }
+    g.start = a; g.end = b; g.desc = e.desc.trim(); g.sync = 'pending'; S.edit = null;
+    processQueue();
+    toast('Úprava uložena na Macu a odesílá se do LuTracku.');
+  }
+  function saveAdd() {
+    const e = S.add;
+    const a = parseTime(e.from), b = parseTime(e.to);
+    if (a == null || b == null) { e.err = 'Časy zadej jako 9:45.'; return; }
+    if (b <= a) { e.err = 'Konec musí být po začátku.'; return; }
+    if (b > S.now) { e.err = 'Konec nemůže být v budoucnosti.'; return; }
+    const clash = todaySegs().find(x => x.start < b && x.end > a) || (S.work && S.work.start < b);
+    if (clash) { e.err = 'V tomhle čase už je jiný úsek.'; return; }
+    S.segments.push({ id: uid('s'), projectId: e.projectId, desc: e.desc.trim(), start: a, end: b, sync: 'pending', added: true });
+    S.add = null; processQueue();
+    toast(`Přidán úsek ${clock(a)}–${clock(b)}. Čeká na potvrzení serverem.`);
+  }
+
+  function simRestart() {
+    S.simOpen = false;
+    if (!S.work && !S.rec && !S.pending) { toast('Aplikace restartována. Nic neběželo, není co rozhodovat.'); return; }
+    const lastSeen = S.now, restartAt = S.now + 25 * 60;
+    if (S.rec) {
+      const d = lastSeen - S.rec.start;
+      S.recordings.push({ id: uid('r'), title: `Schůzka od ${clock(S.rec.start)} (obnoveno)`, start: S.rec.start, dur: d, size: sizeOf(d),
+        target: S.rec.target, targetSource: S.rec.targetSource, state: 'local', error: null, owner: 'alex', recovered: true, log: { local: restartAt } });
+      S.rec = null;
+    }
+    if (S.pending) finalizePending('local');
+    S.recovery = S.work ? { projectId: S.work.projectId, desc: S.work.desc, start: S.work.start, lastSeen, restartAt, prevDay: false, choice: 'last', custom: clock(lastSeen), again: false, err: null } : null;
+    S.work = null; S.draft = null; S.switching = false; S.now = restartAt; S.view = 'panel'; S.panelOpen = true;
+    S.sheet = S.recovery ? { type: 'recovery' } : null;
+    if (!S.recovery) toast('Po restartu je nahrávka bezpečně na Macu. O případném odeslání rozhodneš v přehledu. Žádný čas nevznikl.');
+  }
+
+  function confirmRecovery() {
+    const rv = S.recovery; if (!rv) return;
+    let end = null;
+    if (rv.choice === 'last') end = rv.lastSeen;
+    else if (rv.choice === 'custom') {
+      end = parseTime(rv.custom);
+      const max = rv.prevDay ? t(23, 59) : rv.restartAt;
+      if (end == null || end <= rv.start || end > max) { rv.err = `Zadej čas mezi ${clock(rv.start)} a ${clock(max)}.`; return; }
+    }
+    if (end != null) {
+      S.segments.push({ id: uid('s'), projectId: rv.projectId, desc: rv.desc, start: rv.start, end, sync: 'pending', prevDay: rv.prevDay });
+    }
+    const p = proj(rv.projectId);
+    S.recovery = null; S.sheet = null;
+    const again = document.getElementById('rv-again');
+    if (again ? again.checked : rv.again) {
+      S.work = { projectId: rv.projectId, desc: rv.desc, start: S.now };
+    }
+    processQueue();
+    toast(end != null
+      ? `${rv.prevDay ? 'Včerejší úsek' : 'Úsek'} ${p.name} ${clock(rv.start)}–${clock(end)} uložen (${dur(end - rv.start)}). ${S.auth === 'ok' ? 'Odesílá se.' : 'Čeká na přihlášení.'}`
+      : 'Rozpracovaný úsek neuložen. Nic se nevykázalo.');
+  }
+
+  function finishOnboarding() {
+    const o = S.onboarding;
+    S.onboarding = null; S.auth = 'ok'; S.firstRun = true; S.focus = o.wantTime ? 'cmd' : null;
+    if (!o.wantRec) { S.settings.mic = S.settings.mic === 'ok' ? 'ok' : 'ask'; }
+    if (S.settings.sys === 'ask') S.settings.sys = 'denied';
+  }
+
+  // ---------- vyhledávání ----------
+  function results() {
+    const raw = S.cmd.trim(); if (!raw) return [];
+    const words = raw.split(/\s+/);
+    const toks = words.map(norm);
+    const out = [];
+    PROJECTS.forEach(p => {
+      if (S.switching && S.work && S.work.projectId === p.id) return;
+      const hay = norm(`${p.name} ${FIRMS[p.firm]}`).split(/\s+/);
+      const matchedIdx = toks.map((tk, i) => (hay.some(w => w.startsWith(tk)) ? i : -1)).filter(i => i >= 0);
+      if (!matchedIdx.length) return;
+      const restIdx = toks.map((_, i) => i).filter(i => !matchedIdx.includes(i));
+      let desc = '';
+      if (restIdx.length) {
+        const rest = restIdx.map(i => toks[i]);
+        const known = p.descs.concat(S.segments.filter(g => g.projectId === p.id).map(g => g.desc))
+          .find(dsc => rest.every(tk => norm(dsc).split(/\s+/).some(w => w.startsWith(tk))));
+        desc = known || restIdx.map(i => words[i]).join(' ');
+      }
+      out.push({ kind: 'project', id: p.id, label: p.name, sub: FIRMS[p.firm], desc, score: matchedIdx.length });
+    });
+    out.sort((a, b) => b.score - a.score);
+    if (!S.switching) {
+      COMMANDS.forEach(c => {
+        if (toks.some(tk => tk.length >= 2 && c.keys.some(k => k.startsWith(tk)))) out.push({ kind: 'command', id: c.id, label: c.label, sub: c.sub });
+      });
+    }
+    return out.slice(0, 6);
+  }
+  function resultsHtml() {
+    if (!S.cmd.trim()) return '';
+    const rs = results();
+    if (!rs.length) return `<p class="note cmd-empty">Nic nenalezeno. Projekty ti přiděluje vedoucí na webu.</p>`;
+    if (S.cmdIdx >= rs.length) S.cmdIdx = 0;
+    return `<ul class="results" role="listbox" id="cmd-list" aria-label="Výsledky">${rs.map((x, i) => `
+      <li role="option" aria-selected="${i === S.cmdIdx}"><button type="button" class="result" data-action="cmd-pick" data-i="${i}" tabindex="-1">
+        <span>${x.kind === 'project' ? I.work : I.bolt}</span>
+        <span class="result-l">${esc(x.label)}${x.desc ? ` <span class="muted">· ${esc(x.desc)}</span>` : ''}</span>
+        <span class="result-s">${esc(x.sub)}</span></button></li>`).join('')}</ul>`;
+  }
+  function updateResults() {
+    const box = document.getElementById('cmd-results');
+    if (box) box.innerHTML = resultsHtml();
+    const extra = document.getElementById('idle-extras');
+    if (extra) extra.hidden = !!S.cmd.trim();
+    const inp = document.getElementById('cmd');
+    if (inp) inp.setAttribute('aria-expanded', String(!!S.cmd.trim()));
+  }
+
+  // ---------- drobné komponenty ----------
+  function chip(kind, text, title) {
+    const ic = { live: I.dot, rec: I.dot, ok: I.check, pending: I.wait, queued: I.wait, err: I.alert, local: I.mac, sent: I.up, neutral: '' }[kind] || '';
+    return `<span class="chip chip--${kind}"${title ? ` title="${esc(title)}"` : ''}>${ic}${esc(text)}</span>`;
+  }
+  function segChip(g, long) {
+    if (g.live) return chip('live', 'Běží místně');
+    if (g.sync === 'pending') return chip('pending', long ? 'Čeká na synchronizaci' : 'Čeká na sync', 'Uloženo na Macu, server ho ještě nepotvrdil');
+    if (g.sync === 'failed') return chip('err', 'Vyžaduje zásah');
+    return chip('ok', long ? 'Potvrzeno serverem' : 'Potvrzeno', 'LuTrack úsek přijal. Neznamená schválený výkaz.');
+  }
+  function recChip(r) {
+    if (r.live) return chip('rec', 'Nahrává');
+    if (r.unsaved) return chip('local', 'Na Macu · bez názvu');
+    switch (r.state) {
+      case 'local': return chip('local', 'Na Macu');
+      case 'queued': return chip('queued', S.net ? 'Ve frontě' : 'Ve frontě · bez sítě');
+      case 'uploading': return chip('queued', `Odesílá se ${r.progress || 0} %`);
+      case 'sent': return chip('sent', 'Odesláno');
+      case 'verified': return chip('ok', 'Ověřeno v LuDone');
+      case 'failed': return chip('err', 'Vyžaduje zásah');
+      default: return '';
+    }
+  }
+  function failReason(r) {
+    switch (r.error) {
+      case 'login': return S.auth === 'ok' ? `Odeslání v ${clock(r.failedAt || r.start)} odmítnuto kvůli vypršelému přihlášení. Už jsi přihlášený — stačí odeslat znovu.` : 'Přihlášení vypršelo. Nahrávka je celá na Macu a počká.';
+      case 'firm': return 'Chybí cílová firma. Bez ní se nahrávka neodešle; na Macu je v bezpečí.';
+      case 'limit': return 'Server nahrávku odmítl kvůli velikosti. Celá zůstává na Macu.';
+      case 'owner': return 'Server hlásí, že nahrávka patří jinému účtu LuDone. Odeslat ji můžeš až po převzetí.';
+      default: return 'Něco se nepovedlo.';
+    }
+  }
+  function firmSeg(action, value, opts) {
+    const o = opts || {};
+    const idAttr = o.id ? ` data-id="${esc(o.id)}"` : '';
+    const opt = (f, label) => `<button type="button" role="radio" aria-checked="${value === f || (f === 'none' && !value)}" data-action="${action}" data-firm="${f}"${idAttr}${o.disabled ? ' disabled' : ''}>${esc(label)}</button>`;
+    return `<div class="seg" role="radiogroup" aria-label="${esc(o.label || 'Cílová firma')}">${opt('sever', FIRMS.sever)}${opt('jih', FIRMS.jih)}${o.none ? opt('none', o.noneLabel || 'Nevybráno') : ''}</div>`;
+  }
+
+  // ---------- menu bar ----------
+  function mbState() {
+    return {
+      work: !!S.work, rec: !!S.rec,
+      attention: S.auth === 'expired' || !!S.recovery || !!(S.rec && S.rec.sys === 'lost'),
+      dim: S.auth === 'none',
+    };
+  }
+  function statusIcon(st, text) {
+    // Monochromatický znak lišty používá přesnou geometrii bílých tahů z LuDone.svg.
+    const glyph = `<svg class="mb-glyph${st.dim ? ' is-dim' : ''}" viewBox="0 0 1200 1200" aria-hidden="true"><g fill="currentColor"><rect x="363.43" y="479.05" width="615.7" height="103.05" transform="translate(-143.27 792.56) rotate(-56.15)"/><rect x="352.1" y="457.81" width="103.05" height="403.78" transform="translate(-369.09 627.47) rotate(-56.15)"/><rect x="618.07" y="771.07" width="403.78" height="103.05" transform="translate(-329.27 654.46) rotate(-36.77)"/></g>${st.rec ? '<circle cx="975" cy="975" r="160" fill="currentColor" stroke="var(--mb-solid)" stroke-width="90"/>' : ''}</svg>`;
+    const time = text != null ? text : (st.work ? hm(S.now - S.work.start) : st.rec ? hm(S.now - S.rec.start) : '');
+    const timeEl = time ? `<span${text == null ? ' data-clock="mb-time"' : ''}>${time}</span>` : '';
+    const al = st.attention ? `<svg class="mb-alert" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.2 11.3 10.6H.7Z" fill="currentColor"/><path d="M6 4.6v2.9" stroke="var(--mb-solid)" stroke-width="1.4" stroke-linecap="round"/><circle cx="6" cy="9.1" r=".8" fill="var(--mb-solid)"/></svg>` : '';
+    return glyph + timeEl + al;
+  }
+  function mbLabel(st) {
+    const parts = [];
+    if (st.dim) parts.push('nepřihlášeno');
+    if (st.work) parts.push(`měří čas ${hm(S.now - S.work.start)}`);
+    if (st.rec) parts.push('nahrává zvuk');
+    if (st.attention) parts.push('vyžaduje pozornost');
+    if (!parts.length) parts.push('nic neběží');
+    return `LuDone: ${parts.join(', ')}`;
+  }
+  function menubar() {
+    const st = mbState();
+    const b = (a, l, dis) => `<button type="button" role="menuitem" data-action="${a}"${dis ? ' disabled' : ''}>${esc(l)}</button>`;
+    const menu = !S.simOpen ? '' : `<div class="sim-menu" role="menu" aria-label="Simulace prostředí">
+      <div class="sim-cap">Simulace prostředí — nic skutečného se nestane</div>
+      ${S.net ? b('sim-net-off', 'Vypnout síť') : b('sim-net-on', 'Obnovit síť')}
+      ${b('sim-restart', 'Restartovat aplikaci (Mac spal 25 min)')}
+      ${b('sim-sys-lost', 'Odpojit systémový zvuk', !S.rec || S.rec.sys !== 'ok')}
+      ${b('sim-auth', 'Nechat vypršet přihlášení', S.auth !== 'ok')}
+      ${b('sim-limit', 'Server odmítne příští velikost')}
+      ${b('sim-owner', 'Nahrávka patří jinému účtu')}
+      ${b('sim-update', 'Nabídnout aktualizaci 0.1.5', !['none', 'later'].includes(S.update.stage))}
+      ${b('sim-time', 'Posunout čas o 10 minut')}
+    </div>`;
+    return `<header class="mb">
+      <div class="mb-left"><div class="sim"><button type="button" class="sim-btn" data-action="sim-toggle" aria-haspopup="menu" aria-expanded="${S.simOpen}">Návrh · simulace</button>${menu}</div></div>
+      <div class="mb-right">
+        <span class="mb-sys" role="img" aria-label="${S.net ? 'Wi-Fi připojeno' : 'Wi-Fi bez připojení'}">${S.net ? I.wifi : I.wifiOff}</span>
+        <button type="button" class="mb-item" data-action="toggle-panel" aria-label="${esc(mbLabel(st))}" aria-expanded="${S.view === 'panel' && S.panelOpen}">${statusIcon(st)}</button>
+        <span class="mb-clock" data-clock="mb-clock">${esc(S.day.short)}  ${clock(S.now)}</span>
+      </div></header>`;
+  }
+
+  // ---------- panel ----------
+  function panel() {
+    if (S.onboarding) return `<section class="panel" data-action="noop" aria-label="LuDone — první spuštění">${onboarding()}${sheetHtml()}</section>`;
+    const dual = S.work && S.rec;
+    const running = S.work || S.rec;
+    // živá činnost jde nahoru; samotné nahrávání nemá soutěžit s výběrem projektu
+    const lanes = S.rec && !S.work ? laneSound() + laneWork() : laneWork() + laneSound();
+    return `<section class="panel${dual ? ' is-dual' : ''}" data-action="noop" aria-label="LuDone panel">
+      <header class="p-head">
+        <span class="brand">${I.brand}<span>LuDone</span></span><span class="p-date">${esc(S.day.short)}</span>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="open-window" data-tab="den" title="Otevřít dnešek v okně">${I.win}Den</button>
+        <button type="button" class="icon-btn" data-action="open-window" data-tab="nahravky" aria-label="Nahrávky na tomto Macu" title="Nahrávky na tomto Macu">${I.wave}</button>
+        <button type="button" class="icon-btn" data-action="open-window" data-tab="nastaveni" aria-label="Nastavení" title="Nastavení">${I.gear}</button>
+      </header>
+      ${S.net ? '' : `<div class="band band--offline" role="status">${I.wifiOff}<span><b>Bez sítě od ${clock(S.netSince)}.</b> Měření i nahrávání běží a ukládá se na Mac. Synchronizace a odeslání počkají.</span></div>`}
+      <div class="p-scroll" data-scroll="panel">
+        ${S.result ? resultCard() : ''}
+        ${running || S.auth === 'ok' ? lanes + needs() : needs() + lanes}
+        ${today()}
+      </div>
+      ${updStrip()}
+      ${pFoot()}
+      ${sheetHtml()}
+    </section>`;
+  }
+
+  function laneWork() {
+    if (S.work && !S.switching && !(S.draft && S.draft.mode === 'switch')) return workLive();
+    if (S.work) return workSwitch();
+    return workIdle();
+  }
+
+  function cmdBox(ph) {
+    return `<div class="cmd">${I.search}<input id="cmd" type="text" autocomplete="off" spellcheck="false" placeholder="${esc(ph)}"
+      aria-label="Najít projekt nebo akci" role="combobox" aria-autocomplete="list" aria-controls="cmd-results" aria-expanded="${!!S.cmd.trim()}" value="${esc(S.cmd)}"><kbd aria-hidden="true">/</kbd></div>
+      <div id="cmd-results">${resultsHtml()}</div>`;
+  }
+
+  function recentList(excludeId) {
+    const ids = S.recent.filter(id => id !== excludeId);
+    return `<div class="mini-head">Přidělené projekty</div>${ids.map((id, i) => {
+      const p = proj(id);
+      return `<button type="button" class="recent-row" data-action="recent" data-id="${id}"><span>${esc(p.name)}</span><span class="muted">${esc(FIRMS[p.firm])}</span><kbd aria-label="klávesa ${i + 1}">${i + 1}</kbd></button>`;
+    }).join('')}`;
+  }
+
+  function workIdle() {
+    const last = lastSegment();
+    const signedOut = S.auth === 'none';
+    let body;
+    if (S.draft) body = draftBox();
+    else {
+      const resume = last ? `<button type="button" class="resume" data-action="resume">
+          <span class="resume-k">Pokračovat</span>
+          <span class="resume-t"><strong>${esc(proj(last.projectId).name)}</strong>${last.desc ? ` · ${esc(last.desc)}` : ''}</span>
+          <span class="resume-meta">skončeno ${clock(last.end)}</span></button>` : '';
+      const hint = S.firstRun ? `<div class="firstrun">Máš přidělené 3 projekty. Napiš část názvu a klidně i popis, třeba <b>sever příprava</b>. Napiš <b>nahr</b> a spustíš nahrávání.</div>` : '';
+      body = cmdBox('Projekt a co děláš…') + `<div id="idle-extras"${S.cmd.trim() ? ' hidden' : ''}>${hint}${resume}${S.rec ? '' : recentList()}</div>`;
+    }
+    return `<section class="lane lane--work" aria-labelledby="lw">
+      <div class="lane-head"><span id="lw">${I.work}Práce</span><span class="lane-state">${signedOut ? 'měří se jen na Macu, dokud se nepřihlásíš' : 'nic neběží'}</span></div>
+      ${body}
+    </section>`;
+  }
+
+  function draftBox() {
+    const d = S.draft, p = proj(d.projectId), sw = d.mode === 'switch';
+    const descs = Array.from(new Set(p.descs.concat(S.segments.filter(g => g.projectId === p.id).map(g => g.desc)).filter(Boolean)))
+      .filter(x => x !== d.desc);
+    let cons = '';
+    if (sw && S.work) {
+      const cur = proj(S.work.projectId);
+      cons = `<p class="note">Úsek <b>${esc(cur.name)}${S.work.desc ? ` · ${esc(S.work.desc)}` : ''}</b> se uzavře (${dur(S.now - S.work.start)}) a uloží s popisem. Nový začne teď.${S.rec ? ` Nahrávka běží dál${S.rec.target ? ` a dál míří do ${FIRMS[S.rec.target]}` : ''}.` : ''}</p>`;
+    }
+    return `<div class="draft">
+      <div class="draft-proj"><div><div class="proj-name">${esc(p.name)}</div><div class="proj-firm">${esc(FIRMS[p.firm])}${p.alloc ? ` · alokace: zbývá ${p.alloc}` : ''}</div></div>
+        <button type="button" class="linkbtn" data-action="draft-clear">Jiný projekt</button></div>
+      <label class="field"><span class="field-l">Co přesně děláš</span><input id="draft-desc" class="input" type="text" autocomplete="off" value="${esc(d.desc)}" placeholder="Krátký popis (nepovinné)"></label>
+      ${descs.length ? `<div class="chips">${descs.map(x => `<button type="button" class="chipbtn" data-action="desc-chip" data-desc="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}
+      ${cons}
+      <div class="actions"><button type="button" class="btn btn--primary btn--wide" data-action="start">${sw ? 'Přepnout teď' : 'Začít měřit'} <kbd>↩</kbd></button>
+        ${sw ? '<button type="button" class="btn" data-action="switch-cancel">Zrušit</button>' : ''}</div>
+    </div>`;
+  }
+
+  function workLive() {
+    const w = S.work, p = proj(w.projectId);
+    return `<section class="lane lane--work is-live" aria-labelledby="lw">
+      <div class="lane-head"><span id="lw">${I.work}Práce</span>${chip('live', S.net ? 'Běží místně' : 'Běží místně · bez sítě')}</div>
+      <div class="live-grid">
+        <div><div class="proj-name">${esc(p.name)}</div><div class="proj-firm">${esc(FIRMS[p.firm])}</div></div>
+        <div class="bigclock" data-clock="work" role="timer" aria-label="Uběhlý čas práce">${hms(S.now - w.start)}</div>
+      </div>
+      <input id="work-desc" class="desc-input" type="text" autocomplete="off" value="${esc(w.desc)}" placeholder="Doplň, co děláš" aria-label="Popis běžící práce">
+      <div class="lane-meta"><span>od ${clock(w.start)}</span><button type="button" class="linkbtn" data-action="earlier-open">Začal jsem dřív</button>${p.alloc ? `<span>alokace: zbývá ${p.alloc}</span>` : ''}</div>
+      <div class="actions">
+        <button type="button" class="btn" data-action="switch-open">Přepnout práci <kbd>P</kbd></button>
+        <button type="button" class="btn btn--primary" data-action="stop-work">${I.stop}Zastavit čas</button>
+      </div>
+    </section>`;
+  }
+
+  function workSwitch() {
+    const w = S.work, p = proj(w.projectId);
+    return `<section class="lane lane--work is-live" aria-labelledby="lw">
+      <div class="lane-head"><span id="lw">${I.work}Práce</span>${chip('live', 'Běží místně')}<span class="lane-state">přepínáš</span></div>
+      <div class="live-mini"><span><b>${esc(p.name)}</b>${w.desc ? ` · ${esc(w.desc)}` : ''}</span><span class="tnum" data-clock="work">${hms(S.now - w.start)}</span></div>
+      ${S.draft ? draftBox() : `${cmdBox('Na co přepnout…')}<div id="idle-extras"${S.cmd.trim() ? ' hidden' : ''}>${recentList(w.projectId)}</div>
+        <div class="actions"><button type="button" class="btn btn--sm" data-action="switch-cancel">Zrušit</button></div>`}
+    </section>`;
+  }
+
+  function srcLine(label, st, fix) {
+    if (st === 'ok') return `<span class="src is-ok">${I.check}${label}</span>`;
+    return `<span class="src is-bad">${I.alert}${label}: chybí oprávnění · <button type="button" class="linkbtn" data-action="${fix}">${fix === 'fix-mic' ? 'Povolit' : 'Opravit'}</button></span>`;
+  }
+
+  function laneSound() {
+    if (!S.rec) {
+      const micOk = S.settings.mic === 'ok';
+      let hint;
+      if (S.settings.target === 'sever' || S.settings.target === 'jih') hint = `Nevytvoří čas. Cíl: <b>${FIRMS[S.settings.target]}</b> (výchozí z Nastavení), před odesláním ho uvidíš.`;
+      else if (S.work && S.settings.target === 'suggest') hint = `Nevytvoří čas. Cíl navrhnu podle práce — <b>${FIRMS[proj(S.work.projectId).firm]}</b> — a potvrdíš ho po skončení.`;
+      else hint = 'Nevytvoří čas. Firmu vybereš po skončení, nebo nahrávku necháš jen na Macu.';
+      return `<section class="lane lane--sound" aria-labelledby="ls">
+        <div class="lane-head"><span id="ls">${I.wave}Zvuk</span><span class="lane-state">${micOk ? 'připraveno' : 'nepřipraveno'}</span></div>
+        <div class="sound-idle">
+          <button type="button" class="btn btn--rec" data-action="rec-start"${micOk ? '' : ' disabled aria-describedby="src-mic"'}><span class="dot" aria-hidden="true"></span>Nahrát schůzku <kbd>R</kbd></button>
+          <div class="sources" id="src-mic">${srcLine('Mikrofon', S.settings.mic, 'fix-mic')}${srcLine('Systémový zvuk', S.settings.sys, 'fix-sys')}</div>
+        </div>
+        <p class="note">${hint}</p>
+      </section>`;
+    }
+    const r = S.rec;
+    const srcTxt = r.targetSource === 'work' ? 'navrženo podle práce' : r.targetSource === 'default' ? 'výchozí z Nastavení' : r.target ? 'vybráno ručně' : 'rozhodneš po skončení';
+    let notice = '';
+    if (r.notice && !r.notice.same) {
+      notice = `<div class="callout callout--info" role="status"><b>Práce teď patří k ${esc(FIRMS[r.notice.to])}.</b> Nahrávka dál míří ${r.notice.from ? `do ${esc(FIRMS[r.notice.from])}` : 'bez cíle'} — nic se nepřesunulo ani neodeslalo.
+        <div class="actions"><button type="button" class="btn btn--sm" data-action="notice-keep">${r.notice.from ? `Ponechat ${esc(FIRMS[r.notice.from])}` : 'Nechat bez cíle'}</button><button type="button" class="btn btn--sm btn--ghost" data-action="notice-change">Změnit na ${esc(FIRMS[r.notice.to])}</button></div></div>`;
+    } else if (r.notice && r.notice.same) {
+      notice = `<div class="callout callout--info" role="status">Práci jsi přepnul na ${esc(r.notice.project)}. Nahrávka pokračuje beze změny${r.target ? `, cíl ${esc(FIRMS[r.target])}` : ''}. <button type="button" class="linkbtn" data-action="notice-keep">Rozumím</button></div>`;
+    }
+    const lost = r.sys === 'lost' ? `<div class="callout callout--warn" role="alert"><b>Systémový zvuk se odpojil v ${clock(r.lostAt)}.</b> Mikrofon nahrává dál, nic nezmizelo.
+      <div class="actions"><button type="button" class="btn btn--sm" data-action="sys-retry">Znovu připojit</button><button type="button" class="btn btn--sm btn--ghost" data-action="sys-mic-only">Pokračovat jen s mikrofonem</button></div></div>` : '';
+    const linked = S.work ? `Během práce ${esc(proj(S.work.projectId).name)} — čas běží dál sám.` : 'Žádný čas neběží a žádný nevznikne.';
+    return `<section class="lane lane--sound is-live" aria-labelledby="ls">
+      <div class="lane-head"><span id="ls">${I.wave}Zvuk</span>${chip('rec', 'Nahrává')}${S.net ? '' : '<span class="lane-state">ukládá se na Mac</span>'}</div>
+      <div class="live-grid">
+        <div><div class="proj-name">Schůzka od ${clock(r.start)}</div><div class="proj-firm">název doplníš po skončení</div></div>
+        <div class="bigclock" data-clock="rec" role="timer" aria-label="Délka nahrávky">${ms(S.now - r.start)}</div>
+      </div>
+      <div class="meters" aria-label="Úroveň zdrojů">
+        <span>Mikrofon</span><span class="meter" data-meter="mic"><i></i></span>
+        <span>Systém</span><span class="meter${r.sys !== 'ok' ? ' is-off' : ''}" data-meter="sys"><i></i></span>
+        ${r.sys === 'off' ? '<span class="meter-note muted">jen mikrofon</span>' : ''}
+      </div>
+      ${lost}${notice}
+      <div class="rec-target"><span class="rec-target-l">Kam ji pak poslat: <b>${r.target ? esc(FIRMS[r.target]) : 'nevybráno'}</b> · ${srcTxt}</span>
+        ${firmSeg('rec-target', r.target, { none: true, label: 'Cílová firma nahrávky' })}</div>
+      <div class="actions"><button type="button" class="btn btn--primary" data-action="rec-stop">${I.stop}Ukončit nahrávání <kbd>R</kbd></button></div>
+      <p class="note">${linked} Nic se neodešle bez tvého potvrzení.</p>
+    </section>`;
+  }
+
+  function needs() {
+    const items = [];
+    if (S.auth === 'expired') {
+      items.push(S.login === 'waiting'
+        ? `<div class="need need--warn"><span class="need-ic">${I.wait}</span><div class="need-body"><div class="need-title"><span class="spinner" aria-hidden="true"></span>Dokonči přihlášení v prohlížeči</div><p class="note">Po přihlášení se vrátíš sem. Nic dalšího se samo nestane.</p><div class="actions"><button type="button" class="btn btn--sm btn--ghost" data-action="login-cancel">Zrušit</button></div></div></div>`
+        : `<div class="need need--err"><span class="need-ic">${I.alert}</span><div class="need-body"><div class="need-title">Přihlášení vypršelo</div><p class="note">Na Macu je vše uložené. Synchronizace času a odesílání počkají.</p><div class="actions"><button type="button" class="btn btn--sm btn--primary" data-action="login-start">Přihlásit znovu</button></div></div></div>`);
+    }
+    S.recordings.filter(r => r.state === 'failed').forEach(r => {
+      let ctrl = '';
+      if (r.error === 'firm') {
+        ctrl = `${firmSeg('need-firm', r.pick || null, { id: r.id, label: `Firma pro ${r.title}` })}
+          <div class="actions">${r.pick ? `<button type="button" class="btn btn--sm btn--primary" data-action="need-send" data-id="${r.id}"${S.auth === 'ok' ? '' : ' disabled'}>Odeslat do ${esc(FIRMS[r.pick])}</button>` : ''}
+          <button type="button" class="btn btn--sm btn--ghost" data-action="need-local" data-id="${r.id}">Nechat na Macu</button></div>
+          ${r.pick && S.auth !== 'ok' ? '<p class="note">Odeslat půjde po přihlášení.</p>' : ''}`;
+      } else if (r.error === 'login') {
+        ctrl = S.auth === 'ok'
+          ? `<div class="actions"><button type="button" class="btn btn--sm btn--primary" data-action="need-retry" data-id="${r.id}">Odeslat do ${esc(FIRMS[r.target])}</button><button type="button" class="btn btn--sm btn--ghost" data-action="need-local" data-id="${r.id}">Nechat na Macu</button></div>`
+          : '';
+      } else if (r.error === 'limit') {
+        ctrl = `<div class="actions"><button type="button" class="btn btn--sm" data-action="need-retry" data-id="${r.id}">Zkusit znovu</button><button type="button" class="btn btn--sm btn--ghost" data-action="set-export">Exportovat diagnostiku</button></div>`;
+      } else if (r.error === 'owner') {
+        ctrl = `<div class="actions"><button type="button" class="btn btn--sm" data-action="owner-open" data-id="${r.id}">Převzít jako Alex Novák…</button></div>`;
+      }
+      items.push(`<div class="need need--${r.error === 'login' && S.auth === 'ok' ? 'warn' : 'err'}"><span class="need-ic">${I.alert}</span><div class="need-body">
+        <div class="need-title"><button type="button" class="linkbtn" data-action="open-detail" data-kind="rec" data-id="${r.id}">${esc(r.title)}</button> <span class="muted tnum" style="font-weight:400">· ${ms(r.dur)} · ${mb(r.size)}</span></div>
+        <p class="note">${esc(failReason(r))}</p>${ctrl}</div></div>`);
+    });
+    if (!items.length) return '';
+    return `<section class="needs" aria-labelledby="nd"><div class="sec-head"><h2 id="nd" class="sec-title">Čeká na tebe</h2><span class="sec-sub">${items.length}</span></div>${items.join('')}</section>`;
+  }
+
+  function rowHtml(it) {
+    if (it.kind === 'seg') {
+      const g = it.o, p = proj(g.projectId);
+      return `<li><button type="button" class="row" data-action="open-detail" data-kind="seg" data-id="${g.id}">
+        <span class="row-ic${g.live ? ' is-live-work' : ''}">${I.work}</span>
+        <span class="row-title">${esc(p.name)}</span>
+        <span class="row-right"><span>${clock(g.start)}–${g.live ? 'teď' : clock(g.end)}</span>${segChip(g)}</span>
+        <span class="row-sub">${esc(g.desc || 'bez popisu')} · ${g.live ? `<span data-clock="work-dur">${dur(S.now - g.start)}</span>` : dur(g.end - g.start)}${g.added ? ' · doplněno' : ''}</span></button></li>`;
+    }
+    const r = it.o;
+    const title = r.live ? 'Nahrávání' : r.title;
+    const linked = overlapSegs(r).length ? ' · při práci' : ' · bez práce';
+    const sub = r.live ? `běží · ${r.target ? FIRMS[r.target] : 'cíl nevybrán'}` : `${ms(r.dur)} · ${r.target ? FIRMS[r.target] : 'bez firmy'}${linked}`;
+    return `<li><button type="button" class="row" data-action="open-detail" data-kind="rec" data-id="${r.id}">
+      <span class="row-ic${r.live ? ' is-live-rec' : ''}">${I.wave}</span>
+      <span class="row-title">${esc(title)}</span>
+      <span class="row-right"><span>${r.prevDay ? 'včera ' : ''}${clock(r.start)}</span>${recChip(r)}</span>
+      <span class="row-sub">${esc(sub)}</span></button></li>`;
+  }
+  function dayItems(order) {
+    const list = daySegs().map(o => ({ kind: 'seg', o, start: o.start })).concat(dayRecs().map(o => ({ kind: 'rec', o, start: o.start })));
+    list.sort((a, b) => order === 'asc' ? a.start - b.start : b.start - a.start);
+    return list;
+  }
+
+  function today() {
+    const items = dayItems('desc');
+    const nRec = dayRecs().length;
+    return `<section class="today" aria-labelledby="td">
+      <div class="sec-head"><h2 id="td" class="sec-title">Dnes</h2><span class="sec-sub">práce <span data-clock="total">${dur(totalWork())}</span> · schůzky ${nRec}</span><span class="spacer"></span>
+        <button type="button" class="linkbtn" data-action="open-window" data-tab="den">Celý den</button></div>
+      ${items.length ? ribbon('compact') + `<ul class="rows">${items.slice(0, 5).map(rowHtml).join('')}</ul>` +
+        (items.length > 5 ? `<button type="button" class="linkbtn more" data-action="open-window" data-tab="den">+ ${items.length - 5} další v přehledu dne</button>` : '')
+        : '<p class="empty">Zatím nic. Jakmile začneš měřit nebo nahrávat, uvidíš tady stopu dne.</p>'}
+    </section>`;
+  }
+
+  function ribbon(size) {
+    const large = size === 'large';
+    const from = t(7, 0);
+    const to = large ? Math.max(t(15, 0), Math.ceil((S.now + 5400) / 3600) * 3600) : Math.max(t(13, 0), Math.ceil((S.now + 1800) / 3600) * 3600);
+    const span = to - from;
+    const P = x => (Math.max(from, Math.min(to, x)) - from) / span * 100;
+    const segEls = daySegs().map(g => {
+      const l = P(g.start), w = Math.max(P(g.end) - l, 0.7);
+      const cls = g.live ? 'is-live' : g.sync === 'pending' ? 'is-pending' : '';
+      const lab = `${proj(g.projectId).name}, ${clock(g.start)}–${g.live ? 'teď' : clock(g.end)}`;
+      return large
+        ? `<button type="button" class="rb-seg ${cls}" style="left:${l}%;width:${w}%" data-action="open-detail" data-kind="seg" data-id="${g.id}" aria-label="${esc(lab)}" title="${esc(lab)}">${w > 8 ? esc(proj(g.projectId).name) : ''}</button>`
+        : `<span class="rb-seg ${cls}" style="left:${l}%;width:${w}%"></span>`;
+    }).join('');
+    const recEls = dayRecs().map(r => {
+      const end = r.live ? S.now : recEnd(r);
+      const l = P(r.start), w = Math.max(P(end) - l, 0.7);
+      const cls = r.live ? 'is-live' : r.unsaved || r.state === 'local' ? 'is-local' : r.state === 'failed' ? 'is-err' : (r.state === 'queued' || r.state === 'uploading') ? 'is-queued' : '';
+      const lab = `${r.live ? 'Nahrávání' : r.title}, ${clock(r.start)}`;
+      return large && !r.live && !r.unsaved
+        ? `<button type="button" class="rb-rec ${cls}" style="left:${l}%;width:${w}%" data-action="open-detail" data-kind="rec" data-id="${r.id}" aria-label="${esc(lab)}" title="${esc(lab)}">${w > 8 ? esc(r.title) : ''}</button>`
+        : `<span class="rb-rec ${cls}" style="left:${l}%;width:${w}%" title="${esc(lab)}"></span>`;
+    }).join('');
+    const nowL = P(S.now);
+    const hours = [];
+    for (let h = 7; h * 3600 <= to; h++) hours.push(`<span style="left:${P(h * 3600)}%">${h}</span>`);
+    return `<div class="rb${large ? ' rb--large' : ''}"${large ? ' role="group" aria-label="Stopa dne: práce a zvuk"' : ' aria-hidden="true"'}>
+      <span class="rb-l">Práce</span><div class="rb-track">${segEls}<span class="rb-now" style="left:${nowL}%"></span></div>
+      <span class="rb-l">Zvuk</span><div class="rb-track">${recEls}<span class="rb-now" style="left:${nowL}%"></span></div>
+      <span></span><div class="rb-hours">${hours.join('')}</div>
+    </div>`;
+  }
+
+  function resultCard() {
+    const g = findSeg(S.result.segId);
+    if (!g) return '';
+    const recs = S.result.recIds.map(findRec).filter(Boolean);
+    const p = proj(g.projectId);
+    const segTxt = g.sync === 'confirmed' ? 'čas potvrdil server (schvaluje se na webu)' : 'čas je na Macu a čeká na potvrzení serverem';
+    const recTxt = recs.map(r => r.state === 'verified' ? `„${r.title}" je ověřená v LuDone` : r.state === 'local' ? `„${r.title}" zůstává na Macu` : r.state === 'failed' ? `„${r.title}" potřebuje tvůj krok` : `„${r.title}" se odesílá`).join('; ');
+    const web = recs.find(r => r.state === 'verified');
+    return `<section class="result-card" aria-labelledby="rs">
+      <div class="sec-head"><h2 id="rs" class="sec-title">Hotovo ${clock(g.start)}–${clock(g.end)}</h2><span class="spacer"></span><button type="button" class="icon-btn" data-action="result-close" aria-label="Zavřít souhrn">${I.x}</button></div>
+      <ul class="rows">${rowHtml({ kind: 'seg', o: g })}${recs.map(r => rowHtml({ kind: 'rec', o: r })).join('')}</ul>
+      <p class="note">Výsledek: ${segTxt}; ${recTxt}.</p>
+      <div class="actions"><button type="button" class="btn btn--sm" data-action="resume">Pokračovat v ${esc(p.name)}</button>
+        ${web ? `<button type="button" class="btn btn--sm btn--ghost" data-action="det-web" data-id="${web.id}">Přepis na webu ${I.ext}</button>` : ''}</div>
+    </section>`;
+  }
+
+  function updStrip() {
+    const u = S.update;
+    if (u.stage === 'offered') return `<div class="upd" role="status"><span class="upd-t"><b>Nová verze 0.1.5</b> · Práce a schůzky na jednom místě</span><button type="button" class="btn btn--sm" data-action="upd-details">Podrobnosti</button></div>`;
+    if (u.stage === 'downloading') return `<div class="upd" role="status"><span class="upd-t">Připravuji 0.1.5… nic nepřerušuji<div class="upd-bar"><i style="width:${u.progress}%"></i></div></span></div>`;
+    if (u.stage === 'ready') {
+      const busy = busyList();
+      return busy.length
+        ? `<div class="upd" role="status"><span class="upd-t"><b>0.1.5 je připravená.</b> Restart nabídnu, až skončí ${busy.join(', ')} a vše bude uložené.</span></div>`
+        : `<div class="upd" role="status"><span class="upd-t"><b>0.1.5 je připravená.</b> Nic neběží — můžeš ji nainstalovat.</span><button type="button" class="btn btn--sm btn--primary" data-action="upd-install">Aktualizovat a restartovat</button></div>`;
+    }
+    if (u.stage === 'installing') return `<div class="upd" role="status"><span class="upd-t"><span class="spinner" aria-hidden="true"></span>Instaluji 0.1.5 a restartuji…</span></div>`;
+    return '';
+  }
+
+  function pFoot() {
+    const nSeg = S.segments.filter(g => g.sync === 'pending').length;
+    const nQ = S.recordings.filter(r => r.state === 'queued' || r.state === 'uploading').length;
+    let line;
+    if (!S.net && !(nSeg + nQ)) line = `<span class="sync-ic is-warn">${I.wait}</span>Bez sítě · vše se ukládá na Mac`;
+    else if (!S.net) line = `<span class="sync-ic is-warn">${I.wait}</span>Bez sítě · ${nSeg + nQ} ${nSeg + nQ === 1 ? 'položka čeká' : nSeg + nQ > 1 && nSeg + nQ < 5 ? 'položky čekají' : 'položek čeká'} na Macu`;
+    else if (S.auth === 'expired') line = `<span class="sync-ic is-err">${I.alert}</span>Synchronizace stojí — přihlášení`;
+    else if (S.auth === 'none') line = `<span class="sync-ic is-warn">${I.wait}</span>Nepřihlášeno · vše zůstává na Macu`;
+    else if (nSeg || nQ) line = `<span class="sync-ic is-warn">${I.wait}</span>${nSeg ? `${nSeg} úsek čeká na sync` : ''}${nSeg && nQ ? ' · ' : ''}${nQ ? `${nQ} nahrávka se odesílá` : ''}`;
+    else line = `<span class="sync-ic is-ok">${I.check}</span>Čas potvrzen serverem`;
+    return `<footer class="p-foot">${line}<span class="spacer"></span><button type="button" class="linkbtn" data-action="open-window" data-tab="nastaveni" title="O aplikaci">LuDone ${S.update.version}</button></footer>`;
+  }
+
+  // ---------- listy ----------
+  function sheetHtml() {
+    if (!S.sheet) return '';
+    let inner = '';
+    const sh = S.sheet;
+    if (sh.type === 'save' && S.pending) {
+      const p = S.pending;
+      const firm = p.target ? FIRMS[p.target] : null;
+      const w = S.work;
+      let send;
+      if (!firm) send = 'Pro odeslání vyber firmu';
+      else if (S.auth !== 'ok') send = 'Odeslat půjde po přihlášení';
+      else if (!S.net) send = `Uložit a zařadit do fronty · ${firm}`;
+      else send = `Uložit a odeslat do ${firm}`;
+      const srcNote = p.targetSource === 'work' && w ? `Navrženo podle práce ${esc(proj(w.projectId).name)}. Projekt v LuTracku se tím nemění.`
+        : p.targetSource === 'work' ? 'Navrženo podle práce, která během schůzky běžela.' : p.targetSource === 'default' ? 'Výchozí firma z Nastavení.' : firm ? 'Vybráno ručně.' : 'Bez firmy ji lze nechat jen na Macu.';
+      const gapTxt = p.gaps && p.gaps.length ? ` · systémový zvuk chybí ${p.gaps.map(gp => `${clock(gp[0])}–${gp[1] ? clock(gp[1]) : 'konec'}`).join(', ')}` : '';
+      inner = `<h2 id="sh-t">Pojmenuj nahrávku</h2>
+        <p class="sheet-meta">${chip('local', 'Uloženo na Macu')}<span class="tnum">${ms(p.dur)} · ${mb(p.size)}</span><span>${p.sysOff ? 'jen mikrofon' : 'mikrofon + systémový zvuk v jednom souboru'}${gapTxt}</span></p>
+        <label class="field"><span class="field-l">Název</span><input id="save-title" class="input" type="text" autocomplete="off" value="${esc(p.title)}" placeholder="Schůzka ${clock(p.start)}"></label>
+        <div class="chips"><span class="note" style="margin:0;align-self:center">Dříve použité:</span>${KNOWN_TITLES.map(x => `<button type="button" class="chipbtn" data-action="title-chip" data-title="${esc(x)}" aria-pressed="${p.title === x}">${esc(x)}</button>`).join('')}</div>
+        <div class="field"><span class="field-l">Kam odeslat</span>${firmSeg('save-target', p.target, { none: true, noneLabel: 'Jen na Mac' })}<span class="note" style="margin-top:0">${srcNote}</span></div>
+        ${S.auth !== 'ok' ? `<div class="callout callout--err"><b>${S.auth === 'none' ? 'Nejsi přihlášený.' : 'Přihlášení vypršelo.'}</b> ${S.login === 'waiting' ? '<span class="spinner" aria-hidden="true"></span>Čekám na prohlížeč…' : `<div class="actions"><button type="button" class="btn btn--sm" data-action="login-start">Přihlásit znovu</button></div>`}</div>` : ''}
+        <div class="actions actions--stack">
+          <button type="button" class="btn btn--primary" data-action="save-send"${firm && S.auth === 'ok' ? '' : ' disabled'}>${esc(send)}</button>
+          <button type="button" class="btn" data-action="save-local">Nechat na Macu</button>
+        </div>
+        <p class="note">${w ? `Čas <b>${esc(proj(w.projectId).name)}</b> běží dál — tahle volba ho nezmění.` : 'Žádný čas se nevytvoří.'} Zavřením listu nahrávka zůstane na Macu.</p>`;
+    } else if (sh.type === 'earlier' && S.work) {
+      const w = S.work, p = proj(w.projectId), minS = earliestStart();
+      const opts = [5, 15, 30].filter(m => w.start - m * 60 >= minS);
+      inner = `<h2 id="sh-t">Začal jsem dřív</h2>
+        <p class="note">Posune začátek běžícího úseku <b>${esc(p.name)}</b> (teď od ${clock(w.start)}). Nejdřív lze ${clock(minS)}, kde končí předchozí úsek. Starší dny a cizí úseky se opravují na webu.</p>
+        <div class="chips">${opts.map(m => `<button type="button" class="chipbtn" data-action="earlier-pick" data-min="${m}" aria-pressed="${sh.min === m}">−${m} min · od ${clock(w.start - m * 60)}</button>`).join('') || '<span class="note">Kratší posun nejde — předchozí úsek končí těsně před.</span>'}</div>
+        <label class="field"><span class="field-l">Nebo přesně od</span><input id="earlier-custom" class="input input--time" type="text" inputmode="numeric" value="${esc(sh.custom)}" placeholder="${clock(minS)}"></label>
+        ${sh.err ? `<p class="err-text" role="alert">${esc(sh.err)}</p>` : ''}
+        <div class="actions"><button type="button" class="btn btn--primary" data-action="earlier-apply">Použít</button><button type="button" class="btn" data-action="sheet-close">Zrušit</button></div>`;
+    } else if (sh.type === 'trash') {
+      const r = findRec(sh.id);
+      if (!r) { S.sheet = null; return ''; }
+      const only = !['sent', 'verified'].includes(r.state);
+      inner = `<h2 id="sh-t">Přesunout „${esc(r.title)}" do Koše?</h2>
+        <p class="note tnum">${ms(r.dur)} · ${mb(r.size)} · pořízeno ${clock(r.start)}</p>
+        <div class="callout ${only ? 'callout--warn' : ''}">${only ? '<b>Tohle je jediná kopie.</b> V LuDone není.' : 'Kopie v LuDone zůstane. Smaže se jen soubor na tomto Macu.'}</div>
+        <p class="note">Z Koše macOS ji půjde vrátit, dokud ho nevysypeš.</p>
+        <div class="actions"><button type="button" class="btn btn--danger" data-action="trash-confirm">Přesunout „${esc(r.title)}" do Koše</button><button type="button" class="btn" data-action="sheet-close">Zrušit</button></div>`;
+    } else if (sh.type === 'owner') {
+      const r = findRec(sh.id);
+      if (!r) { S.sheet = null; return ''; }
+      inner = `<h2 id="sh-t">Převzít „${esc(r.title)}"?</h2>
+        <p class="note">Nahrávku pořídil tento Mac pod jiným účtem LuDone. Po převzetí bude tvoje (Alex Novák) a zůstane na Macu. Odeslat ji budeš moct až potom, sám.</p>
+        <div class="actions"><button type="button" class="btn btn--primary" data-action="owner-confirm">Převzít jako Alex Novák</button><button type="button" class="btn" data-action="sheet-close">Zrušit</button></div>`;
+    } else if (sh.type === 'update') {
+      const busy = busyList();
+      inner = `<h2 id="sh-t">LuDone 0.1.5</h2>
+        <p>Práce a schůzky na jednom místě.</p>
+        <p class="note">Máš 0.1.4. Instalace potřebuje restart aplikace, proto ho nabídnu, až nic nepoběží a vše bude uložené. Samotné zastavení měření nebo nahrávání nic nenainstaluje.</p>
+        ${busy.length ? `<div class="callout">Teď běží: <b>${busy.join(', ')}</b>. Příprava je nepřeruší.</div>` : ''}
+        <div class="actions"><button type="button" class="btn btn--primary" data-action="upd-prepare">Připravit instalaci</button><button type="button" class="btn" data-action="upd-later">Později</button></div>`;
+    } else if (sh.type === 'recovery' && S.recovery) {
+      const rv = S.recovery, p = proj(rv.projectId);
+      const max = rv.prevDay ? t(23, 59) : rv.restartAt;
+      const waiting = S.recordings.filter(r => r.state !== 'verified' && r.state !== 'sent');
+      const choice = (c, title, sub, extra) => `<button type="button" class="choice" role="radio" aria-checked="${rv.choice === c}" data-action="rv-choice" data-c="${c}"><span class="radio" aria-hidden="true"></span><span class="choice-t">${title}</span><span class="choice-s">${sub}</span>${extra || ''}</button>`;
+      inner = `<h2 id="sh-t">Po restartu: co s rozdělaným časem?</h2>
+        <p class="note">Měření <b>${esc(p.name)} · ${esc(rv.desc)}</b> zůstalo otevřené od ${rv.prevDay ? 'včerejška ' : ''}${clock(rv.start)}. Mac byl naposledy aktivní ${rv.prevDay ? 'včera ' : ''}v ${clock(rv.lastSeen)}. Nic jsem sám nevykázal.</p>
+        <div class="choices" role="radiogroup" aria-label="Konec úseku">
+          ${choice('last', `Ukončit v ${clock(rv.lastSeen)}`, `naposledy aktivní · ${dur(rv.lastSeen - rv.start)} · doporučeno`)}
+          ${choice('custom', 'Ukončit v jiném čase', `mezi ${clock(rv.start)} a ${clock(max)}`)}
+          ${choice('drop', 'Neukládat tento úsek', 'nic se nevykáže')}
+        </div>
+        ${rv.choice === 'custom' ? `<label class="field"><span class="field-l">Konec úseku</span><input id="rv-custom" class="input input--time" type="text" inputmode="numeric" value="${esc(rv.custom)}"></label>` : ''}
+        ${rv.err ? `<p class="err-text" role="alert">${esc(rv.err)}</p>` : ''}
+        <label class="check"><input type="checkbox" id="rv-again"${rv.again ? ' checked' : ''}> Hned pokračovat v ${esc(p.name)} od teď (${clock(S.now)})</label>
+        ${waiting.length ? `<div class="field"><span class="field-l">Nahrávky, které čekají — nic se neodešle samo</span><ul class="mini-list">${waiting.map(r => `<li><span>${esc(r.title)} <span class="muted tnum">${ms(r.dur)}</span></span>${recChip(r)}</li>`).join('')}</ul></div>` : ''}
+        <div class="actions actions--stack"><button type="button" class="btn btn--primary" data-action="rv-confirm">Potvrdit</button></div>
+        <p class="note">Čas mezi ${clock(rv.lastSeen)} a ${clock(rv.restartAt)}${rv.prevDay ? ' (noc)' : ''} se nezapočítá, pokud ho výslovně nezadáš.</p>`;
+    } else if (sh.type === 'logout') {
+      inner = `<h2 id="sh-t">Odhlásit se?</h2>
+        <p class="note">Nahrávky i neodeslaný čas zůstanou na tomto Macu. Odesílání a synchronizace se zastaví, dokud se znovu nepřihlásíš.${S.work || S.rec ? ' Běžící měření a nahrávání pokračují.' : ''}</p>
+        <div class="actions"><button type="button" class="btn btn--primary" data-action="logout-confirm">Odhlásit</button><button type="button" class="btn" data-action="sheet-close">Zrušit</button></div>`;
+    } else { return ''; }
+    return `<div class="sheet-back" data-action="sheet-dismiss"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" data-action="noop">${inner}</div></div>`;
+  }
+
+  // ---------- onboarding ----------
+  function onboarding() {
+    const o = S.onboarding;
+    if (o.step === 1) {
+      return `<div class="ob">
+        <div class="ob-step">Krok 1 ze 3</div>
+        <div style="margin-top:14px">${appIcon(56)}</div>
+        <h2>LuDone na Macu</h2>
+        <p>Měř čas v LuTracku a nahrávej schůzky, obojí z lišty. Týden, schvalování a přepisy zůstávají na webu.</p>
+        <div class="actions actions--stack" style="margin-top:20px">
+          ${o.waiting ? `<button type="button" class="btn" disabled><span class="spinner" aria-hidden="true"></span>Čekám na přihlášení v prohlížeči…</button><button type="button" class="btn btn--ghost" data-action="ob-cancel">Zrušit</button>`
+            : `<button type="button" class="btn btn--primary" data-action="ob-login">Přihlásit se přes LuDone</button>`}
+        </div>
+        <p class="note">Přihlášení proběhne v prohlížeči a vrátí tě sem. Heslo aplikace neuvidí.</p>
+      </div>`;
+    }
+    if (o.step === 2) {
+      const opt = (k, title, sub) => `<button type="button" class="ob-opt" role="checkbox" aria-checked="${o[k]}" data-action="ob-want" data-w="${k}"><span class="box">${o[k] ? I.check : ''}</span><b>${title}</b><span></span><small>${sub}</small></button>`;
+      return `<div class="ob">
+        <div class="ob-step">Krok 2 ze 3 · přihlášen jako Alex Novák</div>
+        <h2>Co budeš na Macu dělat?</h2>
+        <p>Podle toho se zeptám jen na oprávnění, která opravdu potřebuješ. Změníš to v Nastavení.</p>
+        <div class="ob-list">
+          ${opt('wantTime', 'Měřit čas', 'Máš přidělené 3 projekty. Nic dalšího nastavovat nemusíš.')}
+          ${opt('wantRec', 'Nahrávat schůzky', 'Mikrofon a systémový zvuk v jednom souboru.')}
+        </div>
+        <div class="actions actions--stack" style="margin-top:18px"><button type="button" class="btn btn--primary" data-action="ob-next"${o.wantTime || o.wantRec ? '' : ' disabled'}>${o.wantRec ? 'Pokračovat' : 'Hotovo'}</button></div>
+      </div>`;
+    }
+    const mic = S.settings.mic === 'ok', sys = S.settings.sys === 'ok';
+    return `<div class="ob">
+      <div class="ob-step">Krok 3 ze 3</div>
+      <h2>Oprávnění pro nahrávání</h2>
+      <p>macOS se zeptá sám. Bez systémového zvuku nahraješ jen svůj hlas.</p>
+      <div style="margin-top:14px;border-top:1px solid var(--line)">
+        <div class="perm"><b>Mikrofon</b><small>tvůj hlas</small>${mic ? chip('ok', 'Povoleno') : '<button type="button" class="btn btn--sm btn--primary" data-action="ob-mic">Povolit</button>'}</div>
+        <div class="perm"><b>Systémový zvuk</b><small>hlasy ostatních z hovoru · oprávnění Záznam obrazovky</small>${sys ? chip('ok', 'Povoleno') : '<button type="button" class="btn btn--sm" data-action="ob-sys">Otevřít Nastavení systému</button>'}</div>
+      </div>
+      <div class="actions actions--stack" style="margin-top:18px">
+        <button type="button" class="btn btn--primary" data-action="ob-finish"${mic ? '' : ' disabled'}>${sys ? 'Hotovo' : 'Hotovo, systémový zvuk později'}</button>
+      </div>
+      ${mic ? '' : '<p class="note">Bez mikrofonu nahrávat nejde. Čas měřit můžeš i tak — vrať se a vypni nahrávání.</p>'}
+    </div>`;
+  }
+
+  // ---------- okno ----------
+  function windowView() {
+    const tabs = [['den', 'Den'], ['nahravky', 'Nahrávky'], ['nastaveni', 'Nastavení']];
+    const active = S.detail ? S.backTo : (S.tab === 'identita' ? 'nastaveni' : S.tab);
+    let body;
+    if (S.detail) body = S.detail.kind === 'rec' ? recDetail() : segDetail();
+    else if (S.tab === 'den') body = dayView();
+    else if (S.tab === 'nahravky') body = recsView();
+    else if (S.tab === 'identita') body = identityView();
+    else body = settingsView();
+    return `<section class="win" data-action="noop" aria-label="LuDone — okno">
+      <div class="win-bar">
+        <div class="lights"><button type="button" class="light light--close" data-action="close-window" aria-label="Zavřít okno — měření i nahrávání běží dál"></button><span class="light light--min" aria-hidden="true"></span><span class="light light--zoom" aria-hidden="true"></span></div>
+        <div class="tabs" role="tablist" aria-label="Oblasti okna">${tabs.map(([k, l]) => `<button type="button" role="tab" class="tab" aria-selected="${active === k}" data-action="tab" data-tab="${k}">${l}</button>`).join('')}</div>
+        <div class="win-live">${winLive()}</div>
+      </div>
+      <div class="win-body" data-scroll="win-${S.detail ? 'detail' : S.tab}">${body}</div>
+      ${sheetHtml()}
+    </section>`;
+  }
+  function winLive() {
+    const parts = [];
+    if (S.work) parts.push(`<span><span class="d d--work" aria-hidden="true"></span>${esc(proj(S.work.projectId).name)} <span data-clock="work">${hms(S.now - S.work.start)}</span></span>`);
+    if (S.rec) parts.push(`<span><span class="d d--rec" aria-hidden="true"></span><span data-clock="rec">${ms(S.now - S.rec.start)}</span></span>`);
+    if (!parts.length) parts.push('<span class="muted">Nic neběží</span>');
+    return `<button type="button" class="live-pill" data-action="toggle-panel" title="Ovládání je v panelu v liště">${parts.join('')}</button>`;
+  }
+
+  function dayView() {
+    const nSeg = daySegs().length, nRec = dayRecs().length;
+    const add = S.add ? `<div class="panelish" style="margin-bottom:14px">
+        <div class="sec-head" style="margin-bottom:2px"><h2 class="sec-title">Přidat zapomenutý úsek · dnes</h2></div>
+        <div class="form-grid">
+          <label class="field"><span class="field-l">Projekt</span><select id="add-proj" class="input">${S.recent.map(id => `<option value="${id}"${S.add.projectId === id ? ' selected' : ''}>${esc(proj(id).name)}</option>`).join('')}</select></label>
+          <label class="field"><span class="field-l">Od</span><input id="add-from" class="input input--time" type="text" inputmode="numeric" placeholder="9:35" value="${esc(S.add.from)}"></label>
+          <label class="field"><span class="field-l">Do</span><input id="add-to" class="input input--time" type="text" inputmode="numeric" placeholder="9:44" value="${esc(S.add.to)}"></label>
+          <label class="field field--full"><span class="field-l">Popis</span><input id="add-desc" class="input" type="text" value="${esc(S.add.desc)}" placeholder="Co jsi dělal"></label>
+        </div>
+        ${S.add.err ? `<p class="err-text" role="alert">${esc(S.add.err)}</p>` : ''}
+        <div class="actions"><button type="button" class="btn btn--primary btn--sm" data-action="add-save">Přidat</button><button type="button" class="btn btn--sm" data-action="add-cancel">Zrušit</button></div>
+        <p class="note">Jen dnešek a jen tvoje úseky. Starší dny, cizí úseky a mazání potvrzeného času jsou na webu.</p>
+      </div>` : '';
+    return `<header class="v-head"><div><h1>${esc(S.day.long)}</h1>
+        <p class="v-sub">Práce <b data-clock="total">${dur(totalWork())}</b> · ${nSeg} ${nSeg === 1 ? 'úsek' : nSeg < 5 ? 'úseky' : 'úseků'} · schůzky ${nRec}</p></div>
+        ${S.add ? '' : '<button type="button" class="btn btn--sm" data-action="add-open">Přidat zapomenutý úsek</button>'}</header>
+      ${add}
+      <div class="panelish">${ribbon('large')}
+        <div class="rb-legend"><span><i style="background:var(--ok)"></i>běží</span><span><i style="background:color-mix(in oklab,var(--foreground) 72%,transparent)"></i>potvrzeno</span><span><i style="background:repeating-linear-gradient(135deg,var(--warn) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 1px var(--warn)"></i>čeká</span><span><i style="box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--foreground) 60%,transparent)"></i>jen na Macu</span><span><i style="background:color-mix(in oklab,var(--foreground) 45%,transparent)"></i>v LuDone</span></div>
+      </div>
+      <ul class="rows rows--day">${dayItems('asc').map(rowHtml).join('') || '<li><p class="empty">Dnes zatím nic.</p></li>'}</ul>
+      <div class="handoff">
+        <button type="button" class="handoff-row" data-action="web-week"><span><b>Týden, uzávěrka, export a schvalování</b><span class="note">LuTrack na webu · Přehled, týden ${S.day.week}</span></span>${I.ext}</button>
+        <button type="button" class="handoff-row" data-action="web-recs"><span><b>Přepisy, analýza a týmový archiv</b><span class="note">LuDone na webu · Nahrávky</span></span>${I.ext}</button>
+      </div>
+      <p class="note">Na Macu je dnešek a tvoje nahrávky. Alokace, výkazy a tým spravuje web.</p>`;
+  }
+
+  function recsView() {
+    const all = S.recordings.slice().sort((a, b) => (b.prevDay ? -1 : 0) - (a.prevDay ? -1 : 0) || b.start - a.start);
+    const groups = { all: () => true, local: r => r.state === 'local', queue: r => r.state === 'queued' || r.state === 'uploading', sent: r => r.state === 'sent', verified: r => r.state === 'verified', failed: r => r.state === 'failed' };
+    const labels = [['all', 'Vše'], ['local', 'Na Macu'], ['queue', 'Ve frontě'], ['sent', 'Odesláno'], ['verified', 'Ověřeno'], ['failed', 'Vyžaduje zásah']];
+    const list = all.filter(groups[S.filter] || groups.all);
+    const liveRows = S.filter === 'all' ? (S.rec ? rowHtml({ kind: 'rec', o: { id: 'live-rec', start: S.rec.start, dur: S.now - S.rec.start, live: true, target: S.rec.target } }) : '') +
+      (S.pending ? rowHtml({ kind: 'rec', o: Object.assign({}, S.pending, { unsaved: true, state: 'local', title: S.pending.title || `Schůzka ${clock(S.pending.start)}` }) }) : '') : '';
+    return `<header class="v-head"><div><h1>Nahrávky na tomto Macu</h1><p class="v-sub">Přehled obnoven ${clock(S.refreshedAt)}${S.net ? '' : ' · bez sítě, ukazuji stav na Macu'}</p></div>
+        <button type="button" class="btn btn--sm" data-action="refresh-list">Obnovit přehled</button></header>
+      <div class="filters" role="group" aria-label="Filtr podle stavu">${labels.map(([k, l]) => { const n = all.filter(groups[k]).length; return `<button type="button" class="chipbtn" data-action="filter" data-f="${k}" aria-pressed="${S.filter === k}">${l} ${n}</button>`; }).join('')}</div>
+      <ul class="rows rows--day">${liveRows}${list.map(r => rowHtml({ kind: 'rec', o: r })).join('')}${!list.length && !liveRows ? '<li><p class="empty">V tomhle stavu nic není.</p></li>' : ''}</ul>
+      <details class="legend"><summary>Co znamenají stavy</summary><dl>
+        <dt>${chip('local', 'Na Macu')}</dt><dd>Soubor je jen na tomto Macu. Nic se neodešle bez tvé volby.</dd>
+        <dt>${chip('queued', 'Ve frontě')}</dt><dd>Čeká na síť nebo na řadu a odešle se sám — už jsi ho poslal.</dd>
+        <dt>${chip('sent', 'Odesláno')}</dt><dd>Server soubor přijal. Ještě neověřeno, že je v LuDone celý.</dd>
+        <dt>${chip('ok', 'Ověřeno v LuDone')}</dt><dd>LuDone potvrdil délku i velikost. Přepis a analýza jsou na webu.</dd>
+        <dt>${chip('err', 'Vyžaduje zásah')}</dt><dd>Chybí firma, přihlášení, nebo server odmítl. U položky je další krok.</dd>
+      </dl></details>
+      <p class="note">Kopie ověřené v LuDone se z Macu mažou ${S.settings.retention === 'never' ? 'nikdy' : `po ${S.settings.retention} dnech`}; nic neodeslaného se nesmaže. <button type="button" class="linkbtn" data-action="tab" data-tab="nastaveni">Změnit</button></p>`;
+  }
+
+  function recDetail() {
+    const r = findRec(S.detail.id);
+    if (!r) return `<button type="button" class="back" data-action="back">${I.back}Zpět</button><p class="empty">Nahrávka už tu není.</p>`;
+    const editable = r.state === 'local' || r.state === 'failed';
+    const steps = [['local', 'Uloženo na Macu'], ['queued', 'Ve frontě'], ['sent', 'Odesláno'], ['verified', 'Ověřeno v LuDone']];
+    const pos = { local: 0, queued: 1, uploading: 1, sent: 2, verified: 3, failed: 1 }[r.state];
+    const expl = {
+      local: 'Soubor je jen na tomto Macu. Nic se neodešle bez tvé volby.',
+      queued: S.net ? 'Čeká na odeslání.' : 'Čeká na síť. Odešle se sám, jakmile bude připojení.',
+      uploading: `Odesílá se… ${r.progress || 0} %`,
+      sent: 'Server soubor přijal. Ověření, že je v LuDone celý, ještě neproběhlo.',
+      verified: 'LuDone potvrdil délku i velikost.',
+      failed: failReason(r),
+    }[r.state];
+    const stepsHtml = steps.map(([k, l], i) => {
+      const done = i < pos || (i === pos && r.state === 'verified') || (i === 0 && pos > 0);
+      const cur = i === pos && r.state !== 'verified';
+      const fail = cur && r.state === 'failed';
+      const cls = fail ? 'is-fail' : done ? 'is-done' : cur ? 'is-current' : '';
+      const time = r.log[k] != null && (done || cur) ? clock(r.log[k]) : '';
+      return `<li class="step ${cls}"><span class="step-m">${fail ? I.alert : done ? I.check : ''}</span><span>${l}${fail ? ' — vyžaduje zásah' : ''}</span><span class="step-t">${time}</span>${cur ? `<span class="step-x">${esc(expl)}</span>` : ''}</li>`;
+    }).join('');
+    const segs = overlapSegs(r);
+    let primary = '';
+    if (r.owner !== 'alex') primary = `<button type="button" class="btn btn--primary" data-action="owner-open" data-id="${r.id}">Převzít jako Alex Novák…</button>`;
+    else if (r.state === 'local' || (r.state === 'failed' && r.error === 'firm')) primary = r.target ? `<button type="button" class="btn btn--primary" data-action="det-send" data-id="${r.id}"${S.auth === 'ok' ? '' : ' disabled'}>Odeslat do ${esc(FIRMS[r.target])}</button>` : '<span class="note" style="margin:0">Pro odeslání vyber firmu výš.</span>';
+    else if (r.state === 'failed' && r.error === 'login') primary = S.auth === 'ok' ? `<button type="button" class="btn btn--primary" data-action="det-retry" data-id="${r.id}">Odeslat znovu do ${esc(FIRMS[r.target])}</button>` : '<button type="button" class="btn btn--primary" data-action="login-start">Přihlásit znovu</button>';
+    else if (r.state === 'failed' && r.error === 'limit') primary = `<button type="button" class="btn btn--primary" data-action="det-retry" data-id="${r.id}">Zkusit znovu</button><button type="button" class="btn" data-action="set-export">Exportovat diagnostiku</button>`;
+    else if (r.state === 'sent') primary = `<button type="button" class="btn btn--primary" data-action="det-verify" data-id="${r.id}">Ověřit v LuDone</button>`;
+    else if (r.state === 'verified') primary = `<button type="button" class="btn btn--primary" data-action="det-web" data-id="${r.id}">Otevřít v LuDone ${I.ext}</button>`;
+    const loginNote = S.auth !== 'ok' && (r.state === 'local' || r.state === 'failed') && r.owner === 'alex' && r.error !== 'login'
+      ? `<div class="callout callout--err"><b>Přihlášení vypršelo.</b> Odeslat půjde po přihlášení. ${S.login === 'waiting' ? '<span class="spinner" aria-hidden="true"></span>čekám na prohlížeč…' : '<button type="button" class="linkbtn" data-action="login-start">Přihlásit znovu</button>'}</div>` : '';
+    const gaps = r.gaps && r.gaps.length ? `<p class="note">Systémový zvuk chybí ${r.gaps.map(gp => `${clock(gp[0])}–${gp[1] ? clock(gp[1]) : 'konec'}`).join(', ')}; mikrofon je celý.</p>` : '';
+    return `<button type="button" class="back" data-action="back">${I.back}${S.backTo === 'nahravky' ? 'Nahrávky' : S.backTo === 'nastaveni' ? 'Nastavení' : 'Den'}</button>
+      ${editable && r.owner === 'alex' ? `<input id="det-title" class="title-input" type="text" value="${esc(r.title)}" aria-label="Název nahrávky">` : `<h1>${esc(r.title)}</h1>`}
+      <p class="v-sub tnum">${r.prevDay ? 'včera ' : ''}${clock(r.start)}–${clock(recEnd(r))} · ${ms(r.dur)} · ${mb(r.size)} · ${r.sysOff ? 'jen mikrofon' : 'mikrofon + systémový zvuk, jeden soubor'}</p>
+      ${gaps}
+      <dl class="facts">
+        <dt>Kam</dt><dd>${editable && r.owner === 'alex' ? firmSeg('det-target', r.target, { id: r.id, label: 'Cílová firma' }) + `<p class="note">${r.targetSource === 'work' ? 'Navrženo podle práce. ' : ''}Změna platí jen pro tuto nahrávku; nic neodešle.</p>`
+          : `${r.target ? esc(FIRMS[r.target]) : 'nevybráno'}<p class="note">Odeslanou nahrávku přesouvá mezi firmami správce na webu.</p>`}</dd>
+        <dt>Stav</dt><dd><ol class="steps">${stepsHtml}</ol></dd>
+        <dt>Souvislost s prací</dt><dd>${segs.length ? segs.map(g => `<button type="button" class="linkbtn" data-action="open-detail" data-kind="seg" data-id="${g.id}">${esc(proj(g.projectId).name)}${g.desc ? ` · ${esc(g.desc)}` : ''}</button> <span class="muted tnum">${clock(g.start)}–${g.live ? 'teď' : clock(g.end)}</span>`).join('<br>')
+          + '<p class="note">Jen časový překryv. Nahrávka čas nevytvořila ani nezměnila.</p>' : 'Pořízeno bez práce — žádný čas nevznikl.'}</dd>
+        <dt>Vlastník</dt><dd>${r.owner === 'alex' ? 'Alex Novák' : 'jiný účet LuDone na tomto Macu'}</dd>
+      </dl>
+      ${loginNote}
+      <div class="actions">${primary}
+        <button type="button" class="btn" data-action="det-finder" data-id="${r.id}">Ukázat ve Finderu</button>
+        <button type="button" class="btn btn--ghost-danger" data-action="det-trash" data-id="${r.id}"${r.state === 'uploading' ? ' disabled title="Počkej, až se dokončí odesílání"' : ''}>Přesunout do Koše…</button>
+      </div>
+      <p class="note">Přepis, analýza a sdílení s týmem se otevírají na webu.</p>`;
+  }
+
+  function segDetail() {
+    const id = S.detail.id;
+    const g = id === 'live' ? daySegs().find(x => x.live) : findSeg(id);
+    if (!g) return `<button type="button" class="back" data-action="back">${I.back}Zpět</button><p class="empty">Úsek už tu není.</p>`;
+    const p = proj(g.projectId);
+    const recs = overlapRecs(g);
+    let explain;
+    if (g.live) explain = 'Měří se na tomto Macu. Po zastavení se odešle do LuTracku.';
+    else if (g.sync === 'pending') explain = !S.net ? 'Uloženo na Macu, čeká na síť.' : S.auth !== 'ok' ? 'Uloženo na Macu, čeká na přihlášení.' : 'Odesílá se do LuTracku.';
+    else explain = `LuTrack ho přijal v ${clock(g.confirmedAt || g.end)}. Schválení výkazu probíhá na webu.`;
+    const edit = S.edit && S.edit.id === g.id ? `<div class="panelish" style="margin-top:16px">
+        <div class="form-grid" style="grid-template-columns:0.5fr 0.5fr 2fr">
+          <label class="field"><span class="field-l">Od</span><input id="ed-from" class="input input--time" type="text" inputmode="numeric" value="${esc(S.edit.from)}"></label>
+          <label class="field"><span class="field-l">Do</span><input id="ed-to" class="input input--time" type="text" inputmode="numeric" value="${esc(S.edit.to)}"></label>
+          <label class="field"><span class="field-l">Popis</span><input id="ed-desc" class="input" type="text" value="${esc(S.edit.desc)}"></label>
+        </div>
+        ${S.edit.err ? `<p class="err-text" role="alert">${esc(S.edit.err)}</p>` : ''}
+        <div class="actions"><button type="button" class="btn btn--primary btn--sm" data-action="seg-edit-save">Uložit úpravu</button><button type="button" class="btn btn--sm" data-action="seg-edit-cancel">Zrušit</button></div>
+        <p class="note">Úprava se znovu pošle serverem ke potvrzení.</p></div>` : '';
+    const actions = g.live
+      ? `<button type="button" class="btn btn--primary" data-action="toggle-panel">Ovládat v panelu</button>`
+      : g.prevDay ? '' : `<button type="button" class="btn" data-action="seg-edit" data-id="${g.id}">Upravit čas a popis</button>`;
+    return `<button type="button" class="back" data-action="back">${I.back}${S.backTo === 'nahravky' ? 'Nahrávky' : 'Den'}</button>
+      <h1>${esc(p.name)}</h1>
+      <p class="v-sub">${esc(FIRMS[p.firm])} · ${esc(g.desc || 'bez popisu')}</p>
+      <dl class="facts">
+        <dt>Čas</dt><dd class="tnum">${clock(g.start)}–${g.live ? 'teď' : clock(g.end)} · ${g.live ? `<span data-clock="work-dur">${dur(S.now - g.start)}</span>` : dur(g.end - g.start)}</dd>
+        <dt>Stav</dt><dd>${segChip(g, true)}<p class="note">${esc(explain)}</p></dd>
+        ${p.alloc ? `<dt>Alokace</dt><dd>zbývá ${p.alloc}<p class="note">Informace z webu. Alokace se na Macu nemění.</p></dd>` : ''}
+        <dt>Schůzky během úseku</dt><dd>${recs.length ? recs.map(r => r.live ? 'Nahrávání právě běží' : `<button type="button" class="linkbtn" data-action="open-detail" data-kind="rec" data-id="${r.id}">${esc(r.title)}</button> ${recChip(r)}`).join('<br>') : 'žádné'}</dd>
+      </dl>
+      ${edit}
+      ${S.edit && S.edit.id === g.id ? '' : `<div class="actions">${actions}<button type="button" class="btn btn--ghost" data-action="web-week">Smazat nebo rozdělit na webu ${I.ext}</button></div>`}
+      <p class="note">„Potvrzeno serverem" znamená, že LuTrack úsek přijal. Neznamená schválený výkaz.</p>`;
+  }
+
+  function settingsView() {
+    const sw = (k, label) => `<button type="button" class="switch" role="switch" aria-checked="${!!S.settings[k]}" data-action="set-toggle" data-k="${k}"><span class="sw" aria-hidden="true"></span>${label}</button>`;
+    const tgt = [['suggest', 'Navrhnout podle práce'], ['sever', `Vždy ${FIRMS.sever}`], ['jih', `Vždy ${FIRMS.jih}`], ['ask', 'Vždy se zeptat']];
+    const u = S.update.stage;
+    return `<header class="v-head"><div><h1>Nastavení</h1><p class="v-sub">Běžná práce sem chodit nemusí. Cokoli z denního provozu se opravuje přímo v panelu.</p></div></header>
+      <section class="set-group"><h2>Účet</h2>
+        <div class="set-row"><span class="set-label">Přihlášení</span><div class="set-ctrl">${S.auth === 'ok' ? 'Alex Novák · přes LuDone' : S.auth === 'expired' ? 'Přihlášení vypršelo' : 'Nepřihlášeno'}
+          <div class="actions" style="margin-top:6px">${S.auth === 'ok' ? '<button type="button" class="btn btn--sm" data-action="set-logout">Odhlásit…</button>' : '<button type="button" class="btn btn--sm btn--primary" data-action="login-start">Přihlásit</button>'}</div></div></div>
+      </section>
+      <section class="set-group"><h2>Nahrávání</h2>
+        <div class="set-row"><span class="set-label">Cílová firma</span><div class="set-ctrl"><div class="choices" role="radiogroup" aria-label="Výchozí cílová firma" style="margin-top:0">${tgt.map(([v, l]) => `<button type="button" class="choice" role="radio" aria-checked="${S.settings.target === v}" data-action="set-target" data-v="${v}"><span class="radio" aria-hidden="true"></span><span class="choice-t" style="font-weight:500">${l}</span></button>`).join('')}</div>
+          <p class="note">Firmu vždy uvidíš a změníš před odesláním. Projekt v LuTracku a firma nahrávky jsou dvě různá pole.</p></div></div>
+        <div class="set-row"><span class="set-label">Automatické odeslání</span><div class="set-ctrl">${sw('autoSend', 'Po skončení nahrávku rovnou odeslat')}
+          <p class="note">${S.settings.autoSend ? `Zapnuto od ${clock(S.settings.autoSince)}. ` : ''}Platí jen pro nové nahrávky s vybranou firmou. Starší položky na Macu se neodešlou.</p></div></div>
+        <div class="set-row"><span class="set-label">Zdroje</span><div class="set-ctrl sources">${srcLine('Mikrofon', S.settings.mic, 'fix-mic')}${srcLine('Systémový zvuk', S.settings.sys, 'fix-sys')}</div></div>
+        <div class="set-row"><span class="set-label">Kopie na Macu</span><div class="set-ctrl"><select id="set-retention" class="input" style="width:auto">
+          <option value="14"${S.settings.retention === '14' ? ' selected' : ''}>Smazat 14 dní po ověření</option>
+          <option value="30"${S.settings.retention === '30' ? ' selected' : ''}>Smazat 30 dní po ověření</option>
+          <option value="never"${S.settings.retention === 'never' ? ' selected' : ''}>Nemazat</option></select>
+          <p class="note">Maže jen nahrávky ověřené v LuDone. Nic neodeslaného se nesmaže.</p></div></div>
+      </section>
+      <section class="set-group"><h2>Mac</h2>
+        <div class="set-row"><span class="set-label">Při přihlášení</span><div class="set-ctrl">${sw('login', 'Spustit LuDone do lišty')}</div></div>
+        <div class="set-row"><span class="set-label">Ikona v Docku</span><div class="set-ctrl"><select id="set-dock" class="input" style="width:auto">
+          <option value="window"${S.settings.dock === 'window' ? ' selected' : ''}>Jen když je otevřené okno</option>
+          <option value="always"${S.settings.dock === 'always' ? ' selected' : ''}>Vždy</option></select>
+          <p class="note">Aplikace žije v liště. Zavření okna ani panelu nic nezastaví.</p></div></div>
+        <div class="set-row"><span class="set-label">Vzhled</span><div class="set-ctrl"><div class="seg" role="radiogroup" aria-label="Téma">${[['light', 'Světlý'], ['professional', 'Profesionální'], ['dark', 'Tmavý']].map(([v, l]) => `<button type="button" role="radio" aria-checked="${S.theme === v}" data-action="set-theme" data-v="${v}">${l}</button>`).join('')}</div></div></div>
+        <div class="set-row"><span class="set-label">Klávesy</span><div class="set-ctrl kbd-list">
+          <kbd>⌥⌘L</kbd><span>otevřít panel odkudkoli</span><kbd>/</kbd><span>hledat projekt nebo akci</span><kbd>1–3</kbd><span>vybrat přidělený projekt</span><kbd>R</kbd><span>nahrávat / ukončit nahrávání</span><kbd>P</kbd><span>přepnout práci</span><kbd>Esc</kbd><span>zavřít panel, nic nezastaví</span></div></div>
+      </section>
+      <section class="set-group"><h2>O aplikaci</h2>
+        <div class="set-row"><span class="set-label">Verze</span><div class="set-ctrl">LuDone ${S.update.version}${u === 'ready' ? ' · 0.1.5 připravená' : u === 'offered' ? ' · 0.1.5 k dispozici' : ''}<div class="actions" style="margin-top:6px"><button type="button" class="btn btn--sm" data-action="set-check">Zkontrolovat aktualizace</button></div></div></div>
+        <div class="set-row"><span class="set-label">Diagnostika</span><div class="set-ctrl"><button type="button" class="btn btn--sm" data-action="set-export">Exportovat diagnostiku…</button><p class="note">Uloží protokol bez zvuku a bez přihlašovacích údajů. Komu ho pošleš, je na tobě.</p></div></div>
+        <div class="set-row"><span class="set-label">Ikona a identita</span><div class="set-ctrl"><button type="button" class="btn btn--sm" data-action="set-identity">Zobrazit ikony a témata</button></div></div>
+      </section>`;
+  }
+
+  function identityView() {
+    const states = [
+      [{ work: false, rec: false, attention: false }, null, 'Neaktivní'],
+      [{ work: true, rec: false, attention: false }, '0:32', 'Čas'],
+      [{ work: false, rec: true, attention: false }, '', 'Zvuk'],
+      [{ work: true, rec: true, attention: false }, '0:36', 'Obojí'],
+      [{ work: true, rec: false, attention: true }, '0:32', 'Pozornost'],
+    ];
+    const bar = cls => `<div class="bar-demo ${cls}">${states.map(([st, txt, l]) => `<div class="bar-cell"><span class="mb-item">${statusIcon(st, txt == null ? '' : txt)}</span><small>${l}</small></div>`).join('')}</div>`;
+    const icons = (cls, desktop) => `<div class="icons-row ${cls}">${[16, 32, 64, 128].map(sz => `<figure>${appIcon(sz, desktop)}<figcaption>${sz} px</figcaption></figure>`).join('')}</div>`;
+    const tile = (th, name) => {
+      const inner = `<div class="theme-tile"><span class="t-name">${name}</span><div class="proj-name">Web Studia Sever</div><div class="bigclock">0:32:07</div>
+        <div class="chips">${chip('live', 'Běží místně')}${chip('pending', 'Čeká na sync')}${chip('ok', 'Potvrzeno')}${chip('err', 'Vyžaduje zásah')}${chip('rec', 'Nahrává')}</div>
+        <div class="actions" style="margin-top:0"><button type="button" class="btn btn--primary btn--sm" data-action="noop" tabindex="-1">Zastavit čas</button><button type="button" class="btn btn--sm" data-action="noop" tabindex="-1">Přepnout</button></div></div>`;
+      return th === 'professional' ? `<div data-theme="light"><div data-theme="professional">${inner}</div></div>` : `<div data-theme="${th}">${inner}</div>`;
+    };
+    return `<button type="button" class="back" data-action="tab" data-tab="nastaveni">${I.back}Nastavení</button>
+      <header class="v-head"><div><h1>Ikona a identita</h1><p class="v-sub">Dodaná značka LuDone v celé aplikaci. Stav v liště nese tvar a čas, ne barva.</p></div></header>
+      <section class="id-sec"><h2>Ikona v liště · 18 px, jedna barva</h2>${bar('bar-demo--light')}${bar('bar-demo--dark')}
+        <p class="note">Monochromatický znak používá přesnou geometrii originálu. Tečka vpravo dole = zvuk; čas = práce; plný trojúhelník = pozornost. Stavy jsou oddělené od statické ikony Docku.</p></section>
+      <section class="id-sec"><h2>Dock a Finder · LuDone Desktop</h2>
+        <h3>Původní ikona LuDone</h3>${icons('icons-row--light', false)}${icons('icons-row--dark', false)}
+        <h3>Jemná varianta Desktop</h3>${icons('icons-row--light', true)}${icons('icons-row--dark', true)}
+        <p class="note">Doporučení: původní ikona. Je shodná se zbytkem LuDone a její bílé tahy zůstávají přesné i v 16 px. Varianta Desktop přidává pouze malý zelený roh; tvar značky nemění.</p></section>
+      <section class="id-sec"><h2>Jeden systém ve třech tématech</h2><div class="theme-tiles">${tile('light', 'Světlé')}${tile('professional', 'Profesionální')}${tile('dark', 'Tmavé')}</div>
+        <p class="note">Brockmann pro čas a názvy, Public Sans pro text. Plochy bez zaoblení, ovladače 2 px, zaoblené je jen vnější okno macOS.</p></section>`;
+  }
+
+  function closedDesk() {
+    const running = S.work || S.rec;
+    return `<div class="desk-hint"><p><b>Panel je zavřený.</b></p><p>${running ? 'Měření a nahrávání běží dál. Stav ukazuje ikona v liště nahoře.' : 'LuDone čeká v liště. Klikni na ikonu nahoře nebo stiskni ⌥⌘L.'}</p></div>`;
+  }
+
+  function notifHtml() {
+    if (!S.notif) return '';
+    return `<div class="notif" role="status" aria-label="Oznámení macOS" data-action="noop">${appIcon(32)}<div><b>LuDone</b><p>Verze 0.1.5 je k dispozici. Nic nepřeruší — instalaci spustíš sám, až nic nepoběží.</p></div>
+      <div class="notif-actions"><button type="button" class="btn btn--sm" data-action="upd-details">Podrobnosti</button><button type="button" class="btn btn--sm btn--ghost" data-action="notif-close">Zavřít</button></div></div>`;
+  }
+  function toastHtml() {
+    if (!S.toast) return '';
+    return `<div class="toast" role="status" data-action="noop"><span>${esc(S.toast.text)}</span>${S.toast.action ? `<button type="button" data-action="toast-action">${esc(S.toast.label)}</button>` : ''}</div>`;
+  }
+
+  // ---------- render ----------
+  function currentSize() { return S.view === 'window' ? WIN : PANEL; }
+  function viewName() {
+    if (S.view === 'window') return S.detail ? `okno-detail-${S.detail.kind === 'rec' ? 'nahravka' : 'usek'}` : `okno-${S.tab}`;
+    if (!S.panelOpen) return 'lista';
+    if (S.onboarding) return `panel-prvni-spusteni-${S.onboarding.step}`;
+    return S.sheet ? `panel-${S.sheet.type}` : 'panel';
+  }
+  function postState() {
+    const size = currentSize();
+    const msg = { type: 'ludone-experience:state', scenario: S.scenario, theme: S.theme, view: viewName(), width: size.w, height: size.h };
+    window.__ludoneState = msg;
+    const key = JSON.stringify(msg);
+    if (key === lastPosted) return;
+    lastPosted = key;
+    if (window.parent && window.parent !== window) {
+      let origin = '*';
+      try { if (location.origin && location.origin !== 'null') origin = location.origin; } catch (e) { /* file:// */ }
+      try { window.parent.postMessage(msg, origin); } catch (e) { /* bez rodiče */ }
+    }
+  }
+
+  function render() {
+    const ae = document.activeElement;
+    const keepId = ae && ae.id && root.contains(ae) ? ae.id : null;
+    let selS = null, selE = null;
+    try { if (keepId && ae.selectionStart != null) { selS = ae.selectionStart; selE = ae.selectionEnd; } } catch (e) { /* select */ }
+    const scrolls = {};
+    root.querySelectorAll('[data-scroll]').forEach(el => { scrolls[el.dataset.scroll] = el.scrollTop; });
+
+    const size = currentSize();
+    root.style.width = `${size.w}px`; root.style.height = `${size.h}px`;
+    document.documentElement.dataset.scenario = S.scenario;
+    document.documentElement.dataset.theme = S.theme;
+    document.documentElement.dataset.view = viewName();
+
+    const deskInner = S.view === 'panel' ? (S.panelOpen ? panel() : closedDesk()) : windowView();
+    root.innerHTML = menubar() + `<div class="desk" data-action="desk">${deskInner}${notifHtml()}${toastHtml()}</div>`;
+
+    root.querySelectorAll('[data-scroll]').forEach(el => { if (scrolls[el.dataset.scroll] != null) el.scrollTop = scrolls[el.dataset.scroll]; });
+    const want = S.focus || keepId;
+    S.focus = null;
+    if (want) {
+      const el = document.getElementById(want);
+      if (el) {
+        el.focus({ preventScroll: false });
+        try { if (want === keepId && selS != null) el.setSelectionRange(selS, selE); else if (el.setSelectionRange && el.value) el.setSelectionRange(el.value.length, el.value.length); } catch (e) { /* bez výběru */ }
+      }
+    }
+    tickMeters();
+    postState();
+  }
+
+  // ---------- běh času ----------
+  const isTyping = () => { const a = document.activeElement; return !!(a && a.matches && a.matches('input, select, textarea')); };
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function tickMeters() {
+    root.querySelectorAll('.meter').forEach(m => {
+      const i = m.querySelector('i'); if (!i) return;
+      const base_ = m.dataset.meter === 'mic' ? 30 : 22;
+      i.style.width = reduced ? `${base_ + 20}%` : `${base_ + Math.round(Math.random() * 50)}%`;
+    });
+  }
+  function clockText(kind) {
+    switch (kind) {
+      case 'mb-time': return S.work ? hm(S.now - S.work.start) : S.rec ? hm(S.now - S.rec.start) : '';
+      case 'mb-clock': return `${S.day.short}  ${clock(S.now)}`;
+      case 'work': return S.work ? hms(S.now - S.work.start) : '';
+      case 'work-dur': return S.work ? dur(S.now - S.work.start) : '';
+      case 'rec': return S.rec ? ms(S.now - S.rec.start) : '';
+      case 'total': return dur(totalWork());
+      default: return null;
+    }
+  }
+  setInterval(() => {
+    if (!S) return;
+    S.now += 1;
+    root.querySelectorAll('[data-clock]').forEach(el => { const v = clockText(el.dataset.clock); if (v != null && el.textContent !== v) el.textContent = v; });
+    tickMeters();
+    if (S.now % 60 === 0 && !isTyping() && !S.simOpen) render();
+  }, 1000);
+
+  // ---------- události ----------
+  root.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (!el || !root.contains(el) || el.disabled) return;
+    if (el.tagName === 'INPUT') return;
+    act(el.dataset.action, el.dataset);
+  });
+  root.addEventListener('input', e => {
+    const el = e.target, v = el.value;
+    switch (el.id) {
+      case 'cmd': S.cmd = v; S.cmdIdx = 0; updateResults(); break;
+      case 'work-desc': if (S.work) S.work.desc = v; break;
+      case 'draft-desc': if (S.draft) S.draft.desc = v; break;
+      case 'save-title': if (S.pending) S.pending.title = v; break;
+      case 'earlier-custom': if (S.sheet) { S.sheet.custom = v; S.sheet.min = null; } break;
+      case 'rv-custom': if (S.recovery) S.recovery.custom = v; break;
+      case 'det-title': { const r = S.detail && findRec(S.detail.id); if (r) r.title = v; break; }
+      case 'ed-from': S.edit.from = v; break;
+      case 'ed-to': S.edit.to = v; break;
+      case 'ed-desc': S.edit.desc = v; break;
+      case 'add-from': S.add.from = v; break;
+      case 'add-to': S.add.to = v; break;
+      case 'add-desc': S.add.desc = v; break;
+      default: break;
+    }
+  });
+  root.addEventListener('change', e => {
+    const el = e.target;
+    switch (el.id) {
+      case 'add-proj': S.add.projectId = el.value; break;
+      case 'set-retention': S.settings.retention = el.value; toast(el.value === 'never' ? 'Kopie na Macu se mazat nebudou.' : `Ověřené kopie se smažou po ${el.value} dnech.`); render(); break;
+      case 'set-dock': S.settings.dock = el.value; toast(el.value === 'always' ? 'Ikona zůstane v Docku stále.' : 'Ikona v Docku jen s otevřeným oknem.'); render(); break;
+      case 'rv-again': if (S.recovery) S.recovery.again = el.checked; break;
+      case 'work-desc': toast('Popis upraven. Platí pro běžící úsek.'); render(); break;
+      default: break;
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (!S) return;
+    const tg = e.target;
+    const typing = tg && tg.matches && tg.matches('input, select, textarea');
+    if (e.altKey && e.metaKey && (e.key === 'l' || e.key === 'L' || e.code === 'KeyL')) { e.preventDefault(); act('toggle-panel', {}); return; }
+    if (e.key === 'Escape') {
+      if (S.simOpen) { S.simOpen = false; render(); return; }
+      if (S.sheet) { act('sheet-dismiss', {}); return; }
+      if (tg && tg.id === 'cmd' && S.cmd) { S.cmd = ''; render(); S.focus = null; return; }
+      if (S.draft) { act(S.draft.mode === 'switch' ? 'switch-cancel' : 'draft-clear', {}); return; }
+      if (S.switching) { act('switch-cancel', {}); return; }
+      if (S.view === 'window' && S.detail) { act('back', {}); return; }
+      if (S.view === 'panel' && S.panelOpen) { S.panelOpen = false; render(); return; }
+      return;
+    }
+    if (tg && tg.id === 'cmd') {
+      const rs = results();
+      if (e.key === 'ArrowDown' && rs.length) { e.preventDefault(); S.cmdIdx = (S.cmdIdx + 1) % rs.length; updateResults(); }
+      else if (e.key === 'ArrowUp' && rs.length) { e.preventDefault(); S.cmdIdx = (S.cmdIdx - 1 + rs.length) % rs.length; updateResults(); }
+      else if (e.key === 'Enter' && rs.length) { e.preventDefault(); pickResult(rs[S.cmdIdx] || rs[0]); render(); }
+      return;
+    }
+    if (tg && tg.id === 'draft-desc' && e.key === 'Enter') { e.preventDefault(); act('start', {}); return; }
+    if (tg && tg.id === 'save-title' && e.key === 'Enter') { e.preventDefault(); act(S.pending && S.pending.target && S.auth === 'ok' ? 'save-send' : 'save-local', {}); return; }
+    if (tg && tg.id === 'earlier-custom' && e.key === 'Enter') { e.preventDefault(); act('earlier-apply', {}); return; }
+    if (tg && tg.id === 'work-desc' && e.key === 'Enter') { e.preventDefault(); tg.blur(); return; }
+    if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (S.view !== 'panel' || !S.panelOpen || S.onboarding || S.sheet) return;
+    if (e.key === '/') { e.preventDefault(); S.focus = 'cmd'; render(); }
+    else if (['1', '2', '3'].includes(e.key) && (!S.work || S.switching) && !S.draft) {
+      const ids = S.switching && S.work ? S.recent.filter(id => id !== S.work.projectId) : S.recent;
+      const id = ids[+e.key - 1]; if (id) { chooseProject(id); render(); }
+    }
+    else if (e.key === 'r' || e.key === 'R') { act(S.rec ? 'rec-stop' : 'rec-start', {}); }
+    else if ((e.key === 'p' || e.key === 'P') && S.work && !S.switching) { act('switch-open', {}); }
+  });
+
+  window.addEventListener('message', e => {
+    if (e.source !== window.parent || window.parent === window) return;
+    try { if (location.origin && location.origin !== 'null' && e.origin !== location.origin) return; } catch (err) { return; }
+    const d = e.data;
+    if (!d || typeof d !== 'object' || d.type !== 'ludone-experience:set') return;
+    if (!SCENARIOS.includes(d.scenario) || !THEMES.includes(d.theme)) return;
+    loadScenario(d.scenario, d.theme);
+  });
+
+  // pro ověřovací skript: stejný vstup jako přepínač koordinátora
+  window.__ludone = { load: loadScenario, state: () => S, scenarios: SCENARIOS.slice(), themes: THEMES.slice() };
+
+  const qs = new URLSearchParams(location.search);
+  const sc = SCENARIOS.includes(qs.get('scenario')) ? qs.get('scenario') : 'home';
+  const th = THEMES.includes(qs.get('theme')) ? qs.get('theme') : 'light';
+  loadScenario(sc, th);
+})();
+</script>
 </body>
 </html>

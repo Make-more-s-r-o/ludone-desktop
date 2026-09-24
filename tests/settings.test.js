@@ -32,7 +32,9 @@ function deferred() {
   return { promise, resolve };
 }
 
+/** @param {{ [key: string]: any, initialTab?: string }} options */
 async function renderSettings({
+  initialTab,
   confirmEnvironmentChange = /** @type {() => boolean} */ (() => true),
   deviceName = () => Promise.resolve("MacBook-Pro-Dan"),
   diagnostics = () => Promise.resolve(DIAGNOSTICS),
@@ -63,7 +65,8 @@ async function renderSettings({
     saved: true, selectedCompanyId: companyId,
   }),
 } = {}) {
-  const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
+  const initialQuery = initialTab === "recordingQueue" ? "?settingsTab=recordingQueue" : "";
+  const dom = new JSDOM('<div id="root"></div>', { url: `https://ludone.test/${initialQuery}#settings` });
   const style = dom.window.document.createElement("style");
   style.textContent = settingsStyles;
   dom.window.document.head.append(style);
@@ -73,6 +76,7 @@ async function renderSettings({
   };
   const logoutMock = vi.fn(logout);
   const setAuthOriginMock = vi.fn(setAuthOrigin);
+  let settingsTabRequested;
   const switchAuthOriginImplementation = switchAuthOrigin ?? (async (value) => {
     const result = await logoutMock();
     if (result?.signedOutLocally !== true) return { ...result, origin: null };
@@ -82,6 +86,10 @@ async function renderSettings({
   const ludone = {
     beginAuth: vi.fn(),
     closeSettings: vi.fn(),
+    onSettingsTabRequested: vi.fn((callback) => {
+      settingsTabRequested = callback;
+      return () => { settingsTabRequested = undefined; };
+    }),
     getAuthIdentity: vi.fn(identity),
     getAuthOrigin: vi.fn(origin),
     getDeviceName: vi.fn(deviceName),
@@ -128,6 +136,9 @@ async function renderSettings({
     document: dom.window.document,
     localStorage,
     ludone,
+    requestSettingsTab(tab) {
+      settingsTabRequested?.(tab);
+    },
     async cleanup() {
       await React.act(async () => root.unmount());
       dom.window.close();
@@ -1308,6 +1319,24 @@ describe("systémová nastavení", () => {
       expect(settings.ludone.setOpenAtLogin.mock.calls[0]).toHaveLength(1);
       expect(switchByLabel(settings, LOGIN_LABEL).getAttribute("aria-checked")).toBe("false");
       expect(settings.localStorage.setItem).not.toHaveBeenCalled();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+});
+
+describe("přímý vstup do části Nastavení", () => {
+  it("otevře Nahrávky z hlavního panelu a přijímá jen známé záložky", async () => {
+    const settings = await renderSettings({ initialTab: "recordingQueue" });
+    try {
+      const selectedTab = () => settings.document.querySelector('[role="tab"][aria-selected="true"]');
+      expect(selectedTab()?.id).toBe("settings-tab-recordingQueue");
+
+      await React.act(async () => settings.requestSettingsTab("account"));
+      expect(selectedTab()?.id).toBe("settings-tab-account");
+
+      await React.act(async () => settings.requestSettingsTab("unknown"));
+      expect(selectedTab()?.id).toBe("settings-tab-account");
     } finally {
       await settings.cleanup();
     }

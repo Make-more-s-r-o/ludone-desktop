@@ -22,7 +22,7 @@ const CHECK_LABELS = Object.freeze({
   "settings-diagnostics": "nastavení: Diagnostika",
   "settings-recordings": "nastavení: Záznamy",
   "settings-restored": "změna a obnovení nastavení",
-  tracking: "LuTrack včetně souběhu s nahráváním",
+  "future-tracking": "připravovaný LuTrack bez nefunkční akce",
   welcome: "uvítací obrazovka",
 });
 
@@ -62,7 +62,7 @@ const BRANCH_REQUIREMENTS = Object.freeze({
     checks: Object.freeze([
       "panel",
       "recording",
-      "tracking",
+      "future-tracking",
       "settings-account",
       "settings-audio",
       "settings-recordings",
@@ -75,14 +75,10 @@ const BRANCH_REQUIREMENTS = Object.freeze({
     notCovered: Object.freeze(["onboarding (přihlášený profil jej přeskočil)"]),
     screens: Object.freeze([
       "panel-idle",
+      "panel-lutrack-planned",
       "recording",
-      "recording-and-tracking",
       "recording-naming-before-skip",
-      "tracking-only",
-      "panel-idle-after-tracking",
-      "panel-configured",
-      "configured-tracking",
-      "panel-idle-after-configured-tracking",
+      "panel-idle-after-skip",
       "quick-recording",
       "recording-naming-before-submit",
       "panel-after-submit",
