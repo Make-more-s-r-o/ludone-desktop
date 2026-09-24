@@ -171,8 +171,11 @@ describe("ikona aplikace", () => {
     const koren = mkdtempSync(path.join(tmpdir(), "ludone-app-geometrie-"));
     const zdroj = readFileSync(GENERATOR, "utf8");
     const mutace = [
-      { vzor: /const PULZ = \[[\s\S]*?\n\];/, nahrada: "const PULZ = [[6, 12], [18, 12]];" },
-      { vzor: /const SIRKA_PULZU = [\d.]+;/, nahrada: "const SIRKA_PULZU = 4.4;" },
+      {
+        vzor: /const ZNAK_LUDONE = \[[\s\S]*?\n\];/,
+        nahrada: "const ZNAK_LUDONE = [[[6, 12], [18, 12]]];",
+      },
+      { vzor: /const SIRKA_ZNAKU = [\d.]+;/, nahrada: "const SIRKA_ZNAKU = 4.4;" },
       { vzor: /const PLATNO = [\d.]+;/, nahrada: "const PLATNO = 30;" },
     ];
     try {

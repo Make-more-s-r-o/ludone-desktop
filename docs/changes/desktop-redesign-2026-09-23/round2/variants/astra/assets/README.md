@@ -1,0 +1,1 @@
+Lokální podklady pro návrhy, nikoli nová canonical knihovna. Fonty ze stávajícího LuDone App; jejich veřejnou redistribuci tento návrh neschvaluje. Public Sans licence je přiložená. Barevné tokeny jsou podvýběr skutečného globals.css.

@@ -1,0 +1,68 @@
+PASS idle/light 366×650 · {"scenario": "idle", "theme": "light", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS idle/professional 366×650 · {"scenario": "idle", "theme": "professional", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS idle/dark 366×650 · {"scenario": "idle", "theme": "dark", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS recording/light 366×650 · {"scenario": "recording", "theme": "light", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS recording/professional 366×650 · {"scenario": "recording", "theme": "professional", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS recording/dark 366×650 · {"scenario": "recording", "theme": "dark", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS saved/light 366×650 · {"scenario": "saved", "theme": "light", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS saved/professional 366×650 · {"scenario": "saved", "theme": "professional", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS saved/dark 366×650 · {"scenario": "saved", "theme": "dark", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS blocked-company/light 366×650 · {"scenario": "blocked-company", "theme": "light", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS blocked-company/professional 366×650 · {"scenario": "blocked-company", "theme": "professional", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS blocked-company/dark 366×650 · {"scenario": "blocked-company", "theme": "dark", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS uploading/light 448×676 · {"scenario": "uploading", "theme": "light", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS uploading/professional 448×676 · {"scenario": "uploading", "theme": "professional", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS uploading/dark 448×676 · {"scenario": "uploading", "theme": "dark", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS retry/light 448×676 · {"scenario": "retry", "theme": "light", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS retry/professional 448×676 · {"scenario": "retry", "theme": "professional", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS retry/dark 448×676 · {"scenario": "retry", "theme": "dark", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS settings/light 448×676 · {"scenario": "settings", "theme": "light", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS settings/professional 448×676 · {"scenario": "settings", "theme": "professional", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS settings/dark 448×676 · {"scenario": "settings", "theme": "dark", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS update/light 366×650 · {"scenario": "update", "theme": "light", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS update/professional 366×650 · {"scenario": "update", "theme": "professional", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS update/dark 366×650 · {"scenario": "update", "theme": "dark", "width": 366, "height": 650, "overflow": false, "primaryVisible": true, "font": true}
+PASS identity/light 448×676 · {"scenario": "identity", "theme": "light", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS identity/professional 448×676 · {"scenario": "identity", "theme": "professional", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS identity/dark 448×676 · {"scenario": "identity", "theme": "dark", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS detail/light 448×676 · {"scenario": "detail", "theme": "light", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS detail/professional 448×676 · {"scenario": "detail", "theme": "professional", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS detail/dark 448×676 · {"scenario": "detail", "theme": "dark", "width": 448, "height": 676, "overflow": false, "primaryVisible": true, "font": true}
+PASS Oba zdroje bez scrollu při 366×650
+PASS Nahrát → běžící nahrávání
+PASS Výpadek vysvětluje omezení a nabízí opravu
+PASS Obnovení systémového zvuku
+PASS Stop → uložená nahrávka
+PASS Uložit a odeslat → Ve frontě
+PASS Chybějící firma blokuje odeslání
+PASS Firma se uloží bez odeslání
+PASS Odeslání až po druhém výslovném kliku
+PASS Nechat na Macu neodesílá
+PASS Opakování vlastní položky
+PASS Přihlášení má přímou cestu
+PASS Obnova přihlášení
+PASS Koš žádá potvrzení konkrétní nahrávky
+PASS Zrušení koše data ponechá
+PASS Odesláno se nerovná ověřeno
+PASS Ověření zpřístupní otevření
+PASS Vlastnictví vyžaduje konkrétní potvrzení
+PASS Převzetí samo neodešle
+PASS Limit nenabízí předčasné opakování
+PASS Sekce Nastavení account
+PASS Sekce Nastavení sound
+PASS Sekce Nastavení storage
+PASS Sekce Nastavení recordings
+PASS Sekce Nastavení diagnostics
+PASS Aktualizace během nahrávání čeká
+PASS Odložená instalace až po uložení
+PASS Vstup ze seznamu do detailu
+PASS Návrat z detailu zachová seznam
+PASS Detail umožní ověřit a otevřít
+PASS Ikony Docku 128/64/32/16
+PASS Lišta má osm náhledů 18 px
+PASS Ikona otevře panel
+PASS Hlavní akce při malé výšce 366×500
+PASS Zpráva od cizího zdroje odmítnuta
+PASS Neplatný scénář odmítnut
+PASS Platná zpráva přepne scénář a téma
+EXIT CODE: 0

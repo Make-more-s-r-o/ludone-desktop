@@ -156,3 +156,27 @@ describe.each([false, true])("LuTrack jako ukázka (compact=%s)", (compact) => {
     expectNoTrackingIpc(panel);
   });
 });
+
+describe("budoucí LuTrack v hlavním panelu", () => {
+  it("zobrazuje připravovaný stav bez nefunkčního startu i bez reakce na rychlou akci", async () => {
+    const panel = await renderTrackingCard(false);
+    await panel.render({ disabled: true });
+
+    expect(panel.document.querySelector(".future-feature")?.textContent)
+      .toContain("Časovač ještě není součástí desktopové verze.");
+    expect(panel.document.querySelectorAll(".future-feature button")).toHaveLength(0);
+    expect(panel.onActivityChange.mock.lastCall[0]).toMatchObject({
+      active: false,
+      project: null,
+      description: "",
+    });
+
+    await panel.render({
+      disabled: true,
+      trayCommand: { id: 1, name: "start-tracking" },
+    });
+    expect(panel.document.querySelector('[data-activity-state="tracking"]')).toBeNull();
+    expect(panel.document.querySelectorAll(".future-feature button")).toHaveLength(0);
+    expectNoTrackingIpc(panel);
+  });
+});

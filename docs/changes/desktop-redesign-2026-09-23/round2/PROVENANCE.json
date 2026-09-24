@@ -1,0 +1,75 @@
+{
+  "run": "run_856980a40e27",
+  "round": 2,
+  "base": "main 2f142b3",
+  "briefSha256": "962cf07c6ec5561598ae468474cc58b6a2e78842491ed9579f7874dcb11c4122",
+  "clarificationsSha256": "c6278629e6e3e01afa612c26a03b463b79ba779510fc6656ce0b71c61d0adc5f",
+  "createdAt": "2026-09-23T13:31:47.187745+00:00",
+  "authors": [
+    {
+      "slot": "A",
+      "slug": "opus",
+      "taskId": "task_d43ace873128",
+      "dispatchId": "ctx_1e3229bba250",
+      "launch": {
+        "requested": {
+          "agent": "claude",
+          "model": "claude-opus-5-5",
+          "effort": "high"
+        },
+        "effective": {
+          "agent": "claude",
+          "model": "claude-opus-5-5",
+          "effort": "high"
+        }
+      }
+    },
+    {
+      "slot": "B",
+      "slug": "astra",
+      "taskId": "task_0688c3146a03",
+      "dispatchId": "ctx_d9ccf920fd65",
+      "launch": {
+        "requested": {
+          "agent": "codex",
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "effective": {
+          "agent": "codex",
+          "model": "gpt-6-astra",
+          "effort": "high"
+        }
+      }
+    }
+  ],
+  "scope": "local future product prototypes only",
+  "implementationApproved": false,
+  "sourceObservation": "Existing PWA ludone.cz/time-tracking, read-only; no personal screenshot or records copied",
+  "iconAddendumSha256": "0636abef11a9e9d3657d6137df5cc9ce12507a3f057c9855a8ab3aaaf8946571",
+  "canonicalBrandAssets": {
+    "LuDone.svg": "dd15c49cb35f53b3d08e9a0b72ccb9378630df44493022557d82ac8a60d9f06a",
+    "LuDone-icon-iOS-Default-1024x1024@1x.png": "9c9572c4676fc721ceae4a46c7e7411273623209b2343828557d6050618a62fb",
+    "LuDone_favicon_32px.png": "96cd05a3dbea48da8fae3dcacb865f0c8a126ad0566a5365f77d065ab1d1782c",
+    "LuDone_favicon_128px.png": "051645ba22427c6b564235c22ec0b91e08ee18e07c9e32762fdbc9bf868e0e28"
+  },
+  "finalization": {
+    "date": "2026-09-23",
+    "agents": [
+      {
+        "authorVariant": "astra",
+        "model": "gpt-6-sol",
+        "effort": "medium"
+      },
+      {
+        "authorVariant": "opus",
+        "model": "gpt-6-sol",
+        "effort": "high"
+      }
+    ],
+    "authorRuntimeOutcome": "Original author dispatches interrupted by Orca runtime recovery; outputs preserved and finalized separately. Both terminal resources released.",
+    "rootIntegration": "Comparison, cache versioning, manual UI smoke, documentation; no product implementation.",
+    "evidence": "../../../../dukazy/desktop-experience-2026-09-23/ROOT-REVIEW.md",
+    "status": "ready for user design selection"
+  }
+}

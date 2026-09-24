@@ -1,0 +1,18 @@
+$ node --check /Users/dan/orca/workspaces/ludone-desktop/desktop-design-compare/docs/changes/desktop-redesign-2026-09-23/round2/compare.js
+(bez výstupu)
+EXIT 0
+PASS node --check
+$ node --check /Users/dan/orca/workspaces/ludone-desktop/desktop-design-compare/docs/changes/desktop-redesign-2026-09-23/round2/variants/astra/app.js
+(bez výstupu)
+EXIT 0
+PASS node --check
+$ node --check /Users/dan/orca/workspaces/ludone-desktop/desktop-design-compare/docs/changes/desktop-redesign-2026-09-23/round2/variants/opus/app.js
+(bez výstupu)
+EXIT 0
+PASS node --check
+$ git diff --check
+(bez výstupu)
+EXIT 0
+PASS git diff
+PASS astra canonical LuDone.svg SHA-256 dd15c49cb35f53b3d08e9a0b72ccb9378630df44493022557d82ac8a60d9f06a
+PASS opus canonical LuDone.svg SHA-256 dd15c49cb35f53b3d08e9a0b72ccb9378630df44493022557d82ac8a60d9f06a

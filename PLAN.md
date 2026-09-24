@@ -1,6 +1,12 @@
 # Implementační plán — LuDone Desktop
 
-**23. 9. 2026 — vydaná 0.1.4 / D21–D22:** [jedna schůzka v jednom stereo WebM/Opus](docs/changes/nahravky-dashboard/STEREO-MP3.md), PR #146 a #147 sloučené. ✅ Podpis, notarizace a publikace pro oba Macy i nezávislá kontrola aktualizačního feedu prošly ([důkazy vydání](dukazy/vydani-0.1.4-2026-09-23/REPORT.md)). 🧪 1554 PASS, tři původní skipy; živá aktualizace z nainstalované 0.1.3, schůzka a společný přepis čekají na Dana. Masterplán rozlišuje publikaci a přejímku.
+**24. 9. 2026 — další verze 0.1.5, návrh Astra:** Dan zvolil „Nit dne“ a povolil samostatnou implementaci i vydání. Návrhy Astra i Opus zůstávají k porovnání. Implementován je přímý vstup do Nahrávek, značka LuDone, čitelné stavové ikony a neaktivní, pravdivý LuTrack placeholder. Plné brány prošly: 1 557 testů zelených a 3 původní skipy z baseline; produkční build prošel; nezávislé review dokončeno 🧪. Commit, PR, CI a vydání ještě čekají. Zvuk, upload a aktualizaci musí po instalaci ověřit Dan na skutečném Macu. Backend a web se nemění. Podrobnosti a důkazy jsou v [`desktop-astra-0-1-5/`](docs/changes/desktop-astra-0-1-5/).
+
+**Rozsah LuTracku:** skutečné napojení zatím neexistuje a do 0.1.5 nepatří. Návrh budoucího propojeného toku je uložen v [`lutrack/NEXT-RELEASE.md`](docs/changes/desktop-redesign-2026-09-23/lutrack/NEXT-RELEASE.md); aplikace nesmí předstírat běžící časovač.
+
+**24. 9. 2026 — stav 0.1.4:** předchozí verze je publikovaná, její přijetí a instalační kontrola byly potvrzené Danem. Skutečná zvuková cesta, upload a aktualizace pro 0.1.5 se vyznačí jako ✅ teprve po pozorování na jeho Macu.
+
+**23. 9. 2026 — vydaná 0.1.4 / D21–D22:** [jedna schůzka v jednom stereo WebM/Opus](docs/changes/nahravky-dashboard/STEREO-MP3.md), PR #146 a #147 sloučené. ✅ Podpis, notarizace a publikace pro oba Macy i nezávislá kontrola aktualizačního feedu prošly ([důkazy vydání](dukazy/vydani-0.1.4-2026-09-23/REPORT.md)). 🧪 1554 PASS, tři původní skipy; Dan následně potvrdil aktualizaci a read-only kontrola instalace 0.1.4 prošla. Celá živá schůzka, její upload a společný přepis zůstávají k přejímce. Masterplán rozlišuje publikaci a přejímku.
 
 **15. 9. 2026 — patch 0.1.3:** PR #142 sloučen (`c1ca930`), finální čistý klon i GitHub CI zelené, 1515 PASS. Tag v0.1.3 je publikovaný; release 34948618429 i veřejná kontrola prošly. Zbývá živá přejímka na Macu.
 

@@ -10,6 +10,7 @@ function formatCompactElapsed(totalSeconds) {
 
 export function TrackingCard({
   compact = false,
+  disabled = false,
   onActivityChange,
   todaySummary = null,
   trayCommand = null,
@@ -30,6 +31,7 @@ export function TrackingCard({
   );
 
   function toggleTracking() {
+    if (disabled) return;
     if (active) {
       setActive(false);
       setStartedAt(null);
@@ -49,6 +51,7 @@ export function TrackingCard({
   useEffect(() => {
     if (!trayCommand || trayCommand.id === lastTrayCommandId.current) return;
     lastTrayCommandId.current = trayCommand.id;
+    if (disabled) return;
     if (trayCommand.name === "start-tracking" && !active) {
       setLastMessage("");
       setStartedAt(Date.now());
@@ -63,7 +66,20 @@ export function TrackingCard({
       setStartedAt(null);
       setLastMessage("Čas zastaven · uložení do LuTracku je ukázkové.");
     }
-  }, [active, trayCommand]);
+  }, [active, disabled, trayCommand]);
+
+  if (disabled) {
+    return (
+      <section className="feature-card future-feature" aria-label="LuTrack">
+        <span className="future-feature__icon"><TimerIcon variant="idle" /></span>
+        <span className="future-feature__copy">
+          <strong>LuTrack</strong>
+          <small>Časovač ještě není součástí desktopové verze.</small>
+        </span>
+        <span className="future-feature__status">Připravujeme</span>
+      </section>
+    );
+  }
 
   return (
     <section

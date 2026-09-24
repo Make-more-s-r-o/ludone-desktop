@@ -1,0 +1,13 @@
+{
+  "name": "Nit dne",
+  "slug": "astra",
+  "author": "gpt-6-astra · high",
+  "panelWidth": 400,
+  "panelHeight": 700,
+  "windowWidth": 640,
+  "windowHeight": 744,
+  "thesis": "Jeden pracovní kontext, dvě nezávislé činnosti a společná stopa dne. Panel slouží okamžiku, den ukazuje souvislosti a výsledky.",
+  "entry": "index.html",
+  "themes": ["light", "professional", "dark"],
+  "scenarios": ["home", "working", "meeting", "save", "record-only", "day", "detail", "attention", "offline", "recovery", "settings", "update", "onboarding", "identity"]
+}

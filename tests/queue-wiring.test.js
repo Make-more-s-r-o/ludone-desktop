@@ -231,6 +231,11 @@ function fakeElectron(userDataPath, {
       this.loadCalls.push({ kind: "file", target: filePath, options });
       const fileUrl = new URL(pathToFileURL(filePath));
       if (options.hash) fileUrl.hash = options.hash;
+      if (options.query) {
+        for (const [key, value] of Object.entries(options.query)) {
+          fileUrl.searchParams.set(key, value);
+        }
+      }
       this.webContents.mainFrame.url = fileUrl.toString();
       if (deferPanelLoad && windows[0] === this) {
         return new Promise((resolve, reject) => {
@@ -961,10 +966,10 @@ function loadPreload(invokeResult = true) {
   });
   return {
     api: exposedApi,
-    emit(channel) {
+    emit(channel, ...payload) {
       const listener = listeners.get(channel);
       if (!listener) throw new Error(`Preload neposlouchá kanál ${channel}`);
-      return listener({}, undefined);
+      return listener({}, ...payload);
     },
     invoke,
   };
@@ -997,12 +1002,13 @@ function loadTraySpaceWarningPreload(invokeResult = true) {
   return { api: exposedApi, exposedName, invoke };
 }
 
-function openSettingsAndCreateEvent(harness) {
+function openSettingsAndCreateEvent(harness, initialTab) {
   const panelContents = harness.windows[0].webContents;
   const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
   const openSettings = harness.ipcListeners.get("settings:open");
   expect(openSettings).toBeTypeOf("function");
-  openSettings(panelEvent);
+  if (initialTab === undefined) openSettings(panelEvent);
+  else openSettings(panelEvent, initialTab);
   const settingsContents = harness.windows[1]?.webContents;
   expect(settingsContents).toBeTruthy();
   return {
@@ -1010,6 +1016,57 @@ function openSettingsAndCreateEvent(harness) {
     settingsEvent: { sender: settingsContents, senderFrame: settingsContents.mainFrame },
   };
 }
+
+describe("zobrazení přehledu nahrávek z hlavního panelu", () => {
+  it("otevře širší okno rovnou na nahrávkách a nepřijímá neznámé záložky", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panel = harness.windows[0];
+    const panelEvent = { sender: panel.webContents, senderFrame: panel.webContents.mainFrame };
+    const openSettings = harness.ipcListeners.get("settings:open");
+
+    openSettings(panelEvent, "recordingQueue");
+
+    const settings = harness.windows[1];
+    expect(settings.getSize()).toEqual([640, 744]);
+    expect(settings.loadCalls.at(-1).options).toEqual({
+      hash: "settings",
+      query: { settingsTab: "recordingQueue" },
+    });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    openSettings(panelEvent, "diagnostics");
+    consoleError.mockRestore();
+    expect(settings.loadCalls).toHaveLength(1);
+    expect(harness.windows).toHaveLength(2);
+  });
+
+  it("přesměruje už otevřené okno bez nového načtení", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent } = openSettingsAndCreateEvent(harness, "recordingQueue");
+    const settings = harness.windows[1];
+    settings.webContents.send.mockClear();
+
+    harness.ipcListeners.get("settings:open")(panelEvent, "account");
+
+    expect(settings.webContents.send).toHaveBeenCalledExactlyOnceWith("settings:select-tab", "account");
+    expect(harness.windows).toHaveLength(2);
+  });
+
+  it("preload podrží přepnutí záložky doručené ještě před odběratelem Reactu", () => {
+    const preload = loadPreload();
+    const receiveTab = vi.fn();
+
+    preload.emit("settings:select-tab", "recordingQueue");
+    const unsubscribe = preload.api.onSettingsTabRequested(receiveTab);
+    expect(receiveTab).toHaveBeenCalledExactlyOnceWith("recordingQueue");
+
+    preload.emit("settings:select-tab", "account");
+    expect(receiveTab).toHaveBeenCalledTimes(2);
+    expect(receiveTab).toHaveBeenLastCalledWith("account");
+    unsubscribe();
+  });
+});
 
 function storedAuthSession({
   identity = { name: "Ada Lovelace", email: "ada@ludone.cz" },
@@ -2960,7 +3017,7 @@ describe("výška panelu podle obsahu", () => {
     return { event, harness, panel, resize };
   }
 
-  it("výšku pod rozumným minimem ořízne na 180 bodů a šířku nechá 366", async () => {
+  it("výšku pod rozumným minimem ořízne na 180 bodů a šířku nechá 400", async () => {
     const { event, panel, resize } = await resizeHarness();
 
     await resize(event, 260);
@@ -2968,8 +3025,8 @@ describe("výška panelu podle obsahu", () => {
     const appliedHeight = await resize(event, 40);
 
     expect(appliedHeight).toBe(180);
-    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(366, 180, false);
-    expect(panel.getSize()).toEqual([366, 180]);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(400, 180, false);
+    expect(panel.getSize()).toEqual([400, 180]);
   });
 
   it("výšku nad monitorem ořízne pod spodní hranu pracovní plochy", async () => {
@@ -2982,7 +3039,7 @@ describe("výška panelu podle obsahu", () => {
     const bounds = panel.getBounds();
 
     expect(appliedHeight).toBe(584);
-    expect(bounds).toEqual({ x: 8, y: 32, width: 366, height: 584 });
+    expect(bounds).toEqual({ x: 8, y: 32, width: 400, height: 584 });
     expect(bounds.y + bounds.height).toBe(616);
   });
 
@@ -2991,7 +3048,7 @@ describe("výška panelu podle obsahu", () => {
 
     await resize(event, 320);
 
-    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(366, 320, false);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(400, 320, false);
     expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
     expect(panel.setSize.mock.invocationCallOrder[0])
       .toBeLessThan(panel.setPosition.mock.invocationCallOrder[0]);
@@ -3009,7 +3066,7 @@ describe("výška panelu podle obsahu", () => {
     harness.electron.screen.getDisplayMatching.mockReturnValue(lowDisplay);
     harness.electron.screen.emit("display-metrics-changed");
 
-    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(366, 366, false);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(400, 366, false);
     expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
     expect(panel.setSize.mock.invocationCallOrder[0])
       .toBeLessThan(panel.setPosition.mock.invocationCallOrder[0]);
@@ -3019,7 +3076,7 @@ describe("výška panelu podle obsahu", () => {
     harness.electron.screen.getDisplayMatching.mockReturnValue(highDisplay);
     harness.electron.screen.emit("display-metrics-changed");
 
-    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(366, 700, false);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(400, 700, false);
     expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
   });
 
@@ -3373,7 +3430,6 @@ describe("viditelnost ikony a klikání na lištu", () => {
     const template = harness.electron.Menu.buildFromTemplate.mock.calls[0][0];
     expect(template.map((item) => item.type === "separator" ? "separator" : item.label)).toEqual([
       "Ukončit nahrávání",
-      "Spustit LuTrack",
       "separator",
       "Otevřít panel",
       "Otevřít LuDone v prohlížeči",
@@ -3386,10 +3442,9 @@ describe("viditelnost ikony a klikání na lištu", () => {
     // 🔴 Tenhle soupis dřív dokládal jen to, že jsou popisky napsané v šabloně — a ty
     // zkratky přitom NIC nespouštěly, protože se nikdy neregistrovaly. Teď dokládá, že
     // startovní sekvence registraci opravdu provedla: kdyby ji vynechala, popisky zmizí.
-    expect(harness.electron.globalShortcut.register).toHaveBeenCalledTimes(3);
+    expect(harness.electron.globalShortcut.register).toHaveBeenCalledTimes(2);
     expect(template.map((item) => item.accelerator ?? null)).toEqual([
       "Control+Option+R",
-      "Control+Option+T",
       null,
       "Control+Option+L",
       null,
@@ -3402,7 +3457,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
       null,
       null,
     ]);
-    expect(template[1].enabled).toBe(false);
+    expect(template.some((item) => /LuTrack|měření času/u.test(item.label ?? ""))).toBe(false);
     expect(tray.popUpContextMenu).toHaveBeenCalledExactlyOnceWith(
       harness.electron.Menu.buildFromTemplate.mock.results[0].value,
     );
@@ -3411,47 +3466,21 @@ describe("viditelnost ikony a klikání na lištu", () => {
     expect(panel.focused).toBe(false);
   });
 
-  it("Spustit LuTrack povolí až po připraveném panelu a běžnou rychlou cestu zachová", async () => {
+  it("připravovaný LuTrack nemá položku v rychlém menu", async () => {
     const harness = await loadMain({
       trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
     });
     await harness.runReady();
     const panel = harness.windows[0];
-    const panelContents = panel.webContents;
-    const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const tray = harness.trays[0];
-    const reportFacts = harness.ipcListeners.get("tray:report-facts");
-    const trackingItem = () => harness.electron.Menu.buildFromTemplate.mock.lastCall[0][1];
-
     tray.emit("right-click");
-    expect(trackingItem()).toMatchObject({ label: "Spustit LuTrack", enabled: false });
-
-    reportFacts(event, {
-      panelActionsAvailable: false,
-      signedIn: true,
-      systemAudioLost: false,
-      tracking: false,
-    });
-    tray.emit("right-click");
-    expect(trackingItem()).toMatchObject({ label: "Spustit LuTrack", enabled: false });
-
-    reportFacts(event, {
-      panelActionsAvailable: true,
-      signedIn: true,
-      systemAudioLost: false,
-      tracking: false,
-    });
-    tray.emit("right-click");
-    expect(trackingItem()).toMatchObject({ label: "Spustit LuTrack", enabled: true });
-    trackingItem().click();
-
-    expect(panelContents.send).toHaveBeenCalledExactlyOnceWith("tray:command");
-    expect(harness.ipcHandlers.get("tray:command")(event)).toEqual(["start-tracking"]);
-    expect(panel.visible).toBe(false);
-    expect(panel.focused).toBe(false);
+    const template = harness.electron.Menu.buildFromTemplate.mock.lastCall[0];
+    expect(template.map((item) => item.label)).not.toContain("Spustit LuTrack");
+    expect(template.map((item) => item.label)).not.toContain("Zastavit měření času");
+    expect(panel.webContents.send).not.toHaveBeenCalledWith("tray:command");
   });
 
-  it("opožděný report během změny session rychlou akci neoživí", async () => {
+  it("opožděný report během změny session nepřidá LuTrack do menu", async () => {
     let finishLogout;
     let markLogoutStarted;
     const logoutStarted = new Promise((resolve) => { markLogoutStarted = resolve; });
@@ -3476,7 +3505,8 @@ describe("viditelnost ikony a klikání na lištu", () => {
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const reportFacts = harness.ipcListeners.get("tray:report-facts");
     const tray = harness.trays[0];
-    const trackingItem = () => harness.electron.Menu.buildFromTemplate.mock.lastCall[0][1];
+    const hasTrackingAction = () => harness.electron.Menu.buildFromTemplate.mock.lastCall[0]
+      .some((item) => /LuTrack|měření času/u.test(item.label ?? ""));
     const readyFacts = {
       panelActionsAvailable: true,
       signedIn: true,
@@ -3486,36 +3516,30 @@ describe("viditelnost ikony a klikání na lištu", () => {
 
     reportFacts(event, readyFacts);
     tray.emit("right-click");
-    const previouslyEnabledItem = trackingItem();
-    expect(previouslyEnabledItem.enabled).toBe(true);
+    expect(hasTrackingAction()).toBe(false);
 
     const logout = harness.ipcHandlers.get("auth:logout")(event);
     try {
       await logoutStarted;
       reportFacts(event, readyFacts);
       tray.emit("right-click");
-      expect(trackingItem().enabled).toBe(false);
-
-      previouslyEnabledItem.click();
-      expect(harness.ipcHandlers.get("tray:command")(event)).toEqual([]);
-      expect(panel.visible).toBe(true);
-      expect(panel.focused).toBe(true);
+      expect(hasTrackingAction()).toBe(false);
 
       finishLogout(logoutResult);
       await expect(logout).resolves.toEqual(logoutResult);
       tray.emit("right-click");
-      expect(trackingItem().enabled).toBe(false);
+      expect(hasTrackingAction()).toBe(false);
 
       reportFacts(event, readyFacts);
       tray.emit("right-click");
-      expect(trackingItem().enabled).toBe(true);
+      expect(hasTrackingAction()).toBe(false);
     } finally {
       finishLogout?.(logoutResult);
       await logout;
     }
   });
 
-  it("běžící LuTrack přepne položku na aktivní zastavení přes frontu tray příkazů", async () => {
+  it("ani běžící interní časovač nepřidá LuTrack do menu desktopové verze", async () => {
     const harness = await loadMain({
       env: { DESKTOP_TIME_ENABLED: "true" },
       trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
@@ -3529,23 +3553,11 @@ describe("viditelnost ikony a klikání na lištu", () => {
     tray.emit("right-click");
 
     const template = harness.electron.Menu.buildFromTemplate.mock.calls[0][0];
-    expect(template[1]).toMatchObject({
-      label: "Zastavit měření času",
-      accelerator: "Control+Option+T",
-      enabled: true,
-    });
     expect(template.map((item) => item.label)).not.toContain("Spustit LuTrack");
-
-    template[1].click();
-
-    expect(panelContents.send).toHaveBeenCalledExactlyOnceWith("tray:command");
-    const takeCommand = harness.ipcHandlers.get("tray:command");
-    expect(takeCommand).toBeTypeOf("function");
-    expect(takeCommand(event)).toEqual(["stop-tracking"]);
-    expect(takeCommand(event)).toEqual([]);
+    expect(template.map((item) => item.label)).not.toContain("Zastavit měření času");
   });
 
-  it("rychlé akce předá panelu jediným validovaným kanálem i před jeho odběrem", async () => {
+  it("zastavení nahrávání předá panelu jediným validovaným kanálem", async () => {
     const harness = await loadMain({
       trayBounds: { x: 1_300, y: 0, width: 18, height: 18 },
     });
@@ -3554,25 +3566,16 @@ describe("viditelnost ikony a klikání na lištu", () => {
     const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
     const tray = harness.trays[0];
 
-    harness.ipcListeners.get("tray:report-facts")(event, {
-      panelActionsAvailable: true,
-      signedIn: true,
-      systemAudioLost: false,
-      tracking: false,
-    });
-
     tray.emit("right-click");
     const template = harness.electron.Menu.buildFromTemplate.mock.calls[0][0];
-    template[1].click();
-    tray.emit("right-click");
-    harness.electron.Menu.buildFromTemplate.mock.calls[1][0][1].click();
+    expect(template[0].label).toBe("Ukončit nahrávání");
+    template[0].click();
 
-    expect(panelContents.send).toHaveBeenCalledTimes(2);
-    expect(panelContents.send).toHaveBeenNthCalledWith(1, "tray:command");
-    expect(panelContents.send).toHaveBeenNthCalledWith(2, "tray:command");
+    expect(panelContents.send).toHaveBeenCalledOnce();
+    expect(panelContents.send).toHaveBeenCalledExactlyOnceWith("tray:command");
     const takeCommand = harness.ipcHandlers.get("tray:command");
     expect(takeCommand).toBeTypeOf("function");
-    expect(takeCommand(event)).toEqual(["start-tracking", "start-tracking"]);
+    expect(takeCommand(event)).toEqual(["stop-recording"]);
     expect(takeCommand(event)).toEqual([]);
   });
 
@@ -3586,7 +3589,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
     const tray = harness.trays[0];
 
     tray.emit("right-click");
-    harness.electron.Menu.buildFromTemplate.mock.calls[0][0][1].click();
+    harness.electron.Menu.buildFromTemplate.mock.calls[0][0][0].click();
     panelContents.emit(
       "did-start-navigation",
       {},
@@ -3687,7 +3690,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
 
     expect(panel.visible).toBe(true);
     expect(panel.focused).toBe(true);
-    expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(1_066, 26, false);
+    expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(1_032, 26, false);
     expect(tray.popUpContextMenu).not.toHaveBeenCalled();
   });
 });

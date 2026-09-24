@@ -1,0 +1,1 @@
+Historické DOM výpisy a konzolové logy původního autora Opus, převzaté před odstraněním pracovního stromu. Patří stavu před závěrečnými úpravami. Starý 404 faviconu není chyba zvuku ani důkaz finálního stavu.

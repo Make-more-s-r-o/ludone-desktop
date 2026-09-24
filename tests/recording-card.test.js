@@ -42,7 +42,7 @@ function installSavedPanelGeometry(view) {
 
   view.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
     if (this.matches(".panel.window-surface")) {
-      return new view.DOMRect(0, 0, 366, panelHeight);
+      return new view.DOMRect(0, 0, 400, panelHeight);
     }
     if (this.matches('.recording-saved button[type="submit"], .recording-saved__skip')) {
       const top = savedChildTop(this);
@@ -1702,34 +1702,25 @@ describe("RecordingCard", () => {
     }
   });
 
-  it("App při souběhu ponechá obě aktivní karty čitelné a samostatně ovladatelné", async () => {
+  it("App ponechá připravovaný LuTrack neaktivní i během nahrávání", async () => {
     const panel = await renderRecordingCard({ renderApp: true });
 
     try {
       await startRecording(panel);
-      await panel.click(panel.document.querySelector('[aria-label="Spustit LuTrack"]'));
-      await React.act(async () => Promise.resolve());
 
       const scroll = panel.document.querySelector(".panel-scroll");
       const recordingState = panel.document.querySelector('[data-testid="recording-running-state"]');
-      const trackingState = panel.document.querySelector('[data-testid="tracking-running-state"]');
       const recordingCard = recordingState?.closest('[aria-label="Nahrávání"]');
-      const trackingCard = trackingState?.closest('[aria-label="LuTrack"]');
+      const futureFeature = panel.document.querySelector(".future-feature");
 
       expect(recordingState?.hidden).toBe(false);
-      expect(trackingState?.hidden).toBe(false);
       expect(recordingCard?.parentElement).toBe(scroll);
-      expect(trackingCard?.parentElement).toBe(scroll);
-      expect(recordingCard?.getAttribute("data-layout")).toBe("compact");
-      expect(trackingCard?.getAttribute("data-layout")).toBe("compact");
+      expect(recordingCard?.getAttribute("data-layout")).toBe("default");
       expect(recordingCard?.querySelector('[data-testid="recording-source-microphone"]')).not.toBeNull();
       expect(recordingCard?.querySelector('[data-testid="recording-source-system"]')).not.toBeNull();
       expect(recordingCard?.querySelector('[data-testid="recording-stop"]')).not.toBeNull();
-      expect(trackingCard?.querySelector('[data-testid="tracking-stop"]')).not.toBeNull();
-
-      await panel.click(trackingCard?.querySelector('[data-testid="tracking-stop"]'));
-      expect(panel.phase()).toBe("recording");
-      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+      expect(futureFeature?.textContent).toContain("Připravujeme");
+      expect(futureFeature?.querySelectorAll("button, input, select")).toHaveLength(0);
       expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
 
       await stopRecording(panel);

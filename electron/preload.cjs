@@ -5,11 +5,39 @@ const AUTH_ORIGINS = Object.freeze([
   "https://labs.ludone.cz",
 ]);
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
+const SETTINGS_TAB_CHANNEL = "settings:select-tab";
+const SETTINGS_TABS = Object.freeze(["account", "recordingQueue"]);
 const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const OFFER_TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const UPDATE_VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/u;
+let settingsTabSubscriber = null;
+let pendingSettingsTab;
+
+ipcRenderer.on(SETTINGS_TAB_CHANNEL, (_event, tab) => {
+  if (!SETTINGS_TABS.includes(tab)) return;
+  if (settingsTabSubscriber) {
+    settingsTabSubscriber(tab);
+    return;
+  }
+  pendingSettingsTab = tab;
+});
+
+function onSettingsTabRequested(callback) {
+  if (typeof callback !== "function") {
+    throw new TypeError("Odběratel přepnutí nastavení musí být funkce");
+  }
+  settingsTabSubscriber = callback;
+  if (pendingSettingsTab !== undefined) {
+    const tab = pendingSettingsTab;
+    pendingSettingsTab = undefined;
+    callback(tab);
+  }
+  return () => {
+    if (settingsTabSubscriber === callback) settingsTabSubscriber = null;
+  };
+}
 
 function requireUploadCompanyOffer(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
@@ -318,6 +346,16 @@ contextBridge.exposeInMainWorld("ludone", {
   setPanelContentHeight,
   reportTrayFacts: (facts) => ipcRenderer.send("tray:report-facts", facts),
   hidePanel: () => ipcRenderer.send("panel:hide"),
-  openSettings: () => ipcRenderer.send("settings:open"),
+  openSettings: (initialTab) => {
+    if (initialTab === undefined) {
+      ipcRenderer.send("settings:open");
+      return;
+    }
+    if (!["account", "recordingQueue"].includes(initialTab)) {
+      throw new TypeError("Nastavení lze otevřít jen v podporované části");
+    }
+    ipcRenderer.send("settings:open", initialTab);
+  },
+  onSettingsTabRequested,
   closeSettings: () => ipcRenderer.send("settings:close"),
 });

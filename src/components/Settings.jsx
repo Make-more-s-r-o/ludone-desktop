@@ -2,17 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { countLabel } from "../lib/count-label.js";
 import { RecordingsDashboard } from "../features/recordings/RecordingsDashboard.jsx";
 import {
+  ArchiveIcon,
   CheckIcon,
   CloseIcon,
   CloudIcon,
-  LuDoneMark,
   MicIcon,
+  SettingsIcon,
   UserIcon,
   VolumeIcon,
 } from "./Icons.jsx";
 import { Toggle } from "./Toggle.jsx";
 import { SettingsAudioTest } from "./SettingsAudioTest.jsx";
 import { UploadCompanySelector } from "./UploadCompanySelector.jsx";
+import luDoneMark from "../assets/LuDone.svg";
 
 const STORAGE_KEY = "ludone.prototype.settings";
 const DEFAULTS = {
@@ -25,6 +27,13 @@ const SETTINGS_TABS = Object.freeze([
   { id: "recordingQueue", label: "Nahrávky" },
   { id: "diagnostics", label: "Diagnostika" },
 ]);
+const SETTINGS_TAB_ICONS = Object.freeze({
+  account: UserIcon,
+  audio: VolumeIcon,
+  recordings: ArchiveIcon,
+  recordingQueue: CloudIcon,
+  diagnostics: SettingsIcon,
+});
 const AUTH_ENVIRONMENTS = Object.freeze([
   {
     label: "produkce · app.ludone.cz",
@@ -249,7 +258,11 @@ function useSystemBooleanSetting(getterName, setterName) {
 }
 
 export function SettingsApp() {
-  const [activeTab, setActiveTab] = useState("account");
+  const [activeTab, setActiveTab] = useState(() => (
+    new URL(window.location.href).searchParams.get("settingsTab") === "recordingQueue"
+      ? "recordingQueue"
+      : "account"
+  ));
   const [settings, setSettings] = useState(loadSettings);
   const [account, setAccount] = useState({ state: "unknown", identity: null });
   const [destination, setDestination] = useState({ state: "unknown", origin: null });
@@ -271,6 +284,13 @@ export function SettingsApp() {
     setSettings(nextSettings);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSettings));
   };
+
+  useEffect(() => {
+    const unsubscribe = window.ludone?.onSettingsTabRequested?.((tab) => {
+      if (SETTINGS_TABS.some((item) => item.id === tab)) setActiveTab(tab);
+    });
+    return () => unsubscribe?.();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -587,7 +607,10 @@ export function SettingsApp() {
   return (
     <main className="settings-window window-surface">
       <header className="settings-header">
-        <div className="brand-lockup"><LuDoneMark size={30} /><span>Nastavení</span></div>
+        <div className="settings-brand-lockup">
+          <img className="settings-brand-mark" src={luDoneMark} alt="" />
+          <span><strong>LuDone Desktop</strong><small>Nastavení</small></span>
+        </div>
         <button
           type="button"
           className="icon-button"
@@ -612,6 +635,12 @@ export function SettingsApp() {
             onClick={() => setActiveTab(tab.id)}
             onKeyDown={(event) => selectRelativeTab(event, index)}
           >
+            <span className="settings-tab__icon" aria-hidden="true">
+              {(() => {
+                const Icon = SETTINGS_TAB_ICONS[tab.id];
+                return <Icon />;
+              })()}
+            </span>
             {tab.label}
           </button>
         ))}

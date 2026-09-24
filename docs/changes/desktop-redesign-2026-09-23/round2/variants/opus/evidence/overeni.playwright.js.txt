@@ -1,0 +1,101 @@
+async (page) => {
+  const B = 'http://127.0.0.1:18731/index.html';
+  const DIR = '/Users/dan/orca/workspaces/ludone-desktop/desktop-experience-opus/docs/changes/desktop-redesign-2026-09-23/round2/variants/opus/evidence/';
+  const log = []; const errs = [];
+  page.on('pageerror', e => errs.push(String(e)));
+  page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const check = (name, cond, info) => log.push(`${cond ? 'PASS' : 'FAIL'} ${name}${info ? ' — ' + info : ''}`);
+  const WINDOWED = ['day', 'detail', 'settings', 'identity'];
+  const go = async (sc, th = 'light') => {
+    await page.setViewportSize(WINDOWED.includes(sc) ? { width: 700, height: 760 } : { width: 416, height: 680 });
+    await page.goto(`${B}?scenario=${sc}&theme=${th}`);
+    const st = await page.evaluate(() => window.__ludoneState);
+    await page.setViewportSize({ width: st.width, height: st.height });
+    await page.waitForTimeout(80);
+    return st;
+  };
+  const S = () => page.evaluate(() => { const s = window.__ludone.state(); return JSON.parse(JSON.stringify({ work: s.work, rec: s.rec, sheet: s.sheet, segs: s.segments.map(g => [g.projectId, g.desc, g.sync, g.prevDay || false]), recs: s.recordings.map(r => [r.title, r.state, r.target, r.error]), auth: s.auth, panelOpen: s.panelOpen, update: s.update, result: s.result, notice: s.rec && s.rec.notice, detail: s.detail, onboarding: s.onboarding })); });
+  const click = sel => page.locator(sel).first().click({ timeout: 4000 });
+  try {
+    log.push('== A. 14 scénářů × 3 témata ==');
+    for (const th of ['light', 'professional', 'dark']) for (const sc of ['home','working','meeting','save','record-only','day','detail','attention','offline','recovery','settings','update','onboarding','identity']) {
+      const st = await go(sc, th); await page.waitForTimeout(50);
+      const r = await page.evaluate(() => { const d = document.documentElement; const over = []; document.querySelectorAll('.p-scroll, .win-body, .sheet, .panel, .win, .desk').forEach(el => { if (el.scrollWidth > el.clientWidth + 1) over.push(el.className); }); const app = document.getElementById('app').getBoundingClientRect(); const p = document.querySelector('.panel, .win'); const pr = p ? p.getBoundingClientRect() : null; return { ds: d.dataset.scenario, dt: d.dataset.theme, docW: d.scrollWidth, winW: innerWidth, over, fits: pr ? pr.right <= app.right + .5 && pr.bottom <= app.bottom + .5 : true }; });
+      const inRange = Number.isInteger(st.width) && Number.isInteger(st.height) && ((st.width >= 360 && st.width <= 420 && st.height <= 720) || (st.width >= 480 && st.width <= 720 && st.height <= 760));
+      check(`${th}/${sc} view=${st.view} ${st.width}x${st.height}`, r.ds === sc && r.dt === th && r.docW <= r.winW && !r.over.length && r.fits && inRange, r.over.join(','));
+    }
+    log.push('== B. Povinné cesty ==');
+    await go('home');
+    await page.locator('#cmd').fill('sever příprava'); await page.locator('#cmd').press('Enter'); await page.locator('#draft-desc').press('Enter');
+    let s = await S(); check('1 start z hledání „sever příprava"', s.work && s.work.projectId === 'web' && s.work.desc === 'Příprava obsahu');
+    await click('.mb-item'); s = await S(); const mb1 = (await page.locator('.mb-item').innerText()).trim();
+    check('1 panel zavřen, lišta ukazuje čas', !s.panelOpen && s.work && /\d:\d\d/.test(mb1), `lišta="${mb1}"`);
+    await click('.mb-item'); s = await S(); check('1 panel otevřen, stav zachován', s.panelOpen && s.work && s.work.projectId === 'web');
+    await go('working'); await page.keyboard.press('r'); s = await S();
+    check('2 obojí běží, cíl navržen podle práce', s.work && s.rec && s.rec.target === 'sever');
+    await page.evaluate(() => { window.__ludone.state().now += 754; }); // schůzka trvá 12:34
+    await click('[data-action="rec-stop"]'); s = await S(); check('2 stop zvuku → list, čas běží', s.sheet && s.sheet.type === 'save' && s.work && !s.rec);
+    await click('[data-action="title-chip"]'); await click('[data-action="save-send"]'); await page.waitForTimeout(4200); s = await S();
+    const t2 = s.recs.find(r => r[0] === 'Týdenní domluva'); check('2 nahrávka ověřena, čas stále běží', t2 && t2[1] === 'verified' && s.work, JSON.stringify(t2));
+    await click('[data-action="stop-work"]'); s = await S(); check('2 stop času → souhrn obou výsledků', !s.work && s.result && s.result.recIds.length === 1);
+    await page.waitForTimeout(1500); s = await S(); check('2 úsek potvrzen serverem', s.segs[s.segs.length - 1][2] === 'confirmed');
+    const rt = await page.locator('.result-card').innerText(); check('2 další krok v souhrnu', /Pokračovat v/.test(rt) && /Přepis na webu/.test(rt));
+    await page.screenshot({ path: DIR + 'cesta2-souhrn-light.png' });
+    await go('home'); const n3 = (await S()).segs.length; await click('[data-action="rec-start"]'); s = await S();
+    check('3 nahrávka bez projektu i cíle', s.rec && !s.work && s.rec.target === null);
+    await page.evaluate(() => { window.__ludone.state().now += 125; }); await click('[data-action="rec-stop"]');
+    const dis3 = await page.locator('[data-action="save-send"]').isDisabled(); await click('[data-action="save-local"]'); s = await S();
+    const l3 = s.recs[s.recs.length - 1]; check('3 jen na Macu, žádný úsek času', l3[1] === 'local' && s.segs.length === n3 && !s.work && dis3, JSON.stringify(l3));
+    await go('meeting'); await click('[data-action="switch-open"]'); await page.locator('#cmd').fill('jih'); await page.locator('#cmd').press('Enter'); await page.locator('#draft-desc').press('Enter'); s = await S();
+    const p4 = s.segs[s.segs.length - 1]; check('4 předchozí úsek uložen s popisem', p4[0] === 'web' && p4[1] === 'Příprava obsahu', JSON.stringify(p4));
+    check('4 nový projekt běží', s.work && s.work.projectId === 'jih');
+    check('4 cíl nahrávky zůstal + vysvětlení rozdílu', s.rec && s.rec.target === 'sever' && s.notice && s.notice.to === 'jih');
+    await page.screenshot({ path: DIR + 'cesta4-prepnuti-light.png' });
+    await click('[data-action="notice-keep"]'); s = await S(); check('4 Ponechat Studio Sever', s.rec.target === 'sever' && !s.notice);
+    await go('attention'); await click('[data-action="login-start"]'); await page.waitForTimeout(2600); s = await S();
+    const k5 = s.recs.find(r => r[0] === 'Kontrola rozpočtu'); check('5 přihlášení obnoveno, nic neodesláno samo', s.auth === 'ok' && k5[1] === 'failed');
+    await page.waitForTimeout(1300); s = await S(); check('5 čas se po přihlášení sám synchronizoval', s.segs.every(g => g[2] === 'confirmed'));
+    await click('[data-action="need-firm"][data-firm="sever"][data-id="r-tyden"]'); const sb5 = await page.locator('[data-action="need-send"][data-id="r-tyden"]').innerText();
+    await click('[data-action="need-send"][data-id="r-tyden"]'); await click('[data-action="need-retry"][data-id="r-kontrola"]'); await page.waitForTimeout(4500); s = await S();
+    check('5 výběr firmy a odeslání jsou dva kroky; obě ověřeny', /Odeslat do Studio Sever/.test(sb5) && s.recs.filter(r => r[1] === 'verified').length === 2);
+    await go('offline'); await click('[data-action="rec-stop"]'); const l6 = await page.locator('[data-action="save-send"]').innerText(); await click('[data-action="save-send"]'); await click('[data-action="stop-work"]'); s = await S();
+    const q6 = s.recs[s.recs.length - 1]; check('6 offline: nahrávka ve frontě, úsek čeká', q6[1] === 'queued' && s.segs[s.segs.length - 1][2] === 'pending' && /fronty/.test(l6), l6);
+    const f6 = (await page.locator('.p-foot').innerText()).split('\n')[0];
+    await click('.sim-btn'); await click('[data-action="sim-net-on"]'); await page.waitForTimeout(4500); s = await S();
+    check('6 po obnově: potvrzeno/ověřeno, „Na Macu" zůstává', s.segs[s.segs.length - 1][2] === 'confirmed' && s.recs[s.recs.length - 1][1] === 'verified' && s.recs.find(r => r[0] === 'Návrh webu')[1] === 'local', `patička offline="${f6}"`);
+    await go('recovery'); s = await S(); check('7 rozhodnutí vyžadováno, nic nevykázáno', s.sheet && s.sheet.type === 'recovery' && s.segs.length === 0 && !s.work);
+    await page.mouse.click(200, 60); await page.keyboard.press('Escape'); s = await S(); check('7 list nejde obejít (klik mimo, Esc)', s.sheet && s.sheet.type === 'recovery');
+    await click('[data-action="rv-confirm"]'); s = await S(); check('7 úsek do 18:12, čeká na přihlášení, nic neběží', s.segs.length === 1 && s.segs[0][2] === 'pending' && s.segs[0][3] === true && !s.work);
+    check('7 čekající nahrávky beze změny', s.recs.find(r => r[0] === 'Kontrola rozpočtu')[1] === 'failed' && s.recs.find(r => r[0] === 'Návrh webu')[1] === 'local');
+    await go('day'); await click('.rows--day [data-kind="rec"][data-id="r-navrh"]'); s = await S(); check('8 detail nahrávky z přehledu dne', s.detail && s.detail.id === 'r-navrh');
+    await click('[data-action="det-finder"]'); const tf = await page.locator('.toast').innerText(); await click('[data-action="det-trash"]'); const tt = await page.locator('.sheet').innerText();
+    await click('[data-action="trash-confirm"]'); s = await S(); const gone = !s.recs.find(r => r[0] === 'Návrh webu'); await click('.toast [data-action="toast-action"]'); s = await S();
+    check('8 Finder (popsané předání), konkrétní koš, Vrátit', /Finder/.test(tf) && /jediná kopie/.test(tt) && gone && !!s.recs.find(r => r[0] === 'Návrh webu'));
+    await click('.rows--day [data-kind="seg"][data-id="s-jih"]'); const st8 = await page.locator('.win-body').innerText();
+    check('8 detail úseku ukazuje schůzku a „neznamená schválený výkaz"', /Návrh webu/.test(st8) && /Neznamená schválený výkaz/.test(st8));
+    await click('[data-action="web-week"]'); const tw = await page.locator('.toast').innerText(); check('8 web s konkrétním cílem', /time-tracking/.test(tw), tw);
+    await go('update'); await click('.notif [data-action="upd-details"]'); await click('[data-action="upd-prepare"]'); await page.waitForTimeout(2400); s = await S();
+    const u9 = (await page.locator('.upd').innerText()).trim();
+    check('9 připraveno, čeká na obě činnosti, žádné tlačítko instalace', s.update.stage === 'ready' && (await page.locator('[data-action="upd-install"]').count()) === 0 && /měření, nahrávání/.test(u9), u9);
+    await click('[data-action="rec-stop"]'); await click('[data-action="save-local"]'); await click('[data-action="stop-work"]'); s = await S();
+    check('9 skončení činností nic nenainstalovalo', s.update.stage === 'ready' && s.update.version === '0.1.4');
+    await click('[data-action="upd-install"]'); await page.waitForTimeout(2100); s = await S(); check('9 instalace až po výslovném kliknutí', s.update.version === '0.1.5');
+    await go('onboarding'); await click('[data-action="ob-login"]'); await page.waitForTimeout(2000); await click('[data-action="ob-next"]'); await click('[data-action="ob-mic"]'); await click('[data-action="ob-finish"]'); s = await S();
+    const fc = await page.evaluate(() => document.activeElement && document.activeElement.id); check('10 onboarding → fokus v hledání projektu', !s.onboarding && s.auth === 'ok' && fc === 'cmd');
+    await go('settings'); await click('[data-action="set-theme"][data-v="dark"]'); const dt = await page.evaluate(() => [document.documentElement.dataset.theme, window.__ludoneState.theme]);
+    await click('[data-action="set-toggle"][data-k="autoSend"]'); s = await S(); check('10 téma přepnuto a oznámeno; automatika neodeslala staré', dt[0] === 'dark' && dt[1] === 'dark' && s.recs.find(r => r[0] === 'Návrh webu')[1] === 'local');
+    log.push('== C. Komunikace s rodičem ==');
+    await page.setViewportSize({ width: 900, height: 900 }); await page.goto('http://127.0.0.1:18731/evidence/');
+    const pm = await page.evaluate(async () => { document.body.innerHTML = ''; const msgs = []; addEventListener('message', e => { if (e.data && e.data.type === 'ludone-experience:state') msgs.push(e.data); }); const f = document.createElement('iframe'); f.src = '/index.html?scenario=home&theme=light'; document.body.appendChild(f); await new Promise(r => f.onload = r); await new Promise(r => setTimeout(r, 200)); const first = msgs[msgs.length - 1]; f.contentWindow.postMessage({ type: 'ludone-experience:set', scenario: 'day', theme: 'dark' }, location.origin); await new Promise(r => setTimeout(r, 200)); const valid = msgs[msgs.length - 1]; f.contentWindow.postMessage({ type: 'ludone-experience:set', scenario: 'hack', theme: 'dark' }, location.origin); f.contentWindow.postMessage({ type: 'ludone-experience:set', scenario: 'home', theme: 'neon' }, location.origin); await new Promise(r => setTimeout(r, 200)); f.contentWindow.postMessage({ type: 'ludone-experience:set', scenario: 'home', theme: 'light' }, '*'); return { first, valid, afterInvalid: f.contentDocument.documentElement.dataset.scenario }; });
+    check('stav oznámen rodiči při načtení', pm.first && pm.first.scenario === 'home' && pm.first.width === 416 && pm.first.height === 680, JSON.stringify(pm.first));
+    check('platná zpráva od rodiče přepne scénář a téma', pm.valid && pm.valid.scenario === 'day' && pm.valid.theme === 'dark' && pm.valid.width === 700, JSON.stringify(pm.valid));
+    check('neplatný scénář / téma ignorovány', pm.afterInvalid === 'day');
+    await go('home'); const self = await page.evaluate(async () => { window.postMessage({ type: 'ludone-experience:set', scenario: 'day', theme: 'dark' }, '*'); await new Promise(r => setTimeout(r, 100)); return document.documentElement.dataset.scenario; });
+    check('zpráva, která nepřišla od rodiče, ignorována', self === 'home');
+    for (const [sc, th] of [['record-only', 'professional'], ['offline', 'professional']]) { await go(sc, th); await page.waitForTimeout(150); await page.screenshot({ path: `${DIR}${sc}-${th}.png` }); }
+  } catch (e) { log.push('ABORT ' + String(e).slice(0, 300)); }
+  log.push('chyby stránky/konzole: ' + (errs.length ? errs.join(' || ') : 'žádné'));
+  const pass = log.filter(l => l.startsWith('PASS')).length, fail = log.filter(l => l.startsWith('FAIL') || l.startsWith('ABORT')).length;
+  log.push(`SOUHRN: ${pass} PASS, ${fail} FAIL`);
+  return log.join('\n');
+}

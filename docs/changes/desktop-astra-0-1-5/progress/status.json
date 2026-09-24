@@ -1,0 +1,570 @@
+{
+  "schemaVersion": 2,
+  "tier": "L",
+  "project": {
+    "id": "desktop-astra-0-1-5",
+    "name": "LuDone Desktop 0.1.5: Astra Nit dne",
+    "goal": "Doplnit každodenní LuDone Desktop podle schváleného směru Astra, zachovat oba návrhy, zpřehlednit přístup k nahrávkám a připravit další vydání bez integrace LuTracku.",
+    "updatedAt": "2026-09-24T01:00:35.565Z",
+    "planVersion": "draft",
+    "problem": "Záměr čeká na doplnění popisu problému.",
+    "targetOutcome": "Doplnit každodenní LuDone Desktop podle schváleného směru Astra, zachovat oba návrhy, zpřehlednit přístup k nahrávkám a připravit další vydání bez integrace LuTracku.",
+    "audiences": [],
+    "outOfScope": []
+  },
+  "phase": "review_delivery",
+  "guard": {
+    "requires": []
+  },
+  "summary": {
+    "done": 1,
+    "inProgress": 0,
+    "blocked": 0,
+    "notStarted": 0
+  },
+  "features": [
+    {
+      "id": "DESKTOP-ASTRA-0-1-5-01",
+      "name": "LuDone Desktop 0.1.5: Astra Nit dne",
+      "whatItGives": "Doplnit každodenní LuDone Desktop podle schváleného směru Astra, zachovat oba návrhy, zpřehlednit přístup k nahrávkám a připravit další vydání bez integrace LuTracku.",
+      "scope": "approved",
+      "delivery": "coded",
+      "exposure": "local",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Sloučit PR #149 po zeleném CI; poté pushnout tag v0.1.5, ověřit signed/notarized release a veřejný feed.",
+      "evidence": [
+        "EV3",
+        "EV4",
+        "EV5",
+        "EV6",
+        "EV7",
+        "EV8",
+        "EV9",
+        "EV10",
+        "EV11"
+      ]
+    }
+  ],
+  "screens": [
+    {
+      "id": "panel",
+      "name": "Hlavní panel",
+      "status": "approved",
+      "approval": "approved",
+      "approvalRequired": "composition",
+      "summary": "LuDone značka, ovládání nahrávání a jasný neaktivní LuTrack.",
+      "finding": "LuDone značka, ovládání nahrávání a jasný neaktivní LuTrack.",
+      "current": {
+        "state": "missing",
+        "note": "Screenshot z této verze nebyl v této fázi pořízen; uživatelův screenshot z 23. 9. je v konverzaci."
+      },
+      "proposal": {
+        "state": "approved",
+        "fidelity": "L1",
+        "changes": [
+          "Vybraný výřez Astra; úplný návrh zůstává v round2."
+        ]
+      }
+    },
+    {
+      "id": "recordings",
+      "name": "Přehled nahrávek",
+      "status": "approved",
+      "approval": "approved",
+      "approvalRequired": "composition",
+      "summary": "Skutečný dashboard otevřený přímo z panelu.",
+      "finding": "Skutečný dashboard otevřený přímo z panelu.",
+      "current": {
+        "state": "missing",
+        "note": "Aktuální produkční screenshot nebyl pořízen."
+      },
+      "proposal": {
+        "state": "approved",
+        "fidelity": "L1",
+        "changes": [
+          "Přímý vstup do existujícího přehledu."
+        ]
+      }
+    },
+    {
+      "id": "settings",
+      "name": "Nastavení",
+      "status": "approved",
+      "approval": "approved",
+      "approvalRequired": "composition",
+      "summary": "Širší okno s navigací a zachovanou identitou #settings.",
+      "finding": "Širší okno s navigací a zachovanou identitou #settings.",
+      "current": {
+        "state": "missing",
+        "note": "Aktuální produkční screenshot nebyl pořízen."
+      },
+      "proposal": {
+        "state": "approved",
+        "fidelity": "L1",
+        "changes": [
+          "Větší okno; bezpečnostní identita #settings zůstává."
+        ]
+      }
+    }
+  ],
+  "openQuestions": [],
+  "decisions": [
+    {
+      "id": "D1",
+      "title": "Pro 0.1.5 použít směr Astra „Nit dne“",
+      "ref": "decisions.md#d1",
+      "decidedBy": "Dan",
+      "date": "2026-09-24",
+      "choice": {
+        "question": "Q1",
+        "option": "A",
+        "label": "Astra Nit dne"
+      }
+    },
+    {
+      "id": "D2",
+      "title": "LuTrack zůstává vypnutý do připravenosti služby",
+      "ref": "decisions.md#d2",
+      "decidedBy": "Dan",
+      "date": "2026-09-24",
+      "choice": {
+        "question": "Q2",
+        "option": "A",
+        "label": "Jen neaktivní vysvětlení"
+      }
+    },
+    {
+      "id": "D3",
+      "title": "Zachovat bezpečnostní identitu Nastavení",
+      "ref": "decisions.md#d3",
+      "decidedBy": "Codex — bezpečný technický detail ze stávající IPC brány",
+      "date": "2026-09-24",
+      "choice": {
+        "question": "Q3",
+        "option": "A",
+        "label": "Query parametr a hash #settings"
+      }
+    },
+    {
+      "id": "D4",
+      "title": "Verzi 0.1.5 připravit a vydat desktopovým workflow",
+      "ref": "decisions.md#d4",
+      "decidedBy": "Dan",
+      "date": "2026-09-24",
+      "choice": {
+        "question": "Q4",
+        "option": "A",
+        "label": "Existující podepsané workflow po zeleném CI"
+      }
+    }
+  ],
+  "milestones": [
+    {
+      "id": "intent",
+      "name": "Záměr",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "project_context",
+      "name": "Kontext projektu",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "discovery",
+      "name": "Zjištění",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "outcome_contract",
+      "name": "Kontrakt výsledku",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "design",
+      "name": "Návrh",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "spec",
+      "name": "Specifikace",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "plan",
+      "name": "Plán",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "execution",
+      "name": "Implementace",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "review_delivery",
+      "name": "Kontrola a dodání",
+      "status": "current",
+      "detail": "Tato fáze právě probíhá."
+    },
+    {
+      "id": "archive",
+      "name": "Archiv",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-01",
+      "title": "Připravit změnu „LuDone Desktop 0.1.5: Astra Nit dne“",
+      "executor": "codex",
+      "state": "completed",
+      "attempts": 0,
+      "deps": [],
+      "packet": "tasks/T-01.md"
+    },
+    {
+      "id": "T-02",
+      "title": "Pravdivý stav LuTracku",
+      "executor": "codex",
+      "state": "completed",
+      "attempts": 0,
+      "deps": [
+        "T-01"
+      ],
+      "packet": "tasks/T-02.md"
+    },
+    {
+      "id": "T-03",
+      "title": "Review a vydání 0.1.5",
+      "executor": "codex",
+      "state": "dispatched",
+      "attempts": 1,
+      "deps": [
+        "T-01",
+        "T-02"
+      ],
+      "packet": "tasks/T-03.md",
+      "worktree": ".claude/worktrees/desktop-astra-next-v0-1-5"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV1",
+      "kind": "test",
+      "label": "Plné projektové brány",
+      "value": "npm run gates: 76 souborů; 1 556 PASS, 3 baseline skipy; exit 0",
+      "ref": "evidence/tests/npm-gates.log"
+    },
+    {
+      "id": "EV2",
+      "kind": "test",
+      "label": "Produkční build rendereru",
+      "value": "npm run build; Vite build úspěšně dokončen; exit 0",
+      "ref": "evidence/tests/npm-build.log"
+    },
+    {
+      "id": "EV3",
+      "kind": "test",
+      "label": "Plné brány po opravách review",
+      "value": "npm run gates; 76 test files, 1557 passed, 3 baseline skips; exit 0",
+      "ref": "evidence/tests/npm-gates.log",
+      "href": "evidence/tests/npm-gates.log"
+    },
+    {
+      "id": "EV4",
+      "kind": "test",
+      "label": "Produkční build rendereru po review",
+      "value": "npm run build; 55 modules; exit 0",
+      "ref": "evidence/tests/npm-build.log",
+      "href": "evidence/tests/npm-build.log"
+    },
+    {
+      "id": "EV5",
+      "kind": "verification",
+      "label": "Nezávislé review",
+      "value": "Dva nálezy opraveny; cílené testy a následné úplné brány prošly.",
+      "ref": "evidence/review/review.md",
+      "href": "evidence/review/review.md"
+    },
+    {
+      "id": "EV6",
+      "kind": "verification",
+      "label": "Masterplan review a lint",
+      "value": "Aktivní packet i úplný lint 3 packetů čistý; progress check ověřen.",
+      "ref": "evidence/masterplan/mp-lint-full.log",
+      "href": "evidence/masterplan/mp-lint-full.log"
+    },
+    {
+      "id": "EV7",
+      "kind": "test",
+      "label": "Samostatná E5 sonda: starý fail-closed rozpor",
+      "value": "7 PASS, 1 FAIL; výchozí undefined -> true je v rozporu s historickým R18 a pozdějším schváleným D3/D11; kód ani brána nezměněny.",
+      "ref": "evidence/acceptance/E5.log",
+      "href": "evidence/acceptance/E5.log"
+    },
+    {
+      "id": "EV8",
+      "kind": "verification",
+      "label": "Živý náhled GUI není dostupný",
+      "value": "orca computer capabilities vrátil runtime_unavailable; bez screenshotu nepovažovat vizuální průchod za ověřený.",
+      "ref": "evidence/review/review.md",
+      "href": "evidence/review/review.md"
+    },
+    {
+      "id": "EV9",
+      "kind": "commit",
+      "label": "Commity kandidáta 0.1.5",
+      "value": "434d893 implementace; 69ce81f verzované důkazy.",
+      "ref": "69ce81f"
+    },
+    {
+      "id": "EV10",
+      "kind": "verification",
+      "label": "Push a PR #149",
+      "value": "Push větve úspěšný; PR otevřený; GitHub gates čekají.",
+      "ref": "https://github.com/Make-more-s-r-o/ludone-desktop/pull/149",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/pull/149"
+    },
+    {
+      "id": "EV11",
+      "kind": "test",
+      "label": "GitHub CI pro PR #149",
+      "value": "gates: pass, 1m37s; mergeStateStatus=CLEAN.",
+      "ref": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35940764149/job/107447915008",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35940764149"
+    }
+  ],
+  "latestChanges": [
+    {
+      "at": "2026-09-24T01:00:35.565Z",
+      "text": "GitHub CI gates pro PR #149 prošly; PR je otevřený a čistě slučitelný. Tag čeká na merge."
+    },
+    {
+      "at": "2026-09-24T01:00:35.354Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-24T01:00:35.132Z",
+      "text": "Byl přidán důkaz EV11: GitHub CI pro PR #149."
+    },
+    {
+      "at": "2026-09-24T00:59:09.325Z",
+      "text": "Větev pushnuta a PR #149 otevřen; CI gates čeká, tag ani vydání zatím nebyly spuštěny."
+    },
+    {
+      "at": "2026-09-24T00:59:09.115Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-24T00:59:08.901Z",
+      "text": "Byl přidán důkaz EV10: Push a PR #149."
+    },
+    {
+      "at": "2026-09-24T00:59:08.670Z",
+      "text": "Byl přidán důkaz EV9: Commity kandidáta 0.1.5."
+    },
+    {
+      "at": "2026-09-24T00:53:15.064Z",
+      "text": "Nezávislé review dokončeno; plné npm brány a build zelené. Oddělená E5 sonda a vizuální Orca průchod zaznamenány jako čekající/rozporuplné důkazy."
+    },
+    {
+      "at": "2026-09-24T00:53:14.856Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-24T00:53:14.647Z",
+      "text": "Byl přidán důkaz EV8: Živý náhled GUI není dostupný."
+    },
+    {
+      "at": "2026-09-24T00:53:14.427Z",
+      "text": "Byl přidán důkaz EV7: Samostatná E5 sonda: starý fail-closed rozpor."
+    },
+    {
+      "at": "2026-09-24T00:36:44.356Z",
+      "text": "Fáze se změnila z „execution“ na „review_delivery“."
+    },
+    {
+      "at": "2026-09-24T00:35:47.943Z",
+      "text": "Nezávislé review uzavřeno; po opravách prošly cílené i úplné testy, build a masterplan lint."
+    },
+    {
+      "at": "2026-09-24T00:35:47.665Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-24T00:35:47.386Z",
+      "text": "Byl přidán důkaz EV6: Masterplan review a lint."
+    },
+    {
+      "at": "2026-09-24T00:35:47.110Z",
+      "text": "Byl přidán důkaz EV5: Nezávislé review."
+    },
+    {
+      "at": "2026-09-24T00:35:46.835Z",
+      "text": "Byl přidán důkaz EV4: Produkční build rendereru po review."
+    },
+    {
+      "at": "2026-09-24T00:35:46.543Z",
+      "text": "Byl přidán důkaz EV3: Plné brány po opravách review."
+    },
+    {
+      "at": "2026-09-24T00:10:43.213Z",
+      "text": "Otázka Q4 byla uzavřena rozhodnutím D4: Verzi 0.1.5 připravit a vydat desktopovým workflow. (volba Q4·A)"
+    },
+    {
+      "at": "2026-09-24T00:10:42.929Z",
+      "text": "Byla přidána otevřená otázka Q4: Jak připravit verzi 0.1.5 k distribuci?"
+    },
+    {
+      "at": "2026-09-24T00:10:42.640Z",
+      "text": "Otázka Q3 byla uzavřena rozhodnutím D3: Zachovat bezpečnostní identitu Nastavení. (volba Q3·A)"
+    },
+    {
+      "at": "2026-09-24T00:10:42.357Z",
+      "text": "Byla přidána otevřená otázka Q3: Jak předat první záložku Nastavení při zachování kontroly oprávnění?"
+    },
+    {
+      "at": "2026-09-24T00:10:42.073Z",
+      "text": "Otázka Q2 byla uzavřena rozhodnutím D2: LuTrack zůstává vypnutý do připravenosti služby. (volba Q2·A)"
+    },
+    {
+      "at": "2026-09-24T00:10:41.797Z",
+      "text": "Byla přidána otevřená otázka Q2: Jak se LuTrack zobrazí, dokud služba není připravená?"
+    },
+    {
+      "at": "2026-09-24T00:10:41.514Z",
+      "text": "Otázka Q1 byla uzavřena rozhodnutím D1: Pro 0.1.5 použít směr Astra „Nit dne“. (volba Q1·A)"
+    },
+    {
+      "at": "2026-09-24T00:10:41.229Z",
+      "text": "Byla přidána otevřená otázka Q1: Který schválený návrh se použije pro desktop 0.1.5?"
+    },
+    {
+      "at": "2026-09-24T00:00:25.455Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-24T00:00:25.176Z",
+      "text": "Byl přidán důkaz EV2: Produkční build rendereru."
+    },
+    {
+      "at": "2026-09-24T00:00:24.891Z",
+      "text": "Byl přidán důkaz EV1: Plné projektové brány."
+    },
+    {
+      "at": "2026-09-23T23:01:32.057Z",
+      "text": "Task T-03 má nově stav „dispatched“."
+    },
+    {
+      "at": "2026-09-23T23:01:31.785Z",
+      "text": "Task T-02 má nově stav „completed“."
+    },
+    {
+      "at": "2026-09-23T23:01:31.503Z",
+      "text": "Task T-01 má nově stav „completed“."
+    },
+    {
+      "at": "2026-09-23T23:01:31.220Z",
+      "text": "Fáze se změnila z „plan“ na „execution“."
+    },
+    {
+      "at": "2026-09-23T23:01:30.942Z",
+      "text": "Plán schválen ručním fallbackem na základě výslovného pokynu Dana k samostatné implementaci a vydání; approval metadata jsou v plan.md."
+    },
+    {
+      "at": "2026-09-23T23:01:30.657Z",
+      "text": "Brána plan-approved byla uvolněna."
+    },
+    {
+      "at": "2026-09-23T23:01:09.020Z",
+      "text": "Fáze se změnila z „spec“ na „plan“."
+    },
+    {
+      "at": "2026-09-23T23:01:08.742Z",
+      "text": "Fáze se změnila z „design“ na „spec“."
+    },
+    {
+      "at": "2026-09-23T22:54:15.033Z",
+      "text": "Design byl schválen: varianta B, schválil/a Dan (výslovný pokyn v konverzaci)."
+    },
+    {
+      "at": "2026-09-23T22:54:05.800Z",
+      "text": "Fáze se změnila z „outcome_contract“ na „design“."
+    },
+    {
+      "at": "2026-09-23T22:54:05.527Z",
+      "text": "Fáze project_context–discovery označeny jako proběhlé (adopce)."
+    },
+    {
+      "at": "2026-09-23T22:54:05.247Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-23T22:54:04.963Z",
+      "text": "Byl zalozen task T-03: Review a vydání 0.1.5."
+    },
+    {
+      "at": "2026-09-23T22:54:04.687Z",
+      "text": "Byl zalozen task T-02: Pravdivý stav LuTracku."
+    },
+    {
+      "at": "2026-09-23T22:54:04.402Z",
+      "text": "Návrh obrazovky settings má stav „approved“, věrnost L1."
+    },
+    {
+      "at": "2026-09-23T22:54:04.115Z",
+      "text": "Návrh obrazovky recordings má stav „approved“, věrnost L1."
+    },
+    {
+      "at": "2026-09-23T22:54:03.839Z",
+      "text": "Návrh obrazovky panel má stav „approved“, věrnost L1."
+    },
+    {
+      "at": "2026-09-23T22:54:03.562Z",
+      "text": "Dnešní stav obrazovky settings je „missing“."
+    },
+    {
+      "at": "2026-09-23T22:54:03.278Z",
+      "text": "Dnešní stav obrazovky recordings je „missing“."
+    },
+    {
+      "at": "2026-09-23T22:54:02.998Z",
+      "text": "Dnešní stav obrazovky panel je „missing“."
+    },
+    {
+      "at": "2026-09-23T22:54:02.713Z",
+      "text": "Obrazovka settings byla přidána."
+    },
+    {
+      "at": "2026-09-23T22:54:02.434Z",
+      "text": "Obrazovka recordings byla přidána."
+    },
+    {
+      "at": "2026-09-23T22:54:02.153Z",
+      "text": "Obrazovka panel byla aktualizována."
+    },
+    {
+      "at": "2026-09-23T22:54:01.871Z",
+      "text": "Obrazovka panel byla přidána."
+    },
+    {
+      "at": "2026-09-23T22:33:58.743Z",
+      "text": "Změna byla založena jako tier L."
+    }
+  ],
+  "tryNow": [],
+  "notes": [],
+  "hub": {
+    "repo": "desktop-astra-next-v0-1-5",
+    "path": "docs/changes/desktop-astra-0-1-5"
+  }
+}
