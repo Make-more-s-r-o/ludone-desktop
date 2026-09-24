@@ -6,7 +6,7 @@
 
 | větev / worktree | co | stav |
 |---|---|---|
-| `feat/desktop-astra-next-v0-1-5` | implementace a zachované designové návrhy | plné brány, build a nezávislé review prošly; samostatná E5 sonda má doložený rozpor se schváleným D3/D11; commit, PR a vydání čekají |
+| `feat/desktop-astra-next-v0-1-5` | implementace a zachované designové návrhy | commity `434d893`, `69ce81f`; push hotový; PR #149 otevřený a čistě slučitelný; CI gates zelené; samostatná E5 sonda má doložený rozpor se schváleným D3/D11 |
 
 ## Co je hotové a ověřené
 
@@ -22,7 +22,7 @@
 
 | blokuje | čeká na |
 |---|---|
-| Pull request a tag `v0.1.5` | commit, push, zelené GitHub CI a podepsané vydání |
+| Tag `v0.1.5` a podepsané vydání | merge PR #149; potom sledovat macOS workflow a veřejný feed |
 | Ověření skutečného záznamu, uploadu a aktualizace na Macu | instalaci výsledného podepsaného vydání a ruční postup v [`OVERENI-NA-MACU.md`](OVERENI-NA-MACU.md) |
 | Rozhodnutí, zda historickou E5 sondu sladit se schváleným D3/D11 | samostatné budoucí rozhodnutí; tato změna sondu neobchází ani nemění |
 

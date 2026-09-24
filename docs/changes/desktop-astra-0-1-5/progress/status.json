@@ -5,7 +5,7 @@
     "id": "desktop-astra-0-1-5",
     "name": "LuDone Desktop 0.1.5: Astra Nit dne",
     "goal": "Doplnit každodenní LuDone Desktop podle schváleného směru Astra, zachovat oba návrhy, zpřehlednit přístup k nahrávkám a připravit další vydání bez integrace LuTracku.",
-    "updatedAt": "2026-09-24T00:53:15.064Z",
+    "updatedAt": "2026-09-24T01:00:35.565Z",
     "planVersion": "draft",
     "problem": "Záměr čeká na doplnění popisu problému.",
     "targetOutcome": "Doplnit každodenní LuDone Desktop podle schváleného směru Astra, zachovat oba návrhy, zpřehlednit přístup k nahrávkám a připravit další vydání bez integrace LuTracku.",
@@ -32,14 +32,17 @@
       "exposure": "local",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Dokončit commit, push a PR; po zeleném CI a merge spustit vydání 0.1.5. E5 rozpor a živé GUI jsou výslovně evidované.",
+      "nextStep": "Sloučit PR #149 po zeleném CI; poté pushnout tag v0.1.5, ověřit signed/notarized release a veřejný feed.",
       "evidence": [
         "EV3",
         "EV4",
         "EV5",
         "EV6",
         "EV7",
-        "EV8"
+        "EV8",
+        "EV9",
+        "EV10",
+        "EV11"
       ]
     }
   ],
@@ -315,9 +318,60 @@
       "value": "orca computer capabilities vrátil runtime_unavailable; bez screenshotu nepovažovat vizuální průchod za ověřený.",
       "ref": "evidence/review/review.md",
       "href": "evidence/review/review.md"
+    },
+    {
+      "id": "EV9",
+      "kind": "commit",
+      "label": "Commity kandidáta 0.1.5",
+      "value": "434d893 implementace; 69ce81f verzované důkazy.",
+      "ref": "69ce81f"
+    },
+    {
+      "id": "EV10",
+      "kind": "verification",
+      "label": "Push a PR #149",
+      "value": "Push větve úspěšný; PR otevřený; GitHub gates čekají.",
+      "ref": "https://github.com/Make-more-s-r-o/ludone-desktop/pull/149",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/pull/149"
+    },
+    {
+      "id": "EV11",
+      "kind": "test",
+      "label": "GitHub CI pro PR #149",
+      "value": "gates: pass, 1m37s; mergeStateStatus=CLEAN.",
+      "ref": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35940764149/job/107447915008",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/35940764149"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-24T01:00:35.565Z",
+      "text": "GitHub CI gates pro PR #149 prošly; PR je otevřený a čistě slučitelný. Tag čeká na merge."
+    },
+    {
+      "at": "2026-09-24T01:00:35.354Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-24T01:00:35.132Z",
+      "text": "Byl přidán důkaz EV11: GitHub CI pro PR #149."
+    },
+    {
+      "at": "2026-09-24T00:59:09.325Z",
+      "text": "Větev pushnuta a PR #149 otevřen; CI gates čeká, tag ani vydání zatím nebyly spuštěny."
+    },
+    {
+      "at": "2026-09-24T00:59:09.115Z",
+      "text": "Funkce DESKTOP-ASTRA-0-1-5-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-24T00:59:08.901Z",
+      "text": "Byl přidán důkaz EV10: Push a PR #149."
+    },
+    {
+      "at": "2026-09-24T00:59:08.670Z",
+      "text": "Byl přidán důkaz EV9: Commity kandidáta 0.1.5."
+    },
     {
       "at": "2026-09-24T00:53:15.064Z",
       "text": "Nezávislé review dokončeno; plné npm brány a build zelené. Oddělená E5 sonda a vizuální Orca průchod zaznamenány jako čekající/rozporuplné důkazy."
