@@ -6,10 +6,10 @@
 
 | Oblast | Autoritativní stav | Praktický význam |
 |---|---|---|
-| Desktop 0.1.5 / Astra | [`desktop-astra-0-1-5/STAV.md`](changes/desktop-astra-0-1-5/STAV.md) a [`progress/status.json`](changes/desktop-astra-0-1-5/progress/status.json) | Aktivní tier L. Implementace, plné brány (1 557 PASS, 3 původní skipy), produkční build a nezávislé review jsou 🧪. Commit, PR, CI a release čekají; skutečný zvuk, upload a aktualizaci ověří Dan na Macu. |
+| Desktop 0.1.5 / Astra | [Archivovaný stav](changes/_archive/desktop-astra-0-1-5/STAV.md) a [průběh](changes/_archive/desktop-astra-0-1-5/progress/status.json) | Tier L dodán do produkční distribuce. PR #149, CI, podpis, notarizace a veřejný feed prošly; nezávislé HTTP ověření potvrdilo balíky pro oba Macy. Skutečné UI, zvuk, upload a instalaci aktualizace ověří Dan na Macu. |
 | Návrhy celé aplikace | [`desktop-redesign-2026-09-23/round2/README.md`](changes/desktop-redesign-2026-09-23/round2/README.md) | Klikací varianty Astra i Opus zůstávají uložené pro pozdější přehodnocení. Pozdější návrh LuTracku není integrace ani backendový kontrakt. |
 | Dokončení nahrávek | [`nahravky-dashboard/STAV.md`](changes/nahravky-dashboard/STAV.md) a [`progress/status.json`](changes/nahravky-dashboard/progress/status.json) | Předchozí implementační běh a jeho původní stavové doklady. Pro nové UI použij změnu 0.1.5. |
-| Vydání a aktualizace | [`nahravky-dashboard/T6-VYDANI.md`](changes/nahravky-dashboard/T6-VYDANI.md) a [`PLAN.md`](../PLAN.md) | 0.1.4 je publikovaná. 0.1.5 ještě není vydaná; po zeleném CI naváže na stávající podepsané release workflow. |
+| Vydání a aktualizace | [`nahravky-dashboard/T6-VYDANI.md`](changes/nahravky-dashboard/T6-VYDANI.md), [důkaz 0.1.5](changes/_archive/desktop-astra-0-1-5/evidence/release/release.md) a [`PLAN.md`](../PLAN.md) | 0.1.5 je podepsaná, notarizovaná a dostupná na `stahnout.ludone.cz/desktop/`; automatické upozornění a instalaci na Danově Macu je ještě třeba ověřit. |
 | Původní desktop v1 | [`desktop-v1/STAV.md`](changes/desktop-v1/STAV.md) | Historický snapshot z 1.–7. 9.; nepoužívej jej jako dnešní backlog. |
 | Dlouhodobý etapový plán | [`PLAN.md`](../PLAN.md) | Aktuální rozcestník k desktopové změně a zachovaný historický plán níže. |
 
@@ -22,10 +22,10 @@
 
 ## Jak navázat
 
-1. Přečti `ROZHODNUTI.md` → `PLAN.md` → `DAN-TODO.md` → aktuální `docs/changes/desktop-astra-0-1-5/STAV.md`.
-2. Stav implementace a ověření ber z `desktop-astra-0-1-5/progress/status.json`; HTML je pouze generovaná projekce.
-3. Dokonči T-03 podle [`desktop-astra-0-1-5/plan.md`](changes/desktop-astra-0-1-5/plan.md), ověř diff i CI a potom spusť podepsané vydání.
-4. Zelené testy označuj 🧪. Podepsané vydání, aktualizaci a zvuk označ ✅ až po skutečném pozorování v příslušném prostředí.
+1. Přečti `ROZHODNUTI.md` → `PLAN.md` → `DAN-TODO.md` → [archivovaný stav 0.1.5](changes/_archive/desktop-astra-0-1-5/STAV.md).
+2. Historický běh 0.1.5 je uzavřený; jeho autoritativní evidence je v `changes/_archive/desktop-astra-0-1-5/`. HTML je pouze generovaná projekce.
+3. Další nezávislý krok je Danova přejímka z [krátkého postupu](changes/_archive/desktop-astra-0-1-5/OVERENI-NA-MACU.md); případné opravy založ jako nový běh.
+4. Zelené testy označuj 🧪; release workflow a veřejný feed jsou ověřené ✅, ale instalaci, zvuk, upload a viditelné upozornění ověří člověk na Macu.
 
 ---
 
