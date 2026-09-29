@@ -1,6 +1,6 @@
 # Stav běhu `desktop-astra-parity-0-1-6`
 
-**Aktualizováno:** 30. 9. 2026, Europe/Prague · **Větev:** `feat/desktop-astra-parity` · **Verze:** 0.1.6 · **commit / push / PR / tag / publikace:** zatím neproběhly
+**Aktualizováno:** 30. 9. 2026, Europe/Prague · **Větev:** `feat/desktop-astra-parity` · **Commit:** `d0d222d` · **Push:** hotový · **Draft PR:** [#152](https://github.com/Make-more-s-r-o/ludone-desktop/pull/152) · **Tag / publikace:** neproběhly
 
 ## Výsledek v pracovním stromě
 
