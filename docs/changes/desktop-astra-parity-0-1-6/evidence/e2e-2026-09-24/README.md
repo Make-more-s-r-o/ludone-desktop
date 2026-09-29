@@ -1,3 +1,17 @@
+---
+kind: test
+ref: evidence/e2e-2026-09-24/README.md
+verdict: "🧪 zelené testy"
+measuredAt: 2026-09-30T00:00:00Z
+scope:
+  - izolovaná Electron E2E, nikoli produkční zvuk/upload
+measuredFrom:
+  - report.json
+  - screenshoty běžícího rendereru
+---
+
+> Metadata byla doplněna při kontrole archivovaného reportu 30. 9.; původní report neukládá přesný čas měření.
+
 # Důkazy E2E — LuDone Desktop 0.1.6
 
 ## Finální běh

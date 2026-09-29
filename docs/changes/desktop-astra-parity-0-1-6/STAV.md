@@ -1,31 +1,27 @@
 # Stav běhu `desktop-astra-parity-0-1-6`
 
-**Aktualizováno:** 30. 9. 2026, Europe/Prague · **Větev:** `feat/desktop-astra-parity` · **Implementace:** `d0d222d` · **Push:** hotový · **Draft PR:** [#152](https://github.com/Make-more-s-r-o/ludone-desktop/pull/152) · **GitHub CI:** zatím bez hlášených kontrol · **Tag / publikace:** neproběhly
+**30. 9. 2026 · větev `feat/desktop-astra-parity` · PR [#152](https://github.com/Make-more-s-r-o/ludone-desktop/pull/152)**
 
-## Výsledek v pracovním stromě
+## Implementace a přejímka
 
-- 🧪 Desktopový shell, Teď, Můj den, detail místní nahrávky, Nastavení, témata a vybrané ikony z Opus návrhu jsou implementované. LuTrack zůstává vypnutý a nevytváří pracovní minuty. Produktová UI zobrazují skutečný stav účtu, zvuku a odeslání.
-- 🧪 `npm run test:design:e2e` prošel s exit kódem 0: 12 akceptačních skupin, 30 automatických podmínek a 5 dvojic screenshotů. Kontroly geometrie pro Můj den, detail, Nastavení a offline scénář prošly. Snímky Teď jsou pořízené a report je správně označuje pro ruční vizuální kontrolu; automatický běh netvrdí pixelovou shodu.
-- 🧪 Nezávislé vizuální review Sol 30. 9. porovnalo poslední snímky s Astrou. Našlo překryv zvukové akce s nastavením zařízení; ten byl opraven a E2E nově ověřuje, že tlačítko zůstane uvnitř karty a nadpis následující sekce nezačne dřív než 4 px pod ním. Závěrečné review už nenašlo problém priority P1/P2. Zbývající rozdíly odpovídají skutečnému odhlášenému účtu, místním nahrávkám, neověřeným oprávněním a vypnutému LuTracku.
-- 🧪 `npm run gates` prošel po posledních úpravách: lint, typecheck, 76 testovacích souborů, 1 567 PASS, 3 dosavadní skipy (baseline 3) a kontrola `preskocene`; exit kód 0.
-- 🧪 E2E zároveň sestavilo `0.1.6` přes `npm run build`. Doslovné výpisy včetně exit kódů, report, screenshoty a [porovnání](evidence/e2e-2026-09-29/astra-layout-final/comparison.html) jsou v [důkazech E2E](evidence/e2e-2026-09-29/astra-layout-final/).
-- 🧪 Předchozí nezávislé bezpečnostní review proti `f036788` nenašlo nový nález; kontrolovalo session/tokeny, převzetí a idempotenci fronty, IPC sender guard, testovací updater fixture a audio IPC. Nejde o ověření produkční cesty.
+- 🧪 Celý Astra shell, Teď, Můj den, detail, Nastavení, onboarding a aktualizační plocha jsou implementované s vybranými Opus ikonami. LuTrack je připravený a vypnutý; nevytváří pracovní minuty. Používají se skutečná data účtu/nahrávek, nikoli demo stavy.
+- 🧪 Finální gates: 77 souborů, 1 573 PASS, původní 3 skipy; lint, typecheck a kontrola přeskočení exit 0. Žádná brána, skip ani baseline nebyly oslabeny.
+- 🧪 Skutečné Electron main/preload/renderer E2E: 12 skupin, 35 podmínek, 18 snímků a 10 dvojic s uloženou Astrou; exit 0. Prošla ztráta a obnova syntetické systémové stopy i restart s neúplnou nahrávkou bez změny původních bajtů a bez falešného odeslání.
+- 🧪 Samostatná stavová E2E: 18/18 PASS. Lokální fixture nahrazují preload a server, veškerá externí síť je zablokovaná (0 pokusů), produkční IPC 0. Netestuje produkční OAuth/upload ani instalační bránu main procesu.
+- 🟡 Nezávislé vizuální review přijalo kompozici Astry s pravdivými produktovými rozdíly, bez zbývající P1/P2. Nejde o automatickou pixelovou shodu. Zachovává se šest skutečných bezpečnostních kroků onboardingu a neaktivní LuTrack; nahrávky nemají fiktivní serverové potvrzení.
+- 🧪 Nezávislý review výsledného diffu a lokální integrity nenašel P1/P2. Nulová stopa a rozpracovaný manifest už nejsou označené jako kompletní; původní soubory, serverová fakta a oprávnění akcí zůstávají zachované.
 
-## Co důkazy neprokazují
+[Důkazy a přímé porovnání](evidence/acceptance-2026-09-30/README.md) · [Mac přejímka](MAC-PREJIMKA.md)
 
-- 🟡 E2E použilo syntetický mikrofon a syntetický systémový zvuk. Skutečný mikrofon, oprávnění macOS, systémový zvuk a instalace aplikace na Danově Macu čekají na přejímku.
-- 🟡 V E2E bylo `DESKTOP_UPLOAD_ENABLED=false`, položky zůstaly místní a nedošlo k přihlášení ani produkčnímu uploadu. Úspěšný běh proto neověřuje přijetí nahrávky serverem.
-- 🟡 Aktualizace byla testovací fixture. Veřejný feed, stažení, podpis a instalace aktualizace nebyly tímto E2E ověřeny.
-- ⛔ Počet všech síťových zápisů není instrumentován; report proto netvrdí, že aplikace neprovedla žádný externí zápis. Doložené je vypnuté odesílání z konkrétního E2E toku.
-- 🟡 Zvukovou cestu, přihlášení, skutečné odeslání a aktualizaci ověří Dan na fyzickém Macu. Podle pravidel repozitáře nemůže mít tvrzení o zvuku před touto přejímkou vyšší stav než 🧪.
+## Co ještě není ověřené
 
-## Masterplan a další dodání
+- 🟡 Skutečný mikrofon, systémový zvuk, oprávnění macOS, instalace z Finderu, produkční přihlášení/odeslání a skutečná aktualizace čekají na Dana podle krátkého Mac postupu. Zvuk má do té doby nejvýš 🧪.
+- 🟡 Hlavní E2E má upload vypnutý; všechny síťové zápisy jeho main procesu nejsou instrumentované. Stavová E2E je plně lokální. Žádný z těchto běhů neověřuje produkční server.
+- 🟡 Tag a podepsaná publikace 0.1.6 ještě neproběhly. Poslední dřívější CI `ea41bc0` prošlo; po finálním pushi se ověří nový commit samostatně.
 
-- ⚠️ Kanonický masterplan zůstává `phase: project_context`, `planVersion: draft`, guard `plan-approved`; `plan.md` nemá schválení ani SHA. Schvalovací pole jsem ručně neměnil.
-- ⚠️ Poslední uložený výstup `mp-lint` hlásí 76 nálezů v 7 starších task packetech a vazbách DAG/status; `mp-progress --check` hlásí zastaralý HTML přehled. Výpisy z kontroly 29. 9. jsou v `evidence/masterplan-check-2026-09-29/`.
-- ⚠️ Masterplan skill svěřuje změny `status.json` nástroji `mp-status` a schválení harnessu. V tomto běhu není dostupný příkaz `mp-status` ani schvalovací hook, takže nebylo možné bezpečně aktualizovat kanonické strojové stavy ani schválit plán. Lidsky čitelný stav a příslušné důkazy jsou aktualizované zde a v `PLAN.md`.
-- 🟡 PR, CI a příprava podepsaného vydání ještě čekají. Tag `v0.1.6` a publikaci nepovažuj za hotové; finální tag zůstává Danovi podle původního zadání.
+## Masterplan
 
-## Rozsah
+- 🧪 Kanonický stav a HTML spravuje `mp-status` přímo přes Node ze skillu. Packety, DAG a evidence byly normalizované; `mp-lint` a `mp-progress --check` měly exit 0. Finální `mp-lint` má 0 nálezů a `mp-progress --check` exit 0.
+- ⚠️ Plán formálně zůstává draft, protože tento Codex harness nemá Claude ExitPlanMode schvalovací hook. Přímé zadání Dana k samostatné implementaci a vydání platí; historické schválení, docs-first pořadí ani worker dispatch se nepředstírají. Pending historické tasky neznamenají chybějící implementaci; faktický stav dodání je na ose funkce a v důkazech.
 
-Změny jsou pouze v desktopovém repozitáři. Backend, webová aplikace `app.ludone.cz`, LuTrack a cizí `design/` nebyly upraveny. E2E nepoužilo skutečné přihlašovací údaje ani produkční upload.
+Rozsah zůstal pouze v desktopovém repozitáři. Backend, `app.ludone.cz`, aktivace LuTracku a cizí `design/` se neměnily.

@@ -1,5 +1,6 @@
 import * as React from "react";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -568,5 +569,55 @@ describe("dashboard fronty nahrávek", () => {
     } finally {
       await dashboard.cleanup();
     }
+  });
+});
+
+describe("pravdivá úplnost místního zvuku", () => {
+  it.each([
+    ["complete", "systém", "complete-audio", null],
+    ["incomplete", "systém", "partial-audio", "Nahrávka nebyla dokončena"],
+    ["complete", "", "partial-audio", "Očekávaný zvukový soubor je prázdný"],
+    ["complete", null, "partial-audio", null],
+  ])("%s manifest a systémová stopa %s zachovají soubory i serverový stav", async (state, system, localState, reason) => {
+    const root = await mkdtemp(path.join(tmpdir(), "ludone-local-integrity-"));
+    const manifestPath = path.join(root, "integrity.manifest.json");
+    const microphonePath = path.join(root, "integrity-microphone.webm");
+    const systemPath = path.join(root, "integrity-system.webm");
+    const createdAt = "2026-09-14T10:00:00.000Z";
+    const endedAt = state === "incomplete" ? null : "2026-09-14T10:00:01.000Z";
+    const track = (fileName, bytes) => ({ fileName, startedAt: createdAt, endedAt,
+      sizeBytes: state === "incomplete" ? 0 : Buffer.byteLength(bytes),
+      sha256: state === "incomplete" ? null : createHash("sha256").update(bytes).digest("hex"),
+    });
+    const manifestBytes = JSON.stringify({
+      schemaVersion: 1, clientRecordingId: ID, createdAt, closedAt: endedAt, state,
+      tracks: { microphone: track(path.basename(microphonePath), "mikrofon"), system: track(path.basename(systemPath), system ?? "systém") },
+    });
+    try {
+      await writeFile(manifestPath, manifestBytes);
+      await writeFile(microphonePath, "mikrofon");
+      if (system !== null) await writeFile(systemPath, system);
+      const { createLocalRecordingsSnapshot } = actualRequire("../electron/recordings-dashboard.cjs");
+      const projected = { ...ITEM, state: "odeslano", ownership: "current", uploadIntent: "approved", blockReason: null };
+      const snapshot = await createLocalRecordingsSnapshot({
+        recordingsDirectory: root,
+        queue: { items: [{ clientRecordingId: ID, kind: "recording", manifestPath,
+          tracks: { microphone: microphonePath, system: systemPath } }] },
+        queueItems: [projected],
+      });
+      const row = snapshot.items[0];
+      expect(row).toMatchObject({ localState, state: "odeslano", ownership: "current", uploadIntent: "approved", revision: REVISION });
+      expect(row.localReason).toEqual(reason === null ? null : expect.stringContaining(reason));
+      const orphan = await createLocalRecordingsSnapshot({ recordingsDirectory: root, queue: { items: [] }, queueItems: [] });
+      expect(orphan.items[0]).toMatchObject({ localState, localReason: row.localReason, source: "orphan", revision: null });
+      const dashboard = await renderDashboard({ listLocalRecordings: async () => snapshot });
+      expect(dashboard.document.body.textContent.includes("Zvuk je kompletní")).toBe(localState === "complete-audio");
+      if (reason !== null) expect(dashboard.document.body.textContent).toContain(reason);
+      expect(dashboard.document.querySelector('.recording-queue-card__journey li:last-child.is-complete')).toBeNull();
+      expect(await readFile(manifestPath, "utf8")).toBe(manifestBytes);
+      expect(await readFile(microphonePath, "utf8")).toBe("mikrofon");
+      if (system !== null) expect(await readFile(systemPath, "utf8")).toBe(system);
+      await dashboard.cleanup();
+    } finally { await rm(root, { recursive: true, force: true }); }
   });
 });

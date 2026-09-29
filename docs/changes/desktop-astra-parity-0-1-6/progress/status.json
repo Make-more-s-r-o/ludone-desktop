@@ -5,14 +5,20 @@
     "id": "desktop-astra-parity-0-1-6",
     "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
     "goal": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-    "updatedAt": "2026-09-24T10:15:20.286Z",
+    "updatedAt": "2026-09-29T23:25:30.772Z",
     "planVersion": "draft",
-    "problem": "Záměr čeká na doplnění popisu problému.",
-    "targetOutcome": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-    "audiences": [],
-    "outOfScope": []
+    "problem": "Dan aktualizoval desktop na 0.1.5 a vidí jiné rozložení i tok, než schválil v prototypu Astra „Nit dne“. Vydaná verze převzala pouze omezený výřez L1: ikonu, zúženou navigaci a přímý odkaz na Nahrávky. Hlavní obrazovka, Můj den, nastavení a sjednocená cesta záznamu zůstaly v původním rozhraní. Předchozí předání tak vytvořilo dojem, že je hotový celý návrh, ačkoli dokumentace rozsah označovala jako částečný.",
+    "targetOutcome": "LuDone Desktop má být soudržná, každodenně použitelná macOS aplikace podle schválené plné varianty Astra: přehled „Teď“, společná stopa dne, detail nahrávky a nastavení sdílejí značku, navigaci, typografii, barvy, stavové zprávy a očekávané chování. Nahrávání, místní fronta, serverové ověření, opravy a aktualizace zůstávají skutečné funkce aplikace; prototypové údaje se do produktu nepřenášejí. LuTrack zůstane nefunkčním, pravdivě označeným budoucím místem bez měření a bez napojení na server.",
+    "audiences": [
+      "Dan na Macu"
+    ],
+    "outOfScope": [
+      "Backend a app.ludone.cz",
+      "Funkční LuTrack",
+      "Cizí design/"
+    ]
   },
-  "phase": "project_context",
+  "phase": "plan",
   "guard": {
     "requires": [
       "plan-approved"
@@ -21,26 +27,187 @@
   "summary": {
     "done": 0,
     "inProgress": 0,
-    "blocked": 0,
-    "notStarted": 1
+    "blocked": 1,
+    "notStarted": 0
   },
   "features": [
     {
       "id": "DESKTOP-ASTRA-PARITY-0-1-6-01",
       "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
       "whatItGives": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-      "scope": "draft",
-      "delivery": "no-code",
-      "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "Doplnit a schválit záměr.",
-      "evidence": []
+      "scope": "approved",
+      "delivery": "pr-open",
+      "exposure": "local",
+      "verification": "tests-green",
+      "label": "Blokováno",
+      "nextStep": "Finální push/CI a podepsaná publikace0.1.6. Fyzický zvuk, upload a instalaci ověří Dan podle Mac přejímky.",
+      "evidence": [
+        "EV1",
+        "EV2",
+        "EV3",
+        "EV4",
+        "EV5",
+        "EV6",
+        "EV7"
+      ],
+      "blocker": "Fyzická Mac přejímka čeká: skutečný zvuk, produkční odeslání a instalace aktualizace podle MAC-PREJIMKA.md. Nejde o chybějící implementaci."
     }
   ],
-  "screens": [],
+  "screens": [
+    {
+      "id": "screen-1",
+      "name": "Teď / menu panel",
+      "status": "in-progress",
+      "approval": "not-required",
+      "approvalRequired": "none",
+      "summary": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "current": {
+        "state": "captured",
+        "src": "evidence/acceptance-2026-09-30/electron/03-ted.png",
+        "capturedAt": "2026-09-29T23:20:39.503Z",
+        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+      },
+      "proposal": {
+        "state": "approved",
+        "href": "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=home",
+        "fidelity": "L2",
+        "changes": [
+          "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+        ]
+      }
+    },
+    {
+      "id": "screen-2",
+      "name": "Můj den",
+      "status": "in-progress",
+      "approval": "not-required",
+      "approvalRequired": "none",
+      "summary": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "current": {
+        "state": "captured",
+        "src": "evidence/acceptance-2026-09-30/electron/08-muj-den.png",
+        "capturedAt": "2026-09-29T23:20:39.770Z",
+        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+      },
+      "proposal": {
+        "state": "approved",
+        "href": "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=day",
+        "fidelity": "L2",
+        "changes": [
+          "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+        ]
+      }
+    },
+    {
+      "id": "screen-3",
+      "name": "Detail nahrávky",
+      "status": "in-progress",
+      "approval": "not-required",
+      "approvalRequired": "none",
+      "summary": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "current": {
+        "state": "captured",
+        "src": "evidence/acceptance-2026-09-30/electron/09-detail-nahravky.png",
+        "capturedAt": "2026-09-29T23:20:40.008Z",
+        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+      },
+      "proposal": {
+        "state": "approved",
+        "href": "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=detail",
+        "fidelity": "L2",
+        "changes": [
+          "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+        ]
+      }
+    },
+    {
+      "id": "screen-4",
+      "name": "Nastavení / identita",
+      "status": "in-progress",
+      "approval": "not-required",
+      "approvalRequired": "none",
+      "summary": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "current": {
+        "state": "captured",
+        "src": "evidence/acceptance-2026-09-30/electron/10-nastaveni.png",
+        "capturedAt": "2026-09-29T23:20:40.254Z",
+        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+      },
+      "proposal": {
+        "state": "approved",
+        "href": "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=settings",
+        "fidelity": "L2",
+        "changes": [
+          "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+        ]
+      }
+    },
+    {
+      "id": "screen-5",
+      "name": "Offline, recovery, update, onboarding",
+      "status": "in-progress",
+      "approval": "not-required",
+      "approvalRequired": "none",
+      "summary": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
+      "current": {
+        "state": "captured",
+        "src": "evidence/acceptance-2026-09-30/electron/07-offline-panel-recovery.png",
+        "capturedAt": "2026-09-29T23:20:40.476Z",
+        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+      },
+      "proposal": {
+        "state": "approved",
+        "href": "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=offline",
+        "fidelity": "L2",
+        "changes": [
+          "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+        ]
+      }
+    }
+  ],
   "openQuestions": [],
-  "decisions": [],
+  "decisions": [
+    {
+      "id": "D1",
+      "title": "Implementovat celý schválený návrh Astra Nit dne",
+      "ref": "decisions.md#d1",
+      "decidedBy": "Dan, přímé zadání v chatu 23.–24. 9. 2026",
+      "date": "2026-09-29"
+    },
+    {
+      "id": "D2",
+      "title": "LuTrack zůstává pouze připraveným placeholderem",
+      "ref": "decisions.md#d2",
+      "decidedBy": "Dan, přímé zadání v chatu",
+      "date": "2026-09-29"
+    },
+    {
+      "id": "D3",
+      "title": "Produktová data nejsou data prototypu",
+      "ref": "decisions.md#d3",
+      "decidedBy": "Koordinátor, bezpečný výchozí stav podle existujících API",
+      "date": "2026-09-29"
+    },
+    {
+      "id": "D4",
+      "title": "Před dalším vydáním musí projít designová E2E brána",
+      "ref": "decisions.md#d4",
+      "decidedBy": "Dan, přímé zadání v chatu",
+      "date": "2026-09-29"
+    },
+    {
+      "id": "D5",
+      "title": "Zachovat serverové a IPC hranice",
+      "ref": "decisions.md#d5",
+      "decidedBy": "Pravidla AGENTS.md a přímé zadání Dana",
+      "date": "2026-09-29"
+    }
+  ],
   "milestones": [
     {
       "id": "intent",
@@ -51,38 +218,38 @@
     {
       "id": "project_context",
       "name": "Kontext projektu",
-      "status": "current",
-      "detail": "Tato fáze právě probíhá."
+      "status": "done",
+      "detail": "Fáze je dokončena."
     },
     {
       "id": "discovery",
       "name": "Zjištění",
-      "status": "upcoming",
-      "detail": "Tato fáze teprve přijde."
+      "status": "done",
+      "detail": "Fáze je dokončena."
     },
     {
       "id": "outcome_contract",
       "name": "Kontrakt výsledku",
-      "status": "upcoming",
-      "detail": "Tato fáze teprve přijde."
+      "status": "done",
+      "detail": "Fáze je dokončena."
     },
     {
       "id": "design",
       "name": "Návrh",
-      "status": "upcoming",
-      "detail": "Tato fáze teprve přijde."
+      "status": "done",
+      "detail": "Fáze je dokončena."
     },
     {
       "id": "spec",
       "name": "Specifikace",
-      "status": "upcoming",
-      "detail": "Tato fáze teprve přijde."
+      "status": "done",
+      "detail": "Fáze je dokončena."
     },
     {
       "id": "plan",
       "name": "Plán",
-      "status": "upcoming",
-      "detail": "Tato fáze teprve přijde."
+      "status": "current",
+      "detail": "Tato fáze právě probíhá."
     },
     {
       "id": "execution",
@@ -111,11 +278,366 @@
       "state": "pending",
       "attempts": 0,
       "deps": [],
-      "packet": "tasks/T-01.md"
+      "packet": "tasks/T-01.md",
+      "report": "evidence/tasks/T-01.report.json"
+    },
+    {
+      "id": "T-02",
+      "title": "Společný shell a navigace",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-01"
+      ],
+      "packet": "tasks/T-02.md",
+      "report": "evidence/tasks/T-02.report.json"
+    },
+    {
+      "id": "T-03",
+      "title": "Teď, záznam a uložení",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-02"
+      ],
+      "packet": "tasks/T-03.md",
+      "report": "evidence/tasks/T-03.report.json"
+    },
+    {
+      "id": "T-04",
+      "title": "Můj den a detail",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-03"
+      ],
+      "packet": "tasks/T-04.md",
+      "report": "evidence/tasks/T-04.report.json"
+    },
+    {
+      "id": "T-05",
+      "title": "Nastavení, identita a update",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-04"
+      ],
+      "packet": "tasks/T-05.md",
+      "report": "evidence/tasks/T-05.report.json"
+    },
+    {
+      "id": "T-06",
+      "title": "Electron E2E a vizuální porovnání",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-05"
+      ],
+      "packet": "tasks/T-06.md",
+      "report": "evidence/tasks/T-06.report.json"
+    },
+    {
+      "id": "T-07",
+      "title": "Review, CI a vydání",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-06"
+      ],
+      "packet": "tasks/T-07.md",
+      "report": "evidence/tasks/T-07.report.json"
     }
   ],
-  "evidence": [],
+  "evidence": [
+    {
+      "id": "EV1",
+      "kind": "commit",
+      "label": "Implementace Astra",
+      "value": "d0d222d",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/commit/d0d222d"
+    },
+    {
+      "id": "EV2",
+      "kind": "test",
+      "label": "Lokální gates",
+      "value": "evidence/e2e-2026-09-29/astra-layout-final/repo-gates-output.txt",
+      "ref": "evidence/e2e-2026-09-29/astra-layout-final/repo-gates-output.txt"
+    },
+    {
+      "id": "EV3",
+      "kind": "test",
+      "label": "Izolovaný Electron E2E",
+      "value": "evidence/e2e-2026-09-29/astra-layout-final/acceptance-output.txt",
+      "ref": "evidence/e2e-2026-09-29/astra-layout-final/acceptance-output.txt"
+    },
+    {
+      "id": "EV4",
+      "kind": "test",
+      "label": "GitHub CI",
+      "value": "success pro ea41bc0",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/36639175779"
+    },
+    {
+      "id": "EV5",
+      "kind": "source",
+      "label": "Draft PR #152",
+      "value": "Implementace připravená k review",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/pull/152"
+    },
+    {
+      "id": "EV6",
+      "kind": "test",
+      "label": "Finální přejímka0.1.6",
+      "value": "1572 unit PASS, 35 Electron podmínek, 18 stavů",
+      "ref": "evidence/acceptance-2026-09-30/README.md"
+    },
+    {
+      "id": "EV7",
+      "kind": "verification",
+      "label": "Finální vizuální a bezpečnostní review",
+      "value": "Bez zbývající P1/P2; fyzický Mac čeká",
+      "ref": "evidence/reviews-2026-09-30/checkpoint.md"
+    }
+  ],
   "latestChanges": [
+    {
+      "at": "2026-09-29T23:25:30.772Z",
+      "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-29T23:25:30.564Z",
+      "text": "Task T-07 má nově stav „pending“."
+    },
+    {
+      "at": "2026-09-29T23:25:30.362Z",
+      "text": "Task T-06 má nově stav „pending“."
+    },
+    {
+      "at": "2026-09-29T23:25:30.145Z",
+      "text": "Task T-05 má nově stav „pending“."
+    },
+    {
+      "at": "2026-09-29T23:25:29.946Z",
+      "text": "Task T-04 má nově stav „pending“."
+    },
+    {
+      "at": "2026-09-29T23:25:29.749Z",
+      "text": "Task T-03 má nově stav „pending“."
+    },
+    {
+      "at": "2026-09-29T23:25:29.543Z",
+      "text": "Task T-02 má nově stav „pending“."
+    },
+    {
+      "at": "2026-09-29T23:25:29.311Z",
+      "text": "Task T-01 má nově stav „pending“."
+    },
+    {
+      "at": "2026-09-29T23:20:40.724Z",
+      "text": "Finální přejímka30.9.: 1572 unit PASS, 35 Electron podmínek, 18 stavů, 10 párů. Vizuální P2 uzavřeny, bezpečnostní diff review bez nálezu. Fyzická Mac přejímka a publikace oddělené; formální plan hook se nepředstírá."
+    },
+    {
+      "at": "2026-09-29T23:20:40.476Z",
+      "text": "Dnešní stav obrazovky screen-5 je „captured“."
+    },
+    {
+      "at": "2026-09-29T23:20:40.254Z",
+      "text": "Dnešní stav obrazovky screen-4 je „captured“."
+    },
+    {
+      "at": "2026-09-29T23:20:40.008Z",
+      "text": "Dnešní stav obrazovky screen-3 je „captured“."
+    },
+    {
+      "at": "2026-09-29T23:20:39.770Z",
+      "text": "Dnešní stav obrazovky screen-2 je „captured“."
+    },
+    {
+      "at": "2026-09-29T23:20:39.503Z",
+      "text": "Dnešní stav obrazovky screen-1 je „captured“."
+    },
+    {
+      "at": "2026-09-29T23:17:32.608Z",
+      "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-29T23:17:32.374Z",
+      "text": "Byl přidán důkaz EV7: Finální vizuální a bezpečnostní review."
+    },
+    {
+      "at": "2026-09-29T23:16:35.331Z",
+      "text": "Byl přidán důkaz EV6: Finální přejímka0.1.6."
+    },
+    {
+      "at": "2026-09-29T22:39:58.056Z",
+      "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-29T22:33:39.986Z",
+      "text": "Kontext projektu převzat ze záměru; ID obrazovek sjednocena s normalizací manifestu přes exportovanou transakci mp-status. Schvalovací metadata se nemění."
+    },
+    {
+      "at": "2026-09-29T22:32:15.526Z",
+      "text": "Oprava evidence 30. 9.: mp-status je dostupný přímým Node spuštěním, CI ea41bc0 prošlo. Formalizace schválení plánu v harnessu se nepředstírá; přímé zadání Dana trvá. Povinné stavové E2E se doplňuje."
+    },
+    {
+      "at": "2026-09-29T22:32:15.320Z",
+      "text": "Fáze discovery–spec označeny jako proběhlé (adopce)."
+    },
+    {
+      "at": "2026-09-29T22:32:15.100Z",
+      "text": "Návrh obrazovky 5 má stav „approved“, věrnost L2."
+    },
+    {
+      "at": "2026-09-29T22:32:14.875Z",
+      "text": "Dnešní stav obrazovky 5 je „captured“."
+    },
+    {
+      "at": "2026-09-29T22:32:14.639Z",
+      "text": "Obrazovka 5 byla přidána."
+    },
+    {
+      "at": "2026-09-29T22:32:14.420Z",
+      "text": "Návrh obrazovky 4 má stav „approved“, věrnost L2."
+    },
+    {
+      "at": "2026-09-29T22:32:14.198Z",
+      "text": "Dnešní stav obrazovky 4 je „captured“."
+    },
+    {
+      "at": "2026-09-29T22:32:13.976Z",
+      "text": "Obrazovka 4 byla přidána."
+    },
+    {
+      "at": "2026-09-29T22:32:13.758Z",
+      "text": "Návrh obrazovky 3 má stav „approved“, věrnost L2."
+    },
+    {
+      "at": "2026-09-29T22:32:13.551Z",
+      "text": "Dnešní stav obrazovky 3 je „captured“."
+    },
+    {
+      "at": "2026-09-29T22:32:13.339Z",
+      "text": "Obrazovka 3 byla přidána."
+    },
+    {
+      "at": "2026-09-29T22:32:13.127Z",
+      "text": "Návrh obrazovky 2 má stav „approved“, věrnost L2."
+    },
+    {
+      "at": "2026-09-29T22:32:12.915Z",
+      "text": "Dnešní stav obrazovky 2 je „captured“."
+    },
+    {
+      "at": "2026-09-29T22:32:12.699Z",
+      "text": "Obrazovka 2 byla přidána."
+    },
+    {
+      "at": "2026-09-29T22:32:12.473Z",
+      "text": "Návrh obrazovky 1 má stav „approved“, věrnost L2."
+    },
+    {
+      "at": "2026-09-29T22:32:12.268Z",
+      "text": "Dnešní stav obrazovky 1 je „captured“."
+    },
+    {
+      "at": "2026-09-29T22:32:12.057Z",
+      "text": "Obrazovka 1 byla přidána."
+    },
+    {
+      "at": "2026-09-29T22:32:11.839Z",
+      "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-29T22:32:11.622Z",
+      "text": "Byl přidán důkaz EV5: Draft PR #152."
+    },
+    {
+      "at": "2026-09-29T22:32:11.399Z",
+      "text": "Byl přidán důkaz EV4: GitHub CI."
+    },
+    {
+      "at": "2026-09-29T22:32:11.191Z",
+      "text": "Byl přidán důkaz EV3: Izolovaný Electron E2E."
+    },
+    {
+      "at": "2026-09-29T22:32:10.977Z",
+      "text": "Byl přidán důkaz EV2: Lokální gates."
+    },
+    {
+      "at": "2026-09-29T22:32:10.757Z",
+      "text": "Byl přidán důkaz EV1: Implementace Astra."
+    },
+    {
+      "at": "2026-09-29T22:32:10.543Z",
+      "text": "Otázka Q5 byla uzavřena rozhodnutím D5: Zachovat serverové a IPC hranice."
+    },
+    {
+      "at": "2026-09-29T22:32:10.335Z",
+      "text": "Byla přidána otevřená otázka Q5: Import již přijatého D5: Zachovat serverové a IPC hranice"
+    },
+    {
+      "at": "2026-09-29T22:32:10.114Z",
+      "text": "Otázka Q4 byla uzavřena rozhodnutím D4: Před dalším vydáním musí projít designová E2E brána."
+    },
+    {
+      "at": "2026-09-29T22:32:09.886Z",
+      "text": "Byla přidána otevřená otázka Q4: Import již přijatého D4: Před dalším vydáním musí projít designová E2E brána"
+    },
+    {
+      "at": "2026-09-29T22:32:09.676Z",
+      "text": "Otázka Q3 byla uzavřena rozhodnutím D3: Produktová data nejsou data prototypu."
+    },
+    {
+      "at": "2026-09-29T22:32:09.459Z",
+      "text": "Byla přidána otevřená otázka Q3: Import již přijatého D3: Produktová data nejsou data prototypu"
+    },
+    {
+      "at": "2026-09-29T22:32:09.234Z",
+      "text": "Otázka Q2 byla uzavřena rozhodnutím D2: LuTrack zůstává pouze připraveným placeholderem."
+    },
+    {
+      "at": "2026-09-29T22:32:08.993Z",
+      "text": "Byla přidána otevřená otázka Q2: Import již přijatého D2: LuTrack zůstává pouze připraveným placeholderem"
+    },
+    {
+      "at": "2026-09-29T22:32:08.787Z",
+      "text": "Otázka Q1 byla uzavřena rozhodnutím D1: Implementovat celý schválený návrh Astra Nit dne."
+    },
+    {
+      "at": "2026-09-29T22:32:08.572Z",
+      "text": "Byla přidána otevřená otázka Q1: Import již přijatého D1: Implementovat celý schválený návrh Astra Nit dne"
+    },
+    {
+      "at": "2026-09-29T22:32:08.357Z",
+      "text": "Byl zalozen task T-07: Review, CI a vydání."
+    },
+    {
+      "at": "2026-09-29T22:32:08.146Z",
+      "text": "Byl zalozen task T-06: Electron E2E a vizuální porovnání."
+    },
+    {
+      "at": "2026-09-29T22:32:07.924Z",
+      "text": "Byl zalozen task T-05: Nastavení, identita a update."
+    },
+    {
+      "at": "2026-09-29T22:32:07.695Z",
+      "text": "Byl zalozen task T-04: Můj den a detail."
+    },
+    {
+      "at": "2026-09-29T22:32:07.480Z",
+      "text": "Byl zalozen task T-03: Teď, záznam a uložení."
+    },
+    {
+      "at": "2026-09-29T22:32:07.252Z",
+      "text": "Byl zalozen task T-02: Společný shell a navigace."
+    },
     {
       "at": "2026-09-24T10:15:20.286Z",
       "text": "Design byl schválen: varianta Astra Nit dne, schválil/a Dan."

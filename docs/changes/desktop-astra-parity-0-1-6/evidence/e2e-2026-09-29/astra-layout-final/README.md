@@ -1,3 +1,15 @@
+---
+kind: test
+ref: evidence/e2e-2026-09-29/astra-layout-final/README.md
+verdict: "🧪 zelené testy"
+measuredAt: 2026-09-29T22:10:03Z
+scope:
+  - izolovaná Electron E2E, nikoli produkční zvuk/upload
+measuredFrom:
+  - report.json
+  - screenshoty běžícího rendereru
+---
+
 # Astra design E2E — konečný lokální běh
 
 **Příkaz:** `npm run test:design:e2e` · **Výsledek:** 🧪 exit 0, 12 akceptačních skupin; 30 automatických podmínek a 5 dvojic screenshotů; detailní výstup je v [acceptance-output.txt](acceptance-output.txt).

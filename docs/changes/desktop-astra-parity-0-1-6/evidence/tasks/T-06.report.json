@@ -1,25 +1,18 @@
 {
   "task": "T-06",
-  "measuredAt": "2026-09-29T20:56:22Z",
+  "measuredAt": "2026-09-29T23:22:54.550158+00:00",
   "verification": "🧪 zelené testy",
-  "commands": [
-    {
-      "command": "npm run test:design:e2e",
-      "exitCode": 0,
-      "output": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 60 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-9XQ4F1jj.css                        104.34 kB │ gzip:  16.22 kB\ndist/assets/index-Ugpp8E1d.js                         335.89 kB │ gzip: 100.73 kB\n✓ built in 448ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  offline-recording-continues-locally\nPASS  recording-stop-offers-explicit-safe-choice\nPASS  recording-saved-local-from-ui\nPASS  saved-recording-visible-after-app-restart\nPASS  source-action-opens-audio-settings\nPASS  offline-keeps-local-recording\nPASS  day-hierarchy-and-real-data\nPASS  day-shows-actual-recording-and-seeded-local-fixture\nPASS  local-recording-detail-no-upload\nPASS  detail-back-to-day\nPASS  local-recording-filter\nPASS  delivery-filter-empty-is-truthful\nPASS  settings-shell\nPASS  update-check-isolated-from-production\nPASS  settings-quick-actions\nPASS  light-theme-choice\nPASS  day-theme-light\nPASS  dark-theme-choice\nPASS  day-theme-dark\nPASS  return-to-now\nPASS  theme-shared-across-windows\nPASS  update-banner-and-defer\nPASS  acceptance · Teď\nPASS  acceptance · Záznam a uložení\nPASS  acceptance · Můj den\nPASS  acceptance · Detail\nPASS  acceptance · Nastavení\nPASS  acceptance · Aktualizace\nPASS  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nPASS  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nCAPTURED  acceptance · Screenshoty připravené k vizuální kontrole\n✅ Astra design E2E: .runtime/design-e2e/2026-09-29T20-56-22-081Z\n\nEXIT_CODE=0\n",
-      "report": "../e2e-2026-09-29/final/report.json"
-    },
-    {
-      "command": "npm run build",
-      "exitCode": 0,
-      "outputFile": "../e2e-2026-09-29/final/build-output.txt"
-    },
-    {
-      "command": "npm run gates",
-      "exitCode": 0,
-      "outputFile": "../e2e-2026-09-29/final/gates-output.txt"
-    }
-  ],
+  "summary": "35 hlavních podmínek a 18 izolovaných stavů prošlo; vizuální review bez zbývající P1/P2.",
+  "premisaPlatila": false,
+  "premisaPoznamka": "Produktové zadání je výslovně autorizované Danem. Historický formalizovaný plan hook a docs-first pořadí chybí; toto je aktuální přejímka koordinátora, nikoli zpětný worker report.",
+  "kontrolniNula": {
+    "backendOrWebFilesChanged": 0,
+    "newSkipsOrBaselines": 0,
+    "mainE2eProductionUploads": 0,
+    "stateHarnessNetworkWrites": 0,
+    "stateHarnessProductionIpcCalls": 0,
+    "allMainProcessNetworkWrites": null
+  },
   "acceptance": [
     {
       "label": "Teď",
@@ -40,7 +33,15 @@
           "status": "PASS"
         },
         {
+          "check": "system-audio-loss-and-recovery",
+          "status": "PASS"
+        },
+        {
           "check": "recording-stop-offers-explicit-safe-choice",
+          "status": "PASS"
+        },
+        {
+          "check": "saved-recording-astra-composition",
           "status": "PASS"
         },
         {
@@ -110,6 +111,10 @@
         {
           "check": "update-banner-and-defer",
           "status": "PASS"
+        },
+        {
+          "check": "update-dedicated-surface",
+          "status": "PASS"
         }
       ]
     },
@@ -131,6 +136,10 @@
         },
         {
           "check": "offline-keeps-local-recording",
+          "status": "PASS"
+        },
+        {
+          "check": "unfinished-recording-preserved-after-restart",
           "status": "PASS"
         }
       ]
@@ -166,6 +175,10 @@
           "status": "PASS"
         },
         {
+          "check": "dark-settings-actions-contrast",
+          "status": "PASS"
+        },
+        {
           "check": "day-theme-dark",
           "status": "PASS"
         },
@@ -186,224 +199,417 @@
       ]
     },
     {
-      "label": "Screenshoty připravené k vizuální kontrole",
+      "label": "Astra geometrie a pořadí",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "astra-layout-offline",
+          "status": "PASS"
+        },
+        {
+          "check": "astra-layout-day",
+          "status": "PASS"
+        },
+        {
+          "check": "astra-layout-detail",
+          "status": "PASS"
+        },
+        {
+          "check": "astra-layout-settings",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Screenshoty zachycené pro vizuální kontrolu",
       "status": "PASS",
       "pairs": [
         {
           "label": "Teď · hlavní panel",
-          "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/03-ted.png",
-          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-home.png",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/03-ted.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-home.png",
+          "layoutCheck": null,
+          "layoutStatus": "MANUAL_REVIEW_REQUIRED",
           "status": "CAPTURED"
         },
         {
           "label": "Můj den · místní nahrávky",
-          "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/07-muj-den.png",
-          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-day.png",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/08-muj-den.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-day.png",
+          "layoutCheck": "astra-layout-day",
+          "layoutStatus": "PASS",
           "status": "CAPTURED"
         },
         {
           "label": "Detail · místní kopie",
-          "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/08-detail-nahravky.png",
-          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-detail.png",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/09-detail-nahravky.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-detail.png",
+          "layoutCheck": "astra-layout-detail",
+          "layoutStatus": "PASS",
           "status": "CAPTURED"
         },
         {
           "label": "Nastavení · účet a předvolby",
-          "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/09-nastaveni.png",
-          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-settings.png",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/10-nastaveni.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-settings.png",
+          "layoutCheck": "astra-layout-settings",
+          "layoutStatus": "PASS",
           "status": "CAPTURED"
         },
         {
           "label": "Offline · místní nahrávka",
-          "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/04-offline-active-recording.png",
-          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-offline.png",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/04-offline-active-recording.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-offline.png",
+          "layoutCheck": "astra-layout-offline",
+          "layoutStatus": "PASS",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Uložení · jedna schůzka",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/06-nahravani-ulozeno.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-save.png",
+          "layoutCheck": "saved-recording-astra-composition",
+          "layoutStatus": "PASS",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "První spuštění",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/01-00-prvni-pouziti.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-onboarding.png",
+          "layoutCheck": null,
+          "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Aktualizace · samostatná plocha",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/17-aktualizace-detail.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-update.png",
+          "layoutCheck": "update-dedicated-surface",
+          "layoutStatus": "PASS",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Nastavení · tmavé",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/13-nastaveni-tmave.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-settings-dark.png",
+          "layoutCheck": null,
+          "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Můj den · tmavý",
+          "appScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/14-muj-den-tmave.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-29T23-10-44-011Z/astra-day-dark.png",
+          "layoutCheck": null,
+          "layoutStatus": "MANUAL_REVIEW_REQUIRED",
           "status": "CAPTURED"
         }
       ]
     }
   ],
-  "checks": 26,
-  "visualScreenshotPairs": [
+  "stateScenarios": [
     {
-      "label": "Teď · hlavní panel",
-      "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/03-ted.png",
-      "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-home.png",
-      "status": "CAPTURED"
+      "name": "day-loading",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/day-loading.png"
     },
     {
-      "label": "Můj den · místní nahrávky",
-      "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/07-muj-den.png",
-      "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-day.png",
-      "status": "CAPTURED"
+      "name": "day-empty",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/day-empty.png"
     },
     {
-      "label": "Detail · místní kopie",
-      "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/08-detail-nahravky.png",
-      "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-detail.png",
-      "status": "CAPTURED"
+      "name": "day-error-retry",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/day-error-retry.png"
     },
     {
-      "label": "Nastavení · účet a předvolby",
-      "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/09-nastaveni.png",
-      "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-settings.png",
-      "status": "CAPTURED"
+      "name": "detail-local",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "sendRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-local.png"
     },
     {
-      "label": "Offline · místní nahrávka",
-      "appScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/04-offline-active-recording.png",
-      "referenceScreenshot": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/astra-offline.png",
-      "status": "CAPTURED"
+      "name": "detail-queued",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-queued.png"
+    },
+    {
+      "name": "detail-sent",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-sent.png"
+    },
+    {
+      "name": "detail-verified",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000001",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "openRecordingInLuDone",
+          "value": "40000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-verified.png"
+    },
+    {
+      "name": "detail-error",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "retryRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-error.png"
+    },
+    {
+      "name": "detail-limit",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000001",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-limit.png"
+    },
+    {
+      "name": "detail-owner",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "claimRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000001",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-owner.png"
+    },
+    {
+      "name": "detail-missing",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-missing.png"
+    },
+    {
+      "name": "detail-verify-error",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000001",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/detail-verify-error.png"
+    },
+    {
+      "name": "auth-signed-in",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/auth-signed-in.png"
+    },
+    {
+      "name": "auth-expired",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/auth-expired.png"
+    },
+    {
+      "name": "auth-oauth-pending-cancel",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "beginAuth"
+        },
+        {
+          "name": "cancelAuth"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/auth-oauth-pending-cancel.png"
+    },
+    {
+      "name": "update-available",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/update-available.png"
+    },
+    {
+      "name": "update-downloading",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/update-downloading.png"
+    },
+    {
+      "name": "update-install-waits",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "installUpdate",
+          "version": "0.1.7"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/update-install-waits.png"
     }
   ],
-  "screenshots": [
+  "doslovnyVystupTestu": "$ npm run test:design:e2e\n\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 60 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-DdMnG7AV.css                        122.21 kB │ gzip:  18.33 kB\ndist/assets/index-6ymfsndt.js                         339.57 kB │ gzip: 101.46 kB\n✓ built in 434ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  offline-recording-continues-locally\nPASS  astra-layout-offline\nPASS  system-audio-loss-and-recovery\nPASS  recording-stop-offers-explicit-safe-choice\nPASS  saved-recording-astra-composition\nPASS  recording-saved-local-from-ui\nPASS  saved-recording-visible-after-app-restart\nPASS  source-action-opens-audio-settings\nPASS  offline-keeps-local-recording\nPASS  day-hierarchy-and-real-data\nPASS  astra-layout-day\nPASS  day-shows-actual-recording-and-seeded-local-fixture\nPASS  local-recording-detail-no-upload\nPASS  astra-layout-detail\nPASS  detail-back-to-day\nPASS  local-recording-filter\nPASS  delivery-filter-empty-is-truthful\nPASS  settings-shell\nPASS  astra-layout-settings\nPASS  update-check-isolated-from-production\nPASS  settings-quick-actions\nPASS  light-theme-choice\nPASS  day-theme-light\nPASS  dark-theme-choice\nPASS  dark-settings-actions-contrast\nPASS  day-theme-dark\nPASS  return-to-now\nPASS  theme-shared-across-windows\nPASS  update-dedicated-surface\nPASS  update-banner-and-defer\nPASS  unfinished-recording-preserved-after-restart\nPASS  acceptance · Teď\nPASS  acceptance · Záznam a uložení\nPASS  acceptance · Můj den\nPASS  acceptance · Detail\nPASS  acceptance · Nastavení\nPASS  acceptance · Aktualizace\nPASS  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nPASS  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nPASS  acceptance · Astra geometrie a pořadí\nCAPTURED  acceptance · Screenshoty zachycené pro vizuální kontrolu\n✅ Astra design E2E: .runtime/design-e2e/2026-09-29T23-10-44-011Z\n\nEXIT_CODE=0\n$ node scripts/astra-state-e2e.mjs\nBOOTSTRAP čeká na Electron ready\nBOOTSTRAP READY\nSTART isolated bundled renderer fixtures\nREADY Electron\nBEGIN day-loading\nTARGET day-loading\nCDP day-loading\nLOADED day-loading\nPASS day-loading\nBEGIN day-empty\nTARGET day-empty\nCDP day-empty\nLOADED day-empty\nPASS day-empty\nBEGIN day-error-retry\nTARGET day-error-retry\nCDP day-error-retry\nLOADED day-error-retry\nPASS day-error-retry\nBEGIN detail-local\nTARGET detail-local\nCDP detail-local\nLOADED detail-local\nPASS detail-local\nBEGIN detail-queued\nTARGET detail-queued\nCDP detail-queued\nLOADED detail-queued\nPASS detail-queued\nBEGIN detail-sent\nTARGET detail-sent\nCDP detail-sent\nLOADED detail-sent\nPASS detail-sent\nBEGIN detail-verified\nTARGET detail-verified\nCDP detail-verified\nLOADED detail-verified\nPASS detail-verified\nBEGIN detail-error\nTARGET detail-error\nCDP detail-error\nLOADED detail-error\nPASS detail-error\nBEGIN detail-limit\nTARGET detail-limit\nCDP detail-limit\nLOADED detail-limit\nPASS detail-limit\nBEGIN detail-owner\nTARGET detail-owner\nCDP detail-owner\nLOADED detail-owner\nPASS detail-owner\nBEGIN detail-missing\nTARGET detail-missing\nCDP detail-missing\nLOADED detail-missing\nPASS detail-missing\nBEGIN detail-verify-error\nTARGET detail-verify-error\nCDP detail-verify-error\nLOADED detail-verify-error\nPASS detail-verify-error\nBEGIN auth-signed-in\nTARGET auth-signed-in\nCDP auth-signed-in\nLOADED auth-signed-in\nPASS auth-signed-in\nBEGIN auth-expired\nTARGET auth-expired\nCDP auth-expired\nLOADED auth-expired\nPASS auth-expired\nBEGIN auth-oauth-pending-cancel\nTARGET auth-oauth-pending-cancel\nCDP auth-oauth-pending-cancel\nLOADED auth-oauth-pending-cancel\nPASS auth-oauth-pending-cancel\nBEGIN update-available\nTARGET update-available\nCDP update-available\nLOADED update-available\nPASS update-available\nBEGIN update-downloading\nTARGET update-downloading\nCDP update-downloading\nLOADED update-downloading\nPASS update-downloading\nBEGIN update-install-waits\nTARGET update-install-waits\nCDP update-install-waits\nLOADED update-install-waits\nPASS update-install-waits\nReport: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/.runtime/astra-state-e2e/2026-09-29T23-20-33.970Z/report.json\n\nEXIT_CODE=0\n$ node --test scripts/astra-state-e2e.test.mjs scripts/astra-state-e2e-bootstrap.test.cjs\nTAP version 13\n# Subtest: bootstrap odmítne chybějící i relativní profil\nok 1 - bootstrap odmítne chybějící i relativní profil\n  ---\n  duration_ms: 2.279375\n  type: 'test'\n  ...\n# Subtest: profil je izolovaný ještě před čekáním na Electron ready\nok 2 - profil je izolovaný ještě před čekáním na Electron ready\n  ---\n  duration_ms: 0.596583\n  type: 'test'\n  ...\n# Subtest: chybějící ready nemůže skončit zeleně\nok 3 - chybějící ready nemůže skončit zeleně\n  ---\n  duration_ms: 0.243583\n  type: 'test'\n  ...\n# Subtest: selhání ready vrátí exit1 a uklidí watchdog\nok 4 - selhání ready vrátí exit1 a uklidí watchdog\n  ---\n  duration_ms: 0.647625\n  type: 'test'\n  ...\n# Subtest: úplná izolovaná matice projde\nok 5 - úplná izolovaná matice projde\n  ---\n  duration_ms: 0.36675\n  type: 'test'\n  ...\n# Subtest: prázdný nebo chybějící scénář nesmí projít\nok 6 - prázdný nebo chybějící scénář nesmí projít\n  ---\n  duration_ms: 0.051667\n  type: 'test'\n  ...\n# Subtest: duplicitní nebo cizí scénář nenahradí povinný\nok 7 - duplicitní nebo cizí scénář nenahradí povinný\n  ---\n  duration_ms: 0.047875\n  type: 'test'\n  ...\n# Subtest: FAIL a chybějící screenshot zčervenají\nok 8 - FAIL a chybějící screenshot zčervenají\n  ---\n  duration_ms: 0.339334\n  type: 'test'\n  ...\n# Subtest: pokus o externí síť zčervená i při PASS matice\nok 9 - pokus o externí síť zčervená i při PASS matice\n  ---\n  duration_ms: 0.047125\n  type: 'test'\n  ...\n# Subtest: scénář bez výslovné izolace nesmí projít\nok 10 - scénář bez výslovné izolace nesmí projít\n  ---\n  duration_ms: 0.037583\n  type: 'test'\n  ...\n1..10\n# tests 10\n# suites 0\n# pass 10\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 35.079958\n\nEXIT_CODE=0\n",
+  "sabotaze": [
     {
-      "path": "../e2e-2026-09-29/final/01-00-prvni-pouziti.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/02-00-prihlaseni.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/03-ted.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/04-offline-active-recording.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/05-nahravani-ulozeno.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/06-offline-panel-recovery.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/07-muj-den.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/08-detail-nahravky.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/09-nastaveni.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/10-nastaveni-svetle.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/11-muj-den-svetle.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/12-nastaveni-tmave.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/13-muj-den-tmave.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/14-navrat-do-ted.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/15-aktualizace-stazena.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/astra-day.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/astra-detail.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/astra-home.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/astra-offline.png",
-      "status": "CAPTURED"
-    },
-    {
-      "path": "../e2e-2026-09-29/final/astra-settings.png",
-      "status": "CAPTURED"
+      "nazev": "chybějící Astra screenshot",
+      "ocekavano": "exit 1",
+      "vysledek": "exit 1; ENOENT v reportu",
+      "doslovnyVystup": "$ node scripts/astra-design-e2e.mjs\nFAIL  acceptance · Teď\nFAIL  acceptance · Záznam a uložení\nFAIL  acceptance · Můj den\nFAIL  acceptance · Detail\nFAIL  acceptance · Nastavení\nFAIL  acceptance · Aktualizace\nFAIL  acceptance · Offline a obnova\nFAIL  acceptance · Onboarding\nFAIL  acceptance · Světlé a tmavé téma\nFAIL  acceptance · LuTrack zůstává vypnutý\nFAIL  acceptance · Astra geometrie a pořadí\nFAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu\n⛔ Astra design E2E: .runtime/design-e2e/2026-09-29T23-09-41-412Z\n\nEXIT_CODE=1\n"
     }
   ],
-  "visualReview": {
-    "status": "reviewed-with-documented-product-differences",
-    "reviewer": "nezávislý Sol reviewer, read-only",
-    "verdict": "Kompozice je přijatelnou pravdivou adaptací schválené Astry; nejde o pixelovou shodu.",
-    "reviewedAt": "2026-09-29T20:56:22Z",
-    "remainingDifferences": [
-      "LuTrack neměří čas a neobsahuje fiktivní projekt/pracovní záznam.",
-      "Nastavení a dostupné akce odrážejí skutečně odhlášený účet a místní záznam.",
-      "Stavy a texty reference s ukázkovými daty se nepřenášejí do produkčního rendereru."
-    ],
-    "details": "evidence/e2e-2026-09-29/final/comparison.html"
-  },
-  "recordingProof": {
-    "id": "8d2cbcab-7dd8-470d-ad54-49724558b089",
-    "manifest": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/isolated-data/user-data/nahravky/2026-09-29T20-56-23-470Z-8d2cbcab.manifest.json",
-    "tracks": [
-      {
-        "source": "microphone",
-        "bytes": 22395
-      },
-      {
-        "source": "system",
-        "bytes": 22395
-      }
-    ],
-    "syntheticOnly": true,
-    "uploadTransportEnabled": false,
-    "savedCopy": {
-      "name": "LuDone-2026-09-29T20-56-23-628Z-29-září-2026,-22-56-8d2cbcab-7dd8-470d-ad54-49724558b089.webm",
-      "bytes": 17675
-    },
-    "decision": "keep",
-    "uploadSetting": "false"
-  },
-  "updateProof": {
-    "title": "Nová verze 0.1.6 je stažená",
-    "benefit": true,
-    "install": "Aktualizovat",
-    "defer": "Později",
-    "deferConfirmed": true,
-    "fixtureOnly": true,
-    "chosenAction": "Později"
-  },
-  "kontrolniNula": {
-    "uploadDispatchActionsTriggered": 0,
-    "uploadTransportEnabled": false,
-    "queueIntent": "held",
-    "sendActionAvailable": false,
-    "externalNetworkWrites": null,
-    "measurementNote": "Veškeré síťové zápisy nejsou instrumentovány; nula síťových zápisů se netvrdí."
-  },
-  "controlZero": {
-    "uploadDispatchActionsTriggered": 0,
-    "uploadTransportEnabled": false,
-    "queueIntent": "held",
-    "externalNetworkWriteCount": null,
-    "status": "unmeasured"
-  },
-  "manualMacVerification": {
-    "status": "🟡 čeká na fyzickou přejímku",
-    "items": [
-      "skutečný mikrofon a systémový zvuk",
-      "živé produkční nahrání a ověření na serveru",
-      "veřejný aktualizační feed, download a instalace"
-    ]
-  },
-  "sourceReport": ".runtime/design-e2e/2026-09-29T20-56-22-081Z/report.json",
-  "totalChecksInAcceptanceGroups": 26,
-  "gatesSummary": "      Tests  1567 passed | 3 skipped (1570)"
+  "coJsemNEOVERIL": [
+    "fyzická Mac zvuková cesta",
+    "produkční OAuth/upload",
+    "skutečná instalace aktualizace"
+  ],
+  "evidence": "../acceptance-2026-09-30/README.md"
 }

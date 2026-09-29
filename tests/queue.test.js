@@ -215,7 +215,8 @@ describe("read-only lokální přehled nahrávek", () => {
       });
       expect(snapshot.items.find((item) => item.id === ids.orphan)).toMatchObject({
         source: "orphan",
-        localState: "complete-audio",
+        localState: "partial-audio",
+        localReason: expect.stringContaining("prázdný"),
         sizeBytes: 0,
         revision: null,
         allowedActions: { claim: false, delete: true, retry: false, send: false },

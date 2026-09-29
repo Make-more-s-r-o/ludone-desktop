@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
+import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
 import {
   createAudioLevelMonitor,
@@ -828,13 +828,16 @@ export const RecordingCard = forwardRef(function RecordingCard({
           }}
         >
           <div role="status" aria-live="polite">
-            <h2>Nahrávka uložena</h2>
+            <p className="eyebrow recording-saved__stopped">Zvuk bezpečně zastaven</p>
+            <h2>Kam s nahrávkou?</h2>
+            <span className="sr-only">Nahrávka uložena</span>
           </div>
           <div className="recording-saved__meta">
             <small>{savedMetadata.interval}</small>
+            <div className="recording-saved__format"><ArchiveIcon /> Jedna nahrávka schůzky · stereo WebM/Opus</div>
             <small>{savedMetadata.summary}</small>
           </div>
-          <label className="sr-only" htmlFor="recording-name">Název nahrávky</label>
+          <label htmlFor="recording-name">Název nahrávky</label>
           <input
             id="recording-name"
             className="recording-saved__name"
@@ -854,8 +857,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
             }}
           />
           <small id="recording-name-hint" className="recording-saved__hint">
-            Můžeš přepsat teď nebo později v LuDone.
+            Nahrávka už je místně zachovaná. Odesílání začne jen tvou volbou.
           </small>
+          {!canSend && <p className="recording-saved__hint">Před odesláním obnov přihlášení. Na Macu lze nahrávku nechat i bez něj.</p>}
           {quitExportFailure ? (
             <p
               id="recording-name-error"
@@ -892,7 +896,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
               </button>
               <button
                 type="button"
-                className="recording-saved__skip"
+                className="button button--wide recording-saved__skip"
                 data-testid="skip-recording-name"
                 disabled={exporting}
                 onClick={() => exportSavedRecording(savedRecording, recordingName, "keep")}

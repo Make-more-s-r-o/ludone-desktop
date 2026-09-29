@@ -44,10 +44,10 @@ Závazné vstupy: `intent.md`, `project-context.md`, `discovery.md`, `outcome-co
 ## Průběžný stav implementace (30. 9. 2026)
 
 - 🧪 Shell, Teď, Můj den, detail místní nahrávky, Nastavení a témata jsou v pracovním stromě implementované. LuTrack zůstává vypnutý.
-- 🧪 `npm run test:design:e2e`: 12 akceptačních skupin, 30 automatických podmínek a 5 dvojic screenshotů; geometrické kontroly čtyř ploch prošly. Nezávislé vizuální review po opravě Nastavení nenašlo problém P1/P2. Výpisy a snímky jsou v `evidence/e2e-2026-09-29/astra-layout-final/`.
-- 🧪 `npm run gates`: lint, typecheck, 76 testovacích souborů, 1 567 PASS a 3 baseline skipy; exit kód 0.
-- 🟡 Skutečné oprávnění mikrofonu, přihlášení, produkční upload, veřejný aktualizační feed a instalaci ještě neověřil člověk na Macu.
-- ⚠️ Strojové schválení zůstává `draft`/`plan-approved`; tento odstavec je pouze lidsky čitelný průběžný záznam a nenahrazuje zápis přes masterplan harness.
+- 🧪 Finální Electron E2E: 12 skupin, 35 podmínek, 10 referenčních dvojic a 18 snímků; výpadek syntetické stopy i obnova neúplné nahrávky po restartu prošly. Stavová matice 18/18 PASS. Vizuální review po opravách bez zbývající P1/P2; neprokazuje automatickou pixelovou shodu. Důkazy v `evidence/acceptance-2026-09-30/`.
+- 🧪 `npm run gates`: lint, typecheck, 77 souborů, 1 573 PASS, původní 3 skipy, exit 0.
+- 🟡 Fyzická Mac přejímka čeká podle `MAC-PREJIMKA.md`; podepsaná publikace bude mít samostatný důkaz.
+- ⚠️ Formální metadata plánu zůstávají draft; schvalovací hook se nevydává za proběhlý. Přímé zadání Dana k implementaci a vydání je doložené v intentu.
 
 ## Architecture Spine
 

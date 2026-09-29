@@ -1,0 +1,612 @@
+[
+  {
+    "args": [
+      "add-task",
+      "T-02",
+      "--title",
+      "Společný shell a navigace",
+      "--packet",
+      "tasks/T-02.md",
+      "--deps",
+      "T-01"
+    ],
+    "stdout": "ČISTO: Byl zalozen task T-02: Společný shell a navigace.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-task",
+      "T-03",
+      "--title",
+      "Teď, záznam a uložení",
+      "--packet",
+      "tasks/T-03.md",
+      "--deps",
+      "T-02"
+    ],
+    "stdout": "ČISTO: Byl zalozen task T-03: Teď, záznam a uložení.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-task",
+      "T-04",
+      "--title",
+      "Můj den a detail",
+      "--packet",
+      "tasks/T-04.md",
+      "--deps",
+      "T-03"
+    ],
+    "stdout": "ČISTO: Byl zalozen task T-04: Můj den a detail.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-task",
+      "T-05",
+      "--title",
+      "Nastavení, identita a update",
+      "--packet",
+      "tasks/T-05.md",
+      "--deps",
+      "T-04"
+    ],
+    "stdout": "ČISTO: Byl zalozen task T-05: Nastavení, identita a update.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-task",
+      "T-06",
+      "--title",
+      "Electron E2E a vizuální porovnání",
+      "--packet",
+      "tasks/T-06.md",
+      "--deps",
+      "T-05"
+    ],
+    "stdout": "ČISTO: Byl zalozen task T-06: Electron E2E a vizuální porovnání.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-task",
+      "T-07",
+      "--title",
+      "Review, CI a vydání",
+      "--packet",
+      "tasks/T-07.md",
+      "--deps",
+      "T-06"
+    ],
+    "stdout": "ČISTO: Byl zalozen task T-07: Review, CI a vydání.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-question",
+      "Q1",
+      "Import již přijatého D1: Implementovat celý schválený návrh Astra Nit dne",
+      "--blocks",
+      "T-01",
+      "--option",
+      "Implementovat celý schválený návrh Astra Nit dne|Historický záznam z decisions.md; nejde o nový dotaz.|recommended"
+    ],
+    "stdout": "ČISTO: Byla přidána otevřená otázka Q1: Import již přijatého D1: Implementovat celý schválený návrh Astra Nit dne\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "resolve-question",
+      "Q1",
+      "--decision",
+      "D1",
+      "--title",
+      "Implementovat celý schválený návrh Astra Nit dne",
+      "--by",
+      "Dan, přímé zadání v chatu 23.–24. 9. 2026"
+    ],
+    "stdout": "## D1 — Implementovat celý schválený návrh Astra Nit dne\n\n- **Otázka:** Import již přijatého D1: Implementovat celý schválený návrh Astra Nit dne\n- **Rozhodl:** Dan, přímé zadání v chatu 23.–24. 9. 2026\n- **Datum:** 2026-09-29\n\nPOZOR: decisions.md se nezměnil — odkaz decisions.md#d1 vede do prázdna a lint C3 zčervená, dokud oddíl výše nepřidáš (příště `--decisions-md append`). Otázku Q1 odeber ručně ze sekcí otevřených otázek v spec.md a intent.md — nedokončený úklid hlídá lint C3.\nČISTO: Otázka Q1 byla uzavřena rozhodnutím D1: Implementovat celý schválený návrh Astra Nit dne.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-question",
+      "Q2",
+      "Import již přijatého D2: LuTrack zůstává pouze připraveným placeholderem",
+      "--blocks",
+      "T-01",
+      "--option",
+      "LuTrack zůstává pouze připraveným placeholderem|Historický záznam z decisions.md; nejde o nový dotaz.|recommended"
+    ],
+    "stdout": "ČISTO: Byla přidána otevřená otázka Q2: Import již přijatého D2: LuTrack zůstává pouze připraveným placeholderem\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "resolve-question",
+      "Q2",
+      "--decision",
+      "D2",
+      "--title",
+      "LuTrack zůstává pouze připraveným placeholderem",
+      "--by",
+      "Dan, přímé zadání v chatu"
+    ],
+    "stdout": "## D2 — LuTrack zůstává pouze připraveným placeholderem\n\n- **Otázka:** Import již přijatého D2: LuTrack zůstává pouze připraveným placeholderem\n- **Rozhodl:** Dan, přímé zadání v chatu\n- **Datum:** 2026-09-29\n\nPOZOR: decisions.md se nezměnil — odkaz decisions.md#d2 vede do prázdna a lint C3 zčervená, dokud oddíl výše nepřidáš (příště `--decisions-md append`). Otázku Q2 odeber ručně ze sekcí otevřených otázek v spec.md a intent.md — nedokončený úklid hlídá lint C3.\nČISTO: Otázka Q2 byla uzavřena rozhodnutím D2: LuTrack zůstává pouze připraveným placeholderem.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-question",
+      "Q3",
+      "Import již přijatého D3: Produktová data nejsou data prototypu",
+      "--blocks",
+      "T-01",
+      "--option",
+      "Produktová data nejsou data prototypu|Historický záznam z decisions.md; nejde o nový dotaz.|recommended"
+    ],
+    "stdout": "ČISTO: Byla přidána otevřená otázka Q3: Import již přijatého D3: Produktová data nejsou data prototypu\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "resolve-question",
+      "Q3",
+      "--decision",
+      "D3",
+      "--title",
+      "Produktová data nejsou data prototypu",
+      "--by",
+      "Koordinátor, bezpečný výchozí stav podle existujících API"
+    ],
+    "stdout": "## D3 — Produktová data nejsou data prototypu\n\n- **Otázka:** Import již přijatého D3: Produktová data nejsou data prototypu\n- **Rozhodl:** Koordinátor, bezpečný výchozí stav podle existujících API\n- **Datum:** 2026-09-29\n\nPOZOR: decisions.md se nezměnil — odkaz decisions.md#d3 vede do prázdna a lint C3 zčervená, dokud oddíl výše nepřidáš (příště `--decisions-md append`). Otázku Q3 odeber ručně ze sekcí otevřených otázek v spec.md a intent.md — nedokončený úklid hlídá lint C3.\nČISTO: Otázka Q3 byla uzavřena rozhodnutím D3: Produktová data nejsou data prototypu.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-question",
+      "Q4",
+      "Import již přijatého D4: Před dalším vydáním musí projít designová E2E brána",
+      "--blocks",
+      "T-01",
+      "--option",
+      "Před dalším vydáním musí projít designová E2E brána|Historický záznam z decisions.md; nejde o nový dotaz.|recommended"
+    ],
+    "stdout": "ČISTO: Byla přidána otevřená otázka Q4: Import již přijatého D4: Před dalším vydáním musí projít designová E2E brána\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "resolve-question",
+      "Q4",
+      "--decision",
+      "D4",
+      "--title",
+      "Před dalším vydáním musí projít designová E2E brána",
+      "--by",
+      "Dan, přímé zadání v chatu"
+    ],
+    "stdout": "## D4 — Před dalším vydáním musí projít designová E2E brána\n\n- **Otázka:** Import již přijatého D4: Před dalším vydáním musí projít designová E2E brána\n- **Rozhodl:** Dan, přímé zadání v chatu\n- **Datum:** 2026-09-29\n\nPOZOR: decisions.md se nezměnil — odkaz decisions.md#d4 vede do prázdna a lint C3 zčervená, dokud oddíl výše nepřidáš (příště `--decisions-md append`). Otázku Q4 odeber ručně ze sekcí otevřených otázek v spec.md a intent.md — nedokončený úklid hlídá lint C3.\nČISTO: Otázka Q4 byla uzavřena rozhodnutím D4: Před dalším vydáním musí projít designová E2E brána.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-question",
+      "Q5",
+      "Import již přijatého D5: Zachovat serverové a IPC hranice",
+      "--blocks",
+      "T-01",
+      "--option",
+      "Zachovat serverové a IPC hranice|Historický záznam z decisions.md; nejde o nový dotaz.|recommended"
+    ],
+    "stdout": "ČISTO: Byla přidána otevřená otázka Q5: Import již přijatého D5: Zachovat serverové a IPC hranice\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "resolve-question",
+      "Q5",
+      "--decision",
+      "D5",
+      "--title",
+      "Zachovat serverové a IPC hranice",
+      "--by",
+      "Pravidla AGENTS.md a přímé zadání Dana"
+    ],
+    "stdout": "## D5 — Zachovat serverové a IPC hranice\n\n- **Otázka:** Import již přijatého D5: Zachovat serverové a IPC hranice\n- **Rozhodl:** Pravidla AGENTS.md a přímé zadání Dana\n- **Datum:** 2026-09-29\n\nPOZOR: decisions.md se nezměnil — odkaz decisions.md#d5 vede do prázdna a lint C3 zčervená, dokud oddíl výše nepřidáš (příště `--decisions-md append`). Otázku Q5 odeber ručně ze sekcí otevřených otázek v spec.md a intent.md — nedokončený úklid hlídá lint C3.\nČISTO: Otázka Q5 byla uzavřena rozhodnutím D5: Zachovat serverové a IPC hranice.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-evidence",
+      "--kind",
+      "commit",
+      "--label",
+      "Implementace Astra",
+      "--value",
+      "d0d222d",
+      "--href",
+      "https://github.com/Make-more-s-r-o/ludone-desktop/commit/d0d222d"
+    ],
+    "stdout": "ČISTO: Byl přidán důkaz EV1: Implementace Astra.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-evidence",
+      "--kind",
+      "test",
+      "--label",
+      "Lokální gates",
+      "--value",
+      "evidence/e2e-2026-09-29/astra-layout-final/repo-gates-output.txt",
+      "--ref",
+      "evidence/e2e-2026-09-29/astra-layout-final/repo-gates-output.txt"
+    ],
+    "stdout": "ČISTO: Byl přidán důkaz EV2: Lokální gates.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-evidence",
+      "--kind",
+      "test",
+      "--label",
+      "Izolovaný Electron E2E",
+      "--value",
+      "evidence/e2e-2026-09-29/astra-layout-final/acceptance-output.txt",
+      "--ref",
+      "evidence/e2e-2026-09-29/astra-layout-final/acceptance-output.txt"
+    ],
+    "stdout": "ČISTO: Byl přidán důkaz EV3: Izolovaný Electron E2E.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-evidence",
+      "--kind",
+      "test",
+      "--label",
+      "GitHub CI",
+      "--value",
+      "success pro ea41bc0",
+      "--href",
+      "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/36639175779"
+    ],
+    "stdout": "ČISTO: Byl přidán důkaz EV4: GitHub CI.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-evidence",
+      "--kind",
+      "source",
+      "--label",
+      "Draft PR #152",
+      "--value",
+      "Implementace připravená k review",
+      "--href",
+      "https://github.com/Make-more-s-r-o/ludone-desktop/pull/152"
+    ],
+    "stdout": "ČISTO: Byl přidán důkaz EV5: Draft PR #152.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-feature",
+      "DESKTOP-ASTRA-PARITY-0-1-6-01",
+      "--scope",
+      "approved",
+      "--delivery",
+      "pr-open",
+      "--exposure",
+      "local",
+      "--verification",
+      "tests-green",
+      "--evidence",
+      "EV1,EV2,EV3,EV4,EV5",
+      "--next",
+      "Doplnit povinné stavové E2E, dokončit review a vydání; fyzický zvuk a produkční upload ověří Dan na Macu."
+    ],
+    "stdout": "ČISTO: Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen",
+      "1",
+      "--name",
+      "Teď / menu panel",
+      "--status",
+      "in-progress",
+      "--approval-required",
+      "none",
+      "--approval",
+      "not-required",
+      "--finding",
+      "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká."
+    ],
+    "stdout": "ČISTO: Obrazovka 1 byla přidána.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "1",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/e2e-2026-09-29/astra-layout-final/03-ted.png",
+      "--note",
+      "Skutečný Electron renderer s izolovaným profilem; syntetický zvuk a vypnutý upload."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky 1 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-proposal",
+      "1",
+      "--state",
+      "approved",
+      "--href",
+      "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=home",
+      "--fidelity",
+      "L2",
+      "--change",
+      "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+    ],
+    "stdout": "ČISTO: Návrh obrazovky 1 má stav „approved“, věrnost L2.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen",
+      "2",
+      "--name",
+      "Můj den",
+      "--status",
+      "in-progress",
+      "--approval-required",
+      "none",
+      "--approval",
+      "not-required",
+      "--finding",
+      "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká."
+    ],
+    "stdout": "ČISTO: Obrazovka 2 byla přidána.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "2",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/e2e-2026-09-29/astra-layout-final/07-muj-den.png",
+      "--note",
+      "Skutečný Electron renderer s izolovaným profilem; syntetický zvuk a vypnutý upload."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky 2 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-proposal",
+      "2",
+      "--state",
+      "approved",
+      "--href",
+      "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=day",
+      "--fidelity",
+      "L2",
+      "--change",
+      "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+    ],
+    "stdout": "ČISTO: Návrh obrazovky 2 má stav „approved“, věrnost L2.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen",
+      "3",
+      "--name",
+      "Detail nahrávky",
+      "--status",
+      "in-progress",
+      "--approval-required",
+      "none",
+      "--approval",
+      "not-required",
+      "--finding",
+      "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká."
+    ],
+    "stdout": "ČISTO: Obrazovka 3 byla přidána.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "3",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/e2e-2026-09-29/astra-layout-final/08-detail-nahravky.png",
+      "--note",
+      "Skutečný Electron renderer s izolovaným profilem; syntetický zvuk a vypnutý upload."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky 3 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-proposal",
+      "3",
+      "--state",
+      "approved",
+      "--href",
+      "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=detail",
+      "--fidelity",
+      "L2",
+      "--change",
+      "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+    ],
+    "stdout": "ČISTO: Návrh obrazovky 3 má stav „approved“, věrnost L2.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen",
+      "4",
+      "--name",
+      "Nastavení / identita",
+      "--status",
+      "in-progress",
+      "--approval-required",
+      "none",
+      "--approval",
+      "not-required",
+      "--finding",
+      "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká."
+    ],
+    "stdout": "ČISTO: Obrazovka 4 byla přidána.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "4",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/e2e-2026-09-29/astra-layout-final/09-nastaveni.png",
+      "--note",
+      "Skutečný Electron renderer s izolovaným profilem; syntetický zvuk a vypnutý upload."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky 4 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-proposal",
+      "4",
+      "--state",
+      "approved",
+      "--href",
+      "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=settings",
+      "--fidelity",
+      "L2",
+      "--change",
+      "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+    ],
+    "stdout": "ČISTO: Návrh obrazovky 4 má stav „approved“, věrnost L2.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen",
+      "5",
+      "--name",
+      "Offline, recovery, update, onboarding",
+      "--status",
+      "in-progress",
+      "--approval-required",
+      "none",
+      "--approval",
+      "not-required",
+      "--finding",
+      "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká."
+    ],
+    "stdout": "ČISTO: Obrazovka 5 byla přidána.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "5",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/e2e-2026-09-29/astra-layout-final/06-offline-panel-recovery.png",
+      "--note",
+      "Skutečný Electron renderer s izolovaným profilem; syntetický zvuk a vypnutý upload."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky 5 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-proposal",
+      "5",
+      "--state",
+      "approved",
+      "--href",
+      "../desktop-redesign-2026-09-23/round2/variants/astra/index.html?scenario=offline",
+      "--fidelity",
+      "L2",
+      "--change",
+      "Dan vybral celou Astru, pouze ikony z Opus; LuTrack zůstává nefunkční."
+    ],
+    "stdout": "ČISTO: Návrh obrazovky 5 má stav „approved“, věrnost L2.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-phase",
+      "plan",
+      "--completed"
+    ],
+    "stdout": "ČISTO: Fáze discovery–spec označeny jako proběhlé (adopce).\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-change",
+      "Oprava evidence 30. 9.: mp-status je dostupný přímým Node spuštěním, CI ea41bc0 prošlo. Formalizace schválení plánu v harnessu se nepředstírá; přímé zadání Dana trvá. Povinné stavové E2E se doplňuje."
+    ],
+    "stdout": "ČISTO: Oprava evidence 30. 9.: mp-status je dostupný přímým Node spuštěním, CI ea41bc0 prošlo. Formalizace schválení plánu v harnessu se nepředstírá; přímé zadání Dana trvá. Povinné stavové E2E se doplňuje.\n",
+    "stderr": "",
+    "exitCode": 0
+  }
+]

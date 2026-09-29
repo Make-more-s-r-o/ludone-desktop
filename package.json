@@ -108,7 +108,8 @@
     "gates:clean": "node scripts/gates-clean.mjs",
     "hooks:install": "git config core.hooksPath .githooks && echo \"Hooky zapnuté (.githooks). Vypnutí: git config --unset core.hooksPath\"",
     "preskocene": "node scripts/preskocene.mjs",
-    "preskocene:baseline": "node scripts/preskocene.mjs --zapis-baseline"
+    "preskocene:baseline": "node scripts/preskocene.mjs --zapis-baseline",
+    "test:design:states": "npm run build && node scripts/astra-state-e2e.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9",

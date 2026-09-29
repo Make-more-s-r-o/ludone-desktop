@@ -21,7 +21,9 @@ const acceptanceGroups = [
   { label: "Teď", checks: ["now-hierarchy-and-safe-actions"] },
   { label: "Záznam a uložení", checks: [
     "recording-starts-two-synthetic-sources",
+    "system-audio-loss-and-recovery",
     "recording-stop-offers-explicit-safe-choice",
+    "saved-recording-astra-composition",
     "recording-saved-local-from-ui",
   ] },
   { label: "Můj den", checks: [
@@ -32,12 +34,13 @@ const acceptanceGroups = [
   ] },
   { label: "Detail", checks: ["local-recording-detail-no-upload", "detail-back-to-day"] },
   { label: "Nastavení", checks: ["settings-shell", "settings-quick-actions"] },
-  { label: "Aktualizace", checks: ["update-check-isolated-from-production", "update-banner-and-defer"] },
+  { label: "Aktualizace", checks: ["update-check-isolated-from-production", "update-banner-and-defer", "update-dedicated-surface"] },
   { label: "Offline a obnova", checks: [
     "offline-recording-continues-locally",
     "startup-loads-seeded-local-fixture",
     "saved-recording-visible-after-app-restart",
     "offline-keeps-local-recording",
+    "unfinished-recording-preserved-after-restart",
   ] },
   { label: "Onboarding", checks: [
     "onboarding-first-use-and-honest-scope",
@@ -47,6 +50,7 @@ const acceptanceGroups = [
     "light-theme-choice",
     "day-theme-light",
     "dark-theme-choice",
+    "dark-settings-actions-contrast",
     "day-theme-dark",
     "theme-shared-across-windows",
   ] },
@@ -105,6 +109,13 @@ const comparisonPairs = [
     note: "Porovnává probíhající nahrávání bez sítě; LuTrack zůstává vypnutý a jeho čas se nevymýšlí.",
   },
 ];
+comparisonPairs.push(
+  { label: "Uložení · jedna schůzka", scenario: "save", width: 400, height: 700, app: "nahravani-ulozeno.png", layoutCheck: "saved-recording-astra-composition", note: "Dvě výslovné akce a jedna schůzka; skutečný odhlášený účet a neaktivní LuTrack." },
+  { label: "První spuštění", scenario: "onboarding", width: 400, height: 700, app: "00-prvni-pouziti.png", layoutCheck: null, note: "Společný Astra shell; skutečné kroky oprávnění a přihlášení se zachovávají." },
+  { label: "Aktualizace · samostatná plocha", scenario: "update", width: 400, height: 700, app: "aktualizace-detail.png", layoutCheck: "update-dedicated-surface", note: "Proužek i samostatná aktualizační plocha zachovávají výslovnou volbu instalace." },
+  { label: "Nastavení · tmavé", scenario: "settings-dark", width: 640, height: 744, app: "nastaveni-tmave.png", layoutCheck: null, note: "Tmavá reference ze stejné uložené Astry." },
+  { label: "Můj den · tmavý", scenario: "day-dark", width: 640, height: 744, app: "muj-den-tmave.png", layoutCheck: null, note: "Tmavá reference bez přenosu pracovních demo dat." },
+);
 const referenceImageDirectory = path.join(
   projectRoot,
   "docs/changes/desktop-astra-parity-0-1-6/artifacts/design/reference",
@@ -339,6 +350,16 @@ function compactText(value) {
 }
 
 async function screenshot(client, name) {
+  // Čekáme na hotová písma a konečné přechody barev. Snímek uprostřed
+  // změny tématu může aktivní tlačítko mylně zobrazit jako šedé/zakázané.
+  await client.evaluate(`(async () => {
+    await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await Promise.allSettled(document.getAnimations().filter(animation => {
+      const timing = animation.effect?.getComputedTiming();
+      return timing && Number.isFinite(timing.endTime) && timing.endTime <= 2000;
+    }).map(animation => animation.finished));
+  })()`);
   const viewport = await client.evaluate("({ width: innerWidth, height: innerHeight })");
   const result = await client.send("Page.captureScreenshot", {
     format: "png", fromSurface: true, captureBeyondViewport: false,
@@ -466,7 +487,7 @@ async function installSyntheticAudioCapture(client) {
         canvas.height = 16;
         tracks.push(...canvas.captureStream(1).getVideoTracks());
       }
-      sources.push({ context, oscillator });
+      sources.push({ context, oscillator, tracks, withVideo });
       return new MediaStream(tracks);
     }
     Object.defineProperty(devices, 'getUserMedia', {
@@ -489,6 +510,16 @@ async function installSyntheticAudioCapture(client) {
     });
     window.__ludoneE2ESyntheticAudio = {
       sourceCount: () => sources.length,
+      loseSystemTrack: () => {
+        const source = sources.find((item) => item.withVideo);
+        const track = source?.tracks.find((item) => item.kind === 'audio');
+        if (!track) return false;
+        track.stop();
+        // MediaStreamTrack.stop() sám událost ended nevyvolává. Fixtura
+        // výslovně simuluje stejnou událost jako odebraný systémový zdroj OS.
+        track.dispatchEvent(new Event('ended'));
+        return true;
+      },
       close: async () => {
         for (const source of sources) {
           try { source.oscillator.stop(); } catch { /* Může už být ukončená. */ }
@@ -551,7 +582,7 @@ try {
     timerIcon: Boolean(document.querySelector('.welcome-visual__node--timer')),
     copy: document.querySelector('.onboarding .welcome-step')?.textContent.replace(/\\s+/g, ' ').trim(),
   }))()`);
-  if (onboarding.title !== "Schůzky pod kontrolou." || onboarding.step !== "1 / 6"
+  if (onboarding.title !== "Váš pracovní den. O kousek jednodušší." || onboarding.step !== "1 / 6"
     || !onboarding.start || onboarding.timerIcon
     || onboarding.copy.includes("měřit čas") || onboarding.copy.includes("Měří čas")) {
     throw new Error(`První použití slibuje nepřipravený LuTrack nebo nemá bezpečný vstup: ${JSON.stringify(onboarding)}.`);
@@ -913,6 +944,18 @@ try {
   });
   await waitFor(() => panel.evaluate("navigator.onLine === true"), "síť po offline záznamu");
 
+  if (!await panel.evaluate("window.__ludoneE2ESyntheticAudio.loseSystemTrack()")) {
+    throw new Error("Fixtura nedokázala odebrat syntetický systémový zdroj.");
+  }
+  await waitFor(() => panel.evaluate(`Boolean(document.querySelector('[data-testid="system-audio-outage"]'))
+    && document.querySelector('[data-testid="recording-source-system"]')?.dataset.sourceState === 'lost'
+    && document.querySelector('[data-testid="recording-source-microphone"]')?.dataset.sourceState === 'live'`), 'ztracený systémový zvuk s pokračujícím mikrofonem');
+  await screenshot(panel, "vypadek-systemoveho-zvuku");
+  await clickSelector(panel, '[data-testid="retry-system-audio"]', 'Obnovit syntetický systémový zdroj');
+  await waitFor(() => panel.evaluate(`!document.querySelector('[data-testid="system-audio-outage"]')
+    && document.querySelector('[data-testid="recording-source-system"]')?.dataset.sourceState === 'live'
+    && Boolean(document.querySelector('[data-testid="recording-stop"]'))`), 'obnovený systémový zvuk a dostupné dokončení');
+  observations.push({ check: "system-audio-loss-and-recovery", syntheticOnly: true, microphoneContinued: true, sourceRecovered: true });
   await clickSelector(panel, '[data-testid="recording-stop"]', "Ukončit a uložit syntetický záznam");
   await waitFor(
     () => panel.evaluate(`Boolean(document.querySelector('.recording-saved')
@@ -926,10 +969,23 @@ try {
     keepEnabled: document.querySelector('[data-testid="skip-recording-name"]')?.disabled === false,
     sendDisabled: document.querySelector('.recording-saved button[type="submit"]')?.disabled === true,
   })`);
-  if (saveChoice.title !== "Nahrávka uložena" || !saveChoice.keepEnabled || !saveChoice.sendDisabled) {
+  if (saveChoice.title !== "Kam s nahrávkou?" || !saveChoice.keepEnabled || !saveChoice.sendDisabled) {
     throw new Error(`Volba uložení neodpovídá odhlášenému účtu: ${JSON.stringify(saveChoice)}.`);
   }
   observations.push({ check: "recording-stop-offers-explicit-safe-choice", ...saveChoice });
+  const saveLayout = await panel.evaluate(`(() => {
+    const box = (selector) => { const element = document.querySelector(selector); const rect = element?.getBoundingClientRect(); return rect ? {top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, width: rect.width, height: rect.height} : null; };
+    return { header: box('.panel-header'), nav: box('.desktop-navigation'), preview: box('.recording-saved__meta'), name: box('#recording-name'), send: box('.recording-saved button[type="submit"]'), keep: box('[data-testid="skip-recording-name"]'), footer: box('.panel-footer'), format: document.querySelector('.recording-saved__format')?.textContent.trim() };
+  })()`);
+  if (!saveLayout.header || saveLayout.header.top < 0 || saveLayout.header.bottom > 36
+    || !saveLayout.preview || !saveLayout.format?.includes('Jedna nahrávka schůzky')
+    || !saveLayout.name || !saveLayout.send || !saveLayout.keep || !saveLayout.footer
+    || saveLayout.send.width < 300 || saveLayout.keep.width < 300
+    || !(saveLayout.preview.bottom <= saveLayout.name.top && saveLayout.name.bottom <= saveLayout.send.top
+      && saveLayout.send.bottom <= saveLayout.keep.top && saveLayout.keep.bottom <= saveLayout.footer.top)) {
+    throw new Error(`Uložení nahrávky neodpovídá společnému Astra shellu a pořadí: ${JSON.stringify(saveLayout)}.`);
+  }
+  observations.push({ check: "saved-recording-astra-composition", ...saveLayout });
   await screenshot(panel, "nahravani-ulozeno");
 
   const completedManifest = await waitFor(latestE2eRecording, "dokončený lokální manifest z reálného UI toku", 15_000);
@@ -1520,6 +1576,26 @@ try {
   if (darkTheme !== "dark") throw new Error(`Volba tmavého tématu se neprojevila: ${darkTheme}.`);
   observations.push({ check: "dark-theme-choice", theme: darkTheme });
   await screenshot(settings, "nastaveni-tmave");
+  const darkActions = await settings.evaluate(`(() => {
+    const luminance = color => {
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+      const context = canvas.getContext('2d'); context.fillStyle = color; context.fillRect(0, 0, 1, 1);
+      const rgb = [...context.getImageData(0, 0, 1, 1).data].slice(0, 3);
+      return rgb.map(channel => channel / 255).map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4)
+        .reduce((sum, channel, index) => sum + channel * [.2126, .7152, .0722][index], 0);
+    };
+    return ['[data-testid="open-audio-test"]', '.settings-footer .button--primary'].map(selector => {
+      const button = document.querySelector(selector), css = button && getComputedStyle(button);
+      const background = css && luminance(css.backgroundColor), foreground = css && luminance(css.color);
+      return { selector, disabled: button?.disabled, opacity: css?.opacity, background: css?.backgroundColor, color: css?.color,
+        contrast: (Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05) };
+    });
+  })()`);
+  if (darkActions.some(action => action.disabled !== false || action.opacity !== '1' || !Number.isFinite(action.contrast) || action.contrast < 4.5)) {
+    throw new Error(`Aktivní tmavé akce nemají dostatečný kontrast: ${JSON.stringify(darkActions)}.`);
+  }
+  observations.push({ check: "dark-settings-actions-contrast", actions: darkActions });
+
 
   await clickByText(settings, "Můj den");
   await waitFor(() => settings.evaluate(`document.querySelector('.settings-window')?.dataset.page === 'day'
@@ -1573,11 +1649,28 @@ try {
     install: document.querySelector('[data-testid="update-install"]')?.textContent.trim(),
     defer: document.querySelector('[data-testid="update-defer"]')?.textContent.trim(),
   }))()`);
-  if (updateBanner.title !== "Nová verze 0.1.6 je stažená" || !updateBanner.benefit
+  if (updateBanner.title !== "Nová verze 0.1.7 je stažená" || !updateBanner.benefit
     || updateBanner.install !== "Aktualizovat" || updateBanner.defer !== "Později") {
     throw new Error(`Stažená aktualizace nenabízí jasnou motivaci a volby: ${JSON.stringify(updateBanner)}.`);
   }
   await screenshot(panel, "aktualizace-stazena");
+  await clickSelector(panel, '.application-update-detail__open', 'Otevřít samostatnou aktualizační plochu');
+  await waitFor(() => panel.evaluate(`Boolean(document.querySelector('.application-update-status--detail'))`), 'samostatná plocha aktualizace');
+  const updateDetail = await panel.evaluate(`(() => {
+    const rect = document.querySelector('.application-update-status--detail')?.getBoundingClientRect();
+    const action = document.querySelector('[data-testid="update-install"]')?.getBoundingClientRect();
+    return { version: document.querySelector('.application-update-detail__version')?.textContent.trim(), title: document.querySelector('.application-update-detail__intro h1')?.textContent.trim(), action: action ? {top:action.top,bottom:action.bottom,width:action.width} : null, rect: rect ? {top:rect.top,bottom:rect.bottom} : null, viewport: innerHeight };
+  })()`);
+  if (!updateDetail.version?.includes('0.1.7') || !updateDetail.title || !updateDetail.action
+    || updateDetail.action.width < 300 || !updateDetail.rect || updateDetail.rect.top < 100
+    || updateDetail.action.top < updateDetail.rect.top || updateDetail.action.bottom > updateDetail.viewport) {
+    throw new Error(`Samostatná aktualizační plocha není čitelná a dostupná: ${JSON.stringify(updateDetail)}.`);
+  }
+  observations.push({ check: "update-dedicated-surface", ...updateDetail });
+  await screenshot(panel, "aktualizace-detail");
+  await clickSelector(panel, '.application-update-detail__back', 'Zpět z aktualizační plochy');
+  await waitFor(() => panel.evaluate(`!document.querySelector('.application-update-status--detail')`), 'návrat do původního proužku aktualizace');
+
   await clickSelector(panel, '[data-testid="update-defer"]', "Později u aktualizace");
   await waitFor(
     () => panel.evaluate(`document.querySelector('[data-testid="update-downloaded"]')
@@ -1591,6 +1684,60 @@ try {
     chosenAction: "Později",
   };
   observations.push({ check: "update-banner-and-defer", ...updateProof });
+
+  // Obnova nedokončeného diskového vzorku. Nejde o fyzický výpadek Macu:
+  // samostatný mikrofon má platná data, očekávaná systémová stopa je prázdná.
+  await stopDesktop();
+  const interruptedId = "50000000-0000-4000-8000-000000000001";
+  const recordingsDirectory = path.join(dataRoot, "user-data", "nahravky");
+  const interruptedPaths = ["astra-interrupted.manifest.json", "astra-interrupted-microphone.webm", "astra-interrupted-system.webm"]
+    .map((name) => path.join(recordingsDirectory, name));
+  const interruptedAt = new Date().toISOString();
+  const interruptedManifest = Buffer.from(`${JSON.stringify({
+    schemaVersion: 1, clientRecordingId: interruptedId, createdAt: interruptedAt,
+    closedAt: null, state: "incomplete",
+    tracks: Object.fromEntries(["microphone", "system"].map((source, index) => [source, {
+      fileName: path.basename(interruptedPaths[index + 1]), startedAt: interruptedAt,
+      endedAt: null, sizeBytes: 0, sha256: null,
+    }])),
+  }, null, 2)}\n`);
+  const interruptedBytes = [interruptedManifest, await readFile(recordingFixture.audioPath), Buffer.alloc(0)];
+  for (let index = 0; index < interruptedPaths.length; index += 1) {
+    await writeFile(interruptedPaths[index], interruptedBytes[index], { mode: 0o600, flag: "wx" });
+  }
+  const recoveryLogOffset = log.length;
+  processHandle = launchDesktop(port);
+  await waitFor(() => log.slice(recoveryLogOffset).includes("[queue] odesláno 0,"), "obnova nedokončeného místního vzorku");
+  panel = await connectTarget(port, (target) => target.type === "page" && target.url.includes("/dist/index.html")
+    && !target.url.includes("#settings"), "Teď s nedokončenou nahrávkou");
+  await clickByText(panel, "Můj den");
+  settings = await connectTarget(port, (target) => target.type === "page" && target.url.includes("#settings"), "Můj den po obnově");
+  await waitFor(() => settings.evaluate(`Boolean(document.querySelector('[data-recording-id="${interruptedId}"]'))`), "nedokončená nahrávka v přehledu");
+  await clickSelector(settings, `[data-recording-id="${interruptedId}"] [data-testid="recording-detail"] > summary`, "Detail nedokončené nahrávky");
+  const recovery = await settings.evaluate(`(async () => {
+    const snapshot = await window.ludone.listLocalRecordings();
+    const item = snapshot.items.find(entry => entry.id === '${interruptedId}');
+    const row = document.querySelector('[data-recording-id="${interruptedId}"]');
+    return { id: item?.id, localState: item?.localState, localReason: item?.localReason,
+      uploadIntent: item?.uploadIntent, allowedActions: item?.allowedActions,
+      completeClaim: row?.textContent.includes('Zvuk je kompletní'),
+      falseDelivery: Boolean(row?.querySelector('.recording-queue-card__journey li:last-child.is-complete')),
+      unsafeActions: Boolean(row?.querySelector('.recording-action--send, .recording-action--retry, .recording-action--verify')),
+      open: row?.querySelector('[data-testid="recording-detail"]')?.open };
+  })()`);
+  if (recovery.localState !== "partial-audio" || !recovery.localReason?.includes("nebyla dokončena")
+    || recovery.completeClaim || recovery.falseDelivery || recovery.unsafeActions || !recovery.open
+    || recovery.allowedActions?.send || recovery.allowedActions?.retry) {
+    throw new Error(`Obnova tvrdí nepravdivý stav nebo nabízí nebezpečnou akci: ${JSON.stringify(recovery)}.`);
+  }
+  for (let index = 0; index < interruptedPaths.length; index += 1) {
+    if (!(await readFile(interruptedPaths[index])).equals(interruptedBytes[index])) {
+      throw new Error(`Obnova změnila původní soubor ${path.basename(interruptedPaths[index])}.`);
+    }
+  }
+  observations.push({ check: "unfinished-recording-preserved-after-restart", ...recovery,
+    fixtureOnly: true, originalBytesUnchanged: true, microphoneBytes: interruptedBytes[1].length, systemBytes: 0 });
+  await screenshot(settings, "obnova-neuplne-nahravky");
 
   exitCode = 0;
 } catch (error) {

@@ -1,0 +1,16 @@
+{
+  "changeId": "desktop-astra-parity-0-1-6",
+  "status": "clean",
+  "gateRan": true,
+  "packet": null,
+  "clean": true,
+  "summary": {
+    "packets": 7,
+    "rules": 28,
+    "files": 55,
+    "findings": 0
+  },
+  "findings": []
+}
+
+EXIT_CODE=0

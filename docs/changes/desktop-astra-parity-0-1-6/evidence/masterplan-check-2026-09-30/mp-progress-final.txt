@@ -1,0 +1,5 @@
+$ node /Users/dan/.claude/skills/masterplan/scripts/mp-progress.mjs desktop-astra-parity-0-1-6 --check --repo-root /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity
+ČISTO: Přehled /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/docs/changes/desktop-astra-parity-0-1-6/progress/index.html je shodný s čerstvým renderem bez banneru čerstvosti (1 funkcí).
+ČISTO: Nebyl nalezen zdroj tokenů; použil se vestavěný neutrální fallback.
+
+EXIT_CODE=0

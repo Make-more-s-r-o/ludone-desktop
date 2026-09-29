@@ -5628,7 +5628,8 @@ describe("produkční zapojení odchozí fronty", () => {
       items: [{
         id,
         source: "queue",
-        localState: "complete-audio",
+        localState: "partial-audio",
+        localReason: expect.stringContaining("prázdný"),
         sizeBytes: 0,
         revision: expect.stringMatching(/^sha256:/u),
         fileRevision: expect.stringMatching(/^sha256:/u),
@@ -7378,7 +7379,7 @@ describe("produkční zapojení automatických aktualizací", () => {
     };
 
     await expect(readPackaged(false)).resolves.toMatchObject({
-      downloadedVersion: "0.1.6",
+      downloadedVersion: "0.1.7",
       installDeferred: false,
     });
     await expect(readPackaged(true)).resolves.toMatchObject({
@@ -8297,6 +8298,36 @@ describe("viditelnost automatických aktualizací v panelu", () => {
       // Tři další pokusy o bezpečný restart nesmějí přerušit skutečnou aktivitu mainu.
       await React.act(async () => vi.advanceTimersByTimeAsync(90_000));
       expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    } finally {
+      await panel.close();
+    }
+  });
+
+  it("vyhrazená plocha aktualizace zachová autoritativní verzi a odložení přes IPC", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({ autoUpdater, isPackaged: true });
+    await harness.runReady();
+    autoUpdater.emit("update-downloaded", { version: "7.8.9" });
+    const panel = await mountUpdatePanel(harness);
+    try {
+      await React.act(async () => {
+        panel.document.querySelector(".application-update-detail__open")?.click();
+      });
+      const detail = panel.document.querySelector(".application-update-status--detail");
+      expect(detail?.querySelector(".application-update-detail__version")?.textContent).toContain("7.8.9");
+      expect(detail?.querySelector(".application-update-detail__summary")?.textContent).toContain("LuDone Desktop · 7.8.9");
+      expect(detail?.querySelector(".application-update-detail__safety")?.textContent).toContain("Běžící činnosti se samy nezastaví");
+      expect(detail?.textContent).toContain("Restart proběhne až po vašem kliknutí");
+      await React.act(async () => {
+        detail?.querySelector('[data-testid="update-defer"]')?.click();
+      });
+      expect(panel.ipcRenderer.invoke).toHaveBeenCalledWith("updater:defer");
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+      await React.act(async () => {
+        panel.document.querySelector(".application-update-detail__back")?.click();
+      });
+      expect(panel.document.querySelector(".application-update-status--detail")).toBeNull();
+      expect(panel.document.querySelector('[data-testid="update-install"]')).not.toBeNull();
     } finally {
       await panel.close();
     }

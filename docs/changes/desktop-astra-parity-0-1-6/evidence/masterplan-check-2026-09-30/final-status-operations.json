@@ -1,0 +1,86 @@
+[
+  {
+    "args": [
+      "set-screen-current",
+      "screen-1",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/acceptance-2026-09-30/electron/03-ted.png",
+      "--note",
+      "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky screen-1 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "screen-2",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/acceptance-2026-09-30/electron/08-muj-den.png",
+      "--note",
+      "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky screen-2 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "screen-3",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/acceptance-2026-09-30/electron/09-detail-nahravky.png",
+      "--note",
+      "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky screen-3 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "screen-4",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/acceptance-2026-09-30/electron/10-nastaveni.png",
+      "--note",
+      "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky screen-4 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "set-screen-current",
+      "screen-5",
+      "--state",
+      "captured",
+      "--src",
+      "evidence/acceptance-2026-09-30/electron/07-offline-panel-recovery.png",
+      "--note",
+      "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+    ],
+    "stdout": "ČISTO: Dnešní stav obrazovky screen-5 je „captured“.\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  {
+    "args": [
+      "add-change",
+      "Finální přejímka30.9.: 1572 unit PASS, 35 Electron podmínek, 18 stavů, 10 párů. Vizuální P2 uzavřeny, bezpečnostní diff review bez nálezu. Fyzická Mac přejímka a publikace oddělené; formální plan hook se nepředstírá."
+    ],
+    "stdout": "ČISTO: Finální přejímka30.9.: 1572 unit PASS, 35 Electron podmínek, 18 stavů, 10 párů. Vizuální P2 uzavřeny, bezpečnostní diff review bez nálezu. Fyzická Mac přejímka a publikace oddělené; formální plan hook se nepředstírá.\n",
+    "stderr": "",
+    "exitCode": 0
+  }
+]

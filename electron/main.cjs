@@ -3740,7 +3740,7 @@ let updateStatus = {
   availableVersion: null,
   downloading: false,
   downloadPercent: null,
-  downloadedVersion: designE2eDownloadedUpdate ? "0.1.6" : null,
+  downloadedVersion: designE2eDownloadedUpdate ? "0.1.7" : null,
   benefit: designE2eDownloadedUpdate ? "Přehled nahrávek a sjednocený vzhled." : null,
   checkFailed: false,
   manualCheckAvailable: false,

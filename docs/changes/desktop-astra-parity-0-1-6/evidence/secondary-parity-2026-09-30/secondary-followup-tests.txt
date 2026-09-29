@@ -1,0 +1,17 @@
+
+> ludone-desktop-prototype@0.1.6 test:unit
+> vitest run tests/onboarding-missing-steps.test.js tests/recording-card.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-secondary-parity
+
+ ✓ tests/recording-card.test.js (59 tests) 1430ms
+ ✓ tests/onboarding-missing-steps.test.js (23 tests) 1591ms
+   ✓ dva chybějící kroky onboardingu > po skončení pokusu přestane neznámou adresu znovu zjišťovat  865ms
+
+ Test Files  2 passed (2)
+      Tests  82 passed (82)
+   Start at  00:47:19
+   Duration  2.29s (transform 140ms, setup 13ms, collect 1.14s, tests 3.02s, environment 0ms, prepare 67ms)
+
+EXIT_CODE=0
