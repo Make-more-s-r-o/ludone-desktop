@@ -1,5 +1,7 @@
 # Implementační plán — LuDone Desktop
 
+**30. 9. 2026 — 0.1.6 před finální CI/publikací:** Astra implementovaná v PR #152, 🧪 1 573 unit PASS, 35 podmínek skutečné Electron E2E a 18 stavových scénářů. Review bez zbývající P1/P2. LuTrack neaktivní; 🟡 fyzická Mac přejímka podle `docs/changes/desktop-astra-parity-0-1-6/MAC-PREJIMKA.md`.
+
 **24. 9. 2026 — vydaná 0.1.5, návrh Astra:** Dan zvolil „Nit dne“ a povolil samostatnou implementaci i vydání. PR #149 je sloučen v `46b313c`; tag `v0.1.5` prošel podepsaným a notarizovaným workflow. Nezávislá kontrola potvrdila veřejný feed i DMG/ZIP soubory pro arm64 a x64. Plné brány: 1 557 testů zelených a 3 původní skipy; produkční build prošel; nezávislé review dokončeno 🧪. Zvuk, upload, vizuální kontrolu a ruční instalaci aktualizace musí ověřit Dan na skutečném Macu. Backend a serverové napojení LuTracku se nemění. Podrobnosti a důkazy jsou v [archivu změny 0.1.5](docs/changes/_archive/desktop-astra-0-1-5/).
 
 **Rozsah LuTracku:** v 0.1.5 zůstává neaktivní a bez napojení na server. Klikací návrh budoucího společného toku je uložen v [`lutrack/NEXT-RELEASE.md`](docs/changes/desktop-redesign-2026-09-23/lutrack/NEXT-RELEASE.md); nejde o implementaci ani schválený API kontrakt.

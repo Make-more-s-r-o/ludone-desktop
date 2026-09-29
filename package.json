@@ -1,6 +1,6 @@
 {
   "name": "ludone-desktop-prototype",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "author": "Make more s.r.o.",
   "private": true,
   "description": "Klikatelná kostra menu-bar spouštěče LuDone Desktop",
@@ -99,6 +99,7 @@
     "progress": "node scripts/desktop-progress.mjs",
     "vzorky": "electron scripts/vzorky-exportu.mjs",
     "test:audio": "node scripts/audio-smoke.mjs",
+    "test:design:e2e": "npm run build && node scripts/astra-design-e2e.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p jsconfig.json",
     "test:tray-image": "electron tests/tray-image-electron.js",
@@ -107,7 +108,8 @@
     "gates:clean": "node scripts/gates-clean.mjs",
     "hooks:install": "git config core.hooksPath .githooks && echo \"Hooky zapnuté (.githooks). Vypnutí: git config --unset core.hooksPath\"",
     "preskocene": "node scripts/preskocene.mjs",
-    "preskocene:baseline": "node scripts/preskocene.mjs --zapis-baseline"
+    "preskocene:baseline": "node scripts/preskocene.mjs --zapis-baseline",
+    "test:design:states": "npm run build && node scripts/astra-state-e2e.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9",

@@ -1,0 +1,888 @@
+{
+  "status": "PASS",
+  "acceptance": [
+    {
+      "label": "Teď",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "now-hierarchy-and-safe-actions",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Záznam a uložení",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "recording-starts-two-synthetic-sources",
+          "status": "PASS"
+        },
+        {
+          "check": "recording-stop-offers-explicit-safe-choice",
+          "status": "PASS"
+        },
+        {
+          "check": "recording-saved-local-from-ui",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Můj den",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "day-hierarchy-and-real-data",
+          "status": "PASS"
+        },
+        {
+          "check": "day-shows-actual-recording-and-seeded-local-fixture",
+          "status": "PASS"
+        },
+        {
+          "check": "local-recording-filter",
+          "status": "PASS"
+        },
+        {
+          "check": "delivery-filter-empty-is-truthful",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Detail",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "local-recording-detail-no-upload",
+          "status": "PASS"
+        },
+        {
+          "check": "detail-back-to-day",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Nastavení",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "settings-shell",
+          "status": "PASS"
+        },
+        {
+          "check": "settings-quick-actions",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Aktualizace",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "update-check-isolated-from-production",
+          "status": "PASS"
+        },
+        {
+          "check": "update-banner-and-defer",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Offline a obnova",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "startup-loads-seeded-local-fixture",
+          "status": "PASS"
+        },
+        {
+          "check": "saved-recording-visible-after-app-restart",
+          "status": "PASS"
+        },
+        {
+          "check": "offline-keeps-local-recording",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Onboarding",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "onboarding-first-use-and-honest-scope",
+          "status": "PASS"
+        },
+        {
+          "check": "onboarding-account-step-without-external-login",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Světlé a tmavé téma",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "light-theme-choice",
+          "status": "PASS"
+        },
+        {
+          "check": "day-theme-light",
+          "status": "PASS"
+        },
+        {
+          "check": "dark-theme-choice",
+          "status": "PASS"
+        },
+        {
+          "check": "day-theme-dark",
+          "status": "PASS"
+        },
+        {
+          "check": "theme-shared-across-windows",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "LuTrack zůstává vypnutý",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "lutrack-remains-disabled",
+          "status": "PASS"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/01-00-prvni-pouziti.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/02-00-prihlaseni.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/03-ted.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/04-nahravani-ulozeno.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/05-offline-panel.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/06-muj-den.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/07-detail-nahravky.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/08-nastaveni.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/09-nastaveni-svetle.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/10-muj-den-svetle.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/11-nastaveni-tmave.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/12-muj-den-tmave.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/13-navrat-do-ted.png",
+    ".runtime/design-e2e/2026-09-24T14-22-23-764Z/14-aktualizace-stazena.png"
+  ],
+  "comparisonPage": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/comparison.html",
+  "visualComparisons": [
+    {
+      "label": "Teď · hlavní panel",
+      "scenario": "home",
+      "width": 400,
+      "height": 700,
+      "note": "Produktový LuTrack zůstává poctivě připravovaný; jeho prostor a shell se porovnávají se scénou Astra home.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/03-ted.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-home.png"
+    },
+    {
+      "label": "Můj den · místní nahrávky",
+      "scenario": "day",
+      "width": 640,
+      "height": 744,
+      "note": "Srovnává se stejná plocha a hierarchie; pracovní úseky prototypu se nepřenášejí do skutečných dat.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/06-muj-den.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-day.png"
+    },
+    {
+      "label": "Detail · místní kopie",
+      "scenario": "detail",
+      "width": 640,
+      "height": 744,
+      "note": "Produktová místní kopie a skutečné bezpečné akce se porovnávají s odpovídající scénou Astra detail.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/07-detail-nahravky.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-detail.png"
+    },
+    {
+      "label": "Nastavení · účet a předvolby",
+      "scenario": "settings",
+      "width": 640,
+      "height": 744,
+      "note": "Skutečný účet, zvuk, lokální kopie a aktualizace se porovnávají se scénou Astra Nastavení bez fiktivního profilu.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/08-nastaveni.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-settings.png"
+    },
+    {
+      "label": "Offline · místní nahrávka",
+      "scenario": "offline",
+      "width": 400,
+      "height": 700,
+      "note": "Ověřuje viditelný stav bez připojení a zachování skutečné místní nahrávky bez pokusu o upload.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/05-offline-panel.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-offline.png"
+    }
+  ],
+  "observations": [
+    {
+      "check": "reference-astra-home",
+      "viewport": {
+        "width": 400,
+        "height": 700
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-home.png"
+    },
+    {
+      "check": "reference-astra-day",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-day.png"
+    },
+    {
+      "check": "reference-astra-detail",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-detail.png"
+    },
+    {
+      "check": "reference-astra-settings",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-settings.png"
+    },
+    {
+      "check": "reference-astra-offline",
+      "viewport": {
+        "width": 400,
+        "height": 700
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/astra-offline.png"
+    },
+    {
+      "check": "startup-loads-seeded-local-fixture",
+      "recoveredFromDisk": true,
+      "uploadTransportEnabled": false,
+      "fixtureId": "40000000-0000-4000-8000-000000000001"
+    },
+    {
+      "check": "onboarding-first-use-and-honest-scope",
+      "title": "Schůzky pod kontrolou.",
+      "step": "1 / 6",
+      "start": true,
+      "timerIcon": false,
+      "copy": "LuDone DesktopSchůzkypod kontrolou.Nahrávej z horní lišty. Po zastavení si vybereš, zda záznam odešleš do LuDone, nebo ho necháš uložený na Macu.Začít Přepisy a analýzu otevřeš na app.ludone.cz. Originál zůstává na Macu podle nastavení retence."
+    },
+    {
+      "action": "click",
+      "text": "Začít"
+    },
+    {
+      "check": "onboarding-account-step-without-external-login",
+      "title": "Propojte svůj účet",
+      "loginButton": true,
+      "urlStarted": false
+    },
+    {
+      "action": "click",
+      "text": "Zpět"
+    },
+    {
+      "check": "panel-shell",
+      "labels": [
+        "Teď",
+        "Můj den",
+        "Nastavení"
+      ],
+      "active": "Teď",
+      "width": 400,
+      "height": 700,
+      "navFits": true,
+      "titlebar": {
+        "top": 36,
+        "bottom": 83,
+        "left": 9,
+        "right": 391
+      },
+      "menubar": {
+        "top": 0,
+        "bottom": 28,
+        "left": 0,
+        "right": 400
+      },
+      "markLoaded": true,
+      "theme": "light"
+    },
+    {
+      "action": "click",
+      "target": "Rychlé akce"
+    },
+    {
+      "check": "quick-actions-and-auth-boundary",
+      "title": "Rychlé akce",
+      "items": [
+        "Můj den",
+        "Nahrávky",
+        "Nastavení účtu"
+      ],
+      "shortcut": true
+    },
+    {
+      "check": "now-hierarchy-and-safe-actions",
+      "title": "Pracovní čas se připravuje.",
+      "brand": "LuDone",
+      "introCopy": "Nahrávání schůzek funguje.",
+      "hero": {
+        "top": 123,
+        "bottom": 442,
+        "left": 9,
+        "right": 385,
+        "width": 376,
+        "height": 319
+      },
+      "record": {
+        "top": 442,
+        "bottom": 539,
+        "left": 9,
+        "right": 385,
+        "width": 376,
+        "height": 97
+      },
+      "future": {
+        "top": 123,
+        "bottom": 442,
+        "left": 9,
+        "right": 385,
+        "width": 376,
+        "height": 319
+      },
+      "preview": {
+        "top": 539,
+        "bottom": 663.1875,
+        "left": 9,
+        "right": 385,
+        "width": 376,
+        "height": 124.1875
+      },
+      "footer": {
+        "top": 658,
+        "bottom": 692,
+        "left": 9,
+        "right": 391,
+        "width": 382,
+        "height": 34
+      },
+      "viewportHeight": 700,
+      "recordActionVisible": true,
+      "recordActionEnabled": true,
+      "futureControls": [
+        {
+          "tag": "button",
+          "disabled": true
+        },
+        {
+          "tag": "input",
+          "disabled": true
+        },
+        {
+          "tag": "button",
+          "disabled": true
+        }
+      ],
+      "sourceActionVisible": true,
+      "sourceActionEnabled": true,
+      "previewTitle": "Nahrávky",
+      "previewItems": [
+        "Nahrávka24. 9. 2026 16:20 · Méně než minutuZůstává na Macu"
+      ],
+      "titleFont": "\"Public Sans\", sans-serif",
+      "titleAlign": "left",
+      "topline": {
+        "top": 139,
+        "bottom": 154.5,
+        "left": 31,
+        "right": 363,
+        "width": 332,
+        "height": 15.5
+      },
+      "navActive": "Teď"
+    },
+    {
+      "check": "lutrack-remains-disabled",
+      "label": "LuTrack se připravuje",
+      "disabledControlCount": 3,
+      "enabledControlCount": 0
+    },
+    {
+      "action": "click",
+      "target": "Nahrát syntetickou schůzku"
+    },
+    {
+      "check": "recording-starts-two-synthetic-sources",
+      "label": "Nahrává se",
+      "sources": [
+        {
+          "id": "recording-source-microphone",
+          "state": "live"
+        },
+        {
+          "id": "recording-source-system",
+          "state": "live"
+        }
+      ],
+      "syntheticStreams": 2
+    },
+    {
+      "action": "click",
+      "target": "Ukončit a uložit syntetický záznam"
+    },
+    {
+      "check": "recording-stop-offers-explicit-safe-choice",
+      "title": "Nahrávka uložena",
+      "keepEnabled": true,
+      "sendDisabled": true
+    },
+    {
+      "action": "click",
+      "target": "Nechat na Macu"
+    },
+    {
+      "check": "recording-saved-local-from-ui",
+      "id": "9a415088-0d46-4e4f-872f-c3bc40ec335b",
+      "manifest": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/isolated-data/user-data/nahravky/2026-09-24T14-22-25-328Z-9a415088.manifest.json",
+      "tracks": [
+        {
+          "source": "microphone",
+          "bytes": 21429
+        },
+        {
+          "source": "system",
+          "bytes": 21429
+        }
+      ],
+      "syntheticOnly": true,
+      "uploadTransportEnabled": false,
+      "savedCopy": {
+        "name": "LuDone-2026-09-24T14-22-25-498Z-24-září-2026,-16-22-9a415088-0d46-4e4f-872f-c3bc40ec335b.webm",
+        "bytes": 16949
+      },
+      "decision": "keep",
+      "uploadAttempted": false
+    },
+    {
+      "check": "saved-recording-visible-after-app-restart",
+      "queueReadyAfterRestart": true,
+      "localRecordingsVisible": 2,
+      "recordingId": "9a415088-0d46-4e4f-872f-c3bc40ec335b"
+    },
+    {
+      "action": "click",
+      "target": "Zdroje zvuku"
+    },
+    {
+      "check": "source-action-opens-audio-settings",
+      "selectedTab": "Zvuk",
+      "audioPanelVisible": true
+    },
+    {
+      "check": "offline-keeps-local-recording",
+      "online": false,
+      "status": "Místní režim · Bez připojení",
+      "notice": "Bez připojení. Nahrávky zůstávají na Macu.Synchronizace a odesílání počkají.",
+      "noticeBounds": {
+        "left": 0,
+        "right": 394,
+        "width": 394
+      },
+      "rows": [
+        "24. září 2026, 16:2224. 9. 2026 16:22 · Méně než minutuZůstává na Macu",
+        "Nahrávka24. 9. 2026 16:20 · Méně než minutuZůstává na Macu"
+      ]
+    },
+    {
+      "action": "click",
+      "text": "Můj den"
+    },
+    {
+      "check": "day-hierarchy-and-real-data",
+      "title": "Stopa dne",
+      "active": "Můj den",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "heading": {
+        "top": 169,
+        "bottom": 200.046875,
+        "left": 39,
+        "right": 391,
+        "width": 352,
+        "height": 31.046875
+      },
+      "future": {
+        "top": 178.96875,
+        "bottom": 205.0625,
+        "left": 413,
+        "right": 603,
+        "width": 190,
+        "height": 26.09375
+      },
+      "dashboard": {
+        "top": 254.046875,
+        "bottom": 593.859375,
+        "left": 55,
+        "right": 585,
+        "width": 530,
+        "height": 339.8125
+      },
+      "futureControls": [],
+      "renderedRows": 2,
+      "realRows": 2,
+      "fixture": {
+        "id": "40000000-0000-4000-8000-000000000001",
+        "kind": "recording",
+        "state": "ceka",
+        "attempts": 0,
+        "nextAttemptAt": null,
+        "server": {
+          "sessionId": null,
+          "tracks": {
+            "microphone": {
+              "recordingId": null,
+              "uploadedBytes": 0
+            },
+            "system": {
+              "recordingId": null,
+              "uploadedBytes": 0
+            }
+          }
+        },
+        "revision": "sha256:8a5709da8241c83e50899e647b70b219d0121318d2fcb45079a692d4a58d88ba",
+        "ownership": "unknown",
+        "requiresHumanAction": false,
+        "blockReason": null,
+        "title": "",
+        "uploadIntent": "held",
+        "source": "queue",
+        "localState": "complete-audio",
+        "localReason": null,
+        "fileRevision": "sha256:d3ae3f2df6eebf4a7a785702374ed44ad128f51c430a0e789707e4916cbad867",
+        "createdAt": "2026-09-24T14:20:53.767Z",
+        "durationMs": 2220,
+        "sizeBytes": 35621,
+        "deliveryState": null,
+        "allowedActions": {
+          "claim": true,
+          "delete": true,
+          "retry": false,
+          "send": false
+        },
+        "sendingDisabledReason": "odesílání je vypnuté"
+      },
+      "recordedByE2e": {
+        "id": "9a415088-0d46-4e4f-872f-c3bc40ec335b",
+        "kind": "recording",
+        "state": "ceka",
+        "attempts": 0,
+        "nextAttemptAt": null,
+        "server": {
+          "sessionId": null,
+          "delivery": {
+            "recordingId": null,
+            "uploadedBytes": 0
+          },
+          "tracks": {
+            "microphone": {
+              "recordingId": null,
+              "uploadedBytes": 0
+            },
+            "system": {
+              "recordingId": null,
+              "uploadedBytes": 0
+            }
+          }
+        },
+        "revision": "sha256:48e964668c022b73d86a0d67864bbe9180ceaebb60a22a3948fde6b5650d2de7",
+        "ownership": "unknown",
+        "requiresHumanAction": false,
+        "blockReason": null,
+        "title": "24. září 2026, 16:22",
+        "uploadIntent": "held",
+        "source": "queue",
+        "localState": "complete-audio",
+        "localReason": null,
+        "fileRevision": "sha256:3f9a72efc22514933494d327da067c5a382a961d44072797b212bbfb65901aa5",
+        "createdAt": "2026-09-24T14:22:25.328Z",
+        "durationMs": 1304,
+        "sizeBytes": 77263,
+        "deliveryState": "ready",
+        "allowedActions": {
+          "claim": true,
+          "delete": true,
+          "retry": false,
+          "send": false
+        },
+        "sendingDisabledReason": "odesílání je vypnuté"
+      },
+      "fixtureRowText": "16:20 Zpět na denDnes · 16:2024. 9. 2026 16:20Zůstává na MacuMístní fronta2 s36 kBID: 40000000Zvuk je kompletníDetail a akce24. 9. 2026 16:202 s · 36 kB · Místní frontaNa MacuVe frontěOdeslánoOvěřenoUložení a přístupZůstává na MacuVlastníkVlastník není ověřenZvukStereo WebM/Opus · zvuk je kompletníLokální kopieZachována na tomto MacuSamostatná nahrávka. LuTrack zatím není připojený a nevznikl pracovní úsek.Převzít pod svůj účetUkázat ve FinderuPřesunout do košePřepis a analýzu otevřeš v LuDone na webu.",
+      "recordedRowText": "16:22 Zpět na denDnes · 16:2224. září 2026, 16:22Zůstává na Macu24. 9. 2026 16:22Místní fronta1 s77 kBID: 9a415088Zvuk je kompletníDetail a akce24. září 2026, 16:221 s · 77 kB · Místní frontaNa MacuVe frontěOdeslánoOvěřenoUložení a přístupZůstává na MacuVlastníkVlastník není ověřenZvukStereo WebM/Opus · zvuk je kompletníLokální kopieZachována na tomto MacuSamostatná nahrávka. LuTrack zatím není připojený a nevznikl pracovní úsek.Převzít pod svůj účetUkázat ve FinderuPřesunout do košePřepis a analýzu otevřeš v LuDone na webu.",
+      "firstRowText": "16:20 Zpět na denDnes · 16:2024. 9. 2026 16:20Zůstává na MacuMístní fronta2 s36 kBID: 40000000Zvuk je kompletníDetail a akce24. 9. 2026 16:202 s · 36 kB · Místní frontaNa MacuVe frontěOdeslánoOvěřenoUložení a přístupZůstává na MacuVlastníkVlastník není ověřenZvukStereo WebM/Opus · zvuk je kompletníLokální kopieZachována na tomto MacuSamostatná nahrávka. LuTrack zatím není připojený a nevznikl pracovní úsek.Převzít pod svůj účetUkázat ve FinderuPřesunout do košePřepis a analýzu otevřeš v LuDone na webu.",
+      "emptyState": null
+    },
+    {
+      "check": "day-shows-actual-recording-and-seeded-local-fixture",
+      "manifestState": "complete",
+      "audioBytes": 35621,
+      "uploadIntent": "held",
+      "sendAvailable": false,
+      "uploadAttempted": false
+    },
+    {
+      "action": "click",
+      "target": "Detail skutečně pořízené nahrávky"
+    },
+    {
+      "check": "local-recording-detail-no-upload",
+      "open": true,
+      "id": "9a415088-0d46-4e4f-872f-c3bc40ec335b",
+      "source": true,
+      "localState": "Zvuk je kompletní",
+      "delivery": "Zůstává na Macu",
+      "uploadIntent": "held",
+      "backToDay": true,
+      "title": "24. září 2026, 16:22",
+      "stages": [
+        {
+          "label": "Na Macu",
+          "complete": true
+        },
+        {
+          "label": "Ve frontě",
+          "complete": false
+        },
+        {
+          "label": "Odesláno",
+          "complete": false
+        },
+        {
+          "label": "Ověřeno",
+          "complete": false
+        }
+      ],
+      "soundFormat": "Stereo WebM/Opus · zvuk je kompletní",
+      "sendActionVisible": false,
+      "claimDisabled": true
+    },
+    {
+      "action": "click",
+      "target": "Zpět na den z detailu"
+    },
+    {
+      "check": "detail-back-to-day",
+      "active": "Můj den",
+      "filtersVisible": true,
+      "detailClosed": true
+    },
+    {
+      "action": "click",
+      "target": "filtr Jen na Macu"
+    },
+    {
+      "check": "local-recording-filter",
+      "active": "true",
+      "rows": 2
+    },
+    {
+      "action": "click",
+      "target": "filtr Odesílání"
+    },
+    {
+      "check": "delivery-filter-empty-is-truthful",
+      "active": "true",
+      "rows": 0,
+      "empty": "V tomto přehledu teď nejsou žádné nahrávky."
+    },
+    {
+      "action": "click",
+      "target": "filtr Vše"
+    },
+    {
+      "action": "click",
+      "text": "Nastavení"
+    },
+    {
+      "check": "settings-shell",
+      "active": "Nastavení",
+      "navigation": [
+        {
+          "label": "Teď",
+          "active": false,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "oklch(0.52 0 0)"
+        },
+        {
+          "label": "Můj den",
+          "active": false,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "oklch(0.52 0 0)"
+        },
+        {
+          "label": "Nastavení",
+          "active": true,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "oklch(0.11 0 0)"
+        }
+      ],
+      "activeHasVisibleTreatment": true,
+      "groups": [
+        "Účet",
+        "Zvuk",
+        "Záznamy",
+        "Nahrávky",
+        "Diagnostika"
+      ],
+      "pageHeading": "Nastavení",
+      "accountHeading": "Váš účet a nové nahrávky",
+      "contentScrollTop": 0,
+      "brand": true,
+      "authState": "signed-out",
+      "deviceName": "Testovací Mac",
+      "updateCheckVisible": true,
+      "updateCheckDisabled": true
+    },
+    {
+      "check": "update-check-isolated-from-production",
+      "visible": true,
+      "disabledInE2E": true,
+      "automaticUpdatesDisabled": true,
+      "liveUpdateDownloaded": false
+    },
+    {
+      "action": "click",
+      "target": "Rychlé akce v Nastavení"
+    },
+    {
+      "check": "settings-quick-actions",
+      "items": [
+        "Teď",
+        "Můj den",
+        "Nahrávky",
+        "Zvuk",
+        "Nastavení účtu"
+      ],
+      "shortcut": true
+    },
+    {
+      "action": "click",
+      "text": "Světlé"
+    },
+    {
+      "check": "light-theme-choice",
+      "theme": "light"
+    },
+    {
+      "action": "click",
+      "text": "Můj den"
+    },
+    {
+      "check": "day-theme-light",
+      "theme": "light"
+    },
+    {
+      "action": "click",
+      "text": "Nastavení"
+    },
+    {
+      "action": "click",
+      "text": "Tmavé"
+    },
+    {
+      "check": "dark-theme-choice",
+      "theme": "dark"
+    },
+    {
+      "action": "click",
+      "text": "Můj den"
+    },
+    {
+      "check": "day-theme-dark",
+      "theme": "dark"
+    },
+    {
+      "action": "click",
+      "text": "Teď"
+    },
+    {
+      "check": "return-to-now",
+      "active": "Teď",
+      "visible": true
+    },
+    {
+      "check": "theme-shared-across-windows",
+      "theme": "dark"
+    },
+    {
+      "action": "click",
+      "target": "Později u aktualizace"
+    },
+    {
+      "check": "update-banner-and-defer",
+      "title": "Nová verze 0.1.6 je stažená",
+      "benefit": true,
+      "install": "Aktualizovat",
+      "defer": "Později",
+      "deferConfirmed": true,
+      "fixtureOnly": true,
+      "downloadNetworkUsed": false,
+      "installationStarted": false
+    }
+  ],
+  "recordingProof": {
+    "id": "9a415088-0d46-4e4f-872f-c3bc40ec335b",
+    "manifest": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/isolated-data/user-data/nahravky/2026-09-24T14-22-25-328Z-9a415088.manifest.json",
+    "tracks": [
+      {
+        "source": "microphone",
+        "bytes": 21429
+      },
+      {
+        "source": "system",
+        "bytes": 21429
+      }
+    ],
+    "syntheticOnly": true,
+    "uploadTransportEnabled": false,
+    "savedCopy": {
+      "name": "LuDone-2026-09-24T14-22-25-498Z-24-září-2026,-16-22-9a415088-0d46-4e4f-872f-c3bc40ec335b.webm",
+      "bytes": 16949
+    },
+    "decision": "keep",
+    "uploadAttempted": false
+  },
+  "updateProof": {
+    "title": "Nová verze 0.1.6 je stažená",
+    "benefit": true,
+    "install": "Aktualizovat",
+    "defer": "Později",
+    "deferConfirmed": true,
+    "fixtureOnly": true,
+    "downloadNetworkUsed": false,
+    "installationStarted": false
+  },
+  "testFixture": {
+    "id": "40000000-0000-4000-8000-000000000001",
+    "uploadTransportEnabled": false,
+    "uploadAttempted": false,
+    "media": "seeded local fixture for layout and state; separate synthetic UI capture proof is recorded under recordingProof",
+    "manifest": ".runtime/design-e2e/2026-09-24T14-22-23-764Z/isolated-data/user-data/nahravky/astra-e2e-synthetic.manifest.json"
+  },
+  "outputDir": ".runtime/design-e2e/2026-09-24T14-22-23-764Z"
+}

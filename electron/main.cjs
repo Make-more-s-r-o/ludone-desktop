@@ -401,6 +401,13 @@ function configureWritablePaths() {
     crashDumps: path.join(dataRoot, "crash-dumps"),
     temp: path.join(dataRoot, "temp"),
   };
+  // Test runs get a temporary appData root too. Auth is intentionally stored
+  // outside userData in production; leaving appData untouched would let an E2E
+  // profile read the developer's real macOS login session.
+  if (IS_TEST_RUN) {
+    pathMap.appData = path.join(dataRoot, "app-data");
+    pathMap.downloads = path.join(dataRoot, "downloads");
+  }
 
   fs.mkdirSync(dataRoot, { recursive: true });
   for (const [name, target] of Object.entries(pathMap)) {
@@ -1096,7 +1103,7 @@ function createSettingsWindow(initialTab = "account") {
     minimizable: false,
     roundedCorners: true,
     hasShadow: true,
-    title: "Nastavení · LuDone",
+    title: "LuDone Desktop",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -1107,7 +1114,9 @@ function createSettingsWindow(initialTab = "account") {
 
   settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), {
     hash: "settings",
-    query: initialTab === "recordingQueue" ? { settingsTab: "recordingQueue" } : {},
+    query: ["audio", "recordingQueue", "day"].includes(initialTab)
+      ? { settingsTab: initialTab }
+      : {},
   });
   settingsWindow.webContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
     if (isMainFrame) invalidateUploadCompanySelection();
@@ -1943,6 +1952,11 @@ handleValidated("test:click-tray", ["panel"], () => {
   return { allowed: true, visible: panelWindow.isVisible() };
 });
 onValidated("panel:hide", ["panel"], () => panelWindow?.hide());
+onValidated("settings:return-to-panel", ["settings"], (_event, ...extraPayload) => {
+  requireNoPayload("settings:return-to-panel", extraPayload);
+  showPanel();
+  settingsWindow?.close();
+});
 handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extraPayload) => {
   if (extraPayload.length > 0) {
     throw new TypeError("Výškový kanál přijímá právě jednu číselnou výšku");
@@ -1951,7 +1965,7 @@ handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extra
 });
 onValidated("settings:open", ["panel"], (_event, initialTab, ...extraPayload) => {
   if (extraPayload.length > 0 || (initialTab !== undefined
-    && !["account", "recordingQueue"].includes(initialTab))) {
+    && !["account", "audio", "recordingQueue", "day"].includes(initialTab))) {
     throw new TypeError("Nastavení lze otevřít jen v podporované části");
   }
   createSettingsWindow(initialTab ?? "account");
@@ -1959,6 +1973,7 @@ onValidated("settings:open", ["panel"], (_event, initialTab, ...extraPayload) =>
 onValidated("settings:close", ["settings"], () => settingsWindow?.close());
 handleValidated("settings:get-device-name", ["settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-device-name", extraPayload);
+  if (IS_TEST_RUN && process.env.LUDONE_DESIGN_E2E === "1") return "Testovací Mac";
   try {
     const deviceName = os.hostname().trim();
     return deviceName || "Název zařízení není známý";
@@ -3716,13 +3731,17 @@ const UPDATE_BENEFIT_MAX_LENGTH = 180;
 // 12 hodin potíží v jednom běhu aplikace. Jednorázový výpadek tak uživatele neruší.
 const UPDATE_CHECK_FAILURE_THRESHOLD = 3;
 let consecutiveUpdateCheckFailures = 0;
+const designE2eDownloadedUpdate = IS_TEST_RUN
+  && !app.isPackaged
+  && process.env.LUDONE_DESIGN_E2E === "1"
+  && process.env.LUDONE_E2E_UPDATE_FIXTURE === "downloaded";
 let updateStatus = {
-  revision: 0,
+  revision: designE2eDownloadedUpdate ? 1 : 0,
   availableVersion: null,
   downloading: false,
   downloadPercent: null,
-  downloadedVersion: null,
-  benefit: null,
+  downloadedVersion: designE2eDownloadedUpdate ? "0.1.7" : null,
+  benefit: designE2eDownloadedUpdate ? "Přehled nahrávek a sjednocený vzhled." : null,
   checkFailed: false,
   manualCheckAvailable: false,
   manualCheckState: "idle",
@@ -4618,7 +4637,12 @@ handleValidated("auth:session-state", ["panel", "settings"], async (_event, ...e
   return hasStableStoredAuthSession(readStoredAuthSessionState);
 });
 
-handleValidated("auth:identity", ["settings"], () => readStoredAuthIdentity());
+handleValidated("auth:identity", ["settings"], () => {
+  // Vizuální E2E nikdy nesmí číst přihlášení hostitelského Macu. Ostatní testy
+  // i produkční běh dál používají stejné ověření uložené identity.
+  if (IS_TEST_RUN && process.env.LUDONE_DESIGN_E2E === "1") return null;
+  return readStoredAuthIdentity();
+});
 
 handleValidated("upload-companies:list", ["settings"], (event, ...extraPayload) => {
   requireNoPayload("upload-companies:list", extraPayload);

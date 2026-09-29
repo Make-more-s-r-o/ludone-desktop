@@ -85,11 +85,21 @@ export function UploadCompanySelector({ authState }) {
   }
 
   if (!authenticated) {
-    return <p className="settings-row">Pro výběr firmy se přihlas.</p>;
+    return (
+      <div className="settings-row settings-row--static upload-company-selector upload-company-selector--signed-out">
+        <div>
+          <strong>Výchozí cílová firma</strong>
+          <small>Po přihlášení ji vybereš v panelu LuDone.</small>
+        </div>
+        <select aria-label="Výchozí cílová firma" disabled value="">
+          <option value="">Vyžaduje přihlášení</option>
+        </select>
+      </div>
+    );
   }
 
   return (
-    <div className="settings-group">
+    <div className="settings-group upload-company-selector">
       <p>Výběr firmy sám nic neodešle.</p>
       {view.state === "idle" && (
         <button className="button button--small" type="button" onClick={loadCompanies}>Načíst firmy</button>

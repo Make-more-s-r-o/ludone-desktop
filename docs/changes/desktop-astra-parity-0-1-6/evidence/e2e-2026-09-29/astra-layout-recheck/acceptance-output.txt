@@ -1,0 +1,75 @@
+COMMAND: npm run test:design:e2e
+
+> ludone-desktop-prototype@0.1.6 test:design:e2e
+> npm run build && node scripts/astra-design-e2e.mjs
+
+
+> ludone-desktop-prototype@0.1.6 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 60 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         0.63 kB │ gzip:   0.37 kB
+dist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB
+dist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB
+dist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB
+dist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB
+dist/assets/index-CoPkl4Or.css                        109.18 kB │ gzip:  16.69 kB
+dist/assets/index-CknvcTFn.js                         336.19 kB │ gzip: 100.79 kB
+✓ built in 431ms
+PASS  reference-astra-home
+PASS  reference-astra-day
+PASS  reference-astra-detail
+PASS  reference-astra-settings
+PASS  reference-astra-offline
+PASS  startup-loads-seeded-local-fixture
+PASS  onboarding-first-use-and-honest-scope
+PASS  onboarding-account-step-without-external-login
+PASS  panel-shell
+PASS  quick-actions-and-auth-boundary
+PASS  now-hierarchy-and-safe-actions
+PASS  lutrack-remains-disabled
+PASS  recording-starts-two-synthetic-sources
+PASS  offline-recording-continues-locally
+PASS  astra-layout-offline
+PASS  recording-stop-offers-explicit-safe-choice
+PASS  recording-saved-local-from-ui
+PASS  saved-recording-visible-after-app-restart
+PASS  source-action-opens-audio-settings
+PASS  offline-keeps-local-recording
+PASS  day-hierarchy-and-real-data
+PASS  astra-layout-day
+PASS  day-shows-actual-recording-and-seeded-local-fixture
+PASS  local-recording-detail-no-upload
+PASS  astra-layout-detail
+PASS  detail-back-to-day
+PASS  local-recording-filter
+PASS  delivery-filter-empty-is-truthful
+PASS  settings-shell
+PASS  astra-layout-settings
+PASS  update-check-isolated-from-production
+PASS  settings-quick-actions
+PASS  light-theme-choice
+PASS  day-theme-light
+PASS  dark-theme-choice
+PASS  day-theme-dark
+PASS  return-to-now
+PASS  theme-shared-across-windows
+PASS  update-banner-and-defer
+PASS  acceptance · Teď
+PASS  acceptance · Záznam a uložení
+PASS  acceptance · Můj den
+PASS  acceptance · Detail
+PASS  acceptance · Nastavení
+PASS  acceptance · Aktualizace
+PASS  acceptance · Offline a obnova
+PASS  acceptance · Onboarding
+PASS  acceptance · Světlé a tmavé téma
+PASS  acceptance · LuTrack zůstává vypnutý
+PASS  acceptance · Astra geometrie a pořadí
+CAPTURED  acceptance · Screenshoty zachycené pro vizuální kontrolu
+✅ Astra design E2E: .runtime/design-e2e/2026-09-29T21-33-55-084Z
+EXIT_CODE=0

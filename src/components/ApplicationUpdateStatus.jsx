@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LuDoneMark } from "./Icons.jsx";
 import { version } from "../../package.json";
 
 const BUILD_DATE = import.meta.env.APP_BUILD_DATE;
@@ -28,6 +29,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
     installRequested: false,
     installDeferred: false,
   });
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [actionFailed, setActionFailed] = useState(false);
   const acceptedRevision = useRef(-1);
   const applyStatus = useCallback((next) => {
@@ -42,9 +44,9 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
     const applyActiveStatus = (next) => {
       if (active) applyStatus(next);
     };
-    const unsubscribe = window.ludone.onUpdateStatusChanged?.(applyActiveStatus);
+    const unsubscribe = window.ludone?.onUpdateStatusChanged?.(applyActiveStatus);
     // Čtení po přihlášení listeneru pokryje i stažení před otevřením či reloadem panelu.
-    Promise.resolve().then(() => window.ludone.getUpdateStatus?.()).then(applyActiveStatus).catch(() => {});
+    Promise.resolve().then(() => window.ludone?.getUpdateStatus?.()).then(applyActiveStatus).catch(() => {});
     return () => {
       active = false;
       unsubscribe?.();
@@ -78,7 +80,24 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
   ) return null;
 
   return (
-    <div className="application-update-status">
+    <div className={`application-update-status${detailsOpen ? " application-update-status--detail" : ""}`}>
+      {detailsOpen && <div className="application-update-detail__summary">
+        <LuDoneMark size={30} />
+        <div><strong>LuDone Desktop{(downloadedVersion || availableVersion) && ` · ${downloadedVersion || availableVersion}`}</strong>
+          <p>{benefit || "Aktualizace aplikace na vašem Macu."}</p></div>
+      </div>}
+      {detailsOpen && <header className="application-update-detail__intro">
+        <p className="eyebrow">Aktualizace aplikace</p>
+        <div className="application-update-detail__version">{version}{(downloadedVersion || availableVersion) && ` → ${downloadedVersion || availableVersion}`}</div>
+        <h1>{benefit || "LuDone na vašem Macu."}</h1>
+        <p>Restart proběhne až po vašem kliknutí. Během nahrávání a ukládání aplikace počká na bezpečný okamžik.</p>
+      </header>}
+      {detailsOpen && downloadedVersion && <div className="application-update-detail__safety" role="note">
+        <strong>Teď vás nepřerušíme</strong>
+        <p>Instalace počká na dokončení nahrávání, ukládání a měření času. Běžící činnosti se samy nezastaví.</p>
+        <p>Restart proběhne až po vašem kliknutí na „Aktualizovat a restartovat“.</p>
+      </div>}
+      {!detailsOpen && <button type="button" className="application-update-detail__open" onClick={() => setDetailsOpen(true)}>Zobrazit aktualizaci</button>}
       {showVersion && <ApplicationVersion />}
       <div aria-live="polite" aria-atomic="true">
         {!downloadedVersion && downloading && (
@@ -119,7 +138,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
                   disabled={status.installRequested === true}
                   onClick={() => runAction("installUpdate", downloadedVersion)}
                 >
-                  {status.installRequested ? "Čekám na bezpečný okamžik…" : "Aktualizovat"}
+                  {status.installRequested ? "Čekám na bezpečný okamžik…" : detailsOpen ? "Aktualizovat a restartovat" : "Aktualizovat"}
                 </button>
                 {!status.installDeferred && (
                   <button
@@ -169,6 +188,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
           Akci s aktualizací se nepodařilo dokončit.
         </small>}
       </div>
+      {detailsOpen && <button type="button" className="button button--wide application-update-detail__back" onClick={() => setDetailsOpen(false)}>Zpět</button>}
     </div>
   );
 }

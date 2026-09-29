@@ -329,23 +329,53 @@ async function continueThroughRecordingTest(panel, click) {
 }
 
 describe("schválený klidový panel", () => {
-  it("ukazuje nahrávání a připravovaný LuTrack bez třetí agendy", async () => {
+  it("ukazuje nahrávání, připravovaný LuTrack a pravdivý náhled dne v Astra pořadí", async () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
     try {
       const content = [...panel.document.querySelector(".panel-scroll").children];
       const rows = [...panel.document.querySelectorAll('[data-testid="idle-action-row"]')];
-
-      expect(content).toHaveLength(2);
-      expect(rows).toHaveLength(1);
-      expect(rows[0]?.querySelector("strong")?.textContent).toBe("Nahrávání");
       const futureFeature = panel.document.querySelector(".future-feature");
-      expect(content).toContain(futureFeature);
+      const dayPreview = panel.document.querySelector('[data-testid="day-preview"]');
+
+      expect(content).toEqual([futureFeature, rows[0], dayPreview]);
+      expect(panel.document.querySelector(".desktop-menubar__name")?.textContent).toBe("LuDone Desktop");
+      expect(futureFeature?.querySelector("h1")?.textContent).toBe("Pracovní čas se připravuje.");
+      expect(futureFeature?.textContent).toContain("Pracovní čas se připravuje.");
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.querySelector("strong")?.textContent).toBe("Zachytit schůzku");
       expect(futureFeature?.textContent).toContain("LuTrack");
       expect(futureFeature?.textContent).toContain("Připravujeme");
-      expect(futureFeature?.querySelectorAll("button")).toHaveLength(0);
+      const preparingControls = [...futureFeature.querySelectorAll("button, input")];
+      expect(preparingControls).toHaveLength(3);
+      expect(preparingControls.every((control) => control.disabled)).toBe(true);
+      expect(dayPreview?.textContent).toContain("Fronta je prázdná. Lokální nahrávky najdeš v Můj den.");
       expect(panel.document.querySelector(".global-status")).toBeNull();
       expect(panel.document.querySelector(".account-summary")).toBeNull();
       expect(panel.document.querySelector(".panel-close")).toBeNull();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("neoznačí nahrávku s odloženým souhlasem jako čekající na odeslání", async () => {
+    const queueItem = {
+      id: "40000000-0000-4000-8000-000000000001",
+      kind: "recording",
+      title: "Porada ponechaná na Macu",
+      createdAt: "2026-09-24T09:00:00.000Z",
+      durationMs: 60_000,
+      state: "ceka",
+      uploadIntent: "held",
+    };
+    const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([queueItem]));
+    try {
+      await vi.waitFor(() => {
+        expect(panel.document.querySelector('[data-testid="day-preview"]')?.textContent)
+          .toContain("Zůstává na Macu");
+      });
+      const previewText = panel.document.querySelector('[data-testid="day-preview"]')?.textContent ?? "";
+      expect(previewText).not.toContain("Čeká na odeslání");
+      expect(previewText).not.toContain("Odesláno");
     } finally {
       await panel.cleanup();
     }
@@ -368,8 +398,14 @@ describe("schválený klidový panel", () => {
       expect(header.textContent).not.toContain("Dan Jirotka");
       expect(header.querySelector("small")?.textContent.trim()).not.toBe("");
       expect(header.querySelector(".panel-brand-mark")?.getAttribute("alt")).toBe("");
-      expect(panel.document.querySelectorAll(".panel-settings-button")).toHaveLength(1);
-      expect(panel.document.querySelectorAll(".panel-open-recordings")).toHaveLength(1);
+      expect(panel.document.querySelector(".desktop-titlebar__quick-actions")?.getAttribute("aria-label"))
+        .toBe("Rychlé akce (⌘K)");
+      expect(panel.document.querySelectorAll(".panel-settings-button")).toHaveLength(0);
+      expect(panel.document.querySelectorAll(".panel-open-recordings")).toHaveLength(0);
+      expect(panel.document.querySelector(".desktop-navigation")?.textContent)
+        .toContain("Nastavení");
+      expect(panel.document.querySelector(".desktop-quick-actions")?.textContent)
+        .toContain("Nahrát schůzku");
       expect(hasAuthSession).toHaveBeenCalledOnce();
       expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
         panelActionsAvailable: true,
@@ -588,7 +624,7 @@ describe("schválený klidový panel", () => {
       expect(panel.document.querySelector('[data-testid="recording-daily-summary"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="tracking-daily-summary"]')).toBeNull();
       expect(panel.document.querySelector(".future-feature")?.textContent)
-        .toContain("Časovač ještě není součástí desktopové verze.");
+        .toContain("Pracovní čas se připravuje.");
       expect(panel.document.querySelector(".panel-scroll").textContent).not.toContain("Dnes");
     } finally {
       await panel.cleanup();
@@ -600,13 +636,18 @@ describe("schválený klidový panel", () => {
     try {
       const recordingButton = panel.document.querySelector('[aria-label="Spustit nahrávání"]');
       const futureFeature = panel.document.querySelector(".future-feature");
-      const settings = panel.document.querySelector('[aria-label="Otevřít nastavení"]');
+      const settings = [...panel.document.querySelectorAll(".desktop-navigation__item")]
+        .find((button) => button.textContent.trim() === "Nastavení");
 
       expect(recordingButton.querySelector('[aria-hidden="true"]').textContent).toBe("Nahrát");
       expect(recordingButton.textContent).toContain("Spustit nahrávání");
       expect(futureFeature?.textContent).toContain("Připravujeme");
-      expect(futureFeature?.querySelectorAll("button, input, select")).toHaveLength(0);
-      expect(settings.getAttribute("aria-label")).toBe("Otevřít nastavení");
+      const preparingControls = [...futureFeature.querySelectorAll("button, input, select")];
+      expect(preparingControls).toHaveLength(3);
+      expect(preparingControls.every((control) => control.disabled)).toBe(true);
+      expect(settings?.textContent.trim()).toBe("Nastavení");
+      expect(panel.document.querySelector(".desktop-titlebar__quick-actions"))
+        .not.toBeNull();
     } finally {
       await panel.cleanup();
     }
@@ -1193,7 +1234,8 @@ describe("schválený klidový panel", () => {
       expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(1);
       expect(retryQueue).not.toHaveBeenCalled();
 
-      const settings = panel.document.querySelector('[aria-label="Otevřít nastavení"]');
+      const settings = [...panel.document.querySelectorAll(".desktop-navigation__item")]
+        .find((button) => button.textContent.trim() === "Nastavení");
       await React.act(async () => {
         settings.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
@@ -1223,7 +1265,9 @@ describe("schválený klidový panel", () => {
       expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
         .toBe("1 čeká");
 
-      expect(panel.document.querySelector(".future-feature")?.querySelector("button")).toBeNull();
+      const futureControls = [...panel.document.querySelectorAll(".future-feature button, .future-feature input")];
+      expect(futureControls).toHaveLength(3);
+      expect(futureControls.every((control) => control.disabled)).toBe(true);
 
       await React.act(async () => {
         await vi.advanceTimersByTimeAsync(1_000);
@@ -1337,7 +1381,7 @@ describe("schválený klidový panel", () => {
       await geometry.flush();
 
       expect(beginAuth).toHaveBeenCalledOnce();
-      expect(setPanelContentHeight.mock.calls.map(([height]) => height)).toEqual([336, 402]);
+      expect(setPanelContentHeight.mock.calls.map(([height]) => height)).toEqual([700, 336, 402]);
       expect(geometry.state(
         panel.document.querySelector(".onboarding.window-surface"),
         setPanelContentHeight,
@@ -1353,82 +1397,36 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("opakované změření stejného renderu nespustí smyčku změn výšky", async () => {
-    const animationFrames = [];
-    const setPanelContentHeight = vi.fn().mockResolvedValue(240);
-    let measuredHeight = 240;
-    let measurementCount = 0;
-    let originalRect;
-    let scrollContainer;
+  it("Astra panel drží návrhovou výšku a změna obsahu neposune místo ve scrollu", async () => {
+    const setPanelContentHeight = vi.fn().mockResolvedValue(700);
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
-      configureWindow(domWindow) {
-        originalRect = domWindow.HTMLElement.prototype.getBoundingClientRect;
-        domWindow.requestAnimationFrame = (callback) => {
-          animationFrames.push(callback);
-          return animationFrames.length;
-        };
-        domWindow.cancelAnimationFrame = vi.fn();
-        domWindow.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-          if (
-            this.matches(".window-surface")
-            && this.style.height === "auto"
-            && this.style.maxHeight === "none"
-          ) {
-            measurementCount += 1;
-            // Chromium může při dočasném auto-height oříznout scroll na začátek.
-            if (scrollContainer) scrollContainer.scrollTop = 0;
-            return { ...originalRect.call(this), height: measuredHeight };
-          }
-          return originalRect.call(this);
-        };
-      },
       ludone: { hasAuthSession: vi.fn().mockResolvedValue(true), setPanelContentHeight },
     });
-    const domWindow = panel.document.defaultView;
-    scrollContainer = panel.document.querySelector(".panel-scroll");
-    const flushMeasurements = async () => {
-      await React.act(async () => {
-        await Promise.resolve();
-        while (animationFrames.length > 0) animationFrames.shift()();
-        await Promise.resolve();
-        while (animationFrames.length > 0) animationFrames.shift()();
-      });
-    };
+    const scrollContainer = panel.document.querySelector(".panel-scroll");
 
     try {
+      await React.act(async () => Promise.resolve());
+      expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(700);
       scrollContainer.scrollTop = 37;
-      await flushMeasurements();
-      expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(240);
-      expect(scrollContainer.scrollTop).toBe(37);
-
-      scrollContainer.scrollTop = 51;
       panel.document.querySelector(".future-feature").setAttribute("data-measurement", "same-size");
-      await flushMeasurements();
-
-      expect(measurementCount).toBeGreaterThan(1);
-      expect(setPanelContentHeight).toHaveBeenCalledTimes(1);
-      expect(scrollContainer.scrollTop).toBe(51);
-
-      measuredHeight = 310;
-      panel.document.querySelector(".future-feature").setAttribute("data-measurement", "new-size");
-      await flushMeasurements();
-
-      expect(setPanelContentHeight).toHaveBeenCalledTimes(2);
-      expect(setPanelContentHeight).toHaveBeenLastCalledWith(310);
+      await React.act(async () => Promise.resolve());
+      expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(700);
+      expect(scrollContainer.scrollTop).toBe(37);
     } finally {
-      domWindow.HTMLElement.prototype.getBoundingClientRect = originalRect;
       await panel.cleanup();
     }
   });
 
-  it("připravovaný LuTrack je viditelný a bez ovládání", async () => {
+  it("připravovaný LuTrack je viditelný a jeho budoucí ovládání zůstává vypnuté", async () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
 
     try {
       const feature = panel.document.querySelector(".future-feature");
-      expect(feature?.textContent).toContain("Časovač ještě není součástí desktopové verze.");
+      expect(feature?.textContent).toContain("Pracovní čas se připravuje.");
       expect(feature?.textContent).toContain("Připravujeme");
-      expect(feature?.querySelectorAll("button, input, select")).toHaveLength(0);
+      const preparingControls = [...feature.querySelectorAll("button, input, select")];
+      expect(preparingControls).toHaveLength(3);
+      expect(preparingControls.every((control) => control.disabled)).toBe(true);
       expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
     } finally {
       await panel.cleanup();

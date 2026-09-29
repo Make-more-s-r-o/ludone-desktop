@@ -1,0 +1,7 @@
+{
+  "status": "FAIL",
+  "exitCode": 1,
+  "fixtureOnly": true,
+  "results": [],
+  "error": "Electron harness nevytvořil report; žádný scénář není ověřený."
+}

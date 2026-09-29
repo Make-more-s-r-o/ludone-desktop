@@ -1,0 +1,13 @@
+$ npx vitest run tests/astra-state-acceptance.test.js
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity
+
+ ✓ tests/astra-state-acceptance.test.js (1 test) 61ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  01:22:02
+   Duration  224ms (transform 14ms, setup 7ms, collect 3ms, tests 61ms, environment 0ms, prepare 32ms)
+
+
+EXIT_CODE=0

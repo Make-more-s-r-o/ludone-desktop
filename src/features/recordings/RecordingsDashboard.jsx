@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon, MicIcon, RefreshIcon, WaitingIcon } from "../../components/Icons.jsx";
 
 const RECORDING_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
@@ -96,6 +97,12 @@ function formatCreatedAt(value) {
   }).format(new Date(value));
 }
 
+function formatClockTime(value) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" })
+    .format(new Date(value));
+}
+
 function formatDuration(value) {
   if (value === null) return "Délka není známá";
   const totalSeconds = Math.round(value / 1_000);
@@ -131,6 +138,10 @@ const LOCAL_STATE_LABELS = Object.freeze({
   "invalid-manifest": "Data nahrávky jsou poškozená",
 });
 
+function recordingSourceLabel(item) {
+  return item.source === "orphan" ? "Jen na Macu" : "Místní fronta";
+}
+
 function deliveryStateLabel(item) {
   if (item.source === "orphan") return "Zůstává jen na tomto Macu";
   if (item.state === "odesila") return "Odesílá se do LuDone";
@@ -141,6 +152,16 @@ function deliveryStateLabel(item) {
   }
   if (item.state === "ceka") return "Zůstává na Macu";
   return "Stav odeslání není známý";
+}
+
+function isLocalOnly(item) {
+  return item.source === "orphan" || (item.state === "ceka" && item.uploadIntent === "held");
+}
+
+function matchesRecordingFilter(item, filter) {
+  if (filter === "local") return isLocalOnly(item);
+  if (filter === "delivery") return !isLocalOnly(item);
+  return true;
 }
 
 const VERIFICATION_LABELS = Object.freeze({
@@ -158,12 +179,12 @@ const VERIFICATION_LABELS = Object.freeze({
 });
 
 const TRACK_LABELS = Object.freeze({
-  delivery: "Stereo MP3",
+  delivery: "Stereo WebM/Opus",
   microphone: "Mikrofon",
   system: "Systémový zvuk",
 });
 
-export function RecordingsDashboard({ authState }) {
+export function RecordingsDashboard({ authState, onDetailChange }) {
   const [view, setView] = useState({
     state: "loading", items: [], unreadableCount: 0, message: "",
   });
@@ -172,6 +193,9 @@ export function RecordingsDashboard({ authState }) {
   const [verifyingId, setVerifyingId] = useState(null);
   const [verificationById, setVerificationById] = useState({});
   const [verificationErrorById, setVerificationErrorById] = useState({});
+  const [filter, setFilter] = useState("all");
+  const [openDetailId, setOpenDetailId] = useState(null);
+  const openDetailIdRef = useRef(null);
   const active = useRef(true);
   const claimInFlight = useRef(false);
   const loadGeneration = useRef(0);
@@ -196,6 +220,11 @@ export function RecordingsDashboard({ authState }) {
         if (active.current && requestGeneration === loadGeneration.current) {
           const snapshot = normalizeSnapshot(snapshotValue);
           setView({ state: "ready", ...snapshot, message: "" });
+          if (openDetailIdRef.current && !snapshot.items.some((item) => item.id === openDetailIdRef.current)) {
+            openDetailIdRef.current = null;
+            setOpenDetailId(null);
+            onDetailChange?.(false);
+          }
         }
       })
       .catch(() => {
@@ -203,7 +232,7 @@ export function RecordingsDashboard({ authState }) {
           setView({ state: "error", items: [], unreadableCount: 0, message: "Nahrávky se nepodařilo načíst." });
         }
       });
-  }, []);
+  }, [onDetailChange]);
 
   useEffect(() => {
     active.current = true;
@@ -292,6 +321,12 @@ export function RecordingsDashboard({ authState }) {
   };
 
   const disabledExplanation = accountExplanation(authState);
+  const filteredItems = view.items.filter((item) => matchesRecordingFilter(item, filter));
+  const filterCounts = {
+    all: view.items.length,
+    local: view.items.filter((item) => matchesRecordingFilter(item, "local")).length,
+    delivery: view.items.filter((item) => matchesRecordingFilter(item, "delivery")).length,
+  };
   const runAction = async (item, method) => {
     if (actingId !== null || !item.fileRevision || (method !== "deleteRecording"
       && method !== "revealRecording" && !item.revision)
@@ -318,23 +353,44 @@ export function RecordingsDashboard({ authState }) {
   };
 
   return (
-    <div className="recordings-dashboard" data-testid="recordings-dashboard">
-      <p className="recordings-dashboard__intro">
-        Přehled spojuje frontu s nahrávkami, které zůstaly jen na tomto Macu. Převzetí ji neodešle.
-      </p>
+    <div className={`recordings-dashboard${openDetailId ? " recordings-dashboard--detail" : ""}`} data-testid="recordings-dashboard">
       <div className="recordings-dashboard__toolbar">
+        {view.state === "ready" && view.items.length > 0 && (
+          <div className="recordings-dashboard__filters" role="group" aria-label="Filtrovat nahrávky">
+            {[
+              ["all", "Vše"],
+              ["local", "Jen na Macu"],
+              ["delivery", "Odesílání"],
+            ].map(([value, label]) => (
+              <button
+                type="button"
+                key={value}
+                className="recordings-dashboard__filter"
+                data-filter={value}
+                aria-pressed={filter === value}
+                onClick={() => setFilter(value)}
+              >
+                {label}<span>{filterCounts[value]}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <button
           type="button"
           className="button button--small"
           disabled={view.state === "loading"}
           onClick={() => void load()}
         >
+          <RefreshIcon />
           Obnovit přehled
         </button>
       </div>
-      {disabledExplanation && (
-        <p className="recordings-dashboard__notice" role="status">{disabledExplanation}</p>
-      )}
+      <p
+        className={`recordings-dashboard__notice${disabledExplanation ? " recordings-dashboard__notice--account" : ""}`}
+        role={disabledExplanation ? "status" : undefined}
+      >
+        Převzetí nahrávky ji neodešle.{disabledExplanation ? ` ${disabledExplanation}` : ""}
+      </p>
       {view.state === "loading" && <p role="status">Načítám nahrávky…</p>}
       {view.state === "error" && (
         <div className="recordings-dashboard__error" role="alert">
@@ -347,35 +403,109 @@ export function RecordingsDashboard({ authState }) {
       {view.state === "ready" && view.items.length === 0 && view.unreadableCount === 0 && (
         <p className="recordings-dashboard__empty">Na tomto Macu nejsou žádné nahrávky k zobrazení.</p>
       )}
-      {view.state === "ready" && (view.items.length > 0 || view.unreadableCount > 0) && (
+      {view.state === "ready" && view.items.length > 0 && filteredItems.length === 0 && (
+        <p className="recordings-dashboard__empty">V tomto přehledu teď nejsou žádné nahrávky.</p>
+      )}
+      {view.state === "ready" && (filteredItems.length > 0 || view.unreadableCount > 0) && (
         <ul className="recordings-dashboard__list" aria-label="Lokální nahrávky">
-          {view.items.map((item) => {
+          {filteredItems.map((item) => {
             const claimable = item.source === "queue" && item.canClaim
               && ["unknown", "other"].includes(item.ownership)
               && ["ceka", "selhalo"].includes(item.state);
             const verification = verificationById[item.id];
+            const verified = verification
+              && Object.values(verification.tracks).length > 0
+              && Object.values(verification.tracks).every((track) => track.status === "complete");
+            const journeyStage = verified ? 3
+              : item.state === "odeslano" ? 2
+                : item.state === "odesila" || (item.state === "ceka" && item.uploadIntent === "approved") ? 1
+                  : item.localState === "complete-audio" ? 0 : -1;
+            const ownerLabel = item.ownership === "current" ? "Tento účet"
+              : item.ownership === "other" ? "Jiný účet" : "Vlastník není ověřen";
             const canVerify = item.source === "queue" && item.ownership === "current"
               && item.revision && item.localState !== "invalid-manifest";
             return (
-              <li className="recording-queue-card" key={item.id} data-recording-id={item.id}>
-                <strong>{item.title ?? formatCreatedAt(item.createdAt)}</strong>
-                <div className="recording-queue-card__facts">
-                  <span>{item.source === "orphan" ? "Jen na Macu" : "V aplikaci"}</span>
-                  {item.title && <span>{formatCreatedAt(item.createdAt)}</span>}
-                  <span>{formatDuration(item.durationMs)}</span>
-                  <span>{formatSize(item.sizeBytes)}</span>
-                  <span>ID: {item.id.slice(0, 8)}</span>
-                </div>
-                <p className={`recording-queue-card__local recording-queue-card__local--${item.localState}`}>
-                  {LOCAL_STATE_LABELS[item.localState]}
-                </p>
-                <p>{deliveryStateLabel(item)}</p>
-                {item.localReason && <p>{item.localReason}</p>}
-                {item.blockReason && item.blockReason !== item.localReason && <p>{item.blockReason}</p>}
+              <li className="recordings-timeline__entry" key={item.id} data-recording-id={item.id}
+                data-recording-state={item.state} data-upload-intent={item.uploadIntent}
+                data-detail-active={openDetailId === item.id ? "true" : "false"}>
+                <time className="recordings-timeline__time" dateTime={item.createdAt ?? undefined}>
+                  {formatClockTime(item.createdAt)}
+                </time>
+                <details
+                  className="recording-queue-card"
+                  data-testid="recording-detail"
+                  open={openDetailId === item.id}
+                  onToggle={(event) => {
+                    const isOpen = event.currentTarget.open;
+                    openDetailIdRef.current = isOpen ? item.id : null;
+                    setOpenDetailId(isOpen ? item.id : null);
+                    onDetailChange?.(isOpen);
+                  }}
+                >
+                  <summary className="recording-queue-card__summary">
+                    <span className="recording-queue-card__back"><ArrowLeftIcon /> Zpět na den</span>
+                    <span className="recording-queue-card__detail-date">Dnes · {formatClockTime(item.createdAt)}</span>
+                    <span className="recording-queue-card__source-icon" aria-hidden="true"><MicIcon /></span>
+                    <span className="recording-queue-card__heading">
+                      <strong>{item.title ?? "Nahrávka"}</strong>
+                      <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.source === "orphan" ? "local" : item.state}`}>
+                        {deliveryStateLabel(item)}
+                      </span>
+                    </span>
+                    <span className="recording-queue-card__facts">
+                      <span>{formatCreatedAt(item.createdAt)}</span>
+                      <span>{formatDuration(item.durationMs)}</span>
+                      {item.sizeBytes !== null && <span>{formatSize(item.sizeBytes)}</span>}
+                    </span>
+                    <span className={`recording-queue-card__local recording-queue-card__local--${item.localState}`}>
+                      {item.localState === "complete-audio" ? "Zvuk připraven" : LOCAL_STATE_LABELS[item.localState]}
+                    </span>
+                    <span className="recording-queue-card__detail-label">Otevřít detail</span>
+                    <ArrowRightIcon />
+                  </summary>
+                  <div className="recording-queue-card__detail">
+                    <header className="recording-queue-card__detail-heading">
+                      <h1>{item.title ?? "Nahrávka"}</h1>
+                      <p>{formatCreatedAt(item.createdAt)} · {formatDuration(item.durationMs)} · {formatSize(item.sizeBytes)}</p>
+                    </header>
+                    <ol className="recording-queue-card__journey" aria-label="Postup nahrávky">
+                      {["Na Macu", "Ve frontě", "Odesláno", "Ověřeno"].map((label, index) => (
+                        <li className={index <= journeyStage ? "is-complete" : ""} key={label}>
+                          {index <= journeyStage ? <CheckIcon /> : <WaitingIcon />}
+                          <span>{label}</span>
+                        </li>
+                      ))}
+                    </ol>
+                    <section className="recording-queue-card__storage" aria-labelledby={`recording-storage-${item.id}`}>
+                      <div className="recording-queue-card__storage-heading">
+                        <h2 id={`recording-storage-${item.id}`}>Uložení a přístup</h2>
+                        <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.source === "orphan" ? "local" : item.state}`}>
+                          {deliveryStateLabel(item)}
+                        </span>
+                      </div>
+                      <dl>
+                        <dt>Vlastník</dt><dd>{ownerLabel}</dd>
+                        <dt>Zvuk</dt><dd>{item.localState === "complete-audio" ? "Stereo WebM/Opus · Zvuk je kompletní" : LOCAL_STATE_LABELS[item.localState]}</dd>
+                        <dt>Lokální kopie</dt><dd>{item.localState === "complete-audio" ? "Zachována na tomto Macu" : "Stav místních souborů vyžaduje pozornost"}</dd>
+                        <dt>Uložení</dt><dd>{recordingSourceLabel(item)}</dd>
+                      </dl>
+                    </section>
+                    <section className="recording-queue-card__context-card" aria-label="Pracovní kontext">
+                      <span className="recording-queue-card__context-icon" aria-hidden="true"><ArchiveIcon /></span>
+                      <div>
+                        <strong>Bez pracovního úseku</strong>
+                        <p>K nahrávce zatím není připojený pracovní kontext.</p>
+                        <small>LuTrack v desktopové aplikaci zatím není aktivní.</small>
+                      </div>
+                    </section>
+                    {item.localReason && <p className="recording-queue-card__issue" role="status">{item.localReason}</p>}
+                    {item.blockReason && item.blockReason !== item.localReason && <p className="recording-queue-card__issue" role="status">{item.blockReason}</p>}
+                    <p className="recording-queue-card__web-note">Přepis a analýzu otevřeš v LuDone na webu.</p>
+                    <div className="recording-queue-card__actions">
                 {claimable && (
                   <button
                     type="button"
-                    className="button button--small"
+                    className="button button--small recording-action--claim"
                     disabled={authState !== "signed-in" || claimingId !== null || !item.revision}
                     onClick={() => void claim(item)}
                   >
@@ -385,7 +515,7 @@ export function RecordingsDashboard({ authState }) {
                 {canVerify && (
                   <button
                     type="button"
-                    className="button button--small"
+                    className="button button--small recording-action--verify"
                     disabled={authState !== "signed-in" || verifyingId !== null}
                     onClick={() => void verify(item)}
                   >
@@ -393,25 +523,26 @@ export function RecordingsDashboard({ authState }) {
                   </button>
                 )}
                 {item.canSend && (
-                  <button type="button" className="button button--small"
+                  <button type="button" className="button button--small recording-action--send"
                     disabled={authState !== "signed-in" || actingId !== null}
                     onClick={() => void runAction(item, "sendRecording")}>Uložit a odeslat</button>
                 )}
                 {item.canRetry && (
-                  <button type="button" className="button button--small"
+                  <button type="button" className="button button--small recording-action--retry"
                     disabled={authState !== "signed-in" || actingId !== null}
                     onClick={() => void runAction(item, "retryRecording")}>Zkusit znovu</button>
                 )}
                 {item.fileRevision && item.localState !== "invalid-manifest" && (
-                  <button type="button" className="button button--small"
+                  <button type="button" className="button button--small recording-action--reveal"
                     disabled={actingId !== null}
                     onClick={() => void runAction(item, "revealRecording")}>Ukázat ve Finderu</button>
                 )}
                 {item.canDelete && (
-                  <button type="button" className="button button--small"
+                  <button type="button" className="button button--small recording-action--delete"
                     disabled={actingId !== null}
                     onClick={() => void runAction(item, "deleteRecording")}>Přesunout do koše</button>
                 )}
+                    </div>
                 {verification && (
                   <div className="recording-queue-card__verification" aria-label="Výsledek serverového ověření">
                     {Object.entries(verification.tracks).map(([track, result]) => (
@@ -436,6 +567,12 @@ export function RecordingsDashboard({ authState }) {
                     {verificationErrorById[item.id]}
                   </p>
                 )}
+                    <details className="recording-queue-card__technical">
+                      <summary>Technické údaje</summary>
+                      <code>ID: {item.id.slice(0, 8)}</code>
+                    </details>
+                  </div>
+                </details>
               </li>
             );
           })}

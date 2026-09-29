@@ -366,6 +366,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "settings:get-open-at-login",
       "settings:get-upload-enabled",
       "settings:open",
+      "settings:return-to-panel",
       "settings:set-dock-visible",
       "settings:set-open-at-login",
       "settings:set-upload-enabled",

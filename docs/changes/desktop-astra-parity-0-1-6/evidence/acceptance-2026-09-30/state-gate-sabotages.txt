@@ -1,0 +1,73 @@
+$ node --test scripts/astra-state-e2e.test.mjs scripts/astra-state-e2e-bootstrap.test.cjs
+TAP version 13
+# Subtest: bootstrap odmítne chybějící i relativní profil
+ok 1 - bootstrap odmítne chybějící i relativní profil
+  ---
+  duration_ms: 2.279375
+  type: 'test'
+  ...
+# Subtest: profil je izolovaný ještě před čekáním na Electron ready
+ok 2 - profil je izolovaný ještě před čekáním na Electron ready
+  ---
+  duration_ms: 0.596583
+  type: 'test'
+  ...
+# Subtest: chybějící ready nemůže skončit zeleně
+ok 3 - chybějící ready nemůže skončit zeleně
+  ---
+  duration_ms: 0.243583
+  type: 'test'
+  ...
+# Subtest: selhání ready vrátí exit1 a uklidí watchdog
+ok 4 - selhání ready vrátí exit1 a uklidí watchdog
+  ---
+  duration_ms: 0.647625
+  type: 'test'
+  ...
+# Subtest: úplná izolovaná matice projde
+ok 5 - úplná izolovaná matice projde
+  ---
+  duration_ms: 0.36675
+  type: 'test'
+  ...
+# Subtest: prázdný nebo chybějící scénář nesmí projít
+ok 6 - prázdný nebo chybějící scénář nesmí projít
+  ---
+  duration_ms: 0.051667
+  type: 'test'
+  ...
+# Subtest: duplicitní nebo cizí scénář nenahradí povinný
+ok 7 - duplicitní nebo cizí scénář nenahradí povinný
+  ---
+  duration_ms: 0.047875
+  type: 'test'
+  ...
+# Subtest: FAIL a chybějící screenshot zčervenají
+ok 8 - FAIL a chybějící screenshot zčervenají
+  ---
+  duration_ms: 0.339334
+  type: 'test'
+  ...
+# Subtest: pokus o externí síť zčervená i při PASS matice
+ok 9 - pokus o externí síť zčervená i při PASS matice
+  ---
+  duration_ms: 0.047125
+  type: 'test'
+  ...
+# Subtest: scénář bez výslovné izolace nesmí projít
+ok 10 - scénář bez výslovné izolace nesmí projít
+  ---
+  duration_ms: 0.037583
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 35.079958
+
+EXIT_CODE=0

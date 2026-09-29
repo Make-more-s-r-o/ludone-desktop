@@ -373,7 +373,7 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForSignedIn(panel);
 
     expect([...panel.document.querySelectorAll('[data-testid="idle-action-row"] strong')]
-      .map((element) => element.textContent.trim())).toEqual(["Nahrávání"]);
+      .map((element) => element.textContent.trim())).toEqual(["Zachytit schůzku"]);
     expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
     expect(panel.document.querySelector(".onboarding")).toBeNull();
     expect(panel.document.querySelector(".permission-step")).toBeNull();
@@ -388,7 +388,7 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForSignedIn(panel);
 
     expect([...panel.document.querySelectorAll('[data-testid="idle-action-row"] strong')]
-      .map((element) => element.textContent.trim())).toEqual(["Nahrávání"]);
+      .map((element) => element.textContent.trim())).toEqual(["Zachytit schůzku"]);
     expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
     expect(panel.document.querySelector(".onboarding")).toBeNull();
     expect(panel.ludone.beginAuth).not.toHaveBeenCalled();

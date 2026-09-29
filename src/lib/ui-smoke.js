@@ -23,6 +23,9 @@ const CHECK_LABELS = Object.freeze({
   "settings-recordings": "nastavení: Záznamy",
   "settings-restored": "změna a obnovení nastavení",
   "future-tracking": "připravovaný LuTrack bez nefunkční akce",
+  "primary-navigation": "společná navigace Teď / Můj den / Nastavení",
+  "my-day-real-recordings": "Můj den shodný se skutečným seznamem nahrávek",
+  "lutrack-disabled": "LuTrack jako neaktivní placeholder bez ovládání",
   welcome: "uvítací obrazovka",
 });
 
@@ -63,6 +66,9 @@ const BRANCH_REQUIREMENTS = Object.freeze({
       "panel",
       "recording",
       "future-tracking",
+      "primary-navigation",
+      "my-day-real-recordings",
+      "lutrack-disabled",
       "settings-account",
       "settings-audio",
       "settings-recordings",
@@ -83,6 +89,7 @@ const BRANCH_REQUIREMENTS = Object.freeze({
       "recording-naming-before-submit",
       "panel-after-submit",
       "settings-account",
+      "desktop-my-day",
       "settings-audio",
       "settings-audio-changed",
       "settings-recordings",

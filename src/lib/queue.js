@@ -348,12 +348,17 @@ export function enqueueRecording(queue, recording, now = Date.now()) {
     (item) => item.clientRecordingId === manifest.clientRecordingId,
   );
   if (existing) {
+    // Obnova z manifestu nemusí znát už vytvořený lokální stereo descriptor.
+    // Při shodě ID, cest a původního manifestu jej ponecháme beze změny místo
+    // falešné kolize; případný předaný descriptor se dál musí přesně shodovat.
+    const sameDelivery = delivery === undefined
+      || JSON.stringify(existing.delivery) === JSON.stringify(delivery);
     const sameRecording = existing.kind === QUEUE_ITEM_KINDS.RECORDING
       && (existing.sourceManifestPath ?? existing.manifestPath) === sourceManifestPath
       && existing.manifestPath === manifestPath
       && existing.tracks?.microphone === tracks.microphone
       && existing.tracks?.system === tracks.system
-      && JSON.stringify(existing.delivery) === JSON.stringify(delivery)
+      && sameDelivery
       && (existing.recoveredIncomplete === true) === recoveredIncomplete;
     if (sameRecording) return { added: false, item: existing, queue };
     throw new Error("Kolize clientRecordingId s jinou položkou fronty");

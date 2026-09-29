@@ -215,7 +215,8 @@ describe("read-only lokální přehled nahrávek", () => {
       });
       expect(snapshot.items.find((item) => item.id === ids.orphan)).toMatchObject({
         source: "orphan",
-        localState: "complete-audio",
+        localState: "partial-audio",
+        localReason: expect.stringContaining("prázdný"),
         sizeBytes: 0,
         revision: null,
         allowedActions: { claim: false, delete: true, retry: false, send: false },
@@ -2363,6 +2364,54 @@ describe("obnova osiřelých nahrávek", () => {
       expect([first.recovered, second.recovered].sort()).toEqual([0, 1]);
       expect([first.alreadyQueued, second.alreadyQueued].sort()).toEqual([0, 1]);
       expect((await loadQueue(queuePath)).items).toHaveLength(1);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("opakovaná obnova zachová už uložený stereo descriptor", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-queue-recovery-delivery-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    const queuePath = path.join(directory, "queue", "outgoing.json");
+    const fixture = await writeRecoverableRecording(recordingsDirectory);
+    const store = createOutboundQueueStore({
+      filePath: queuePath,
+      queueModulePromise: import("../src/lib/queue.js"),
+      send: vi.fn(),
+    });
+    const options = {
+      logger: { error: vi.fn(), log: vi.fn(), warn: vi.fn() },
+      manifestModulePromise: import("../src/lib/manifest.js"),
+      queueStore: store,
+      recordingsDirectory,
+    };
+    const delivery = {
+      state: "ready",
+      clientRecordingId: fixture.manifest.clientRecordingId,
+      mime: "audio/webm",
+      channels: 2,
+      channelMap: { left: "microphone", right: "system" },
+      filePath: path.join(recordingsDirectory, "recovered-stereo.webm"),
+      sidecarPath: path.join(recordingsDirectory, "recovered-stereo.sidecar.json"),
+      sizeBytes: 12,
+      sha256: "a".repeat(64),
+      encoderVersion: "6.1.6",
+    };
+
+    try {
+      await expect(recoverOrphanedRecordings(options)).resolves.toMatchObject({ recovered: 1 });
+      await store.setRecordingDelivery(fixture.manifest.clientRecordingId, delivery);
+      const beforeRetry = await loadQueue(queuePath);
+
+      await expect(recoverOrphanedRecordings(options)).resolves.toMatchObject({
+        alreadyQueued: 1,
+        failed: 0,
+        recovered: 0,
+      });
+
+      const afterRetry = await loadQueue(queuePath);
+      expect(afterRetry).toEqual(beforeRetry);
+      expect(afterRetry.items[0].delivery).toEqual(delivery);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

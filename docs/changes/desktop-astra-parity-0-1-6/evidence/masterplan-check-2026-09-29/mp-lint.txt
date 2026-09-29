@@ -1,0 +1,155 @@
+NÁLEZ [1] tasks/T-01.md:1 — # Task T-01 — Zjištění, kontrakt a příprava změny
+  Náprava: Začni packet nadpisem `# Zadání <Task ID> — <stručný cíl>`.
+NÁLEZ [1] tasks/T-02.md:1 — # Task T-02 — Společný shell a navigace
+  Náprava: Začni packet nadpisem `# Zadání <Task ID> — <stručný cíl>`.
+NÁLEZ [1] tasks/T-03.md:1 — # Task T-03 — Teď a zachování audio toku
+  Náprava: Začni packet nadpisem `# Zadání <Task ID> — <stručný cíl>`.
+NÁLEZ [1] tasks/T-04.md:1 — # Task T-04 — Můj den a detail nahrávky
+  Náprava: Začni packet nadpisem `# Zadání <Task ID> — <stručný cíl>`.
+NÁLEZ [1] tasks/T-05.md:1 — # Task T-05 — Nastavení, identity a aktualizace
+  Náprava: Začni packet nadpisem `# Zadání <Task ID> — <stručný cíl>`.
+NÁLEZ [1] tasks/T-06.md:1 — # Task T-06 — Electron E2E shoda s Astrou
+  Náprava: Začni packet nadpisem `# Zadání <Task ID> — <stručný cíl>`.
+NÁLEZ [1] tasks/T-07.md:1 — # Task T-07 — Review a připravenost vydání
+  Náprava: Začni packet nadpisem `# Zadání <Task ID> — <stručný cíl>`.
+NÁLEZ [2] tasks/T-01.md:1 — # Task T-01 — Zjištění, kontrakt a příprava změny
+  Náprava: Hned za H1 uveď `Pracuješ ve worktree {{WORKTREE}}.` (nebo ekvivalent s injekcí) a nařiď na začátku ověřit `pwd`.
+NÁLEZ [2] tasks/T-02.md:1 — # Task T-02 — Společný shell a navigace
+  Náprava: Hned za H1 uveď `Pracuješ ve worktree {{WORKTREE}}.` (nebo ekvivalent s injekcí) a nařiď na začátku ověřit `pwd`.
+NÁLEZ [2] tasks/T-03.md:1 — # Task T-03 — Teď a zachování audio toku
+  Náprava: Hned za H1 uveď `Pracuješ ve worktree {{WORKTREE}}.` (nebo ekvivalent s injekcí) a nařiď na začátku ověřit `pwd`.
+NÁLEZ [2] tasks/T-04.md:1 — # Task T-04 — Můj den a detail nahrávky
+  Náprava: Hned za H1 uveď `Pracuješ ve worktree {{WORKTREE}}.` (nebo ekvivalent s injekcí) a nařiď na začátku ověřit `pwd`.
+NÁLEZ [2] tasks/T-05.md:1 — # Task T-05 — Nastavení, identity a aktualizace
+  Náprava: Hned za H1 uveď `Pracuješ ve worktree {{WORKTREE}}.` (nebo ekvivalent s injekcí) a nařiď na začátku ověřit `pwd`.
+NÁLEZ [2] tasks/T-06.md:1 — # Task T-06 — Electron E2E shoda s Astrou
+  Náprava: Hned za H1 uveď `Pracuješ ve worktree {{WORKTREE}}.` (nebo ekvivalent s injekcí) a nařiď na začátku ověřit `pwd`.
+NÁLEZ [2] tasks/T-07.md:1 — # Task T-07 — Review a připravenost vydání
+  Náprava: Hned za H1 uveď `Pracuješ ve worktree {{WORKTREE}}.` (nebo ekvivalent s injekcí) a nařiď na začátku ověřit `pwd`.
+NÁLEZ [3] tasks/T-01.md:1 — (chybí sekce Mantinely nebo allowlist)
+  Náprava: Umísti H2 sekci `Mantinely` před výčet povolených souborů.
+NÁLEZ [3] tasks/T-02.md:1 — (chybí sekce Mantinely nebo allowlist)
+  Náprava: Umísti H2 sekci `Mantinely` před výčet povolených souborů.
+NÁLEZ [3] tasks/T-03.md:1 — (chybí sekce Mantinely nebo allowlist)
+  Náprava: Umísti H2 sekci `Mantinely` před výčet povolených souborů.
+NÁLEZ [3] tasks/T-04.md:1 — (chybí sekce Mantinely nebo allowlist)
+  Náprava: Umísti H2 sekci `Mantinely` před výčet povolených souborů.
+NÁLEZ [3] tasks/T-05.md:1 — (chybí sekce Mantinely nebo allowlist)
+  Náprava: Umísti H2 sekci `Mantinely` před výčet povolených souborů.
+NÁLEZ [3] tasks/T-06.md:1 — (chybí sekce Mantinely nebo allowlist)
+  Náprava: Umísti H2 sekci `Mantinely` před výčet povolených souborů.
+NÁLEZ [3] tasks/T-07.md:1 — (chybí sekce Mantinely nebo allowlist)
+  Náprava: Umísti H2 sekci `Mantinely` před výčet povolených souborů.
+NÁLEZ [4] tasks/T-01.md:1 — # Task T-01 — Zjištění, kontrakt a příprava změny
+  Náprava: Doplň výslovný zákaz pro: git, stdin, install; povol jen závěrečný read-only git status.
+NÁLEZ [4] tasks/T-02.md:1 — # Task T-02 — Společný shell a navigace
+  Náprava: Doplň výslovný zákaz pro: git, stdin, install; povol jen závěrečný read-only git status.
+NÁLEZ [4] tasks/T-03.md:9 — ## Mantinely
+  Náprava: Doplň výslovný zákaz pro: git, stdin, install; povol jen závěrečný read-only git status.
+NÁLEZ [4] tasks/T-04.md:9 — ## Mantinely
+  Náprava: Doplň výslovný zákaz pro: git, stdin, install; povol jen závěrečný read-only git status.
+NÁLEZ [4] tasks/T-05.md:9 — ## Mantinely
+  Náprava: Doplň výslovný zákaz pro: git, stdin, install; povol jen závěrečný read-only git status.
+NÁLEZ [4] tasks/T-06.md:9 — ## Mantinely
+  Náprava: Doplň výslovný zákaz pro: git, stdin, install; povol jen závěrečný read-only git status.
+NÁLEZ [4] tasks/T-07.md:9 — ## Mantinely
+  Náprava: Doplň výslovný zákaz pro: git, stdin, install; povol jen závěrečný read-only git status.
+NÁLEZ [5] tasks/T-01.md:1 — # Task T-01 — Zjištění, kontrakt a příprava změny
+  Náprava: Výslovně zakaž výjimku z brány, skip a zápis baseline místo opravy (chybí: gateException, skip, baseline).
+NÁLEZ [5] tasks/T-02.md:1 — # Task T-02 — Společný shell a navigace
+  Náprava: Výslovně zakaž výjimku z brány, skip a zápis baseline místo opravy (chybí: gateException, skip, baseline).
+NÁLEZ [5] tasks/T-03.md:9 — ## Mantinely
+  Náprava: Výslovně zakaž výjimku z brány, skip a zápis baseline místo opravy (chybí: gateException, skip, baseline).
+NÁLEZ [5] tasks/T-04.md:9 — ## Mantinely
+  Náprava: Výslovně zakaž výjimku z brány, skip a zápis baseline místo opravy (chybí: gateException, skip, baseline).
+NÁLEZ [5] tasks/T-05.md:9 — ## Mantinely
+  Náprava: Výslovně zakaž výjimku z brány, skip a zápis baseline místo opravy (chybí: gateException, skip, baseline).
+NÁLEZ [5] tasks/T-06.md:9 — ## Mantinely
+  Náprava: Výslovně zakaž výjimku z brány, skip a zápis baseline místo opravy (chybí: gateException, skip, baseline).
+NÁLEZ [5] tasks/T-07.md:9 — ## Mantinely
+  Náprava: Výslovně zakaž výjimku z brány, skip a zápis baseline místo opravy (chybí: gateException, skip, baseline).
+NÁLEZ [6] tasks/T-01.md:1 — # Task T-01 — Zjištění, kontrakt a příprava změny
+  Náprava: Zapiš každý povolený soubor do vlastního bulletu, v backticku a pouze relativní cestou.
+NÁLEZ [6] tasks/T-02.md:1 — # Task T-02 — Společný shell a navigace
+  Náprava: Zapiš každý povolený soubor do vlastního bulletu, v backticku a pouze relativní cestou.
+NÁLEZ [6] tasks/T-03.md:9 — ## Mantinely
+  Náprava: Zapiš každý povolený soubor do vlastního bulletu, v backticku a pouze relativní cestou.
+NÁLEZ [6] tasks/T-04.md:9 — ## Mantinely
+  Náprava: Zapiš každý povolený soubor do vlastního bulletu, v backticku a pouze relativní cestou.
+NÁLEZ [6] tasks/T-05.md:9 — ## Mantinely
+  Náprava: Zapiš každý povolený soubor do vlastního bulletu, v backticku a pouze relativní cestou.
+NÁLEZ [6] tasks/T-06.md:9 — ## Mantinely
+  Náprava: Zapiš každý povolený soubor do vlastního bulletu, v backticku a pouze relativní cestou.
+NÁLEZ [6] tasks/T-07.md:9 — ## Mantinely
+  Náprava: Zapiš každý povolený soubor do vlastního bulletu, v backticku a pouze relativní cestou.
+NÁLEZ [9] tasks/T-01.md:1 — (chybí Postup)
+  Náprava: Ukonči číslovaný Postup přesně v pořadí typecheck → testy → `git --no-pager status --porcelain`.
+NÁLEZ [9] tasks/T-02.md:1 — (chybí Postup)
+  Náprava: Ukonči číslovaný Postup přesně v pořadí typecheck → testy → `git --no-pager status --porcelain`.
+NÁLEZ [9] tasks/T-03.md:1 — (chybí Postup)
+  Náprava: Ukonči číslovaný Postup přesně v pořadí typecheck → testy → `git --no-pager status --porcelain`.
+NÁLEZ [9] tasks/T-04.md:1 — (chybí Postup)
+  Náprava: Ukonči číslovaný Postup přesně v pořadí typecheck → testy → `git --no-pager status --porcelain`.
+NÁLEZ [9] tasks/T-05.md:1 — (chybí Postup)
+  Náprava: Ukonči číslovaný Postup přesně v pořadí typecheck → testy → `git --no-pager status --porcelain`.
+NÁLEZ [9] tasks/T-06.md:1 — (chybí Postup)
+  Náprava: Ukonči číslovaný Postup přesně v pořadí typecheck → testy → `git --no-pager status --porcelain`.
+NÁLEZ [9] tasks/T-07.md:1 — (chybí Postup)
+  Náprava: Ukonči číslovaný Postup přesně v pořadí typecheck → testy → `git --no-pager status --porcelain`.
+NÁLEZ [11] tasks/T-01.md:1 — (chybí JSON output contract)
+  Náprava: Output contract musí být JSON objekt s povinnými top-level klíči.
+NÁLEZ [11] tasks/T-02.md:1 — (chybí JSON output contract)
+  Náprava: Output contract musí být JSON objekt s povinnými top-level klíči.
+NÁLEZ [11] tasks/T-03.md:1 — (chybí JSON output contract)
+  Náprava: Output contract musí být JSON objekt s povinnými top-level klíči.
+NÁLEZ [11] tasks/T-04.md:1 — (chybí JSON output contract)
+  Náprava: Output contract musí být JSON objekt s povinnými top-level klíči.
+NÁLEZ [11] tasks/T-05.md:1 — (chybí JSON output contract)
+  Náprava: Output contract musí být JSON objekt s povinnými top-level klíči.
+NÁLEZ [11] tasks/T-06.md:1 — (chybí JSON output contract)
+  Náprava: Output contract musí být JSON objekt s povinnými top-level klíči.
+NÁLEZ [11] tasks/T-07.md:1 — (chybí JSON output contract)
+  Náprava: Output contract musí být JSON objekt s povinnými top-level klíči.
+NÁLEZ [13] tasks/T-01.md:1 — (chybí doslovný výstup testů)
+  Náprava: Vyžádej klíčem `doslovnyVystupTestu` skutečný doslovný výstup, ne tvrzení, že testy prošly.
+NÁLEZ [13] tasks/T-02.md:1 — (chybí doslovný výstup testů)
+  Náprava: Vyžádej klíčem `doslovnyVystupTestu` skutečný doslovný výstup, ne tvrzení, že testy prošly.
+NÁLEZ [13] tasks/T-03.md:1 — (chybí doslovný výstup testů)
+  Náprava: Vyžádej klíčem `doslovnyVystupTestu` skutečný doslovný výstup, ne tvrzení, že testy prošly.
+NÁLEZ [13] tasks/T-04.md:1 — (chybí doslovný výstup testů)
+  Náprava: Vyžádej klíčem `doslovnyVystupTestu` skutečný doslovný výstup, ne tvrzení, že testy prošly.
+NÁLEZ [13] tasks/T-05.md:1 — (chybí doslovný výstup testů)
+  Náprava: Vyžádej klíčem `doslovnyVystupTestu` skutečný doslovný výstup, ne tvrzení, že testy prošly.
+NÁLEZ [13] tasks/T-06.md:1 — (chybí doslovný výstup testů)
+  Náprava: Vyžádej klíčem `doslovnyVystupTestu` skutečný doslovný výstup, ne tvrzení, že testy prošly.
+NÁLEZ [13] tasks/T-07.md:1 — (chybí doslovný výstup testů)
+  Náprava: Vyžádej klíčem `doslovnyVystupTestu` skutečný doslovný výstup, ne tvrzení, že testy prošly.
+NÁLEZ [15] progress/status.json:108 — "id": "T-01",
+  Náprava: Vynucuj dependencies(packetu T-01) == DAG(task): status [], DAG task v tabulce DAG chybí.
+NÁLEZ [C2] artifacts/design/design-manifest.md:18 — | 1 | Teď / menu panel | Screenshot od Dana 24. 9. | Astra `home`, `working`, `meeting`, `save`, `record-only` | L2 | LuDone značka, současný recording flow, stav fronty | sjednocená navigace a hierarchie | `none` — směr B byl výslovně vybrán |
+  Náprava: Srovnej počet a ID obrazovek 1:1; manifest má 5, status 0.
+NÁLEZ [C3] decisions.md:3 — ## D1 — Implementovat celý schválený návrh Astra „Nit dne“
+  Náprava: Srovnej status.json decisions[] s H2 rozhodnutími D<n> v decisions.md.
+NÁLEZ [C4] progress/status.json:108 — "id": "T-01",
+  Náprava: Každý status task musí odkazovat na existující lintovaný packet a jeho ID musí odpovídat názvu packetu.
+NÁLEZ [C4] progress/status.json:108 — "id": "T-01",
+  Náprava: Srovnej deps tasku T-01: status [], DAG task v tabulce DAG chybí.
+NÁLEZ [C4] tasks/T-01.md:1 — # Task T-01 — Zjištění, kontrakt a příprava změny
+  Náprava: Každý lintovaný packet musí mít ve status.tasks[] právě jednu vazbu se shodným task ID i cestou packetu.
+NÁLEZ [C4] tasks/T-02.md:1 — # Task T-02 — Společný shell a navigace
+  Náprava: Každý lintovaný packet musí mít ve status.tasks[] právě jednu vazbu se shodným task ID i cestou packetu.
+NÁLEZ [C4] tasks/T-03.md:1 — # Task T-03 — Teď a zachování audio toku
+  Náprava: Každý lintovaný packet musí mít ve status.tasks[] právě jednu vazbu se shodným task ID i cestou packetu.
+NÁLEZ [C4] tasks/T-04.md:1 — # Task T-04 — Můj den a detail nahrávky
+  Náprava: Každý lintovaný packet musí mít ve status.tasks[] právě jednu vazbu se shodným task ID i cestou packetu.
+NÁLEZ [C4] tasks/T-05.md:1 — # Task T-05 — Nastavení, identity a aktualizace
+  Náprava: Každý lintovaný packet musí mít ve status.tasks[] právě jednu vazbu se shodným task ID i cestou packetu.
+NÁLEZ [C4] tasks/T-06.md:1 — # Task T-06 — Electron E2E shoda s Astrou
+  Náprava: Každý lintovaný packet musí mít ve status.tasks[] právě jednu vazbu se shodným task ID i cestou packetu.
+NÁLEZ [C4] tasks/T-07.md:1 — # Task T-07 — Review a připravenost vydání
+  Náprava: Každý lintovaný packet musí mít ve status.tasks[] právě jednu vazbu se shodným task ID i cestou packetu.
+NÁLEZ [C8] evidence/e2e-2026-09-24/README.md:1 — # Důkazy E2E — LuDone Desktop 0.1.6
+  Náprava: Doplň evidence frontmatter s klíči kind, measuredAt a measuredFrom (chybí: kind, measuredAt, measuredFrom).
+SOUHRN: 7 packetů, 28 pravidel a 41 souborů prověřeno; 76 nálezů.
+
+EXIT_CODE=1

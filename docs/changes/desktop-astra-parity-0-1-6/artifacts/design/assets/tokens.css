@@ -1,0 +1,103 @@
+/* Prototyp: podvýběr tokenů LuDone DS ze src/app/globals.css, 23. 9. 2026. */
+
+:root, [data-theme="light"] {
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.516 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(1 0 0);
+  --destructive-hover: oklch(0.54 0.245 27.325);
+  --success: oklch(0.465 0.2 145);
+  --success-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --color-surface: var(--background);
+  --color-surface-elevated: oklch(0.97 0 0);
+  --color-surface-elevated-2: oklch(0.945 0 0);
+  --color-on-surface: var(--foreground);
+  --color-on-surface-muted: var(--muted-foreground);
+  --color-on-surface-subtle: oklch(0.145 0 0 / 57%);
+  --color-border-strong: oklch(0.145 0 0 / 18%);
+  --color-accent: oklch(0.205 0 0);
+  --color-accent-fg: var(--primary-foreground);
+  --color-error: oklch(0.492 0.245 27.325);
+  --color-error-fg: oklch(1 0 0);
+  --color-warning-fg: oklch(1 0 0);
+  --color-warning: oklch(0.515 0.17 65);
+  --color-info: var(--accent-media);
+}
+
+[data-theme="professional"] {
+  --background: oklch(0.975 0.005 80);
+  --foreground: oklch(0.18 0.02 260);
+  --card: oklch(0.995 0.003 80);
+  --card-foreground: oklch(0.18 0.02 260);
+  --primary: oklch(0.55 0.2 260);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.95 0.01 80);
+  --secondary-foreground: oklch(0.25 0.02 260);
+  --muted: oklch(0.95 0.008 80);
+  --muted-foreground: oklch(0.5 0.02 260);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(1 0 0);
+  --destructive-hover: oklch(0.54 0.245 27.325);
+  --success: oklch(0.465 0.2 145);
+  --success-foreground: oklch(0.985 0 0);
+  --border: oklch(0.91 0.015 80);
+  --input: oklch(0.91 0.015 80);
+  --ring: oklch(0.55 0.2 260);
+  --color-surface-elevated: oklch(0.995 0.003 80);
+  --color-surface-elevated-2: oklch(0.95 0.01 80);
+  --color-on-surface-subtle: oklch(0.18 0.02 260 / 59%);
+  --color-border-strong: oklch(0.18 0.02 260 / 18%);
+  --color-accent: oklch(0.55 0.2 260);
+  --color-accent-fg: var(--primary-foreground);
+  --color-warning: oklch(0.51 0.17 65);
+  --color-info: oklch(0.53 0.268 285.47);
+}
+
+[data-theme="dark"] {
+  --background: oklch(0.16 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.2 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.145 0 0);
+  --destructive-hover: oklch(0.75 0.191 22.216);
+  --success: oklch(0.62 0.2 145);
+  --success-foreground: oklch(0.145 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --color-surface-elevated: oklch(0.22 0 0);
+  --color-surface-elevated-2: oklch(0.26 0 0);
+  --color-on-surface-subtle: oklch(1 0 0 / 45%);
+  --color-border-strong: oklch(1 0 0 / 20%);
+  --color-accent: oklch(0.985 0 0);
+  --color-accent-fg: oklch(0.145 0 0);
+  --color-error: oklch(0.704 0.191 22.216);
+  --color-error-fg: oklch(0.145 0 0);
+  --color-warning-fg: oklch(0.145 0 0);
+  --color-warning: oklch(0.75 0.17 65);
+  --color-info: oklch(0.78 0.11 285);
+}
+
+@font-face {font-family:Brockmann;src:url("Brockmann-Medium.otf") format("opentype");font-weight:500;font-display:swap;}
+@font-face {font-family:Brockmann;src:url("Brockmann-SemiBold.otf") format("opentype");font-weight:600;font-display:swap;}
+@font-face {font-family:"Public Sans";src:url("PublicSans-Regular.woff2") format("woff2");font-weight:400;font-display:swap;}
+@font-face {font-family:"Public Sans";src:url("PublicSans-Medium.woff2") format("woff2");font-weight:500;font-display:swap;}
+@font-face {font-family:"Public Sans";src:url("PublicSans-SemiBold.woff2") format("woff2");font-weight:600;font-display:swap;}

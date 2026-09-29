@@ -1,0 +1,16 @@
+$ node scripts/astra-design-e2e.mjs
+FAIL  acceptance · Teď
+FAIL  acceptance · Záznam a uložení
+FAIL  acceptance · Můj den
+FAIL  acceptance · Detail
+FAIL  acceptance · Nastavení
+FAIL  acceptance · Aktualizace
+FAIL  acceptance · Offline a obnova
+FAIL  acceptance · Onboarding
+FAIL  acceptance · Světlé a tmavé téma
+FAIL  acceptance · LuTrack zůstává vypnutý
+FAIL  acceptance · Astra geometrie a pořadí
+FAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu
+⛔ Astra design E2E: .runtime/design-e2e/2026-09-29T23-09-41-412Z
+
+EXIT_CODE=1

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { DesktopMenubar, DesktopTitlebar } from "./DesktopChrome.jsx";
+import { DesktopNavigation } from "./DesktopNavigation.jsx";
 import { AuthErrorScreen } from "./AuthErrorScreen.jsx";
 import { ApplicationUpdateStatus, ApplicationVersion } from "./ApplicationUpdateStatus.jsx";
 import { RecordingTestStep } from "./RecordingTestStep.jsx";
@@ -10,7 +12,6 @@ import {
   CheckIcon,
   LuDoneMark,
   MicIcon,
-  TimerIcon,
   VolumeIcon,
 } from "./Icons.jsx";
 
@@ -434,13 +435,18 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
       className={`onboarding${reauthenticate ? " onboarding--reauthenticate" : ""}${embedded ? " onboarding--embedded" : " window-surface"}`}
     >
       <div className="onboarding__topbar">
-        <div className="brand-lockup"><LuDoneMark size={30} /><span>LuDone</span></div>
-        <div>
+        {!embedded && <>
+          <header className="panel-header"><DesktopMenubar status="Nastavení aplikace" authState="none" accountLabel="Přihlášení a zvuk" /></header>
+          <DesktopTitlebar closeLabel="Skrýt panel" onClose={() => window.ludone?.hidePanel?.()} quickActions={[]} />
+          <DesktopNavigation active="now" onNavigate={(page) => window.ludone?.openSettings?.(page === "day" ? "day" : "account")} />
+        </>}
+        {embedded && <>
+          <div className="brand-lockup"><LuDoneMark size={30} /><span>LuDone</span></div>
           <ApplicationVersion withBuildDate={false} />
           {!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}
-        </div>
+        </>}
+        <ApplicationUpdateStatus showVersion={false} />
       </div>
-      <ApplicationUpdateStatus showVersion={false} />
 
       {!reauthenticate && (
         <div className="step-track" aria-label={`Krok ${step + 1} z ${STEPS.length}`}>
@@ -461,17 +467,16 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
             <div className="welcome-visual__ring welcome-visual__ring--two" />
             <div className="welcome-visual__core"><LuDoneMark size={58} /></div>
             <span className="welcome-visual__node welcome-visual__node--mic"><MicIcon /></span>
-            <span className="welcome-visual__node welcome-visual__node--timer"><TimerIcon /></span>
           </div>
-          <p className="eyebrow">Spouštěč pro váš pracovní den</p>
-          <h1>Rozhovory a čas.<br />Pěkně po ruce.</h1>
+
+          <h1>Váš pracovní den.<br />O kousek jednodušší.</h1>
           <p className="lead">
-            LuDone žije v horní liště a nechá vás jedním klikem nahrávat nebo měřit čas.
+            Zachyťte schůzku. LuDone zůstane po ruce v liště vašeho Macu. Po zastavení si vyberete odeslání nebo uložení na Macu.
           </p>
           <button type="button" className="button button--primary button--wide" onClick={() => setStep(1)}>
             Začít <ArrowRightIcon />
           </button>
-          <p className="privacy-note">Žádný archiv navíc. Všechno důležité zůstává na app.ludone.cz.</p>
+          <p className="privacy-note">Přepisy a analýzu otevřeš na app.ludone.cz. Originál zůstává na Macu podle nastavení retence.</p>
         </section>
       )}
 
@@ -669,7 +674,6 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
           <div className="tray-preview" aria-label="Ukázka stavů ikony v horní liště">
             <div><span className="tray-symbol tray-symbol--idle" /><small>Nečinná</small></div>
             <div><span className="tray-symbol tray-symbol--recording" /><small>Nahrává</small></div>
-            <div><span className="tray-symbol tray-symbol--tracking" /><small>Měří čas</small></div>
           </div>
           <button type="button" className="button button--primary button--wide" onClick={onComplete}>
             Otevřít můj panel <ArrowRightIcon />
@@ -681,6 +685,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
           data-testid="reauth-settings"
           onClick={() => window.ludone.openSettings()}>Nastavení</button>
       )}
+      {!embedded && <footer className="onboarding__footer"><ApplicationVersion withBuildDate={false} /><span>Přihlášení a oprávnění macOS</span>{!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}</footer>}
     </Container>
   );
 }

@@ -1,0 +1,15 @@
+
+> ludone-desktop-prototype@0.1.6 test:unit
+> vitest run tests/queue-wiring.test.js -t vyhrazená plocha aktualizace
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-secondary-parity
+
+ ✓ tests/queue-wiring.test.js (286 tests | 285 skipped) 105ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 285 skipped (286)
+   Start at  00:41:43
+   Duration  929ms (transform 169ms, setup 6ms, collect 662ms, tests 105ms, environment 0ms, prepare 35ms)
+
+EXIT_CODE=0

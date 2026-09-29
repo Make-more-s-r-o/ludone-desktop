@@ -224,12 +224,18 @@ async function inspectManifest(recordingsDirectory, manifestPath, derivativePath
   )));
   const allFiles = [...tracks, ...derivatives];
   const existing = allFiles.filter((track) => track.exists);
-  const localState = existing.length === allFiles.length
-    ? "complete-audio"
-    : existing.length === 0 ? "missing-audio" : "partial-audio";
+  // Přítomný soubor ještě nedokládá dokončený zvuk: rozpracovaný manifest
+  // a prázdná očekávaná stopa musejí zůstat viditelně neúplné.
+  const incomplete = validated.manifest.state !== "complete";
+  const emptyAudio = existing.some((track) => track.sizeBytes === 0);
+  const localState = existing.length === 0 ? "missing-audio"
+    : existing.length === allFiles.length && !incomplete && !emptyAudio
+      ? "complete-audio" : "partial-audio";
+  const localReason = incomplete ? "Nahrávka nebyla dokončena. Dostupné původní zvukové soubory zůstávají na Macu."
+    : emptyAudio ? "Očekávaný zvukový soubor je prázdný. Původní soubory zůstávají na Macu."
+      : null;
   const sizeBytes = existing.length > 0
-    ? existing.reduce((sum, track) => sum + track.sizeBytes, 0)
-    : (allFiles.length > 0 && localState === "complete-audio" ? 0 : null);
+    ? existing.reduce((sum, track) => sum + track.sizeBytes, 0) : null;
   return {
     identifiedId,
     invalid: false,
@@ -237,6 +243,7 @@ async function inspectManifest(recordingsDirectory, manifestPath, derivativePath
     durationMs: durationFromManifest(validated.manifest, validated.sources),
     fileRevision: revisionFor(read, allFiles),
     localState,
+    localReason,
     sizeBytes,
     sources: validated.sources,
     trackNames: Object.fromEntries(validated.sources.map(
@@ -415,7 +422,7 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       ...safeProjectedItem(projected),
       source: "queue",
       localState: inspected.invalid ? "invalid-manifest" : inspected.localState,
-      localReason: inspected.invalid ? "Primární manifest nelze bezpečně přečíst." : null,
+      localReason: inspected.invalid ? "Primární manifest nelze bezpečně přečíst." : inspected.localReason ?? null,
       fileRevision: inspected.fileRevision ?? null,
       createdAt: inspected.createdAt ?? projected.createdAt ?? null,
       durationMs: inspected.durationMs ?? projected.durationMs ?? null,
@@ -468,7 +475,7 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       durationMs: inspected.durationMs ?? null,
       sizeBytes: inspected.invalid ? null : inspected.sizeBytes,
       localState: inspected.invalid ? "invalid-manifest" : inspected.localState,
-      localReason: inspected.invalid ? "Primární manifest nelze bezpečně přečíst." : null,
+      localReason: inspected.invalid ? "Primární manifest nelze bezpečně přečíst." : inspected.localReason ?? null,
       fileRevision: inspected.fileRevision ?? null,
       allowedActions: { claim: false, delete: !inspected.invalid, retry: false, send: false },
     });

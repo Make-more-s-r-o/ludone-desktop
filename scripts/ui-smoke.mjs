@@ -442,6 +442,94 @@ async function assertTray(client, expected) {
   observations.push({ check: "tray", value: actual });
 }
 
+async function verifyQuickPanelShell(client) {
+  const layout = await client.evaluate(`(() => {
+    const nav = document.querySelector('.desktop-navigation');
+    const buttons = [...(nav?.querySelectorAll('button') || [])];
+    const bounds = nav?.getBoundingClientRect();
+    return {
+      labels: buttons.map((button) => button.textContent.trim()),
+      active: buttons.find((button) => button.getAttribute('aria-current') === 'page')?.textContent.trim(),
+      visible: Boolean(nav && bounds.width > 0 && bounds.height > 0),
+      fits: Boolean(bounds && bounds.left >= 0 && bounds.right <= innerWidth + 1),
+    };
+  })()`);
+  if (JSON.stringify(layout.labels) !== JSON.stringify(["Teď", "Můj den", "Nastavení"])
+    || layout.active !== "Teď" || !layout.visible || !layout.fits) {
+    throw new Error(`Rychlý panel neodpovídá schválené navigaci Astra: ${JSON.stringify(layout)}`);
+  }
+  observations.push({ check: "approved-shell-panel", ...layout });
+}
+
+async function verifyMyDayDesign(client) {
+  await clickByText(client, "Můj den", 0);
+  await waitFor(
+    () => client.evaluate(`(() => {
+      const shell = document.querySelector('.settings-window');
+      const loading = document.querySelector('.recordings-dashboard > [role="status"]')
+        ?.textContent.includes('Načítám nahrávky') === true;
+      return shell?.dataset.page === 'day' && !loading;
+    })()`),
+    "načtení skutečného seznamu pro Můj den",
+  );
+  const layout = await waitFor(() => client.evaluate(`(() => {
+    const shell = document.querySelector('.settings-window');
+    const nav = document.querySelector('.desktop-navigation');
+    const heading = document.querySelector('.desktop-day-intro h1');
+    const placeholder = document.querySelector('[aria-label="LuTrack připravujeme"]');
+    const dashboard = document.querySelector('[data-testid="recordings-dashboard"]');
+    if (shell?.dataset.page !== 'day' || !heading || !placeholder || !dashboard) return null;
+    const rect = (element) => {
+      const box = element.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom, left: box.left, right: box.right, width: box.width, height: box.height };
+    };
+    return {
+      page: shell.dataset.page,
+      title: heading.textContent.trim(),
+      navActive: [...nav.querySelectorAll('button')]
+        .find((button) => button.getAttribute('aria-current') === 'page')?.textContent.trim(),
+      viewport: { width: innerWidth, height: innerHeight },
+      heading: rect(heading),
+      placeholder: rect(placeholder),
+      dashboard: rect(dashboard),
+      placeholderControls: Boolean(placeholder.querySelector('button, a, input, select')),
+    };
+  })()`), "přechod do skutečného Můj den");
+
+  const renderedCount = await client.evaluate(`(async () => {
+    const snapshot = await window.ludone.listLocalRecordings();
+    return {
+      actual: snapshot.items.length + snapshot.unreadableCount,
+      rendered: document.querySelectorAll('.recordings-dashboard__list > li').length,
+    };
+  })()`);
+  const inViewport = (box, viewport) => box.width > 0 && box.height > 0
+    && box.left >= 0 && box.right <= viewport.width + 1
+    && box.top >= 0 && box.top < viewport.height;
+  if (layout.title !== "Stopa dne" || layout.navActive !== "Můj den"
+    || layout.viewport.width < 600 || layout.viewport.height < 680
+    || !inViewport(layout.heading, layout.viewport)
+    || !inViewport(layout.placeholder, layout.viewport)
+    || !inViewport(layout.dashboard, layout.viewport)
+    || !(layout.heading.bottom < layout.placeholder.top
+      && layout.placeholder.bottom < layout.dashboard.top)
+    || layout.placeholderControls
+    || renderedCount.rendered !== renderedCount.actual) {
+    throw new Error(
+      `Můj den nedrží schválenou hierarchii nebo zobrazuje neověřený obsah: ${JSON.stringify({ layout, renderedCount })}`,
+    );
+  }
+  await assertText(client, "Práce · LuTrack");
+  await screenshot(client, "desktop-my-day");
+  observations.push({ check: "approved-day-layout", layout, recordings: renderedCount });
+
+  await clickByText(client, "Nastavení", 0);
+  await waitFor(
+    () => client.evaluate("document.querySelector('.settings-window')?.dataset.page === 'settings'"),
+    "návrat z Můj den do Nastavení",
+  );
+}
+
 async function verifyTrayToggle(client) {
   const hidden = await client.evaluate("window.ludone.testClickTray()");
   if (!hidden.allowed || hidden.visible) {
@@ -662,6 +750,8 @@ async function exerciseSettings(client) {
     );
     await screenshot(client, "settings-account");
 
+    await verifyMyDayDesign(client);
+
     await selectSettingsTab(client, "audio", "Kdy nahrávat");
     // Karta Zvuk už nemá přepínač, který by se dal změnit a vrátit — nastavení bez
     // účinku bylo odstraněno. Změnu a obnovení proto měří retence níž; sem patří
@@ -835,6 +925,7 @@ async function runPanelAndSettings(client) {
   await assertText(client, "Spustit nahrávání");
   await assertTray(client, "idle");
   await verifyTrayToggle(client);
+  await verifyQuickPanelShell(client);
   await screenshot(client, "panel-idle");
   verifiedChecks.push("panel");
 
@@ -905,6 +996,7 @@ async function runPanelAndSettings(client) {
     "nastavení",
   );
   await exerciseSettings(settings);
+  verifiedChecks.push("primary-navigation", "my-day-real-recordings", "lutrack-disabled");
   verifiedChecks.push(
     "settings-account",
     "settings-audio",

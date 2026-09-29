@@ -427,7 +427,14 @@ async function renderRecordingCard(options = {}) {
   const phase = () => dom.window.document
     .querySelector("[data-recording-phase]")
     ?.getAttribute("data-recording-phase");
-  const currentButton = () => dom.window.document.querySelector("[data-recording-phase] button");
+  const currentButton = () => {
+    if (phase() === "recording") {
+      return dom.window.document.querySelector(
+        '[data-testid="recording-stop"], [data-testid="degraded-recording-stop"]',
+      );
+    }
+    return dom.window.document.querySelector("[data-recording-phase] button");
+  };
 
   return {
     document: dom.window.document,
@@ -1720,7 +1727,9 @@ describe("RecordingCard", () => {
       expect(recordingCard?.querySelector('[data-testid="recording-source-system"]')).not.toBeNull();
       expect(recordingCard?.querySelector('[data-testid="recording-stop"]')).not.toBeNull();
       expect(futureFeature?.textContent).toContain("Připravujeme");
-      expect(futureFeature?.querySelectorAll("button, input, select")).toHaveLength(0);
+      const preparingControls = [...futureFeature.querySelectorAll("button, input, select")];
+      expect(preparingControls).toHaveLength(3);
+      expect(preparingControls.every((control) => control.disabled)).toBe(true);
       expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
 
       await stopRecording(panel);

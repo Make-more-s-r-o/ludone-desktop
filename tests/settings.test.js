@@ -65,7 +65,9 @@ async function renderSettings({
     saved: true, selectedCompanyId: companyId,
   }),
 } = {}) {
-  const initialQuery = initialTab === "recordingQueue" ? "?settingsTab=recordingQueue" : "";
+  const initialQuery = ["audio", "recordingQueue", "day"].includes(initialTab)
+    ? `?settingsTab=${initialTab}`
+    : "";
   const dom = new JSDOM('<div id="root"></div>', { url: `https://ludone.test/${initialQuery}#settings` });
   const style = dom.window.document.createElement("style");
   style.textContent = settingsStyles;
@@ -86,6 +88,7 @@ async function renderSettings({
   const ludone = {
     beginAuth: vi.fn(),
     closeSettings: vi.fn(),
+    returnToNowPanel: vi.fn(),
     onSettingsTabRequested: vi.fn((callback) => {
       settingsTabRequested = callback;
       return () => { settingsTabRequested = undefined; };
@@ -253,14 +256,16 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
     const settings = await renderSettings();
     try {
       await selectTab(settings, "Zvuk");
-      const panel = settings.document.querySelector('[role="tabpanel"]:not([hidden])');
-      expect(panel?.querySelectorAll('[role="switch"]')).toHaveLength(1);
-      expect(panel?.querySelector('[role="switch"]')?.getAttribute("aria-label"))
+      const panel = settings.document.querySelector("#settings-panel-audio");
+      const uploadPanel = settings.document.querySelector("#settings-panel-account");
+      expect(panel?.querySelectorAll('[role="switch"]')).toHaveLength(0);
+      expect(uploadPanel?.querySelector('[data-testid="automatic-upload-setting"] [role="switch"]')
+        ?.getAttribute("aria-label"))
         .toBe("Automaticky odesílat nové nahrávky");
       expect(panel?.textContent).not.toContain("Ostatní hovory");
       expect(panel?.textContent).not.toContain("Nejdřív se zeptat");
-      expect(panel?.textContent).toContain("Nahrávání spouštíš ručně.");
-      expect(panel?.textContent).toContain("Platí jen pro nahrávky zahájené po zapnutí.");
+      expect(uploadPanel?.textContent).toContain("Nahrávání spouštíš ručně.");
+      expect(uploadPanel?.textContent).toContain("Platí jen pro nové záznamy.");
       expect(settings.localStorage.setItem).not.toHaveBeenCalled();
     } finally {
       await settings.cleanup();
@@ -327,7 +332,7 @@ afterEach(() => {
 });
 
 describe("pět částí Nastavení", () => {
-  it("vykreslí přesně pět přístupných záložek a přepíná jejich obsah", async () => {
+  it("ukáže sekce Nastavení v jednom přehledu a zachová jejich samostatné ovládání", async () => {
     const settings = await renderSettings();
     try {
       const tablist = settings.document.querySelector('[role="tablist"]');
@@ -347,7 +352,7 @@ describe("pět částí Nastavení", () => {
         "false",
         "false",
       ]);
-      expect(settings.document.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(1);
+      expect(settings.document.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(4);
 
       tabs[0].focus();
       await React.act(async () => {
@@ -358,18 +363,21 @@ describe("pět částí Nastavení", () => {
         await Promise.resolve();
       });
       expect(settings.document.activeElement).toBe(tabs[1]);
-      let panel = settings.document.querySelector('[role="tabpanel"]:not([hidden])');
-      expect(panel?.textContent).toContain("Kdy nahrávat");
-      expect(panel?.textContent).toContain("Co se děje se zvukem");
-      expect(panel?.textContent).not.toContain("Ponechat na tomto Macu");
+      let panel = settings.document.querySelector("#settings-panel-audio");
+      expect(panel?.textContent).not.toContain("Kdy nahrávat");
+      expect(panel?.textContent).toContain("Zvuk schůzky");
+      expect(panel?.textContent).toContain("Jeden výsledný soubor");
+      expect(panel?.textContent).toContain("MikrofonLevý kanál");
+      expect(panel?.textContent).toContain("Systémový zvukPravý kanál");
+      expect(panel?.textContent).toContain("Spustit zkoušku");
 
       await selectTab(settings, "Záznamy");
-      panel = settings.document.querySelector('[role="tabpanel"]:not([hidden])');
+      panel = settings.document.querySelector("#settings-panel-recordings");
       expect(panel?.textContent).toContain("Ponechat na tomto Macu");
       expect(panel?.textContent).toContain("2 čekají");
 
       await selectTab(settings, "Diagnostika");
-      panel = settings.document.querySelector('[role="tabpanel"]:not([hidden])');
+      panel = settings.document.querySelector("#settings-panel-diagnostics");
       expect(panel?.textContent).toContain("Verze");
       expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual([
         "false",
@@ -378,7 +386,7 @@ describe("pět částí Nastavení", () => {
         "false",
         "true",
       ]);
-      expect(settings.document.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(1);
+      expect(settings.document.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(4);
     } finally {
       await settings.cleanup();
     }
@@ -1326,6 +1334,17 @@ describe("systémová nastavení", () => {
 });
 
 describe("přímý vstup do části Nastavení", () => {
+  it("otevře Nastavení přímo na zvukových zdrojích", async () => {
+    const settings = await renderSettings({ initialTab: "audio" });
+    try {
+      const selectedTab = settings.document.querySelector('[role="tab"][aria-selected="true"]');
+      expect(selectedTab?.id).toBe("settings-tab-audio");
+      expect(settings.document.querySelector("#settings-panel-audio")?.hidden).toBe(false);
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
   it("otevře Nahrávky z hlavního panelu a přijímá jen známé záložky", async () => {
     const settings = await renderSettings({ initialTab: "recordingQueue" });
     try {
@@ -1337,6 +1356,48 @@ describe("přímý vstup do části Nastavení", () => {
 
       await React.act(async () => settings.requestSettingsTab("unknown"));
       expect(selectedTab()?.id).toBe("settings-tab-account");
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("sjednocuje Teď, Můj den a Nastavení a LuTrack ponechá bez ovládání", async () => {
+    const settings = await renderSettings();
+    try {
+      const navigation = settings.document.querySelector(
+        '[aria-label="Hlavní navigace LuDone Desktop"]',
+      );
+      expect([...navigation.querySelectorAll("button")].map((button) => button.textContent.trim()))
+        .toEqual(["Teď", "Můj den", "Nastavení"]);
+      expect(settings.document.querySelector(".settings-window")?.getAttribute("data-page"))
+        .toBe("settings");
+
+      await React.act(async () => {
+        [...navigation.querySelectorAll("button")]
+          .find((button) => button.textContent.trim() === "Můj den")
+          .click();
+        await Promise.resolve();
+      });
+
+      expect(settings.document.querySelector(".settings-window")?.getAttribute("data-page"))
+        .toBe("day");
+      expect(settings.document.querySelector(".desktop-day-intro h1")?.textContent)
+        .toBe("Stopa dne");
+      expect(navigation.querySelector('[aria-current="page"]')?.textContent.trim())
+        .toBe("Můj den");
+      expect(settings.document.querySelector(".recordings-dashboard")).toBeTruthy();
+      expect(settings.document.querySelector('[aria-label="LuTrack připravujeme"]')?.textContent)
+        .toContain("žádný pracovní čas neměří");
+      expect(settings.document.querySelector('[aria-label="LuTrack připravujeme"] button'))
+        .toBeNull();
+
+      await React.act(async () => {
+        [...navigation.querySelectorAll("button")]
+          .find((button) => button.textContent.trim() === "Teď")
+          .click();
+        await Promise.resolve();
+      });
+      expect(settings.ludone.returnToNowPanel).toHaveBeenCalledOnce();
     } finally {
       await settings.cleanup();
     }

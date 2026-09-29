@@ -1,3 +1,5 @@
+import luDoneMark from "../assets/LuDone.svg";
+
 const baseProps = {
   width: 20,
   height: 20,
@@ -10,180 +12,145 @@ const baseProps = {
   "aria-hidden": true,
 };
 
-export function LuDoneMark({ size = 28, variant = "default" }) {
-  if (variant === "panel") {
-    return (
-      <svg width={size} height={size} viewBox="0 0 22 22" fill="none" aria-hidden="true">
-        <rect width="22" height="22" rx="6" fill="currentColor" />
-        <path
-          d="M4 18 10 6l4 8 6-5"
-          transform="translate(4.5 4.5) scale(.5416667)"
-          stroke="var(--mark-ink, #171717)"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
+function OpusIcon({ name, size = 20 }) {
+  const wideGlyphs = {
+    arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
+    down: <path d="m6 9 6 6 6-6" />,
+    edit: <path d="m4 16-1 5 5-1L20 8l-4-4ZM14 6l4 4" />,
+    file: <path d="M5 3h9l5 5v13H5ZM14 3v6h5M9 14h6M9 17h4" />,
+    folder: <path d="M3 6h6l2 3h10v11H3Z" />,
+    keyboard: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M6 9h1m3 0h1m3 0h1m3 0h1M6 13h1m3 0h1m3 0h1m3 0h1M7 16h10" /></>,
+    link: <><path d="m9 15 6-6M7 10l-3 3a4 4 0 0 0 6 6l3-3M11 8l3-3a4 4 0 0 1 6 6l-3 3" /></>,
+    play: <path d="m8 5 11 7-11 7Z" fill="currentColor" stroke="none" />,
+    plus: <path d="M12 4v16M4 12h16" />,
+    refresh: <path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 14 6M4 12a8 8 0 0 0 14 6" />,
+    trash: <path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7" />,
+    user: <><circle cx="12" cy="8" r="4" /><path d="M4 22v-3a8 8 0 0 1 16 0v3" /></>,
+    download: <path d="M12 3v13m-5-5 5 5 5-5M4 16v5h16v-5" />,
+  };
+  const isWide = Object.hasOwn(wideGlyphs, name);
+  const props = {
+    width: size,
+    height: size,
+    viewBox: isWide ? "0 0 24 24" : "0 0 16 16",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: isWide ? 1.7 : 1.5,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+  };
 
+  const glyphs = {
+    alert: <><path d="M6 1.4 11.2 10.5H.8Z" /><path d="M6 4.8v2.6" /><circle cx="6" cy="9" r=".75" fill="currentColor" stroke="none" /></>,
+    back: <path d="M10 3.5 5.5 8l4.5 4.5" />,
+    bolt: <path d="M9 2 4 9h4l-1 5 5-7H8z" />,
+    check: <path d="M2.5 6.3 5 8.6l4.6-5" />,
+    close: <path d="m4 4 8 8M12 4l-8 8" />,
+    external: <path d="M6 3.5h6.5V10M12.3 3.7 4 12" />,
+    gear: <><path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7" /><circle cx="11" cy="4.5" r="1.6" /><circle cx="5" cy="11.5" r="1.6" /></>,
+    mac: <><rect x="2" y="2.3" width="8" height="5.6" /><path d="M.8 10h10.4" /></>,
+    search: <><circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3.5 3.5" /></>,
+    stop: <rect x="4" y="4" width="8" height="8" fill="currentColor" stroke="none" />,
+    wait: <><circle cx="6" cy="6" r="4.3" /><path d="M6 3.8V6l1.6 1" /></>,
+    wave: <path d="M2 8h1M5 5.5v5M8 3v10M11 5v6M14 8h-.2" />,
+    window: <><rect x="2" y="3" width="12" height="10" /><path d="M2 6h12" /></>,
+    upload: <><path d="M6 10V2.5M3 5.3l3-2.9 3 2.9" /><path d="M1 11v3h10v-3" /></>,
+    wifi: <><path d="M2 6.2a8.5 8.5 0 0 1 12 0M4.3 8.6a5.2 5.2 0 0 1 7.4 0M6.5 11a2 2 0 0 1 3 0" /></>,
+    wifiOff: <><path d="M2 6.2a8.5 8.5 0 0 1 12 0M4.3 8.6a5.2 5.2 0 0 1 7.4 0M6.5 11a2 2 0 0 1 3 0" opacity=".35" /><path d="m3 2.5 10 11" /></>,
+    work: <><circle cx="8" cy="8" r="5.8" /><path d="M8 4.8v3.4l2.3 1.4" /></>,
+  };
+
+  return <svg {...props}>{wideGlyphs[name] ?? glyphs[name]}</svg>;
+}
+
+export function LuDoneMark({ size = 28, variant = "default" }) {
+  return <img className={`ludone-mark${variant === "panel" ? " ludone-mark--panel" : ""}`} src={luDoneMark} width={size} height={size} alt="" />;
+}
+
+export function LuDoneGlyph({ size = 18 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      aria-hidden="true"
-    >
-      <rect width="32" height="32" rx="10" fill="currentColor" />
-      <path
-        d="M10 8.5v9.25c0 3.3 2.35 5.75 6 5.75s6-2.45 6-5.75V8.5"
-        stroke="var(--mark-ink, #171717)"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="m13 16 2.2 2.2L20 13.4"
-        stroke="var(--mark-ink, #171717)"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <g transform="scale(.02)">
+        <rect x="363.43" y="479.05" width="615.7" height="103.05" transform="translate(-143.27 792.56) rotate(-56.15)" />
+        <rect x="352.1" y="457.81" width="103.05" height="403.78" transform="translate(-369.09 627.47) rotate(-56.15)" />
+        <rect x="618.07" y="771.07" width="403.78" height="103.05" transform="translate(-329.27 654.46) rotate(-36.77)" />
+      </g>
     </svg>
   );
 }
 
 export function MicIcon({ variant = "default" }) {
-  if (variant === "idle") {
-    return (
-      <svg {...baseProps} strokeLinejoin={undefined}>
-        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg {...baseProps}>
-      <rect x="9" y="3" width="6" height="11" rx="3" />
-      <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6" />
-    </svg>
-  );
+  return <OpusIcon name="wave" size={variant === "idle" ? 18 : 20} />;
 }
 
 export function TimerIcon({ variant = "default" }) {
-  if (variant === "idle") {
-    return (
-      <svg {...baseProps} strokeLinejoin={undefined}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg {...baseProps}>
-      <circle cx="12" cy="13" r="8" />
-      <path d="M12 9v4l2.75 1.75M9 2h6M12 2v3" />
-    </svg>
-  );
+  return <OpusIcon name="work" size={variant === "idle" ? 18 : 20} />;
 }
 
 export function AccessDeniedIcon() {
-  return (
-    <svg {...baseProps}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="m15 9-6 6M9 9l6 6" />
-    </svg>
-  );
+  return <OpusIcon name="alert" />;
 }
 
 export function OfflineIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="M2 2l20 20" />
-      <path d="M5 12.55a11 11 0 0 1 5.2-2.4M10.7 5.05a16 16 0 0 1 10.3 4.5M1.4 8.9A16 16 0 0 1 5.7 6" />
-      <path d="M8.5 16.1a6 6 0 0 1 7 0M12 20h.01" />
-    </svg>
-  );
+  return <OpusIcon name="wifiOff" />;
 }
 
 export function SettingsIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="M3 6h7M13 6h8M3 12h3M9 12h12M3 18h9M15 18h6" />
-      <circle cx="12" cy="6" r="2" />
-      <circle cx="7" cy="12" r="2" />
-      <circle cx="13" cy="18" r="2" />
-    </svg>
-  );
+  return <OpusIcon name="gear" />;
 }
 
 export function ArchiveIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="M3 6h18v14H3zM2 3h20v3H2z" />
-      <path d="M9 10h6" />
-    </svg>
-  );
+  return <OpusIcon name="folder" />;
 }
 
 export function CloseIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="m7 7 10 10M17 7 7 17" />
-    </svg>
-  );
+  return <OpusIcon name="close" />;
 }
 
 export function ArrowRightIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
+  return <OpusIcon name="arrow" />;
+}
+
+export function ArrowLeftIcon() {
+  return <OpusIcon name="back" />;
 }
 
 export function CheckIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="m5 12 4 4L19 6" />
-    </svg>
-  );
+  return <OpusIcon name="check" size={16} />;
 }
 
 export function BrowserIcon() {
-  return (
-    <svg {...baseProps}>
-      <rect x="3" y="4" width="18" height="16" rx="3" />
-      <path d="M3 9h18M7 6.5h.01M10 6.5h.01" />
-    </svg>
-  );
+  return <OpusIcon name="window" />;
 }
 
 export function VolumeIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="M11 5 6.5 9H3v6h3.5L11 19V5ZM15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" />
-    </svg>
-  );
+  return <OpusIcon name="wave" />;
 }
 
 export function CloudIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="M7 18h11a4 4 0 0 0 .7-7.94A7 7 0 0 0 5.22 8.7 4.7 4.7 0 0 0 7 18Z" />
-      <path d="m9 13 3-3 3 3M12 10v6" />
-    </svg>
-  );
+  return <OpusIcon name="upload" />;
 }
 
 export function UserIcon() {
-  return (
-    <svg {...baseProps}>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
-    </svg>
-  );
+  return <OpusIcon name="user" />;
+}
+
+export function KeyboardIcon() {
+  return <OpusIcon name="keyboard" />;
+}
+
+export function RefreshIcon() {
+  return <OpusIcon name="refresh" />;
+}
+
+export function PlayIcon() {
+  return <OpusIcon name="play" />;
+}
+
+
+export function WaitingIcon() {
+  return <OpusIcon name="wait" />;
 }
 
 export function LockIcon() {
@@ -196,9 +163,5 @@ export function LockIcon() {
 }
 
 export function ChevronDownIcon() {
-  return (
-    <svg {...baseProps}>
-      <path d="m7 10 5 5 5-5" />
-    </svg>
-  );
+  return <OpusIcon name="down" />;
 }

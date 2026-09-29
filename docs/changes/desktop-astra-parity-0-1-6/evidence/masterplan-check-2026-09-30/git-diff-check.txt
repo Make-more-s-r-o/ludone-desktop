@@ -1,0 +1,17 @@
+$ git diff --cached --check
+docs/changes/desktop-astra-parity-0-1-6/progress/index.html:395: trailing whitespace.
++              
+docs/changes/desktop-astra-parity-0-1-6/progress/index.html:399: trailing whitespace.
++              
+docs/changes/desktop-astra-parity-0-1-6/progress/index.html:403: trailing whitespace.
++              
+docs/changes/desktop-astra-parity-0-1-6/progress/index.html:407: trailing whitespace.
++              
+docs/changes/desktop-astra-parity-0-1-6/progress/index.html:411: trailing whitespace.
++              
+docs/changes/desktop-astra-parity-0-1-6/progress/index.html:415: trailing whitespace.
++              
+docs/changes/desktop-astra-parity-0-1-6/progress/index.html:419: trailing whitespace.
++              
+
+EXIT_CODE=2

@@ -1,0 +1,302 @@
+{
+  "status": "FAIL",
+  "exitCode": 1,
+  "verification": "🧪",
+  "fixtureOnly": true,
+  "productionPreloadLoaded": false,
+  "networkAttempts": 0,
+  "kontrolniNula": {
+    "networkWrites": 0,
+    "productionIpcCalls": 0
+  },
+  "results": [
+    {
+      "name": "day-loading",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/day-loading.png"
+    },
+    {
+      "name": "day-empty",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/day-empty.png"
+    },
+    {
+      "name": "day-error-retry",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/day-error-retry.png"
+    },
+    {
+      "name": "detail-local",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "sendRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-local.png"
+    },
+    {
+      "name": "detail-queued",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-queued.png"
+    },
+    {
+      "name": "detail-sent",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-sent.png"
+    },
+    {
+      "name": "detail-verified",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000001",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "openRecordingInLuDone",
+          "value": "40000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-verified.png"
+    },
+    {
+      "name": "detail-error",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "retryRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-error.png"
+    },
+    {
+      "name": "detail-limit",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000001",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-limit.png"
+    },
+    {
+      "name": "detail-owner",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "claimRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000001",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-owner.png"
+    },
+    {
+      "name": "detail-missing",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-missing.png"
+    },
+    {
+      "name": "detail-verify-error",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000001",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/detail-verify-error.png"
+    },
+    {
+      "name": "auth-signed-in",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/auth-signed-in.png"
+    },
+    {
+      "name": "auth-expired",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/auth-expired.png"
+    },
+    {
+      "name": "auth-oauth-pending-cancel",
+      "status": "FAIL",
+      "fixtureOnly": true,
+      "error": "Stav se neobjevil: document.body.textContent.includes(\"Přihlásit v prohlížeči\")",
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/auth-oauth-pending-cancel.png"
+    },
+    {
+      "name": "update-available",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/update-available.png"
+    },
+    {
+      "name": "update-downloading",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/update-downloading.png"
+    },
+    {
+      "name": "update-install-waits",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "calls": [
+        {
+          "name": "installUpdate",
+          "version": "0.1.7"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-e2e-states/.runtime/astra-state-e2e/2026-09-29T22-46-07.810Z/update-install-waits.png"
+    }
+  ],
+  "unverified": [
+    "Produkční OAuth, serverové potvrzení a upload",
+    "Skutečný Mac audio-smoke a ui-smoke",
+    "Vizuální shoda s Astrou a úplnost Opus ikon",
+    "Skutečné blokování instalace hlavním procesem při nahrávání; testuje se pouze renderer odpovědi installRequested",
+    "Pád během nahrávání, výpadek zdroje a souběh uploadů"
+  ]
+}
