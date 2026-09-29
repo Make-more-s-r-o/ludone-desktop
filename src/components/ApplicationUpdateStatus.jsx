@@ -42,9 +42,9 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
     const applyActiveStatus = (next) => {
       if (active) applyStatus(next);
     };
-    const unsubscribe = window.ludone.onUpdateStatusChanged?.(applyActiveStatus);
+    const unsubscribe = window.ludone?.onUpdateStatusChanged?.(applyActiveStatus);
     // Čtení po přihlášení listeneru pokryje i stažení před otevřením či reloadem panelu.
-    Promise.resolve().then(() => window.ludone.getUpdateStatus?.()).then(applyActiveStatus).catch(() => {});
+    Promise.resolve().then(() => window.ludone?.getUpdateStatus?.()).then(applyActiveStatus).catch(() => {});
     return () => {
       active = false;
       unsubscribe?.();

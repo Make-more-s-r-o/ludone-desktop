@@ -940,6 +940,7 @@ function loadPreload(invokeResult = true) {
   const invoke = vi.fn(async (...args) => (
     typeof invokeResult === "function" ? invokeResult(...args) : invokeResult
   ));
+  const send = vi.fn();
   const listeners = new Map();
   const evaluatePreload = Function(
     "require",
@@ -960,7 +961,7 @@ function loadPreload(invokeResult = true) {
         removeListener: vi.fn((channel, listener) => {
           if (listeners.get(channel) === listener) listeners.delete(channel);
         }),
-        send: vi.fn(),
+        send,
       },
     };
   });
@@ -972,6 +973,7 @@ function loadPreload(invokeResult = true) {
       return listener({}, ...payload);
     },
     invoke,
+    send,
   };
 }
 
@@ -1017,7 +1019,44 @@ function openSettingsAndCreateEvent(harness, initialTab) {
   };
 }
 
+describe("oddělení cest testovacího běhu", () => {
+  it("běžná aplikace nepřepisuje systémovou složku Stažené", async () => {
+    const harness = await loadMain({ env: { LUDONE_E2E: undefined } });
+
+    expect(harness.electron.app.setPath).not.toHaveBeenCalledWith("downloads", expect.any(String));
+  });
+
+  it("E2E přesune Stažené do izolovaného datového adresáře", async () => {
+    const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-e2e-paths-"));
+    temporaryRoots.add(userDataPath);
+    const dataRoot = path.join(userDataPath, "isolated-data");
+    const harness = await loadMain({
+      userDataPath,
+      env: { LUDONE_E2E: "1", LUDONE_DATA_DIR: dataRoot },
+    });
+
+    expect(harness.electron.app.setPath).toHaveBeenCalledWith(
+      "downloads",
+      path.join(dataRoot, "downloads"),
+    );
+  });
+});
+
 describe("zobrazení přehledu nahrávek z hlavního panelu", () => {
+  it("preload dovolí jen známé cesty z navigace desktopu", () => {
+    const preload = loadPreload();
+
+    preload.api.openSettings("audio");
+    expect(preload.send).toHaveBeenCalledExactlyOnceWith("settings:open", "audio");
+    preload.send.mockClear();
+    preload.api.openSettings("day");
+    expect(preload.send).toHaveBeenCalledExactlyOnceWith("settings:open", "day");
+    preload.api.returnToNowPanel();
+    expect(preload.send).toHaveBeenLastCalledWith("settings:return-to-panel");
+    expect(preload.send.mock.calls.at(-1)).toHaveLength(1);
+    expect(() => preload.api.openSettings("unknown")).toThrow(/jen v podporované části/u);
+  });
+
   it("otevře širší okno rovnou na nahrávkách a nepřijímá neznámé záložky", async () => {
     const harness = await loadMain();
     await harness.runReady();
@@ -1038,6 +1077,48 @@ describe("zobrazení přehledu nahrávek z hlavního panelu", () => {
     consoleError.mockRestore();
     expect(settings.loadCalls).toHaveLength(1);
     expect(harness.windows).toHaveLength(2);
+  });
+
+  it("otevře nastavení zvukových zdrojů přímo na odpovídající záložce", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const panel = harness.windows[0];
+    const panelEvent = { sender: panel.webContents, senderFrame: panel.webContents.mainFrame };
+
+    harness.ipcListeners.get("settings:open")(panelEvent, "audio");
+
+    expect(harness.windows[1].loadCalls.at(-1).options).toEqual({
+      hash: "settings",
+      query: { settingsTab: "audio" },
+    });
+  });
+
+  it("otevře Můj den a návrat do Teď povolí pouze ověřenému oknu Nastavení", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness, "day");
+    const settings = harness.windows[1];
+    const panel = harness.windows[0];
+
+    expect(settings.loadCalls.at(-1).options).toEqual({
+      hash: "settings",
+      query: { settingsTab: "day" },
+    });
+
+    const returnToPanel = harness.ipcListeners.get("settings:return-to-panel");
+    expect(returnToPanel).toBeTypeOf("function");
+    panel.hide();
+    returnToPanel(settingsEvent, "unexpected");
+    expect(panel.isVisible()).toBe(false);
+    expect(settings.isDestroyed()).toBe(false);
+    returnToPanel(panelEvent);
+    expect(panel.isVisible()).toBe(false);
+    expect(settings.isDestroyed()).toBe(false);
+
+    returnToPanel(settingsEvent);
+    expect(panel.isVisible()).toBe(true);
+    expect(panel.focused).toBe(true);
+    expect(settings.isDestroyed()).toBe(true);
   });
 
   it("přesměruje už otevřené okno bez nového načtení", async () => {
@@ -7282,6 +7363,30 @@ describe("bezpečné ukončení aplikace", () => {
 });
 
 describe("produkční zapojení automatických aktualizací", () => {
+  it("nedovolí testovací staženou verzi ve zkompilované aplikaci", async () => {
+    const env = {
+      LUDONE_E2E: "1",
+      LUDONE_DESIGN_E2E: "1",
+      LUDONE_E2E_UPDATE_FIXTURE: "downloaded",
+    };
+    const readPackaged = async (isPackaged) => {
+      const harness = await loadMain({ env, isPackaged });
+      await harness.runReady();
+      const contents = harness.windows[0].webContents;
+      const event = { sender: contents, senderFrame: contents.mainFrame };
+      return harness.ipcHandlers.get("updater:get-state")(event);
+    };
+
+    await expect(readPackaged(false)).resolves.toMatchObject({
+      downloadedVersion: "0.1.6",
+      installDeferred: false,
+    });
+    await expect(readPackaged(true)).resolves.toMatchObject({
+      downloadedVersion: null,
+      revision: 0,
+    });
+  });
+
   it("zkontroluje vydání po startu a znovu po šesti hodinách", async () => {
     vi.useFakeTimers();
     const autoUpdater = fakeAutoUpdater();
@@ -8086,7 +8191,8 @@ describe("viditelnost automatických aktualizací v panelu", () => {
       expect(panel.document.querySelector('[data-testid="update-downloaded"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="update-check-failed"]')).toBeNull();
       if (onboardingComplete) {
-        expect(panel.document.querySelector('[data-testid="update-check-now"]')?.disabled).toBe(true);
+        expect(panel.document.querySelector('[data-testid="update-check-now"]'))
+          .toBeNull();
       }
     } finally {
       await panel.close();

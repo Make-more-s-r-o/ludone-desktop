@@ -1,0 +1,73 @@
+{
+  "task": "T-07",
+  "measuredAt": "2026-09-29",
+  "verification": "🧪 lokální kontroly zelené; dodání čeká na masterplan gate a fyzickou Mac přejímku",
+  "securityReview": {
+    "reviewer": "Sol, read-only",
+    "base": "f036788",
+    "findingCount": 0,
+    "summary": "Bez nových actionable security nálezů v kontrolovaném diffu. Kontrolováno proti merge-base f036788: session/tokeny, vlastnictví/idempotence fronty, IPC sender guard, update fixture guard a audio IPC. Testovací updater fixture je omezená na IS_TEST_RUN && !app.isPackaged && LUDONE_DESIGN_E2E; nový IPC settings:return-to-panel ověřuje důvěryhodného odesílatele a prázdný payload; obnovení fronty zachovává existujícího vlastníka i descriptor."
+  },
+  "visualReview": {
+    "status": "reviewed-with-documented-product-differences",
+    "reviewer": "nezávislý Sol reviewer, read-only",
+    "verdict": "Kompozice je přijatelnou pravdivou adaptací schválené Astry; nejde o pixelovou shodu.",
+    "reviewedAt": "2026-09-29T20:56:22Z",
+    "remainingDifferences": [
+      "LuTrack neměří čas a neobsahuje fiktivní projekt/pracovní záznam.",
+      "Nastavení a dostupné akce odrážejí skutečně odhlášený účet a místní záznam.",
+      "Stavy a texty reference s ukázkovými daty se nepřenášejí do produkčního rendereru."
+    ],
+    "details": "evidence/e2e-2026-09-29/final/comparison.html"
+  },
+  "commands": [
+    {
+      "command": "npm run gates",
+      "exitCode": 0,
+      "outputFile": "../e2e-2026-09-29/final/gates-output.txt"
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "outputFile": "../e2e-2026-09-29/final/build-output.txt"
+    },
+    {
+      "command": "npm run test:design:e2e",
+      "exitCode": 0,
+      "outputFile": "../e2e-2026-09-29/final/output.txt"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "output": ""
+    }
+  ],
+  "masterplan": {
+    "phase": "project_context",
+    "planVersion": "draft",
+    "guard": "plan-approved",
+    "mpLint": "76 findings, exit 1",
+    "mpProgressCheck": "generated HTML is stale, exit 1",
+    "evidence": "evidence/masterplan-check-2026-09-29/"
+  },
+  "delivery": {
+    "pr": "not created",
+    "ci": "not run",
+    "releaseTag": "not pushed",
+    "publishWorkflow": "not started"
+  },
+  "manualMacVerification": {
+    "status": "🟡 čeká na fyzickou přejímku",
+    "items": [
+      "skutečný mikrofon a systémový zvuk",
+      "živé produkční nahrání a ověření na serveru",
+      "veřejný aktualizační feed, download a instalace"
+    ]
+  },
+  "kontrolniNula": {
+    "backendOrWebFilesChanged": 0,
+    "unauthorizedReleaseTagsPushed": 0,
+    "publishRunsStarted": 0,
+    "evidence": "aktuální změněné cesty obsahují pouze desktopový kód a jeho dokumentaci/evidence"
+  }
+}

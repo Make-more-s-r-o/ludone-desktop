@@ -6,7 +6,7 @@ const AUTH_ORIGINS = Object.freeze([
 ]);
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const SETTINGS_TAB_CHANNEL = "settings:select-tab";
-const SETTINGS_TABS = Object.freeze(["account", "recordingQueue"]);
+const SETTINGS_TABS = Object.freeze(["account", "audio", "recordingQueue", "day"]);
 const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
@@ -225,6 +225,7 @@ function onTrayCommand(callback) {
 contextBridge.exposeInMainWorld("ludone", {
   runtime: Object.freeze({
     resetOnboarding: process.env.LUDONE_RESET_ONBOARDING === "1",
+    designE2E: process.env.LUDONE_E2E === "1" && process.env.LUDONE_DESIGN_E2E === "1",
   }),
   beginAuth: () => ipcRenderer.invoke("auth:begin"),
   cancelAuth: () => ipcRenderer.invoke("auth:cancel"),
@@ -346,12 +347,13 @@ contextBridge.exposeInMainWorld("ludone", {
   setPanelContentHeight,
   reportTrayFacts: (facts) => ipcRenderer.send("tray:report-facts", facts),
   hidePanel: () => ipcRenderer.send("panel:hide"),
+  returnToNowPanel: () => ipcRenderer.send("settings:return-to-panel"),
   openSettings: (initialTab) => {
     if (initialTab === undefined) {
       ipcRenderer.send("settings:open");
       return;
     }
-    if (!["account", "recordingQueue"].includes(initialTab)) {
+    if (!SETTINGS_TABS.includes(initialTab)) {
       throw new TypeError("Nastavení lze otevřít jen v podporované části");
     }
     ipcRenderer.send("settings:open", initialTab);

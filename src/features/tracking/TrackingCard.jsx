@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { TimerIcon } from "../../components/Icons.jsx";
+import { ArchiveIcon, ChevronDownIcon, PlayIcon, TimerIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
 
 function formatCompactElapsed(totalSeconds) {
@@ -69,14 +69,54 @@ export function TrackingCard({
   }, [active, disabled, trayCommand]);
 
   if (disabled) {
+    const date = new Intl.DateTimeFormat("cs-CZ", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(new Date());
     return (
-      <section className="feature-card future-feature" aria-label="LuTrack">
-        <span className="future-feature__icon"><TimerIcon variant="idle" /></span>
-        <span className="future-feature__copy">
-          <strong>LuTrack</strong>
-          <small>Časovač ještě není součástí desktopové verze.</small>
-        </span>
-        <span className="future-feature__status">Připravujeme</span>
+      <section className="feature-card future-feature astra-work-hero" aria-label="LuTrack" data-module-status="preparing" data-testid="future-work-area">
+        <div className="astra-work-hero__topline">
+          <small className="eyebrow astra-work-hero__date">{date}</small>
+          <span className="future-feature__status">Připravujeme</span>
+          <p className="astra-work-hero__recording-note">
+            Pracovní čas se zatím neměří. LuTrack připravujeme.
+          </p>
+        </div>
+        <h1>Pracovní čas se připravuje.</h1>
+        <p>Nahrávání schůzek funguje.</p>
+        <button
+          type="button"
+          className="astra-work-hero__project"
+          aria-label="Výběr projektu · LuTrack se připravuje"
+          disabled
+          title="Projekt bude dostupný po zapojení LuTracku"
+        >
+          <span className="astra-work-hero__project-icon" aria-hidden="true"><ArchiveIcon /></span>
+          <span className="astra-work-hero__project-copy">
+            <strong>Výběr projektu</strong>
+            <small>Po zapojení LuTracku</small>
+          </span>
+          <ChevronDownIcon />
+        </button>
+        <input
+          className="astra-work-hero__task"
+          type="text"
+          aria-label="Pracovní úkol · LuTrack se připravuje"
+          placeholder="Pracovní úkoly nejsou zapojené"
+          disabled
+        />
+        <label className="astra-work-hero__task-label" aria-hidden="true">Na čem budete pracovat</label>
+        <button
+          type="button"
+          className="astra-work-hero__start"
+          disabled
+          aria-label="Začít práci · LuTrack se připravuje"
+          title="LuTrack zatím není zapojený"
+        >
+          <PlayIcon />
+          Začít práci
+        </button>
       </section>
     );
   }

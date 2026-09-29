@@ -1,0 +1,3 @@
+NÁLEZ: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity/docs/changes/desktop-astra-parity-0-1-6/progress/index.html se liší od čerstvého renderu status.json (banner čerstvosti se neporovnává).
+
+EXIT_CODE=1

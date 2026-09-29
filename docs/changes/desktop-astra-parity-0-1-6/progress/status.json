@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 2,
+  "tier": "L",
+  "project": {
+    "id": "desktop-astra-parity-0-1-6",
+    "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
+    "goal": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
+    "updatedAt": "2026-09-24T10:15:20.286Z",
+    "planVersion": "draft",
+    "problem": "Záměr čeká na doplnění popisu problému.",
+    "targetOutcome": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
+    "audiences": [],
+    "outOfScope": []
+  },
+  "phase": "project_context",
+  "guard": {
+    "requires": [
+      "plan-approved"
+    ]
+  },
+  "summary": {
+    "done": 0,
+    "inProgress": 0,
+    "blocked": 0,
+    "notStarted": 1
+  },
+  "features": [
+    {
+      "id": "DESKTOP-ASTRA-PARITY-0-1-6-01",
+      "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
+      "whatItGives": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
+      "scope": "draft",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Doplnit a schválit záměr.",
+      "evidence": []
+    }
+  ],
+  "screens": [],
+  "openQuestions": [],
+  "decisions": [],
+  "milestones": [
+    {
+      "id": "intent",
+      "name": "Záměr",
+      "status": "done",
+      "detail": "Fáze je dokončena."
+    },
+    {
+      "id": "project_context",
+      "name": "Kontext projektu",
+      "status": "current",
+      "detail": "Tato fáze právě probíhá."
+    },
+    {
+      "id": "discovery",
+      "name": "Zjištění",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    },
+    {
+      "id": "outcome_contract",
+      "name": "Kontrakt výsledku",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    },
+    {
+      "id": "design",
+      "name": "Návrh",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    },
+    {
+      "id": "spec",
+      "name": "Specifikace",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    },
+    {
+      "id": "plan",
+      "name": "Plán",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    },
+    {
+      "id": "execution",
+      "name": "Implementace",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    },
+    {
+      "id": "review_delivery",
+      "name": "Kontrola a dodání",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    },
+    {
+      "id": "archive",
+      "name": "Archiv",
+      "status": "upcoming",
+      "detail": "Tato fáze teprve přijde."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-01",
+      "title": "Připravit změnu „LuDone Desktop 0.1.6 – kompletní Astra Nit dne“",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [],
+      "packet": "tasks/T-01.md"
+    }
+  ],
+  "evidence": [],
+  "latestChanges": [
+    {
+      "at": "2026-09-24T10:15:20.286Z",
+      "text": "Design byl schválen: varianta Astra Nit dne, schválil/a Dan."
+    },
+    {
+      "at": "2026-09-24T10:15:11.709Z",
+      "text": "Design byl schválen: varianta Astra Nit dne, schválil/a Dan."
+    },
+    {
+      "at": "2026-09-24T07:35:09.971Z",
+      "text": "Fáze se změnila z „intent“ na „project_context“."
+    },
+    {
+      "at": "2026-09-24T05:17:42.096Z",
+      "text": "Změna byla založena jako tier L."
+    }
+  ],
+  "tryNow": [],
+  "notes": [],
+  "hub": {
+    "repo": "ludone-desktop",
+    "path": "docs/changes/desktop-astra-parity-0-1-6"
+  }
+}

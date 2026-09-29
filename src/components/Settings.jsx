@@ -4,7 +4,6 @@ import { RecordingsDashboard } from "../features/recordings/RecordingsDashboard.
 import {
   ArchiveIcon,
   CheckIcon,
-  CloseIcon,
   CloudIcon,
   MicIcon,
   SettingsIcon,
@@ -13,8 +12,11 @@ import {
 } from "./Icons.jsx";
 import { Toggle } from "./Toggle.jsx";
 import { SettingsAudioTest } from "./SettingsAudioTest.jsx";
+import { DesktopNavigation } from "./DesktopNavigation.jsx";
+import { DesktopConnectivityNotice, DesktopMenubar, DesktopTitlebar } from "./DesktopChrome.jsx";
+import { ApplicationUpdateStatus } from "./ApplicationUpdateStatus.jsx";
 import { UploadCompanySelector } from "./UploadCompanySelector.jsx";
-import luDoneMark from "../assets/LuDone.svg";
+import { getThemePreference, persistThemePreference } from "../lib/theme.js";
 
 const STORAGE_KEY = "ludone.prototype.settings";
 const DEFAULTS = {
@@ -258,12 +260,17 @@ function useSystemBooleanSetting(getterName, setterName) {
 }
 
 export function SettingsApp() {
+  const [initialTab] = useState(() => new URL(window.location.href).searchParams.get("settingsTab"));
   const [activeTab, setActiveTab] = useState(() => (
-    new URL(window.location.href).searchParams.get("settingsTab") === "recordingQueue"
-      ? "recordingQueue"
-      : "account"
+    initialTab === "day" ? "recordingQueue"
+      : (SETTINGS_TABS.some((item) => item.id === initialTab) ? initialTab : "account")
   ));
+  const [activePage, setActivePage] = useState(() => (
+    ["day", "recordingQueue"].includes(initialTab) ? "day" : "settings"
+  ));
+  const [recordingDetailOpen, setRecordingDetailOpen] = useState(false);
   const [settings, setSettings] = useState(loadSettings);
+  const [themePreference, setThemePreference] = useState(getThemePreference);
   const [account, setAccount] = useState({ state: "unknown", identity: null });
   const [destination, setDestination] = useState({ state: "unknown", origin: null });
   const [device, setDevice] = useState({ state: "unknown", name: null });
@@ -287,10 +294,85 @@ export function SettingsApp() {
 
   useEffect(() => {
     const unsubscribe = window.ludone?.onSettingsTabRequested?.((tab) => {
-      if (SETTINGS_TABS.some((item) => item.id === tab)) setActiveTab(tab);
+      if (tab === "day") {
+        setActivePage("day");
+        setActiveTab("recordingQueue");
+        setRecordingDetailOpen(false);
+      } else if (SETTINGS_TABS.some((item) => item.id === tab)) {
+        setActiveTab(tab);
+        setActivePage(tab === "recordingQueue" ? "day" : "settings");
+        setRecordingDetailOpen(false);
+      }
     });
     return () => unsubscribe?.();
   }, []);
+
+  const navigateToPage = (page) => {
+    if (page === "now") {
+      window.ludone.returnToNowPanel();
+      return;
+    }
+    if (page === "day") {
+      setActiveTab("recordingQueue");
+      setActivePage("day");
+      setRecordingDetailOpen(false);
+      return;
+    }
+    setActiveTab((current) => current === "recordingQueue" ? "account" : current);
+    setActivePage("settings");
+    setRecordingDetailOpen(false);
+  };
+
+  const navigateToSettingsTab = (tab) => {
+    setActiveTab(tab);
+    setActivePage(tab === "recordingQueue" ? "day" : "settings");
+    setRecordingDetailOpen(false);
+  };
+
+  useEffect(() => {
+    const content = document.querySelector(".settings-content");
+    if (!content) return;
+    if (typeof content.scrollTo === "function") content.scrollTo({ top: 0 });
+    else content.scrollTop = 0;
+  }, [activePage]);
+
+  const quickActions = [
+    {
+      id: "now",
+      label: "Teď",
+      description: "Zpět k nahrávání.",
+      icon: <MicIcon />,
+      onSelect: () => window.ludone.returnToNowPanel(),
+    },
+    {
+      id: "day",
+      label: "Můj den",
+      description: "Místní a odeslané nahrávky.",
+      icon: <ArchiveIcon />,
+      onSelect: () => navigateToPage("day"),
+    },
+    {
+      id: "recordings",
+      label: "Nahrávky",
+      description: "Fronta a bezpečné akce.",
+      icon: <CloudIcon />,
+      onSelect: () => navigateToSettingsTab("recordingQueue"),
+    },
+    {
+      id: "audio",
+      label: "Zvuk",
+      description: "Mikrofon a test nahrávání.",
+      icon: <VolumeIcon />,
+      onSelect: () => navigateToSettingsTab("audio"),
+    },
+    {
+      id: "account",
+      label: "Nastavení účtu",
+      description: "Přihlášení a předvolby aplikace.",
+      icon: <UserIcon />,
+      onSelect: () => navigateToSettingsTab("account"),
+    },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -470,7 +552,7 @@ export function SettingsApp() {
 
     event.preventDefault();
     const nextTab = SETTINGS_TABS[nextIndex];
-    setActiveTab(nextTab.id);
+    navigateToSettingsTab(nextTab.id);
     document.getElementById(`settings-tab-${nextTab.id}`)?.focus();
   };
 
@@ -605,23 +687,24 @@ export function SettingsApp() {
     : queueStatusText(diagnosticValues?.queue);
 
   return (
-    <main className="settings-window window-surface">
+    <div className="settings-app-frame">
+      <DesktopMenubar
+        status={signedIn ? "Přihlášeno" : "Místní režim"}
+        authState={account.state}
+        accountLabel={signedIn ? account.identity.name : "Nepřipojeno"}
+      />
+      <main className={`settings-window window-surface${recordingDetailOpen ? " settings-window--recording-detail" : ""}`} data-page={activePage}>
       <header className="settings-header">
-        <div className="settings-brand-lockup">
-          <img className="settings-brand-mark" src={luDoneMark} alt="" />
-          <span><strong>LuDone Desktop</strong><small>Nastavení</small></span>
-        </div>
-        <button
-          type="button"
-          className="icon-button"
-          aria-label="Zavřít nastavení"
-          onClick={() => window.ludone.closeSettings()}
-        >
-          <CloseIcon />
-        </button>
+        <DesktopTitlebar
+          closeLabel="Zavřít okno LuDone Desktop"
+          onClose={() => window.ludone.closeSettings()}
+          quickActions={quickActions}
+        />
       </header>
 
-      <nav className="settings-tabs" role="tablist" aria-label="Části nastavení">
+      <DesktopNavigation active={activePage} onNavigate={navigateToPage} />
+
+      <nav className="settings-tabs" role="tablist" aria-label="Části nastavení" hidden={activePage !== "settings"}>
         {SETTINGS_TABS.map((tab, index) => (
           <button
             key={tab.id}
@@ -632,7 +715,7 @@ export function SettingsApp() {
             aria-controls={`settings-panel-${tab.id}`}
             aria-selected={activeTab === tab.id}
             tabIndex={activeTab === tab.id ? 0 : -1}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => navigateToSettingsTab(tab.id)}
             onKeyDown={(event) => selectRelativeTab(event, index)}
           >
             <span className="settings-tab__icon" aria-hidden="true">
@@ -647,17 +730,45 @@ export function SettingsApp() {
       </nav>
 
       <div className="settings-content">
+        <DesktopConnectivityNotice />
+        <header className="desktop-settings-intro" hidden={activePage !== "settings"}>
+          <h1>Nastavení</h1>
+          <p>Účet, zvuk a ukládání nahrávek na tomto Macu.</p>
+        </header>
+        <ApplicationUpdateStatus
+          showVersion={false}
+          allowManualCheck={activePage === "settings"}
+        />
+        <section className="desktop-day-intro" hidden={activePage !== "day"}>
+          <p className="eyebrow">
+            {new Intl.DateTimeFormat("cs-CZ", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            }).format(new Date())}
+          </p>
+          <h1>Stopa dne</h1>
+          <p>Přehled nahrávek a jejich stav v LuDone.</p>
+        </section>
+        {activePage === "day" && (
+          <section className="day-tracking-placeholder" aria-label="LuTrack připravujeme" aria-disabled="true">
+            <span className="day-tracking-placeholder__copy">
+              <strong>LuTrack se připravuje</strong>
+              <small>Zatím se žádný pracovní čas neměří.</small>
+            </span>
+          </section>
+        )}
         <section
           id="settings-panel-account"
           className="settings-tab-panel"
           role="tabpanel"
           aria-labelledby="settings-tab-account"
-          hidden={activeTab !== "account"}
+          hidden={activePage !== "settings"}
         >
           <section className="settings-group" aria-labelledby="account-settings-title">
             <div className="settings-group__heading">
               <span><UserIcon /></span>
-              <div><p className="eyebrow">Účet</p><h2 id="account-settings-title">Tento Mac</h2></div>
+              <div><p className="eyebrow">Účet</p><h2 id="account-settings-title">Váš účet a nové nahrávky</h2></div>
             </div>
             <div
               className={`account-card account-card--${account.state}`}
@@ -672,53 +783,23 @@ export function SettingsApp() {
               <div className="account-card__facts">
                 {(!signedIn || account.identity.hasName) && (
                   <div className="settings-fact-row">
-                    <small>Přihlášen</small>
+                    <small>{signedIn ? "Přihlášen" : "Účet"}</small>
                     {signedIn ? (
                       <strong data-testid="settings-identity-name">{account.identity.name}</strong>
                     ) : (
                       <strong>
-                        {account.state === "signed-out" ? "Nikdo" : "Identita není známá"}
+                        {account.state === "signed-out" ? "Přihlas se v panelu LuDone" : "Identita není známá"}
                       </strong>
                     )}
                   </div>
                 )}
-                <div className="settings-fact-row">
+                <div className="settings-fact-row settings-fact-row--email">
                   <small>E-mail</small>
                   <strong
                     data-testid={signedIn ? "settings-identity-email" : undefined}
                   >
                     {signedIn ? account.identity.email : "—"}
                   </strong>
-                </div>
-                <div className="settings-fact-row">
-                  <small>Zařízení</small>
-                  <strong data-testid="settings-device">
-                    {device.name ?? "Název zařízení není známý"}
-                  </strong>
-                </div>
-                <div className="settings-fact-row">
-                  <small><label htmlFor="settings-environment">Prostředí</label></small>
-                  <select
-                    id="settings-environment"
-                    data-testid="settings-environment"
-                    aria-describedby="settings-environment-explanation"
-                    value={destination.origin ?? ""}
-                    disabled={
-                      destination.state !== "resolved"
-                      || environmentState.state === "busy"
-                      || logoutState.state === "busy"
-                    }
-                    onChange={(event) => void changeEnvironment(event.target.value)}
-                  >
-                    {destination.origin === null && (
-                      <option value="" disabled>Není známo</option>
-                    )}
-                    {AUTH_ENVIRONMENTS.map((environment) => (
-                      <option key={environment.origin} value={environment.origin}>
-                        {environment.label}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
               <span
@@ -736,14 +817,48 @@ export function SettingsApp() {
                 Pro odesílání nahrávek otevři panel LuDone a přihlas se znovu.
               </p>
             )}
-            <p
-              id="settings-environment-explanation"
-              className="settings-hint settings-environment-hint"
-              data-testid="settings-environment-explanation"
-            >
-              Prostředí určuje server, ke kterému se tento Mac přihlašuje a odesílá data.
-            </p>
             <UploadCompanySelector authState={{ ...account, issuer: destination.origin }} />
+            <div className="settings-row" data-testid="automatic-upload-setting">
+              <div>
+                <strong>Nové nahrávky odesílat automaticky</strong>
+                <small>Nahrávání spouštíš ručně. Platí jen pro nové záznamy.</small>
+              </div>
+              <Toggle
+                checked={automaticUpload.value}
+                disabled={!automaticUpload.loaded || automaticUpload.busy}
+                onChange={automaticUpload.update}
+                label="Automaticky odesílat nové nahrávky"
+              />
+            </div>
+            <div className="settings-row settings-row--environment" data-testid="settings-environment-row">
+              <div>
+                <strong><label htmlFor="settings-environment">Prostředí</label></strong>
+                <small id="settings-environment-explanation">
+                  Prostředí určuje server, ke kterému se tento Mac přihlašuje a odesílá data.
+                </small>
+              </div>
+              <select
+                id="settings-environment"
+                data-testid="settings-environment"
+                aria-describedby="settings-environment-explanation"
+                value={destination.origin ?? ""}
+                disabled={
+                  destination.state !== "resolved"
+                  || environmentState.state === "busy"
+                  || logoutState.state === "busy"
+                }
+                onChange={(event) => void changeEnvironment(event.target.value)}
+              >
+                {destination.origin === null && (
+                  <option value="" disabled>Není známo</option>
+                )}
+                {AUTH_ENVIRONMENTS.map((environment) => (
+                  <option key={environment.origin} value={environment.origin}>
+                    {environment.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div
               className="destination-row"
               data-testid="settings-destination"
@@ -790,28 +905,6 @@ export function SettingsApp() {
                 {environmentState.message}
               </p>
             )}
-            <div className="settings-divider" />
-            <div className="settings-row">
-              <div>
-                <strong>Zobrazovat i ikonu v Docku</strong>
-                <small>Zapni, když se ti ikona v liště schovává za notch nebo za jinou aplikaci.</small>
-              </div>
-              <Toggle
-                checked={dock.value}
-                disabled={!dock.loaded || dock.busy}
-                onChange={dock.update}
-                label="Zobrazovat i ikonu v Docku"
-              />
-            </div>
-            <div className="settings-row">
-              <div><strong>Spouštět po přihlášení do systému</strong></div>
-              <Toggle
-                checked={login.value}
-                disabled={!login.loaded || login.busy}
-                onChange={login.update}
-                label="Spouštět po přihlášení do systému"
-              />
-            </div>
           </section>
         </section>
 
@@ -820,50 +913,121 @@ export function SettingsApp() {
           className="settings-tab-panel"
           role="tabpanel"
           aria-labelledby="settings-tab-audio"
-          hidden={activeTab !== "audio"}
+          hidden={activePage !== "settings"}
         >
-          <section className="settings-group" aria-labelledby="recording-settings-title">
-            <div className="settings-group__heading">
-              <span><MicIcon /></span>
-              <div>
-                <p className="eyebrow">Doporučení</p>
-                <h2 id="recording-settings-title">Kdy nahrávat</h2>
-              </div>
-            </div>
-            <div className="settings-row settings-row--static">
-              <div><strong>Nahrávání spouštíš ručně.</strong></div>
-            </div>
-            <div className="settings-row">
-              <div>
-                <strong>Automaticky odesílat nové nahrávky</strong>
-                <small>Platí jen pro nahrávky zahájené po zapnutí. Starší záznamy se nezmění.</small>
-              </div>
-              <Toggle checked={automaticUpload.value}
-                disabled={!automaticUpload.loaded || automaticUpload.busy}
-                onChange={automaticUpload.update}
-                label="Automaticky odesílat nové nahrávky" />
-            </div>
-          </section>
-
           <section className="settings-group" aria-labelledby="audio-settings-title">
             <div className="settings-group__heading">
               <span><VolumeIcon /></span>
-              <div>
-                <p className="eyebrow">Dvě oddělené stopy</p>
-                <h2 id="audio-settings-title">Co se děje se zvukem</h2>
-              </div>
+              <div><h2 id="audio-settings-title">Zvuk schůzky</h2></div>
             </div>
-            <div className="settings-row settings-row--static">
-              <div><strong>Mikrofon</strong><small>Tvůj hlas se ukládá samostatně.</small></div>
-            </div>
-            <div className="settings-row settings-row--static">
-              <div>
-                <strong>Ostatní zvuk</strong>
-                <small>Je-li povolený, hlasy z hovoru se ukládají do druhé stopy.</small>
+            <p className="settings-audio-summary">
+              Jeden výsledný soubor: mikrofon vlevo, systémový zvuk vpravo.
+            </p>
+            <div className="settings-row settings-row--static settings-audio-source" data-testid="settings-audio-microphone">
+              <div className="settings-audio-source__name">
+                <MicIcon />
+                <span><strong>Mikrofon</strong><small>Levý kanál</small></span>
               </div>
+              <span className="settings-audio-source__state" data-status="unknown">Ověříš zkouškou</span>
+            </div>
+            <div className="settings-row settings-row--static settings-audio-source" data-testid="settings-audio-system">
+              <div className="settings-audio-source__name">
+                <VolumeIcon />
+                <span><strong>Systémový zvuk</strong><small>Pravý kanál</small></span>
+              </div>
+              <span className="settings-audio-source__state" data-status="unknown">Ověříš zkouškou</span>
             </div>
           </section>
-          {activeTab === "audio" && <SettingsAudioTest />}
+          {activePage === "settings" && activeTab === "audio" ? (
+            <SettingsAudioTest />
+          ) : (
+            <div className="settings-row settings-row--static settings-audio-action">
+              <div>
+                <strong>Zdroje a oprávnění</strong>
+                <small>Zkoušku spustíš až po otevření další obrazovky.</small>
+              </div>
+              <button
+                type="button"
+                className="button button--small"
+                data-testid="open-audio-test"
+                onClick={() => setActiveTab("audio")}
+              >
+                Otevřít zkoušku
+              </button>
+            </div>
+          )}
+        </section>
+
+        <section
+          className="settings-group settings-group--local"
+          aria-labelledby="settings-local-title"
+          hidden={activePage !== "settings"}
+        >
+          <div className="settings-group__heading">
+            <span><SettingsIcon /></span>
+            <div>
+              <p className="eyebrow">Na tomto Macu</p>
+              <h2 id="settings-local-title">Nastavení zařízení</h2>
+            </div>
+          </div>
+          <div className="settings-row settings-row--static">
+            <div>
+              <strong>Toto zařízení</strong>
+              <small data-testid="settings-device">{device.name ?? "Název zařízení není známý"}</small>
+            </div>
+          </div>
+          <div className="settings-row">
+            <div>
+              <strong>Zobrazovat i ikonu v Docku</strong>
+              <small>Zapni, když se ti ikona v liště schovává za notch nebo za jinou aplikaci.</small>
+            </div>
+            <Toggle
+              checked={dock.value}
+              disabled={!dock.loaded || dock.busy}
+              onChange={dock.update}
+              label="Zobrazovat i ikonu v Docku"
+            />
+          </div>
+          <div className="settings-row">
+            <div><strong>Spouštět po přihlášení do systému</strong></div>
+            <Toggle
+              checked={login.value}
+              disabled={!login.loaded || login.busy}
+              onChange={login.update}
+              label="Spouštět po přihlášení do systému"
+            />
+          </div>
+          <div className="settings-theme" aria-labelledby="settings-theme-title">
+            <div>
+              <strong id="settings-theme-title">Vzhled aplikace</strong>
+              <small>Vyber, jak se má LuDone zobrazovat na tomto Macu.</small>
+            </div>
+            <div className="settings-theme__choices" role="group" aria-label="Barevné téma">
+              {[
+                { id: "light", label: "Světlé" },
+                { id: "professional", label: "Profesionální" },
+                { id: "dark", label: "Tmavé" },
+              ].map((choice) => {
+                const activeTheme = themePreference === "system"
+                  ? document.documentElement.dataset.theme
+                  : themePreference;
+                return (
+                  <button
+                    key={choice.id}
+                    type="button"
+                    className="settings-theme__choice"
+                    aria-pressed={activeTheme === choice.id}
+                    onClick={() => {
+                      persistThemePreference(choice.id);
+                      setThemePreference(choice.id);
+                    }}
+                  >
+                    {choice.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </section>
 
         <section
@@ -871,7 +1035,7 @@ export function SettingsApp() {
           className="settings-tab-panel"
           role="tabpanel"
           aria-labelledby="settings-tab-recordings"
-          hidden={activeTab !== "recordings"}
+          hidden={activePage !== "settings"}
         >
           <section className="settings-group" aria-labelledby="recordings-settings-title">
             <div className="settings-group__heading">
@@ -903,18 +1067,18 @@ export function SettingsApp() {
           className="settings-tab-panel"
           role="tabpanel"
           aria-labelledby="settings-tab-recordingQueue"
-          hidden={activeTab !== "recordingQueue"}
+          hidden={activePage !== "day" || activeTab !== "recordingQueue"}
         >
-          {activeTab === "recordingQueue" && (
+          {activePage === "day" && activeTab === "recordingQueue" && (
             <section className="settings-group" aria-labelledby="recording-queue-settings-title">
               <div className="settings-group__heading">
                 <span><CloudIcon /></span>
                 <div>
-                  <p className="eyebrow">Lokální fronta</p>
+                  <p className="eyebrow">Lokální i odeslané</p>
                   <h2 id="recording-queue-settings-title">Nahrávky</h2>
                 </div>
               </div>
-              <RecordingsDashboard authState={account.state} />
+              <RecordingsDashboard authState={account.state} onDetailChange={setRecordingDetailOpen} />
             </section>
           )}
         </section>
@@ -924,7 +1088,7 @@ export function SettingsApp() {
           className="settings-tab-panel"
           role="tabpanel"
           aria-labelledby="settings-tab-diagnostics"
-          hidden={activeTab !== "diagnostics"}
+          hidden={activePage !== "settings"}
         >
           <section className="settings-group" aria-labelledby="diagnostics-settings-title">
             <div className="settings-group__heading">
@@ -1012,7 +1176,7 @@ export function SettingsApp() {
         </section>
       </div>
 
-      <footer className="settings-footer">
+        <footer className="settings-footer">
         {dock.failed || login.failed ? (
           <p className="settings-feedback settings-feedback--error" role="alert">
             {[
@@ -1027,6 +1191,7 @@ export function SettingsApp() {
           Hotovo
         </button>
       </footer>
-    </main>
+      </main>
+    </div>
   );
 }

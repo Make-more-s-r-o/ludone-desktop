@@ -12,13 +12,18 @@ function restoreInlineStyle(element, property, value) {
   else element.style.removeProperty(property);
 }
 
-export function PanelContentHeightReporter({ children }) {
+export function PanelContentHeightReporter({ children, fixedHeight = null }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
     const container = containerRef.current;
     const reportHeight = window.ludone?.setPanelContentHeight;
     if (!container || typeof reportHeight !== "function") return undefined;
+
+    if (Number.isFinite(fixedHeight) && fixedHeight > 0) {
+      Promise.resolve(reportHeight(fixedHeight)).catch(() => {});
+      return undefined;
+    }
 
     let animationFrame = null;
     let lastReportedHeight = null;
@@ -100,7 +105,7 @@ export function PanelContentHeightReporter({ children }) {
       observer.disconnect();
       if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
     };
-  }, []);
+  }, [fixedHeight]);
 
   return (
     <div className="panel-content-height-reporter" ref={containerRef}>

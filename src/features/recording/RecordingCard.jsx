@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { MicIcon } from "../../components/Icons.jsx";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
 import {
   createAudioLevelMonitor,
@@ -214,13 +214,14 @@ function savedRecordingMetadata(recording) {
   };
 }
 
-export function RecordingCard({
+export const RecordingCard = forwardRef(function RecordingCard({
   canSend = true,
   compact = false,
   onActivityChange,
+  onOpenSources,
   todaySummary = null,
   trayCommand = null,
-}) {
+}, ref) {
   const [session, setSession] = useState({
     phase: "idle",
     recordingMode: null,
@@ -701,6 +702,8 @@ export function RecordingCard({
     if (runtime && !runtime.closing) void finishRuntime(runtime);
   }
 
+  useImperativeHandle(ref, () => ({ start, stop }));
+
   useEffect(() => () => {
     const runtime = runtimeRef.current;
     runtime?.recoveryController?.abort();
@@ -903,7 +906,7 @@ export function RecordingCard({
         <>
           <span className="idle-feature-row__icon"><MicIcon variant="idle" /></span>
           <span className="idle-feature-row__copy">
-            <strong>Nahrávání</strong>
+            <strong>Zachytit schůzku</strong>
             {notice ? (
               <small
                 className={`idle-feature-row__notice idle-feature-row__notice--${notice.type}`}
@@ -911,8 +914,10 @@ export function RecordingCard({
               >
                 {notice.text}
               </small>
-            ) : todaySummary && (
+            ) : todaySummary ? (
               <small data-testid="recording-daily-summary">{todaySummary}</small>
+            ) : (
+              <small className="recording-card__description">Mikrofon + systémový zvuk</small>
             )}
           </span>
           <button
@@ -924,6 +929,19 @@ export function RecordingCard({
             <span aria-hidden="true">Nahrát</span>
             <span className="sr-only">Spustit nahrávání</span>
           </button>
+          <div className="recording-card__idle-footer">
+            <small>Po stopu vybereš, kam nahrávku uložit.</small>
+            <button
+              type="button"
+              className="recording-card__sources"
+              onClick={onOpenSources}
+              aria-label="Zdroje zvuku"
+              title="Otevřít nastavení zvuku"
+              disabled={typeof onOpenSources !== "function"}
+            >
+              <SettingsIcon />
+            </button>
+          </div>
         </>
       ) : !isRecording ? (
         <div className="feature-card__header">
@@ -948,14 +966,27 @@ export function RecordingCard({
           {/* Odečítač dostává stav „Nahrává se“ a názvy obou zdrojů níže.
               AudioLevelMeter je dekorativní (aria-hidden). Samostatné potvrzení
               stop vynecháváme: jejich přítomnost nedokládá ověření zvuku. */}
-          <div
-            className={`activity-status activity-status--recording${systemAudioLost || microphoneOnly ? " is-degraded" : ""}`}
-            data-testid="recording-running-state"
-            role="status"
-          >
-            <span className="activity-status__dot" aria-hidden="true" />
-            <span>{systemAudioLost || microphoneOnly ? "Nahrává se omezeně" : "Nahrává se"}</span>
+          <div className="recording-running__statusline">
+            <div
+              className={`activity-status activity-status--recording${systemAudioLost || microphoneOnly ? " is-degraded" : ""}`}
+              data-testid="recording-running-state"
+              role="status"
+            >
+              <span className="activity-status__dot" aria-hidden="true" />
+              <span>{systemAudioLost || microphoneOnly ? "Nahrává se omezeně" : "Nahrává se"}</span>
+            </div>
+            <button
+              type="button"
+              className="recording-running__sources"
+              data-testid="recording-open-sources"
+              onClick={onOpenSources}
+              disabled={typeof onOpenSources !== "function"}
+            >
+              <SettingsIcon />
+              Zdroje
+            </button>
           </div>
+          <p className="recording-running__title">Nahrávání schůzky</p>
           <span className="sr-only" aria-hidden="true">Rychlá nahrávka</span>
 
           <p
@@ -974,7 +1005,10 @@ export function RecordingCard({
             data-testid="recording-source-microphone"
             title={`Mikrofon: ${session.labels.microphone}`}
           >
-            <span className="recording-source__label">Mikrofon</span>
+            <span className="recording-source__label">
+              <MicIcon />
+              <span>Mikrofon</span>
+            </span>
             <AudioLevelMeter
               className="recording-source__meter"
               fillClassName="recording-source__fill"
@@ -993,7 +1027,10 @@ export function RecordingCard({
             data-testid="recording-source-system"
             title={microphoneOnly ? "Ostatní zvuk není dostupný" : `Ostatní zvuk: ${session.labels.system}`}
           >
-            <span className="recording-source__label">Ostatní zvuk</span>
+            <span className="recording-source__label">
+              <VolumeIcon />
+              <span>Ostatní zvuk</span>
+            </span>
             <AudioLevelMeter
               className="recording-source__meter"
               fillClassName="recording-source__fill"
@@ -1004,6 +1041,7 @@ export function RecordingCard({
               <span className="recording-source__pill is-lost">ticho</span>
             )}
           </div>
+          <p className="recording-running__format">Výsledkem bude jedna stereo nahrávka.</p>
           {microphoneOnly && (
             <div className="recording-mode-note" role="status" aria-atomic="true">
               {microphoneOnlyNote}
@@ -1067,4 +1105,4 @@ export function RecordingCard({
 
     </section>
   );
-}
+});

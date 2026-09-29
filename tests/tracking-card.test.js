@@ -163,8 +163,10 @@ describe("budoucí LuTrack v hlavním panelu", () => {
     await panel.render({ disabled: true });
 
     expect(panel.document.querySelector(".future-feature")?.textContent)
-      .toContain("Časovač ještě není součástí desktopové verze.");
-    expect(panel.document.querySelectorAll(".future-feature button")).toHaveLength(0);
+      .toContain("Pracovní čas se připravuje.");
+    const preparingControls = [...panel.document.querySelectorAll(".future-feature button, .future-feature input")];
+    expect(preparingControls).toHaveLength(3);
+    expect(preparingControls.every((control) => control.disabled)).toBe(true);
     expect(panel.onActivityChange.mock.lastCall[0]).toMatchObject({
       active: false,
       project: null,
@@ -176,7 +178,8 @@ describe("budoucí LuTrack v hlavním panelu", () => {
       trayCommand: { id: 1, name: "start-tracking" },
     });
     expect(panel.document.querySelector('[data-activity-state="tracking"]')).toBeNull();
-    expect(panel.document.querySelectorAll(".future-feature button")).toHaveLength(0);
+    expect([...panel.document.querySelectorAll(".future-feature button, .future-feature input")]
+      .every((control) => control.disabled)).toBe(true);
     expectNoTrackingIpc(panel);
   });
 });

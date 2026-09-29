@@ -10,7 +10,6 @@ import {
   CheckIcon,
   LuDoneMark,
   MicIcon,
-  TimerIcon,
   VolumeIcon,
 } from "./Icons.jsx";
 
@@ -461,17 +460,17 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
             <div className="welcome-visual__ring welcome-visual__ring--two" />
             <div className="welcome-visual__core"><LuDoneMark size={58} /></div>
             <span className="welcome-visual__node welcome-visual__node--mic"><MicIcon /></span>
-            <span className="welcome-visual__node welcome-visual__node--timer"><TimerIcon /></span>
           </div>
-          <p className="eyebrow">Spouštěč pro váš pracovní den</p>
-          <h1>Rozhovory a čas.<br />Pěkně po ruce.</h1>
+          <p className="eyebrow">LuDone Desktop</p>
+          <h1>Schůzky<br />pod kontrolou.</h1>
           <p className="lead">
-            LuDone žije v horní liště a nechá vás jedním klikem nahrávat nebo měřit čas.
+            Nahrávej z horní lišty. Po zastavení si vybereš, zda záznam odešleš do LuDone,
+            nebo ho necháš uložený na Macu.
           </p>
           <button type="button" className="button button--primary button--wide" onClick={() => setStep(1)}>
             Začít <ArrowRightIcon />
           </button>
-          <p className="privacy-note">Žádný archiv navíc. Všechno důležité zůstává na app.ludone.cz.</p>
+          <p className="privacy-note">Přepisy a analýzu otevřeš na app.ludone.cz. Originál zůstává na Macu podle nastavení retence.</p>
         </section>
       )}
 
@@ -669,7 +668,6 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
           <div className="tray-preview" aria-label="Ukázka stavů ikony v horní liště">
             <div><span className="tray-symbol tray-symbol--idle" /><small>Nečinná</small></div>
             <div><span className="tray-symbol tray-symbol--recording" /><small>Nahrává</small></div>
-            <div><span className="tray-symbol tray-symbol--tracking" /><small>Měří čas</small></div>
           </div>
           <button type="button" className="button button--primary button--wide" onClick={onComplete}>
             Otevřít můj panel <ArrowRightIcon />

@@ -415,7 +415,7 @@ describe("dashboard fronty nahrávek", () => {
       const button = claimButton(dashboard);
       expect(dashboard.document.body.textContent).toContain("1 min 5 s");
       expect(dashboard.document.body.textContent).toContain("2,5 MB");
-      expect(dashboard.document.body.textContent).toContain("Převzetí ji neodešle");
+      expect(dashboard.document.body.textContent).toContain("Převzetí nahrávky ji neodešle");
       expect(dashboard.document.body.textContent).not.toContain("/tajne/porada.webm");
       expect(dashboard.document.body.textContent).not.toContain(ITEM.ownerFingerprint);
 

@@ -96,14 +96,12 @@ describe("pravdivé stavy lokálních nahrávek", () => {
       expect(dashboard.card(ids.sent).textContent).toContain("Odesláno podle stavu fronty");
       expect(dashboard.card(ids.sent).textContent).not.toContain("čeká ve frontě");
       expect(dashboard.card(ids.sent).textContent).not.toContain("Na serveru je úplná");
-      const sentFacts = [...dashboard.card(ids.sent).querySelectorAll(
-        ".recording-queue-card__facts span",
-      )].map((fact) => fact.textContent.trim());
-      expect(sentFacts).toContain("V aplikaci");
-      expect(sentFacts).not.toContain("Ve frontě");
+      expect(dashboard.card(ids.sent).textContent).toContain("Místní fronta");
+      expect(dashboard.card(ids.sent).textContent).not.toContain("V aplikaci");
       expect(dashboard.card(ids.approved).textContent)
         .toContain("Schváleno k odeslání · čeká ve frontě");
       expect(dashboard.card(ids.held).textContent).toContain("Zůstává na Macu");
+      expect(dashboard.card(ids.held).textContent).toContain("Místní fronta");
       expect(dashboard.card(ids.failed).textContent).toContain("Odeslání selhalo");
       expect(dashboard.card(ids.failed).textContent).toContain("Jedna lokální stopa chybí.");
       expect(dashboard.card(ids.failed).textContent)

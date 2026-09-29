@@ -77,6 +77,10 @@ describe("samostatný výběr firmy", () => {
     const panel = await renderSelector({ authState });
     expect(panel.ludone.listUploadCompanies).not.toHaveBeenCalled();
     expect(panel.ludone.selectUploadCompany).not.toHaveBeenCalled();
+    expect(panel.document.querySelector(".upload-company-selector--signed-out")?.textContent)
+      .toContain("Výchozí cílová firma");
+    expect(panel.document.querySelector(".upload-company-selector--signed-out select")?.disabled)
+      .toBe(true);
   });
 
   it("po změně auth zahodí pozdní odpověď a prázdná nabídka nic neuloží", async () => {
