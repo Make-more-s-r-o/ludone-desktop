@@ -1,3 +1,4 @@
-Celá schůzka se odesílá jako jeden stereo soubor: mikrofon vlevo, systémový zvuk vpravo.
-Úsporný formát WebM/Opus zachová nové nahrávky bez další ztrátové konverze. Soubor zůstává uložený na Macu pro pozdější odeslání a pokračování po restartu.
-Původní nahrávky zůstávají zachované podle nastavené retence. Staré rozpracované uploady se nepřevádějí automaticky na nový záznam.
+Nový vzhled Astra a přehlednější nahrávání, Můj den a detail schůzky.
+Teď, Můj den, Nastavení, přihlášení a aktualizace mají společné rozhraní s ikonami LuDone. LuTrack je připravený pro budoucnost a zatím zůstává neaktivní.
+Po zastavení si zvolíš „Uložit a odeslat“ nebo „Nechat na Macu“. Schůzka zůstává jedním stereo souborem WebM/Opus; rozpracované a prázdné zvukové soubory aplikace označí jako neúplné.
+Aktualizace se instalují až po tvém kliknutí a počkají na dokončení nahrávání a ukládání.
