@@ -78,3 +78,36 @@
 .recording-saved .recording-upload-preferences label { font-size: 11px; }
 .recording-saved .recording-upload-preferences select { min-height: 30px; width: 100%; border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; color: var(--foreground); background: var(--surface-elevated); font: inherit; }
 .recording-saved .recording-upload-preferences small { color: var(--muted-foreground); font-size: 10px; }
+
+/* Uložení na 400px panelu: obě rozhodnutí mají místo před spodní navigací. */
+.panel.panel-polish .recording-saved { gap: 7px; }
+.panel.panel-polish .recording-saved h2 { margin-top: 4px; font-size: 23px; line-height: 1.2; }
+.panel.panel-polish .recording-saved__meta { padding: 7px 9px; gap: 2px; }
+.panel.panel-polish .recording-saved__meta small,
+.panel.panel-polish .recording-saved__format { font-size: 10px; line-height: 1.35; }
+.panel.panel-polish .recording-saved__format svg { width: 15px; height: 15px; }
+.panel.panel-polish .recording-saved__name { height: 34px; }
+.panel.panel-polish .recording-saved .recording-upload-preferences {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 4px;
+  margin: 0;
+}
+.panel.panel-polish .recording-saved .recording-upload-preferences > label:first-of-type { grid-column: 1; grid-row: 1; }
+.panel.panel-polish .recording-saved .recording-upload-preferences > select:first-of-type { grid-column: 1; grid-row: 2; }
+.panel.panel-polish .recording-saved .recording-upload-preferences > label:nth-of-type(2) { grid-column: 2; grid-row: 1; }
+.panel.panel-polish .recording-saved .recording-upload-preferences > select:nth-of-type(2) { grid-column: 2; grid-row: 2; }
+.panel.panel-polish .recording-saved .recording-upload-preferences > :not(label):not(select) { grid-column: 1 / -1; }
+.panel.panel-polish .recording-saved .recording-upload-preferences select { min-width: 0; height: 32px; padding: 5px 6px; font-size: 11px; }
+.panel.panel-polish .recording-saved .recording-upload-preferences p,
+.panel.panel-polish .recording-saved .recording-upload-preferences small,
+.panel.panel-polish .recording-saved__hint { margin: 0; font-size: 10px; line-height: 1.35; }
+/* Dlouhá chyba se čte ve vlastní oblasti; neposouvá místní uložení mimo panel. */
+.panel.panel-polish .recording-saved__error,
+.panel.panel-polish .recording-saved .recording-upload-preferences [role="alert"] {
+  max-height: 54px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  margin: 0;
+  overscroll-behavior: contain;
+}

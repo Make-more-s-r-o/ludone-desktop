@@ -108,5 +108,22 @@
     "Pouze read-only git status jako závěrečný self-check; žádné Git zápisy, GUI, instalace, server změny nebo subdelegace.",
     "Scope UI nelze považovat za serverové potvrzení dostupnosti nahrávky ani absolutní soukromí pouze pro vlastníka.",
     "P2 z review opraven: pouze locked read-only větev vydává dirty:false. Disabled auth, loading a offer error stále blokují změnu/upload fail-closed."
-  ]
+  ],
+  "layoutRepair": {
+    "summary": "CSS-only kompaktní stopform: gap 7px, menší margin nad title, kompaktní meta s ikonou 15px, name34px, native firma/přístup ve dvou sloupcích s labely. Všechny helper/status texty zachované. Dlouhé alerty max54px ve vlastní scroll oblasti ponechají rozhodovací akce dosažitelné.",
+    "changedFiles": [
+      "src/features/recording/panel-polish.css",
+      "docs/changes/desktop-astra-parity-0-1-6/evidence/tasks/T-13.report.json"
+    ],
+    "doslovnyVystupTestu": "\n> ludone-desktop-prototype@0.1.6 test:unit\n> vitest run tests/recording-card.test.js tests/upload-company-selector.test.js\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui\n\n ✓ tests/upload-company-selector.test.js (12 tests) 132ms\n ✓ tests/recording-card.test.js (68 tests) 1883ms\n\n Test Files  2 passed (2)\n      Tests  80 passed (80)\n   Start at  20:53:33\n   Duration  2.68s (transform 141ms, setup 13ms, collect 1.15s, tests 2.01s, environment 0ms, prepare 69ms)\n\n\nEXIT_CODE=0\n",
+    "typecheck": "\n> ludone-desktop-prototype@0.1.6 typecheck\n> tsc --noEmit -p jsconfig.json\n\n\nEXIT_CODE=0\n",
+    "scopedLint": "\nEXIT_CODE=0\n",
+    "stav": "🧪 cílené testy; skutečná 400×700 geometrie čeká integrační Electron E2E koordinátora.",
+    "coJsemNEOVERIL": [
+      "GUI, skutečná výška tlačítek proti footer y658, screenshoty témat a dlouhé chyby v Electronu."
+    ],
+    "notes": [
+      "Žádná změna brány, assertions, baseline, JSX akcí, prefs ani auth/auto/manual flow."
+    ]
+  }
 }
