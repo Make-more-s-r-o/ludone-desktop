@@ -1464,3 +1464,36 @@ describe("detail aktualizace", () => {
     } finally { await settings.cleanup(); }
   });
 });
+
+
+describe("skutečná rychlá akce Zvuk", () => {
+  it("klik rychlé akce opakovaně fokusuje Zvuk a běžný návrat z dne požadavek neopakuje", async () => {
+    const settings = await renderSettings();
+    try {
+      const dialog = settings.document.querySelector(".desktop-quick-actions");
+      // JSDOM nemá nativní dialog; pouze jeho otevření a zavření doplníme.
+      dialog.showModal = () => { dialog.open = true; };
+      dialog.close = () => { dialog.open = false; };
+      const trigger = settings.document.querySelector('[aria-label="Rychlé akce (⌘K)"]');
+      const audio = [...dialog.querySelectorAll("button")].find((button) => button.querySelector("strong")?.textContent === "Zvuk");
+      const heading = settings.document.querySelector("#audio-settings-title");
+      const scroll = vi.fn();
+      heading.scrollIntoView = scroll;
+      for (let index = 0; index < 2; index += 1) {
+        await React.act(async () => trigger.click());
+        expect(dialog.open).toBe(true);
+        await React.act(async () => audio.click());
+        expect(dialog.open).toBe(false);
+        expect(settings.document.activeElement).toBe(heading);
+        expect(scroll).toHaveBeenCalledTimes(index + 1);
+      }
+      const navigation = settings.document.querySelector('[aria-label="Hlavní navigace LuDone Desktop"]');
+      const navigate = (label) => [...navigation.querySelectorAll("button")].find((button) => button.textContent.trim() === label).click();
+      await React.act(async () => navigate("Můj den"));
+      heading.blur();
+      await React.act(async () => navigate("Nastavení"));
+      expect(settings.document.activeElement).not.toBe(heading);
+      expect(scroll).toHaveBeenCalledTimes(2);
+    } finally { await settings.cleanup(); }
+  });
+});

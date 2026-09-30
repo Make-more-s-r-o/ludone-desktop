@@ -326,8 +326,9 @@ export function SettingsApp() {
     setRecordingDetailOpen(false);
   };
 
-  const navigateToSettingsTab = (tab) => {
+  const navigateToSettingsTab = (tab, focusAudio = true) => {
     setActiveTab(tab);
+    if (tab === "audio" && focusAudio) setAudioNavigationRequest((request) => request + 1);
     setActivePage(tab === "recordingQueue" ? "day" : "settings");
     setRecordingDetailOpen(false);
   };
@@ -549,6 +550,7 @@ export function SettingsApp() {
     const heading = document.getElementById("audio-settings-title");
     heading?.scrollIntoView?.({ block: "start", behavior: "auto" });
     heading?.focus({ preventScroll: true });
+    setAudioNavigationRequest(0);
   }, [activePage, audioNavigationRequest]);
 
   const selectRelativeTab = (event, currentIndex) => {
@@ -562,7 +564,7 @@ export function SettingsApp() {
 
     event.preventDefault();
     const nextTab = SETTINGS_TABS[nextIndex];
-    navigateToSettingsTab(nextTab.id);
+    navigateToSettingsTab(nextTab.id, false);
     document.getElementById(`settings-tab-${nextTab.id}`)?.focus();
   };
 
