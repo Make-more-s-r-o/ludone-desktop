@@ -394,10 +394,18 @@ export function SettingsApp() {
           // Chování zůstává stejné: když stav neznáme, rozhoduje identita jako dosud.
           const state = typeof window.ludone.getAuthSessionState === "function"
             ? await window.ludone.getAuthSessionState() : null;
-          return { state, value: state === "expired" ? null : await getAuthIdentity() };
+          const [value, originValue] = await Promise.all([
+            state === "expired" ? null : getAuthIdentity(),
+            Promise.resolve().then(() => window.ludone?.getAuthOrigin?.()).catch(() => null),
+          ]);
+          return { state, value, originValue };
         })
-        .then(({ state, value }) => {
+        .then(({ state, value, originValue }) => {
           if (!active || currentRequestId !== identityRequestGeneration.current) return;
+          const origin = typeof originValue === "string" ? originValue.trim() : "";
+          setDestination(origin
+            ? { state: "resolved", origin }
+            : { state: "unknown", origin: null });
           if (state === "expired") {
             setAccount({ state: "expired", identity: null });
             return;
@@ -413,6 +421,7 @@ export function SettingsApp() {
         })
         .catch(() => {
           if (active && currentRequestId === identityRequestGeneration.current) {
+            setDestination({ state: "unknown", origin: null });
             setAccount({ state: "unknown", identity: null });
           }
         });
@@ -457,6 +466,8 @@ export function SettingsApp() {
   useEffect(() => {
     let active = true;
     const getAuthOrigin = window.ludone?.getAuthOrigin;
+    // Bez identity API lze zobrazit cíl, nemůže ale vzniknout přihlášený scope.
+    if (typeof window.ludone?.getAuthIdentity === "function") return () => { active = false; };
     if (typeof getAuthOrigin !== "function") return () => { active = false; };
 
     Promise.resolve()

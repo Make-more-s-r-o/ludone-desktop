@@ -80,6 +80,7 @@ async function renderSettings({
   const logoutMock = vi.fn(logout);
   const setAuthOriginMock = vi.fn(setAuthOrigin);
   let settingsTabRequested;
+  let authSessionChanged;
   const switchAuthOriginImplementation = switchAuthOrigin ?? (async (value) => {
     const result = await logoutMock();
     if (result?.signedOutLocally !== true) return { ...result, origin: null };
@@ -94,6 +95,10 @@ async function renderSettings({
     onSettingsTabRequested: vi.fn((callback) => {
       settingsTabRequested = callback;
       return () => { settingsTabRequested = undefined; };
+    }),
+    onAuthSessionChanged: vi.fn((callback) => {
+      authSessionChanged = callback;
+      return () => { authSessionChanged = undefined; };
     }),
     getAuthIdentity: vi.fn(identity),
     getAuthOrigin: vi.fn(origin),
@@ -141,6 +146,7 @@ async function renderSettings({
     document: dom.window.document,
     localStorage,
     ludone,
+    requestAuthSessionChange() { authSessionChanged?.(); },
     requestSettingsTab(tab) {
       settingsTabRequested?.(tab);
     },
@@ -1494,6 +1500,48 @@ describe("skutečná rychlá akce Zvuk", () => {
       await React.act(async () => navigate("Nastavení"));
       expect(settings.document.activeElement).not.toBe(heading);
       expect(scroll).toHaveBeenCalledTimes(2);
+    } finally { await settings.cleanup(); }
+  });
+});
+
+
+describe("konzistentní identita a prostředí při obnově", () => {
+  it("auth událost se stejným e-mailem obnoví změněný origin", async () => {
+    let origin = PRODUCTION_ORIGIN;
+    const settings = await renderSettings({ origin: async () => origin });
+    try {
+      expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.origin).toBe(PRODUCTION_ORIGIN);
+      origin = ORIGIN;
+      await React.act(async () => settings.requestAuthSessionChange());
+      expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.origin).toBe(ORIGIN);
+      expect(settings.document.querySelector('[data-testid="settings-identity-email"]').textContent).toBe("ada@ludone.cz");
+      expect(settings.ludone.getAuthOrigin).toHaveBeenCalledTimes(2);
+    } finally { await settings.cleanup(); }
+  });
+
+  it("čekající origin nezveřejní novou identitu a starý origin nepřepíše novější snapshot", async () => {
+    const stale = deferred();
+    const origin = vi.fn().mockResolvedValueOnce(PRODUCTION_ORIGIN).mockReturnValueOnce(stale.promise).mockResolvedValueOnce(ORIGIN);
+    const settings = await renderSettings({ origin });
+    try {
+      await React.act(async () => settings.requestAuthSessionChange());
+      expect(settings.document.querySelector('[data-testid="settings-account"]').dataset.authState).toBe("unknown");
+      expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.origin).toBe(PRODUCTION_ORIGIN);
+      await React.act(async () => settings.requestAuthSessionChange());
+      expect(settings.document.querySelector('[data-testid="settings-account"]').dataset.authState).toBe("signed-in");
+      expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.origin).toBe(ORIGIN);
+      await React.act(async () => stale.resolve(PRODUCTION_ORIGIN));
+      expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.origin).toBe(ORIGIN);
+    } finally { await settings.cleanup(); }
+  });
+
+  it("chyba originu po auth události neponechá dřívější platný scope", async () => {
+    const origin = vi.fn().mockResolvedValueOnce(PRODUCTION_ORIGIN).mockRejectedValueOnce(new Error("offline"));
+    const settings = await renderSettings({ origin });
+    try {
+      await React.act(async () => settings.requestAuthSessionChange());
+      expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.destinationState).toBe("unknown");
+      expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.origin).toBeUndefined();
     } finally { await settings.cleanup(); }
   });
 });
