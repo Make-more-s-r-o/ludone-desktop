@@ -5,7 +5,7 @@
     "id": "desktop-astra-parity-0-1-6",
     "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
     "goal": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-    "updatedAt": "2026-09-30T12:46:15.398Z",
+    "updatedAt": "2026-09-30T19:32:07.288Z",
     "planVersion": "draft",
     "problem": "Dan aktualizoval desktop na 0.1.5 a vidí jiné rozložení i tok, než schválil v prototypu Astra „Nit dne“. Vydaná verze převzala pouze omezený výřez L1: ikonu, zúženou navigaci a přímý odkaz na Nahrávky. Hlavní obrazovka, Můj den, nastavení a sjednocená cesta záznamu zůstaly v původním rozhraní. Předchozí předání tak vytvořilo dojem, že je hotový celý návrh, ačkoli dokumentace rozsah označovala jako částečný.",
     "targetOutcome": "LuDone Desktop má být soudržná, každodenně použitelná macOS aplikace podle schválené plné varianty Astra: přehled „Teď“, společná stopa dne, detail nahrávky a nastavení sdílejí značku, navigaci, typografii, barvy, stavové zprávy a očekávané chování. Nahrávání, místní fronta, serverové ověření, opravy a aktualizace zůstávají skutečné funkce aplikace; prototypové údaje se do produktu nepřenášejí. LuTrack zůstane nefunkčním, pravdivě označeným budoucím místem bez měření a bez napojení na server.",
@@ -25,10 +25,10 @@
     ]
   },
   "summary": {
-    "done": 1,
+    "done": 3,
     "inProgress": 0,
-    "blocked": 1,
-    "notStarted": 1
+    "blocked": 0,
+    "notStarted": 0
   },
   "features": [
     {
@@ -60,25 +60,27 @@
       "scope": "approved",
       "delivery": "coded",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Blokováno",
-      "nextStep": "Dokončit T-12/T-13, review a finální audit; obnovit vizuální kontrakt až po rozhodnutí Q1.",
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Zelené CI PR158, merge a podepsané vydání0.1.7; fyzická Mac přejímka potom.",
       "evidence": [
-        "EV10"
-      ],
-      "blocker": "Původní design E2E FAIL na staré geometrii, Q1 před publikací; nový požadavek firmy/viditelnosti pokračuje."
+        "EV10",
+        "EV11"
+      ]
     },
     {
       "id": "F3",
       "name": "Firma a viditelnost před uploadem",
       "whatItGives": "Uložený default firmy a bezpečná volba firmy/soukromí jedné nahrávky.",
       "scope": "approved",
-      "delivery": "no-code",
+      "delivery": "coded",
       "exposure": "unavailable",
-      "verification": "unverified",
-      "label": "Navrženo",
-      "nextStep": "T-12 core kontrakt, potom T-13 UI a finální audit.",
-      "evidence": []
+      "verification": "tests-green",
+      "label": "Testy zelené",
+      "nextStep": "Publikovat0.1.7, poté člověk ověří default firmy po reopen/restart a jeden soukromý upload.",
+      "evidence": [
+        "EV11"
+      ]
     }
   ],
   "screens": [
@@ -198,28 +200,7 @@
       }
     }
   ],
-  "openQuestions": [
-    {
-      "id": "Q1",
-      "question": "Potvrdit dotaženou hierarchii a obnovit podle ní původní vizuální kontrakt před vydáním?",
-      "blocks": [
-        "publikace další desktopové verze"
-      ],
-      "canContinue": "T-12/T-13 firma a viditelnost, review a testy bez publikace.",
-      "options": [
-        {
-          "name": "Potvrdit dotažení",
-          "tradeOff": "Nahrávání první a kompaktní neaktivní LuTrack; obnovit přesné vizuální testy při zachování funkčních kontrol.",
-          "recommended": true
-        },
-        {
-          "name": "Vrátit původní kompozici",
-          "tradeOff": "Původní LuTrack hero a hustota z 0.1.6; opravy funkčnosti ponechat.",
-          "recommended": false
-        }
-      ]
-    }
-  ],
+  "openQuestions": [],
   "decisions": [
     {
       "id": "D1",
@@ -292,6 +273,30 @@
         "question": "Q2",
         "option": "A",
         "label": "Doplnit F3"
+      }
+    },
+    {
+      "id": "D10",
+      "title": "Q1 → A · Potvrdit dotažení",
+      "ref": "decisions.md#d10",
+      "decidedBy": "Dan — výslovná odpověď v chatu 30. 9. 2026",
+      "date": "2026-09-30",
+      "choice": {
+        "question": "Q1",
+        "option": "A",
+        "label": "Potvrdit dotažení"
+      }
+    },
+    {
+      "id": "D11",
+      "title": "Q3 → A · Firemní default nových",
+      "ref": "decisions.md#d11",
+      "decidedBy": "Dan — přímé zadání v chatu 30. 9. 2026",
+      "date": "2026-09-30",
+      "choice": {
+        "question": "Q3",
+        "option": "A",
+        "label": "Firemní default nových"
       }
     }
   ],
@@ -498,7 +503,8 @@
       "deps": [
         "T-12"
       ],
-      "packet": "tasks/T-13.md"
+      "packet": "tasks/T-13.md",
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui"
     }
   ],
   "evidence": [
@@ -572,9 +578,64 @@
       "label": "Produktové dotažení checkpoint",
       "value": "0dd87da: 1607 PASS, 18 stavů, 29 cest; původní E2E FAIL, kandidát nevydán",
       "ref": "evidence/product-polish-2026-09-30/README.md"
+    },
+    {
+      "id": "EV11",
+      "kind": "verification",
+      "label": "Finální kandidát 0.1.7",
+      "value": "2bf1da4: 1654 PASS, 35 main/preload podmínek, 18 stavů a 41 cest; review bez P1/P2",
+      "ref": "evidence/acceptance-0-1-7-2026-09-30/README.md"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-30T19:32:07.288Z",
+      "text": "0.1.7 finální zdroj2bf1da4: schválený panel, uložený default firmy a per-recording firma/přístup; gates/E2E/audit/review zelené. D10/D11 vyřízené. Publikace a lidská Mac přejímka ještě čekají."
+    },
+    {
+      "at": "2026-09-30T19:32:03.736Z",
+      "text": "Funkce F3 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T19:32:00.323Z",
+      "text": "Funkce F2 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T19:31:57.193Z",
+      "text": "Byl přidán důkaz EV11: Finální kandidát 0.1.7."
+    },
+    {
+      "at": "2026-09-30T13:35:10.829Z",
+      "text": "Core 770b0a9: koordinátor zopakoval 613 testů a typecheck. UI běží odděleně; nové review ještě chrání legacy vazbu po403. Sol obnovuje geometrické podmínky dleD10, plná přejímka stále čeká."
+    },
+    {
+      "at": "2026-09-30T13:35:10.461Z",
+      "text": "Funkce F3 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T13:35:10.018Z",
+      "text": "Pro task T-13 byl zaregistrován worktree /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui."
+    },
+    {
+      "at": "2026-09-30T13:06:54.461Z",
+      "text": "Dan potvrdil novou hierarchii panelu (D10) a firemní default pouze nových nahrávek (D11), před uploadem možnost Soukromá. Historické položky se nemění."
+    },
+    {
+      "at": "2026-09-30T13:06:53.599Z",
+      "text": "Funkce F2 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T13:06:52.219Z",
+      "text": "Otázka Q3 byla uzavřena rozhodnutím D11: Q3 → A · Firemní default nových. (volba Q3·A)"
+    },
+    {
+      "at": "2026-09-30T13:06:49.814Z",
+      "text": "Byla přidána otevřená otázka Q3: Nastavit Sdílená ve firmě jako default nových nahrávek s možností změny před uploadem?"
+    },
+    {
+      "at": "2026-09-30T13:06:47.636Z",
+      "text": "Otázka Q1 byla uzavřena rozhodnutím D10: Q1 → A · Potvrdit dotažení. (volba Q1·A)"
+    },
     {
       "at": "2026-09-30T12:46:15.398Z",
       "text": "Otázka Q2 byla uzavřena rozhodnutím D9: Q2 → A · Doplnit F3. (volba Q2·A)"

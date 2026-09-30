@@ -1,3 +1,4 @@
+import "./features/recording/panel-polish.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { ArchiveIcon, MicIcon, SettingsIcon, UserIcon } from "./components/Icons.jsx";
@@ -294,7 +295,7 @@ export function App() {
       <PanelContentHeightReporter fixedHeight={700}>
         <main
           aria-busy="true"
-          className="panel window-surface"
+          className="panel window-surface panel-polish"
           data-panel-state="checking-session"
         >
           <header className="panel-header">
@@ -313,7 +314,9 @@ export function App() {
           />
           <DesktopNavigation
             active="now"
-            onNavigate={(page) => window.ludone.openSettings(page === "day" ? "day" : "account")}
+            onNavigate={(page) => {
+              if (page !== "now") window.ludone.openSettings(page === "day" ? "day" : "account");
+            }}
           />
           <ApplicationUpdateStatus showVersion={false} allowManualCheck />
           <div className="panel-scroll">
@@ -394,7 +397,7 @@ export function App() {
   return (
     <PanelContentHeightReporter fixedHeight={700}>
       <main
-        className="panel window-surface"
+        className="panel window-surface panel-polish"
         data-panel-view={queueScreenVisible ? "queue" : "main"}
         data-panel-state={bothActivitiesRunning ? "recording-and-tracking" : "single-or-idle"}
       >
@@ -412,7 +415,9 @@ export function App() {
         />
         <DesktopNavigation
           active="now"
-          onNavigate={(page) => window.ludone.openSettings(page === "day" ? "day" : "account")}
+          onNavigate={(page) => {
+              if (page !== "now") window.ludone.openSettings(page === "day" ? "day" : "account");
+            }}
         />
         <ApplicationUpdateStatus showVersion={false} />
         <div className="panel-scroll">
@@ -420,23 +425,6 @@ export function App() {
           {panelActionsAvailable && queueSnapshot.unavailable && (
             <p className="queue-retry-feedback" role="alert">
               Stav fronty není dostupný. Počet čekajících záznamů není známý.
-            </p>
-          )}
-          {queueScreenVisible && (
-            <QueueCard
-              items={queueSnapshot.items}
-              onRetry={typeof window.ludone.retryQueue === "function" ? retryQueueNow : undefined}
-              onRetryFeedback={setQueueRetryFeedback}
-              retryError={queueRetryFeedback}
-            />
-          )}
-          {panelActionsAvailable && !queueScreenVisible && queueRetryFeedback && (
-            <p
-              className="queue-retry-feedback"
-              data-testid="queue-retry-feedback"
-              role="alert"
-            >
-              {queueRetryFeedback}
             </p>
           )}
           {!queueScreenVisible && (
@@ -456,6 +444,23 @@ export function App() {
             onOpenSources={() => window.ludone?.openSettings?.("audio")}
             trayCommand={trayCommand}
           />
+          {queueScreenVisible && (
+            <QueueCard
+              items={queueSnapshot.items}
+              onRetry={typeof window.ludone.retryQueue === "function" ? retryQueueNow : undefined}
+              onRetryFeedback={setQueueRetryFeedback}
+              retryError={queueRetryFeedback}
+            />
+          )}
+          {panelActionsAvailable && !queueScreenVisible && queueRetryFeedback && (
+            <p
+              className="queue-retry-feedback"
+              data-testid="queue-retry-feedback"
+              role="alert"
+            >
+              {queueRetryFeedback}
+            </p>
+          )}
           {sessionExists === false && runtime.designE2E !== true && (
             <Onboarding embedded reauthenticate sessionExpired={sessionState === "expired"} onAuthenticated={rememberUser} />
           )}

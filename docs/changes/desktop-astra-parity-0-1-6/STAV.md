@@ -1,16 +1,19 @@
 # Stav běhu `desktop-astra-parity-0-1-6`
 
-## Nevydaný kandidát po produktovém auditu
+## Finální kandidát0.1.7 před publikací
 
-**30. 9. 2026 · 0dd87da:** nahrávání první, klidný neaktivní LuTrack, přehled po
-dnech, čitelné stavy, pravdivé ověření a funkční diagnostika/rychlá akce Zvuk.
-🧪 1 607 PASS, 18 stavů a 29 cest. ⚠️ Hlavní původní design E2E FAIL na první
-geometrii; Q1 blokuje publikaci. ⛔ Zvuk/upload/instalace tohoto kandidáta neověřeny.
-[Checkpoint](../../../dukazy/produktove-dotazeni-2026-09-30/README.md) a
-[galerie](../../../dukazy/produktove-dotazeni-2026-09-30/index.html).
-Nové zadání firmy/viditelnosti pokračuje T-12/T-13, viz UPLOAD-PREFERENCES.md.
-Následující0.1.6 důkazy jsou historická publikace a nejsou důkaz nového kandidáta.
-
+**30. 9. 2026 · zdroj2bf1da4:** nahrávání první, kompaktní neaktivní LuTrack,
+členění dne, funkční diagnostika a přehledné volby firmy/přístupu.
+🧪1 654PASS/3 původní skipy;35 hlavních Electron podmínek,18 stavů a41
+produktových cest v400/640px. Nezávislé review bez zbývajícíP1/P2.
+D10 přesná vizuální brána zelená; D11 jen nové nahrávky výchozí firemní.
+Default firmy se obnovuje a lze jej výslovně uložit. Před uploadem má každá
+nahrávka vlastní firmu/přístup; uložení voleb nic neodesílá. Historické chybějící
+preference zůstávají soukromé, serverové vazby/progress uzamykají změnu.
+[Finální důkazy](evidence/acceptance-0-1-7-2026-09-30/README.md).
+🟡 CI/merge/podepsaná publikace ještě čekají; ⛔ fyzický zvuk, produkční
+OAuth/upload a instalace aktualizace kandidáta neověřeny.
+Následující0.1.6 důkazy popisují historickou publikaci.
 
 **30. 9. 2026 · ✅ verze 0.1.6 podepsaná, notarizovaná a publikovaná · PR #152, #153 a #154 sloučené · 🟡 fyzická Mac přejímka čeká**
 

@@ -5,6 +5,7 @@ function safeItems(value) {
   return value.filter((item) => item && typeof item === "object"
     && item.kind === "recording" && typeof item.id === "string")
     .map((item) => ({
+      recordingInProgress: item.recordingInProgress === true,
       id: item.id,
       title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "Nahrávka",
       createdAt: typeof item.createdAt === "string" && Number.isFinite(Date.parse(item.createdAt))
@@ -32,6 +33,7 @@ function durationLabel(value) {
 }
 
 function stateLabel(item) {
+  if (item.recordingInProgress) return "Nahrává se";
   if (item.state === "ceka" && item.uploadIntent === "held") return "Zůstává na Macu";
   if (item.state === "ceka") return "Čeká na odeslání";
   if (item.state === "odesila") return "Odesílá se";
@@ -73,7 +75,6 @@ export function RecordingDayPreview({ items, unavailable = false, onOpenDay }) {
                 <small>{dateLabel(item.createdAt)} · {durationLabel(item.durationMs)}</small>
                 <small className={`day-preview__state day-preview__state--${item.state}`}>{stateLabel(item)}</small>
               </span>
-              <ArrowRightIcon />
             </li>
           ))}
         </ul>

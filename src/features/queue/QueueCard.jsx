@@ -72,7 +72,7 @@ export function QueueCard({ items, onRetry, onRetryFeedback, retryError: control
   }
 
   return (
-    <section id="queue-screen" className="feature-card queue-card" data-testid="queue-screen">
+    <section id="queue-screen" className="feature-card queue-card" aria-label="Podrobnosti fronty" tabIndex={0} data-testid="queue-screen">
       <div className="queue-card__heading">
         <span className="queue-card__icon" aria-hidden="true"><CloudIcon /></span>
         <div>
@@ -138,9 +138,9 @@ export function QueueCard({ items, onRetry, onRetryFeedback, retryError: control
       )}
       {summary.recordingActionCount > 0 && (
         <div className="queue-card__secondary">
-          <strong>Nahrávky spravuješ jednotlivě v Nastavení.</strong>
+          <strong>Jednotlivé nahrávky a jejich stav najdeš v přehledu.</strong>
           <button type="button" className="button button--small"
-            onClick={() => window.ludone.openSettings()}>Otevřít nahrávky</button>
+            onClick={() => window.ludone.openSettings("recordingQueue")}>Otevřít nahrávky</button>
         </div>
       )}
 

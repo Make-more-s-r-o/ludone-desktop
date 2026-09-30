@@ -1820,3 +1820,20 @@ describe("záchytná síť proti záměně nahrávky", () => {
     await expect(send(fixture.item)).resolves.toBeDefined();
   });
 });
+
+describe("preference jedné nahrávky v transportu", () => {
+  it.each(["private", "company"])("firma nahrávky přepíše default a pošle visibility %s", async (visibility) => {
+    const fixture = await recordingFixture({ microphoneOnly: true });
+    fixture.item.uploadPreferences = { companyId: COMPANY_ID, visibility };
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl, createLogger(), {
+      getUploadContext: async () => ({ accessToken: TOKEN, ownerFingerprint: OWNER_A,
+        companyTabidooId: "765a78f8-b47f-4bb8-8b34-f4ec07f6f516" }),
+    });
+    await send(fixture.item, async () => {});
+    const body = JSON.parse(server.fetchImpl.mock.calls.find(([input, options]) =>
+      requestPath(input) === "/api/nahravky/uploads" && options.method === "POST")[1].body);
+    expect(body.companyTabidooId).toBe(COMPANY_ID);
+    expect(body.visibility).toBe(visibility);
+  });
+});

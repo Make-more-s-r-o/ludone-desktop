@@ -52,16 +52,39 @@
 
 Dan požádal o zapamatovatelný výběr firmy a možnost firmu i viditelnost zvolit
 pro jednotlivou nahrávku před uploadem. Nový kontrakt je v UPLOAD-PREFERENCES.md.
-Soukromá je vždy výchozí; existující upload vazby se nepřepisují. Přímý mandát
+Původní návrh měl soukromý default; pozdější D11 mění pouze nové nahrávky
+na firemní. Existující upload vazby se nepřepisují. Přímý mandát
 rozšiřuje desktop o úzké per-recording IPC; backend se nemění. Formální hook
 schválení se nevyrábí.
 
-## Q1 — Obnova vizuálního kontraktu před vydáním
+## Původní vizuální rozpor — uzavřen rozhodnutím D10
 
-Blokuje: publikace další desktopové verze. Nezávislá implementace pokračuje.
+Historicky blokovalo publikaci; rozhodnutí D10 nyní dovoluje přesnou obnovu brány.
 Nový panel dává nahrávání první místo a LuTrack je malý neaktivní řádek.
 Původní nezměněná brána vyžaduje starý dominantní LuTrack hero a skončí FAIL.
 Varianta A: potvrdit konkrétní dotažení z galerie a poté obnovit vizuální kontrakt
 a jeho přesné testy; funkční a bezpečnostní podmínky zachovat.
 Varianta B: vrátit pouze kompozici/hustotu pod původní vizuální kontrakt.
-Žádná výjimka z projektové brány dosud udělena nebyla.
+Nejde o výjimku z projektové brány; funkční a bezpečnostní podmínky zůstávají.
+
+## D10 — Q1 → A · Potvrdit dotažení
+
+- **Otázka:** Potvrdit dotaženou hierarchii a obnovit podle ní původní vizuální kontrakt před vydáním?
+- **Volba Q1·A:** Potvrdit dotažení
+- **Trade-off:** Nahrávání první a kompaktní neaktivní LuTrack; obnovit přesné vizuální testy při zachování funkčních kontrol.
+- **Rozhodl:** Dan — výslovná odpověď v chatu 30. 9. 2026
+- **Datum:** 2026-09-30
+
+## D11 — Q3 → A · Firemní default nových
+
+- **Otázka:** Nastavit Sdílená ve firmě jako default nových nahrávek s možností změny před uploadem?
+- **Volba Q3·A:** Firemní default nových
+- **Trade-off:** Před uploadem změna na Soukromá; staré položky zachovat.
+- **Rozhodl:** Dan — přímé zadání v chatu 30. 9. 2026
+- **Datum:** 2026-09-30
+
+D10 potvrzuje snímky checkpointu 0dd87da a hierarchii Nahrát → Nahrávky → kompaktní
+neaktivní LuTrack. Původní FAIL zůstává archivovaný, není přepsán na PASS. Aktualizace
+geometrických predicates je změna schváleného produktu, nikoli vynechání měřidla.
+D11 mění explicitní inicializaci pouze nových položek a nového stop-formu na company.
+Starý soukromý fallback a již zahájená vazba zůstávají chráněné.

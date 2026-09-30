@@ -83,13 +83,22 @@ function requireRecordingAction(value, queueRevisionRequired = false) {
   return { id: value.id, queueRev: value.queueRev, fileRev: value.fileRev };
 }
 
+function requireUploadPreferences(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).sort().join("|") !== "companyId|offerToken|visibility"
+    || !COMPANY_ID_PATTERN.test(value.companyId ?? "") || !OFFER_TOKEN_PATTERN.test(value.offerToken ?? "")
+    || !["private", "company"].includes(value.visibility)) throw new TypeError("Neplatné preference uploadu");
+  return { companyId: value.companyId, offerToken: value.offerToken, visibility: value.visibility };
+}
+
 function requireRecordingDecision(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
     || !["send", "keep"].includes(value.decision)
     || typeof value.recordingName !== "string") {
     throw new TypeError("Rozhodnutí nahrávky vyžaduje název a volbu send nebo keep");
   }
-  return { recordingName: value.recordingName, decision: value.decision };
+  return { recordingName: value.recordingName, decision: value.decision,
+    ...(value.uploadPreferences !== undefined ? { uploadPreferences: requireUploadPreferences(value.uploadPreferences) } : {}) };
 }
 
 function requireAuthOrigin(value) {
@@ -268,6 +277,14 @@ contextBridge.exposeInMainWorld("ludone", {
       .then(requireAuthOriginSwitchResponse);
   },
   logout: () => ipcRenderer.invoke("auth:logout"),
+  getUploadCompanyDefault: () => ipcRenderer.invoke("upload-companies:default").then((value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).join("|") !== "companyId"
+      || (value.companyId !== null && !COMPANY_ID_PATTERN.test(value.companyId ?? ""))) {
+      throw new TypeError("Neplatná uložená výchozí firma");
+    }
+    return { companyId: value.companyId };
+  }),
   listUploadCompanies: () => ipcRenderer.invoke("upload-companies:list")
     .then(requireUploadCompanyOffer),
   selectUploadCompany: (offerToken, companyId) => {
@@ -306,6 +323,20 @@ contextBridge.exposeInMainWorld("ludone", {
     ipcRenderer.invoke("recording:export", clientRecordingId, volby),
   listQueue: () => ipcRenderer.invoke("queue:list"),
   listLocalRecordings: () => ipcRenderer.invoke("recordings:list-local"),
+  configureRecordingUpload: (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).sort().join("|") !== "companyId|fileRev|id|offerToken|queueRev|visibility") {
+      throw new TypeError("Neplatná konfigurace nahrávky");
+    }
+    const preferences = requireUploadPreferences({ companyId: value.companyId, offerToken: value.offerToken, visibility: value.visibility });
+    return ipcRenderer.invoke("recordings:configure-upload", { ...requireRecordingAction(value, true), ...preferences })
+      .then((result) => {
+        if (!result || result.configured !== true || Object.keys(result).join("|") !== "configured") {
+          throw new TypeError("Hlavní proces nepotvrdil konfiguraci");
+        }
+        return { configured: true };
+      });
+  },
   sendRecording: (value) => ipcRenderer.invoke("recordings:send", requireRecordingAction(value, true)),
   retryRecording: (value) => ipcRenderer.invoke("recordings:retry", requireRecordingAction(value, true)),
   deleteRecording: (value) => ipcRenderer.invoke("recordings:delete", requireRecordingAction(value)),

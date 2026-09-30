@@ -1,0 +1,3 @@
+Zdroj: .runtime/design-e2e/2026-09-30T19-13-11-704Z
+Pouze nejvyšší úroveň, bez userData či zvuku.
+Finální zdrojový strom je totožný s commit2bf1da4 pro produkt/scripts/verzi; commit pouze zmrazil již proběhlý proklik.

@@ -7,6 +7,35 @@ import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
+// D10: geometrie z potvrzené galerie 0dd87da, nikoli baseline aktuálního běhu.
+export function homeGeometryValid(state) {
+  const near = (value, expected) => Number.isFinite(value) && Math.abs(value - expected) <= 2;
+  return Boolean(state.record && state.preview && state.future && state.footer && state.topline
+    && near(state.viewportHeight, 700) && near(state.record.top, 123) && near(state.record.height, 212)
+    && near(state.preview.height, 147) && near(state.future.height, 43)
+    && state.record.bottom <= state.preview.top && state.preview.bottom <= state.future.top
+    && state.future.bottom <= state.footer.top && near(state.footer.bottom, 692)
+    && near(state.topline.left - state.future.left, 22)
+    && state.futureControls.length === 3 && state.futureControls.every(control => control.disabled && !control.visible));
+}
+
+export function timelineGeometryValid(layout) {
+  return Boolean(layout.entries?.length === 2 && layout.times?.length === 2 && layout.statuses?.length === 2
+    && layout.groups?.length === layout.groupKeys?.length
+    && JSON.stringify(layout.groupKeys) === JSON.stringify(layout.actualGroupKeys)
+    && Math.abs(layout.groups[0]?.top - 323) <= 2 && Math.abs(layout.groups[0]?.height - 19) <= 1
+    && Math.abs(layout.entries[0]?.top - 364) <= 2
+    && layout.entries.every(entry => Math.abs(entry.height - 98) <= 2)
+    && layout.entries[0].bottom <= layout.entries[1].top && layout.entries[1].bottom <= layout.footer?.top
+    && !layout.textClipping && !layout.horizontalOverflow
+    && layout.times.every((time, index) => time.width === 42 && time.height === 24
+      && time.right <= layout.entries[index].left && time.top >= layout.entries[index].top && time.bottom <= layout.entries[index].bottom)
+    && layout.statuses.every((status, index) => status.width > 0 && status.height > 0
+      && status.left >= layout.entries[index].left && status.right <= layout.entries[index].right
+      && status.top >= layout.entries[index].top && status.bottom <= layout.entries[index].bottom));
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 const require = createRequire(import.meta.url);
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = path.join(projectRoot, ".runtime", "design-e2e");
@@ -116,6 +145,9 @@ comparisonPairs.push(
   { label: "Nastavení · tmavé", scenario: "settings-dark", width: 640, height: 744, app: "nastaveni-tmave.png", layoutCheck: null, note: "Tmavá reference ze stejné uložené Astry." },
   { label: "Můj den · tmavý", scenario: "day-dark", width: 640, height: 744, app: "muj-den-tmave.png", layoutCheck: null, note: "Tmavá reference bez přenosu pracovních demo dat." },
 );
+for (const pair of comparisonPairs) {
+  pair.note = `D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. ${pair.note}`;
+}
 const referenceImageDirectory = path.join(
   projectRoot,
   "docs/changes/desktop-astra-parity-0-1-6/artifacts/design/reference",
@@ -282,6 +314,9 @@ async function captureAstraReferences() {
 }
 
 async function clickByText(client, text) {
+  await ensureVisibleWindow(client);
+  await waitFor(() => client.evaluate(`Boolean([...document.querySelectorAll('button')]
+    .find(item => item.textContent.replace(/\\s+/g, ' ').trim() === ${JSON.stringify(text)}))`), `tlačítko ${text}`);
   await client.evaluate(`(async () => {
     const target = [...document.querySelectorAll('button')]
       .find((item) => item.textContent.replace(/\\s+/g, ' ').trim() === ${JSON.stringify(text)});
@@ -322,6 +357,8 @@ async function clickByText(client, text) {
 }
 
 async function clickSelector(client, selector, label) {
+  await ensureVisibleWindow(client);
+  await waitFor(() => client.evaluate(`Boolean(document.querySelector(${JSON.stringify(selector)}))`), `prvek ${label}`);
   const point = await client.evaluate(`(async () => {
     const target = document.querySelector(${JSON.stringify(selector)});
     if (!target) return null;
@@ -353,7 +390,28 @@ function compactText(value) {
     .replace(/[\s\u00ad\u200b]+/gu, "");
 }
 
+async function ensureVisibleWindow(client) {
+  // macOS může zastavit rAF zakrytého okna. Snímek vyžaduje skutečně vykreslené
+  // okno; zvedneme je stejně jako při lidské vizuální přejímce, časový limit neměníme.
+  await client.send("Page.bringToFront");
+  // bringToFront neotevře skrytý macOS panel. Použijeme existující testovací
+  // klik na lištu (povolený výhradně LUDONE_E2E), nikoli změnu renderer guardu.
+  if (await client.evaluate("Boolean(document.querySelector('.panel')) && document.visibilityState !== 'visible'")) {
+    const shown = await client.evaluate("window.ludone.testClickTray()");
+    if (!shown?.allowed) throw new Error("Izolovaný panel nelze otevřít klikem na lištu.");
+    if (!shown.visible) await client.evaluate("window.ludone.testClickTray()");
+    await waitFor(() => client.evaluate("document.visibilityState === 'visible'"), "viditelný panel pro screenshot");
+  }
+  await waitFor(() => client.evaluate("document.visibilityState === 'visible'"), "viditelné okno pro proklik a snímání");
+}
+
 async function screenshot(client, name) {
+  await ensureVisibleWindow(client);
+  observations.push({ diagnostic: "screenshot-readiness", name,
+    ...await client.evaluate(`({ visibility: document.visibilityState, focus: document.hasFocus(),
+      animations: document.getAnimations().map(animation => ({ state: animation.playState,
+        endTime: String(animation.effect?.getComputedTiming()?.endTime) })) })`),
+  });
   // Čekáme na hotová písma a konečné přechody barev. Snímek uprostřed
   // změny tématu může aktivní tlačítko mylně zobrazit jako šedé/zakázané.
   await client.evaluate(`(async () => {
@@ -447,7 +505,11 @@ const e2eEnvironment = {
 };
 
 function launchDesktop(port, extraEnvironment = {}) {
-  const child = spawn(electronBinary, [".", `--remote-debugging-port=${port}`], {
+  // Izolovanou vizuální přejímku nesmí macOS pozastavit při zakrytí jiným oknem.
+  // Neměníme produkt ani assertions; stejné neškrcené vykreslování má fixture audit.
+  const child = spawn(electronBinary, [".", `--remote-debugging-port=${port}`,
+    "--disable-background-timer-throttling", "--disable-renderer-backgrounding",
+    "--disable-backgrounding-occluded-windows"], {
     cwd: projectRoot,
     env: { ...e2eEnvironment, ...extraEnvironment },
     stdio: ["ignore", "pipe", "pipe"],
@@ -713,6 +775,7 @@ try {
       } : null;
     };
     return {
+      futureStatus: future?.querySelector('.future-feature__status')?.textContent.trim(),
       title: title?.textContent.trim(),
       brand: document.querySelector('.desktop-titlebar__brand span')?.textContent.trim(),
       introCopy: hero?.querySelector(':scope > p')?.textContent.trim(),
@@ -722,10 +785,11 @@ try {
       preview: bounds(preview),
       footer: bounds(footer),
       viewportHeight: innerHeight,
+      recordAction: bounds(recordAction),
       recordActionVisible: Boolean(recordAction && recordAction.getBoundingClientRect().width > 0),
       recordActionEnabled: recordAction?.disabled === false,
       futureControls: [...(future?.querySelectorAll('button, a, input, select') || [])]
-        .map((control) => ({ tag: control.tagName.toLowerCase(), disabled: control.disabled === true })),
+        .map((control) => ({ tag: control.tagName.toLowerCase(), disabled: control.disabled === true, visible: control.getClientRects().length > 0 })),
       sourceActionVisible: Boolean(document.querySelector('.recording-card__sources')?.getBoundingClientRect().width > 0),
       sourceActionEnabled: document.querySelector('.recording-card__sources')?.disabled === false,
       previewTitle: preview?.querySelector('h2')?.textContent.trim(),
@@ -743,6 +807,8 @@ try {
     || homeState.brand !== "LuDone"
     || !homeState.introCopy?.includes("Nahrávání schůzek funguje")
     || !homeState.recordActionVisible || !homeState.recordActionEnabled
+    || !homeState.recordAction || homeState.recordAction.width < 330
+    || homeState.recordAction.top < homeState.record.top || homeState.recordAction.bottom > homeState.record.bottom
     || homeState.futureControls.length !== 3
     || !homeState.futureControls.every((control) => control.disabled)
     || !homeState.sourceActionVisible || !homeState.sourceActionEnabled
@@ -751,15 +817,9 @@ try {
     || !compactText(homeState.previewItems[0]).includes("macu")
     || compactText(homeState.previewItems[0]).includes("čekánaodeslání")
     || compactText(homeState.previewItems[0]).includes("odesláno")
-    || homeState.future.bottom > homeState.viewportHeight - 8
-    || Math.abs(homeState.footer.bottom - (homeState.viewportHeight - 8)) > 2
-    || !(homeState.hero.bottom <= homeState.record.top && homeState.record.bottom <= homeState.preview.top)
+    || homeState.futureStatus !== "Připravujeme"
+    || !homeGeometryValid(homeState)
     || homeState.titleAlign !== "left"
-    || Math.abs(homeState.hero.top - 123) > 2
-    || Math.abs(homeState.hero.bottom - 442) > 2
-    || Math.abs(homeState.record.top - 442) > 2
-    || Math.abs(homeState.record.height - 97) > 2
-    || Math.abs(homeState.topline.left - homeState.hero.left - 22) > 1
     || !homeState.titleFont.includes("Public Sans")) {
     throw new Error(`Teď neodpovídá Astra kompozici nebo funkčním hranicím: ${JSON.stringify(homeState)}.`);
   }
@@ -834,10 +894,10 @@ try {
         status: hero.querySelector('.future-feature__status')?.textContent.trim(),
         recordingNote: hero.querySelector('.astra-work-hero__recording-note')?.textContent.replace(/\\s+/g, ' ').trim(),
         recordingNoteVisible: hero.querySelector('.astra-work-hero__recording-note')?.getClientRects().length > 0,
-        noteBelowStatus: (() => {
+        noteBesideStatus: (() => {
           const statusRect = hero.querySelector('.future-feature__status')?.getBoundingClientRect();
           const noteRect = hero.querySelector('.astra-work-hero__recording-note')?.getBoundingClientRect();
-          return Boolean(statusRect && noteRect && noteRect.top >= statusRect.bottom);
+          return Boolean(statusRect && noteRect && noteRect.left >= statusRect.right && noteRect.top < statusRect.bottom && noteRect.bottom > statusRect.top);
         })(),
         controls: [...hero.querySelectorAll('button, input, select')]
           .map((control) => ({ disabled: control.disabled === true, visible: control.getClientRects().length > 0 })),
@@ -912,15 +972,17 @@ try {
     || offlineRecording.recordingTitle !== "Nahrávání schůzky"
     || offlineRecording.recordingFormat !== "Výsledkem bude jedna stereo nahrávka."
     || offlineRecording.liveSources !== 2
-    || !offlineRecording.lutrack.visible || offlineRecording.lutrack.height < 50
+    || !offlineRecording.lutrack.visible || offlineRecording.lutrack.height !== 53
     || offlineRecording.lutrack.status !== "Připravujeme"
     || !offlineRecording.lutrack.recordingNoteVisible
     || !offlineRecording.lutrack.recordingNote?.includes("Pracovní čas se zatím neměří")
-    || !offlineRecording.lutrack.noteBelowStatus
+    || !offlineRecording.lutrack.noteBesideStatus
+    || offlineRecording.lutrack.controls.length !== 3
     || offlineRecording.lutrack.controls.some((control) => !control.disabled || control.visible)
     || !offlineRecording.recordingCard || offlineRecording.recordingCard.height < 340
     || !offlineRecording.stopAction.visible || !offlineRecording.stopAction.aboveFooter
     || offlineRecording.horizontalExtent.client !== offlineRecording.horizontalExtent.scroll
+    || offlineRecording.horizontalExtent.overflowing.length !== 0
     || !offlineRecording.notice?.includes("Nahrávky zůstávají na Macu.")) {
     throw new Error(`Probíhající offline záznam nepokračuje bezpečně: ${JSON.stringify(offlineRecording)}.`);
   }
@@ -1180,7 +1242,17 @@ try {
       layout: {
         toolbar: box(document.querySelector('.recordings-dashboard__toolbar')),
         notice: box(document.querySelector('.recordings-dashboard__notice')),
-        entries: [...document.querySelectorAll('.recordings-dashboard__list > li')].slice(0, 2)
+        groups: [...document.querySelectorAll('.recordings-day__heading')].map(box),
+        groupKeys: [...document.querySelectorAll('.recordings-day')].map(group => group.dataset.day),
+        actualGroupKeys: [...new Set(actual.items.map(item => {
+          const date = new Date(item.createdAt);
+          return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+        }))].sort().reverse(),
+        textClipping: [...document.querySelectorAll('.recordings-timeline__time, .recording-queue-card__summary .recording-queue-card__delivery')]
+          .some(element => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1),
+        times: [...document.querySelectorAll('.recordings-timeline__time')].map(box),
+        statuses: [...document.querySelectorAll('.recording-queue-card__summary .recording-queue-card__delivery')].map(box),
+        entries: [...document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]')].slice(0, 2)
           .map((entry) => box(entry.querySelector('.recording-queue-card__summary'))),
         footer: box(document.querySelector('.settings-footer')),
         horizontalOverflow: document.querySelector('.settings-content').scrollWidth
@@ -1188,7 +1260,7 @@ try {
       },
       futureControls: [...(future?.querySelectorAll('button, a, input, select') || [])]
         .map((control) => ({ tag: control.tagName.toLowerCase(), disabled: control.disabled === true })),
-      renderedRows: document.querySelectorAll('.recordings-dashboard__list > li').length,
+      renderedRows: document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length,
       realRows: actual.items.length + actual.unreadableCount,
       fixture: actual.items.find((item) => item.id === ${JSON.stringify(fixtureRecordingId)}) ?? null,
       recordedByE2e: actual.items.find((item) => item.id === ${JSON.stringify(recordingProof.id)}) ?? null,
@@ -1196,7 +1268,7 @@ try {
         ?.textContent.replace(/\\s+/g, ' ').trim() ?? null,
       recordedRowText: document.querySelector('[data-recording-id="${recordingProof.id}"]')
         ?.textContent.replace(/\\s+/g, ' ').trim() ?? null,
-      firstRowText: document.querySelector('.recordings-dashboard__list > li')?.textContent.replace(/\\s+/g, ' ').trim() ?? null,
+      firstRowText: document.querySelector('.recordings-dashboard__list li[data-recording-id]')?.textContent.replace(/\\s+/g, ' ').trim() ?? null,
       emptyState: document.querySelector('.recordings-dashboard__empty')?.textContent.trim() ?? null,
     };
   })()`);
@@ -1224,16 +1296,17 @@ try {
   observations.push({ check: "day-hierarchy-and-real-data", ...day });
   const dayLayout = day.layout;
   if (day.heading.top < 145 || day.heading.top > 205
-    || dayLayout.toolbar.top < 225 || dayLayout.toolbar.top > 285
+    || Math.abs(dayLayout.toolbar.top - 240) > 2
     || !dayLayout.notice || dayLayout.notice.height > 42
     || dayLayout.notice.bottom > dayLayout.entries[0]?.top
     || dayLayout.entries.length !== 2
-    || dayLayout.entries.some((entry) => !entry || entry.height < 62 || entry.height > 92)
-    || dayLayout.entries[0].top < 285 || dayLayout.entries[0].top > 350
+    || dayLayout.entries.some((entry) => !entry || Math.abs(entry.height - 98) > 2)
+    || Math.abs(dayLayout.entries[0].top - 364) > 2
     || dayLayout.entries[1].top <= dayLayout.entries[0].top
-    || dayLayout.footer.height !== 44 || dayLayout.footer.top < 680
+    || dayLayout.footer.height !== 44 || dayLayout.footer.top !== 691
     || dayLayout.footer.bottom > day.viewport.height
-    || dayLayout.entries[1]?.bottom > dayLayout.footer.top || dayLayout.horizontalOverflow) {
+    || dayLayout.entries[1]?.bottom > dayLayout.footer.top || dayLayout.horizontalOverflow
+    || !timelineGeometryValid(dayLayout)) {
     throw new Error(`Rozvržení Mého dne neodpovídá kompozici Astry nebo obsah přetéká: ${JSON.stringify(dayLayout)}.`);
   }
   observations.push({ check: "astra-layout-day", ...dayLayout });
@@ -1268,8 +1341,8 @@ try {
     const card = row?.querySelector('[data-testid="recording-detail"]');
     const buttons = [...(card?.querySelectorAll('button') || [])];
     const claim = buttons.find((button) => button.textContent.trim() === 'Převzít pod svůj účet');
-    const storageValues = [...(card?.querySelectorAll('.recording-queue-card__storage dd') || [])]
-      .map((item) => item.textContent.trim());
+    const soundValue = [...(card?.querySelectorAll('.recording-queue-card__storage dt') || [])]
+      .find(item => item.textContent.trim() === 'Zvuk')?.nextElementSibling;
     return {
       open: card?.open === true,
       id: row?.dataset.recordingId,
@@ -1281,7 +1354,7 @@ try {
       title: card?.querySelector('.recording-queue-card__detail-heading h1')?.textContent.trim(),
       stages: [...(card?.querySelectorAll('.recording-queue-card__journey li') || [])]
         .map((step) => ({ label: step.textContent.trim(), complete: step.classList.contains('is-complete') })),
-      soundFormat: storageValues[1],
+      soundFormat: soundValue?.textContent.trim(),
       sendActionVisible: buttons.some((button) => button.textContent.trim() === 'Uložit a odeslat'),
       claimDisabled: claim?.disabled,
     };
@@ -1392,9 +1465,12 @@ try {
   observations.push({ check: "detail-back-to-day", ...detailBack });
 
   await clickSelector(settings, '[data-filter="local"]', "filtr Jen na Macu");
+  await waitFor(() => settings.evaluate(`document.querySelector('[data-filter="local"]')?.getAttribute('aria-pressed') === 'true'
+    && document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length === 2`),
+  "lokální filtr po dokončení obnovy při focusu");
   const localFilter = await settings.evaluate(`({
     active: document.querySelector('[data-filter="local"]')?.getAttribute('aria-pressed'),
-    rows: document.querySelectorAll('.recordings-dashboard__list > li[data-recording-id]').length,
+    rows: document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length,
   })`);
   if (localFilter.active !== "true" || localFilter.rows !== 2) {
     throw new Error(`Filtr Jen na Macu neodpovídá skutečné frontě: ${JSON.stringify(localFilter)}.`);
@@ -1402,9 +1478,12 @@ try {
   observations.push({ check: "local-recording-filter", ...localFilter });
 
   await clickSelector(settings, '[data-filter="delivery"]', "filtr Odesílání");
+  await waitFor(() => settings.evaluate(`document.querySelector('[data-filter="delivery"]')?.getAttribute('aria-pressed') === 'true'
+    && document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length === 0
+    && Boolean(document.querySelector('.recordings-dashboard__empty'))`), "pravdivý prázdný filtr odesílání");
   const deliveryFilter = await settings.evaluate(`({
     active: document.querySelector('[data-filter="delivery"]')?.getAttribute('aria-pressed'),
-    rows: document.querySelectorAll('.recordings-dashboard__list > li[data-recording-id]').length,
+    rows: document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length,
     empty: document.querySelector('.recordings-dashboard__empty')?.textContent.trim(),
   })`);
   if (deliveryFilter.active !== "true" || deliveryFilter.rows !== 0 || !deliveryFilter.empty) {
@@ -1464,7 +1543,7 @@ try {
     const box = (element) => {
       if (!element) return null;
       const rect = element.getBoundingClientRect();
-      return { top: Math.round(rect.top), bottom: Math.round(rect.bottom), left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width), height: Math.round(rect.height) };
+      return { top: Math.round(rect.top + content.scrollTop), bottom: Math.round(rect.bottom + content.scrollTop), left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width), height: Math.round(rect.height) };
     };
     const content = document.querySelector('.settings-content');
     const footer = document.querySelector('.settings-footer');
@@ -1496,7 +1575,7 @@ try {
     };
   })()`);
   const settingsVisible = (box) => box && box.width > 0 && box.height > 0
-    && box.top >= 0 && box.bottom <= settingsLayout.viewport.height - 44
+    && box.top >= 0
     && box.left >= 0 && box.right <= settingsLayout.viewport.width;
   if (settingsLayout.viewport.width !== 640 || settingsLayout.viewport.height !== 744
     || !settingsVisible(settingsLayout.heading) || !settingsVisible(settingsLayout.account)
@@ -1516,10 +1595,42 @@ try {
     || !(settingsLayout.company.bottom <= settingsLayout.automatic.top
       && settingsLayout.automatic.bottom <= settingsLayout.environmentRow.top
       && settingsLayout.environmentRow.bottom <= settingsLayout.destination.top)
+    || settingsLayout.footer?.display !== "flex" || settingsLayout.footer?.height !== 44
+    || settingsLayout.footer?.top !== 691 || settingsLayout.footer?.bottom !== 735
     || settingsLayout.horizontalOverflow) {
-    throw new Error(`Nastavení neukazuje hlavní Astra přehled v jednom viewportu: ${JSON.stringify(settingsLayout)}.`);
+    throw new Error(`Nastavení nemá zachovanou čitelnou kompozici: ${JSON.stringify(settingsLayout)}.`);
   }
-  observations.push({ check: "astra-layout-settings", ...settingsLayout });
+  const settingsReachability = await settings.evaluate(`(() => {
+    const content = document.querySelector('.settings-content');
+    const footer = document.querySelector('.settings-footer');
+    const originalScroll = content.scrollTop;
+    const elements = [...document.querySelectorAll('.settings-group h2, .settings-group button, .settings-group select, .settings-group input, .settings-audio-action button, [data-testid="update-check-now"], .settings-footer button')];
+    const results = elements.map(element => {
+      element.scrollIntoView({ block: 'center', behavior: 'instant' });
+      const rect = element.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      const footerRect = footer.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      const inFooter = footer.contains(element);
+      const signedOutLogout = element.textContent.trim() === 'Odhlásit tento Mac'
+        && document.querySelector('[data-testid="settings-account"]')?.dataset.authState === 'signed-out'
+        && element.disabled === true && rect.width === 0 && rect.height === 0;
+      return { label: element.getAttribute('aria-label') || element.textContent.trim() || element.id,
+        top: rect.top, bottom: rect.bottom, height: rect.height,
+        signedOutLogout,
+        reachable: signedOutLogout || (rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth
+          && rect.top >= (inFooter ? footerRect.top : contentRect.top)
+          && rect.bottom <= (inFooter ? innerHeight : footerRect.top)
+          && Boolean(hit && (element.contains(hit) || hit.contains(element)))),
+        disabled: element.disabled === true };
+    });
+    content.scrollTop = originalScroll;
+    return results;
+  })()`);
+  if (settingsReachability.length < 10 || settingsReachability.some(item => !item.reachable)) {
+    throw new Error(`Skupina nebo ovladač Nastavení není dosažitelný nad patičkou: ${JSON.stringify(settingsReachability)}.`);
+  }
+  observations.push({ check: "astra-layout-settings", ...settingsLayout, reachability: settingsReachability });
   observations.push({
     check: "update-check-isolated-from-production",
     visible: settingsState.updateCheckVisible,
@@ -1823,3 +1934,5 @@ const visualScreenshotStatus = comparisonPairs.every((pair) => pair.referenceScr
 console.log(`${visualScreenshotStatus}  acceptance · Screenshoty zachycené pro vizuální kontrolu`);
 console.log(`${exitCode === 0 ? "🧪" : "⛔"} Astra design E2E: ${path.relative(projectRoot, outputDir)}`);
 process.exitCode = exitCode;
+
+}

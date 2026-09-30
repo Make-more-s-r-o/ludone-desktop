@@ -1,0 +1,27 @@
+
+> ludone-desktop-prototype@0.1.6 test:unit
+> vitest run tests/upload-company-selector.test.js tests/settings.test.js tests/recording-card.test.js tests/recordings-dashboard.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui
+
+ ✓ tests/upload-company-selector.test.js (12 tests) 576ms
+ ✓ tests/recordings-dashboard.test.js (30 tests) 3310ms
+   ✓ dashboard fronty nahrávek > čekající schválená nahrávka po volbě firmy nabídne skutečné Zkusit znovu  374ms
+   ✓ produktové dotažení dne > dlouhou historii seskupí po místním dni a zachová chronologii i filtry  429ms
+ ✓ tests/recording-card.test.js (68 tests) 7424ms
+   ✓ produktové dotažení Teď > aktivní Teď zůstane v panelu; den a nastavení mají vlastní cíl  710ms
+   ✓ produktové dotažení Teď > velká fronta zůstává za nahráváním a odkaz otevře její přehled  330ms
+   ✓ nahrávání při zneplatnění relace > stav expired ponechá Stop i lokální uložení, ale zavře odesílání  340ms
+ ✓ tests/settings.test.js (62 tests) 8607ms
+   ✓ poctivý výsledek odhlášení v Nastavení > potvrzené odhlášení na Macu i serveru zachová dosavadní úspěch  699ms
+   ✓ poctivý výsledek odhlášení v Nastavení > 'chybějící serverRevoked': ukáže varování a další krok, Mac zůstane odhlášený  328ms
+   ✓ pravdivá identita v Nastavení > dlouhý e-mail v kartě Účet nenastaví běžné lámání uprostřed slova  312ms
+
+ Test Files  4 passed (4)
+      Tests  172 passed (172)
+   Start at  16:43:02
+   Duration  11.21s (transform 1.19s, setup 58ms, collect 8.12s, tests 19.92s, environment 0ms, prepare 561ms)
+
+
+EXIT_CODE=0

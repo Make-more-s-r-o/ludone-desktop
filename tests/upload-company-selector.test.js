@@ -105,3 +105,6 @@ describe("samostatný výběr firmy", () => {
     expect(ludone.selectUploadCompany).not.toHaveBeenCalled();
   });
 });
+
+// @ts-expect-error Regresní JSX scénáře transformuje Vite.
+import "../src/components/UploadCompanySelector.test.jsx";

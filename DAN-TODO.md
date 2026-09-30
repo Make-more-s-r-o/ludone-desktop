@@ -1,6 +1,6 @@
 # Co čeká na Dana — LuDone Desktop
 
-**30. 9. 2026 — nový kandidát:** 🧪 produktové dotažení otestované (1 607 PASS, 18 stavů, 29 cest), zatím nevydané. ⚠️ Q1: konkrétní nová hierarchie panelu odporuje původnímu vizuálnímu E2E kontraktu; před publikací potřebuje rozhodnutí nad [galerií](dukazy/produktove-dotazeni-2026-09-30/index.html). Opravy firmy/viditelnosti před uploadem mezitím pokračují samostatně. Fyzickou přejímku provedeme až s hotovým kandidátem.
+**30. 9. 2026 — kandidát0.1.7 připraven:** 🧪1 654PASS,35 hlavních podmínek,18 stavů a41 produktových cest; review bezP1/P2. D10/D11 vyřízené, firma/přístup hotové. Nic nyní nerozhodovat ani nehledat hesla. Po potvrzení vydání zbývá jen [krátká Mac přejímka](docs/changes/desktop-astra-parity-0-1-6/MAC-PREJIMKA.md): uložená firma, soukromá lokální nahrávka po restartu, jeden skutečný upload a zvuk. 🟡 Publikaci dokončuje agent.
 
 **30. 9. 2026 — 0.1.6 je vydaná:** přístupy, podpis, notarizace a publikace jsou vyřízené. Stačí **Nastavení → Zkontrolovat aktualizace → Aktualizovat**, potom [krátký postup na Macu](docs/changes/desktop-astra-parity-0-1-6/MAC-PREJIMKA.md), přibližně 10 minut bez živého hovoru. Zelené E2E, CI a review už proběhly. 🟡 Zbývá člověkem ověřit skutečný zvuk, upload a instalaci; nic nového nyní nerozhodovat ani nehledat hesla. Níže datované body 14.–15. 9. jsou historická zjištění, nikoli dnešní stav vydání.
 

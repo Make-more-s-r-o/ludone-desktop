@@ -1,0 +1,3 @@
+Původní izolovaný běh: .runtime/desktop-product-audit/2026-09-30T14-56-51.185Z
+Archivovány jen soubory v nejvyšší úrovni; osobní/userData profily a syntetický zvuk nejsou součástí archivu.
+Zdrojový kandidát: 1e9c44c + necommitované změny integračních scripts/verze.

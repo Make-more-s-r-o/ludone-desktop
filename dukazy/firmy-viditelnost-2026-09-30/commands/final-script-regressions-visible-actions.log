@@ -1,0 +1,127 @@
+TAP version 13
+# Subtest: D10: pozorované Nahrávání první vyhovuje přesnému kontraktu
+ok 1 - D10: pozorované Nahrávání první vyhovuje přesnému kontraktu
+  ---
+  duration_ms: 0.593167
+  type: 'test'
+  ...
+# Subtest: D10 odmítne: návrat dominantního LuTracku
+ok 2 - D10 odmítne: návrat dominantního LuTracku
+  ---
+  duration_ms: 0.457666
+  type: 'test'
+  ...
+# Subtest: D10 odmítne: změněná výška nahrávání
+ok 3 - D10 odmítne: změněná výška nahrávání
+  ---
+  duration_ms: 0.067416
+  type: 'test'
+  ...
+# Subtest: D10 odmítne: chybějící nahrávání
+ok 4 - D10 odmítne: chybějící nahrávání
+  ---
+  duration_ms: 0.049833
+  type: 'test'
+  ...
+# Subtest: D10 odmítne: přehled před nahráváním
+ok 5 - D10 odmítne: přehled před nahráváním
+  ---
+  duration_ms: 0.10075
+  type: 'test'
+  ...
+# Subtest: D10 odmítne: viditelný budoucí ovladač
+ok 6 - D10 odmítne: viditelný budoucí ovladač
+  ---
+  duration_ms: 0.050625
+  type: 'test'
+  ...
+# Subtest: D10 odmítne: aktivní budoucí ovladač
+ok 7 - D10 odmítne: aktivní budoucí ovladač
+  ---
+  duration_ms: 0.08725
+  type: 'test'
+  ...
+# Subtest: D10 odmítne: překrytí patičkou
+ok 8 - D10 odmítne: překrytí patičkou
+  ---
+  duration_ms: 0.825792
+  type: 'test'
+  ...
+# Subtest: D10: denní skupina má čas a stav bez překryvu
+ok 9 - D10: denní skupina má čas a stav bez překryvu
+  ---
+  duration_ms: 0.274917
+  type: 'test'
+  ...
+# Subtest: D10 den odmítne: chybějící skutečný řádek
+ok 10 - D10 den odmítne: chybějící skutečný řádek
+  ---
+  duration_ms: 0.280583
+  type: 'test'
+  ...
+# Subtest: D10 den odmítne: čas zasahující do nahrávky
+ok 11 - D10 den odmítne: čas zasahující do nahrávky
+  ---
+  duration_ms: 0.090875
+  type: 'test'
+  ...
+# Subtest: D10 den odmítne: zkrácený stav
+ok 12 - D10 den odmítne: zkrácený stav
+  ---
+  duration_ms: 0.044916
+  type: 'test'
+  ...
+# Subtest: D10 den odmítne: překrytí druhé položky patičkou
+ok 13 - D10 den odmítne: překrytí druhé položky patičkou
+  ---
+  duration_ms: 0.040625
+  type: 'test'
+  ...
+# Subtest: D10 den odmítne: nesprávná kalendářní skupina
+ok 14 - D10 den odmítne: nesprávná kalendářní skupina
+  ---
+  duration_ms: 0.037041
+  type: 'test'
+  ...
+# Subtest: produktový audit končí bezpečně
+    # Subtest: přijme úplný lokální důkaz bez síťového pokusu
+    ok 1 - přijme úplný lokální důkaz bez síťového pokusu
+      ---
+      duration_ms: 0.88425
+      type: 'test'
+      ...
+    # Subtest: odmítne prázdný výsledek i chybějící výsledek
+    ok 2 - odmítne prázdný výsledek i chybějící výsledek
+      ---
+      duration_ms: 0.154708
+      type: 'test'
+      ...
+    # Subtest: odmítne každý síťový pokus i neznámé počítadlo
+    ok 3 - odmítne každý síťový pokus i neznámé počítadlo
+      ---
+      duration_ms: 0.108583
+      type: 'test'
+      ...
+    # Subtest: odmítne selhání, chybějící a prázdné screenshoty
+    ok 4 - odmítne selhání, chybějící a prázdné screenshoty
+      ---
+      duration_ms: 1.081708
+      type: 'test'
+      ...
+    1..4
+ok 15 - produktový audit končí bezpečně
+  ---
+  duration_ms: 2.76975
+  type: 'suite'
+  ...
+1..15
+# tests 18
+# suites 1
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 46.779292
+
+EXIT_CODE=0

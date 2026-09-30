@@ -46,11 +46,8 @@ ikona v liště → Teď → nahrát schůzku → uložit a odeslat / nechat na 
 
 ## Otevřené otázky
 
-### Q1 — Obnova vizuálního kontraktu před vydáním
-
-Blokuje publikaci další desktopové verze. Konkrétní dotažení a původní nezměněný
-FAIL jsou v galerii checkpointu; nezávislé T-12/T-13 pokračují. Rozhodnutí člověka
-je v decisions.md, žádná výjimka dosud nebyla udělena.
+Žádné otevřené. D10 výslovně potvrzuje dotažený panel; finální brána se obnoví
+podle tohoto konkrétního artefaktu při zachování všech funkčních a bezpečnostních kontrol.
 
 ## Doslovné citace zadavatele
 

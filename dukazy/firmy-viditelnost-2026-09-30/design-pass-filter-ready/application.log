@@ -1,0 +1,26 @@
+
+DevTools listening on ws://127.0.0.1:64731/devtools/browser/effc0fea-490c-4866-8541-a01accab18c3
+[tray] 2026-09-30T19:09:47.905Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] Při startu obnoveno nahrávek: 1.
+[queue] odesláno 0, konec: žádná položka není připravená
+[recording] Připraveny oddělené soubory s prefixem 2026-09-30T19-09-48-788Z-c85d8a35.
+[recording] Uloženo: mikrofon 27225 B, systém 27225 B.
+[queue] Zařazeno c85d8a35-24fc-43e7-ae27-248d2536d37d (recording).
+[recording-export] Uloženo c85d8a35-24fc-43e7-ae27-248d2536d37d; rozdíl startů 5 ms.
+
+DevTools listening on ws://127.0.0.1:64731/devtools/browser/0c8e4d34-d38b-485b-bd8b-ccc424a15f83
+[tray] 2026-09-30T19:09:51.417Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] odesláno 0, konec: žádná položka není připravená
+
+DevTools listening on ws://127.0.0.1:64731/devtools/browser/030c8f15-880b-4d40-ba21-339ea0731815
+[tray] 2026-09-30T19:09:54.911Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] odesláno 0, konec: žádná položka není připravená
+
+DevTools listening on ws://127.0.0.1:64731/devtools/browser/f59ef5bc-d74e-4463-98b0-d3f2d8ab6e55
+[tray] 2026-09-30T19:09:55.716Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] Při startu obnoveno nahrávek: 1.
+[queue] odesláno 0, konec: žádná položka není připravená

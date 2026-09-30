@@ -238,6 +238,7 @@ async function inspectManifest(recordingsDirectory, manifestPath, derivativePath
     ? existing.reduce((sum, track) => sum + track.sizeBytes, 0) : null;
   return {
     identifiedId,
+    uploadPreferencesLocked: typeof parsed.sessionId === "string" && parsed.sessionId.length > 0,
     invalid: false,
     createdAt: validated.manifest.createdAt,
     durationMs: durationFromManifest(validated.manifest, validated.sources),
@@ -335,6 +336,8 @@ function safeProjectedItem(projected) {
     nextAttemptAt: Number.isSafeInteger(projected.nextAttemptAt) && projected.nextAttemptAt >= 0
       ? projected.nextAttemptAt : null,
     server: projected.server,
+    uploadPreferences: projected.uploadPreferences ?? null,
+    uploadPreferencesLocked: projected.uploadPreferencesLocked === true,
     revision: projected.revision,
     ownership: ["unknown", "current", "other", "unavailable"].includes(projected.ownership)
       ? projected.ownership : "unavailable",
@@ -421,6 +424,7 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
     items.push({
       ...safeProjectedItem(projected),
       source: "queue",
+      uploadPreferencesLocked: projected.uploadPreferencesLocked === true || inspected.uploadPreferencesLocked === true,
       localState: inspected.invalid ? "invalid-manifest" : inspected.localState,
       localReason: inspected.invalid ? "Primární manifest nelze bezpečně přečíst." : inspected.localReason ?? null,
       fileRevision: inspected.fileRevision ?? null,

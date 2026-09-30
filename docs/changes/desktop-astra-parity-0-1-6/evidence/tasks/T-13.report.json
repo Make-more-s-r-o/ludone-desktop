@@ -1,0 +1,129 @@
+{
+  "summary": "Settings obnoví uložený default lokálním getterem a čerstvou nabídkou, rozliší dirty/saving/saved/error a ponechá select po uložení. Sdílený per-recording picker ve stopform a detailu nastaví firmu/přístup; nové stopform mají company, historické private fallback. Explicitní transakce obnovují krátkodobou nabídku při zachování uživatelovy volby. Detail configure→refresh→nový explicitní send používá nové CAS revize, chyby/stale i dirty blokují send/retry, zero-progress403 zůstává opravitelné, progress zamčený. Offline keep uloží lokálně a neprohlašuje uložené upload volby.",
+  "premisaPlatila": true,
+  "premisaPoznamka": "Původní selector po mount zobrazoval jen Načíst firmy a po save skryl výběr; stopform a detail neměly per-recording volby. Moderní lokální getter umožnil napravit otevření bez změny původní capability fallback cesty.",
+  "kontrolniNula": {
+    "souboruMimoAllowlist": 0,
+    "serverChanges": 0,
+    "gitZapisu": 0
+  },
+  "kontroly": [
+    {
+      "kontrola": "default po novém otevření",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "pending/saved/error",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "company default nové položky a private historické",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "výběr neovlivní default účtu",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "přesný payload",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "zamčená položka",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "stale snapshot + refresh bez automatického send",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "odmítnutí uploadu po chybě uložení",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "explicitní oprava zero-progress 403",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "spotřebovaný offer token se před dalším save obnoví",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "busy stop save failure zachová private draft, další explicitní klik obnoví token",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "detail error/stale role alert, saved role status",
+      "stav": "PASS"
+    },
+    {
+      "kontrola": "Review P2: zamčený failed/progress detail neoznačuje draft dirty; povolený retry použije původní CAS a prefs, close/reopen jej neblokuje, nabídka/configure se nevolají.",
+      "stav": "PASS"
+    }
+  ],
+  "doslovnyVystupTestu": "\n> ludone-desktop-prototype@0.1.6 test:unit\n> vitest run tests/upload-company-selector.test.js tests/settings.test.js tests/recording-card.test.js tests/recordings-dashboard.test.js\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui\n\n ✓ tests/upload-company-selector.test.js (12 tests) 239ms\n ✓ tests/recordings-dashboard.test.js (30 tests) 1407ms\n ✓ tests/recording-card.test.js (68 tests) 3512ms\n ✓ tests/settings.test.js (62 tests) 3933ms\n   ✓ poctivý výsledek odhlášení v Nastavení > potvrzené odhlášení na Macu i serveru zachová dosavadní úspěch  335ms\n\n Test Files  4 passed (4)\n      Tests  172 passed (172)\n   Start at  16:40:57\n   Duration  5.76s (transform 656ms, setup 118ms, collect 5.61s, tests 9.09s, environment 1ms, prepare 287ms)\n\n\nEXIT_CODE=0\n",
+  "typecheck": "\n> ludone-desktop-prototype@0.1.6 typecheck\n> tsc --noEmit -p jsconfig.json\n\n\nEXIT_CODE=0\n",
+  "scopedLint": "\nEXIT_CODE=0\n",
+  "sabotaze": [
+    {
+      "mutace": "Dočasně ve stopform změněn defaultVisibility company na private; přesně obnoveno z vlastní kopie.",
+      "prikaz": "npm run test:unit -- tests/recording-card.test.js -t 'nový stopform uloží firmu'",
+      "doslovnyVystup": "\n> ludone-desktop-prototype@0.1.6 test:unit\n> vitest run tests/recording-card.test.js -t nový stopform uloží firmu\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui\n\n ❯ tests/recording-card.test.js (67 tests | 1 failed | 66 skipped) 180ms\n   ↓ produktové dotažení Teď > aktivní Teď zůstane v panelu; den a nastavení mají vlastní cíl\n   ↓ produktové dotažení Teď > velká fronta zůstává za nahráváním a odkaz otevře její přehled\n   ↓ produktové dotažení Teď > moderní výsledek queued má lidské potvrzení a dosažitelný přehled\n   ↓ produktové dotažení Teď > moderní výsledek saved_local má lidské potvrzení a dosažitelný přehled\n   ↓ produktové dotažení Teď > moderní výsledek sent má lidské potvrzení a dosažitelný přehled\n   ↓ produktové dotažení Teď > moderní výsledek unknown má lidské potvrzení a dosažitelný přehled\n   ↓ nahrávání při zneplatnění relace > stav expired ponechá Stop i lokální uložení, ale zavře odesílání\n   ↓ nahrávání při zneplatnění relace > stav none ponechá Stop i lokální uložení, ale zavře odesílání\n   ↓ RecordingCard > volba send zachová title a použije nový save-decision kontrakt\n   ↓ RecordingCard > volba keep zachová title a použije nový save-decision kontrakt\n   ↓ RecordingCard > automatický snapshot po finish spustí stejnou send cestu právě jednou\n   ↓ RecordingCard > výsledek queued po uložení popíše pravdivě stav odeslání\n   ↓ RecordingCard > výsledek saved_local po uložení popíše pravdivě stav odeslání\n   ↓ RecordingCard > 501 jednotek odmítne u pole, zachová uloženou nahrávku a dovolí opravu (0)\n   ↓ RecordingCard > 501 jednotek odmítne u pole, zachová uloženou nahrávku a dovolí opravu (1)\n   ↓ RecordingCard > 501 jednotek odmítne u pole, zachová uloženou nahrávku a dovolí opravu (2)\n   ↓ RecordingCard > přijme nejvýš 500 jednotek po trim i prázdný název (0)\n   ↓ RecordingCard > přijme nejvýš 500 jednotek po trim i prázdný název (1)\n   ↓ RecordingCard > přijme nejvýš 500 jednotek po trim i prázdný název (2)\n   ↓ RecordingCard > přijme nejvýš 500 jednotek po trim i prázdný název (3)\n   ↓ RecordingCard > přijme nejvýš 500 jednotek po trim i prázdný název (4)\n   ↓ RecordingCard > po odmítnutí dlouhého názvu dovolí Nechat na Macu s opraveným názvem\n   ↓ RecordingCard > při nahrávání ani s tichými stopami netvrdí, že jsou ověřeny\n   ↓ RecordingCard > za běhu mění oba pruhy podle ticha a hlasitého vstupu\n   ↓ RecordingCard > selhání měřidla nezasáhne do nahrávání ani uložení stop\n   ↓ RecordingCard > chyba při čtení měřidlo nenechá zamrzlé a nahrávání pokračuje\n   ↓ RecordingCard > při spuštění požádá o mikrofon i systémový zvuk\n   ↓ RecordingCard > jen s mikrofonem nahrává dál a varuje před spuštěním i během nahrávání\n   ↓ RecordingCard > bez mikrofonu nahrávání nespustí a řekne proč\n   ↓ RecordingCard > druhý klik během přípravy nespustí druhou nahrávku\n   ↓ RecordingCard > zastavení dokončí rozepsanou session\n   ↓ RecordingCard > příkaz z kontextového menu bezpečně dokončí rozepsanou session\n   ↓ RecordingCard > podrží stop příkaz, který dorazí během přípravy hlavní session\n   ↓ RecordingCard > předá vyrobené chunky obou rekordérů do úložiště\n   ↓ RecordingCard > po uložení nabídne samostatné tlačítko Uložit a odeslat\n   ↓ RecordingCard > po uložení +0 s ukáže přesně '0 sekund'\n   ↓ RecordingCard > po uložení 1 s ukáže přesně '1 sekunda'\n   ↓ RecordingCard > po uložení 2 s ukáže přesně '2 sekundy'\n   ↓ RecordingCard > po uložení 5 s ukáže přesně '5 sekund'\n   ↓ RecordingCard > po uložení 8 s ukáže přesně '8 sekund'\n   ↓ RecordingCard > po uložení 59 s ukáže přesně '59 sekund'\n   ↓ RecordingCard > po uložení 59.6 s ukáže přesně '1 minuta'\n   ↓ RecordingCard > po uložení 60 s ukáže přesně '1 minuta'\n   ↓ RecordingCard > po uložení 89 s ukáže přesně '1 minuta'\n   ↓ RecordingCard > po uložení 90 s ukáže přesně '2 minuty'\n   ↓ RecordingCard > po uložení 300 s ukáže přesně '5 minut'\n   ↓ RecordingCard > neplatné datum ('chybějící začátek') nespadne ani nevypíše NaN\n   ↓ RecordingCard > neplatné datum ('nesmyslný konec') nespadne ani nevypíše NaN\n   ↓ RecordingCard > s rozbalenou frontou jsou po dokončení nahrávky obě akce dosažitelné na 400px ploše\n   ↓ RecordingCard > pojmenování předvyplní datum a čas, fokusuje pole a předá změněný název\n   ↓ RecordingCard > Nechat na Macu neztratí dokončenou nahrávku a zachová název\n   ↓ RecordingCard > Nechat na Macu potvrdí uložení ve Stažených a poradí přehrání WebM\n   ↓ RecordingCard > Uložit a odeslat potvrdí uložení ve Stažených a poradí přehrání WebM\n   ↓ RecordingCard > při selhání otevření stránky uživateli řekne, že soubor je uložený\n   ↓ RecordingCard > uložení původních stop nečeká na dokončení stereo exportu\n   ↓ RecordingCard > selhání exportu ponechá uloženou nahrávku i možnost pokus opakovat\n   ↓ RecordingCard > při selhání přípravy exportu během quitu ukáže následek a ukončí až po potvrzení\n   ↓ RecordingCard > selhání přípravy exportu mimo quit nezmění obrazovku uložené nahrávky\n   ↓ RecordingCard > definitivní konec systémové stopy okamžitě zobrazí výpadek\n   ↓ RecordingCard > krátké ztišení pod dvě sekundy nehlásí ztrátu stopy\n   ↓ RecordingCard > po potvrzeném výpadku mikrofon pokračuje a nahrávku lze uložit\n   ↓ RecordingCard > úspěšné obnovení vrátí systémovou stopu bez restartu nahrávání\n   ↓ RecordingCard > samoobnovená původní stopa zůstane živá i po neúspěšném ručním pokusu\n   ↓ RecordingCard > App hlásí výpadek systémového zvuku jako boolean a po obnově jej stáhne\n   ↓ RecordingCard > App ponechá připravovaný LuTrack neaktivní i během nahrávání\n   × nový stopform uloží firmu a private override atomicky; account default nemění 179ms\n     → expected 'private' to be 'company' // Object.is equality\n   ↓ stopform bez nabídky odmítne send, ale ponechá místní uložení\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  tests/recording-card.test.js > nový stopform uloží firmu a private override atomicky; account default nemění\nAssertionError: expected 'private' to be 'company' // Object.is equality\n\nExpected: \"company\"\nReceived: \"private\"\n\n ❯ tests/recording-card.test.js:1808:30\n    1806|     await startRecording(panel); await stopRecording(panel);\n    1807|     const visibility = panel.document.querySelector('[data-testid=\"rec…\n    1808|     expect(visibility.value).toBe(\"company\");\n       |                              ^\n    1809|     await React.act(async () => { visibility.value = \"private\"; visibi…\n    1810|     await panel.click(panel.document.querySelector('button[type=\"submi…\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed | 66 skipped (67)\n   Start at  15:46:57\n   Duration  1.42s (transform 175ms, setup 9ms, collect 950ms, tests 180ms, environment 0ms, prepare 49ms)\n\n\nEXIT_CODE=1\n",
+      "stav": "PASS — nový regresní test zčervenal s EXIT_CODE=1"
+    },
+    {
+      "stav": "PASS — po přesném obnovení 172 testů zelených, EXIT_CODE=0",
+      "doslovnyVystup": "\n> ludone-desktop-prototype@0.1.6 test:unit\n> vitest run tests/upload-company-selector.test.js tests/settings.test.js tests/recording-card.test.js tests/recordings-dashboard.test.js\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui\n\n ✓ tests/upload-company-selector.test.js (12 tests) 239ms\n ✓ tests/recordings-dashboard.test.js (30 tests) 1407ms\n ✓ tests/recording-card.test.js (68 tests) 3512ms\n ✓ tests/settings.test.js (62 tests) 3933ms\n   ✓ poctivý výsledek odhlášení v Nastavení > potvrzené odhlášení na Macu i serveru zachová dosavadní úspěch  335ms\n\n Test Files  4 passed (4)\n      Tests  172 passed (172)\n   Start at  16:40:57\n   Duration  5.76s (transform 656ms, setup 118ms, collect 5.61s, tests 9.09s, environment 1ms, prepare 287ms)\n\n\nEXIT_CODE=0\n"
+    },
+    {
+      "mutace": "Locked read-only callback dočasně vrácen z (null,false) na (null,true), čímž falešně označí draft dirty a blokuje retry. Přesně obnoveno z vlastní kopie.",
+      "prikaz": "npm run test:unit -- tests/recordings-dashboard.test.js -t 'zamčený failed progress detail'",
+      "stav": "PASS — nový regresní test selhal EXIT_CODE=1, po obnovení finální 172 suite EXIT_CODE=0",
+      "doslovnyVystup": "\n> ludone-desktop-prototype@0.1.6 test:unit\n> vitest run tests/recordings-dashboard.test.js -t zamčený failed progress detail\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui\n\n ❯ tests/recordings-dashboard.test.js (30 tests | 1 failed | 29 skipped) 172ms\n   ↓ dashboard fronty nahrávek > čekající schválená nahrávka po volbě firmy nabídne skutečné Zkusit znovu\n   ↓ dashboard fronty nahrávek > initialized nahrávce bez pinu ukáže bezpečný pokyn k volbě firmy\n   ↓ dashboard fronty nahrávek > částečný koš zobrazí zachování souborů i queue položky\n   ↓ dashboard fronty nahrávek > server nevolá při renderu ani refreshi a ověří obě stopy jen po ručním kliku\n   ↓ dashboard fronty nahrávek > refresh změněné revize odstraní dřívější serverový výsledek\n   ↓ dashboard fronty nahrávek > pending ověření po refreshi nesmí zapsat výsledek staré revize\n   ↓ dashboard fronty nahrávek > nabídne převzetí neznámého vlastníka bez chyby, ale ne vlastní 401\n   ↓ dashboard fronty nahrávek > nulovou velikost zobrazí jako 0 B a neplete ji s chybějící hodnotou\n   ↓ dashboard fronty nahrávek > jiný účet může znovu převzít dosud drženou nahrávku\n   ↓ dashboard fronty nahrávek > ukáže bezpečná fakta a dvojklik odešle jediný přesný claim\n   ↓ dashboard fronty nahrávek > zrušené potvrzení ponechá položku i její akci beze změny\n   ↓ dashboard fronty nahrávek > chyba převzetí nabídne čerstvé načtení a odliší jej od prázdného seznamu\n   ↓ dashboard fronty nahrávek > ruční obnovení vykreslí retention ghost, vadný souhrn a potom prázdný stav\n   ↓ dashboard fronty nahrávek > chyba prvního načtení není prázdný stav a tlačítko ji opraví\n   ↓ dashboard fronty nahrávek > stav signed-out vysvětlí blokaci a tlačítko zakáže\n   ↓ dashboard fronty nahrávek > stav expired vysvětlí blokaci a tlačítko zakáže\n   ↓ dashboard fronty nahrávek > stav unknown vysvětlí blokaci a tlačítko zakáže\n   ↓ pravdivá úplnost místního zvuku > complete manifest a systémová stopa systém zachovají soubory i serverový stav\n   ↓ pravdivá úplnost místního zvuku > incomplete manifest a systémová stopa systém zachovají soubory i serverový stav\n   ↓ pravdivá úplnost místního zvuku > complete manifest a systémová stopa  zachovají soubory i serverový stav\n   ↓ pravdivá úplnost místního zvuku > complete manifest a systémová stopa null zachovají soubory i serverový stav\n   ↓ produktové dotažení dne > dlouhou historii seskupí po místním dni a zachová chronologii i filtry\n   ↓ produktové dotažení dne > aktivní nahrávání nehlásí poškození a blokuje akce jen své položky\n   ↓ produktové dotažení dne > obnova a dočasný focus unknown zachovají ověření jen shodného účtu, originu a souboru\n   ↓ náhled má jediný skutečný vstup do dne a pravdivý probíhající stav\n   ↓ neznámý origin nedovolí ověření ani při změně přihlášeného účtu\n   ↓ detail uloží přesný CAS payload bez send, obnoví revize a nový explicitní send používá novou revizi\n   ↓ stale preference chyba obnoví přehled a další send zůstane blokovaný i po nové nabídce\n   ↓ výslovná zero-progress 403 oprava je editovatelná, progress zůstává zamčený\n   × zamčený failed progress detail nezmění draft a dovolí původní retry i po znovuotevření 171ms\n     → expected true to be false // Object.is equality\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  tests/recordings-dashboard.test.js > zamčený failed progress detail nezmění draft a dovolí původní retry i po znovuotevření\nAssertionError: expected true to be false // Object.is equality\n\n- Expected\n+ Received\n\n- false\n+ true\n\n ❯ tests/recordings-dashboard.test.js:825:79\n    823|   try {\n    824|     await openUploadDetail(panel);\n    825|     expect(panel.document.querySelector('.recording-action--retry').di…\n       |                                                                               ^\n    826|     await React.act(async () => panel.document.querySelector('.recordi…\n    827|     expect(panel.ludone.retryRecording).toHaveBeenCalledExactlyOnceWit…\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed | 29 skipped (30)\n   Start at  16:40:27\n   Duration  1.55s (transform 139ms, setup 15ms, collect 991ms, tests 172ms, environment 0ms, prepare 64ms)\n\n\nEXIT_CODE=1\n"
+    }
+  ],
+  "coJsemNEOVERIL": [
+    "GUI, fyzický zvuk a produkční upload",
+    "Výšku stopform v reálném Electron panelu musí ověřit koordinátor v auditovém profilu."
+  ],
+  "uiContract": {
+    "default": "getUploadCompanyDefault→pokud existuje ID listUploadCompanies; staré API nebo null default zachová ruční Načíst firmy. Modern save obnovuje offerToken před selectUploadCompany a hlídá generation.",
+    "stop": "Native recording-upload-company/visibility SELECT; company default pouze nový stopform, explicit prefs atomicky přes saveRecordingDecision. Automatic finish bez pickeru zůstává původní cesta durable company default.",
+    "detail": "configureRecordingUpload({id,queueRev,fileRev,companyId,offerToken,visibility}) vyžaduje configured:true; poté listLocalRecordings, nový klik send. Žádný default save. Failed configuration má samostatnou blokaci send/retry i po načtení nabídky.",
+    "testids": [
+      "upload-company-default",
+      "upload-company-select",
+      "upload-company-save",
+      "upload-company-state",
+      "recording-upload-preferences",
+      "recording-upload-company",
+      "recording-upload-visibility",
+      "recording-upload-preferences-save",
+      "recording-upload-preferences-state"
+    ]
+  },
+  "notes": [
+    "🧪 cílené testy, typecheck a scoped lint zelené; žádné tvrzení o ostré funkčnosti.",
+    "Původní assertions, testové brány ani baseline nezměněny. Nové JSX regrese jsou importované stávajícím allowlist tests/upload-company-selector.test.js, protože vitest include zahrnuje jen tests/**/*.test.js.",
+    "Pouze read-only git status jako závěrečný self-check; žádné Git zápisy, GUI, instalace, server změny nebo subdelegace.",
+    "Scope UI nelze považovat za serverové potvrzení dostupnosti nahrávky ani absolutní soukromí pouze pro vlastníka.",
+    "P2 z review opraven: pouze locked read-only větev vydává dirty:false. Disabled auth, loading a offer error stále blokují změnu/upload fail-closed."
+  ],
+  "layoutRepair": {
+    "summary": "CSS-only kompaktní stopform: gap 7px, menší margin nad title, kompaktní meta s ikonou 15px, name34px, native firma/přístup ve dvou sloupcích s labely. Všechny helper/status texty zachované. Dlouhé alerty max54px ve vlastní scroll oblasti ponechají rozhodovací akce dosažitelné.",
+    "changedFiles": [
+      "src/features/recording/panel-polish.css",
+      "docs/changes/desktop-astra-parity-0-1-6/evidence/tasks/T-13.report.json"
+    ],
+    "doslovnyVystupTestu": "\n> ludone-desktop-prototype@0.1.6 test:unit\n> vitest run tests/recording-card.test.js tests/upload-company-selector.test.js\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui\n\n ✓ tests/upload-company-selector.test.js (12 tests) 132ms\n ✓ tests/recording-card.test.js (68 tests) 1883ms\n\n Test Files  2 passed (2)\n      Tests  80 passed (80)\n   Start at  20:53:33\n   Duration  2.68s (transform 141ms, setup 13ms, collect 1.15s, tests 2.01s, environment 0ms, prepare 69ms)\n\n\nEXIT_CODE=0\n",
+    "typecheck": "\n> ludone-desktop-prototype@0.1.6 typecheck\n> tsc --noEmit -p jsconfig.json\n\n\nEXIT_CODE=0\n",
+    "scopedLint": "\nEXIT_CODE=0\n",
+    "stav": "🧪 cílené testy; skutečná 400×700 geometrie čeká integrační Electron E2E koordinátora.",
+    "coJsemNEOVERIL": [
+      "GUI, skutečná výška tlačítek proti footer y658, screenshoty témat a dlouhé chyby v Electronu."
+    ],
+    "notes": [
+      "Žádná změna brány, assertions, baseline, JSX akcí, prefs ani auth/auto/manual flow."
+    ]
+  }
+}
