@@ -398,9 +398,20 @@ export const RecordingCard = forwardRef(function RecordingCard({
         : result.outcome === "saved_local"
           ? "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."
           : "";
+      // Starší exportní most nemá potvrzený stav odeslání; zachovává vlastní potvrzení souboru.
+      const modernOutcome = typeof modernDecision === "function";
+      const outcomeText = result.outcome === "saved_local"
+        ? "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."
+        : result.outcome === "queued"
+          ? "Uloženo na Macu. Nahrávka čeká ve frontě k odeslání."
+          : result.outcome === "sent"
+            ? "Uloženo a odesláno."
+            : "Uloženo na Macu. Stav odeslání není potvrzený.";
       setNotice({
         type: "success",
-        text: `Soubor ${result.fileName} je uložený ve Stažených. ${deliveryDetail} Přehrajete ho v prohlížeči nebo ve VLC.`,
+        text: modernOutcome ? outcomeText
+          : `Soubor ${result.fileName} je uložený ve Stažených. ${deliveryDetail} Přehrajete ho v prohlížeči nebo ve VLC.`,
+        openRecordings: modernOutcome,
       });
     } catch (error) {
       setExportError(describeError(error));
@@ -917,6 +928,12 @@ export const RecordingCard = forwardRef(function RecordingCard({
                 role={notice.type === "error" ? "alert" : "status"}
               >
                 {notice.text}
+                {notice.openRecordings && (
+                  <button type="button" className="recording-notice__next"
+                    onClick={() => window.ludone.openSettings("recordingQueue")}>
+                    Otevřít nahrávky
+                  </button>
+                )}
               </small>
             ) : todaySummary ? (
               <small data-testid="recording-daily-summary">{todaySummary}</small>

@@ -1,0 +1,75 @@
+/* Teď: nahrávání má stabilní přednost, podrobnosti zůstávají dosažitelné. */
+.panel.panel-polish .panel-scroll > .recording-card {
+  order: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.panel.panel-polish .panel-scroll > .queue-card {
+  order: 1;
+  flex: 0 0 auto;
+  max-height: 190px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--panel-hair);
+  border-radius: 10px;
+  background: var(--panel-page);
+}
+.panel.panel-polish .queue-card__heading h2 { font-size: 14px; }
+.panel.panel-polish .queue-card__heading p { font-size: 11px; margin-top: 3px; }
+.panel.panel-polish .queue-card__summary,
+.panel.panel-polish .queue-card__human,
+.panel.panel-polish .queue-card__secondary,
+.panel.panel-polish .queue-card__failed { margin-top: 10px; }
+.panel.panel-polish .queue-card__copy,
+.panel.panel-polish .queue-card__secondary { min-width: 0; overflow-wrap: anywhere; }
+.panel.panel-polish .queue-card__secondary { flex-wrap: wrap; }
+.panel.panel-polish .queue-card:focus-visible,
+.panel.panel-polish button:focus-visible {
+  outline: 2px solid var(--panel-success);
+  outline-offset: 3px;
+}
+.panel.panel-polish .panel-scroll > [data-testid="day-preview"] { order: 2; }
+/* Původní disabled ovladače zachovávají DOM kontrakt; budoucí funkce je jediný tichý řádek. */
+.panel.panel-polish .panel-scroll > .future-feature.astra-work-hero {
+  display: flex;
+  order: 3;
+  flex: 0 0 auto;
+  min-height: 34px;
+  height: auto;
+  padding: 8px 0;
+  border-top: 1px solid var(--panel-hair);
+  background: transparent;
+}
+.panel.panel-polish .panel-scroll > .future-feature.astra-work-hero > :not(.astra-work-hero__topline) { display: none; }
+.panel.panel-polish .future-feature.astra-work-hero .astra-work-hero__topline {
+  position: static;
+  min-height: 18px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+.panel.panel-polish .future-feature.astra-work-hero .astra-work-hero__topline::before {
+  content: "LuTrack";
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--panel-subtle);
+}
+.panel.panel-polish .future-feature .astra-work-hero__date,
+.panel.panel-polish .future-feature .astra-work-hero__recording-note { display: none; }
+.panel.panel-polish .future-feature__status { font-size: 10px; color: var(--panel-subtle); }
+.panel.panel-polish .idle-feature-row__notice { overflow-wrap: anywhere; }
+.recording-notice__next {
+  display: block;
+  margin-top: 6px;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--panel-success);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
