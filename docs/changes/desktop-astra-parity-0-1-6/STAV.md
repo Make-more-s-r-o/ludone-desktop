@@ -1,6 +1,6 @@
 # Stav běhu `desktop-astra-parity-0-1-6`
 
-**30. 9. 2026 · Astra sloučená PR [#152](https://github.com/Make-more-s-r-o/ludone-desktop/pull/152), release notes PR [#153](https://github.com/Make-more-s-r-o/ludone-desktop/pull/153) · bezpečnostní oprava `fix/desktop-electron-security`**
+**30. 9. 2026 · ✅ verze 0.1.6 podepsaná, notarizovaná a publikovaná · PR #152, #153 a #154 sloučené · 🟡 fyzická Mac přejímka čeká**
 
 ## Implementace a přejímka
 
@@ -13,12 +13,12 @@
 
 [Důkazy a přímé porovnání](evidence/acceptance-electron43-2026-09-30/README.md) · [Mac přejímka](MAC-PREJIMKA.md)
 
-## Co ještě není ověřené
+## Publikace a co ještě není ověřené
 
 - 🟡 Skutečný mikrofon, systémový zvuk, oprávnění macOS, instalace z Finderu, produkční přihlášení/odeslání a skutečná aktualizace čekají na Dana podle krátkého Mac postupu. Zvuk má do té doby nejvýš 🧪.
 - 🟡 Hlavní E2E má upload vypnutý; všechny síťové zápisy jeho main procesu nejsou instrumentované. Stavová E2E je plně lokální. Žádný z těchto běhů neověřuje produkční server.
-- 🧪 CI implementace `2405df1` a opravených release notes `3570432` prošlo, oba PR jsou sloučené.
-- 🟡 První tag v0.1.6 byl vytvořený; publikační běh [36645632382](https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/36645632382) byl zrušený před podpisem/notarizací/publikací. Veřejný feed znovu ověřený ukazuje 0.1.5. Tag zůstává nepoužitý pro vydané artefakty a před obnovením musí ukazovat opravený, ověřený commit.
+- 🧪 CI implementace `2405df1`, release notes `3570432` i runtime opravy `d4428a1` prošlo; PR #152–154 jsou sloučené.
+- ✅ [Vydání0.1.6](evidence/release-2026-09-30/README.md): workflow 36649506694 SUCCESS, veřejný feed 0.1.6 a všech osm artefaktů HTTP200. První canceled run zůstává v archivu, obnoven pouze dosud nepublikovaný tag s přesným lease. Publikovaný tag je nyní neměnný.
 - 🧪 Electron 43.7.6 zachovává macOS 12 a opravuje čtyři high runtime advisories. Oprava prázdného profilu prošla nezávislým security review; dva nové skutečné main/preload průchody mají 35/35 podmínek, stavové E2E 18/18. Vizuální review deseti dvojic bez P1/P2. [Důkazy včetně zachovaných FAIL](evidence/acceptance-electron43-2026-09-30/README.md).
 
 ## Masterplan

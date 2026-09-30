@@ -1,0 +1,39 @@
+import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+const root='/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-astra-parity';
+const require=createRequire(root+'/package.json');
+const yaml=require('js-yaml');
+const out='/private/tmp/ludone-release-0-1-6/';
+const run=JSON.parse(execFileSync('gh',['run','view','36649506694','--json','status,conclusion,headSha,jobs,url'],{encoding:'utf8'}));
+writeFileSync(out+'release-run.json',JSON.stringify(run,null,2)+'\n');
+if(run.status!=='completed'||run.conclusion!=='success'||run.headSha!=='ba0adfe50eae12cf1d3dcb81e6b851ef351237d2')throw Error('Release není úspěšný na očekávaném commitu');
+const log=execFileSync('gh',['run','view','36649506694','--log'],{encoding:'utf8',maxBuffer:20*1024*1024});
+writeFileSync(out+'release-log.txt',log);
+const signatureLog=log.split('\n').filter(line=>line.includes('\tPodepsání, notarizace a ověření DMG + ZIP\t')).join('\n');
+const publicationLog=log.split('\n').filter(line=>line.includes('\tPublikace na stahnout.ludone.cz\t')).join('\n');
+for(const arch of ['arm64','x64'])for(const kind of ['dmg','zip']){
+ const name=`LuDone-Desktop-0.1.6-${arch}.${kind}`;
+ const marker=kind==='dmg'?`PASS DMG obraz a vložená aplikace: ${name}`:`PASS ZIP aplikace, architektura, podpis a notarizace: ${name}`;
+ if(!signatureLog.includes(marker))throw Error('Chybí macOS podpisové ověření '+name);
+ if(!publicationLog.includes(name+': OK'))throw Error('Chybí kontrola přenosu SHA256 '+name);
+}
+if(!log.includes('PASS veřejný feed: metadata verze 0.1.6 a všech osm balíčků/blockmap jsou dostupné'))throw Error('Chybí finální kontrola workflow');
+const base='https://stahnout.ludone.cz/desktop/';
+const res=await fetch(base+'latest-mac.yml',{redirect:'error',headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(20000)});
+if(res.status!==200)throw Error('Feed HTTP '+res.status);
+const bytes=Buffer.from(await res.arrayBuffer());writeFileSync(out+'published-latest-mac.yml',bytes);
+const meta=yaml.load(bytes.toString(),{schema:yaml.JSON_SCHEMA});
+if(meta.version!=='0.1.6'||meta.files.length!==4||!meta.releaseNotes.includes('Astra'))throw Error('Nesprávná verze či poznámky feedu');
+const results=[];
+for(const arch of ['arm64','x64'])for(const kind of ['dmg','zip'])for(const suffix of ['','.blockmap']){
+ const name=`LuDone-Desktop-0.1.6-${arch}.${kind}${suffix}`;
+ const response=await fetch(base+name,{method:'HEAD',redirect:'error',headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(20000)});
+ const size=Number(response.headers.get('content-length'));if(response.status!==200||!Number.isSafeInteger(size)||size<=0)throw Error(name+' nedostupný či bez velikosti');
+ const file=meta.files.find(f=>f.url===name);
+ if(!suffix&&(!file||file.size!==size||Buffer.from(file.sha512,'base64').length!==64))throw Error(name+' neodpovídá feedu');
+ results.push({name,http:response.status,bytes:size,comparedToFeed:!suffix});console.log('PASS',name,response.status,size);
+}
+writeFileSync(out+'public-verification.json',JSON.stringify({measuredAt:new Date().toISOString(),version:meta.version,releaseCommit:run.headSha,releaseRun:run.url,feedSha256:createHash('sha256').update(bytes).digest('hex'),feedBytes:bytes.length,files:results,scope:'Nezávislé GET/HEAD veřejných souborů; celé binárky se zde nestahují. Podpis/notarizaci a SHA256 přenos ověřil uložený macOS workflow log. Fyzické nahrávání, upload a instalaci potvrzuje člověk.'},null,2)+'\n');
+console.log('PASS podpis/notarizace, přenos SHA256, veřejný feed0.1.6 a všech8artefaktů');
