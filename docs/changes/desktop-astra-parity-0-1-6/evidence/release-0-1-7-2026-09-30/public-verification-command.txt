@@ -1,0 +1,3 @@
+PASS veřejný feed0.1.7 a osm instalačních souborů/blockmap: HTTP200, balíčky mají velikost shodnou s feedem
+
+EXIT_CODE=0

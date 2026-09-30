@@ -1,0 +1,24 @@
+import { writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { parseMacUpdateMetadata, expectedReleaseFileNames } from "./scripts/release-artifacts.mjs";
+const proof = "docs/changes/desktop-astra-parity-0-1-6/evidence/release-0-1-7-2026-09-30/";
+const base = "https://stahnout.ludone.cz/desktop/";
+const feedResponse = await fetch(base + "latest-mac.yml", { redirect: "error", headers: {"Cache-Control":"no-cache"}, signal: AbortSignal.timeout(15000) });
+if (feedResponse.status !== 200) throw new Error("Feed HTTP " + feedResponse.status);
+const feed = await feedResponse.text();
+await writeFile(proof + "published-latest-mac.yml", feed);
+const metadata = parseMacUpdateMetadata(feed);
+if (metadata.version !== "0.1.7") throw new Error("Veřejný feed dosud nemá0.1.7: " + metadata.version);
+const expected = expectedReleaseFileNames("0.1.7");
+if (JSON.stringify([...metadata.files.map(x => x.url)].sort()) !== JSON.stringify([...expected.packages].sort())) throw new Error("Nesprávná sada souborů ve feedu");
+const rows = await Promise.all([...expected.packages, ...expected.blockmaps].map(async name => {
+  const response = await fetch(base + name, {method:"HEAD",redirect:"error",headers:{"Cache-Control":"no-cache"},signal:AbortSignal.timeout(15000)});
+  const rawSize = response.headers.get("content-length") ?? "";
+  const expectedSize = metadata.files.find(x => x.url === name)?.size ?? null;
+  const size = Number(rawSize);
+  if (response.status !== 200 || !/^\d+$/.test(rawSize) || size <= 0 || (expectedSize !== null && size !== expectedSize)) throw new Error(name + ": HTTP/velikost nesouhlasí");
+  return {name,status:response.status,size,expectedSize};
+}));
+const result = {measuredAt:new Date().toISOString(),version:metadata.version,feedStatus:feedResponse.status,feedSha256:createHash("sha256").update(feed).digest("hex"),files:rows,limits:["Nezávislá kontrola nestahuje celé veřejné binárky ani sama neověřuje jejich podpis.","SHA256 feedu a přesné velikosti všech osmi souborů vůči místním artefaktům ověřuje skutečný publikační workflow."]};
+await writeFile(proof + "public-verification.json", JSON.stringify(result,null,2)+"\n");
+console.log("PASS veřejný feed0.1.7 a osm instalačních souborů/blockmap: HTTP200, balíčky mají velikost shodnou s feedem");

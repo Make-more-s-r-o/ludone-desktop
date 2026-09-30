@@ -1,0 +1,19 @@
+
+> ludone-desktop-prototype@0.1.6 test:unit
+> vitest run tests/upload-company-selector.test.js tests/settings.test.js tests/recording-card.test.js tests/recordings-dashboard.test.js
+
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui
+
+ ✓ tests/upload-company-selector.test.js (12 tests) 170ms
+ ✓ tests/recordings-dashboard.test.js (29 tests) 785ms
+ ✓ tests/recording-card.test.js (68 tests) 2288ms
+ ✓ tests/settings.test.js (62 tests) 2468ms
+
+ Test Files  4 passed (4)
+      Tests  171 passed (171)
+   Start at  16:38:09
+   Duration  3.40s (transform 390ms, setup 29ms, collect 2.88s, tests 5.71s, environment 0ms, prepare 161ms)
+
+
+EXIT_CODE=0

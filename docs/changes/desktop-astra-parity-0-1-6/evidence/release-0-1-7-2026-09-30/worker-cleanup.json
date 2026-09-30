@@ -1,0 +1,87 @@
+{
+  "verifiedEvidenceCommit": "02d37206a3f2c7fbd4614ebb2b0cdf607453ff84",
+  "workers": [
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/mac-ui-review-0-1-6",
+      "branch": "docs/mac-ui-review-0-1-6",
+      "head": "acf6c861554601465b2d0375c48605af778a1804",
+      "archiveRef": "refs/archive/completed-workers/mac-ui-review-0-1-6",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch docs/mac-ui-review-0-1-6 (was acf6c86).\n"
+    },
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/polish-day",
+      "branch": "fix/polish-day",
+      "head": "ae7d69ee881e5a103049b7be123e8d03edefb517",
+      "archiveRef": "refs/archive/completed-workers/polish-day",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch fix/polish-day (was ae7d69e).\n"
+    },
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/polish-panel",
+      "branch": "fix/polish-panel",
+      "head": "4bcf3d152f40e277b656e4c8871e0ca1e986af09",
+      "archiveRef": "refs/archive/completed-workers/polish-panel",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch fix/polish-panel (was 4bcf3d1).\n"
+    },
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/polish-settings",
+      "branch": "fix/polish-settings",
+      "head": "e22909a60bbc8851cf0abc2a467925bcb9e95572",
+      "archiveRef": "refs/archive/completed-workers/polish-settings",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch fix/polish-settings (was e22909a).\n"
+    },
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/product-polish-audit",
+      "branch": "fix/product-polish-audit",
+      "head": "14d1dceb53e85fea14ed185cce89722ea599662c",
+      "archiveRef": "refs/archive/completed-workers/product-polish-audit",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch fix/product-polish-audit (was 14d1dce).\n"
+    },
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-core",
+      "branch": "feat/recording-upload-preferences",
+      "head": "420bd0e6211e58b3d552e33950761779424643dd",
+      "archiveRef": "refs/archive/completed-workers/upload-preferences-core",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch feat/recording-upload-preferences (was 420bd0e).\n"
+    },
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-docs",
+      "branch": "docs/upload-preferences",
+      "head": "49fa9b5bf29ac7799f70e0e0bca825c631429592",
+      "archiveRef": "refs/archive/completed-workers/upload-preferences-docs",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch docs/upload-preferences (was 49fa9b5).\n"
+    },
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/upload-preferences-ui",
+      "branch": "feat/recording-upload-preferences-ui",
+      "head": "d97a30da730e7f94c1e8b5adb31beb9c4678359d",
+      "archiveRef": "refs/archive/completed-workers/upload-preferences-ui",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch feat/recording-upload-preferences-ui (was d97a30d).\n"
+    },
+    {
+      "worktree": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/visual-contract-renewal",
+      "branch": "fix/product-polish-visual-contract",
+      "head": "47ebbab607660ddcba116e6bf55d7262c9e8201e",
+      "archiveRef": "refs/archive/completed-workers/visual-contract-renewal",
+      "cleanBeforeRemoval": true,
+      "exitCode": 0,
+      "output": "Deleted branch fix/product-polish-visual-contract (was 47ebbab).\n"
+    }
+  ],
+  "foreignTreeUntouched": "/Users/dan/orca/workspaces/ludone-desktop/desktop-design-compare"
+}

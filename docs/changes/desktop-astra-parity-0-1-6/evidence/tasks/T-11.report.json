@@ -53,5 +53,13 @@
       "Instalace aktualizace kandidáta",
       "Podepsaná publikace ještě čeká"
     ]
+  },
+  "release0_1_7": {
+    "verification": "✅ ověřeno naostro",
+    "scope": "Podpis/notarizace/publikace; nikoli fyzický zvuk nebo produkční upload",
+    "tag": "v0.1.7",
+    "commit": "a149a55c702077a657a9123274e5129d9fe18039",
+    "workflow": 36767124908,
+    "evidence": "evidence/release-0-1-7-2026-09-30/README.md"
   }
 }

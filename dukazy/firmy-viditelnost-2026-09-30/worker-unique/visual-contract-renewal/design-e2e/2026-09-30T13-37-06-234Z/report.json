@@ -1,0 +1,1663 @@
+{
+  "status": "FAIL",
+  "acceptance": [
+    {
+      "label": "Teď",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "now-hierarchy-and-safe-actions",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Záznam a uložení",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "recording-starts-two-synthetic-sources",
+          "status": "PASS"
+        },
+        {
+          "check": "system-audio-loss-and-recovery",
+          "status": "PASS"
+        },
+        {
+          "check": "recording-stop-offers-explicit-safe-choice",
+          "status": "PASS"
+        },
+        {
+          "check": "saved-recording-astra-composition",
+          "status": "PASS"
+        },
+        {
+          "check": "recording-saved-local-from-ui",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Můj den",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "day-hierarchy-and-real-data",
+          "status": "PASS"
+        },
+        {
+          "check": "day-shows-actual-recording-and-seeded-local-fixture",
+          "status": "PASS"
+        },
+        {
+          "check": "local-recording-filter",
+          "status": "PASS"
+        },
+        {
+          "check": "delivery-filter-empty-is-truthful",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Detail",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "local-recording-detail-no-upload",
+          "status": "PASS"
+        },
+        {
+          "check": "detail-back-to-day",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Nastavení",
+      "status": "FAIL",
+      "checks": [
+        {
+          "check": "settings-shell",
+          "status": "PASS"
+        },
+        {
+          "check": "settings-quick-actions",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "label": "Aktualizace",
+      "status": "FAIL",
+      "checks": [
+        {
+          "check": "update-check-isolated-from-production",
+          "status": "FAIL"
+        },
+        {
+          "check": "update-banner-and-defer",
+          "status": "FAIL"
+        },
+        {
+          "check": "update-dedicated-surface",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "label": "Offline a obnova",
+      "status": "FAIL",
+      "checks": [
+        {
+          "check": "offline-recording-continues-locally",
+          "status": "PASS"
+        },
+        {
+          "check": "startup-loads-seeded-local-fixture",
+          "status": "PASS"
+        },
+        {
+          "check": "saved-recording-visible-after-app-restart",
+          "status": "PASS"
+        },
+        {
+          "check": "offline-keeps-local-recording",
+          "status": "PASS"
+        },
+        {
+          "check": "unfinished-recording-preserved-after-restart",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "label": "Onboarding",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "onboarding-first-use-and-honest-scope",
+          "status": "PASS"
+        },
+        {
+          "check": "onboarding-account-step-without-external-login",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Světlé a tmavé téma",
+      "status": "FAIL",
+      "checks": [
+        {
+          "check": "light-theme-choice",
+          "status": "FAIL"
+        },
+        {
+          "check": "day-theme-light",
+          "status": "FAIL"
+        },
+        {
+          "check": "dark-theme-choice",
+          "status": "FAIL"
+        },
+        {
+          "check": "dark-settings-actions-contrast",
+          "status": "FAIL"
+        },
+        {
+          "check": "day-theme-dark",
+          "status": "FAIL"
+        },
+        {
+          "check": "theme-shared-across-windows",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "label": "LuTrack zůstává vypnutý",
+      "status": "PASS",
+      "checks": [
+        {
+          "check": "lutrack-remains-disabled",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "label": "Astra geometrie a pořadí",
+      "status": "FAIL",
+      "checks": [
+        {
+          "check": "astra-layout-offline",
+          "status": "PASS"
+        },
+        {
+          "check": "astra-layout-day",
+          "status": "PASS"
+        },
+        {
+          "check": "astra-layout-detail",
+          "status": "PASS"
+        },
+        {
+          "check": "astra-layout-settings",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "label": "Screenshoty zachycené pro vizuální kontrolu",
+      "status": "FAIL",
+      "pairs": [
+        {
+          "label": "Teď · hlavní panel",
+          "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/03-ted.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-home.png",
+          "layoutCheck": null,
+          "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Můj den · místní nahrávky",
+          "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/08-muj-den.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-day.png",
+          "layoutCheck": "astra-layout-day",
+          "layoutStatus": "PASS",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Detail · místní kopie",
+          "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/09-detail-nahravky.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-detail.png",
+          "layoutCheck": "astra-layout-detail",
+          "layoutStatus": "PASS",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Nastavení · účet a předvolby",
+          "appScreenshot": null,
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-settings.png",
+          "layoutCheck": "astra-layout-settings",
+          "layoutStatus": "FAIL",
+          "status": "FAIL"
+        },
+        {
+          "label": "Offline · místní nahrávka",
+          "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/04-offline-active-recording.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-offline.png",
+          "layoutCheck": "astra-layout-offline",
+          "layoutStatus": "PASS",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Uložení · jedna schůzka",
+          "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/06-nahravani-ulozeno.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-save.png",
+          "layoutCheck": "saved-recording-astra-composition",
+          "layoutStatus": "PASS",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "První spuštění",
+          "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/01-00-prvni-pouziti.png",
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-onboarding.png",
+          "layoutCheck": null,
+          "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+          "status": "CAPTURED"
+        },
+        {
+          "label": "Aktualizace · samostatná plocha",
+          "appScreenshot": null,
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-update.png",
+          "layoutCheck": "update-dedicated-surface",
+          "layoutStatus": "FAIL",
+          "status": "FAIL"
+        },
+        {
+          "label": "Nastavení · tmavé",
+          "appScreenshot": null,
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-settings-dark.png",
+          "layoutCheck": null,
+          "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+          "status": "FAIL"
+        },
+        {
+          "label": "Můj den · tmavý",
+          "appScreenshot": null,
+          "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-day-dark.png",
+          "layoutCheck": null,
+          "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+          "status": "FAIL"
+        }
+      ]
+    }
+  ],
+  "visualScreenshotPairs": [
+    {
+      "label": "Teď · hlavní panel",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/03-ted.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-home.png",
+      "layoutCheck": null,
+      "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+      "status": "CAPTURED"
+    },
+    {
+      "label": "Můj den · místní nahrávky",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/08-muj-den.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-day.png",
+      "layoutCheck": "astra-layout-day",
+      "layoutStatus": "PASS",
+      "status": "CAPTURED"
+    },
+    {
+      "label": "Detail · místní kopie",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/09-detail-nahravky.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-detail.png",
+      "layoutCheck": "astra-layout-detail",
+      "layoutStatus": "PASS",
+      "status": "CAPTURED"
+    },
+    {
+      "label": "Nastavení · účet a předvolby",
+      "appScreenshot": null,
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-settings.png",
+      "layoutCheck": "astra-layout-settings",
+      "layoutStatus": "FAIL",
+      "status": "FAIL"
+    },
+    {
+      "label": "Offline · místní nahrávka",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/04-offline-active-recording.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-offline.png",
+      "layoutCheck": "astra-layout-offline",
+      "layoutStatus": "PASS",
+      "status": "CAPTURED"
+    },
+    {
+      "label": "Uložení · jedna schůzka",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/06-nahravani-ulozeno.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-save.png",
+      "layoutCheck": "saved-recording-astra-composition",
+      "layoutStatus": "PASS",
+      "status": "CAPTURED"
+    },
+    {
+      "label": "První spuštění",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/01-00-prvni-pouziti.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-onboarding.png",
+      "layoutCheck": null,
+      "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+      "status": "CAPTURED"
+    },
+    {
+      "label": "Aktualizace · samostatná plocha",
+      "appScreenshot": null,
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-update.png",
+      "layoutCheck": "update-dedicated-surface",
+      "layoutStatus": "FAIL",
+      "status": "FAIL"
+    },
+    {
+      "label": "Nastavení · tmavé",
+      "appScreenshot": null,
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-settings-dark.png",
+      "layoutCheck": null,
+      "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+      "status": "FAIL"
+    },
+    {
+      "label": "Můj den · tmavý",
+      "appScreenshot": null,
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-day-dark.png",
+      "layoutCheck": null,
+      "layoutStatus": "MANUAL_REVIEW_REQUIRED",
+      "status": "FAIL"
+    }
+  ],
+  "screenshots": [
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/01-00-prvni-pouziti.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/02-00-prihlaseni.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/03-ted.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/04-offline-active-recording.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/05-vypadek-systemoveho-zvuku.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/06-nahravani-ulozeno.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/07-offline-panel-recovery.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/08-muj-den.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/09-detail-nahravky.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/10-chyba-den.png",
+    ".runtime/design-e2e/2026-09-30T13-37-06-234Z/11-chyba-panel.png"
+  ],
+  "comparisonPage": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/comparison.html",
+  "visualComparisons": [
+    {
+      "label": "Teď · hlavní panel",
+      "scenario": "home",
+      "width": 400,
+      "height": 700,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Produktový LuTrack zůstává poctivě připravovaný; jeho prostor a shell se porovnávají se scénou Astra home.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/03-ted.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-home.png"
+    },
+    {
+      "label": "Můj den · místní nahrávky",
+      "scenario": "day",
+      "width": 640,
+      "height": 744,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Srovnává se stejná plocha a hierarchie; pracovní úseky prototypu se nepřenášejí do skutečných dat.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/08-muj-den.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-day.png"
+    },
+    {
+      "label": "Detail · místní kopie",
+      "scenario": "detail",
+      "width": 640,
+      "height": 744,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Produktová místní kopie a skutečné bezpečné akce se porovnávají s odpovídající scénou Astra detail.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/09-detail-nahravky.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-detail.png"
+    },
+    {
+      "label": "Nastavení · účet a předvolby",
+      "scenario": "settings",
+      "width": 640,
+      "height": 744,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Skutečný účet, zvuk, lokální kopie a aktualizace se porovnávají se scénou Astra Nastavení bez fiktivního profilu.",
+      "appScreenshot": null,
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-settings.png"
+    },
+    {
+      "label": "Offline · místní nahrávka",
+      "scenario": "offline",
+      "width": 400,
+      "height": 700,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Porovnává probíhající nahrávání bez sítě; LuTrack zůstává vypnutý a jeho čas se nevymýšlí.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/04-offline-active-recording.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-offline.png"
+    },
+    {
+      "label": "Uložení · jedna schůzka",
+      "scenario": "save",
+      "width": 400,
+      "height": 700,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Dvě výslovné akce a jedna schůzka; skutečný odhlášený účet a neaktivní LuTrack.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/06-nahravani-ulozeno.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-save.png"
+    },
+    {
+      "label": "První spuštění",
+      "scenario": "onboarding",
+      "width": 400,
+      "height": 700,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Společný Astra shell; skutečné kroky oprávnění a přihlášení se zachovávají.",
+      "appScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/01-00-prvni-pouziti.png",
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-onboarding.png"
+    },
+    {
+      "label": "Aktualizace · samostatná plocha",
+      "scenario": "update",
+      "width": 400,
+      "height": 700,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Proužek i samostatná aktualizační plocha zachovávají výslovnou volbu instalace.",
+      "appScreenshot": null,
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-update.png"
+    },
+    {
+      "label": "Nastavení · tmavé",
+      "scenario": "settings-dark",
+      "width": 640,
+      "height": 744,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Tmavá reference ze stejné uložené Astry.",
+      "appScreenshot": null,
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-settings-dark.png"
+    },
+    {
+      "label": "Můj den · tmavý",
+      "scenario": "day-dark",
+      "width": 640,
+      "height": 744,
+      "note": "D10: autoritou produktového rozložení je potvrzená galerie checkpointu 0dd87da. Astra zůstává historickou referencí; porovnání netvrdí shodu 1:1. Tmavá reference bez přenosu pracovních demo dat.",
+      "appScreenshot": null,
+      "referenceScreenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-day-dark.png"
+    }
+  ],
+  "observations": [
+    {
+      "check": "reference-astra-home",
+      "viewport": {
+        "width": 400,
+        "height": 700
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-home.png"
+    },
+    {
+      "check": "reference-astra-day",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-day.png"
+    },
+    {
+      "check": "reference-astra-detail",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-detail.png"
+    },
+    {
+      "check": "reference-astra-settings",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-settings.png"
+    },
+    {
+      "check": "reference-astra-offline",
+      "viewport": {
+        "width": 400,
+        "height": 700
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-offline.png"
+    },
+    {
+      "check": "reference-astra-save",
+      "viewport": {
+        "width": 400,
+        "height": 700
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-save.png"
+    },
+    {
+      "check": "reference-astra-onboarding",
+      "viewport": {
+        "width": 400,
+        "height": 700
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-onboarding.png"
+    },
+    {
+      "check": "reference-astra-update",
+      "viewport": {
+        "width": 400,
+        "height": 700
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-update.png"
+    },
+    {
+      "check": "reference-astra-settings-dark",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-settings-dark.png"
+    },
+    {
+      "check": "reference-astra-day-dark",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "screenshot": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/astra-day-dark.png"
+    },
+    {
+      "check": "startup-loads-seeded-local-fixture",
+      "recoveredFromDisk": true,
+      "uploadTransportEnabled": false,
+      "fixtureId": "40000000-0000-4000-8000-000000000001"
+    },
+    {
+      "check": "onboarding-first-use-and-honest-scope",
+      "title": "Váš pracovní den. O kousek jednodušší.",
+      "step": "1 / 6",
+      "start": true,
+      "timerIcon": false,
+      "copy": "Váš pracovní den.O kousek jednodušší.Zachyťte schůzku. LuDone zůstane po ruce v liště vašeho Macu. Po zastavení si vyberete odeslání nebo uložení na Macu.Začít Přepisy a analýzu otevřeš na app.ludone.cz. Originál zůstává na Macu podle nastavení retence."
+    },
+    {
+      "action": "click",
+      "text": "Začít"
+    },
+    {
+      "check": "onboarding-account-step-without-external-login",
+      "title": "Propojte svůj účet",
+      "loginButton": true,
+      "urlStarted": false
+    },
+    {
+      "action": "click",
+      "text": "Zpět"
+    },
+    {
+      "check": "panel-shell",
+      "labels": [
+        "Teď",
+        "Můj den",
+        "Nastavení"
+      ],
+      "active": "Teď",
+      "width": 400,
+      "height": 700,
+      "navFits": true,
+      "titlebar": {
+        "top": 36,
+        "bottom": 83,
+        "left": 9,
+        "right": 391
+      },
+      "menubar": {
+        "top": 0,
+        "bottom": 28,
+        "left": 0,
+        "right": 400
+      },
+      "markLoaded": true,
+      "theme": "light"
+    },
+    {
+      "action": "click",
+      "target": "Rychlé akce"
+    },
+    {
+      "check": "quick-actions-and-auth-boundary",
+      "title": "Rychlé akce",
+      "items": [
+        "Můj den",
+        "Nahrávky",
+        "Nastavení účtu"
+      ],
+      "shortcut": true
+    },
+    {
+      "check": "now-hierarchy-and-safe-actions",
+      "futureStatus": "Připravujeme",
+      "title": "Pracovní čas se připravuje.",
+      "brand": "LuDone",
+      "introCopy": "Nahrávání schůzek funguje.",
+      "hero": {
+        "top": 482.1875,
+        "bottom": 525.1875,
+        "left": 9,
+        "right": 391,
+        "width": 382,
+        "height": 43
+      },
+      "record": {
+        "top": 123,
+        "bottom": 335,
+        "left": 9,
+        "right": 391,
+        "width": 382,
+        "height": 212
+      },
+      "future": {
+        "top": 482.1875,
+        "bottom": 525.1875,
+        "left": 9,
+        "right": 391,
+        "width": 382,
+        "height": 43
+      },
+      "preview": {
+        "top": 335,
+        "bottom": 482.1875,
+        "left": 9,
+        "right": 391,
+        "width": 382,
+        "height": 147.1875
+      },
+      "footer": {
+        "top": 658,
+        "bottom": 692,
+        "left": 9,
+        "right": 391,
+        "width": 382,
+        "height": 34
+      },
+      "viewportHeight": 700,
+      "recordAction": {
+        "top": 221.234375,
+        "bottom": 263.234375,
+        "left": 31,
+        "right": 369,
+        "width": 338,
+        "height": 42
+      },
+      "recordActionVisible": true,
+      "recordActionEnabled": true,
+      "futureControls": [
+        {
+          "tag": "button",
+          "disabled": true,
+          "visible": false
+        },
+        {
+          "tag": "input",
+          "disabled": true,
+          "visible": false
+        },
+        {
+          "tag": "button",
+          "disabled": true,
+          "visible": false
+        }
+      ],
+      "sourceActionVisible": true,
+      "sourceActionEnabled": true,
+      "previewTitle": "Nahrávky",
+      "previewItems": [
+        "Nahrávka30. 9. 2026 15:35 · Méně než minutuZůstává na Macu"
+      ],
+      "titleFont": "\"Public Sans\", sans-serif",
+      "titleAlign": "left",
+      "topline": {
+        "top": 495.1875,
+        "bottom": 513.1875,
+        "left": 31,
+        "right": 369,
+        "width": 338,
+        "height": 18
+      },
+      "navActive": "Teď"
+    },
+    {
+      "check": "lutrack-remains-disabled",
+      "label": "LuTrack se připravuje",
+      "disabledControlCount": 3,
+      "enabledControlCount": 0
+    },
+    {
+      "action": "click",
+      "target": "Nahrát syntetickou schůzku"
+    },
+    {
+      "check": "recording-starts-two-synthetic-sources",
+      "label": "Nahrává se",
+      "sources": [
+        {
+          "id": "recording-source-microphone",
+          "state": "live"
+        },
+        {
+          "id": "recording-source-system",
+          "state": "live"
+        }
+      ],
+      "syntheticStreams": 2
+    },
+    {
+      "check": "offline-recording-continues-locally",
+      "online": false,
+      "recording": "Nahrává se",
+      "recordingTitle": "Nahrávání schůzky",
+      "recordingFormat": "Výsledkem bude jedna stereo nahrávka.",
+      "liveSources": 2,
+      "notice": "Bez připojení. Nahrávky zůstávají na Macu.Synchronizace a odesílání počkají.",
+      "lutrack": {
+        "visible": true,
+        "height": 53,
+        "status": "Připravujeme",
+        "recordingNote": "Pracovní čas se zatím neměří. LuTrack připravujeme.",
+        "recordingNoteVisible": true,
+        "noteBesideStatus": true,
+        "controls": [
+          {
+            "disabled": true,
+            "visible": false
+          },
+          {
+            "disabled": true,
+            "visible": false
+          },
+          {
+            "disabled": true,
+            "visible": false
+          }
+        ]
+      },
+      "recordingCard": {
+        "top": 219,
+        "height": 359,
+        "bottom": 578,
+        "borderTopWidth": "0px"
+      },
+      "layout": {
+        "status": {
+          "top": 242,
+          "bottom": 256,
+          "height": 14,
+          "width": 262
+        },
+        "title": {
+          "top": 277,
+          "bottom": 298,
+          "height": 22,
+          "width": 338
+        },
+        "timer": {
+          "top": 321,
+          "bottom": 375,
+          "height": 54,
+          "width": 338
+        },
+        "sources": [
+          {
+            "top": 401,
+            "bottom": 428,
+            "height": 27
+          },
+          {
+            "top": 444,
+            "bottom": 471,
+            "height": 27
+          }
+        ],
+        "sourceAction": {
+          "top": 237,
+          "bottom": 261,
+          "height": 24,
+          "width": 64
+        },
+        "stop": {
+          "top": 521,
+          "bottom": 559,
+          "height": 38,
+          "width": 338
+        },
+        "luTrack": {
+          "top": 590,
+          "bottom": 643,
+          "height": 53,
+          "width": 382
+        }
+      },
+      "stopAction": {
+        "visible": true,
+        "aboveFooter": true
+      },
+      "horizontalExtent": {
+        "client": 382,
+        "scroll": 382,
+        "overflowing": []
+      }
+    },
+    {
+      "check": "astra-layout-offline",
+      "status": {
+        "top": 242,
+        "bottom": 256,
+        "height": 14,
+        "width": 262
+      },
+      "title": {
+        "top": 277,
+        "bottom": 298,
+        "height": 22,
+        "width": 338
+      },
+      "timer": {
+        "top": 321,
+        "bottom": 375,
+        "height": 54,
+        "width": 338
+      },
+      "sources": [
+        {
+          "top": 401,
+          "bottom": 428,
+          "height": 27
+        },
+        {
+          "top": 444,
+          "bottom": 471,
+          "height": 27
+        }
+      ],
+      "sourceAction": {
+        "top": 237,
+        "bottom": 261,
+        "height": 24,
+        "width": 64
+      },
+      "stop": {
+        "top": 521,
+        "bottom": 559,
+        "height": 38,
+        "width": 338
+      },
+      "luTrack": {
+        "top": 590,
+        "bottom": 643,
+        "height": 53,
+        "width": 382
+      }
+    },
+    {
+      "action": "click",
+      "target": "Obnovit syntetický systémový zdroj"
+    },
+    {
+      "check": "system-audio-loss-and-recovery",
+      "syntheticOnly": true,
+      "microphoneContinued": true,
+      "sourceRecovered": true
+    },
+    {
+      "action": "click",
+      "target": "Ukončit a uložit syntetický záznam"
+    },
+    {
+      "check": "recording-stop-offers-explicit-safe-choice",
+      "title": "Kam s nahrávkou?",
+      "keepEnabled": true,
+      "sendDisabled": true
+    },
+    {
+      "check": "saved-recording-astra-composition",
+      "header": {
+        "top": 0,
+        "bottom": 28,
+        "left": 0,
+        "right": 400,
+        "width": 400,
+        "height": 28
+      },
+      "nav": {
+        "top": 83,
+        "bottom": 123,
+        "left": 9,
+        "right": 391,
+        "width": 382,
+        "height": 40
+      },
+      "preview": {
+        "top": 211.71875,
+        "bottom": 296.71875,
+        "left": 31,
+        "right": 363,
+        "width": 332,
+        "height": 85
+      },
+      "name": {
+        "top": 343.3125,
+        "bottom": 381.3125,
+        "left": 31,
+        "right": 363,
+        "width": 332,
+        "height": 38
+      },
+      "send": {
+        "top": 481.90625,
+        "bottom": 519.90625,
+        "left": 31,
+        "right": 363,
+        "width": 332,
+        "height": 38
+      },
+      "keep": {
+        "top": 533.90625,
+        "bottom": 567.90625,
+        "left": 31,
+        "right": 363,
+        "width": 332,
+        "height": 34
+      },
+      "footer": {
+        "top": 658,
+        "bottom": 692,
+        "left": 9,
+        "right": 391,
+        "width": 382,
+        "height": 34
+      },
+      "format": "Jedna nahrávka schůzky · stereo WebM/Opus"
+    },
+    {
+      "action": "click",
+      "target": "Nechat na Macu"
+    },
+    {
+      "check": "recording-saved-local-from-ui",
+      "id": "1146e67c-a59c-45fc-a30c-fd5efddca03a",
+      "manifest": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/isolated-data/user-data/nahravky/2026-09-30T13-37-08-706Z-1146e67c.manifest.json",
+      "tracks": [
+        {
+          "source": "microphone",
+          "bytes": 28191
+        },
+        {
+          "source": "system",
+          "bytes": 28191
+        }
+      ],
+      "syntheticOnly": true,
+      "uploadTransportEnabled": false,
+      "savedCopy": {
+        "name": "LuDone-2026-09-30T13-37-08-960Z-30-září-2026,-15-37-1146e67c-a59c-45fc-a30c-fd5efddca03a.webm",
+        "bytes": 22031
+      },
+      "decision": "keep",
+      "uploadSetting": "false"
+    },
+    {
+      "check": "saved-recording-visible-after-app-restart",
+      "queueReadyAfterRestart": true,
+      "localRecordingsVisible": 2,
+      "recordingId": "1146e67c-a59c-45fc-a30c-fd5efddca03a"
+    },
+    {
+      "action": "click",
+      "target": "Zdroje zvuku"
+    },
+    {
+      "check": "source-action-opens-audio-settings",
+      "selectedTab": "Zvuk",
+      "audioPanelVisible": true
+    },
+    {
+      "check": "offline-keeps-local-recording",
+      "online": false,
+      "status": "Místní režim · Bez připojení",
+      "notice": "Bez připojení. Nahrávky zůstávají na Macu.Synchronizace a odesílání počkají.",
+      "noticeBounds": {
+        "left": 9,
+        "right": 385,
+        "width": 376
+      },
+      "rows": [
+        "30. září 2026, 15:3730. 9. 2026 15:37 · Méně než minutuZůstává na Macu",
+        "Nahrávka30. 9. 2026 15:35 · Méně než minutuZůstává na Macu"
+      ],
+      "horizontalExtent": {
+        "document": {
+          "client": 400,
+          "scroll": 400
+        },
+        "body": {
+          "client": 400,
+          "scroll": 400
+        },
+        "panel": {
+          "client": 400,
+          "scroll": 400
+        },
+        "panelScroll": {
+          "client": 376,
+          "scroll": 376
+        }
+      }
+    },
+    {
+      "action": "click",
+      "text": "Můj den"
+    },
+    {
+      "check": "day-hierarchy-and-real-data",
+      "title": "Stopa dne",
+      "active": "Můj den",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "heading": {
+        "top": 169,
+        "bottom": 200.046875,
+        "left": 39,
+        "right": 391,
+        "width": 352,
+        "height": 31.046875
+      },
+      "future": {
+        "top": 171.96875,
+        "bottom": 198.0625,
+        "left": 413,
+        "right": 603,
+        "width": 190,
+        "height": 26.09375
+      },
+      "dashboard": {
+        "top": 240.046875,
+        "bottom": 614.796875,
+        "left": 55,
+        "right": 585,
+        "width": 530,
+        "height": 374.75
+      },
+      "layout": {
+        "toolbar": {
+          "top": 240.046875,
+          "bottom": 269.046875,
+          "left": 55,
+          "right": 585,
+          "width": 530,
+          "height": 29
+        },
+        "notice": {
+          "top": 273.046875,
+          "bottom": 296.546875,
+          "left": 55,
+          "right": 585,
+          "width": 530,
+          "height": 23.5
+        },
+        "groups": [
+          {
+            "top": 322.546875,
+            "bottom": 341.734375,
+            "left": 55,
+            "right": 585,
+            "width": 530,
+            "height": 19.1875
+          }
+        ],
+        "groupKeys": [
+          "2026-09-30"
+        ],
+        "actualGroupKeys": [
+          "2026-09-30"
+        ],
+        "textClipping": false,
+        "times": [
+          {
+            "top": 363.734375,
+            "bottom": 387.734375,
+            "left": 55,
+            "right": 97,
+            "width": 42,
+            "height": 24
+          },
+          {
+            "top": 491.265625,
+            "bottom": 515.265625,
+            "left": 55,
+            "right": 97,
+            "width": 42,
+            "height": 24
+          }
+        ],
+        "statuses": [
+          {
+            "top": 400.578125,
+            "bottom": 418.265625,
+            "left": 157,
+            "right": 241.65625,
+            "width": 84.65625,
+            "height": 17.6875
+          },
+          {
+            "top": 528.109375,
+            "bottom": 545.796875,
+            "left": 157,
+            "right": 241.65625,
+            "width": 84.65625,
+            "height": 17.6875
+          }
+        ],
+        "entries": [
+          {
+            "top": 363.734375,
+            "bottom": 461.265625,
+            "left": 117,
+            "right": 585,
+            "width": 468,
+            "height": 97.53125
+          },
+          {
+            "top": 491.265625,
+            "bottom": 588.796875,
+            "left": 117,
+            "right": 585,
+            "width": 468,
+            "height": 97.53125
+          }
+        ],
+        "footer": {
+          "top": 691,
+          "bottom": 735,
+          "left": 9,
+          "right": 631,
+          "width": 622,
+          "height": 44
+        },
+        "horizontalOverflow": false
+      },
+      "futureControls": [],
+      "renderedRows": 2,
+      "realRows": 2,
+      "fixture": {
+        "id": "40000000-0000-4000-8000-000000000001",
+        "kind": "recording",
+        "state": "ceka",
+        "attempts": 0,
+        "nextAttemptAt": null,
+        "server": {
+          "sessionId": null,
+          "tracks": {
+            "microphone": {
+              "recordingId": null,
+              "uploadedBytes": 0
+            },
+            "system": {
+              "recordingId": null,
+              "uploadedBytes": 0
+            }
+          }
+        },
+        "revision": "sha256:d81d8d8d2695fe16ba9d180ad2b76651254cf70b3e7b4dae26ae38eb053e24bb",
+        "ownership": "unknown",
+        "requiresHumanAction": false,
+        "blockReason": null,
+        "title": "",
+        "uploadIntent": "held",
+        "source": "queue",
+        "localState": "complete-audio",
+        "localReason": null,
+        "fileRevision": "sha256:f257c492e60a76eac4c25d18cb86925db4fca1202f4b576aedfc171e7de05b09",
+        "createdAt": "2026-09-30T13:35:36.238Z",
+        "durationMs": 2220,
+        "sizeBytes": 35621,
+        "deliveryState": null,
+        "allowedActions": {
+          "claim": true,
+          "delete": true,
+          "retry": false,
+          "send": false
+        },
+        "sendingDisabledReason": "odesílání je vypnuté"
+      },
+      "recordedByE2e": {
+        "id": "1146e67c-a59c-45fc-a30c-fd5efddca03a",
+        "kind": "recording",
+        "state": "ceka",
+        "attempts": 0,
+        "nextAttemptAt": null,
+        "server": {
+          "sessionId": null,
+          "delivery": {
+            "recordingId": null,
+            "uploadedBytes": 0
+          },
+          "tracks": {
+            "microphone": {
+              "recordingId": null,
+              "uploadedBytes": 0
+            },
+            "system": {
+              "recordingId": null,
+              "uploadedBytes": 0
+            }
+          }
+        },
+        "revision": "sha256:20f70baed257287e1c5a05e441344f3868c1d458bf292fa9205b81609fcd4db8",
+        "ownership": "unknown",
+        "requiresHumanAction": false,
+        "blockReason": null,
+        "title": "30. září 2026, 15:37",
+        "uploadIntent": "held",
+        "source": "queue",
+        "localState": "complete-audio",
+        "localReason": null,
+        "fileRevision": "sha256:0a5220490cc76f23e5be693267519009eff2e98f285bfbf857d63ccc646638a9",
+        "createdAt": "2026-09-30T13:37:08.706Z",
+        "durationMs": 1720,
+        "sizeBytes": 100951,
+        "deliveryState": "ready",
+        "allowedActions": {
+          "claim": true,
+          "delete": true,
+          "retry": false,
+          "send": false
+        },
+        "sendingDisabledReason": "odesílání je vypnuté"
+      },
+      "fixtureRowText": "15:35 Zpět na denDnes · 15:35NahrávkaZůstává na Macu30. 9. 2026 15:352 s36 kBZvuk připravenOtevřít detailNahrávka30. 9. 2026 15:35 · 2 s · 36 kBNa MacuVe frontěOdeslánoOvěřenoUložení a přístupZůstává na MacuVlastníkVlastník není ověřenCílová firmaU této nahrávky není název cílové firmy dostupný.ZvukStereo WebM/Opus · Zvuk je kompletníLokální kopieZachována na tomto MacuUloženíMístní frontaBez pracovního úsekuK nahrávce zatím není připojený pracovní kontext.LuTrack v desktopové aplikaci zatím není aktivní.Přepis a analýzu otevřeš v LuDone na webu.Převzít pod svůj účetUkázat ve FinderuPřesunout do košeTechnické údajeID: 40000000",
+      "recordedRowText": "15:37 Zpět na denDnes · 15:3730. září 2026, 15:37Zůstává na Macu30. 9. 2026 15:372 s101 kBZvuk připravenOtevřít detail30. září 2026, 15:3730. 9. 2026 15:37 · 2 s · 101 kBNa MacuVe frontěOdeslánoOvěřenoUložení a přístupZůstává na MacuVlastníkVlastník není ověřenCílová firmaU této nahrávky není název cílové firmy dostupný.ZvukStereo WebM/Opus · Zvuk je kompletníLokální kopieZachována na tomto MacuUloženíMístní frontaBez pracovního úsekuK nahrávce zatím není připojený pracovní kontext.LuTrack v desktopové aplikaci zatím není aktivní.Přepis a analýzu otevřeš v LuDone na webu.Převzít pod svůj účetUkázat ve FinderuPřesunout do košeTechnické údajeID: 1146e67c",
+      "firstRowText": "15:35 Zpět na denDnes · 15:35NahrávkaZůstává na Macu30. 9. 2026 15:352 s36 kBZvuk připravenOtevřít detailNahrávka30. 9. 2026 15:35 · 2 s · 36 kBNa MacuVe frontěOdeslánoOvěřenoUložení a přístupZůstává na MacuVlastníkVlastník není ověřenCílová firmaU této nahrávky není název cílové firmy dostupný.ZvukStereo WebM/Opus · Zvuk je kompletníLokální kopieZachována na tomto MacuUloženíMístní frontaBez pracovního úsekuK nahrávce zatím není připojený pracovní kontext.LuTrack v desktopové aplikaci zatím není aktivní.Přepis a analýzu otevřeš v LuDone na webu.Převzít pod svůj účetUkázat ve FinderuPřesunout do košeTechnické údajeID: 40000000",
+      "emptyState": null
+    },
+    {
+      "check": "astra-layout-day",
+      "toolbar": {
+        "top": 240.046875,
+        "bottom": 269.046875,
+        "left": 55,
+        "right": 585,
+        "width": 530,
+        "height": 29
+      },
+      "notice": {
+        "top": 273.046875,
+        "bottom": 296.546875,
+        "left": 55,
+        "right": 585,
+        "width": 530,
+        "height": 23.5
+      },
+      "groups": [
+        {
+          "top": 322.546875,
+          "bottom": 341.734375,
+          "left": 55,
+          "right": 585,
+          "width": 530,
+          "height": 19.1875
+        }
+      ],
+      "groupKeys": [
+        "2026-09-30"
+      ],
+      "actualGroupKeys": [
+        "2026-09-30"
+      ],
+      "textClipping": false,
+      "times": [
+        {
+          "top": 363.734375,
+          "bottom": 387.734375,
+          "left": 55,
+          "right": 97,
+          "width": 42,
+          "height": 24
+        },
+        {
+          "top": 491.265625,
+          "bottom": 515.265625,
+          "left": 55,
+          "right": 97,
+          "width": 42,
+          "height": 24
+        }
+      ],
+      "statuses": [
+        {
+          "top": 400.578125,
+          "bottom": 418.265625,
+          "left": 157,
+          "right": 241.65625,
+          "width": 84.65625,
+          "height": 17.6875
+        },
+        {
+          "top": 528.109375,
+          "bottom": 545.796875,
+          "left": 157,
+          "right": 241.65625,
+          "width": 84.65625,
+          "height": 17.6875
+        }
+      ],
+      "entries": [
+        {
+          "top": 363.734375,
+          "bottom": 461.265625,
+          "left": 117,
+          "right": 585,
+          "width": 468,
+          "height": 97.53125
+        },
+        {
+          "top": 491.265625,
+          "bottom": 588.796875,
+          "left": 117,
+          "right": 585,
+          "width": 468,
+          "height": 97.53125
+        }
+      ],
+      "footer": {
+        "top": 691,
+        "bottom": 735,
+        "left": 9,
+        "right": 631,
+        "width": 622,
+        "height": 44
+      },
+      "horizontalOverflow": false
+    },
+    {
+      "check": "day-shows-actual-recording-and-seeded-local-fixture",
+      "manifestState": "complete",
+      "audioBytes": 35621,
+      "uploadIntent": "held",
+      "sendAvailable": false,
+      "uploadSetting": "false"
+    },
+    {
+      "action": "click",
+      "target": "Detail skutečně pořízené nahrávky"
+    },
+    {
+      "check": "local-recording-detail-no-upload",
+      "open": true,
+      "id": "1146e67c-a59c-45fc-a30c-fd5efddca03a",
+      "source": true,
+      "localState": "Zvuk připraven",
+      "delivery": "Zůstává na Macu",
+      "uploadIntent": "held",
+      "backToDay": true,
+      "title": "30. září 2026, 15:37",
+      "stages": [
+        {
+          "label": "Na Macu",
+          "complete": true
+        },
+        {
+          "label": "Ve frontě",
+          "complete": false
+        },
+        {
+          "label": "Odesláno",
+          "complete": false
+        },
+        {
+          "label": "Ověřeno",
+          "complete": false
+        }
+      ],
+      "soundFormat": "Stereo WebM/Opus · Zvuk je kompletní",
+      "sendActionVisible": false,
+      "claimDisabled": true
+    },
+    {
+      "check": "astra-layout-detail",
+      "viewport": {
+        "width": 640,
+        "height": 744
+      },
+      "back": {
+        "top": 160,
+        "bottom": 175,
+        "left": 55,
+        "right": 143,
+        "width": 88,
+        "height": 15
+      },
+      "heading": {
+        "top": 184,
+        "bottom": 251,
+        "left": 55,
+        "right": 579,
+        "width": 524,
+        "height": 67
+      },
+      "journey": {
+        "top": 267,
+        "bottom": 311,
+        "left": 55,
+        "right": 579,
+        "width": 524,
+        "height": 44
+      },
+      "storage": {
+        "top": 327,
+        "bottom": 435,
+        "left": 55,
+        "right": 579,
+        "width": 524,
+        "height": 107
+      },
+      "context": {
+        "top": 451,
+        "bottom": 518,
+        "left": 55,
+        "right": 579,
+        "width": 524,
+        "height": 67
+      },
+      "note": {
+        "top": 534,
+        "bottom": 549,
+        "left": 55,
+        "right": 579,
+        "width": 524,
+        "height": 15
+      },
+      "actions": {
+        "top": 565,
+        "bottom": 640,
+        "left": 55,
+        "right": 579,
+        "width": 524,
+        "height": 75
+      },
+      "actionComposition": {
+        "claim": {
+          "top": 565,
+          "bottom": 599,
+          "left": 55,
+          "right": 579,
+          "width": 524,
+          "height": 34
+        },
+        "reveal": {
+          "top": 606,
+          "bottom": 640,
+          "left": 55,
+          "right": 314,
+          "width": 259,
+          "height": 34
+        },
+        "delete": {
+          "top": 606,
+          "bottom": 640,
+          "left": 321,
+          "right": 579,
+          "width": 259,
+          "height": 34
+        }
+      },
+      "sourceIconVisible": false,
+      "visibleActions": [
+        {
+          "label": "Převzít pod svůj účet",
+          "top": 565,
+          "bottom": 599,
+          "left": 55,
+          "right": 579,
+          "width": 524,
+          "height": 34
+        },
+        {
+          "label": "Ukázat ve Finderu",
+          "top": 606,
+          "bottom": 640,
+          "left": 55,
+          "right": 314,
+          "width": 259,
+          "height": 34
+        },
+        {
+          "label": "Přesunout do koše",
+          "top": 606,
+          "bottom": 640,
+          "left": 321,
+          "right": 579,
+          "width": 259,
+          "height": 34
+        }
+      ],
+      "footer": {
+        "display": "flex",
+        "top": 691,
+        "bottom": 735,
+        "left": 9,
+        "right": 631,
+        "width": 622,
+        "height": 44
+      },
+      "horizontalOverflow": false
+    },
+    {
+      "action": "click",
+      "target": "Zpět na den z detailu"
+    },
+    {
+      "check": "detail-back-to-day",
+      "active": "Můj den",
+      "filtersVisible": true,
+      "detailClosed": true
+    },
+    {
+      "action": "click",
+      "target": "filtr Jen na Macu"
+    },
+    {
+      "check": "local-recording-filter",
+      "active": "true",
+      "rows": 2
+    },
+    {
+      "action": "click",
+      "target": "filtr Odesílání"
+    },
+    {
+      "check": "delivery-filter-empty-is-truthful",
+      "active": "true",
+      "rows": 0,
+      "empty": "V tomto přehledu teď nejsou žádné nahrávky."
+    },
+    {
+      "action": "click",
+      "target": "filtr Vše"
+    },
+    {
+      "action": "click",
+      "text": "Nastavení"
+    },
+    {
+      "check": "settings-shell",
+      "active": "Nastavení",
+      "navigation": [
+        {
+          "label": "Teď",
+          "active": false,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "oklch(0.52 0 0)"
+        },
+        {
+          "label": "Můj den",
+          "active": false,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "oklch(0.52 0 0)"
+        },
+        {
+          "label": "Nastavení",
+          "active": true,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "oklch(0.11 0 0)"
+        }
+      ],
+      "activeHasVisibleTreatment": true,
+      "groups": [
+        "Účet",
+        "Zvuk",
+        "Záznamy",
+        "Nahrávky",
+        "Diagnostika"
+      ],
+      "pageHeading": "Nastavení",
+      "accountHeading": "Váš účet a nové nahrávky",
+      "contentScrollTop": 0,
+      "brand": true,
+      "authState": "signed-out",
+      "deviceName": "Testovací Mac",
+      "updateCheckVisible": true,
+      "updateCheckDisabled": true
+    },
+    {
+      "error": "Skupina nebo ovladač Nastavení není dosažitelný nad patičkou: [{\"label\":\"Váš účet a nové nahrávky\",\"top\":203.046875,\"bottom\":225.4375,\"height\":22.390625,\"reachable\":true,\"disabled\":false},{\"label\":\"Výchozí cílová firma\",\"top\":269.15625,\"bottom\":298.15625,\"height\":29,\"reachable\":true,\"disabled\":true},{\"label\":\"Automaticky odesílat nové nahrávky\",\"top\":318.4375,\"bottom\":342.4375,\"height\":24,\"reachable\":true,\"disabled\":false},{\"label\":\"produkce · app.ludone.czlabs · labs.ludone.cz\",\"top\":366.578125,\"bottom\":395.578125,\"height\":29,\"reachable\":true,\"disabled\":false},{\"label\":\"Odhlásit tento Mac\",\"top\":0,\"bottom\":0,\"height\":0,\"reachable\":false,\"disabled\":true},{\"label\":\"Zvuk schůzky\",\"top\":406.171875,\"bottom\":428.5625,\"height\":22.390625,\"reachable\":true,\"disabled\":false},{\"label\":\"Nastavení zařízení\",\"top\":396.28125,\"bottom\":418.671875,\"height\":22.390625,\"reachable\":true,\"disabled\":false},{\"label\":\"Zobrazovat i ikonu v Docku\",\"top\":395.234375,\"bottom\":419.234375,\"height\":24,\"reachable\":true,\"disabled\":false},{\"label\":\"Spouštět po přihlášení do systému\",\"top\":395.296875,\"bottom\":419.296875,\"height\":24,\"reachable\":true,\"disabled\":false},{\"label\":\"Světlé\",\"top\":392.796875,\"bottom\":422.796875,\"height\":30,\"reachable\":true,\"disabled\":false},{\"label\":\"Profesionální\",\"top\":392.796875,\"bottom\":422.796875,\"height\":30,\"reachable\":true,\"disabled\":false},{\"label\":\"Tmavé\",\"top\":392.796875,\"bottom\":422.796875,\"height\":30,\"reachable\":true,\"disabled\":false},{\"label\":\"Záznamy\",\"top\":396.796875,\"bottom\":419.1875,\"height\":22.390625,\"reachable\":true,\"disabled\":false},{\"label\":\"Ihned smazat24 hodin po odeslání7 dní po odeslání30 dní po odesláníNemazat\",\"top\":391.25,\"bottom\":424.25,\"height\":33,\"reachable\":true,\"disabled\":false},{\"label\":\"Diagnostika\",\"top\":396.125,\"bottom\":418.515625,\"height\":22.390625,\"reachable\":true,\"disabled\":false},{\"label\":\"Exportovat diagnostiku\",\"top\":570.765625,\"bottom\":600.765625,\"height\":30,\"reachable\":true,\"disabled\":false},{\"label\":\"Hotovo\",\"top\":697.5,\"bottom\":729.5,\"height\":32,\"reachable\":true,\"disabled\":false}]."
+    }
+  ],
+  "recordingProof": {
+    "id": "1146e67c-a59c-45fc-a30c-fd5efddca03a",
+    "manifest": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/isolated-data/user-data/nahravky/2026-09-30T13-37-08-706Z-1146e67c.manifest.json",
+    "tracks": [
+      {
+        "source": "microphone",
+        "bytes": 28191
+      },
+      {
+        "source": "system",
+        "bytes": 28191
+      }
+    ],
+    "syntheticOnly": true,
+    "uploadTransportEnabled": false,
+    "savedCopy": {
+      "name": "LuDone-2026-09-30T13-37-08-960Z-30-září-2026,-15-37-1146e67c-a59c-45fc-a30c-fd5efddca03a.webm",
+      "bytes": 22031
+    },
+    "decision": "keep",
+    "uploadSetting": "false"
+  },
+  "testFixture": {
+    "id": "40000000-0000-4000-8000-000000000001",
+    "uploadSetting": "false",
+    "media": "seeded local fixture for layout and state; separate synthetic UI capture proof is recorded under recordingProof",
+    "manifest": ".runtime/design-e2e/2026-09-30T13-37-06-234Z/isolated-data/user-data/nahravky/astra-e2e-synthetic.manifest.json"
+  },
+  "outputDir": ".runtime/design-e2e/2026-09-30T13-37-06-234Z"
+}

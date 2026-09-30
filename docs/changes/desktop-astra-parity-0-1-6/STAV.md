@@ -1,19 +1,24 @@
 # Stav běhu `desktop-astra-parity-0-1-6`
 
-## Finální kandidát0.1.7 před publikací
+## Verze 0.1.7 je vydaná
 
-**30. 9. 2026 · zdroj2bf1da4:** nahrávání první, kompaktní neaktivní LuTrack,
-členění dne, funkční diagnostika a přehledné volby firmy/přístupu.
-🧪1 654PASS/3 původní skipy;35 hlavních Electron podmínek,18 stavů a41
-produktových cest v400/640px. Nezávislé review bez zbývajícíP1/P2.
-D10 přesná vizuální brána zelená; D11 jen nové nahrávky výchozí firemní.
-Default firmy se obnovuje a lze jej výslovně uložit. Před uploadem má každá
-nahrávka vlastní firmu/přístup; uložení voleb nic neodesílá. Historické chybějící
-preference zůstávají soukromé, serverové vazby/progress uzamykají změnu.
-[Finální důkazy](evidence/acceptance-0-1-7-2026-09-30/README.md).
-🟡 CI/merge/podepsaná publikace ještě čekají; ⛔ fyzický zvuk, produkční
-OAuth/upload a instalace aktualizace kandidáta neověřeny.
-Následující0.1.6 důkazy popisují historickou publikaci.
+**30. 9. 2026:** ✅ PR #158 sloučený, nový neměnný tag `v0.1.7` na `a149a55`,
+podpis/notarizace a publikace pro arm64/x64 prošly. Workflow 36767124908 SUCCESS;
+nezávislý GET feedu 0.1.7 a osm HEAD HTTP200 potvrzené.
+[Publikační důkazy](evidence/release-0-1-7-2026-09-30/README.md).
+
+🧪 Zdroj `2bf1da4`: 1 654 PASS / 3 původní skipy, 35 hlavních Electron
+podmínek, 18 stavů a 41 produktových cest v šířkách 400/640 px.
+Nezávislé core/UI/vizuální review bez zbývající P1/P2; přesná brána D10 zelená.
+Nahrávání je první, LuTrack kompaktní a neaktivní. Nastavení obnoví uložený
+default firmy; konkrétní nahrávka má vlastní firmu/přístup a uložení nic neodesílá.
+D11 mění výchozí přístup pouze novým nahrávkám na firemní. Historické chybějící
+preference zůstávají soukromé; existující serverová vazba/progress zamyká změny.
+[Finální přejímka](evidence/acceptance-0-1-7-2026-09-30/README.md).
+
+🟡 Fyzický zvuk, produkční OAuth/upload a instalace aktualizace čekají na člověka
+podle [Mac přejímky](MAC-PREJIMKA.md). Syntetická E2E to neověřuje naostro.
+Následující 0.1.6 důkazy popisují historickou publikaci.
 
 **30. 9. 2026 · ✅ verze 0.1.6 podepsaná, notarizovaná a publikovaná · PR #152, #153 a #154 sloučené · 🟡 fyzická Mac přejímka čeká**
 
