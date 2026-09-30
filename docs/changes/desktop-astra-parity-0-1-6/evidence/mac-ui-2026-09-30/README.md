@@ -1,3 +1,12 @@
+---
+kind: verification
+ref: mac-ui-0.1.6
+verdict: warning
+measuredAt: "2026-09-30T06:45:00Z"
+scope: ["nainstalované UI 0.1.6"]
+measuredFrom: ["native accessibility a snímky běžící aplikace", "zdrojový Settings.jsx a RecordingsDashboard.jsx"]
+---
+
 # Kontrola nainstalované aplikace 0.1.6 na Macu
 
 30. 9. 2026, přibližně 08:28–08:45 Europe/Prague. Dan potvrdil instalaci a

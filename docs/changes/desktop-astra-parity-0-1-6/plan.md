@@ -131,3 +131,11 @@ Běh **NESMÍ**:
 ## Odhad
 
 Celkem 16–24 hodin čisté práce: T-01 1h, T-02 3–4h, T-03 2–3h, T-04 3–5h, T-05 2–4h, T-06 3–5h, T-07 2–3h. Zahrnuje implementaci, integraci a lokální kontroly; čekání na běh CI nebo fyzickou Mac přejímku může kalendářní čas prodloužit.
+
+## Revize po instalaci 30. 9. 2026
+
+Pokračování T-08–T-11 podle `PRODUCT-POLISH.md` opravuje živé nálezy a dále
+vylepšuje Astru na výslovný pokyn Dana. Vlastnictví souborů je v nových packetech.
+KDO: implementace Sol low ve třech izolovaných stromech, integrační audit a
+finální ověření koordinátor, nezávislé review jiný model. Předběžný rozsah
+2–4 hodiny práce plus CI; odhad není důkaz splnění.

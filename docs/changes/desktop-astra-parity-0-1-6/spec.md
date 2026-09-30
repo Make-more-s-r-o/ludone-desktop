@@ -63,3 +63,11 @@ Umožní Danovi používat Teď, Můj den, detail a Nastavení jako jeden skute�
 
 - **Astra prototyp × LuTrack bez funkční služby:** vzhled se zachová, časovač a demo data se nepřenášejí.
 - **Předchozí scope 0.1.5 × dnešní očekávání:** starý manifest popisoval jen L1 výřez; tato nová změna přijímá celý dříve schválený L2 směr a před release vyžaduje novou E2E přejímku.
+
+### F2 — Produktové dotažení po živém auditu
+
+Umožní Danovi používat klidný panel, přehled dne a pravdivý detail nad skutečnou
+historií bez chyb skrytých záložek. Kontrakt a přejímka jsou v `PRODUCT-POLISH.md`.
+Given dlouhá historie a čekající fronta; When otevřu Teď, Můj den, detail a Nastavení;
+Then nahrávání zůstane hlavní akcí, dny se neslijí, diagnostika se načte a všechny
+povolené akce mají bezpečný dokončitelný tok ve třech tématech.
