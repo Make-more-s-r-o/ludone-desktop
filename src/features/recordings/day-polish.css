@@ -24,3 +24,6 @@
 .recordings-dashboard--detail .recordings-day:not(:has([data-detail-active="true"])) { display: none; }
 .recordings-dashboard--detail .recordings-dashboard__today-empty { display: none; }
 .recordings-dashboard .recording-queue-card__delivery--odeslano { color: var(--panel-subtle); background: var(--panel-raised); }
+.settings-window[data-page="day"] .recordings-dashboard__filter[aria-pressed="true"] span { color: inherit; }
+/* Stálá čitelná časová značka nezávisí na metrice právě načteného písma. */
+.settings-window[data-page="day"] .recordings-dashboard .recordings-timeline__time { height: 24px; padding-top: 10px; line-height: 14px; }

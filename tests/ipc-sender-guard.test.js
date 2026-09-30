@@ -353,6 +353,8 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "recording:finish",
       "recording:finish-export",
       "recording:save-decision",
+      // D9: výslovná konfigurace jedné nahrávky; přesný CAS/payload měří queue-wiring.
+      "recordings:configure-upload",
       "recordings:delete",
       "recordings:list-local",
       "recordings:open-web",
@@ -386,6 +388,8 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       // Nové čtení stavu; odmítnutí cizího rámu i payloadu měří queue-wiring.test.js.
       "updater:get-state",
       "updater:install",
+      // D9: pouze lokální čtení zapamatované firmy, bez síťového požadavku.
+      "upload-companies:default",
       "upload-companies:list",
       "upload-companies:select",
     ].sort());
@@ -401,6 +405,16 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       'handleValidated("upload-companies:select", ["settings"],',
     );
     expect(mainSource).toContain("requireTrustedSender(event, [\"settings\"])");
+  });
+
+  it("preference nahrávky a čtení výchozí firmy mají jen oprávnění Nastavení", () => {
+    expect(mainSource).toContain(
+      'handleValidated("recordings:configure-upload", ["settings"],',
+    );
+    expect(mainSource).toContain(
+      'handleValidated("upload-companies:default", ["settings"],',
+    );
+    expect(mainSource).toContain('requireNoPayload("upload-companies:default", extraPayload)');
   });
 
   it("inventarizuje přesně čtyři boolean fakta přijímaná tray kanálem", () => {

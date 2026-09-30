@@ -1216,7 +1216,7 @@ export function SettingsApp() {
             ].filter(Boolean).join(" ")}
           </p>
         ) : (
-          <span><CheckIcon /> Změny se ukládají automaticky</span>
+          <span>Volby firmy a přístupu potvrď uložením.</span>
         )}
         <button type="button" className="button button--primary" onClick={() => window.ludone.closeSettings()}>
           Hotovo

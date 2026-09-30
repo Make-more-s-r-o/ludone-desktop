@@ -41,6 +41,7 @@
 | `electron/main.cjs` | koordinátor | Sekvenční převzetí původních a nových packetů; nový běh: Settings T-08, dashboard T-09, panel T-10, ostatní T-11. |
 | `electron/preload.cjs` | koordinátor | Sekvenční převzetí původních a nových packetů; nový běh: Settings T-08, dashboard T-09, panel T-10, ostatní T-11. |
 | `tests/queue-wiring.test.js` | koordinátor | Sekvenční převzetí původních a nových packetů; nový běh: Settings T-08, dashboard T-09, panel T-10, ostatní T-11. |
+| `tests/ipc-sender-guard.test.js` | koordinátor | Po T-12 přesně přidat dva kanály povolené D9; zachovat whitelist i validační wrapper a doplnit omezení na Nastavení. |
 | `scripts/astra-design-e2e.mjs` | koordinátor | Sekvenční převzetí původních a nových packetů; nový běh: Settings T-08, dashboard T-09, panel T-10, ostatní T-11. |
 | `scripts/astra-design-e2e.test.mjs` | koordinátor | T-06/T-11 sekvenčně; přesná obnova vizuálního kontraktu schválená D10, bez oslabení funkčních kontrol. |
 | `package.json` | koordinátor | Sekvenční převzetí původních a nových packetů; nový běh: Settings T-08, dashboard T-09, panel T-10, ostatní T-11. |

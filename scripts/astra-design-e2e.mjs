@@ -314,6 +314,9 @@ async function captureAstraReferences() {
 }
 
 async function clickByText(client, text) {
+  await ensureVisibleWindow(client);
+  await waitFor(() => client.evaluate(`Boolean([...document.querySelectorAll('button')]
+    .find(item => item.textContent.replace(/\\s+/g, ' ').trim() === ${JSON.stringify(text)}))`), `tlačítko ${text}`);
   await client.evaluate(`(async () => {
     const target = [...document.querySelectorAll('button')]
       .find((item) => item.textContent.replace(/\\s+/g, ' ').trim() === ${JSON.stringify(text)});
@@ -354,6 +357,8 @@ async function clickByText(client, text) {
 }
 
 async function clickSelector(client, selector, label) {
+  await ensureVisibleWindow(client);
+  await waitFor(() => client.evaluate(`Boolean(document.querySelector(${JSON.stringify(selector)}))`), `prvek ${label}`);
   const point = await client.evaluate(`(async () => {
     const target = document.querySelector(${JSON.stringify(selector)});
     if (!target) return null;
@@ -385,7 +390,28 @@ function compactText(value) {
     .replace(/[\s\u00ad\u200b]+/gu, "");
 }
 
+async function ensureVisibleWindow(client) {
+  // macOS může zastavit rAF zakrytého okna. Snímek vyžaduje skutečně vykreslené
+  // okno; zvedneme je stejně jako při lidské vizuální přejímce, časový limit neměníme.
+  await client.send("Page.bringToFront");
+  // bringToFront neotevře skrytý macOS panel. Použijeme existující testovací
+  // klik na lištu (povolený výhradně LUDONE_E2E), nikoli změnu renderer guardu.
+  if (await client.evaluate("Boolean(document.querySelector('.panel')) && document.visibilityState !== 'visible'")) {
+    const shown = await client.evaluate("window.ludone.testClickTray()");
+    if (!shown?.allowed) throw new Error("Izolovaný panel nelze otevřít klikem na lištu.");
+    if (!shown.visible) await client.evaluate("window.ludone.testClickTray()");
+    await waitFor(() => client.evaluate("document.visibilityState === 'visible'"), "viditelný panel pro screenshot");
+  }
+  await waitFor(() => client.evaluate("document.visibilityState === 'visible'"), "viditelné okno pro proklik a snímání");
+}
+
 async function screenshot(client, name) {
+  await ensureVisibleWindow(client);
+  observations.push({ diagnostic: "screenshot-readiness", name,
+    ...await client.evaluate(`({ visibility: document.visibilityState, focus: document.hasFocus(),
+      animations: document.getAnimations().map(animation => ({ state: animation.playState,
+        endTime: String(animation.effect?.getComputedTiming()?.endTime) })) })`),
+  });
   // Čekáme na hotová písma a konečné přechody barev. Snímek uprostřed
   // změny tématu může aktivní tlačítko mylně zobrazit jako šedé/zakázané.
   await client.evaluate(`(async () => {
@@ -479,7 +505,11 @@ const e2eEnvironment = {
 };
 
 function launchDesktop(port, extraEnvironment = {}) {
-  const child = spawn(electronBinary, [".", `--remote-debugging-port=${port}`], {
+  // Izolovanou vizuální přejímku nesmí macOS pozastavit při zakrytí jiným oknem.
+  // Neměníme produkt ani assertions; stejné neškrcené vykreslování má fixture audit.
+  const child = spawn(electronBinary, [".", `--remote-debugging-port=${port}`,
+    "--disable-background-timer-throttling", "--disable-renderer-backgrounding",
+    "--disable-backgrounding-occluded-windows"], {
     cwd: projectRoot,
     env: { ...e2eEnvironment, ...extraEnvironment },
     stdio: ["ignore", "pipe", "pipe"],
@@ -1435,6 +1465,9 @@ try {
   observations.push({ check: "detail-back-to-day", ...detailBack });
 
   await clickSelector(settings, '[data-filter="local"]', "filtr Jen na Macu");
+  await waitFor(() => settings.evaluate(`document.querySelector('[data-filter="local"]')?.getAttribute('aria-pressed') === 'true'
+    && document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length === 2`),
+  "lokální filtr po dokončení obnovy při focusu");
   const localFilter = await settings.evaluate(`({
     active: document.querySelector('[data-filter="local"]')?.getAttribute('aria-pressed'),
     rows: document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length,
@@ -1445,6 +1478,9 @@ try {
   observations.push({ check: "local-recording-filter", ...localFilter });
 
   await clickSelector(settings, '[data-filter="delivery"]', "filtr Odesílání");
+  await waitFor(() => settings.evaluate(`document.querySelector('[data-filter="delivery"]')?.getAttribute('aria-pressed') === 'true'
+    && document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length === 0
+    && Boolean(document.querySelector('.recordings-dashboard__empty'))`), "pravdivý prázdný filtr odesílání");
   const deliveryFilter = await settings.evaluate(`({
     active: document.querySelector('[data-filter="delivery"]')?.getAttribute('aria-pressed'),
     rows: document.querySelectorAll('.recordings-dashboard__list li[data-recording-id]').length,

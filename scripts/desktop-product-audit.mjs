@@ -16,6 +16,10 @@ export const REQUIRED_PATHS = [
   ...["light", "professional", "dark"].map(t => `settings-theme-${t}`),
   "settings-audio-quick-focus", "keyboard-escape-quick-actions", "now-navigation-queue-layout",
   ...["absent", "available", "downloaded"].map(u => `update-${u}`),
+  "company-default-restored", "company-default-change-twice", "company-default-error-retained", "company-default-auth-reset",
+  "upload-preferences-save-before-send", "upload-preferences-save-failure", "upload-preferences-stale-refresh",
+  "upload-preferences-locked", "upload-preferences-locked-retry", "upload-preferences-historical-private",
+  ...["dark", "professional"].map(theme => `upload-preferences-theme-${theme}`),
 ];
 export function auditExitCode(results, networkAttempts) {
   return networkAttempts !== 0 || !Array.isArray(results) || results.length === 0
@@ -126,6 +130,18 @@ function installFixture(window, scenario) {
       allowedActions: { send: kind === "local", retry: kind === "error", claim: kind === "owner", delete: kind === "delete" },
     };
   }).reverse();
+  if (scenario.uploadPreferences) {
+    const local = state.items.find(i => i.id.endsWith("000000000001"));
+    local.title = "Firma a viditelnost před odesláním";
+    // Historický řádek nemá nová metadata; UI musí samo použít soukromý fallback.
+    if (!scenario.historicalPrivate) local.uploadPreferences = {
+      companyId: "10000000-0000-4000-8000-000000000001", companyName: "Výchozí fixture firma", visibility: "company",
+    };
+    local.uploadPreferencesLocked = scenario.preferencesLocked === true;
+    if (scenario.preferencesLocked) { local.state = scenario.lockedRetry ? "selhalo" : "odesila"; local.uploadIntent = "approved"; local.allowedActions.send = false; local.allowedActions.retry = scenario.lockedRetry === true; }
+  }
+  state.defaultCompanyId = "10000000-0000-4000-8000-000000000001";
+  state.companyOfferSerial = 0;
   if (scenario.preview) {
     try {
       const saved = JSON.parse(window.sessionStorage.getItem("ludone.fixture.preview-state"));
@@ -189,6 +205,38 @@ function installFixture(window, scenario) {
       return state.update;
     },
     deferUpdate: async () => { calls.push({ name: "deferUpdate" }); state.update = { ...state.update, revision: 2, installDeferred: true }; return state.update; },
+    ...(scenario.uploadPreferences ? {
+      getUploadCompanyDefault: async () => { calls.push({ name: "getUploadCompanyDefault" }); return { companyId: state.defaultCompanyId }; },
+      listUploadCompanies: async () => {
+        calls.push({ name: "listUploadCompanies" });
+        if (scenario.companyOfferError) throw new Error("Izolovaná chyba nabídky firem");
+        state.lastCompanyOffer = `fixture-offer-token-${++state.companyOfferSerial}`;
+        return { companies: [
+          { id: "10000000-0000-4000-8000-000000000001", name: "Výchozí fixture firma" },
+          { id: "10000000-0000-4000-8000-000000000002", name: "Jiná fixture firma" },
+        ], selectedCompanyId: state.defaultCompanyId, offerToken: state.lastCompanyOffer };
+      },
+      selectUploadCompany: async (offerToken, companyId) => {
+        calls.push({ name: "selectUploadCompany", offerToken, companyId });
+        if (!state.lastCompanyOffer || offerToken !== state.lastCompanyOffer) throw new Error("stale_offer");
+        state.lastCompanyOffer = null;
+        state.defaultCompanyId = companyId; return { saved: true, selectedCompanyId: companyId };
+      },
+      configureRecordingUpload: async (value) => {
+        calls.push({ name: "configureRecordingUpload", value });
+        if (!state.lastCompanyOffer || value.offerToken !== state.lastCompanyOffer) throw new Error("stale_offer");
+        state.lastCompanyOffer = null;
+        const recording = state.items.find(i => i.id === value.id);
+        if (scenario.preferencesSaveFailure) throw new Error("Izolované odmítnutí zápisu preferencí");
+        if (scenario.preferencesStale) {
+          recording.revision = `sha256:${"c".repeat(64)}`;
+          throw new Error("Snímek nahrávky je neaktuální; načtěte seznam znovu");
+        }
+        recording.uploadPreferences = { companyId: value.companyId, companyName: value.companyId.endsWith("2") ? "Jiná fixture firma" : "Výchozí fixture firma", visibility: value.visibility };
+        recording.revision = `sha256:${"b".repeat(64)}`;
+        return { configured: true };
+      },
+    } : {}),
   });
 }
 
@@ -383,6 +431,78 @@ try {
     await t.wait("document.querySelector('[data-testid=diagnostics-version]')?.textContent.trim()==='0.1.6'");
     assert(await t.evaluate("document.querySelector('[data-testid=diagnostics-server]').dataset.status==='unknown'"), "Neznámý server je hlášen úspěšný");
   });
+  await scenario("company-default-restored", { page: "account", uploadPreferences: true }, async (t) => {
+    await t.wait("document.querySelector('[data-testid=upload-company-select]')?.value==='10000000-0000-4000-8000-000000000001'");
+    assert(await t.evaluate("window.__astraFixture.calls.some(c=>c.name==='getUploadCompanyDefault') && window.__astraFixture.calls.some(c=>c.name==='listUploadCompanies')"), "Uložená firma nebyla ověřena po otevření Nastavení");
+    assert(await t.evaluate("![...window.__astraFixture.calls].some(c=>c.name==='selectUploadCompany'||c.name==='sendRecording')"), "Pouhé otevření změnilo default nebo odeslalo nahrávku");
+  });
+  await scenario("company-default-error-retained", { page: "account", uploadPreferences: true, companyOfferError: true }, async (t) => {
+    await t.wait("Boolean(document.querySelector('.upload-company-selector [role=alert]'))");
+    assert(await t.evaluate("window.__astraFixture.defaultCompanyId==='10000000-0000-4000-8000-000000000001' && !window.__astraFixture.calls.some(c=>c.name==='selectUploadCompany')"), "Chyba sítě odstranila zapamatovanou firmu");
+  });
+  await scenario("company-default-change-twice", { page: "account", uploadPreferences: true }, async (t) => {
+    await t.wait("document.querySelector('[data-testid=upload-company-select]')?.value==='10000000-0000-4000-8000-000000000001'");
+    for (const id of ['10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000001']) {
+      await t.evaluate(`(() => { const e=document.querySelector('[data-testid=upload-company-select]'); e.value=${JSON.stringify(id)}; e.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+      await t.click('[data-testid=upload-company-save]');
+      await t.wait(`window.__astraFixture.defaultCompanyId===${JSON.stringify(id)} && document.querySelector('[data-testid=upload-company-select]')?.value===${JSON.stringify(id)} && document.querySelector('[data-testid=upload-company-select]')?.disabled===false`);
+    }
+    assert(await t.evaluate("window.__astraFixture.calls.filter(c=>c.name==='selectUploadCompany').length===2 && !window.__astraFixture.calls.some(c=>c.name==='sendRecording')"), "Opakovaná změna firmy spotřebovala starou nabídku nebo odeslala data");
+  });
+  await scenario("company-default-auth-reset", { page: "account", uploadPreferences: true }, async (t) => {
+    await t.wait("document.querySelector('[data-testid=upload-company-select]')?.value==='10000000-0000-4000-8000-000000000001'");
+    await t.evaluate("window.__astraFixture.auth='expired'; window.__astraFixture.identity=null; window.__astraFixture.listeners.auth()");
+    await t.wait("Boolean(document.querySelector('.upload-company-selector--signed-out'))");
+    assert(await t.evaluate("!document.querySelector('.upload-company-selector')?.textContent.includes('Výchozí fixture firma')"), "Po změně identity zůstal cizí název firmy");
+  });
+  const changeUploadPreferences = async (t) => {
+    await t.wait("Boolean(document.querySelector('[data-testid=recording-upload-company] option[value=\"10000000-0000-4000-8000-000000000002\"]'))");
+    for (const [selector,value] of [['[data-testid=recording-upload-company]','10000000-0000-4000-8000-000000000002'],['[data-testid=recording-upload-visibility]','private']]) {
+      await t.evaluate(`(() => { const control=document.querySelector(${JSON.stringify(selector)}); control.value=${JSON.stringify(value)}; control.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+    }
+  };
+  await scenario("upload-preferences-save-before-send", { uploadPreferences: true }, async (t) => {
+    await open(t,0); await changeUploadPreferences(t);
+    await t.click('[data-testid=recording-upload-preferences-save]');
+    await t.wait("window.__astraFixture.calls.some(c=>c.name==='configureRecordingUpload') && document.querySelector('[data-testid=recording-upload-company]')?.value==='10000000-0000-4000-8000-000000000002'");
+    assert(await t.evaluate("!window.__astraFixture.calls.some(c=>c.name==='sendRecording') && window.__astraFixture.defaultCompanyId==='10000000-0000-4000-8000-000000000001'"), "Samotná volba odeslala nahrávku nebo změnila default účtu");
+    await t.click(`${entry(0)} .recording-action--send`);
+    await t.wait("window.__astraFixture.calls.some(c=>c.name==='sendRecording')");
+    assert(await t.evaluate(`(() => { const c=window.__astraFixture.calls; const configure=c.findIndex(x=>x.name==='configureRecordingUpload'); const send=c.findIndex(x=>x.name==='sendRecording'); const payload=c[configure].value; return payload.companyId==='10000000-0000-4000-8000-000000000002' && payload.visibility==='private' && c.slice(configure+1,send).some(x=>x.name==='listLocalRecordings') && c[send].value.queueRev==='sha256:'+'b'.repeat(64) && !c.some(x=>x.name==='selectUploadCompany'); })()`), "Upload nepoužil uložené volby a čerstvou revizi");
+  });
+  for (const [name, failure] of [["save-failure", { preferencesSaveFailure: true }], ["stale-refresh", { preferencesStale: true }]]) {
+    await scenario(`upload-preferences-${name}`, { uploadPreferences: true, ...failure }, async (t) => {
+      await open(t,0); await changeUploadPreferences(t);
+      await t.click('[data-testid=recording-upload-preferences-save]');
+      await t.wait("window.__astraFixture.calls.some(c=>c.name==='configureRecordingUpload') && Boolean(document.querySelector('[role=alert]'))");
+      assert(await t.evaluate("!window.__astraFixture.calls.some(c=>c.name==='sendRecording'||c.name==='retryRecording'||c.name==='selectUploadCompany')"), "Po neúspěšném zápisu se spustil upload");
+      if (failure.preferencesStale) assert(await t.evaluate("window.__astraFixture.calls.filter(c=>c.name==='listLocalRecordings').length>=2"), "Po zastaralé revizi nebyla načtena realita");
+    });
+  }
+  await scenario("upload-preferences-locked", { uploadPreferences: true, preferencesLocked: true }, async (t) => {
+    await open(t,0); await t.wait(textHas("Firma a viditelnost před odesláním"));
+    assert(await t.evaluate("![...document.querySelectorAll('[data-testid=recording-upload-preferences] select,[data-testid=recording-upload-preferences] button')].some(c=>!c.disabled) && !window.__astraFixture.calls.some(c=>c.name==='configureRecordingUpload')"), "Rozpracovaná nahrávka dovoluje změnit cíl");
+  });
+  await scenario("upload-preferences-historical-private", { uploadPreferences: true, historicalPrivate: true }, async (t) => {
+    await open(t,0); await t.wait("document.querySelector('[data-testid=recording-upload-visibility]')?.value==='private'");
+    assert(await t.evaluate("!window.__astraFixture.calls.some(c=>c.name==='configureRecordingUpload')"), "Historická soukromá volba byla přepsána");
+  });
+  await scenario("upload-preferences-locked-retry", { uploadPreferences: true, preferencesLocked: true, lockedRetry: true }, async (t) => {
+    // Nastavení načítá default i nad skrytou stránkou účtu. Počítáme pouze nové
+    // nabídky vyvolané otevřením detailu/retry, nikoli toto nezávislé čtení defaultu.
+    await t.wait("document.querySelector('[data-testid=upload-company-state]')?.textContent.trim()==='Firma je uložená.'");
+    const offersBefore = await t.evaluate("window.__astraFixture.calls.filter(c=>c.name==='listUploadCompanies').length");
+    await open(t,0); await t.wait(`document.querySelector('${entry(0)} .recording-action--retry')?.disabled===false`);
+    await t.click(`${entry(0)} .recording-action--retry`);
+    await t.wait("window.__astraFixture.calls.some(c=>c.name==='retryRecording')");
+    assert(await t.evaluate(`!window.__astraFixture.calls.some(c=>c.name==='configureRecordingUpload') && window.__astraFixture.calls.filter(c=>c.name==='listUploadCompanies').length===${offersBefore} && window.__astraFixture.items.find(i=>i.id.endsWith('000000000001')).uploadPreferences.companyId==='10000000-0000-4000-8000-000000000001'`), "Zamčený retry změnil firmu nebo zkoušel nové volby");
+  });
+  for (const theme of ["dark", "professional"]) {
+    await scenario(`upload-preferences-theme-${theme}`, { uploadPreferences: true, theme }, async (t) => {
+      await open(t,0); await t.wait("document.querySelector('[data-testid=recording-upload-visibility]')?.value==='company'");
+      assert(await t.evaluate(`document.documentElement.dataset.theme===${JSON.stringify(theme)} && [...document.querySelectorAll('[data-testid=recording-upload-preferences] select')].every(e=>e.getBoundingClientRect().width>0 && !e.disabled)`), "Nové volby nejsou čitelné v daném tématu");
+    });
+  }
   for (const [theme,label] of [["light","Světlé"],["professional","Profesionální"],["dark","Tmavé"]]) {
     await scenario(`settings-theme-${theme}`, { page: "account" }, async (t) => {
       await t.wait("Boolean(document.querySelector('.settings-theme__choices'))");
@@ -440,4 +560,3 @@ if (process.versions.electron) void runElectron().catch((error) => {
   console.error(error.stack || error.message);
   writeFile(path.join(output, preview ? "preview-status.json" : "report.json"), JSON.stringify({ status: "FAIL", exitCode: 1, fixtureOnly: true, results: [], error: error.message }, null, 2)).finally(() => require("electron").app.exit(1));
 });
-
