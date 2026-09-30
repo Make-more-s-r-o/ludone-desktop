@@ -139,3 +139,18 @@ vylepšuje Astru na výslovný pokyn Dana. Vlastnictví souborů je v nových pa
 KDO: implementace Sol low ve třech izolovaných stromech, integrační audit a
 finální ověření koordinátor, nezávislé review jiný model. Předběžný rozsah
 2–4 hodiny práce plus CI; odhad není důkaz splnění.
+
+## Checkpoint produktového dotažení a další zadání
+
+0dd87da: T-08–T-11 implementované a zkontrolované; 1 607 PASS, 18 stavů a 29 cest.
+Hlavní design E2E zůstává FAIL na první geometrii; Q1 blokuje publikaci, ne
+nezávislé opravy. Doklady: dukazy/produktove-dotazeni-2026-09-30 v kořeni repa.
+
+| Etapa | KDO | Závislost | Čím ověřit |
+|---|---|---|---|
+| T-12 Preference uploadu a bezpečný kontrakt | Sol, samostatný worktree | integrovaný základ | persistence, CAS, owner/origin, pinned progress, upload tělo |
+| T-13 Firma a viditelnost v UI | Sol, samostatný worktree | T-12 | default po otevření, private, přesný payload, stale/error a lock |
+
+Koordinátor reviewuje rizikový diff, integruje postupně a doplní auditové cesty.
+Finální brány zopakuje až nad posledním zdrojovým commitem. Bez vyřešení Q1
+nepushuje release tag. Verze a podepsané artefakty0.1.6 zůstávají nedotčené.

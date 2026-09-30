@@ -1,5 +1,7 @@
 # Co čeká na Dana — LuDone Desktop
 
+**30. 9. 2026 — nový kandidát:** 🧪 produktové dotažení otestované (1 607 PASS, 18 stavů, 29 cest), zatím nevydané. ⚠️ Q1: konkrétní nová hierarchie panelu odporuje původnímu vizuálnímu E2E kontraktu; před publikací potřebuje rozhodnutí nad [galerií](dukazy/produktove-dotazeni-2026-09-30/index.html). Opravy firmy/viditelnosti před uploadem mezitím pokračují samostatně. Fyzickou přejímku provedeme až s hotovým kandidátem.
+
 **30. 9. 2026 — 0.1.6 je vydaná:** přístupy, podpis, notarizace a publikace jsou vyřízené. Stačí **Nastavení → Zkontrolovat aktualizace → Aktualizovat**, potom [krátký postup na Macu](docs/changes/desktop-astra-parity-0-1-6/MAC-PREJIMKA.md), přibližně 10 minut bez živého hovoru. Zelené E2E, CI a review už proběhly. 🟡 Zbývá člověkem ověřit skutečný zvuk, upload a instalaci; nic nového nyní nerozhodovat ani nehledat hesla. Níže datované body 14.–15. 9. jsou historická zjištění, nikoli dnešní stav vydání.
 
 **23. 9. 2026 — 0.1.4 je vydaná:** ✅ podpis, notarizace a veřejná publikace prošly. Pověření k tagu je vyřízené (D22), přístupy ani hesla znovu nehledat. Na Macu byla před vydáním zjištěna 0.1.3. Danovi zbývá **Nastavení → Zkontrolovat aktualizace → Aktualizovat**, potom [krátká živá přejímka](docs/changes/nahravky-dashboard/OVERENI-NA-MACU.md#přejímka-stereo-webmopus--nrd-09-po-vydání-navazující-verze): jeden webový záznam a přepis obou stran. Níže uvedené stavy instalace 0.1.2 a starších vydání jsou historické.

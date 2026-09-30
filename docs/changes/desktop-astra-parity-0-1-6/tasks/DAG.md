@@ -15,6 +15,8 @@
 | T-09 | — | Produktový den |
 | T-10 | — | Produktový panel |
 | T-11 | T-08, T-09, T-10 | Integrace a přejímka |
+| T-12 | — | Integrovaný základ, preference uploadu |
+| T-13 | T-12 | UI nad hotovým kontraktem |
 
 ## Hotspoty
 
@@ -46,6 +48,14 @@
 | `electron/preload.test.cjs` | koordinátor | Sekvenční převzetí; původní a opravný běh nejsou souběžné. |
 | `src/features/recording/RecordingCard.test.jsx` | koordinátor | Sekvenční převzetí; původní a opravný běh nejsou souběžné. |
 
+| `src/lib/queue.js` | koordinátor | Sekvenční převzetí; T-12 core potom T-13 UI, starší etapy již neběží. |
+| `tests/queue.test.js` | koordinátor | Sekvenční převzetí; T-12 core potom T-13 UI, starší etapy již neběží. |
+| `src/components/settings-polish.css` | koordinátor | Sekvenční převzetí; T-12 core potom T-13 UI, starší etapy již neběží. |
+| `src/features/recordings/day-polish.css` | koordinátor | Sekvenční převzetí; T-12 core potom T-13 UI, starší etapy již neběží. |
+| `src/features/recording/panel-polish.css` | koordinátor | Sekvenční převzetí; T-12 core potom T-13 UI, starší etapy již neběží. |
+
+| `src/lib/queue.test.js` | koordinátor | Sekvenční převzetí staré a nové datové etapy. |
+
 ## Packety a executor
 
 | task | packet | executor |
@@ -61,7 +71,11 @@
 | T-09 | `tasks/T-09.md` | codex |
 | T-10 | `tasks/T-10.md` | codex |
 | T-11 | `tasks/T-11.md` | codex |
+| T-12 | `tasks/T-12.md` | codex |
+| T-13 | `tasks/T-13.md` | codex |
 
 T-08/T-09/T-10 pracují souběžně v samostatných worktrees, se svými scoped CSS.
 T-11 vlastní sdílené CSS, main/preload, audit, dokumentaci a verzi. Historické
 tasky ani schvalovací hook nepřevádíme zpětně na proběhlý dispatch.
+
+T-12 (preference/core) → T-13 (UI). Q1 blokuje pouze publikaci, ne tyto opravy.
