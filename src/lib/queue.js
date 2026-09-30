@@ -459,11 +459,11 @@ export function reduceQueueForRenderer(queue, currentOwnerFingerprint = null) {
       : {}),
     ...((item.kind ?? QUEUE_ITEM_KINDS.RECORDING) === QUEUE_ITEM_KINDS.RECORDING && (item.uploadPreferences !== undefined
       || item.legacyDeliveryBarrier === true || item.server?.companyTabidooId !== undefined
-      || hasInitializedServerProgress(normalizedStoredServer(item))) ? {
+      || hasRawRecordingServerProgress(item)) ? {
       uploadPreferences: item.uploadPreferences ? { companyId: item.uploadPreferences.companyId, visibility: item.uploadPreferences.visibility,
         ...(typeof item.uploadPreferences.companyName === "string" ? { companyName: item.uploadPreferences.companyName } : {}) } : null,
       uploadPreferencesLocked: !recordingCompanyRepairAvailable(item) && (item.legacyDeliveryBarrier === true || [QUEUE_STATES.SENDING, QUEUE_STATES.SENT].includes(item.state)
-        || item.server?.companyTabidooId !== undefined || hasInitializedServerProgress(normalizedStoredServer(item))),
+        || item.server?.companyTabidooId !== undefined || hasRawRecordingServerProgress(item)),
     } : {}),
     attempts: item.attempts,
     nextAttemptAt: item.nextAttemptAt,
@@ -783,11 +783,22 @@ export function retryFailedItem(queue, clientRecordingId) {
   return { item, queue: replaceItem(queue, index, item) };
 }
 
+/** Konzervativní kontrola původního progressu: normalizace nesmí odemknout starší vazbu. */
+function hasRawRecordingServerProgress(item) {
+  const server = item.server ?? {};
+  const hasId = (value) => value !== null && value !== undefined;
+  const hasBytes = (value) => value !== null && value !== undefined && value !== 0;
+  return [server.sessionId, server.recordingId, server.legacyRecordingId, server.delivery?.recordingId].some(hasId)
+    || hasBytes(server.delivery?.uploadedBytes)
+    || Object.values(server.tracks ?? {}).some((progress) => hasId(progress?.recordingId) || hasBytes(progress?.uploadedBytes))
+    || Object.values(server.uploadedBytes ?? {}).some(hasBytes);
+}
+
 /** Po 403 lze opravit pouze lokální pin, nikoli existující serverovou vazbu. */
 export function recordingCompanyRepairAvailable(item) {
   return item.state === QUEUE_STATES.FAILED && item.legacyDeliveryBarrier !== true
     && ["company_out_of_scope (HTTP 403)", "403 company_out_of_scope"].includes(item.lastFailureReason)
-    && !hasInitializedServerProgress(normalizedStoredServer(item));
+    && !hasRawRecordingServerProgress(item);
 }
 
 /** Výslovná oprava pouze firmy odmítnuté serverem, ještě před vznikem serverových ID. */

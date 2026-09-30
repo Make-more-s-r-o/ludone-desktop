@@ -3817,6 +3817,36 @@ describe("preference jedné nahrávky na disku", () => {
 
     } finally { await rm(h.directory, { recursive: true, force: true }); }
   });
+  it.each([
+    { legacyRecordingId: SERVER_MICROPHONE_ID }, { sessionId: SERVER_SESSION_ID }, { recordingId: SERVER_MICROPHONE_ID },
+    { delivery: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 0 } },
+    { delivery: { recordingId: null, uploadedBytes: 1 } },
+    { tracks: { microphone: { recordingId: null, uploadedBytes: 1 }, system: { recordingId: null, uploadedBytes: 0 } } },
+  ])("403 configure s delivery odmítne actual progress %j a nezmění disk", async (progress) => {
+    const h = await fixture();
+    try {
+      const base = h.value.manifestPath.slice(0, -".manifest.json".length);
+      const sidecarPath = `${h.value.manifestPath}.meeting-audio-v1.json`;
+      await fs.promises.writeFile(sidecarPath, "{}");
+      await h.store.setRecordingDelivery(h.value.manifest.clientRecordingId, {
+        clientRecordingId: h.value.manifest.clientRecordingId, state: "pending", mime: "audio/webm", channels: 2,
+        channelMap: { left: "microphone", right: "system" }, sidecarPath, filePath: `${base}-stereo.webm`, masterPath: null,
+      });
+      const seeded = await loadQueue(h.filePath);
+      seeded.items[0] = { ...seeded.items[0], state: "selhalo", attempts: 1, uploadIntent: "approved",
+        lastFailureReason: "company_out_of_scope (HTTP 403)",
+        server: { ...seeded.items[0].server, companyTabidooId: companyId, ...progress } };
+      await saveQueueAtomically(h.filePath, seeded);
+      const store = h.makeStore();
+      const row = (await store.listLocalRecordings(CURRENT_OWNER)).items[0];
+      const before = await fs.promises.readFile(h.filePath, "utf8");
+      await expect(store.configureRecordingUpload({ clientRecordingId: row.id, expectedRevision: row.revision,
+        expectedFileRevision: row.fileRevision, currentOwnerFingerprint: CURRENT_OWNER,
+        uploadPreferences: preferences, guard: async () => true })).rejects.toThrow();
+      expect(await fs.promises.readFile(h.filePath, "utf8")).toBe(before);
+      expect(row.uploadPreferencesLocked).toBe(true);
+    } finally { await rm(h.directory, { recursive: true, force: true }); }
+  });
   it("detail kontroluje queue/file CAS, vlastníka i guard a zůstane held", async () => {
     const h = await fixture();
     try {
