@@ -243,6 +243,19 @@ async function scenario(name, fixture, check, panel = false) {
       // Měříme kontejnery, nikoli záměrně oříznuté titulky a jednotlivé texty.
       const overflows = await evaluate(`(() => {
         const selectors = ['html', '.settings-content', '.panel-scroll', '.recordings-dashboard', '.queue-card'];
+        for (const entry of document.querySelectorAll('.recordings-timeline__entry:not([data-detail-active="true"])')) {
+          const time = entry.querySelector('time');
+          if (!time || !time.getClientRects().length) continue;
+          const range = document.createRange(); range.selectNodeContents(time);
+          const text = range.getBoundingClientRect();
+          const dot = getComputedStyle(entry, '::before');
+          if (dot.display !== 'none') {
+            const left = entry.getBoundingClientRect().left + parseFloat(dot.left);
+            if (text.right > left - 2) throw new Error('Čas se překrývá se značkou časové stopy');
+          }
+          const status = entry.querySelector('.recording-queue-card__delivery');
+          if (status && status.scrollWidth > status.clientWidth + 1) throw new Error('Stav nahrávky je oříznutý');
+        }
         return selectors.flatMap(selector => [...document.querySelectorAll(selector)]
           .filter(element => element.scrollWidth > element.clientWidth + 1)
           .map(element => ({ selector, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })));

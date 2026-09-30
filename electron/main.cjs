@@ -2977,7 +2977,14 @@ handleValidated("recordings:list-local", ["settings"], async () => {
   const snapshot = await (await getOutboundQueueStore())
     .listLocalRecordings(currentOwnerFingerprint);
   const items = await addQueueSendingAvailability(snapshot.items);
-  return { ...snapshot, items };
+  // Recovery manifest běžící session je na disku záměrně neúplný. UI smí
+  // tento stav odlišit pouze podle živé session hlavního procesu, ne podle stáří souboru.
+  return { ...snapshot, items: items.map((item) => {
+    if (!recordingSessions.has(item.id) && !recordingCompletionsInFlight.has(item.id)) return item;
+    return { ...item, recordingInProgress: true,
+      allowedActions: Object.fromEntries(Object.keys(item.allowedActions ?? {})
+        .map((action) => [action, false])) };
+  }) };
 });
 async function runRecordingQueueAction(event, payload, mode) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)
@@ -3069,7 +3076,12 @@ handleValidated("recordings:delete", ["settings"], async (event, payload, ...ext
     type: "warning",
     title: "Přesunout nahrávku do koše?",
     message: "Přesunout tuto nahrávku do koše?",
-    detail: `${claimRecordingDialogLabel(row)}. Tato akce nemaže nic na serveru.`,
+    detail: `${typeof row.title === "string" && row.title.trim() ? row.title.trim().slice(0, 160) + "\n" : ""}`
+      + `${claimRecordingDialogLabel(row)}`
+      + `${Number.isSafeInteger(row.sizeBytes) && row.sizeBytes >= 0
+        ? ` · ${new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 1 }).format(row.sizeBytes / 1_000_000)} MB` : ""}`
+      + "\n\nPřesuneš místní zvukové soubory do koše. Tato akce nemaže nic na serveru. "
+      + "Dostupnost serverové kopie zde není ověřena; pokud ji potřebuješ, nejdřív ji ověř v přehledu.",
     buttons: ["Zrušit", "Přesunout do koše"], cancelId: 0, defaultId: 0, noLink: true,
   });
   if (response.response !== 1) return { outcome: "cancelled" };

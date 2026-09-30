@@ -5639,6 +5639,23 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(harness.electron.net.fetch).not.toHaveBeenCalled();
   });
 
+  it("živá session v místním přehledu není poškozený dokončený záznam a po finalizaci značku ztratí", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const session = await harness.ipcHandlers.get("recording:begin")(panelEvent);
+    const listLocal = harness.ipcHandlers.get("recordings:list-local");
+    const active = (await listLocal(settingsEvent)).items.find((item) => item.id === session.sessionId);
+    expect(active).toMatchObject({ recordingInProgress: true });
+    expect(Object.values(active.allowedActions)).not.toContain(true);
+    // I při neúplném ukončení už jde o ukončenou nahrávku: žádný odhad podle data.
+    await harness.ipcHandlers.get("recording:finish")(panelEvent, session.sessionId);
+    const stopped = (await listLocal(settingsEvent)).items.find((item) => item.id === session.sessionId);
+    expect(stopped.recordingInProgress).not.toBe(true);
+    expect(stopped.localState).not.toBe("complete-audio");
+    expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+  });
+
   it("send projde skutečným preloadem a store schválí jen zvolenou held nahrávku i po obnově tokenu", async () => {
     const serverRecordingId = "19e586e5-d688-43f1-8a80-a3d61e754f3e";
     const uploadSend = vi.fn(async (item, reportServerProgress) => {
@@ -5748,6 +5765,16 @@ describe("produkční zapojení odchozí fronty", () => {
 
     await expect(remove(settingsEvent, payload())).resolves.toEqual({ outcome: "cancelled" });
     expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+    expect(harness.electron.dialog.showMessageBox).toHaveBeenCalledWith(
+      expect.anything(), expect.objectContaining({
+        detail: expect.stringContaining("Lokální kopie"), cancelId: 0, defaultId: 0,
+      }),
+    );
+    expect(harness.electron.dialog.showMessageBox).toHaveBeenCalledWith(
+      expect.anything(), expect.objectContaining({
+        detail: expect.stringMatching(/MB[\s\S]*Tato akce nemaže nic na serveru[\s\S]*Dostupnost serverové kopie zde není ověřena/u),
+      }),
+    );
 
     const queue = JSON.parse(await readFile(
       path.join(harness.userDataPath, "queue", "outgoing.json"),

@@ -28,7 +28,7 @@
 .panel.panel-polish .queue-card__secondary { flex-wrap: wrap; }
 .panel.panel-polish .queue-card:focus-visible,
 .panel.panel-polish button:focus-visible {
-  outline: 2px solid var(--panel-success);
+  outline: 2px solid var(--panel-ok);
   outline-offset: 3px;
 }
 .panel.panel-polish .panel-scroll > [data-testid="day-preview"] { order: 2; }
@@ -68,7 +68,7 @@
   padding: 3px 0;
   border: 0;
   background: transparent;
-  color: var(--panel-success);
+  color: var(--panel-ok);
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
