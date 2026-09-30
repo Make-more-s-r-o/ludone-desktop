@@ -1795,3 +1795,55 @@ describe("RecordingCard", () => {
     }
   });
 });
+
+it("nový stopform uloží firmu a private override atomicky; account default nemění", async () => {
+  const panel = await renderRecordingCard({ modernDecision: true });
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const token = "offer-token-0000000000000001";
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken: token }));
+  panel.ludone.selectUploadCompany = vi.fn();
+  try {
+    await startRecording(panel); await stopRecording(panel);
+    const visibility = panel.document.querySelector('[data-testid="recording-upload-visibility"]');
+    expect(visibility.value).toBe("company");
+    await React.act(async () => { visibility.value = "private"; visibility.dispatchEvent(new panel.document.defaultView.Event("change", { bubbles: true })); });
+    await panel.click(panel.document.querySelector('button[type="submit"]'));
+    expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledWith(SESSION_ID, {
+      recordingName: DEFAULT_RECORDING_NAME, decision: "send", uploadPreferences: { companyId, offerToken: token, visibility: "private" },
+    });
+    expect(panel.ludone.selectUploadCompany).not.toHaveBeenCalled();
+  } finally { await panel.cleanup(); }
+});
+it("stopform bez nabídky odmítne send, ale ponechá místní uložení", async () => {
+  const panel = await renderRecordingCard({ modernDecision: true });
+  panel.ludone.listUploadCompanies = vi.fn(async () => { throw new Error("offline"); });
+  try {
+    await startRecording(panel); await stopRecording(panel);
+    await panel.click(panel.document.querySelector('button[type="submit"]'));
+    expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+    await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
+    expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledWith(SESSION_ID, { recordingName: DEFAULT_RECORDING_NAME, decision: "keep" });
+  } finally { await panel.cleanup(); }
+});
+it("busy save chyba zachová private draft; nové kliknutí použije čerstvý token a private", async () => {
+  const panel = await renderRecordingCard({ modernDecision: true });
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  let serial = 0;
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken: `offer-token-00000000000000${++serial}` }));
+  panel.ludone.saveRecordingDecision.mockRejectedValueOnce(new Error("stale_snapshot"));
+  try {
+    await startRecording(panel); await stopRecording(panel);
+    const visibility = panel.document.querySelector('[data-testid="recording-upload-visibility"]');
+    await React.act(async () => { visibility.value = "private"; visibility.dispatchEvent(new panel.document.defaultView.Event("change", { bubbles: true })); });
+    await panel.click(panel.document.querySelector('button[type="submit"]'));
+    expect(panel.phase()).toBe("saved");
+    expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("private");
+    expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledTimes(1);
+    await panel.click(panel.document.querySelector('button[type="submit"]'));
+    expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledTimes(2);
+    const first = panel.ludone.saveRecordingDecision.mock.calls[0][1].uploadPreferences;
+    const second = panel.ludone.saveRecordingDecision.mock.calls[1][1].uploadPreferences;
+    expect(second.visibility).toBe("private"); expect(second.companyId).toBe(companyId);
+    expect(second.offerToken).not.toBe(first.offerToken);
+  } finally { await panel.cleanup(); }
+});

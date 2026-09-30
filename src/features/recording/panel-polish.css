@@ -73,3 +73,8 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+.recording-saved .recording-upload-preferences { display: grid; gap: 5px; margin-block: 8px; }
+.recording-saved .recording-upload-preferences label { font-size: 11px; }
+.recording-saved .recording-upload-preferences select { min-height: 30px; width: 100%; border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; color: var(--foreground); background: var(--surface-elevated); font: inherit; }
+.recording-saved .recording-upload-preferences small { color: var(--muted-foreground); font-size: 10px; }

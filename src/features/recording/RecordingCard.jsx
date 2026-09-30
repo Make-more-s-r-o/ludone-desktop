@@ -1,3 +1,4 @@
+import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
@@ -233,6 +234,14 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [savedRecording, setSavedRecording] = useState(null);
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [uploadPreferences, setUploadPreferences] = useState(null);
+  const [pickerInitial, setPickerInitial] = useState(null);
+  const [pickerRefresh, setPickerRefresh] = useState(0);
+  const uploadAuthGeneration = useRef(0);
+  useEffect(() => window.ludone?.onAuthSessionChanged?.(() => {
+    uploadAuthGeneration.current += 1;
+    setUploadPreferences(null);
+  }), []);
   const [exportError, setExportError] = useState(null);
   const [quitExportFailure, setQuitExportFailure] = useState(null);
   const [recoveringSystemAudio, setRecoveringSystemAudio] = useState(false);
@@ -373,7 +382,12 @@ export const RecordingCard = forwardRef(function RecordingCard({
     return runtime.finishPromise;
   }
 
-  async function exportSavedRecording(recording, name, decision) {
+  async function exportSavedRecording(recording, name, decision, manual = false) {
+    const supportsPreferences = typeof window.ludone?.listUploadCompanies === "function";
+    if (manual && decision === "send" && supportsPreferences && !uploadPreferences) {
+      setExportError("Před odesláním ověř a vyber cílovou firmu.");
+      return;
+    }
     if (!recording || exporting) return;
     if (decision === "send" && !canSend) return;
     if (name.trim().length > MAX_UPLOAD_NAME_UTF16_UNITS) {
@@ -382,15 +396,24 @@ export const RecordingCard = forwardRef(function RecordingCard({
     }
     setExporting(true);
     setExportError(null);
+    const generation = uploadAuthGeneration.current;
     try {
+      const freshPreferences = manual && uploadPreferences
+        ? await freshRecordingUploadPreferences(uploadPreferences).catch((error) => {
+          if (decision === "keep") return null;
+          throw error;
+        }) : null;
+      if (generation !== uploadAuthGeneration.current) throw new Error("Přihlášení se změnilo. Ověř volby znovu.");
       const modernDecision = window.ludone.saveRecordingDecision;
       const result = typeof modernDecision === "function"
-        ? await modernDecision(recording.clientRecordingId, { recordingName: name, decision })
+        ? await modernDecision(recording.clientRecordingId, { recordingName: name, decision, ...(freshPreferences ? { uploadPreferences: freshPreferences } : {}) })
         : await window.ludone.exportRecording(recording.clientRecordingId, {
           recordingName: name, openUploadPage: decision === "send",
         });
       if (!result?.ok) throw new Error(result?.message || "Export se nepodařil");
       setSavedRecording(null);
+      setPickerInitial(null);
+      setUploadPreferences(null);
       setRecordingName("");
       setQuitExportFailure(null);
       const deliveryDetail = result.outcome === "queued"
@@ -409,12 +432,13 @@ export const RecordingCard = forwardRef(function RecordingCard({
             : "Uloženo na Macu. Stav odeslání není potvrzený.";
       setNotice({
         type: "success",
-        text: modernOutcome ? outcomeText
+        text: modernOutcome ? `${outcomeText}${manual && decision === "keep" && supportsPreferences && !freshPreferences ? " Volby pro odeslání nastavíš v detailu nahrávky." : ""}`
           : `Soubor ${result.fileName} je uložený ve Stažených. ${deliveryDetail} Přehrajete ho v prohlížeči nebo ve VLC.`,
         openRecordings: modernOutcome,
       });
     } catch (error) {
       setExportError(describeError(error));
+      if (manual && supportsPreferences) { setPickerInitial(uploadPreferences); setPickerRefresh((value) => value + 1); }
     } finally {
       setExporting(false);
     }
@@ -835,7 +859,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
           aria-busy={exporting}
           onSubmit={(event) => {
             event.preventDefault();
-            void exportSavedRecording(savedRecording, recordingName, "send");
+            void exportSavedRecording(savedRecording, recordingName, "send", true);
           }}
         >
           <div role="status" aria-live="polite">
@@ -867,6 +891,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
               setExportError(null);
             }}
           />
+          {typeof window.ludone?.listUploadCompanies === "function" && <RecordingUploadPreferences
+            key={savedRecording.clientRecordingId} defaultVisibility="company" disabled={!canSend} busy={exporting}
+            initialValue={pickerInitial} refreshToken={pickerRefresh}
+            onChange={(value) => setUploadPreferences(value)} />}
           <small id="recording-name-hint" className="recording-saved__hint">
             Nahrávka už je místně zachovaná. Odesílání začne jen tvou volbou.
           </small>
@@ -910,7 +938,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
                 className="button button--wide recording-saved__skip"
                 data-testid="skip-recording-name"
                 disabled={exporting}
-                onClick={() => exportSavedRecording(savedRecording, recordingName, "keep")}
+                onClick={() => exportSavedRecording(savedRecording, recordingName, "keep", true)}
               >
                 Nechat na Macu
               </button>

@@ -1,3 +1,4 @@
+import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon, MicIcon, RefreshIcon, WaitingIcon } from "../../components/Icons.jsx";
 
@@ -38,6 +39,8 @@ function normalizeRecordingItem(value) {
     fileRevision: typeof value.fileRevision === "string" && REVISION_PATTERN.test(value.fileRevision)
       ? value.fileRevision : null,
     title: safeText(value.title),
+    uploadPreferences: value.uploadPreferences ?? null,
+    uploadPreferencesLocked: value.uploadPreferencesLocked === true,
     uploadIntent: value.uploadIntent === "approved" ? "approved" : "held",
     state: safeText(value.state) ?? "neznámý",
     createdAt,
@@ -226,6 +229,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   const [verificationErrorById, setVerificationErrorById] = useState({});
   const [filter, setFilter] = useState("all");
   const [openDetailId, setOpenDetailId] = useState(null);
+  const [preferencesById, setPreferencesById] = useState({});
+  const [preferenceMessageById, setPreferenceMessageById] = useState({});
+  const [preferenceFailedById, setPreferenceFailedById] = useState({});
   const openDetailIdRef = useRef(null);
   const active = useRef(true);
   const claimInFlight = useRef(false);
@@ -377,7 +383,31 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
     local: view.items.filter((item) => matchesRecordingFilter(item, "local")).length,
     delivery: view.items.filter((item) => matchesRecordingFilter(item, "delivery")).length,
   };
+  const configure = async (item) => {
+    const choice = preferencesById[item.id]?.value;
+    if (!choice || actingId !== null || !item.revision || !item.fileRevision || item.uploadPreferencesLocked) return;
+    const identity = identityRef.current;
+    setActingId(item.id);
+    setPreferenceMessageById((current) => ({ ...current, [item.id]: "Ukládám volby…" }));
+    try {
+      const preferences = await freshRecordingUploadPreferences(choice);
+      if (!identity || identity !== identityRef.current || authRef.current !== "signed-in") throw new Error("identity_changed");
+      const result = await window.ludone.configureRecordingUpload({ id: item.id, queueRev: item.revision,
+        fileRev: item.fileRevision, ...preferences });
+      if (result?.configured !== true) throw new Error("not_configured");
+      await load();
+      setPreferenceFailedById((current) => ({ ...current, [item.id]: false }));
+      setPreferencesById((current) => ({ ...current, [item.id]: { value: null, dirty: false } }));
+      setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby jsou uložené. Odeslání spustíš dalším kliknutím." }));
+    } catch {
+      setPreferenceFailedById((current) => ({ ...current, [item.id]: true }));
+      await load();
+      setPreferencesById((current) => ({ ...current, [item.id]: { value: null, dirty: true } }));
+      setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby se nepodařilo uložit. Přehled byl obnoven; ověř volby a ulož je znovu." }));
+    } finally { if (active.current) setActingId(null); }
+  };
   const runAction = async (item, method) => {
+    if (["sendRecording", "retryRecording"].includes(method) && (preferencesById[item.id]?.dirty || preferenceFailedById[item.id])) return;
     if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method !== "deleteRecording"
       && method !== "revealRecording" && !item.revision)
       || typeof window.ludone?.[method] !== "function") return;
@@ -544,12 +574,24 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                       </div>
                       <dl>
                         <dt>Vlastník</dt><dd>{ownerLabel}</dd>
-                        <dt>Cílová firma</dt><dd>U této nahrávky není název cílové firmy dostupný.</dd>
+                        <dt>Cílová firma</dt><dd>{item.ownership === "current" && currentIdentity ? item.uploadPreferences?.companyName ?? "U této nahrávky není název cílové firmy dostupný." : "Název firmy nelze pro tento účet ověřit."}</dd>
+                        <dt>Přístup</dt><dd>{item.uploadPreferences?.visibility === "company" ? "Sdílená ve firmě" : "Soukromá"}</dd>
                         <dt>Zvuk</dt><dd>{item.recordingInProgress ? "Nahrává se · soubor ještě není uzavřený" : item.localState === "complete-audio" ? "Stereo WebM/Opus · Zvuk je kompletní" : LOCAL_STATE_LABELS[item.localState]}</dd>
                         <dt>Lokální kopie</dt><dd>{item.recordingInProgress ? "Nahrávání probíhá na tomto Macu" : item.localState === "complete-audio" ? "Zachována na tomto Macu" : "Stav místních souborů vyžaduje pozornost"}</dd>
                         <dt>Uložení</dt><dd>{recordingSourceLabel(item)}</dd>
                       </dl>
                     </section>
+                    {openDetailId === item.id && item.ownership === "current" && !item.recordingInProgress
+                      && typeof window.ludone?.configureRecordingUpload === "function" && (
+                        <RecordingUploadPreferences key={`${item.id}:${item.revision}:${currentIdentity}`}
+                          initialValue={item.uploadPreferences} identityKey={currentIdentity} surface="detail"
+                          locked={item.uploadPreferencesLocked} disabled={authState !== "signed-in"} busy={actingId !== null}
+                          onChange={(value, dirty) => {
+                            setPreferencesById((current) => ({ ...current, [item.id]: { value, dirty } }));
+                            if (dirty && value) setPreferenceMessageById((current) => ({ ...current, [item.id]: "Neuložená změna. Uložení voleb samo nic neodešle." }));
+                          }}
+                          onSave={() => void configure(item)} stateMessage={preferenceMessageById[item.id]} stateError={preferenceFailedById[item.id]} />
+                      )}
                     <section className="recording-queue-card__context-card" aria-label="Pracovní kontext">
                       <span className="recording-queue-card__context-icon" aria-hidden="true"><ArchiveIcon /></span>
                       <div>
@@ -587,12 +629,12 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                 )}
                 {item.canSend && (
                   <button type="button" className="button button--small recording-action--send"
-                    disabled={item.recordingInProgress || authState !== "signed-in" || actingId !== null}
+                    disabled={item.recordingInProgress || authState !== "signed-in" || actingId !== null || preferencesById[item.id]?.dirty || preferenceFailedById[item.id]}
                     onClick={() => void runAction(item, "sendRecording")}>Uložit a odeslat</button>
                 )}
                 {item.canRetry && (
                   <button type="button" className="button button--small recording-action--retry"
-                    disabled={item.recordingInProgress || authState !== "signed-in" || actingId !== null}
+                    disabled={item.recordingInProgress || authState !== "signed-in" || actingId !== null || preferencesById[item.id]?.dirty || preferenceFailedById[item.id]}
                     onClick={() => void runAction(item, "retryRecording")}>Zkusit znovu</button>
                 )}
                 {item.fileRevision && item.localState !== "invalid-manifest" && (

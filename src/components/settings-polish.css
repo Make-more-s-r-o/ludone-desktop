@@ -17,3 +17,8 @@
   .settings-window[data-page="settings"] :is(.settings-row--environment, .settings-select, .settings-audio-action) { flex-wrap: wrap; }
   .settings-window[data-page="settings"] :is(.settings-row--environment, .settings-select) select { width: 100%; }
 }
+
+.recording-upload-preferences { display: grid; gap: 7px; margin-block: 12px; }
+.recording-upload-preferences label { font-size: 12px; font-weight: 600; }
+.recording-upload-preferences select, .upload-company-selector select { width: 100%; min-height: 34px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--foreground); background: var(--surface-elevated); font: inherit; }
+.recording-upload-preferences small { color: var(--muted-foreground); font-size: 11px; }

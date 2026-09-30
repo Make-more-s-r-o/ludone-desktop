@@ -742,3 +742,95 @@ it("neznámý origin nedovolí ověření ani při změně přihlášeného úč
     expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
   } finally { await dashboard.cleanup(); }
 });
+
+async function openUploadDetail(panel) {
+  await React.act(async () => {
+    const detail = panel.document.querySelector('details[data-testid="recording-detail"]');
+    detail.open = true;
+    detail.dispatchEvent(new panel.document.defaultView.Event("toggle", { bubbles: true }));
+  });
+}
+async function chooseUpload(panel, selector, value) {
+  await React.act(async () => { const select = panel.document.querySelector(selector); select.value = value;
+    select.dispatchEvent(new panel.document.defaultView.Event("change", { bubbles: true })); });
+}
+it("detail uloží přesný CAS payload bez send, obnoví revize a nový explicitní send používá novou revizi", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const offerToken = "offer-token-0000000000000001";
+  const nextRev = `sha256:${"b".repeat(64)}`;
+  let item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId, visibility: "private", companyName: "Beta" }, allowedActions: { send: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken }));
+  panel.ludone.configureRecordingUpload = vi.fn(async () => { item = { ...item, revision: nextRev }; return { configured: true }; });
+  panel.ludone.sendRecording = vi.fn(async () => ({ outcome: "queued" }));
+  panel.ludone.selectUploadCompany = vi.fn();
+  try {
+    await openUploadDetail(panel);
+    expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("private");
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    expect(panel.ludone.sendRecording).not.toHaveBeenCalled();
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.ludone.configureRecordingUpload).toHaveBeenCalledExactlyOnceWith({ id: ID, queueRev: REVISION, fileRev: ITEM.fileRevision, companyId, offerToken, visibility: "company" });
+    expect(panel.ludone.sendRecording).not.toHaveBeenCalled();
+    expect(panel.document.querySelector('[data-testid="recording-upload-preferences-state"]').getAttribute("role")).toBe("status");
+    await React.act(async () => panel.document.querySelector('.recording-action--send').click());
+    expect(panel.ludone.sendRecording).toHaveBeenCalledExactlyOnceWith({ id: ID, queueRev: nextRev, fileRev: ITEM.fileRevision });
+    expect(panel.ludone.selectUploadCompany).not.toHaveBeenCalled();
+  } finally { await panel.cleanup(); }
+});
+it("stale preference chyba obnoví přehled a další send zůstane blokovaný i po nové nabídce", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [{ ...ITEM, ownership: "current", uploadIntent: "held", allowedActions: { send: true } }], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn(async () => { throw new Error("stale_snapshot"); });
+  panel.ludone.sendRecording = vi.fn();
+  try {
+    await openUploadDetail(panel);
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.ludone.listLocalRecordings).toHaveBeenCalledTimes(2);
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(true);
+    await React.act(async () => panel.document.querySelector('.recording-action--send').click());
+    expect(panel.ludone.sendRecording).not.toHaveBeenCalled();
+    expect(panel.document.body.textContent).toContain("Volby se nepodařilo uložit");
+    expect(panel.document.querySelector('[data-testid="recording-upload-preferences-state"]').getAttribute("role")).toBe("alert");
+  } finally { await panel.cleanup(); }
+});
+it("výslovná zero-progress 403 oprava je editovatelná, progress zůstává zamčený", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  let item = { ...ITEM, ownership: "current", state: "selhalo", uploadIntent: "approved", uploadPreferencesLocked: false,
+    blockReason: "company_out_of_scope", allowedActions: { retry: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn(async () => { item = { ...item, state: "ceka", uploadIntent: "held", revision: `sha256:${"b".repeat(64)}`, uploadPreferencesLocked: true }; return { configured: true }; });
+  try {
+    await openUploadDetail(panel);
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').disabled).toBe(false);
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.ludone.configureRecordingUpload).toHaveBeenCalledOnce();
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]')).toBeNull();
+    expect(panel.document.body.textContent).toContain("odesílání už začalo");
+  } finally { await panel.cleanup(); }
+});
+it("zamčený failed progress detail nezmění draft a dovolí původní retry i po znovuotevření", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const prefs = Object.freeze({ companyId, visibility: "private", companyName: "Beta" });
+  const item = { ...ITEM, ownership: "current", state: "selhalo", uploadIntent: "approved",
+    uploadPreferencesLocked: true, uploadPreferences: prefs, allowedActions: { retry: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(); panel.ludone.configureRecordingUpload = vi.fn();
+  try {
+    await openUploadDetail(panel);
+    expect(panel.document.querySelector('.recording-action--retry').disabled).toBe(false);
+    await React.act(async () => panel.document.querySelector('.recording-action--retry').click());
+    expect(panel.ludone.retryRecording).toHaveBeenCalledExactlyOnceWith({ id: ID, queueRev: REVISION, fileRev: ITEM.fileRevision });
+    expect(item.uploadPreferences).toBe(prefs);
+    const detail = panel.document.querySelector('details[data-testid="recording-detail"]');
+    await React.act(async () => { detail.open = false; detail.dispatchEvent(new panel.document.defaultView.Event("toggle", { bubbles: true })); });
+    await openUploadDetail(panel);
+    expect(panel.document.querySelector('.recording-action--retry').disabled).toBe(false);
+    expect(panel.ludone.listUploadCompanies).not.toHaveBeenCalled();
+    expect(panel.ludone.configureRecordingUpload).not.toHaveBeenCalled();
+  } finally { await panel.cleanup(); }
+});
