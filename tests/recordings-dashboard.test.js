@@ -717,3 +717,28 @@ it("náhled má jediný skutečný vstup do dne a pravdivý probíhající stav"
     dom.window.close();
   }
 });
+
+
+it("neznámý origin nedovolí ověření ani při změně přihlášeného účtu", async () => {
+  const dashboard = await renderDashboard({
+    listLocalRecordings: async () => ({ items: [{ ...ITEM, ownership: "current" }] }),
+    verifyRecording: async () => ({ id: ID, revision: REVISION, verifiedAt: "2026-09-30T10:00:00Z", tracks: { delivery: { status: "complete", mismatchFields: [] } } }),
+  });
+  try {
+    await dashboard.rerender("signed-in", "first@ludone.cz", null);
+    const button = dashboard.document.querySelector(".recording-action--verify");
+    expect(button.disabled).toBe(true);
+    expect(dashboard.document.body.textContent).toContain("potvrzený účet i prostředí LuDone");
+    await React.act(async () => button.click());
+    expect(dashboard.ludone.verifyRecording).not.toHaveBeenCalled();
+    await dashboard.rerender("signed-in", "second@ludone.cz", null);
+    expect(dashboard.document.querySelector(".recording-action--verify").disabled).toBe(true);
+    expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
+    await dashboard.rerender("signed-in", "second@ludone.cz", "https://ludone.test");
+    await React.act(async () => dashboard.document.querySelector(".recording-action--verify").click());
+    expect(dashboard.ludone.verifyRecording).toHaveBeenCalledExactlyOnceWith(ID, REVISION);
+    expect(dashboard.document.body.textContent).toContain("Otevřít v LuDone");
+    await dashboard.rerender("signed-in", "second@ludone.cz", null);
+    expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
+  } finally { await dashboard.cleanup(); }
+});

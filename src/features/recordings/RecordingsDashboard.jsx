@@ -300,7 +300,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
 
   const verify = async (item) => {
     if (
-      item.recordingInProgress || verifyingId !== null || authState !== "signed-in" || !item.revision
+      item.recordingInProgress || !currentIdentity || verifyingId !== null || authState !== "signed-in" || !item.revision
       || typeof window.ludone?.verifyRecording !== "function"
     ) return;
     const actionGeneration = verificationGeneration.current;
@@ -471,7 +471,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
               && ["ceka", "selhalo"].includes(item.state);
             const cached = verificationById[item.id];
             const verification = authState === "signed-in" && !item.recordingInProgress
-              && (!cached?.identity || cached.identity === currentIdentity) ? cached : null;
+              && cached?.identity && cached.identity === currentIdentity ? cached : null;
             const verified = verification
               && Object.values(verification.tracks).length > 0
               && Object.values(verification.tracks).every((track) => track.status === "complete");
@@ -562,6 +562,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     {!item.recordingInProgress && item.blockReason && item.blockReason !== item.localReason && <p className="recording-queue-card__issue" role="status">{item.blockReason}</p>}
                     <p className="recording-queue-card__web-note">Přepis a analýzu otevřeš v LuDone na webu.</p>
                     {item.recordingInProgress && <p role="status">Akce budou dostupné po dokončení nahrávání.</p>}
+                    {canVerify && !currentIdentity && <p role="status">Pro serverové ověření musí být potvrzený účet i prostředí LuDone.</p>}
                     <div className="recording-queue-card__actions">
                 {claimable && (
                   <button
@@ -577,7 +578,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   <button
                     type="button"
                     className="button button--small recording-action--verify"
-                    disabled={item.recordingInProgress || authState !== "signed-in" || verifyingId !== null}
+                    disabled={item.recordingInProgress || !currentIdentity || authState !== "signed-in" || verifyingId !== null}
+                    title={!currentIdentity ? "Pro serverové ověření musí být potvrzený účet i prostředí LuDone." : undefined}
                     onClick={() => void verify(item)}
                   >
                     {verifyingId === item.id ? "Ověřuji…" : "Ověřit v LuDone"}
