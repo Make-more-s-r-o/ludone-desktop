@@ -282,10 +282,12 @@ async function captureAstraReferences() {
 }
 
 async function clickByText(client, text) {
-  await client.evaluate(`(() => {
+  await client.evaluate(`(async () => {
     const target = [...document.querySelectorAll('button')]
       .find((item) => item.textContent.replace(/\\s+/g, ' ').trim() === ${JSON.stringify(text)});
     target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    // Nativní hit-test musí po změně DOM a scrollu používat vykreslenou kompozici.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     return Boolean(target);
   })()`);
   const point = await client.evaluate(`(() => {
@@ -320,10 +322,12 @@ async function clickByText(client, text) {
 }
 
 async function clickSelector(client, selector, label) {
-  const point = await client.evaluate(`(() => {
+  const point = await client.evaluate(`(async () => {
     const target = document.querySelector(${JSON.stringify(selector)});
     if (!target) return null;
     target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    // Nativní hit-test musí po změně DOM a scrollu používat vykreslenou kompozici.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const rect = target.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
     const y = rect.top + rect.height / 2;
@@ -1714,6 +1718,10 @@ try {
   settings = await connectTarget(port, (target) => target.type === "page" && target.url.includes("#settings"), "Můj den po obnově");
   await waitFor(() => settings.evaluate(`Boolean(document.querySelector('[data-recording-id="${interruptedId}"]'))`), "nedokončená nahrávka v přehledu");
   await clickSelector(settings, `[data-recording-id="${interruptedId}"] [data-testid="recording-detail"] > summary`, "Detail nedokončené nahrávky");
+  await waitFor(
+    () => settings.evaluate(`document.querySelector('[data-recording-id="${interruptedId}"] [data-testid="recording-detail"]')?.open === true`),
+    "otevření detailu nedokončené nahrávky",
+  );
   const recovery = await settings.evaluate(`(async () => {
     const snapshot = await window.ludone.listLocalRecordings();
     const item = snapshot.items.find(entry => entry.id === '${interruptedId}');
@@ -1813,5 +1821,5 @@ for (const group of acceptanceGroups) {
 const visualScreenshotStatus = comparisonPairs.every((pair) => pair.referenceScreenshot
   && screenshots.some((item) => item.endsWith(`-${pair.app}`))) ? "CAPTURED" : "FAIL";
 console.log(`${visualScreenshotStatus}  acceptance · Screenshoty zachycené pro vizuální kontrolu`);
-console.log(`${exitCode === 0 ? "✅" : "⛔"} Astra design E2E: ${path.relative(projectRoot, outputDir)}`);
+console.log(`${exitCode === 0 ? "🧪" : "⛔"} Astra design E2E: ${path.relative(projectRoot, outputDir)}`);
 process.exitCode = exitCode;

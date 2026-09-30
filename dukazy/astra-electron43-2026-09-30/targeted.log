@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/auth-empty-store
+
+ ✓ tests/auth-empty-store.test.js (9 tests) 16ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  01:52:33
+   Duration  176ms (transform 18ms, setup 6ms, collect 8ms, tests 16ms, environment 0ms, prepare 34ms)
+
+exit_code=0

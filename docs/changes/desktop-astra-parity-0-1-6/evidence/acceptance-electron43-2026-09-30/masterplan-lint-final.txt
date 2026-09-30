@@ -1,0 +1,4 @@
+$ node /Users/dan/.claude/skills/masterplan/scripts/mp-lint.mjs desktop-astra-parity-0-1-6
+ČISTO: 7 packetů, 28 pravidel a 126 souborů prověřeno; 0 nálezů.
+
+EXIT_CODE=0

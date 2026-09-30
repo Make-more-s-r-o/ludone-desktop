@@ -4467,6 +4467,15 @@ async function readStoredAuthSession() {
   const generation = authSessionGeneration;
   if (authLogoutsInFlight > 0) return null;
 
+  // Prázdný profil nemá identitu k dešifrování; Keychain oslovujeme až po načtení blobu.
+  let encrypted;
+  try {
+    encrypted = await fs.promises.readFile(tokenSessionFilePath(app));
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw new Error("Uloženou identitu se nepodařilo načíst");
+  }
+
   let encryptionAvailable;
   try {
     encryptionAvailable = safeStorage?.isEncryptionAvailable?.() === true;
@@ -4475,14 +4484,6 @@ async function readStoredAuthSession() {
   }
   if (!encryptionAvailable) {
     throw new Error("Bezpečné úložiště identity není dostupné");
-  }
-
-  let encrypted;
-  try {
-    encrypted = await fs.promises.readFile(tokenSessionFilePath(app));
-  } catch (error) {
-    if (error?.code === "ENOENT") return null;
-    throw new Error("Uloženou identitu se nepodařilo načíst");
   }
 
   let storedSession;

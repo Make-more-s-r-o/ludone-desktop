@@ -5,7 +5,7 @@
     "id": "desktop-astra-parity-0-1-6",
     "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
     "goal": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-    "updatedAt": "2026-09-29T23:25:30.772Z",
+    "updatedAt": "2026-09-30T00:11:27.118Z",
     "planVersion": "draft",
     "problem": "Dan aktualizoval desktop na 0.1.5 a vidí jiné rozložení i tok, než schválil v prototypu Astra „Nit dne“. Vydaná verze převzala pouze omezený výřez L1: ikonu, zúženou navigaci a přímý odkaz na Nahrávky. Hlavní obrazovka, Můj den, nastavení a sjednocená cesta záznamu zůstaly v původním rozhraní. Předchozí předání tak vytvořilo dojem, že je hotový celý návrh, ačkoli dokumentace rozsah označovala jako částečný.",
     "targetOutcome": "LuDone Desktop má být soudržná, každodenně použitelná macOS aplikace podle schválené plné varianty Astra: přehled „Teď“, společná stopa dne, detail nahrávky a nastavení sdílejí značku, navigaci, typografii, barvy, stavové zprávy a očekávané chování. Nahrávání, místní fronta, serverové ověření, opravy a aktualizace zůstávají skutečné funkce aplikace; prototypové údaje se do produktu nepřenášejí. LuTrack zůstane nefunkčním, pravdivě označeným budoucím místem bez měření a bez napojení na server.",
@@ -25,9 +25,9 @@
     ]
   },
   "summary": {
-    "done": 0,
+    "done": 1,
     "inProgress": 0,
-    "blocked": 1,
+    "blocked": 0,
     "notStarted": 0
   },
   "features": [
@@ -36,11 +36,11 @@
       "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
       "whatItGives": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
       "scope": "approved",
-      "delivery": "pr-open",
+      "delivery": "coded",
       "exposure": "local",
       "verification": "tests-green",
-      "label": "Blokováno",
-      "nextStep": "Finální push/CI a podepsaná publikace0.1.6. Fyzický zvuk, upload a instalaci ověří Dan podle Mac přejímky.",
+      "label": "Testy zelené",
+      "nextStep": "CI bezpečnostní opravy a podepsaná publikace 0.1.6; fyzická Mac přejímka čeká na Dana.",
       "evidence": [
         "EV1",
         "EV2",
@@ -48,9 +48,9 @@
         "EV4",
         "EV5",
         "EV6",
-        "EV7"
-      ],
-      "blocker": "Fyzická Mac přejímka čeká: skutečný zvuk, produkční odeslání a instalace aktualizace podle MAC-PREJIMKA.md. Nejde o chybějící implementaci."
+        "EV7",
+        "EV8"
+      ]
     }
   ],
   "screens": [
@@ -64,9 +64,9 @@
       "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
       "current": {
         "state": "captured",
-        "src": "evidence/acceptance-2026-09-30/electron/03-ted.png",
-        "capturedAt": "2026-09-29T23:20:39.503Z",
-        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+        "src": "evidence/acceptance-electron43-2026-09-30/electron/03-ted.png",
+        "capturedAt": "2026-09-30T00:10:46.882Z",
+        "note": "Skutečný Electron 43.7.6, snímek 2026-09-30T00:01:41Z; 35 podmínek PASS, vizuální review bez P1/P2. Syntetický zvuk, upload vypnutý."
       },
       "proposal": {
         "state": "approved",
@@ -87,9 +87,9 @@
       "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
       "current": {
         "state": "captured",
-        "src": "evidence/acceptance-2026-09-30/electron/08-muj-den.png",
-        "capturedAt": "2026-09-29T23:20:39.770Z",
-        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+        "src": "evidence/acceptance-electron43-2026-09-30/electron/08-muj-den.png",
+        "capturedAt": "2026-09-30T00:10:47.080Z",
+        "note": "Skutečný Electron 43.7.6, snímek 2026-09-30T00:01:41Z; 35 podmínek PASS, vizuální review bez P1/P2. Syntetický zvuk, upload vypnutý."
       },
       "proposal": {
         "state": "approved",
@@ -110,9 +110,9 @@
       "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
       "current": {
         "state": "captured",
-        "src": "evidence/acceptance-2026-09-30/electron/09-detail-nahravky.png",
-        "capturedAt": "2026-09-29T23:20:40.008Z",
-        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+        "src": "evidence/acceptance-electron43-2026-09-30/electron/09-detail-nahravky.png",
+        "capturedAt": "2026-09-30T00:10:47.295Z",
+        "note": "Skutečný Electron 43.7.6, snímek 2026-09-30T00:01:41Z; 35 podmínek PASS, vizuální review bez P1/P2. Syntetický zvuk, upload vypnutý."
       },
       "proposal": {
         "state": "approved",
@@ -133,9 +133,9 @@
       "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
       "current": {
         "state": "captured",
-        "src": "evidence/acceptance-2026-09-30/electron/10-nastaveni.png",
-        "capturedAt": "2026-09-29T23:20:40.254Z",
-        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+        "src": "evidence/acceptance-electron43-2026-09-30/electron/10-nastaveni.png",
+        "capturedAt": "2026-09-30T00:10:47.497Z",
+        "note": "Skutečný Electron 43.7.6, snímek 2026-09-30T00:01:41Z; 35 podmínek PASS, vizuální review bez P1/P2. Syntetický zvuk, upload vypnutý."
       },
       "proposal": {
         "state": "approved",
@@ -156,9 +156,9 @@
       "finding": "Astra vybraná Danem; implementace zachycená v izolované E2E, fyzická Mac přejímka dosud čeká.",
       "current": {
         "state": "captured",
-        "src": "evidence/acceptance-2026-09-30/electron/07-offline-panel-recovery.png",
-        "capturedAt": "2026-09-29T23:20:40.476Z",
-        "note": "Finální skutečný Electron screenshot0.1.6; nezávislé porovnání kompozice bez zbývající P1/P2. Syntetický zvuk/upload vypnutý."
+        "src": "evidence/acceptance-electron43-2026-09-30/electron/07-offline-panel-recovery.png",
+        "capturedAt": "2026-09-30T00:10:47.685Z",
+        "note": "Skutečný Electron 43.7.6, snímek 2026-09-30T00:01:41Z; 35 podmínek PASS, vizuální review bez P1/P2. Syntetický zvuk, upload vypnutý."
       },
       "proposal": {
         "state": "approved",
@@ -206,6 +206,20 @@
       "ref": "decisions.md#d5",
       "decidedBy": "Pravidla AGENTS.md a přímé zadání Dana",
       "date": "2026-09-29"
+    },
+    {
+      "id": "D6",
+      "title": "Před publikací opravit Electron runtime",
+      "ref": "decisions.md#d6",
+      "decidedBy": "Koordinátor v mandátu samostatného dokončení, viz decisions.md",
+      "date": "2026-09-30"
+    },
+    {
+      "id": "D7",
+      "title": "Prázdné přihlášení nesmí oslovovat Klíčenku",
+      "ref": "decisions.md#d7",
+      "decidedBy": "Koordinátor v mandátu samostatného dokončení, viz decisions.md",
+      "date": "2026-09-30"
     }
   ],
   "milestones": [
@@ -403,9 +417,64 @@
       "label": "Finální vizuální a bezpečnostní review",
       "value": "Bez zbývající P1/P2; fyzický Mac čeká",
       "ref": "evidence/reviews-2026-09-30/checkpoint.md"
+    },
+    {
+      "id": "EV8",
+      "kind": "verification",
+      "label": "Electron 43: finální brány a dvě E2E",
+      "value": "1582 unit PASS, 35 main/preload podmínek dvakrát, 18 stavů; review bez P1/P2",
+      "ref": "evidence/acceptance-electron43-2026-09-30/README.md"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-30T00:11:27.118Z",
+      "text": "Otázka Q7 byla uzavřena rozhodnutím D7: Prázdné přihlášení nesmí oslovovat Klíčenku."
+    },
+    {
+      "at": "2026-09-30T00:11:26.927Z",
+      "text": "Byla přidána otevřená otázka Q7: Import již přijatého D7: Prázdné přihlášení nesmí oslovovat Klíčenku"
+    },
+    {
+      "at": "2026-09-30T00:11:26.718Z",
+      "text": "Otázka Q6 byla uzavřena rozhodnutím D6: Před publikací opravit Electron runtime."
+    },
+    {
+      "at": "2026-09-30T00:11:26.516Z",
+      "text": "Byla přidána otevřená otázka Q6: Import již přijatého D6: Před publikací opravit Electron runtime"
+    },
+    {
+      "at": "2026-09-30T00:10:47.884Z",
+      "text": "Electron 43.7.6 a prázdný profil opraveny; plné brány 1582 PASS, dvě skutečné Electron E2E 35/35 a stavové 18/18. Nové snímky a FAIL zachovány. Zrušený tag dosud nebyl publikován; CI a obnovení vydání jsou další krok."
+    },
+    {
+      "at": "2026-09-30T00:10:47.685Z",
+      "text": "Dnešní stav obrazovky screen-5 je „captured“."
+    },
+    {
+      "at": "2026-09-30T00:10:47.497Z",
+      "text": "Dnešní stav obrazovky screen-4 je „captured“."
+    },
+    {
+      "at": "2026-09-30T00:10:47.295Z",
+      "text": "Dnešní stav obrazovky screen-3 je „captured“."
+    },
+    {
+      "at": "2026-09-30T00:10:47.080Z",
+      "text": "Dnešní stav obrazovky screen-2 je „captured“."
+    },
+    {
+      "at": "2026-09-30T00:10:46.882Z",
+      "text": "Dnešní stav obrazovky screen-1 je „captured“."
+    },
+    {
+      "at": "2026-09-30T00:10:46.675Z",
+      "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T00:10:16.510Z",
+      "text": "Byl přidán důkaz EV8: Electron 43: finální brány a dvě E2E."
+    },
     {
       "at": "2026-09-29T23:25:30.772Z",
       "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
