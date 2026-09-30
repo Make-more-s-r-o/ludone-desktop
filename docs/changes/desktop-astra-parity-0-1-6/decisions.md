@@ -40,3 +40,10 @@
 - **Volba:** Nejprve načíst šifrovaný soubor relace. ENOENT znamená nepřihlášený profil a vrací null. Jen existující blob vyžaduje původní kontrolu safeStorage a dešifrování; ostatní chyby zůstávají fail-closed.
 - **Důvod:** Skutečný E2E nový unsigned Electron čekal v macOS Keychain i při profilu bez identity. Dva neúspěšné běhy a nativní profil zůstávají v důkazech. Test nesmí vyžadovat přístup k uživatelově Klíčence, když nemá co dešifrovat.
 - **Mantinely:** Žádný mock Keychain, nové E2E oprávnění, změna timeoutu, formátu tokenů, šifrování, IPC nebo serveru. Logout a generation kontrola zůstávají. Devět nových testů ověřuje prázdný profil, existující blob a zamítnutí chybných stavů; celá existující queue-wiring sada prošla.
+
+## D8 — Dále vylepšit schválenou Astru jako produkt
+
+- **Kdo:** Dan, přímý pokyn 30. 9. 2026: „schválená astra ok, ale ještě vylepšit. Jako produktový designer z Notionu / apple / Plaud.“
+- **Volba:** Samostatně provést úplný audit a implementovat kvalitativní dotažení nad schváleným základem. Hlavní priorita je srozumitelný panel, denní historie, funkční přechody, stavové a bezpečné akce; nejde o pixelovou neměnnost prototypu.
+- **Mantinely:** Původní návrhy zachovat, značku a Opus ikony ponechat, backend a LuTrack nezapojovat. Osobní nahrávky, soukromé screenshoty a přihlášení se nepoužijí jako veřejná testovací data.
+- **Ověření:** Úplný inventář ovladačů, původní gates/E2E, další regresní matice a nezávislé review; žádná falešná hook metadata.

@@ -5,7 +5,7 @@
     "id": "desktop-astra-parity-0-1-6",
     "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
     "goal": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-    "updatedAt": "2026-09-30T00:32:59.110Z",
+    "updatedAt": "2026-09-30T08:46:18.733Z",
     "planVersion": "draft",
     "problem": "Dan aktualizoval desktop na 0.1.5 a vidí jiné rozložení i tok, než schválil v prototypu Astra „Nit dne“. Vydaná verze převzala pouze omezený výřez L1: ikonu, zúženou navigaci a přímý odkaz na Nahrávky. Hlavní obrazovka, Můj den, nastavení a sjednocená cesta záznamu zůstaly v původním rozhraní. Předchozí předání tak vytvořilo dojem, že je hotový celý návrh, ačkoli dokumentace rozsah označovala jako částečný.",
     "targetOutcome": "LuDone Desktop má být soudržná, každodenně použitelná macOS aplikace podle schválené plné varianty Astra: přehled „Teď“, společná stopa dne, detail nahrávky a nastavení sdílejí značku, navigaci, typografii, barvy, stavové zprávy a očekávané chování. Nahrávání, místní fronta, serverové ověření, opravy a aktualizace zůstávají skutečné funkce aplikace; prototypové údaje se do produktu nepřenášejí. LuTrack zůstane nefunkčním, pravdivě označeným budoucím místem bez měření a bez napojení na server.",
@@ -28,7 +28,7 @@
     "done": 1,
     "inProgress": 0,
     "blocked": 0,
-    "notStarted": 0
+    "notStarted": 1
   },
   "features": [
     {
@@ -52,6 +52,18 @@
         "EV8",
         "EV9"
       ]
+    },
+    {
+      "id": "F2",
+      "name": "Produktové dotažení po živém auditu",
+      "whatItGives": "Klidný panel, přehled dne, pravdivý detail a funkční nastavení nad dlouhou historií.",
+      "scope": "approved",
+      "delivery": "no-code",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Navrženo",
+      "nextStep": "Opravit a agentně proklikat všechny cesty v izolovaném profilu.",
+      "evidence": []
     }
   ],
   "screens": [
@@ -221,6 +233,18 @@
       "ref": "decisions.md#d7",
       "decidedBy": "Koordinátor v mandátu samostatného dokončení, viz decisions.md",
       "date": "2026-09-30"
+    },
+    {
+      "id": "D8",
+      "title": "Dále vylepšit schválenou Astru jako produkt",
+      "ref": "decisions.md#d8",
+      "decidedBy": "Dan, přímý pokyn v chatu 30.9.2026",
+      "date": "2026-09-30",
+      "choice": {
+        "question": "Q8",
+        "option": "A",
+        "label": "Dále vylepšit"
+      }
     }
   ],
   "milestones": [
@@ -367,6 +391,46 @@
       ],
       "packet": "tasks/T-07.md",
       "report": "evidence/tasks/T-07.report.json"
+    },
+    {
+      "id": "T-08",
+      "title": "Nastavení a diagnostika",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [],
+      "packet": "tasks/T-08.md"
+    },
+    {
+      "id": "T-09",
+      "title": "Den a detail",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [],
+      "packet": "tasks/T-09.md"
+    },
+    {
+      "id": "T-10",
+      "title": "Teď fronta a uložení",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [],
+      "packet": "tasks/T-10.md"
+    },
+    {
+      "id": "T-11",
+      "title": "Integrace audit a předání",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-08",
+        "T-09",
+        "T-10"
+      ],
+      "packet": "tasks/T-11.md"
     }
   ],
   "evidence": [
@@ -436,6 +500,38 @@
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-30T08:46:18.733Z",
+      "text": "Otázka Q8 byla uzavřena rozhodnutím D8: Dále vylepšit schválenou Astru jako produkt. (volba Q8·A)"
+    },
+    {
+      "at": "2026-09-30T08:46:18.416Z",
+      "text": "Byla přidána otevřená otázka Q8: Import přímého rozhodnutí Dana D8: schválenou Astru dále produktově vylepšit"
+    },
+    {
+      "at": "2026-09-30T08:44:37.837Z",
+      "text": "Dan potvrdil instalaci0.1.6; živý audit našel vady. D8: úplný agentní audit a produktové vylepšení Astry s inspirací Apple/Notion/Plaud; přímý mandát, bez předstírání historického hooku."
+    },
+    {
+      "at": "2026-09-30T08:44:37.578Z",
+      "text": "Byl zalozen task T-11: Integrace audit a předání."
+    },
+    {
+      "at": "2026-09-30T08:44:37.299Z",
+      "text": "Byl zalozen task T-10: Teď fronta a uložení."
+    },
+    {
+      "at": "2026-09-30T08:44:37.003Z",
+      "text": "Byl zalozen task T-09: Den a detail."
+    },
+    {
+      "at": "2026-09-30T08:44:36.702Z",
+      "text": "Byl zalozen task T-08: Nastavení a diagnostika."
+    },
+    {
+      "at": "2026-09-30T08:43:01.607Z",
+      "text": "Byla zalozena funkce F2: Produktové dotažení po živém auditu."
+    },
     {
       "at": "2026-09-30T00:32:59.110Z",
       "text": "0.1.6 vydaná: podepsané/notarizované obě architektury, přesný feed a osm veřejných souborů ověřené. Podmínky35/35 dvakrát,18stavů a1582PASS. Fyzická Mac přejímka čeká; historický plan hook ani pixelové schválení se nepředstírají."

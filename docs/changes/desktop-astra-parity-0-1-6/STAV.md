@@ -2,6 +2,12 @@
 
 **30. 9. 2026 · ✅ verze 0.1.6 podepsaná, notarizovaná a publikovaná · PR #152, #153 a #154 sloučené · 🟡 fyzická Mac přejímka čeká**
 
+## Živý proklik po instalaci 30. 9.
+
+- ✅ Dan instalaci potvrdil; v běžící aplikaci z Applications je vidět 0.1.6 a fungují přechody Teď / Můj den / Nastavení.
+- ⚠️ Na skutečné historii a frontě byly nalezeny nedostatky: chybí členění historie po dnech, fronta odsouvá nahrávání, zůstal starý odkaz do Nastavení a diagnostika se při běžném vstupu nenačte. Rozpracované nahrávání se v přehledu tváří jako neúplné. Vizuální přejímka tím není uzavřená; předchozí lokální review se nevydává za důkaz bezchybné instalace.
+- 🟡 Nový upload, zvuk výsledného souboru a zbývající živé prokliky čekají. Běžící nahrávání nebylo přerušeno. [Konkrétní nálezy a rozsah kontroly](evidence/mac-ui-2026-09-30/README.md).
+
 ## Implementace a přejímka
 
 - 🧪 Celý Astra shell, Teď, Můj den, detail, Nastavení, onboarding a aktualizační plocha jsou implementované s vybranými Opus ikonami. LuTrack je připravený a vypnutý; nevytváří pracovní minuty. Používají se skutečná data účtu/nahrávek, nikoli demo stavy.
