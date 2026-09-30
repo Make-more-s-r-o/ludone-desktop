@@ -1,0 +1,42 @@
+TAP version 13
+# Subtest: produktový audit končí bezpečně
+    # Subtest: přijme úplný lokální důkaz bez síťového pokusu
+    ok 1 - přijme úplný lokální důkaz bez síťového pokusu
+      ---
+      duration_ms: 0.404167
+      type: 'test'
+      ...
+    # Subtest: odmítne prázdný výsledek i chybějící výsledek
+    ok 2 - odmítne prázdný výsledek i chybějící výsledek
+      ---
+      duration_ms: 0.073917
+      type: 'test'
+      ...
+    # Subtest: odmítne každý síťový pokus i neznámé počítadlo
+    ok 3 - odmítne každý síťový pokus i neznámé počítadlo
+      ---
+      duration_ms: 0.09975
+      type: 'test'
+      ...
+    # Subtest: odmítne selhání, chybějící a prázdné screenshoty
+    ok 4 - odmítne selhání, chybějící a prázdné screenshoty
+      ---
+      duration_ms: 0.314625
+      type: 'test'
+      ...
+    1..4
+ok 1 - produktový audit končí bezpečně
+  ---
+  duration_ms: 1.399042
+  type: 'suite'
+  ...
+1..1
+# tests 4
+# suites 1
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 41.563125
+EXIT_CODE=0

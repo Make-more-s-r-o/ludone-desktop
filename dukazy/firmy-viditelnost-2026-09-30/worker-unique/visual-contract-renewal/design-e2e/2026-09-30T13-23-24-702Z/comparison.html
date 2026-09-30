@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="cs"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LuDone Desktop · porovnání s Astrou</title>
+<style>
+  :root{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#202124;background:#f4f5f6}
+  body{margin:0 auto;max-width:1400px;padding:28px}
+  h1{font-size:28px;line-height:1.2;margin:0 0 8px} header{margin-bottom:24px}
+  header p{max-width:80ch;color:#555}
+  .pair{background:#fff;border:1px solid #d9dce0;border-radius:12px;padding:18px;margin:16px 0}
+  .pair h2{font-size:19px;margin:0 0 4px}.pair>p{color:#555;margin:0 0 16px}
+  .images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+  figure{margin:0;min-width:0}figcaption{font-weight:600;margin-bottom:8px}
+  img{display:block;max-width:100%;height:auto;border:1px solid #d9dce0;border-radius:8px;background:#fff}
+  @media(max-width:760px){body{padding:14px}.images{grid-template-columns:1fr}}
+</style>
+<body><header><h1>Skutečná aplikace vedle schválené Astry</h1>
+<p>Vlevo je screenshot z běžícího Electron rendereru, vpravo referenční screenshot návrhu. Automatické kontroly ověřují rozměry, hranice a pořadí klíčových prvků; neprokazují pixelovou shodu. Poznámky vysvětlují produktové rozdíly. Výsledek vizuálního porovnání zůstává oddělený.</p></header>
+<section class="pair">
+      <h2>Teď · hlavní panel</h2>
+      <p>D10: schválená galerie 0dd87da mění hierarchii na Nahrávání první + kompaktní LuTrack. Astra je historická reference, nejde o shodu 1:1. Produktový LuTrack zůstává poctivě připravovaný; jeho prostor a shell se porovnávají se scénou Astra home.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><img src="03-ted.png" alt="Teď · hlavní panel v aplikaci"></figure>
+        <figure><figcaption>Schválená Astra · home</figcaption><img src="astra-home.png" alt="Teď · hlavní panel v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>Můj den · místní nahrávky</h2>
+      <p>Srovnává se stejná plocha a hierarchie; pracovní úseky prototypu se nepřenášejí do skutečných dat.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><p>Produktový screenshot nebyl zachycen.</p></figure>
+        <figure><figcaption>Schválená Astra · day</figcaption><img src="astra-day.png" alt="Můj den · místní nahrávky v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>Detail · místní kopie</h2>
+      <p>Produktová místní kopie a skutečné bezpečné akce se porovnávají s odpovídající scénou Astra detail.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><p>Produktový screenshot nebyl zachycen.</p></figure>
+        <figure><figcaption>Schválená Astra · detail</figcaption><img src="astra-detail.png" alt="Detail · místní kopie v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>Nastavení · účet a předvolby</h2>
+      <p>Skutečný účet, zvuk, lokální kopie a aktualizace se porovnávají se scénou Astra Nastavení bez fiktivního profilu.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><p>Produktový screenshot nebyl zachycen.</p></figure>
+        <figure><figcaption>Schválená Astra · settings</figcaption><img src="astra-settings.png" alt="Nastavení · účet a předvolby v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>Offline · místní nahrávka</h2>
+      <p>Porovnává probíhající nahrávání bez sítě; LuTrack zůstává vypnutý a jeho čas se nevymýšlí.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><p>Produktový screenshot nebyl zachycen.</p></figure>
+        <figure><figcaption>Schválená Astra · offline</figcaption><img src="astra-offline.png" alt="Offline · místní nahrávka v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>Uložení · jedna schůzka</h2>
+      <p>Dvě výslovné akce a jedna schůzka; skutečný odhlášený účet a neaktivní LuTrack.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><p>Produktový screenshot nebyl zachycen.</p></figure>
+        <figure><figcaption>Schválená Astra · save</figcaption><img src="astra-save.png" alt="Uložení · jedna schůzka v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>První spuštění</h2>
+      <p>Společný Astra shell; skutečné kroky oprávnění a přihlášení se zachovávají.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><img src="01-00-prvni-pouziti.png" alt="První spuštění v aplikaci"></figure>
+        <figure><figcaption>Schválená Astra · onboarding</figcaption><img src="astra-onboarding.png" alt="První spuštění v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>Aktualizace · samostatná plocha</h2>
+      <p>Proužek i samostatná aktualizační plocha zachovávají výslovnou volbu instalace.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><p>Produktový screenshot nebyl zachycen.</p></figure>
+        <figure><figcaption>Schválená Astra · update</figcaption><img src="astra-update.png" alt="Aktualizace · samostatná plocha v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>Nastavení · tmavé</h2>
+      <p>Tmavá reference ze stejné uložené Astry.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><p>Produktový screenshot nebyl zachycen.</p></figure>
+        <figure><figcaption>Schválená Astra · settings-dark</figcaption><img src="astra-settings-dark.png" alt="Nastavení · tmavé v návrhu"></figure>
+      </div>
+    </section>
+<section class="pair">
+      <h2>Můj den · tmavý</h2>
+      <p>Tmavá reference bez přenosu pracovních demo dat.</p>
+      <div class="images">
+        <figure><figcaption>Skutečný renderer LuDone Desktop</figcaption><p>Produktový screenshot nebyl zachycen.</p></figure>
+        <figure><figcaption>Schválená Astra · day-dark</figcaption><img src="astra-day-dark.png" alt="Můj den · tmavý v návrhu"></figure>
+      </div>
+    </section>
+</body></html>

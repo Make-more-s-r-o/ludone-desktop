@@ -1,0 +1,19 @@
+
+DevTools listening on ws://127.0.0.1:52744/devtools/browser/be3f84f6-a3b9-4921-8ca1-69076859cc29
+[tray] 2026-09-30T13:34:35.268Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] Při startu obnoveno nahrávek: 1.
+[queue] odesláno 0, konec: žádná položka není připravená
+[recording] Připraveny oddělené soubory s prefixem 2026-09-30T13-34-36-252Z-77a64801.
+[recording] Uloženo: mikrofon 28191 B, systém 28191 B.
+[queue] Zařazeno 77a64801-f84a-472e-a967-a439b0eef2d8 (recording).
+[recording-export] Uloženo 77a64801-f84a-472e-a967-a439b0eef2d8; rozdíl startů 6 ms.
+Error occurred in handler for 'queue:list': Error: IPC odmítnuto: aplikace se ukončuje
+    at /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/visual-contract-renewal/electron/main.cjs:317:27
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:120511)
+    at Session.emit (node:events:514:28)
+
+DevTools listening on ws://127.0.0.1:52744/devtools/browser/c4934ac9-f25b-4412-9cfc-9b4ceb1f915e
+[tray] 2026-09-30T13:34:39.299Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] odesláno 0, konec: žádná položka není připravená
