@@ -9,6 +9,8 @@ import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { RecordingsDashboard } from "../src/features/recordings/RecordingsDashboard.jsx";
+// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
+import { RecordingDayPreview } from "../src/features/recordings/RecordingDayPreview.jsx";
 
 const ID = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
 const REVISION = `sha256:${"a".repeat(64)}`;
@@ -74,6 +76,7 @@ async function renderDashboard({
     verifyRecording: vi.fn(verifyRecording),
     openRecordingInLuDone: vi.fn(openRecordingInLuDone),
     retryRecording: vi.fn(retryRecording),
+    revealRecording: vi.fn(async () => ({ outcome: "revealed" })),
   };
   Object.defineProperty(dom.window, "ludone", { configurable: true, value: ludone });
   vi.stubGlobal("React", React);
@@ -84,11 +87,14 @@ async function renderDashboard({
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const root = createRoot(dom.window.document.querySelector("#root"));
   await React.act(async () => {
-    root.render(React.createElement(RecordingsDashboard, { authState }));
+    root.render(React.createElement(RecordingsDashboard, { authState, authIdentity: { email: "test@ludone.cz" }, authOrigin: "https://ludone.test" }));
   });
   await vi.waitFor(() => expect(ludone.listLocalRecordings).toHaveBeenCalledOnce());
   return {
     document: dom.window.document,
+    async rerender(authState, email = "test@ludone.cz", authOrigin = "https://ludone.test") {
+      await React.act(async () => root.render(React.createElement(RecordingsDashboard, { authState, authIdentity: email ? { email } : null, authOrigin })));
+    },
     ludone,
     async cleanup() {
       await React.act(async () => root.unmount());
@@ -620,4 +626,94 @@ describe("pravdivá úplnost místního zvuku", () => {
       await dashboard.cleanup();
     } finally { await rm(root, { recursive: true, force: true }); }
   });
+});
+
+
+describe("produktové dotažení dne", () => {
+  it("dlouhou historii seskupí po místním dni a zachová chronologii i filtry", async () => {
+    const items = Array.from({ length: 24 }, (_, index) => ({ ...ITEM,
+      id: `9e586e55-d688-43f1-8a80-${String(index).padStart(12, "0")}`,
+      createdAt: new Date(2026, 8, 29 + Math.floor(index / 12), index % 12).toISOString(),
+      uploadIntent: index % 2 ? "approved" : "held",
+    })).reverse();
+    items.push({ ...ITEM, uploadIntent: "held", createdAt: "neplatné" });
+    const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items }) });
+    try {
+      const days = [...dashboard.document.querySelectorAll("[data-day]")];
+      expect(days.map((day) => day.getAttribute("data-day"))).toEqual(["2026-09-30", "2026-09-29", "unknown"]);
+      expect(days[0].querySelectorAll("[data-recording-id]")).toHaveLength(12);
+      expect([...days[0].querySelectorAll("time")].map((time) => time.dateTime)).toEqual(items.filter((item) => new Date(item.createdAt).getDate() === 30).map((item) => item.createdAt).sort());
+      await React.act(async () => dashboard.document.querySelector('[data-filter="delivery"]').click());
+      expect(dashboard.document.querySelectorAll("[data-recording-id]")).toHaveLength(12);
+    } finally { await dashboard.cleanup(); }
+  });
+
+  it("aktivní nahrávání nehlásí poškození a blokuje akce jen své položky", async () => {
+    const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [
+      { ...ITEM, recordingInProgress: true, localState: "partial-audio", localReason: "Chybí dokončený soubor", allowedActions: { claim: true, send: true, delete: true, retry: true } },
+      { ...ITEM, id: "9e586e55-d688-43f1-8a80-000000000002" },
+    ] }) });
+    try {
+      const rows = dashboard.document.querySelectorAll("[data-recording-id]");
+      expect(rows[0].textContent).toContain("Nahrává se");
+      expect(rows[0].textContent).not.toContain("Chybí dokončený soubor");
+      expect([...rows[0].querySelectorAll("button")].every((button) => button.disabled)).toBe(true);
+      expect(rows[1].querySelector("button").disabled).toBe(false);
+    } finally { await dashboard.cleanup(); }
+  });
+
+  it("obnova a dočasný focus unknown zachovají ověření jen shodného účtu, originu a souboru", async () => {
+    let item = { ...ITEM, ownership: "current", allowedActions: {} };
+    const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [item] }),
+      verifyRecording: async () => ({ id: ID, revision: REVISION, verifiedAt: "2026-09-30T10:00:00Z", tracks: { delivery: { status: "complete", mismatchFields: [] } } }),
+    });
+    try {
+      await React.act(async () => dashboard.document.querySelector(".recording-action--verify").click());
+      expect(dashboard.document.body.textContent).toContain("Otevřít v LuDone");
+      await React.act(async () => [...dashboard.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
+      expect(dashboard.document.body.textContent).toContain("Otevřít v LuDone");
+      await React.act(async () => dashboard.document.querySelector(".recording-action--reveal").click());
+      expect(dashboard.document.body.textContent).toContain("Otevřít v LuDone");
+      await dashboard.rerender("unknown", null);
+      expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
+      await dashboard.rerender("signed-in");
+      expect(dashboard.document.body.textContent).toContain("Otevřít v LuDone");
+      item = { ...item, fileRevision: `sha256:${"d".repeat(64)}` };
+      await React.act(async () => [...dashboard.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
+      expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
+      await React.act(async () => dashboard.document.querySelector(".recording-action--verify").click());
+      await dashboard.rerender("signed-in", "test@ludone.cz", "https://other.test");
+      expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
+      await React.act(async () => dashboard.document.querySelector(".recording-action--verify").click());
+      await dashboard.rerender("signed-in", "other@ludone.cz", "https://other.test");
+      expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
+      await React.act(async () => dashboard.document.querySelector(".recording-action--verify").click());
+      await dashboard.rerender("expired", null, "https://other.test");
+      expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
+      await dashboard.rerender("signed-in", "other@ludone.cz", "https://other.test");
+      expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
+    } finally { await dashboard.cleanup(); }
+  });
+});
+
+it("náhled má jediný skutečný vstup do dne a pravdivý probíhající stav", async () => {
+  const dom = new JSDOM('<div id="root"></div>');
+  vi.stubGlobal("React", React);
+  vi.stubGlobal("window", dom.window);
+  vi.stubGlobal("document", dom.window.document);
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const root = createRoot(dom.window.document.querySelector("#root"));
+  const open = vi.fn();
+  try {
+    await React.act(async () => root.render(React.createElement(RecordingDayPreview, { onOpenDay: open, items: [
+      { kind: "recording", id: "test", title: "Porada", recordingInProgress: true, state: "ceka" },
+    ] })));
+    expect(dom.window.document.body.textContent).toContain("Nahrává se");
+    expect(dom.window.document.querySelector(".day-preview__item > svg")).toBeNull();
+    await React.act(async () => dom.window.document.querySelector("button").click());
+    expect(open).toHaveBeenCalledOnce();
+  } finally {
+    await React.act(async () => root.unmount());
+    dom.window.close();
+  }
 });
