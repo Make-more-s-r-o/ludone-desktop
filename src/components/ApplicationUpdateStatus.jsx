@@ -56,6 +56,8 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
   const availableVersion = typeof status.availableVersion === "string" ? status.availableVersion : null;
   const downloadedVersion = typeof status.downloadedVersion === "string" ? status.downloadedVersion : null;
   const downloading = status.downloading === true;
+  const hasUpdate = Boolean(availableVersion || downloading || downloadedVersion);
+  const showDetails = detailsOpen && hasUpdate;
   const benefit = typeof status.benefit === "string" && status.benefit.trim()
     ? status.benefit.trim()
     : null;
@@ -80,24 +82,24 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
   ) return null;
 
   return (
-    <div className={`application-update-status${detailsOpen ? " application-update-status--detail" : ""}`}>
-      {detailsOpen && <div className="application-update-detail__summary">
+    <div className={`application-update-status${showDetails ? " application-update-status--detail" : ""}`}>
+      {showDetails && <div className="application-update-detail__summary">
         <LuDoneMark size={30} />
         <div><strong>LuDone Desktop{(downloadedVersion || availableVersion) && ` · ${downloadedVersion || availableVersion}`}</strong>
           <p>{benefit || "Aktualizace aplikace na vašem Macu."}</p></div>
       </div>}
-      {detailsOpen && <header className="application-update-detail__intro">
+      {showDetails && <header className="application-update-detail__intro">
         <p className="eyebrow">Aktualizace aplikace</p>
         <div className="application-update-detail__version">{version}{(downloadedVersion || availableVersion) && ` → ${downloadedVersion || availableVersion}`}</div>
         <h1>{benefit || "LuDone na vašem Macu."}</h1>
         <p>Restart proběhne až po vašem kliknutí. Během nahrávání a ukládání aplikace počká na bezpečný okamžik.</p>
       </header>}
-      {detailsOpen && downloadedVersion && <div className="application-update-detail__safety" role="note">
+      {showDetails && downloadedVersion && <div className="application-update-detail__safety" role="note">
         <strong>Teď vás nepřerušíme</strong>
         <p>Instalace počká na dokončení nahrávání, ukládání a měření času. Běžící činnosti se samy nezastaví.</p>
         <p>Restart proběhne až po vašem kliknutí na „Aktualizovat a restartovat“.</p>
       </div>}
-      {!detailsOpen && <button type="button" className="application-update-detail__open" onClick={() => setDetailsOpen(true)}>Zobrazit aktualizaci</button>}
+      {hasUpdate && !showDetails && <button type="button" className="application-update-detail__open" onClick={() => setDetailsOpen(true)}>Zobrazit aktualizaci</button>}
       {showVersion && <ApplicationVersion />}
       <div aria-live="polite" aria-atomic="true">
         {!downloadedVersion && downloading && (
@@ -138,7 +140,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
                   disabled={status.installRequested === true}
                   onClick={() => runAction("installUpdate", downloadedVersion)}
                 >
-                  {status.installRequested ? "Čekám na bezpečný okamžik…" : detailsOpen ? "Aktualizovat a restartovat" : "Aktualizovat"}
+                  {status.installRequested ? "Čekám na bezpečný okamžik…" : showDetails ? "Aktualizovat a restartovat" : "Aktualizovat"}
                 </button>
                 {!status.installDeferred && (
                   <button
@@ -176,6 +178,9 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
             >
               {status.manualCheckState === "checking" ? "Kontroluji…" : "Zkontrolovat aktualizace"}
             </button>
+            {status.manualCheckAvailable !== true && (
+              <small>Kontrola je dostupná v nainstalované aplikaci.</small>
+            )}
             {status.manualCheckState === "current" && (
               <small role="status" data-testid="update-current">Používáš aktuální verzi.</small>
             )}
@@ -188,7 +193,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
           Akci s aktualizací se nepodařilo dokončit.
         </small>}
       </div>
-      {detailsOpen && <button type="button" className="button button--wide application-update-detail__back" onClick={() => setDetailsOpen(false)}>Zpět</button>}
+      {showDetails && <button type="button" className="button button--wide application-update-detail__back" onClick={() => setDetailsOpen(false)}>Zpět</button>}
     </div>
   );
 }

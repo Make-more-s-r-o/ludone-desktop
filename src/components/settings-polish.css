@@ -1,0 +1,19 @@
+/* Dotažení Nastavení používá stejné tokeny ve všech třech tématech. */
+.settings-window[data-page="settings"] .settings-content { gap: 20px; min-width: 0; }
+.settings-window[data-page="settings"] .settings-group { padding: 20px; min-width: 0; }
+.settings-window[data-page="settings"] .settings-group__heading { margin-bottom: 16px; gap: 12px; }
+.settings-window[data-page="settings"] .settings-group__heading h2 { font-size: 16px; line-height: 1.4; letter-spacing: -.02em; }
+.settings-window[data-page="settings"] .settings-row { padding: 12px; gap: 16px; }
+.settings-window[data-page="settings"] .settings-row > div { min-width: 0; }
+.settings-window[data-page="settings"] :is(.settings-row, .settings-select, .diagnostics-card) strong { line-height: 1.45; }
+.settings-window[data-page="settings"] :is(.settings-row, .settings-select, .settings-hint) small { font-size: 12px; line-height: 1.5; }
+.settings-window[data-page="settings"] :is(.settings-action-row, .settings-theme__choices) { flex-wrap: wrap; gap: 8px; }
+.settings-window[data-page="settings"] :is(select, .application-update-status) { max-width: 100%; min-width: 0; }
+.settings-window[data-page="settings"] :is(.destination-row strong, .diagnostics-card strong) { overflow-wrap: anywhere; }
+.settings-window[data-page="settings"] #audio-settings-title { scroll-margin-top: 20px; }
+.settings-window[data-page="settings"] #audio-settings-title:focus-visible { outline: 2px solid var(--panel-accent); outline-offset: 5px; border-radius: 3px; }
+@media (max-width: 480px) {
+  .settings-window[data-page="settings"] .settings-group { padding: 16px; }
+  .settings-window[data-page="settings"] :is(.settings-row--environment, .settings-select, .settings-audio-action) { flex-wrap: wrap; }
+  .settings-window[data-page="settings"] :is(.settings-row--environment, .settings-select) select { width: 100%; }
+}

@@ -43,6 +43,7 @@ async function renderSettings({
     ok: true,
     fileName: "ludone-diagnostika-2026-09-03-130500.txt",
   }),
+  updateStatus = () => Promise.resolve({ revision: 0, manualCheckAvailable: true }),
   identity = () => Promise.resolve({ name: "Ada Lovelace", email: "ada@ludone.cz" }),
   listUploadCompanies = () => Promise.resolve({
     companies: [], selectedCompanyId: null, offerToken: "11111111-1111-4111-8111-111111111111",
@@ -86,6 +87,7 @@ async function renderSettings({
     return { ...result, origin: effectiveOrigin };
   });
   const ludone = {
+    getUpdateStatus: vi.fn(updateStatus),
     beginAuth: vi.fn(),
     closeSettings: vi.fn(),
     returnToNowPanel: vi.fn(),
@@ -445,7 +447,7 @@ describe("pět částí Nastavení", () => {
       expect(settings.ludone.claimRecording).toHaveBeenCalledWith(id, revision);
       expect(settings.ludone.listLocalRecordings).toHaveBeenCalledTimes(2);
       expect(listLocalRecordings).toHaveBeenCalledTimes(2);
-      expect(settings.ludone.getDiagnostics).not.toHaveBeenCalled();
+      expect(settings.ludone.getDiagnostics).toHaveBeenCalledOnce();
       expect(settings.document.body.textContent).toContain("Převzatá nahrávka čeká");
     } finally {
       await settings.cleanup();
@@ -1401,5 +1403,64 @@ describe("přímý vstup do části Nastavení", () => {
     } finally {
       await settings.cleanup();
     }
+  });
+});
+
+
+describe("běžný vstup a rychlá akce Zvuk", () => {
+  it("načte viditelnou diagnostiku při čerstvém otevření bez výběru skryté záložky", async () => {
+    const settings = await renderSettings();
+    try {
+      expect(settings.ludone.getDiagnostics).toHaveBeenCalledOnce();
+      expect(settings.document.querySelector('[data-testid="diagnostics-version"]').textContent).toBe("9.8.7");
+      expect(settings.document.querySelector('[data-testid="settings-queue-summary"]').textContent).toContain("2 čekají");
+    } finally { await settings.cleanup(); }
+  });
+
+  it("chybu čerstvého načtení neponechá jako nekonečné načítání ani úspěch", async () => {
+    const settings = await renderSettings({ diagnostics: async () => { throw new Error("offline"); } });
+    try {
+      expect(settings.document.querySelector('[data-testid="settings-queue-summary"]').textContent).toContain("Stav fronty není dostupný");
+      expect(settings.document.querySelector('[data-testid="diagnostics-microphone"]').dataset.status).toBe("unknown");
+    } finally { await settings.cleanup(); }
+  });
+
+  it("opakovaná rychlá akce Zvuk navede focus a scroll i na již otevřené stránce", async () => {
+    const settings = await renderSettings({ initialTab: "audio" });
+    try {
+      const heading = settings.document.querySelector("#audio-settings-title");
+      const scroll = vi.fn();
+      heading.scrollIntoView = scroll;
+      expect(settings.document.activeElement).toBe(heading);
+      heading.blur();
+      await React.act(async () => settings.requestSettingsTab("audio"));
+      expect(settings.document.activeElement).toBe(heading);
+      expect(scroll).toHaveBeenCalledOnce();
+      heading.blur();
+      await React.act(async () => settings.requestSettingsTab("audio"));
+      expect(settings.document.activeElement).toBe(heading);
+      expect(scroll).toHaveBeenCalledTimes(2);
+    } finally { await settings.cleanup(); }
+  });
+});
+
+
+describe("detail aktualizace", () => {
+  it.each([{}, { checkFailed: true }, { manualCheckState: "current" }])("bez nové verze nenabízí prázdný detail: %j", async (status) => {
+    const settings = await renderSettings({ updateStatus: async () => ({ revision: 0, manualCheckAvailable: true, ...status }) });
+    try {
+      expect(settings.document.body.textContent).not.toContain("Zobrazit aktualizaci");
+      expect(settings.document.querySelector('[data-testid="application-version"]')).not.toBeNull();
+      expect(settings.document.querySelector('[data-testid="update-check-now"]')).not.toBeNull();
+    } finally { await settings.cleanup(); }
+  });
+  it.each([{ availableVersion: "9.8.8" }, { downloading: true }, { downloadedVersion: "9.8.8" }])("konkrétní aktualizace detail nabídne: %j", async (status) => {
+    const settings = await renderSettings({ updateStatus: async () => ({ revision: 0, ...status }) });
+    try {
+      const open = [...settings.document.querySelectorAll("button")].find((button) => button.textContent === "Zobrazit aktualizaci");
+      expect(open).toBeDefined();
+      await React.act(async () => open.click());
+      expect(settings.document.querySelector(".application-update-detail__intro")).not.toBeNull();
+    } finally { await settings.cleanup(); }
   });
 });

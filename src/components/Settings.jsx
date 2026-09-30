@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "./settings-polish.css";
 import { countLabel } from "../lib/count-label.js";
 import { RecordingsDashboard } from "../features/recordings/RecordingsDashboard.jsx";
 import {
@@ -268,6 +269,7 @@ export function SettingsApp() {
   const [activePage, setActivePage] = useState(() => (
     ["day", "recordingQueue"].includes(initialTab) ? "day" : "settings"
   ));
+  const [audioNavigationRequest, setAudioNavigationRequest] = useState(initialTab === "audio" ? 1 : 0);
   const [recordingDetailOpen, setRecordingDetailOpen] = useState(false);
   const [settings, setSettings] = useState(loadSettings);
   const [themePreference, setThemePreference] = useState(getThemePreference);
@@ -300,6 +302,7 @@ export function SettingsApp() {
         setRecordingDetailOpen(false);
       } else if (SETTINGS_TABS.some((item) => item.id === tab)) {
         setActiveTab(tab);
+        if (tab === "audio") setAudioNavigationRequest((request) => request + 1);
         setActivePage(tab === "recordingQueue" ? "day" : "settings");
         setRecordingDetailOpen(false);
       }
@@ -495,7 +498,7 @@ export function SettingsApp() {
   useEffect(() => {
     let active = true;
     let requestId = 0;
-    if (activeTab !== "recordings" && activeTab !== "diagnostics") {
+    if (activePage !== "settings") {
       return () => { active = false; };
     }
     const getDiagnostics = window.ludone?.getDiagnostics;
@@ -539,7 +542,14 @@ export function SettingsApp() {
       window.removeEventListener("focus", refreshDiagnostics);
       document.removeEventListener("visibilitychange", refreshVisibleDiagnostics);
     };
-  }, [activeTab]);
+  }, [activePage]);
+
+  useEffect(() => {
+    if (activePage !== "settings" || audioNavigationRequest === 0) return;
+    const heading = document.getElementById("audio-settings-title");
+    heading?.scrollIntoView?.({ block: "start", behavior: "auto" });
+    heading?.focus({ preventScroll: true });
+  }, [activePage, audioNavigationRequest]);
 
   const selectRelativeTab = (event, currentIndex) => {
     let nextIndex;
@@ -918,7 +928,7 @@ export function SettingsApp() {
           <section className="settings-group" aria-labelledby="audio-settings-title">
             <div className="settings-group__heading">
               <span><VolumeIcon /></span>
-              <div><h2 id="audio-settings-title">Zvuk schůzky</h2></div>
+              <div><h2 id="audio-settings-title" tabIndex={-1}>Zvuk schůzky</h2></div>
             </div>
             <p className="settings-audio-summary">
               Jeden výsledný soubor: mikrofon vlevo, systémový zvuk vpravo.
@@ -944,13 +954,16 @@ export function SettingsApp() {
             <div className="settings-row settings-row--static settings-audio-action">
               <div>
                 <strong>Zdroje a oprávnění</strong>
-                <small>Zkoušku spustíš až po otevření další obrazovky.</small>
+                <small>Ověř mikrofon a zvuk ostatních aplikací krátkou zkouškou.</small>
               </div>
               <button
                 type="button"
                 className="button button--small"
                 data-testid="open-audio-test"
-                onClick={() => setActiveTab("audio")}
+                onClick={() => {
+                  setActiveTab("audio");
+                  setAudioNavigationRequest((request) => request + 1);
+                }}
               >
                 Otevřít zkoušku
               </button>
@@ -1078,7 +1091,12 @@ export function SettingsApp() {
                   <h2 id="recording-queue-settings-title">Nahrávky</h2>
                 </div>
               </div>
-              <RecordingsDashboard authState={account.state} onDetailChange={setRecordingDetailOpen} />
+              <RecordingsDashboard
+                authState={account.state}
+                authIdentity={account.identity}
+                authOrigin={destination.origin}
+                onDetailChange={setRecordingDetailOpen}
+              />
             </section>
           )}
         </section>
