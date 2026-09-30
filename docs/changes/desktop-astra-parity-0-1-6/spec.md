@@ -57,11 +57,8 @@ Umožní Danovi používat Teď, Můj den, detail a Nastavení jako jeden skute�
 
 ## Otevřené otázky a rozhodovací defaulty
 
-### Q1 — Obnova vizuálního kontraktu před vydáním
-
-Blokuje publikaci další desktopové verze. Konkrétní dotažení a původní nezměněný
-FAIL jsou v galerii checkpointu; nezávislé T-12/T-13 pokračují. Rozhodnutí člověka
-je v decisions.md, žádná výjimka dosud nebyla udělena.
+Žádné otevřené. D10 výslovně potvrzuje dotažený panel; finální brána se obnoví
+podle tohoto konkrétního artefaktu při zachování všech funkčních a bezpečnostních kontrol.
 
 ## Konflikty řešené nahlas
 
@@ -79,7 +76,7 @@ povolené akce mají bezpečný dokončitelný tok ve třech tématech.
 ### F3 — Firma a viditelnost před uploadem
 
 Umožní zobrazit uloženou výchozí firmu a bezpečně vybrat firmu a viditelnost
-pro jeden nový či držený soubor podle UPLOAD-PREFERENCES.md. Private je default,
+pro jeden nový či držený soubor podle UPLOAD-PREFERENCES.md. D11: nové nahrávky mají company default; historický fallback je private,
 progress a serverová vazba zamčené; CAS/owner/origin a čerstvá nabídka povinné.
 
 #### AC-03.1 — Zapamatovatelný default
@@ -98,5 +95,5 @@ přežije restart; cizí či stale změna se odmítne a progress se nikdy nepře
 Given per-recording volba, When první upload, Then stávající create request
 nese přesnou zvolenou firmu a private/company; staré soukromé payloady platí dál.
 
-Otevřená Q1 blokuje publikaci. Obnova vizuálního kontraktu vyžaduje člověka;
-nezávislá implementace F3 pokračuje a původní brány se kvůli výsledku nemění.
+D10 uzavírá Q1 výslovným potvrzením konkrétní nové kompozice. Publikace stále
+vyžaduje zelenou obnovenou vizuální bránu a veškeré funkční/bezpečnostní kontroly.

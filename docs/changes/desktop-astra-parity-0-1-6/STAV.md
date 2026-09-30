@@ -5,10 +5,11 @@
 **30. 9. 2026 · 0dd87da:** nahrávání první, klidný neaktivní LuTrack, přehled po
 dnech, čitelné stavy, pravdivé ověření a funkční diagnostika/rychlá akce Zvuk.
 🧪 1 607 PASS, 18 stavů a 29 cest. ⚠️ Hlavní původní design E2E FAIL na první
-geometrii; Q1 blokuje publikaci. ⛔ Zvuk/upload/instalace tohoto kandidáta neověřeny.
+geometrii; Q1 je potvrzena D10, nová přesná brána ještě čeká. ⛔ Zvuk/upload/instalace tohoto kandidáta neověřeny.
 [Checkpoint](../../../dukazy/produktove-dotazeni-2026-09-30/README.md) a
 [galerie](../../../dukazy/produktove-dotazeni-2026-09-30/index.html).
-Nové zadání firmy/viditelnosti pokračuje T-12/T-13, viz UPLOAD-PREFERENCES.md.
+D11: nové nahrávky výchozí Sdílená ve firmě, před uploadem možnost Soukromá;
+staré položky zachované. Zadání pokračuje T-12/T-13, viz UPLOAD-PREFERENCES.md.
 Následující0.1.6 důkazy jsou historická publikace a nejsou důkaz nového kandidáta.
 
 

@@ -1,6 +1,6 @@
 # Implementační plán — LuDone Desktop
 
-**30. 9. 2026 — další kandidát, zatím nevydaný:** produktové dotažení 0dd87da má 🧪 1 607 PASS, 18 stavů a 29 cest. ⚠️ Původní design E2E FAIL na staré dominantní geometrii LuTracku; Q1 blokuje publikaci. Nové zadání firmy a viditelnosti před uploadem pokračuje T-12/T-13. [Checkpoint a galerie](dukazy/produktove-dotazeni-2026-09-30/README.md). ⛔ Skutečný zvuk/upload kandidáta neověřen.
+**30. 9. 2026 — další kandidát, zatím nevydaný:** produktové dotažení 0dd87da má 🧪 1 607 PASS, 18 stavů a 29 cest. ⚠️ Původní design E2E FAIL na staré dominantní geometrii LuTracku; Q1 je potvrzena D10; čeká zelená obnovená vizuální brána. Nové zadání firmy a viditelnosti před uploadem pokračuje T-12/T-13. [Checkpoint a galerie](dukazy/produktove-dotazeni-2026-09-30/README.md). ⛔ Skutečný zvuk/upload kandidáta neověřen.
 
 **30. 9. 2026 — 0.1.6 vydaná:** celý schválený Astra tok s Opus ikonami implementovaný; PR #152–154 sloučené. ✅ Podpis/notarizace a publikace obou DMG/ZIP, feed 0.1.6 a všech osm artefaktů ověřené ([důkazy](docs/changes/desktop-astra-parity-0-1-6/evidence/release-2026-09-30/README.md)). 🧪 1 582 PASS, 35 skutečných Electron E2E podmínek dvakrát, 18 stavových scénářů a nezávislé review bez P1/P2. Electron 43.7.6 zachovává macOS 12. LuTrack neaktivní; 🟡 [fyzická Mac přejímka](docs/changes/desktop-astra-parity-0-1-6/MAC-PREJIMKA.md) čeká na Dana.
 
