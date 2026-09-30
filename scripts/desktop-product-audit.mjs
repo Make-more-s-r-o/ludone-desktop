@@ -28,10 +28,12 @@ export function auditExitCode(results, networkAttempts) {
 const require = createRequire(import.meta.url);
 const script = fileURLToPath(import.meta.url);
 const root = path.resolve(path.dirname(script), "..");
+const preview = process.argv.includes("--preview");
+const panelPreview = process.argv.includes("--panel");
 const output = process.versions.electron ? process.argv[2] : path.join(root, ".runtime", "desktop-product-audit", new Date().toISOString().replaceAll(":", "-"));
 if (!process.versions.electron && process.argv[1] === script) {
   await mkdir(output, { recursive: true });
-  const child = spawn(require("electron"), [path.join(root, "scripts/desktop-product-audit-bootstrap.cjs"), output], {
+  const child = spawn(require("electron"), [path.join(root, "scripts/desktop-product-audit-bootstrap.cjs"), output, ...process.argv.slice(2).filter(arg => ["--preview", "--panel"].includes(arg))], {
     cwd: root, stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, DESKTOP_UPLOAD_ENABLED: "false" },
   });
@@ -40,13 +42,17 @@ if (!process.versions.electron && process.argv[1] === script) {
     log += chunk.toString();
     process.stdout.write(chunk);
   });
-  const timer = setTimeout(() => child.kill("SIGTERM"), 120_000);
-  let code = await new Promise((resolve, reject) => {
+  const timer = setTimeout(() => child.kill("SIGTERM"), preview ? 900_000 : 120_000);
+  let code = await new Promise((resolve) => {
     child.once("error", (error) => { log += error.message; resolve(1); });
     child.once("exit", (code) => resolve(code ?? 1));
   });
   clearTimeout(timer);
   await writeFile(path.join(output, "command.log"), `node scripts/desktop-product-audit.mjs\n${log}\nexit_code=${code}\n`);
+  if (preview) {
+    await writeFile(path.join(output, "preview-status.json"), JSON.stringify({ mode: "preview", verification: "⛔", fixtureOnly: true, exitCode: code, unverified: ["Audit přejímka", "Fyzický zvuk", "Skutečný upload"] }, null, 2));
+    process.exit(code);
+  }
   try { await access(path.join(output, "report.json")); } catch {
     code = code || 1;
     await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "FAIL", exitCode: code || 1, fixtureOnly: true, results: [], error: "Electron harness nevytvořil report; žádný scénář není ověřený." }, null, 2));
@@ -68,7 +74,7 @@ console.log("READY Electron");
 const results = [];
 let networkAttempts = 0;
 let index = 0;
-const watchdog = setTimeout(async () => {
+const watchdog = preview ? null : setTimeout(async () => {
   await writeFile(path.join(runOutput, "report.json"), JSON.stringify({ status: "FAIL", exitCode: 1, fixtureOnly: true, networkAttempts, results, error: "Audit překročil limit 120 sekund" }, null, 2));
   app.exit(1);
 }, 120_000);
@@ -120,13 +126,32 @@ function installFixture(window, scenario) {
       allowedActions: { send: kind === "local", retry: kind === "error", claim: kind === "owner", delete: kind === "delete" },
     };
   }).reverse();
+  if (scenario.preview) {
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem("ludone.fixture.preview-state"));
+      if (saved) { Object.assign(state, saved); calls.push(...(saved.calls ?? [])); state.calls = calls; }
+    } catch { /* Nový izolovaný profil nemá uložený stav. */ }
+  }
   state.listeners = listeners;
 
-  state.update = { revision: 1, availableVersion: null, downloadedVersion: null, downloading: false,
+  state.update ??= { revision: 1, availableVersion: null, downloadedVersion: null, downloading: false,
     installRequested: false, installDeferred: false, ...scenario.update };
   window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
   window.__astraFixture = state;
   const action = (name) => async (value) => { calls.push({ name, value }); return { outcome: "fixture_only" }; };
+  const persist = () => {
+    if (scenario.preview) window.sessionStorage.setItem("ludone.fixture.preview-state", JSON.stringify({ ...state, listeners: undefined }));
+  };
+  if (scenario.preview) window.addEventListener("pagehide", persist);
+  const navigate = (tab) => {
+    calls.push({ name: tab === null ? "returnToNowPanel" : "openSettings", value: tab });
+    if (!scenario.preview) return;
+    persist();
+    const next = new URL(window.location.href);
+    next.search = tab === null ? "" : `?settingsTab=${encodeURIComponent(tab)}`;
+    next.hash = tab === null ? "" : "settings";
+    window.location.href = next.href;
+  };
   window.ludone = Object.freeze({
     runtime: Object.freeze({ resetOnboarding: false, designE2E: scenario.designE2E !== false }),
     getAuthSessionState: async () => state.auth,
@@ -151,7 +176,7 @@ function installFixture(window, scenario) {
     openRecordingInLuDone: action("openRecordingInLuDone"),
     getDiagnostics: async () => { calls.push({ name: "getDiagnostics" }); return { version: "0.1.6", architecture: "Apple Silicon", permissions: { microphone: "unknown", systemAudio: "unknown" }, queue: { available: true, waiting: 20, sending: 0, failed: 3 }, serverConnection: { status: "unknown" } }; },
     setDockVisible: action("setDockVisible"), setOpenAtLogin: action("setOpenAtLogin"),
-    returnToNowPanel: action("returnToNowPanel"), closeSettings: action("closeSettings"), openSettings: action("openSettings"),
+    returnToNowPanel: () => navigate(null), closeSettings: () => navigate(null), openSettings: (tab = "account") => navigate(tab),
     onAuthSessionChanged: observe("auth"), onUpdateStatusChanged: observe("update"),
     reportTrayFacts: () => {}, setPanelContentHeight: () => {},
     beginAuth: () => { calls.push({ name: "beginAuth" }); return pending(); },
@@ -200,13 +225,18 @@ async function scenario(name, fixture, check, panel = false) {
       throw new Error(`Stav se neobjevil: ${source}`);
     };
     const click = async (selector) => {
-      const ok = await evaluate(`(() => { const e = document.querySelector(${JSON.stringify(selector)}); if (!e || e.disabled) return false; e.click(); return true; })()`);
+      const ok = await evaluate(`(() => { const e = document.querySelector(${JSON.stringify(selector)}); if (!e || e.disabled) return false; e.focus(); e.click(); return true; })()`);
       if (!ok) throw new Error(`Akce není dostupná: ${selector}`);
     };
     await bounded(win.loadFile(path.join(root, "dist/index.html"), panel ? {} : { query: { settingsTab: fixture.page ?? "day" }, hash: "settings" }), `${name}: loadFile`);
     console.log(`LOADED ${name}`);
     await wait("Boolean(document.querySelector('#root')?.textContent.trim())");
-    await check({ evaluate, wait, click });
+    const pressEscape = async () => {
+      win.webContents.sendInputEvent({ type: "keyDown", keyCode: "ESCAPE" });
+      win.webContents.sendInputEvent({ type: "keyUp", keyCode: "ESCAPE" });
+      await delay(80);
+    };
+    await check({ evaluate, wait, click, pressEscape });
     for (const width of [400, 640]) {
       win.setContentSize(width, 744); await delay(80);
       const overflow = await evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 1");
@@ -235,6 +265,32 @@ async function scenario(name, fixture, check, panel = false) {
     results.push(row);
     console.log(`${row.status} ${name}${row.error ? ` · ${row.error}` : ""}`);
   }
+}
+// Viditelný proklik není automatická přejímka a nikdy nezapisuje audit PASS.
+if (preview) {
+  const win = new BrowserWindow({ show: true, width: panelPreview ? 400 : 640, height: 744,
+    title: "LuDone — izolovaný fixture preview",
+    webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true,
+      backgroundThrottling: false, partition: "product-preview-fixture" } });
+  win.webContents.session.webRequest.onBeforeRequest({ urls: ["http://*/*", "https://*/*", "ws://*/*", "wss://*/*"] }, (_request, callback) => {
+    networkAttempts += 1; console.error("PREVIEW blokovaný síťový pokus"); callback({ cancel: true });
+  });
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.on("will-navigate", (event, url) => {
+    if (!url.startsWith(new URL(`file://${path.join(root, "dist/index.html")}`).href)) event.preventDefault();
+  });
+  const stop = setTimeout(() => { console.log("PREVIEW hardstop 15 minut"); app.exit(0); }, 900_000);
+  win.on("closed", () => { clearTimeout(stop); app.exit(0); });
+  await bounded(win.loadURL("about:blank"), "preview inicializace");
+  win.webContents.debugger.attach("1.3");
+  await win.webContents.debugger.sendCommand("Page.enable");
+  await win.webContents.debugger.sendCommand("Page.addScriptToEvaluateOnNewDocument", {
+    source: `(${installFixture.toString()})(window, ${JSON.stringify({ preview: true })})`,
+  });
+  await win.loadFile(path.join(root, "dist/index.html"), panelPreview ? {} : { query: { settingsTab: "day" }, hash: "settings" });
+  await writeFile(path.join(runOutput, "preview-status.json"), JSON.stringify({ mode: "preview", verification: "⛔", fixtureOnly: true, networkAttempts, renderer: "dist/index.html", productionPreloadLoaded: false, hardstopMs: 900000 }, null, 2));
+  console.log(`PREVIEW připraven: ${runOutput}`);
+  return;
 }
 const textHas = (text) => `document.body.textContent.includes(${JSON.stringify(text)})`;
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -308,15 +364,15 @@ try {
   }
   await scenario("settings-audio-quick-focus", { page: "account" }, async (t) => {
     await t.click('.desktop-titlebar__quick-actions');
-    await t.wait("Boolean(document.querySelector('.desktop-quick-actions'))");
+    await t.wait("Boolean(document.querySelector('.desktop-quick-actions')?.open)");
     await t.evaluate("[...document.querySelectorAll('.desktop-quick-actions__item')].find(b=>b.textContent.includes('Zvuk')).click()");
     await t.wait("Boolean(document.activeElement?.closest('#settings-panel-audio'))");
     assert(await t.evaluate("document.querySelector('#settings-panel-audio').getBoundingClientRect().top >= 0 && document.querySelector('#settings-panel-audio').getBoundingClientRect().top < innerHeight"), "Zvuk není odscrollován do viditelné plochy");
   });
   await scenario("keyboard-escape-quick-actions", { page: "account" }, async (t) => {
-    await t.click('.desktop-titlebar__quick-actions'); await t.wait("Boolean(document.querySelector('.desktop-quick-actions'))");
-    await t.evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
-    await t.wait("!document.querySelector('.desktop-quick-actions')");
+    await t.click('.desktop-titlebar__quick-actions'); await t.wait("Boolean(document.querySelector('.desktop-quick-actions')?.open)");
+    await t.pressEscape();
+    await t.wait("!document.querySelector('.desktop-quick-actions')?.open");
     await t.wait("document.activeElement?.matches('.desktop-titlebar__quick-actions')");
   });
   await scenario("now-navigation-queue-layout", {}, async (t) => {
@@ -354,6 +410,6 @@ app.exit(code);
 }
 if (process.versions.electron) void runElectron().catch((error) => {
   console.error(error.stack || error.message);
-  writeFile(path.join(output, "report.json"), JSON.stringify({ status: "FAIL", exitCode: 1, fixtureOnly: true, results: [], error: error.message }, null, 2)).finally(() => require("electron").app.exit(1));
+  writeFile(path.join(output, preview ? "preview-status.json" : "report.json"), JSON.stringify({ status: "FAIL", exitCode: 1, fixtureOnly: true, results: [], error: error.message }, null, 2)).finally(() => require("electron").app.exit(1));
 });
 

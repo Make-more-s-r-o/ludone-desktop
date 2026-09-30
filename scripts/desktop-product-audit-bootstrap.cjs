@@ -9,11 +9,11 @@ if (!output || !path.isAbsolute(output)) throw new Error("Harness vyžaduje abso
 const userData = path.join(output, "isolated-user-data");
 mkdirSync(userData, { recursive: true });
 app.setPath("userData", userData);
-app.on("window-all-closed", () => {});
+app.on("window-all-closed", () => { if (process.argv.includes("--preview")) app.quit(); });
 console.log("BOOTSTRAP čeká na Electron ready");
 const timer = setTimeout(() => {
   console.error("FAIL bootstrap: Electron ready nepřišel do 30 sekund");
-  writeFileSync(path.join(output, "report.json"), JSON.stringify({ status: "FAIL", exitCode: 1, fixtureOnly: true, results: [], error: "Electron bootstrap selhal" }));
+  writeFileSync(path.join(output, process.argv.includes("--preview") ? "preview-status.json" : "report.json"), JSON.stringify({ status: "FAIL", exitCode: 1, fixtureOnly: true, results: [], error: "Electron bootstrap selhal" }));
   app.exit(1);
 }, 30000);
 app.whenReady().then(() => {
@@ -23,6 +23,6 @@ app.whenReady().then(() => {
 }).catch((error) => {
   clearTimeout(timer);
   console.error(error.stack || error.message);
-  writeFileSync(path.join(output, "report.json"), JSON.stringify({ status: "FAIL", exitCode: 1, fixtureOnly: true, results: [], error: "Electron bootstrap selhal" }));
+  writeFileSync(path.join(output, process.argv.includes("--preview") ? "preview-status.json" : "report.json"), JSON.stringify({ status: "FAIL", exitCode: 1, fixtureOnly: true, results: [], error: "Electron bootstrap selhal" }));
   app.exit(1);
 });
