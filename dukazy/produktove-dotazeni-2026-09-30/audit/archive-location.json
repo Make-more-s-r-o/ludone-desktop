@@ -1,0 +1,9 @@
+{
+  "originalDirectory": ".runtime/desktop-product-audit/2026-09-30T12-20-02.936Z",
+  "copiedTopLevelOnly": true,
+  "excluded": [
+    "isolated-user-data",
+    "isolated-data"
+  ],
+  "copyIsLiteral": true
+}

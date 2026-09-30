@@ -47,3 +47,21 @@
 - **Volba:** Samostatně provést úplný audit a implementovat kvalitativní dotažení nad schváleným základem. Hlavní priorita je srozumitelný panel, denní historie, funkční přechody, stavové a bezpečné akce; nejde o pixelovou neměnnost prototypu.
 - **Mantinely:** Původní návrhy zachovat, značku a Opus ikony ponechat, backend a LuTrack nezapojovat. Osobní nahrávky, soukromé screenshoty a přihlášení se nepoužijí jako veřejná testovací data.
 - **Ověření:** Úplný inventář ovladačů, původní gates/E2E, další regresní matice a nezávislé review; žádná falešná hook metadata.
+
+## D9 — Firma a soukromí před uploadem (30. 9. 2026)
+
+Dan požádal o zapamatovatelný výběr firmy a možnost firmu i viditelnost zvolit
+pro jednotlivou nahrávku před uploadem. Nový kontrakt je v UPLOAD-PREFERENCES.md.
+Soukromá je vždy výchozí; existující upload vazby se nepřepisují. Přímý mandát
+rozšiřuje desktop o úzké per-recording IPC; backend se nemění. Formální hook
+schválení se nevyrábí.
+
+## Q1 — Obnova vizuálního kontraktu před vydáním
+
+Blokuje: publikace další desktopové verze. Nezávislá implementace pokračuje.
+Nový panel dává nahrávání první místo a LuTrack je malý neaktivní řádek.
+Původní nezměněná brána vyžaduje starý dominantní LuTrack hero a skončí FAIL.
+Varianta A: potvrdit konkrétní dotažení z galerie a poté obnovit vizuální kontrakt
+a jeho přesné testy; funkční a bezpečnostní podmínky zachovat.
+Varianta B: vrátit pouze kompozici/hustotu pod původní vizuální kontrakt.
+Žádná výjimka z projektové brány dosud udělena nebyla.

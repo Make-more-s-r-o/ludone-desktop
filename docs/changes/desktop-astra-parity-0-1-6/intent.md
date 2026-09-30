@@ -46,7 +46,11 @@ ikona v liště → Teď → nahrát schůzku → uložit a odeslat / nechat na 
 
 ## Otevřené otázky
 
-Žádné. Schválené výchozí hodnoty: plná Astra „Nit dne“; LuTrack pouze neaktivní placeholder; téma navazuje na chování současné aplikace/macOS; žádné změny serveru.
+### Q1 — Obnova vizuálního kontraktu před vydáním
+
+Blokuje publikaci další desktopové verze. Konkrétní dotažení a původní nezměněný
+FAIL jsou v galerii checkpointu; nezávislé T-12/T-13 pokračují. Rozhodnutí člověka
+je v decisions.md, žádná výjimka dosud nebyla udělena.
 
 ## Doslovné citace zadavatele
 

@@ -1,0 +1,9 @@
+{
+  "originalDirectory": ".runtime/astra-state-e2e/2026-09-30T12-15-20.063Z",
+  "copiedTopLevelOnly": true,
+  "excluded": [
+    "isolated-user-data",
+    "isolated-data"
+  ],
+  "copyIsLiteral": true
+}
