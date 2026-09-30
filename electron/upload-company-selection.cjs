@@ -133,7 +133,8 @@ function createUploadCompanySelectionController({
     return { companies: offer.companies, selectedCompanyId, offerToken };
   }
 
-  async function select({ requesterKey, offerToken, companyId, guard }) {
+  async function resolve({ requesterKey, offerToken, companyId, guard, commit }) {
+    if (typeof commit !== "function") throw failure("invalid_commit");
     validateRequest(requesterKey, guard);
     const snapshot = snapshots.get(requesterKey);
     if (!snapshot || snapshot.offerToken !== offerToken || now() >= snapshot.expiresAt
@@ -148,10 +149,19 @@ function createUploadCompanySelectionController({
     await stillCurrent(context, guard, expectedEpoch);
     if (!freshOffer.companies.some(({ id }) => id === companyId)) throw failure("company_removed");
     requireGuard(guard);
-    const committed = await commitChoice({ context, companyId, guard });
+    const committed = await commit({ context, companyId, companyName: freshOffer.companies.find(({ id }) => id === companyId).name, guard: async () => {
+      try { await stillCurrent(context, guard, expectedEpoch); return true; } catch { return false; }
+    } });
     await stillCurrent(context, guard, expectedEpoch);
+    if (!committed) throw failure("commit_rejected");
+    return committed;
+  }
+
+  async function select(request) {
+    const committed = await resolve({ ...request, commit: ({ context, companyId }) =>
+      commitChoice({ context, companyId, guard: request.guard }) });
     if (committed !== true) throw failure("commit_rejected");
-    return { saved: true, selectedCompanyId: companyId };
+    return { saved: true, selectedCompanyId: request.companyId };
   }
 
   function invalidate() {
@@ -160,7 +170,7 @@ function createUploadCompanySelectionController({
     loads.clear();
   }
 
-  return Object.freeze({ invalidate, load, select });
+  return Object.freeze({ invalidate, load, select, resolve });
 }
 
 module.exports = { createUploadCompanySelectionController };

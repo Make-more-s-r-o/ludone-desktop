@@ -8620,3 +8620,112 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     expect(() => preload.api.selectUploadCompany("podvrh", companyId)).toThrow(/platný/u);
   });
 });
+
+describe("úzké IPC preferencí nahrávky", () => {
+  it("panel smí načíst nabídku ale nesmí měnit account default ani detail", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200,
+      json: async () => ({ companies: [{ id: companyId, name: "Firma" }], defaultCompanyId: companyId }) })));
+    const harness = await loadMain(); await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), accessExpiresAt: Date.now() + 600_000 });
+    const offer = await harness.ipcHandlers.get("upload-companies:list")(panelEvent);
+    expect(offer.companies).toEqual([{ id: companyId, name: "Firma" }]);
+    expect(JSON.stringify(offer)).not.toMatch(/accessToken|ownerFingerprint/u);
+    expect(() => harness.ipcHandlers.get("upload-companies:select")(panelEvent, offer.offerToken, companyId)).toThrow(/nedůvěryhodný/u);
+    const configure = harness.ipcHandlers.get("recordings:configure-upload");
+    const payload = { id: "9e586e55-d688-43f1-8a80-a3d61e754f3e", queueRev: `sha256:${"a".repeat(64)}`,
+      fileRev: `sha256:${"b".repeat(64)}`, companyId, offerToken: offer.offerToken, visibility: "company" };
+    expect(() => configure(panelEvent, payload)).toThrow(/nedůvěryhodný/u);
+    expect(() => configure({ ...settingsEvent, senderFrame: {} }, payload)).toThrow(/nedůvěryhodný/u);
+    await expect(configure(settingsEvent, { ...payload, visibility: "public" })).rejects.toThrow(/preference/u);
+    await expect(configure(settingsEvent, { ...payload, extra: true })).rejects.toThrow(/konfigurace/u);
+  });
+  it("preload validuje nové payloady a potvrzení konfigurace", async () => {
+    const { api, invoke } = loadPreload({ configured: true });
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    const uploadPreferences = { companyId: "865a78f8-b47f-4bb8-8b34-f4ec07f6f516", offerToken: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", visibility: "company" };
+    await api.saveRecordingDecision(id, { recordingName: "Porada", decision: "send", uploadPreferences });
+    expect(invoke).toHaveBeenCalledWith("recording:save-decision", id, { recordingName: "Porada", decision: "send", uploadPreferences });
+    const payload = { id, queueRev: `sha256:${"a".repeat(64)}`, fileRev: `sha256:${"b".repeat(64)}`, ...uploadPreferences };
+    await expect(api.configureRecordingUpload(payload)).resolves.toEqual({ configured: true });
+    expect(() => api.configureRecordingUpload({ ...payload, visibility: "public" })).toThrow();
+    expect(() => api.configureRecordingUpload({ ...payload, companyName: "podvrh" })).toThrow();
+    invoke.mockResolvedValue({ configured: true, token: "tajné" });
+    await expect(api.configureRecordingUpload(payload)).rejects.toThrow(/nepotvrdil/u);
+  });
+});
+
+describe("lokální uložený default firmy", () => {
+  it("vrátí pouze uložený GUID ze scoped platné relace, bez sítě a jen Settings", async () => {
+    const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+    const harness = await loadMain(); await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const get = harness.ipcHandlers.get("upload-companies:default");
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: Date.now() + 600_000 });
+    await expect(get(settingsEvent)).resolves.toEqual({ companyId });
+    expect(fetch).not.toHaveBeenCalled(); expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+    expect(() => get(panelEvent)).toThrow(/nedůvěryhodný/u);
+    expect(() => get({ ...settingsEvent, senderFrame: {} })).toThrow(/nedůvěryhodný/u);
+    await expect(get(settingsEvent, "navíc")).rejects.toThrow();
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: 0 });
+    await expect(get(settingsEvent)).resolves.toEqual({ companyId: null });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("preference IPC až do skutečného storu", () => {
+  const A = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+  const B = "765a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+  function companyResponse() {
+    return { ok: true, status: 200, json: async () => ({ companies: [{ id: A, name: "Firma A" }, { id: B, name: "Firma B" }], defaultCompanyId: B }) };
+  }
+  it("save přes panel a configure přes Settings uloží preference bez změny defaultu a vyžaduje nové revize", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => companyResponse()));
+    const harness = await loadMain();
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: B, accessExpiresAt: Date.now() + 600_000 });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const panel = loadPreload((channel, ...args) => harness.ipcHandlers.get(channel)(event, ...args));
+    const offer = await panel.api.listUploadCompanies();
+    await expect(panel.api.saveRecordingDecision(sessionId, { recordingName: "Porada", decision: "keep",
+      uploadPreferences: { companyId: A, offerToken: offer.offerToken, visibility: "private" } })).resolves.toMatchObject({ ok: true, outcome: "saved_local" });
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const settings = loadPreload((channel, ...args) => harness.ipcHandlers.get(channel)(settingsEvent, ...args));
+    const snapshot = await settings.api.listLocalRecordings();
+    const row = snapshot.items.find((item) => item.id === sessionId);
+    expect(row.uploadPreferences).toEqual({ companyId: A, companyName: "Firma A", visibility: "private" });
+    const settingsOffer = await settings.api.listUploadCompanies();
+    await expect(settings.api.configureRecordingUpload({ id: sessionId, queueRev: row.revision, fileRev: row.fileRevision,
+      companyId: B, offerToken: settingsOffer.offerToken, visibility: "company" })).resolves.toEqual({ configured: true });
+    const refreshed = (await settings.api.listLocalRecordings()).items.find((item) => item.id === sessionId);
+    expect(refreshed.revision).not.toBe(row.revision); expect(refreshed.uploadIntent).toBe("held");
+    expect(refreshed.uploadPreferences).toEqual({ companyId: B, companyName: "Firma B", visibility: "company" });
+    await expect(settings.api.sendRecording({ id: sessionId, queueRev: row.revision, fileRev: row.fileRevision })).rejects.toThrow(/neaktuální/u);
+    await expect(settings.api.getUploadCompanyDefault()).resolves.toEqual({ companyId: B });
+  });
+  it.each(["sender", "identity"])("změna %s během čerstvé nabídky odmítne configure před zápisem", async (change) => {
+    let release; let started;
+    const entered = new Promise((resolve) => { started = resolve; });
+    const gate = new Promise((resolve) => { release = resolve; });
+    const fetch = vi.fn(async () => companyResponse()); vi.stubGlobal("fetch", fetch);
+    const harness = await loadMain();
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: B, accessExpiresAt: Date.now() + 600_000 });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    await harness.ipcHandlers.get("recording:save-decision")(event, sessionId, { recordingName: "Porada", decision: "keep" });
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const row = (await harness.ipcHandlers.get("recordings:list-local")(settingsEvent)).items.find((item) => item.id === sessionId);
+    const offer = await harness.ipcHandlers.get("upload-companies:list")(settingsEvent);
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const before = await readFile(queuePath, "utf8");
+    fetch.mockImplementationOnce(async () => { started(); await gate; return companyResponse(); });
+    const pending = harness.ipcHandlers.get("recordings:configure-upload")(settingsEvent, {
+      id: sessionId, queueRev: row.revision, fileRev: row.fileRevision, companyId: A, offerToken: offer.offerToken, visibility: "company" });
+    const rejected = expect(pending).rejects.toMatchObject({ code: "context_changed" });
+    await entered;
+    if (change === "sender") settingsEvent.senderFrame = {};
+    else await writeStoredAuthSession(harness, { ...storedAuthSession(), accessToken: "jiná-relace", companyTabidooId: B, accessExpiresAt: Date.now() + 600_000 });
+    release(); await rejected;
+    expect(await readFile(queuePath, "utf8")).toBe(before);
+  });
+});

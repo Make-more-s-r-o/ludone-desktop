@@ -21,6 +21,29 @@ const QUEUE_OWNER_FINGERPRINT_DOMAIN = Object.freeze([
   "v1",
 ]);
 
+function recordingUploadLocked(item) {
+  const server = item.server ?? {};
+  return ["odesila", "odeslano"].includes(item.state) || item.legacyDeliveryBarrier === true
+    || [server.companyTabidooId, server.sessionId, server.recordingId, server.legacyRecordingId]
+      .some((value) => value !== null && value !== undefined)
+    || Number(server.delivery?.uploadedBytes) > 0 || server.delivery?.recordingId != null
+    || Object.values(server.tracks ?? {}).some((track) => track.recordingId != null || Number(track.uploadedBytes) > 0)
+    || Object.values(server.uploadedBytes ?? {}).some((bytes) => Number(bytes) > 0);
+}
+
+function validateUploadPreferences(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || !["companyId|visibility", "companyId|companyName|visibility"].includes(Object.keys(value).sort().join("|"))
+    || (value.companyName !== undefined && (typeof value.companyName !== "string" || value.companyName.length < 1
+      || value.companyName.length > 160 || [...value.companyName].some((character) => character.codePointAt(0) <= 31 || character.codePointAt(0) === 127)))
+    || (value.companyId !== null && !COMPANY_ID_PATTERN.test(value.companyId ?? ""))
+    || !["private", "company"].includes(value.visibility)) {
+    throw new TypeError("Preference vyžadují platnou firmu a viditelnost");
+  }
+  return { companyId: value.companyId, visibility: value.visibility,
+    ...(value.companyName !== undefined ? { companyName: value.companyName } : {}) };
+}
+
 function emptyQueue() {
   return { schemaVersion: QUEUE_SCHEMA_VERSION, items: [] };
 }
@@ -71,6 +94,7 @@ function validateQueue(queue) {
     }
     const ownerFingerprint = normalizeQueueOwnerFingerprint(item.ownerFingerprint);
     const server = normalizeStoredServer(item);
+    if (item.uploadPreferences !== undefined) validateUploadPreferences(item.uploadPreferences);
     const uploadIntent = item.uploadIntent === "approved" ? "approved" : "held";
     const legacyDeliveryBarrier = item.legacyDeliveryBarrier === true
       || (item.delivery === undefined && legacyUploadEvidence(item));
@@ -1030,6 +1054,9 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
   }
 
   function enqueueRecording(recording) {
+    if (recording.initialUploadVisibility !== undefined && !["private", "company"].includes(recording.initialUploadVisibility)) {
+      throw new TypeError("Neplatná počáteční viditelnost");
+    }
     return serialize(async () => {
       const queueModule = await loadQueueModule();
       const queue = await ensureLoaded();
@@ -1040,7 +1067,12 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
         enqueued,
         normalizeQueueOwnerFingerprint(recording?.ownerFingerprint),
       );
-      if (result.added) await commit(result.queue);
+      if (result.added) {
+        if (!recordingUploadLocked(result.item) && !recording.manifest?.sessionId) {
+          result.item.uploadPreferences = { companyId: null, visibility: recording.initialUploadVisibility ?? "private" };
+        }
+        await commit(result.queue);
+      }
       return result;
     });
   }
@@ -1124,6 +1156,9 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     if (approve && typeof options.guard !== "function") {
       throw new TypeError("Schválení vyžaduje aktuální guard identity");
     }
+    const preferences = options.uploadPreferences === undefined ? undefined
+      : validateUploadPreferences(options.uploadPreferences);
+    if (preferences && typeof options.guard !== "function") throw new TypeError("Preference vyžadují guard");
     const normalizedTitle = normalizedRecordingTitle(title);
     return serialize(async () => {
       const queue = await ensureLoaded();
@@ -1136,18 +1171,63 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       if (["odesila", "odeslano"].includes(original.state)) {
         throw new Error("o nahrávce už bylo rozhodnuto");
       }
+      if (preferences && (recordingUploadLocked(original) || ownerFingerprint === null
+        || await options.guard() !== true)) throw new Error("Preference nahrávky jsou zamčené nebo identita neplatná");
       const approved = approve && ownerFingerprint !== null && await options.guard() === true;
+      if (preferences && approve && !approved) throw new Error("Identita se před uložením preferencí změnila");
       const item = {
         ...original,
         title: normalizedTitle,
+        ...(preferences ? { uploadPreferences: preferences } : {}),
         uploadIntent: approved ? "approved" : "held",
         ...(approved ? { requiresHumanAction: false } : {}),
       };
       const items = [...queue.items];
       items[index] = item;
       const next = { ...queue, items };
+      if (preferences && approved) {
+        items[index] = { ...item, uploadIntent: "held" };
+        await commit({ ...next, items: [...items] });
+        if (await options.guard() !== true) throw new Error("Identita se před schválením změnila");
+        items[index] = item;
+      }
       await commit(next);
       return { approved, item, queue: next, revision: queueItemRevision(item) };
+    });
+  }
+
+  function configureRecordingUpload({ clientRecordingId, expectedRevision, expectedFileRevision,
+    currentOwnerFingerprint, uploadPreferences, guard }) {
+    const preferences = validateUploadPreferences(uploadPreferences);
+    if (!UUID_PATTERN.test(clientRecordingId ?? "") || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision ?? "")
+      || !QUEUE_ITEM_REVISION_PATTERN.test(expectedFileRevision ?? "") || typeof guard !== "function") {
+      throw new TypeError("Preference vyžadují ID, revize a guard");
+    }
+    requireCurrentOwnerFingerprint(currentOwnerFingerprint);
+    return serialize(async () => {
+      const queueModule = await loadQueueModule();
+      const queue = (await loadQueue(filePath, { includeMigration: true })).queue;
+      currentQueue = queue; loaded = true;
+      const snapshot = await createLocalRecordingsSnapshot({ queue,
+        queueItems: reduceForLocalDashboard(queueModule, queue, currentOwnerFingerprint), recordingsDirectory });
+      const projected = snapshot.items.find((item) => item.id === clientRecordingId);
+      const index = queue.items.findIndex((item) => item.clientRecordingId === clientRecordingId);
+      const original = queue.items[index];
+      const repair = original && queueModule.recordingCompanyRepairAvailable(original);
+      if (!projected || !original || projected.revision !== expectedRevision
+        || projected.fileRevision !== expectedFileRevision || projected.source !== "queue"
+        || ["invalid-manifest", "missing-audio"].includes(projected.localState)
+        || currentOwnerFingerprint === null || original.ownerFingerprint !== currentOwnerFingerprint
+        || (!repair && original.uploadIntent !== "held") || projected.uploadPreferencesLocked === true
+        || (!repair && recordingUploadLocked(original))
+        || await guard() !== true) throw new Error("Preference nelze změnit; načtěte aktuální nahrávku");
+      const items = [...queue.items];
+      const server = { ...original.server };
+      if (repair) delete server.companyTabidooId;
+      items[index] = { ...original, server, uploadPreferences: preferences, uploadIntent: "held",
+        ...(repair ? { state: "ceka", nextAttemptAt: null, requiresHumanAction: false, lastFailureReason: null } : {}) };
+      await commit({ ...queue, items });
+      return { configured: true };
     });
   }
 
@@ -1199,6 +1279,9 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       if (mode === "retry") {
         if (original.lastFailureReason === "company_out_of_scope (HTTP 403)"
           || original.lastFailureReason === "403 company_out_of_scope") {
+          if (original.uploadPreferences?.companyId != null) {
+            throw new Error("Firma této nahrávky byla odmítnuta; změňte její výslovnou volbu před odesláním");
+          }
           if (typeof getCurrentCompany !== "function") {
             throw new Error("Pro opravu firmy chybí aktuální výběr");
           }
@@ -1890,6 +1973,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
 
   return Object.freeze({
     actOnRecording,
+    configureRecordingUpload,
     claimRecording,
     decideRecording,
     deleteRecording,

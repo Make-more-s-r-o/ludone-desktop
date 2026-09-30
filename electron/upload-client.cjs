@@ -525,7 +525,8 @@ function normalizedContext(context, manifest, expectedOrigin, item) {
   if (pinnedCompanyId !== "" && !COMPANY_ID_PATTERN.test(pinnedCompanyId)) {
     throw localError("company_binding_missing", "Uložená firma nahrávky není platná", "paused");
   }
-  const companyTabidooId = pinnedCompanyId || safeString(context.companyTabidooId)
+  const companyTabidooId = pinnedCompanyId || safeString(item?.uploadPreferences?.companyId)
+    || safeString(context.companyTabidooId)
     || safeString(manifest.companyTabidooId);
   if (!COMPANY_ID_PATTERN.test(companyTabidooId)) {
     // 🔴 Dva různé světy, které dřív splývaly do jedné hlášky — a ta hláška lhala.
@@ -560,6 +561,7 @@ function normalizedContext(context, manifest, expectedOrigin, item) {
     companyTabidooId,
     deviceLabel,
     companyWasPinned: pinnedCompanyId !== "",
+    visibility: item?.uploadPreferences?.visibility ?? (manifest.visibility === "company" ? "company" : "private"),
     resetRejectedCompany: typeof context.resetRejectedCompany === "function"
       ? context.resetRejectedCompany
       : async () => false,
@@ -815,7 +817,7 @@ function initPayload(recording, track, context, sessionId) {
     sha256: track.sha256,
     startedAt,
     title: titleForTrack({ ...recording.manifest, title: recording.title }, track.trackKind),
-    visibility: recording.manifest.visibility === "company" ? "company" : "private",
+    visibility: context.visibility,
   };
 }
 

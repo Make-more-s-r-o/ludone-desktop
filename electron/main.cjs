@@ -2472,10 +2472,10 @@ function uploadCompanyRequester(event) {
   return `settings:${event.sender.id}`;
 }
 
-function uploadCompanyGuard(event, generation, selectionEpoch) {
+function uploadCompanyGuard(event, generation, selectionEpoch, roles = ["settings"]) {
   return () => {
     try {
-      requireTrustedSender(event, ["settings"]);
+      requireTrustedSender(event, roles);
       return generation === authSessionGeneration
         && selectionEpoch === uploadCompanySelectionEpoch && authAttemptsInFlight === 0
         && authLogoutsInFlight === 0 && !authOriginChangeInFlight
@@ -2712,10 +2712,30 @@ function logRecordingExportFailure(error) {
   );
 }
 
+function validateRecordingUploadPreferences(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).sort().join("|") !== "companyId|offerToken|visibility"
+    || !COMPANY_ID_PATTERN.test(value.companyId ?? "")
+    || !OFFER_TOKEN_PATTERN.test(value.offerToken ?? "")
+    || !["private", "company"].includes(value.visibility)) throw new TypeError("Neplatné preference uploadu");
+  return value;
+}
+
+async function resolveRecordingUploadPreferences(event, preferences, roles, commit) {
+  validateRecordingUploadPreferences(preferences);
+  return getUploadCompanySelectionController().resolve({
+    requesterKey: uploadCompanyRequester(event), offerToken: preferences.offerToken,
+    companyId: preferences.companyId,
+    guard: uploadCompanyGuard(event, authSessionGeneration, uploadCompanySelectionEpoch, roles),
+    commit: ({ context, companyId, companyName, guard }) => commit({ context,
+      uploadPreferences: { companyId, companyName, visibility: preferences.visibility }, guard }),
+  });
+}
+
 /**
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {string} clientRecordingId
- * @param {{ recordingName?: string, decision: "send" | "keep" }} options
+ * @param {{ recordingName?: string, decision: "send" | "keep", uploadPreferences?: any }} options
  */
 async function exportCompletedRecording(event, clientRecordingId, options) {
   const exportStage = ownedRecordingExportStage(event, clientRecordingId);
@@ -2777,15 +2797,17 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
       stagePath: delivery.filePath,
       stereoTiming: exportStage.timing,
     });
-    const decided = await store.decideRecording(
+    const decide = async (preferences = undefined, preferenceGuard = undefined) => store.decideRecording(
       clientRecordingId,
       exportStage.ownerFingerprint,
       recordingName,
       decision === "send",
       {
+        uploadPreferences: preferences,
         guard: async () => {
           try {
             requireTrustedSender(event, ["panel"]);
+            if (preferenceGuard && await preferenceGuard() !== true) return false;
             return exportStage.ownerFingerprint !== null
               && await readUsableQueueOwnerFingerprint() === exportStage.ownerFingerprint;
           } catch {
@@ -2794,6 +2816,11 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
         },
       },
     );
+    const decided = options.uploadPreferences ? await resolveRecordingUploadPreferences(
+      event, options.uploadPreferences, ["panel"], async ({ context, uploadPreferences, guard }) => {
+        if (context.ownerFingerprint !== exportStage.ownerFingerprint) throw new Error("Nahrávka patří jinému účtu");
+        return decide(uploadPreferences, guard);
+      }) : await decide();
     recordingExportStages.delete(clientRecordingId);
     armDeferredQuitTimeout(deferredQuitRequest);
     void maybeCompleteDeferredQuit();
@@ -2863,6 +2890,7 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
       const store = await getOutboundQueueStore();
       const exportStage = recordingExportStages.get(sessionId);
       const queued = await store.enqueueRecording({
+        initialUploadVisibility: "company",
         manifest: recordingSession.manifest,
         manifestPath: recordingSession.manifestPath,
         ownerFingerprint: recordingSession.ownerFingerprint,
@@ -2949,9 +2977,10 @@ handleValidated("recording:save-decision", ["panel"], (
 ) => {
   if (extraPayload.length > 0 || !options || typeof options !== "object"
     || Array.isArray(options)
-    || Object.keys(options).sort().join("|") !== "decision|recordingName") {
+    || !["decision|recordingName", "decision|recordingName|uploadPreferences"].includes(Object.keys(options).sort().join("|"))) {
     throw new TypeError("Save decision přijímá právě GUID, název a rozhodnutí");
   }
+  if (options.uploadPreferences !== undefined) validateRecordingUploadPreferences(options.uploadPreferences);
   return exportCompletedRecording(event, clientRecordingId, options);
 });
 handleValidated("recording:export", ["panel"], async (event, clientRecordingId, options) => {
@@ -2971,6 +3000,22 @@ handleValidated("queue:list", ["panel", "settings"], async () => {
   );
   updateOutboundQueueTrayFact(items);
   return items;
+});
+handleValidated("recordings:configure-upload", ["settings"], async (event, payload, ...extraPayload) => {
+  if (extraPayload.length || !payload || typeof payload !== "object" || Array.isArray(payload)
+    || Object.keys(payload).sort().join("|") !== "companyId|fileRev|id|offerToken|queueRev|visibility"
+    || !QUEUE_ITEM_ID_PATTERN.test(payload.id ?? "")
+    || !QUEUE_ITEM_REVISION_PATTERN.test(payload.queueRev ?? "")
+    || !QUEUE_ITEM_REVISION_PATTERN.test(payload.fileRev ?? "")) throw new TypeError("Neplatná konfigurace nahrávky");
+  const preferences = { companyId: payload.companyId, offerToken: payload.offerToken, visibility: payload.visibility };
+  return resolveRecordingUploadPreferences(event, preferences, ["settings"], async ({ context, uploadPreferences, guard }) => {
+    const store = await getOutboundQueueStore();
+    return store.configureRecordingUpload({ clientRecordingId: payload.id, expectedRevision: payload.queueRev,
+      expectedFileRevision: payload.fileRev, currentOwnerFingerprint: context.ownerFingerprint, uploadPreferences,
+      guard: async () => !recordingSessions.has(payload.id) && !recordingCompletionsInFlight.has(payload.id)
+        && await guard() === true,
+    });
+  });
 });
 handleValidated("recordings:list-local", ["settings"], async () => {
   const currentOwnerFingerprint = await readCurrentValidQueueOwnerFingerprint();
@@ -4657,13 +4702,29 @@ handleValidated("auth:identity", ["settings"], () => {
   return readStoredAuthIdentity();
 });
 
-handleValidated("upload-companies:list", ["settings"], (event, ...extraPayload) => {
+handleValidated("upload-companies:default", ["settings"], async (event, ...extraPayload) => {
+  requireNoPayload("upload-companies:default", extraPayload);
+  const generation = authSessionGeneration;
+  const selectionEpoch = uploadCompanySelectionEpoch;
+  const guard = uploadCompanyGuard(event, generation, selectionEpoch);
+  if (!guard()) return { companyId: null };
+  const storedSession = await readStoredAuthSession();
+  requireTrustedSender(event, ["settings"]);
+  if (!guard() || storedAuthSessionState(storedSession) !== "valid"
+    || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE) {
+    return { companyId: null };
+  }
+  return { companyId: COMPANY_ID_PATTERN.test(storedSession.companyTabidooId ?? "")
+    ? storedSession.companyTabidooId : null };
+});
+
+handleValidated("upload-companies:list", ["settings", "panel"], (event, ...extraPayload) => {
   requireNoPayload("upload-companies:list", extraPayload);
   const generation = authSessionGeneration;
   const selectionEpoch = uploadCompanySelectionEpoch;
   return getUploadCompanySelectionController().load({
     requesterKey: uploadCompanyRequester(event),
-    guard: uploadCompanyGuard(event, generation, selectionEpoch),
+    guard: uploadCompanyGuard(event, generation, selectionEpoch, ["settings", "panel"]),
   });
 });
 

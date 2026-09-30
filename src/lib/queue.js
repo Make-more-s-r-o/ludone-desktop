@@ -457,6 +457,14 @@ export function reduceQueueForRenderer(queue, currentOwnerFingerprint = null) {
     ...((item.kind ?? QUEUE_ITEM_KINDS.RECORDING) === QUEUE_ITEM_KINDS.RECORDING
       ? { title: safeNullableString(item.title) }
       : {}),
+    ...((item.kind ?? QUEUE_ITEM_KINDS.RECORDING) === QUEUE_ITEM_KINDS.RECORDING && (item.uploadPreferences !== undefined
+      || item.legacyDeliveryBarrier === true || item.server?.companyTabidooId !== undefined
+      || hasInitializedServerProgress(normalizedStoredServer(item))) ? {
+      uploadPreferences: item.uploadPreferences ? { companyId: item.uploadPreferences.companyId, visibility: item.uploadPreferences.visibility,
+        ...(typeof item.uploadPreferences.companyName === "string" ? { companyName: item.uploadPreferences.companyName } : {}) } : null,
+      uploadPreferencesLocked: !recordingCompanyRepairAvailable(item) && (item.legacyDeliveryBarrier === true || [QUEUE_STATES.SENDING, QUEUE_STATES.SENT].includes(item.state)
+        || item.server?.companyTabidooId !== undefined || hasInitializedServerProgress(normalizedStoredServer(item))),
+    } : {}),
     attempts: item.attempts,
     nextAttemptAt: item.nextAttemptAt,
     lastFailureReason: item.lastFailureReason,
@@ -528,6 +536,7 @@ export function claimRecording(queue, clientRecordingId, ownerFingerprint) {
       || originalItem.attempts > 0
     ) ? { legacyDeliveryBarrier: true } : {}),
     attempts: 0,
+    ...(originalItem.uploadPreferences !== undefined ? { uploadPreferences: { companyId: null, visibility: "private" } } : {}),
     lastFailureReason: CLAIMED_RECORDING_HOLD_REASON,
     nextAttemptAt: null,
     ownerFingerprint,
@@ -774,6 +783,13 @@ export function retryFailedItem(queue, clientRecordingId) {
   return { item, queue: replaceItem(queue, index, item) };
 }
 
+/** Po 403 lze opravit pouze lokální pin, nikoli existující serverovou vazbu. */
+export function recordingCompanyRepairAvailable(item) {
+  return item.state === QUEUE_STATES.FAILED && item.legacyDeliveryBarrier !== true
+    && ["company_out_of_scope (HTTP 403)", "403 company_out_of_scope"].includes(item.lastFailureReason)
+    && !hasInitializedServerProgress(normalizedStoredServer(item));
+}
+
 /** Výslovná oprava pouze firmy odmítnuté serverem, ještě před vznikem serverových ID. */
 export function rebindCompanyOutOfScopeItem(queue, clientRecordingId, companyTabidooId) {
   requireQueue(queue);
@@ -789,6 +805,7 @@ export function rebindCompanyOutOfScopeItem(queue, clientRecordingId, companyTab
   if (originalItem.state !== QUEUE_STATES.FAILED || !rejectedCompany) {
     return { item: originalItem, queue };
   }
+  if (originalItem.uploadPreferences?.companyId != null) return { item: originalItem, queue };
   const server = normalizedStoredServer(originalItem);
   if (server.companyTabidooId === companyTabidooId) return { item: originalItem, queue };
   if (hasInitializedServerProgress(server)) return { item: originalItem, queue };

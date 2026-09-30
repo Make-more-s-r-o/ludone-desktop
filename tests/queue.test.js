@@ -3700,3 +3700,154 @@ describe("trusted detail pro serverové ověření", () => {
     }
   });
 });
+
+describe("preference jedné nahrávky na disku", () => {
+  const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+  const preferences = { companyId, companyName: "Make more", visibility: "company" };
+  async function fixture() {
+    const directory = await mkdtemp(path.join(tmpdir(), "ludone-upload-preference-"));
+    const recordingsDirectory = path.join(directory, "nahravky");
+    await fs.promises.mkdir(recordingsDirectory);
+    const value = ownedRecording();
+    value.manifestPath = path.join(recordingsDirectory, "session.manifest.json");
+    for (const [source, track] of Object.entries(value.manifest.tracks)) {
+      value.trackPaths[source] = path.join(recordingsDirectory, track.fileName);
+      await fs.promises.writeFile(value.trackPaths[source], "zvuk");
+    }
+    await fs.promises.writeFile(value.manifestPath, JSON.stringify(value.manifest));
+    const filePath = path.join(directory, "queue", "outgoing.json");
+    const makeStore = () => createOutboundQueueStore({ filePath,
+      queueModulePromise: import("../src/lib/queue.js"), send: vi.fn() });
+    const store = makeStore(); await store.enqueueRecording(value);
+    return { directory, filePath, store, makeStore, value };
+  }
+  it("persistuje private default a explicitní preference při restartu bez enqueue navíc", async () => {
+    const h = await fixture();
+    try {
+      expect((await loadQueue(h.filePath)).items[0].uploadPreferences).toEqual({ companyId: null, visibility: "private" });
+      await h.store.decideRecording(h.value.manifest.clientRecordingId, CURRENT_OWNER, "Porada", true,
+        { uploadPreferences: preferences, guard: async () => true });
+      const restarted = h.makeStore();
+      expect((await restarted.list(CURRENT_OWNER))[0].uploadPreferences).toEqual(preferences);
+      const saved = await loadQueue(h.filePath);
+      expect(saved.items).toHaveLength(1); expect(saved.items[0].uploadIntent).toBe("approved");
+    } finally { await rm(h.directory, { recursive: true, force: true }); }
+  });
+  it("nová výslovná company inicializace nezmění starou položku při opakovaném enqueue", async () => {
+    const h = await fixture();
+    try {
+      await h.store.enqueueRecording({ ...h.value, initialUploadVisibility: "company" });
+      expect((await loadQueue(h.filePath)).items[0].uploadPreferences.visibility).toBe("private");
+      const saved = await loadQueue(h.filePath); saved.items = [];
+      await saveQueueAtomically(h.filePath, saved);
+      const restarted = h.makeStore();
+      await restarted.enqueueRecording({ ...h.value, initialUploadVisibility: "company" });
+      expect((await loadQueue(h.filePath)).items[0].uploadPreferences.visibility).toBe("company");
+    } finally { await rm(h.directory, { recursive: true, force: true }); }
+  });
+  it("preference odmítne před prvním zápisem při guard true/false, po held zápisu už pouze zachová held", async () => {
+    const h = await fixture();
+    try {
+      const before = await fs.promises.readFile(h.filePath, "utf8");
+      await expect(h.store.decideRecording(h.value.manifest.clientRecordingId, CURRENT_OWNER, "Porada", true,
+        { uploadPreferences: preferences, guard: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false) })).rejects.toThrow(/Identita/u);
+      expect(await fs.promises.readFile(h.filePath, "utf8")).toBe(before);
+      await expect(h.store.decideRecording(h.value.manifest.clientRecordingId, CURRENT_OWNER, "Porada", true,
+        { uploadPreferences: preferences, guard: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(true).mockResolvedValueOnce(false) })).rejects.toThrow(/Identita/u);
+      expect((await loadQueue(h.filePath)).items[0]).toMatchObject({ uploadPreferences: preferences, uploadIntent: "held" });
+    } finally { await rm(h.directory, { recursive: true, force: true }); }
+  });
+  it("403 retry nikdy nenahradí explicitní firmu nahrávky account defaultem", async () => {
+    const h = await fixture();
+    try {
+      const base = h.value.manifestPath.slice(0, -".manifest.json".length);
+      const sidecarPath = `${h.value.manifestPath}.meeting-audio-v1.json`;
+      await fs.promises.writeFile(sidecarPath, "{}");
+      await h.store.setRecordingDelivery(h.value.manifest.clientRecordingId, {
+        clientRecordingId: h.value.manifest.clientRecordingId, state: "pending", mime: "audio/webm", channels: 2,
+        channelMap: { left: "microphone", right: "system" }, sidecarPath, filePath: `${base}-stereo.webm`, masterPath: null,
+      });
+      await h.store.decideRecording(h.value.manifest.clientRecordingId, CURRENT_OWNER, "Porada", true,
+        { uploadPreferences: preferences, guard: async () => true });
+      const firstAttempt = vi.fn(async (item, reportProgress) => {
+        expect(item.uploadPreferences).toEqual(preferences);
+        await reportProgress({ companyTabidooId: companyId });
+        throw Object.assign(new Error("company_out_of_scope (HTTP 403)"), { failureClass: FAILURE_CLASSES.PERMANENT });
+      });
+      const failedStore = createOutboundQueueStore({ filePath: h.filePath, queueModulePromise: import("../src/lib/queue.js"), send: firstAttempt });
+      await failedStore.pump(killswitches(ENABLED_SETTING), CURRENT_OWNER);
+      expect(firstAttempt).toHaveBeenCalledOnce();
+      const failed = await loadQueue(h.filePath);
+      expect(failed.items[0]).toMatchObject({ state: "selhalo", server: { companyTabidooId: companyId } });
+      const send = vi.fn(); const getCurrentCompany = vi.fn(async () => "765a78f8-b47f-4bb8-8b34-f4ec07f6f516");
+      const store = createOutboundQueueStore({ filePath: h.filePath, queueModulePromise: import("../src/lib/queue.js"), send });
+      const row = (await store.listLocalRecordings(CURRENT_OWNER)).items[0];
+      await expect(store.actOnRecording({ clientRecordingId: row.id, expectedRevision: row.revision,
+        expectedFileRevision: row.fileRevision, currentOwnerFingerprint: CURRENT_OWNER, mode: "retry",
+        killswitches: killswitches(ENABLED_SETTING), guard: async () => true, getCurrentCompany })).rejects.toThrow(/výslovnou volbu/u);
+      expect(send).not.toHaveBeenCalled(); expect(getCurrentCompany).not.toHaveBeenCalled();
+      expect((await loadQueue(h.filePath)).items[0]).toEqual(failed.items[0]);
+      expect((await store.listLocalRecordings(CURRENT_OWNER)).items[0].uploadPreferences).toEqual(preferences);
+      expect(rebindCompanyOutOfScopeItem(failed, row.id, await getCurrentCompany()).item).toBe(failed.items[0]);
+      const repairedPreferences = { companyId: "665a78f8-b47f-4bb8-8b34-f4ec07f6f516", companyName: "Firma C", visibility: "private" };
+      expect(row.uploadPreferencesLocked).toBe(false);
+      await store.configureRecordingUpload({ clientRecordingId: row.id, expectedRevision: row.revision,
+        expectedFileRevision: row.fileRevision, currentOwnerFingerprint: CURRENT_OWNER,
+        uploadPreferences: repairedPreferences, guard: async () => true });
+      const repaired = (await loadQueue(h.filePath)).items[0];
+      expect(repaired.server.companyTabidooId).toBeUndefined(); expect(repaired.uploadIntent).toBe("held");
+      expect(repaired.uploadPreferences).toEqual(repairedPreferences); expect(send).not.toHaveBeenCalled();
+      const refreshed = (await store.listLocalRecordings(CURRENT_OWNER)).items[0];
+      expect(refreshed.uploadPreferences).toEqual(repairedPreferences); expect(refreshed.revision).not.toBe(row.revision);
+      await expect(store.actOnRecording({ clientRecordingId: row.id, expectedRevision: row.revision,
+        expectedFileRevision: row.fileRevision, currentOwnerFingerprint: CURRENT_OWNER, mode: "send", getCurrentCompany: undefined,
+        killswitches: killswitches(ENABLED_SETTING), guard: async () => true })).rejects.toThrow(/neaktuální/u);
+      await store.actOnRecording({ clientRecordingId: refreshed.id, expectedRevision: refreshed.revision,
+        expectedFileRevision: refreshed.fileRevision, currentOwnerFingerprint: CURRENT_OWNER, mode: "send", getCurrentCompany: undefined,
+        killswitches: killswitches(ENABLED_SETTING), guard: async () => true });
+      expect(send).toHaveBeenCalledOnce(); expect(send.mock.calls[0][0].uploadPreferences).toEqual(repairedPreferences);
+      const initialized = await loadQueue(h.filePath);
+      initialized.items[0] = { ...failed.items[0], server: { ...failed.items[0].server, sessionId: SERVER_SESSION_ID } };
+      await saveQueueAtomically(h.filePath, initialized);
+      const locked = (await store.listLocalRecordings(CURRENT_OWNER)).items[0];
+      expect(locked.uploadPreferencesLocked).toBe(true);
+      await expect(store.configureRecordingUpload({ clientRecordingId: locked.id, expectedRevision: locked.revision,
+        expectedFileRevision: locked.fileRevision, currentOwnerFingerprint: CURRENT_OWNER,
+        uploadPreferences: repairedPreferences, guard: async () => true })).rejects.toThrow();
+
+    } finally { await rm(h.directory, { recursive: true, force: true }); }
+  });
+  it("detail kontroluje queue/file CAS, vlastníka i guard a zůstane held", async () => {
+    const h = await fixture();
+    try {
+      const snapshot = await h.store.listLocalRecordings(CURRENT_OWNER);
+      const item = snapshot.items[0];
+      const input = { clientRecordingId: item.id, expectedRevision: item.revision,
+        expectedFileRevision: item.fileRevision, currentOwnerFingerprint: CURRENT_OWNER,
+        uploadPreferences: preferences, guard: async () => true };
+      await expect(h.store.configureRecordingUpload({ ...input, expectedRevision: `sha256:${"0".repeat(64)}` })).rejects.toThrow();
+      await expect(h.store.configureRecordingUpload({ ...input, expectedFileRevision: `sha256:${"0".repeat(64)}` })).rejects.toThrow();
+      await expect(h.store.configureRecordingUpload({ ...input, currentOwnerFingerprint: `sha256:${"a".repeat(64)}` })).rejects.toThrow();
+      await expect(h.store.configureRecordingUpload({ ...input, guard: async () => false })).rejects.toThrow();
+      await expect(h.store.configureRecordingUpload(input)).resolves.toEqual({ configured: true });
+      expect((await loadQueue(h.filePath)).items[0]).toMatchObject({ uploadPreferences: preferences, uploadIntent: "held" });
+      await expect(h.store.configureRecordingUpload(input)).rejects.toThrow();
+    } finally { await rm(h.directory, { recursive: true, force: true }); }
+  });
+  it.each([
+    { companyTabidooId: companyId }, { sessionId: SERVER_SESSION_ID }, { legacyRecordingId: SERVER_MICROPHONE_ID },
+    { delivery: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 0 } },
+    { delivery: { recordingId: null, uploadedBytes: 1 } },
+    { tracks: { microphone: { recordingId: SERVER_MICROPHONE_ID, uploadedBytes: 0 } } },
+    { tracks: { microphone: { recordingId: null, uploadedBytes: 1 } } },
+  ])("odmítne změnu při server progress %j", async (server) => {
+    const h = await fixture();
+    try {
+      const saved = await loadQueue(h.filePath); saved.items[0].server = { ...saved.items[0].server, ...server };
+      await saveQueueAtomically(h.filePath, saved);
+      const restarted = h.makeStore();
+      await expect(restarted.decideRecording(h.value.manifest.clientRecordingId, CURRENT_OWNER, "Porada", true,
+        { uploadPreferences: preferences, guard: async () => true })).rejects.toThrow(/zamčené/u);
+    } finally { await rm(h.directory, { recursive: true, force: true }); }
+  });
+});

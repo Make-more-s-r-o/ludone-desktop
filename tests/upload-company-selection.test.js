@@ -136,3 +136,27 @@ describe("controller výběru upload firmy", () => {
     expect(h.commitChoice).not.toHaveBeenCalled();
   });
 });
+
+describe("per-recording firma bez změny defaultu", () => {
+  it("resolve vrátí čerstvý název a guard bez změny account defaultu", async () => {
+    const h = harness();
+    const loaded = await h.controller.load({ requesterKey: "panel", guard: () => true });
+    const commit = vi.fn(async ({ companyId, companyName, guard }) => {
+      expect(companyId).toBe(A); expect(companyName).toBe("Alfa");
+      expect(await guard()).toBe(true); return { configured: true };
+    });
+    await expect(h.controller.resolve({ requesterKey: "panel", offerToken: loaded.offerToken,
+      companyId: A, guard: () => true, commit })).resolves.toEqual({ configured: true });
+    expect(h.commitChoice).not.toHaveBeenCalled();
+    expect(h.fetchOffer).toHaveBeenCalledTimes(2);
+  });
+  it.each(["issuer", "resource", "ownerFingerprint", "generation"])("resolve odmítne změnu %s", async (field) => {
+    const h = harness();
+    const loaded = await h.controller.load({ requesterKey: "panel", guard: () => true });
+    h.setContext(context({ [field]: field === "generation" ? 8 : field === "ownerFingerprint" ? `sha256:${"b".repeat(64)}` : "https://app.ludone.cz" }));
+    const commit = vi.fn();
+    await expect(h.controller.resolve({ requesterKey: "panel", offerToken: loaded.offerToken,
+      companyId: A, guard: () => true, commit })).rejects.toMatchObject({ code: "context_changed" });
+    expect(commit).not.toHaveBeenCalled();
+  });
+});
