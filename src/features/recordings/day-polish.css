@@ -1,16 +1,16 @@
 /* Dotažení historie je omezené na plochu Můj den. */
 .recordings-dashboard .recordings-day { list-style: none; min-width: 0; }
 .recordings-dashboard .recordings-day__heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin: 20px 0 12px; font-size: 16px; }
-.recordings-dashboard .recordings-day__heading span { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+.recordings-dashboard .recordings-day__heading span { color: var(--panel-subtle); font-size: 11px; font-weight: 400; }
 .recordings-dashboard .recordings-day__items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.recordings-dashboard .recordings-dashboard__today-empty { margin: 10px 0; color: var(--text-muted); font-size: 12px; }
+.recordings-dashboard .recordings-dashboard__today-empty { margin: 10px 0; color: var(--panel-subtle); font-size: 12px; }
 .recordings-dashboard .recording-queue-card, .recordings-dashboard .recording-queue-card__heading, .recordings-dashboard .recording-queue-card__detail { min-width: 0; }
 .recordings-dashboard .recording-queue-card__heading strong, .recordings-dashboard .recording-queue-card__detail-heading h1, .recordings-dashboard dd, .recordings-dashboard .recording-queue-card__issue { overflow-wrap: anywhere; }
 .recordings-dashboard .recording-queue-card__actions { flex-wrap: wrap; }
 .recordings-dashboard .recording-queue-card__actions button { max-width: 100%; white-space: normal; }
-.recordings-dashboard .recording-queue-card__technical { margin-top: 16px; color: var(--text-muted); font-size: 11px; }
+.recordings-dashboard .recording-queue-card__technical { margin-top: 16px; color: var(--panel-subtle); font-size: 11px; }
 .recordings-dashboard .recording-queue-card__context-card { padding: 10px; opacity: .8; }
-.recordings-dashboard summary:focus-visible, .recordings-dashboard button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.recordings-dashboard summary:focus-visible, .recordings-dashboard button:focus-visible { outline: 2px solid var(--panel-accent); outline-offset: 3px; }
 .recordings-dashboard--detail .recordings-day__heading { display: none; }
 @media (max-width: 440px) {
   .recordings-dashboard .recordings-dashboard__toolbar { flex-wrap: wrap; }
@@ -23,4 +23,4 @@
 .settings-window[data-page="day"] .recordings-dashboard__list::before { display: none; }
 .recordings-dashboard--detail .recordings-day:not(:has([data-detail-active="true"])) { display: none; }
 .recordings-dashboard--detail .recordings-dashboard__today-empty { display: none; }
-.recordings-dashboard .recording-queue-card__delivery--odeslano { color: var(--text-muted); background: var(--surface); }
+.recordings-dashboard .recording-queue-card__delivery--odeslano { color: var(--panel-subtle); background: var(--panel-raised); }

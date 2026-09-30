@@ -7,7 +7,7 @@
     "serverChanges": 0,
     "gitZapisu": 0
   },
-  "doslovnyVystupTestu": "\n> ludone-desktop-prototype@0.1.6 typecheck\n> tsc --noEmit -p jsconfig.json\n\n\nEXIT_CODE=0\n\n> ludone-desktop-prototype@0.1.6 test:unit\n> vitest run tests/recordings-dashboard.test.js\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/polish-day\n\n ✓ tests/recordings-dashboard.test.js (25 tests) 526ms\n\n Test Files  1 passed (1)\n      Tests  25 passed (25)\n   Start at  11:00:28\n   Duration  1.22s (transform 53ms, setup 7ms, collect 499ms, tests 526ms, environment 0ms, prepare 34ms)\n\n\nEXIT_CODE=0\n",
+  "doslovnyVystupTestu": "\n> ludone-desktop-prototype@0.1.6 typecheck\n> tsc --noEmit -p jsconfig.json\n\n\nEXIT_CODE=0\n\n> ludone-desktop-prototype@0.1.6 test:unit\n> vitest run tests/recordings-dashboard.test.js\n\n\n RUN  v3.2.7 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/polish-day\n\n ✓ tests/recordings-dashboard.test.js (25 tests) 526ms\n\n Test Files  1 passed (1)\n      Tests  25 passed (25)\n   Start at  11:00:28\n   Duration  1.22s (transform 53ms, setup 7ms, collect 499ms, tests 526ms, environment 0ms, prepare 34ms)\n\n\nEXIT_CODE=0\n\nPASS day-polish.css používá jen definované desktopové tokeny: --panel-accent, --panel-raised, --panel-subtle\nEXIT_CODE=0\n",
   "sabotaze": [
     {
       "zmena": "Dočasně vráceno bezpodmínečné setVerificationById({}) na počátku load().",
@@ -48,6 +48,7 @@
     "Cílová firma není ve stávajícím autoritativním snapshotu vystavená, detail ji neodvozuje z aktuálního výběru firmy.",
     "Nový src test byl při prvním ověření ignorovaný existujícím include vitestu; přesunut do allowlistového tests/recordings-dashboard.test.js, finální skutečný počet 25 testů.",
     "Úvodní test konstrukce nesprávně filtroval lokální den přes UTC substring; test opraven na místní Date.getDate, produkční seskupení bylo správné. Úvodní typecheck našel neúplnou syntetickou položku bez uploadIntent; doplněno.",
-    "npx eslint dotčených JSX a testu skončil bez výstupu, EXIT_CODE=0. Žádná instalace, GUI, subdelegace či git zápis."
+    "npx eslint dotčených JSX a testu skončil bez výstupu, EXIT_CODE=0. Žádná instalace, GUI, subdelegace či git zápis.",
+    "Review oprava: text-muted → panel-subtle, surface → panel-raised, accent → panel-accent. Změněné pouze day-polish.css a tento report; funkční diff beze změny."
   ]
 }
