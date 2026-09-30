@@ -1,0 +1,173 @@
+{
+  "summary": "D10: přesná geometrie Nahrávání první, kompaktní LuTrack; skutečné řádky uvnitř denních skupin; dosažitelné scrollované Nastavení.",
+  "premisaPlatila": true,
+  "premisaPoznamka": "Archivovaný původní FAIL vyžadoval LuTrack y123–442 před nahráváním y442/h97. Dan potvrdil galerii checkpointu 0dd87da (D10).",
+  "kontrolniNula": {
+    "souboruMimoAllowlist": 0,
+    "serverChanges": 0,
+    "gitZapisu": 0
+  },
+  "authority": [
+    "docs/changes/desktop-astra-parity-0-1-6/artifacts/design/product-polish-approved.md",
+    "docs/changes/desktop-astra-parity-0-1-6/decisions.md#d10",
+    "dukazy/produktove-dotazeni-2026-09-30/index.html"
+  ],
+  "predicateChanges": [
+    {
+      "predicate": "home geometry",
+      "before": "hero123–442, record442/h97, hero→record→preview",
+      "after": "record123/h212→preview/h147→future/h43→footer(bottom692); tři původní disabled ovladače navíc neviditelné; původní brand/font/truth/source checks",
+      "authority": "D10 potvrzená galerie idle a product-polish-approved.md"
+    },
+    {
+      "predicate": "offline future",
+      "before": "min50, note pod statusem",
+      "after": "exact53, stejná pravdivá visible note inline bez překryvu; všechny 3 disabled neviditelné; Stop / 2 zdroje / pořadí zachovány",
+      "authority": "D10 immutable zdroje checkpointu 0dd87da: panel-polish.css future flex a astra-parity.css:1877 note; active E2E měření53 samo není nová baseline"
+    },
+    {
+      "predicate": "day selectors",
+      "before": ".list > li",
+      "after": ".list li[data-recording-id] včetně filtrů; renderedRows===realRows===2 zachováno",
+      "authority": "D10 kalendářní skupiny"
+    },
+    {
+      "predicate": "settings visibility",
+      "before": "všechny skupiny současně v jednom viewportu",
+      "after": "dokumentové pořadí zachováno; každá skupina / ovladač scrollIntoView + rect + elementFromPoint nad pevnou patičkou",
+      "authority": "D10 čitelný scroll a product-polish-approved.md"
+    },
+    {
+      "predicate": "day geometry",
+      "before": "řádky h62–92 / první y285–350 bez denní hlavičky",
+      "after": "toolbar240±2; skupina323±2/h19±1; první řádek364±2/h98±2; všechny skutečné časové buňky42×24 a stavy ve vlastním prostoru, žádný clipping; kalendářní skupiny přesně odpovídají lokálním datumům actual.items.",
+      "authority": "D10 galerie day-groups-and-filters-640.png a immutable checkpoint CSS day-polish.css:3 + astra-parity.css:2034–2060,2629–2644; měření původní stejné dvoupoložkové fixture potvrzuje aplikaci kontraktu, nevytváří automatickou baseline."
+    },
+    {
+      "predicate": "detail sound value selector",
+      "before": "storageValues[1] čte nyní Cílová firma",
+      "after": "sémantické dt Zvuk → následující dd; původní Stereo WebM/Opus a zákaz MP3 zachovány",
+      "authority": "Checkpoint UI již obsahuje Cílová firma před Zvuk; žádná funkční podmínka se nemění."
+    },
+    {
+      "predicate": "settings controls",
+      "before": "všechna původní obsahová a pravdivostní pravidla",
+      "after": "zachována + scroll/hit-test všech skupin a ovladačů; zvukový vstup i update check zahrnuty. Odhlášená fixture má přesně hidden+disabled logout, jeho dostupnost se nepředstírá. Patička přesně y691–735/h44.",
+      "authority": "D10 čitelný scroll, původní odhlášená fixture a auth scope. Nejde o generickou výjimku pro skryté ovladače."
+    }
+  ],
+  "doslovnyVystupTestu": [
+    {
+      "command": "npm run test:design:e2e",
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 63 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-BQNxNARj.css                        130.42 kB │ gzip:  19.68 kB\ndist/assets/index-B1MglOMB.js                         344.37 kB │ gzip: 102.82 kB\n✓ built in 562ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nFAIL  acceptance · Teď\nFAIL  acceptance · Záznam a uložení\nFAIL  acceptance · Můj den\nFAIL  acceptance · Detail\nFAIL  acceptance · Nastavení\nFAIL  acceptance · Aktualizace\nFAIL  acceptance · Offline a obnova\nFAIL  acceptance · Onboarding\nFAIL  acceptance · Světlé a tmavé téma\nFAIL  acceptance · LuTrack zůstává vypnutý\nFAIL  acceptance · Astra geometrie a pořadí\nFAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu\n⛔ Astra design E2E: .runtime/design-e2e/2026-09-30T13-23-00-192Z\n\nEXIT_CODE=1\n",
+      "exitCode": 1
+    },
+    {
+      "command": "npm run test:design:e2e",
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 63 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-BQNxNARj.css                        130.42 kB │ gzip:  19.68 kB\ndist/assets/index-De2mievv.js                         344.37 kB │ gzip: 102.82 kB\n✓ built in 502ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  acceptance · Teď\nFAIL  acceptance · Záznam a uložení\nFAIL  acceptance · Můj den\nFAIL  acceptance · Detail\nFAIL  acceptance · Nastavení\nFAIL  acceptance · Aktualizace\nFAIL  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nFAIL  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nFAIL  acceptance · Astra geometrie a pořadí\nFAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu\n⛔ Astra design E2E: .runtime/design-e2e/2026-09-30T13-23-24-702Z\n\nEXIT_CODE=1\n",
+      "exitCode": 1
+    },
+    {
+      "command": "npm run test:design:e2e",
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 63 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-BQNxNARj.css                        130.42 kB │ gzip:  19.68 kB\ndist/assets/index-B5a4HjwP.js                         344.37 kB │ gzip: 102.82 kB\n✓ built in 505ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  offline-recording-continues-locally\nPASS  astra-layout-offline\nPASS  system-audio-loss-and-recovery\nPASS  recording-stop-offers-explicit-safe-choice\nPASS  saved-recording-astra-composition\nPASS  acceptance · Teď\nFAIL  acceptance · Záznam a uložení\nFAIL  acceptance · Můj den\nFAIL  acceptance · Detail\nFAIL  acceptance · Nastavení\nFAIL  acceptance · Aktualizace\nFAIL  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nFAIL  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nFAIL  acceptance · Astra geometrie a pořadí\nFAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu\n⛔ Astra design E2E: .runtime/design-e2e/2026-09-30T13-25-20-284Z\n\nEXIT_CODE=1\n",
+      "exitCode": 1
+    },
+    {
+      "command": "node --test scripts/astra-design-e2e.test.mjs",
+      "stdoutStderr": "TAP version 13\n# Subtest: D10: pozorované Nahrávání první vyhovuje přesnému kontraktu\nok 1 - D10: pozorované Nahrávání první vyhovuje přesnému kontraktu\n  ---\n  duration_ms: 0.5025\n  type: 'test'\n  ...\n# Subtest: D10 odmítne: návrat dominantního LuTracku\nok 2 - D10 odmítne: návrat dominantního LuTracku\n  ---\n  duration_ms: 0.163208\n  type: 'test'\n  ...\n# Subtest: D10 odmítne: změněná výška nahrávání\nok 3 - D10 odmítne: změněná výška nahrávání\n  ---\n  duration_ms: 0.054208\n  type: 'test'\n  ...\n# Subtest: D10 odmítne: chybějící nahrávání\nok 4 - D10 odmítne: chybějící nahrávání\n  ---\n  duration_ms: 0.049583\n  type: 'test'\n  ...\n# Subtest: D10 odmítne: přehled před nahráváním\nok 5 - D10 odmítne: přehled před nahráváním\n  ---\n  duration_ms: 0.096458\n  type: 'test'\n  ...\n# Subtest: D10 odmítne: viditelný budoucí ovladač\nok 6 - D10 odmítne: viditelný budoucí ovladač\n  ---\n  duration_ms: 0.050375\n  type: 'test'\n  ...\n# Subtest: D10 odmítne: aktivní budoucí ovladač\nok 7 - D10 odmítne: aktivní budoucí ovladač\n  ---\n  duration_ms: 0.086917\n  type: 'test'\n  ...\n# Subtest: D10 odmítne: překrytí patičkou\nok 8 - D10 odmítne: překrytí patičkou\n  ---\n  duration_ms: 0.041541\n  type: 'test'\n  ...\n# Subtest: D10: denní skupina má čas a stav bez překryvu\nok 9 - D10: denní skupina má čas a stav bez překryvu\n  ---\n  duration_ms: 0.263958\n  type: 'test'\n  ...\n# Subtest: D10 den odmítne: chybějící skutečný řádek\nok 10 - D10 den odmítne: chybějící skutečný řádek\n  ---\n  duration_ms: 0.336875\n  type: 'test'\n  ...\n# Subtest: D10 den odmítne: čas zasahující do nahrávky\nok 11 - D10 den odmítne: čas zasahující do nahrávky\n  ---\n  duration_ms: 0.103583\n  type: 'test'\n  ...\n# Subtest: D10 den odmítne: zkrácený stav\nok 12 - D10 den odmítne: zkrácený stav\n  ---\n  duration_ms: 0.043583\n  type: 'test'\n  ...\n# Subtest: D10 den odmítne: překrytí druhé položky patičkou\nok 13 - D10 den odmítne: překrytí druhé položky patičkou\n  ---\n  duration_ms: 0.0355\n  type: 'test'\n  ...\n# Subtest: D10 den odmítne: nesprávná kalendářní skupina\nok 14 - D10 den odmítne: nesprávná kalendářní skupina\n  ---\n  duration_ms: 0.033084\n  type: 'test'\n  ...\n1..14\n# tests 14\n# suites 0\n# pass 14\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 70.916459\n\nEXIT_CODE=0\n",
+      "exitCode": 0
+    },
+    {
+      "command": "node --input-type=module (assert.equal(homeGeometryValid(dominantLuTrack), true))",
+      "stdoutStderr": "node:internal/modules/run_main:123\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: SABOTÁŽ: původní dominantní LuTrack musí způsobit FAIL\n\nfalse !== true\n\n    at file:///Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/visual-contract-renewal/[eval1]:4:8\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.22.0\n\nEXIT_CODE=1\n",
+      "exitCode": 1
+    },
+    {
+      "command": "npm run typecheck",
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 typecheck\n> tsc --noEmit -p jsconfig.json\n\n\nEXIT_CODE=0\n",
+      "exitCode": 0
+    },
+    {
+      "command": "node_modules/.bin/eslint scripts/astra-design-e2e.mjs scripts/astra-design-e2e.test.mjs",
+      "stdoutStderr": "\nEXIT_CODE=0\n",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:design:e2e",
+      "attempt": 4,
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 63 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-BQNxNARj.css                        130.42 kB │ gzip:  19.68 kB\ndist/assets/index-3KEDR_T6.js                         344.37 kB │ gzip: 102.82 kB\n✓ built in 497ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  offline-recording-continues-locally\nPASS  astra-layout-offline\nPASS  acceptance · Teď\nFAIL  acceptance · Záznam a uložení\nFAIL  acceptance · Můj den\nFAIL  acceptance · Detail\nFAIL  acceptance · Nastavení\nFAIL  acceptance · Aktualizace\nFAIL  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nFAIL  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nFAIL  acceptance · Astra geometrie a pořadí\nFAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu\n⛔ Astra design E2E: .runtime/design-e2e/2026-09-30T13-33-34-952Z\n\nEXIT_CODE=1\n",
+      "exitCode": 1
+    },
+    {
+      "command": "npm run test:design:e2e",
+      "attempt": 5,
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 63 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-BQNxNARj.css                        130.42 kB │ gzip:  19.68 kB\ndist/assets/index-CyEdJFou.js                         344.37 kB │ gzip: 102.82 kB\n✓ built in 609ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  offline-recording-continues-locally\nPASS  astra-layout-offline\nPASS  system-audio-loss-and-recovery\nPASS  recording-stop-offers-explicit-safe-choice\nPASS  saved-recording-astra-composition\nPASS  recording-saved-local-from-ui\nPASS  saved-recording-visible-after-app-restart\nPASS  source-action-opens-audio-settings\nPASS  offline-keeps-local-recording\nPASS  day-hierarchy-and-real-data\nPASS  acceptance · Teď\nPASS  acceptance · Záznam a uložení\nFAIL  acceptance · Můj den\nFAIL  acceptance · Detail\nFAIL  acceptance · Nastavení\nFAIL  acceptance · Aktualizace\nFAIL  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nFAIL  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nFAIL  acceptance · Astra geometrie a pořadí\nFAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu\n⛔ Astra design E2E: .runtime/design-e2e/2026-09-30T13-34-34-755Z\n\nEXIT_CODE=1\n",
+      "exitCode": 1
+    },
+    {
+      "command": "npm run test:design:e2e",
+      "attempt": 6,
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 63 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-BQNxNARj.css                        130.42 kB │ gzip:  19.68 kB\ndist/assets/index-BW2wf3tf.js                         344.37 kB │ gzip: 102.82 kB\n✓ built in 530ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  offline-recording-continues-locally\nPASS  astra-layout-offline\nPASS  system-audio-loss-and-recovery\nPASS  recording-stop-offers-explicit-safe-choice\nPASS  saved-recording-astra-composition\nPASS  recording-saved-local-from-ui\nPASS  saved-recording-visible-after-app-restart\nPASS  source-action-opens-audio-settings\nPASS  offline-keeps-local-recording\nPASS  day-hierarchy-and-real-data\nPASS  astra-layout-day\nPASS  day-shows-actual-recording-and-seeded-local-fixture\nPASS  acceptance · Teď\nPASS  acceptance · Záznam a uložení\nFAIL  acceptance · Můj den\nFAIL  acceptance · Detail\nFAIL  acceptance · Nastavení\nFAIL  acceptance · Aktualizace\nFAIL  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nFAIL  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nFAIL  acceptance · Astra geometrie a pořadí\nFAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu\n⛔ Astra design E2E: .runtime/design-e2e/2026-09-30T13-35-52-575Z\n\nEXIT_CODE=1\n",
+      "exitCode": 1
+    },
+    {
+      "command": "npm run test:design:e2e",
+      "attempt": 7,
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 63 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-BQNxNARj.css                        130.42 kB │ gzip:  19.68 kB\ndist/assets/index-BCGTnnsv.js                         344.37 kB │ gzip: 102.82 kB\n✓ built in 769ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  offline-recording-continues-locally\nPASS  astra-layout-offline\nPASS  system-audio-loss-and-recovery\nPASS  recording-stop-offers-explicit-safe-choice\nPASS  saved-recording-astra-composition\nPASS  recording-saved-local-from-ui\nPASS  saved-recording-visible-after-app-restart\nPASS  source-action-opens-audio-settings\nPASS  offline-keeps-local-recording\nPASS  day-hierarchy-and-real-data\nPASS  astra-layout-day\nPASS  day-shows-actual-recording-and-seeded-local-fixture\nPASS  local-recording-detail-no-upload\nPASS  astra-layout-detail\nPASS  detail-back-to-day\nPASS  local-recording-filter\nPASS  delivery-filter-empty-is-truthful\nPASS  settings-shell\nPASS  acceptance · Teď\nPASS  acceptance · Záznam a uložení\nPASS  acceptance · Můj den\nPASS  acceptance · Detail\nFAIL  acceptance · Nastavení\nFAIL  acceptance · Aktualizace\nFAIL  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nFAIL  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nFAIL  acceptance · Astra geometrie a pořadí\nFAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu\n⛔ Astra design E2E: .runtime/design-e2e/2026-09-30T13-37-06-234Z\n\nEXIT_CODE=1\n",
+      "exitCode": 1
+    },
+    {
+      "command": "npm run test:design:e2e",
+      "attempt": 8,
+      "stdoutStderr": "\n> ludone-desktop-prototype@0.1.6 test:design:e2e\n> npm run build && node scripts/astra-design-e2e.mjs\n\n\n> ludone-desktop-prototype@0.1.6 build\n> vite build\n\nvite v7.3.6 building client environment for production...\ntransforming...\n✓ 63 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                         0.63 kB │ gzip:   0.37 kB\ndist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB\ndist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB\ndist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB\ndist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB\ndist/assets/index-BQNxNARj.css                        130.42 kB │ gzip:  19.68 kB\ndist/assets/index-jYHrsTXq.js                         344.37 kB │ gzip: 102.82 kB\n✓ built in 497ms\nPASS  reference-astra-home\nPASS  reference-astra-day\nPASS  reference-astra-detail\nPASS  reference-astra-settings\nPASS  reference-astra-offline\nPASS  reference-astra-save\nPASS  reference-astra-onboarding\nPASS  reference-astra-update\nPASS  reference-astra-settings-dark\nPASS  reference-astra-day-dark\nPASS  startup-loads-seeded-local-fixture\nPASS  onboarding-first-use-and-honest-scope\nPASS  onboarding-account-step-without-external-login\nPASS  panel-shell\nPASS  quick-actions-and-auth-boundary\nPASS  now-hierarchy-and-safe-actions\nPASS  lutrack-remains-disabled\nPASS  recording-starts-two-synthetic-sources\nPASS  offline-recording-continues-locally\nPASS  astra-layout-offline\nPASS  system-audio-loss-and-recovery\nPASS  recording-stop-offers-explicit-safe-choice\nPASS  saved-recording-astra-composition\nPASS  recording-saved-local-from-ui\nPASS  saved-recording-visible-after-app-restart\nPASS  source-action-opens-audio-settings\nPASS  offline-keeps-local-recording\nPASS  day-hierarchy-and-real-data\nPASS  astra-layout-day\nPASS  day-shows-actual-recording-and-seeded-local-fixture\nPASS  local-recording-detail-no-upload\nPASS  astra-layout-detail\nPASS  detail-back-to-day\nPASS  local-recording-filter\nPASS  delivery-filter-empty-is-truthful\nPASS  settings-shell\nPASS  astra-layout-settings\nPASS  update-check-isolated-from-production\nPASS  settings-quick-actions\nPASS  light-theme-choice\nPASS  day-theme-light\nPASS  dark-theme-choice\nPASS  dark-settings-actions-contrast\nPASS  day-theme-dark\nPASS  return-to-now\nPASS  theme-shared-across-windows\nPASS  update-dedicated-surface\nPASS  update-banner-and-defer\nPASS  unfinished-recording-preserved-after-restart\nPASS  acceptance · Teď\nPASS  acceptance · Záznam a uložení\nPASS  acceptance · Můj den\nPASS  acceptance · Detail\nPASS  acceptance · Nastavení\nPASS  acceptance · Aktualizace\nPASS  acceptance · Offline a obnova\nPASS  acceptance · Onboarding\nPASS  acceptance · Světlé a tmavé téma\nPASS  acceptance · LuTrack zůstává vypnutý\nPASS  acceptance · Astra geometrie a pořadí\nCAPTURED  acceptance · Screenshoty zachycené pro vizuální kontrolu\n🧪 Astra design E2E: .runtime/design-e2e/2026-09-30T13-38-54-029Z\n\nEXIT_CODE=0\n",
+      "exitCode": 0
+    }
+  ],
+  "sabotaze": [
+    {
+      "mutation": "Čistý exportedpredicate: dominantLuTrack 319, record442/h97",
+      "expectedExit": 1,
+      "actualExit": 1,
+      "originalProductFilesChanged": false,
+      "restoration": "Čistý hodnotový mutant; žádný produktový soubor nebyl změněn.",
+      "command": "node --input-type=module: assert.equal(homeGeometryValid({ viewportHeight:700, record:{top:442,height:97,bottom:539}, preview:{top:539,height:147,bottom:686}, future:{top:123,height:319,bottom:442,left:8}, footer:{top:648,bottom:692}, topline:{left:30}, futureControls:Array.from({length:3},()=>({disabled:true,visible:false})) }), true)"
+    },
+    {
+      "mutation": "Unit hodnotové mutace: chybějící nahrávání/řádek, výška, pořadí, visible nebo enabled future ovladač, zakrytí patičkou, čas zasahující do obsahu, clipping stavu, nesprávný místní den.",
+      "expected": "Každý mutant vrací false.",
+      "actual": "14 testů PASS včetně pozitivních skutečných pozorování.",
+      "originalProductFilesChanged": false
+    }
+  ],
+  "coJsemNEOVERIL": [
+    "Fyzický zvuk, skutečný upload a živépermissions (E2E je syntetické se skutečným main/preload)."
+  ],
+  "notes": [
+    "Původní FAIL archiv a historické Astra reference zachovány. Srovnání uvádí D10 novou galerii, netvrdí shodu 1:1.",
+    "První E2E: sandbox EPERM 127.0.0.1; rutinní GUI / loopback povolena.",
+    "Připravený encoder dodal koordinátor po pinned rebuild a kontrole arch/hash/podpisu.",
+    "E2E 4: původní CDP Runtime.evaluate timeout 8 sekund; stejné bráně se timeout neměnil.",
+    "E2E 5: původní day geometry FAIL při schválených skupinách.",
+    "E2E 6: detail selector index ukázal firmu místo zvuku; opraven sémantický výběr při stejných assertions.",
+    "E2E 7: nová obecná reachability kontrola narazila na záměrně hidden+disabled odhlášení v signed-out fixture; doplněna přesná pravdivá podmínka pro tuto existující funkční hranici.",
+    "E2E 8: všechny acceptance skupiny PASS, screenshoty CAPTURED. Regresní sada 14 PASS, 0 skip."
+  ],
+  "status": "🧪 zelené testy",
+  "finalE2e": {
+    "outputDir": ".runtime/design-e2e/2026-09-30T13-38-54-029Z",
+    "report": ".runtime/design-e2e/2026-09-30T13-38-54-029Z/report.json",
+    "exitCode": 0,
+    "visualQa": [
+      "04-offline-active-recording.png",
+      "08-muj-den.png",
+      "10-nastaveni.png"
+    ],
+    "scope": "Skutečný Electron main/preload, izolovaný profil, syntetické dva zdroje, skutečný lokální stereo export; žádný živý zvuk ani produkční upload."
+  },
+  "allowlistCheck": {
+    "command": "git --no-pager diff --check; git --no-pager status --porcelain",
+    "diffCheckExitCode": 0,
+    "stdout": " M scripts/astra-design-e2e.mjs\n?? docs/changes/desktop-astra-parity-0-1-6/evidence/tasks/T-11-visual.report.json\n?? scripts/astra-design-e2e.test.mjs\n",
+    "foreignProductFilesChanged": 0
+  }
+}
