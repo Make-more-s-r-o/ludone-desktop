@@ -1,0 +1,2 @@
+Zdroj: .runtime/astra-state-e2e/2026-09-29T23-46-26.413Z
+Archivují se reporty, snímky a logy; izolovaný uživatelský profil se nepublikuje.

@@ -1,0 +1,2 @@
+Zdroj: .runtime/design-e2e/2026-09-30T00-01-41-031Z
+Archivují se reporty, snímky a logy; izolovaný uživatelský profil se nepublikuje.

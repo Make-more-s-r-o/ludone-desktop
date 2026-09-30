@@ -5,6 +5,12 @@ Kdo na to naváže: **přečti tenhle soubor první.** Podklady jsou v `/Users/d
 
 ## Co se staví a proč
 
+**30. 9. 2026:** Pro desktop 0.1.6 se před publikací aktualizuje Electron 39.8.10 na
+podporovaný 43.7.6 kvůli čtyřem high bezpečnostním nálezům. Minimum macOS zůstává 12;
+major 44 by jej zvýšil. Rozhodnutí a primární zdroje jsou v
+[`D6`](docs/changes/desktop-astra-parity-0-1-6/decisions.md#d6--před-publikací-opravit-electron-runtime).
+Nový runtime potřebuje nové gates/E2E; fyzický zvuk se staršími měřeními nedokládá.
+
 Vlastní aplikace na macOS, která nahrazuje placený Plaud. Dan za něj nechce dál platit a chce mít
 nahrávání schůzek pod kontrolou, s archivem pro celý tým.
 

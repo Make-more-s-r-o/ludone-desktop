@@ -1,0 +1,18 @@
+$ node /Users/dan/.claude/skills/masterplan/scripts/mp-lint.mjs desktop-astra-parity-0-1-6
+NÁLEZ [C3] decisions.md:3 — ## D1 — Implementovat celý schválený návrh Astra „Nit dne“
+  Náprava: Srovnej status.json decisions[] s H2 rozhodnutími D<n> v decisions.md.
+NÁLEZ [C8] evidence/acceptance-electron43-2026-09-30/ludone-auth-empty-store-report.md:1 — # Prázdné úložiště identity bez Keychain
+  Náprava: Doplň evidence frontmatter s klíči kind, measuredAt a measuredFrom (chybí: kind, measuredAt, measuredFrom).
+NÁLEZ [C8] evidence/acceptance-electron43-2026-09-30/ludone-auth-empty-store-security-review.md:1 — # Read-only security review: prázdné úložiště identity
+  Náprava: Doplň evidence frontmatter s klíči kind, measuredAt a measuredFrom (chybí: kind, measuredAt, measuredFrom).
+NÁLEZ [C8] evidence/acceptance-electron43-2026-09-30/ludone-cdp-input-paint-fix.md:1 — # Synchronizace nativního CDP vstupu s vykreslením
+  Náprava: Doplň evidence frontmatter s klíči kind, measuredAt a measuredFrom (chybí: kind, measuredAt, measuredFrom).
+NÁLEZ [C8] evidence/acceptance-electron43-2026-09-30/ludone-cdp-paint-security-review.md:1 — # Read-only review synchronizace CDP kliknutí
+  Náprava: Doplň evidence frontmatter s klíči kind, measuredAt a measuredFrom (chybí: kind, measuredAt, measuredFrom).
+NÁLEZ [C8] evidence/acceptance-electron43-2026-09-30/ludone-electron-security-final-review.md:1 — # Nezávislé read-only review pinu Electron 43.7.6
+  Náprava: Doplň evidence frontmatter s klíči kind, measuredAt a measuredFrom (chybí: kind, measuredAt, measuredFrom).
+NÁLEZ [C8] evidence/acceptance-electron43-2026-09-30/ludone-visual-review-electron43.md:1 — # Vizuální kontrola po aktualizaci Electronu 43.7.6
+  Náprava: Doplň evidence frontmatter s klíči kind, measuredAt a measuredFrom (chybí: kind, measuredAt, measuredFrom).
+SOUHRN: 7 packetů, 28 pravidel a 126 souborů prověřeno; 7 nálezů.
+
+EXIT_CODE=1

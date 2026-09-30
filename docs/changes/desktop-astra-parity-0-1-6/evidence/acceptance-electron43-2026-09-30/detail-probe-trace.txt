@@ -1,0 +1,54 @@
+$ node /private/tmp/ludone-detail-probe.mjs
+CLICK TRACE Rychlé akce [{"kind":"mousedown","target":"svg","cls":{},"states":[]},{"kind":"mouseup","target":"svg","cls":{},"states":[]},{"kind":"click","target":"svg","cls":{},"states":[]}]
+CLICK TRACE Nahrát syntetickou schůzku [{"kind":"mousedown","target":"svg","cls":{},"states":[]},{"kind":"mouseup","target":"svg","cls":{},"states":[]},{"kind":"click","target":"svg","cls":{},"states":[]},{"kind":"toggle","target":"DIALOG","cls":"desktop-quick-actions","open":false,"states":[]},{"kind":"mousedown","target":"SPAN","cls":"","states":[]},{"kind":"mouseup","target":"SPAN","cls":"","states":[]},{"kind":"click","target":"SPAN","cls":"","states":[]}]
+CLICK TRACE Obnovit syntetický systémový zdroj [{"kind":"mousedown","target":"svg","cls":{},"states":[]},{"kind":"mouseup","target":"svg","cls":{},"states":[]},{"kind":"click","target":"svg","cls":{},"states":[]},{"kind":"toggle","target":"DIALOG","cls":"desktop-quick-actions","open":false,"states":[]},{"kind":"mousedown","target":"SPAN","cls":"","states":[]},{"kind":"mouseup","target":"SPAN","cls":"","states":[]},{"kind":"click","target":"SPAN","cls":"","states":[]},{"kind":"mousedown","target":"BUTTON","cls":"recording-outage__continue","states":[]},{"kind":"mouseup","target":"BUTTON","cls":"recording-outage__continue","states":[]},{"kind":"click","target":"BUTTON","cls":"recording-outage__continue","states":[]}]
+CLICK TRACE Ukončit a uložit syntetický záznam [{"kind":"mousedown","target":"svg","cls":{},"states":[]},{"kind":"mouseup","target":"svg","cls":{},"states":[]},{"kind":"click","target":"svg","cls":{},"states":[]},{"kind":"toggle","target":"DIALOG","cls":"desktop-quick-actions","open":false,"states":[]},{"kind":"mousedown","target":"SPAN","cls":"","states":[]},{"kind":"mouseup","target":"SPAN","cls":"","states":[]},{"kind":"click","target":"SPAN","cls":"","states":[]},{"kind":"mousedown","target":"BUTTON","cls":"recording-outage__continue","states":[]},{"kind":"mouseup","target":"BUTTON","cls":"recording-outage__continue","states":[]},{"kind":"click","target":"BUTTON","cls":"recording-outage__continue","states":[]},{"kind":"mousedown","target":"BUTTON","cls":"recording-running__stop","states":[]},{"kind":"mouseup","target":"BUTTON","cls":"recording-running__stop","states":[]},{"kind":"click","target":"BUTTON","cls":"recording-running__stop","states":[]}]
+CLICK TRACE Nechat na Macu [{"kind":"mousedown","target":"svg","cls":{},"states":[]},{"kind":"mouseup","target":"svg","cls":{},"states":[]},{"kind":"click","target":"svg","cls":{},"states":[]},{"kind":"toggle","target":"DIALOG","cls":"desktop-quick-actions","open":false,"states":[]},{"kind":"mousedown","target":"SPAN","cls":"","states":[]},{"kind":"mouseup","target":"SPAN","cls":"","states":[]},{"kind":"click","target":"SPAN","cls":"","states":[]},{"kind":"mousedown","target":"BUTTON","cls":"recording-outage__continue","states":[]},{"kind":"mouseup","target":"BUTTON","cls":"recording-outage__continue","states":[]},{"kind":"click","target":"BUTTON","cls":"recording-outage__continue","states":[]},{"kind":"mousedown","target":"BUTTON","cls":"recording-running__stop","states":[]},{"kind":"mouseup","target":"BUTTON","cls":"recording-running__stop","states":[]},{"kind":"click","target":"BUTTON","cls":"recording-running__stop","states":[]},{"kind":"mousedown","target":"BUTTON","cls":"button button--wide recording-saved__skip","states":[]},{"kind":"mouseup","target":"BUTTON","cls":"button button--wide recording-saved__skip","states":[]},{"kind":"click","target":"BUTTON","cls":"button button--wide recording-saved__skip","states":[]}]
+CLICK TRACE Zdroje zvuku [{"kind":"mousedown","target":"svg","cls":{},"states":[]},{"kind":"mouseup","target":"svg","cls":{},"states":[]},{"kind":"click","target":"svg","cls":{},"states":[]}]
+CLICK TRACE Detail skutečně pořízené nahrávky [{"kind":"mousedown","target":"SECTION","cls":"settings-group","states":[]},{"kind":"mouseup","target":"SECTION","cls":"settings-group","states":[]},{"kind":"click","target":"SECTION","cls":"settings-group","states":[]}]
+DETAIL TRACE FINAL [{"kind":"mousedown","target":"SECTION","cls":"settings-group","states":[]},{"kind":"mouseup","target":"SECTION","cls":"settings-group","states":[]},{"kind":"click","target":"SECTION","cls":"settings-group","states":[]}]
+PASS  reference-astra-home
+PASS  reference-astra-day
+PASS  reference-astra-detail
+PASS  reference-astra-settings
+PASS  reference-astra-offline
+PASS  reference-astra-save
+PASS  reference-astra-onboarding
+PASS  reference-astra-update
+PASS  reference-astra-settings-dark
+PASS  reference-astra-day-dark
+PASS  startup-loads-seeded-local-fixture
+PASS  onboarding-first-use-and-honest-scope
+PASS  onboarding-account-step-without-external-login
+PASS  panel-shell
+PASS  quick-actions-and-auth-boundary
+PASS  now-hierarchy-and-safe-actions
+PASS  lutrack-remains-disabled
+PASS  recording-starts-two-synthetic-sources
+PASS  offline-recording-continues-locally
+PASS  astra-layout-offline
+PASS  system-audio-loss-and-recovery
+PASS  recording-stop-offers-explicit-safe-choice
+PASS  saved-recording-astra-composition
+PASS  recording-saved-local-from-ui
+PASS  saved-recording-visible-after-app-restart
+PASS  source-action-opens-audio-settings
+PASS  offline-keeps-local-recording
+PASS  day-hierarchy-and-real-data
+PASS  astra-layout-day
+PASS  day-shows-actual-recording-and-seeded-local-fixture
+PASS  acceptance · Teď
+PASS  acceptance · Záznam a uložení
+FAIL  acceptance · Můj den
+FAIL  acceptance · Detail
+FAIL  acceptance · Nastavení
+FAIL  acceptance · Aktualizace
+FAIL  acceptance · Offline a obnova
+PASS  acceptance · Onboarding
+FAIL  acceptance · Světlé a tmavé téma
+PASS  acceptance · LuTrack zůstává vypnutý
+FAIL  acceptance · Astra geometrie a pořadí
+FAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu
+⛔ Astra design E2E: .runtime/design-e2e/2026-09-29T23-58-49-015Z
+
+EXIT_CODE=1

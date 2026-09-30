@@ -1,0 +1,47 @@
+$ npm run test:design:e2e
+
+> ludone-desktop-prototype@0.1.6 test:design:e2e
+> npm run build && node scripts/astra-design-e2e.mjs
+
+
+> ludone-desktop-prototype@0.1.6 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 60 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         0.63 kB │ gzip:   0.37 kB
+dist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB
+dist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB
+dist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB
+dist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB
+dist/assets/index-DdMnG7AV.css                        122.21 kB │ gzip:  18.33 kB
+dist/assets/index-DKppAR1Z.js                         339.57 kB │ gzip: 101.46 kB
+✓ built in 436ms
+PASS  reference-astra-home
+PASS  reference-astra-day
+PASS  reference-astra-detail
+PASS  reference-astra-settings
+PASS  reference-astra-offline
+PASS  reference-astra-save
+PASS  reference-astra-onboarding
+PASS  reference-astra-update
+PASS  reference-astra-settings-dark
+PASS  reference-astra-day-dark
+FAIL  acceptance · Teď
+FAIL  acceptance · Záznam a uložení
+FAIL  acceptance · Můj den
+FAIL  acceptance · Detail
+FAIL  acceptance · Nastavení
+FAIL  acceptance · Aktualizace
+FAIL  acceptance · Offline a obnova
+FAIL  acceptance · Onboarding
+FAIL  acceptance · Světlé a tmavé téma
+FAIL  acceptance · LuTrack zůstává vypnutý
+FAIL  acceptance · Astra geometrie a pořadí
+FAIL  acceptance · Screenshoty zachycené pro vizuální kontrolu
+⛔ Astra design E2E: .runtime/design-e2e/2026-09-29T23-47-21-581Z
+
+EXIT_CODE=1

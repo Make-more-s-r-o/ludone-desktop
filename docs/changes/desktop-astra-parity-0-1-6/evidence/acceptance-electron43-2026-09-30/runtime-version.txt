@@ -1,0 +1,4 @@
+$ node_modules/.bin/electron --version
+v43.7.6
+
+EXIT_CODE=0

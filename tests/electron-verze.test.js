@@ -11,6 +11,9 @@ const MINIMUM_MACOS_PODLE_MAJORU = {
   37: "10.15.0",
   38: "11.0.0",
   39: "12.0.0",
+  // Electron 43 zachovává Monterey; macOS 12 vyřazuje až major 44.
+  // Zdroj: https://www.electronjs.org/docs/latest/breaking-changes/#removed-macos-12-support
+  43: "12.0.0",
 };
 
 function major(verze) {
