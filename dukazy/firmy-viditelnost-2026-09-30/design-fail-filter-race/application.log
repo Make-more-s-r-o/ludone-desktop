@@ -1,0 +1,19 @@
+
+DevTools listening on ws://127.0.0.1:63703/devtools/browser/d1b78b97-4858-4425-b171-880c41c13e52
+[tray] 2026-09-30T19:06:44.235Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] Při startu obnoveno nahrávek: 1.
+[queue] odesláno 0, konec: žádná položka není připravená
+[recording] Připraveny oddělené soubory s prefixem 2026-09-30T19-06-45-344Z-e5db324d.
+[recording] Uloženo: mikrofon 26259 B, systém 26259 B.
+[queue] Zařazeno e5db324d-0aab-4cbf-9096-001e8285dfe5 (recording).
+[recording-export] Uloženo e5db324d-0aab-4cbf-9096-001e8285dfe5; rozdíl startů 5 ms.
+
+DevTools listening on ws://127.0.0.1:63703/devtools/browser/cf96d93e-c2ac-4305-8c64-e231bd328848
+[tray] 2026-09-30T19:06:48.108Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] odesláno 0, konec: žádná položka není připravená
+Error occurred in handler for 'auth:session-state': Error: IPC odmítnuto: aplikace se ukončuje
+    at /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/electron/main.cjs:317:27
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:120511)
+    at Session.emit (node:events:514:28)

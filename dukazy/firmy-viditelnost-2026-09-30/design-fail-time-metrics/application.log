@@ -1,0 +1,15 @@
+
+DevTools listening on ws://127.0.0.1:58138/devtools/browser/e8d0788a-1873-400e-bdf7-ffb560e839c1
+[tray] 2026-09-30T18:56:01.466Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] Při startu obnoveno nahrávek: 1.
+[queue] odesláno 0, konec: žádná položka není připravená
+[recording] Připraveny oddělené soubory s prefixem 2026-09-30T18-56-02-641Z-fd43c858.
+[recording] Uloženo: mikrofon 106517 B, systém 106517 B.
+[queue] Zařazeno fd43c858-8152-478a-a9f3-15c0e968f6b4 (recording).
+[recording-export] Uloženo fd43c858-8152-478a-a9f3-15c0e968f6b4; rozdíl startů 0 ms.
+
+DevTools listening on ws://127.0.0.1:58138/devtools/browser/71b57fe1-1dc6-4dfe-8b3e-f6b996da311c
+[tray] 2026-09-30T18:56:12.275Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] odesláno 0, konec: žádná položka není připravená

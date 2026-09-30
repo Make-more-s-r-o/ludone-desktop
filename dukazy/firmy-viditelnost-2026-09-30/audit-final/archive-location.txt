@@ -1,0 +1,3 @@
+Původní runtime: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z
+Měřený zdroj: 2bf1da4
+Archivovány pouze soubory v první úrovni; osobní a izolované profily nejsou součástí.

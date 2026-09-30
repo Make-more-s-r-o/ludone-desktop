@@ -1,0 +1,118 @@
+
+> ludone-desktop-prototype@0.1.7 test:design:states
+> npm run build && node scripts/astra-state-e2e.mjs
+
+
+> ludone-desktop-prototype@0.1.7 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 63 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         0.63 kB │ gzip:   0.37 kB
+dist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB
+dist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB
+dist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB
+dist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB
+dist/assets/index-CYeDT5Ov.css                        133.31 kB │ gzip:  20.09 kB
+dist/assets/index-sFTI7rX1.js                         352.64 kB │ gzip: 105.47 kB
+✓ built in 495ms
+BOOTSTRAP čeká na Electron ready
+BOOTSTRAP READY
+START isolated bundled renderer fixtures
+READY Electron
+BEGIN day-loading
+TARGET day-loading
+CDP day-loading
+LOADED day-loading
+PASS day-loading
+BEGIN day-empty
+TARGET day-empty
+CDP day-empty
+LOADED day-empty
+PASS day-empty
+BEGIN day-error-retry
+TARGET day-error-retry
+CDP day-error-retry
+LOADED day-error-retry
+PASS day-error-retry
+BEGIN detail-local
+TARGET detail-local
+CDP detail-local
+LOADED detail-local
+PASS detail-local
+BEGIN detail-queued
+TARGET detail-queued
+CDP detail-queued
+LOADED detail-queued
+PASS detail-queued
+BEGIN detail-sent
+TARGET detail-sent
+CDP detail-sent
+LOADED detail-sent
+PASS detail-sent
+BEGIN detail-verified
+TARGET detail-verified
+CDP detail-verified
+LOADED detail-verified
+PASS detail-verified
+BEGIN detail-error
+TARGET detail-error
+CDP detail-error
+LOADED detail-error
+PASS detail-error
+BEGIN detail-limit
+TARGET detail-limit
+CDP detail-limit
+LOADED detail-limit
+PASS detail-limit
+BEGIN detail-owner
+TARGET detail-owner
+CDP detail-owner
+LOADED detail-owner
+PASS detail-owner
+BEGIN detail-missing
+TARGET detail-missing
+CDP detail-missing
+LOADED detail-missing
+PASS detail-missing
+BEGIN detail-verify-error
+TARGET detail-verify-error
+CDP detail-verify-error
+LOADED detail-verify-error
+PASS detail-verify-error
+BEGIN auth-signed-in
+TARGET auth-signed-in
+CDP auth-signed-in
+LOADED auth-signed-in
+PASS auth-signed-in
+BEGIN auth-expired
+TARGET auth-expired
+CDP auth-expired
+LOADED auth-expired
+PASS auth-expired
+BEGIN auth-oauth-pending-cancel
+TARGET auth-oauth-pending-cancel
+CDP auth-oauth-pending-cancel
+LOADED auth-oauth-pending-cancel
+PASS auth-oauth-pending-cancel
+BEGIN update-available
+TARGET update-available
+CDP update-available
+LOADED update-available
+PASS update-available
+BEGIN update-downloading
+TARGET update-downloading
+CDP update-downloading
+LOADED update-downloading
+PASS update-downloading
+BEGIN update-install-waits
+TARGET update-install-waits
+CDP update-install-waits
+LOADED update-install-waits
+PASS update-install-waits
+Report: /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T19-16-56.028Z/report.json
+
+EXIT_CODE=0

@@ -1,0 +1,1438 @@
+{
+  "status": "PASS",
+  "exitCode": 0,
+  "verification": "🧪",
+  "fixtureOnly": true,
+  "productionPreloadLoaded": false,
+  "networkAttempts": 0,
+  "kontrolniNula": {
+    "networkWrites": 0,
+    "productionIpcCalls": 0
+  },
+  "results": [
+    {
+      "name": "day-groups-and-filters",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-groups-and-filters-400.png",
+          "bytes": 104863,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-groups-and-filters-640.png",
+          "bytes": 124991,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-groups-and-filters.png",
+      "screenshotBytes": 124991
+    },
+    {
+      "name": "day-dark",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-dark-400.png",
+          "bytes": 102044,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-dark-640.png",
+          "bytes": 121876,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-dark.png",
+      "screenshotBytes": 121876
+    },
+    {
+      "name": "day-professional",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-professional-400.png",
+          "bytes": 115492,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-professional-640.png",
+          "bytes": 136607,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-professional.png",
+      "screenshotBytes": 136607
+    },
+    {
+      "name": "now-dark",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-dark-400.png",
+          "bytes": 81295,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-dark-640.png",
+          "bytes": 86216,
+          "overflows": []
+        }
+      ],
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-dark.png",
+      "screenshotBytes": 86216
+    },
+    {
+      "name": "detail-verification-finder-focus",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-verification-finder-focus-400.png",
+          "bytes": 104863,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-verification-finder-focus-640.png",
+          "bytes": 124991,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000003",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "revealRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000003",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "openRecordingInLuDone",
+          "value": "40000000-0000-4000-8000-000000000003"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-verification-finder-focus.png",
+      "screenshotBytes": 124991
+    },
+    {
+      "name": "verification-invalidates-identity",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-identity-400.png",
+          "bytes": 114503,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-identity-640.png",
+          "bytes": 127025,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000003",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-identity.png",
+      "screenshotBytes": 127025
+    },
+    {
+      "name": "verification-invalidates-origin",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-origin-400.png",
+          "bytes": 114503,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-origin-640.png",
+          "bytes": 127025,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000003",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-origin.png",
+      "screenshotBytes": 127025
+    },
+    {
+      "name": "verification-invalidates-revision",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-revision-400.png",
+          "bytes": 114503,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-revision-640.png",
+          "bytes": 127025,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000003",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-revision.png",
+      "screenshotBytes": 127025
+    },
+    {
+      "name": "verification-invalidates-fileRevision",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-fileRevision-400.png",
+          "bytes": 114503,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-fileRevision-640.png",
+          "bytes": 127025,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000003",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-fileRevision.png",
+      "screenshotBytes": 127025
+    },
+    {
+      "name": "verification-invalidates-unknown",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-unknown-400.png",
+          "bytes": 119679,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-unknown-640.png",
+          "bytes": 130556,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "verifyRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000003",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/verification-invalidates-unknown.png",
+      "screenshotBytes": 130556
+    },
+    {
+      "name": "day-empty",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-empty-400.png",
+          "bytes": 61527,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-empty-640.png",
+          "bytes": 66434,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-empty.png",
+      "screenshotBytes": 66434
+    },
+    {
+      "name": "day-expired-send-disabled",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-expired-send-disabled-400.png",
+          "bytes": 168450,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-expired-send-disabled-640.png",
+          "bytes": 212105,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/day-expired-send-disabled.png",
+      "screenshotBytes": 212105
+    },
+    {
+      "name": "now-offline",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-offline-400.png",
+          "bytes": 96288,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-offline-640.png",
+          "bytes": 101664,
+          "overflows": []
+        }
+      ],
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-offline.png",
+      "screenshotBytes": 101664
+    },
+    {
+      "name": "fixture-action-send",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-send-400.png",
+          "bytes": 149512,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-send-640.png",
+          "bytes": 132679,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "sendRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-send.png",
+      "screenshotBytes": 132679
+    },
+    {
+      "name": "fixture-action-retry",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-retry-400.png",
+          "bytes": 111691,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-retry-640.png",
+          "bytes": 124709,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "retryRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000004",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-retry.png",
+      "screenshotBytes": 124709
+    },
+    {
+      "name": "fixture-action-claim",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-claim-400.png",
+          "bytes": 114342,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-claim-640.png",
+          "bytes": 127007,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "claimRecording",
+          "recordingId": "40000000-0000-4000-8000-000000000005",
+          "expectedRevision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-claim.png",
+      "screenshotBytes": 127007
+    },
+    {
+      "name": "fixture-action-delete",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-delete-400.png",
+          "bytes": 117928,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-delete-640.png",
+          "bytes": 130373,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "deleteRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000008",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/fixture-action-delete.png",
+      "screenshotBytes": 130373
+    },
+    {
+      "name": "detail-partial",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-partial-400.png",
+          "bytes": 106679,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-partial-640.png",
+          "bytes": 126230,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-partial.png",
+      "screenshotBytes": 126230
+    },
+    {
+      "name": "detail-active-safe",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-active-safe-400.png",
+          "bytes": 115145,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-active-safe-640.png",
+          "bytes": 129279,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/detail-active-safe.png",
+      "screenshotBytes": 129279
+    },
+    {
+      "name": "settings-normal-diagnostics",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-normal-diagnostics-400.png",
+          "bytes": 116972,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-normal-diagnostics-640.png",
+          "bytes": 136640,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-normal-diagnostics.png",
+      "screenshotBytes": 136640
+    },
+    {
+      "name": "company-default-restored",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-restored-400.png",
+          "bytes": 122537,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-restored-640.png",
+          "bytes": 140257,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-restored.png",
+      "screenshotBytes": 140257
+    },
+    {
+      "name": "company-default-error-retained",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-error-retained-400.png",
+          "bytes": 131015,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-error-retained-640.png",
+          "bytes": 149282,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-error-retained.png",
+      "screenshotBytes": 149282
+    },
+    {
+      "name": "company-default-change-twice",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-change-twice-400.png",
+          "bytes": 117931,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-change-twice-640.png",
+          "bytes": 135929,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "selectUploadCompany",
+          "offerToken": "fixture-offer-token-2",
+          "companyId": "10000000-0000-4000-8000-000000000002"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "selectUploadCompany",
+          "offerToken": "fixture-offer-token-3",
+          "companyId": "10000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-change-twice.png",
+      "screenshotBytes": 135929
+    },
+    {
+      "name": "company-default-auth-reset",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-auth-reset-400.png",
+          "bytes": 121991,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-auth-reset-640.png",
+          "bytes": 144881,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/company-default-auth-reset.png",
+      "screenshotBytes": 144881
+    },
+    {
+      "name": "upload-preferences-save-before-send",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-save-before-send-400.png",
+          "bytes": 113779,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-save-before-send-640.png",
+          "bytes": 113884,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "configureRecordingUpload",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "companyId": "10000000-0000-4000-8000-000000000002",
+            "offerToken": "fixture-offer-token-3",
+            "visibility": "private"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "sendRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-save-before-send.png",
+      "screenshotBytes": 113884
+    },
+    {
+      "name": "upload-preferences-save-failure",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-save-failure-400.png",
+          "bytes": 107505,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-save-failure-640.png",
+          "bytes": 136499,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "configureRecordingUpload",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "companyId": "10000000-0000-4000-8000-000000000002",
+            "offerToken": "fixture-offer-token-3",
+            "visibility": "private"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-save-failure.png",
+      "screenshotBytes": 136499
+    },
+    {
+      "name": "upload-preferences-stale-refresh",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-stale-refresh-400.png",
+          "bytes": 110160,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-stale-refresh-640.png",
+          "bytes": 139249,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "configureRecordingUpload",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "companyId": "10000000-0000-4000-8000-000000000002",
+            "offerToken": "fixture-offer-token-3",
+            "visibility": "private"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listUploadCompanies"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-stale-refresh.png",
+      "screenshotBytes": 139249
+    },
+    {
+      "name": "upload-preferences-locked",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-locked-400.png",
+          "bytes": 117333,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-locked-640.png",
+          "bytes": 142192,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-locked.png",
+      "screenshotBytes": 142192
+    },
+    {
+      "name": "upload-preferences-historical-private",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-historical-private-400.png",
+          "bytes": 109028,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-historical-private-640.png",
+          "bytes": 135160,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listUploadCompanies"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-historical-private.png",
+      "screenshotBytes": 135160
+    },
+    {
+      "name": "upload-preferences-locked-retry",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-locked-retry-400.png",
+          "bytes": 120485,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-locked-retry-640.png",
+          "bytes": 130601,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "retryRecording",
+          "value": {
+            "id": "40000000-0000-4000-8000-000000000001",
+            "queueRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "fileRev": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "listLocalRecordings"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-locked-retry.png",
+      "screenshotBytes": 130601
+    },
+    {
+      "name": "upload-preferences-theme-dark",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-theme-dark-400.png",
+          "bytes": 107387,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-theme-dark-640.png",
+          "bytes": 131397,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listUploadCompanies"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-theme-dark.png",
+      "screenshotBytes": 131397
+    },
+    {
+      "name": "upload-preferences-theme-professional",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-theme-professional-400.png",
+          "bytes": 126313,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-theme-professional-640.png",
+          "bytes": 152689,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "getUploadCompanyDefault"
+        },
+        {
+          "name": "listUploadCompanies"
+        },
+        {
+          "name": "listLocalRecordings"
+        },
+        {
+          "name": "listUploadCompanies"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/upload-preferences-theme-professional.png",
+      "screenshotBytes": 152689
+    },
+    {
+      "name": "settings-theme-light",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-light-400.png",
+          "bytes": 116972,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-light-640.png",
+          "bytes": 136640,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-light.png",
+      "screenshotBytes": 136640
+    },
+    {
+      "name": "settings-theme-professional",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-professional-400.png",
+          "bytes": 136337,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-professional-640.png",
+          "bytes": 157027,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-professional.png",
+      "screenshotBytes": 157027
+    },
+    {
+      "name": "settings-theme-dark",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-dark-400.png",
+          "bytes": 115036,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-dark-640.png",
+          "bytes": 134190,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-theme-dark.png",
+      "screenshotBytes": 134190
+    },
+    {
+      "name": "settings-audio-quick-focus",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-audio-quick-focus-400.png",
+          "bytes": 124909,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-audio-quick-focus-640.png",
+          "bytes": 127203,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/settings-audio-quick-focus.png",
+      "screenshotBytes": 127203
+    },
+    {
+      "name": "keyboard-escape-quick-actions",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/keyboard-escape-quick-actions-400.png",
+          "bytes": 116972,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/keyboard-escape-quick-actions-640.png",
+          "bytes": 136640,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "getDiagnostics"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/keyboard-escape-quick-actions.png",
+      "screenshotBytes": 136640
+    },
+    {
+      "name": "now-navigation-queue-layout",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-navigation-queue-layout-400.png",
+          "bytes": 71621,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-navigation-queue-layout-640.png",
+          "bytes": 79293,
+          "overflows": []
+        }
+      ],
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/now-navigation-queue-layout.png",
+      "screenshotBytes": 79293
+    },
+    {
+      "name": "update-absent",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-absent-400.png",
+          "bytes": 83995,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-absent-640.png",
+          "bytes": 89188,
+          "overflows": []
+        }
+      ],
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-absent.png",
+      "screenshotBytes": 89188
+    },
+    {
+      "name": "update-available",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-available-400.png",
+          "bytes": 101902,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-available-640.png",
+          "bytes": 107526,
+          "overflows": []
+        }
+      ],
+      "calls": [],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-available.png",
+      "screenshotBytes": 107526
+    },
+    {
+      "name": "update-downloaded",
+      "status": "PASS",
+      "fixtureOnly": true,
+      "viewportScreenshots": [
+        {
+          "width": 400,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-downloaded-400.png",
+          "bytes": 103041,
+          "overflows": []
+        },
+        {
+          "width": 640,
+          "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-downloaded-640.png",
+          "bytes": 112658,
+          "overflows": []
+        }
+      ],
+      "calls": [
+        {
+          "name": "deferUpdate"
+        },
+        {
+          "name": "installUpdate",
+          "version": "0.1.7"
+        }
+      ],
+      "screenshot": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T19-24-37.326Z/update-downloaded.png",
+      "screenshotBytes": 112658
+    }
+  ],
+  "unverified": [
+    "Produkční OAuth, serverové potvrzení a upload",
+    "Skutečný Mac audio-smoke a ui-smoke",
+    "Vizuální shoda s Astrou a úplnost Opus ikon",
+    "Skutečné blokování instalace hlavním procesem při nahrávání; testuje se pouze renderer odpovědi installRequested",
+    "Pád během nahrávání, výpadek zdroje a souběh uploadů"
+  ]
+}
