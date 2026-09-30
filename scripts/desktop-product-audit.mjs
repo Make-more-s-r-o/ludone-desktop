@@ -8,7 +8,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 // Prázdný nebo neúplný důkaz nemůže vyjít zeleně.
 export const REQUIRED_PATHS = [
-  "day-groups-and-filters", "detail-verification-finder-focus",
+  "day-groups-and-filters", "day-dark", "day-professional", "now-dark", "detail-verification-finder-focus",
   ...["identity", "origin", "revision", "fileRevision", "unknown"].map(m => `verification-invalidates-${m}`),
   "day-empty", "day-expired-send-disabled", "now-offline",
   ...["send", "retry", "claim", "delete"].map(a => `fixture-action-${a}`),
@@ -21,7 +21,7 @@ export function auditExitCode(results, networkAttempts) {
   return networkAttempts !== 0 || !Array.isArray(results) || results.length === 0
     || REQUIRED_PATHS.some(name => results.filter(r => r.name === name).length !== 1)
     || results.some(r => r.status !== "PASS" || !r.screenshot || !(r.screenshotBytes > 0) || r.screenshotError
-      || ![400, 640].every(width => r.viewportScreenshots?.some(s => s.width === width && s.screenshot && s.bytes > 0))) ? 1 : 0;
+      || ![400, 640].every(width => r.viewportScreenshots?.some(s => s.width === width && s.screenshot && s.bytes > 0 && Array.isArray(s.overflows) && s.overflows.length === 0))) ? 1 : 0;
 }
 
 // Samostatný renderer bez produkčního preloadu, tokenů a IPC. Neověřuje backend.
@@ -137,6 +137,7 @@ function installFixture(window, scenario) {
   state.update ??= { revision: 1, availableVersion: null, downloadedVersion: null, downloading: false,
     installRequested: false, installDeferred: false, ...scenario.update };
   window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
+  if (scenario.theme) window.localStorage.setItem("ludone.desktop.theme", scenario.theme);
   window.__astraFixture = state;
   const action = (name) => async (value) => { calls.push({ name, value }); return { outcome: "fixture_only" }; };
   const persist = () => {
@@ -239,15 +240,21 @@ async function scenario(name, fixture, check, panel = false) {
     await check({ evaluate, wait, click, pressEscape });
     for (const width of [400, 640]) {
       win.setContentSize(width, 744); await delay(80);
-      const overflow = await evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 1");
-      if (overflow) throw new Error(`Horizontální overflow při ${width}px`);
+      // Měříme kontejnery, nikoli záměrně oříznuté titulky a jednotlivé texty.
+      const overflows = await evaluate(`(() => {
+        const selectors = ['html', '.settings-content', '.panel-scroll', '.recordings-dashboard', '.queue-card'];
+        return selectors.flatMap(selector => [...document.querySelectorAll(selector)]
+          .filter(element => element.scrollWidth > element.clientWidth + 1)
+          .map(element => ({ selector, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })));
+      })()`);
       const shot = await win.webContents.capturePage();
       if (shot.isEmpty()) throw new Error(`Prázdný screenshot při ${width}px`);
       const png = shot.toPNG();
       if (png.length === 0) throw new Error(`Prázdný PNG při ${width}px`);
       const screenshot = path.join(runOutput, `${name}-${width}.png`);
       await writeFile(screenshot, png);
-      row.viewportScreenshots.push({ width, screenshot, bytes: png.length });
+      row.viewportScreenshots.push({ width, screenshot, bytes: png.length, overflows });
+      if (overflows.length) throw new Error(`Horizontální overflow při ${width}px: ${JSON.stringify(overflows)}`);
     }
     row.status = "PASS";
     row.calls = await evaluate("window.__astraFixture.calls");
@@ -310,6 +317,14 @@ try {
       await t.click(`[data-filter=${filter}]`); await t.wait(`document.querySelectorAll('[data-recording-id]').length === ${count}`);
     }
   });
+  for (const theme of ["dark", "professional"]) {
+    await scenario(`day-${theme}`, { theme }, async (t) => {
+      await ready(t); await t.wait(`document.documentElement.dataset.theme==='${theme}'`);
+    });
+  }
+  await scenario("now-dark", { theme: "dark" }, async (t) => {
+    await t.wait("document.documentElement.dataset.theme==='dark' && Boolean(document.querySelector('.recording-card'))");
+  }, true);
   await scenario("detail-verification-finder-focus", {}, async (t) => {
     await open(t,2); await t.click(`${entry(2)} .recording-action--verify`);
     await t.wait(`Boolean(document.querySelector('${entry(2)} [data-status=complete]'))`);
