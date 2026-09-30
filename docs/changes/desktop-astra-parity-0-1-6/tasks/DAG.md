@@ -42,6 +42,10 @@
 | `scripts/astra-design-e2e.mjs` | koordinátor | Sekvenční převzetí původních a nových packetů; nový běh: Settings T-08, dashboard T-09, panel T-10, ostatní T-11. |
 | `package.json` | koordinátor | Sekvenční převzetí původních a nových packetů; nový běh: Settings T-08, dashboard T-09, panel T-10, ostatní T-11. |
 
+| `electron/main.test.cjs` | koordinátor | Sekvenční převzetí; původní a opravný běh nejsou souběžné. |
+| `electron/preload.test.cjs` | koordinátor | Sekvenční převzetí; původní a opravný běh nejsou souběžné. |
+| `src/features/recording/RecordingCard.test.jsx` | koordinátor | Sekvenční převzetí; původní a opravný běh nejsou souběžné. |
+
 ## Packety a executor
 
 | task | packet | executor |
