@@ -5,7 +5,7 @@
     "id": "desktop-astra-parity-0-1-6",
     "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
     "goal": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-    "updatedAt": "2026-09-30T19:32:07.288Z",
+    "updatedAt": "2026-09-30T19:59:38.535Z",
     "planVersion": "draft",
     "problem": "Dan aktualizoval desktop na 0.1.5 a vidí jiné rozložení i tok, než schválil v prototypu Astra „Nit dne“. Vydaná verze převzala pouze omezený výřez L1: ikonu, zúženou navigaci a přímý odkaz na Nahrávky. Hlavní obrazovka, Můj den, nastavení a sjednocená cesta záznamu zůstaly v původním rozhraní. Předchozí předání tak vytvořilo dojem, že je hotový celý návrh, ačkoli dokumentace rozsah označovala jako částečný.",
     "targetOutcome": "LuDone Desktop má být soudržná, každodenně použitelná macOS aplikace podle schválené plné varianty Astra: přehled „Teď“, společná stopa dne, detail nahrávky a nastavení sdílejí značku, navigaci, typografii, barvy, stavové zprávy a očekávané chování. Nahrávání, místní fronta, serverové ověření, opravy a aktualizace zůstávají skutečné funkce aplikace; prototypové údaje se do produktu nepřenášejí. LuTrack zůstane nefunkčním, pravdivě označeným budoucím místem bez měření a bez napojení na server.",
@@ -40,7 +40,7 @@
       "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Aktualizovat na0.1.6 a provést MAC-PREJIMKA.md: skutečný zvuk, restart, jeden upload a Finder instalace.",
+      "nextStep": "Základ vydaný v 0.1.6; aktuální 0.1.7 rozšiřuje produktový tok. Fyzickou Mac přejímku provést na aktuální verzi.",
       "evidence": [
         "EV1",
         "EV2",
@@ -58,14 +58,15 @@
       "name": "Produktové dotažení po živém auditu",
       "whatItGives": "Klidný panel, přehled dne, pravdivý detail a funkční nastavení nad dlouhou historií.",
       "scope": "approved",
-      "delivery": "coded",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Zelené CI PR158, merge a podepsané vydání0.1.7; fyzická Mac přejímka potom.",
+      "nextStep": "Aktualizovat na 0.1.7 a provést krátkou Mac přejímku; skutečný zvuk a instalace čekají na člověka.",
       "evidence": [
         "EV10",
-        "EV11"
+        "EV11",
+        "EV12"
       ]
     },
     {
@@ -73,13 +74,14 @@
       "name": "Firma a viditelnost před uploadem",
       "whatItGives": "Uložený default firmy a bezpečná volba firmy/soukromí jedné nahrávky.",
       "scope": "approved",
-      "delivery": "coded",
-      "exposure": "unavailable",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "Publikovat0.1.7, poté člověk ověří default firmy po reopen/restart a jeden soukromý upload.",
+      "nextStep": "Na Macu ověřit uloženou výchozí firmu po znovuotevření/restartu a jeden skutečný soukromý upload do zvolené firmy.",
       "evidence": [
-        "EV11"
+        "EV11",
+        "EV12"
       ]
     }
   ],
@@ -585,9 +587,37 @@
       "label": "Finální kandidát 0.1.7",
       "value": "2bf1da4: 1654 PASS, 35 main/preload podmínek, 18 stavů a 41 cest; review bez P1/P2",
       "ref": "evidence/acceptance-0-1-7-2026-09-30/README.md"
+    },
+    {
+      "id": "EV12",
+      "kind": "deploy",
+      "label": "Podepsané vydání 0.1.7",
+      "value": "Workflow 36767124908 SUCCESS, feed 0.1.7 a osm souborů HTTP200; fyzická Mac přejímka čeká",
+      "ref": "evidence/release-0-1-7-2026-09-30/README.md",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/36767124908"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-30T19:59:38.535Z",
+      "text": "0.1.7 vydaná: PR158 sloučený na a149a55, nový neměnný tag, podpis/notarizace a publikace obou Mac variant SUCCESS. Nezávislý veřejný feed a osm souborů ověřené. F2/F3 dodané a produkční, ověření funkcí stále tests-green; fyzický zvuk, produkční OAuth/upload a instalace čekají na člověka. Unikátní důkazy archivované před úklidem vlastních workerů."
+    },
+    {
+      "at": "2026-09-30T19:59:33.825Z",
+      "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T19:59:27.879Z",
+      "text": "Funkce F3 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T19:59:23.365Z",
+      "text": "Funkce F2 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T19:59:18.579Z",
+      "text": "Byl přidán důkaz EV12: Podepsané vydání 0.1.7."
+    },
     {
       "at": "2026-09-30T19:32:07.288Z",
       "text": "0.1.7 finální zdroj2bf1da4: schválený panel, uložený default firmy a per-recording firma/přístup; gates/E2E/audit/review zelené. D10/D11 vyřízené. Publikace a lidská Mac přejímka ještě čekají."

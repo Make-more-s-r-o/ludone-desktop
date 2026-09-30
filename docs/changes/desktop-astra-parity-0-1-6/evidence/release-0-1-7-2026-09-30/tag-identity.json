@@ -1,0 +1,11 @@
+{
+  "tag": "v0.1.7",
+  "tagObject": "59c8f8a605e7a6fef335d7df7f4315f186879f20",
+  "commit": "a149a55c702077a657a9123274e5129d9fe18039",
+  "releaseRun": 36767124908,
+  "checkedAt": "2026-09-30T19:46:26.233815+00:00",
+  "feedBeforePublication": {
+    "status": 200,
+    "firstLine": "version: 0.1.6"
+  }
+}

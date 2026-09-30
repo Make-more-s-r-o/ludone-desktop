@@ -1,0 +1,4 @@
+To https://github.com/Make-more-s-r-o/ludone-desktop.git
+ * [new tag]         v0.1.7 -> v0.1.7
+
+EXIT_CODE=0

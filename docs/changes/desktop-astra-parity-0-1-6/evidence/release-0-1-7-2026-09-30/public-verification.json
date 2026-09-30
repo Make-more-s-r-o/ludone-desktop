@@ -1,0 +1,60 @@
+{
+  "measuredAt": "2026-09-30T19:52:31.982Z",
+  "version": "0.1.7",
+  "feedStatus": 200,
+  "feedSha256": "1e856cc4a1bfbe64bb2fc989eed6a0acc1947561f17331d7d5fea01c14ce3dab",
+  "files": [
+    {
+      "name": "LuDone-Desktop-0.1.7-arm64.dmg",
+      "status": 200,
+      "size": 145418168,
+      "expectedSize": 145418168
+    },
+    {
+      "name": "LuDone-Desktop-0.1.7-arm64.zip",
+      "status": 200,
+      "size": 145105082,
+      "expectedSize": 145105082
+    },
+    {
+      "name": "LuDone-Desktop-0.1.7-x64.dmg",
+      "status": 200,
+      "size": 151434741,
+      "expectedSize": 151434741
+    },
+    {
+      "name": "LuDone-Desktop-0.1.7-x64.zip",
+      "status": 200,
+      "size": 151177850,
+      "expectedSize": 151177850
+    },
+    {
+      "name": "LuDone-Desktop-0.1.7-arm64.dmg.blockmap",
+      "status": 200,
+      "size": 152869,
+      "expectedSize": null
+    },
+    {
+      "name": "LuDone-Desktop-0.1.7-arm64.zip.blockmap",
+      "status": 200,
+      "size": 151748,
+      "expectedSize": null
+    },
+    {
+      "name": "LuDone-Desktop-0.1.7-x64.dmg.blockmap",
+      "status": 200,
+      "size": 160513,
+      "expectedSize": null
+    },
+    {
+      "name": "LuDone-Desktop-0.1.7-x64.zip.blockmap",
+      "status": 200,
+      "size": 160057,
+      "expectedSize": null
+    }
+  ],
+  "limits": [
+    "Nezávislá kontrola nestahuje celé veřejné binárky ani sama neověřuje jejich podpis.",
+    "SHA256 feedu a přesné velikosti všech osmi souborů vůči místním artefaktům ověřuje skutečný publikační workflow."
+  ]
+}
