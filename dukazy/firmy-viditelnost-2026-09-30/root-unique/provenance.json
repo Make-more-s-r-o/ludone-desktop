@@ -1,0 +1,595 @@
+{
+  "note": "Historické meziběhy před finální integrací, zachované před úklidem vlastního root worktree. Nejde o finální přejímku2bf1da4. Původní reporty doslovné, pouze top-level soubory bez profilů. SourceRef meziběhů se nepřipisuje zpětně.",
+  "files": [
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/design-e2e/2026-09-30T09-08-40-475Z/04-chyba-panel.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/design-e2e/2026-09-30T09-08-40-475Z/04-chyba-panel.png",
+      "sha256": "f841b9eafc43d511a5bc3a53f968f701ee489dc9890091d11ec99d0337fc9af0"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/design-e2e/2026-09-30T09-08-40-475Z/report.json",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/design-e2e/2026-09-30T09-08-40-475Z/report.json",
+      "sha256": "fabf9d8baff996595044943383aed05fac5d8a25b92d85115befce9f81cd9001"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/design-e2e/2026-09-30T09-08-40-475Z/02-00-prihlaseni.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/design-e2e/2026-09-30T09-08-40-475Z/02-00-prihlaseni.png",
+      "sha256": "34a9bf5d6018e54ddf2d02a6936afee6482f7fe1bc1c395aa30bb9ad0a54cc62"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/design-e2e/2026-09-30T09-08-40-475Z/03-ted.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/design-e2e/2026-09-30T09-08-40-475Z/03-ted.png",
+      "sha256": "580d7ae0e71b70287e008f70ffddd9d5c2c48dd540ffac668b9b15ba608d7bbc"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/design-e2e/2026-09-30T09-08-40-475Z/application.log",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/design-e2e/2026-09-30T09-08-40-475Z/application.log",
+      "sha256": "61f67ec233f812bf7aa765e76c9de594ee2a3c901c7d9262f035bb0d6f656f8d"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/design-e2e/2026-09-30T09-08-40-475Z/01-00-prvni-pouziti.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/design-e2e/2026-09-30T09-08-40-475Z/01-00-prvni-pouziti.png",
+      "sha256": "c09b24426033c22b2405ffc4f1a00f9d719770d47ff3c2ec2d6d70e830fad11f"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/design-e2e/2026-09-30T09-08-11-124Z/report.json",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/design-e2e/2026-09-30T09-08-11-124Z/report.json",
+      "sha256": "4fca6242926fca403f93606e7571ade12d6daf8f31a243fec8eaa19045b6faba"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/design-e2e/2026-09-30T09-08-11-124Z/comparison.html",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/design-e2e/2026-09-30T09-08-11-124Z/comparison.html",
+      "sha256": "a07643c4453c1d1ca603e4a3977608f0baee6b0da9cfc91b9db6b38fa8ee6936"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-missing.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-missing.png",
+      "sha256": "81954de37a4a749a5f09173927e990b57460c84a649bfba0e4629cb7e090783a"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/auth-expired.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/auth-expired.png",
+      "sha256": "6961fbafe5fc3adf4d503d6a8c5380fd55fe19fc4023c89e75075a4233d5c8c4"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-verify-error.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-verify-error.png",
+      "sha256": "a171aac9e8461ed854de0047a9db8694202a92f13a42a4a1cef564cce6b4377d"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/update-downloading.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/update-downloading.png",
+      "sha256": "414006456706a9ef957f9f29c667e58c404ebc6efe9b1ec2d4607477bc012c1d"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/report.json",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/report.json",
+      "sha256": "f6b725499f36015ef85fb145801bb4a0fcf40f6ebc217efa03fabe67954c3506"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/update-available.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/update-available.png",
+      "sha256": "8539154578f1680de0f364d5d4e204944330584b356bbd21da3d4832186b56b2"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-sent.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-sent.png",
+      "sha256": "ed787d3c0c45906e5d033b44501bc0f59c8a22df2921c948f598e99541a6270e"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/auth-signed-in.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/auth-signed-in.png",
+      "sha256": "31757e9ba2e9eb69bef401ff2977af66b96a7c698e830a1b339c9342a8cfdbf9"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-queued.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-queued.png",
+      "sha256": "1a3b99332de4fc65bc5e9b6333307cf1de936e22670e507ca2aa900a471c6b83"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/auth-oauth-pending-cancel.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/auth-oauth-pending-cancel.png",
+      "sha256": "91680d255f7933bcb2e4330beae5249a986f709607b2ecdbeba9bab2e6e15bc7"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-error.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-error.png",
+      "sha256": "1171e9cd3659d87d2f63840df1d9d7e1c8a53ac9ef89519c46aaef0866b00e0e"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/day-empty.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/day-empty.png",
+      "sha256": "31504c81f08458b323ca4115182b67036e5078ca34729083e0a9c81c2bf3f033"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/update-install-waits.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/update-install-waits.png",
+      "sha256": "f51df9650a392202578003946aa1379a3d59e091497309ad7f4e3ef85ccdd7b0"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/command.log",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/command.log",
+      "sha256": "e7a08209e3a405352cfecc88642229399325d9481b80715db6e072601367f2b6"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-verified.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/detail-verified.png",
+      "sha256": "51f117a5d4c18a932168926be56fd5a7279a0bfe5f18b0dd26b1ac9c375b0f7c"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/astra-state-e2e/2026-09-30T09-11-34.731Z/day-loading.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/astra-state-e2e/2026-09-30T09-11-34.731Z/day-loading.png",
+      "sha256": "eaf31e46ed79048d4e381bf3cb7142fa3f65585c034cb6088aae520d8a2ee4f1"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-identity-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-identity-640.png",
+      "sha256": "9d0c354855c88130fee5da1cefa0fe7850db83349df1deeef5c2f3afc9b3b30d"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/day-empty-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/day-empty-640.png",
+      "sha256": "95d87e14ab15be91ef766f6096ef8c846eb4794076210d4f57ed7d7a52e5e362"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-normal-diagnostics-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-normal-diagnostics-640.png",
+      "sha256": "d7ae9350f9bf4de0de32b4a86b1ebf186d0afb6bd446b9fc976ee7e8f4d0f59e"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-audio-quick-focus-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-audio-quick-focus-400.png",
+      "sha256": "8b4e4495a836b3b2b579c1744f07877663617618218ed110409cd2c1c956f3f4"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/report.json",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/report.json",
+      "sha256": "701dec686d4ee0cf7ac0be90c8a994a1d1512649406baadc7492d20483e0bfc2"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-active-safe-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-active-safe-400.png",
+      "sha256": "f0c4befd2c64cd8e5dea6227948bf9194d74dee0cec2b40600665b498a7a5b7e"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/day-expired-send-disabled-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/day-expired-send-disabled-400.png",
+      "sha256": "b5aaa3dcc239480bb0682a27150ba36d08f7007b3d23373495679a9f304f81fa"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/day-groups-and-filters.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/day-groups-and-filters.png",
+      "sha256": "8317b06bad727f191e103b05df2f50f3acd294f2a2469b4f939fbbcc917f3c88"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-delete.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-delete.png",
+      "sha256": "3e076d87ded45116d3dac30f3840508059fa8a8c1ea9912a2700814dced54470"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/update-available.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/update-available.png",
+      "sha256": "904935d3ebf8499309d6e6ee782610ead1f209741227e74bf05a85737465e7aa"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/update-downloaded-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/update-downloaded-640.png",
+      "sha256": "ef69c9d2ec29c7a63dbd480c31c03bae7e6b41fdcac9298534596cb712f2a920"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-send-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-send-400.png",
+      "sha256": "80509e8075d65fe0cccc2ca02e8659960bfac293990eb2c6fe73fd5adbdd9ceb"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/now-navigation-queue-layout-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/now-navigation-queue-layout-640.png",
+      "sha256": "0837f542e75d3045a24c5dc091c69d764ec56f3a9a27f1f3a2565c92852d87f6"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-send.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-send.png",
+      "sha256": "e7cf314a7401e297146b656e6b69291cd62e784750fd7da79e138f32da2804cc"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-delete-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-delete-400.png",
+      "sha256": "4aad3ad0ec744422147f1338856054f7c379b7c02f0a8750ad9c9f003cb9d2da"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-theme-dark-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-theme-dark-640.png",
+      "sha256": "d3ffc23e638ef6f829a5a40a2d28b627bdcc09c38ae18b4b33bade4835d20705"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-retry-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-retry-400.png",
+      "sha256": "223d68a147dec280d0f9155780c789248bc2231c5187c36e1bab209c87a6c5cb"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-audio-quick-focus.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-audio-quick-focus.png",
+      "sha256": "834780217ac15bb6653d328e37cf25bcc88864342e814d129207f9b2e998c227"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/now-offline.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/now-offline.png",
+      "sha256": "28b9773a93ec30763c7f553854b7a6b83acbfbe3a977ee2e62f6cde10431e90f"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-verification-finder-focus-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-verification-finder-focus-400.png",
+      "sha256": "90fec2a7eee2a89b1b1eb9336a163277e02c20509122004d4f74f066284098a4"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/update-absent-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/update-absent-400.png",
+      "sha256": "af0d8d1b0d9e6582ac4eb41b5e182db1cc4e2322a7f21b48a0fc27be1aac3bf7"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-theme-professional.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-theme-professional.png",
+      "sha256": "3fd104d6ca863f120a5eb7d9e7b7715c2e682ff0baf57537785fa120d98c20b7"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-unknown-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-unknown-640.png",
+      "sha256": "a9fdbaf3613296516c808a2a3ab47fc8013828588b835f192f375636815e754b"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-partial-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-partial-400.png",
+      "sha256": "f557d7fa8e71f32c299dac1c4af1097c58ca1da394c5d5524da66463a1fdb762"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-theme-professional-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-theme-professional-400.png",
+      "sha256": "c0953cfd837e98f840b0fe5cc355f9004de08d8b179f64845b85a71c286b0e02"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-claim-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-claim-640.png",
+      "sha256": "0988f82ce14862c4aabc5cb07eaacbe2f547f06744b2c9b32c0c63a52b25ce68"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/command.log",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/command.log",
+      "sha256": "7d20ecf638888e6f7f5998847ba191673b42dd7d3902f3458a609e50e15a8cc2"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/keyboard-escape-quick-actions.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/keyboard-escape-quick-actions.png",
+      "sha256": "f242909a456a4cb1ed6ba36965f4573b2299b57ed944d205c97655c1507306ba"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-partial.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-partial.png",
+      "sha256": "f7570657378a1e05c33497e362085e62393f81ae7936297e83de9b0e6aef40f0"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/day-empty-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/day-empty-400.png",
+      "sha256": "fd8c519e705f8405604efa840fae1ffe31c387d449524b914802627db51f76c8"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-normal-diagnostics-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-normal-diagnostics-400.png",
+      "sha256": "1901322e057cdb1b80e846ee4c00824b4c60b5344ccf4439a666c6f1265fe6af"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-identity-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-identity-400.png",
+      "sha256": "914adbe37e9a23b5f7f74f33ac48b7e9be0c1c8809e69653633d94c24931ea79"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-retry.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-retry.png",
+      "sha256": "601594088ad2976f8495b9fb7c0a5b29b7e475ed24be4af41bcb892eb4816497"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-fileRevision-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-fileRevision-400.png",
+      "sha256": "632b6b16b969d195a915445243e0a49a1f106084ecdb47e78abd289f592b8ac3"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-origin.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-origin.png",
+      "sha256": "73af78d37601287cf37cb78833eaf4a83c18be91693fe7f6b158d1463b4e546c"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-active-safe.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/detail-active-safe.png",
+      "sha256": "3ccc77084440bcf64fea4310a607a5ed7a139f4755543a3b23895dd9bdb2c05b"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/day-expired-send-disabled-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/day-expired-send-disabled-640.png",
+      "sha256": "8c4ee8ee7daede6f3252595418344c1bba525c47075877a16d93cc195bfcfc79"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/update-downloaded-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/update-downloaded-400.png",
+      "sha256": "7657bad4e9d201adc963649c0713d5dae8ac511fbf046ac0c020b72a3b9f29c4"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/now-navigation-queue-layout-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/now-navigation-queue-layout-400.png",
+      "sha256": "89a34fd0f7c54f95b12fd345d903afaded09813a97cfe7a8d91e0410d87e5b3f"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-theme-dark-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/settings-theme-dark-400.png",
+      "sha256": "cb1c86b3dbe4a524792062488396e483348bf044e14669928765178e4f6629df"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/update-absent.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/update-absent.png",
+      "sha256": "c999186c73e82f5736a6049d56c43d130e595f821b5ab5a24babc67c10e1165e"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/now-offline-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/now-offline-400.png",
+      "sha256": "6a7eeccf6ef050463f9d0763aa03b704c4878f47ae0b0cbf0fd75d72ac50884d"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/update-available-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/update-available-400.png",
+      "sha256": "81d5fe637186909698d93e649c17cf3a65e1d8c07cdc8840f7203910d6c0a9fe"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-unknown-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/verification-invalidates-unknown-400.png",
+      "sha256": "c3eef2018e96f54d654df3de6c7a6b767c59c83a6ce5c4beff8febafe2ae62df"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-claim-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-16-07.619Z/fixture-action-claim-400.png",
+      "sha256": "9d762c14a7dfb6eaa406bec10801ddc5752e912aee7706e5ac9d1b0c74069dc7"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/report.json",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/report.json",
+      "sha256": "09d091b4d85cd0f6015312cd4a94da7aa4eef0ccdbf781612b4956ad7400d549"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/day-groups-and-filters.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/day-groups-and-filters.png",
+      "sha256": "f2addf62fd17587427443e4db2b5776459edd2ca364935cfaf56f274722195c0"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/update-available.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/update-available.png",
+      "sha256": "625a9c0aba3e62a9d075b47054549ba41f9be5750b78de9be6931b847a6db449"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/update-downloaded-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/update-downloaded-640.png",
+      "sha256": "c82adfb45cbef7b72f42dd3278162cf80e5e27f8dc9e42d93dc864f19815e51c"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/now-dark-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/now-dark-640.png",
+      "sha256": "8ee77d7afaf4dba8c73f8bf1ad74825a740ba0e37077ade48ecb91815d5e7999"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/now-navigation-queue-layout-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/now-navigation-queue-layout-640.png",
+      "sha256": "5684475f21fb78945c837620af2c1859d925012d31e4eb6d0805b25841abf867"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/fixture-action-delete-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/fixture-action-delete-400.png",
+      "sha256": "f90a1d7434cf9470c47f12211219dba4b33f01b462aea92706e90c288c908f5f"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/fixture-action-retry-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/fixture-action-retry-400.png",
+      "sha256": "e1138db8ee0a030b5da490f5382273f779cacffac07f68639aa74e0e64d365e3"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/now-offline.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/now-offline.png",
+      "sha256": "11e47111445a45d0a37fb8cae856623b14ad9142398c4655db80b383664bfe5b"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/detail-verification-finder-focus-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/detail-verification-finder-focus-400.png",
+      "sha256": "3fe8b5c7bc776250dffec901316adcc3434be4f0bd59b82152cfbe187d8e5280"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/verification-invalidates-origin-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/verification-invalidates-origin-400.png",
+      "sha256": "6853f0f9e4c437d05182ca7b23a562ac5a1f5c2b38bdecc5be0493d43e1ba173"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/detail-verification-finder-focus.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/detail-verification-finder-focus.png",
+      "sha256": "005df22fe1efe791cb0a8cfdb5200aafd4800f12534e2d6de2c5010c180061fe"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/update-absent-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/update-absent-400.png",
+      "sha256": "94bbf416784559b4ca129f48d114a05b499361cfb1401ef9007f255142e271a4"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/day-professional-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/day-professional-640.png",
+      "sha256": "28d1ecbbec974bca6a039df222b67ebee3b91f529a3a69341f1307e26a464401"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/verification-invalidates-unknown-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/verification-invalidates-unknown-640.png",
+      "sha256": "ccbfd0416a36adaa4cbde6e95b856025d16cc41e3c11528b77a3469d2ff0cfb9"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/detail-partial-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/detail-partial-400.png",
+      "sha256": "db1a8740208ed554b8e76cf55b83c48fbe93932fc14424bbbbf514fc2dbbe2be"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/settings-theme-professional-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/settings-theme-professional-400.png",
+      "sha256": "525c3d399493b200d194835c5a200ba64489f05ef69c65b136e0d92cfd8ab030"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/command.log",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/command.log",
+      "sha256": "d806a7f77db485676934d455bcf9cbb75acc4c73dbcd87b285559020e3eca918"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/day-dark-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/day-dark-400.png",
+      "sha256": "525c71fc178e9a9acdad2586283306bf08c984cb70cbc9e1d784c4f4bde1bd92"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/verification-invalidates-identity-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/verification-invalidates-identity-400.png",
+      "sha256": "c8a6a9239033415ef5614bd02a0597b0b97f773411fd0d3857208904f0e57578"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/day-dark.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/day-dark.png",
+      "sha256": "15ebc85e77895be6726baef31fc788aa0f1cb9a65ca76b4783ef21ce11f153fb"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/update-downloaded-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/update-downloaded-400.png",
+      "sha256": "dfad763ccb706af56c2a60da79de82ec0784908ac81be0c9be16a18b200c2fa3"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/now-navigation-queue-layout-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/now-navigation-queue-layout-400.png",
+      "sha256": "954688324521b6e1ac1f2fd15370a412b39561962086cbc27be3012a0e7e6a07"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/now-dark-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/now-dark-400.png",
+      "sha256": "30ccafc2bce863d3e9d95689c5b46355dc744873b6fb330bcba6ca9abbb07cf6"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/settings-theme-dark-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/settings-theme-dark-400.png",
+      "sha256": "4cb691b0ddeb0afef146f8bfd76621f0292daee6fbba22baec54a505f47c28e7"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/update-absent.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/update-absent.png",
+      "sha256": "093976f00fe2eae1544fc772a8a987fb16e991d959a870976dc7d410c0c516e3"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/now-offline-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/now-offline-400.png",
+      "sha256": "d992d788c514619ce426cef0436b505aae6f4f9e679f8deace266e99ad05dec0"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/update-available-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/update-available-400.png",
+      "sha256": "c93f4e0380ac744b7aff0fd33f71e054a3c94f9c0f80642c5f9e94ed2a42ec53"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/day-groups-and-filters-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/day-groups-and-filters-400.png",
+      "sha256": "9382842cfd5b34fa51790199a915e0b20e09ae04159589758169a53901e54971"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/day-professional-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/day-professional-400.png",
+      "sha256": "f1a54145315a6ddd5943bcb50923f460b4f2d350387d70338ebc3b43ea75bdeb"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T12-15-21.042Z/verification-invalidates-unknown-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T12-15-21.042Z/verification-invalidates-unknown-400.png",
+      "sha256": "63cf321afef08b4f0efa4206b85a342894235f0b512f2de3bb8cd85cef28f70c"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/report.json",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/report.json",
+      "sha256": "3e9c8e1a4af9594377ec3099e0330d9fb9c2337643b3b5e2feb45e03ac1ad190"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/detail-active-safe-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/detail-active-safe-400.png",
+      "sha256": "5e543f4b82e02e3b8024f0f193911e0f33ef0a49bd8820c8128d58f08f859c8b"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/update-available.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/update-available.png",
+      "sha256": "14e4162fa8bded1252caac156488d970bf366f5709d874d55e4e73190588a805"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/update-downloaded-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/update-downloaded-640.png",
+      "sha256": "dd6fee730ae9ec47eb443e360e9e255bcf0facf30e104074c4e8ba294fbee773"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/now-navigation-queue-layout-640.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/now-navigation-queue-layout-640.png",
+      "sha256": "233d5cfbc8e51a9c136328981d58c4ddc310331e6977c9ffa74655feee34e158"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/fixture-action-delete-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/fixture-action-delete-400.png",
+      "sha256": "83a2fa8dbdfbd686c9f3ec4035c350da18c8bb876ff8bee2dc91f2b890ad5f00"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/now-offline.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/now-offline.png",
+      "sha256": "9441e7be2af39255a612491669475db588df5c2e3baad6cf37d4d694fde1fa7d"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/update-absent-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/update-absent-400.png",
+      "sha256": "51453f539fc2cec9063795b740418835e0aa234d491ac86858fe7a5e5d4732a2"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/detail-partial-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/detail-partial-400.png",
+      "sha256": "72fcad25649cb232033081ec6db7da46ff627e2c6658b52d1e70aebe28f45615"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/settings-theme-professional-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/settings-theme-professional-400.png",
+      "sha256": "84d70f84a91c20e2134e1a13a8ee510c53dd94cfc0453883838d6be4099198b9"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/command.log",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/command.log",
+      "sha256": "ee7b2e02f5c678c381052356ee550ead0e8f4ed43e60f25e70f074f611ba33f0"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/update-downloaded-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/update-downloaded-400.png",
+      "sha256": "93f0afd541cec08e81eb129609ac88171e7573a5aa4397ed64ef1e6d245dc908"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/now-navigation-queue-layout-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/now-navigation-queue-layout-400.png",
+      "sha256": "467674d0ab06868cdcb56257bd6a5ba1aebb9343b0d15fc4ddb0963afd940c09"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/settings-theme-dark-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/settings-theme-dark-400.png",
+      "sha256": "80c92c4746c783e2f3945ea17c4cb035b1d15f32f1837392f6477ce932e3ab3f"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/update-absent.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/update-absent.png",
+      "sha256": "ad62e63eb8c284cb5f738f60bdbdf32a45bd10aa9032cbc39c2c32a1d7c6cff8"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/now-offline-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/now-offline-400.png",
+      "sha256": "3615ea9bd92fc22d91dff55e307fff9513a2f87eb40b05b7b2af9afbcded03b6"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/update-available-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/update-available-400.png",
+      "sha256": "d058a829419db067948ba1c9eaa5de611b3406c8cce6fb9e437adb0e639877e2"
+    },
+    {
+      "original": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/astra-product-polish/.runtime/desktop-product-audit/2026-09-30T09-22-20.142Z/fixture-action-claim-400.png",
+      "archived": "dukazy/firmy-viditelnost-2026-09-30/root-unique/desktop-product-audit/2026-09-30T09-22-20.142Z/fixture-action-claim-400.png",
+      "sha256": "8b43a716bdbaca16121017cdb4820c4de623c849ff807ece0b51af7f37790080"
+    }
+  ]
+}
