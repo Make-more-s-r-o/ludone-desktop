@@ -1,0 +1,22 @@
+version: 0.1.6
+files:
+  - url: LuDone-Desktop-0.1.6-x64.zip
+    sha512: l2g6Qdfq0+YYHI/VrZZG/9BBTmlWUxE6/70sanXkezWALOLdUQ0af28rRBoWJsPkIu0rduNhooJ1gWfTwu3bFg==
+    size: 151168689
+  - url: LuDone-Desktop-0.1.6-arm64.zip
+    sha512: rBXDVkOfT+FojOesb9X6adh9MXTnq3W6wevKh+HSeLKfKBgn5/lHE7+RAz4IGkLLnUENV1xkBUj6HLc3J8rvTw==
+    size: 145095917
+  - url: LuDone-Desktop-0.1.6-x64.dmg
+    sha512: 9WUBXuIHFTVz9a2Jw2A9aoXxAbH7RDoE6W53hc1aymhlyfecuorrQcvxglWvvN6cCSuIIYvXwByX9cqsUpr8Gw==
+    size: 151419887
+  - url: LuDone-Desktop-0.1.6-arm64.dmg
+    sha512: wfQUwXum7hv2rZ6ypptngeiL9HTESP81FefVjm8DWKPSOKBi6shJlbtgKQqcvHRN/9+UZ1TDcP60dYZZ/5dS1w==
+    size: 145422389
+path: LuDone-Desktop-0.1.6-x64.zip
+sha512: l2g6Qdfq0+YYHI/VrZZG/9BBTmlWUxE6/70sanXkezWALOLdUQ0af28rRBoWJsPkIu0rduNhooJ1gWfTwu3bFg==
+releaseNotes: |
+  Nový vzhled Astra a přehlednější nahrávání, Můj den a detail schůzky.
+  Teď, Můj den, Nastavení, přihlášení a aktualizace mají společné rozhraní s ikonami LuDone. LuTrack je připravený pro budoucnost a zatím zůstává neaktivní.
+  Po zastavení si zvolíš „Uložit a odeslat“ nebo „Nechat na Macu“. Schůzka zůstává jedním stereo souborem WebM/Opus; rozpracované a prázdné zvukové soubory aplikace označí jako neúplné.
+  Aktualizace se instalují až po tvém kliknutí a počkají na dokončení nahrávání a ukládání.
+releaseDate: '2026-09-30T00:25:50.700Z'

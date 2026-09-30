@@ -1,0 +1,6 @@
+object a6a12e863bf18075567f627ab14679112dc1678b
+type commit
+tag v0.1.6
+tagger Dan Jirotka <dan.jirotka@gmail.com> 1790724662 +0200
+
+LuDone Desktop 0.1.6: complete Astra experience

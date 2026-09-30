@@ -1,0 +1,5 @@
+$ git push --force-with-lease=refs/tags/v0.1.6:bc749378626eb01a2cf3bbd6e8a36f2d7bfe6ea6 origin refs/tags/v0.1.6
+To https://github.com/Make-more-s-r-o/ludone-desktop.git
+ + bc74937...239acfc v0.1.6 -> v0.1.6 (forced update)
+
+EXIT_CODE=0

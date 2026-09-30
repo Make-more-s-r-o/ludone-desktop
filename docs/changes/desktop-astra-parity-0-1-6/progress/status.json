@@ -5,7 +5,7 @@
     "id": "desktop-astra-parity-0-1-6",
     "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
     "goal": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-    "updatedAt": "2026-09-30T00:11:27.118Z",
+    "updatedAt": "2026-09-30T00:32:59.110Z",
     "planVersion": "draft",
     "problem": "Dan aktualizoval desktop na 0.1.5 a vidí jiné rozložení i tok, než schválil v prototypu Astra „Nit dne“. Vydaná verze převzala pouze omezený výřez L1: ikonu, zúženou navigaci a přímý odkaz na Nahrávky. Hlavní obrazovka, Můj den, nastavení a sjednocená cesta záznamu zůstaly v původním rozhraní. Předchozí předání tak vytvořilo dojem, že je hotový celý návrh, ačkoli dokumentace rozsah označovala jako částečný.",
     "targetOutcome": "LuDone Desktop má být soudržná, každodenně použitelná macOS aplikace podle schválené plné varianty Astra: přehled „Teď“, společná stopa dne, detail nahrávky a nastavení sdílejí značku, navigaci, typografii, barvy, stavové zprávy a očekávané chování. Nahrávání, místní fronta, serverové ověření, opravy a aktualizace zůstávají skutečné funkce aplikace; prototypové údaje se do produktu nepřenášejí. LuTrack zůstane nefunkčním, pravdivě označeným budoucím místem bez měření a bez napojení na server.",
@@ -36,11 +36,11 @@
       "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
       "whatItGives": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
       "scope": "approved",
-      "delivery": "coded",
-      "exposure": "local",
+      "delivery": "merged",
+      "exposure": "production",
       "verification": "tests-green",
       "label": "Testy zelené",
-      "nextStep": "CI bezpečnostní opravy a podepsaná publikace 0.1.6; fyzická Mac přejímka čeká na Dana.",
+      "nextStep": "Aktualizovat na0.1.6 a provést MAC-PREJIMKA.md: skutečný zvuk, restart, jeden upload a Finder instalace.",
       "evidence": [
         "EV1",
         "EV2",
@@ -49,7 +49,8 @@
         "EV5",
         "EV6",
         "EV7",
-        "EV8"
+        "EV8",
+        "EV9"
       ]
     }
   ],
@@ -424,9 +425,33 @@
       "label": "Electron 43: finální brány a dvě E2E",
       "value": "1582 unit PASS, 35 main/preload podmínek dvakrát, 18 stavů; review bez P1/P2",
       "ref": "evidence/acceptance-electron43-2026-09-30/README.md"
+    },
+    {
+      "id": "EV9",
+      "kind": "deploy",
+      "label": "Podepsané vydání0.1.6",
+      "value": "SUCCESS workflow36649506694, feed0.1.6, osm artefaktů HTTP200; fyzická Mac přejímka čeká",
+      "ref": "evidence/release-2026-09-30/README.md",
+      "href": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/36649506694"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-30T00:32:59.110Z",
+      "text": "0.1.6 vydaná: podepsané/notarizované obě architektury, přesný feed a osm veřejných souborů ověřené. Podmínky35/35 dvakrát,18stavů a1582PASS. Fyzická Mac přejímka čeká; historický plan hook ani pixelové schválení se nepředstírají."
+    },
+    {
+      "at": "2026-09-30T00:32:58.910Z",
+      "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T00:32:24.247Z",
+      "text": "Byl přidán důkaz EV9: Podepsané vydání0.1.6."
+    },
+    {
+      "at": "2026-09-30T00:25:10.238Z",
+      "text": "Funkce DESKTOP-ASTRA-PARITY-0-1-6-01 byla aktualizována."
+    },
     {
       "at": "2026-09-30T00:11:27.118Z",
       "text": "Otázka Q7 byla uzavřena rozhodnutím D7: Prázdné přihlášení nesmí oslovovat Klíčenku."

@@ -1,0 +1,14 @@
+{
+  "previousTagObject": "bc749378626eb01a2cf3bbd6e8a36f2d7bfe6ea6",
+  "previousCommit": "a6a12e863bf18075567f627ab14679112dc1678b",
+  "newTagObject": "239acfcb0efd4801e4eb2ff78dee5cf8f724d063",
+  "newCommit": "ba0adfe50eae12cf1d3dcb81e6b851ef351237d2",
+  "reason": "První run zrušen před podpisem a publikací, feed0.1.5 a všechny balíčky0.1.6 HTTP404; CI opravy success.",
+  "pushCommand": [
+    "git",
+    "push",
+    "--force-with-lease=refs/tags/v0.1.6:bc749378626eb01a2cf3bbd6e8a36f2d7bfe6ea6",
+    "origin",
+    "refs/tags/v0.1.6"
+  ]
+}

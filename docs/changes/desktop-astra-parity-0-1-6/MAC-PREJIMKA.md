@@ -1,6 +1,6 @@
 # Přejímka LuDone Desktop 0.1.6 na Macu
 
-**Stav:** 🟡 čeká na vydání a skutečné měření člověkem. Čas: přibližně 10 minut. Nepotřebuješ živý hovor; pro zvuk stačí vlastní hlas a krátké video přehrané na Macu.
+**Stav:** 🟡 vydání0.1.6 proběhlo; čeká na skutečné měření člověkem. Čas: přibližně 10 minut. Nepotřebuješ živý hovor; pro zvuk stačí vlastní hlas a krátké video přehrané na Macu.
 
 1. Po oznámení vydání aktualizuj aplikaci přes proužek **Aktualizovat**. Otevři ji z Finderu; v Nastavení zkontroluj verzi **0.1.6**. Samotný HTML prototyp není aplikace.
 2. Z lišty otevři **Teď → Můj den → Nastavení → Teď**. Porovnej rozložení s Astrou: společná horní navigace, stopa dne, detail nahrávky, nastavení účtu a zdrojů. Zkus světlé a tmavé téma. LuTrack ukazuje **Připravujeme**, nejde spustit a nezobrazuje naměřené minuty.

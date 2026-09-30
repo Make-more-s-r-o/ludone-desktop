@@ -1,0 +1,12 @@
+$ node /private/tmp/ludone-verify-release-0-1-6.mjs
+PASS LuDone-Desktop-0.1.6-arm64.dmg 200 145422389
+PASS LuDone-Desktop-0.1.6-arm64.dmg.blockmap 200 151395
+PASS LuDone-Desktop-0.1.6-arm64.zip 200 145095917
+PASS LuDone-Desktop-0.1.6-arm64.zip.blockmap 200 151711
+PASS LuDone-Desktop-0.1.6-x64.dmg 200 151419887
+PASS LuDone-Desktop-0.1.6-x64.dmg.blockmap 200 159536
+PASS LuDone-Desktop-0.1.6-x64.zip 200 151168689
+PASS LuDone-Desktop-0.1.6-x64.zip.blockmap 200 160004
+PASS podpis/notarizace, přenos SHA256, veřejný feed0.1.6 a všech8artefaktů
+
+EXIT_CODE=0

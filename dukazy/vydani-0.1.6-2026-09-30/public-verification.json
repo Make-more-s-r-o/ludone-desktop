@@ -1,0 +1,59 @@
+{
+  "measuredAt": "2026-09-30T00:29:42.019Z",
+  "version": "0.1.6",
+  "releaseCommit": "ba0adfe50eae12cf1d3dcb81e6b851ef351237d2",
+  "releaseRun": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/36649506694",
+  "feedSha256": "e628e7c79272f11d0dbbe688d04fd8bf04de2f75efd361020afc4ff32ac00f86",
+  "feedBytes": 1424,
+  "files": [
+    {
+      "name": "LuDone-Desktop-0.1.6-arm64.dmg",
+      "http": 200,
+      "bytes": 145422389,
+      "comparedToFeed": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.6-arm64.dmg.blockmap",
+      "http": 200,
+      "bytes": 151395,
+      "comparedToFeed": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.6-arm64.zip",
+      "http": 200,
+      "bytes": 145095917,
+      "comparedToFeed": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.6-arm64.zip.blockmap",
+      "http": 200,
+      "bytes": 151711,
+      "comparedToFeed": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.6-x64.dmg",
+      "http": 200,
+      "bytes": 151419887,
+      "comparedToFeed": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.6-x64.dmg.blockmap",
+      "http": 200,
+      "bytes": 159536,
+      "comparedToFeed": false
+    },
+    {
+      "name": "LuDone-Desktop-0.1.6-x64.zip",
+      "http": 200,
+      "bytes": 151168689,
+      "comparedToFeed": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.6-x64.zip.blockmap",
+      "http": 200,
+      "bytes": 160004,
+      "comparedToFeed": false
+    }
+  ],
+  "scope": "Nezávislé GET/HEAD veřejných souborů; celé binárky se zde nestahují. Podpis/notarizaci a SHA256 přenos ověřil uložený macOS workflow log. Fyzické nahrávání, upload a instalaci potvrzuje člověk."
+}

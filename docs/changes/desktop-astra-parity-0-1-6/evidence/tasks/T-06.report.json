@@ -1,8 +1,8 @@
 {
   "task": "T-06",
-  "measuredAt": "2026-09-29T23:22:54.550158+00:00",
+  "measuredAt": "2026-09-30T00:31:50.187835+00:00",
   "verification": "🧪 zelené testy",
-  "summary": "35 hlavních podmínek a 18 izolovaných stavů prošlo; vizuální review bez zbývající P1/P2.",
+  "summary": "Electron43.7.6: dvě skutečné E2E35/35, 18 stavů, vizuální review10párů bez P1/P2. Fyzická přejímka čeká.",
   "premisaPlatila": false,
   "premisaPoznamka": "Produktové zadání je výslovně autorizované Danem. Historický formalizovaný plan hook a docs-first pořadí chybí; toto je aktuální přejímka koordinátora, nikoli zpětný worker report.",
   "kontrolniNula": {
@@ -611,5 +611,7 @@
     "produkční OAuth/upload",
     "skutečná instalace aktualizace"
   ],
-  "evidence": "../acceptance-2026-09-30/README.md"
+  "evidence": "../acceptance-2026-09-30/README.md",
+  "runtime": "43.7.6",
+  "latestCheckpoint": "../acceptance-electron43-2026-09-30/README.md"
 }
