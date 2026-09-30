@@ -1,0 +1,19 @@
+npm run gates
+
+> ludone-desktop-prototype@0.1.6 gates
+> npm run lint && npm run typecheck && npm run test:unit && npm run preskocene
+
+
+> ludone-desktop-prototype@0.1.6 lint
+> eslint .
+
+
+> ludone-desktop-prototype@0.1.6 typecheck
+> tsc --noEmit -p jsconfig.json
+
+tests/queue-wiring.test.js(5773,83): error TS2493: Tuple type '[]' of length '0' has no element at index '1'.
+tests/queue-wiring.test.js(5774,12): error TS18048: 'confirmation' is possibly 'undefined'.
+tests/queue-wiring.test.js(5775,12): error TS18048: 'confirmation' is possibly 'undefined'.
+tests/queue-wiring.test.js(5776,12): error TS18048: 'confirmation' is possibly 'undefined'.
+
+EXIT_CODE=1

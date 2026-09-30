@@ -5,7 +5,7 @@
     "id": "desktop-astra-parity-0-1-6",
     "name": "LuDone Desktop 0.1.6 – kompletní Astra Nit dne",
     "goal": "Před dalším vydáním sjednotit skutečnou desktopovou aplikaci s celým schváleným návrhem Astra a prokázat shodu E2E; LuTrack ponechat jako nefunkční připravený slot bez serverového napojení.",
-    "updatedAt": "2026-09-30T08:46:18.733Z",
+    "updatedAt": "2026-09-30T12:46:15.398Z",
     "planVersion": "draft",
     "problem": "Dan aktualizoval desktop na 0.1.5 a vidí jiné rozložení i tok, než schválil v prototypu Astra „Nit dne“. Vydaná verze převzala pouze omezený výřez L1: ikonu, zúženou navigaci a přímý odkaz na Nahrávky. Hlavní obrazovka, Můj den, nastavení a sjednocená cesta záznamu zůstaly v původním rozhraní. Předchozí předání tak vytvořilo dojem, že je hotový celý návrh, ačkoli dokumentace rozsah označovala jako částečný.",
     "targetOutcome": "LuDone Desktop má být soudržná, každodenně použitelná macOS aplikace podle schválené plné varianty Astra: přehled „Teď“, společná stopa dne, detail nahrávky a nastavení sdílejí značku, navigaci, typografii, barvy, stavové zprávy a očekávané chování. Nahrávání, místní fronta, serverové ověření, opravy a aktualizace zůstávají skutečné funkce aplikace; prototypové údaje se do produktu nepřenášejí. LuTrack zůstane nefunkčním, pravdivě označeným budoucím místem bez měření a bez napojení na server.",
@@ -27,7 +27,7 @@
   "summary": {
     "done": 1,
     "inProgress": 0,
-    "blocked": 0,
+    "blocked": 1,
     "notStarted": 1
   },
   "features": [
@@ -58,11 +58,26 @@
       "name": "Produktové dotažení po živém auditu",
       "whatItGives": "Klidný panel, přehled dne, pravdivý detail a funkční nastavení nad dlouhou historií.",
       "scope": "approved",
+      "delivery": "coded",
+      "exposure": "unavailable",
+      "verification": "unverified",
+      "label": "Blokováno",
+      "nextStep": "Dokončit T-12/T-13, review a finální audit; obnovit vizuální kontrakt až po rozhodnutí Q1.",
+      "evidence": [
+        "EV10"
+      ],
+      "blocker": "Původní design E2E FAIL na staré geometrii, Q1 před publikací; nový požadavek firmy/viditelnosti pokračuje."
+    },
+    {
+      "id": "F3",
+      "name": "Firma a viditelnost před uploadem",
+      "whatItGives": "Uložený default firmy a bezpečná volba firmy/soukromí jedné nahrávky.",
+      "scope": "approved",
       "delivery": "no-code",
       "exposure": "unavailable",
       "verification": "unverified",
       "label": "Navrženo",
-      "nextStep": "Opravit a agentně proklikat všechny cesty v izolovaném profilu.",
+      "nextStep": "T-12 core kontrakt, potom T-13 UI a finální audit.",
       "evidence": []
     }
   ],
@@ -183,7 +198,28 @@
       }
     }
   ],
-  "openQuestions": [],
+  "openQuestions": [
+    {
+      "id": "Q1",
+      "question": "Potvrdit dotaženou hierarchii a obnovit podle ní původní vizuální kontrakt před vydáním?",
+      "blocks": [
+        "publikace další desktopové verze"
+      ],
+      "canContinue": "T-12/T-13 firma a viditelnost, review a testy bez publikace.",
+      "options": [
+        {
+          "name": "Potvrdit dotažení",
+          "tradeOff": "Nahrávání první a kompaktní neaktivní LuTrack; obnovit přesné vizuální testy při zachování funkčních kontrol.",
+          "recommended": true
+        },
+        {
+          "name": "Vrátit původní kompozici",
+          "tradeOff": "Původní LuTrack hero a hustota z 0.1.6; opravy funkčnosti ponechat.",
+          "recommended": false
+        }
+      ]
+    }
+  ],
   "decisions": [
     {
       "id": "D1",
@@ -244,6 +280,18 @@
         "question": "Q8",
         "option": "A",
         "label": "Dále vylepšit"
+      }
+    },
+    {
+      "id": "D9",
+      "title": "Q2 → A · Doplnit F3",
+      "ref": "decisions.md#d9",
+      "decidedBy": "Dan — přímé zadání v chatu 30. 9. 2026",
+      "date": "2026-09-30",
+      "choice": {
+        "question": "Q2",
+        "option": "A",
+        "label": "Doplnit F3"
       }
     }
   ],
@@ -431,6 +479,26 @@
         "T-10"
       ],
       "packet": "tasks/T-11.md"
+    },
+    {
+      "id": "T-12",
+      "title": "Preference uploadu a bezpečný kontrakt",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [],
+      "packet": "tasks/T-12.md"
+    },
+    {
+      "id": "T-13",
+      "title": "Firma a viditelnost v UI",
+      "executor": "codex",
+      "state": "pending",
+      "attempts": 0,
+      "deps": [
+        "T-12"
+      ],
+      "packet": "tasks/T-13.md"
     }
   ],
   "evidence": [
@@ -497,9 +565,52 @@
       "value": "SUCCESS workflow36649506694, feed0.1.6, osm artefaktů HTTP200; fyzická Mac přejímka čeká",
       "ref": "evidence/release-2026-09-30/README.md",
       "href": "https://github.com/Make-more-s-r-o/ludone-desktop/actions/runs/36649506694"
+    },
+    {
+      "id": "EV10",
+      "kind": "verification",
+      "label": "Produktové dotažení checkpoint",
+      "value": "0dd87da: 1607 PASS, 18 stavů, 29 cest; původní E2E FAIL, kandidát nevydán",
+      "ref": "evidence/product-polish-2026-09-30/README.md"
     }
   ],
   "latestChanges": [
+    {
+      "at": "2026-09-30T12:46:15.398Z",
+      "text": "Otázka Q2 byla uzavřena rozhodnutím D9: Q2 → A · Doplnit F3. (volba Q2·A)"
+    },
+    {
+      "at": "2026-09-30T12:46:15.088Z",
+      "text": "Byla přidána otevřená otázka Q2: Doplnit výběr firmy a soukromí před uploadem jednotlivé nahrávky podle přímého zadání Dana?"
+    },
+    {
+      "at": "2026-09-30T12:43:14.440Z",
+      "text": "Checkpoint F2 0dd87da: audit a review archivované, E2E FAIL přiznaný. Dan přidal firmu/viditelnost před uploadem; T-12/T-13 pokračují sekvenčně."
+    },
+    {
+      "at": "2026-09-30T12:43:12.686Z",
+      "text": "Byla přidána otevřená otázka Q1: Potvrdit dotaženou hierarchii a obnovit podle ní původní vizuální kontrakt před vydáním?"
+    },
+    {
+      "at": "2026-09-30T12:43:12.008Z",
+      "text": "Byl zalozen task T-13: Firma a viditelnost v UI."
+    },
+    {
+      "at": "2026-09-30T12:43:11.285Z",
+      "text": "Byl zalozen task T-12: Preference uploadu a bezpečný kontrakt."
+    },
+    {
+      "at": "2026-09-30T12:43:10.905Z",
+      "text": "Byla zalozena funkce F3: Firma a viditelnost před uploadem."
+    },
+    {
+      "at": "2026-09-30T12:43:08.662Z",
+      "text": "Funkce F2 byla aktualizována."
+    },
+    {
+      "at": "2026-09-30T12:43:07.360Z",
+      "text": "Byl přidán důkaz EV10: Produktové dotažení checkpoint."
+    },
     {
       "at": "2026-09-30T08:46:18.733Z",
       "text": "Otázka Q8 byla uzavřena rozhodnutím D8: Dále vylepšit schválenou Astru jako produkt. (volba Q8·A)"

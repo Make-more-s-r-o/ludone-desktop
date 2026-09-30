@@ -1,0 +1,9 @@
+{
+  "originalDirectory": ".runtime/design-e2e/2026-09-30T12-26-13-878Z",
+  "copiedTopLevelOnly": true,
+  "excluded": [
+    "isolated-user-data",
+    "isolated-data"
+  ],
+  "copyIsLiteral": true
+}

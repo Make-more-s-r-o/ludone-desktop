@@ -57,7 +57,11 @@ Umožní Danovi používat Teď, Můj den, detail a Nastavení jako jeden skute�
 
 ## Otevřené otázky a rozhodovací defaulty
 
-Žádné. Složitější akci, která nemá stávající desktopové API, UI předá současné podporované ploše nebo ji označí jako nepřipravenou; nevzniká nový serverový endpoint.
+### Q1 — Obnova vizuálního kontraktu před vydáním
+
+Blokuje publikaci další desktopové verze. Konkrétní dotažení a původní nezměněný
+FAIL jsou v galerii checkpointu; nezávislé T-12/T-13 pokračují. Rozhodnutí člověka
+je v decisions.md, žádná výjimka dosud nebyla udělena.
 
 ## Konflikty řešené nahlas
 
@@ -71,3 +75,28 @@ historií bez chyb skrytých záložek. Kontrakt a přejímka jsou v `PRODUCT-PO
 Given dlouhá historie a čekající fronta; When otevřu Teď, Můj den, detail a Nastavení;
 Then nahrávání zůstane hlavní akcí, dny se neslijí, diagnostika se načte a všechny
 povolené akce mají bezpečný dokončitelný tok ve třech tématech.
+
+### F3 — Firma a viditelnost před uploadem
+
+Umožní zobrazit uloženou výchozí firmu a bezpečně vybrat firmu a viditelnost
+pro jeden nový či držený soubor podle UPLOAD-PREFERENCES.md. Private je default,
+progress a serverová vazba zamčené; CAS/owner/origin a čerstvá nabídka povinné.
+
+#### AC-03.1 — Zapamatovatelný default
+Given platná identita s uloženou firmou, When znovu otevřu Nastavení, Then vidím
+skutečnou uloženou volbu a odlišenou neuloženou změnu i chybu načtení.
+
+#### AC-03.2 — Nastavení jedné nahrávky
+Given nový či držený soubor bez progress, When zvolím firmu a viditelnost, Then se
+preference uloží před souhlasem a nezmění default ani nespustí samy upload.
+
+#### AC-03.3 — Závody a restart
+Given uložená volba, When restart nebo změna účtu/originu/revize, Then platná volba
+přežije restart; cizí či stale změna se odmítne a progress se nikdy nepřepíše.
+
+#### AC-03.4 — Klientský protokol
+Given per-recording volba, When první upload, Then stávající create request
+nese přesnou zvolenou firmu a private/company; staré soukromé payloady platí dál.
+
+Otevřená Q1 blokuje publikaci. Obnova vizuálního kontraktu vyžaduje člověka;
+nezávislá implementace F3 pokračuje a původní brány se kvůli výsledku nemění.
