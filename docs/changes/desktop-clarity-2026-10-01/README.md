@@ -25,3 +25,16 @@ Teď simuluje start, stop a volbu uložení. Nastavení obsahuje fiktivního Ale
 ## Prohlížení
 
 `design/index.html` lze otevřít samostatně, bez instalace a závislostí. Během předání slouží také místní náhled na `http://127.0.0.1:53301/index.html`. Vnější ovládání mění téma a ukázkovou šířku; volba Vzhled funguje i v Nastavení. Akce pracují pouze v paměti makety a obnovení stránky je vrátí. Výběr měsíce je pro ukázková data roku 2026.
+
+## Další dva nápady — B a C
+
+Na žádost Dana jsou doplněné dvě rozdílné varianty. Původní A zůstává zachované. [Společné porovnání](design/compare.html) nabízí samostatné klikací makety a všechny tři náhledy.
+
+- B — Knihovna: postranní navigace, seznam a trvalý inspektor. Pro větší množství nahrávek; krátké nahrávání se otevírá v panelu.
+- C — Nahrávač: jedna hlavní akce, poslední nahrávky, samostatná historie a nastavení v panelu. Běžící simulovaná nahrávka zůstává viditelná při otevření historie.
+
+🟡 Všechny návrhy čekají na výslovné schválení před implementací a vydáním. Rozměry oken v maketách se přizpůsobují výšce prohlížeče, aby šly zobrazit také v menším panelu.
+
+🧪 Obě nové varianty byly otevřené a proklikané v IAB; přesný rozsah je v [záznamu kontroly B/C](../../../dukazy/desktop-clarity-2026-10-01/KONTROLA-BC.md). Zelená syntaxe ani tato maketa nejsou důkazem funkčnosti produkční aplikace.
+
+⛔ Produkční soubory, backend, fyzický zvuk, autentizace a vydání nejsou součástí změny.

@@ -1,0 +1,4 @@
+command: node --check docs/changes/desktop-clarity-2026-10-01/design/variant-b/preview.js
+exit_code: 0
+command: node --check docs/changes/desktop-clarity-2026-10-01/design/variant-c/preview.js
+exit_code: 0
