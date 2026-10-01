@@ -1,0 +1,2 @@
+command: node --check docs/changes/desktop-clarity-2026-10-01/design/preview.js
+exit_code: 0
