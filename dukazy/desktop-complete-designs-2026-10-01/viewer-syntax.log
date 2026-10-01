@@ -1,0 +1,12 @@
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/viewer.js
+
+
+exit=0
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+
+
+exit=0
+$ git diff --check
+
+
+exit=0

@@ -6,13 +6,15 @@ Dan 1. 10. upřesnil: tři odlišné designy celé aplikace, každý se zachová
 - B — Studio: horní navigace, otevřená pracovní plocha, měkký fialový akcent.
 - C — Deník: úzká navigace, teplý povrch, otevřené seznamy, větší typografie.
 
-[Porovnání](design/index.html) · [Všechny obrazovky](design/gallery.html) · [Funkční rozsah](design/coverage.html) · [Brief a zdroje](BRIEF.md)
+[Živý přehled všech návrhů](design/viewer.html) · [Porovnání](design/index.html) · [Všechny snímky](design/gallery.html) · [Funkční rozsah](design/coverage.html) · [Brief a zdroje](BRIEF.md)
 
 ## Jak proklikávat
 
-Otevři `design/index.html` v prohlížeči a vyber návrh. Každá maketa má stejné příklady a všechny funkční oblasti. Horní přepínač situací a tématu patří porovnání, nikoli budoucí aplikaci. Reset vrátí fiktivní data. Paměťová simulace se po načtení obnoví; není perzistentní produkční frontou.
+Otevři `design/viewer.html` v prohlížeči. Nahoře přepni A/B/C, v nabídce „Obrazovka“ vyber jednu z 23 obrazovek a situací. Pak klikej na tlačítka přímo v aplikaci pod ovladači. „Všechny snímky“ otevřou galerii 42 snímků; tlačítka vyobrazená ve snímcích nejsou interaktivní. Odkazy z porovnání nyní vedou do živého přehledu.
 
-Pro místní server z této složky lze spustit `python3 -m http.server 53302 --bind 127.0.0.1 --directory design`. Otevři `http://127.0.0.1:53302/`. Soubory fungují i přímo z disku bez sestavení aplikace.
+Každá maketa má stejné příklady a všechny funkční oblasti. Jde o tři vzhledy a rozložení se společným funkčním základem; Mac a Studio jsou si bližší než Deník. Horní přepínače obrazovky a tématu patří porovnání, nikoli budoucí aplikaci. Přepnutí obnoví fiktivní data. Nabídka obrazovek slouží k přímému otevření situace; běžný proklik uvnitř makety její vybranou hodnotu nemění. Paměťová simulace se po načtení obnoví; není perzistentní produkční frontou.
+
+Pro místní server z této složky lze spustit `python3 -m http.server 53302 --bind 127.0.0.1 --directory design`. Otevři `http://127.0.0.1:53302/viewer.html`. Soubory fungují i přímo z disku bez sestavení aplikace.
 
 ## Rozsah a rozdíly proti současné aplikaci
 
@@ -23,6 +25,8 @@ Systémová typografie reaguje na Danův požadavek na macOS a čitelnost. Znač
 ## Ověření
 
 🧪 Syntaxe JavaScriptu, 57 scénářů, 102 kontrol hlavních průchodů a kontrola rozložení 30 úzkých náhledů (640/400 px). Důkazy: `../../../dukazy/desktop-complete-designs-2026-10-01/`.
+
+🧪 Následná oprava prokliku: přímý výběr všech 23 obrazovek v A/B/C (69 kontrol), devět přepnutí tématu a proklik uvnitř vložené makety ve všech třech variantách. Záznam `live-viewer.json`, snímky `live-viewer-a.jpg`, `live-viewer-b.jpg`, `live-viewer-c.jpg`.
 
 ⛔ Skutečné nahrávání, OAuth, síťový upload, oprávnění macOS, Finder/koš, export diagnostiky a instalace se zde neověřují; všechny tyto akce jsou makety. HTML prokliky nejsou E2E nainstalované aplikace. Produkční `src/`, Electron, testy, brány, backend, cizí `design/` a release workflow nebyly změněny. Nové vydání nevzniklo.
 

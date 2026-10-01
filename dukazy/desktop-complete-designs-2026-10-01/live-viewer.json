@@ -1,0 +1,557 @@
+{
+  "screens": [
+    {
+      "variant": "A Mac",
+      "screen": "ready",
+      "title": "Nahrávání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "recording",
+      "title": "Nahrávání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "save",
+      "title": "Nahrávání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "history",
+      "title": "Nahrávky",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "detail",
+      "title": "Nahrávka",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "sent",
+      "title": "Nahrávka",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "queue",
+      "title": "Odesílání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "settings",
+      "title": "Nastavení",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "audio",
+      "title": "Nastavení",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "device",
+      "title": "Nastavení",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "storage",
+      "title": "Nastavení",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "diagnostics",
+      "title": "Nastavení",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "updates",
+      "title": "Aktualizace",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "onboarding",
+      "title": "Vítejte v LuDone",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "tray",
+      "title": "Nahrávání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "offline",
+      "title": "Odesílání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "expired",
+      "title": "Odesílání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "unclaimed",
+      "title": "Nahrávka",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "rate",
+      "title": "Nahrávka",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "missing",
+      "title": "Nahrávka",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "system-lost",
+      "title": "Nahrávání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "microphone-only",
+      "title": "Nahrávání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "companies-error",
+      "title": "Nahrávání",
+      "concept": "a",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "ready",
+      "title": "Nahrávání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "recording",
+      "title": "Nahrávání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "save",
+      "title": "Nahrávání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "history",
+      "title": "Nahrávky",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "detail",
+      "title": "Nahrávka",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "sent",
+      "title": "Nahrávka",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "queue",
+      "title": "Odesílání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "settings",
+      "title": "Nastavení",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "audio",
+      "title": "Nastavení",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "device",
+      "title": "Nastavení",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "storage",
+      "title": "Nastavení",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "diagnostics",
+      "title": "Nastavení",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "updates",
+      "title": "Aktualizace",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "onboarding",
+      "title": "Vítejte v LuDone",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "tray",
+      "title": "Nahrávání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "offline",
+      "title": "Odesílání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "expired",
+      "title": "Odesílání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "unclaimed",
+      "title": "Nahrávka",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "rate",
+      "title": "Nahrávka",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "missing",
+      "title": "Nahrávka",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "system-lost",
+      "title": "Nahrávání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "microphone-only",
+      "title": "Nahrávání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "companies-error",
+      "title": "Nahrávání",
+      "concept": "b",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "ready",
+      "title": "Nahrávání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "recording",
+      "title": "Nahrávání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "save",
+      "title": "Nahrávání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "history",
+      "title": "Nahrávky",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "detail",
+      "title": "Nahrávka",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "sent",
+      "title": "Nahrávka",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "queue",
+      "title": "Odesílání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "settings",
+      "title": "Nastavení",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "audio",
+      "title": "Nastavení",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "device",
+      "title": "Nastavení",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "storage",
+      "title": "Nastavení",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "diagnostics",
+      "title": "Nastavení",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "updates",
+      "title": "Aktualizace",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "onboarding",
+      "title": "Vítejte v LuDone",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "tray",
+      "title": "Nahrávání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "offline",
+      "title": "Odesílání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "expired",
+      "title": "Odesílání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "unclaimed",
+      "title": "Nahrávka",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "rate",
+      "title": "Nahrávka",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "missing",
+      "title": "Nahrávka",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "system-lost",
+      "title": "Nahrávání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "microphone-only",
+      "title": "Nahrávání",
+      "concept": "c",
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "companies-error",
+      "title": "Nahrávání",
+      "concept": "c",
+      "pass": true
+    }
+  ],
+  "themes": [
+    {
+      "variant": "A Mac",
+      "theme": "professional",
+      "actualTheme": "professional",
+      "recordVisible": true,
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "theme": "dark",
+      "actualTheme": "dark",
+      "recordVisible": true,
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "theme": "light",
+      "actualTheme": "light",
+      "recordVisible": true,
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "theme": "professional",
+      "actualTheme": "professional",
+      "recordVisible": true,
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "theme": "dark",
+      "actualTheme": "dark",
+      "recordVisible": true,
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "theme": "light",
+      "actualTheme": "light",
+      "recordVisible": true,
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "theme": "professional",
+      "actualTheme": "professional",
+      "recordVisible": true,
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "theme": "dark",
+      "actualTheme": "dark",
+      "recordVisible": true,
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "theme": "light",
+      "actualTheme": "light",
+      "recordVisible": true,
+      "pass": true
+    }
+  ],
+  "actions": [
+    "A: navigace na Nahrávky",
+    "B: start → stop → volba Uložit a odeslat / Nechat na Macu",
+    "C: historie → detail nahrávky"
+  ]
+}

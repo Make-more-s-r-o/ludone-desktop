@@ -23,3 +23,13 @@ První kontrola 400 px našla tři přetečení: filtry A/C a minimální šíř
 Doslovný záznam syntaxe a kontroly diffu s exit kódem: `syntax.log`. Produkční testy ani brány nebyly změněny. Celé produkční testy se nespouštěly pro samostatné návrhy bez změny aplikace; jejich úspěch by tyto HTML návrhy neověřil.
 
 Dva autoři vzhledu pracovali v oddělených worktrees (Mac, Studio), root vlastnil společný renderer, Deník, integraci a browser kontrolu. Cizí design/worktrees nebyly upraveny. Všechna data ve snímcích jsou fiktivní.
+
+## Oprava živého přehledu
+
+Dan hlásil, že náhled nelze proklikat. Místní server na portu 53302 běžel; původní karta nereagovala ani na browser ovládání. Nová karta téhož prohlížeče reagovala a navigace uvnitř makety fungovala. Nelze z toho určit příčinu problému původní karty. Porovnání obsahovalo statické snímky s vyobrazenými tlačítky, což mohlo mást.
+
+Přidán `viewer.html`: skutečná vložená maketa, přepínač A/B/C, explicitní seznam 23 obrazovek a situací, téma a odkaz na samostatné okno. Odkazy z porovnání vedou do tohoto živého přehledu; statické snímky jsou jasně popsané. Vložená maketa nezobrazuje druhou sadu porovnávacích ovladačů ani druhý rám.
+
+🧪 V browseru prošlo všech 69 výběrů obrazovek (23 × A/B/C); každý vykreslil nadpis a správný návrh. Devět přepnutí tématu zachovalo dostupné tlačítko nahrávání. Proklik uvnitř rámu: A navigace na historii, B start → stop → rozhodnutí před odesláním, C historie → detail. Důkaz v `live-viewer.json` a třech snímcích živého přehledu. První přesný výběr podle popisku selhal; ovladačům byly doplněny jednoznačné přístupné názvy a následně prošel. Nejde o E2E produkční aplikace.
+
+⚠️ Návrhy sdílejí funkční základ. Mají odlišnou navigaci a vizuální řešení, ale Mac a Studio jsou si bližší; netvrdíme, že jsou to tři zcela nezávislé produktové koncepce.

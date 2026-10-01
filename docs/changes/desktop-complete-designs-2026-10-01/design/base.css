@@ -3,3 +3,6 @@
 /* Hotová ikonová značka má vlastní bílý symbol; v tmavém tématu ji nepřebarvujeme. */
 html[data-theme=dark] .brand img,html[data-theme=dark] .app-title img,html[data-theme=dark] .logo{filter:none}
 .brand img{border-radius:6px}.app-title img{border-radius:4px}
+
+/* Živý přehled používá jeden rám náhledu a nezobrazuje druhou sadu ovladačů. */
+body.embedded .preview-bar{display:none}body.embedded .desktop-stage{padding:0;display:block}body.embedded .window{width:100%;max-width:none;height:100vh;min-height:0;margin:0;border:0;border-radius:0;box-shadow:none}
