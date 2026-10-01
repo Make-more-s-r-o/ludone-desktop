@@ -1,0 +1,5 @@
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+exit_code=0
+
+$ git diff --cached --check
+exit_code=0

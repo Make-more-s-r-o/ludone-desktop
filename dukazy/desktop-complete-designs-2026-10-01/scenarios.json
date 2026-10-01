@@ -1,0 +1,458 @@
+[
+  {
+    "variant": "a",
+    "scene": "ready",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "recording",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "save",
+    "buttons": 10,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "history",
+    "buttons": 21,
+    "contentOverflow": false,
+    "heading": "Nahrávky",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "detail",
+    "buttons": 12,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "sent",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "queue",
+    "buttons": 18,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "offline",
+    "buttons": 19,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "expired",
+    "buttons": 19,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "unclaimed",
+    "buttons": 13,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "rate",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "missing",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "system-lost",
+    "buttons": 15,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "microphone-only",
+    "buttons": 15,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "companies-error",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "onboarding",
+    "buttons": 8,
+    "contentOverflow": false,
+    "heading": "Vítejte v LuDone",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "settings",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nastavení",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "updates",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Aktualizace",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "tray",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "ready",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "recording",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "save",
+    "buttons": 10,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "history",
+    "buttons": 21,
+    "contentOverflow": false,
+    "heading": "Nahrávky",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "detail",
+    "buttons": 12,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "sent",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "queue",
+    "buttons": 18,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "offline",
+    "buttons": 19,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "expired",
+    "buttons": 19,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "unclaimed",
+    "buttons": 13,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "rate",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "missing",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "system-lost",
+    "buttons": 15,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "microphone-only",
+    "buttons": 15,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "companies-error",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "onboarding",
+    "buttons": 8,
+    "contentOverflow": false,
+    "heading": "Vítejte v LuDone",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "settings",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nastavení",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "updates",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Aktualizace",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "tray",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "ready",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "recording",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "save",
+    "buttons": 10,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "history",
+    "buttons": 21,
+    "contentOverflow": false,
+    "heading": "Nahrávky",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "detail",
+    "buttons": 12,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "sent",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "queue",
+    "buttons": 18,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "offline",
+    "buttons": 19,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "expired",
+    "buttons": 19,
+    "contentOverflow": false,
+    "heading": "Odesílání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "unclaimed",
+    "buttons": 13,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "rate",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "missing",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávka",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "system-lost",
+    "buttons": 15,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "microphone-only",
+    "buttons": 15,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "companies-error",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "onboarding",
+    "buttons": 8,
+    "contentOverflow": false,
+    "heading": "Vítejte v LuDone",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "settings",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nastavení",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "updates",
+    "buttons": 11,
+    "contentOverflow": false,
+    "heading": "Aktualizace",
+    "horizontalOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "tray",
+    "buttons": 14,
+    "contentOverflow": false,
+    "heading": "Nahrávání",
+    "horizontalOverflow": false
+  }
+]

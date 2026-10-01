@@ -1,0 +1,410 @@
+[
+  {
+    "label": "a hledání půl roku",
+    "pass": true
+  },
+  {
+    "label": "a další strana",
+    "pass": true
+  },
+  {
+    "label": "a prázdný filtr",
+    "pass": true
+  },
+  {
+    "label": "a změna firmy blokuje upload",
+    "pass": true
+  },
+  {
+    "label": "a uložit volby bez uploadu",
+    "pass": true
+  },
+  {
+    "label": "a souhlas s uploadem",
+    "pass": true
+  },
+  {
+    "label": "a potvrzený upload zamkne metadata",
+    "pass": true
+  },
+  {
+    "label": "a převzetí vyžaduje potvrzení",
+    "pass": true
+  },
+  {
+    "label": "a převzetí nic neodeslalo",
+    "pass": true
+  },
+  {
+    "label": "a ověření zpřístupní web",
+    "pass": true
+  },
+  {
+    "label": "a bezpečné místní mazání",
+    "pass": true
+  },
+  {
+    "label": "a webová historie po koši zůstala",
+    "pass": true
+  },
+  {
+    "label": "a výchozí firma explicitně ukládaná",
+    "pass": true
+  },
+  {
+    "label": "a uložit firmu",
+    "pass": true
+  },
+  {
+    "label": "a firma zapamatovaná při návratu",
+    "pass": true
+  },
+  {
+    "label": "b hledání půl roku",
+    "pass": true
+  },
+  {
+    "label": "b další strana",
+    "pass": true
+  },
+  {
+    "label": "b prázdný filtr",
+    "pass": true
+  },
+  {
+    "label": "b změna firmy blokuje upload",
+    "pass": true
+  },
+  {
+    "label": "b uložit volby bez uploadu",
+    "pass": true
+  },
+  {
+    "label": "b souhlas s uploadem",
+    "pass": true
+  },
+  {
+    "label": "b potvrzený upload zamkne metadata",
+    "pass": true
+  },
+  {
+    "label": "b převzetí vyžaduje potvrzení",
+    "pass": true
+  },
+  {
+    "label": "b převzetí nic neodeslalo",
+    "pass": true
+  },
+  {
+    "label": "b ověření zpřístupní web",
+    "pass": true
+  },
+  {
+    "label": "b bezpečné místní mazání",
+    "pass": true
+  },
+  {
+    "label": "b webová historie po koši zůstala",
+    "pass": true
+  },
+  {
+    "label": "b výchozí firma explicitně ukládaná",
+    "pass": true
+  },
+  {
+    "label": "b uložit firmu",
+    "pass": true
+  },
+  {
+    "label": "b firma zapamatovaná při návratu",
+    "pass": true
+  },
+  {
+    "label": "c hledání půl roku",
+    "pass": true
+  },
+  {
+    "label": "c další strana",
+    "pass": true
+  },
+  {
+    "label": "c prázdný filtr",
+    "pass": true
+  },
+  {
+    "label": "c změna firmy blokuje upload",
+    "pass": true
+  },
+  {
+    "label": "c uložit volby bez uploadu",
+    "pass": true
+  },
+  {
+    "label": "c souhlas s uploadem",
+    "pass": true
+  },
+  {
+    "label": "c potvrzený upload zamkne metadata",
+    "pass": true
+  },
+  {
+    "label": "c převzetí vyžaduje potvrzení",
+    "pass": true
+  },
+  {
+    "label": "c převzetí nic neodeslalo",
+    "pass": true
+  },
+  {
+    "label": "c ověření zpřístupní web",
+    "pass": true
+  },
+  {
+    "label": "c bezpečné místní mazání",
+    "pass": true
+  },
+  {
+    "label": "c webová historie po koši zůstala",
+    "pass": true
+  },
+  {
+    "label": "c výchozí firma explicitně ukládaná",
+    "pass": true
+  },
+  {
+    "label": "c uložit firmu",
+    "pass": true
+  },
+  {
+    "label": "c firma zapamatovaná při návratu",
+    "pass": true
+  },
+  {
+    "label": "a první spuštění",
+    "pass": true
+  },
+  {
+    "label": "a přihlášení přes browser",
+    "pass": true
+  },
+  {
+    "label": "a návrat přihlášení",
+    "pass": true
+  },
+  {
+    "label": "a povolení mikrofonu",
+    "pass": true
+  },
+  {
+    "label": "a povolení systému",
+    "pass": true
+  },
+  {
+    "label": "a start zkoušky",
+    "pass": true
+  },
+  {
+    "label": "a stop zkoušky",
+    "pass": true
+  },
+  {
+    "label": "a oba kanály vyžadují potvrzení člověka",
+    "pass": true
+  },
+  {
+    "label": "a začátek nahrávání",
+    "pass": true
+  },
+  {
+    "label": "a aktualizace čeká při nahrávání",
+    "pass": true
+  },
+  {
+    "label": "a uložení ukončí čekání aktualizace",
+    "pass": true
+  },
+  {
+    "label": "a aktualizace dokončena po uložení",
+    "pass": true
+  },
+  {
+    "label": "b první spuštění",
+    "pass": true
+  },
+  {
+    "label": "b přihlášení přes browser",
+    "pass": true
+  },
+  {
+    "label": "b návrat přihlášení",
+    "pass": true
+  },
+  {
+    "label": "b povolení mikrofonu",
+    "pass": true
+  },
+  {
+    "label": "b povolení systému",
+    "pass": true
+  },
+  {
+    "label": "b start zkoušky",
+    "pass": true
+  },
+  {
+    "label": "b stop zkoušky",
+    "pass": true
+  },
+  {
+    "label": "b oba kanály vyžadují potvrzení člověka",
+    "pass": true
+  },
+  {
+    "label": "b začátek nahrávání",
+    "pass": true
+  },
+  {
+    "label": "b aktualizace čeká při nahrávání",
+    "pass": true
+  },
+  {
+    "label": "b uložení ukončí čekání aktualizace",
+    "pass": true
+  },
+  {
+    "label": "b aktualizace dokončena po uložení",
+    "pass": true
+  },
+  {
+    "label": "c první spuštění",
+    "pass": true
+  },
+  {
+    "label": "c přihlášení přes browser",
+    "pass": true
+  },
+  {
+    "label": "c návrat přihlášení",
+    "pass": true
+  },
+  {
+    "label": "c povolení mikrofonu",
+    "pass": true
+  },
+  {
+    "label": "c povolení systému",
+    "pass": true
+  },
+  {
+    "label": "c start zkoušky",
+    "pass": true
+  },
+  {
+    "label": "c stop zkoušky",
+    "pass": true
+  },
+  {
+    "label": "c oba kanály vyžadují potvrzení člověka",
+    "pass": true
+  },
+  {
+    "label": "c začátek nahrávání",
+    "pass": true
+  },
+  {
+    "label": "c aktualizace čeká při nahrávání",
+    "pass": true
+  },
+  {
+    "label": "c uložení ukončí čekání aktualizace",
+    "pass": true
+  },
+  {
+    "label": "c aktualizace dokončena po uložení",
+    "pass": true
+  },
+  {
+    "label": "a rychlé akce",
+    "pass": true
+  },
+  {
+    "label": "a rychlý přístup ke zvuku",
+    "pass": true
+  },
+  {
+    "label": "a export diagnostiky",
+    "pass": true
+  },
+  {
+    "label": "a chybný rozsah data",
+    "pass": true
+  },
+  {
+    "label": "a vlastní rozsah data",
+    "pass": true
+  },
+  {
+    "label": "a automatika jen nových",
+    "pass": true
+  },
+  {
+    "label": "b rychlé akce",
+    "pass": true
+  },
+  {
+    "label": "b rychlý přístup ke zvuku",
+    "pass": true
+  },
+  {
+    "label": "b export diagnostiky",
+    "pass": true
+  },
+  {
+    "label": "b chybný rozsah data",
+    "pass": true
+  },
+  {
+    "label": "b vlastní rozsah data",
+    "pass": true
+  },
+  {
+    "label": "b automatika jen nových",
+    "pass": true
+  },
+  {
+    "label": "c rychlé akce",
+    "pass": true
+  },
+  {
+    "label": "c rychlý přístup ke zvuku",
+    "pass": true
+  },
+  {
+    "label": "c export diagnostiky",
+    "pass": true
+  },
+  {
+    "label": "c chybný rozsah data",
+    "pass": true
+  },
+  {
+    "label": "c vlastní rozsah data",
+    "pass": true
+  },
+  {
+    "label": "c automatika jen nových",
+    "pass": true
+  },
+  {
+    "label": "a mikrofon bez druhé strany zřetelně označen",
+    "pass": true
+  },
+  {
+    "label": "b mikrofon bez druhé strany zřetelně označen",
+    "pass": true
+  },
+  {
+    "label": "c mikrofon bez druhé strany zřetelně označen",
+    "pass": true
+  }
+]

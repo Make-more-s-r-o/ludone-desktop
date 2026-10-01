@@ -1,0 +1,242 @@
+[
+  {
+    "variant": "a",
+    "scene": "ready",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "history",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "save",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "settings",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "queue",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "updates",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "ready",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "history",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "save",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "settings",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "queue",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "updates",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "ready",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "history",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "save",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "settings",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "queue",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "updates",
+    "width": 640,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "ready",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "save",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "history",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "a",
+    "scene": "settings",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "ready",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "save",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "history",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "b",
+    "scene": "settings",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "ready",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "save",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "history",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  },
+  {
+    "variant": "c",
+    "scene": "settings",
+    "width": 400,
+    "bodyOverflow": false,
+    "contentOverflow": false,
+    "windowOverflow": false
+  }
+]
