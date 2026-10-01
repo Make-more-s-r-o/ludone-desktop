@@ -1,0 +1,173 @@
+{
+  "ownSizes": [
+    {
+      "variant": "A Mac",
+      "screen": "ready",
+      "height": 650,
+      "width": 898,
+      "scrollWidth": 898,
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "history",
+      "height": 650,
+      "width": 898,
+      "scrollWidth": 898,
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "settings",
+      "height": 650,
+      "width": 898,
+      "scrollWidth": 898,
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "audio",
+      "height": 650,
+      "width": 898,
+      "scrollWidth": 898,
+      "pass": true
+    },
+    {
+      "variant": "A Mac",
+      "screen": "detail",
+      "height": 650,
+      "width": 898,
+      "scrollWidth": 898,
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "ready",
+      "height": 720,
+      "width": 1098,
+      "scrollWidth": 1098,
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "history",
+      "height": 720,
+      "width": 1098,
+      "scrollWidth": 1098,
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "settings",
+      "height": 720,
+      "width": 1098,
+      "scrollWidth": 1098,
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "audio",
+      "height": 720,
+      "width": 1098,
+      "scrollWidth": 1098,
+      "pass": true
+    },
+    {
+      "variant": "B Studio",
+      "screen": "detail",
+      "height": 720,
+      "width": 1098,
+      "scrollWidth": 1098,
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "ready",
+      "height": 800,
+      "width": 718,
+      "scrollWidth": 718,
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "history",
+      "height": 800,
+      "width": 718,
+      "scrollWidth": 718,
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "settings",
+      "height": 800,
+      "width": 718,
+      "scrollWidth": 718,
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "audio",
+      "height": 800,
+      "width": 718,
+      "scrollWidth": 718,
+      "pass": true
+    },
+    {
+      "variant": "C Deník",
+      "screen": "detail",
+      "height": 800,
+      "width": 718,
+      "scrollWidth": 718,
+      "pass": true
+    }
+  ],
+  "equalSizes": [
+    {
+      "variant": "B Studio",
+      "height": 540,
+      "width": 1200
+    },
+    {
+      "variant": "A Mac",
+      "height": 540,
+      "width": 1200
+    },
+    {
+      "variant": "C Deník",
+      "height": 540,
+      "width": 1200
+    }
+  ],
+  "ownSizesMeasurement": "Výška rámu a vnitřní šířka dokumentu; vnitřní šířka je o 2 px menší kvůli okraji rámu. Průchody před doplněním container queries.",
+  "standaloneSizes": [
+    {
+      "variant": "a",
+      "height": 650,
+      "innerWidth": 898,
+      "scrollWidth": 898,
+      "width": 900,
+      "pass": true
+    },
+    {
+      "variant": "b",
+      "height": 720,
+      "innerWidth": 1098,
+      "scrollWidth": 1098,
+      "width": 1100,
+      "pass": true
+    },
+    {
+      "variant": "c",
+      "height": 800,
+      "innerWidth": 718,
+      "scrollWidth": 718,
+      "width": 720,
+      "pass": true
+    }
+  ],
+  "standaloneSizesSource": "Doslovné hodnoty vrácené browser kontrolou po doplnění container queries; stejné vykreslení je ve standalone-*.jpg.",
+  "finalWorkspaceCheck": {
+    "status": "⛔ neověřeno",
+    "reason": "Závěrečná kontrola vnitřního přetečení po doplnění container queries skončila timeoutem a resetem nástroje. Browser pak nebyl dostupný; úplný výsledek nebyl získán."
+  }
+}

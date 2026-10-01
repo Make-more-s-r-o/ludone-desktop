@@ -33,3 +33,13 @@ Přidán `viewer.html`: skutečná vložená maketa, přepínač A/B/C, explicit
 🧪 V browseru prošlo všech 69 výběrů obrazovek (23 × A/B/C); každý vykreslil nadpis a správný návrh. Devět přepnutí tématu zachovalo dostupné tlačítko nahrávání. Proklik uvnitř rámu: A navigace na historii, B start → stop → rozhodnutí před odesláním, C historie → detail. Důkaz v `live-viewer.json` a třech snímcích živého přehledu. První přesný výběr podle popisku selhal; ovladačům byly doplněny jednoznačné přístupné názvy a následně prošel. Nejde o E2E produkční aplikace.
 
 ⚠️ Návrhy sdílejí funkční základ. Mají odlišnou navigaci a vizuální řešení, ale Mac a Studio jsou si bližší; netvrdíme, že jsou to tři zcela nezávislé produktové koncepce.
+
+## Vlastní proporce oken
+
+Dan upozornil na shodné rozměry. Dosavadní živý přehled vynucoval stejný rám pro všechny návrhy, ačkoli nejde o požadavek budoucí aplikace. Výchozí rozměry nyní: Mac 900 × 650, Studio 1100 × 720, Deník 720 × 800 CSS px. Volitelný společný rám zůstal pro porovnání. Text se nezmenšuje; menší dostupná šířka zúží okno. Container queries řídí rozložení podle šířky samotného okna i při samostatném otevření.
+
+🧪 Změřené samostatné okno má přesně uvedenou šířku a výšku ve všech třech návrzích. Před doplněním container queries prošly nahrávání, historie, účet, zvuk a detail ve všech třech proporcích bez vodorovného přetečení dokumentu. Toto měření nezaručuje nepřetečení všech vnitřních kontejnerů. Společný rám má stejných 1200 × 540 ve všech třech návrzích v daném browser viewportu. Důkazy v `proportions.json`, `proportions-a.jpg`, `proportions-b.jpg`, `proportions-c.jpg` a `standalone-*.jpg`.
+
+⛔ Tyto rozměry jsou návrh, ne důkaz velikosti oken produkční macOS aplikace. Produkční aplikace ani release se nemění.
+
+🟡 Závěrečný proklik po úpravě container queries čeká na dostupný browser: ověřit nahrávání, historii, účet, zvuk a detail v A/B/C včetně vodorovného přetečení uvnitř pracovního obsahu. Původní kontrola skončila timeoutem a resetem ovládacího nástroje, další otevření hlásilo nedostupný browser. Úplný výsledek nebyl získán. Snímky samostatných oken a měření jejich rozměrů po úpravě byly získány před touto chybou. Dodatečné otevření přehledu pomocí app nástroje nevrátilo výsledek a čekání bylo ukončeno; netvrdíme, že se přehled tímto pokusem otevřel.

@@ -14,6 +14,8 @@ Otevři `design/viewer.html` v prohlížeči. Nahoře přepni A/B/C, v nabídce 
 
 Každá maketa má stejné příklady a všechny funkční oblasti. Jde o tři vzhledy a rozložení se společným funkčním základem; Mac a Studio jsou si bližší než Deník. Horní přepínače obrazovky a tématu patří porovnání, nikoli budoucí aplikaci. Přepnutí obnoví fiktivní data. Nabídka obrazovek slouží k přímému otevření situace; běžný proklik uvnitř makety její vybranou hodnotu nemění. Paměťová simulace se po načtení obnoví; není perzistentní produkční frontou.
 
+Výchozí rozměry nejsou sjednocené: Mac 900 × 650, Studio 1100 × 720 a Deník 720 × 800 CSS px. LuDone Mac nabízí kompaktní běžné okno s postranním menu, Studio širší pracovní plochu s horním menu a Deník užší svislé okno. Okno se přizpůsobí dostupné šířce bez zmenšování písma; obsah zůstává dostupný posouváním. Rozložení používá skutečnou šířku okna i při samostatném otevření. Volba „Velikost → Stejná pro porovnání“ umožňuje dočasně srovnat všechny návrhy ve shodném rámu. Aktualizované snímky úvodního porovnání jsou `own-a-home.jpg`, `own-b-home.jpg`, `own-c-home.jpg`; galerie 42 funkčních obrazovek uchovává dřívější společný rám.
+
 Pro místní server z této složky lze spustit `python3 -m http.server 53302 --bind 127.0.0.1 --directory design`. Otevři `http://127.0.0.1:53302/viewer.html`. Soubory fungují i přímo z disku bez sestavení aplikace.
 
 ## Rozsah a rozdíly proti současné aplikaci

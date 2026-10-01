@@ -18,11 +18,22 @@ let variant = ['a','b','c'].includes(params.get('variant')) ? params.get('varian
 const view = document.querySelector('#view');
 const theme = document.querySelector('#theme');
 const iframe = document.querySelector('#prototype');
+const size = document.querySelector('#size');
+const windowSizes = {a:[900,650],b:[1100,720],c:[720,800]};
+size.value=params.get('size')==='equal'?'equal':'native';
+function fitWindow(){
+ const [width,height]=windowSizes[variant];
+ document.body.dataset.size=size.value;
+ document.querySelector('.preview').style.setProperty('--window-width',width+'px');
+ document.querySelector('.preview').style.setProperty('--window-height',height+'px');
+ document.querySelector('#dimensions').textContent=size.value==='equal'?'Společný rám':`${width} × ${height}`;
+}
 view.innerHTML = screens.map(([group,items])=>`<optgroup label="${group}">${items.map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</optgroup>`).join('');
 view.value = allScreens.includes(params.get('scenario')) ? params.get('scenario') : 'ready';
 if(['audio','device','storage','diagnostics'].includes(params.get('tab')))view.value=params.get('tab');
 theme.value = ['light','dark','professional'].includes(params.get('theme')) ? params.get('theme') : 'light';
 function show(){
+ fitWindow();
  const tab = ['audio','device','storage','diagnostics'].includes(view.value) ? view.value : null;
  const url = new URL('app.html',location.href);
  url.searchParams.set('variant',variant);
@@ -39,4 +50,5 @@ function show(){
 document.querySelectorAll('[data-variant]').forEach(button=>button.addEventListener('click',()=>{variant=button.dataset.variant;show();}));
 view.addEventListener('change',show);
 theme.addEventListener('change',show);
+size.addEventListener('change',fitWindow);
 show();

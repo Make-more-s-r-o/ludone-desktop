@@ -6,7 +6,7 @@ const concept = concepts[query.get('variant')] ? query.get('variant') : 'a';
 document.body.dataset.concept = concept;
 if(query.get('embedded')==='1')document.body.classList.add('embedded');
 document.documentElement.dataset.theme = ['light','dark','professional'].includes(query.get('theme')) ? query.get('theme') : 'light';
-const style = document.createElement('link'); style.rel='stylesheet'; style.href=concepts[concept][1]+'?v=13'; document.head.append(style);
+const style = document.createElement('link'); style.rel='stylesheet'; style.href=concepts[concept][1]+'?v=14'; document.head.append(style);
 const paths = {
  record:'<rect x="8" y="2" width="8" height="13" rx="4"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>',
  library:'<path d="M4 5h16v15H4zM2 2h20v4H2zM9 11h6"/>',

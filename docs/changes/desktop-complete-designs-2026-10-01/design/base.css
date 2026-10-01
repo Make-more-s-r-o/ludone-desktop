@@ -6,3 +6,12 @@ html[data-theme=dark] .brand img,html[data-theme=dark] .app-title img,html[data-
 
 /* Živý přehled používá jeden rám náhledu a nezobrazuje druhou sadu ovladačů. */
 body.embedded .preview-bar{display:none}body.embedded .desktop-stage{padding:0;display:block}body.embedded .window{width:100%;max-width:none;height:100vh;min-height:0;margin:0;border:0;border-radius:0;box-shadow:none}
+
+/* Vlastní výchozí proporce každého návrhu také při samostatném otevření. */
+body[data-concept=a]{--window-width:900px;--window-height:650px}
+body[data-concept=b]{--window-width:1100px;--window-height:720px}
+body[data-concept=c]{--window-width:720px;--window-height:800px}
+body:not(.embedded) .window{width:min(var(--window-width),100%);max-width:none;height:var(--window-height);min-height:0}
+
+/* Rozložení reaguje na skutečnou šířku okna, nikoli na plochu prohlížeče kolem něj. */
+.window{container-name:app-window;container-type:inline-size}
