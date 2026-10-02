@@ -11,10 +11,7 @@ const menuStyle=document.createElement('link');menuStyle.rel='stylesheet';menuSt
 if(['d','e'].includes(concept))document.head.append(style);
 const integrationStyle=document.createElement('link');integrationStyle.rel='stylesheet';integrationStyle.href='menu-integration.css?v=1';document.head.append(integrationStyle);
 /* Nové směry mohou přestavět prezentaci; funkční stav a akce zůstávají společné. */
-if(['f','g'].includes(concept)){
- document.head.append(style);
- const creativeIntegration=document.createElement('link');creativeIntegration.rel='stylesheet';creativeIntegration.href='creative-integration.css?v=1';document.head.append(creativeIntegration);
-}
+if(['f','g'].includes(concept))document.head.append(style);
 const paths = {
  record:'<rect x="8" y="2" width="8" height="13" rx="4"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>',
  library:'<path d="M4 5h16v15H4zM2 2h20v4H2zM9 11h6"/>',
@@ -255,11 +252,7 @@ document.addEventListener('click',event=>{
 document.addEventListener('input',event=>{
  const el=event.target,key=el.dataset.field;
  if(key==='draft-title'){state.draft.title=el.value;return;}
- if(key==='search'){
-  const start=el.selectionStart,end=el.selectionEnd,scroll=$('.content').scrollTop;
-  state.search=el.value;state.pageIndex=0;render();const search=$('[data-field=search]');
-  search.focus({preventScroll:true});search.setSelectionRange(start,end);$('.content').scrollTop=scroll;
- }
+ if(key==='search'){state.search=el.value;state.pageIndex=0;render();const search=$('[data-field=search]');search.focus();}
 });
 document.addEventListener('change',event=>{
  const el=event.target,key=el.dataset.field;
@@ -272,7 +265,7 @@ document.addEventListener('change',event=>{
  if(key==='heard-mic')state.heardMic=el.checked;
  if(key==='heard-system')state.heardSystem=el.checked;
  if(key==='environment'){modal('Změnit prostředí?',`<p>Pro přechod na jiný server je potřeba nové přihlášení. Místní nahrávky zůstanou zachované.</p>`,btn('Zrušit','close-modal')+btn('Změnit a odhlásit','environment-confirm','primary','',`data-value="${el.value}"`));return;}
- if(key){render();document.querySelector(`[data-field="${key}"]`)?.focus({preventScroll:true});}
+ if(key)render();
 });
 document.addEventListener('keydown',event=>{
  if(event.key==='Escape'){if(!$('.modal-layer').hidden){closeModal();}else if(state.page!=='detail'){menuOpen=false;render();}return;}

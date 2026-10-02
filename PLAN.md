@@ -227,3 +227,10 @@ Tento checkpoint nahrazuje starší designové odhady pouze pro nynější výb�
 2. 🧪 Prokliky 115 obrazovek, 60 kontrol malých šířek a nové snímky. Podrobnosti a hranice ověření v [README](docs/changes/desktop-complete-designs-2026-10-01/README.md); archiv v [dukazy](dukazy/desktop-menu-sonnet-2026-10-02/README.md).
 3. 🟡 Dan vybere návrh a případné úpravy. Teprve po výslovném schválení se sestaví implementační etapa, vizuální akceptace a E2E nad skutečnou aplikací.
 4. ⛔ Produkční implementace nového UI, skutečný zvuk a upload tohoto návrhu ani vydání nejsou tímto checkpointem ověřené.
+
+## Kreativnější návrhy F/G — 2. 10. 2026
+
+1. 🧪 Sonnet 5.5 vytvořil F Osa a G Příkaz podle silnějšího [briefu](docs/changes/desktop-complete-designs-2026-10-01/SONNET-CREATIVE-BRIEF.md) s volností přestavět prezentační strukturu. Původní A–E jsou zachované.
+2. 🧪 Koordinátor proklikal 138 finálních obrazovek ve třech tématech, celý běžný tok a malé šířky. Doslovné autorské soubory, opravy, syntaxe, review a snímky jsou v [archivu](dukazy/desktop-sonnet-creative-2026-10-02/README.md).
+3. 🟡 Dan vybere směr; [F/G vedle sebe přes VPN](http://100.101.162.108:53302/creative.html). Implementace produkce začne až po výslovném schválení.
+4. ⛔ Nevzniklo vydání, změna serveru ani ověření skutečného zvuku/uploadu.

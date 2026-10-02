@@ -1,0 +1,40 @@
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+
+
+exit_code=0
+PASS
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/viewer.js
+
+
+exit_code=0
+PASS
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/creative.js
+
+
+exit_code=0
+PASS
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-f-layout.js
+
+
+exit_code=0
+PASS
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-g-layout.js
+
+
+exit_code=0
+PASS
+
+$ git diff --check
+
+
+exit_code=0
+PASS
+
+$ git diff --cached --check
+
+exit_code=0
+PASS

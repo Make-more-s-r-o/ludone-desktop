@@ -1,4 +1,4 @@
-# Pět kompletních návrhů LuDone Desktop z horní lišty
+# Sedm kompletních návrhů LuDone Desktop z horní lišty
 
 Dan 1. 10. požádal o tři odlišné minimalistické návrhy celé aplikace; implementaci zahájit až po schválení. Dne 2. 10. upřesnil nahrávání z horní lišty a další dva návrhy od Sonnetu 5.5. Tento běh upravuje pouze HTML makety s fiktivními daty.
 
@@ -9,12 +9,14 @@ Dan 1. 10. požádal o tři odlišné minimalistické návrhy celé aplikace; im
 | C Deník | Původní návrh | 390 px | 720 × 800 px | Teplý povrch a vzdušná typografie |
 | D Sloupec | Sonnet 5.5 | 360 px | 760 × 820 px | Grafit, textové seznamy, svislý dokument |
 | E Kapsle | Sonnet 5.5 | 420–480 px | 1040 × 640 px | Průsvitný panel, měkké skupiny, boční inspektor |
+| F Osa | Sonnet 5.5 | 420–460 px | 860 × 580 px | Osa schůzek, boční lišta, akce u stanice Mac/LuDone |
+| G Příkaz | Sonnet 5.5 | 380–640 px, draft 480 px | 700 × 540 px | Přímá akce, rozbalovací navigace, boční filtry a dok v detailu |
 
-[Živé návrhy](design/viewer.html?variant=d) · [Porovnání](design/index.html) · [Aktuální galerie](design/menu-gallery.html) · [Funkční rozsah](design/coverage.html) · [Brief](BRIEF.md)
+[Nové F/G vedle sebe](design/creative.html) · [Živé návrhy](design/viewer.html?variant=f) · [Porovnání](design/index.html) · [Aktuální galerie](design/menu-gallery.html) · [Funkční rozsah](design/coverage.html) · [Brief](BRIEF.md)
 
 ## Jak proklikávat
 
-Otevři `design/viewer.html`. Přepni A–E a v nabídce „Obrazovka“ jednu z 23 obrazovek či situací. Pak klikej přímo v maketě. Každá varianta má vlastní proporce; „Stejná pro porovnání“ je volitelný technický rám. Horní ovladače a popisky autora patří porovnání, nikoli budoucí aplikaci. Přepnutí obnoví fiktivní data. Hodnota výběru obrazovek se při navigaci uvnitř makety nemění.
+Otevři `design/viewer.html`. Přepni A–G a v nabídce „Obrazovka“ jednu z 23 obrazovek či situací. Pak klikej přímo v maketě. Každá varianta má vlastní proporce; „Stejná pro porovnání“ je volitelný technický rám. Horní ovladače a popisky autora patří porovnání, nikoli budoucí aplikaci. Přepnutí obnoví fiktivní data. Hodnota výběru obrazovek se při navigaci uvnitř makety nemění.
 
 1. Klikni na ikonu LuDone v horní liště a spusť nahrávání v panelu.
 2. Zavři panel: čas v liště pokračuje. Otevři jej znovu a zastav nahrávání.
@@ -22,7 +24,7 @@ Otevři `design/viewer.html`. Přepni A–E a v nabídce „Obrazovka“ jednu z
 4. Klikni na konkrétní schůzku: teprve nyní se otevře okno detailu. Červené zavírací tlačítko vrací do panelu.
 5. Historie má hledání, období včetně půl roku a vlastního rozsahu, filtry a stránkování. Nastavení a fronta zůstávají v panelu.
 
-Galerie obsahuje 55 aktuálních snímků; obrázky nejsou ovladače, odkazy „Proklikat“ otevírají živou situaci. Původní galerie 42 snímků je označená jako starší.
+Galerie obsahuje 77 snímků, z toho 22 nových F/G; obrázky nejsou ovladače, odkazy „Proklikat“ otevírají živou situaci. Původní galerie 42 snímků je označená jako starší.
 
 ## Přístup přes Tailscale
 
@@ -43,3 +45,15 @@ Důkazy: `../../../dukazy/desktop-menu-sonnet-2026-10-02/`. Při první kontrole
 ⛔ Skutečný zvuk, OAuth, serverový upload, systémová oprávnění, Finder/koš, restart a instalace se v HTML maketě neověřují. Proklik není E2E nainstalované aplikace. Produkční kód, testy, brány, backend a publikační workflow se nezměnily; nové vydání nevzniklo.
 
 🟡 Výběr a schválení návrhu čekají na Dana. Bez schválení nezačínat implementaci. Historické ověření původních maket z 1. 10. je uložené v `../../../dukazy/desktop-complete-designs-2026-10-01/` a není důkazem tohoto nového toku.
+
+## Kreativní doplnění F/G — 2. 10. 2026
+
+Dan požádal o dva další kreativnější směry a lepší zadání pro Sonnet. [Nový brief](SONNET-CREATIVE-BRIEF.md) už dovoluje změnit prezentační DOM, navigaci a odhalování voleb při zachování společného funkčního stavu. Sonnet nejprve navrhl šest kompozic a vybral dvě v [plánu](SONNET-CREATIVE-PLAN.md). [Reference](REFERENCES.md): oficiální Raycast, Screen Studio a Granola; oficiální skill Anthropic frontend-design je uchovaný v references/. Nativní systémové písmo respektuje Danovo aktuální zadání.
+
+Autorovy [původní poznámky](SONNET-CREATIVE-NOTES.md) a [druhý průchod](SONNET-CREATIVE-REVIEW.md) zůstávají doslovné v archivu. První poznámky přiznávají nedostupnost skillu mimo workspace. Druhý běh dostal jeho plný obsah, přečetl jej a provedl konkrétní opravy. Staré tvrzení plánu o měsíční ose je překonané: skutečné seskupení je po dnech, po sedmi záznamech na stránku. Oba návrhy používají systémové SF; Osa už nemá monospace čas.
+
+🧪 138 finálních kontrol obrazovek ve třech tématech, funkční prokliky celého běžného toku a cílené kontroly posledních úprav. Archiv [důkazů](../../../dukazy/desktop-sonnet-creative-2026-10-02/README.md) obsahuje původní neúspěšné pokusy i opravu kurzoru v hledání, přesné autorské soubory, metadata, nezávislé review Sol a snímky.
+
+Koordinátor doplnil `creative-integration.css` pro plné znění firmy/přístupu v draftu a srovnané formuláře. Společný renderer nyní při hledání uchovává pozici kurzoru; při změně voleb uchovává fokus. Žádná funkční simulace se nezměnila na skutečný serverový či zvukový přístup.
+
+🟡 Výběr a schválení stále čekají na Dana. ⛔ Makety neověřují produkční aplikaci a nejsou nová verze.

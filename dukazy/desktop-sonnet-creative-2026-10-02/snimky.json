@@ -1,0 +1,244 @@
+[
+  {
+    "variant": "f",
+    "screen": "ready",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-ready.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "recording",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-recording.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "save",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-save.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "history",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-history.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "detail",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-detail.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "settings",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-settings.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "audio",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-audio.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "queue",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-queue.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "updates",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-updates.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "onboarding",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-onboarding.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "f",
+    "screen": "dark",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-f-dark.jpg",
+    "clip": {
+      "height": 578,
+      "width": 858,
+      "x": 211,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "ready",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-ready.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "recording",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-recording.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "save",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-save.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "history",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-history.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "detail",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-detail.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "settings",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-settings.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "audio",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-audio.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "queue",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-queue.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "updates",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-updates.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "onboarding",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-onboarding.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  },
+  {
+    "variant": "g",
+    "screen": "dark",
+    "path": "/Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/previews/menu-g-dark.jpg",
+    "clip": {
+      "height": 538,
+      "width": 698,
+      "x": 291,
+      "y": 182
+    }
+  }
+]

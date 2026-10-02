@@ -1,0 +1,31 @@
+{
+  "is_error": false,
+  "duration_ms": 504219,
+  "num_turns": 22,
+  "total_cost_usd": 1.347179,
+  "modelUsage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 22,
+      "outputTokens": 69438,
+      "cacheReadInputTokens": 661875,
+      "cacheCreationInputTokens": 130095,
+      "webSearchRequests": 0,
+      "costUSD": 1.347179,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 41428,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "zdroj": "Claude Code --model claude-sonnet-5-5 --effort medium; safe-mode/restricted; Read/Write/Edit; strict MCP prázdné; budget 4 USD",
+  "sha256_autorske_soubory": {
+    "design/sonnet-f.css": "d972b7bfb206a3f1efc1c6df7ee644abb22c140068515137df2993aedd9b6e28",
+    "design/sonnet-f-layout.js": "01e04b4cfde1cfb3444ab6475d5a0e1cf9e7b120ce8e3fe6e9442f36a166a204",
+    "design/sonnet-g.css": "b74392407c5742883328908eb2aa8b580b20973a9b928cc72171d6b9e4365821",
+    "design/sonnet-g-layout.js": "2dfd351df2e2c955456687f33462ddb5066d1493097fd0e92615693c3dfbf457",
+    "SONNET-CREATIVE-PLAN.md": "0a307c8ac273f5c47fa451ff221c1d5a8d8a7f7deb1a3678b3b250e833686fa4",
+    "SONNET-CREATIVE-NOTES.md": "a6f7a011132e25d0aa72e5db7b1000687451ba5c3ae41143afc085cfefeeead3"
+  }
+}

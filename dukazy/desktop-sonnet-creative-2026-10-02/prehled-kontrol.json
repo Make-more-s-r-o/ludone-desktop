@@ -1,0 +1,94 @@
+{
+  "Původní ready beze změny": {
+    "PASS": 5,
+    "FAIL": 0
+  },
+  "Nahrávání pokračuje po zavření panelu": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Firma a přístup uchované po místním uložení, detail otevře okno": {
+    "PASS": 1,
+    "FAIL": 0
+  },
+  "Firma a soukromí uchované po místním uložení": {
+    "PASS": 1,
+    "FAIL": 0
+  },
+  "Obrazovka a integrita DOM": {
+    "PASS": 46,
+    "FAIL": 0
+  },
+  "Malá šířka": {
+    "PASS": 32,
+    "FAIL": 0
+  },
+  "Přepnutí části nastavení": {
+    "PASS": 10,
+    "FAIL": 0
+  },
+  "Uložená firma nové nahrávky, firemní přístup a zámek při automatickém uploadu": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Původní průběžné hledání": {
+    "PASS": 0,
+    "FAIL": 1
+  },
+  "Půl roku, stránkování, hledání po znacích a prázdný výsledek po opravě": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Vlastní období odmítá obrácené datum a přijme platný rozsah": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Potvrzené převzetí vlastnictví samo neodešle": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Neověřený server, ověření a potvrzení místního koše": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Finální obrazovka v proporcích návrhu": {
+    "PASS": 138,
+    "FAIL": 0
+  },
+  "První pokus onboardingu": {
+    "PASS": 0,
+    "FAIL": 1
+  },
+  "Dokončený průchod 5 kroků, login a simulovaná zkouška": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Stop zůstává první a sticky v historii": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Simulovaná instalace čeká na zastavení a uložení": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "Finální malá šířka": {
+    "PASS": 24,
+    "FAIL": 0
+  },
+  "G finální kompaktní rozhodnutí před uploadem": {
+    "PASS": 6,
+    "FAIL": 0
+  },
+  "Detail: zarovnání firmy a přístupu": {
+    "PASS": 1,
+    "FAIL": 0
+  },
+  "Poslední úpravy formuláře při 400 px": {
+    "PASS": 2,
+    "FAIL": 0
+  },
+  "VPN porovnání F/G a společný přepínač obrazovek": {
+    "PASS": 1,
+    "FAIL": 0
+  }
+}

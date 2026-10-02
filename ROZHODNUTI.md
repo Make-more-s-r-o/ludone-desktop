@@ -214,3 +214,7 @@ Dan odpověděl „Ano, tak vydej“ na výslovnou otázku, zda má koordinátor
 Dan požádal, aby spuštění, průběh, zastavení a rozhodnutí o uložení/odeslání probíhaly v panelu z ikony LuDone v horní liště. Hlavní okno se má otevřít až pro detail konkrétní schůzky. Přidal požadavek na dva další celé návrhy od Sonnetu 5.5.
 
 Požadavek je zapracovaný pouze do samostatných maket A–E; jde o přijaté zadání toku, nikoli schválení konkrétního nového designu. Dan výslovně požaduje předchozí schválení před implementací. Produkční změna ani vydání nejsou součástí tohoto běhu. Podklady: [pět návrhů](docs/changes/desktop-complete-designs-2026-10-01/README.md).
+
+## Kreativní doplnění návrhů — 2. 10. 2026
+
+Dan požádal o další dva kreativnější návrhy od Sonnetu 5.5, konkrétní reference a designový skill. F Osa a G Příkaz vznikly jako samostatné kompletní makety. Mohou měnit strukturu prezentace a navigaci, společné funkce a bezpečnostní významy zůstávají. Vzhled ani jedna varianta tím nejsou schválené; dřívější zákaz implementace před výběrem trvá. [Podklady a evidence](docs/changes/desktop-complete-designs-2026-10-01/README.md).

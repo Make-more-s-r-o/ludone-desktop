@@ -14,14 +14,14 @@ const screens = [
  ]]
 ];
 const allScreens = screens.flatMap(([,items])=>items.map(([value])=>value));
-let variant = ['a','b','c','d','e'].includes(params.get('variant')) ? params.get('variant') : 'a';
+let variant = ['a','b','c','d','e','f','g'].includes(params.get('variant')) ? params.get('variant') : 'a';
 const view = document.querySelector('#view');
 const theme = document.querySelector('#theme');
 const iframe = document.querySelector('#prototype');
 const size = document.querySelector('#size');
-const windowSizes = {a:[900,650],b:[1100,720],c:[720,800],d:[760,820],e:[1040,640]};
-const panelWidths={a:'400',b:'440',c:'390',d:'360',e:'420–480'};
-const authors={a:'Původní návrh · Mac',b:'Původní návrh · Studio',c:'Původní návrh · Deník',d:'Sonnet 5.5 · Sloupec',e:'Sonnet 5.5 · Kapsle'};
+const windowSizes = {a:[900,650],b:[1100,720],c:[720,800],d:[760,820],e:[1040,640],f:[860,580],g:[700,540]};
+const panelWidths={a:'400',b:'440',c:'390',d:'360',e:'420–480',f:'420–460',g:'380–640'};
+const authors={a:'Původní návrh · Mac',b:'Původní návrh · Studio',c:'Původní návrh · Deník',d:'Sonnet 5.5 · Sloupec',e:'Sonnet 5.5 · Kapsle',f:'Sonnet 5.5 · Osa',g:'Sonnet 5.5 · Příkaz'};
 size.value=params.get('size')==='equal'?'equal':'native';
 function fitWindow(){
  const [width,height]=windowSizes[variant];

@@ -1871,6 +1871,6 @@ Mají opravu, dají vědět.
 
 ## Aktuální výběr designu — 2. 10. 2026
 
-🟡 Vybrat a schválit jednu z pěti celých variant, případně říci konkrétní úpravy. D Sloupec a E Kapsle jsou nové návrhy Sonnetu 5.5. [Živé návrhy přes Tailscale](http://100.101.162.108:53302/viewer.html?variant=d) a [uložené podklady](docs/changes/desktop-complete-designs-2026-10-01/README.md).
+🟡 Vybrat a schválit jednu ze sedmi celých variant, případně říci konkrétní úpravy. D Sloupec a E Kapsle jsou předchozí návrhy Sonnetu 5.5; nové kreativnější směry jsou F Osa a G Příkaz. [Živé návrhy přes Tailscale](http://100.101.162.108:53302/creative.html) a [uložené podklady](docs/changes/desktop-complete-designs-2026-10-01/README.md).
 
 Nahrávání, zavření panelu, zastavení a volbu firmy/přístupu lze proklikat v liště. Detail se otevře až kliknutím na konkrétní schůzku. Jde o fiktivní makety, ne novou instalovanou verzi. Před schválením se produkce neimplementuje ani nevydává. Pro tuto volbu není potřeba žádný nový token, heslo ani instalační krok.
