@@ -1,12 +1,15 @@
 /* Samostatná maketa: pouze fiktivní data v paměti, žádné Electron API nebo HTTP. */
 const $ = (s) => document.querySelector(s);
 const query = new URLSearchParams(location.search);
-const concepts = { a: ['Mac','mac.css'], b: ['Studio','studio.css'], c: ['Deník','journal.css'] };
+const concepts = { a: ['Mac','mac.css'], b: ['Studio','studio.css'], c: ['Deník','journal.css'], d: ['Sloupec · Sonnet 5.5','sonnet-d.css'], e: ['Kapsle · Sonnet 5.5','sonnet-e.css'] };
 const concept = concepts[query.get('variant')] ? query.get('variant') : 'a';
 document.body.dataset.concept = concept;
 if(query.get('embedded')==='1')document.body.classList.add('embedded');
 document.documentElement.dataset.theme = ['light','dark','professional'].includes(query.get('theme')) ? query.get('theme') : 'light';
-const style = document.createElement('link'); style.rel='stylesheet'; style.href=concepts[concept][1]+'?v=14'; document.head.append(style);
+const style = document.createElement('link'); style.rel='stylesheet'; style.href=concepts[concept][1]+'?v=16'; document.head.append(style);
+const menuStyle=document.createElement('link');menuStyle.rel='stylesheet';menuStyle.href='menu.css?v=1';document.head.append(menuStyle);
+if(['d','e'].includes(concept))document.head.append(style);
+const integrationStyle=document.createElement('link');integrationStyle.rel='stylesheet';integrationStyle.href='menu-integration.css?v=1';document.head.append(integrationStyle);
 const paths = {
  record:'<rect x="8" y="2" width="8" height="13" rx="4"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>',
  library:'<path d="M4 5h16v15H4zM2 2h20v4H2zM9 11h6"/>',
@@ -64,11 +67,25 @@ function globalNotice(){
  if(state.update==='ready'&&!state.deferred&&state.page!=='updates'&&state.page!=='onboarding')return notice('Nová verze je připravená','','nav','Zobrazit','success').replace('data-action="nav"','data-action="nav" data-page="updates"');
  return '';
 }
+let menuOpen=true;
 function render(){
+ const windowView=state.page==='detail';
+ document.body.dataset.surface=windowView?'window':'tray';
+ document.body.dataset.page=state.page;
+ document.body.dataset.phase=state.phase;
+ const workspace=$('.workspace');
+ (windowView?$('.app-layout'):$('.menu-popover-body')).append(workspace);
+ $('.window').hidden=!windowView;
+ $('.desktop-stage').hidden=!windowView;
+ $('.menu-popover').hidden=windowView||!menuOpen;
+ $('.menubar-trigger').classList.toggle('is-recording',state.phase==='recording');
+ $('.menubar-trigger').setAttribute('aria-expanded',String(!windowView&&menuOpen));
+ $('.menubar-trigger .menu-live-status').innerHTML=state.phase==='recording'?`<i class="dot red"></i><span data-live-time>${clock()}</span>`:'';
  $('.app-nav').innerHTML=nav(); $('.workspace-head').innerHTML=pageHead(); $('.global-notice').innerHTML=globalNotice(); $('.global-notice').hidden=!$('.global-notice').innerHTML;
  const renderers={home:home,library:history,queue:queuePage,detail:detail,settings:settings,updates:updates,onboarding:onboarding};
  $('.content').innerHTML=(state.phase==='recording'&&state.page!=='home'?`<div class="live-strip"><span><i class="dot red"></i>Nahrává se <b data-live-time>${clock()}</b></span>${btn('Zastavit','stop','stop-button','stop')}</div>`:'')+(renderers[state.page]||home)();
  $('.app-title span').textContent=state.phase==='recording'?'LuDone · nahrává se':'LuDone Desktop';
+ document.querySelectorAll('.menu-tab').forEach(button=>button.classList.toggle('active',button.dataset.page===state.page));
 }
 function clock(){return Math.floor(state.seconds/60).toString().padStart(2,'0')+':'+(state.seconds%60).toString().padStart(2,'0');}
 function home(){
@@ -138,15 +155,15 @@ function login(){modal('Přihlášení v prohlížeči',`<p>Potvrďte účet a o
 function navigate(page){
  if(state.draftDirty&&state.page==='detail'&&page!=='detail'){modal('Uložit změny?',`<p>Firma a přístup této schůzky mají neuložené změny.</p>`,btn('Zůstat','close-modal')+btn('Zahodit změny','discard-nav','','',`data-page="${page}"`)+btn('Uložit a přejít','save-nav','primary','',`data-page="${page}"`));return;}
  if(state.companyDirty&&state.page==='settings'&&page!=='settings'){modal('Uložit výchozí firmu?',`<p>Změna ještě není uložená.</p>`,btn('Zůstat','close-modal')+btn('Zahodit změnu','discard-nav','','',`data-page="${page}"`)+btn('Uložit a přejít','save-nav','primary','',`data-page="${page}"`));return;}
- state.page=page;render();$('.content').scrollTop=0;
+ menuOpen=true;state.page=page;render();$('.content').scrollTop=0;
 }
 function saveRecording(send){
  if(send&&(!state.signed||!state.network||!state.scope||state.companyError||!state.draft.company))return;
- state.recordings.unshift({id:'new-'+Date.now(),title:state.draft.title.trim()||'Nová schůzka',date:'2026-10-01T10:05:00Z',duration:clock(),size:'5,2 MB',status:send?'queued':'local',company:state.draft.company,visibility:state.draft.visibility,verified:null,claimed:true,localPresent:true,microphoneOnly:state.microphoneOnly,locked:send,progress:0});state.phase='idle';state.draftDirty=false;state.page='library';state.period='30';state.pageIndex=0;state.search='';state.filter='all';render();toast(send?'Zařazeno k odeslání · ukázka':'Nahrávka zůstává na Macu · ukázka');finishInstall();
+ state.recordings.unshift({id:'new-'+Date.now(),title:state.draft.title.trim()||'Nová schůzka',date:'2026-10-01T10:05:00Z',duration:clock(),size:'5,2 MB',status:send?'queued':'local',company:state.draft.company,visibility:state.draft.visibility,verified:null,claimed:true,localPresent:true,microphoneOnly:state.microphoneOnly,locked:send,progress:0});state.phase='idle';state.draftDirty=false;state.page='home';state.period='30';state.pageIndex=0;state.search='';state.filter='all';render();toast(send?'Zařazeno k odeslání · ukázka':'Nahrávka zůstává na Macu · ukázka');finishInstall();
 }
 function finishInstall(){if(state.installRequested&&state.phase==='idle'){state.installRequested=false;state.update='current';render();toast('Ukázka: po bezpečném uložení by proběhl restart a instalace.');}}
 function applyScenario(name){
- state=seed();recordOriginal=null;closeModal();$('.scenario').value=name;
+ state=seed();menuOpen=true;recordOriginal=null;closeModal();$('.scenario').value=name;
  if(name==='recording'||name==='system-lost'){state.phase='recording';state.seconds=1458;state.systemLost=name==='system-lost';}
  if(name==='save'){state.phase='draft';state.seconds=1458;}
  if(name==='history')state.page='library';
@@ -161,17 +178,20 @@ function applyScenario(name){
  if(name==='onboarding'){state.page='onboarding';state.signed=false;state.mic=false;state.system=false;}
  render();$('.content').scrollTop=0;if(name==='tray')openTray();
 }
-function openTray(){modal('LuDone v horní liště',`<div class="tray-shell"><div class="record-head"><span class="eyebrow">${state.phase==='recording'?'Nahrává se':'Připraveno'}</span>${icon('record')}</div><div class="record-time">${state.phase==='recording'?clock():'00:00'}</div><div class="source-summary"><span>${icon('record')}Mikrofon</span><span>${icon('sound')}Schůzka</span></div>${btn(state.phase==='recording'?'Zastavit':'Nahrávat schůzku',state.phase==='recording'?'stop':'start','record-button',state.phase==='recording'?'stop':'record')}${state.recordings.slice(0,2).map(row).join('')}<div class="quiet-row"><span>LuTrack</span><span>Připravujeme</span></div></div>`,btn('Otevřít celé okno','close-modal','primary')+btn('Nastavení','quick-nav','','settings','data-page="settings"')+btn('Další','tray-menu','subtle'));}
+function openTray(){menuOpen=true;closeModal();navigate('home');}
+
 let recordOriginal;
 document.addEventListener('click',event=>{
  const el=event.target.closest('[data-action]');if(!el||el.disabled)return;const action=el.dataset.action,r=current();
- if(action==='nav'){navigate(el.dataset.page||'updates');return;}
+ if(action==='menu-toggle'){if(state.page==='detail'){openTray();}else{menuOpen=!menuOpen;render();}return;}
+ if(action==='hide-menu'){menuOpen=false;render();return;}
+ if(action==='nav'){menuOpen=true;navigate(el.dataset.page||'updates');return;}
  if(action==='settings-tab'){state.tab=el.dataset.tab;render();$('.content').scrollTop=0;return;}
  if(action==='detail'){if(state.draftDirty){navigate('library');return;}closeModal();state.selected=el.dataset.id;recordOriginal={...current()};state.page='detail';state.draftDirty=false;render();$('.content').scrollTop=0;return;}
  if(action==='close-modal'){closeModal();return;}
- if(action==='start'){closeModal();if(state.phase==='draft'||state.phase==='finalizing'){state.page='home';render();return;}if(!state.mic){state.page='settings';state.tab='audio';render();toast('Nejprve povolte mikrofon.');return;}if(!state.system){modal('Nahrávat jen mikrofon?',`<p>Druhá strana schůzky se nezachytí. Můžete povolit systémový zvuk nebo pokračovat omezeně.</p>`,btn('Zvuk a oprávnění','quick-nav','','sound','data-page="settings" data-tab="audio"')+btn('Nahrát jen mikrofon','start-microphone','primary'));return;}if(state.phase==='draft'){state.page='home';render();return;}state.microphoneOnly=false;state.phase='recording';state.seconds=0;state.page='home';render();return;}
+ if(action==='start'){menuOpen=true;closeModal();if(state.phase==='draft'||state.phase==='finalizing'){state.page='home';render();return;}if(!state.mic){state.page='settings';state.tab='audio';render();toast('Nejprve povolte mikrofon.');return;}if(!state.system){modal('Nahrávat jen mikrofon?',`<p>Druhá strana schůzky se nezachytí. Můžete povolit systémový zvuk nebo pokračovat omezeně.</p>`,btn('Zvuk a oprávnění','quick-nav','','sound','data-page="settings" data-tab="audio"')+btn('Nahrát jen mikrofon','start-microphone','primary'));return;}if(state.phase==='draft'){state.page='home';render();return;}state.microphoneOnly=false;state.phase='recording';state.seconds=0;state.page='home';render();return;}
  if(action==='start-microphone'){closeModal();state.microphoneOnly=true;state.phase='recording';state.seconds=0;state.page='home';render();return;}
- if(action==='stop'){closeModal();state.phase='finalizing';state.page='home';render();setTimeout(()=>{state.phase='draft';state.draft={title:'Nová schůzka',company:state.defaultCompany,visibility:'company'};if(state.auto&&state.signed&&state.network&&state.scope&&state.defaultCompany&&!state.companyError){saveRecording(true);}else render();},650);return;}
+ if(action==='stop'){menuOpen=true;closeModal();state.phase='finalizing';state.page='home';render();setTimeout(()=>{state.phase='draft';state.draft={title:'Nová schůzka',company:state.defaultCompany,visibility:'company'};if(state.auto&&state.signed&&state.network&&state.scope&&state.defaultCompany&&!state.companyError){saveRecording(true);}else render();},650);return;}
  if(action==='save-send'||action==='save-local'){saveRecording(action==='save-send');return;}
  if(action==='sources'){closeModal();state.tab='audio';navigate('settings');return;}
  if(action==='refresh'){render();toast('Přehled obnoven · pouze fiktivní data');return;}
@@ -217,7 +237,7 @@ document.addEventListener('click',event=>{
  if(action==='about'){modal('O LuDone Desktop',`<p>LuDone Desktop · 0.1.7<br>Schůzky na Macu, přepis v LuDone.</p><p class="small-note">Tato obrazovka je návrh, ne nainstalovaná aplikace.</p>`,btn('Hotovo','close-modal','primary'));return;}
  if(action==='shortcuts'){modal('Klávesové zkratky',`<div class="shortcut-row"><span>Rychlé akce</span><kbd>⌘ K</kbd></div><div class="shortcut-row"><span>Ukončit nahrávání</span><kbd>⌃ ⌥ R</kbd></div><div class="shortcut-row"><span>Panel v liště</span><kbd>⌃ ⌥ L</kbd></div><div class="shortcut-row"><span>Nahrát / zastavit v maketě</span><kbd>⌘ ⇧ R</kbd></div><div class="shortcut-row"><span>Hledat v nahrávkách</span><kbd>⌘ F</kbd></div><div class="shortcut-row"><span>Nastavení</span><kbd>⌘ ,</kbd></div><div class="shortcut-row"><span>Zavřít dialog</span><kbd>Esc</kbd></div>`,btn('Hotovo','close-modal','primary'));return;}
  if(action==='tray'){openTray();return;}
- if(action==='tray-menu'){modal('LuDone · nabídka',`<div class="detail-actions">${btn('Otevřít LuDone na webu','open-web','','web')}${btn('Nastavení','quick-nav','','settings','data-page="settings"')}${btn('O aplikaci','about','','info')}${btn('Ukončit LuDone','quit','danger')}</div>`,btn('Zavřít','close-modal'));return;}
+ if(action==='tray-menu'){modal('LuDone · nabídka',`<div class="detail-actions">${btn('Otevřít LuDone na webu','open-web','','web')}${btn('Nastavení','quick-nav','','settings','data-page="settings"')}${btn('Aktualizace','quick-nav','','update','data-page="updates"')+btn('Klávesové zkratky','shortcuts','','keyboard')+btn('O aplikaci','about','','info')}${btn('Ukončit LuDone','quit','danger')}</div>`,btn('Zavřít','close-modal'));return;}
  if(action==='check-update'){state.update='downloading';render();setTimeout(()=>{state.update='ready';render();toast('Fiktivní verze 0.1.8 je připravená.');},900);return;}
  if(action==='defer'){state.deferred=true;render();toast('Aktualizace odložena. Najdete ji v navigaci.');return;}
  if(action==='install'){state.installRequested=true;render();if(state.phase==='idle')finishInstall();return;}
@@ -245,7 +265,7 @@ document.addEventListener('change',event=>{
  if(key)render();
 });
 document.addEventListener('keydown',event=>{
- if(event.key==='Escape'){closeModal();return;}
+ if(event.key==='Escape'){if(!$('.modal-layer').hidden){closeModal();}else if(state.page!=='detail'){menuOpen=false;render();}return;}
  if(!$('.modal-layer').hidden&&event.key==='Tab'){const items=[...$('.sheet').querySelectorAll('button:not(:disabled),input,select,a[href]')];const i=items.indexOf(document.activeElement);if(event.shiftKey&&i===0){event.preventDefault();items.at(-1)?.focus();}else if(!event.shiftKey&&i===items.length-1){event.preventDefault();items[0]?.focus();}return;}
  if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();if(!$('.modal-layer').hidden)closeModal();else $('[data-action=quick-actions]')?.click();return;}
  if(!$('.modal-layer').hidden)return;
@@ -255,7 +275,7 @@ document.addEventListener('keydown',event=>{
  if((event.metaKey||event.ctrlKey)&&event.key===','){event.preventDefault();navigate('settings');}
  if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='f'){event.preventDefault();navigate('library');$('[data-field=search]')?.focus();}
 });
-document.body.innerHTML=`<header class="preview-bar"><div class="preview-label"><strong>${concept.toUpperCase()} · ${concepts[concept][0]}</strong> <span class="muted">Celá aplikace · klikací maketa</span></div><a href="index.html">Porovnat návrhy</a><select class="scenario" aria-label="Ukázková situace">${scenarios.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><select class="theme-select" aria-label="Téma makety"><option value="light">Světlé</option><option value="professional">Profesionální</option><option value="dark">Tmavé</option></select><button data-action="reset-preview">Reset</button></header><div class="desktop-stage"><div class="window"><header class="titlebar"><span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span><div class="app-title"><img src="LuDone.svg" alt=""><span>LuDone Desktop</span></div><div class="window-actions"><button class="icon-btn" data-action="tray" aria-label="Panel v liště" title="Panel v liště">${icon('tray')}</button><button class="icon-btn" data-action="quick-actions" aria-label="Rychlé akce (⌘K)" title="Rychlé akce (⌘K)">${icon('keyboard')}</button></div></header><div class="app-layout"><nav class="app-nav" aria-label="Hlavní navigace"></nav><main class="workspace"><header class="workspace-head"></header><div class="global-notice"></div><div class="content"></div></main></div></div></div><div class="modal-layer" hidden></div><div class="toast" hidden role="status"></div>`;
+document.body.innerHTML=`<header class="preview-bar"><div class="preview-label"><strong>${concept.toUpperCase()} · ${concepts[concept][0]}</strong> <span class="muted">Celá aplikace · klikací maketa</span></div><a href="index.html">Porovnat návrhy</a><select class="scenario" aria-label="Ukázková situace">${scenarios.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><select class="theme-select" aria-label="Téma makety"><option value="light">Světlé</option><option value="professional">Profesionální</option><option value="dark">Tmavé</option></select><button data-action="reset-preview">Reset</button></header><section class="menubar-scene" aria-label="Návrh ovládání z horní lišty"><header class="mac-menubar"><span class="menu-os-brand" aria-hidden="true">◆ &nbsp; LuDone Desktop</span><button class="menubar-trigger" data-action="menu-toggle" aria-label="LuDone v horní liště" aria-expanded="true"><img src="LuDone.svg" alt=""><span class="menu-live-status"></span></button><span class="menu-os-time" aria-hidden="true">Pá 10:32</span></header><section class="menu-popover" aria-label="Panel LuDone"><header class="menu-popover-header"><div class="menu-brand"><img src="LuDone.svg" alt=""><h1 class="menu-popover-title">LuDone</h1></div><div class="popover-actions"><button class="icon-btn" data-action="tray-menu" aria-label="Další možnosti">${icon('settings')}</button><button class="icon-btn" data-action="hide-menu" aria-label="Zavřít panel">${icon('close')}</button></div></header><div class="menu-popover-body"></div><footer class="menu-popover-footer"><button class="menu-tab" data-action="nav" data-page="home" aria-label="Nahrávat">${icon('record')}<span>Nahrávat</span></button><button class="menu-tab" data-action="nav" data-page="library" aria-label="Nahrávky">${icon('library')}<span>Nahrávky</span></button><button class="menu-tab" data-action="nav" data-page="queue" aria-label="Odesílání">${icon('cloud')}<span>Odesílání</span></button><button class="menu-tab" data-action="nav" data-page="settings" aria-label="Nastavení">${icon('settings')}<span>Nastavení</span></button></footer></section></section><div class="desktop-stage"><div class="window"><header class="titlebar"><span class="traffic"><button class="window-close" data-action="tray" aria-label="Zavřít detail a vrátit se do lišty"></button><i></i><i></i></span><div class="app-title"><img src="LuDone.svg" alt=""><span>LuDone Desktop</span></div><div class="window-actions"><button class="icon-btn" data-action="tray" aria-label="Panel v liště" title="Panel v liště">${icon('tray')}</button><button class="icon-btn" data-action="quick-actions" aria-label="Rychlé akce (⌘K)" title="Rychlé akce (⌘K)">${icon('keyboard')}</button></div></header><div class="app-layout"><nav class="app-nav" aria-label="Hlavní navigace"></nav><main class="workspace"><header class="workspace-head menu-page-head"></header><div class="global-notice menu-notice"></div><div class="content menu-content"></div></main></div></div></div><div class="modal-layer" hidden></div><div class="toast" hidden role="status"></div>`;
 $('.theme-select').value=document.documentElement.dataset.theme;
 $('.theme-select').addEventListener('change',event=>{document.documentElement.dataset.theme=event.target.value;render();});
 $('.scenario').addEventListener('change',event=>applyScenario(event.target.value));

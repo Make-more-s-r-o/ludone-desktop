@@ -14,19 +14,21 @@ const screens = [
  ]]
 ];
 const allScreens = screens.flatMap(([,items])=>items.map(([value])=>value));
-let variant = ['a','b','c'].includes(params.get('variant')) ? params.get('variant') : 'a';
+let variant = ['a','b','c','d','e'].includes(params.get('variant')) ? params.get('variant') : 'a';
 const view = document.querySelector('#view');
 const theme = document.querySelector('#theme');
 const iframe = document.querySelector('#prototype');
 const size = document.querySelector('#size');
-const windowSizes = {a:[900,650],b:[1100,720],c:[720,800]};
+const windowSizes = {a:[900,650],b:[1100,720],c:[720,800],d:[760,820],e:[1040,640]};
+const panelWidths={a:'400',b:'440',c:'390',d:'360',e:'420–480'};
+const authors={a:'Původní návrh · Mac',b:'Původní návrh · Studio',c:'Původní návrh · Deník',d:'Sonnet 5.5 · Sloupec',e:'Sonnet 5.5 · Kapsle'};
 size.value=params.get('size')==='equal'?'equal':'native';
 function fitWindow(){
  const [width,height]=windowSizes[variant];
  document.body.dataset.size=size.value;
  document.querySelector('.preview').style.setProperty('--window-width',width+'px');
  document.querySelector('.preview').style.setProperty('--window-height',height+'px');
- document.querySelector('#dimensions').textContent=size.value==='equal'?'Společný rám':`${width} × ${height}`;
+ document.querySelector('#dimensions').textContent=size.value==='equal'?'Společný rám':`Panel ${panelWidths[variant]} px · detail ${width} × ${height}`;
 }
 view.innerHTML = screens.map(([group,items])=>`<optgroup label="${group}">${items.map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</optgroup>`).join('');
 view.value = allScreens.includes(params.get('scenario')) ? params.get('scenario') : 'ready';
@@ -45,6 +47,7 @@ function show(){
  iframe.src=url.href;
  document.body.dataset.theme=theme.value;
  document.querySelectorAll('[data-variant]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.variant===variant)));
+ document.querySelector('#author').textContent=authors[variant];
  document.title=`LuDone · ${variant.toUpperCase()} · ${view.selectedOptions[0].textContent}`;
 }
 document.querySelectorAll('[data-variant]').forEach(button=>button.addEventListener('click',()=>{variant=button.dataset.variant;show();}));

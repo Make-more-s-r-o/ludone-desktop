@@ -1,0 +1,23 @@
+{
+  "is_error": false,
+  "duration_ms": 299945,
+  "num_turns": 17,
+  "modelUsage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 20,
+      "outputTokens": 38775,
+      "cacheReadInputTokens": 354367,
+      "cacheCreationInputTokens": 87864,
+      "webSearchRequests": 0,
+      "costUSD": 0.8101193999999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 18212,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "note": "costBasis=list je ceníková metadata CLI, nikoli doložená platba. Autorské CSS a poznámky jsou uložené v docs/changes."
+}

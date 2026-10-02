@@ -208,3 +208,9 @@ D21 mění pouze formát a potřebnou konverzi v D20; bezpečnost fronty a jeden
 ## D22 — pověření k vydání 0.1.4 (23. 9. 2026)
 
 Dan odpověděl „Ano, tak vydej“ na výslovnou otázku, zda má koordinátor vydat připravenou 0.1.4. Koordinátor smí vytvořit a pushnout tag v0.1.4 a dokončit podepsané a notarizované vydání na stahnout.ludone.cz/desktop/ včetně aktualizačního feedu. Pověření samo nedokládá úspěšnou publikaci ani instalaci na Macu; ty vyžadují samostatné důkazy. Existující záloha klíče a přístupy se znovu nevyžadují.
+
+## Upřesnění UI — nahrávání z horní lišty (2. 10. 2026)
+
+Dan požádal, aby spuštění, průběh, zastavení a rozhodnutí o uložení/odeslání probíhaly v panelu z ikony LuDone v horní liště. Hlavní okno se má otevřít až pro detail konkrétní schůzky. Přidal požadavek na dva další celé návrhy od Sonnetu 5.5.
+
+Požadavek je zapracovaný pouze do samostatných maket A–E; jde o přijaté zadání toku, nikoli schválení konkrétního nového designu. Dan výslovně požaduje předchozí schválení před implementací. Produkční změna ani vydání nejsou součástí tohoto běhu. Podklady: [pět návrhů](docs/changes/desktop-complete-designs-2026-10-01/README.md).

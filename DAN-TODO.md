@@ -1868,3 +1868,9 @@ Mají opravu, dají vědět.
    (druhá opravena v PR #120).
 5. **Rozhodnutí o časovém přepínači** — dnes jde zapnout jen restartem aplikace, protože
    se hodnota zmrazí při prvním sestavení časovače.
+
+## Aktuální výběr designu — 2. 10. 2026
+
+🟡 Vybrat a schválit jednu z pěti celých variant, případně říci konkrétní úpravy. D Sloupec a E Kapsle jsou nové návrhy Sonnetu 5.5. [Živé návrhy přes Tailscale](http://100.101.162.108:53302/viewer.html?variant=d) a [uložené podklady](docs/changes/desktop-complete-designs-2026-10-01/README.md).
+
+Nahrávání, zavření panelu, zastavení a volbu firmy/přístupu lze proklikat v liště. Detail se otevře až kliknutím na konkrétní schůzku. Jde o fiktivní makety, ne novou instalovanou verzi. Před schválením se produkce neimplementuje ani nevydává. Pro tuto volbu není potřeba žádný nový token, heslo ani instalační krok.

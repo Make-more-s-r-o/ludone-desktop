@@ -218,3 +218,12 @@ commitnuté a nemá remote** (`git ls-files mockupy` vrací prázdno). Dokud nep
 | B6 „vadná hlavička Opus“ | riziko pro přepis | **kosmetika.** Hlavička je platná; skutečný problém je chybějící délka, opraví ji `ffmpeg -c copy` při příjmu |
 | C1 podpis | ✅ potvrzeno | **⛔ neověřeno** — měřilo se špatné oprávnění |
 | B1 Electron | ✅ uzavřeno | **🟡** dokud neproběhne E1 |
+
+## Aktuální designový checkpoint — 2. 10. 2026
+
+Tento checkpoint nahrazuje starší designové odhady pouze pro nynější výběr UI. Produkční vývoj čeká na výslovné schválení Dana; jde o návrhy, ne nový release.
+
+1. 🧪 Pět klikacích HTML návrhů A–E se zachovaným společným funkčním rozsahem; D/E vytvořil Sonnet 5.5. Nahrávání a rozhodnutí po schůzce zůstávají v liště, hlavní okno až pro detail.
+2. 🧪 Prokliky 115 obrazovek, 60 kontrol malých šířek a nové snímky. Podrobnosti a hranice ověření v [README](docs/changes/desktop-complete-designs-2026-10-01/README.md); archiv v [dukazy](dukazy/desktop-menu-sonnet-2026-10-02/README.md).
+3. 🟡 Dan vybere návrh a případné úpravy. Teprve po výslovném schválení se sestaví implementační etapa, vizuální akceptace a E2E nad skutečnou aplikací.
+4. ⛔ Produkční implementace nového UI, skutečný zvuk a upload tohoto návrhu ani vydání nejsou tímto checkpointem ověřené.

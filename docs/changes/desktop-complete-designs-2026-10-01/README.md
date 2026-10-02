@@ -1,35 +1,45 @@
-# Tři kompletní minimalistické návrhy LuDone Desktop
+# Pět kompletních návrhů LuDone Desktop z horní lišty
 
-Dan 1. 10. upřesnil: tři odlišné designy celé aplikace, každý se zachováním všech funkcí; implementaci zahájit až po výslovném schválení. Tento běh připravuje pouze HTML makety. Původní částečné návrhy jsou zachované v `../desktop-clarity-2026-10-01/`.
+Dan 1. 10. požádal o tři odlišné minimalistické návrhy celé aplikace; implementaci zahájit až po schválení. Dne 2. 10. upřesnil nahrávání z horní lišty a další dva návrhy od Sonnetu 5.5. Tento běh upravuje pouze HTML makety s fiktivními daty.
 
-- A — Mac: postranní navigace, systémové ovladače, seskupené nastavení.
-- B — Studio: horní navigace, otevřená pracovní plocha, měkký fialový akcent.
-- C — Deník: úzká navigace, teplý povrch, otevřené seznamy, větší typografie.
+| Návrh | Autor | Panel | Samostatný detail | Směr |
+|---|---|---|---|---|
+| A Mac | Původní návrh | 400 px | 900 × 650 px | Známé ovladače a modrý akcent |
+| B Studio | Původní návrh | 440 px | 1100 × 720 px | Otevřená kompozice a fialový akcent |
+| C Deník | Původní návrh | 390 px | 720 × 800 px | Teplý povrch a vzdušná typografie |
+| D Sloupec | Sonnet 5.5 | 360 px | 760 × 820 px | Grafit, textové seznamy, svislý dokument |
+| E Kapsle | Sonnet 5.5 | 420–480 px | 1040 × 640 px | Průsvitný panel, měkké skupiny, boční inspektor |
 
-[Živý přehled všech návrhů](design/viewer.html) · [Porovnání](design/index.html) · [Všechny snímky](design/gallery.html) · [Funkční rozsah](design/coverage.html) · [Brief a zdroje](BRIEF.md)
+[Živé návrhy](design/viewer.html?variant=d) · [Porovnání](design/index.html) · [Aktuální galerie](design/menu-gallery.html) · [Funkční rozsah](design/coverage.html) · [Brief](BRIEF.md)
 
 ## Jak proklikávat
 
-Otevři `design/viewer.html` v prohlížeči. Nahoře přepni A/B/C, v nabídce „Obrazovka“ vyber jednu z 23 obrazovek a situací. Pak klikej na tlačítka přímo v aplikaci pod ovladači. „Všechny snímky“ otevřou galerii 42 snímků; tlačítka vyobrazená ve snímcích nejsou interaktivní. Odkazy z porovnání nyní vedou do živého přehledu.
+Otevři `design/viewer.html`. Přepni A–E a v nabídce „Obrazovka“ jednu z 23 obrazovek či situací. Pak klikej přímo v maketě. Každá varianta má vlastní proporce; „Stejná pro porovnání“ je volitelný technický rám. Horní ovladače a popisky autora patří porovnání, nikoli budoucí aplikaci. Přepnutí obnoví fiktivní data. Hodnota výběru obrazovek se při navigaci uvnitř makety nemění.
 
-Každá maketa má stejné příklady a všechny funkční oblasti. Jde o tři vzhledy a rozložení se společným funkčním základem; Mac a Studio jsou si bližší než Deník. Horní přepínače obrazovky a tématu patří porovnání, nikoli budoucí aplikaci. Přepnutí obnoví fiktivní data. Nabídka obrazovek slouží k přímému otevření situace; běžný proklik uvnitř makety její vybranou hodnotu nemění. Paměťová simulace se po načtení obnoví; není perzistentní produkční frontou.
+1. Klikni na ikonu LuDone v horní liště a spusť nahrávání v panelu.
+2. Zavři panel: čas v liště pokračuje. Otevři jej znovu a zastav nahrávání.
+3. V témže panelu změň název, firmu a přístup; zvol Uložit a odeslat nebo Nechat na Macu.
+4. Klikni na konkrétní schůzku: teprve nyní se otevře okno detailu. Červené zavírací tlačítko vrací do panelu.
+5. Historie má hledání, období včetně půl roku a vlastního rozsahu, filtry a stránkování. Nastavení a fronta zůstávají v panelu.
 
-Výchozí rozměry nejsou sjednocené: Mac 900 × 650, Studio 1100 × 720 a Deník 720 × 800 CSS px. LuDone Mac nabízí kompaktní běžné okno s postranním menu, Studio širší pracovní plochu s horním menu a Deník užší svislé okno. Okno se přizpůsobí dostupné šířce bez zmenšování písma; obsah zůstává dostupný posouváním. Rozložení používá skutečnou šířku okna i při samostatném otevření. Volba „Velikost → Stejná pro porovnání“ umožňuje dočasně srovnat všechny návrhy ve shodném rámu. Aktualizované snímky úvodního porovnání jsou `own-a-home.jpg`, `own-b-home.jpg`, `own-c-home.jpg`; galerie 42 funkčních obrazovek uchovává dřívější společný rám.
+Galerie obsahuje 55 aktuálních snímků; obrázky nejsou ovladače, odkazy „Proklikat“ otevírají živou situaci. Původní galerie 42 snímků je označená jako starší.
 
-Pro místní server z této složky lze spustit `python3 -m http.server 53302 --bind 127.0.0.1 --directory design`. Otevři `http://127.0.0.1:53302/viewer.html`. Soubory fungují i přímo z disku bez sestavení aplikace.
+## Přístup přes Tailscale
 
-## Rozsah a rozdíly proti současné aplikaci
+Server podkladů běží jen nad adresářem návrhů: místně `http://127.0.0.1:53302/viewer.html`, přes VPN `http://100.101.162.108:53302/viewer.html`. Dva servery jsou vázané na loopback a konkrétní Tailscale IP; nejde o veřejné vystavení repozitáře. Pro opětovné spuštění z této složky: `python3 -m http.server 53302 --bind 100.101.162.108 --directory design`.
 
-Inventář odvozený z aktuálních komponent je v briefu. Přibylo navržené hledání, výběr období, stránkování, sjednocené okno a jasnější navigace. Firma a přístup, consent, zamčené zahájené uploady, samostatné převzetí, ověření serveru, bezpečný místní koš, zvuková zkouška, účet, retence, Dock, spuštění, diagnostika, updater, lišta a rychlé akce zůstávají dostupné ve všech variantách. LuTrack není připojený ani aktivní.
+## Autorství a archivace
 
-Systémová typografie reaguje na Danův požadavek na macOS a čitelnost. Značka LuDone zůstává. Toto není canonical preview webového DS ani SwiftUI implementace. HTML vykresluje jedinou ukázku okna; skutečné systémové ovladače řeší až schválená implementace.
+D/E vznikly v odděleném worktree `desktop-sonnet-concepts` přes Claude Code s `--model claude-sonnet-5-5 --effort medium`. Model měl pouze Read/Write/Edit a rozpočtový strop 3 USD, bez Bash a MCP. [Zadání](SONNET-BRIEF.md), [poznámky autora](SONNET-NOTES.md), doslovné CSS a metadata výsledku jsou archivované. `menu-integration.css` vlastní Codex: řeší skutečný DOM, společný tok, dostupné odznaky stavů a formulář bez překrývání tlačítek. Obě varianty sdílejí funkční renderer, mají vlastní kompozici i proporce.
 
-## Ověření
+Původní návrhy A–C před změnou na lištu jsou zachované v commitu `08db89abc15fabf85e908f3a45f284a8185cd8e4`. Částečné starší návrhy zůstávají v `../desktop-clarity-2026-10-01/`.
 
-🧪 Syntaxe JavaScriptu, 57 scénářů, 102 kontrol hlavních průchodů a kontrola rozložení 30 úzkých náhledů (640/400 px). Důkazy: `../../../dukazy/desktop-complete-designs-2026-10-01/`.
+## Ověření 2. 10. 2026
 
-🧪 Následná oprava prokliku: přímý výběr všech 23 obrazovek v A/B/C (69 kontrol), devět přepnutí tématu a proklik uvnitř vložené makety ve všech třech variantách. Záznam `live-viewer.json`, snímky `live-viewer-a.jpg`, `live-viewer-b.jpg`, `live-viewer-c.jpg`.
+🧪 Prokliky v prohlížeči: nahrávání, zavření/otevření panelu, zastavení, firma/soukromí, místní uložení a detail ve všech pěti variantách; přímý výběr 115 obrazovek a situací bez vodorovného přetékání. Dalších 60 kontrol při šířkách 400/640 px ověřilo přetékání a dostupnost spodní navigace. V D/E také hledání a stránkování, uložená firma pro novou schůzku, firemní výchozí přístup, zámek voleb po odeslání a samostatné potvrzené převzetí, které nic neodešle. Syntaxe a kontrola diffu jsou zaznamenané v archivu.
 
-⛔ Skutečné nahrávání, OAuth, síťový upload, oprávnění macOS, Finder/koš, export diagnostiky a instalace se zde neověřují; všechny tyto akce jsou makety. HTML prokliky nejsou E2E nainstalované aplikace. Produkční `src/`, Electron, testy, brány, backend, cizí `design/` a release workflow nebyly změněny. Nové vydání nevzniklo.
+Důkazy: `../../../dukazy/desktop-menu-sonnet-2026-10-02/`. Při první kontrole D přetékala navigace nastavení o 18 px; oprava je v integračním CSS a následných 115 kontrol je zelených. Původní kontrola zůstává v záznamu.
 
-🟡 Výběr a schválení návrhu čekají na Dana. Bez schválení nezačínat implementaci.
+⛔ Skutečný zvuk, OAuth, serverový upload, systémová oprávnění, Finder/koš, restart a instalace se v HTML maketě neověřují. Proklik není E2E nainstalované aplikace. Produkční kód, testy, brány, backend a publikační workflow se nezměnily; nové vydání nevzniklo.
+
+🟡 Výběr a schválení návrhu čekají na Dana. Bez schválení nezačínat implementaci. Historické ověření původních maket z 1. 10. je uložené v `../../../dukazy/desktop-complete-designs-2026-10-01/` a není důkazem tohoto nového toku.
