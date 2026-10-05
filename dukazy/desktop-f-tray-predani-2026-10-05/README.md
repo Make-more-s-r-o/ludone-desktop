@@ -12,6 +12,8 @@ Snímky: [náhled](horní-lišta-náhled.jpg), [všechny stavy](horní-lišta-v�
 
 ✅ [remote-preflight.txt](remote-preflight.txt): čtecí SSH připojení na správný dev-ludone host, verze nástrojů, přihlášený Codex, Swift/macOS SDK a dostupnost desktopového repa z GitHubu. Počáteční sandboxové odmítnutí síťového připojení a problém PATH jsou uchované; další povolené čtecí kontroly prošly. Žádné tajemství se nečetlo ani nepřenášelo.
 
+✅ [remote-priprava.txt](remote-priprava.txt): nový clone a čistý detached worktree podkladů na dev-ludone, 99 samostatných PASS a EXIT_CODE=0. Produkční kód tam pouze zkopírovaný z main; žádná aplikace, zvuk, instalace závislostí ani agent se nespouštěly.
+
 Nezávislé zdrojové review Sol: [review-sol.md](review-sol.md). Zjištěný P2 — předčasné tvrzení o schválení ikon v připraveném promptu — opraven podmínkou použití a odkazem na přímé zadání člověka. Žádný další P1/P2 v kódu nalezený. Review samo není GUI měření.
 
 ## Podklady a limity

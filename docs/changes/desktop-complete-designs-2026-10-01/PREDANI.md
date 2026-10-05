@@ -12,6 +12,14 @@
 
 Codex app tento místní chat nemůže přemístit sám sebe. V inventáři projektů byl desktop uveden jen jako místní; host `dev-ludone` je dostupný pro remote handoff jiného chatu. Připravený prompt lze vložit do nové úlohy na tomto hostu. Po výslovném pokynu založit/spustit vzdálenou úlohu lze využít dostupné Codex nástroje; nynější běh připravuje podklady a žádnou takovou úlohu nespustil.
 
+## Nově připravená kopie na Macu mini
+
+✅ Nový čistý clone je nyní v `/Users/dev_ludone/Dev/ludone-desktop`, kořen na produkčním `main`. Podklady F mají oddělený detached worktree `/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa-preview`, zamražený na `a355c6ad608c4cfd59077fa84ac7f7a724569e6c`. Je čistý a samostatná kontrola ikon tam prošla se všemi 99 podmínkami a exit kódem 0. [Doslovný výpis](../../../dukazy/desktop-f-tray-predani-2026-10-05/remote-priprava.txt).
+
+Tato kopie je příprava, nikoli implementační větev. Nebylo spuštěno nahrávání, aplikace, agent ani instalace závislostí. Další běh vytvoří vlastní `feat/desktop-osa` a přečte poslední dokumentaci z přípravné větve. Historický údaj o chybějícím checkoutu výše popisuje stav před tímto novým clonem.
+
+⚠️ GitHub při odeslání podkladů hlásil pro default branch 12 dependency upozornění (1 high, 7 moderate, 4 low). Konkrétní závislosti nebyly v tomto designovém běhu auditované; před vydáním další verze je nový běh ověří a vyřeší relevantní nálezy. Tento souhrn sám nedokládá zranitelnost vydaného balíčku.
+
 ## Přenos bez závislosti na původním Macu
 
 Podklady jsou ve větvi `docs/desktop-clarity-preview`. Nejsou změnou `main` ani produkčním buildem. Po zahájení dalšího běhu:

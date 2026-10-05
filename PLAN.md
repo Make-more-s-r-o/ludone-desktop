@@ -237,7 +237,7 @@ Tento checkpoint nahrazuje starší designové odhady pouze pro nynější výb�
 
 ## Vybraná F a ikony — 5. 10. 2026
 
-**Navazující příprava:** 🧪 deset tray stavů ve dvou podobách systémové lišty, SVG/PNG 18/36 px, souběhový kontrakt a prokliky klíčových obrazovek. [Předání](docs/changes/desktop-complete-designs-2026-10-01/PREDANI.md) obsahuje celý F brief, pořadí implementace, akceptaci a prompt. ✅ Čtecí připojení na dev-ludone, přihlášený Codex a vývojové nástroje ověřené. 🟡 Posouzení posledních ikon a zahájení dalšího běhu. ⛔ Nativní GUI/audio a produkční F stále neověřené.
+**Navazující příprava:** 🧪 deset tray stavů ve dvou podobách systémové lišty, SVG/PNG 18/36 px, souběhový kontrakt a prokliky klíčových obrazovek. [Předání](docs/changes/desktop-complete-designs-2026-10-01/PREDANI.md) obsahuje celý F brief, pořadí implementace, akceptaci a prompt. ✅ Čtecí připojení na dev-ludone, přihlášený Codex a vývojové nástroje ověřené. ✅ Nový čistý clone na dev-ludone a oddělená kopie podkladů `a355c6a` jsou připravené; samostatná kontrola ikon prošla i tam. 🟡 Posouzení posledních ikon a zahájení dalšího běhu. ⛔ Nativní GUI/audio a produkční F stále neověřené.
 
 
 1. Dan zvolil F Osa; další celé varianty se nyní netvoří.
