@@ -1,0 +1,12 @@
+$ node node_modules/vitest/vitest.mjs run tests/brany-workflow.test.js tests/tray-ikony.test.js
+
+ RUN  v4.1.11 /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/osa-ci-review
+
+
+ Test Files  2 passed (2)
+      Tests  14 passed (14)
+   Start at  16:30:43
+   Duration  276ms (transform 31ms, setup 29ms, import 21ms, tests 177ms, environment 0ms)
+
+
+EXIT_CODE=0
