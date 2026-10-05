@@ -26,7 +26,7 @@ const DEFAULTS = {
 const SETTINGS_TABS = Object.freeze([
   { id: "account", label: "Účet" },
   { id: "audio", label: "Zvuk" },
-  { id: "recordings", label: "Záznamy" },
+  { id: "recordings", label: "Ukládání" },
   { id: "device", label: "Zařízení" },
   { id: "diagnostics", label: "Diagnostika" },
 ]);
