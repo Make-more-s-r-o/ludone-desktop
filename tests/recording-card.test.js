@@ -41,7 +41,7 @@ function installSavedPanelGeometry(view) {
   };
 
   view.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-    if (this.matches(".panel.window-surface")) {
+    if (this.matches(".osa-shell")) {
       return new view.DOMRect(0, 0, 400, panelHeight);
     }
     if (this.matches('.recording-saved button[type="submit"], .recording-saved__skip')) {
@@ -518,14 +518,14 @@ describe("produktové dotažení Teď", () => {
   it("aktivní Teď zůstane v panelu; den a nastavení mají vlastní cíl", async () => {
     const panel = await renderRecordingCard({ renderApp: true });
     try {
-      const navigation = panel.document.querySelector(".desktop-navigation");
-      const buttons = [...navigation.querySelectorAll("button")];
-      await panel.click(buttons.find((button) => button.textContent === "Teď"));
-      expect(panel.ludone.openSettings).not.toHaveBeenCalled();
-      await panel.click(buttons.find((button) => button.textContent === "Můj den"));
-      expect(panel.ludone.openSettings).toHaveBeenLastCalledWith("day");
-      await panel.click(buttons.find((button) => button.textContent === "Nastavení"));
-      expect(panel.ludone.openSettings).toHaveBeenLastCalledWith("account");
+      const navigation = panel.document.querySelector(".osa-rail");
+      await panel.click(navigation.querySelector('[data-page="home"]'));
+      expect(panel.document.querySelector(".osa-shell").dataset.osaPage).toBe("home");
+      await panel.click(navigation.querySelector('[data-page="library"]'));
+      expect(panel.document.querySelector(".osa-shell").dataset.osaPage).toBe("library");
+      await panel.click(navigation.querySelector('[data-page="settings"]'));
+      expect(panel.document.querySelector(".osa-shell").dataset.osaPage).toBe("settings");
+      expect(panel.document.querySelector(".osa-settings-sections")).not.toBeNull();
     } finally { await panel.cleanup(); }
   });
 
@@ -537,15 +537,12 @@ describe("produktové dotažení Teď", () => {
       })),
     });
     try {
-      await panel.click(panel.document.querySelector('[data-testid="queue-status"]'));
-      const scroll = panel.document.querySelector(".panel-scroll");
-      const children = [...scroll.children];
-      expect(children.indexOf(scroll.querySelector(".recording-card")))
-        .toBeLessThan(children.indexOf(scroll.querySelector(".queue-card")));
-      expect(scroll.querySelector(".queue-card").textContent).toContain("Důvod 29");
-      await panel.click([...scroll.querySelectorAll("button")]
-        .find((button) => button.textContent === "Otevřít nahrávky"));
-      expect(panel.ludone.openSettings).toHaveBeenLastCalledWith("recordingQueue");
+      expect(panel.document.querySelector(".osa-shell").dataset.osaPage).toBe("home");
+      expect(panel.document.querySelector(".queue-card")).toBeNull();
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="queue"]'));
+      expect(panel.document.querySelector(".queue-card").textContent).toContain("Důvod 29");
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="library"]'));
+      expect(panel.document.querySelector(".osa-shell").dataset.osaPage).toBe("library");
       expect(panel.ludone.beginRecording).not.toHaveBeenCalled();
     } finally { await panel.cleanup(); }
   });
@@ -578,8 +575,9 @@ describe("nahrávání při zneplatnění relace", () => {
       queueItems: [{ id: "cekajici", kind: "recording", state: "ceka", nextAttemptAt: Date.now() + 60_000 }],
     });
     try {
-      await panel.click(panel.document.querySelector('[data-testid="queue-status"]'));
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="queue"]'));
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="home"]'));
       await startRecording(panel);
       const card = panel.document.querySelector("[data-recording-phase]");
       // Starý boolean i nový stav říkají totéž. Test tak odhalí původní odmountování
@@ -594,8 +592,13 @@ describe("nahrávání při zneplatnění relace", () => {
       expect(panel.document.querySelector('[data-auth-state="signed-in"]')).toBeNull();
       if (state === "expired") expect(panel.document.body.textContent).toContain("Přihlášení vypršelo");
       expect(panel.document.querySelector('[data-testid="queue-status"]')).toBeNull();
-      expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="queue"]'));
+      expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
+      expect(panel.document.querySelector('button[data-action="retry-queue"]')).toBeNull();
+      expect(panel.document.querySelector('.osa-live-strip button')?.disabled).toBe(false);
+      expect(panel.document.querySelector("[data-recording-phase]")).toBe(card);
       expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="home"]'));
       await stopRecording(panel);
       expect(panel.ludone.finishRecording).toHaveBeenCalledOnce();
       const send = [...panel.document.querySelectorAll("button")]
@@ -1274,18 +1277,19 @@ describe("RecordingCard", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')).not.toBeNull();
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent).toBe("1");
       });
-      await panel.click(panel.document.querySelector('[data-testid="queue-status"]'));
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="queue"]'));
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
       expect(panel.document.defaultView.getComputedStyle(
         panel.document.querySelector('[data-testid="queue-screen"]'),
       ).display).not.toBe("none");
 
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="home"]'));
       await startRecording(panel);
       await stopRecording(panel);
 
-      const surfaceRect = panel.document.querySelector(".panel.window-surface")
+      const surfaceRect = panel.document.querySelector(".osa-shell")
         .getBoundingClientRect();
       expect(surfaceRect.height).toBe(366);
       const actions = [
@@ -1302,6 +1306,7 @@ describe("RecordingCard", () => {
 
       await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
       await panel.waitForPhase("idle");
+      await panel.click(panel.document.querySelector('.osa-rail [data-page="queue"]'));
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).not.toBeNull();
       expect(panel.ludone.exportRecording).toHaveBeenCalledWith(SESSION_ID, { recordingName: DEFAULT_RECORDING_NAME, openUploadPage: false });
     } finally {
@@ -1772,10 +1777,10 @@ describe("RecordingCard", () => {
     try {
       await startRecording(panel);
 
-      const scroll = panel.document.querySelector(".panel-scroll");
+      const scroll = panel.document.querySelector('[aria-label="Nahrávání schůzky"]');
       const recordingState = panel.document.querySelector('[data-testid="recording-running-state"]');
       const recordingCard = recordingState?.closest('[aria-label="Nahrávání"]');
-      const futureFeature = panel.document.querySelector(".future-feature");
+      const futureFeature = panel.document.querySelector(".osa-lutrack");
 
       expect(recordingState?.hidden).toBe(false);
       expect(recordingCard?.parentElement).toBe(scroll);
@@ -1783,9 +1788,9 @@ describe("RecordingCard", () => {
       expect(recordingCard?.querySelector('[data-testid="recording-source-microphone"]')).not.toBeNull();
       expect(recordingCard?.querySelector('[data-testid="recording-source-system"]')).not.toBeNull();
       expect(recordingCard?.querySelector('[data-testid="recording-stop"]')).not.toBeNull();
-      expect(futureFeature?.textContent).toContain("Připravujeme");
-      const preparingControls = [...futureFeature.querySelectorAll("button, input, select")];
-      expect(preparingControls).toHaveLength(3);
+      expect(futureFeature).toBeNull();
+      const preparingControls = [...panel.document.querySelectorAll(".osa-lutrack button, .osa-lutrack input, .osa-lutrack select")];
+      expect(preparingControls).toHaveLength(0);
       expect(preparingControls.every((control) => control.disabled)).toBe(true);
       expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
 

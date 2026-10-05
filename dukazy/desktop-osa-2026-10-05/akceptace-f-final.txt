@@ -1,0 +1,13 @@
+COMMAND: PATH=<ověřený Node 24.19.0>/bin:$PATH node scripts/akceptace/F-Osa.mjs
+PASS lint-implementace (exit 0)
+PASS typecheck (exit 0)
+PASS unit-F (exit 0)
+PASS unit-vsechny-puvodni-i-nove (exit 0)
+PASS lint-puvodni-brana (exit 0)
+PASS build (exit 0)
+PASS tray-image-puvodni (exit 0)
+PASS tray-image-F (exit 0)
+PASS Electron-F (exit 0)
+PASS Electron-F-24x3-auth-a-detail (exit 0)
+Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/dukazy/desktop-osa-2026-10-05/akceptace
+EXIT_CODE=0

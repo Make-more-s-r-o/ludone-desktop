@@ -1,0 +1,77 @@
+COMMAND: PATH=<ověřený Node 24.19.0>/bin:$PATH npm run gates:clean
+
+> ludone-desktop-prototype@0.1.8 gates:clean
+> node scripts/gates-clean.mjs
+
+Čistý klon 56800d37 → /var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-kRJa0q/repo
+
+▶ npm ci
+npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 470 packages in 2s
+npm warn allow-scripts 3 packages have install scripts not yet covered by allowScripts:
+npm warn allow-scripts   electron-winstaller@5.4.0 (install: node ./script/select-7z-arch.js)
+npm warn allow-scripts   esbuild@0.28.2 (postinstall: node install.js)
+npm warn allow-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+▶ brány (lint · typecheck · testy)
+
+> ludone-desktop-prototype@0.1.8 gates
+> npm run lint && npm run typecheck && npm run test:unit && npm run preskocene
+
+
+> ludone-desktop-prototype@0.1.8 lint
+> eslint .
+
+
+> ludone-desktop-prototype@0.1.8 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+> ludone-desktop-prototype@0.1.8 test:unit
+> vitest run
+
+
+ RUN  v4.1.11 /private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-kRJa0q/repo
+
+
+ Test Files  83 passed (83)
+      Tests  1708 passed | 3 skipped (1711)
+   Start at  17:32:41
+   Duration  10.91s (transform 2.45s, setup 427ms, import 9.36s, tests 46.51s, environment 354ms)
+
+
+> ludone-desktop-prototype@0.1.8 preskocene
+> node scripts/preskocene.mjs
+
+[preskocene] 3 přeskočených, baseline 3 — v pořádku.
+
+▶ build
+
+> ludone-desktop-prototype@0.1.8 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 70 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         0.66 kB │ gzip:   0.39 kB
+dist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB
+dist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB
+dist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB
+dist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB
+dist/assets/index-CJXEhDCN.css                        158.06 kB │ gzip:  24.19 kB
+dist/assets/index-DPoXvqM6.js                         360.78 kB │ gzip: 109.47 kB
+✓ built in 331ms
+
+🟢 Brány nad čistým klonem 56800d37 prošly.
+EXIT_CODE=0

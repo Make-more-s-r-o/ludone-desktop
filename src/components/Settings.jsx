@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Children, cloneElement, useEffect, useRef, useState } from "react";
 import "./settings-polish.css";
 import { countLabel } from "../lib/count-label.js";
 import { RecordingsDashboard } from "../features/recordings/RecordingsDashboard.jsx";
@@ -26,15 +26,15 @@ const DEFAULTS = {
 const SETTINGS_TABS = Object.freeze([
   { id: "account", label: "Účet" },
   { id: "audio", label: "Zvuk" },
-  { id: "recordings", label: "Záznamy" },
-  { id: "recordingQueue", label: "Nahrávky" },
+  { id: "device", label: "Zařízení" },
+  { id: "recordings", label: "Ukládání" },
   { id: "diagnostics", label: "Diagnostika" },
 ]);
 const SETTINGS_TAB_ICONS = Object.freeze({
   account: UserIcon,
   audio: VolumeIcon,
   recordings: ArchiveIcon,
-  recordingQueue: CloudIcon,
+  device: SettingsIcon,
   diagnostics: SettingsIcon,
 });
 const AUTH_ENVIRONMENTS = Object.freeze([
@@ -260,14 +260,30 @@ function useSystemBooleanSetting(getterName, setterName) {
   return { ...state, update };
 }
 
-export function SettingsApp() {
-  const [initialTab] = useState(() => new URL(window.location.href).searchParams.get("settingsTab"));
+function SettingsSections({ embedded, activePage, activeTab, onSelect, children }) {
+  if (!embedded || activePage !== "settings") return <div className="settings-content">{children}</div>;
+  const sections = Children.toArray(children);
+  const ids = { account: "settings-panel-account", audio: "settings-panel-audio", device: "settings-local-title", recordings: "settings-panel-recordings", diagnostics: "settings-panel-diagnostics" };
+  return <div className="settings-content osa-settings-sections">
+    {SETTINGS_TABS.map((tab) => {
+      const panel = sections.find((child) => child?.props?.id === ids[tab.id] || child?.props?.["aria-labelledby"] === ids[tab.id]);
+      return <section className="osa-settings-section" key={tab.id}>
+        <button type="button" aria-expanded={activeTab === tab.id} aria-controls={`osa-section-${tab.id}`} onClick={() => onSelect(tab.id)}>{tab.label}<span aria-hidden="true">›</span></button>
+        <div id={`osa-section-${tab.id}`} hidden={activeTab !== tab.id}>{panel ? cloneElement(panel, { hidden: false }) : null}</div>
+      </section>;
+    })}
+  </div>;
+}
+
+export function SettingsApp({ embedded = false, initialSection, queueOnly = false, onNavigate }) {
+  const detailId = !embedded ? new URL(window.location.href).searchParams.get("recordingId") : null;
+  const [initialTab] = useState(() => initialSection ?? new URL(window.location.href).searchParams.get("settingsTab"));
   const [activeTab, setActiveTab] = useState(() => (
-    initialTab === "day" ? "recordingQueue"
+    detailId || initialTab === "day" || initialTab === "recordingQueue" ? "recordingQueue"
       : (SETTINGS_TABS.some((item) => item.id === initialTab) ? initialTab : "account")
   ));
   const [activePage, setActivePage] = useState(() => (
-    ["day", "recordingQueue"].includes(initialTab) ? "day" : "settings"
+    detailId || ["day", "recordingQueue"].includes(initialTab) ? "day" : "settings"
   ));
   const [audioNavigationRequest, setAudioNavigationRequest] = useState(initialTab === "audio" ? 1 : 0);
   const [recordingDetailOpen, setRecordingDetailOpen] = useState(false);
@@ -275,6 +291,13 @@ export function SettingsApp() {
   const [themePreference, setThemePreference] = useState(getThemePreference);
   const [account, setAccount] = useState({ state: "unknown", identity: null });
   const [destination, setDestination] = useState({ state: "unknown", origin: null });
+  const [shortcuts, setShortcuts] = useState([]);
+  const [folderError, setFolderError] = useState(false);
+  useEffect(() => {
+    let current = true;
+    Promise.resolve().then(() => window.ludone.getShortcuts?.()).then(value => { if (current && Array.isArray(value)) setShortcuts(value); }).catch(() => {});
+    return () => { current = false; };
+  }, []);
   const [device, setDevice] = useState({ state: "unknown", name: null });
   const [diagnostics, setDiagnostics] = useState({ state: "loading", value: null });
   const [exportState, setExportState] = useState({ state: "idle", fileName: null });
@@ -295,6 +318,7 @@ export function SettingsApp() {
   };
 
   useEffect(() => {
+    if (embedded) return undefined;
     const unsubscribe = window.ludone?.onSettingsTabRequested?.((tab) => {
       if (tab === "day") {
         setActivePage("day");
@@ -308,7 +332,7 @@ export function SettingsApp() {
       }
     });
     return () => unsubscribe?.();
-  }, []);
+  }, [embedded]);
 
   const navigateToPage = (page) => {
     if (page === "now") {
@@ -710,7 +734,7 @@ export function SettingsApp() {
     : queueStatusText(diagnosticValues?.queue);
 
   return (
-    <div className="settings-app-frame">
+    <div className={`settings-app-frame${embedded ? " osa-settings-embedded" : " osa-detail-window"}`}>
       <DesktopMenubar
         status={signedIn ? "Přihlášeno" : "Místní režim"}
         authState={account.state}
@@ -752,16 +776,16 @@ export function SettingsApp() {
         ))}
       </nav>
 
-      <div className="settings-content">
-        <DesktopConnectivityNotice />
+      <SettingsSections embedded={embedded} activePage={activePage} activeTab={activeTab} onSelect={navigateToSettingsTab}>
+        {!embedded && <DesktopConnectivityNotice />}
         <header className="desktop-settings-intro" hidden={activePage !== "settings"}>
           <h1>Nastavení</h1>
           <p>Účet, zvuk a ukládání nahrávek na tomto Macu.</p>
         </header>
-        <ApplicationUpdateStatus
+        {!embedded && <ApplicationUpdateStatus
           showVersion={false}
           allowManualCheck={activePage === "settings"}
-        />
+        />}
         <section className="desktop-day-intro" hidden={activePage !== "day"}>
           <p className="eyebrow">
             {new Intl.DateTimeFormat("cs-CZ", {
@@ -853,6 +877,7 @@ export function SettingsApp() {
                 label="Automaticky odesílat nové nahrávky"
               />
             </div>
+            <details className="osa-account-advanced"><summary>Pokročilé nastavení</summary>
             <div className="settings-row settings-row--environment" data-testid="settings-environment-row">
               <div>
                 <strong><label htmlFor="settings-environment">Prostředí</label></strong>
@@ -894,6 +919,7 @@ export function SettingsApp() {
                 <strong>{destination.origin ?? "Adresa není známá"}</strong>
               </span>
             </div>
+            </details>
             <div className="settings-action-row">
               <button
                 type="button"
@@ -1023,6 +1049,10 @@ export function SettingsApp() {
               label="Spouštět po přihlášení do systému"
             />
           </div>
+          <details className="osa-settings-shortcuts"><summary>Klávesové zkratky</summary>
+            {shortcuts.length ? shortcuts.map(item => <p key={item.action}>{item.action === "stop-recording" ? "Zastavit nahrávání" : "Otevřít panel"} <kbd>{item.accelerator}</kbd></p>) : <p>Systém zatím nepotvrdil žádnou globální zkratku.</p>}
+          </details>
+          <div className="settings-action-row"><strong>Panel v liště</strong><button type="button" className="button button--small" onClick={() => window.ludone.hidePanel()}>Skrýt panel</button><small>Znovu jej otevřeš ikonou LuDone v horní liště.</small></div>
           <div className="settings-theme" aria-labelledby="settings-theme-title">
             <div>
               <strong id="settings-theme-title">Vzhled aplikace</strong>
@@ -1081,6 +1111,9 @@ export function SettingsApp() {
                 <option>Nemazat</option>
               </select>
             </label>
+            <div className="settings-action-row"><button type="button" className="button button--small" onClick={() => { setFolderError(false); Promise.resolve().then(() => window.ludone.showRecordingsFolder()).catch(() => setFolderError(true)); }}>Zobrazit složku</button>
+              {onNavigate && <button type="button" className="button button--small" onClick={() => onNavigate("queue")}>Přejít na odesílání</button>}</div>
+            {folderError && <p role="alert">Složku nahrávek se nepodařilo zobrazit.</p>}
             <p className="settings-hint">Neodeslané záznamy se automaticky nemažou.</p>
             <div className="settings-row settings-row--static" data-testid="settings-queue-summary">
               <div><strong>Fronta</strong><small>{queueText}</small></div>
@@ -1109,6 +1142,9 @@ export function SettingsApp() {
                 authIdentity={account.identity}
                 authOrigin={destination.origin}
                 onDetailChange={setRecordingDetailOpen}
+                osa
+                queueOnly={queueOnly}
+                detailId={detailId}
               />
             </section>
           )}
@@ -1205,7 +1241,7 @@ export function SettingsApp() {
             )}
           </section>
         </section>
-      </div>
+      </SettingsSections>
 
         <footer className="settings-footer">
         {dock.failed || login.failed ? (

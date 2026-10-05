@@ -1,0 +1,11 @@
+PASS lint-implementace (exit 0)
+PASS typecheck (exit 0)
+PASS unit-F (exit 0)
+FAIL unit-vsechny-puvodni-i-nove (exit 1)
+FAIL lint-puvodni-brana (exit 1)
+PASS build (exit 0)
+PASS tray-image-puvodni (exit 0)
+PASS tray-image-F (exit 0)
+PASS Electron-F (exit 0)
+Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/dukazy/desktop-osa-2026-10-05/akceptace
+EXIT_CODE=1

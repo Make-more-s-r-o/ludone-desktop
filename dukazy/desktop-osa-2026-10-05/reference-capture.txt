@@ -1,0 +1,10 @@
+file:///Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-reference-capture.mjs:45
+ const bounds=await win.webContents.executeJavaScript(`(()=>{const selector=document.body.dataset.page==='detail'?'.window':'.menu-popover';const el=document.querySelector(selector);const b=el?.getBoundingClientRect();if(!b||b.width<=0||b.height<=0)throw new Error('Chybí vykreslená F plocha');return {selector,x:Math.floor(b.x),y:Math.floor(b.y),width:Math.ceil(b.width),height:Math.ceil(b.height),page:document.body.dataset.page,theme:document.documentElement.dataset.theme}})()`);
+                                                       ^
+
+TypeError: JSON.stringify(...)JSON.stringify(...)JSON.stringify(...) is not a function
+    at file:///Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-reference-capture.mjs:45:56
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+Node.js v22.23.3
+EXIT_CODE=1

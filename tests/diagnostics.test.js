@@ -194,18 +194,18 @@ describe("produkční zapojení diagnostiky", () => {
   const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
   const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");
 
-  it("přijímá oba kanály jen z Nastavení, bez payloadu a bez HTTP sondy", () => {
+  it("přijímá oba kanály jen z vlastního panelu a detailu, bez payloadu a bez HTTP sondy", () => {
     const start = mainSource.indexOf('handleValidated("diagnostics:get"');
     const end = mainSource.indexOf('handleValidated("auth:pending-url"', start);
     expect(start, "diagnostics:get není registrovaný").toBeGreaterThan(-1);
     expect(end, "blok diagnostiky nemá bezpečnou hranici").toBeGreaterThan(start);
     const block = mainSource.slice(start, end);
 
-    expect(block).toContain('handleValidated("diagnostics:get", ["settings"]');
+    expect(block).toContain('handleValidated("diagnostics:get", ["panel", "settings"]');
     expect(block).toContain('requireNoPayload("diagnostics:get"');
     expect(block).toContain("Stav diagnostiky není dostupný");
     expect(block).toContain("return null");
-    expect(block).toContain('handleValidated("diagnostics:export", ["settings"]');
+    expect(block).toContain('handleValidated("diagnostics:export", ["panel", "settings"]');
     expect(block).toContain('requireNoPayload("diagnostics:export"');
     expect(block).not.toMatch(/net\.fetch|https?:\/\//u);
     expect(preloadSource).toContain('ipcRenderer.invoke("diagnostics:get")');
@@ -215,7 +215,7 @@ describe("produkční zapojení diagnostiky", () => {
   it("název zařízení čte přes os.hostname v hlavním procesu bez payloadu", () => {
     expect(mainSource).toContain('const os = require("node:os")');
     expect(mainSource).toContain(
-      'handleValidated("settings:get-device-name", ["settings"]',
+      'handleValidated("settings:get-device-name", ["panel", "settings"]',
     );
     expect(mainSource).toContain('requireNoPayload("settings:get-device-name"');
     expect(mainSource).toContain("os.hostname()");

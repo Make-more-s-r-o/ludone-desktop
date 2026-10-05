@@ -1,0 +1,37 @@
+/* Integrace Codex: skutečný DOM a zachování dostupnosti funkcí v obou návrzích Sonnetu. */
+body:is([data-concept=d],[data-concept=e]) .menubar-scene{background:var(--wall)}
+body:is([data-concept=d],[data-concept=e]) .menu-popover{margin:0;border:0}
+body:is([data-concept=d],[data-concept=e]):not(.embedded) .menu-popover{max-height:min(var(--popover-height),calc(100vh - 118px))}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .workspace{background:transparent}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .content{padding:6px 0 16px}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .workspace-head{padding:6px 0 12px}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .global-notice{margin:10px 0 0}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .home-grid{gap:0}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .record-actions{display:grid;gap:4px}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .recent-section{border:0}
+body:is([data-concept=d],[data-concept=e]) .menu-popover-footer{flex-shrink:0}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .settings-nav{flex-wrap:wrap}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .row-tail .badge{display:inline-block}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .row-main{min-width:0}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .settings-layout{gap:12px}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .diag-grid{grid-template-columns:1fr}
+body[data-concept=e] .menu-popover-title{display:block;font-size:16px;color:var(--text)}
+body:is([data-concept=d],[data-concept=e]).embedded[data-surface=window] .desktop-stage{padding:0;display:block}
+body:is([data-concept=d],[data-concept=e]).embedded .window{width:100%;height:calc(100vh - 30px);border-radius:0;border:0}
+body:is([data-concept=d],[data-concept=e]) .brand img,
+body:is([data-concept=d],[data-concept=e]) .menu-brand img,
+body:is([data-concept=d],[data-concept=e]) .menubar-trigger img,
+body:is([data-concept=d],[data-concept=e]) .logo{filter:none}
+/* Po schůzce se formulář posouvá nad pevnými akcemi, nic se nepřekrývá. */
+body[data-phase=draft] .menu-popover .content{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+body[data-phase=draft] .menu-popover .detail-layout{display:flex;flex-direction:column;flex:1;min-height:0;gap:0}
+body[data-phase=draft] .menu-popover .detail-main{min-height:0;overflow:auto;padding-bottom:14px}
+body[data-phase=draft] .menu-popover .detail-aside{position:static;flex:none;margin:0;padding:12px 0;border-top:1px solid var(--line);background:var(--surface)}
+body[data-phase=draft] .menu-popover .detail-aside .small-note{font-size:12px;margin:8px 0 0}
+body[data-concept=d] .menu-popover .settings-nav{margin-inline:0;padding-inline:0;gap:0}
+body:is([data-concept=d],[data-concept=e]) .menu-popover .setting-row select{max-width:100%;width:100%}
+
+/* Čitelnost: název schůzky 15 px a důležité údaje alespoň 13 px. */
+body .menu-popover .row-main strong{font-size:15px}
+body .menu-popover .facts,body .menu-popover .badge,body .menu-popover .small-note,
+body[data-phase=draft] .menu-popover .detail-aside .small-note,body .menu-tab{font-size:13px}

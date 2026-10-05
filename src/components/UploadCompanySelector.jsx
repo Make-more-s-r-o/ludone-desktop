@@ -177,7 +177,7 @@ export function UploadCompanySelector({ authState }) {
 
 // Jedna nabídka patří konkrétnímu účtu; samotná editace nikdy neschvaluje upload.
 export function RecordingUploadPreferences({ initialValue, defaultVisibility = "private", identityKey = "panel",
-  disabled = false, busy = false, locked = false, refreshToken = 0, onChange, onSave, stateMessage, stateError = false, surface = "panel" }) {
+  disabled = false, busy = false, locked = false, refreshToken = 0, onChange, onUserChange, onSave, stateMessage, stateError = false, surface = "panel" }) {
   const id = useId();
   const generation = useRef(0);
   const changeRef = useRef(onChange);
@@ -221,6 +221,7 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
   const update = (choice, visibility) => {
     setView((current) => ({ ...current, choice, visibility }));
     changeRef.current?.(choice ? { companyId: choice, offerToken: view.offerToken, visibility } : null, true);
+    onUserChange?.();
   };
   return (
     <div className="recording-upload-preferences" data-testid="recording-upload-preferences" data-surface={surface}>

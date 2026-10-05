@@ -1,0 +1,2 @@
+npm error Cannot read properties of null (reading 'edgesOut')
+npm error A complete log of this run can be found in: /private/tmp/ludone-npm-cache/_logs/2026-10-05T13_51_10_067Z-debug-0.log

@@ -1,5 +1,15 @@
 # Rozhodnutí — LuDone Desktop
 
+**5. 10. 2026 — pověření dotáhnout vydání F Osa 0.1.8:** Po předání opraveného
+výsledku a nezávislém review Dan zadal „tak ohlídej vydání a pak končíme“.
+Koordinátor dokončí přijetí PR #160, tag a existující podepsané/notarizované
+publikační workflow po zeleném CI přesného finálního headu. Starší nepověření
+k release je tím nahrazeno. Fyzický zvuk, produkční upload a instalace na Danově
+Macu zůstávají samostatnou neověřenou přejímkou; publikace není důkazem jejich
+funkčnosti. Po ověřené veřejné publikaci se dohled ukončí.
+
+**5. 10. 2026 — F Osa schválena k implementaci:** Dan přímo schválil celou F včetně posledních menu bar ikon a požádal o spuštění na dev-ludone Macu mini. Pro tento redesign platí systémové čitelné písmo a panel horní lišty se samostatným oknem až pro detail; historický směr A14 a starší Astra rozvržení nejsou vizuálním cílem tohoto běhu. LuTrack je jen neaktivní řádek; backend se nemění. Existující funkční a bezpečnostní brány nesmějí být oslabené. [Provozní brief](docs/behy/desktop-osa-2026-10-05/START.md). Finální tag/publikace čekají na kontrolu výsledku a nové výslovné pověření.
+
 Zápis z 19.–20. 8. 2026. Slouží k tomu, aby se nemuselo znovu rozhodovat to, co už rozhodnuté je.
 Kdo na to naváže: **přečti tenhle soubor první.** Podklady jsou v `/Users/dan/Dev/ClaudeCode/luplaud-vyzkum/`.
 
@@ -208,3 +218,10 @@ D21 mění pouze formát a potřebnou konverzi v D20; bezpečnost fronty a jeden
 ## D22 — pověření k vydání 0.1.4 (23. 9. 2026)
 
 Dan odpověděl „Ano, tak vydej“ na výslovnou otázku, zda má koordinátor vydat připravenou 0.1.4. Koordinátor smí vytvořit a pushnout tag v0.1.4 a dokončit podepsané a notarizované vydání na stahnout.ludone.cz/desktop/ včetně aktualizačního feedu. Pověření samo nedokládá úspěšnou publikaci ani instalaci na Macu; ty vyžadují samostatné důkazy. Existující záloha klíče a přístupy se znovu nevyžadují.
+
+
+## D23 — zahájení celé F Osa bez pověření k vydání (5. 10. 2026)
+
+Dan přímo schválil celou vybranou F i poslední podobu ikon: „ok, schvaluju, můžeš to pustit ty? nebo ne musím já?“ Navazující přímé zadání pověřuje vývojem, testy, průběžnými commity, push a PR na existující `feat/desktop-osa`. Nejde jen o přípravu promptu. Podklady `95ff0b2c7a6d92a6f92efe80f9a030fc57d240ea`, main základ `2dd73fb2821f81fad3d9087381c72fd4d127e927`.
+
+Nahrávání, rozhodnutí, historie, odesílání a nastavení zůstávají v tray panelu; samostatné okno až pro detail. LuTrack neaktivní. Původní brány se nesmějí oslabit; schválení návrhu není výjimka pro červené měřidlo. Finální tag, merge do main, vydání a produkční instalace vyžadují samostatný další pokyn. [Stav implementace a přejímky](docs/behy/desktop-osa-2026-10-05/STAV.md).

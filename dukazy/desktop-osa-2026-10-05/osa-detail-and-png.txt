@@ -1,0 +1,10 @@
+
+ RUN  v4.1.11 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa
+
+
+ Test Files  3 passed (3)
+      Tests  26 passed (26)
+   Start at  16:03:27
+   Duration  237ms (transform 49ms, setup 40ms, import 37ms, tests 160ms, environment 0ms)
+
+EXIT_CODE=0

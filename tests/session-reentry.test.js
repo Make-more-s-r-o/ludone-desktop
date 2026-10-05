@@ -184,15 +184,18 @@ async function renderWindows({
 
 async function waitForSignedIn(panel) {
   await vi.waitFor(() => {
-    expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+    expect(panel.document.querySelector(".osa-auth-status")?.dataset.authState)
       .toBe("signed-in");
   });
 }
 
 async function waitForReauthentication(panel) {
+  if (!panel.document.querySelector(".auth-step")) {
+    await click(buttonWithText(panel.document, "Přihlásit se"), panel.view);
+  }
   await vi.waitFor(() => {
-    expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
-      .toBe("Nejsi připojený");
+    expect(panel.document.querySelector(".auth-step h1, #auth-error-title")?.textContent.trim())
+      .toMatch(/Nejsi připojený|Přihlášení vypršelo/u);
   });
 }
 
@@ -287,8 +290,9 @@ describe("návrat do aplikace po ztrátě session", () => {
     const sessionCheck = new Promise(() => {});
     const panel = await renderWindows({ hasAuthSession: () => sessionCheck });
 
-    expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(0);
-    expect(panel.document.querySelector('[aria-label="Spustit nahrávání"]')).toBeNull();
+    expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(1);
+    expect(panel.document.querySelector(".osa-auth-status")?.dataset.authState).toBe("checking");
+    expect(panel.document.querySelector('[aria-label="Spustit nahrávání"]')).not.toBeNull();
     expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
   });
 
@@ -307,7 +311,7 @@ describe("návrat do aplikace po ztrátě session", () => {
 
     expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
     expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
-    expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
+    expect(panel.document.querySelector(".osa-lutrack")?.textContent).toContain("Připravujeme");
   });
 
   it("příkaz LuTracku z lišty neaktivuje připravovanou kartu ani po přihlášení", async () => {
@@ -373,8 +377,8 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForSignedIn(panel);
 
     expect([...panel.document.querySelectorAll('[data-testid="idle-action-row"] strong')]
-      .map((element) => element.textContent.trim())).toEqual(["Zachytit schůzku"]);
-    expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
+      .map((element) => element.textContent.trim())).toEqual(["Připraveno k nahrávání"]);
+    expect(panel.document.querySelector(".osa-lutrack")?.textContent).toContain("Připravujeme");
     expect(panel.document.querySelector(".onboarding")).toBeNull();
     expect(panel.document.querySelector(".permission-step")).toBeNull();
     expect(panel.ludone.requestPermission).not.toHaveBeenCalled();
@@ -388,8 +392,8 @@ describe("návrat do aplikace po ztrátě session", () => {
     await waitForSignedIn(panel);
 
     expect([...panel.document.querySelectorAll('[data-testid="idle-action-row"] strong')]
-      .map((element) => element.textContent.trim())).toEqual(["Zachytit schůzku"]);
-    expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
+      .map((element) => element.textContent.trim())).toEqual(["Připraveno k nahrávání"]);
+    expect(panel.document.querySelector(".osa-lutrack")?.textContent).toContain("Připravujeme");
     expect(panel.document.querySelector(".onboarding")).toBeNull();
     expect(panel.ludone.beginAuth).not.toHaveBeenCalled();
   });
@@ -414,6 +418,8 @@ describe("oznámení změny session mezi okny", () => {
       await new Promise((resolve) => panel.view.setTimeout(resolve, 1_100));
     });
     expect(panel.document.querySelector('#panel-root [data-auth-state="signed-in"]')).toBeNull();
+    expect(panel.document.querySelector("#panel-root")?.textContent).toContain("Přihlášení vypršelo");
+    await waitForReauthentication(panel);
     expect(panel.document.querySelector('[data-testid="auth-error-message"]')?.textContent)
       .toContain("Platnost přihlášení skončila");
     expect(panel.document.querySelector('[data-testid="settings-account-status"]')?.textContent)

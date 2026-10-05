@@ -120,6 +120,10 @@ describe("název zvukového zařízení bez domýšlení hardwaru", () => {
     expectNeutralDevice(panel, UNKNOWN_LABELS.microphone);
     expect(panel.document.querySelector("[data-recording-test-state]")?.dataset.recordingTestState)
       .toBe("testing");
+    expect(panel.document.querySelector('[data-testid="recording-test-continue"]').disabled).toBe(true);
+    const confirmation = panel.document.querySelector('[data-testid="recording-test-hearing-confirmation"]');
+    expect(confirmation.disabled).toBe(false);
+    await React.act(async () => confirmation.click());
     expect(panel.document.querySelector('[data-testid="recording-test-continue"]').disabled)
       .toBe(false);
   });

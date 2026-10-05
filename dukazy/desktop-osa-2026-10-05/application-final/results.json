@@ -1,0 +1,3548 @@
+{
+  "exitCode": 0,
+  "observations": [
+    {
+      "name": "light-onboarding-axis-is-vertical",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-onboarding-no-nested-chrome",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-auth-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-auth-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-waiting-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-waiting-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-permissions-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-permissions-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-onboarding-does-not-claim-human-hearing",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-audio-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-audio-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-onboarding-skip-stays-unverified",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-done-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-onboarding-done-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-onboarding-axis-is-vertical",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-onboarding-no-nested-chrome",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-auth-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-auth-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-waiting-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-waiting-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-permissions-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-permissions-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-onboarding-does-not-claim-human-hearing",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-audio-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-audio-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-onboarding-skip-stays-unverified",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-done-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-onboarding-done-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-onboarding-axis-is-vertical",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-onboarding-no-nested-chrome",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-auth-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-auth-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-waiting-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-waiting-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-permissions-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-permissions-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-onboarding-does-not-claim-human-hearing",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-audio-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-audio-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-onboarding-skip-stays-unverified",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-done-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-onboarding-done-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-actual-scoped-session",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-four-real-disk-recordings",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-complete-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-complete-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-account-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-account-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-account-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-audio-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-audio-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-audio-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-device-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-device-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-device-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-recordings-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-storage-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-storage-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-diagnostics-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-diagnostics-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-diagnostics-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-complete-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-complete-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-complete-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-update-controller-actions",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-updates-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-updates-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-tray-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-tray-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-unclaimed-actual-disk-state",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-unclaimed-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-unclaimed-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-missing-actual-disk-state",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-missing-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-missing-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-recording-main-authority",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-recording-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-recording-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-system-lost-stop-contrast",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-system-lost-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-system-lost-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-saving-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-saving-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-save-actions-side-by-side-visible",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-save-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-save-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-microphone-only-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-microphone-only-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-complete-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-complete-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-account-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-account-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-account-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-audio-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-audio-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-audio-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-device-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-device-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-device-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-recordings-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-storage-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-storage-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-diagnostics-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-diagnostics-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-diagnostics-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-complete-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-complete-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-complete-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-update-controller-actions",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-updates-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-updates-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-tray-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-tray-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-unclaimed-actual-disk-state",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-unclaimed-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-unclaimed-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-missing-actual-disk-state",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-missing-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-missing-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-recording-main-authority",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-recording-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-recording-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-system-lost-stop-contrast",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-system-lost-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-system-lost-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-saving-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-saving-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-save-actions-side-by-side-visible",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-save-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-save-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-microphone-only-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-microphone-only-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-complete-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-complete-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-account-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-account-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-account-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-audio-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-audio-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-audio-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-device-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-device-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-device-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-recordings-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-storage-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-storage-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-diagnostics-expanded",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-diagnostics-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-diagnostics-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-complete-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-complete-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-complete-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-update-controller-actions",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-updates-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-updates-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-tray-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-tray-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-unclaimed-actual-disk-state",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-unclaimed-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-unclaimed-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-missing-actual-disk-state",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-missing-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-missing-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-recording-main-authority",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-recording-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-recording-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-system-lost-stop-contrast",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-system-lost-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-system-lost-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-saving-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-saving-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-save-actions-side-by-side-visible",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-save-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-save-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-microphone-only-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-microphone-only-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "claim-disk-owner-without-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-local-detail-editable-first-viewport",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-actual-scroll-owner-overflow-and-stability",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-local-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-light-local-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-local-detail-editable-first-viewport",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-actual-scroll-owner-overflow-and-stability",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-local-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-professional-local-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-local-detail-editable-first-viewport",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-actual-scroll-owner-overflow-and-stability",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-local-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dark-local-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dirty-stay-keeps-detail",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dirty-stay-does-not-write",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dirty-stay-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-dirty-stay-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dirty-discard-does-not-write",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dirty-save-actual-CAS-without-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "company-default-survives-actual-process-restart",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "update-install-waits-for-real-recording",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "no-install-before-safe-confirmed-moment",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "actual-update-defer",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "new-recording-uses-stored-company-and-company-visibility",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "one-inert-install-only-after-explicit-safe-confirmation",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "prior-processes-one-hook-and-no-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "update-notification-once-per-version-across-restart",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-one-identity-projection-hook",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-no-unexpected-network",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "complete-no-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dirty-all-three-dialog-decisions",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-actual-scoped-session",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-four-real-disk-recordings",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-light-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-light-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-expired-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-expired-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-light-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-light-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-light-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-light-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-expired-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-light-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-light-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-professional-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-professional-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-expired-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-expired-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-professional-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-professional-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-professional-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-professional-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-expired-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-professional-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-professional-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-dark-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-dark-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-expired-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-expired-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-dark-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-dark-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-dark-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-dark-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-expired-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-dark-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-dark-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-one-identity-projection-hook",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-no-unexpected-network",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "expired-no-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-actual-scoped-session",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-four-real-disk-recordings",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-companies-error-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-companies-error-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-company-failure-visible",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-companies-error-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-company-default-retained-during-failure",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-company-error-send-blocked-local-available",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-companies-error-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-light-companies-error-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-company-retry-retains-title",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-companies-error-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-companies-error-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-company-failure-visible",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-companies-error-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-company-default-retained-during-failure",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-company-error-send-blocked-local-available",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-companies-error-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-professional-companies-error-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-company-retry-retains-title",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-companies-error-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-companies-error-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-company-failure-visible",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-companies-error-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-company-default-retained-during-failure",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-company-error-send-blocked-local-available",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-companies-error-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-dark-companies-error-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-company-retry-retains-title",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-one-identity-projection-hook",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-no-unexpected-network",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "companies-error-no-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-actual-scoped-session",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-four-real-disk-recordings",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-light-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-light-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-rate-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-rate-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-light-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-light-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-rate-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-rate-recovery-first-viewport",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-rate-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-light-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-light-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-rate-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-light-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-light-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-professional-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-professional-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-rate-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-rate-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-professional-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-professional-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-rate-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-rate-recovery-first-viewport",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-rate-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-professional-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-professional-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-rate-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-professional-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-professional-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-dark-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-dark-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-rate-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-rate-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-dark-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-dark-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-rate-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-rate-recovery-first-viewport",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-rate-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-dark-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-dark-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-rate-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-dark-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-dark-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-one-identity-projection-hook",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-no-unexpected-network",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "rate-no-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-actual-scoped-session",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-four-real-disk-recordings",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-light-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-light-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-incomplete-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-incomplete-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-light-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-light-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-incomplete-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-incomplete-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-light-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-light-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-incomplete-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-light-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-light-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-professional-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-professional-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-incomplete-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-incomplete-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-professional-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-professional-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-incomplete-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-incomplete-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-professional-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-professional-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-incomplete-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-professional-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-professional-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-dark-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-dark-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-incomplete-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-incomplete-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-dark-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-dark-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-incomplete-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-incomplete-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-dark-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-dark-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-incomplete-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-dark-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-dark-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-one-identity-projection-hook",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-no-unexpected-network",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "incomplete-no-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-actual-scoped-session",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-four-real-disk-recordings",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-light-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-light-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-mismatch-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-mismatch-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-light-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-light-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-mismatch-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-mismatch-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-light-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-light-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-mismatch-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-light-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-light-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-professional-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-professional-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-mismatch-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-mismatch-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-professional-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-professional-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-mismatch-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-mismatch-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-professional-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-professional-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-mismatch-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-professional-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-professional-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-dark-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-dark-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-mismatch-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-mismatch-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-dark-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-dark-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-mismatch-actual-verifier",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-mismatch-verified-action-hover-readable",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-dark-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-dark-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-mismatch-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-dark-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-dark-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-one-identity-projection-hook",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-no-unexpected-network",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "mismatch-no-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-actual-scoped-session",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-four-real-disk-recordings",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-light-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-light-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-offline-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-offline-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-light-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-light-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-light-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-light-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "light-offline-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-light-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-light-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-professional-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-professional-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-offline-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-offline-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-professional-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-professional-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-professional-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-professional-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "professional-offline-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-professional-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-professional-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-dark-ready-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-dark-ready-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-offline-history-node-centers",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-offline-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-dark-history-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-dark-history-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-dark-detail-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-dark-detail-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "dark-offline-queue-one-update-banner",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-dark-queue-system-font",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-dark-queue-no-horizontal-overflow",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-one-identity-projection-hook",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-no-unexpected-network",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "offline-no-upload",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-ready-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-ready-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-ready-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-recording-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-recording-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-recording-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-saving-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-saving-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-saving-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-save-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-save-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-save-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-history-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-history-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-history-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-detail-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-detail-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-detail-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-sent-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-sent-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-sent-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-queue-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-queue-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-queue-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-offline-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-offline-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-offline-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-expired-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-expired-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-expired-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-unclaimed-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-unclaimed-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-unclaimed-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-rate-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-rate-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-rate-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-missing-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-missing-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-missing-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-system-lost-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-system-lost-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-system-lost-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-microphone-only-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-microphone-only-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-microphone-only-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-companies-error-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-companies-error-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-companies-error-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-onboarding-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-onboarding-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-onboarding-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-audio-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-audio-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-audio-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-device-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-device-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-device-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-storage-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-storage-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-storage-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-diagnostics-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-diagnostics-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-settings-diagnostics-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-updates-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-updates-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-updates-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-tray-light",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-tray-professional",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-tray-dark",
+      "pass": true,
+      "syntheticTransport": true
+    },
+    {
+      "name": "matrix-24-scenarios-three-themes",
+      "pass": true,
+      "syntheticTransport": true
+    }
+  ],
+  "matrix": [
+    {
+      "scenario": "ready",
+      "theme": "light",
+      "file": "complete-light-ready.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-ready.png"
+    },
+    {
+      "scenario": "ready",
+      "theme": "professional",
+      "file": "complete-professional-ready.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-ready.png"
+    },
+    {
+      "scenario": "ready",
+      "theme": "dark",
+      "file": "complete-dark-ready.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-ready.png"
+    },
+    {
+      "scenario": "recording",
+      "theme": "light",
+      "file": "complete-light-recording.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-recording.png"
+    },
+    {
+      "scenario": "recording",
+      "theme": "professional",
+      "file": "complete-professional-recording.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-recording.png"
+    },
+    {
+      "scenario": "recording",
+      "theme": "dark",
+      "file": "complete-dark-recording.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-recording.png"
+    },
+    {
+      "scenario": "saving",
+      "theme": "light",
+      "file": "complete-light-saving.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-saving.png"
+    },
+    {
+      "scenario": "saving",
+      "theme": "professional",
+      "file": "complete-professional-saving.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-saving.png"
+    },
+    {
+      "scenario": "saving",
+      "theme": "dark",
+      "file": "complete-dark-saving.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-saving.png"
+    },
+    {
+      "scenario": "save",
+      "theme": "light",
+      "file": "complete-light-save.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-save.png"
+    },
+    {
+      "scenario": "save",
+      "theme": "professional",
+      "file": "complete-professional-save.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-save.png"
+    },
+    {
+      "scenario": "save",
+      "theme": "dark",
+      "file": "complete-dark-save.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-save.png"
+    },
+    {
+      "scenario": "history",
+      "theme": "light",
+      "file": "complete-light-history.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-history.png"
+    },
+    {
+      "scenario": "history",
+      "theme": "professional",
+      "file": "complete-professional-history.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-history.png"
+    },
+    {
+      "scenario": "history",
+      "theme": "dark",
+      "file": "complete-dark-history.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-history.png"
+    },
+    {
+      "scenario": "detail",
+      "theme": "light",
+      "file": "complete-light-local-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-detail.png"
+    },
+    {
+      "scenario": "detail",
+      "theme": "professional",
+      "file": "complete-professional-local-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-detail.png"
+    },
+    {
+      "scenario": "detail",
+      "theme": "dark",
+      "file": "complete-dark-local-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-detail.png"
+    },
+    {
+      "scenario": "sent",
+      "theme": "light",
+      "file": "complete-light-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-sent.png"
+    },
+    {
+      "scenario": "sent",
+      "theme": "professional",
+      "file": "complete-professional-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-sent.png"
+    },
+    {
+      "scenario": "sent",
+      "theme": "dark",
+      "file": "complete-dark-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-sent.png"
+    },
+    {
+      "scenario": "queue",
+      "theme": "light",
+      "file": "complete-light-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-queue.png"
+    },
+    {
+      "scenario": "queue",
+      "theme": "professional",
+      "file": "complete-professional-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-queue.png"
+    },
+    {
+      "scenario": "queue",
+      "theme": "dark",
+      "file": "complete-dark-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-queue.png"
+    },
+    {
+      "scenario": "offline",
+      "theme": "light",
+      "file": "offline-light-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-offline.png"
+    },
+    {
+      "scenario": "offline",
+      "theme": "professional",
+      "file": "offline-professional-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-offline.png"
+    },
+    {
+      "scenario": "offline",
+      "theme": "dark",
+      "file": "offline-dark-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-offline.png"
+    },
+    {
+      "scenario": "expired",
+      "theme": "light",
+      "file": "expired-light-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-expired.png"
+    },
+    {
+      "scenario": "expired",
+      "theme": "professional",
+      "file": "expired-professional-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-expired.png"
+    },
+    {
+      "scenario": "expired",
+      "theme": "dark",
+      "file": "expired-dark-queue.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-expired.png"
+    },
+    {
+      "scenario": "unclaimed",
+      "theme": "light",
+      "file": "complete-light-unclaimed.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-unclaimed.png"
+    },
+    {
+      "scenario": "unclaimed",
+      "theme": "professional",
+      "file": "complete-professional-unclaimed.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-unclaimed.png"
+    },
+    {
+      "scenario": "unclaimed",
+      "theme": "dark",
+      "file": "complete-dark-unclaimed.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-unclaimed.png"
+    },
+    {
+      "scenario": "rate",
+      "theme": "light",
+      "file": "rate-light-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-rate.png"
+    },
+    {
+      "scenario": "rate",
+      "theme": "professional",
+      "file": "rate-professional-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-rate.png"
+    },
+    {
+      "scenario": "rate",
+      "theme": "dark",
+      "file": "rate-dark-detail.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-rate.png"
+    },
+    {
+      "scenario": "missing",
+      "theme": "light",
+      "file": "complete-light-missing.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-missing.png"
+    },
+    {
+      "scenario": "missing",
+      "theme": "professional",
+      "file": "complete-professional-missing.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-missing.png"
+    },
+    {
+      "scenario": "missing",
+      "theme": "dark",
+      "file": "complete-dark-missing.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-missing.png"
+    },
+    {
+      "scenario": "system-lost",
+      "theme": "light",
+      "file": "complete-light-system-lost.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-system-lost.png"
+    },
+    {
+      "scenario": "system-lost",
+      "theme": "professional",
+      "file": "complete-professional-system-lost.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-system-lost.png"
+    },
+    {
+      "scenario": "system-lost",
+      "theme": "dark",
+      "file": "complete-dark-system-lost.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-system-lost.png"
+    },
+    {
+      "scenario": "microphone-only",
+      "theme": "light",
+      "file": "complete-light-microphone-only.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-microphone-only.png"
+    },
+    {
+      "scenario": "microphone-only",
+      "theme": "professional",
+      "file": "complete-professional-microphone-only.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-microphone-only.png"
+    },
+    {
+      "scenario": "microphone-only",
+      "theme": "dark",
+      "file": "complete-dark-microphone-only.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-microphone-only.png"
+    },
+    {
+      "scenario": "companies-error",
+      "theme": "light",
+      "file": "companies-error-light-companies-error.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-companies-error.png"
+    },
+    {
+      "scenario": "companies-error",
+      "theme": "professional",
+      "file": "companies-error-professional-companies-error.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-companies-error.png"
+    },
+    {
+      "scenario": "companies-error",
+      "theme": "dark",
+      "file": "companies-error-dark-companies-error.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-companies-error.png"
+    },
+    {
+      "scenario": "onboarding",
+      "theme": "light",
+      "file": "complete-light-onboarding.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-onboarding.png"
+    },
+    {
+      "scenario": "onboarding",
+      "theme": "professional",
+      "file": "complete-professional-onboarding.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-onboarding.png"
+    },
+    {
+      "scenario": "onboarding",
+      "theme": "dark",
+      "file": "complete-dark-onboarding.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-onboarding.png"
+    },
+    {
+      "scenario": "settings",
+      "theme": "light",
+      "file": "complete-light-account.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-settings.png"
+    },
+    {
+      "scenario": "settings",
+      "theme": "professional",
+      "file": "complete-professional-account.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-settings.png"
+    },
+    {
+      "scenario": "settings",
+      "theme": "dark",
+      "file": "complete-dark-account.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-settings.png"
+    },
+    {
+      "scenario": "settings-audio",
+      "theme": "light",
+      "file": "complete-light-audio.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-audio.png"
+    },
+    {
+      "scenario": "settings-audio",
+      "theme": "professional",
+      "file": "complete-professional-audio.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-audio.png"
+    },
+    {
+      "scenario": "settings-audio",
+      "theme": "dark",
+      "file": "complete-dark-audio.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-audio.png"
+    },
+    {
+      "scenario": "settings-device",
+      "theme": "light",
+      "file": "complete-light-device.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-device.png"
+    },
+    {
+      "scenario": "settings-device",
+      "theme": "professional",
+      "file": "complete-professional-device.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-device.png"
+    },
+    {
+      "scenario": "settings-device",
+      "theme": "dark",
+      "file": "complete-dark-device.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-device.png"
+    },
+    {
+      "scenario": "settings-storage",
+      "theme": "light",
+      "file": "complete-light-storage.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-storage.png"
+    },
+    {
+      "scenario": "settings-storage",
+      "theme": "professional",
+      "file": "complete-professional-storage.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-storage.png"
+    },
+    {
+      "scenario": "settings-storage",
+      "theme": "dark",
+      "file": "complete-dark-storage.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-storage.png"
+    },
+    {
+      "scenario": "settings-diagnostics",
+      "theme": "light",
+      "file": "complete-light-diagnostics.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-diagnostics.png"
+    },
+    {
+      "scenario": "settings-diagnostics",
+      "theme": "professional",
+      "file": "complete-professional-diagnostics.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-diagnostics.png"
+    },
+    {
+      "scenario": "settings-diagnostics",
+      "theme": "dark",
+      "file": "complete-dark-diagnostics.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-diagnostics.png"
+    },
+    {
+      "scenario": "updates",
+      "theme": "light",
+      "file": "complete-light-updates.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-updates.png"
+    },
+    {
+      "scenario": "updates",
+      "theme": "professional",
+      "file": "complete-professional-updates.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-updates.png"
+    },
+    {
+      "scenario": "updates",
+      "theme": "dark",
+      "file": "complete-dark-updates.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-updates.png"
+    },
+    {
+      "scenario": "tray",
+      "theme": "light",
+      "file": "complete-light-tray.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "light-tray.png"
+    },
+    {
+      "scenario": "tray",
+      "theme": "professional",
+      "file": "complete-professional-tray.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "professional-tray.png"
+    },
+    {
+      "scenario": "tray",
+      "theme": "dark",
+      "file": "complete-dark-tray.png",
+      "actualElectron": true,
+      "syntheticIdentity": true,
+      "syntheticTransport": true,
+      "archivedFile": "dark-tray.png"
+    }
+  ],
+  "matrixComplete": true,
+  "syntheticIdentity": true,
+  "syntheticTransport": true,
+  "syntheticAuthFlow": true,
+  "syntheticPermissions": true,
+  "syntheticUpdater": true,
+  "inertInstallOnly": true,
+  "productionServerVerified": false
+}

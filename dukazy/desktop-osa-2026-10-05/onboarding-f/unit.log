@@ -1,0 +1,57 @@
+
+> ludone-desktop-prototype@0.1.8 test:unit
+> vitest run tests/onboarding-missing-steps.test.js tests/auth-error-screens.test.js tests/auth-wait-lifecycle.test.js tests/auth-timeout-guard.test.js tests/auth-cancellation-storage.test.js
+
+
+ RUN  v4.1.11 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/osa-onboarding-f
+
+ ❯ tests/auth-error-screens.test.js (13 tests | 1 failed) 280ms
+     × oznámí chybu bez ztráty hlavního landmarku a přesune fokus na akci 13ms
+ ❯ tests/onboarding-missing-steps.test.js (23 tests | 1 failed) 1488ms
+     × během OAuth ukáže samostatné čekání a dovolí otevřít nový pokus 16ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/auth-error-screens.test.js > chybové obrazovky přihlášení > oznámí chybu bez ztráty hlavního landmarku a přesune fokus na akci
+AssertionError: expected 'SECTION' to be 'MAIN' // Object.is equality
+
+Expected: "MAIN"
+Received: "SECTION"
+
+ ❯ tests/auth-error-screens.test.js:139:28
+    137|     const action = panel.document.querySelector('[data-testid="auth-er…
+    138|
+    139|     expect(screen.tagName).toBe("MAIN");
+       |                            ^
+    140|     expect(screen.getAttribute("role")).toBeNull();
+    141|     expect(announcement?.getAttribute("role")).toBe("alert");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/onboarding-missing-steps.test.js > dva chybějící kroky onboardingu > během OAuth ukáže samostatné čekání a dovolí otevřít nový pokus
+AssertionError: expected  to have a length of 6 but got +0
+
+- Expected
++ Received
+
+- 6
++ 0
+
+ ❯ tests/onboarding-missing-steps.test.js:357:65
+    355|     expect(waiting.dataset.authWaitingState).toBe("waiting");
+    356|     expect(waiting.textContent.trim()).not.toBe("");
+    357|     expect(panel.document.querySelectorAll(".step-track span")).toHave…
+       |                                                                 ^
+    358|     expect(panel.document.querySelector('[data-testid="auth-waiting-co…
+    359|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed | 3 passed (5)
+      Tests  2 failed | 49 passed (51)
+   Start at  21:10:56
+   Duration  2.13s (transform 216ms, setup 53ms, import 1.15s, tests 2.14s, environment 0ms)
+
+
+EXIT_CODE=1

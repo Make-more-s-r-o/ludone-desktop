@@ -1,0 +1,5 @@
+# Nezávislé čtecí review posledních adaptérů
+
+Sol 6.1 low: bez nového P1/P2 bezpečnostního nálezu. Exact guards odmítají změnu odstraněného úseku initializeru; skutečný controller za ním zůstává. Auth adaptér existuje jen po izolovaném guardu, má produkční validační IPC wrapper, povoluje panel, odmítá payload a vrací jen {name,email} z validované veřejné izolované session. Produkční OAuth ani entrypoint se nemění. Permission a updater adaptéry jsou výslovně syntetické. Updater nemá síťové stahování ani instalátor, pouze události a inertní audit.
+
+🧪 Guard test 7 PASS, exit 0. Samotné review nespouštělo Electron; jeho PASS dokládá integrační výpis zvlášť. Nové E2E procházejí UI/preload/IPC/controller, měří odklad při živém nahrávání, odvolání žádosti a jednu inertní instalaci po explicitním potvrzení v bezpečném stavu. Oznámení se sčítají napříč dvěma skutečnými procesy nad stejným profilem, jednou pro verzi. Dirty detail a závod finalizace navíc dokládají původní controller unit testy, ne tento nový E2E průchod. Fyzický Mac/server ⛔.

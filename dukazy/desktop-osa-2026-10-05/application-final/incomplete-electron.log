@@ -1,0 +1,6 @@
+
+DevTools listening on ws://127.0.0.1:65440/devtools/browser/4790d98e-be62-4720-ad83-dfc00b688cb9
+[tray] 2026-10-05T19:32:30.204Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[tray] 2026-10-05T19:32:30.341Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[queue] Obnova přeskočila neplatný nebo nedokončený manifest; soubory zůstaly beze změny.
+[queue] odesláno 0, konec: žádná položka není připravená

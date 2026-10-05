@@ -1,0 +1,310 @@
+{
+  "syntheticTransport": true,
+  "syntheticAuthFlow": true,
+  "syntheticPermissions": true,
+  "syntheticUpdater": true,
+  "identityHookCount": 1,
+  "dialogChoices": [
+    2,
+    1,
+    0
+  ],
+  "updaterAudit": {
+    "checks": 1,
+    "installs": 1,
+    "notifications": 0
+  },
+  "calls": [
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/60000000-0000-4000-8000-000000000001",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    }
+  ],
+  "processCount": 2
+}

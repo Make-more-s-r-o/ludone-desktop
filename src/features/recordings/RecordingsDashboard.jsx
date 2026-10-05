@@ -1,3 +1,6 @@
+import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
+import { selectOsaRecordings, osaRecordingStatus, osaRecordingNode } from "../../lib/osa-recordings.js";
+import { OsaHistoryControls, OsaStations } from "../../components/osa/index.js";
 import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon, MicIcon, RefreshIcon, WaitingIcon } from "../../components/Icons.jsx";
@@ -218,7 +221,7 @@ const TRACK_LABELS = Object.freeze({
   system: "Systémový zvuk",
 });
 
-export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDetailChange }) {
+export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDetailChange, osa = false, queueOnly = false, detailId = null }) {
   const [view, setView] = useState({
     state: "loading", items: [], unreadableCount: 0, message: "",
   });
@@ -228,11 +231,13 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   const [verificationById, setVerificationById] = useState({});
   const [verificationErrorById, setVerificationErrorById] = useState({});
   const [filter, setFilter] = useState("all");
-  const [openDetailId, setOpenDetailId] = useState(null);
+  const [openDetailId, setOpenDetailId] = useState(detailId);
+  const [query, setQuery] = useState({ search: "", period: "all", filter: "all", page: 1, from: "", to: "" });
+  const [playback, setPlayback] = useState(null);
   const [preferencesById, setPreferencesById] = useState({});
   const [preferenceMessageById, setPreferenceMessageById] = useState({});
   const [preferenceFailedById, setPreferenceFailedById] = useState({});
-  const openDetailIdRef = useRef(null);
+  const openDetailIdRef = useRef(detailId);
   const active = useRef(true);
   const claimInFlight = useRef(false);
   const loadGeneration = useRef(0);
@@ -377,7 +382,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   };
 
   const disabledExplanation = accountExplanation(authState);
-  const filteredItems = view.items.filter((item) => matchesRecordingFilter(item, filter));
+  const osaItems = queueOnly ? view.items.filter((item) => ["waiting", "attention"].includes(osaRecordingStatus(item))) : view.items;
+  const selected = selectOsaRecordings(osaItems, query);
+  const filteredItems = osa ? (detailId ? view.items.filter((item) => item.id === detailId) : selected.items) : view.items.filter((item) => matchesRecordingFilter(item, filter));
   const filterCounts = {
     all: view.items.length,
     local: view.items.filter((item) => matchesRecordingFilter(item, "local")).length,
@@ -385,7 +392,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   };
   const configure = async (item) => {
     const choice = preferencesById[item.id]?.value;
-    if (!choice || actingId !== null || !item.revision || !item.fileRevision || item.uploadPreferencesLocked) return;
+    if (!choice || actingId !== null || !item.revision || !item.fileRevision || item.uploadPreferencesLocked) return false;
     const identity = identityRef.current;
     setActingId(item.id);
     setPreferenceMessageById((current) => ({ ...current, [item.id]: "Ukládám volby…" }));
@@ -399,13 +406,26 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       setPreferenceFailedById((current) => ({ ...current, [item.id]: false }));
       setPreferencesById((current) => ({ ...current, [item.id]: { value: null, dirty: false } }));
       setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby jsou uložené. Odeslání spustíš dalším kliknutím." }));
+      if (detailId) await window.ludone.setDetailDirty(false);
+      return true;
     } catch {
       setPreferenceFailedById((current) => ({ ...current, [item.id]: true }));
       await load();
       setPreferencesById((current) => ({ ...current, [item.id]: { value: null, dirty: true } }));
       setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby se nepodařilo uložit. Přehled byl obnoven; ověř volby a ulož je znovu." }));
+      return false;
     } finally { if (active.current) setActingId(null); }
   };
+  const saveBeforeClose = useRef(null);
+  saveBeforeClose.current = async (id) => {
+    const item = view.items.find((candidate) => candidate.id === detailId);
+    const success = item ? await configure(item) : false;
+    await window.ludone.finishDetailSave(id, success);
+  };
+  useEffect(() => {
+    if (!detailId || typeof window.ludone?.onDetailSaveRequested !== "function") return undefined;
+    return window.ludone.onDetailSaveRequested((id) => { void saveBeforeClose.current?.(id); });
+  }, [detailId]);
   const runAction = async (item, method) => {
     if (["sendRecording", "retryRecording"].includes(method) && (preferencesById[item.id]?.dirty || preferenceFailedById[item.id])) return;
     if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method !== "deleteRecording"
@@ -434,8 +454,12 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
 
   return (
     <div className={`recordings-dashboard${openDetailId ? " recordings-dashboard--detail" : ""}`} data-testid="recordings-dashboard">
+      {osa && !detailId && <OsaHistoryControls placement="filters" query={query} result={selected} onChange={(patch) => setQuery((current) => ({ ...current, ...patch, page: patch.page ?? 1 }))} />}
+      {osa && selected.error && <p role="alert">{selected.error}</p>}
+      {detailId && <button type="button" className="button button--small" onClick={() => window.ludone.returnToNowPanel()}>Zpět do panelu</button>}
+      {detailId && view.state === "ready" && filteredItems.length === 0 && <p role="status">Nahrávka už není v místním přehledu dostupná.</p>}
       <div className="recordings-dashboard__toolbar">
-        {view.state === "ready" && view.items.length > 0 && (
+        {!osa && view.state === "ready" && view.items.length > 0 && (
           <div className="recordings-dashboard__filters" role="group" aria-label="Filtrovat nahrávky">
             {[
               ["all", "Vše"],
@@ -514,7 +538,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
             const canVerify = item.source === "queue" && item.ownership === "current"
               && item.revision && item.localState !== "invalid-manifest";
             return (
-              <li className="recordings-timeline__entry" key={item.id} data-recording-id={item.id}
+              <li className="recordings-timeline__entry" key={item.id} data-recording-id={item.id} data-osa-node={osaRecordingNode(item, Boolean(verified))}
                 data-recording-state={item.state} data-upload-intent={item.uploadIntent}
                 data-detail-active={openDetailId === item.id ? "true" : "false"}>
                 <time className="recordings-timeline__time" dateTime={item.createdAt ?? undefined}>
@@ -531,7 +555,12 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     onDetailChange?.(isOpen);
                   }}
                 >
-                  <summary className="recording-queue-card__summary">
+                  <summary className="recording-queue-card__summary" onClick={(event) => {
+                    if (osa && !detailId) {
+                      event.preventDefault();
+                      window.ludone.openRecordingDetail(item.id);
+                    }
+                  }}>
                     <span className="recording-queue-card__back"><ArrowLeftIcon /> Zpět na den</span>
                     <span className="recording-queue-card__detail-date">{dayLabel(item.createdAt)} · {formatClockTime(item.createdAt)}</span>
                     <span className="recording-queue-card__source-icon" aria-hidden="true"><MicIcon /></span>
@@ -576,7 +605,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                         <dt>Vlastník</dt><dd>{ownerLabel}</dd>
                         <dt>Cílová firma</dt><dd>{item.ownership === "current" && currentIdentity ? item.uploadPreferences?.companyName ?? "U této nahrávky není název cílové firmy dostupný." : "Název firmy nelze pro tento účet ověřit."}</dd>
                         <dt>Přístup</dt><dd>{item.uploadPreferences?.visibility === "company" ? "Sdílená ve firmě" : "Soukromá"}</dd>
-                        <dt>Zvuk</dt><dd>{item.recordingInProgress ? "Nahrává se · soubor ještě není uzavřený" : item.localState === "complete-audio" ? "Stereo WebM/Opus · Zvuk je kompletní" : LOCAL_STATE_LABELS[item.localState]}</dd>
+                        <dt>Zvuk</dt><dd>{item.recordingInProgress ? "Nahrává se · soubor ještě není uzavřený" : item.localState === "complete-audio" ? "Zvuk je kompletní · místní soubor" : LOCAL_STATE_LABELS[item.localState]}</dd>
                         <dt>Lokální kopie</dt><dd>{item.recordingInProgress ? "Nahrávání probíhá na tomto Macu" : item.localState === "complete-audio" ? "Zachována na tomto Macu" : "Stav místních souborů vyžaduje pozornost"}</dd>
                         <dt>Uložení</dt><dd>{recordingSourceLabel(item)}</dd>
                       </dl>
@@ -588,7 +617,13 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                           locked={item.uploadPreferencesLocked} disabled={authState !== "signed-in"} busy={actingId !== null}
                           onChange={(value, dirty) => {
                             setPreferencesById((current) => ({ ...current, [item.id]: { value, dirty } }));
+
                             if (dirty && value) setPreferenceMessageById((current) => ({ ...current, [item.id]: "Neuložená změna. Uložení voleb samo nic neodešle." }));
+                          }}
+                          onUserChange={() => {
+                            if (detailId) void window.ludone.setDetailDirty(true).catch(() => {
+                              setPreferenceFailedById((current) => ({ ...current, [item.id]: true }));
+                            });
                           }}
                           onSave={() => void configure(item)} stateMessage={preferenceMessageById[item.id]} stateError={preferenceFailedById[item.id]} />
                       )}
@@ -605,8 +640,24 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     <p className="recording-queue-card__web-note">Přepis a analýzu otevřeš v LuDone na webu.</p>
                     {item.recordingInProgress && <p role="status">Akce budou dostupné po dokončení nahrávání.</p>}
                     {canVerify && !currentIdentity && <p role="status">Pro serverové ověření musí být potvrzený účet i prostředí LuDone.</p>}
-                    <div className="recording-queue-card__actions">
-                {claimable && (
+                    <OsaStations mac={{ status: item.localState === "complete-audio" ? "Zvuk připraven" : LOCAL_STATE_LABELS[item.localState], error: item.localState !== "complete-audio", description: "Místní kopie na tomto Macu", actions: <>{osa && item.fileRevision && item.localState === "complete-audio" && <button type="button" className="button button--small" disabled={item.recordingInProgress || actingId !== null} onClick={async () => {
+                    try {
+                      const response = await window.ludone.playRecording({ id: item.id, queueRev: item.revision, fileRev: item.fileRevision });
+                      if (active.current && /^ludone:\/\/app\/media\/[0-9a-f-]{36}$/u.test(response?.url)) setPlayback({ id: item.id, url: response.url, label: response.label });
+                    } catch { setVerificationErrorById((current) => ({ ...current, [item.id]: "Zvuk se nepodařilo otevřít. Obnov přehled a zkus to znovu." })); }
+                  }}><OsaIcon name="play" size={17} /> Přehrát dostupný zvuk</button>}
+                  {playback?.id === item.id && <audio controls autoPlay src={playback.url} aria-label={playback.label || "Přehrávání místní nahrávky"} onError={() => setVerificationErrorById((current) => ({ ...current, [item.id]: "Zvuk už není dostupný; obnov přehled." }))} />}
+                {item.fileRevision && item.localState !== "invalid-manifest" && (
+                  <button type="button" className="button button--small recording-action--reveal"
+                    disabled={item.recordingInProgress || actingId !== null}
+                    onClick={() => void runAction(item, "revealRecording")}><OsaIcon name="folder" size={17} /> Ukázat ve Finderu</button>
+                )}
+                {item.canDelete && (
+                  <button type="button" className="button button--small recording-action--delete"
+                    disabled={item.recordingInProgress || actingId !== null}
+                    onClick={() => void runAction(item, "deleteRecording")}><OsaIcon name="trash" size={17} /> Přesunout do koše</button>
+                )}
+</> }} server={{ status: verified ? "Dokončeno · ověřeno" : verification && Object.values(verification.tracks).some(result => result.status !== "complete") ? VERIFICATION_LABELS[Object.values(verification.tracks).find(result => result.status !== "complete").status] : deliveryStateLabel(item), verified: Boolean(verified), error: Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? [...new Set(Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]))].join(" · ") : "Přepis a analýza jsou na webu", actions: <>                {claimable && (
                   <button
                     type="button"
                     className="button button--small recording-action--claim"
@@ -628,26 +679,16 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   </button>
                 )}
                 {item.canSend && (
-                  <button type="button" className="button button--small recording-action--send"
+                  <button type="button" className="button button--primary recording-action--send"
                     disabled={item.recordingInProgress || authState !== "signed-in" || actingId !== null || preferencesById[item.id]?.dirty || preferenceFailedById[item.id]}
-                    onClick={() => void runAction(item, "sendRecording")}>Uložit a odeslat</button>
+                    onClick={() => void runAction(item, "sendRecording")}><OsaIcon name="cloud" size={17} /> Uložit a odeslat</button>
                 )}
                 {item.canRetry && (
                   <button type="button" className="button button--small recording-action--retry"
                     disabled={item.recordingInProgress || authState !== "signed-in" || actingId !== null || preferencesById[item.id]?.dirty || preferenceFailedById[item.id]}
                     onClick={() => void runAction(item, "retryRecording")}>Zkusit znovu</button>
                 )}
-                {item.fileRevision && item.localState !== "invalid-manifest" && (
-                  <button type="button" className="button button--small recording-action--reveal"
-                    disabled={item.recordingInProgress || actingId !== null}
-                    onClick={() => void runAction(item, "revealRecording")}>Ukázat ve Finderu</button>
-                )}
-                {item.canDelete && (
-                  <button type="button" className="button button--small recording-action--delete"
-                    disabled={item.recordingInProgress || actingId !== null}
-                    onClick={() => void runAction(item, "deleteRecording")}>Přesunout do koše</button>
-                )}
-                    </div>
+</> }} />
                 {verification && (
                   <div className="recording-queue-card__verification" aria-label="Výsledek serverového ověření">
                     {Object.entries(verification.tracks).map(([track, result]) => (
@@ -696,6 +737,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
           )}
         </ul>
       )}
+      {osa && !detailId && <OsaHistoryControls placement="pagination" query={query} result={selected} onChange={(patch) => setQuery((current) => ({ ...current, ...patch, page: patch.page ?? 1 }))} />}
     </div>
   );
 }

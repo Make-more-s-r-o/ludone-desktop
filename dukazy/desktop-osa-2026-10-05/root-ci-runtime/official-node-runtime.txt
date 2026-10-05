@@ -1,0 +1,4 @@
+$ /private/tmp/ludone-osa-node-review/node-v24.19.0-darwin-arm64/bin/node -p 'JSON.stringify({node:process.version,zlib:process.versions.zlib})'
+{"node":"v24.19.0","zlib":"1.3.2.1-motley-3246f1b"}
+
+EXIT_CODE=0

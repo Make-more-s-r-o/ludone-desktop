@@ -1557,6 +1557,25 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
+  function resolveRecordingAudio({ clientRecordingId, expectedRevision, expectedFileRevision, guard }) {
+    if (typeof guard !== "function") throw new TypeError("Přehrávání vyžaduje guard");
+    return serialize(async () => {
+      const target = await freshActionTarget(clientRecordingId, expectedRevision, expectedFileRevision);
+      const candidates = [...target.derivativePaths.filter((candidate) => candidate.endsWith("-stereo.webm")),
+        ...target.derivativePaths.filter((candidate) => /\.(webm|mp3)$/u.test(candidate)), ...target.audioPaths];
+      for (const candidate of [...new Set(candidates)]) {
+        if (await guard() !== true) throw new Error("Přehrávání už nelze potvrdit");
+        const stats = await stableTrashStat(candidate);
+        if (stats !== null && stats.size > 0) {
+          if (await guard() !== true) throw new Error("Přehrávání už nelze potvrdit");
+          return { outcome: "ready", filePath: candidate, mime: candidate.endsWith(".mp3") ? "audio/mpeg" : "audio/webm",
+            label: candidate.includes("-stereo") ? "Stereo nahrávka" : target.audioPaths.includes(candidate) ? "Původní zvuková stopa" : "Místní zvuk" };
+        }
+      }
+      return { outcome: "missing" };
+    });
+  }
+
   function revealRecording({ clientRecordingId, expectedRevision, expectedFileRevision, guard }) {
     if (typeof guard !== "function") throw new TypeError("Reveal vyžaduje guard");
     return serialize(async () => {
@@ -1985,6 +2004,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     nextRecordingRetryAt,
     pump,
     revealRecording,
+    resolveRecordingAudio,
     retry,
     setRecordingDelivery,
   });

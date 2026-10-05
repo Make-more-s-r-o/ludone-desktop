@@ -1,0 +1,50 @@
+$ npx vitest run tests/queue-wiring.test.js tests/ipc-sender-guard.test.js
+
+ RUN  v4.1.11 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/osa-settings-ipc-tests
+
+ ❯ tests/queue-wiring.test.js (300 tests | 2 failed) 6336ms
+     × panel i detail ukážou pouze pevnou existující složku svého profilu 3ms
+     × složka typu symlink je odmítnuta bez shellu a bez změny cíle 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/queue-wiring.test.js > F lokální složka a skutečně přijaté zkratky > panel i detail ukážou pouze pevnou existující složku svého profilu
+AssertionError: expected '/private/var/folders/9q/pnp6hbt136x98…' to be '/var/folders/9q/pnp6hbt136x98kt5gckjm…' // Object.is equality
+
+Expected: "/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-main-queue-test-OJJhrn/nahravky"
+Received: "/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-main-queue-test-OJJhrn/nahravky"
+
+ ❯ tests/queue-wiring.test.js:8751:36
+    8749|     const handler = harness.ipcHandlers.get("recordings:folder");
+    8750|     for (const event of [panelEvent, settingsEvent]) expect(handler(ev…
+    8751|     expect(await realpath(folder)).toBe(folder);
+       |                                    ^
+    8752|     expect(harness.electron.shell.showItemInFolder.mock.calls).toEqual…
+    8753|     expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/queue-wiring.test.js > F lokální složka a skutečně přijaté zkratky > složka typu symlink je odmítnuta bez shellu a bez změny cíle
+AssertionError: expected '/private/var/folders/9q/pnp6hbt136x98…' to be '/var/folders/9q/pnp6hbt136x98kt5gckjm…' // Object.is equality
+
+Expected: "/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-main-queue-test-uBxwnp/cizi-cil"
+Received: "/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-main-queue-test-uBxwnp/cizi-cil"
+
+ ❯ tests/queue-wiring.test.js:8798:38
+    8796|     expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+    8797|     if (kind === "symlink") {
+    8798|       expect(await realpath(folder)).toBe(target);
+       |                                      ^
+    8799|       expect(await readdir(target)).toEqual(["zachovat"]);
+    8800|       expect(await readFile(path.join(target, "zachovat"), "utf8")).to…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 322 passed (324)
+   Start at  21:17:36
+   Duration  6.79s (transform 203ms, setup 18ms, import 419ms, tests 6.34s, environment 0ms)
+
+
+EXIT_CODE=1

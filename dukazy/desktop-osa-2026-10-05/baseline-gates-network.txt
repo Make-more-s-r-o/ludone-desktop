@@ -1,0 +1,206 @@
+
+> ludone-desktop-prototype@0.1.7 gates:clean
+> node scripts/gates-clean.mjs
+
+Čistý klon 3fdca5c6 → /var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo
+
+▶ npm ci
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 514 packages in 1s
+
+▶ brány (lint · typecheck · testy)
+
+> ludone-desktop-prototype@0.1.7 gates
+> npm run lint && npm run typecheck && npm run test:unit && npm run preskocene
+
+
+> ludone-desktop-prototype@0.1.7 lint
+> eslint .
+
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+    2:18   error  'document' is not defined               no-undef
+    3:19   error  'URLSearchParams' is not defined        no-undef
+    3:35   error  'location' is not defined               no-undef
+    7:1    error  'document' is not defined               no-undef
+    8:32   error  'document' is not defined               no-undef
+    9:1    error  'document' is not defined               no-undef
+   10:15   error  'document' is not defined               no-undef
+   10:112  error  'document' is not defined               no-undef
+   11:17   error  'document' is not defined               no-undef
+   11:105  error  'document' is not defined               no-undef
+   12:32   error  'document' is not defined               no-undef
+   13:24   error  'document' is not defined               no-undef
+   13:138  error  'document' is not defined               no-undef
+   16:2    error  'document' is not defined               no-undef
+   17:28   error  'document' is not defined               no-undef
+   17:152  error  'document' is not defined               no-undef
+   18:37   error  'document' is not defined               no-undef
+   18:130  error  'document' is not defined               no-undef
+   36:40   error  'window' is not defined                 no-undef
+   80:2    error  'document' is not defined               no-undef
+   81:2    error  'document' is not defined               no-undef
+   82:2    error  'document' is not defined               no-undef
+   95:2    error  'document' is not defined               no-undef
+   96:2    error  'window' is not defined                 no-undef
+   97:19   error  'window' is not defined                 no-undef
+  144:416  error  'document' is not defined               no-undef
+  144:527  error  'document' is not defined               no-undef
+  159:53   error  'document' is not defined               no-undef
+  159:487  error  'requestAnimationFrame' is not defined  no-undef
+  162:76   error  'clearTimeout' is not defined           no-undef
+  162:112  error  'setTimeout' is not defined             no-undef
+  194:1    error  'document' is not defined               no-undef
+  204:101  error  'setTimeout' is not defined             no-undef
+  234:23   error  'document' is not defined               no-undef
+  251:66   error  'setTimeout' is not defined             no-undef
+  259:1    error  'document' is not defined               no-undef
+  268:1    error  'document' is not defined               no-undef
+  279:19   error  'document' is not defined               no-undef
+  281:1    error  'document' is not defined               no-undef
+  283:165  error  'document' is not defined               no-undef
+  292:1    error  'document' is not defined               no-undef
+  293:26   error  'document' is not defined               no-undef
+  294:54   error  'document' is not defined               no-undef
+  299:1    error  'setInterval' is not defined            no-undef
+  299:64   error  'document' is not defined               no-undef
+  303:21   error  'document' is not defined               no-undef
+  304:35   error  'document' is not defined               no-undef
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/check-f-tray.mjs
+  12:26  error  'console' is not defined  no-undef
+  43:25  error  'Buffer' is not defined   no-undef
+  46:52  error  'Buffer' is not defined   no-undef
+  49:1   error  'console' is not defined  no-undef
+  50:1   error  'process' is not defined  no-undef
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/creative.js
+   3:18  error  'URLSearchParams' is not defined  no-undef
+   3:34  error  'location' is not defined         no-undef
+   3:56  error  'document' is not defined         no-undef
+   3:94  error  'document' is not defined         no-undef
+   7:2   error  'document' is not defined         no-undef
+  10:16  error  'URLSearchParams' is not defined  no-undef
+  13:3   error  'document' is not defined         no-undef
+  14:3   error  'document' is not defined         no-undef
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/f-icons.js
+  44:19  error  'document' is not defined  no-undef
+  47:14  error  'window' is not defined    no-undef
+  53:28  error  'window' is not defined    no-undef
+  58:11  error  'document' is not defined  no-undef
+  59:11  error  'document' is not defined  no-undef
+  60:11  error  'document' is not defined  no-undef
+  61:3   error  'document' is not defined  no-undef
+  66:3   error  'document' is not defined  no-undef
+  70:2   error  'window' is not defined    no-undef
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/f-tray-gallery.js
+  19:1    error  'document' is not defined  no-undef
+  20:19   error  'document' is not defined  no-undef
+  20:64   error  'document' is not defined  no-undef
+  20:110  error  'document' is not defined  no-undef
+  20:157  error  'document' is not defined  no-undef
+  24:2    error  'document' is not defined  no-undef
+  26:2    error  'document' is not defined  no-undef
+  27:2    error  'document' is not defined  no-undef
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/generate-f-tray.mjs
+  15:38   error  'Buffer' is not defined   no-undef
+  15:64   error  'Buffer' is not defined   no-undef
+  15:119  error  'Buffer' is not defined   no-undef
+  15:159  error  'Buffer' is not defined   no-undef
+  15:195  error  'Buffer' is not defined   no-undef
+  25:35   error  'Buffer' is not defined   no-undef
+  33:13   error  'Buffer' is not defined   no-undef
+  34:9    error  'Buffer' is not defined   no-undef
+  34:24   error  'Buffer' is not defined   no-undef
+  34:128  error  'Buffer' is not defined   no-undef
+  38:12   error  'Buffer' is not defined   no-undef
+  43:1    error  'console' is not defined  no-undef
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-f-layout.js
+   5:56  error  'icon' is not defined      no-undef
+   6:60  error  'state' is not defined     no-undef
+   6:79  error  'state' is not defined     no-undef
+  10:16  error  'document' is not defined  no-undef
+  14:9   error  'document' is not defined  no-undef
+  20:19  error  'document' is not defined  no-undef
+  20:73  error  'document' is not defined  no-undef
+  29:67  error  'document' is not defined  no-undef
+  34:3   error  'document' is not defined  no-undef
+  39:3   error  'document' is not defined  no-undef
+  47:15  error  'document' is not defined  no-undef
+  48:19  error  'document' is not defined  no-undef
+  51:20  error  'document' is not defined  no-undef
+  68:17  error  'document' is not defined  no-undef
+  69:17  error  'document' is not defined  no-undef
+  79:15  error  'document' is not defined  no-undef
+  80:18  error  'document' is not defined  no-undef
+  89:2   error  'window' is not defined    no-undef
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-g-layout.js
+    7:60  error  'state' is not defined     no-undef
+    7:79  error  'state' is not defined     no-undef
+   11:19  error  'document' is not defined  no-undef
+   16:14  error  'document' is not defined  no-undef
+   20:9   error  'window' is not defined    no-undef
+   21:5   error  'window' is not defined    no-undef
+   22:5   error  'document' is not defined  no-undef
+   23:19  error  'document' is not defined  no-undef
+   26:5   error  'document' is not defined  no-undef
+   27:34  error  'document' is not defined  no-undef
+   31:16  error  'document' is not defined  no-undef
+   32:17  error  'document' is not defined  no-undef
+   47:19  error  'document' is not defined  no-undef
+   59:43  error  'document' is not defined  no-undef
+   60:16  error  'document' is not defined  no-undef
+   61:16  error  'document' is not defined  no-undef
+   62:19  error  'document' is not defined  no-undef
+   80:17  error  'document' is not defined  no-undef
+   82:7   error  'document' is not defined  no-undef
+   82:50  error  'document' is not defined  no-undef
+   83:19  error  'document' is not defined  no-undef
+   84:18  error  'document' is not defined  no-undef
+   88:11  error  'document' is not defined  no-undef
+   96:24  error  'document' is not defined  no-undef
+   97:18  error  'document' is not defined  no-undef
+   99:23  error  'document' is not defined  no-undef
+  104:3   error  'document' is not defined  no-undef
+  109:3   error  'document' is not defined  no-undef
+  115:2   error  'window' is not defined    no-undef
+
+/private/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-d3aBsa/repo/docs/changes/desktop-complete-designs-2026-10-01/design/viewer.js
+   2:20  error  'URLSearchParams' is not defined  no-undef
+   2:36  error  'location' is not defined         no-undef
+  18:14  error  'document' is not defined         no-undef
+  19:15  error  'document' is not defined         no-undef
+  20:16  error  'document' is not defined         no-undef
+  21:14  error  'document' is not defined         no-undef
+  28:2   error  'document' is not defined         no-undef
+  29:2   error  'document' is not defined         no-undef
+  30:2   error  'document' is not defined         no-undef
+  31:2   error  'document' is not defined         no-undef
+  40:18  error  'URL' is not defined              no-undef
+  40:33  error  'location' is not defined         no-undef
+  47:2   error  'document' is not defined         no-undef
+  50:2   error  'document' is not defined         no-undef
+  51:2   error  'document' is not defined         no-undef
+  52:2   error  'document' is not defined         no-undef
+  53:2   error  'document' is not defined         no-undef
+  54:2   error  'document' is not defined         no-undef
+  56:1   error  'document' is not defined         no-undef
+
+✖ 155 problems (155 errors, 0 warnings)
+
+
+🔴 Brány nad čistým klonem 3fdca5c6 SPADLY.
+EXIT_CODE=1

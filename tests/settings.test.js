@@ -77,8 +77,8 @@ async function renderSettings({
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
   };
-  const logoutMock = vi.fn(logout);
-  const setAuthOriginMock = vi.fn(setAuthOrigin);
+  const logoutMock = vi.fn(() => logout());
+  const setAuthOriginMock = vi.fn((value) => setAuthOrigin(value));
   let settingsTabRequested;
   let authSessionChanged;
   const switchAuthOriginImplementation = switchAuthOrigin ?? (async (value) => {
@@ -283,7 +283,7 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
   it("při změně retence ukládá jen funkční nastavení", async () => {
     const settings = await renderSettings();
     try {
-      await selectTab(settings, "Záznamy");
+      await selectTab(settings, "Ukládání");
       const retention = settings.document.querySelector(".settings-select select");
       await React.act(async () => {
         retention.value = "30 dní po odeslání";
@@ -349,8 +349,8 @@ describe("pět částí Nastavení", () => {
       expect(tabs.map((tab) => tab.textContent.trim())).toEqual([
         "Účet",
         "Zvuk",
-        "Záznamy",
-        "Nahrávky",
+        "Zařízení",
+        "Ukládání",
         "Diagnostika",
       ]);
       expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual([
@@ -379,7 +379,7 @@ describe("pět částí Nastavení", () => {
       expect(panel?.textContent).toContain("Systémový zvukPravý kanál");
       expect(panel?.textContent).toContain("Spustit zkoušku");
 
-      await selectTab(settings, "Záznamy");
+      await selectTab(settings, "Ukládání");
       panel = settings.document.querySelector("#settings-panel-recordings");
       expect(panel?.textContent).toContain("Ponechat na tomto Macu");
       expect(panel?.textContent).toContain("2 čekají");
@@ -438,7 +438,7 @@ describe("pět částí Nastavení", () => {
     });
     try {
       await expectAccountState(settings, "signed-in");
-      await selectTab(settings, "Nahrávky");
+      await React.act(async () => settings.requestSettingsTab("day"));
       await vi.waitFor(() => {
         expect(settings.document.querySelector(".recording-queue-card")).toBeTruthy();
       });
@@ -474,7 +474,7 @@ describe("pět částí Nastavení", () => {
       }),
     });
     try {
-      await selectTab(settings, "Záznamy");
+      await selectTab(settings, "Ukládání");
       await vi.waitFor(() => {
         expect(settings.document.querySelector(
           '[data-testid="settings-queue-summary"] small',
@@ -957,7 +957,7 @@ describe("pět částí Nastavení", () => {
       diagnostics: () => Promise.resolve(malformedDiagnostics),
     });
     try {
-      await selectTab(settings, "Záznamy");
+      await selectTab(settings, "Ukládání");
       await vi.waitFor(() => {
         expect(settings.document.querySelector('[data-testid="settings-queue-summary"]')?.textContent)
           .toContain("Stav fronty není dostupný");
@@ -1357,7 +1357,8 @@ describe("přímý vstup do části Nastavení", () => {
     const settings = await renderSettings({ initialTab: "recordingQueue" });
     try {
       const selectedTab = () => settings.document.querySelector('[role="tab"][aria-selected="true"]');
-      expect(selectedTab()?.id).toBe("settings-tab-recordingQueue");
+      expect(settings.document.querySelector("#settings-panel-recordingQueue")?.hidden).toBe(false);
+      expect(settings.document.querySelector(".settings-window")?.dataset.page).toBe("day");
 
       await React.act(async () => settings.requestSettingsTab("account"));
       expect(selectedTab()?.id).toBe("settings-tab-account");

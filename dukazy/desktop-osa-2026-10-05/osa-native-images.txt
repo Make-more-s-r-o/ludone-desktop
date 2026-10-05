@@ -1,0 +1,11 @@
+PASS idle: 18/36 px, template, obě reprezentace
+PASS recording: 18/36 px, template, obě reprezentace
+PASS recording-audio-lost: 18/36 px, template, obě reprezentace
+PASS recording-microphone-only: 18/36 px, template, obě reprezentace
+PASS saving: 18/36 px, template, obě reprezentace
+PASS decision: 18/36 px, template, obě reprezentace
+PASS signed-out: 18/36 px, template, obě reprezentace
+PASS offline: 18/36 px, template, obě reprezentace
+PASS attention: 18/36 px, template, obě reprezentace
+PASS queue-waiting: 18/36 px, template, obě reprezentace
+EXIT_CODE=0

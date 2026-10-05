@@ -1,0 +1,80 @@
+{
+  "syntheticTransport": true,
+  "syntheticAuthFlow": true,
+  "syntheticPermissions": true,
+  "syntheticUpdater": true,
+  "identityHookCount": 1,
+  "dialogChoices": [],
+  "updaterAudit": {
+    "checks": 1,
+    "installs": 0,
+    "notifications": 0
+  },
+  "calls": [
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/60000000-0000-4000-8000-000000000001",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/nahravky/uploads/firmy",
+      "allowed": true
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+COMMAND: PATH=<ověřený Node 24.19.0>/bin:$PATH LUDONE_OSA_MODES=complete,companies-error,rate node scripts/osa-auth-e2e.mjs
+PASS complete-light-onboarding-system-font
+PASS complete-light-onboarding-no-horizontal-overflow
+PASS light-onboarding-no-nested-chrome
+PASS complete-light-onboarding-auth-system-font
+PASS complete-light-onboarding-auth-no-horizontal-overflow
+PASS complete-light-onboarding-waiting-system-font
+PASS complete-light-onboarding-waiting-no-horizontal-overflow
+PASS complete-light-onboarding-permissions-system-font
+PASS complete-light-onboarding-permissions-no-horizontal-overflow
+PASS light-onboarding-does-not-claim-human-hearing
+PASS complete-light-onboarding-audio-system-font
+PASS complete-light-onboarding-audio-no-horizontal-overflow
+PASS light-onboarding-skip-stays-unverified
+PASS complete-light-onboarding-done-system-font
+PASS complete-light-onboarding-done-no-horizontal-overflow
+PASS complete-professional-onboarding-system-font
+PASS complete-professional-onboarding-no-horizontal-overflow
+PASS professional-onboarding-no-nested-chrome
+PASS complete-professional-onboarding-auth-system-font
+PASS complete-professional-onboarding-auth-no-horizontal-overflow
+PASS complete-professional-onboarding-waiting-system-font
+PASS complete-professional-onboarding-waiting-no-horizontal-overflow
+PASS complete-professional-onboarding-permissions-system-font
+PASS complete-professional-onboarding-permissions-no-horizontal-overflow
+FAIL professional-onboarding-does-not-claim-human-hearing
+Scénář complete: professional-onboarding-does-not-claim-human-hearing
+PASS complete-one-identity-projection-hook
+PASS complete-no-unexpected-network
+PASS complete-no-upload
+professional-onboarding-does-not-claim-human-hearing
+Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.runtime/osa-auth-e2e/2026-10-05T19-19-26.555Z
+EXIT_CODE=1

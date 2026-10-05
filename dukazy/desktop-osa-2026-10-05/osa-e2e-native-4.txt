@@ -1,0 +1,38 @@
+PASS onboarding-first-use
+PASS home-420-and-system-font
+PASS lutrack-inactive
+PASS light-home-no-horizontal-overflow
+PASS light-library-no-horizontal-overflow
+PASS light-queue-no-horizontal-overflow
+PASS light-settings-no-horizontal-overflow
+PASS light-updates-no-horizontal-overflow
+PASS professional-home-no-horizontal-overflow
+PASS professional-library-no-horizontal-overflow
+PASS professional-queue-no-horizontal-overflow
+PASS professional-settings-no-horizontal-overflow
+PASS professional-updates-no-horizontal-overflow
+PASS dark-home-no-horizontal-overflow
+PASS dark-library-no-horizontal-overflow
+PASS dark-queue-no-horizontal-overflow
+PASS dark-settings-no-horizontal-overflow
+PASS dark-updates-no-horizontal-overflow
+PASS library-460
+PASS real-manifest-loaded
+PASS library-search-period-pagination
+PASS five-settings-sections
+PASS settings-no-second-window
+PASS detail-separate-860-580
+PASS detail-actual-fixture
+PASS two-synthetic-sources
+PASS signed-out-offline-recording-priority
+PASS hidden-panel-recording-authority
+PASS hidden-panel-time-continues
+PASS live-stop-outside-home
+PASS main-save-decision-priority
+PASS explicit-local-and-send-actions
+FAIL Error: Čekání na „local save“ vypršelo.
+    at waitFor (file:///Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-design-e2e.mjs:126:9)
+    at async file:///Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-design-e2e.mjs:272:3
+Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.runtime/osa-e2e/2026-10-05T11-32-20.579Z
+exit code: 1
+EXIT_CODE=1

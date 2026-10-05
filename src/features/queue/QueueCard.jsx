@@ -41,9 +41,8 @@ export function QueueCard({ items, onRetry, onRetryFeedback, retryError: control
   const summary = queuePanelSummary(items, now);
   const [retrying, setRetrying] = useState(false);
   const [localRetryError, setLocalRetryError] = useState(null);
-  if (!summary) return null;
-
   const retryError = controlledRetryError === undefined ? localRetryError : controlledRetryError;
+  if (!summary) return retryError ? <p role="alert" className="queue-card__retry-error">{retryError}</p> : null;
 
   function reportRetryFeedback(message) {
     setLocalRetryError(message);

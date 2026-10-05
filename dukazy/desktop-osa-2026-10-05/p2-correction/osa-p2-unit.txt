@@ -1,0 +1,149 @@
+COMMAND: PATH=<ověřený Node 24.19.0>/bin:$PATH npm run test:unit
+
+> ludone-desktop-prototype@0.1.8 test:unit
+> vitest run
+
+
+ RUN  v4.1.11 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa
+
+ ❯ tests/recording-card.test.js (68 tests | 1 failed) 2320ms
+     × App ponechá připravovaný LuTrack neaktivní i během nahrávání 39ms
+ ❯ tests/session-reentry.test.js (12 tests | 1 failed) 2811ms
+     × po dokončeném onboardingu a bez session nabídne jediný přihlašovací krok 44ms
+ ❯ tests/idle-panel.test.js (43 tests | 1 failed) 1291ms
+     × F panel drží návrhovou výšku a změna obsahu neposune místo ve scrollu 14ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/idle-panel.test.js > schválený klidový panel > F panel drží návrhovou výšku a změna obsahu neposune místo ve scrollu
+AssertionError: expected 'visible' to match /auto|scroll/
+
+- Expected:
+/auto|scroll/
+
++ Received:
+"visible"
+
+ ❯ tests/idle-panel.test.js:1416:86
+    1414|       await React.act(async () => Promise.resolve());
+    1415|       expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(66…
+    1416|       expect(panel.document.defaultView.getComputedStyle(scrollContain…
+       |                                                                                      ^
+    1417|       scrollContainer.scrollTop = 37;
+    1418|       panel.document.querySelector(".osa-lutrack").setAttribute("data-…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/recording-card.test.js > RecordingCard > App ponechá připravovaný LuTrack neaktivní i během nahrávání
+AssertionError: expected <p class="osa-lutrack" …(1)>…(1)</p> to be null
+
+- Expected:
+null
+
++ Received:
+<p
+  aria-disabled="true"
+  class="osa-lutrack"
+>
+  LuTrack 
+  <small>
+    Připravujeme
+  </small>
+</p>
+
+ ❯ tests/recording-card.test.js:1791:29
+    1789|       expect(recordingCard?.querySelector('[data-testid="recording-sou…
+    1790|       expect(recordingCard?.querySelector('[data-testid="recording-sto…
+    1791|       expect(futureFeature).toBeNull();
+       |                             ^
+    1792|       const preparingControls = [...panel.document.querySelectorAll(".…
+    1793|       expect(preparingControls).toHaveLength(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/session-reentry.test.js > návrat do aplikace po ztrátě session > po dokončeném onboardingu a bez session nabídne jediný přihlašovací krok
+AssertionError: expected <ol …(2)>…(6)</ol> to be null
+
+- Expected:
+null
+
++ Received:
+<ol
+  aria-label="Krok 2 z 6: Přihlášení"
+  class="osa-onboarding__axis step-track"
+>
+  <li
+    class=""
+  >
+    <span
+      class="sr-only"
+    >
+      Vítejte
+    </span>
+  </li>
+  <li
+    aria-current="step"
+    class="is-current"
+  >
+    <span
+      class="sr-only"
+    >
+      Přihlášení
+    </span>
+  </li>
+  <li
+    class=""
+  >
+    <span
+      class="sr-only"
+    >
+      Čekání na prohlížeč
+    </span>
+  </li>
+  <li
+    class=""
+  >
+    <span
+      class="sr-only"
+    >
+      Oprávnění
+    </span>
+  </li>
+  <li
+    class=""
+  >
+    <span
+      class="sr-only"
+    >
+      Test záznamu
+    </span>
+  </li>
+  <li
+    class=""
+  >
+    <span
+      class="sr-only"
+    >
+      Hotovo
+    </span>
+  </li>
+</ol>
+
+ ❯ tests/session-reentry.test.js:244:57
+    242|     expect(panel.document.querySelector(".permission-step")).toBeNull(…
+    243|     expect(panel.document.querySelector(".step-count")).toBeNull();
+    244|     expect(panel.document.querySelector(".step-track")).toBeNull();
+       |                                                         ^
+    245|     expect(buttonWithText(panel.document, "Zpět")).toBeUndefined();
+    246|     const loginButton = buttonWithText(panel.document, "Přihlásit v pr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  3 failed | 80 passed (83)
+      Tests  3 failed | 1712 passed | 3 skipped (1718)
+   Start at  21:19:27
+   Duration  9.80s (transform 3.09s, setup 558ms, import 10.47s, tests 47.22s, environment 233ms)
+
+
+EXIT_CODE=1

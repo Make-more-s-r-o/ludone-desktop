@@ -1,0 +1,12 @@
+$ npx vitest run tests/queue-wiring.test.js tests/ipc-sender-guard.test.js
+
+ RUN  v4.1.11 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/osa-settings-ipc-tests
+
+
+ Test Files  2 passed (2)
+      Tests  324 passed (324)
+   Start at  21:18:03
+   Duration  7.07s (transform 244ms, setup 29ms, import 603ms, tests 6.42s, environment 0ms)
+
+
+EXIT_CODE=0

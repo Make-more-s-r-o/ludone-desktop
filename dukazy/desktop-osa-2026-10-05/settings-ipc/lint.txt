@@ -1,0 +1,3 @@
+$ npx eslint tests/queue-wiring.test.js
+
+EXIT_CODE=0

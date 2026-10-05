@@ -1,0 +1,195 @@
+
+DevTools listening on ws://127.0.0.1:65313/devtools/browser/6f367aa7-2da3-43fa-998d-d3a0867a8897
+[tray] 2026-10-05T19:32:02.763Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[tray] 2026-10-05T19:32:02.875Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[queue] Obnova přeskočila neplatný nebo nedokončený manifest; soubory zůstaly beze změny.
+[queue] odesláno 0, konec: žádná položka není připravená
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+[tray] 2026-10-05T19:32:06.400Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T19-32-06-400Z-0d20b768.
+[tray] 2026-10-05T19:32:06.839Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[recording] Uloženo: mikrofon 4025 B, systém 4025 B.
+[queue] Zařazeno 0d20b768-8d23-42f1-a9d4-8703a799341a (recording).
+[tray] 2026-10-05T19:32:06.882Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+[tray] 2026-10-05T19:32:08.287Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+[recording-export] Uloženo 0d20b768-8d23-42f1-a9d4-8703a799341a; rozdíl startů 0 ms.
+[tray] 2026-10-05T19:32:08.352Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+[tray] 2026-10-05T19:32:11.717Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T19-32-11-717Z-20556680.
+[tray] 2026-10-05T19:32:12.156Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+[recording] Uloženo: mikrofon 4991 B, systém 4991 B.
+[queue] Zařazeno 20556680-4419-4326-b4c1-b974affcfe22 (recording).
+[tray] 2026-10-05T19:32:12.190Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+[tray] 2026-10-05T19:32:13.610Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[recording-export] Uloženo 20556680-4419-4326-b4c1-b974affcfe22; rozdíl startů 6 ms.
+[tray] 2026-10-05T19:32:13.659Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+[tray] 2026-10-05T19:32:17.021Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T19-32-17-021Z-7c7f3ebf.
+[tray] 2026-10-05T19:32:17.460Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[recording] Uloženo: mikrofon 4991 B, systém 4991 B.
+[queue] Zařazeno 7c7f3ebf-96b8-45cc-8d88-08d709db1d97 (recording).
+[tray] 2026-10-05T19:32:17.487Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=5 přihlášen=true
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+[tray] 2026-10-05T19:32:18.910Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=5 přihlášen=true
+[recording-export] Uloženo 7c7f3ebf-96b8-45cc-8d88-08d709db1d97; rozdíl startů 6 ms.
+[tray] 2026-10-05T19:32:18.949Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=5 přihlášen=true

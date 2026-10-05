@@ -1,0 +1,8 @@
+$ npm run typecheck
+
+> ludone-desktop-prototype@0.1.8 typecheck
+> tsc --noEmit -p jsconfig.json
+
+tests/queue-wiring.test.js(8812,14): error TS2493: Tuple type '[]' of length '0' has no element at index '0'.
+
+EXIT_CODE=1

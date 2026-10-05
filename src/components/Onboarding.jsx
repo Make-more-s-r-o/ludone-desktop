@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { DesktopMenubar, DesktopTitlebar } from "./DesktopChrome.jsx";
-import { DesktopNavigation } from "./DesktopNavigation.jsx";
+import "./osa/osa-onboarding.css";
 import { AuthErrorScreen } from "./AuthErrorScreen.jsx";
 import { ApplicationUpdateStatus, ApplicationVersion } from "./ApplicationUpdateStatus.jsx";
 import { RecordingTestStep } from "./RecordingTestStep.jsx";
@@ -28,15 +27,6 @@ const PERMISSIONS = [
     description: "Hlasy ze schůzky · zapíná se ručně v Nastavení systému",
     icon: VolumeIcon,
   },
-];
-
-const STEPS = [
-  "Vítejte",
-  "Přihlášení",
-  "Čekání na prohlížeč",
-  "Oprávnění",
-  "Test záznamu",
-  "Hotovo",
 ];
 
 const AUTH_WAIT_SECONDS = 10 * 60;
@@ -418,49 +408,24 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
     };
   }
 
-  if (authFailure) {
-    return <>
-      <AuthErrorScreen busy={authBusy} onRetry={beginAuth} reason={authFailure} embedded={embedded} />
-      {reauthenticate && !embedded && (
-        <button type="button" className="panel-settings-button"
-          data-testid="reauth-settings"
-          onClick={() => window.ludone.openSettings()}>Nastavení</button>
-      )}
-    </>;
-  }
-
-  const Container = embedded ? "section" : "main";
+  // Chyba přihlášení zůstává u jeho stanice; čekání má vlastní skutečný krok.
+  const axisStep = reauthenticate ? 0 : authFailure ? 1 : step;
+  const axisSteps = reauthenticate ? ["Přihlášení"] : ["Vítejte", "Přihlášení", "Čekání na prohlížeč", "Oprávnění", "Test záznamu", "Hotovo"];
+  const Container = embedded ? "section" : authFailure ? "div" : "main";
   return (
-    <Container
-      className={`onboarding${reauthenticate ? " onboarding--reauthenticate" : ""}${embedded ? " onboarding--embedded" : " window-surface"}`}
-    >
-      <div className="onboarding__topbar">
-        {!embedded && <>
-          <header className="panel-header"><DesktopMenubar status="Nastavení aplikace" authState="none" accountLabel="Přihlášení a zvuk" /></header>
-          <DesktopTitlebar closeLabel="Skrýt panel" onClose={() => window.ludone?.hidePanel?.()} quickActions={[]} />
-          <DesktopNavigation active="now" onNavigate={(page) => window.ludone?.openSettings?.(page === "day" ? "day" : "account")} />
-        </>}
-        {embedded && <>
-          <div className="brand-lockup"><LuDoneMark size={30} /><span>LuDone</span></div>
-          <ApplicationVersion withBuildDate={false} />
-          {!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}
-        </>}
-        <ApplicationUpdateStatus showVersion={false} />
-      </div>
-
-      {!reauthenticate && (
-        <div className="step-track" aria-label={`Krok ${step + 1} z ${STEPS.length}`}>
-          {STEPS.map((item, index) => (
-            <span
-              key={item}
-              className={index <= step ? "is-complete" : ""}
-              aria-hidden="true"
-            />
+    <Container className={`onboarding osa-onboarding${reauthenticate ? " onboarding--reauthenticate" : ""}`}>
+      <div className="osa-onboarding__layout">
+        <ol className={`osa-onboarding__axis${reauthenticate ? "" : " step-track"}`} aria-label={`Krok ${axisStep + 1} z ${axisSteps.length}: ${axisSteps[axisStep]}`}>
+          {axisSteps.map((label, index) => (
+            <li key={label} aria-current={index === axisStep ? "step" : undefined}
+              className={index === axisStep ? "is-current" : ""}>
+              <span className="sr-only">{label}</span>
+            </li>
           ))}
-        </div>
-      )}
-
-      {step === 0 && (
+        </ol>
+        <div className="osa-onboarding__station">
+      {authFailure && <AuthErrorScreen busy={authBusy} onRetry={beginAuth} reason={authFailure} embedded={embedded} />}
+      {!authFailure && step === 0 && (
         <section className="onboarding__content welcome-step">
           <div className="welcome-visual" aria-hidden="true">
             <div className="welcome-visual__ring welcome-visual__ring--one" />
@@ -469,9 +434,9 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
             <span className="welcome-visual__node welcome-visual__node--mic"><MicIcon /></span>
           </div>
 
-          <h1>Váš pracovní den.<br />O kousek jednodušší.</h1>
+          <h1>Vaše schůzky.<br />V jednom místě.</h1>
           <p className="lead">
-            Zachyťte schůzku. LuDone zůstane po ruce v liště vašeho Macu. Po zastavení si vyberete odeslání nebo uložení na Macu.
+            Nahrajte schůzku na Macu. Přepis a analýzu otevřete v LuDone na webu.
           </p>
           <button type="button" className="button button--primary button--wide" onClick={() => setStep(1)}>
             Začít <ArrowRightIcon />
@@ -480,7 +445,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
         </section>
       )}
 
-      {step === 1 && (
+      {!authFailure && step === 1 && (
         <section className="onboarding__content auth-step">
           <div className="onboarding-icon"><BrowserIcon /></div>
           {!reauthenticate && <p className="eyebrow">Přihlášení přes LuDone</p>}
@@ -520,7 +485,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
         </section>
       )}
 
-      {step === 2 && (
+      {!authFailure && step === 2 && (
         <section
           className="onboarding__content auth-waiting-step"
           data-auth-waiting-state="waiting"
@@ -585,7 +550,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
         </section>
       )}
 
-      {step === 3 && (
+      {!authFailure && step === 3 && (
         <section className="onboarding__content permission-step">
           <div className="onboarding-icon"><MicIcon /></div>
           <p className="eyebrow">Dvě srozumitelná oprávnění</p>
@@ -642,7 +607,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
         </section>
       )}
 
-      {step === 4 && recordingTestSession && (
+      {!authFailure && step === 4 && recordingTestSession && (
         <RecordingTestStep
           sessionAttempt={recordingTestSession}
           onRetry={startRecordingTestAttempt}
@@ -657,7 +622,7 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
         />
       )}
 
-      {step === 5 && (
+      {!authFailure && step === 5 && (
         <section
           className="onboarding__content done-step"
           data-recording-test-result={recordingTestResult}
@@ -685,7 +650,9 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
           data-testid="reauth-settings"
           onClick={() => window.ludone.openSettings()}>Nastavení</button>
       )}
-      {!embedded && <footer className="onboarding__footer"><ApplicationVersion withBuildDate={false} /><span>Přihlášení a oprávnění macOS</span>{!reauthenticate && <span className="step-count">{step + 1} / {STEPS.length}</span>}</footer>}
+        </div>
+      </div>
+      {!embedded && <footer className="osa-onboarding__footer"><ApplicationVersion withBuildDate={false} /><ApplicationUpdateStatus showVersion={false} /></footer>}
     </Container>
   );
 }

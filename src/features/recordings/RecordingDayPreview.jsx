@@ -38,7 +38,7 @@ function stateLabel(item) {
   if (item.state === "ceka") return "Čeká na odeslání";
   if (item.state === "odesila") return "Odesílá se";
   if (item.state === "selhalo") return "Odeslání selhalo";
-  if (item.state === "odeslano") return "Odesláno podle fronty";
+  if (item.state === "odeslano") return "Odesláno · neověřeno";
   return "Stav není ověřený";
 }
 
@@ -51,11 +51,11 @@ export function RecordingDayPreview({ items, unavailable = false, onOpenDay }) {
       <header className="day-preview__header">
         <span className="day-preview__icon" aria-hidden="true"><ArchiveIcon /></span>
         <div>
-          <p className="eyebrow">Stav fronty</p>
-          <h2 id="day-preview-title">Nahrávky</h2>
+          <p className="eyebrow">Poslední schůzky</p>
+          <h2 id="day-preview-title">Poslední schůzky</h2>
         </div>
         <button type="button" className="day-preview__open" onClick={onOpenDay}>
-          Můj den <ArrowRightIcon />
+          Všechny <ArrowRightIcon />
         </button>
       </header>
       {loading && <p className="day-preview__empty" role="status">Načítám stav fronty…</p>}
@@ -63,7 +63,7 @@ export function RecordingDayPreview({ items, unavailable = false, onOpenDay }) {
         <p className="day-preview__empty" role="status">Stav fronty není dostupný.</p>
       )}
       {!loading && !unavailable && recordings.length === 0 && (
-        <p className="day-preview__empty">Fronta je prázdná. Lokální nahrávky najdeš v Můj den.</p>
+        <p className="day-preview__empty">Zatím tu nejsou schůzky. Všechny místní nahrávky najdeš v historii.</p>
       )}
       {!loading && !unavailable && recordings.length > 0 && (
         <ul className="day-preview__list" aria-label="Nahrávky ve frontě">

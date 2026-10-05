@@ -1,0 +1,22 @@
+
+ RUN  v3.2.7 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa
+
+ ✓ tests/oauth-state.test.js (10 tests) 7ms
+ ✓ tests/queue-scheduler.test.js (8 tests) 10ms
+ ✓ tests/auth-empty-store.test.js (9 tests) 80ms
+ ✓ tests/auth-refresh.test.js (10 tests) 154ms
+ ✓ tests/auth-controller-wiring.test.js (48 tests) 164ms
+ ✓ tests/auth-cancellation-storage.test.js (11 tests) 444ms
+ ✓ tests/recording-export.test.js (75 tests) 428ms
+ ✓ tests/recordings-status.test.js (2 tests) 117ms
+ ✓ tests/auth-identity-fallback.test.js (29 tests) 971ms
+ ✓ tests/recordings-dashboard.test.js (30 tests) 681ms
+ ✓ tests/queue.test.js (153 tests) 2170ms
+   ✓ perzistentní pumpa fronty > 🔴 jedna pumpa nepřekročí strop, i když je fronta delší  541ms
+
+ Test Files  11 passed (11)
+      Tests  385 passed (385)
+   Start at  13:36:49
+   Duration  2.54s (transform 306ms, setup 182ms, collect 1.97s, tests 5.23s, environment 2ms, prepare 478ms)
+
+EXIT_CODE=0
