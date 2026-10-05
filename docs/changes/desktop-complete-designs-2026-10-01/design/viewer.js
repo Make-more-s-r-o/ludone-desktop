@@ -2,7 +2,7 @@
 const params = new URLSearchParams(location.search);
 const screens = [
  ['Základní obrazovky',[
-  ['ready','Nahrávání'],['recording','Během nahrávání'],['save','Po schůzce · uložit a odeslat'],
+  ['ready','Nahrávání'],['recording','Během nahrávání'],['saving','Ukládání souboru'],['save','Po schůzce · uložit a odeslat'],
   ['history','Historie · hledání a období'],['detail','Detail na Macu'],['sent','Detail v LuDone'],['queue','Odesílání'],
   ['settings','Nastavení · Účet'],['audio','Nastavení · Zvuk a zkouška'],['device','Nastavení · Zařízení'],
   ['storage','Nastavení · Ukládání'],['diagnostics','Nastavení · Diagnostika'],['updates','Aktualizace'],
@@ -41,7 +41,7 @@ function show(){
  url.searchParams.set('variant',variant);
  url.searchParams.set('scenario',tab?'settings':view.value);
  url.searchParams.set('theme',theme.value);
- if(variant==='f')url.searchParams.set('revision','icons-20261005');
+ if(variant==='f')url.searchParams.set('revision','tray-20261005');
  if(params.get('icons')==='original')url.searchParams.set('icons','original');
  if(tab)url.searchParams.set('tab',tab);
  document.querySelector('#standalone').href=url.href;

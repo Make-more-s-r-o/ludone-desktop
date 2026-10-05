@@ -15,7 +15,7 @@ const integrationStyle=document.createElement('link');integrationStyle.rel='styl
 if(['f','g'].includes(concept)){
  document.head.append(style);
  const creativeIntegration=document.createElement('link');creativeIntegration.rel='stylesheet';creativeIntegration.href='creative-integration.css?v=1';document.head.append(creativeIntegration);
- if(refinedFIcons){const iconsStyle=document.createElement('link');iconsStyle.rel='stylesheet';iconsStyle.href='f-icons.css?v=1';document.head.append(iconsStyle);}
+ if(refinedFIcons){const iconsStyle=document.createElement('link');iconsStyle.rel='stylesheet';iconsStyle.href='f-icons.css?v=2';document.head.append(iconsStyle);}
 }
 const paths = {
  record:'<rect x="8" y="2" width="8" height="13" rx="4"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>',
@@ -37,7 +37,7 @@ const icon = (name) => refinedFIcons ? window.LuDoneFIcons.icon(name) : `<svg vi
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const btn = (text, action, cls='', glyph='', extra='') => `<button type="button" class="btn ${cls}" data-action="${action}" ${extra}>${glyph?icon(glyph):''}${text}</button>`;
 const companies = ['Ateliér Sever s.r.o.','Studio Forma','LuDone Demo'];
-const scenarios = [ ['ready','Připraveno'],['recording','Nahrávání'],['save','Po schůzce'],['history','Historie'],['detail','Detail na Macu'],['sent','Detail na webu'],['queue','Fronta a chyby'],['offline','Bez sítě'],['expired','Vypršelé přihlášení'],['unclaimed','Převzetí vlastnictví'],['rate','Limit serveru'],['missing','Chybějící zvuk'],['system-lost','Výpadek kanálu'],['microphone-only','Jen mikrofon'],['companies-error','Chyba výběru firmy'],['onboarding','První použití'],['settings','Nastavení'],['updates','Aktualizace'],['tray','Panel v liště'] ];
+const scenarios = [ ['ready','Připraveno'],['recording','Nahrávání'],['saving','Ukládání'],['save','Po schůzce'],['history','Historie'],['detail','Detail na Macu'],['sent','Detail na webu'],['queue','Fronta a chyby'],['offline','Bez sítě'],['expired','Vypršelé přihlášení'],['unclaimed','Převzetí vlastnictví'],['rate','Limit serveru'],['missing','Chybějící zvuk'],['system-lost','Výpadek kanálu'],['microphone-only','Jen mikrofon'],['companies-error','Chyba výběru firmy'],['onboarding','První použití'],['settings','Nastavení'],['updates','Aktualizace'],['tray','Panel v liště'] ];
 let state;
 function seed() {
  const titles=['Týdenní domluva','Návrh nové spolupráce','Produktová konzultace','Plán na další týden','Schůzka s týmem','Poznámky k projektu'];
@@ -175,6 +175,7 @@ function applyScenario(name){
  state=seed();menuOpen=true;recordOriginal=null;closeModal();$('.scenario').value=name;
  if(name==='recording'||name==='system-lost'){state.phase='recording';state.seconds=1458;state.systemLost=name==='system-lost';}
  if(name==='save'){state.phase='draft';state.seconds=1458;}
+ if(name==='saving'){state.phase='finalizing';state.seconds=1458;}
  if(name==='history')state.page='library';
  if(['detail','sent','unclaimed','rate','missing'].includes(name)){state.page='detail';state.selected={detail:'demo-0',sent:'demo-1',unclaimed:'demo-5',rate:'demo-7',missing:'demo-8'}[name];}
  if(name==='queue')state.page='queue';

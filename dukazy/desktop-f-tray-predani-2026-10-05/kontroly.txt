@@ -1,0 +1,228 @@
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/f-tray.js
+EXIT_CODE=0
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/f-tray-gallery.js
+EXIT_CODE=0
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/f-icons.js
+EXIT_CODE=0
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+EXIT_CODE=0
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/viewer.js
+EXIT_CODE=0
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/generate-f-tray.mjs
+EXIT_CODE=0
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/check-f-tray.mjs
+EXIT_CODE=0
+
+$ node docs/changes/desktop-complete-designs-2026-10-01/design/check-f-tray.mjs
+PASS: priorita {"phase":"idle","signed":true} → idle
+PASS: priorita {"phase":"recording","signed":false,"network":false,"pendingCount":8,"attentionCount":2,"time":"12:34"} → recording
+PASS: priorita {"phase":"recording","systemLost":true,"microphoneOnly":true,"signed":false,"time":"12:34"} → recording-audio-lost
+PASS: priorita {"phase":"recording","microphoneOnly":true,"network":false,"time":"12:34"} → recording-microphone-only
+PASS: priorita {"phase":"finalizing","signed":false,"attentionCount":5} → saving
+PASS: priorita {"phase":"draft","signed":false,"network":false} → decision
+PASS: priorita {"phase":"idle","signed":false,"pendingCount":4,"attentionCount":2} → signed-out
+PASS: priorita {"phase":"idle","signed":true,"pendingCount":4,"network":false,"attentionCount":2} → offline
+PASS: priorita {"phase":"idle","signed":true,"attentionCount":2,"pendingCount":4} → attention
+PASS: priorita {"phase":"idle","signed":true,"pendingCount":4} → queue-waiting
+PASS: priorita {"phase":"idle","signed":true,"systemLost":true,"microphoneOnly":true} → idle
+PASS: priorita {"phase":"idle","signed":true,"network":false,"pendingCount":0} → idle
+PASS: odhlášení a offline jsou ve vysvětlení, nepřebijí nahrávání
+PASS: původní značka shodná s archivem Opus
+PASS: úplný manifest 10 SVG + 20 PNG
+PASS: SHA-256 idle.svg
+PASS: SHA-256 idle.png
+PASS: rozměry idle.png
+PASS: template alfa, bez barev a dlaždice idle.png
+PASS: SHA-256 idle@2x.png
+PASS: rozměry idle@2x.png
+PASS: template alfa, bez barev a dlaždice idle@2x.png
+PASS: SHA-256 recording.svg
+PASS: SHA-256 recording.png
+PASS: rozměry recording.png
+PASS: template alfa, bez barev a dlaždice recording.png
+PASS: SHA-256 recording@2x.png
+PASS: rozměry recording@2x.png
+PASS: template alfa, bez barev a dlaždice recording@2x.png
+PASS: SHA-256 saving.svg
+PASS: SHA-256 saving.png
+PASS: rozměry saving.png
+PASS: template alfa, bez barev a dlaždice saving.png
+PASS: SHA-256 saving@2x.png
+PASS: rozměry saving@2x.png
+PASS: template alfa, bez barev a dlaždice saving@2x.png
+PASS: SHA-256 decision.svg
+PASS: SHA-256 decision.png
+PASS: rozměry decision.png
+PASS: template alfa, bez barev a dlaždice decision.png
+PASS: SHA-256 decision@2x.png
+PASS: rozměry decision@2x.png
+PASS: template alfa, bez barev a dlaždice decision@2x.png
+PASS: SHA-256 queue-waiting.svg
+PASS: SHA-256 queue-waiting.png
+PASS: rozměry queue-waiting.png
+PASS: template alfa, bez barev a dlaždice queue-waiting.png
+PASS: SHA-256 queue-waiting@2x.png
+PASS: rozměry queue-waiting@2x.png
+PASS: template alfa, bez barev a dlaždice queue-waiting@2x.png
+PASS: SHA-256 signed-out.svg
+PASS: SHA-256 signed-out.png
+PASS: rozměry signed-out.png
+PASS: template alfa, bez barev a dlaždice signed-out.png
+PASS: SHA-256 signed-out@2x.png
+PASS: rozměry signed-out@2x.png
+PASS: template alfa, bez barev a dlaždice signed-out@2x.png
+PASS: SHA-256 offline.svg
+PASS: SHA-256 offline.png
+PASS: rozměry offline.png
+PASS: template alfa, bez barev a dlaždice offline.png
+PASS: SHA-256 offline@2x.png
+PASS: rozměry offline@2x.png
+PASS: template alfa, bez barev a dlaždice offline@2x.png
+PASS: SHA-256 recording-audio-lost.svg
+PASS: SHA-256 recording-audio-lost.png
+PASS: rozměry recording-audio-lost.png
+PASS: template alfa, bez barev a dlaždice recording-audio-lost.png
+PASS: SHA-256 recording-audio-lost@2x.png
+PASS: rozměry recording-audio-lost@2x.png
+PASS: template alfa, bez barev a dlaždice recording-audio-lost@2x.png
+PASS: SHA-256 recording-microphone-only.svg
+PASS: SHA-256 recording-microphone-only.png
+PASS: rozměry recording-microphone-only.png
+PASS: template alfa, bez barev a dlaždice recording-microphone-only.png
+PASS: SHA-256 recording-microphone-only@2x.png
+PASS: rozměry recording-microphone-only@2x.png
+PASS: template alfa, bez barev a dlaždice recording-microphone-only@2x.png
+PASS: SHA-256 attention.svg
+PASS: SHA-256 attention.png
+PASS: rozměry attention.png
+PASS: template alfa, bez barev a dlaždice attention.png
+PASS: SHA-256 attention@2x.png
+PASS: rozměry attention@2x.png
+PASS: template alfa, bez barev a dlaždice attention@2x.png
+PASS: všech deset stavů má odlišnou alfa masku v 18 px
+PASS: všech deset stavů má odlišnou alfa masku v 36 px
+⛔ Toto není důkaz čitelnosti skutečné systémové lišty, zvuku, IPC ani uploadu.
+EXIT_CODE=0
+
+$ git diff --check
+EXIT_CODE=0
+
+Finální kontrola po review a doplnění SHA-256 zdroje:
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/generate-f-tray.mjs
+EXIT_CODE=0
+
+$ node --check docs/changes/desktop-complete-designs-2026-10-01/design/check-f-tray.mjs
+EXIT_CODE=0
+
+$ node docs/changes/desktop-complete-designs-2026-10-01/design/check-f-tray.mjs
+PASS: priorita {"phase":"idle","signed":true} → idle
+PASS: priorita {"phase":"recording","signed":false,"network":false,"pendingCount":8,"attentionCount":2,"time":"12:34"} → recording
+PASS: priorita {"phase":"recording","systemLost":true,"microphoneOnly":true,"signed":false,"time":"12:34"} → recording-audio-lost
+PASS: priorita {"phase":"recording","microphoneOnly":true,"network":false,"time":"12:34"} → recording-microphone-only
+PASS: priorita {"phase":"finalizing","signed":false,"attentionCount":5} → saving
+PASS: priorita {"phase":"draft","signed":false,"network":false} → decision
+PASS: priorita {"phase":"idle","signed":false,"pendingCount":4,"attentionCount":2} → signed-out
+PASS: priorita {"phase":"idle","signed":true,"pendingCount":4,"network":false,"attentionCount":2} → offline
+PASS: priorita {"phase":"idle","signed":true,"attentionCount":2,"pendingCount":4} → attention
+PASS: priorita {"phase":"idle","signed":true,"pendingCount":4} → queue-waiting
+PASS: priorita {"phase":"idle","signed":true,"systemLost":true,"microphoneOnly":true} → idle
+PASS: priorita {"phase":"idle","signed":true,"network":false,"pendingCount":0} → idle
+PASS: odhlášení a offline jsou ve vysvětlení, nepřebijí nahrávání
+PASS: původní značka shodná s archivem Opus
+PASS: manifest odpovídá aktuálnímu originálu značky
+PASS: manifest odpovídá aktuálnímu zdroji kresby
+PASS: úplný manifest 10 SVG + 20 PNG
+PASS: SHA-256 idle.svg
+PASS: SVG odpovídá aktuální definici idle.svg
+PASS: SHA-256 idle.png
+PASS: rozměry idle.png
+PASS: template alfa, bez barev a dlaždice idle.png
+PASS: SHA-256 idle@2x.png
+PASS: rozměry idle@2x.png
+PASS: template alfa, bez barev a dlaždice idle@2x.png
+PASS: SHA-256 recording.svg
+PASS: SVG odpovídá aktuální definici recording.svg
+PASS: SHA-256 recording.png
+PASS: rozměry recording.png
+PASS: template alfa, bez barev a dlaždice recording.png
+PASS: SHA-256 recording@2x.png
+PASS: rozměry recording@2x.png
+PASS: template alfa, bez barev a dlaždice recording@2x.png
+PASS: SHA-256 saving.svg
+PASS: SVG odpovídá aktuální definici saving.svg
+PASS: SHA-256 saving.png
+PASS: rozměry saving.png
+PASS: template alfa, bez barev a dlaždice saving.png
+PASS: SHA-256 saving@2x.png
+PASS: rozměry saving@2x.png
+PASS: template alfa, bez barev a dlaždice saving@2x.png
+PASS: SHA-256 decision.svg
+PASS: SVG odpovídá aktuální definici decision.svg
+PASS: SHA-256 decision.png
+PASS: rozměry decision.png
+PASS: template alfa, bez barev a dlaždice decision.png
+PASS: SHA-256 decision@2x.png
+PASS: rozměry decision@2x.png
+PASS: template alfa, bez barev a dlaždice decision@2x.png
+PASS: SHA-256 queue-waiting.svg
+PASS: SVG odpovídá aktuální definici queue-waiting.svg
+PASS: SHA-256 queue-waiting.png
+PASS: rozměry queue-waiting.png
+PASS: template alfa, bez barev a dlaždice queue-waiting.png
+PASS: SHA-256 queue-waiting@2x.png
+PASS: rozměry queue-waiting@2x.png
+PASS: template alfa, bez barev a dlaždice queue-waiting@2x.png
+PASS: SHA-256 signed-out.svg
+PASS: SVG odpovídá aktuální definici signed-out.svg
+PASS: SHA-256 signed-out.png
+PASS: rozměry signed-out.png
+PASS: template alfa, bez barev a dlaždice signed-out.png
+PASS: SHA-256 signed-out@2x.png
+PASS: rozměry signed-out@2x.png
+PASS: template alfa, bez barev a dlaždice signed-out@2x.png
+PASS: SHA-256 offline.svg
+PASS: SVG odpovídá aktuální definici offline.svg
+PASS: SHA-256 offline.png
+PASS: rozměry offline.png
+PASS: template alfa, bez barev a dlaždice offline.png
+PASS: SHA-256 offline@2x.png
+PASS: rozměry offline@2x.png
+PASS: template alfa, bez barev a dlaždice offline@2x.png
+PASS: SHA-256 recording-audio-lost.svg
+PASS: SVG odpovídá aktuální definici recording-audio-lost.svg
+PASS: SHA-256 recording-audio-lost.png
+PASS: rozměry recording-audio-lost.png
+PASS: template alfa, bez barev a dlaždice recording-audio-lost.png
+PASS: SHA-256 recording-audio-lost@2x.png
+PASS: rozměry recording-audio-lost@2x.png
+PASS: template alfa, bez barev a dlaždice recording-audio-lost@2x.png
+PASS: SHA-256 recording-microphone-only.svg
+PASS: SVG odpovídá aktuální definici recording-microphone-only.svg
+PASS: SHA-256 recording-microphone-only.png
+PASS: rozměry recording-microphone-only.png
+PASS: template alfa, bez barev a dlaždice recording-microphone-only.png
+PASS: SHA-256 recording-microphone-only@2x.png
+PASS: rozměry recording-microphone-only@2x.png
+PASS: template alfa, bez barev a dlaždice recording-microphone-only@2x.png
+PASS: SHA-256 attention.svg
+PASS: SVG odpovídá aktuální definici attention.svg
+PASS: SHA-256 attention.png
+PASS: rozměry attention.png
+PASS: template alfa, bez barev a dlaždice attention.png
+PASS: SHA-256 attention@2x.png
+PASS: rozměry attention@2x.png
+PASS: template alfa, bez barev a dlaždice attention@2x.png
+PASS: všech deset stavů má odlišnou alfa masku v 18 px
+PASS: všech deset stavů má odlišnou alfa masku v 36 px
+⛔ Toto není důkaz čitelnosti skutečné systémové lišty, zvuku, IPC ani uploadu.
+EXIT_CODE=0
+
+$ git diff --check
+EXIT_CODE=0

@@ -1877,4 +1877,7 @@ Nahrávání, zavření panelu, zastavení a volbu firmy/přístupu lze proklika
 
 ## F je vybraná — 5. 10. 2026
 
+Aktuálně jde hlavně o ikony v horní systémové liště: [deset stavů ve skutečné velikosti](http://100.101.162.108:53302/f-tray.html). 🟡 Posoudit poslední sadu a pak dát pokyn k zahájení na dev-ludone. Celý [prompt pro Mac mini](docs/changes/desktop-complete-designs-2026-10-01/PROMPT-MAC-MINI.txt) je připravený; žádné nové heslo nebo klíč se nevyžaduje.
+
+
 Výběr celé varianty je vyřízený: Dan zvolil F Osa. 🟡 Zbývá posoudit rozpracované ikony: [přehled](http://100.101.162.108:53302/f-icons.html) a [upravená F](http://100.101.162.108:53302/viewer.html?variant=f&preview=icons-20261005). Původní značka LuDone je zachovaná. Nejde o novou instalovanou verzi; produkční změny čekají na schválení.

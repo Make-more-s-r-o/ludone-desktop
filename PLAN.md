@@ -237,7 +237,10 @@ Tento checkpoint nahrazuje starší designové odhady pouze pro nynější výb�
 
 ## Vybraná F a ikony — 5. 10. 2026
 
+**Navazující příprava:** 🧪 deset tray stavů ve dvou podobách systémové lišty, SVG/PNG 18/36 px, souběhový kontrakt a prokliky klíčových obrazovek. [Předání](docs/changes/desktop-complete-designs-2026-10-01/PREDANI.md) obsahuje celý F brief, pořadí implementace, akceptaci a prompt. ✅ Čtecí připojení na dev-ludone, přihlášený Codex a vývojové nástroje ověřené. 🟡 Posouzení posledních ikon a zahájení dalšího běhu. ⛔ Nativní GUI/audio a produkční F stále neověřené.
+
+
 1. Dan zvolil F Osa; další celé varianty se nyní netvoří.
 2. 🧪 Ikony jsou sjednocené pouze v HTML F; zachovaná původní značka LuDone, monochromatický znak lišty, přístupné názvy/fokus a aktivní značka navigace. [Podoba a rozsah](docs/changes/desktop-complete-designs-2026-10-01/F-IKONY.md), [důkazy](dukazy/desktop-f-ikony-2026-10-05/README.md).
-3. 🟡 Dan posoudí rozpracované ikony. Po jejich schválení lze připravit implementační etapu a E2E skutečné aplikace podle F.
+3. 🟡 Dan posoudí rozpracované ikony. Implementační etapa a E2E skutečné aplikace podle F jsou připravené v samostatném briefu; spuštění čeká na schválení ikon a pokyn začít.
 4. ⛔ Produkční implementace ani vydání F se v této etapě neprovádějí.

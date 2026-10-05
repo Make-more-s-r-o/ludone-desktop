@@ -42,15 +42,18 @@
  }
  function apply(s) {
   const trigger = document.querySelector('.menubar-trigger');
-  if (trigger.querySelector('img')) trigger.querySelector('img').outerHTML = icon('brand');
+  const image=trigger.querySelector('img,.f-icon,.f-tray-icon');
   const live = trigger.querySelector('.menu-live-status');
-  let status = '';
-  if (s.phase === 'recording') status = 'Nahrává se';
-  else if (s.phase === 'draft') { status = 'Čeká na uložení'; live.innerHTML = `${icon('folder')}<span>Uložit</span>`; }
-  else if (s.phase === 'finalizing') { status = 'Ukládá se'; live.innerHTML = `${icon('folder')}<span>Ukládá se</span>`; }
-  const warning = s.systemLost || s.microphoneOnly;
-  if (warning) live.insertAdjacentHTML('afterbegin', icon('alert'));
-  trigger.setAttribute('aria-label', `LuDone v horní liště${status ? ' · ' + status : ''}${warning ? ' · omezený zvuk' : ''}`);
+  const tray=window.LuDoneFTray.describe({
+   phase:s.phase,systemLost:s.systemLost,microphoneOnly:s.microphoneOnly,signed:s.signed,network:s.network,
+   time:live.querySelector('[data-live-time]')?.textContent,
+   pendingCount:s.recordings.filter(r=>['queued','rate'].includes(r.status)).length,
+   attentionCount:s.recordings.filter(r=>['failed','unclaimed','missing','partial','unknown'].includes(r.status)).length
+  });
+  if(image)image.outerHTML=window.LuDoneFTray.svg(tray.name);
+  live.innerHTML=tray.text?`<span${s.phase==='recording'?' data-live-time':''}>${tray.text}</span>`:'';
+  trigger.dataset.trayState=tray.name;
+  trigger.setAttribute('aria-label',tray.label);
   trigger.title = trigger.getAttribute('aria-label');
   replace(document.querySelector('[data-action=tray-menu]'), 'more');
   replace(document.querySelector('.head-actions [data-action=sources]'), 'sources');

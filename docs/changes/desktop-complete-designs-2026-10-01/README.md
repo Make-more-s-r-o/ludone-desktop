@@ -1,6 +1,8 @@
 # Sedm kompletních návrhů LuDone Desktop z horní lišty
 
-**5. 10. 2026:** Dan vybral **F Osa**, ikony ještě rozpracovat. [Upravená F](design/viewer.html?variant=f&preview=icons-20261005), [přehled ikon](design/f-icons.html) a [rozsah revize](F-IKONY.md). Kompozice je od Sonnetu, ikonová vrstva od Codexu; původní podoba a ostatní návrhy jsou zachované. 🟡 Ikony čekají na posouzení. Produkce ani vydání se v této etapě nemění; starší výběrové checkpointy níže jsou historické.
+**5. 10. 2026 — aktuální:** Dan vybral **F Osa** a upřesnil hlavně ikony **horní systémové lišty**. [Nový přehled deseti stavů](design/f-tray.html), [kontrakt](F-TRAY-KONTRAKT.md), [celé implementační zadání](IMPLEMENTACE-F.md) a [předání s promptem pro Mac mini](PREDANI.md) jsou připravené. Čtecí remote preflight prošel; vývoj ještě není zahájený.
+
+**Předchozí ikonový průchod 5. 10. 2026:** Dan vybral **F Osa**, ikony ještě rozpracovat. [Upravená F](design/viewer.html?variant=f&preview=icons-20261005), [přehled ikon](design/f-icons.html) a [rozsah revize](F-IKONY.md). Kompozice je od Sonnetu, ikonová vrstva od Codexu; původní podoba a ostatní návrhy jsou zachované. 🟡 Ikony čekají na posouzení. Produkce ani vydání se v této etapě nemění; starší výběrové checkpointy níže jsou historické.
 
 Dan 1. 10. požádal o tři odlišné minimalistické návrhy celé aplikace; implementaci zahájit až po schválení. Dne 2. 10. upřesnil nahrávání z horní lišty a další dva návrhy od Sonnetu 5.5. Tento běh upravuje pouze HTML makety s fiktivními daty.
 

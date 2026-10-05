@@ -221,4 +221,7 @@ Dan požádal o další dva kreativnější návrhy od Sonnetu 5.5, konkrétní 
 
 ## Vybraný směr F — 5. 10. 2026
 
+Dan upřesnil hlavně **systémové ikony horní lišty**. [Konečné rozpracování k posouzení](docs/changes/desktop-complete-designs-2026-10-01/F-TRAY-KONTRAKT.md) zachovává originální značku a odděluje nahrávání, ukládání, rozhodnutí, frontu a omezení. Aktivní místní záznam nepřekryje síť ani přihlášení. Připravit předání na **dev-ludone Mac mini**, nikoli spustit produkční vývoj; [samostatné zadání](docs/changes/desktop-complete-designs-2026-10-01/IMPLEMENTACE-F.md) a prompt jsou uložené.
+
+
 Dan zvolil „Tak varianta F jen ikony jště rozpracovat“. F Osa je vybraný směr, zbývá posouzení ikon. Původní značka LuDone z Opus/DS se zachovává; monochromatická lišta a sjednocené ovladače jsou rozpracované v [ikonovém náhledu](docs/changes/desktop-complete-designs-2026-10-01/F-IKONY.md). Nejde o schválení této nové sady, produkční implementace nebo vydání. Původní návrhy i doslovné autorské soubory zůstávají uložené.

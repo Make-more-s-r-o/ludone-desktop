@@ -1,0 +1,7 @@
+$ git diff --cached --check
+dukazy/desktop-f-tray-predani-2026-10-05/kontroly.txt:229: new blank line at EOF.
+EXIT_CODE=2
+Poznámka: opraven pouze nadbytečný prázdný řádek na konci nového výpisu, akceptační příkazy ani jejich výsledky se nemění.
+
+$ git diff --cached --check
+EXIT_CODE=0

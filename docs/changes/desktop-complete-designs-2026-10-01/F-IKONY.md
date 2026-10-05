@@ -1,5 +1,7 @@
 # F Osa — výběr a rozpracování ikon
 
+**Aktuální upřesnění:** jde hlavně o systémovou horní lištu. Její původní náčrt níže nahrazuje [F-TRAY-KONTRAKT.md](F-TRAY-KONTRAKT.md) a [nový náhled deseti stavů](design/f-tray.html). Ovládací ikony této vrstvy zůstávají zachované.
+
 Dan 5. 10. 2026 zvolil: „Tak varianta F jen ikony jště rozpracovat.“ F je vybraný směr; tato etapa dotahuje pouze ikony v maketě. Nejde o pokyn k implementaci produkce nebo vydání. Dřívější požadavek schválit návrh před implementací platí dál.
 
 ## Podoba k posouzení

@@ -2,7 +2,9 @@
 body[data-concept=f] .f-icon{width:20px;height:20px;flex:none;vertical-align:middle;stroke-width:1.75}
 body[data-concept=f] .menu-brand img{width:28px;height:28px;border-radius:7px}
 body[data-concept=f] .popover-actions .icon-btn{width:36px;height:36px}
-body[data-concept=f] .menubar-trigger>.f-icon{width:24px;height:24px}
+body[data-concept=f] .menubar-trigger>.f-tray-icon{width:18px;height:18px;flex:none}
+body[data-concept=f] .menu-live-status{font-size:13px;font-variant-numeric:tabular-nums;gap:0}
+body[data-concept=f] .menubar-trigger.is-recording{color:var(--text)}
 body[data-concept=f] .menu-live-status .f-icon{width:17px;height:17px}
 body[data-concept=f] .menu-live-status .f-icon[data-icon=alert]{color:var(--warn)}
 body[data-concept=f] .btn.record-button .f-icon[data-icon=start],body[data-concept=f] .btn.stop-button .f-icon{fill:currentColor;stroke:none}

@@ -1,0 +1,169 @@
+{
+  "description": "Návrh F: černé RGB a alfa maska pro macOS template; Retina při scaleFactor 2, bez produkční integrace.",
+  "source": "../f-tray.js",
+  "sourceSha256": "833ed7d7bd5607da1ee98b13141f51f4a798c4a324d226feeec1dac3997283d0",
+  "brandSource": "../LuDone.svg",
+  "brandSha256": "dd15c49cb35f53b3d08e9a0b72ccb9378630df44493022557d82ac8a60d9f06a",
+  "files": [
+    {
+      "file": "idle.svg",
+      "sha256": "6d434a98b5f91d640c8775c10e7832a01b00c731a850ee186b906adcad7ecf5f"
+    },
+    {
+      "file": "idle.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "991fbfe072920acfa0d64a458c6df7df8418e2090d90ab3ed2120a4a24da9dff"
+    },
+    {
+      "file": "idle@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "d2548495d075ecb8ebc4b530b72b2bb6c161282070a2cfad841524d9c834deee"
+    },
+    {
+      "file": "recording.svg",
+      "sha256": "4d8f276e387dd07bfee7450a60cff2319f46ed7167e3c69ae5a41d2056468455"
+    },
+    {
+      "file": "recording.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "dcbd705ccbc44be76d16f179b913797a609a2d887e732ff31833ce8fc2d6a105"
+    },
+    {
+      "file": "recording@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "2e7cb16104196be74ba3cada92610c2710b63263f577b0c039c3f11a3f1c93e0"
+    },
+    {
+      "file": "saving.svg",
+      "sha256": "483c959c9c344f3a8f42036600a2bb2407fe5a06e575fe5355b6e0bf68a54507"
+    },
+    {
+      "file": "saving.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "10b375f510b9cb65aafb962c54beac637f36dc2baa4901ef51d0808f8a08e347"
+    },
+    {
+      "file": "saving@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "bd9f7cfbee39fd20dcbbb78f848cd1b036689fa1347ceca775355ece5b69ec8d"
+    },
+    {
+      "file": "decision.svg",
+      "sha256": "2272f76ac53d68a7b66e8bb07023d2f94476b584fcbe6393ddfaf6635a1010bb"
+    },
+    {
+      "file": "decision.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "d345c0c01e0b9fc02fcaad5de9bb92376bbe803fc1a8a58ce2e23ca52dd63852"
+    },
+    {
+      "file": "decision@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "7f8506e564ee5d56b36316a6f6eb74ab9357aedade34dc0dd2178f935eb06c1f"
+    },
+    {
+      "file": "queue-waiting.svg",
+      "sha256": "6ff0df104c75ce392a2153f8e8e0c77060326cc932160bf7f1bd4902580094bd"
+    },
+    {
+      "file": "queue-waiting.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "a894a08726468948076756445fb1125ca03f47cec0c720ca1c54a7c8111f4349"
+    },
+    {
+      "file": "queue-waiting@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "2796d1709549eb2a87b1a7b978c3f5b6e7879c31b6638133234c5a71aebe3d5a"
+    },
+    {
+      "file": "signed-out.svg",
+      "sha256": "6e4d539db9d7eb81fd70d5fa58c5e87f3dc041873c8e01c5b187d09acf7aaca3"
+    },
+    {
+      "file": "signed-out.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "20ec23776e1a9067721ae608115b42c234e1ee7ed7243df31bcc2fc2a537ebf7"
+    },
+    {
+      "file": "signed-out@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "52e7b9aa7513b625e3a0cecca539a5c838fec89003432c9915bd4e7c0158ba36"
+    },
+    {
+      "file": "offline.svg",
+      "sha256": "944f1d84a2e466be0e168fe50990860c4abc0ffa387f20eba772237734f4e96a"
+    },
+    {
+      "file": "offline.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "91032b92b16e19aeea567b237206429c4477ee00328ea652f77c097288973488"
+    },
+    {
+      "file": "offline@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "1af6741a66c3f2328081bec3f316933580427537d0561492579447d6547df837"
+    },
+    {
+      "file": "recording-audio-lost.svg",
+      "sha256": "91726f3e9e1b97db454a224f2516a6fb61320d68028e9b5949e12426478fb06d"
+    },
+    {
+      "file": "recording-audio-lost.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "a6fbd2b4ffc2f36271bc854e386d2ded679b30986a93f169ade4a6baa6db0a97"
+    },
+    {
+      "file": "recording-audio-lost@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "4df40546d1e75f7d625ee3c8dc757d63d2a2d9f9e083ad359b14741f177f8aac"
+    },
+    {
+      "file": "recording-microphone-only.svg",
+      "sha256": "600273f950bf25434c33a76e4a5d0202ab7e0a56983aa7e4e639745c87bbf79d"
+    },
+    {
+      "file": "recording-microphone-only.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "9af9b58f8ed8a40cf017170e8ae54446f27e9f7079983e7d7e434735684ea8c1"
+    },
+    {
+      "file": "recording-microphone-only@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "6d4fdbe302dbe946ca13dff2e028e12144b357fc4888292210e1f452370ae8f1"
+    },
+    {
+      "file": "attention.svg",
+      "sha256": "a34e697751b221b402f6ddbd735fe3218f9c149c7a828898d6702ec74aeb018a"
+    },
+    {
+      "file": "attention.png",
+      "width": 18,
+      "height": 18,
+      "sha256": "3731bc3a16d463aaad6c173da98e3daebeafbd0b7944a92a6a6236c351d2d32c"
+    },
+    {
+      "file": "attention@2x.png",
+      "width": 36,
+      "height": 36,
+      "sha256": "0053d34795050126d350090bac0c0b9383aec96eb9bf504009a28864a7c165c3"
+    }
+  ]
+}
