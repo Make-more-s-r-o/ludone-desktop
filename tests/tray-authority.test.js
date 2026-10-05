@@ -403,7 +403,8 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     expect(harness.getTrayState()).not.toBe("recording-audio-lost");
     expect(harness.getTrayState()).toBe("recording-microphone-only");
     expect(harness.images.at(-1)).toBe("obrazek:recording-microphone-only");
-    expect(harness.tooltips.at(-1)).toBe(`LuDone · Nahrává se · jen mikrofon${input.queueWaitingCount ? ` · ${input.queueWaitingCount} čeká` : ""}`);
+    const queueWaitingCount = "queueWaitingCount" in input ? input.queueWaitingCount : 0;
+    expect(harness.tooltips.at(-1)).toBe(`LuDone · Nahrává se · jen mikrofon${queueWaitingCount ? ` · ${queueWaitingCount} čeká` : ""}`);
   });
 
   it.each([
@@ -831,7 +832,8 @@ describe("F souběhy autoritativních faktů", () => {
     harness.refreshTray();
     expect(harness.getTrayState()).toBe(expected);
     expect(harness.images.at(-1)).toBe(`obrazek:${expected}`);
-    expect(harness.tooltips.at(-1)).toBe(`${OSA_TRAY_LABELS[expected]}${input.queueWaitingCount ? ` · ${input.queueWaitingCount} čeká` : ""}`);
+    const queueWaitingCount = "queueWaitingCount" in input ? input.queueWaitingCount : 0;
+    expect(harness.tooltips.at(-1)).toBe(`${OSA_TRAY_LABELS[expected]}${queueWaitingCount ? ` · ${queueWaitingCount} čeká` : ""}`);
   });
 
   it("změna počtu při stejné ikoně obnoví skutečný tooltip", () => {

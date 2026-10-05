@@ -60,3 +60,23 @@ Doslovný výpis:
 
 exit code: 0
 ```
+
+## Finalni doplneni 5. 10. 2026
+
+Read-only review bf94447 a navazujiciho diffu: puvodni P2 exact-once je opraven. Zadne dalsi konkretni P1/P2. Bari era finalizace je omezena presnym importem main, izolovanym markerem a 30 sekundami; pote vola skutecnou createLivePendingDelivery s puvodnimi argumenty. Nevytvari nahradni vysledek. Audit zustava v izolovanem profilu, rozhodnuti dialogu ma striktni poradi [2,1,0].
+
+Select pres DOM setter a change event je automatizovany renderer vstup, nikoli fyzicke ovladani macOS popupu. Tlacitka pouzivaji ukazatel. Kontrola dvou viditelnych akci ve stejne rade odpovida kompozici; save/skip handlery zustaly zachovany. Fixture neni skutecne overeni serveru ani fyzickeho zvuku.
+
+Dve typove opravy explicitne zuzuji existenci queueWaitingCount; tooltip assertions a pripady se nezmenily.
+
+Doslovne overeni izolovaneho stromu, Node 24.19.0:
+```text
+node node_modules/typescript/bin/tsc --noEmit -p jsconfig.json
+EXIT_CODE=0
+node node_modules/vitest/vitest.mjs run tests/tray-authority.test.js tests/ipc-sender-guard.test.js tests/diagnostics.test.js
+Test Files 3 passed (3)
+Tests 131 passed (131)
+Duration 333ms
+EXIT_CODE=0
+```
+Fyzicka pre jimka Macu nebyla provedena.
