@@ -1,0 +1,39 @@
+/* Průvodce F má jednu osu; stav oprávnění a zvuku určují skutečné kroky. */
+.osa-onboarding.onboarding { display:block; grid-template-rows:none; width:100%; max-width:440px; min-height:0; margin:0; padding:0; border:0; border-radius:0; box-shadow:none; background:none; color:var(--osa-text,var(--foreground)); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.osa-onboarding__layout { display:grid; grid-template-columns:16px minmax(0,1fr); gap:16px; }
+.osa-onboarding__axis { display:block; list-style:none; margin:8px 0 0; padding:0; align-self:start; }
+.osa-onboarding__axis li { position:relative; width:14px; height:14px; margin-bottom:22px; border:3px solid var(--osa-rail,var(--border)); border-radius:50%; background:var(--osa-surface,var(--background)); }
+.osa-onboarding__axis li:not(:last-child)::after { content:""; position:absolute; top:11px; left:3px; width:2px; height:25px; background:var(--osa-rail,var(--border)); }
+.osa-onboarding__axis li.is-current { border-color:var(--osa-accent,var(--primary)); background:var(--osa-accent,var(--primary)); }
+.osa-onboarding__station { min-width:0; }
+.osa-onboarding .onboarding__content { min-height:0; padding:0; text-align:left; align-items:stretch; gap:14px; }
+.osa-onboarding .onboarding__content h1 { margin:0; font-size:26px; font-weight:700; line-height:1.15; letter-spacing:-1px; }
+.osa-onboarding .lead { margin:0 0 10px; font-size:15px; line-height:1.55; color:var(--osa-muted,var(--muted-foreground)); }
+.osa-onboarding .welcome-visual { width:44px; height:44px; margin:0 0 14px; }
+.osa-onboarding .welcome-visual__ring,.osa-onboarding .welcome-visual__node { display:none; }
+.osa-onboarding .welcome-visual__core { position:static; width:44px; height:44px; transform:none; border-radius:0; background:none; box-shadow:none; }
+.osa-onboarding .welcome-visual__core img { width:44px; height:44px; }
+.osa-onboarding .privacy-note { margin:14px 0 0; text-align:left; font-size:12px; line-height:1.5; }
+.osa-onboarding .onboarding-icon,.osa-onboarding .done-check { margin:0 0 12px; width:44px; height:44px; }
+.osa-onboarding .auth-flow { display:grid; gap:10px; margin:16px 0; }
+.osa-onboarding .auth-flow i { display:none; }
+.osa-onboarding .auth-flow>div { flex-direction:row; align-items:center; text-align:left; }
+.osa-onboarding .permission-list { margin:16px 0; }
+.osa-onboarding .permission-row { flex-wrap:wrap; gap:8px; padding:12px 0; border-bottom:1px solid var(--osa-line,var(--border)); }
+.osa-onboarding .permission-row__copy { flex:1 1 150px; min-width:0; }
+.osa-onboarding .permission-row__copy small { white-space:normal; }
+.osa-onboarding .permission-row button { margin-left:auto; max-width:100%; }
+.osa-onboarding .button--wide { width:100%; min-height:40px; }
+.osa-onboarding .auth-waiting-address { min-width:0; width:100%; }
+.osa-onboarding .auth-waiting-address code { overflow-wrap:anywhere; white-space:normal; }
+.osa-onboarding .auth-error-panel,.osa-onboarding .auth-error-panel.panel.window-surface { padding:0; min-height:0; border:0; background:none; box-shadow:none; }
+.osa-onboarding .auth-error-panel__heading { align-items:flex-start; flex-wrap:wrap; }
+.osa-onboarding .auth-error-panel__heading h1 { font-size:24px; }
+.osa-onboarding .auth-error-panel__message { font-size:15px; line-height:1.5; }
+.osa-onboarding .recording-test-levels { margin:16px 0; }
+.osa-onboarding .panel-settings-button { position:static; margin-top:16px; }
+.osa-onboarding__footer { margin-top:18px; font-size:12px; color:var(--osa-muted,var(--muted-foreground)); }
+.osa-shell .osa-onboarding__footer { display:none; }
+
+.osa-onboarding .onboarding__content > .button--wide { margin-top:0; }
+.osa-onboarding__axis.step-track span { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
