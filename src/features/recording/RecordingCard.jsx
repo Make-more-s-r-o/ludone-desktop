@@ -828,9 +828,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
       // finishRecording doběhne a hlavní proces stihne položku zařadit do fronty.
       active: session.phase !== "idle",
       pendingSave: savedRecording !== null,
+      startedAt: session.startedAt,
       systemAudioState: session.systemAudioState,
     });
-  }, [onActivityChange, savedRecording, session.phase, session.systemAudioState]);
+  }, [onActivityChange, savedRecording, session.phase, session.systemAudioState, session.startedAt]);
 
   const statusLabel = {
     idle: "Připraveno",

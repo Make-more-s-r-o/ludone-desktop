@@ -42,7 +42,7 @@ try{
  await win.loadURL(url.href);
  await win.webContents.executeJavaScript('document.fonts.ready');
  await new Promise(r=>setTimeout(r,100));
- const bounds=await win.webContents.executeJavaScript(`(()=>{const selector=document.body.dataset.page==='detail'?'.window':'.menu-popover';const el=document.querySelector(selector);const b=el?.getBoundingClientRect();if(!b||b.width<=0||b.height<=0)throw new Error('Chybí vykreslená F plocha');return {selector,x:Math.floor(b.x),y:Math.floor(b.y),width:Math.ceil(b.width),height:Math.ceil(b.height),page:document.body.dataset.page,theme:document.documentElement.dataset.theme}})()`);
+ const bounds=await win.webContents.executeJavaScript(\`(()=>{const selector=document.body.dataset.page==='detail'?'.window':'.menu-popover';const el=document.querySelector(selector);const b=el?.getBoundingClientRect();if(!b||b.width<=0||b.height<=0)throw new Error('Chybí vykreslená F plocha');return {selector,x:Math.floor(b.x),y:Math.floor(b.y),width:Math.ceil(b.width),height:Math.ceil(b.height),page:document.body.dataset.page,theme:document.documentElement.dataset.theme}})()\`);
  if(bounds.x<0||bounds.y<0||bounds.x+bounds.width>1200||bounds.y+bounds.height>1100)throw new Error('Reference přesahuje viewport: '+JSON.stringify(bounds));
  const image=await win.webContents.capturePage({x:bounds.x,y:bounds.y,width:bounds.width,height:bounds.height});const file=theme+'-'+scenario+'.png';await fs.writeFile(path.join(output,file),image.toPNG());records.push({scenario,theme,file,bounds,url:url.href});console.log('PASS reference '+theme+' '+scenario);
  }

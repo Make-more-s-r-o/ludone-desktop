@@ -1,14 +1,14 @@
 import "./features/recording/panel-polish.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Onboarding } from "./components/Onboarding.jsx";
-import { ArchiveIcon, MicIcon, SettingsIcon, UserIcon } from "./components/Icons.jsx";
+import { OsaShell } from "./components/osa/index.js";
+import { SettingsApp } from "./components/Settings.jsx";
+import { useElapsedTime, formatElapsed } from "./hooks/useElapsedTime.js";
 import { PanelContentHeightReporter } from "./components/PanelContentHeightReporter.jsx";
-import { DesktopNavigation } from "./components/DesktopNavigation.jsx";
-import { DesktopConnectivityNotice, DesktopMenubar, DesktopTitlebar } from "./components/DesktopChrome.jsx";
-import { ApplicationUpdateStatus, ApplicationVersion } from "./components/ApplicationUpdateStatus.jsx";
+import { DesktopConnectivityNotice } from "./components/DesktopChrome.jsx";
+import { ApplicationUpdateStatus } from "./components/ApplicationUpdateStatus.jsx";
 import { RecordingCard } from "./features/recording/RecordingCard.jsx";
 import { QueueCard } from "./features/queue/QueueCard.jsx";
-import { TrackingCard } from "./features/tracking/TrackingCard.jsx";
 import { RecordingDayPreview } from "./features/recordings/RecordingDayPreview.jsx";
 import { queueFooterStatus, queuePanelSummary } from "./lib/panel.js";
 
@@ -40,9 +40,12 @@ export function App() {
   const [sessionState, setSessionState] = useState(null);
   const sessionExists = sessionState === null ? null : sessionState === "valid";
   const [recording, setRecording] = useState({ active: false, systemAudioState: "inactive" });
-  const [tracking, setTracking] = useState({ active: false });
+  const tracking = { active: false };
+  const [page, setPage] = useState("home");
+  const [settingsTab, setSettingsTab] = useState("account");
+  const [authRequested, setAuthRequested] = useState(false);
+  const elapsed = useElapsedTime(recording.active, recording.startedAt);
   const [queueSnapshot, setQueueSnapshot] = useState({ items: null, status: null, unavailable: false });
-  const [queueExpanded, setQueueExpanded] = useState(false);
   const [queueRetryFeedback, setQueueRetryFeedback] = useState(null);
   const [trayCommand, setTrayCommand] = useState(null);
   const recordingCardRef = useRef(null);
@@ -170,9 +173,8 @@ export function App() {
     }
     queueItemsFingerprintRef.current = nextFingerprint;
     const status = queueFooterStatus(items);
-    const detailsAvailable = queuePanelSummary(items) !== null;
     setQueueSnapshot({ items: status ? items : null, status, unavailable: status === null });
-    if (!detailsAvailable) setQueueExpanded(false);
+
   }, []);
 
   const refreshQueueStatus = useCallback(async () => {
@@ -254,11 +256,9 @@ export function App() {
     setRecording(nextRecording);
   }, []);
 
-  const handleTrackingChange = useCallback((nextTracking) => {
-    setTracking(nextTracking);
-  }, []);
 
   function rememberUser(nextUser) {
+    setAuthRequested(false);
     authSessionRequestId.current += 1;
     setSessionState("valid");
     const normalizedUser = normalizeUser(nextUser);
@@ -274,231 +274,62 @@ export function App() {
     setOnboardingComplete(true);
   }
 
-  if (!onboardingComplete && !recordingControlsAvailable) {
-    return (
-      <PanelContentHeightReporter>
-        <Onboarding key="initial-onboarding" onAuthenticated={rememberUser} onComplete={completeOnboarding} />
-      </PanelContentHeightReporter>
-    );
+  useEffect(() => window.ludone.onSettingsTabRequested?.((tab) => {
+    setSettingsTab(tab);
+    setPage(["day", "recordingQueue"].includes(tab) ? "library" : "settings");
+  }), []);
+  useEffect(() => {
+    const nextPage = authRequested || (!onboardingComplete && !recordingControlsAvailable) ? "onboarding" : page;
+    window.ludone.setPanelPage?.(nextPage)?.catch(() => {});
+  }, [onboardingComplete, recordingControlsAvailable, page, authRequested]);
+
+  function navigate(next) {
+    setPage(next);
+    if (next === "home" && recording.pendingSave) {
+      window.requestAnimationFrame(() => document.querySelector(".recording-card--saved input")?.focus());
+    }
   }
 
-  if (sessionExists === false && !recordingControlsAvailable && runtime.designE2E !== true) {
-    return (
-      <PanelContentHeightReporter>
-        <Onboarding key="reauthentication" reauthenticate sessionExpired={sessionState === "expired"} onAuthenticated={rememberUser} />
-      </PanelContentHeightReporter>
-    );
-  }
-
-  if (sessionExists === null && !recordingControlsAvailable) {
-    return (
-      <PanelContentHeightReporter fixedHeight={700}>
-        <main
-          aria-busy="true"
-          className="panel window-surface panel-polish"
-          data-panel-state="checking-session"
-        >
-          <header className="panel-header">
-            <DesktopMenubar status="Ověřuji účet" authState="checking" accountLabel="Kontroluji přihlášení" />
-          </header>
-          <DesktopTitlebar
-            closeLabel="Skrýt panel"
-            onClose={() => window.ludone.hidePanel()}
-            quickActions={[{
-              id: "account",
-              label: "Nastavení účtu",
-              description: "Přihlášení, zvuk a další předvolby.",
-              icon: <SettingsIcon />,
-              onSelect: () => window.ludone.openSettings("account"),
-            }]}
-          />
-          <DesktopNavigation
-            active="now"
-            onNavigate={(page) => {
-              if (page !== "now") window.ludone.openSettings(page === "day" ? "day" : "account");
-            }}
-          />
-          <ApplicationUpdateStatus showVersion={false} allowManualCheck />
-          <div className="panel-scroll">
-            <DesktopConnectivityNotice />
-            <ApplicationVersion />
-            <p role="status">Ověřuji přihlášení a stav nahrávek…</p>
-          </div>
-          <footer className="panel-footer" />
-        </main>
-      </PanelContentHeightReporter>
-    );
-  }
-
-  const bothActivitiesRunning = recording.active && tracking.active;
-  const queueStatus = panelActionsAvailable ? queueSnapshot.status : null;
-  const queueDetailsAvailable = queuePanelSummary(queueSnapshot.items) !== null;
-  const queueScreenVisible = panelActionsAvailable && queueExpanded && queueDetailsAvailable;
-  const authLabel = sessionExists === true
-    ? (user ? `${user.name}${user.email ? ` · ${user.email}` : ""}` : "Přihlášeno")
-    : sessionState === "expired" ? "Přihlášení vypršelo" : "Nepřipojeno";
-  const statusLabel = sessionExists === true
-    ? "Přihlášeno"
-    : sessionState === "expired" ? "Přihlášení vypršelo" : "Místní režim";
-  const quickActions = [
-    ...(recording.active
-      ? [{
-        id: "stop-recording",
-        label: "Ukončit nahrávání",
-        description: "Zastaví záznam a otevře volbu uložení.",
-        icon: <MicIcon />,
-        onSelect: () => recordingCardRef.current?.stop(),
-      }]
-      : panelActionsAvailable && !recording.pendingSave
-        ? [{
-          id: "start-recording",
-          label: "Nahrát schůzku",
-          description: "Spustí stejnou kontrolu mikrofonu a systémového zvuku jako tlačítko Nahrát.",
-          icon: <MicIcon />,
-          onSelect: () => recordingCardRef.current?.start(),
-        }]
-        : []),
-    ...(recording.pendingSave
-      ? [{
-        id: "finish-save",
-        label: "Dokončit uložení",
-        description: "Vrátí se k volbě odeslat nebo ponechat na Macu.",
-        icon: <ArchiveIcon />,
-        onSelect: () => {
-          const nameField = document.querySelector(".recording-card--saved input");
-          nameField?.scrollIntoView({ block: "nearest" });
-          nameField?.focus();
-        },
-      }]
-      : []),
-    {
-      id: "day",
-      label: "Můj den",
-      description: "Přehled místních a odeslaných nahrávek.",
-      icon: <ArchiveIcon />,
-      onSelect: () => window.ludone.openSettings("day"),
-    },
-    {
-      id: "recordings",
-      label: "Nahrávky",
-      description: "Fronta, stav a bezpečné akce.",
-      icon: <ArchiveIcon />,
-      onSelect: () => window.ludone.openSettings("recordingQueue"),
-    },
-    {
-      id: "account",
-      label: "Nastavení účtu",
-      description: "Přihlášení, zvuk a další předvolby.",
-      icon: <UserIcon />,
-      onSelect: () => window.ludone.openSettings("account"),
-    },
-  ];
-
+  const shellPage = authRequested || (!onboardingComplete && !recordingControlsAvailable) ? "onboarding" : page;
+  const summary = queuePanelSummary(queueSnapshot.items);
   return (
-    <PanelContentHeightReporter fixedHeight={700}>
-      <main
-        className="panel window-surface panel-polish"
-        data-panel-view={queueScreenVisible ? "queue" : "main"}
-        data-panel-state={bothActivitiesRunning ? "recording-and-tracking" : "single-or-idle"}
-      >
-        <header className="panel-header">
-          <DesktopMenubar
-            status={statusLabel}
-            authState={sessionExists === true ? "signed-in" : sessionState ?? "checking"}
-            accountLabel={authLabel}
-          />
-        </header>
-        <DesktopTitlebar
-          closeLabel="Skrýt panel; běžící činnosti budou pokračovat"
-          onClose={() => window.ludone.hidePanel()}
-          quickActions={quickActions}
-        />
-        <DesktopNavigation
-          active="now"
-          onNavigate={(page) => {
-              if (page !== "now") window.ludone.openSettings(page === "day" ? "day" : "account");
-            }}
-        />
-        <ApplicationUpdateStatus showVersion={false} />
-        <div className="panel-scroll">
-          <DesktopConnectivityNotice />
-          {panelActionsAvailable && queueSnapshot.unavailable && (
-            <p className="queue-retry-feedback" role="alert">
-              Stav fronty není dostupný. Počet čekajících záznamů není známý.
-            </p>
-          )}
-          {!queueScreenVisible && (
-            <TrackingCard
-              compact={bothActivitiesRunning}
-              disabled
-              onActivityChange={handleTrackingChange}
-              trayCommand={trayCommand}
-            />
-          )}
-          <RecordingCard
-            key="recording"
-            ref={recordingCardRef}
-            canSend={panelActionsAvailable}
-            compact={bothActivitiesRunning}
+    <PanelContentHeightReporter fixedHeight={660}>
+      <OsaShell page={shellPage} onNavigate={navigate}
+        onClose={() => window.ludone.hidePanel()}
+        queueCount={summary ? summary.waitingCount + summary.failedCount + summary.humanActionCount : 0}
+        recording={{ ...recording, elapsed: formatElapsed(elapsed), onStop: () => recordingCardRef.current?.stop() }}>
+        <DesktopConnectivityNotice />
+        <ApplicationUpdateStatus showVersion={page === "updates"} allowManualCheck={page === "updates"} />
+        {shellPage === "onboarding" && <>
+          <Onboarding reauthenticate={onboardingComplete} sessionExpired={sessionState === "expired"} onAuthenticated={rememberUser} onComplete={completeOnboarding} />
+          <button type="button" className="button" onClick={() => { setOnboardingComplete(true); setAuthRequested(false); }}>Nahrávat bez přihlášení</button>
+        </>}
+        {/* Záznam zůstává namountovaný: přepnutí stránky nesmí zničit streamy. */}
+        <section hidden={shellPage !== "home"} aria-label="Nahrávání schůzky">
+          <RecordingCard ref={recordingCardRef} canSend={panelActionsAvailable}
             onActivityChange={handleRecordingChange}
-            onOpenSources={() => window.ludone?.openSettings?.("audio")}
-            trayCommand={trayCommand}
-          />
-          {queueScreenVisible && (
-            <QueueCard
-              items={queueSnapshot.items}
-              onRetry={typeof window.ludone.retryQueue === "function" ? retryQueueNow : undefined}
-              onRetryFeedback={setQueueRetryFeedback}
-              retryError={queueRetryFeedback}
-            />
-          )}
-          {panelActionsAvailable && !queueScreenVisible && queueRetryFeedback && (
-            <p
-              className="queue-retry-feedback"
-              data-testid="queue-retry-feedback"
-              role="alert"
-            >
-              {queueRetryFeedback}
-            </p>
-          )}
-          {sessionExists === false && runtime.designE2E !== true && (
-            <Onboarding embedded reauthenticate sessionExpired={sessionState === "expired"} onAuthenticated={rememberUser} />
-          )}
-          {!queueScreenVisible && !recording.active && !recording.pendingSave && (
-            <RecordingDayPreview
-              items={queueSnapshot.items}
-              unavailable={queueSnapshot.unavailable}
-              onOpenDay={() => window.ludone.openSettings("day")}
-            />
-          )}
-        </div>
-
-        <footer className="panel-footer">
-          {queueStatus && queueDetailsAvailable && (
-            <button
-              type="button"
-              className={`queue-status queue-status--button queue-status--${queueStatus.tone}`}
-              data-testid="queue-status"
-              aria-controls="queue-screen"
-              aria-expanded={queueScreenVisible}
-              onClick={() => setQueueExpanded((expanded) => !expanded)}
-            >
-              <span className="queue-status__dot" aria-hidden="true" />
-              <span role="status">{queueStatus.text}</span>
-            </button>
-          )}
-          {queueStatus && !queueDetailsAvailable && (
-            <div
-              className={`queue-status queue-status--${queueStatus.tone}`}
-              data-testid="queue-status"
-              role="status"
-            >
-              <span className="queue-status__dot" aria-hidden="true" />
-              <span>{queueStatus.text}</span>
-            </div>
-          )}
-        </footer>
-      </main>
+            onOpenSources={() => { setSettingsTab("audio"); navigate("settings"); }} trayCommand={trayCommand} />
+          {!recording.active && !recording.pendingSave && <>
+            <RecordingDayPreview items={queueSnapshot.items} unavailable={queueSnapshot.unavailable} onOpenDay={() => navigate("library")} />
+            <p className="osa-lutrack" aria-disabled="true">LuTrack <small>Připravujeme</small></p>
+          </>}
+          {sessionExists === false && <p role="status">{sessionState === "expired" ? "Přihlášení vypršelo." : "Místní režim."} Nahrávky zůstávají na tomto Macu.
+            <button type="button" className="button button--small" onClick={() => { setAuthRequested(true); }}>Přihlásit se</button>
+          </p>}
+        </section>
+        {shellPage === "queue" && <>
+          {queueSnapshot.unavailable && <p role="alert">Stav fronty není dostupný.</p>}
+          <QueueCard items={queueSnapshot.items} onRetry={panelActionsAvailable ? retryQueueNow : undefined} onRetryFeedback={setQueueRetryFeedback} retryError={queueRetryFeedback} />
+          <SettingsApp embedded initialSection="recordingQueue" queueOnly />
+        </>}
+        {shellPage === "library" && <SettingsApp embedded initialSection="day" />}
+        {shellPage === "settings" && <>
+          {sessionExists === false && <button type="button" className="button" onClick={() => setAuthRequested(true)}>Přihlásit se</button>}
+          <SettingsApp key={settingsTab} embedded initialSection={settingsTab} />
+        </>}
+        {shellPage === "updates" && <p>Před instalací aktualizace bezpečně dokončíme nahrávání i uložení.</p>}
+        {recording.pendingSave && page !== "home" && <button type="button" className="button button--primary" onClick={() => navigate("home")}>Dokončit uložení</button>}
+      </OsaShell>
     </PanelContentHeightReporter>
   );
 }

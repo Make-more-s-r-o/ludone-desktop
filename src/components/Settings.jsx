@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Children, cloneElement, useEffect, useRef, useState } from "react";
 import "./settings-polish.css";
 import { countLabel } from "../lib/count-label.js";
 import { RecordingsDashboard } from "../features/recordings/RecordingsDashboard.jsx";
@@ -27,14 +27,14 @@ const SETTINGS_TABS = Object.freeze([
   { id: "account", label: "Účet" },
   { id: "audio", label: "Zvuk" },
   { id: "recordings", label: "Záznamy" },
-  { id: "recordingQueue", label: "Nahrávky" },
+  { id: "device", label: "Zařízení" },
   { id: "diagnostics", label: "Diagnostika" },
 ]);
 const SETTINGS_TAB_ICONS = Object.freeze({
   account: UserIcon,
   audio: VolumeIcon,
   recordings: ArchiveIcon,
-  recordingQueue: CloudIcon,
+  device: SettingsIcon,
   diagnostics: SettingsIcon,
 });
 const AUTH_ENVIRONMENTS = Object.freeze([
@@ -260,14 +260,29 @@ function useSystemBooleanSetting(getterName, setterName) {
   return { ...state, update };
 }
 
-export function SettingsApp() {
-  const [initialTab] = useState(() => new URL(window.location.href).searchParams.get("settingsTab"));
+function SettingsSections({ embedded, activePage, activeTab, onSelect, children }) {
+  if (!embedded || activePage !== "settings") return <div className="settings-content">{children}</div>;
+  const sections = Children.toArray(children);
+  const ids = { account: "settings-panel-account", audio: "settings-panel-audio", device: "settings-local-title", recordings: "settings-panel-recordings", diagnostics: "settings-panel-diagnostics" };
+  return <div className="settings-content osa-settings-sections">
+    {SETTINGS_TABS.map((tab) => {
+      const panel = sections.find((child) => child?.props?.id === ids[tab.id] || child?.props?.["aria-labelledby"] === ids[tab.id]);
+      return <section className="osa-settings-section" key={tab.id}>
+        <button type="button" aria-expanded={activeTab === tab.id} aria-controls={`osa-section-${tab.id}`} onClick={() => onSelect(tab.id)}>{tab.label}<span aria-hidden="true">›</span></button>
+        <div id={`osa-section-${tab.id}`} hidden={activeTab !== tab.id}>{panel ? cloneElement(panel, { hidden: false }) : null}</div>
+      </section>;
+    })}
+  </div>;
+}
+
+export function SettingsApp({ embedded = false, initialSection, queueOnly = false }) {
+  const [initialTab] = useState(() => initialSection ?? new URL(window.location.href).searchParams.get("settingsTab"));
   const [activeTab, setActiveTab] = useState(() => (
-    initialTab === "day" ? "recordingQueue"
+    !embedded || initialTab === "day" || initialTab === "recordingQueue" ? "recordingQueue"
       : (SETTINGS_TABS.some((item) => item.id === initialTab) ? initialTab : "account")
   ));
   const [activePage, setActivePage] = useState(() => (
-    ["day", "recordingQueue"].includes(initialTab) ? "day" : "settings"
+    !embedded || ["day", "recordingQueue"].includes(initialTab) ? "day" : "settings"
   ));
   const [audioNavigationRequest, setAudioNavigationRequest] = useState(initialTab === "audio" ? 1 : 0);
   const [recordingDetailOpen, setRecordingDetailOpen] = useState(false);
@@ -295,6 +310,7 @@ export function SettingsApp() {
   };
 
   useEffect(() => {
+    if (embedded) return undefined;
     const unsubscribe = window.ludone?.onSettingsTabRequested?.((tab) => {
       if (tab === "day") {
         setActivePage("day");
@@ -308,7 +324,7 @@ export function SettingsApp() {
       }
     });
     return () => unsubscribe?.();
-  }, []);
+  }, [embedded]);
 
   const navigateToPage = (page) => {
     if (page === "now") {
@@ -710,7 +726,7 @@ export function SettingsApp() {
     : queueStatusText(diagnosticValues?.queue);
 
   return (
-    <div className="settings-app-frame">
+    <div className={`settings-app-frame${embedded ? " osa-settings-embedded" : " osa-detail-window"}`}>
       <DesktopMenubar
         status={signedIn ? "Přihlášeno" : "Místní režim"}
         authState={account.state}
@@ -752,7 +768,7 @@ export function SettingsApp() {
         ))}
       </nav>
 
-      <div className="settings-content">
+      <SettingsSections embedded={embedded} activePage={activePage} activeTab={activeTab} onSelect={navigateToSettingsTab}>
         <DesktopConnectivityNotice />
         <header className="desktop-settings-intro" hidden={activePage !== "settings"}>
           <h1>Nastavení</h1>
@@ -1109,6 +1125,9 @@ export function SettingsApp() {
                 authIdentity={account.identity}
                 authOrigin={destination.origin}
                 onDetailChange={setRecordingDetailOpen}
+                osa
+                queueOnly={queueOnly}
+                detailId={!embedded ? new URL(window.location.href).searchParams.get("recordingId") : null}
               />
             </section>
           )}
@@ -1205,7 +1224,7 @@ export function SettingsApp() {
             )}
           </section>
         </section>
-      </div>
+      </SettingsSections>
 
         <footer className="settings-footer">
         {dock.failed || login.failed ? (

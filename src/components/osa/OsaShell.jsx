@@ -1,11 +1,13 @@
-import { LuDoneMark, MicIcon, ArchiveIcon, SettingsIcon, CloseIcon, CloudIcon, RefreshIcon } from "../Icons.jsx";
+import { LuDoneMark } from "../Icons.jsx";
+
+import { OsaIcon } from "./OsaIcon.jsx";
 
 const pages = [
-  ["home", "Nahrávání", MicIcon],
-  ["library", "Nahrávky", ArchiveIcon],
-  ["queue", "Odesílání", CloudIcon],
-  ["settings", "Nastavení", SettingsIcon],
-  ["updates", "Aktualizace", RefreshIcon],
+  ["home", "Nahrávání", "record"],
+  ["library", "Nahrávky", "library"],
+  ["queue", "Odesílání", "cloud"],
+  ["settings", "Nastavení", "settings"],
+  ["updates", "Aktualizace", "update"],
 ];
 
 // Stav i čas přicházejí z řídicího procesu; shell je pouze zobrazuje.
@@ -15,16 +17,16 @@ export function OsaShell({ page = "home", onNavigate, recording, queueCount = 0,
   return <main className={`osa-shell osa-shell--${page}`} data-osa-page={page} data-osa-recording={recording?.active ? "true" : "false"}>
     <header className="osa-header">
       <div className="osa-brand"><LuDoneMark size={26} /><strong>LuDone</strong><span>Desktop</span></div>
-      {onClose && <button type="button" className="osa-icon-button" aria-label="Zavřít panel" onClick={onClose}><CloseIcon /></button>}
+      {onClose && <button type="button" className="osa-icon-button" aria-label="Zavřít panel" onClick={onClose}><OsaIcon name="close" /></button>}
     </header>
     <div className="osa-body">
       {page !== "onboarding" && page !== "detail" && <nav className="osa-rail" aria-label="Části LuDone">
-        {pages.map(([key, label, Icon]) => <button type="button" key={key} data-page={key}
+        {pages.map(([key, label, icon]) => <button type="button" key={key} data-page={key}
           className={key === "settings" ? "osa-rail__low" : undefined}
           aria-current={activePage === key ? "page" : undefined}
           aria-label={key === "queue" && queueCount ? `${label}, čeká ${queueCount}` : label}
           title={label} onClick={() => onNavigate?.(key)}>
-          <Icon />{key === "queue" && queueCount > 0 && <span className="osa-count" aria-hidden="true">{queueCount}</span>}
+          <OsaIcon name={icon} />{key === "queue" && queueCount > 0 && <span className="osa-count" aria-hidden="true">{queueCount}</span>}
         </button>)}
       </nav>}
       <div className="osa-workspace">

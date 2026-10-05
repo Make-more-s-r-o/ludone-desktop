@@ -74,6 +74,10 @@ const {
 } = require("./recording-export.cjs");
 const { trayIsProbablyOutsideStatusArea } = require("./tray-visibility.cjs");
 
+const { recordingAudioResponse } = require("./osa-playback.cjs");
+const playbackOffers = new Map();
+const { deriveOsaTrayState, OSA_TRAY_LABELS } = require("./osa-tray.cjs");
+
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DIST_ROOT = path.join(PROJECT_ROOT, "dist");
 const manifestModulePromise = import(
@@ -89,7 +93,8 @@ const uploadCompanyModulePromise = import(
   pathToFileURL(path.join(PROJECT_ROOT, "src", "lib", "upload-company-resolution.js")).href
 );
 const IS_TEST_RUN = process.env.LUDONE_E2E === "1";
-const PANEL_WIDTH = 400;
+const PANEL_WIDTH = 420;
+let panelWidth = PANEL_WIDTH;
 const PANEL_MIN_HEIGHT = 180;
 const PANEL_MAX_HEIGHT = 720;
 const PANEL_SCREEN_MARGIN = 8;
@@ -174,7 +179,23 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 function registerAppProtocol() {
-  protocol.handle("ludone", (request) => {
+  protocol.handle("ludone", async (request) => {
+    const mediaMatch = /^ludone:\/\/app\/media\/([0-9a-f-]{36})$/u.exec(request.url);
+    if (mediaMatch) {
+      const offer = playbackOffers.get(mediaMatch[1]);
+      if (!offer || Date.now() > offer.expiresAt || !recordingFileActionGuard(offer.event)) return new Response(null, { status: 403 });
+      try {
+        return await recordingAudioResponse(request, async () => {
+          if (!recordingFileActionGuard(offer.event)) throw new Error("Přehrávání už nelze potvrdit");
+          const row = await (await getOutboundQueueStore()).resolveRecordingAudio({
+            clientRecordingId: offer.payload.id, expectedRevision: offer.payload.queueRev,
+            expectedFileRevision: offer.payload.fileRev, guard: async () => recordingFileActionGuard(offer.event),
+          });
+          if (row.outcome !== "ready") throw new Error("Zvuk už není dostupný");
+          return row;
+        });
+      } catch { return new Response(null, { status: 409 }); }
+    }
     const requestedPath = decodeURIComponent(new URL(request.url).pathname)
       .replace(/^\/+/, "") || "index.html";
     const targetPath = path.resolve(DIST_ROOT, requestedPath);
@@ -527,6 +548,30 @@ function trayImage(state) {
   return image;
 }
 
+function osaTrayImage(state) {
+  const name = Object.hasOwn(OSA_TRAY_LABELS, state) ? state : "signed-out";
+  const root = path.join(__dirname, "osa-ikony");
+  const image = nativeImage.createFromBuffer(fs.readFileSync(path.join(root, `${name}.png`)), { scaleFactor: 1 });
+  const retina = fs.readFileSync(path.join(root, `${name}@2x.png`));
+  if (image.isEmpty()) throw new Error(`Ikona F ${name} se nenačetla`);
+  image.addRepresentation({ scaleFactor: 2, buffer: retina });
+  image.setTemplateImage(true);
+  return image;
+}
+
+function osaExportFacts() {
+  let saving = recordingCompletionsInFlight.size > 0;
+  let decision = false;
+  let attention = false;
+  for (const stage of recordingExportStages.values()) {
+    if (stage.releaseRequested) continue;
+    if (stage.exportInFlight || (stage.finalizePromise && !stage.finalizationSettled)) saving = true;
+    if (stage.result?.ok === false) attention = true;
+    if (stage.recordingFinishSucceeded && stage.finalizationSettled && stage.result?.ok) decision = true;
+  }
+  return { saving, decision, attention };
+}
+
 const TRAY_LABELS = {
   "signed-out": "LuDone · nepřihlášeno",
   idle: "LuDone · připraveno",
@@ -662,7 +707,10 @@ function oldestTrackingStartedAt() {
 function currentTrayTitle() {
   const recordingStartedAt = oldestLiveRecordingStartedAt();
   const trackingStartedAt = oldestTrackingStartedAt();
-  if (recordingStartedAt === null && trackingStartedAt === null) return "";
+  if (recordingStartedAt === null && trackingStartedAt === null) {
+    const facts = osaExportFacts();
+    return facts.saving ? "Ukládá se" : facts.decision ? "Uložit" : "";
+  }
 
   const now = Date.now();
   const elapsedSeconds = (startedAt) => (
@@ -729,14 +777,16 @@ function refreshTray() {
   ));
   const tracking = appState.trackingOwners.size > 0;
   const queueWaiting = appState.outboundQueueWaitingCount > 0;
-  const next = trayIconName(deriveTrayState({
+  const next = deriveOsaTrayState({
     microphoneOnly,
     queueWaiting,
     recording,
     signedIn: appState.signedIn,
     systemAudioLost,
-    tracking,
-  }));
+    ...osaExportFacts(),
+    attention: osaExportFacts().attention || osaQueueFacts.attention,
+    offline: !net.isOnline() || osaQueueFacts.offline,
+  });
   const iconVariant = trayIconVariant();
   // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při
   // startu obojí rovná „signed-out“, funkce skončí předčasně a popisek se nenastaví NIKDY.
@@ -748,12 +798,12 @@ function refreshTray() {
       + `fronta=${appState.outboundQueueWaitingCount} přihlášen=${appState.signedIn}`,
     );
     if (tray) {
-      tray.setImage(trayImage(trayState));
-      tray.setToolTip(TRAY_LABELS[trayState]);
+      tray.setImage(osaTrayImage(trayState));
       trayApplied = true;
       trayVariantApplied = iconVariant;
     }
   }
+  if (tray) tray.setToolTip(`${OSA_TRAY_LABELS[trayState]}${queueWaiting ? ` · ${appState.outboundQueueWaitingCount} čeká` : ""}`);
   refreshTrayTitle();
 }
 
@@ -886,12 +936,12 @@ function panelPlacement() {
   const trayBounds = tray.getBounds();
   const display = screen.getDisplayMatching(trayBounds);
   const workArea = display.workArea;
-  const proposedX = Math.round(trayBounds.x + trayBounds.width / 2 - PANEL_WIDTH / 2);
+  const proposedX = Math.round(trayBounds.x + trayBounds.width / 2 - panelWidth / 2);
   const x = Math.max(
     workArea.x + PANEL_SCREEN_MARGIN,
     Math.min(
       proposedX,
-      workArea.x + workArea.width - PANEL_WIDTH - PANEL_SCREEN_MARGIN,
+      workArea.x + workArea.width - panelWidth - PANEL_SCREEN_MARGIN,
     ),
   );
   const y = Math.max(
@@ -927,8 +977,8 @@ function positionPanel() {
   if (!placement) return;
   const nextHeight = constrainedPanelHeight(panelContentHeight, panelMaximumHeight(placement));
   const [, currentHeight] = panelWindow.getSize();
-  if (currentHeight !== nextHeight) {
-    panelWindow.setSize(PANEL_WIDTH, nextHeight, false);
+  if (currentHeight !== nextHeight || panelWindow.getSize()[0] !== panelWidth) {
+    panelWindow.setSize(panelWidth, nextHeight, false);
   }
   panelWindow.setPosition(placement.x, placement.y, false);
 }
@@ -950,7 +1000,7 @@ function setPanelContentHeight(reportedHeight) {
   const [, currentHeight] = panelWindow.getSize();
   if (currentHeight === nextHeight) return nextHeight;
 
-  panelWindow.setSize(PANEL_WIDTH, nextHeight, false);
+  panelWindow.setSize(panelWidth, nextHeight, false);
   // Změna rozměru nesmí spoléhat na původní souřadnice. Tímto znovu používáme
   // jedinou autoritu pro přilepení panelu pod ikonu v liště.
   positionPanel();
@@ -998,8 +1048,8 @@ function createPanelWindow() {
   const createdPanelWindow = new BrowserWindow({
     width: PANEL_WIDTH,
     height: PANEL_MIN_HEIGHT,
-    minWidth: PANEL_WIDTH,
-    maxWidth: PANEL_WIDTH,
+    minWidth: 1,
+    maxWidth: 460,
     show: false,
     frame: false,
     transparent: false,
@@ -1041,6 +1091,16 @@ function createPanelWindow() {
   panelContents.on("render-process-gone", () => {
     if (trackingStore) handleRendererGone(trackingStore, {});
   });
+  let recoveryAttempts = [];
+  panelContents.on("render-process-gone", () => {
+    recoveryAttempts = recoveryAttempts.filter((time) => Date.now() - time < 60_000);
+    if (isQuitting || recoveryAttempts.length >= 3) return;
+    recoveryAttempts.push(Date.now());
+    // Původní session už main finalizuje; nový dokument otevře obnovitelnou historii.
+    void createdPanelWindow.loadFile(path.join(DIST_ROOT, "index.html")).then(() => {
+      panelContents.send("settings:select-tab", "day");
+    }).catch((error) => console.error(`[panel] Obnova rendereru selhala: ${error.message}`));
+  });
   panelContents.once("destroyed", () => {
     pendingTrayCommands.length = 0;
     forgetOwnerActivity(panelContents.id, "zničení okna");
@@ -1079,20 +1139,23 @@ function createPanelWindow() {
 }
 
 function createSettingsWindow(initialTab = "account") {
+  showPanel();
+  panelWindow?.webContents.send("settings:select-tab", initialTab);
+}
+
+function createRecordingDetailWindow(recordingId) {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
-    settingsWindow.webContents.send("settings:select-tab", initialTab);
+    settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), { hash: "settings", query: { recordingId } });
     settingsWindow.show();
     settingsWindow.focus();
     return;
   }
 
   settingsWindow = new BrowserWindow({
-    width: 640,
-    height: 744,
+    width: 860,
+    height: 580,
     minWidth: 640,
-    maxWidth: 640,
-    minHeight: 744,
-    maxHeight: 744,
+    minHeight: 400,
     show: false,
     frame: false,
     transparent: false,
@@ -1114,9 +1177,7 @@ function createSettingsWindow(initialTab = "account") {
 
   settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), {
     hash: "settings",
-    query: ["audio", "recordingQueue", "day"].includes(initialTab)
-      ? { settingsTab: initialTab }
-      : {},
+    query: { recordingId },
   });
   settingsWindow.webContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
     if (isMainFrame) invalidateUploadCompanySelection();
@@ -1776,6 +1837,7 @@ async function finalizeRecordingExportStage(sessionId, outcome, { preserveFile =
     return exportStage.result;
   })().finally(() => {
     exportStage.finalizationSettled = true;
+    refreshTray();
     completeRecordingExportStageRelease(exportStage);
   });
   return exportStage.finalizePromise;
@@ -1937,6 +1999,16 @@ onValidated("tray:report-facts", ["panel"], (event, facts) => {
   }
   void maybeCompleteDeferredQuit();
 });
+handleValidated("recording:get-activity", ["panel", "settings"], (_event, ...extraPayload) => {
+  requireNoPayload("recording:get-activity", extraPayload);
+  return { active: hasLiveRecording(), startedAt: oldestLiveRecordingStartedAt(), ...osaExportFacts(), title: currentTrayTitle() };
+});
+handleValidated("recording:request-stop", ["settings"], (_event, ...extraPayload) => {
+  requireNoPayload("recording:request-stop", extraPayload);
+  if (!hasLiveRecording()) return false;
+  showPanel();
+  return queueTrayCommand("stop-recording");
+});
 handleValidated("tray:get-state", ["panel", "settings"], () => trayState);
 handleValidated(TRAY_COMMAND_CHANNEL, ["panel"], (_event, ...extraPayload) => {
   if (extraPayload.length > 0) {
@@ -1952,7 +2024,7 @@ handleValidated("test:click-tray", ["panel"], () => {
   return { allowed: true, visible: panelWindow.isVisible() };
 });
 onValidated("panel:hide", ["panel"], () => panelWindow?.hide());
-onValidated("settings:return-to-panel", ["settings"], (_event, ...extraPayload) => {
+onValidated("settings:return-to-panel", ["panel", "settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:return-to-panel", extraPayload);
   showPanel();
   settingsWindow?.close();
@@ -1965,13 +2037,29 @@ handleValidated("panel:set-content-height", ["panel"], (_event, height, ...extra
 });
 onValidated("settings:open", ["panel"], (_event, initialTab, ...extraPayload) => {
   if (extraPayload.length > 0 || (initialTab !== undefined
-    && !["account", "audio", "recordingQueue", "day"].includes(initialTab))) {
+    && !["account", "audio", "recordingQueue", "day", "recordings", "diagnostics"].includes(initialTab))) {
     throw new TypeError("Nastavení lze otevřít jen v podporované části");
   }
   createSettingsWindow(initialTab ?? "account");
 });
-onValidated("settings:close", ["settings"], () => settingsWindow?.close());
-handleValidated("settings:get-device-name", ["settings"], (_event, ...extraPayload) => {
+handleValidated("panel:set-page", ["panel"], (_event, page, ...extraPayload) => {
+  if (extraPayload.length || !["home", "library", "queue", "settings", "updates", "onboarding"].includes(page)) {
+    throw new TypeError("Neplatná stránka panelu");
+  }
+  const desired = page === "library" ? 460 : page === "onboarding" ? 440 : 420;
+  const workArea = screen.getDisplayMatching(tray.getBounds()).workArea;
+  panelWidth = Math.max(1, Math.min(desired, workArea.width - 2 * PANEL_SCREEN_MARGIN));
+  positionPanel();
+  return panelWidth;
+});
+onValidated("recordings:open-detail", ["panel"], (_event, id, ...extraPayload) => {
+  if (extraPayload.length || typeof id !== "string" || !QUEUE_ITEM_ID_PATTERN.test(id)) {
+    throw new TypeError("Detail vyžaduje GUID nahrávky");
+  }
+  createRecordingDetailWindow(id);
+});
+onValidated("settings:close", ["panel", "settings"], () => settingsWindow?.close());
+handleValidated("settings:get-device-name", ["panel", "settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-device-name", extraPayload);
   if (IS_TEST_RUN && process.env.LUDONE_DESIGN_E2E === "1") return "Testovací Mac";
   try {
@@ -1981,7 +2069,7 @@ handleValidated("settings:get-device-name", ["settings"], (_event, ...extraPaylo
     return "Název zařízení není známý";
   }
 });
-handleValidated("settings:get-dock-visible", ["settings"], (_event, ...extraPayload) => {
+handleValidated("settings:get-dock-visible", ["panel", "settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-dock-visible", extraPayload);
   // Po selhání návratu nemusí úložiště odpovídat Docku a další zápis může selhat také.
   // Přepínač proto na macOS čte skutečnost; uložená volba slouží pro příští start.
@@ -1997,19 +2085,19 @@ handleValidated(
 );
 handleValidated(
   "settings:set-dock-visible",
-  ["settings"],
+  ["panel", "settings"],
   (_event, dockVisible, ...extraPayload) => {
     requireBooleanPayload("settings:set-dock-visible", dockVisible, extraPayload);
     return queueDockVisibility(dockVisible, { persist: true });
   },
 );
-handleValidated("settings:get-open-at-login", ["settings"], (_event, ...extraPayload) => {
+handleValidated("settings:get-open-at-login", ["panel", "settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-open-at-login", extraPayload);
   return app.getLoginItemSettings().openAtLogin === true;
 });
 handleValidated(
   "settings:set-open-at-login",
-  ["settings"],
+  ["panel", "settings"],
   (_event, openAtLogin, ...extraPayload) => {
     requireBooleanPayload("settings:set-open-at-login", openAtLogin, extraPayload);
     app.setLoginItemSettings({ openAtLogin });
@@ -2018,11 +2106,11 @@ handleValidated(
     return app.getLoginItemSettings().openAtLogin === true;
   },
 );
-handleValidated("settings:get-upload-enabled", ["settings"], (_event, ...extraPayload) => {
+handleValidated("settings:get-upload-enabled", ["panel", "settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-upload-enabled", extraPayload);
   return applicationSettingsStore.get("uploadEnabled");
 });
-handleValidated("settings:set-upload-enabled", ["settings"], (_event, value, ...extraPayload) => {
+handleValidated("settings:set-upload-enabled", ["panel", "settings"], (_event, value, ...extraPayload) => {
   requireBooleanPayload("settings:set-upload-enabled", value, extraPayload);
   return setUploadEnabled(value);
 });
@@ -2088,11 +2176,14 @@ function outboundQueueItemsFromResult(result) {
   return null;
 }
 
+const osaQueueFacts = { offline: false, attention: false };
+
 function updateOutboundQueueTrayFact(result) {
   const items = outboundQueueItemsFromResult(result);
   if (items === null) return false;
   const waitingCount = items.filter((item) => item?.state === "ceka").length;
-  if (waitingCount === appState.outboundQueueWaitingCount) return true;
+  osaQueueFacts.attention = items.some((item) => item.state === "selhalo" || item.requiresHumanAction === true);
+  osaQueueFacts.offline = items.some((item) => item.state !== "odeslano" && /offline|network|síť|připojení/iu.test(item.lastFailureReason ?? ""));
   appState.outboundQueueWaitingCount = waitingCount;
   refreshTray();
   return true;
@@ -2472,7 +2563,7 @@ function uploadCompanyRequester(event) {
   return `settings:${event.sender.id}`;
 }
 
-function uploadCompanyGuard(event, generation, selectionEpoch, roles = ["settings"]) {
+function uploadCompanyGuard(event, generation, selectionEpoch, roles = ["panel", "settings"]) {
   return () => {
     try {
       requireTrustedSender(event, roles);
@@ -2756,6 +2847,7 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
       throw new RecordingExportUserError("Stereo export už probíhá");
     }
     exportStage.exportInFlight = true;
+    refreshTray();
     claimedExport = true;
     const ready = await waitForRecordingExportStage(exportStage);
     if (!ready.ok) return ready;
@@ -2864,6 +2956,7 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
   } finally {
     if (claimedExport) {
       exportStage.exportInFlight = false;
+      refreshTray();
       completeRecordingExportStageRelease(exportStage);
     }
   }
@@ -2928,6 +3021,7 @@ async function finishRecordingAndEnqueue(event, sessionId, trackTimings) {
     // Quit smí pokračovat až po dokončení manifestu i lokálního enqueue. Samostatná
     // evidence kryje mezeru, kdy už session zmizela z mapy, ale enqueue ještě běží.
     recordingCompletionsInFlight.delete(sessionId);
+    refreshTray();
     void maybeCompleteDeferredQuit();
     void tryInstallDownloadedUpdate();
   }
@@ -3001,14 +3095,14 @@ handleValidated("queue:list", ["panel", "settings"], async () => {
   updateOutboundQueueTrayFact(items);
   return items;
 });
-handleValidated("recordings:configure-upload", ["settings"], async (event, payload, ...extraPayload) => {
+handleValidated("recordings:configure-upload", ["panel", "settings"], async (event, payload, ...extraPayload) => {
   if (extraPayload.length || !payload || typeof payload !== "object" || Array.isArray(payload)
     || Object.keys(payload).sort().join("|") !== "companyId|fileRev|id|offerToken|queueRev|visibility"
     || !QUEUE_ITEM_ID_PATTERN.test(payload.id ?? "")
     || !QUEUE_ITEM_REVISION_PATTERN.test(payload.queueRev ?? "")
     || !QUEUE_ITEM_REVISION_PATTERN.test(payload.fileRev ?? "")) throw new TypeError("Neplatná konfigurace nahrávky");
   const preferences = { companyId: payload.companyId, offerToken: payload.offerToken, visibility: payload.visibility };
-  return resolveRecordingUploadPreferences(event, preferences, ["settings"], async ({ context, uploadPreferences, guard }) => {
+  return resolveRecordingUploadPreferences(event, preferences, ["panel", "settings"], async ({ context, uploadPreferences, guard }) => {
     const store = await getOutboundQueueStore();
     return store.configureRecordingUpload({ clientRecordingId: payload.id, expectedRevision: payload.queueRev,
       expectedFileRevision: payload.fileRev, currentOwnerFingerprint: context.ownerFingerprint, uploadPreferences,
@@ -3017,7 +3111,7 @@ handleValidated("recordings:configure-upload", ["settings"], async (event, paylo
     });
   });
 });
-handleValidated("recordings:list-local", ["settings"], async () => {
+handleValidated("recordings:list-local", ["panel", "settings"], async () => {
   const currentOwnerFingerprint = await readCurrentValidQueueOwnerFingerprint();
   const snapshot = await (await getOutboundQueueStore())
     .listLocalRecordings(currentOwnerFingerprint);
@@ -3041,9 +3135,9 @@ async function runRecordingQueueAction(event, payload, mode) {
   }
   // Ruční send/retry smí před lokálním stabilním snapshotem jednou obnovit token.
   // Samotný claim zůstává čistě lokální a tuto cestu nepoužívá.
-  requireTrustedSender(event, ["settings"]);
+  requireTrustedSender(event, ["panel", "settings"]);
   const usableOwnerFingerprint = await readUsableQueueOwnerFingerprint();
-  requireTrustedSender(event, ["settings"]);
+  requireTrustedSender(event, ["panel", "settings"]);
   if (usableOwnerFingerprint === null) {
     throw new Error("Pro odeslání je nutné platné přihlášení");
   }
@@ -3054,7 +3148,7 @@ async function runRecordingQueueAction(event, payload, mode) {
   }
   const guard = async () => {
     try {
-      requireTrustedSender(event, ["settings"]);
+      requireTrustedSender(event, ["panel", "settings"]);
       const latest = await readStableClaimOwnerSnapshot();
       return sameClaimOwnerSnapshot(owner, latest) && companyGeneration === uploadCompanyGeneration;
     } catch {
@@ -3071,7 +3165,7 @@ async function runRecordingQueueAction(event, payload, mode) {
     guard,
     getCurrentCompany: async () => {
       const context = await recordingUploadContext();
-      requireTrustedSender(event, ["settings"]);
+      requireTrustedSender(event, ["panel", "settings"]);
       if (context?.ownerFingerprint !== owner.ownerFingerprint
         || typeof context.companyTabidooId !== "string"
         || !COMPANY_ID_PATTERN.test(context.companyTabidooId)
@@ -3085,11 +3179,11 @@ async function runRecordingQueueAction(event, payload, mode) {
   await refreshOutboundQueueRetrySchedule();
   return result;
 }
-handleValidated("recordings:send", ["settings"], (event, payload, ...extraPayload) => {
+handleValidated("recordings:send", ["panel", "settings"], (event, payload, ...extraPayload) => {
   if (extraPayload.length > 0) throw new TypeError("Kanál recordings:send přijímá jeden payload");
   return runRecordingQueueAction(event, payload, "send");
 });
-handleValidated("recordings:retry", ["settings"], (event, payload, ...extraPayload) => {
+handleValidated("recordings:retry", ["panel", "settings"], (event, payload, ...extraPayload) => {
   if (extraPayload.length > 0) throw new TypeError("Kanál recordings:retry přijímá jeden payload");
   return runRecordingQueueAction(event, payload, "retry");
 });
@@ -3103,13 +3197,13 @@ function validRecordingFileActionPayload(payload) {
 }
 function recordingFileActionGuard(event) {
   try {
-    requireTrustedSender(event, ["settings"]);
+    requireTrustedSender(event, ["panel", "settings"]);
     return recordingOwnersPreparing.size === 0 && recordingSessions.size === 0
       && recordingCompletionsInFlight.size === 0
       && recordingExportStages.size === 0 && outboundQueueSendsInFlight === 0;
   } catch { return false; }
 }
-handleValidated("recordings:delete", ["settings"], async (event, payload, ...extraPayload) => {
+handleValidated("recordings:delete", ["panel", "settings"], async (event, payload, ...extraPayload) => {
   if (extraPayload.length > 0 || !validRecordingFileActionPayload(payload)) {
     throw new TypeError("Kanál recordings:delete očekává GUID a platné revize");
   }
@@ -3117,7 +3211,7 @@ handleValidated("recordings:delete", ["settings"], async (event, payload, ...ext
   const row = snapshot.items.find((item) => item.id === payload.id
     && item.revision === payload.queueRev && item.fileRevision === payload.fileRev);
   if (!row || row.allowedActions?.delete !== true) throw new Error("Nahrávku už nelze smazat");
-  const response = await dialog.showMessageBox(settingsWindow, {
+  const response = await dialog.showMessageBox(event.sender === panelWindow?.webContents ? panelWindow : settingsWindow, {
     type: "warning",
     title: "Přesunout nahrávku do koše?",
     message: "Přesunout tuto nahrávku do koše?",
@@ -3138,7 +3232,20 @@ handleValidated("recordings:delete", ["settings"], async (event, payload, ...ext
     guard: async () => recordingFileActionGuard(event),
   });
 });
-handleValidated("recordings:reveal", ["settings"], async (event, payload, ...extraPayload) => {
+handleValidated("recordings:play", ["panel", "settings"], async (event, payload, ...extraPayload) => {
+  if (extraPayload.length || !validRecordingFileActionPayload(payload)) throw new TypeError("Přehrávání vyžaduje GUID a revize");
+  if (!recordingFileActionGuard(event)) throw new Error("Přehrávání nyní není dostupné");
+  const row = await (await getOutboundQueueStore()).resolveRecordingAudio({
+    clientRecordingId: payload.id, expectedRevision: payload.queueRev, expectedFileRevision: payload.fileRev,
+    guard: async () => recordingFileActionGuard(event),
+  });
+  if (row.outcome !== "ready" || !recordingFileActionGuard(event)) throw new Error("Zvuk už není dostupný");
+  for (const [key, value] of playbackOffers) if (Date.now() > value.expiresAt || value.event.sender.isDestroyed()) playbackOffers.delete(key);
+  const token = randomUUID();
+  playbackOffers.set(token, { event, payload: { ...payload }, expiresAt: Date.now() + 60 * 60 * 1000 });
+  return { url: `ludone://app/media/${token}`, label: row.label };
+});
+handleValidated("recordings:reveal", ["panel", "settings"], async (event, payload, ...extraPayload) => {
   if (extraPayload.length > 0 || !validRecordingFileActionPayload(payload)) {
     throw new TypeError("Kanál recordings:reveal očekává GUID a platné revize");
   }
@@ -3152,7 +3259,7 @@ handleValidated("recordings:reveal", ["settings"], async (event, payload, ...ext
   if (result.outcome === "shown") shell.showItemInFolder(result.filePath);
   return { outcome: result.outcome };
 });
-handleValidated("recordings:verify", ["settings"], async (
+handleValidated("recordings:verify", ["panel", "settings"], async (
   event,
   clientRecordingId,
   expectedRevision,
@@ -3174,18 +3281,18 @@ handleValidated("recordings:verify", ["settings"], async (
     expectedRevision,
     context.ownerFingerprint,
   );
-  requireTrustedSender(event, ["settings"]);
+  requireTrustedSender(event, ["panel", "settings"]);
   if (!await isRecordingVerificationContextCurrent(context)) {
     throw new Error("Přihlášení se během ověření změnilo");
   }
   const result = await getRecordingVerifier().verify(target);
-  requireTrustedSender(event, ["settings"]);
+  requireTrustedSender(event, ["panel", "settings"]);
   if (!await isRecordingVerificationContextCurrent(context)) {
     throw new Error("Přihlášení se během ověření změnilo");
   }
   return result;
 });
-handleValidated("recordings:open-web", ["settings"], async (
+handleValidated("recordings:open-web", ["panel", "settings"], async (
   event,
   clientRecordingId,
   expectedRevision,
@@ -3209,7 +3316,7 @@ handleValidated("recordings:open-web", ["settings"], async (
     expectedRevision,
     context.ownerFingerprint,
   );
-  requireTrustedSender(event, ["settings"]);
+  requireTrustedSender(event, ["panel", "settings"]);
   if (!await isRecordingVerificationContextCurrent(context)) {
     throw new Error("Přihlášení se během otevírání změnilo");
   }
@@ -3219,13 +3326,13 @@ handleValidated("recordings:open-web", ["settings"], async (
   }
   const detailUrl = new URL(`/nahravky/${recordingId}`, context.issuer);
   await shell.openExternal(detailUrl.href);
-  requireTrustedSender(event, ["settings"]);
+  requireTrustedSender(event, ["panel", "settings"]);
   if (!await isRecordingVerificationContextCurrent(context)) {
     throw new Error("Přihlášení se během otevírání změnilo");
   }
   return { opened: true };
 });
-handleValidated("queue:claim-recording", ["settings"], async (
+handleValidated("queue:claim-recording", ["panel", "settings"], async (
   event,
   clientRecordingId,
   expectedRevision,
@@ -3256,7 +3363,7 @@ handleValidated("queue:claim-recording", ["settings"], async (
   ) {
     throw new Error("Nahrávku už nelze převzít; načtěte seznam znovu");
   }
-  const confirmation = await dialog.showMessageBox(settingsWindow, {
+  const confirmation = await dialog.showMessageBox(event.sender === panelWindow?.webContents ? panelWindow : settingsWindow, {
     type: "warning",
     title: "Převzít nahrávku?",
     message: "Převzít tuto nahrávku pod svůj účet?",
@@ -3275,7 +3382,7 @@ handleValidated("queue:claim-recording", ["settings"], async (
 
   // Modal dovolí rendereru navigovat i účtu se mezitím změnit. Ověřujeme obojí
   // znovu těsně před serializovaným zápisem a ještě jednou uvnitř jeho guardu.
-  requireTrustedSender(event, ["settings"]);
+  requireTrustedSender(event, ["panel", "settings"]);
   const currentOwner = await readStableClaimOwnerSnapshot();
   if (!sameClaimOwnerSnapshot(currentOwner, confirmedOwner)) {
     throw new Error("Účet se během potvrzení změnil; načtěte seznam znovu");
@@ -3288,9 +3395,9 @@ handleValidated("queue:claim-recording", ["settings"], async (
       guard: async () => {
         if (dialogGeneration !== claimDialogGeneration) return false;
         try {
-          requireTrustedSender(event, ["settings"]);
+          requireTrustedSender(event, ["panel", "settings"]);
           const latestOwner = await readStableClaimOwnerSnapshot();
-          requireTrustedSender(event, ["settings"]);
+          requireTrustedSender(event, ["panel", "settings"]);
           return sameClaimOwnerSnapshot(latestOwner, confirmedOwner);
         } catch {
           return false;
@@ -4695,21 +4802,21 @@ handleValidated("auth:session-state", ["panel", "settings"], async (_event, ...e
   return hasStableStoredAuthSession(readStoredAuthSessionState);
 });
 
-handleValidated("auth:identity", ["settings"], () => {
+handleValidated("auth:identity", ["panel", "settings"], () => {
   // Vizuální E2E nikdy nesmí číst přihlášení hostitelského Macu. Ostatní testy
   // i produkční běh dál používají stejné ověření uložené identity.
   if (IS_TEST_RUN && process.env.LUDONE_DESIGN_E2E === "1") return null;
   return readStoredAuthIdentity();
 });
 
-handleValidated("upload-companies:default", ["settings"], async (event, ...extraPayload) => {
+handleValidated("upload-companies:default", ["panel", "settings"], async (event, ...extraPayload) => {
   requireNoPayload("upload-companies:default", extraPayload);
   const generation = authSessionGeneration;
   const selectionEpoch = uploadCompanySelectionEpoch;
   const guard = uploadCompanyGuard(event, generation, selectionEpoch);
   if (!guard()) return { companyId: null };
   const storedSession = await readStoredAuthSession();
-  requireTrustedSender(event, ["settings"]);
+  requireTrustedSender(event, ["panel", "settings"]);
   if (!guard() || storedAuthSessionState(storedSession) !== "valid"
     || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE) {
     return { companyId: null };
@@ -4728,7 +4835,7 @@ handleValidated("upload-companies:list", ["settings", "panel"], (event, ...extra
   });
 });
 
-handleValidated("upload-companies:select", ["settings"],
+handleValidated("upload-companies:select", ["panel", "settings"],
   async (event, offerToken, companyId, ...extraPayload) => {
     if (extraPayload.length > 0 || typeof offerToken !== "string"
       || !OFFER_TOKEN_PATTERN.test(offerToken) || typeof companyId !== "string"
@@ -4748,7 +4855,7 @@ handleValidated("upload-companies:select", ["settings"],
     return result;
   });
 
-handleValidated("auth:origin", ["settings"], (_event, ...extraPayload) => {
+handleValidated("auth:origin", ["panel", "settings"], (_event, ...extraPayload) => {
   requireNoPayload("auth:origin", extraPayload);
   return resolveCurrentAuthIssuer();
 });
@@ -4775,7 +4882,7 @@ function requireIdleAuthOriginChange({ allowSignedIn = false } = {}) {
   }
 }
 
-handleValidated("auth:set-origin", ["settings"], async (_event, authOrigin, ...extraPayload) => {
+handleValidated("auth:set-origin", ["panel", "settings"], async (_event, authOrigin, ...extraPayload) => {
   requireAuthOriginPayload("auth:set-origin", authOrigin, extraPayload);
   if (authOriginChangeInFlight) {
     throw new Error("Změna prostředí už probíhá");
@@ -4807,7 +4914,7 @@ handleValidated("auth:set-origin", ["settings"], async (_event, authOrigin, ...e
   }
 });
 
-handleValidated("diagnostics:get", ["settings"], async (_event, ...extraPayload) => {
+handleValidated("diagnostics:get", ["panel", "settings"], async (_event, ...extraPayload) => {
   requireNoPayload("diagnostics:get", extraPayload);
   try {
     return await createCurrentDiagnosticsSnapshot();
@@ -4819,7 +4926,7 @@ handleValidated("diagnostics:get", ["settings"], async (_event, ...extraPayload)
   }
 });
 
-handleValidated("diagnostics:export", ["settings"], async (_event, ...extraPayload) => {
+handleValidated("diagnostics:export", ["panel", "settings"], async (_event, ...extraPayload) => {
   requireNoPayload("diagnostics:export", extraPayload);
   try {
     return await exportCurrentDiagnostics();
@@ -4934,7 +5041,7 @@ function authOriginSwitchResponse(logoutResult, origin) {
   };
 }
 
-handleValidated("auth:switch-origin", ["settings"], async (_event, authOrigin, ...extraPayload) => {
+handleValidated("auth:switch-origin", ["panel", "settings"], async (_event, authOrigin, ...extraPayload) => {
   requireAuthOriginPayload("auth:switch-origin", authOrigin, extraPayload);
   if (authOriginChangeInFlight) {
     throw new Error("Změna prostředí už probíhá");
@@ -5013,6 +5120,17 @@ handleValidated("permission:request", ["panel"], async (_event, permission) => {
   }
 });
 
+// Snímek pouze vlastního důvěryhodného okna v nezabaleném izolovaném E2E.
+handleValidated("test:capture-window", ["panel", "settings"], async (event, ...extraPayload) => {
+  requireNoPayload("test:capture-window", extraPayload);
+  if (app.isPackaged || !IS_TEST_RUN || process.env.LUDONE_DESIGN_E2E !== "1") return null;
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (!window || window.isDestroyed()) return null;
+  window.show();
+  const image = await event.sender.capturePage();
+  return image.toDataURL();
+});
+
 handleValidated("test:quit", ["panel"], (event) => {
   requireTrustedRecordingSender(event);
   if (!IS_TEST_RUN) return { allowed: false };
@@ -5084,7 +5202,7 @@ app.whenReady().then(async () => {
   }
   registerAppProtocol();
   installMediaHandlers();
-  tray = new Tray(trayImage(trayState));
+  tray = new Tray(osaTrayImage(trayState));
   nativeTheme.on("updated", refreshTray);
   tray.on("click", togglePanel);
   tray.on("right-click", showTrayContextMenu);
@@ -5170,3 +5288,6 @@ app.on("will-quit", () => {
 app.on("window-all-closed", () => {
   // Menu-bar aplikace zůstává aktivní, dokud ji uživatel výslovně neukončí.
 });
+
+// Historický kontrakt zůstává dostupný čtecím nástrojům; runtime používá F Osa.
+module.exports = { deriveTrayState, trayImage, TRAY_LABELS };

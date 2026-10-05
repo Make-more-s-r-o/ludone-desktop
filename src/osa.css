@@ -39,3 +39,22 @@ html[data-theme=dark]:has(.osa-shell){--osa-surface:#161d1b;--osa-alt:#1d2624;--
 @container osa (max-width:620px){.osa-shell--detail .osa-stations{grid-template-columns:1fr;gap:24px}.osa-shell--detail .osa-content{padding:14px 18px}}
 @container osa (max-width:380px){.osa-content{padding:10px 14px 16px}.osa-page-title{padding-left:14px}.osa-live-strip{padding:8px 14px}.osa-rail{width:46px}.osa-rail button{width:36px}}
 @media(prefers-reduced-motion:reduce){.osa-shell *{animation:none!important;transition:none!important}}
+
+/* Integrační skladba: obsah scrolluje, navigace i stop zůstávají dostupné. */
+.osa-body{height:calc(100vh - 48px);min-height:0}.osa-workspace{overflow:auto}
+.osa-settings-embedded>.desktop-menubar,.osa-settings-embedded .desktop-navigation,.osa-settings-embedded .settings-tabs,.osa-settings-embedded .desktop-day-intro,.osa-settings-embedded .day-tracking-placeholder{display:none!important}
+.osa-settings-section{border-bottom:1px solid var(--osa-line)}.osa-settings-section>button{width:100%;display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:10px 2px;border:0;background:none;color:var(--osa-text);font-size:16px;font-weight:600}.osa-settings-section>button[aria-expanded=true]{color:var(--osa-accent)}.osa-settings-section>button[aria-expanded=true] span{transform:rotate(90deg)}.osa-settings-section>div{padding:4px 0 16px}
+.osa-lutrack{display:flex;justify-content:space-between;border-top:1px solid var(--osa-line);padding:12px 0;color:var(--osa-muted);font-size:13px}
+.osa-detail-window>.desktop-menubar,.osa-detail-window .desktop-navigation,.osa-detail-window .settings-tabs,.osa-detail-window .desktop-day-intro,.osa-detail-window .day-tracking-placeholder,.osa-detail-window .settings-group__heading{display:none!important}
+.osa-shell--detail .recordings-dashboard__toolbar,.osa-shell--detail .recordings-dashboard__notice,.osa-shell--detail .recordings-day__heading,.osa-shell--detail .recordings-timeline__time{display:none}
+.osa-shell--detail .recordings-dashboard__list{padding:0}.osa-shell--detail .recordings-dashboard__list:before,.osa-shell--detail .recordings-timeline__entry:before{display:none}
+.osa-shell--detail .recording-queue-card__summary{display:none}.osa-shell--detail .recording-queue-card__detail-heading h1{font-size:28px;line-height:1.2}.osa-shell--detail .recording-queue-card__journey,.osa-shell--detail .recording-queue-card__context-card{display:none}
+.osa-shell .recording-card.is-recording:after{background:var(--osa-rec);border-color:var(--osa-rec)}
+
+.osa-shell .recording-card.idle-feature-row .idle-feature-row__action{height:46px;font-size:16px;background:var(--osa-rec);border-color:var(--osa-rec);color:var(--osa-on-rec)}
+.osa-shell .settings-window[data-page] .settings-content{display:block;grid-template-columns:none;padding:0;min-height:0;margin:0}
+.osa-shell .settings-window[data-page] .recording-queue-card__summary{display:flex;padding:8px 0;min-height:56px}.osa-shell--detail .settings-window[data-page] .recording-queue-card__summary{display:none!important}
+.osa-shell--detail .settings-window[data-page] .recording-queue-card__detail{padding:0}
+.osa-shell .recording-card__description,.osa-shell .recording-card__idle-footer small,.osa-shell .idle-feature-row__copy small{font-size:14px;line-height:1.4}.osa-shell .idle-feature-row__copy strong{font-size:16px}
+.osa-shell .recording-day-preview{position:relative;border:0;background:none;padding:10px 0 10px 30px}.osa-shell .recording-day-preview:before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--osa-rail)}
+.osa-shell audio{width:100%;min-width:180px}

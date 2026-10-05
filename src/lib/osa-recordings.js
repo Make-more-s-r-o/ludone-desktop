@@ -21,7 +21,7 @@ function itemDate(value) {
 /** Prezentační filtr; neposkytuje oprávnění k žádné operaci fronty. */
 export function osaRecordingStatus(item) {
   if (item.state === "odeslano") return "sent";
-  if (item.requiresHumanAction || item.state === "selhalo" || item.blockReason || ["incomplete", "missing-audio", "unreadable"].includes(item.localState)) return "attention";
+  if (item.requiresHumanAction || item.state === "selhalo" || item.blockReason || ["incomplete", "partial-audio", "missing-audio", "invalid-manifest", "unreadable"].includes(item.localState)) return "attention";
   if (item.uploadIntent === "held" || !item.state) return "local";
   return "waiting";
 }

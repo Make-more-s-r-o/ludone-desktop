@@ -6,7 +6,7 @@ const AUTH_ORIGINS = Object.freeze([
 ]);
 const AUTH_SESSION_STATUS_CHANNEL = "auth:has-session";
 const SETTINGS_TAB_CHANNEL = "settings:select-tab";
-const SETTINGS_TABS = Object.freeze(["account", "audio", "recordingQueue", "day"]);
+const SETTINGS_TABS = Object.freeze(["account", "audio", "recordingQueue", "day", "recordings", "diagnostics"]);
 const QUEUE_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const QUEUE_ITEM_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
@@ -340,6 +340,7 @@ contextBridge.exposeInMainWorld("ludone", {
   sendRecording: (value) => ipcRenderer.invoke("recordings:send", requireRecordingAction(value, true)),
   retryRecording: (value) => ipcRenderer.invoke("recordings:retry", requireRecordingAction(value, true)),
   deleteRecording: (value) => ipcRenderer.invoke("recordings:delete", requireRecordingAction(value)),
+  playRecording: (value) => ipcRenderer.invoke("recordings:play", requireRecordingAction(value)),
   revealRecording: (value) => ipcRenderer.invoke("recordings:reveal", requireRecordingAction(value)),
   verifyRecording: (clientRecordingId, expectedRevision) => {
     requireRecordingReference(clientRecordingId, expectedRevision);
@@ -371,10 +372,21 @@ contextBridge.exposeInMainWorld("ludone", {
   getTrackingState: () => ipcRenderer.invoke("tracking:get-state"),
   resolveRecoveredTracking: (payload) =>
     ipcRenderer.invoke("tracking:resolve-recovered", payload),
+  getRecordingActivity: () => ipcRenderer.invoke("recording:get-activity"),
+  requestRecordingStop: () => ipcRenderer.invoke("recording:request-stop"),
   getTrayState: () => ipcRenderer.invoke("tray:get-state"),
   onTrayCommand,
   testClickTray: () => ipcRenderer.invoke("test:click-tray"),
   testQuit: () => ipcRenderer.invoke("test:quit"),
+  testCaptureWindow: () => ipcRenderer.invoke("test:capture-window"),
+  setPanelPage: (page) => {
+    if (!["home", "library", "queue", "settings", "updates", "onboarding"].includes(page)) throw new TypeError("Neplatná stránka panelu");
+    return ipcRenderer.invoke("panel:set-page", page);
+  },
+  openRecordingDetail: (id) => {
+    if (typeof id !== "string" || !QUEUE_ITEM_ID_PATTERN.test(id)) throw new TypeError("Detail vyžaduje GUID");
+    ipcRenderer.send("recordings:open-detail", id);
+  },
   setPanelContentHeight,
   reportTrayFacts: (facts) => ipcRenderer.send("tray:report-facts", facts),
   hidePanel: () => ipcRenderer.send("panel:hide"),

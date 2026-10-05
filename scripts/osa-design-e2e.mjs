@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import net from "node:net";
 import path from "node:path";
@@ -211,7 +211,12 @@ async function click(selector, client = panel) {
   for(const type of ['mousePressed','mouseReleased']) await client.send('Input.dispatchMouseEvent',{type,...point,button:'left',clickCount:1});
   await delay(200);
 }
-async function screenshot(name, client=panel) { if(client===panel) await visible(); const image=await client.send('Page.captureScreenshot',{format:'png'});await writeFile(path.join(outputDir,name+'.png'),Buffer.from(image.data,'base64')); }
+async function screenshot(name, client=panel) {
+  if(client===panel) await visible();
+  const data = await client.evaluate('window.ludone.testCaptureWindow()');
+  if (!data?.startsWith('data:image/png;base64,')) throw new Error('Nativní snímek okna není dostupný');
+  await writeFile(path.join(outputDir,name+'.png'),Buffer.from(data.split(',')[1],'base64'));
+}
 async function navigate(page) { await click(`.osa-rail [data-page=${page}]`); await waitFor(()=>panel.evaluate(`document.querySelector('.osa-shell')?.dataset.osaPage===${JSON.stringify(page)}`), page); }
 try {
   await seedLocalRecordingFixture();
@@ -234,6 +239,14 @@ try {
   await waitFor(()=>panel.evaluate(`Boolean(document.querySelector('[data-recording-id="${fixtureRecordingId}"]'))`),'disk fixture');
   check('real-manifest-loaded',true);
   check('library-search-period-pagination',await panel.evaluate("Boolean(document.querySelector('input[type=search]') && document.querySelector('.osa-pagination') && document.querySelector('option[value=custom]'))"));
+  await panel.evaluate("(()=>{const el=document.querySelector('input[type=search]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'nenalezitelná položka');el.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  await waitFor(()=>panel.evaluate("document.querySelectorAll('[data-recording-id]').length===0"),'real search no results');
+  check('real-search-filters-disk-recordings',true);
+  await panel.evaluate("(()=>{const el=document.querySelector('input[type=search]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  await waitFor(()=>panel.evaluate(`Boolean(document.querySelector('[data-recording-id="${fixtureRecordingId}"]'))`),'search restored');
+  const playback = await panel.evaluate(`(async()=>{const snapshot=await window.ludone.listLocalRecordings();const item=snapshot.items.find(i=>i.id==='${fixtureRecordingId}');const media=await window.ludone.playRecording({id:item.id,queueRev:item.revision,fileRev:item.fileRevision});const response=await fetch(media.url,{headers:{Range:'bytes=0-31'}});return {status:response.status,type:response.headers.get('Content-Type'),size:(await response.arrayBuffer()).byteLength,url:media.url};})()`);
+  check('actual-protected-audio-range',playback.status===206&&playback.size===32&&playback.type==='audio/webm'&&playback.url.startsWith('ludone://app/media/'));
+
   await navigate('settings');
   check('five-settings-sections',await panel.evaluate("document.querySelectorAll('.osa-settings-section').length===5"));
   check('settings-no-second-window',(await getTargets(port)).filter(t=>t.type==='page'&&t.url.includes('/dist/index.html')).length===1);
@@ -261,12 +274,23 @@ try {
   await click('.osa-live-strip button');
   await waitFor(()=>panel.evaluate("Boolean(document.querySelector('.recording-card--saved'))"),'safe save decision',20000);
   const decision=await panel.evaluate('window.ludone.getTrayState()');check('main-save-decision-priority',decision==='decision',{tray:decision});
-  await navigate('home');await screenshot('save-decision');
+  await navigate('home');await panel.send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});await screenshot('save-decision');
   check('explicit-local-and-send-actions',await panel.evaluate("document.querySelector('.recording-card--saved').textContent.includes('Nechat na Macu') && document.querySelector('.recording-card--saved').textContent.includes('Uložit a odeslat')"));
   await click('.recording-saved__skip');
   await waitFor(()=>panel.evaluate("!document.querySelector('.recording-card--saved')"),'local save');
   const manifests=await readdir(path.join(dataRoot,'user-data','nahravky'));check('recording-persisted-on-disk',manifests.filter(n=>n.endsWith('.manifest.json')).length>=2);
   check('upload-disabled',true,{transportEnabled:false});
+  await navigate('home');await installSyntheticAudioCapture(panel);await click('.recording-card .idle-feature-row__action');
+  await waitFor(()=>panel.evaluate("document.querySelector('.recording-card')?.classList.contains('is-active')"),'second recording');
+  await panel.send('Page.crash').catch(()=>{});panel.close();
+  const recoveredTarget=await waitFor(async()=>(await getTargets(port)).find(t=>t.type==='page'&&t.url.includes('/dist/index.html')&&!t.url.includes('#settings')),'recovered target');
+  panel=await connect(recoveredTarget);
+  await waitFor(()=>panel.evaluate("Boolean(document.querySelector('.osa-shell'))"),'renderer recovery',20000);
+  await waitFor(()=>panel.evaluate("window.ludone.getRecordingActivity().then(a=>!a.active)"),'crash finalization',20000);
+  check('renderer-crash-main-finalizes-and-recovers',true);
+  await navigate('library');await screenshot('crash-recovered');
+  const recoveredManifests=await readdir(path.join(dataRoot,'user-data','nahravky'));
+  check('crashed-recording-preserved',recoveredManifests.filter(n=>n.endsWith('.manifest.json')).length>=3);
   exitCode=0;
 } catch(error) {console.error('FAIL',error.stack);observations.push({error:error.message});}
 finally { panel?.close();detail?.close();if(child&&child.exitCode===null){child.kill('SIGTERM');await Promise.race([new Promise(r=>child.once('exit',r)),delay(3000)]);if(child.exitCode===null)child.kill('SIGKILL');} await writeFile(path.join(outputDir,'electron.log'),log);await writeFile(path.join(outputDir,'results.json'),JSON.stringify({exitCode,observations,physicalAudioVerified:false},null,2));console.log(`Důkazy: ${outputDir}\nexit code: ${exitCode}`);process.exitCode=exitCode; }
