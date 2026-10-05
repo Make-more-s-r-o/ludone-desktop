@@ -99,3 +99,17 @@ Professional-detail: návrat není v zachyceném prvním obrázku vůbec vidět.
 P3 nahrávací kompozice popsaná výše se v tomto opakování neotevírala znovu. Závěr o jejím odstranění zde není.
 
 Koordinátor dostal konkrétní selektory a příčiny zbývajících P2. Stav vizuální přejímky zůstává 🟡, dokud nebudou tyto dva nálezy odstraněny a znovu zachyceny. Automatické pokrytí 24 × 3 ani systémový font nesmějí nahrazovat tento konkrétní pixelový review.
+
+
+## Cílené uzavření zbývajících P2 — runtime 15-13-21.576Z
+
+V tomto čtecím opakování otevřeno pět nových skutečných snímků: `complete-professional-ready.png`, `complete-dark-ready.png`, `complete-professional-history.png`, `complete-professional-detail.png`, `complete-light-detail.png`. Zdroj `.runtime/osa-auth-e2e/2026-10-05T15-13-21.576Z/`, produkční oprava koordinátora `a8a14bd`. V době zápisu celý běh ještě neměl `results.json`; ⛔ jeho konečný exit ani celkové font/hover assertions tímto dodatkem nejsou prohlášeny za zelené.
+
+- 🧪 P2 slitého statusu odstraněn: professional i dark ready mají samostatný nadpis, potvrzení na vlastních řádcích a samostatný odkaz. Text uložené nahrávky zůstal zachován.
+- 🧪 P2 kontrastu ověření odstraněn v novém light/professional detailu: Ověřit v LuDone je čitelné, tmavý text na světlém podkladu. Definitivní automatický hover/kontrast výsledek musí uvést koordinátor z dokončeného běhu; review neodvozuje konkrétní poměr kontrastu pouze z obrázku.
+- 🧪 Cílená nejistota počátečního návratu uzavřena pro light/professional detail: po explicitním počátečním scrollTop=0 je Zpět do panelu plně viditelné v oddělené oblasti kolem y=78. Předchozí capture po pointer verify nebylo důkazem trvalého překrytí.
+- 🧪 History denní kruh Dnes již není oříznutý a svislá linka je viditelná.
+
+⚠️ Zůstává drobný P3 osy historie: v professional-history je spojitá linka kolem x=93 a denní kruh kolem x=98, ale malé kruhy nahrávek kolem x=123, tedy zhruba 25 px vpravo od hlavní osy. Čtecí příčina: vyšší specificita `.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-timeline__entry:before` stále používá `left:5px`, zatímco změna paddingu seznamu posunula samotné položky. Reference má denní a položkové uzly na jedné ose. Koordinátorovi předáno; tento bod se neoznačuje za opravený pouze proto, že kruhy již nejsou oříznuté.
+
+V pěti znovu otevřených snímcích nebyl nalezen další konkrétní P2. To není obecné schválení celé F ani lidská přejímka fyzického Macu. Dosavadní vědomě omezený stav fyzického zvuku/lišty a syntetického transportu platí dál.
