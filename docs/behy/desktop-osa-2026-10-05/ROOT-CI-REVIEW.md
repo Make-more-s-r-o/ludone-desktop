@@ -23,8 +23,10 @@ spouštěcí podmínky a publikační kroky zůstávají beze změny.
   exit 0. Reprodukce původních PNG nemění generátor ani očekávané soubory.
 - 🧪 Samostatné čtecí Sol review úzkého diffu bez P1/P2. Nezměnilo se měřidlo
   ani pravidla publikace.
-- 🟡 Oficiální Linux runtime a celé GitHub CI po této změně musí projít novým
-  během; macOS kontrola sama tento důkaz neposkytuje.
+- 🧪 GitHub běh `37325589558` nad `995626f` skutečně načetl oficiální Linux
+  Node 24.19.0, dokončil `npm ci`, lint a typecheck. Původní PNG testy mají
+  9 PASS. Celá sada zůstává ⚠️ 111 FAIL / 1568 PASS / 3 původní skipy, exit 1;
+  build se kvůli tomu nespustil. Nejde o zelenou přejímku celé aplikace.
 
 Primární zdroje: [vydání Node 24.19.0](https://nodejs.org/en/blog/release/v24.19.0)
 a [oficiální kontrolní součty](https://nodejs.org/dist/v24.19.0/SHASUMS256.txt).
@@ -37,6 +39,10 @@ Doslovné výpisy jsou v `dukazy/desktop-osa-2026-10-05/root-ci-runtime/`.
 v `ci-37322989536.txt.gz`; SHA256 rozbaleného souboru:
 `9986facc2ee70aac91645df0e345edb61e3928baacaa9eb68abd2b0cf165e60f`.
 Tento stav není zelená přejímka.
+
+Nový doslovný výpis `37325589558` je uložen v `ci-37325589558.txt.gz`;
+SHA256 rozbaleného souboru:
+`a5ad1709b69ee363cdecdf7be0a8c4691fae4e57209260425f4e85fc8cddae29`.
 
 Nezávislé čtecí review čtyř migrací testovacího setupu potvrdilo zachování
 dosavadních assertions. Zbývá doplnit stejné pozitivní služby přes panel,
