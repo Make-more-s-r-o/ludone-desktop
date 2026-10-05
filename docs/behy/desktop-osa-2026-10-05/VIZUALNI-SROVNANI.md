@@ -113,3 +113,14 @@ V tomto čtecím opakování otevřeno pět nových skutečných snímků: `comp
 ⚠️ Zůstává drobný P3 osy historie: v professional-history je spojitá linka kolem x=93 a denní kruh kolem x=98, ale malé kruhy nahrávek kolem x=123, tedy zhruba 25 px vpravo od hlavní osy. Čtecí příčina: vyšší specificita `.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-timeline__entry:before` stále používá `left:5px`, zatímco změna paddingu seznamu posunula samotné položky. Reference má denní a položkové uzly na jedné ose. Koordinátorovi předáno; tento bod se neoznačuje za opravený pouze proto, že kruhy již nejsou oříznuté.
 
 V pěti znovu otevřených snímcích nebyl nalezen další konkrétní P2. To není obecné schválení celé F ani lidská přejímka fyzického Macu. Dosavadní vědomě omezený stav fyzického zvuku/lišty a syntetického transportu platí dál.
+
+
+## Cílená kontrola osy po 7275bdc — runtime 15-22-02.462Z
+
+Otevřeny pouze dva nově požadované skutečné snímky: `complete-light-history.png` a `complete-professional-history.png` v `.runtime/osa-auth-e2e/2026-10-05T15-22-02.462Z/`.
+
+🧪 Původní přibližně 25px rozpad položkových uzlů od hlavní osy je odstraněn. Malé kruhy jsou znovu u spojité osy a žádný z prohlédnutých denních ani položkových kruhů není oříznutý.
+
+⚠️ Zůstává malé P3 vycentrování: v obou obrázcích je osa přibližně x=94, středy malých položkových uzlů kolem x=90 a středy denních kruhů kolem x=98. Pozice jsou vizuální odhad ze skutečných snímků, nikoli tvrzení subpixelového DOM měření. Denní a položkové uzly tedy stále nemají stejný střed. Doporučeno jednotné box sizing pseudo-elementů a společná středová kotva; rozdílná šířka kruhů a border bez společného středu vytváří tyto zbylé odchylky. Předáno koordinátorovi jako drobný P3, nikoli nový P2 či funkční blokace.
+
+Tento dodatek neotevíral další snímky, neprováděl source/test změny a neprohlašuje za zelený celý probíhající runtime nebo CI. Fyzický Mac/zvuk a serverová produkce tím zůstávají ⛔ neověřené.
