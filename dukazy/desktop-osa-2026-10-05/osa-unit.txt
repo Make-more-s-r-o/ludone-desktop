@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa
+
+ ✓ tests/osa-tray.test.js (4 tests) 2ms
+ ✓ tests/osa-playback.test.js (4 tests) 16ms
+ ✓ tests/osa-recordings.test.js (7 tests) 7ms
+
+ Test Files  3 passed (3)
+      Tests  15 passed (15)
+   Start at  13:32:51
+   Duration  202ms (transform 17ms, setup 15ms, collect 18ms, tests 25ms, environment 0ms, prepare 77ms)
+
+EXIT_CODE=0

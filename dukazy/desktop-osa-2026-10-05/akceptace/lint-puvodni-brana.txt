@@ -1,0 +1,3122 @@
+$ npm run lint
+
+> ludone-desktop-prototype@0.1.8 lint
+> eslint .
+
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+    2:18   error  'document' is not defined               no-undef
+    3:19   error  'URLSearchParams' is not defined        no-undef
+    3:35   error  'location' is not defined               no-undef
+    7:1    error  'document' is not defined               no-undef
+    8:32   error  'document' is not defined               no-undef
+    9:1    error  'document' is not defined               no-undef
+   10:15   error  'document' is not defined               no-undef
+   10:112  error  'document' is not defined               no-undef
+   11:17   error  'document' is not defined               no-undef
+   11:105  error  'document' is not defined               no-undef
+   12:32   error  'document' is not defined               no-undef
+   13:24   error  'document' is not defined               no-undef
+   13:138  error  'document' is not defined               no-undef
+   16:2    error  'document' is not defined               no-undef
+   17:28   error  'document' is not defined               no-undef
+   17:152  error  'document' is not defined               no-undef
+   18:37   error  'document' is not defined               no-undef
+   18:130  error  'document' is not defined               no-undef
+   36:40   error  'window' is not defined                 no-undef
+   80:2    error  'document' is not defined               no-undef
+   81:2    error  'document' is not defined               no-undef
+   82:2    error  'document' is not defined               no-undef
+   95:2    error  'document' is not defined               no-undef
+   96:2    error  'window' is not defined                 no-undef
+   97:19   error  'window' is not defined                 no-undef
+  144:416  error  'document' is not defined               no-undef
+  144:527  error  'document' is not defined               no-undef
+  159:53   error  'document' is not defined               no-undef
+  159:487  error  'requestAnimationFrame' is not defined  no-undef
+  162:76   error  'clearTimeout' is not defined           no-undef
+  162:112  error  'setTimeout' is not defined             no-undef
+  194:1    error  'document' is not defined               no-undef
+  204:101  error  'setTimeout' is not defined             no-undef
+  234:23   error  'document' is not defined               no-undef
+  251:66   error  'setTimeout' is not defined             no-undef
+  259:1    error  'document' is not defined               no-undef
+  268:1    error  'document' is not defined               no-undef
+  279:19   error  'document' is not defined               no-undef
+  281:1    error  'document' is not defined               no-undef
+  283:165  error  'document' is not defined               no-undef
+  292:1    error  'document' is not defined               no-undef
+  293:26   error  'document' is not defined               no-undef
+  294:54   error  'document' is not defined               no-undef
+  299:1    error  'setInterval' is not defined            no-undef
+  299:64   error  'document' is not defined               no-undef
+  303:21   error  'document' is not defined               no-undef
+  304:35   error  'document' is not defined               no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/check-f-tray.mjs
+  12:26  error  'console' is not defined  no-undef
+  43:25  error  'Buffer' is not defined   no-undef
+  46:52  error  'Buffer' is not defined   no-undef
+  49:1   error  'console' is not defined  no-undef
+  50:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/creative.js
+   3:18  error  'URLSearchParams' is not defined  no-undef
+   3:34  error  'location' is not defined         no-undef
+   3:56  error  'document' is not defined         no-undef
+   3:94  error  'document' is not defined         no-undef
+   7:2   error  'document' is not defined         no-undef
+  10:16  error  'URLSearchParams' is not defined  no-undef
+  13:3   error  'document' is not defined         no-undef
+  14:3   error  'document' is not defined         no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/f-icons.js
+  44:19  error  'document' is not defined  no-undef
+  47:14  error  'window' is not defined    no-undef
+  53:28  error  'window' is not defined    no-undef
+  58:11  error  'document' is not defined  no-undef
+  59:11  error  'document' is not defined  no-undef
+  60:11  error  'document' is not defined  no-undef
+  61:3   error  'document' is not defined  no-undef
+  66:3   error  'document' is not defined  no-undef
+  70:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/f-tray-gallery.js
+  19:1    error  'document' is not defined  no-undef
+  20:19   error  'document' is not defined  no-undef
+  20:64   error  'document' is not defined  no-undef
+  20:110  error  'document' is not defined  no-undef
+  20:157  error  'document' is not defined  no-undef
+  24:2    error  'document' is not defined  no-undef
+  26:2    error  'document' is not defined  no-undef
+  27:2    error  'document' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/generate-f-tray.mjs
+  15:38   error  'Buffer' is not defined   no-undef
+  15:64   error  'Buffer' is not defined   no-undef
+  15:119  error  'Buffer' is not defined   no-undef
+  15:159  error  'Buffer' is not defined   no-undef
+  15:195  error  'Buffer' is not defined   no-undef
+  25:35   error  'Buffer' is not defined   no-undef
+  33:13   error  'Buffer' is not defined   no-undef
+  34:9    error  'Buffer' is not defined   no-undef
+  34:24   error  'Buffer' is not defined   no-undef
+  34:128  error  'Buffer' is not defined   no-undef
+  38:12   error  'Buffer' is not defined   no-undef
+  43:1    error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-f-layout.js
+   5:56  error  'icon' is not defined      no-undef
+   6:60  error  'state' is not defined     no-undef
+   6:79  error  'state' is not defined     no-undef
+  10:16  error  'document' is not defined  no-undef
+  14:9   error  'document' is not defined  no-undef
+  20:19  error  'document' is not defined  no-undef
+  20:73  error  'document' is not defined  no-undef
+  29:67  error  'document' is not defined  no-undef
+  34:3   error  'document' is not defined  no-undef
+  39:3   error  'document' is not defined  no-undef
+  47:15  error  'document' is not defined  no-undef
+  48:19  error  'document' is not defined  no-undef
+  51:20  error  'document' is not defined  no-undef
+  68:17  error  'document' is not defined  no-undef
+  69:17  error  'document' is not defined  no-undef
+  79:15  error  'document' is not defined  no-undef
+  80:18  error  'document' is not defined  no-undef
+  89:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-g-layout.js
+    7:60  error  'state' is not defined     no-undef
+    7:79  error  'state' is not defined     no-undef
+   11:19  error  'document' is not defined  no-undef
+   16:14  error  'document' is not defined  no-undef
+   20:9   error  'window' is not defined    no-undef
+   21:5   error  'window' is not defined    no-undef
+   22:5   error  'document' is not defined  no-undef
+   23:19  error  'document' is not defined  no-undef
+   26:5   error  'document' is not defined  no-undef
+   27:34  error  'document' is not defined  no-undef
+   31:16  error  'document' is not defined  no-undef
+   32:17  error  'document' is not defined  no-undef
+   47:19  error  'document' is not defined  no-undef
+   59:43  error  'document' is not defined  no-undef
+   60:16  error  'document' is not defined  no-undef
+   61:16  error  'document' is not defined  no-undef
+   62:19  error  'document' is not defined  no-undef
+   80:17  error  'document' is not defined  no-undef
+   82:7   error  'document' is not defined  no-undef
+   82:50  error  'document' is not defined  no-undef
+   83:19  error  'document' is not defined  no-undef
+   84:18  error  'document' is not defined  no-undef
+   88:11  error  'document' is not defined  no-undef
+   96:24  error  'document' is not defined  no-undef
+   97:18  error  'document' is not defined  no-undef
+   99:23  error  'document' is not defined  no-undef
+  104:3   error  'document' is not defined  no-undef
+  109:3   error  'document' is not defined  no-undef
+  115:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/docs/changes/desktop-complete-designs-2026-10-01/design/viewer.js
+   2:20  error  'URLSearchParams' is not defined  no-undef
+   2:36  error  'location' is not defined         no-undef
+  18:14  error  'document' is not defined         no-undef
+  19:15  error  'document' is not defined         no-undef
+  20:16  error  'document' is not defined         no-undef
+  21:14  error  'document' is not defined         no-undef
+  28:2   error  'document' is not defined         no-undef
+  29:2   error  'document' is not defined         no-undef
+  30:2   error  'document' is not defined         no-undef
+  31:2   error  'document' is not defined         no-undef
+  40:18  error  'URL' is not defined              no-undef
+  40:33  error  'location' is not defined         no-undef
+  47:2   error  'document' is not defined         no-undef
+  50:2   error  'document' is not defined         no-undef
+  51:2   error  'document' is not defined         no-undef
+  52:2   error  'document' is not defined         no-undef
+  53:2   error  'document' is not defined         no-undef
+  54:2   error  'document' is not defined         no-undef
+  56:1   error  'document' is not defined         no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/desktop-design-2026-09-23/lutrack/sol-original/app.js
+    8:20  error  'URLSearchParams' is not defined  no-undef
+    8:36  error  'location' is not defined         no-undef
+   20:15  error  'document' is not defined         no-undef
+   21:21  error  'document' is not defined         no-undef
+   97:20  error  'URL' is not defined              no-undef
+   97:24  error  'location' is not defined         no-undef
+  100:3   error  'history' is not defined          no-undef
+  103:3   error  'document' is not defined         no-undef
+  105:3   error  'document' is not defined         no-undef
+  109:1   error  'document' is not defined         no-undef
+  154:1   error  'window' is not defined           no-undef
+  156:19  error  'document' is not defined         no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/desktop-design-2026-09-23/opus/check-updates.mjs
+   3:39  error  'URL' is not defined      no-undef
+  20:33  error  'console' is not defined  no-undef
+  21:1   error  'console' is not defined  no-undef
+  22:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/desktop-experience-2026-09-23/astra/capture-brand.cjs
+  4:349   error  '__dirname' is not defined  no-undef
+  4:735   error  'document' is not defined   no-undef
+  4:786   error  'document' is not defined   no-undef
+  4:910   error  '__dirname' is not defined  no-undef
+  4:1101  error  'process' is not defined    no-undef
+  4:1179  error  '__dirname' is not defined  no-undef
+  4:1229  error  'console' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/desktop-experience-2026-09-23/astra/flows.js
+   4:17   error  'window' is not defined        no-undef
+   5:18   error  'window' is not defined        no-undef
+   6:30   error  'document' is not defined      no-undef
+   7:31   error  'document' is not defined      no-undef
+   7:150  error  'Event' is not defined         no-undef
+   8:72   error  'document' is not defined      no-undef
+  15:45   error  'document' is not defined      no-undef
+  15:189  error  'document' is not defined      no-undef
+  15:333  error  'document' is not defined      no-undef
+  16:49   error  'document' is not defined      no-undef
+  16:322  error  'document' is not defined      no-undef
+  17:461  error  'document' is not defined      no-undef
+  17:553  error  'document' is not defined      no-undef
+  17:609  error  'document' is not defined      no-undef
+  19:86   error  'document' is not defined      no-undef
+  19:176  error  'Event' is not defined         no-undef
+  22:16   error  'window' is not defined        no-undef
+  22:41   error  'MessageEvent' is not defined  no-undef
+  22:72   error  'window' is not defined        no-undef
+  22:267  error  'window' is not defined        no-undef
+  22:292  error  'MessageEvent' is not defined  no-undef
+  22:469  error  'window' is not defined        no-undef
+  22:494  error  'MessageEvent' is not defined  no-undef
+  22:525  error  'window' is not defined        no-undef
+  26:32   error  'document' is not defined      no-undef
+  26:118  error  'Event' is not defined         no-undef
+  26:290  error  'document' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/desktop-experience-2026-09-23/astra/verify-local.cjs
+   6:25   error  '__dirname' is not defined   no-undef
+   7:31   error  'console' is not defined     no-undef
+  19:26   error  'document' is not defined    no-undef
+  20:51   error  'document' is not defined    no-undef
+  20:105  error  'document' is not defined    no-undef
+  20:153  error  'document' is not defined    no-undef
+  20:191  error  'innerWidth' is not defined  no-undef
+  20:203  error  'document' is not defined    no-undef
+  20:251  error  'document' is not defined    no-undef
+  25:61   error  '__dirname' is not defined   no-undef
+  29:51   error  'process' is not defined     no-undef
+  29:139  error  '__dirname' is not defined   no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/desktop-experience-2026-09-23/opus/overeni.playwright.js
+  12:42   error  'window' is not defined            no-undef
+  17:51   error  'window' is not defined            no-undef
+  23:55   error  'document' is not defined          no-undef
+  23:98   error  'document' is not defined          no-undef
+  23:275  error  'document' is not defined          no-undef
+  23:341  error  'document' is not defined          no-undef
+  23:511  error  'innerWidth' is not defined        no-undef
+  36:33   error  'window' is not defined            no-undef
+  46:33   error  'window' is not defined            no-undef
+  84:42   error  'document' is not defined          no-undef
+  84:68   error  'document' is not defined          no-undef
+  85:122  error  'document' is not defined          no-undef
+  85:162  error  'window' is not defined            no-undef
+  89:50   error  'document' is not defined          no-undef
+  89:97   error  'addEventListener' is not defined  no-undef
+  89:222  error  'document' is not defined          no-undef
+  89:305  error  'document' is not defined          no-undef
+  89:396  error  'setTimeout' is not defined        no-undef
+  89:549  error  'location' is not defined          no-undef
+  89:590  error  'setTimeout' is not defined        no-undef
+  89:744  error  'location' is not defined          no-undef
+  89:858  error  'location' is not defined          no-undef
+  89:899  error  'setTimeout' is not defined        no-undef
+  93:70   error  'window' is not defined            no-undef
+  93:185  error  'setTimeout' is not defined        no-undef
+  93:213  error  'document' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/stereo-mp3-2026-09-15/native-hour-script.mjs
+  13:2   error  'console' is not defined      no-undef
+  14:14  error  'performance' is not defined  no-undef
+  15:2   error  'console' is not defined      no-undef
+  15:49  error  'performance' is not defined  no-undef
+  18:2   error  'console' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/zvuk-2026-08-20/nastroje/test-loopback.js
+   1:58  error  'require' is not defined       no-undef
+   2:14  error  'require' is not defined       no-undef
+   9:14  error  'e' is defined but never used  no-unused-vars
+  11:30  error  '__dirname' is not defined     no-undef
+  32:3   error  'console' is not defined       no-undef
+  35:1   error  'setTimeout' is not defined    no-undef
+  35:20  error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/dukazy/zvuk-2026-08-20/nastroje/test-zarizeni.js
+   2:32  error  'require' is not defined     no-undef
+   5:20  error  'require' is not defined     no-undef
+   5:41  error  '__dirname' is not defined   no-undef
+  19:3   error  'console' is not defined     no-undef
+  22:1   error  'setTimeout' is not defined  no-undef
+  22:20  error  'console' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/auth.cjs
+    30:35   error  '__dirname' is not defined        no-undef
+    71:47   error  '__dirname' is not defined        no-undef
+    85:19   error  'URL' is not defined              no-undef
+    96:24   error  'URL' is not defined              no-undef
+    99:32   error  'URL' is not defined              no-undef
+   175:27   error  'URL' is not defined              no-undef
+   211:23   error  'Buffer' is not defined           no-undef
+   237:16   error  'clearTimeout' is not defined     no-undef
+   262:29   error  'URL' is not defined              no-undef
+   305:11   error  'setTimeout' is not defined       no-undef
+   390:9    error  'URL' is not defined              no-undef
+   480:31   error  'AbortController' is not defined  no-undef
+   483:13   error  'setTimeout' is not defined       no-undef
+   500:5    error  'clearTimeout' is not defined     no-undef
+   713:20   error  'URLSearchParams' is not defined  no-undef
+   718:31   error  'AbortController' is not defined  no-undef
+   721:15   error  'setTimeout' is not defined       no-undef
+   743:5    error  'clearTimeout' is not defined     no-undef
+   840:109  error  'console' is not defined          no-undef
+  1018:20   error  'URLSearchParams' is not defined  no-undef
+  1218:14   error  'console' is not defined          no-undef
+  1250:42   error  'URL' is not defined              no-undef
+  1436:59   error  'console' is not defined          no-undef
+  1491:35   error  'console' is not defined          no-undef
+  1539:70   error  'console' is not defined          no-undef
+  1560:78   error  'console' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/companies.cjs
+  45:9  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/main.cjs
+    77:35  error  '__dirname' is not defined        no-undef
+    91:21  error  'process' is not defined          no-undef
+   178:50  error  'URL' is not defined              no-undef
+   182:35  error  'Response' is not defined         no-undef
+   189:21  error  'URL' is not defined              no-undef
+   208:16  error  'URL' is not defined              no-undef
+   264:14  error  'URL' is not defined              no-undef
+   306:14  error  'URL' is not defined              no-undef
+   307:14  error  'URL' is not defined              no-undef
+   331:7   error  'console' is not defined          no-undef
+   356:7   error  'process' is not defined          no-undef
+   381:9   error  'console' is not defined          no-undef
+   393:25  error  'process' is not defined          no-undef
+   430:21  error  'console' is not defined          no-undef
+   435:21  error  'console' is not defined          no-undef
+   442:21  error  'console' is not defined          no-undef
+   510:35  error  '__dirname' is not defined        no-undef
+   684:3   error  'clearInterval' is not defined    no-undef
+   708:20  error  'setInterval' is not defined      no-undef
+   745:5   error  'console' is not defined          no-undef
+   777:26  error  '__dirname' is not defined        no-undef
+   793:7   error  'console' is not defined          no-undef
+   807:5   error  'console' is not defined          no-undef
+   818:5   error  'console' is not defined          no-undef
+   823:25  error  'setTimeout' is not defined       no-undef
+   972:7   error  'clearTimeout' is not defined     no-undef
+   982:13  error  'setTimeout' is not defined       no-undef
+  1016:26  error  '__dirname' is not defined        no-undef
+  1037:5   error  'console' is not defined          no-undef
+  1108:26  error  '__dirname' is not defined        no-undef
+  1159:5   error  'console' is not defined          no-undef
+  1172:5   error  'console' is not defined          no-undef
+  1204:5   error  'console' is not defined          no-undef
+  1218:7   error  'console' is not defined          no-undef
+  1266:9   error  'console' is not defined          no-undef
+  1269:7   error  'console' is not defined          no-undef
+  1337:7   error  'console' is not defined          no-undef
+  1340:7   error  'console' is not defined          no-undef
+  1344:9   error  'console' is not defined          no-undef
+  1579:9   error  'console' is not defined          no-undef
+  1594:5   error  'console' is not defined          no-undef
+  1645:17  error  'Buffer' is not defined           no-undef
+  1674:20  error  'Buffer' is not defined           no-undef
+  1709:7   error  'console' is not defined          no-undef
+  1773:9   error  'console' is not defined          no-undef
+  1875:5   error  'console' is not defined          no-undef
+  1896:7   error  'console' is not defined          no-undef
+  1898:7   error  'console' is not defined          no-undef
+  1935:5   error  'console' is not defined          no-undef
+  1976:22  error  'process' is not defined          no-undef
+  1988:10  error  'process' is not defined          no-undef
+  2106:7   error  'console' is not defined          no-undef
+  2111:7   error  'console' is not defined          no-undef
+  2135:7   error  'console' is not defined          no-undef
+  2139:7   error  'console' is not defined          no-undef
+  2156:5   error  'console' is not defined          no-undef
+  2176:7   error  'console' is not defined          no-undef
+  2180:5   error  'console' is not defined          no-undef
+  2202:47  error  'process' is not defined          no-undef
+  2237:28  error  'process' is not defined          no-undef
+  2245:25  error  'console' is not defined          no-undef
+  2563:28  error  'process' is not defined          no-undef
+  2564:39  error  '__dirname' is not defined        no-undef
+  2577:17  error  'console' is not defined          no-undef
+  2606:13  error  'console' is not defined          no-undef
+  2612:5   error  'console' is not defined          no-undef
+  2626:5   error  'console' is not defined          no-undef
+  2629:5   error  'console' is not defined          no-undef
+  2651:5   error  'console' is not defined          no-undef
+  2658:17  error  'setTimeout' is not defined       no-undef
+  2663:67  error  'clearTimeout' is not defined     no-undef
+  2710:3   error  'console' is not defined          no-undef
+  2782:24  error  'process' is not defined          no-undef
+  2783:35  error  '__dirname' is not defined        no-undef
+  2831:5   error  'console' is not defined          no-undef
+  2903:9   error  'console' is not defined          no-undef
+  2911:7   error  'console' is not defined          no-undef
+  3220:25  error  'URL' is not defined              no-undef
+  3320:3   error  'console' is not defined          no-undef
+  3343:5   error  'console' is not defined          no-undef
+  3352:19  error  'process' is not defined          no-undef
+  3393:10  error  'process' is not defined          no-undef
+  3456:9   error  'console' is not defined          no-undef
+  3459:7   error  'console' is not defined          no-undef
+  3567:3   error  'console' is not defined          no-undef
+  3587:5   error  'console' is not defined          no-undef
+  3592:3   error  'console' is not defined          no-undef
+  3607:3   error  'clearTimeout' is not defined     no-undef
+  3610:5   error  'console' is not defined          no-undef
+  3614:5   error  'console' is not defined          no-undef
+  3680:23  error  'setTimeout' is not defined       no-undef
+  3684:7   error  'console' is not defined          no-undef
+  3718:5   error  'console' is not defined          no-undef
+  3793:6   error  'process' is not defined          no-undef
+  3794:6   error  'process' is not defined          no-undef
+  3823:5   error  'console' is not defined          no-undef
+  3902:29  error  'setInterval' is not defined      no-undef
+  3910:3   error  'clearInterval' is not defined    no-undef
+  3926:5   error  'console' is not defined          no-undef
+  3940:5   error  'console' is not defined          no-undef
+  3972:5   error  'console' is not defined          no-undef
+  3982:5   error  'console' is not defined          no-undef
+  4010:5   error  'console' is not defined          no-undef
+  4089:5   error  'console' is not defined          no-undef
+  4095:5   error  'console' is not defined          no-undef
+  4099:5   error  'console' is not defined          no-undef
+  4106:5   error  'console' is not defined          no-undef
+  4133:5   error  'console' is not defined          no-undef
+  4172:5   error  'console' is not defined          no-undef
+  4192:5   error  'console' is not defined          no-undef
+  4202:22  error  'setInterval' is not defined      no-undef
+  4211:5   error  'console' is not defined          no-undef
+  4265:18  error  'URL' is not defined              no-undef
+  4288:28  error  'process' is not defined          no-undef
+  4296:38  error  'process' is not defined          no-undef
+  4484:21  error  'URL' is not defined              no-undef
+  4512:8   error  'process' is not defined          no-undef
+  4515:11  error  'console' is not defined          no-undef
+  4567:24  error  'URL' is not defined              no-undef
+  4701:22  error  'process' is not defined          no-undef
+  4817:5   error  'console' is not defined          no-undef
+  4828:5   error  'console' is not defined          no-undef
+  4844:23  error  'AbortController' is not defined  no-undef
+  4877:11  error  'console' is not defined          no-undef
+  4916:11  error  'console' is not defined          no-undef
+  4967:9   error  'console' is not defined          no-undef
+  5019:3   error  'setImmediate' is not defined     no-undef
+  5083:5   error  'console' is not defined          no-undef
+  5106:7   error  'console' is not defined          no-undef
+  5114:36  error  'process' is not defined          no-undef
+  5116:5   error  'setTimeout' is not defined       no-undef
+  5117:7   error  'console' is not defined          no-undef
+  5133:3   error  'clearTimeout' is not defined     no-undef
+  5165:5   error  'console' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/media-encoder.cjs
+   12:19  error  'process' is not defined       no-undef
+   14:10  error  'process' is not defined       no-undef
+   15:14  error  'process' is not defined       no-undef
+   16:30  error  '__dirname' is not defined     no-undef
+  139:7   error  'clearTimeout' is not defined  no-undef
+  140:7   error  'clearTimeout' is not defined  no-undef
+  148:24  error  'setTimeout' is not defined    no-undef
+  152:26  error  'setTimeout' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/meeting-audio.cjs
+  215:20  error  'Buffer' is not defined     no-undef
+  590:41  error  '__dirname' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/preload.cjs
+  206:15  error  'console' is not defined     no-undef
+  211:46  error  'setTimeout' is not defined  no-undef
+  217:7   error  'console' is not defined     no-undef
+  236:22  error  'process' is not defined     no-undef
+  237:16  error  'process' is not defined     no-undef
+  237:50  error  'process' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/queue-scheduler.cjs
+  1:60  error  'setTimeout' is not defined    no-undef
+  1:85  error  'clearTimeout' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/queue.cjs
+  236:8   error  'Buffer' is not defined   no-undef
+  243:27  error  'URL' is not defined      no-undef
+  563:24  error  'Buffer' is not defined   no-undef
+  762:12  error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/recording-export.cjs
+    5:19  error  'Buffer' is not defined  no-undef
+    6:20  error  'Buffer' is not defined  no-undef
+   49:18  error  'Buffer' is not defined  no-undef
+   49:51  error  'Buffer' is not defined  no-undef
+   67:18  error  'Buffer' is not defined  no-undef
+   67:51  error  'Buffer' is not defined  no-undef
+  191:19  error  'URL' is not defined     no-undef
+  235:26  error  'Buffer' is not defined  no-undef
+  248:7   error  'Buffer' is not defined  no-undef
+  261:20  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/recording-verification.cjs
+  81:18  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/recordings-dashboard.cjs
+  50:20  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/retention.cjs
+  151:22  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/settings.cjs
+   96:20  error  'Buffer' is not defined   no-undef
+  117:56  error  'console' is not defined  no-undef
+  150:59  error  'console' is not defined  no-undef
+  206:54  error  'console' is not defined  no-undef
+  246:50  error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/tracking.cjs
+  206:75  error  'console' is not defined  no-undef
+  256:11  error  'console' is not defined  no-undef
+  517:44  error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/upload-client.cjs
+   169:18  error  'URL' is not defined              no-undef
+   233:17  error  'Buffer' is not defined           no-undef
+   260:18  error  'Buffer' is not defined           no-undef
+   603:20  error  'URL' is not defined              no-undef
+   623:33  error  'AbortController' is not defined  no-undef
+   626:19  error  'setTimeout' is not defined       no-undef
+   688:7   error  'clearTimeout' is not defined     no-undef
+   764:26  error  'Buffer' is not defined           no-undef
+   765:17  error  'Buffer' is not defined           no-undef
+   766:54  error  'Buffer' is not defined           no-undef
+  1004:12  error  'console' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/electron/upload-company-selection.cjs
+   93:33  error  'AbortController' is not defined  no-undef
+   96:19  error  'setTimeout' is not defined       no-undef
+  104:7   error  'clearTimeout' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/akceptace/casovac-sondy.mjs
+  231:35  error  'setTimeout' is not defined  no-undef
+  462:15  error  'process' is not defined     no-undef
+  465:3   error  'console' is not defined     no-undef
+  466:3   error  'process' is not defined     no-undef
+  471:3   error  'console' is not defined     no-undef
+  473:3   error  'console' is not defined     no-undef
+  474:29  error  'console' is not defined     no-undef
+  475:3   error  'process' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/akceptace/fronta-sondy.mjs
+  141:61  error  'process' is not defined  no-undef
+  230:42  error  'process' is not defined  no-undef
+  240:15  error  'process' is not defined  no-undef
+  243:3   error  'console' is not defined  no-undef
+  244:3   error  'process' is not defined  no-undef
+  249:3   error  'console' is not defined  no-undef
+  251:3   error  'console' is not defined  no-undef
+  252:29  error  'console' is not defined  no-undef
+  253:3   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/akceptace/stereo-audio.mjs
+   13:29  error  'process' is not defined  no-undef
+   14:16  error  'process' is not defined  no-undef
+   16:10  error  'process' is not defined  no-undef
+   17:19  error  'process' is not defined  no-undef
+   36:28  error  'console' is not defined  no-undef
+   37:34  error  'console' is not defined  no-undef
+   94:3   error  'console' is not defined  no-undef
+  135:35  error  'process' is not defined  no-undef
+  152:1   error  'console' is not defined  no-undef
+  153:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/akceptace/stereo-hour.mjs
+  12:29  error  'process' is not defined      no-undef
+  13:16  error  'process' is not defined      no-undef
+  15:10  error  'process' is not defined      no-undef
+  16:19  error  'process' is not defined      no-undef
+  40:3   error  'console' is not defined      no-undef
+  41:17  error  'performance' is not defined  no-undef
+  44:25  error  'performance' is not defined  no-undef
+  52:3   error  'console' is not defined      no-undef
+  56:3   error  'console' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/akceptace/stereo-package.mjs
+  10:37  error  'process' is not defined  no-undef
+  17:28  error  'console' is not defined  no-undef
+  18:34  error  'console' is not defined  no-undef
+  52:84  error  'URL' is not defined      no-undef
+  58:1   error  'console' is not defined  no-undef
+  59:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/astra-design-e2e.mjs
+    38:5   error  'process' is not defined       no-undef
+    38:37  error  'process' is not defined       no-undef
+   207:23  error  'WebSocket' is not defined     no-undef
+   217:7   error  'clearTimeout' is not defined  no-undef
+   227:21  error  'setTimeout' is not defined    no-undef
+   249:10  error  'WebSocket' is not defined     no-undef
+   249:26  error  'WebSocket' is not defined     no-undef
+   269:26  error  'fetch' is not defined         no-undef
+   429:17  error  'Buffer' is not defined        no-undef
+   499:6   error  'process' is not defined       no-undef
+  1811:31  error  'Buffer' is not defined        no-undef
+  1819:94  error  'Buffer' is not defined        no-undef
+  1925:3   error  'console' is not defined       no-undef
+  1930:3   error  'console' is not defined       no-undef
+  1934:1   error  'console' is not defined       no-undef
+  1935:1   error  'console' is not defined       no-undef
+  1936:1   error  'process' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/astra-design-e2e.test.mjs
+  104:19  error  'structuredClone' is not defined  no-undef
+  221:19  error  'structuredClone' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/astra-state-e2e.mjs
+   13:16  error  'process' is not defined       no-undef
+   13:44  error  'process' is not defined       no-undef
+   14:6   error  'process' is not defined       no-undef
+   18:15  error  'process' is not defined       no-undef
+   23:5   error  'process' is not defined       no-undef
+   25:17  error  'setTimeout' is not defined    no-undef
+   30:3   error  'clearTimeout' is not defined  no-undef
+   36:3   error  'process' is not defined       no-undef
+   39:1   error  'console' is not defined       no-undef
+   42:19  error  'process' is not defined       no-undef
+   44:1   error  'console' is not defined       no-undef
+  124:82  error  'setTimeout' is not defined    no-undef
+  125:13  error  'clearTimeout' is not defined  no-undef
+  132:5   error  'console' is not defined       no-undef
+  142:5   error  'console' is not defined       no-undef
+  145:5   error  'console' is not defined       no-undef
+  160:5   error  'console' is not defined       no-undef
+  177:5   error  'console' is not defined       no-undef
+  272:1   error  'console' is not defined       no-undef
+  277:3   error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/audio-smoke.mjs
+   14:19  error  'process' is not defined       no-undef
+   15:25  error  'process' is not defined       no-undef
+   16:22  error  'process' is not defined       no-undef
+   18:3   error  'process' is not defined       no-undef
+   51:35  error  'setTimeout' is not defined    no-undef
+   84:23  error  'WebSocket' is not defined     no-undef
+  127:26  error  'fetch' is not defined         no-undef
+  193:17  error  'process' is not defined       no-undef
+  223:7   error  'clearTimeout' is not defined  no-undef
+  226:19  error  'setTimeout' is not defined    no-undef
+  283:12  error  'process' is not defined       no-undef
+  293:17  error  'process' is not defined       no-undef
+  436:3   error  'console' is not defined       no-undef
+  483:1   error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/desktop-product-audit.mjs
+   35:17   error  'process' is not defined       no-undef
+   36:22   error  'process' is not defined       no-undef
+   37:16   error  'process' is not defined       no-undef
+   37:44   error  'process' is not defined       no-undef
+   38:6    error  'process' is not defined       no-undef
+   38:35   error  'process' is not defined       no-undef
+   40:120  error  'process' is not defined       no-undef
+   42:15   error  'process' is not defined       no-undef
+   47:5    error  'process' is not defined       no-undef
+   49:17   error  'setTimeout' is not defined    no-undef
+   54:3    error  'clearTimeout' is not defined  no-undef
+   58:5    error  'process' is not defined       no-undef
+   69:3    error  'process' is not defined       no-undef
+   72:1    error  'console' is not defined       no-undef
+   75:19   error  'process' is not defined       no-undef
+   77:1    error  'console' is not defined       no-undef
+   81:35   error  'setTimeout' is not defined    no-undef
+  167:22   error  'URL' is not defined           no-undef
+  245:82   error  'setTimeout' is not defined    no-undef
+  246:13   error  'clearTimeout' is not defined  no-undef
+  253:5    error  'console' is not defined       no-undef
+  263:5    error  'console' is not defined       no-undef
+  266:5    error  'console' is not defined       no-undef
+  281:5    error  'console' is not defined       no-undef
+  334:5    error  'console' is not defined       no-undef
+  344:27   error  'console' is not defined       no-undef
+  348:29   error  'URL' is not defined           no-undef
+  350:16   error  'setTimeout' is not defined    no-undef
+  350:35   error  'console' is not defined       no-undef
+  351:28   error  'clearTimeout' is not defined  no-undef
+  360:3    error  'console' is not defined       no-undef
+  554:1    error  'console' is not defined       no-undef
+  555:1    error  'clearTimeout' is not defined  no-undef
+  559:5    error  'process' is not defined       no-undef
+  560:3    error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/desktop-progress.mjs
+    77:7   error  'console' is not defined  no-undef
+    80:7   error  'process' is not defined  no-undef
+   138:21  error  'URL' is not defined      no-undef
+   146:20  error  'process' is not defined  no-undef
+  1171:32  error  'process' is not defined  no-undef
+  1184:7   error  'console' is not defined  no-undef
+  1185:7   error  'process' is not defined  no-undef
+  1188:5   error  'console' is not defined  no-undef
+  1194:3   error  'console' is not defined  no-undef
+  1198:3   error  'console' is not defined  no-undef
+  1199:3   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/gates-clean.mjs
+  14:18  error  'process' is not defined  no-undef
+  22:3   error  'process' is not defined  no-undef
+  27:3   error  'console' is not defined  no-undef
+  41:3   error  'console' is not defined  no-undef
+  42:3   error  'process' is not defined  no-undef
+  44:1   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/meet-mereni.mjs
+   66:3   error  'console' is not defined  no-undef
+  114:61  error  'Buffer' is not defined   no-undef
+  117:25  error  'Buffer' is not defined   no-undef
+  117:54  error  'Buffer' is not defined   no-undef
+  236:3   error  'console' is not defined  no-undef
+  292:3   error  'console' is not defined  no-undef
+  303:3   error  'console' is not defined  no-undef
+  314:3   error  'console' is not defined  no-undef
+  406:3   error  'console' is not defined  no-undef
+  408:5   error  'console' is not defined  no-undef
+  409:5   error  'console' is not defined  no-undef
+  411:3   error  'console' is not defined  no-undef
+  412:3   error  'console' is not defined  no-undef
+  413:3   error  'console' is not defined  no-undef
+  414:3   error  'console' is not defined  no-undef
+  415:3   error  'console' is not defined  no-undef
+  416:3   error  'console' is not defined  no-undef
+  417:3   error  'console' is not defined  no-undef
+  418:3   error  'console' is not defined  no-undef
+  420:23  error  'process' is not defined  no-undef
+  423:24  error  'process' is not defined  no-undef
+  433:3   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/package-mac.mjs
+   38:5   error  'console' is not defined  no-undef
+   58:7   error  'console' is not defined  no-undef
+  126:22  error  'process' is not defined  no-undef
+  132:3   error  'console' is not defined  no-undef
+  135:38  error  'process' is not defined  no-undef
+  138:3   error  'process' is not defined  no-undef
+  141:20  error  'process' is not defined  no-undef
+  143:26  error  'process' is not defined  no-undef
+  151:5   error  'process' is not defined  no-undef
+  160:1   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/prepare-media-encoder.mjs
+   49:19  error  'Buffer' is not defined   no-undef
+   86:72  error  'fetch' is not defined    no-undef
+  339:62  error  'URL' is not defined      no-undef
+  376:7   error  'process' is not defined  no-undef
+  387:5   error  'console' is not defined  no-undef
+  404:35  error  'process' is not defined  no-undef
+  411:9   error  'console' is not defined  no-undef
+  414:9   error  'console' is not defined  no-undef
+  417:5   error  'console' is not defined  no-undef
+  421:3   error  'console' is not defined  no-undef
+  425:44  error  'process' is not defined  no-undef
+  428:5   error  'process' is not defined  no-undef
+  428:71  error  'process' is not defined  no-undef
+  430:5   error  'console' is not defined  no-undef
+  431:5   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/preskocene.mjs
+  27:7   error  'process' is not defined  no-undef
+  57:5   error  'process' is not defined  no-undef
+  59:3   error  'console' is not defined  no-undef
+  60:3   error  'process' is not defined  no-undef
+  65:3   error  'console' is not defined  no-undef
+  67:5   error  'console' is not defined  no-undef
+  69:3   error  'process' is not defined  no-undef
+  72:1   error  'console' is not defined  no-undef
+  73:1   error  'console' is not defined  no-undef
+  76:22  error  'console' is not defined  no-undef
+  78:1   error  'console' is not defined  no-undef
+  83:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/release-artifacts.mjs
+  189:58  error  'process' is not defined  no-undef
+  191:3   error  'console' is not defined  no-undef
+  192:3   error  'console' is not defined  no-undef
+  195:5   error  'console' is not defined  no-undef
+  199:5   error  'process' is not defined  no-undef
+  199:71  error  'process' is not defined  no-undef
+  201:5   error  'console' is not defined  no-undef
+  202:5   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/schuzka-mereni.mjs
+   90:61  error  'Buffer' is not defined   no-undef
+   93:15  error  'Buffer' is not defined   no-undef
+  207:24  error  'process' is not defined  no-undef
+  210:3   error  'console' is not defined  no-undef
+  220:3   error  'process' is not defined  no-undef
+  224:3   error  'console' is not defined  no-undef
+  225:3   error  'process' is not defined  no-undef
+  232:1   error  'console' is not defined  no-undef
+  324:1   error  'console' is not defined  no-undef
+  406:1   error  'console' is not defined  no-undef
+  407:1   error  'console' is not defined  no-undef
+  408:1   error  'console' is not defined  no-undef
+  409:1   error  'console' is not defined  no-undef
+  410:1   error  'console' is not defined  no-undef
+  411:1   error  'console' is not defined  no-undef
+  412:1   error  'console' is not defined  no-undef
+  413:1   error  'console' is not defined  no-undef
+  414:1   error  'console' is not defined  no-undef
+  415:1   error  'console' is not defined  no-undef
+  416:1   error  'console' is not defined  no-undef
+  417:1   error  'console' is not defined  no-undef
+  418:1   error  'console' is not defined  no-undef
+  426:3   error  'console' is not defined  no-undef
+  427:3   error  'console' is not defined  no-undef
+  428:3   error  'console' is not defined  no-undef
+  430:3   error  'console' is not defined  no-undef
+  432:1   error  'console' is not defined  no-undef
+  433:1   error  'console' is not defined  no-undef
+  434:1   error  'console' is not defined  no-undef
+  439:26  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/tray-ikony.mjs
+   44:20  error  'Buffer' is not defined   no-undef
+  278:16  error  'Buffer' is not defined   no-undef
+  305:21  error  'Buffer' is not defined   no-undef
+  306:17  error  'Buffer' is not defined   no-undef
+  307:27  error  'Buffer' is not defined   no-undef
+  309:39  error  'Buffer' is not defined   no-undef
+  310:10  error  'Buffer' is not defined   no-undef
+  314:16  error  'Buffer' is not defined   no-undef
+  323:10  error  'Buffer' is not defined   no-undef
+  327:22  error  'Buffer' is not defined   no-undef
+  370:22  error  'Buffer' is not defined   no-undef
+  373:12  error  'Buffer' is not defined   no-undef
+  375:20  error  'Buffer' is not defined   no-undef
+  378:10  error  'Buffer' is not defined   no-undef
+  416:3   error  'console' is not defined  no-undef
+  430:5   error  'process' is not defined  no-undef
+  430:40  error  'process' is not defined  no-undef
+  431:21  error  'process' is not defined  no-undef
+  449:5   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/ui-smoke.mjs
+    16:27  error  'process' is not defined       no-undef
+    33:35  error  'setTimeout' is not defined    no-undef
+    52:26  error  'fetch' is not defined         no-undef
+    62:23  error  'WebSocket' is not defined     no-undef
+    72:9   error  'clearTimeout' is not defined  no-undef
+    93:7   error  'clearTimeout' is not defined  no-undef
+   101:36  error  'WebSocket' is not defined     no-undef
+   106:21  error  'setTimeout' is not defined    no-undef
+   114:9   error  'clearTimeout' is not defined  no-undef
+   134:36  error  'WebSocket' is not defined     no-undef
+   134:81  error  'WebSocket' is not defined     no-undef
+   561:15  error  'Buffer' is not defined        no-undef
+  1165:3   error  'console' is not defined       no-undef
+  1166:3   error  'process' is not defined       no-undef
+  1237:3   error  'console' is not defined       no-undef
+  1239:5   error  'console' is not defined       no-undef
+  1241:3   error  'process' is not defined       no-undef
+  1245:3   error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/verify-macos-release.mjs
+   85:43  error  'URL' is not defined      no-undef
+  129:33  error  'process' is not defined  no-undef
+  129:58  error  'process' is not defined  no-undef
+  190:45  error  'process' is not defined  no-undef
+  204:5   error  'console' is not defined  no-undef
+  210:5   error  'console' is not defined  no-undef
+  221:43  error  'process' is not defined  no-undef
+  224:5   error  'process' is not defined  no-undef
+  224:71  error  'process' is not defined  no-undef
+  226:5   error  'console' is not defined  no-undef
+  227:5   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/verify-published-release.mjs
+  10:72  error  'fetch' is not defined        no-undef
+  16:42  error  'URL' is not defined          no-undef
+  20:15  error  'AbortSignal' is not defined  no-undef
+  24:21  error  'Buffer' is not defined       no-undef
+  42:3   error  'console' is not defined      no-undef
+  45:5   error  'process' is not defined      no-undef
+  45:71  error  'process' is not defined      no-undef
+  47:5   error  'console' is not defined      no-undef
+  48:5   error  'process' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/scripts/vzorky-exportu.mjs
+   40:1   error  'process' is not defined  no-undef
+   52:41  error  'Buffer' is not defined   no-undef
+  267:40  error  'Buffer' is not defined   no-undef
+  304:39  error  'Buffer' is not defined   no-undef
+  351:17  error  'Buffer' is not defined   no-undef
+  396:44  error  'process' is not defined  no-undef
+  473:48  error  'process' is not defined  no-undef
+  480:35  error  'process' is not defined  no-undef
+  527:26  error  'process' is not defined  no-undef
+  536:5   error  'console' is not defined  no-undef
+  537:5   error  'console' is not defined  no-undef
+  538:5   error  'console' is not defined  no-undef
+  539:35  error  'process' is not defined  no-undef
+  558:3   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/src/features/recording/system-audio-health.js
+  26:5   error  'window' is not defined  no-undef
+  48:21  error  'window' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/src/hooks/useElapsedTime.js
+  16:22  error  'window' is not defined  no-undef
+  17:18  error  'window' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/src/lib/audio-levels.js
+    8:14  error  'DOMException' is not defined  no-undef
+   23:17  error  'DOMException' is not defined  no-undef
+   28:17  error  'window' is not defined        no-undef
+   30:18  error  'DOMException' is not defined  no-undef
+   36:64  error  'window' is not defined        no-undef
+   43:7   error  'window' is not defined        no-undef
+   55:23  error  'window' is not defined        no-undef
+   89:8   error  'window' is not defined        no-undef
+   89:35  error  'navigator' is not defined     no-undef
+  102:7   error  'navigator' is not defined     no-undef
+  121:6   error  'window' is not defined        no-undef
+  122:9   error  'navigator' is not defined     no-undef
+  140:63  error  'navigator' is not defined     no-undef
+  148:26  error  'navigator' is not defined     no-undef
+  150:7   error  'navigator' is not defined     no-undef
+  406:19  error  'window' is not defined        no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/src/lib/oauth.js
+   87:19  error  'URL' is not defined              no-undef
+  108:20  error  'URLSearchParams' is not defined  no-undef
+  122:14  error  'URLSearchParams' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/src/lib/theme.js
+   8:14  error  'window' is not defined    no-undef
+  17:10  error  'window' is not defined    no-undef
+  21:16  error  'document' is not defined  no-undef
+  30:5   error  'window' is not defined    no-undef
+  39:3   error  'window' is not defined    no-undef
+  42:3   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/src/lib/ui-smoke.js
+  119:18  error  'URL' is not defined  no-undef
+  140:20  error  'URL' is not defined  no-undef
+  216:15  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/astra-state-acceptance.test.js
+  5:31  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/auth-cancellation-storage.test.js
+   59:5   error  'queueMicrotask' is not defined   no-undef
+   63:23  error  'URL' is not defined              no-undef
+  104:21  error  'URL' is not defined              no-undef
+  140:55  error  'Buffer' is not defined           no-undef
+  193:16  error  'Buffer' is not defined           no-undef
+  207:11  error  'URL' is not defined              no-undef
+  211:28  error  'URLSearchParams' is not defined  no-undef
+  233:16  error  'Buffer' is not defined           no-undef
+  243:29  error  'Buffer' is not defined           no-undef
+  281:16  error  'Buffer' is not defined           no-undef
+  310:16  error  'Buffer' is not defined           no-undef
+  353:16  error  'Buffer' is not defined           no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/auth-controller-wiring.test.js
+   45:37  error  'URL' is not defined              no-undef
+   46:37  error  'URL' is not defined              no-undef
+   47:40  error  'URL' is not defined              no-undef
+   48:72  error  'process' is not defined          no-undef
+  121:5   error  'queueMicrotask' is not defined   no-undef
+  296:34  error  'AbortController' is not defined  no-undef
+  402:23  error  'URL' is not defined              no-undef
+  427:28  error  'AbortController' is not defined  no-undef
+  438:11  error  'queueMicrotask' is not defined   no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/auth-empty-store.test.js
+  11:31  error  'URL' is not defined     no-undef
+  31:55  error  'URL' is not defined     no-undef
+  39:16  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/auth-identity-fallback.test.js
+   70:5   error  'queueMicrotask' is not defined   no-undef
+   74:23  error  'URL' is not defined              no-undef
+   85:23  error  'URL' is not defined              no-undef
+   87:24  error  'URLSearchParams' is not defined  no-undef
+  139:21  error  'URL' is not defined              no-undef
+  171:37  error  'Buffer' is not defined           no-undef
+  229:11  error  'URL' is not defined              no-undef
+  237:11  error  'URL' is not defined              no-undef
+  239:16  error  'URL' is not defined              no-undef
+  242:11  error  'URL' is not defined              no-undef
+  244:16  error  'URLSearchParams' is not defined  no-undef
+  262:11  error  'URL' is not defined              no-undef
+  267:16  error  'URL' is not defined              no-undef
+  285:11  error  'URL' is not defined              no-undef
+  305:11  error  'URL' is not defined              no-undef
+  325:11  error  'URL' is not defined              no-undef
+  341:11  error  'URL' is not defined              no-undef
+  354:11  error  'URL' is not defined              no-undef
+  356:16  error  'URL' is not defined              no-undef
+  376:11  error  'URL' is not defined              no-undef
+  382:11  error  'URL' is not defined              no-undef
+  407:11  error  'URL' is not defined              no-undef
+  442:24  error  'URL' is not defined              no-undef
+  464:72  error  'URL' is not defined              no-undef
+  474:26  error  'AbortSignal' is not defined      no-undef
+  582:24  error  'URL' is not defined              no-undef
+  586:24  error  'URL' is not defined              no-undef
+  618:24  error  'URL' is not defined              no-undef
+  644:24  error  'URL' is not defined              no-undef
+  677:24  error  'URL' is not defined              no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/auth-panel-blur-guard.test.js
+  32:37  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/auth-refresh.test.js
+  54:31  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/auth-wait-lifecycle.test.js
+  10:68  error  'process' is not defined         no-undef
+  33:7   error  'queueMicrotask' is not defined  no-undef
+  49:21  error  'URL' is not defined             no-undef
+  84:16  error  'URL' is not defined             no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/barvy.test.js
+  4:32  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/brany-workflow.test.js
+  18:34  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/desktop-progress.test.js
+  113:8   error  'process' is not defined  no-undef
+  114:37  error  'process' is not defined  no-undef
+  124:5   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/diagnostics.test.js
+  194:39  error  'URL' is not defined  no-undef
+  195:42  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/electron-verze.test.js
+  5:20  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/fronta-symetrie.test.js
+  4:37  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/idle-panel.test.js
+  13:42  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/ikona-aplikace.test.js
+   11:33  error  'URL' is not defined      no-undef
+   15:20  error  'Buffer' is not defined   no-undef
+   31:28  error  'Buffer' is not defined   no-undef
+   62:16  error  'process' is not defined  no-undef
+  228:53  error  'process' is not defined  no-undef
+  231:20  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/ipc-sender-guard.test.js
+  20:37  error  'URL' is not defined  no-undef
+  24:49  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/kalendar-zrusen.test.js
+  20:33  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/logout-safety.test.js
+   62:31  error  'Buffer' is not defined           no-undef
+  123:5   error  'queueMicrotask' is not defined   no-undef
+  157:25  error  'URL' is not defined              no-undef
+  195:25  error  'URL' is not defined              no-undef
+  205:29  error  'URLSearchParams' is not defined  no-undef
+  254:25  error  'URL' is not defined              no-undef
+  265:29  error  'URLSearchParams' is not defined  no-undef
+  315:27  error  'URL' is not defined              no-undef
+  323:36  error  'URLSearchParams' is not defined  no-undef
+  379:27  error  'URL' is not defined              no-undef
+  387:36  error  'URLSearchParams' is not defined  no-undef
+  426:25  error  'URL' is not defined              no-undef
+  557:25  error  'URL' is not defined              no-undef
+  603:20  error  'URL' is not defined              no-undef
+  653:35  error  'Buffer' is not defined           no-undef
+  655:53  error  'Buffer' is not defined           no-undef
+  679:33  error  'Buffer' is not defined           no-undef
+  691:35  error  'Buffer' is not defined           no-undef
+  744:36  error  'Buffer' is not defined           no-undef
+  745:38  error  'Buffer' is not defined           no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/logout.test.js
+   46:37  error  'URL' is not defined              no-undef
+   47:37  error  'URL' is not defined              no-undef
+   48:40  error  'URL' is not defined              no-undef
+   53:31  error  'Buffer' is not defined           no-undef
+  194:26  error  'URLSearchParams' is not defined  no-undef
+  213:24  error  'URLSearchParams' is not defined  no-undef
+  247:24  error  'URLSearchParams' is not defined  no-undef
+  381:33  error  'Buffer' is not defined           no-undef
+  466:36  error  'Buffer' is not defined           no-undef
+  468:38  error  'Buffer' is not defined           no-undef
+  693:39  error  'URL' is not defined              no-undef
+  777:27  error  'URL' is not defined              no-undef
+  803:50  error  'URL' is not defined              no-undef
+  806:32  error  'URL' is not defined              no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/manifest.test.js
+   15:20  error  'URL' is not defined  no-undef
+  100:43  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/media-encoder-packaging.test.js
+   52:42  error  'process' is not defined  no-undef
+   91:22  error  'Buffer' is not defined   no-undef
+  105:17  error  'Buffer' is not defined   no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/media-encoder.test.js
+   28:33  error  'process' is not defined  no-undef
+   92:5   error  'process' is not defined  no-undef
+  112:14  error  'process' is not defined  no-undef
+  130:40  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/meeting-audio.test.js
+   83:19  error  'Buffer' is not defined           no-undef
+  165:19  error  'Buffer' is not defined           no-undef
+  192:19  error  'Buffer' is not defined           no-undef
+  226:19  error  'Buffer' is not defined           no-undef
+  247:25  error  'Buffer' is not defined           no-undef
+  269:19  error  'Buffer' is not defined           no-undef
+  294:19  error  'Buffer' is not defined           no-undef
+  328:23  error  'Buffer' is not defined           no-undef
+  365:25  error  'Buffer' is not defined           no-undef
+  377:58  error  'structuredClone' is not defined  no-undef
+  380:17  error  'structuredClone' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/meeting-upload.test.js
+  11:48  error  'Headers' is not defined  no-undef
+  24:19  error  'Buffer' is not defined   no-undef
+  39:30  error  'URL' is not defined      no-undef
+  40:28  error  'URL' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/oauth-state.test.js
+  28:36  error  'Buffer' is not defined  no-undef
+  37:14  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/onboarding-missing-steps.test.js
+   99:36  error  'DOMException' is not defined  no-undef
+  820:36  error  'setTimeout' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/packaging.test.js
+   11:45  error  'URL' is not defined      no-undef
+   33:28  error  'process' is not defined  no-undef
+   69:28  error  'process' is not defined  no-undef
+   70:28  error  'URL' is not defined      no-undef
+  100:28  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/panel-blur-guard.test.js
+  39:37  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/permissions.test.js
+   14:52  error  'URL' is not defined      no-undef
+  122:25  error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/pisma.test.js
+  6:51  error  'URL' is not defined  no-undef
+  7:32  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/pkce.test.js
+  27:53  error  'Buffer' is not defined  no-undef
+  35:49  error  'Buffer' is not defined  no-undef
+  38:21  error  'Buffer' is not defined  no-undef
+  45:40  error  'Buffer' is not defined  no-undef
+  46:41  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/publish-release-remote.test.js
+   8:24  error  'URL' is not defined      no-undef
+  29:16  error  'Buffer' is not defined   no-undef
+  30:16  error  'Buffer' is not defined   no-undef
+  66:17  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/queue-wiring.test.js
+    50:21  error  'URL' is not defined              no-undef
+    74:40  error  'URL' is not defined              no-undef
+    75:40  error  'URL' is not defined              no-undef
+    79:43  error  'URL' is not defined              no-undef
+   105:5   error  'Buffer' is not defined           no-undef
+   232:27  error  'URL' is not defined              no-undef
+   390:24  error  'Buffer' is not defined           no-undef
+   393:32  error  'Buffer' is not defined           no-undef
+   416:39  error  'Buffer' is not defined           no-undef
+   739:12  error  'process' is not defined          no-undef
+   773:10  error  'Buffer' is not defined           no-undef
+   774:5   error  'Buffer' is not defined           no-undef
+   775:5   error  'Buffer' is not defined           no-undef
+   776:5   error  'Buffer' is not defined           no-undef
+   777:5   error  'Buffer' is not defined           no-undef
+   778:5   error  'Buffer' is not defined           no-undef
+   825:27  error  'Buffer' is not defined           no-undef
+   826:23  error  'Buffer' is not defined           no-undef
+   867:27  error  'Buffer' is not defined           no-undef
+   868:23  error  'Buffer' is not defined           no-undef
+  1075:35  error  'console' is not defined          no-undef
+  2071:57  error  'setImmediate' is not defined     no-undef
+  2143:32  error  'Buffer' is not defined           no-undef
+  2577:32  error  'Buffer' is not defined           no-undef
+  3696:7   error  'setTimeout' is not defined       no-undef
+  3733:7   error  'setTimeout' is not defined       no-undef
+  4253:43  error  'Headers' is not defined          no-undef
+  5006:36  error  'setImmediate' is not defined     no-undef
+  5008:25  error  'Buffer' is not defined           no-undef
+  5144:36  error  'setImmediate' is not defined     no-undef
+  5175:38  error  'setImmediate' is not defined     no-undef
+  5213:38  error  'setImmediate' is not defined     no-undef
+  5506:26  error  'Buffer' is not defined           no-undef
+  5511:26  error  'Buffer' is not defined           no-undef
+  5609:76  error  'Buffer' is not defined           no-undef
+  5894:32  error  'setImmediate' is not defined     no-undef
+  6321:12  error  'Buffer' is not defined           no-undef
+  6742:23  error  'structuredClone' is not defined  no-undef
+  6743:31  error  'structuredClone' is not defined  no-undef
+  6985:23  error  'structuredClone' is not defined  no-undef
+  6986:39  error  'structuredClone' is not defined  no-undef
+  7126:25  error  'Buffer' is not defined           no-undef
+  7128:25  error  'Buffer' is not defined           no-undef
+  7143:23  error  'structuredClone' is not defined  no-undef
+  7144:31  error  'structuredClone' is not defined  no-undef
+  7342:36  error  'setImmediate' is not defined     no-undef
+  7346:25  error  'Buffer' is not defined           no-undef
+  7388:25  error  'Buffer' is not defined           no-undef
+  7516:36  error  'setTimeout' is not defined       no-undef
+  7708:23  error  'structuredClone' is not defined  no-undef
+  7709:39  error  'structuredClone' is not defined  no-undef
+  7801:23  error  'structuredClone' is not defined  no-undef
+  7802:31  error  'structuredClone' is not defined  no-undef
+  8214:52  error  'URL' is not defined              no-undef
+  8524:77  error  'AbortSignal' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/queue.test.js
+    36:33  error  'process' is not defined          no-undef
+    37:31  error  'process' is not defined          no-undef
+    43:40  error  'URL' is not defined              no-undef
+   140:53  error  'process' is not defined          no-undef
+   141:8   error  'process' is not defined          no-undef
+   142:51  error  'process' is not defined          no-undef
+   143:8   error  'process' is not defined          no-undef
+   202:87  error  'Buffer' is not defined           no-undef
+   427:9   error  'Buffer' is not defined           no-undef
+   534:33  error  'Buffer' is not defined           no-undef
+   575:44  error  'Buffer' is not defined           no-undef
+   657:27  error  'Buffer' is not defined           no-undef
+   658:23  error  'Buffer' is not defined           no-undef
+   701:27  error  'Buffer' is not defined           no-undef
+   743:32  error  'process' is not defined          no-undef
+   743:75  error  'process' is not defined          no-undef
+   841:12  error  'process' is not defined          no-undef
+   842:12  error  'process' is not defined          no-undef
+   843:30  error  'process' is not defined          no-undef
+   848:39  error  'process' is not defined          no-undef
+   860:12  error  'process' is not defined          no-undef
+   875:5   error  'process' is not defined          no-undef
+   889:5   error  'process' is not defined          no-undef
+  1275:22  error  'structuredClone' is not defined  no-undef
+  1313:22  error  'structuredClone' is not defined  no-undef
+  1361:20  error  'structuredClone' is not defined  no-undef
+  1374:20  error  'structuredClone' is not defined  no-undef
+  1617:20  error  'structuredClone' is not defined  no-undef
+  2503:60  error  'Buffer' is not defined           no-undef
+  2538:73  error  'Buffer' is not defined           no-undef
+  2540:56  error  'Buffer' is not defined           no-undef
+  2574:60  error  'Buffer' is not defined           no-undef
+  2575:56  error  'Buffer' is not defined           no-undef
+  3135:19  error  'Buffer' is not defined           no-undef
+  3456:51  error  'Buffer' is not defined           no-undef
+  3457:47  error  'Buffer' is not defined           no-undef
+  3619:22  error  'Headers' is not defined          no-undef
+  3658:60  error  'Buffer' is not defined           no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/recording-actions.test.js
+   29:17  error  'Buffer' is not defined           no-undef
+  123:27  error  'Buffer' is not defined           no-undef
+  279:25  error  'Buffer' is not defined           no-undef
+  332:62  error  'Buffer' is not defined           no-undef
+  339:10  error  'structuredClone' is not defined  no-undef
+  404:38  error  'Buffer' is not defined           no-undef
+  420:22  error  'structuredClone' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/recording-card.test.js
+   115:41  error  'URL' is not defined           no-undef
+   931:24  error  'DOMException' is not defined  no-undef
+  1008:24  error  'DOMException' is not defined  no-undef
+  1714:34  error  'DOMException' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/recording-export.test.js
+   25:32  error  'Buffer' is not defined       no-undef
+   66:10  error  'Buffer' is not defined       no-undef
+   67:5   error  'Buffer' is not defined       no-undef
+   68:5   error  'Buffer' is not defined       no-undef
+   69:5   error  'Buffer' is not defined       no-undef
+   70:5   error  'Buffer' is not defined       no-undef
+   71:5   error  'Buffer' is not defined       no-undef
+  121:21  error  'URL' is not defined          no-undef
+  143:16  error  'URL' is not defined          no-undef
+  151:21  error  'URL' is not defined          no-undef
+  163:21  error  'URL' is not defined          no-undef
+  174:21  error  'URL' is not defined          no-undef
+  192:12  error  'Buffer' is not defined       no-undef
+  197:16  error  'URL' is not defined          no-undef
+  204:12  error  'Buffer' is not defined       no-undef
+  217:50  error  'Buffer' is not defined       no-undef
+  220:19  error  'Buffer' is not defined       no-undef
+  221:16  error  'TextDecoder' is not defined  no-undef
+  229:12  error  'Buffer' is not defined       no-undef
+  231:12  error  'Buffer' is not defined       no-undef
+  232:16  error  'URL' is not defined          no-undef
+  251:23  error  'URL' is not defined          no-undef
+  263:21  error  'URL' is not defined          no-undef
+  327:11  error  'URL' is not defined          no-undef
+  749:21  error  'URL' is not defined          no-undef
+  763:21  error  'URL' is not defined          no-undef
+  773:21  error  'URL' is not defined          no-undef
+  787:25  error  'URL' is not defined          no-undef
+  796:16  error  'URL' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/recording-order-guard.test.js
+  20:41  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/recording-verification.test.js
+   17:18  error  'Headers' is not defined  no-undef
+  106:18  error  'URL' is not defined      no-undef
+  116:16  error  'URL' is not defined      no-undef
+  123:22  error  'URL' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/recordings-dashboard.test.js
+  595:47  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/release-artifacts.test.js
+  32:21  error  'Buffer' is not defined  no-undef
+  37:44  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/release-workflow.test.js
+  5:7  error  'URL' is not defined  no-undef
+  9:7  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/retention.test.js
+    66:27  error  'Buffer' is not defined  no-undef
+    67:23  error  'Buffer' is not defined  no-undef
+   146:23  error  'Buffer' is not defined  no-undef
+   147:25  error  'Buffer' is not defined  no-undef
+   225:27  error  'Buffer' is not defined  no-undef
+   413:24  error  'Buffer' is not defined  no-undef
+   414:37  error  'Buffer' is not defined  no-undef
+   930:47  error  'Buffer' is not defined  no-undef
+  1026:36  error  'URL' is not defined     no-undef
+  1027:37  error  'URL' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/session-reentry.test.js
+  429:41  error  'URL' is not defined  no-undef
+  430:44  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/settings-audio-permissions.test.js
+  6:37  error  'URL' is not defined  no-undef
+  7:36  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/settings.test.js
+  10:41  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/tracking-card.test.js
+  9:42  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/tracking-timer.test.js
+  104:7   error  'URL' is not defined           no-undef
+  719:9   error  'setImmediate' is not defined  no-undef
+  800:24  error  'URL' is not defined           no-undef
+  833:24  error  'URL' is not defined           no-undef
+  844:22  error  'URL' is not defined           no-undef
+  847:22  error  'URL' is not defined           no-undef
+  874:24  error  'URL' is not defined           no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/tray-authority.test.js
+  50:37  error  'URL' is not defined  no-undef
+  51:40  error  'URL' is not defined  no-undef
+  52:36  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/tray-ikony.test.js
+   28:20  error  'Buffer' is not defined   no-undef
+   29:38  error  'URL' is not defined      no-undef
+  102:27  error  'Buffer' is not defined   no-undef
+  104:16  error  'Buffer' is not defined   no-undef
+  148:16  error  'Buffer' is not defined   no-undef
+  155:10  error  'Buffer' is not defined   no-undef
+  348:20  error  'process' is not defined  no-undef
+  349:20  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/tray-image-electron.js
+   25:20  error  'process' is not defined  no-undef
+   75:7   error  'console' is not defined  no-undef
+   94:7   error  'console' is not defined  no-undef
+   99:7   error  'console' is not defined  no-undef
+  112:5   error  'console' is not defined  no-undef
+  117:5   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/ui-smoke.test.js
+   72:19  error  'URL' is not defined      no-undef
+  159:22  error  'process' is not defined  no-undef
+  161:7   error  'process' is not defined  no-undef
+  167:42  error  'process' is not defined  no-undef
+  168:12  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/upload-client.test.js
+    63:18  error  'Headers' is not defined       no-undef
+    69:14  error  'Headers' is not defined       no-undef
+    73:14  error  'URL' is not defined           no-undef
+    87:21  error  'Buffer' is not defined        no-undef
+    88:17  error  'Buffer' is not defined        no-undef
+   542:10  error  'Buffer' is not defined        no-undef
+   627:43  error  'Buffer' is not defined        no-undef
+   673:15  error  'Buffer' is not defined        no-undef
+   674:23  error  'Buffer' is not defined        no-undef
+   725:69  error  'Buffer' is not defined        no-undef
+   726:65  error  'Buffer' is not defined        no-undef
+   730:29  error  'Buffer' is not defined        no-undef
+   731:25  error  'Buffer' is not defined        no-undef
+  1037:28  error  'URL' is not defined           no-undef
+  1427:29  error  'Buffer' is not defined        no-undef
+  1490:24  error  'Buffer' is not defined        no-undef
+  1491:20  error  'Buffer' is not defined        no-undef
+  1501:40  error  'setImmediate' is not defined  no-undef
+  1575:25  error  'Buffer' is not defined        no-undef
+  1599:24  error  'Buffer' is not defined        no-undef
+  1706:76  error  'Buffer' is not defined        no-undef
+  1707:72  error  'Buffer' is not defined        no-undef
+  1731:76  error  'Buffer' is not defined        no-undef
+  1732:72  error  'Buffer' is not defined        no-undef
+  1763:76  error  'Buffer' is not defined        no-undef
+  1764:72  error  'Buffer' is not defined        no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/verify-macos-release.test.js
+  29:21  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/verify-published-release.test.js
+   5:18  error  'Buffer' is not defined       no-undef
+  17:11  error  'Response' is not defined     no-undef
+  18:11  error  'Response' is not defined     no-undef
+  24:45  error  'AbortSignal' is not defined  no-undef
+  39:13  error  'Response' is not defined     no-undef
+  46:13  error  'Response' is not defined     no-undef
+  52:32  error  'Response' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/volba-firmy-v-relaci.test.js
+  20:29  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/zapojeni-odhlaseni.test.js
+  27:33  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-data/tests/zkratky-bez-kryti.test.js
+  52:37  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+    2:18   error  'document' is not defined               no-undef
+    3:19   error  'URLSearchParams' is not defined        no-undef
+    3:35   error  'location' is not defined               no-undef
+    7:1    error  'document' is not defined               no-undef
+    8:32   error  'document' is not defined               no-undef
+    9:1    error  'document' is not defined               no-undef
+   10:15   error  'document' is not defined               no-undef
+   10:112  error  'document' is not defined               no-undef
+   11:17   error  'document' is not defined               no-undef
+   11:105  error  'document' is not defined               no-undef
+   12:32   error  'document' is not defined               no-undef
+   13:24   error  'document' is not defined               no-undef
+   13:138  error  'document' is not defined               no-undef
+   16:2    error  'document' is not defined               no-undef
+   17:28   error  'document' is not defined               no-undef
+   17:152  error  'document' is not defined               no-undef
+   18:37   error  'document' is not defined               no-undef
+   18:130  error  'document' is not defined               no-undef
+   36:40   error  'window' is not defined                 no-undef
+   80:2    error  'document' is not defined               no-undef
+   81:2    error  'document' is not defined               no-undef
+   82:2    error  'document' is not defined               no-undef
+   95:2    error  'document' is not defined               no-undef
+   96:2    error  'window' is not defined                 no-undef
+   97:19   error  'window' is not defined                 no-undef
+  144:416  error  'document' is not defined               no-undef
+  144:527  error  'document' is not defined               no-undef
+  159:53   error  'document' is not defined               no-undef
+  159:487  error  'requestAnimationFrame' is not defined  no-undef
+  162:76   error  'clearTimeout' is not defined           no-undef
+  162:112  error  'setTimeout' is not defined             no-undef
+  194:1    error  'document' is not defined               no-undef
+  204:101  error  'setTimeout' is not defined             no-undef
+  234:23   error  'document' is not defined               no-undef
+  251:66   error  'setTimeout' is not defined             no-undef
+  259:1    error  'document' is not defined               no-undef
+  268:1    error  'document' is not defined               no-undef
+  279:19   error  'document' is not defined               no-undef
+  281:1    error  'document' is not defined               no-undef
+  283:165  error  'document' is not defined               no-undef
+  292:1    error  'document' is not defined               no-undef
+  293:26   error  'document' is not defined               no-undef
+  294:54   error  'document' is not defined               no-undef
+  299:1    error  'setInterval' is not defined            no-undef
+  299:64   error  'document' is not defined               no-undef
+  303:21   error  'document' is not defined               no-undef
+  304:35   error  'document' is not defined               no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/check-f-tray.mjs
+  12:26  error  'console' is not defined  no-undef
+  43:25  error  'Buffer' is not defined   no-undef
+  46:52  error  'Buffer' is not defined   no-undef
+  49:1   error  'console' is not defined  no-undef
+  50:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/creative.js
+   3:18  error  'URLSearchParams' is not defined  no-undef
+   3:34  error  'location' is not defined         no-undef
+   3:56  error  'document' is not defined         no-undef
+   3:94  error  'document' is not defined         no-undef
+   7:2   error  'document' is not defined         no-undef
+  10:16  error  'URLSearchParams' is not defined  no-undef
+  13:3   error  'document' is not defined         no-undef
+  14:3   error  'document' is not defined         no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/f-icons.js
+  44:19  error  'document' is not defined  no-undef
+  47:14  error  'window' is not defined    no-undef
+  53:28  error  'window' is not defined    no-undef
+  58:11  error  'document' is not defined  no-undef
+  59:11  error  'document' is not defined  no-undef
+  60:11  error  'document' is not defined  no-undef
+  61:3   error  'document' is not defined  no-undef
+  66:3   error  'document' is not defined  no-undef
+  70:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/f-tray-gallery.js
+  19:1    error  'document' is not defined  no-undef
+  20:19   error  'document' is not defined  no-undef
+  20:64   error  'document' is not defined  no-undef
+  20:110  error  'document' is not defined  no-undef
+  20:157  error  'document' is not defined  no-undef
+  24:2    error  'document' is not defined  no-undef
+  26:2    error  'document' is not defined  no-undef
+  27:2    error  'document' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/generate-f-tray.mjs
+  15:38   error  'Buffer' is not defined   no-undef
+  15:64   error  'Buffer' is not defined   no-undef
+  15:119  error  'Buffer' is not defined   no-undef
+  15:159  error  'Buffer' is not defined   no-undef
+  15:195  error  'Buffer' is not defined   no-undef
+  25:35   error  'Buffer' is not defined   no-undef
+  33:13   error  'Buffer' is not defined   no-undef
+  34:9    error  'Buffer' is not defined   no-undef
+  34:24   error  'Buffer' is not defined   no-undef
+  34:128  error  'Buffer' is not defined   no-undef
+  38:12   error  'Buffer' is not defined   no-undef
+  43:1    error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-f-layout.js
+   5:56  error  'icon' is not defined      no-undef
+   6:60  error  'state' is not defined     no-undef
+   6:79  error  'state' is not defined     no-undef
+  10:16  error  'document' is not defined  no-undef
+  14:9   error  'document' is not defined  no-undef
+  20:19  error  'document' is not defined  no-undef
+  20:73  error  'document' is not defined  no-undef
+  29:67  error  'document' is not defined  no-undef
+  34:3   error  'document' is not defined  no-undef
+  39:3   error  'document' is not defined  no-undef
+  47:15  error  'document' is not defined  no-undef
+  48:19  error  'document' is not defined  no-undef
+  51:20  error  'document' is not defined  no-undef
+  68:17  error  'document' is not defined  no-undef
+  69:17  error  'document' is not defined  no-undef
+  79:15  error  'document' is not defined  no-undef
+  80:18  error  'document' is not defined  no-undef
+  89:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-g-layout.js
+    7:60  error  'state' is not defined     no-undef
+    7:79  error  'state' is not defined     no-undef
+   11:19  error  'document' is not defined  no-undef
+   16:14  error  'document' is not defined  no-undef
+   20:9   error  'window' is not defined    no-undef
+   21:5   error  'window' is not defined    no-undef
+   22:5   error  'document' is not defined  no-undef
+   23:19  error  'document' is not defined  no-undef
+   26:5   error  'document' is not defined  no-undef
+   27:34  error  'document' is not defined  no-undef
+   31:16  error  'document' is not defined  no-undef
+   32:17  error  'document' is not defined  no-undef
+   47:19  error  'document' is not defined  no-undef
+   59:43  error  'document' is not defined  no-undef
+   60:16  error  'document' is not defined  no-undef
+   61:16  error  'document' is not defined  no-undef
+   62:19  error  'document' is not defined  no-undef
+   80:17  error  'document' is not defined  no-undef
+   82:7   error  'document' is not defined  no-undef
+   82:50  error  'document' is not defined  no-undef
+   83:19  error  'document' is not defined  no-undef
+   84:18  error  'document' is not defined  no-undef
+   88:11  error  'document' is not defined  no-undef
+   96:24  error  'document' is not defined  no-undef
+   97:18  error  'document' is not defined  no-undef
+   99:23  error  'document' is not defined  no-undef
+  104:3   error  'document' is not defined  no-undef
+  109:3   error  'document' is not defined  no-undef
+  115:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/docs/changes/desktop-complete-designs-2026-10-01/design/viewer.js
+   2:20  error  'URLSearchParams' is not defined  no-undef
+   2:36  error  'location' is not defined         no-undef
+  18:14  error  'document' is not defined         no-undef
+  19:15  error  'document' is not defined         no-undef
+  20:16  error  'document' is not defined         no-undef
+  21:14  error  'document' is not defined         no-undef
+  28:2   error  'document' is not defined         no-undef
+  29:2   error  'document' is not defined         no-undef
+  30:2   error  'document' is not defined         no-undef
+  31:2   error  'document' is not defined         no-undef
+  40:18  error  'URL' is not defined              no-undef
+  40:33  error  'location' is not defined         no-undef
+  47:2   error  'document' is not defined         no-undef
+  50:2   error  'document' is not defined         no-undef
+  51:2   error  'document' is not defined         no-undef
+  52:2   error  'document' is not defined         no-undef
+  53:2   error  'document' is not defined         no-undef
+  54:2   error  'document' is not defined         no-undef
+  56:1   error  'document' is not defined         no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/desktop-design-2026-09-23/lutrack/sol-original/app.js
+    8:20  error  'URLSearchParams' is not defined  no-undef
+    8:36  error  'location' is not defined         no-undef
+   20:15  error  'document' is not defined         no-undef
+   21:21  error  'document' is not defined         no-undef
+   97:20  error  'URL' is not defined              no-undef
+   97:24  error  'location' is not defined         no-undef
+  100:3   error  'history' is not defined          no-undef
+  103:3   error  'document' is not defined         no-undef
+  105:3   error  'document' is not defined         no-undef
+  109:1   error  'document' is not defined         no-undef
+  154:1   error  'window' is not defined           no-undef
+  156:19  error  'document' is not defined         no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/desktop-design-2026-09-23/opus/check-updates.mjs
+   3:39  error  'URL' is not defined      no-undef
+  20:33  error  'console' is not defined  no-undef
+  21:1   error  'console' is not defined  no-undef
+  22:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/desktop-experience-2026-09-23/astra/capture-brand.cjs
+  4:349   error  '__dirname' is not defined  no-undef
+  4:735   error  'document' is not defined   no-undef
+  4:786   error  'document' is not defined   no-undef
+  4:910   error  '__dirname' is not defined  no-undef
+  4:1101  error  'process' is not defined    no-undef
+  4:1179  error  '__dirname' is not defined  no-undef
+  4:1229  error  'console' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/desktop-experience-2026-09-23/astra/flows.js
+   4:17   error  'window' is not defined        no-undef
+   5:18   error  'window' is not defined        no-undef
+   6:30   error  'document' is not defined      no-undef
+   7:31   error  'document' is not defined      no-undef
+   7:150  error  'Event' is not defined         no-undef
+   8:72   error  'document' is not defined      no-undef
+  15:45   error  'document' is not defined      no-undef
+  15:189  error  'document' is not defined      no-undef
+  15:333  error  'document' is not defined      no-undef
+  16:49   error  'document' is not defined      no-undef
+  16:322  error  'document' is not defined      no-undef
+  17:461  error  'document' is not defined      no-undef
+  17:553  error  'document' is not defined      no-undef
+  17:609  error  'document' is not defined      no-undef
+  19:86   error  'document' is not defined      no-undef
+  19:176  error  'Event' is not defined         no-undef
+  22:16   error  'window' is not defined        no-undef
+  22:41   error  'MessageEvent' is not defined  no-undef
+  22:72   error  'window' is not defined        no-undef
+  22:267  error  'window' is not defined        no-undef
+  22:292  error  'MessageEvent' is not defined  no-undef
+  22:469  error  'window' is not defined        no-undef
+  22:494  error  'MessageEvent' is not defined  no-undef
+  22:525  error  'window' is not defined        no-undef
+  26:32   error  'document' is not defined      no-undef
+  26:118  error  'Event' is not defined         no-undef
+  26:290  error  'document' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/desktop-experience-2026-09-23/astra/verify-local.cjs
+   6:25   error  '__dirname' is not defined   no-undef
+   7:31   error  'console' is not defined     no-undef
+  19:26   error  'document' is not defined    no-undef
+  20:51   error  'document' is not defined    no-undef
+  20:105  error  'document' is not defined    no-undef
+  20:153  error  'document' is not defined    no-undef
+  20:191  error  'innerWidth' is not defined  no-undef
+  20:203  error  'document' is not defined    no-undef
+  20:251  error  'document' is not defined    no-undef
+  25:61   error  '__dirname' is not defined   no-undef
+  29:51   error  'process' is not defined     no-undef
+  29:139  error  '__dirname' is not defined   no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/desktop-experience-2026-09-23/opus/overeni.playwright.js
+  12:42   error  'window' is not defined            no-undef
+  17:51   error  'window' is not defined            no-undef
+  23:55   error  'document' is not defined          no-undef
+  23:98   error  'document' is not defined          no-undef
+  23:275  error  'document' is not defined          no-undef
+  23:341  error  'document' is not defined          no-undef
+  23:511  error  'innerWidth' is not defined        no-undef
+  36:33   error  'window' is not defined            no-undef
+  46:33   error  'window' is not defined            no-undef
+  84:42   error  'document' is not defined          no-undef
+  84:68   error  'document' is not defined          no-undef
+  85:122  error  'document' is not defined          no-undef
+  85:162  error  'window' is not defined            no-undef
+  89:50   error  'document' is not defined          no-undef
+  89:97   error  'addEventListener' is not defined  no-undef
+  89:222  error  'document' is not defined          no-undef
+  89:305  error  'document' is not defined          no-undef
+  89:396  error  'setTimeout' is not defined        no-undef
+  89:549  error  'location' is not defined          no-undef
+  89:590  error  'setTimeout' is not defined        no-undef
+  89:744  error  'location' is not defined          no-undef
+  89:858  error  'location' is not defined          no-undef
+  89:899  error  'setTimeout' is not defined        no-undef
+  93:70   error  'window' is not defined            no-undef
+  93:185  error  'setTimeout' is not defined        no-undef
+  93:213  error  'document' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/stereo-mp3-2026-09-15/native-hour-script.mjs
+  13:2   error  'console' is not defined      no-undef
+  14:14  error  'performance' is not defined  no-undef
+  15:2   error  'console' is not defined      no-undef
+  15:49  error  'performance' is not defined  no-undef
+  18:2   error  'console' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/zvuk-2026-08-20/nastroje/test-loopback.js
+   1:58  error  'require' is not defined       no-undef
+   2:14  error  'require' is not defined       no-undef
+   9:14  error  'e' is defined but never used  no-unused-vars
+  11:30  error  '__dirname' is not defined     no-undef
+  32:3   error  'console' is not defined       no-undef
+  35:1   error  'setTimeout' is not defined    no-undef
+  35:20  error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/dukazy/zvuk-2026-08-20/nastroje/test-zarizeni.js
+   2:32  error  'require' is not defined     no-undef
+   5:20  error  'require' is not defined     no-undef
+   5:41  error  '__dirname' is not defined   no-undef
+  19:3   error  'console' is not defined     no-undef
+  22:1   error  'setTimeout' is not defined  no-undef
+  22:20  error  'console' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/auth.cjs
+    30:35   error  '__dirname' is not defined        no-undef
+    71:47   error  '__dirname' is not defined        no-undef
+    85:19   error  'URL' is not defined              no-undef
+    96:24   error  'URL' is not defined              no-undef
+    99:32   error  'URL' is not defined              no-undef
+   175:27   error  'URL' is not defined              no-undef
+   211:23   error  'Buffer' is not defined           no-undef
+   237:16   error  'clearTimeout' is not defined     no-undef
+   262:29   error  'URL' is not defined              no-undef
+   305:11   error  'setTimeout' is not defined       no-undef
+   390:9    error  'URL' is not defined              no-undef
+   480:31   error  'AbortController' is not defined  no-undef
+   483:13   error  'setTimeout' is not defined       no-undef
+   500:5    error  'clearTimeout' is not defined     no-undef
+   713:20   error  'URLSearchParams' is not defined  no-undef
+   718:31   error  'AbortController' is not defined  no-undef
+   721:15   error  'setTimeout' is not defined       no-undef
+   743:5    error  'clearTimeout' is not defined     no-undef
+   840:109  error  'console' is not defined          no-undef
+  1018:20   error  'URLSearchParams' is not defined  no-undef
+  1218:14   error  'console' is not defined          no-undef
+  1250:42   error  'URL' is not defined              no-undef
+  1436:59   error  'console' is not defined          no-undef
+  1491:35   error  'console' is not defined          no-undef
+  1539:70   error  'console' is not defined          no-undef
+  1560:78   error  'console' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/companies.cjs
+  45:9  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/main.cjs
+    77:35  error  '__dirname' is not defined        no-undef
+    91:21  error  'process' is not defined          no-undef
+   178:50  error  'URL' is not defined              no-undef
+   182:35  error  'Response' is not defined         no-undef
+   189:21  error  'URL' is not defined              no-undef
+   208:16  error  'URL' is not defined              no-undef
+   264:14  error  'URL' is not defined              no-undef
+   306:14  error  'URL' is not defined              no-undef
+   307:14  error  'URL' is not defined              no-undef
+   331:7   error  'console' is not defined          no-undef
+   356:7   error  'process' is not defined          no-undef
+   381:9   error  'console' is not defined          no-undef
+   393:25  error  'process' is not defined          no-undef
+   430:21  error  'console' is not defined          no-undef
+   435:21  error  'console' is not defined          no-undef
+   442:21  error  'console' is not defined          no-undef
+   510:35  error  '__dirname' is not defined        no-undef
+   684:3   error  'clearInterval' is not defined    no-undef
+   708:20  error  'setInterval' is not defined      no-undef
+   745:5   error  'console' is not defined          no-undef
+   777:26  error  '__dirname' is not defined        no-undef
+   793:7   error  'console' is not defined          no-undef
+   807:5   error  'console' is not defined          no-undef
+   818:5   error  'console' is not defined          no-undef
+   823:25  error  'setTimeout' is not defined       no-undef
+   972:7   error  'clearTimeout' is not defined     no-undef
+   982:13  error  'setTimeout' is not defined       no-undef
+  1016:26  error  '__dirname' is not defined        no-undef
+  1037:5   error  'console' is not defined          no-undef
+  1108:26  error  '__dirname' is not defined        no-undef
+  1159:5   error  'console' is not defined          no-undef
+  1172:5   error  'console' is not defined          no-undef
+  1204:5   error  'console' is not defined          no-undef
+  1218:7   error  'console' is not defined          no-undef
+  1266:9   error  'console' is not defined          no-undef
+  1269:7   error  'console' is not defined          no-undef
+  1337:7   error  'console' is not defined          no-undef
+  1340:7   error  'console' is not defined          no-undef
+  1344:9   error  'console' is not defined          no-undef
+  1579:9   error  'console' is not defined          no-undef
+  1594:5   error  'console' is not defined          no-undef
+  1645:17  error  'Buffer' is not defined           no-undef
+  1674:20  error  'Buffer' is not defined           no-undef
+  1709:7   error  'console' is not defined          no-undef
+  1773:9   error  'console' is not defined          no-undef
+  1875:5   error  'console' is not defined          no-undef
+  1896:7   error  'console' is not defined          no-undef
+  1898:7   error  'console' is not defined          no-undef
+  1935:5   error  'console' is not defined          no-undef
+  1976:22  error  'process' is not defined          no-undef
+  1988:10  error  'process' is not defined          no-undef
+  2106:7   error  'console' is not defined          no-undef
+  2111:7   error  'console' is not defined          no-undef
+  2135:7   error  'console' is not defined          no-undef
+  2139:7   error  'console' is not defined          no-undef
+  2156:5   error  'console' is not defined          no-undef
+  2176:7   error  'console' is not defined          no-undef
+  2180:5   error  'console' is not defined          no-undef
+  2202:47  error  'process' is not defined          no-undef
+  2237:28  error  'process' is not defined          no-undef
+  2245:25  error  'console' is not defined          no-undef
+  2563:28  error  'process' is not defined          no-undef
+  2564:39  error  '__dirname' is not defined        no-undef
+  2577:17  error  'console' is not defined          no-undef
+  2606:13  error  'console' is not defined          no-undef
+  2612:5   error  'console' is not defined          no-undef
+  2626:5   error  'console' is not defined          no-undef
+  2629:5   error  'console' is not defined          no-undef
+  2651:5   error  'console' is not defined          no-undef
+  2658:17  error  'setTimeout' is not defined       no-undef
+  2663:67  error  'clearTimeout' is not defined     no-undef
+  2710:3   error  'console' is not defined          no-undef
+  2782:24  error  'process' is not defined          no-undef
+  2783:35  error  '__dirname' is not defined        no-undef
+  2831:5   error  'console' is not defined          no-undef
+  2903:9   error  'console' is not defined          no-undef
+  2911:7   error  'console' is not defined          no-undef
+  3220:25  error  'URL' is not defined              no-undef
+  3320:3   error  'console' is not defined          no-undef
+  3343:5   error  'console' is not defined          no-undef
+  3352:19  error  'process' is not defined          no-undef
+  3393:10  error  'process' is not defined          no-undef
+  3456:9   error  'console' is not defined          no-undef
+  3459:7   error  'console' is not defined          no-undef
+  3567:3   error  'console' is not defined          no-undef
+  3587:5   error  'console' is not defined          no-undef
+  3592:3   error  'console' is not defined          no-undef
+  3607:3   error  'clearTimeout' is not defined     no-undef
+  3610:5   error  'console' is not defined          no-undef
+  3614:5   error  'console' is not defined          no-undef
+  3680:23  error  'setTimeout' is not defined       no-undef
+  3684:7   error  'console' is not defined          no-undef
+  3718:5   error  'console' is not defined          no-undef
+  3793:6   error  'process' is not defined          no-undef
+  3794:6   error  'process' is not defined          no-undef
+  3823:5   error  'console' is not defined          no-undef
+  3902:29  error  'setInterval' is not defined      no-undef
+  3910:3   error  'clearInterval' is not defined    no-undef
+  3926:5   error  'console' is not defined          no-undef
+  3940:5   error  'console' is not defined          no-undef
+  3972:5   error  'console' is not defined          no-undef
+  3982:5   error  'console' is not defined          no-undef
+  4010:5   error  'console' is not defined          no-undef
+  4089:5   error  'console' is not defined          no-undef
+  4095:5   error  'console' is not defined          no-undef
+  4099:5   error  'console' is not defined          no-undef
+  4106:5   error  'console' is not defined          no-undef
+  4133:5   error  'console' is not defined          no-undef
+  4172:5   error  'console' is not defined          no-undef
+  4192:5   error  'console' is not defined          no-undef
+  4202:22  error  'setInterval' is not defined      no-undef
+  4211:5   error  'console' is not defined          no-undef
+  4265:18  error  'URL' is not defined              no-undef
+  4288:28  error  'process' is not defined          no-undef
+  4296:38  error  'process' is not defined          no-undef
+  4484:21  error  'URL' is not defined              no-undef
+  4512:8   error  'process' is not defined          no-undef
+  4515:11  error  'console' is not defined          no-undef
+  4567:24  error  'URL' is not defined              no-undef
+  4701:22  error  'process' is not defined          no-undef
+  4817:5   error  'console' is not defined          no-undef
+  4828:5   error  'console' is not defined          no-undef
+  4844:23  error  'AbortController' is not defined  no-undef
+  4877:11  error  'console' is not defined          no-undef
+  4916:11  error  'console' is not defined          no-undef
+  4967:9   error  'console' is not defined          no-undef
+  5019:3   error  'setImmediate' is not defined     no-undef
+  5083:5   error  'console' is not defined          no-undef
+  5106:7   error  'console' is not defined          no-undef
+  5114:36  error  'process' is not defined          no-undef
+  5116:5   error  'setTimeout' is not defined       no-undef
+  5117:7   error  'console' is not defined          no-undef
+  5133:3   error  'clearTimeout' is not defined     no-undef
+  5165:5   error  'console' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/media-encoder.cjs
+   12:19  error  'process' is not defined       no-undef
+   14:10  error  'process' is not defined       no-undef
+   15:14  error  'process' is not defined       no-undef
+   16:30  error  '__dirname' is not defined     no-undef
+  139:7   error  'clearTimeout' is not defined  no-undef
+  140:7   error  'clearTimeout' is not defined  no-undef
+  148:24  error  'setTimeout' is not defined    no-undef
+  152:26  error  'setTimeout' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/meeting-audio.cjs
+  215:20  error  'Buffer' is not defined     no-undef
+  590:41  error  '__dirname' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/preload.cjs
+  206:15  error  'console' is not defined     no-undef
+  211:46  error  'setTimeout' is not defined  no-undef
+  217:7   error  'console' is not defined     no-undef
+  236:22  error  'process' is not defined     no-undef
+  237:16  error  'process' is not defined     no-undef
+  237:50  error  'process' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/queue-scheduler.cjs
+  1:60  error  'setTimeout' is not defined    no-undef
+  1:85  error  'clearTimeout' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/queue.cjs
+  236:8   error  'Buffer' is not defined   no-undef
+  243:27  error  'URL' is not defined      no-undef
+  563:24  error  'Buffer' is not defined   no-undef
+  762:12  error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/recording-export.cjs
+    5:19  error  'Buffer' is not defined  no-undef
+    6:20  error  'Buffer' is not defined  no-undef
+   49:18  error  'Buffer' is not defined  no-undef
+   49:51  error  'Buffer' is not defined  no-undef
+   67:18  error  'Buffer' is not defined  no-undef
+   67:51  error  'Buffer' is not defined  no-undef
+  191:19  error  'URL' is not defined     no-undef
+  235:26  error  'Buffer' is not defined  no-undef
+  248:7   error  'Buffer' is not defined  no-undef
+  261:20  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/recording-verification.cjs
+  81:18  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/recordings-dashboard.cjs
+  50:20  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/retention.cjs
+  151:22  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/settings.cjs
+   96:20  error  'Buffer' is not defined   no-undef
+  117:56  error  'console' is not defined  no-undef
+  150:59  error  'console' is not defined  no-undef
+  206:54  error  'console' is not defined  no-undef
+  246:50  error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/tracking.cjs
+  206:75  error  'console' is not defined  no-undef
+  256:11  error  'console' is not defined  no-undef
+  517:44  error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/upload-client.cjs
+   169:18  error  'URL' is not defined              no-undef
+   233:17  error  'Buffer' is not defined           no-undef
+   260:18  error  'Buffer' is not defined           no-undef
+   603:20  error  'URL' is not defined              no-undef
+   623:33  error  'AbortController' is not defined  no-undef
+   626:19  error  'setTimeout' is not defined       no-undef
+   688:7   error  'clearTimeout' is not defined     no-undef
+   764:26  error  'Buffer' is not defined           no-undef
+   765:17  error  'Buffer' is not defined           no-undef
+   766:54  error  'Buffer' is not defined           no-undef
+  1004:12  error  'console' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/electron/upload-company-selection.cjs
+   93:33  error  'AbortController' is not defined  no-undef
+   96:19  error  'setTimeout' is not defined       no-undef
+  104:7   error  'clearTimeout' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/akceptace/casovac-sondy.mjs
+  231:35  error  'setTimeout' is not defined  no-undef
+  462:15  error  'process' is not defined     no-undef
+  465:3   error  'console' is not defined     no-undef
+  466:3   error  'process' is not defined     no-undef
+  471:3   error  'console' is not defined     no-undef
+  473:3   error  'console' is not defined     no-undef
+  474:29  error  'console' is not defined     no-undef
+  475:3   error  'process' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/akceptace/fronta-sondy.mjs
+  141:61  error  'process' is not defined  no-undef
+  230:42  error  'process' is not defined  no-undef
+  240:15  error  'process' is not defined  no-undef
+  243:3   error  'console' is not defined  no-undef
+  244:3   error  'process' is not defined  no-undef
+  249:3   error  'console' is not defined  no-undef
+  251:3   error  'console' is not defined  no-undef
+  252:29  error  'console' is not defined  no-undef
+  253:3   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/akceptace/stereo-audio.mjs
+   13:29  error  'process' is not defined  no-undef
+   14:16  error  'process' is not defined  no-undef
+   16:10  error  'process' is not defined  no-undef
+   17:19  error  'process' is not defined  no-undef
+   36:28  error  'console' is not defined  no-undef
+   37:34  error  'console' is not defined  no-undef
+   94:3   error  'console' is not defined  no-undef
+  135:35  error  'process' is not defined  no-undef
+  152:1   error  'console' is not defined  no-undef
+  153:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/akceptace/stereo-hour.mjs
+  12:29  error  'process' is not defined      no-undef
+  13:16  error  'process' is not defined      no-undef
+  15:10  error  'process' is not defined      no-undef
+  16:19  error  'process' is not defined      no-undef
+  40:3   error  'console' is not defined      no-undef
+  41:17  error  'performance' is not defined  no-undef
+  44:25  error  'performance' is not defined  no-undef
+  52:3   error  'console' is not defined      no-undef
+  56:3   error  'console' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/akceptace/stereo-package.mjs
+  10:37  error  'process' is not defined  no-undef
+  17:28  error  'console' is not defined  no-undef
+  18:34  error  'console' is not defined  no-undef
+  52:84  error  'URL' is not defined      no-undef
+  58:1   error  'console' is not defined  no-undef
+  59:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/astra-design-e2e.mjs
+    38:5   error  'process' is not defined       no-undef
+    38:37  error  'process' is not defined       no-undef
+   207:23  error  'WebSocket' is not defined     no-undef
+   217:7   error  'clearTimeout' is not defined  no-undef
+   227:21  error  'setTimeout' is not defined    no-undef
+   249:10  error  'WebSocket' is not defined     no-undef
+   249:26  error  'WebSocket' is not defined     no-undef
+   269:26  error  'fetch' is not defined         no-undef
+   429:17  error  'Buffer' is not defined        no-undef
+   499:6   error  'process' is not defined       no-undef
+  1811:31  error  'Buffer' is not defined        no-undef
+  1819:94  error  'Buffer' is not defined        no-undef
+  1925:3   error  'console' is not defined       no-undef
+  1930:3   error  'console' is not defined       no-undef
+  1934:1   error  'console' is not defined       no-undef
+  1935:1   error  'console' is not defined       no-undef
+  1936:1   error  'process' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/astra-design-e2e.test.mjs
+  104:19  error  'structuredClone' is not defined  no-undef
+  221:19  error  'structuredClone' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/astra-state-e2e.mjs
+   13:16  error  'process' is not defined       no-undef
+   13:44  error  'process' is not defined       no-undef
+   14:6   error  'process' is not defined       no-undef
+   18:15  error  'process' is not defined       no-undef
+   23:5   error  'process' is not defined       no-undef
+   25:17  error  'setTimeout' is not defined    no-undef
+   30:3   error  'clearTimeout' is not defined  no-undef
+   36:3   error  'process' is not defined       no-undef
+   39:1   error  'console' is not defined       no-undef
+   42:19  error  'process' is not defined       no-undef
+   44:1   error  'console' is not defined       no-undef
+  124:82  error  'setTimeout' is not defined    no-undef
+  125:13  error  'clearTimeout' is not defined  no-undef
+  132:5   error  'console' is not defined       no-undef
+  142:5   error  'console' is not defined       no-undef
+  145:5   error  'console' is not defined       no-undef
+  160:5   error  'console' is not defined       no-undef
+  177:5   error  'console' is not defined       no-undef
+  272:1   error  'console' is not defined       no-undef
+  277:3   error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/audio-smoke.mjs
+   14:19  error  'process' is not defined       no-undef
+   15:25  error  'process' is not defined       no-undef
+   16:22  error  'process' is not defined       no-undef
+   18:3   error  'process' is not defined       no-undef
+   51:35  error  'setTimeout' is not defined    no-undef
+   84:23  error  'WebSocket' is not defined     no-undef
+  127:26  error  'fetch' is not defined         no-undef
+  193:17  error  'process' is not defined       no-undef
+  223:7   error  'clearTimeout' is not defined  no-undef
+  226:19  error  'setTimeout' is not defined    no-undef
+  283:12  error  'process' is not defined       no-undef
+  293:17  error  'process' is not defined       no-undef
+  436:3   error  'console' is not defined       no-undef
+  483:1   error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/desktop-product-audit.mjs
+   35:17   error  'process' is not defined       no-undef
+   36:22   error  'process' is not defined       no-undef
+   37:16   error  'process' is not defined       no-undef
+   37:44   error  'process' is not defined       no-undef
+   38:6    error  'process' is not defined       no-undef
+   38:35   error  'process' is not defined       no-undef
+   40:120  error  'process' is not defined       no-undef
+   42:15   error  'process' is not defined       no-undef
+   47:5    error  'process' is not defined       no-undef
+   49:17   error  'setTimeout' is not defined    no-undef
+   54:3    error  'clearTimeout' is not defined  no-undef
+   58:5    error  'process' is not defined       no-undef
+   69:3    error  'process' is not defined       no-undef
+   72:1    error  'console' is not defined       no-undef
+   75:19   error  'process' is not defined       no-undef
+   77:1    error  'console' is not defined       no-undef
+   81:35   error  'setTimeout' is not defined    no-undef
+  167:22   error  'URL' is not defined           no-undef
+  245:82   error  'setTimeout' is not defined    no-undef
+  246:13   error  'clearTimeout' is not defined  no-undef
+  253:5    error  'console' is not defined       no-undef
+  263:5    error  'console' is not defined       no-undef
+  266:5    error  'console' is not defined       no-undef
+  281:5    error  'console' is not defined       no-undef
+  334:5    error  'console' is not defined       no-undef
+  344:27   error  'console' is not defined       no-undef
+  348:29   error  'URL' is not defined           no-undef
+  350:16   error  'setTimeout' is not defined    no-undef
+  350:35   error  'console' is not defined       no-undef
+  351:28   error  'clearTimeout' is not defined  no-undef
+  360:3    error  'console' is not defined       no-undef
+  554:1    error  'console' is not defined       no-undef
+  555:1    error  'clearTimeout' is not defined  no-undef
+  559:5    error  'process' is not defined       no-undef
+  560:3    error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/desktop-progress.mjs
+    77:7   error  'console' is not defined  no-undef
+    80:7   error  'process' is not defined  no-undef
+   138:21  error  'URL' is not defined      no-undef
+   146:20  error  'process' is not defined  no-undef
+  1171:32  error  'process' is not defined  no-undef
+  1184:7   error  'console' is not defined  no-undef
+  1185:7   error  'process' is not defined  no-undef
+  1188:5   error  'console' is not defined  no-undef
+  1194:3   error  'console' is not defined  no-undef
+  1198:3   error  'console' is not defined  no-undef
+  1199:3   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/gates-clean.mjs
+  14:18  error  'process' is not defined  no-undef
+  22:3   error  'process' is not defined  no-undef
+  27:3   error  'console' is not defined  no-undef
+  41:3   error  'console' is not defined  no-undef
+  42:3   error  'process' is not defined  no-undef
+  44:1   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/meet-mereni.mjs
+   66:3   error  'console' is not defined  no-undef
+  114:61  error  'Buffer' is not defined   no-undef
+  117:25  error  'Buffer' is not defined   no-undef
+  117:54  error  'Buffer' is not defined   no-undef
+  236:3   error  'console' is not defined  no-undef
+  292:3   error  'console' is not defined  no-undef
+  303:3   error  'console' is not defined  no-undef
+  314:3   error  'console' is not defined  no-undef
+  406:3   error  'console' is not defined  no-undef
+  408:5   error  'console' is not defined  no-undef
+  409:5   error  'console' is not defined  no-undef
+  411:3   error  'console' is not defined  no-undef
+  412:3   error  'console' is not defined  no-undef
+  413:3   error  'console' is not defined  no-undef
+  414:3   error  'console' is not defined  no-undef
+  415:3   error  'console' is not defined  no-undef
+  416:3   error  'console' is not defined  no-undef
+  417:3   error  'console' is not defined  no-undef
+  418:3   error  'console' is not defined  no-undef
+  420:23  error  'process' is not defined  no-undef
+  423:24  error  'process' is not defined  no-undef
+  433:3   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/osa-design-e2e.mjs
+    2:10   error  'copyFile' is defined but never used  no-unused-vars
+    2:46   error  'stat' is defined but never used      no-unused-vars
+   11:34   error  'process' is not defined              no-undef
+   68:23   error  'WebSocket' is not defined            no-undef
+   78:7    error  'clearTimeout' is not defined         no-undef
+   88:21   error  'setTimeout' is not defined           no-undef
+  110:10   error  'WebSocket' is not defined            no-undef
+  110:26   error  'WebSocket' is not defined            no-undef
+  130:26   error  'fetch' is not defined                no-undef
+  204:117  error  'console' is not defined              no-undef
+  214:205  error  'Buffer' is not defined               no-undef
+  219:170  error  'process' is not defined              no-undef
+  271:17   error  'console' is not defined              no-undef
+  272:402  error  'console' is not defined              no-undef
+  272:462  error  'process' is not defined              no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/osa-reference-capture.mjs
+   9:34   error  'process' is not defined   no-undef
+  16:45   error  'URL' is not defined       no-undef
+  45:77   error  'document' is not defined  no-undef
+  45:150  error  'document' is not defined  no-undef
+  45:405  error  'document' is not defined  no-undef
+  45:438  error  'document' is not defined  no-undef
+  56:115  error  'process' is not defined   no-undef
+  59:1    error  'console' is not defined   no-undef
+  60:1    error  'process' is not defined   no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/package-mac.mjs
+   38:5   error  'console' is not defined  no-undef
+   58:7   error  'console' is not defined  no-undef
+  126:22  error  'process' is not defined  no-undef
+  132:3   error  'console' is not defined  no-undef
+  135:38  error  'process' is not defined  no-undef
+  138:3   error  'process' is not defined  no-undef
+  141:20  error  'process' is not defined  no-undef
+  143:26  error  'process' is not defined  no-undef
+  151:5   error  'process' is not defined  no-undef
+  160:1   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/prepare-media-encoder.mjs
+   49:19  error  'Buffer' is not defined   no-undef
+   86:72  error  'fetch' is not defined    no-undef
+  339:62  error  'URL' is not defined      no-undef
+  376:7   error  'process' is not defined  no-undef
+  387:5   error  'console' is not defined  no-undef
+  404:35  error  'process' is not defined  no-undef
+  411:9   error  'console' is not defined  no-undef
+  414:9   error  'console' is not defined  no-undef
+  417:5   error  'console' is not defined  no-undef
+  421:3   error  'console' is not defined  no-undef
+  425:44  error  'process' is not defined  no-undef
+  428:5   error  'process' is not defined  no-undef
+  428:71  error  'process' is not defined  no-undef
+  430:5   error  'console' is not defined  no-undef
+  431:5   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/preskocene.mjs
+  27:7   error  'process' is not defined  no-undef
+  57:5   error  'process' is not defined  no-undef
+  59:3   error  'console' is not defined  no-undef
+  60:3   error  'process' is not defined  no-undef
+  65:3   error  'console' is not defined  no-undef
+  67:5   error  'console' is not defined  no-undef
+  69:3   error  'process' is not defined  no-undef
+  72:1   error  'console' is not defined  no-undef
+  73:1   error  'console' is not defined  no-undef
+  76:22  error  'console' is not defined  no-undef
+  78:1   error  'console' is not defined  no-undef
+  83:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/release-artifacts.mjs
+  189:58  error  'process' is not defined  no-undef
+  191:3   error  'console' is not defined  no-undef
+  192:3   error  'console' is not defined  no-undef
+  195:5   error  'console' is not defined  no-undef
+  199:5   error  'process' is not defined  no-undef
+  199:71  error  'process' is not defined  no-undef
+  201:5   error  'console' is not defined  no-undef
+  202:5   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/schuzka-mereni.mjs
+   90:61  error  'Buffer' is not defined   no-undef
+   93:15  error  'Buffer' is not defined   no-undef
+  207:24  error  'process' is not defined  no-undef
+  210:3   error  'console' is not defined  no-undef
+  220:3   error  'process' is not defined  no-undef
+  224:3   error  'console' is not defined  no-undef
+  225:3   error  'process' is not defined  no-undef
+  232:1   error  'console' is not defined  no-undef
+  324:1   error  'console' is not defined  no-undef
+  406:1   error  'console' is not defined  no-undef
+  407:1   error  'console' is not defined  no-undef
+  408:1   error  'console' is not defined  no-undef
+  409:1   error  'console' is not defined  no-undef
+  410:1   error  'console' is not defined  no-undef
+  411:1   error  'console' is not defined  no-undef
+  412:1   error  'console' is not defined  no-undef
+  413:1   error  'console' is not defined  no-undef
+  414:1   error  'console' is not defined  no-undef
+  415:1   error  'console' is not defined  no-undef
+  416:1   error  'console' is not defined  no-undef
+  417:1   error  'console' is not defined  no-undef
+  418:1   error  'console' is not defined  no-undef
+  426:3   error  'console' is not defined  no-undef
+  427:3   error  'console' is not defined  no-undef
+  428:3   error  'console' is not defined  no-undef
+  430:3   error  'console' is not defined  no-undef
+  432:1   error  'console' is not defined  no-undef
+  433:1   error  'console' is not defined  no-undef
+  434:1   error  'console' is not defined  no-undef
+  439:26  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/tray-ikony.mjs
+   44:20  error  'Buffer' is not defined   no-undef
+  278:16  error  'Buffer' is not defined   no-undef
+  305:21  error  'Buffer' is not defined   no-undef
+  306:17  error  'Buffer' is not defined   no-undef
+  307:27  error  'Buffer' is not defined   no-undef
+  309:39  error  'Buffer' is not defined   no-undef
+  310:10  error  'Buffer' is not defined   no-undef
+  314:16  error  'Buffer' is not defined   no-undef
+  323:10  error  'Buffer' is not defined   no-undef
+  327:22  error  'Buffer' is not defined   no-undef
+  370:22  error  'Buffer' is not defined   no-undef
+  373:12  error  'Buffer' is not defined   no-undef
+  375:20  error  'Buffer' is not defined   no-undef
+  378:10  error  'Buffer' is not defined   no-undef
+  416:3   error  'console' is not defined  no-undef
+  430:5   error  'process' is not defined  no-undef
+  430:40  error  'process' is not defined  no-undef
+  431:21  error  'process' is not defined  no-undef
+  449:5   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/ui-smoke.mjs
+    16:27  error  'process' is not defined       no-undef
+    33:35  error  'setTimeout' is not defined    no-undef
+    52:26  error  'fetch' is not defined         no-undef
+    62:23  error  'WebSocket' is not defined     no-undef
+    72:9   error  'clearTimeout' is not defined  no-undef
+    93:7   error  'clearTimeout' is not defined  no-undef
+   101:36  error  'WebSocket' is not defined     no-undef
+   106:21  error  'setTimeout' is not defined    no-undef
+   114:9   error  'clearTimeout' is not defined  no-undef
+   134:36  error  'WebSocket' is not defined     no-undef
+   134:81  error  'WebSocket' is not defined     no-undef
+   561:15  error  'Buffer' is not defined        no-undef
+  1165:3   error  'console' is not defined       no-undef
+  1166:3   error  'process' is not defined       no-undef
+  1237:3   error  'console' is not defined       no-undef
+  1239:5   error  'console' is not defined       no-undef
+  1241:3   error  'process' is not defined       no-undef
+  1245:3   error  'console' is not defined       no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/verify-macos-release.mjs
+   85:43  error  'URL' is not defined      no-undef
+  129:33  error  'process' is not defined  no-undef
+  129:58  error  'process' is not defined  no-undef
+  190:45  error  'process' is not defined  no-undef
+  204:5   error  'console' is not defined  no-undef
+  210:5   error  'console' is not defined  no-undef
+  221:43  error  'process' is not defined  no-undef
+  224:5   error  'process' is not defined  no-undef
+  224:71  error  'process' is not defined  no-undef
+  226:5   error  'console' is not defined  no-undef
+  227:5   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/verify-published-release.mjs
+  10:72  error  'fetch' is not defined        no-undef
+  16:42  error  'URL' is not defined          no-undef
+  20:15  error  'AbortSignal' is not defined  no-undef
+  24:21  error  'Buffer' is not defined       no-undef
+  42:3   error  'console' is not defined      no-undef
+  45:5   error  'process' is not defined      no-undef
+  45:71  error  'process' is not defined      no-undef
+  47:5   error  'console' is not defined      no-undef
+  48:5   error  'process' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/scripts/vzorky-exportu.mjs
+   40:1   error  'process' is not defined  no-undef
+   52:41  error  'Buffer' is not defined   no-undef
+  267:40  error  'Buffer' is not defined   no-undef
+  304:39  error  'Buffer' is not defined   no-undef
+  351:17  error  'Buffer' is not defined   no-undef
+  396:44  error  'process' is not defined  no-undef
+  473:48  error  'process' is not defined  no-undef
+  480:35  error  'process' is not defined  no-undef
+  527:26  error  'process' is not defined  no-undef
+  536:5   error  'console' is not defined  no-undef
+  537:5   error  'console' is not defined  no-undef
+  538:5   error  'console' is not defined  no-undef
+  539:35  error  'process' is not defined  no-undef
+  558:3   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/src/features/recording/system-audio-health.js
+  26:5   error  'window' is not defined  no-undef
+  48:21  error  'window' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/src/hooks/useElapsedTime.js
+  16:22  error  'window' is not defined  no-undef
+  17:18  error  'window' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/src/lib/audio-levels.js
+    8:14  error  'DOMException' is not defined  no-undef
+   23:17  error  'DOMException' is not defined  no-undef
+   28:17  error  'window' is not defined        no-undef
+   30:18  error  'DOMException' is not defined  no-undef
+   36:64  error  'window' is not defined        no-undef
+   43:7   error  'window' is not defined        no-undef
+   55:23  error  'window' is not defined        no-undef
+   89:8   error  'window' is not defined        no-undef
+   89:35  error  'navigator' is not defined     no-undef
+  102:7   error  'navigator' is not defined     no-undef
+  121:6   error  'window' is not defined        no-undef
+  122:9   error  'navigator' is not defined     no-undef
+  140:63  error  'navigator' is not defined     no-undef
+  148:26  error  'navigator' is not defined     no-undef
+  150:7   error  'navigator' is not defined     no-undef
+  406:19  error  'window' is not defined        no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/src/lib/oauth.js
+   87:19  error  'URL' is not defined              no-undef
+  108:20  error  'URLSearchParams' is not defined  no-undef
+  122:14  error  'URLSearchParams' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/src/lib/theme.js
+   8:14  error  'window' is not defined    no-undef
+  17:10  error  'window' is not defined    no-undef
+  21:16  error  'document' is not defined  no-undef
+  30:5   error  'window' is not defined    no-undef
+  39:3   error  'window' is not defined    no-undef
+  42:3   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/src/lib/ui-smoke.js
+  119:18  error  'URL' is not defined  no-undef
+  140:20  error  'URL' is not defined  no-undef
+  216:15  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/astra-state-acceptance.test.js
+  5:31  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/auth-cancellation-storage.test.js
+   59:5   error  'queueMicrotask' is not defined   no-undef
+   63:23  error  'URL' is not defined              no-undef
+  104:21  error  'URL' is not defined              no-undef
+  140:55  error  'Buffer' is not defined           no-undef
+  193:16  error  'Buffer' is not defined           no-undef
+  207:11  error  'URL' is not defined              no-undef
+  211:28  error  'URLSearchParams' is not defined  no-undef
+  233:16  error  'Buffer' is not defined           no-undef
+  243:29  error  'Buffer' is not defined           no-undef
+  281:16  error  'Buffer' is not defined           no-undef
+  310:16  error  'Buffer' is not defined           no-undef
+  353:16  error  'Buffer' is not defined           no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/auth-controller-wiring.test.js
+   45:37  error  'URL' is not defined              no-undef
+   46:37  error  'URL' is not defined              no-undef
+   47:40  error  'URL' is not defined              no-undef
+   48:72  error  'process' is not defined          no-undef
+  121:5   error  'queueMicrotask' is not defined   no-undef
+  296:34  error  'AbortController' is not defined  no-undef
+  402:23  error  'URL' is not defined              no-undef
+  427:28  error  'AbortController' is not defined  no-undef
+  438:11  error  'queueMicrotask' is not defined   no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/auth-empty-store.test.js
+  11:31  error  'URL' is not defined     no-undef
+  31:55  error  'URL' is not defined     no-undef
+  39:16  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/auth-identity-fallback.test.js
+   70:5   error  'queueMicrotask' is not defined   no-undef
+   74:23  error  'URL' is not defined              no-undef
+   85:23  error  'URL' is not defined              no-undef
+   87:24  error  'URLSearchParams' is not defined  no-undef
+  139:21  error  'URL' is not defined              no-undef
+  171:37  error  'Buffer' is not defined           no-undef
+  229:11  error  'URL' is not defined              no-undef
+  237:11  error  'URL' is not defined              no-undef
+  239:16  error  'URL' is not defined              no-undef
+  242:11  error  'URL' is not defined              no-undef
+  244:16  error  'URLSearchParams' is not defined  no-undef
+  262:11  error  'URL' is not defined              no-undef
+  267:16  error  'URL' is not defined              no-undef
+  285:11  error  'URL' is not defined              no-undef
+  305:11  error  'URL' is not defined              no-undef
+  325:11  error  'URL' is not defined              no-undef
+  341:11  error  'URL' is not defined              no-undef
+  354:11  error  'URL' is not defined              no-undef
+  356:16  error  'URL' is not defined              no-undef
+  376:11  error  'URL' is not defined              no-undef
+  382:11  error  'URL' is not defined              no-undef
+  407:11  error  'URL' is not defined              no-undef
+  442:24  error  'URL' is not defined              no-undef
+  464:72  error  'URL' is not defined              no-undef
+  474:26  error  'AbortSignal' is not defined      no-undef
+  582:24  error  'URL' is not defined              no-undef
+  586:24  error  'URL' is not defined              no-undef
+  618:24  error  'URL' is not defined              no-undef
+  644:24  error  'URL' is not defined              no-undef
+  677:24  error  'URL' is not defined              no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/auth-panel-blur-guard.test.js
+  32:37  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/auth-refresh.test.js
+  54:31  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/auth-wait-lifecycle.test.js
+  10:68  error  'process' is not defined         no-undef
+  33:7   error  'queueMicrotask' is not defined  no-undef
+  49:21  error  'URL' is not defined             no-undef
+  84:16  error  'URL' is not defined             no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/barvy.test.js
+  4:32  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/brany-workflow.test.js
+  18:34  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/desktop-progress.test.js
+  113:8   error  'process' is not defined  no-undef
+  114:37  error  'process' is not defined  no-undef
+  124:5   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/diagnostics.test.js
+  194:39  error  'URL' is not defined  no-undef
+  195:42  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/electron-verze.test.js
+  5:20  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/fronta-symetrie.test.js
+  4:37  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/idle-panel.test.js
+  13:42  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/ikona-aplikace.test.js
+   11:33  error  'URL' is not defined      no-undef
+   15:20  error  'Buffer' is not defined   no-undef
+   31:28  error  'Buffer' is not defined   no-undef
+   62:16  error  'process' is not defined  no-undef
+  228:53  error  'process' is not defined  no-undef
+  231:20  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/ipc-sender-guard.test.js
+  20:37  error  'URL' is not defined  no-undef
+  24:49  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/kalendar-zrusen.test.js
+  20:33  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/logout-safety.test.js
+   62:31  error  'Buffer' is not defined           no-undef
+  123:5   error  'queueMicrotask' is not defined   no-undef
+  157:25  error  'URL' is not defined              no-undef
+  195:25  error  'URL' is not defined              no-undef
+  205:29  error  'URLSearchParams' is not defined  no-undef
+  254:25  error  'URL' is not defined              no-undef
+  265:29  error  'URLSearchParams' is not defined  no-undef
+  315:27  error  'URL' is not defined              no-undef
+  323:36  error  'URLSearchParams' is not defined  no-undef
+  379:27  error  'URL' is not defined              no-undef
+  387:36  error  'URLSearchParams' is not defined  no-undef
+  426:25  error  'URL' is not defined              no-undef
+  557:25  error  'URL' is not defined              no-undef
+  603:20  error  'URL' is not defined              no-undef
+  653:35  error  'Buffer' is not defined           no-undef
+  655:53  error  'Buffer' is not defined           no-undef
+  679:33  error  'Buffer' is not defined           no-undef
+  691:35  error  'Buffer' is not defined           no-undef
+  744:36  error  'Buffer' is not defined           no-undef
+  745:38  error  'Buffer' is not defined           no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/logout.test.js
+   46:37  error  'URL' is not defined              no-undef
+   47:37  error  'URL' is not defined              no-undef
+   48:40  error  'URL' is not defined              no-undef
+   53:31  error  'Buffer' is not defined           no-undef
+  194:26  error  'URLSearchParams' is not defined  no-undef
+  213:24  error  'URLSearchParams' is not defined  no-undef
+  247:24  error  'URLSearchParams' is not defined  no-undef
+  381:33  error  'Buffer' is not defined           no-undef
+  466:36  error  'Buffer' is not defined           no-undef
+  468:38  error  'Buffer' is not defined           no-undef
+  693:39  error  'URL' is not defined              no-undef
+  777:27  error  'URL' is not defined              no-undef
+  803:50  error  'URL' is not defined              no-undef
+  806:32  error  'URL' is not defined              no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/manifest.test.js
+   15:20  error  'URL' is not defined  no-undef
+  100:43  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/media-encoder-packaging.test.js
+   52:42  error  'process' is not defined  no-undef
+   91:22  error  'Buffer' is not defined   no-undef
+  105:17  error  'Buffer' is not defined   no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/media-encoder.test.js
+   28:33  error  'process' is not defined  no-undef
+   92:5   error  'process' is not defined  no-undef
+  112:14  error  'process' is not defined  no-undef
+  130:40  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/meeting-audio.test.js
+   83:19  error  'Buffer' is not defined           no-undef
+  165:19  error  'Buffer' is not defined           no-undef
+  192:19  error  'Buffer' is not defined           no-undef
+  226:19  error  'Buffer' is not defined           no-undef
+  247:25  error  'Buffer' is not defined           no-undef
+  269:19  error  'Buffer' is not defined           no-undef
+  294:19  error  'Buffer' is not defined           no-undef
+  328:23  error  'Buffer' is not defined           no-undef
+  365:25  error  'Buffer' is not defined           no-undef
+  377:58  error  'structuredClone' is not defined  no-undef
+  380:17  error  'structuredClone' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/meeting-upload.test.js
+  11:48  error  'Headers' is not defined  no-undef
+  24:19  error  'Buffer' is not defined   no-undef
+  39:30  error  'URL' is not defined      no-undef
+  40:28  error  'URL' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/oauth-state.test.js
+  28:36  error  'Buffer' is not defined  no-undef
+  37:14  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/onboarding-missing-steps.test.js
+   99:36  error  'DOMException' is not defined  no-undef
+  820:36  error  'setTimeout' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/packaging.test.js
+   11:45  error  'URL' is not defined      no-undef
+   33:28  error  'process' is not defined  no-undef
+   69:28  error  'process' is not defined  no-undef
+   70:28  error  'URL' is not defined      no-undef
+  100:28  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/panel-blur-guard.test.js
+  39:37  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/permissions.test.js
+   14:52  error  'URL' is not defined      no-undef
+  122:25  error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/pisma.test.js
+  6:51  error  'URL' is not defined  no-undef
+  7:32  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/pkce.test.js
+  27:53  error  'Buffer' is not defined  no-undef
+  35:49  error  'Buffer' is not defined  no-undef
+  38:21  error  'Buffer' is not defined  no-undef
+  45:40  error  'Buffer' is not defined  no-undef
+  46:41  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/publish-release-remote.test.js
+   8:24  error  'URL' is not defined      no-undef
+  29:16  error  'Buffer' is not defined   no-undef
+  30:16  error  'Buffer' is not defined   no-undef
+  66:17  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/queue-wiring.test.js
+    50:21  error  'URL' is not defined              no-undef
+    74:40  error  'URL' is not defined              no-undef
+    75:40  error  'URL' is not defined              no-undef
+    79:43  error  'URL' is not defined              no-undef
+   105:5   error  'Buffer' is not defined           no-undef
+   232:27  error  'URL' is not defined              no-undef
+   390:24  error  'Buffer' is not defined           no-undef
+   393:32  error  'Buffer' is not defined           no-undef
+   416:39  error  'Buffer' is not defined           no-undef
+   739:12  error  'process' is not defined          no-undef
+   773:10  error  'Buffer' is not defined           no-undef
+   774:5   error  'Buffer' is not defined           no-undef
+   775:5   error  'Buffer' is not defined           no-undef
+   776:5   error  'Buffer' is not defined           no-undef
+   777:5   error  'Buffer' is not defined           no-undef
+   778:5   error  'Buffer' is not defined           no-undef
+   825:27  error  'Buffer' is not defined           no-undef
+   826:23  error  'Buffer' is not defined           no-undef
+   867:27  error  'Buffer' is not defined           no-undef
+   868:23  error  'Buffer' is not defined           no-undef
+  1075:35  error  'console' is not defined          no-undef
+  2071:57  error  'setImmediate' is not defined     no-undef
+  2143:32  error  'Buffer' is not defined           no-undef
+  2577:32  error  'Buffer' is not defined           no-undef
+  3696:7   error  'setTimeout' is not defined       no-undef
+  3733:7   error  'setTimeout' is not defined       no-undef
+  4253:43  error  'Headers' is not defined          no-undef
+  5006:36  error  'setImmediate' is not defined     no-undef
+  5008:25  error  'Buffer' is not defined           no-undef
+  5144:36  error  'setImmediate' is not defined     no-undef
+  5175:38  error  'setImmediate' is not defined     no-undef
+  5213:38  error  'setImmediate' is not defined     no-undef
+  5506:26  error  'Buffer' is not defined           no-undef
+  5511:26  error  'Buffer' is not defined           no-undef
+  5609:76  error  'Buffer' is not defined           no-undef
+  5894:32  error  'setImmediate' is not defined     no-undef
+  6321:12  error  'Buffer' is not defined           no-undef
+  6742:23  error  'structuredClone' is not defined  no-undef
+  6743:31  error  'structuredClone' is not defined  no-undef
+  6985:23  error  'structuredClone' is not defined  no-undef
+  6986:39  error  'structuredClone' is not defined  no-undef
+  7126:25  error  'Buffer' is not defined           no-undef
+  7128:25  error  'Buffer' is not defined           no-undef
+  7143:23  error  'structuredClone' is not defined  no-undef
+  7144:31  error  'structuredClone' is not defined  no-undef
+  7342:36  error  'setImmediate' is not defined     no-undef
+  7346:25  error  'Buffer' is not defined           no-undef
+  7388:25  error  'Buffer' is not defined           no-undef
+  7516:36  error  'setTimeout' is not defined       no-undef
+  7708:23  error  'structuredClone' is not defined  no-undef
+  7709:39  error  'structuredClone' is not defined  no-undef
+  7801:23  error  'structuredClone' is not defined  no-undef
+  7802:31  error  'structuredClone' is not defined  no-undef
+  8214:52  error  'URL' is not defined              no-undef
+  8524:77  error  'AbortSignal' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/queue.test.js
+    36:33  error  'process' is not defined          no-undef
+    37:31  error  'process' is not defined          no-undef
+    43:40  error  'URL' is not defined              no-undef
+   140:53  error  'process' is not defined          no-undef
+   141:8   error  'process' is not defined          no-undef
+   142:51  error  'process' is not defined          no-undef
+   143:8   error  'process' is not defined          no-undef
+   202:87  error  'Buffer' is not defined           no-undef
+   427:9   error  'Buffer' is not defined           no-undef
+   534:33  error  'Buffer' is not defined           no-undef
+   575:44  error  'Buffer' is not defined           no-undef
+   657:27  error  'Buffer' is not defined           no-undef
+   658:23  error  'Buffer' is not defined           no-undef
+   701:27  error  'Buffer' is not defined           no-undef
+   743:32  error  'process' is not defined          no-undef
+   743:75  error  'process' is not defined          no-undef
+   841:12  error  'process' is not defined          no-undef
+   842:12  error  'process' is not defined          no-undef
+   843:30  error  'process' is not defined          no-undef
+   848:39  error  'process' is not defined          no-undef
+   860:12  error  'process' is not defined          no-undef
+   875:5   error  'process' is not defined          no-undef
+   889:5   error  'process' is not defined          no-undef
+  1275:22  error  'structuredClone' is not defined  no-undef
+  1313:22  error  'structuredClone' is not defined  no-undef
+  1361:20  error  'structuredClone' is not defined  no-undef
+  1374:20  error  'structuredClone' is not defined  no-undef
+  1617:20  error  'structuredClone' is not defined  no-undef
+  2503:60  error  'Buffer' is not defined           no-undef
+  2538:73  error  'Buffer' is not defined           no-undef
+  2540:56  error  'Buffer' is not defined           no-undef
+  2574:60  error  'Buffer' is not defined           no-undef
+  2575:56  error  'Buffer' is not defined           no-undef
+  3135:19  error  'Buffer' is not defined           no-undef
+  3456:51  error  'Buffer' is not defined           no-undef
+  3457:47  error  'Buffer' is not defined           no-undef
+  3619:22  error  'Headers' is not defined          no-undef
+  3658:60  error  'Buffer' is not defined           no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/recording-actions.test.js
+   29:17  error  'Buffer' is not defined           no-undef
+  123:27  error  'Buffer' is not defined           no-undef
+  279:25  error  'Buffer' is not defined           no-undef
+  332:62  error  'Buffer' is not defined           no-undef
+  339:10  error  'structuredClone' is not defined  no-undef
+  404:38  error  'Buffer' is not defined           no-undef
+  420:22  error  'structuredClone' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/recording-card.test.js
+   115:41  error  'URL' is not defined           no-undef
+   931:24  error  'DOMException' is not defined  no-undef
+  1008:24  error  'DOMException' is not defined  no-undef
+  1714:34  error  'DOMException' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/recording-export.test.js
+   25:32  error  'Buffer' is not defined       no-undef
+   66:10  error  'Buffer' is not defined       no-undef
+   67:5   error  'Buffer' is not defined       no-undef
+   68:5   error  'Buffer' is not defined       no-undef
+   69:5   error  'Buffer' is not defined       no-undef
+   70:5   error  'Buffer' is not defined       no-undef
+   71:5   error  'Buffer' is not defined       no-undef
+  121:21  error  'URL' is not defined          no-undef
+  143:16  error  'URL' is not defined          no-undef
+  151:21  error  'URL' is not defined          no-undef
+  163:21  error  'URL' is not defined          no-undef
+  174:21  error  'URL' is not defined          no-undef
+  192:12  error  'Buffer' is not defined       no-undef
+  197:16  error  'URL' is not defined          no-undef
+  204:12  error  'Buffer' is not defined       no-undef
+  217:50  error  'Buffer' is not defined       no-undef
+  220:19  error  'Buffer' is not defined       no-undef
+  221:16  error  'TextDecoder' is not defined  no-undef
+  229:12  error  'Buffer' is not defined       no-undef
+  231:12  error  'Buffer' is not defined       no-undef
+  232:16  error  'URL' is not defined          no-undef
+  251:23  error  'URL' is not defined          no-undef
+  263:21  error  'URL' is not defined          no-undef
+  327:11  error  'URL' is not defined          no-undef
+  749:21  error  'URL' is not defined          no-undef
+  763:21  error  'URL' is not defined          no-undef
+  773:21  error  'URL' is not defined          no-undef
+  787:25  error  'URL' is not defined          no-undef
+  796:16  error  'URL' is not defined          no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/recording-order-guard.test.js
+  20:41  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/recording-verification.test.js
+   17:18  error  'Headers' is not defined  no-undef
+  106:18  error  'URL' is not defined      no-undef
+  116:16  error  'URL' is not defined      no-undef
+  123:22  error  'URL' is not defined      no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/recordings-dashboard.test.js
+  595:47  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/release-artifacts.test.js
+  32:21  error  'Buffer' is not defined  no-undef
+  37:44  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/release-workflow.test.js
+  5:7  error  'URL' is not defined  no-undef
+  9:7  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/retention.test.js
+    66:27  error  'Buffer' is not defined  no-undef
+    67:23  error  'Buffer' is not defined  no-undef
+   146:23  error  'Buffer' is not defined  no-undef
+   147:25  error  'Buffer' is not defined  no-undef
+   225:27  error  'Buffer' is not defined  no-undef
+   413:24  error  'Buffer' is not defined  no-undef
+   414:37  error  'Buffer' is not defined  no-undef
+   930:47  error  'Buffer' is not defined  no-undef
+  1026:36  error  'URL' is not defined     no-undef
+  1027:37  error  'URL' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/session-reentry.test.js
+  429:41  error  'URL' is not defined  no-undef
+  430:44  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/settings-audio-permissions.test.js
+  6:37  error  'URL' is not defined  no-undef
+  7:36  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/settings.test.js
+  10:41  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/tracking-card.test.js
+  9:42  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/tracking-timer.test.js
+  104:7   error  'URL' is not defined           no-undef
+  719:9   error  'setImmediate' is not defined  no-undef
+  800:24  error  'URL' is not defined           no-undef
+  833:24  error  'URL' is not defined           no-undef
+  844:22  error  'URL' is not defined           no-undef
+  847:22  error  'URL' is not defined           no-undef
+  874:24  error  'URL' is not defined           no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/tray-authority.test.js
+  50:37  error  'URL' is not defined  no-undef
+  51:40  error  'URL' is not defined  no-undef
+  52:36  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/tray-ikony.test.js
+   28:20  error  'Buffer' is not defined   no-undef
+   29:38  error  'URL' is not defined      no-undef
+  102:27  error  'Buffer' is not defined   no-undef
+  104:16  error  'Buffer' is not defined   no-undef
+  148:16  error  'Buffer' is not defined   no-undef
+  155:10  error  'Buffer' is not defined   no-undef
+  348:20  error  'process' is not defined  no-undef
+  349:20  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/tray-image-electron.js
+   25:20  error  'process' is not defined  no-undef
+   75:7   error  'console' is not defined  no-undef
+   94:7   error  'console' is not defined  no-undef
+   99:7   error  'console' is not defined  no-undef
+  112:5   error  'console' is not defined  no-undef
+  117:5   error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/ui-smoke.test.js
+   72:19  error  'URL' is not defined      no-undef
+  159:22  error  'process' is not defined  no-undef
+  161:7   error  'process' is not defined  no-undef
+  167:42  error  'process' is not defined  no-undef
+  168:12  error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/upload-client.test.js
+    63:18  error  'Headers' is not defined       no-undef
+    69:14  error  'Headers' is not defined       no-undef
+    73:14  error  'URL' is not defined           no-undef
+    87:21  error  'Buffer' is not defined        no-undef
+    88:17  error  'Buffer' is not defined        no-undef
+   542:10  error  'Buffer' is not defined        no-undef
+   627:43  error  'Buffer' is not defined        no-undef
+   673:15  error  'Buffer' is not defined        no-undef
+   674:23  error  'Buffer' is not defined        no-undef
+   725:69  error  'Buffer' is not defined        no-undef
+   726:65  error  'Buffer' is not defined        no-undef
+   730:29  error  'Buffer' is not defined        no-undef
+   731:25  error  'Buffer' is not defined        no-undef
+  1037:28  error  'URL' is not defined           no-undef
+  1427:29  error  'Buffer' is not defined        no-undef
+  1490:24  error  'Buffer' is not defined        no-undef
+  1491:20  error  'Buffer' is not defined        no-undef
+  1501:40  error  'setImmediate' is not defined  no-undef
+  1575:25  error  'Buffer' is not defined        no-undef
+  1599:24  error  'Buffer' is not defined        no-undef
+  1706:76  error  'Buffer' is not defined        no-undef
+  1707:72  error  'Buffer' is not defined        no-undef
+  1731:76  error  'Buffer' is not defined        no-undef
+  1732:72  error  'Buffer' is not defined        no-undef
+  1763:76  error  'Buffer' is not defined        no-undef
+  1764:72  error  'Buffer' is not defined        no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/verify-macos-release.test.js
+  29:21  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/verify-published-release.test.js
+   5:18  error  'Buffer' is not defined       no-undef
+  17:11  error  'Response' is not defined     no-undef
+  18:11  error  'Response' is not defined     no-undef
+  24:45  error  'AbortSignal' is not defined  no-undef
+  39:13  error  'Response' is not defined     no-undef
+  46:13  error  'Response' is not defined     no-undef
+  52:32  error  'Response' is not defined     no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/volba-firmy-v-relaci.test.js
+  20:29  error  'Buffer' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/zapojeni-odhlaseni.test.js
+  27:33  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.claude/worktrees/osa-ui/tests/zkratky-bez-kryti.test.js
+  52:37  error  'URL' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+    2:18   error  'document' is not defined               no-undef
+    3:19   error  'URLSearchParams' is not defined        no-undef
+    3:35   error  'location' is not defined               no-undef
+    7:1    error  'document' is not defined               no-undef
+    8:32   error  'document' is not defined               no-undef
+    9:1    error  'document' is not defined               no-undef
+   10:15   error  'document' is not defined               no-undef
+   10:112  error  'document' is not defined               no-undef
+   11:17   error  'document' is not defined               no-undef
+   11:105  error  'document' is not defined               no-undef
+   12:32   error  'document' is not defined               no-undef
+   13:24   error  'document' is not defined               no-undef
+   13:138  error  'document' is not defined               no-undef
+   16:2    error  'document' is not defined               no-undef
+   17:28   error  'document' is not defined               no-undef
+   17:152  error  'document' is not defined               no-undef
+   18:37   error  'document' is not defined               no-undef
+   18:130  error  'document' is not defined               no-undef
+   36:40   error  'window' is not defined                 no-undef
+   80:2    error  'document' is not defined               no-undef
+   81:2    error  'document' is not defined               no-undef
+   82:2    error  'document' is not defined               no-undef
+   95:2    error  'document' is not defined               no-undef
+   96:2    error  'window' is not defined                 no-undef
+   97:19   error  'window' is not defined                 no-undef
+  144:416  error  'document' is not defined               no-undef
+  144:527  error  'document' is not defined               no-undef
+  159:53   error  'document' is not defined               no-undef
+  159:487  error  'requestAnimationFrame' is not defined  no-undef
+  162:76   error  'clearTimeout' is not defined           no-undef
+  162:112  error  'setTimeout' is not defined             no-undef
+  194:1    error  'document' is not defined               no-undef
+  204:101  error  'setTimeout' is not defined             no-undef
+  234:23   error  'document' is not defined               no-undef
+  251:66   error  'setTimeout' is not defined             no-undef
+  259:1    error  'document' is not defined               no-undef
+  268:1    error  'document' is not defined               no-undef
+  279:19   error  'document' is not defined               no-undef
+  281:1    error  'document' is not defined               no-undef
+  283:165  error  'document' is not defined               no-undef
+  292:1    error  'document' is not defined               no-undef
+  293:26   error  'document' is not defined               no-undef
+  294:54   error  'document' is not defined               no-undef
+  299:1    error  'setInterval' is not defined            no-undef
+  299:64   error  'document' is not defined               no-undef
+  303:21   error  'document' is not defined               no-undef
+  304:35   error  'document' is not defined               no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/check-f-tray.mjs
+  12:26  error  'console' is not defined  no-undef
+  43:25  error  'Buffer' is not defined   no-undef
+  46:52  error  'Buffer' is not defined   no-undef
+  49:1   error  'console' is not defined  no-undef
+  50:1   error  'process' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/creative.js
+   3:18  error  'URLSearchParams' is not defined  no-undef
+   3:34  error  'location' is not defined         no-undef
+   3:56  error  'document' is not defined         no-undef
+   3:94  error  'document' is not defined         no-undef
+   7:2   error  'document' is not defined         no-undef
+  10:16  error  'URLSearchParams' is not defined  no-undef
+  13:3   error  'document' is not defined         no-undef
+  14:3   error  'document' is not defined         no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/f-icons.js
+  44:19  error  'document' is not defined  no-undef
+  47:14  error  'window' is not defined    no-undef
+  53:28  error  'window' is not defined    no-undef
+  58:11  error  'document' is not defined  no-undef
+  59:11  error  'document' is not defined  no-undef
+  60:11  error  'document' is not defined  no-undef
+  61:3   error  'document' is not defined  no-undef
+  66:3   error  'document' is not defined  no-undef
+  70:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/f-tray-gallery.js
+  19:1    error  'document' is not defined  no-undef
+  20:19   error  'document' is not defined  no-undef
+  20:64   error  'document' is not defined  no-undef
+  20:110  error  'document' is not defined  no-undef
+  20:157  error  'document' is not defined  no-undef
+  24:2    error  'document' is not defined  no-undef
+  26:2    error  'document' is not defined  no-undef
+  27:2    error  'document' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/generate-f-tray.mjs
+  15:38   error  'Buffer' is not defined   no-undef
+  15:64   error  'Buffer' is not defined   no-undef
+  15:119  error  'Buffer' is not defined   no-undef
+  15:159  error  'Buffer' is not defined   no-undef
+  15:195  error  'Buffer' is not defined   no-undef
+  25:35   error  'Buffer' is not defined   no-undef
+  33:13   error  'Buffer' is not defined   no-undef
+  34:9    error  'Buffer' is not defined   no-undef
+  34:24   error  'Buffer' is not defined   no-undef
+  34:128  error  'Buffer' is not defined   no-undef
+  38:12   error  'Buffer' is not defined   no-undef
+  43:1    error  'console' is not defined  no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-f-layout.js
+   5:56  error  'icon' is not defined      no-undef
+   6:60  error  'state' is not defined     no-undef
+   6:79  error  'state' is not defined     no-undef
+  10:16  error  'document' is not defined  no-undef
+  14:9   error  'document' is not defined  no-undef
+  20:19  error  'document' is not defined  no-undef
+  20:73  error  'document' is not defined  no-undef
+  29:67  error  'document' is not defined  no-undef
+  34:3   error  'document' is not defined  no-undef
+  39:3   error  'document' is not defined  no-undef
+  47:15  error  'document' is not defined  no-undef
+  48:19  error  'document' is not defined  no-undef
+  51:20  error  'document' is not defined  no-undef
+  68:17  error  'document' is not defined  no-undef
+  69:17  error  'document' is not defined  no-undef
+  79:15  error  'document' is not defined  no-undef
+  80:18  error  'document' is not defined  no-undef
+  89:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/sonnet-g-layout.js
+    7:60  error  'state' is not defined     no-undef
+    7:79  error  'state' is not defined     no-undef
+   11:19  error  'document' is not defined  no-undef
+   16:14  error  'document' is not defined  no-undef
+   20:9   error  'window' is not defined    no-undef
+   21:5   error  'window' is not defined    no-undef
+   22:5   error  'document' is not defined  no-undef
+   23:19  error  'document' is not defined  no-undef
+   26:5   error  'document' is not defined  no-undef
+   27:34  error  'document' is not defined  no-undef
+   31:16  error  'document' is not defined  no-undef
+   32:17  error  'document' is not defined  no-undef
+   47:19  error  'document' is not defined  no-undef
+   59:43  error  'document' is not defined  no-undef
+   60:16  error  'document' is not defined  no-undef
+   61:16  error  'document' is not defined  no-undef
+   62:19  error  'document' is not defined  no-undef
+   80:17  error  'document' is not defined  no-undef
+   82:7   error  'document' is not defined  no-undef
+   82:50  error  'document' is not defined  no-undef
+   83:19  error  'document' is not defined  no-undef
+   84:18  error  'document' is not defined  no-undef
+   88:11  error  'document' is not defined  no-undef
+   96:24  error  'document' is not defined  no-undef
+   97:18  error  'document' is not defined  no-undef
+   99:23  error  'document' is not defined  no-undef
+  104:3   error  'document' is not defined  no-undef
+  109:3   error  'document' is not defined  no-undef
+  115:2   error  'window' is not defined    no-undef
+
+/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/docs/changes/desktop-complete-designs-2026-10-01/design/viewer.js
+   2:20  error  'URLSearchParams' is not defined  no-undef
+   2:36  error  'location' is not defined         no-undef
+  18:14  error  'document' is not defined         no-undef
+  19:15  error  'document' is not defined         no-undef
+  20:16  error  'document' is not defined         no-undef
+  21:14  error  'document' is not defined         no-undef
+  28:2   error  'document' is not defined         no-undef
+  29:2   error  'document' is not defined         no-undef
+  30:2   error  'document' is not defined         no-undef
+  31:2   error  'document' is not defined         no-undef
+  40:18  error  'URL' is not defined              no-undef
+  40:33  error  'location' is not defined         no-undef
+  47:2   error  'document' is not defined         no-undef
+  50:2   error  'document' is not defined         no-undef
+  51:2   error  'document' is not defined         no-undef
+  52:2   error  'document' is not defined         no-undef
+  53:2   error  'document' is not defined         no-undef
+  54:2   error  'document' is not defined         no-undef
+  56:1   error  'document' is not defined         no-undef
+
+✖ 2603 problems (2603 errors, 0 warnings)
+
+EXIT_CODE=1

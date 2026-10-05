@@ -1,0 +1,38 @@
+PASS onboarding-first-use
+PASS home-420-and-system-font
+PASS lutrack-inactive
+PASS light-home-no-horizontal-overflow
+PASS light-library-no-horizontal-overflow
+PASS light-queue-no-horizontal-overflow
+PASS light-settings-no-horizontal-overflow
+PASS light-updates-no-horizontal-overflow
+PASS professional-home-no-horizontal-overflow
+PASS professional-library-no-horizontal-overflow
+PASS professional-queue-no-horizontal-overflow
+PASS professional-settings-no-horizontal-overflow
+PASS professional-updates-no-horizontal-overflow
+PASS dark-home-no-horizontal-overflow
+PASS dark-library-no-horizontal-overflow
+PASS dark-queue-no-horizontal-overflow
+PASS dark-settings-no-horizontal-overflow
+PASS dark-updates-no-horizontal-overflow
+PASS library-460
+PASS real-manifest-loaded
+PASS library-search-period-pagination
+PASS five-settings-sections
+PASS settings-no-second-window
+PASS detail-separate-860-580
+PASS detail-actual-fixture
+PASS two-synthetic-sources
+PASS signed-out-offline-recording-priority
+PASS hidden-panel-recording-authority
+PASS hidden-panel-time-continues
+PASS live-stop-outside-home
+PASS main-save-decision-priority
+FAIL Error: CDP Page.captureScreenshot neodpověděl do 8 sekund.
+    at Timeout._onTimeout (file:///Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-design-e2e.mjs:90:16)
+    at listOnTimeout (node:internal/timers:585:17)
+    at process.processTimers (node:internal/timers:521:7)
+Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.runtime/osa-e2e/2026-10-05T11-20-16.145Z
+exit code: 1
+EXIT_CODE=1

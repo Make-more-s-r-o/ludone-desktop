@@ -1,0 +1,14 @@
+$ npx vitest run tests/osa-playback.test.js tests/osa-tray.test.js tests/osa-recordings.test.js
+
+ RUN  v3.2.7 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa
+
+ ✓ tests/osa-tray.test.js (4 tests) 1ms
+ ✓ tests/osa-recordings.test.js (7 tests) 7ms
+ ✓ tests/osa-playback.test.js (4 tests) 9ms
+
+ Test Files  3 passed (3)
+      Tests  15 passed (15)
+   Start at  13:45:48
+   Duration  193ms (transform 21ms, setup 20ms, collect 19ms, tests 17ms, environment 0ms, prepare 113ms)
+
+EXIT_CODE=0

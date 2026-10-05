@@ -1,0 +1,46 @@
+$ npm run test:tray-image
+
+> ludone-desktop-prototype@0.1.8 test:tray-image
+> electron tests/tray-image-electron.js
+
+MEASURE dark-signed-out: isEmpty=false template=true getSize=18x18 toPNG.length=398
+PASS dark-signed-out: isEmpty=false template=true getSize=18x18 toPNG.length=398
+MEASURE dark-idle: isEmpty=false template=true getSize=18x18 toPNG.length=391
+PASS dark-idle: isEmpty=false template=true getSize=18x18 toPNG.length=391
+MEASURE dark-recording: isEmpty=false template=true getSize=18x18 toPNG.length=498
+PASS dark-recording: isEmpty=false template=true getSize=18x18 toPNG.length=498
+MEASURE dark-tracking: isEmpty=false template=true getSize=18x18 toPNG.length=448
+PASS dark-tracking: isEmpty=false template=true getSize=18x18 toPNG.length=448
+MEASURE dark-recording-tracking: isEmpty=false template=true getSize=18x18 toPNG.length=517
+PASS dark-recording-tracking: isEmpty=false template=true getSize=18x18 toPNG.length=517
+MEASURE dark-queue-waiting: isEmpty=false template=true getSize=18x18 toPNG.length=500
+PASS dark-queue-waiting: isEmpty=false template=true getSize=18x18 toPNG.length=500
+MEASURE dark-recording-audio-lost: isEmpty=false template=true getSize=18x18 toPNG.length=477
+PASS dark-recording-audio-lost: isEmpty=false template=true getSize=18x18 toPNG.length=477
+MEASURE dark-recording-microphone-only: isEmpty=false template=true getSize=18x18 toPNG.length=495
+PASS dark-recording-microphone-only: isEmpty=false template=true getSize=18x18 toPNG.length=495
+MEASURE light-signed-out: isEmpty=false template=true getSize=18x18 toPNG.length=398
+PASS light-signed-out: isEmpty=false template=true getSize=18x18 toPNG.length=398
+MEASURE light-idle: isEmpty=false template=true getSize=18x18 toPNG.length=391
+PASS light-idle: isEmpty=false template=true getSize=18x18 toPNG.length=391
+MEASURE light-recording: isEmpty=false template=true getSize=18x18 toPNG.length=498
+PASS light-recording: isEmpty=false template=true getSize=18x18 toPNG.length=498
+MEASURE light-tracking: isEmpty=false template=true getSize=18x18 toPNG.length=448
+PASS light-tracking: isEmpty=false template=true getSize=18x18 toPNG.length=448
+MEASURE light-recording-tracking: isEmpty=false template=true getSize=18x18 toPNG.length=517
+PASS light-recording-tracking: isEmpty=false template=true getSize=18x18 toPNG.length=517
+MEASURE light-queue-waiting: isEmpty=false template=true getSize=18x18 toPNG.length=500
+PASS light-queue-waiting: isEmpty=false template=true getSize=18x18 toPNG.length=500
+MEASURE light-recording-audio-lost: isEmpty=false template=true getSize=18x18 toPNG.length=477
+PASS light-recording-audio-lost: isEmpty=false template=true getSize=18x18 toPNG.length=477
+MEASURE light-recording-microphone-only: isEmpty=false template=true getSize=18x18 toPNG.length=495
+PASS light-recording-microphone-only: isEmpty=false template=true getSize=18x18 toPNG.length=495
+PASS theme-switch-signed-out: samePixels=true
+PASS theme-switch-idle: samePixels=true
+PASS theme-switch-recording: samePixels=true
+PASS theme-switch-tracking: samePixels=true
+PASS theme-switch-recording-tracking: samePixels=true
+PASS theme-switch-queue-waiting: samePixels=true
+PASS theme-switch-recording-audio-lost: samePixels=true
+PASS theme-switch-recording-microphone-only: samePixels=true
+EXIT_CODE=0

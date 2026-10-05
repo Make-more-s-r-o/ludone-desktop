@@ -1,0 +1,18 @@
+
+> ludone-desktop-prototype@0.1.7 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 69 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         0.66 kB │ gzip:   0.39 kB
+dist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB
+dist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB
+dist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB
+dist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB
+dist/assets/index-CQIobZCN.css                        148.74 kB │ gzip:  23.06 kB
+dist/assets/index-B1-xLBW6.js                         358.48 kB │ gzip: 108.42 kB
+✓ built in 359ms
+EXIT_CODE=0

@@ -1,0 +1,15 @@
+
+> ludone-desktop-prototype@0.1.7 gates:clean
+> node scripts/gates-clean.mjs
+
+Čistý klon 3fdca5c6 → /var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-gates-rmqlUz/repo
+
+▶ npm ci
+npm error Exit handler never called!
+npm error This is an error with npm itself. Please report this error at:
+npm error   <https://github.com/npm/cli/issues>
+npm error Log files were not written due to an error writing to the directory: /Users/dev_ludone/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+🔴 Brány nad čistým klonem 3fdca5c6 SPADLY.
+EXIT_CODE=1
