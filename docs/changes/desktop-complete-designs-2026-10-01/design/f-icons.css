@@ -1,0 +1,20 @@
+/* Jedna ikonová rodina pro F; ostatní návrhy ani autorské CSS se nemění. */
+body[data-concept=f] .f-icon{width:20px;height:20px;flex:none;vertical-align:middle;stroke-width:1.75}
+body[data-concept=f] .menu-brand img{width:28px;height:28px;border-radius:7px}
+body[data-concept=f] .popover-actions .icon-btn{width:36px;height:36px}
+body[data-concept=f] .menubar-trigger>.f-tray-icon{width:18px;height:18px;flex:none}
+body[data-concept=f] .menu-live-status{font-size:13px;font-variant-numeric:tabular-nums;gap:0}
+body[data-concept=f] .menubar-trigger.is-recording{color:var(--text)}
+body[data-concept=f] .menu-live-status .f-icon{width:17px;height:17px}
+body[data-concept=f] .menu-live-status .f-icon[data-icon=alert]{color:var(--warn)}
+body[data-concept=f] .btn.record-button .f-icon[data-icon=start],body[data-concept=f] .btn.stop-button .f-icon{fill:currentColor;stroke:none}
+body[data-concept=f] .f-rail{position:relative;z-index:3}
+body[data-concept=f] .f-rail button[aria-current=page]:before{content:'';position:absolute;left:-5px;top:11px;bottom:11px;width:3px;border-radius:2px;background:currentColor}
+body[data-concept=f] .f-rail .f-count{top:auto;bottom:-1px;right:-1px;font-size:10px;min-width:16px;height:15px;line-height:15px;padding:0 3px;border:1px solid var(--surface-alt);border-radius:5px}
+body[data-concept=f] .f-nav-tooltip{position:absolute;left:46px;top:50%;transform:translateY(-50%);padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--text);box-shadow:0 3px 10px #0002;white-space:nowrap;font-size:13px;font-weight:550;line-height:1.2;pointer-events:none;opacity:0;visibility:hidden}
+body[data-concept=f] .f-rail button:is(:hover,:focus-visible) .f-nav-tooltip{opacity:1;visibility:visible}
+body[data-concept=f] .settings-nav button>.f-icon{margin-right:10px}
+body[data-concept=f] .f-sec>button{justify-content:flex-start!important}
+body[data-concept=f] .f-sec>button:after{margin-left:auto}
+body[data-concept=f] .btn .f-icon[data-icon=more]{stroke-width:2}
+body[data-concept=f] .f-icon[data-icon=more]{fill:currentColor;stroke:none}

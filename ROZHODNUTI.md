@@ -1,5 +1,7 @@
 # Rozhodnutí — LuDone Desktop
 
+**5. 10. 2026 — F Osa schválena k implementaci:** Dan přímo schválil celou F včetně posledních menu bar ikon a požádal o spuštění na dev-ludone Macu mini. Pro tento redesign platí systémové čitelné písmo a panel horní lišty se samostatným oknem až pro detail; historický směr A14 a starší Astra rozvržení nejsou vizuálním cílem tohoto běhu. LuTrack je jen neaktivní řádek; backend se nemění. Existující funkční a bezpečnostní brány nesmějí být oslabené. [Provozní brief](docs/behy/desktop-osa-2026-10-05/START.md). Finální tag/publikace čekají na kontrolu výsledku a nové výslovné pověření.
+
 Zápis z 19.–20. 8. 2026. Slouží k tomu, aby se nemuselo znovu rozhodovat to, co už rozhodnuté je.
 Kdo na to naváže: **přečti tenhle soubor první.** Podklady jsou v `/Users/dan/Dev/ClaudeCode/luplaud-vyzkum/`.
 

@@ -1,0 +1,16 @@
+/* Integrace Codex: plné znění přístupu v úzkém panelu a souhrn místo duplicitního odstavce. */
+body[data-concept=g][data-phase=draft] .menu-popover .detail-aside > .small-note{display:none}
+@container app-window (max-width:420px){
+ body[data-concept=g][data-phase=draft] .menu-popover .form-grid .form-grid{display:flex;flex-direction:column;gap:12px}
+}
+/* Po schůzce se firma a přístup vejdou do přirozeného panelu vedle sebe. */
+body[data-concept=g][data-phase=draft]{--popover-width:480px}
+body[data-concept=g][data-phase=draft] .menu-popover .detail-aside h3,
+body[data-concept=g][data-phase=draft] .menu-popover .detail-hero h2,
+body[data-concept=g][data-phase=draft] .menu-popover .detail-hero > .badge{display:none}
+body[data-concept=g][data-phase=draft] .menu-popover .detail-hero{padding:0 0 8px;border:0}
+body[data-concept=g][data-phase=draft] .menu-popover .detail-actions .btn{flex-direction:row;align-items:center;gap:8px;min-height:64px;padding:12px}
+body[data-concept=g][data-phase=draft] .menu-popover .detail-main{padding-bottom:8px}
+body[data-concept=g][data-phase=draft] .menu-popover .form-grid .form-grid .field{display:flex;flex-direction:column;gap:8px}
+body[data-concept=g][data-phase=draft] .menu-popover .form-grid .form-grid .field select{flex:none}
+body[data-concept=f][data-page=detail] .form-grid .field{display:flex;flex-direction:column;gap:8px}

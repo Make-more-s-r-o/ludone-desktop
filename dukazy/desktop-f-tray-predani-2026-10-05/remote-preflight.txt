@@ -1,0 +1,30 @@
+Čtecí kontroly, 5. 10. 2026. Výpisy převzaté doslovně z nástrojů, bez tajemství.
+
+$ ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=5 dev-ludone 'uname -s; sw_vers -productVersion; test -d /Users/dev_ludone/Dev/ludone-desktop && echo desktop_repo_found; command -v node; command -v codex'
+ssh: connect to host 100.115.47.6 port 22: Operation not permitted
+EXIT_CODE=255
+Poznámka: omezení sandboxové sítě, nikoli nedostupnost hostu. Následující čtecí kontroly provedené s povoleným síťovým přístupem.
+
+$ ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=5 dev-ludone 'uname -s; sw_vers -productVersion; pwd; command -v node; command -v codex'
+Darwin
+27.0.1
+/Users/dev_ludone
+EXIT_CODE=1
+Poznámka: neinteraktivní SSH PATH neobsahuje Node/Codex; explicitní cesty fungují níže.
+
+$ ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=5 dev-ludone 'env PATH=/opt/homebrew/bin:/usr/bin:/bin /Users/dev_ludone/.npm-global/bin/codex --version; env PATH=/opt/homebrew/bin:/usr/bin:/bin /Users/dev_ludone/.npm-global/bin/codex login status; for p in /Users/dev_ludone/Dev/ludone-desktop /Users/dev_ludone/Dev/ClaudeCode/ludone-desktop /Users/dev_ludone/Dev/ClaudeCode/LuDone/ludone-desktop; do if test -d "$p"; then printf "desktop_repo=%s\n" "$p"; git -C "$p" status --short; fi; done'
+codex-cli 0.160.0
+Logged in using ChatGPT
+EXIT_CODE=0
+
+$ ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=5 dev-ludone 'xcrun --find swift; xcrun --show-sdk-path; env GIT_TERMINAL_PROMPT=0 git ls-remote https://github.com/Make-more-s-r-o/ludone-desktop.git HEAD'
+/Library/Developer/CommandLineTools/usr/bin/swift
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+2dd73fb2821f81fad3d9087381c72fd4d127e927	HEAD
+EXIT_CODE=0
+
+Další ověřené jednotlivé výpisy z inventury:
+Node: v22.23.3
+Git: git version 2.54.0 (Apple Git-157)
+Aktivní developer directory: /Library/Developer/CommandLineTools
+Žádné GUI, fyzické audio, nahrávání, změna oprávnění, přihlášení do app.ludone.cz ani podpisový proces se tímto nepouštěly.
