@@ -290,6 +290,10 @@ async function continueThroughRecordingTest(panel, click) {
       await React.act(async () => callback(panel.document.defaultView.performance.now()));
     }
   }
+  expect(continueButton?.disabled).toBe(true);
+  const confirmation = panel.document.querySelector('[data-testid="recording-test-hearing-confirmation"]');
+  expect(confirmation?.disabled).toBe(false);
+  await click(confirmation);
   expect(continueButton?.disabled).toBe(false);
   await click(continueButton);
 }
@@ -1408,6 +1412,7 @@ describe("schválený klidový panel", () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
       ludone: { hasAuthSession: vi.fn().mockResolvedValue(true), setPanelContentHeight },
     });
+    installOnboardingGeometry(panel.document.defaultView);
     const scrollContainer = panel.document.querySelector(".osa-workspace");
 
     try {

@@ -782,10 +782,10 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
           <h1>Nastavení</h1>
           <p>Účet, zvuk a ukládání nahrávek na tomto Macu.</p>
         </header>
-        <ApplicationUpdateStatus
+        {!embedded && <ApplicationUpdateStatus
           showVersion={false}
           allowManualCheck={activePage === "settings"}
-        />
+        />}
         <section className="desktop-day-intro" hidden={activePage !== "day"}>
           <p className="eyebrow">
             {new Intl.DateTimeFormat("cs-CZ", {

@@ -316,7 +316,7 @@ export function App() {
             {queueSnapshot.unavailable && <p className="osa-queue-unavailable" role="status">Stav fronty není dostupný. Počet čekajících položek nelze ověřit.</p>}
             <OsaDestination identity={panelActionsAvailable ? (user?.email || "valid-session") : null} readOnly={recording.active} onOpenAccount={() => { setSettingsTab("account"); navigate("settings"); }} />
             <RecordingDayPreview items={queueSnapshot.items} unavailable={queueSnapshot.unavailable} onOpenDay={() => navigate("library")} />
-            <p className="osa-lutrack" aria-disabled="true">LuTrack <small>Připravujeme</small></p>
+            {!recording.active && <p className="osa-lutrack" aria-disabled="true">LuTrack <small>Připravujeme</small></p>}
           </>}
           {sessionExists === false && <p role="status">{sessionState === "expired" ? "Přihlášení vypršelo." : "Místní režim."} Nahrávky zůstávají na tomto Macu.
             <button type="button" className="button button--small" onClick={() => { setAuthRequested(true); }}>Přihlásit se</button>

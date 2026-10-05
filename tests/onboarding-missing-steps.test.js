@@ -301,11 +301,21 @@ async function navigateToRecordingTest(panel) {
   });
 }
 
+async function confirmHumanHearing(panel) {
+  const confirmation = panel.document.querySelector('[data-testid="recording-test-hearing-confirmation"]');
+  if (confirmation && !confirmation.disabled) {
+    expect(panel.document.querySelector('[data-testid="recording-test-continue"]').disabled).toBe(true);
+    expect(confirmation.checked).toBe(false);
+    await panel.click(confirmation);
+  }
+}
+
 async function enterRecordingTest(panel) {
   await navigateToRecordingTest(panel);
   for (let index = 0; index < LIVE_CONFIRMATION_TEST_FRAMES; index += 1) {
     await panel.frame();
   }
+  await confirmHumanHearing(panel);
 }
 
 const LIVE_CONFIRMATION_TEST_FRAMES = 6;
@@ -512,6 +522,7 @@ describe("dva chybějící kroky onboardingu", () => {
 
     expect(panel.document.querySelector('[data-testid="recording-test-screen"]')
       ?.dataset.recordingTestState).toBe("testing");
+    await confirmHumanHearing(panel);
     expect(panel.document.querySelector('[data-testid="recording-test-continue"]')?.disabled)
       .toBe(false);
   });

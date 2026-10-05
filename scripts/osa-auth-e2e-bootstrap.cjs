@@ -7,6 +7,7 @@ const { setTimeout: delay } = require("node:timers/promises");
 const fs = require("node:fs");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
+const { EventEmitter } = require("node:events");
 const Module = require("node:module");
 const { pathToFileURL, fileURLToPath } = require("node:url");
 const electron = require("electron");
@@ -60,6 +61,18 @@ async function fixtureFetch(input, options = {}) {
   }
   throw new Error("Fixtura odmítla nepovolenou cestu");
 }
+const fixtureUpdater = new EventEmitter();
+const updaterAudit = { checks: 0, installs: 0, notifications: 0 };
+fixtureUpdater.checkForUpdates = async () => {
+  updaterAudit.checks += 1;
+  if (!fs.existsSync(path.join(root, ".public-update-available"))) { fixtureUpdater.emit("update-not-available"); return {}; }
+  fixtureUpdater.emit("update-available", { version: "0.1.9", releaseNotes: "Bezpečné uložení a přehlednější nahrávky." });
+  fixtureUpdater.emit("download-progress", { percent: 100 });
+  fixtureUpdater.emit("update-downloaded", { version: "0.1.9" });
+  return { downloadPromise: Promise.resolve() };
+};
+fixtureUpdater.quitAndInstall = () => { updaterAudit.installs += 1; persistAudit(); };
+class FixtureNotification { static isSupported() { return true; } show() { updaterAudit.notifications += 1; persistAudit(); } on() {} }
 const realLoad = Module._load;
 const net = new Proxy(electron.net, { get(target, key) {
   if (key === "fetch") return (input, options) => {
@@ -103,6 +116,12 @@ const app = new Proxy(electron.app, { get(target, key) {
   return typeof value === "function" ? value.bind(target) : value;
 } });
 const facade = new Proxy(electron, { get(target, key) {
+  if (key === "systemPreferences") return new Proxy(target.systemPreferences, { get(actual, name) {
+    if (name === "getMediaAccessStatus") return () => "granted";
+    if (name === "askForMediaAccess") return async () => true;
+    return Reflect.get(actual,name);
+  } });
+  if (key === "Notification") return FixtureNotification;
   if (key === "app") return app;
   if (key === "safeStorage") return safeStorage;
   if (key === "net") return net;
@@ -112,6 +131,7 @@ const facade = new Proxy(electron, { get(target, key) {
 } });
 Module._load = function(request, ...args) {
   if (request === "electron") return facade;
+  if (request === "electron-updater") return { autoUpdater: fixtureUpdater };
   const actual = realLoad.call(this, request, ...args);
   if (request === "./meeting-audio.cjs" && args[0]?.filename === path.join(project, "electron/main.cjs")) {
     return { ...actual, createLivePendingDelivery: async (...values) => {
@@ -138,15 +158,40 @@ Module.prototype._compile = function(source, filename) {
     const fixtureRegistration = `
       ipcMain.removeHandler("auth:identity");
       handleValidated("auth:identity", ["panel", "settings"], () => readStoredAuthIdentity());
+      // Veřejný auth adaptér pouze vrací validovanou izolovanou session, nikdy host účet.
+      ipcMain.removeHandler("auth:begin");
+      handleValidated("auth:begin", ["panel"], async (_event, ...extraPayload) => {
+        requireNoPayload("auth:begin", extraPayload);
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        return { ok:true, user:await readStoredAuthIdentity() };
+      });
     `;
-    return realCompile.call(this, source + fixtureRegistration, filename);
+    // Izolovaná fixtura aktivuje skutečný updater controller s inertním adaptérem.
+    const start = source.indexOf("async function initializeAutoUpdates() {");
+    const end = source.indexOf("  try {", start);
+    if (start < 0 || end < 0) throw new Error("Nenalezen initializer updateru");
+    const guards = source.slice(start, end);
+    const expectedGuards = `async function initializeAutoUpdates() {
+  if (IS_TEST_RUN) {
+    console.log("[updater] V E2E běhu jsou automatické aktualizace vypnuté.");
+    return;
+  }
+  if (!app.isPackaged) {
+    console.log("[updater] Ve vývojovém běhu jsou automatické aktualizace vypnuté.");
+    return;
+  }
+
+`;
+    if (guards !== expectedGuards) throw new Error("Změněné brány initializeru updateru; fixtura odmítla splice");
+    const testSource = source.slice(0, start) + "async function initializeAutoUpdates() {\n" + source.slice(end);
+    return realCompile.call(this, testSource + fixtureRegistration, filename);
   }
   return realCompile.call(this, source, filename);
 };
 globalThis.fetch = fixtureFetch;
 const persistAudit = () => {
   const temporary = path.join(root, ".public-transport-audit.tmp");
-  fs.writeFileSync(temporary, JSON.stringify({ syntheticTransport: true, identityHookCount, dialogChoices, calls }, null, 2), { mode: 0o600 });
+  fs.writeFileSync(temporary, JSON.stringify({ syntheticTransport: true, syntheticAuthFlow: true, syntheticPermissions: true, syntheticUpdater: true, identityHookCount, dialogChoices, updaterAudit, calls }, null, 2), { mode: 0o600 });
   fs.renameSync(temporary, path.join(root, "transport-audit.json"));
 };
 process.on("exit", persistAudit);

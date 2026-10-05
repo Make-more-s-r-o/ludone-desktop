@@ -55,6 +55,7 @@ function LevelRow({ label, meterRef, rowRef, signal, testId, status }) {
 
 export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped, variant = "onboarding" }) {
   const inSettings = variant === "settings";
+  const [hearingConfirmed, setHearingConfirmed] = useState(false);
   const [captureState, setCaptureState] = useState("starting");
   const [toneError, setToneError] = useState(false);
   const [toneBusy, setToneBusy] = useState(false);
@@ -83,6 +84,7 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
     suppressMicrophoneUntilRef.current = 0;
     updateAudioLevelMeter(microphoneMeterRef.current, 0);
     updateAudioLevelMeter(systemMeterRef.current, 0);
+    setHearingConfirmed(false);
     setCaptureState("starting");
     setToneError(false);
     setToneBusy(false);
@@ -285,11 +287,13 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
       )}
       {!inSettings && (
         <>
+          <label className="recording-test-hearing"><input type="checkbox" data-testid="recording-test-hearing-confirmation" checked={hearingConfirmed}
+            disabled={captureState !== "testing" || !bothHeard} onChange={event => setHearingConfirmed(event.target.checked)} />Potvrzuji, že jsem slyšel/a mikrofon i systémový zvuk.</label>
           <button
             type="button"
             className="button button--primary button--wide"
             data-testid="recording-test-continue"
-            disabled={captureState !== "testing" || !bothHeard}
+            disabled={captureState !== "testing" || !bothHeard || !hearingConfirmed}
             onClick={onPassed}
           >
             Pokračovat
@@ -303,7 +307,7 @@ export function RecordingTestStep({ onPassed, onRetry, sessionAttempt, onSkipped
             Pokračovat bez testu
           </button>
           <p className="recording-test-hint">
-            {bothHeard
+            {bothHeard && hearingConfirmed
               ? "Oba kanály slyším."
               : "Bez ní se nedá tvrdit, že to funguje."}
           </p>

@@ -134,3 +134,11 @@ html[data-theme=dark] .osa-shell .osa-station__actions .recording-action--delete
 .osa-shell--detail .application-update-status{display:none}
 .osa-shell .application-update-status--compact .feature-card{padding:6px 8px;min-height:0}.osa-shell .application-update-status--compact .idle-feature-row__copy>small,.osa-shell .application-update-status--compact .application-update-detail__open{display:none}.osa-shell .application-update-status--compact .application-update-status__actions{display:flex;margin-top:4px}.osa-shell .application-update-status--compact .idle-feature-row__action{width:auto;min-height:28px;height:auto;padding:4px 10px;font-size:12px}
 html[data-theme=dark] .osa-shell .osa-station__actions .recording-action--send:not(:disabled){color:#102821}
+
+.osa-workspace{overflow-x:hidden;overflow-y:auto}
+.osa-shell .application-update-status__actions{display:flex;flex-wrap:wrap;gap:8px;min-width:0}.osa-shell .application-update-status__actions .idle-feature-row__action{flex:1;width:auto;min-width:0}.osa-shell .application-update-status__later{flex:none;min-width:0}.osa-shell .application-update-status .idle-feature-row__copy{min-width:0;width:100%}.osa-shell .application-update-status .feature-card{min-width:0}.osa-shell .application-update-status p,.osa-shell .application-update-status strong{overflow-wrap:anywhere}
+.osa-shell--detail .recording-queue-card__detail-heading{padding:4px 0}.osa-shell--detail .osa-stations{margin:8px 0;padding:12px 0 0}.osa-shell--detail .recording-queue-card__detail{gap:8px}
+
+/* Jediná svislá osa přebíjí starý vodorovný progress načtený později. */
+.osa-shell .osa-onboarding__axis{display:block;position:static;width:16px;min-width:16px;height:auto;gap:0;padding:0;margin:8px 0 0;align-self:start}
+.osa-shell .osa-onboarding__axis li{display:block;position:relative;flex:none;width:14px;height:14px;margin:0 0 22px}

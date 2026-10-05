@@ -60,7 +60,7 @@ try {
       if (!data?.startsWith("data:image/png;base64,")) throw new Error("Chybí nativní snímek");
       await writeFile(path.join(output, `${mode}-${name}.png`), Buffer.from(data.split(",")[1], "base64"));
       check(`${mode}-${name}-system-font`, await client.evaluate("[...document.querySelectorAll('h1,h2,h3,p,button,label,select,input,strong,small,time')].filter(el=>el.getClientRects().length).every(el=>getComputedStyle(el).fontFamily.includes('-apple-system'))"));
-      check(`${mode}-${name}-no-horizontal-overflow`, await client.evaluate("document.documentElement.scrollWidth<=innerWidth"));
+      check(`${mode}-${name}-no-horizontal-overflow`, await client.evaluate("document.documentElement.scrollWidth<=innerWidth&&[...document.querySelectorAll('.osa-workspace')].every(el=>el.scrollWidth<=el.clientWidth)"));
     };
     const navigate = async page => {
       await click(`.osa-rail [data-page=${page}]`);
@@ -73,7 +73,24 @@ try {
       if (mode === "complete") {
         for (const theme of ["light", "professional", "dark"]) {
           await panel.evaluate(`localStorage.setItem('ludone.desktop.theme',${JSON.stringify(theme)});document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
+          check(`${theme}-onboarding-axis-is-vertical`,await panel.evaluate("(()=>{const nodes=[...document.querySelectorAll('.osa-onboarding__axis>li')].map(el=>el.getBoundingClientRect());return nodes.length===6&&nodes.every((r,i)=>Math.abs(r.left-nodes[0].left)<1&&(i===0||r.top>nodes[i-1].bottom));})()"));
           await capture(`${theme}-onboarding`);
+          check(`${theme}-onboarding-no-nested-chrome`,await panel.evaluate("!document.querySelector('.onboarding .desktop-titlebar,.onboarding .desktop-navigation')&&Boolean(document.querySelector('.osa-onboarding__axis'))"));
+          await clickText("Začít",panel); await capture(`${theme}-onboarding-auth`);
+          await clickText("Přihlásit v prohlížeči",panel); await capture(`${theme}-onboarding-waiting`);
+          await waitFor(()=>panel.evaluate("Boolean(document.querySelector('.permission-step'))"),"actual onboarding permission step");
+          for (const source of ['microphone','system-audio']) if (await panel.evaluate(`!document.querySelector('[data-permission-id=${source}] button').disabled`)) await click(`[data-permission-id=${source}] button`);
+          await capture(`${theme}-onboarding-permissions`);
+          await installSyntheticAudioCapture(panel);
+          await click('.permission-step>.button');
+          await waitFor(()=>panel.evaluate("Boolean(document.querySelector('[data-testid=recording-test-screen]'))"),"actual onboarding audio step");
+          check(`${theme}-onboarding-does-not-claim-human-hearing`,await panel.evaluate("document.querySelector('[data-testid=recording-test-continue]').disabled"));
+          await capture(`${theme}-onboarding-audio`);
+          await click('[data-testid=recording-test-skip]');
+          check(`${theme}-onboarding-skip-stays-unverified`,await panel.evaluate("document.querySelector('.done-step')?.dataset.verificationState==='unverified'"));
+          await capture(`${theme}-onboarding-done`);
+          await panel.evaluate("location.reload()");
+          await waitFor(()=>panel.evaluate("Boolean(document.querySelector('.welcome-step'))"),"reset only incomplete onboarding view");
         }
       }
       await panel.evaluate("localStorage.setItem('ludone.prototype.onboarding-complete','true');location.reload()");
@@ -92,6 +109,7 @@ try {
         await navigate("home"); await capture(`${theme}-ready`);
         await navigate("library");
         check(`${theme}-${mode}-history-node-centers`, await panel.evaluate("(()=>{const list=document.querySelector('.recordings-dashboard__list');const entries=[...document.querySelectorAll('.recordings-timeline__entry,.recordings-day__heading')];if(!list||!entries.length)return false;const line=getComputedStyle(list,'::before');const center=list.getBoundingClientRect().left+parseFloat(line.left)+parseFloat(line.width)/2;return entries.every(el=>{const node=getComputedStyle(el,'::before');const x=el.getBoundingClientRect().left+parseFloat(node.left)+parseFloat(node.width)/2;return Math.abs(x-center)<=1;});})()"));
+        check(`${theme}-${mode}-one-update-banner`,await panel.evaluate("document.querySelectorAll('[data-testid=update-downloaded]').length<=1"));
         await capture(`${theme}-history`);
         if (mode === "complete") {
           await navigate("settings");
@@ -112,6 +130,7 @@ try {
           const expected = { complete: "complete", incomplete: "incomplete", mismatch: "mismatch", rate: "rate_limited" }[mode];
           await waitFor(() => detail.evaluate(`Boolean(document.querySelector('.recording-queue-card__track[data-status=${expected}]'))`), `actual verifier ${expected}`).catch(async error => {await capture(`${theme}-verifier-failed`,detail);throw error;});
           check(`${theme}-${mode}-actual-verifier`, true);
+          if (mode === "rate") check(`${theme}-rate-recovery-first-viewport`,await detail.evaluate("(()=>{document.querySelector('.osa-workspace').scrollTop=0;const station=document.querySelector('[data-station=error]');const button=document.querySelector('.recording-action--verify');return !!station&&station.textContent.includes('omezil')&&station.getBoundingClientRect().bottom<=innerHeight&&!!button&&!button.disabled;})()"));
           check(`${theme}-${mode}-verified-action-hover-readable`, await detail.evaluate("(()=>{const el=document.querySelector('.recording-action--verify');if(!el)return false;const style=getComputedStyle(el);const luminance=color=>{const values=color.match(/[0-9.]+/g).slice(0,3).map(Number).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return .2126*values[0]+.7152*values[1]+.0722*values[2];};const a=luminance(style.color),b=luminance(style.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5;})()"));
         }
         if (mode === "companies-error") {
@@ -120,9 +139,34 @@ try {
         }
         await capture(`${theme}-detail`, detail);
         await detail.evaluate("window.ludone.closeSettings()"); detail.close(); detail = null; await delay(100);
-        await navigate("queue"); await capture(`${theme}-queue`);
+        await navigate("queue");
+        check(`${theme}-${mode}-queue-one-update-banner`,await panel.evaluate("document.querySelectorAll('[data-testid=update-downloaded]').length<=1"));
+        await capture(`${theme}-queue`);
+        if (mode === "companies-error") {
+          await navigate("home"); await installSyntheticAudioCapture(panel);
+          await click('.recording-card .idle-feature-row__action');
+          await waitFor(() => panel.evaluate("window.ludone.getTrayState().then(s=>s==='recording')"), "company-error actual recording");
+          await click('[data-testid=recording-stop],[data-testid=degraded-recording-stop]');
+          await waitFor(() => panel.evaluate("Boolean(document.querySelector('.recording-card--saved'))&&document.body.textContent.includes('Firmy nelze ověřit')"), "company-error actual post-stop decision",20000);
+          await panel.evaluate("(()=>{const el=document.querySelector('[data-testid=recording-name-input]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'Porada zachovaná při chybě firem');el.dispatchEvent(new Event('input',{bubbles:true}));})()");
+          check(`${theme}-company-default-retained-during-failure`,await panel.evaluate("window.ludone.getUploadCompanyDefault().then(v=>v.companyId==='50000000-0000-4000-8000-000000000001')"));
+          check(`${theme}-company-error-send-blocked-local-available`,await panel.evaluate("document.querySelector('.recording-saved__skip')?.disabled===false&&[...document.querySelectorAll('.recording-saved__actions>button')].some(b=>b!==document.querySelector('.recording-saved__skip')&&b.disabled)&&Boolean(document.querySelector('.recording-saved input')?.value)"));
+          await capture(`${theme}-companies-error`);
+          const companyCallsBefore = JSON.parse(await readFile(path.join(root,"transport-audit.json"),"utf8")).calls.filter(c=>c.path.endsWith("/firmy")).length;
+          await clickText("Načíst firmy",panel);
+          await waitFor(async()=>JSON.parse(await readFile(path.join(root,"transport-audit.json"),"utf8")).calls.filter(c=>c.path.endsWith("/firmy")).length>companyCallsBefore,"actual company offer retry");
+          check(`${theme}-company-retry-retains-title`,await panel.evaluate("document.querySelector('[data-testid=recording-name-input]').value==='Porada zachovaná při chybě firem'"));
+          await waitFor(() => panel.evaluate("document.body.textContent.includes('Firmy nelze ověřit')"),"company retry remains truthful");
+          await click('.recording-saved__skip');
+          await waitFor(() => panel.evaluate("!document.querySelector('.recording-card--saved')"),"company failure safe local decision");
+        }
         if (mode === "complete") {
-          await navigate("updates"); await capture(`${theme}-updates`);
+          await navigate("updates");
+          await writeFile(path.join(root,".public-update-available"),"OSA_PUBLIC_FIXTURE_V1");
+          if (await panel.evaluate("Boolean(document.querySelector('[data-testid=update-check-now]'))")) await click('[data-testid=update-check-now]');
+          await waitFor(() => panel.evaluate("Boolean(document.querySelector('[data-testid=update-downloaded]'))"), "actual updater downloaded");
+          check(`${theme}-update-controller-actions`, await panel.evaluate("window.ludone.getUpdateStatus().then(s=>s.downloadedVersion==='0.1.9'&&s.manualCheckAvailable&&!s.installRequested)") && await panel.evaluate("!document.querySelector('[data-testid=update-install]').disabled"));
+          await capture(`${theme}-updates`);
           await navigate("home"); await panel.evaluate("window.ludone.hidePanel()");
           await panel.evaluate("window.ludone.testClickTray()"); await capture(`${theme}-tray`);
           for (const [scenario, fixtureId] of [["unclaimed", "003"], ["missing", "004"]]) {
@@ -141,6 +185,7 @@ try {
           await capture(`${theme}-recording`);
           await panel.evaluate("window.__ludoneE2ESyntheticAudio.loseSystemTrack()");
           await waitFor(() => panel.evaluate("window.ludone.getTrayState().then(s=>s==='recording-audio-lost')"), "real channel loss");
+          check(`${theme}-system-lost-stop-contrast`, await panel.evaluate("(()=>{const el=document.querySelector('.recording-outage__stop');if(!el||el.disabled)return false;const s=getComputedStyle(el);const l=c=>{const v=c.match(/[0-9.]+/g).slice(0,3).map(Number).map(x=>x/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return .2126*v[0]+.7152*v[1]+.0722*v[2];};const a=l(s.color),b=l(s.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5;})()"));
           await capture(`${theme}-system-lost`);
           await writeFile(path.join(root, ".public-hold-finalization"), "OSA_PUBLIC_FIXTURE_V1");
           await click('[data-testid=recording-stop],[data-testid=degraded-recording-stop]');
@@ -172,6 +217,8 @@ try {
         check("claim-disk-owner-without-upload", claimed.uploadIntent === "held" && claimed.ownership === "current");
         for (const theme of ["light", "professional", "dark"]) {
           await detail.evaluate(`localStorage.setItem('ludone.desktop.theme',${JSON.stringify(theme)});document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
+          check(`${theme}-local-detail-editable-first-viewport`,await detail.evaluate("[...document.querySelectorAll('[data-testid=recording-upload-company],[data-testid=recording-upload-visibility]')].length===2&&[...document.querySelectorAll('[data-testid=recording-upload-company],[data-testid=recording-upload-visibility]')].every(el=>{const r=el.getBoundingClientRect();return !el.disabled&&r.top>=48&&r.bottom<=innerHeight;})"));
+          check(`${theme}-actual-scroll-owner-overflow-and-stability`,await detail.evaluate("(()=>{const el=document.querySelector('.osa-workspace');if(!el||!['auto','scroll'].includes(getComputedStyle(el).overflowY)||el.scrollHeight<=el.clientHeight)return false;el.scrollTop=37;const before=el.scrollTop;document.querySelector('.recording-queue-card__storage').dataset.measurement='same-size';return before>0&&el.scrollTop===before&&innerHeight===580;})()"));
           await capture(`${theme}-local-detail`, detail);
         }
         const targetVisibility = claimed.uploadPreferences?.visibility === "private" ? "company" : "private";
@@ -226,11 +273,21 @@ try {
         await navigate("home"); await installSyntheticAudioCapture(panel);
         await click('.recording-card .idle-feature-row__action');
         await waitFor(() => panel.evaluate("window.ludone.getTrayState().then(s=>s==='recording')"), "post-restart recording");
-        await delay(500); await click('[data-testid=recording-stop]');
+        await delay(500);
+        await navigate("updates"); await click('[data-testid=update-install]');
+        check("update-install-waits-for-real-recording",await panel.evaluate("window.ludone.getUpdateStatus().then(s=>s.installRequested)")&&await panel.evaluate("window.ludone.getTrayState().then(s=>s==='recording')"));
+        await delay(300);
+        check("no-install-before-safe-confirmed-moment",JSON.parse(await readFile(path.join(root,"transport-audit.json"),"utf8")).updaterAudit.installs===0);
+        await click('[data-testid=update-defer]');
+        check("actual-update-defer",await panel.evaluate("window.ludone.getUpdateStatus().then(s=>s.installDeferred&&!s.installRequested)"));
+        await navigate("home"); await click('[data-testid=recording-stop]');
         await waitFor(() => panel.evaluate("Boolean(document.querySelector('.recording-card--saved'))"), "post-restart save", 20000);
         check("new-recording-uses-stored-company-and-company-visibility", await panel.evaluate(`document.querySelector('[data-testid=recording-upload-company]')?.value===${JSON.stringify(secondCompany)}&&document.querySelector('[data-testid=recording-upload-visibility]')?.value==='company'`));
         await click('.recording-saved__skip');
         await waitFor(() => panel.evaluate("!document.querySelector('.recording-card--saved')"), "post-restart local decision");
+        await navigate("updates"); await click('[data-testid=update-install]');
+        await waitFor(async()=>JSON.parse(await readFile(path.join(root,"transport-audit.json"),"utf8")).updaterAudit.installs===1,"explicit inert installation through actual controller");
+        check("one-inert-install-only-after-explicit-safe-confirmation",true);
       }
       scenarioCompleted = true;
     } catch (error) {
@@ -246,6 +303,7 @@ try {
         audit.dialogChoices = [...priorAudits.flatMap(a=>a.dialogChoices), ...audit.dialogChoices];
         audit.calls = [...priorAudits.flatMap(a=>a.calls), ...audit.calls];
         audit.processCount = priorAudits.length + 1;
+        check("update-notification-once-per-version-across-restart",priorAudits.reduce((count,a)=>count+a.updaterAudit.notifications,0)+audit.updaterAudit.notifications===1);
       }
       await writeFile(path.join(output, `${mode}-transport.json`), JSON.stringify(audit, null, 2));
       check(`${mode}-one-identity-projection-hook`, audit.identityHookCount === 1);
@@ -255,7 +313,7 @@ try {
     }
   }
   if (["complete", "expired", "companies-error", "rate", "offline"].every(mode => modes.includes(mode))) {
-    const scenes = { ready: ["complete", "ready"], recording: ["complete", "recording"], saving: ["complete", "saving"], save: ["complete", "save"], history: ["complete", "history"], detail: ["complete", "local-detail"], sent: ["complete", "detail"], queue: ["complete", "queue"], offline: ["offline", "queue"], expired: ["expired", "queue"], unclaimed: ["complete", "unclaimed"], rate: ["rate", "detail"], missing: ["complete", "missing"], "system-lost": ["complete", "system-lost"], "microphone-only": ["complete", "microphone-only"], "companies-error": ["companies-error", "detail"], onboarding: ["complete", "onboarding"], settings: ["complete", "account"], "settings-audio": ["complete", "audio"], "settings-device": ["complete", "device"], "settings-storage": ["complete", "storage"], "settings-diagnostics": ["complete", "diagnostics"], updates: ["complete", "updates"], tray: ["complete", "tray"] };
+    const scenes = { ready: ["complete", "ready"], recording: ["complete", "recording"], saving: ["complete", "saving"], save: ["complete", "save"], history: ["complete", "history"], detail: ["complete", "local-detail"], sent: ["complete", "detail"], queue: ["complete", "queue"], offline: ["offline", "queue"], expired: ["expired", "queue"], unclaimed: ["complete", "unclaimed"], rate: ["rate", "detail"], missing: ["complete", "missing"], "system-lost": ["complete", "system-lost"], "microphone-only": ["complete", "microphone-only"], "companies-error": ["companies-error", "companies-error"], onboarding: ["complete", "onboarding"], settings: ["complete", "account"], "settings-audio": ["complete", "audio"], "settings-device": ["complete", "device"], "settings-storage": ["complete", "storage"], "settings-diagnostics": ["complete", "diagnostics"], updates: ["complete", "updates"], tray: ["complete", "tray"] };
     for (const [scenario, [mode, view]] of Object.entries(scenes)) {
       for (const theme of ["light", "professional", "dark"]) {
         const file = `${mode}-${theme}-${view}.png`;
@@ -268,5 +326,5 @@ try {
   }
   exitCode = 0;
 } catch (error) { console.error(error.message); }
-await writeFile(path.join(output, "results.json"), JSON.stringify({ exitCode, observations, matrix, matrixComplete: matrix.length === 72, syntheticIdentity: true, syntheticTransport: true, productionServerVerified: false }, null, 2));
+await writeFile(path.join(output, "results.json"), JSON.stringify({ exitCode, observations, matrix, matrixComplete: matrix.length === 72, syntheticIdentity: true, syntheticTransport: true, syntheticAuthFlow: true, syntheticPermissions: true, syntheticUpdater: true, inertInstallOnly: true, productionServerVerified: false }, null, 2));
 console.log(`Důkazy: ${output}\nEXIT_CODE=${exitCode}`); process.exitCode = exitCode;

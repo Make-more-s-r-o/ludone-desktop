@@ -409,13 +409,13 @@ export function Onboarding({ onAuthenticated, onComplete, reauthenticate = false
   }
 
   // Chyba přihlášení zůstává u jeho stanice; čekání má vlastní skutečný krok.
-  const axisStep = authFailure ? 1 : step;
-  const axisSteps = ["Vítejte", "Přihlášení", "Čekání na prohlížeč", "Oprávnění", "Test záznamu", "Hotovo"];
+  const axisStep = reauthenticate ? 0 : authFailure ? 1 : step;
+  const axisSteps = reauthenticate ? ["Přihlášení"] : ["Vítejte", "Přihlášení", "Čekání na prohlížeč", "Oprávnění", "Test záznamu", "Hotovo"];
   const Container = embedded ? "section" : authFailure ? "div" : "main";
   return (
     <Container className={`onboarding osa-onboarding${reauthenticate ? " onboarding--reauthenticate" : ""}`}>
       <div className="osa-onboarding__layout">
-        <ol className="osa-onboarding__axis step-track" aria-label={`Krok ${axisStep + 1} z ${axisSteps.length}: ${axisSteps[axisStep]}`}>
+        <ol className={`osa-onboarding__axis${reauthenticate ? "" : " step-track"}`} aria-label={`Krok ${axisStep + 1} z ${axisSteps.length}: ${axisSteps[axisStep]}`}>
           {axisSteps.map((label, index) => (
             <li key={label} aria-current={index === axisStep ? "step" : undefined}
               className={index === axisStep ? "is-current" : ""}>

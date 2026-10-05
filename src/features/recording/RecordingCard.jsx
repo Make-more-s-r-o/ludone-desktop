@@ -932,7 +932,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
               <button
                 type="submit"
                 className="button button--primary button--wide"
-                disabled={exporting || !canSend}
+                disabled={exporting || !canSend || (typeof window.ludone?.listUploadCompanies === "function" && !uploadPreferences)}
               >
                 Uložit a odeslat
               </button>
