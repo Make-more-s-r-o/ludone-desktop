@@ -33,6 +33,6 @@ Průběžné neúspěšné výpisy zůstávají zachované. Jejich FAIL se nesm�
 | Profesionální nahrávání | [reference](reference/professional-ready.png) | [aplikace](application/professional-home.png) |
 | Tmavé nahrávání | [reference](reference/dark-ready.png) | [aplikace](application/dark-home.png) |
 | Samostatný detail / dvě stanice | [reference](reference/light-detail.png) | [aplikace](application/detail.png) |
-| Historie / sedm položek na stránku | [reference](reference/light-library.png) | [aplikace](application/light-library.png) |
+| Historie / sedm položek na stránku | [reference](reference/light-history.png) | [aplikace](application/light-library.png) |
 
 Rozdíly jsou věcné: skutečná aplikace nevykresluje zelené ověření zdrojů před spuštěním/poslechem, neověřená lokální fixtura nemá potvrzeného vlastníka ani firmu, serverovou stanici nelze naplnit pouhým odesláním a skutečné Mac / LuDone akce mají vlastní guards. Přidané místní přehrávání skutečně otevírá povolený audio soubor. Reference má ukázkovou přihlášenou firmu a fiktivní serverové stavy; v izolovaném běhu jsou tyto akce pravdivě zamčené. Systémové písmo, levá rail navigace, svislá osa a dvě stanice jsou převzaty z F.
