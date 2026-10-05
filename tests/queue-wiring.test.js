@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -8736,5 +8736,99 @@ describe("preference IPC až do skutečného storu", () => {
     else await writeStoredAuthSession(harness, { ...storedAuthSession(), accessToken: "jiná-relace", companyTabidooId: B, accessExpiresAt: Date.now() + 600_000 });
     release(); await rejected;
     expect(await readFile(queuePath, "utf8")).toBe(before);
+  });
+});
+
+// Nové čtení nastavení nesmí rozšířit hranici vlastního okna ani přijmout cestu.
+describe("F lokální složka a skutečně přijaté zkratky", () => {
+  it("panel i detail ukážou pouze pevnou existující složku svého profilu", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const folder = path.join(harness.userDataPath, "nahravky");
+    const handler = harness.ipcHandlers.get("recordings:folder");
+    for (const event of [panelEvent, settingsEvent]) expect(handler(event)).toEqual({ outcome: "shown" });
+    expect(await realpath(folder)).toBe(path.join(await realpath(harness.userDataPath), "nahravky"));
+    expect(harness.electron.shell.showItemInFolder.mock.calls).toEqual([[folder], [folder]]);
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+  });
+
+  it.each(["recordings:folder", "settings:shortcuts"])(
+    "%s odmítne cizí okno, podřízený i chybějící rám a každý payload bez shellu",
+    async (channel) => {
+      const harness = await loadMain();
+      await harness.runReady();
+      const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+      const handler = harness.ipcHandlers.get(channel);
+      for (const event of [panelEvent, settingsEvent]) {
+        const foreign = { ...event.sender, mainFrame: event.sender.mainFrame };
+        for (const badEvent of [
+          { sender: foreign, senderFrame: foreign.mainFrame },
+          { sender: event.sender, senderFrame: { url: event.sender.mainFrame.url } },
+          { sender: event.sender },
+          { sender: event.sender, senderFrame: null },
+        ]) expect(() => handler(badEvent)).toThrow(/nedůvěryhodný odesílatel/u);
+        for (const payload of [undefined, null, "/tmp/cizi", {}, false]) {
+          expect(() => handler(event, payload)).toThrow(/nepřijímá payload/u);
+        }
+        expect(() => handler(event, undefined, "navíc")).toThrow(/nepřijímá payload/u);
+      }
+      expect(harness.electron.shell.showItemInFolder).not.toHaveBeenCalled();
+      expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["symlink", "file"])("složka typu %s je odmítnuta bez shellu a bez změny cíle", async (kind) => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const folder = path.join(harness.userDataPath, "nahravky");
+    await rm(folder, { recursive: true, force: true });
+    const target = path.join(harness.userDataPath, "cizi-cil");
+    if (kind === "symlink") {
+      await mkdir(target);
+      await writeFile(path.join(target, "zachovat"), "původní obsah");
+      await symlink(target, folder);
+    } else await writeFile(folder, "původní obsah");
+    const handler = harness.ipcHandlers.get("recordings:folder");
+    for (const event of [panelEvent, settingsEvent]) expect(() => handler(event)).toThrow();
+    expect(harness.electron.shell.showItemInFolder).not.toHaveBeenCalled();
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+    if (kind === "symlink") {
+      expect(await realpath(folder)).toBe(await realpath(target));
+      expect(await readdir(target)).toEqual(["zachovat"]);
+      expect(await readFile(path.join(target, "zachovat"), "utf8")).toBe("původní obsah");
+    } else expect(await readFile(folder, "utf8")).toBe("původní obsah");
+  });
+
+  it("zkratky odpovídají přijatým registracím a vrácená data nemění stav main", async () => {
+    const harness = await loadMain();
+    harness.electron.globalShortcut.register.mockReturnValueOnce(false);
+    await harness.runReady();
+    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const handler = harness.ipcHandlers.get("settings:shortcuts");
+    const registrationCalls = /** @type {Array<[string]>} */ (/** @type {unknown} */ (harness.electron.globalShortcut.register.mock.calls));
+    const accepted = registrationCalls
+      .filter((_call, index) => harness.electron.globalShortcut.register.mock.results[index].value === true)
+      .map(([accelerator]) => accelerator);
+    const shortcuts = handler(panelEvent);
+    expect(shortcuts.length).toBeGreaterThan(0);
+    expect(shortcuts.map(({ accelerator }) => accelerator)).toEqual(accepted);
+    expect(shortcuts.every((entry) => Object.keys(entry).sort().join() === "accelerator,action" && typeof entry.action === "string")).toBe(true);
+    const expected = shortcuts.map((entry) => ({ ...entry }));
+    shortcuts[0].accelerator = "podvrh";
+    shortcuts.push({ action: "podvrh", accelerator: "podvrh" });
+    expect(handler(settingsEvent)).toEqual(expected);
+    expect(harness.electron.shell.showItemInFolder).not.toHaveBeenCalled();
+  });
+
+  it("oba skutečné preload mosty posílají pouze svůj kanál bez payloadu", async () => {
+    const harness = await loadMain();
+    await harness.runReady();
+    const { panelEvent } = openSettingsAndCreateEvent(harness);
+    const preload = loadPreload((channel, ...payload) => harness.ipcHandlers.get(channel)(panelEvent, ...payload));
+    await expect(preload.api.showRecordingsFolder()).resolves.toEqual({ outcome: "shown" });
+    await expect(preload.api.getShortcuts()).resolves.toEqual(harness.ipcHandlers.get("settings:shortcuts")(panelEvent));
+    expect(preload.invoke.mock.calls).toEqual([["recordings:folder"], ["settings:shortcuts"]]);
   });
 });
