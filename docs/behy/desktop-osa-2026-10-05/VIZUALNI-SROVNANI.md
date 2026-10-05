@@ -68,3 +68,34 @@ Systémové písmo, svislý rail, tématický akcent, rozlišení Mac/server a s
 ## Stav po předání koordinátorovi
 
 🟡 Koordinátor průběžně opravuje kompaktní save a blok akcí, osu historie, pořadí nastavení, sbalené prostředí a skutečnou perzistenci tématu. Tento dokument zachycuje nálezy před těmito opravami. Nepotvrzuje jejich odstranění; převzetí potřebuje nový skutečný runtime, snímky po ustálení a kontrolu zbývajících situací. P1/P2 nálezy nesmějí být vydávány za kosmetickou výjimku bez vyřešení.
+
+
+## Opakované převzetí po opravách — runtime 15-07-29.395Z
+
+🧪 Čtením `.runtime/osa-auth-e2e/2026-10-05T15-07-29.395Z/results.json` ověřeno: exit 0, 422 observations, žádný FAIL, včetně `matrix-24-scenarios-three-themes` a `light/professional/dark-save-actions-side-by-side-visible`. To dokládá novou úplnou automatickou matici; neznamená, že čtecí reviewer vizuálně otevřel všech 72 obrázků.
+
+V tomto opakování skutečně otevřeno 12 snímků: save ve třech tématech; professional-detail; dark-local-detail; professional-history; dark-ready a professional-ready; dark-account a light-account; light-audio; professional-device. Reference se použily z předchozí výslovně uvedené kontroly. Fyzický Mac, jeho nativní lišta, fyzický zvuk a produkční server zůstávají ⛔ neověřené tímto review.
+
+### Odstraněné nálezy v nových snímcích
+
+- 🧪 Save: obě rovnocenné volby jsou plně viditelné vedle sebe ve všech třech tématech, přibližně y=503–547, v 660px viewportu. Název, firma a přístup mají jednotlivé kruhové uzly osy; meta/hinty jsou kompaktnější. Potvrzeno obrazem i samostatnými viewport assertions.
+- 🧪 Dark local detail: po ustálení tématu jsou skutečné akce čitelné, světlý text na tmavém podkladu. Předchozí snímek velmi světlého pozadí nepředstavoval prokázanou ustálenou chybu; nové zachycení odstranilo tento konkrétní problém.
+- 🧪 Účet: Pokročilé nastavení je sbalené a odhlášení znovu viditelné v prvním viewportu, v light i dark.
+- 🧪 Pořadí sekcí: light-audio a professional-device ukazují Účet/Zvuk/Zařízení/Ukládání/Diagnostika podle F.
+- 🧪 Historie: spojitá svislá osa skutečných řádků je nově viditelná.
+
+### Přetrvávající konkrétní P2
+
+**P2 — slité potvrzení po uložení:** `complete-dark-ready.png` i `complete-professional-ready.png` stále zobrazují „Připraveno k nahráváníNahrávka zůstala…“. Čtecí příčina: `src/osa.css` mění `.idle-feature-row__copy` z flex sloupce na `display:block`; její `strong` a `small` zůstávají inline. Náprava: skutečné blokové oddělení nadpisu a notice nebo obnovení flex column se zachovanou notice a odkazy. Nález nelze uzavřít jen zeleným testem počtu nebo fontu.
+
+**P2 — hover kontrast ověření v light/professional detailu:** `complete-professional-detail.png` má po pointer ověření nadále téměř černý text na tmavém pozadí. Čtecí příčina je konkrétní `.button:not(:disabled):hover` v `src/styles.css`: podklad `oklch(0.3 0 0)` se přepne bez změny tmavé `--foreground`. Pointer po kliknutí zůstává nad tlačítkem. Původní náprava disabled selectoru tento enabled hover neřeší. Úzká náprava: `.osa-shell .osa-station__actions .button:not(:disabled):hover` s F `--osa-soft`, `--osa-text` a `--osa-line`; ověřit skutečný hover i pohyb pointeru mimo akci v light/professional, zachovat disabled a busy kontrakt.
+
+### Zbývající P3 a omezení pozorování
+
+Professional-history: denní uzel u Dnes je stále levá polovina kruhu; zbytek osy je již opravený. `.recordings-day__heading:before` má `left:-30px`, ale heading začíná kolem x=88 a scroll content clip kolem x=70, tedy levá část uzlu kolem x=58 se ořezává. Posunout uzel či inset tak, aby měl celý skutečný bounds v scroll regionu.
+
+Professional-detail: návrat není v zachyceném prvním obrázku vůbec vidět. Capture následuje po pointer verify, který skutečně používá scrollIntoView; z tohoto scrolled snímku nelze prokázat trvalé překrytí nebo nepřístupnost návratu. Původní P2 návratu proto nyní zůstává 🟡 k cílenému ověření počátečního scrollTop, návratu po otevření i návratu po skutečné akci. Dark-local-detail má návrat viditelný, kolem y=78. Nesprávná poloha návratu se nesmí tvrdit jako potvrzená chyba bez rozlišení stavu scrollu.
+
+P3 nahrávací kompozice popsaná výše se v tomto opakování neotevírala znovu. Závěr o jejím odstranění zde není.
+
+Koordinátor dostal konkrétní selektory a příčiny zbývajících P2. Stav vizuální přejímky zůstává 🟡, dokud nebudou tyto dva nálezy odstraněny a znovu zachyceny. Automatické pokrytí 24 × 3 ani systémový font nesmějí nahrazovat tento konkrétní pixelový review.
