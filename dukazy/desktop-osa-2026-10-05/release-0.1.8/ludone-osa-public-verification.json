@@ -1,0 +1,70 @@
+{
+  "version": "0.1.8",
+  "startedAt": "2026-10-05T22:18:11.202Z",
+  "checks": [
+    {
+      "name": "signed-archive-manifest-and-SHA512",
+      "pass": true
+    },
+    {
+      "name": "existing-public-release-acceptance",
+      "pass": true
+    },
+    {
+      "name": "latest-mac.yml",
+      "size": 1680,
+      "sha256": "6be3030516e9be1096e875bc488120ab44e723235679a7da3c367e6ff95fc234",
+      "pass": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.8-arm64.dmg",
+      "size": 145447718,
+      "sha256": "6fe7cfc3d0886bb77eba1bec89c0d4d5a5f95a94ec712bc5c1beac1d678a8213",
+      "pass": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.8-arm64.dmg.blockmap",
+      "size": 152726,
+      "sha256": "9f71588902d394fa1a6b75312cd3c696a6e176e8705bd310bfde927ef74ffb23",
+      "pass": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.8-arm64.zip",
+      "size": 145138106,
+      "sha256": "6ec6bb73ddc7e767fbb052e6b68d19f40cedc47421ba06ec729bb08607aeeb87",
+      "pass": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.8-arm64.zip.blockmap",
+      "size": 151664,
+      "sha256": "ee3882acbf1edf46a72bcd4e7aa62fad1e81d8cf56ce72bc81dd5470631a7987",
+      "pass": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.8-x64.dmg",
+      "size": 151484650,
+      "sha256": "78764471a09e7f7879701d81a5091372d9b73fd96e9a3d17b9bb12f8a09feaf8",
+      "pass": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.8-x64.dmg.blockmap",
+      "size": 159080,
+      "sha256": "28e1d8f60f4123b1f8869a8d1c0fdfbc9db44decd30998414b4c772fc6583eaa",
+      "pass": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.8-x64.zip",
+      "size": 151210922,
+      "sha256": "40067775b3227c0b9fc0665a5b18a3403a0588850df71095a806aa9b5bdd8171",
+      "pass": true
+    },
+    {
+      "name": "LuDone-Desktop-0.1.8-x64.zip.blockmap",
+      "size": 160114,
+      "sha256": "1e3601579179fc4da203fe12c0444fcd7a77b0107660fcee027d16fb19e8147d",
+      "pass": true
+    }
+  ],
+  "exitCode": 0,
+  "completedAt": "2026-10-05T22:18:24.300Z"
+}

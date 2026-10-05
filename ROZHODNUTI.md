@@ -1,5 +1,7 @@
 # Rozhodnutí — LuDone Desktop
 
+**6. 10. 2026 — 0.1.8 F Osa vydaná:** ✅ PR #160 sloučený, tag `v0.1.8` na `dde2a24420d63c0de56a6c8e5310fc59d98193c6`. Podepsané a notarizované DMG/ZIP pro arm64 i x64 publikované; release workflow 37368725559, pokus 3, SUCCESS. Nezávislé stažení celého veřejného feedu a všech osmi souborů potvrdilo shodu hashů s podepsaným archivem, exit 0. 🧪 1715 PASS / 0 FAIL / 3 původní skipy, deset F bran, 577 Electron kontrol; nezávislé review bez zbývajících P1/P2. [Důkazy vydání](dukazy/desktop-osa-2026-10-05/release-0.1.8/README.md). 🟡 Skutečný zvuk, produkční upload, nativní lišta/dialogy a instalace aktualizace čekají na [lidskou Mac přejímku](docs/behy/desktop-osa-2026-10-05/MAC-PREJIMKA.md). Vydání není jejich ověřením. Přístupy ani další schválení vydání nejsou potřeba.
+
 **5. 10. 2026 — pověření dotáhnout vydání F Osa 0.1.8:** Po předání opraveného
 výsledku a nezávislém review Dan zadal „tak ohlídej vydání a pak končíme“.
 Koordinátor dokončí přijetí PR #160, tag a existující podepsané/notarizované

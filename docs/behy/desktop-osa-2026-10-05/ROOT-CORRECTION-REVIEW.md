@@ -90,3 +90,10 @@ Root přebírá pouze dokumentační integraci vlastního review a auditu do PR,
 aby jejich unikátní důkazy nebyly po úklidu ztracené. Vývojový agent je idle;
 žádný souběžný zapisovatel nebyl spuštěn. Po této dokumentační integraci se
 ověří nové CI přesného headu, nikoli starší superseded run.
+
+
+## Potvrzené vydání 0.1.8
+
+✅ Vydání dokončeno 5. 10. 2026 v 22:07:19 UTC (6. 10. místního času). Celé CI 37366895016 přesného headu 3164e22 prošlo; PR #160 sloučené do dde2a244, celý tree shodný. Existující tag v0.1.8 nebyl přepsán. Release 37368725559 attempt 3 úspěšně podepsal, notarizoval a publikoval obě architektury. Nezávislé ověření veřejného feedu i celého obsahu osmi artefaktů skončilo exit 0; důkazy v `dukazy/desktop-osa-2026-10-05/release-0.1.8/`. První dva pokusy nevykonaly jediný krok kvůli přidělení GitHub runneru; nic duplicitně nevydaly.
+
+🟡 Skutečný zvuk, produkční upload, nativní lišta/dialogy a skutečná instalace zůstávají lidskou přejímkou. Na Danově Macu nebyla produkční aplikace instalována. Pověření vydat je splněné; dohled se po předání ukončuje.

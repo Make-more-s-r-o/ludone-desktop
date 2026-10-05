@@ -1,0 +1,23 @@
+version: 0.1.8
+files:
+  - url: LuDone-Desktop-0.1.8-x64.zip
+    sha512: Oj2fLGaZKYzet0HHxi9EkINnJSd0E9KnoZuiEDDbkHOuy9B0Y2ssDVWHMwm8C0JZE+7eGVrz4+bXobLhjOkpTg==
+    size: 151210922
+  - url: LuDone-Desktop-0.1.8-arm64.zip
+    sha512: Zib3dj0mXWWxpfiKPb+8qWNcsR+NwO++Z8kkuYek3Bm0sE8Ig0D/j2QDypBi0rcyuikqwfMVZuzCHwCu2x2rEw==
+    size: 145138106
+  - url: LuDone-Desktop-0.1.8-x64.dmg
+    sha512: oBOJuB1ixeQTGqShj6JiH6xa2jDVE3rpo84FdqpzZGl0swEISmmsELiuPO9qeptfqmjj1hdAOP2J3ye2vLWFVg==
+    size: 151484650
+  - url: LuDone-Desktop-0.1.8-arm64.dmg
+    sha512: aJzF/Wvh65BTW4dt6t6fz1ZVfO8mKjORCe9K8bRaJ4tq6O3pIqpCC4sTOquwxq48W+KdB1lp+JkVUbT37WB9ag==
+    size: 145447718
+path: LuDone-Desktop-0.1.8-x64.zip
+sha512: Oj2fLGaZKYzet0HHxi9EkINnJSd0E9KnoZuiEDDbkHOuy9B0Y2ssDVWHMwm8C0JZE+7eGVrz4+bXobLhjOkpTg==
+releaseNotes: |
+  Přehlednější panel a lepší práce s nahrávkami.
+  Nahrávání má v panelu přednost. Můj den seskupuje historii po dnech; detail odlišuje místní kopii, frontu a skutečné ověření v LuDone. LuTrack zatím zůstává neaktivní.
+  Výchozí firma se po otevření Nastavení znovu zobrazí. Před odesláním můžeš u každé nahrávky zvolit firmu a přístup: nové nahrávky jsou výchozí Sdílená ve firmě, případně je přepni na Soukromá. Starší volby ani rozpracované uploady se nemění.
+  Po zastavení zůstávají obě volby Uložit a odeslat / Nechat na Macu dostupné v panelu. Uložením firmy nebo přístupu se samo nic neodesílá.
+  Schůzka dál tvoří jeden stereo soubor WebM/Opus. Aktualizace začnou až po tvém kliknutí a počkají na dokončení nahrávání a ukládání.
+releaseDate: '2026-10-05T22:05:51.890Z'

@@ -103,3 +103,10 @@
 
 - 🧪 Opravená implementace, matice i review pushnuté v `51bfd10` do původní `feat/desktop-osa`. Draft PR #160 má aktualizovaný popis. Čistý integrační checkout zůstává pro nezávislé převzetí; oba nové vlastní worker checkouty odstraněné až po verzování jejich unikátních důkazů.
 - 🟡 GitHub CI `37364309970` nad tímto pushem čeká na přidělení runneru (`queued`, žádný test dosud nespustil). Doslovný stav v `p2-correction/ci-status-51bfd10.json`. Následující commit doplňuje pouze toto pravdivé předání a funkční PR odkazy; poslední CI se ověří zvlášť. Fyzická Mac přejímka stále ⛔, další vydání ani instalace neprovedené.
+
+
+## Potvrzené vydání 0.1.8
+
+✅ Vydání dokončeno 5. 10. 2026 v 22:07:19 UTC (6. 10. místního času). Celé CI 37366895016 přesného headu 3164e22 prošlo; PR #160 sloučené do dde2a244, celý tree shodný. Existující tag v0.1.8 nebyl přepsán. Release 37368725559 attempt 3 úspěšně podepsal, notarizoval a publikoval obě architektury. Nezávislé ověření veřejného feedu i celého obsahu osmi artefaktů skončilo exit 0; důkazy v `dukazy/desktop-osa-2026-10-05/release-0.1.8/`. První dva pokusy nevykonaly jediný krok kvůli přidělení GitHub runneru; nic duplicitně nevydaly.
+
+🟡 Skutečný zvuk, produkční upload, nativní lišta/dialogy a skutečná instalace zůstávají lidskou přejímkou. Na Danově Macu nebyla produkční aplikace instalována. Pověření vydat je splněné; dohled se po předání ukončuje.
