@@ -10,7 +10,8 @@ import { UPLOAD_DISABLED_REASON } from "../src/lib/queue.js";
 
 const USER = { name: "Dan Jirotka", email: "dan@ludone.cz" };
 const onboardingAudioFrames = new WeakMap();
-const RENDERER_STYLES = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+const RENDERER_STYLES = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
+  + readFileSync(new URL("../src/osa.css", import.meta.url), "utf8");
 
 const ONBOARDING_CONTENT_HEIGHTS = {
   // JSDOM nemá layout engine. Vkládáme proto jen deterministickou intrinsic výšku
@@ -22,6 +23,8 @@ const ONBOARDING_CONTENT_HEIGHTS = {
 };
 
 function installOnboardingGeometry(view) {
+  // F má pevný viewport; JSDOM dostává jeho skutečnou smluvenou výšku.
+  Object.defineProperty(view, "innerHeight", { configurable: true, value: 660 });
   const style = view.document.createElement("style");
   style.textContent = RENDERER_STYLES;
   view.document.head.append(style);
@@ -153,13 +156,23 @@ function installOnboardingGeometry(view) {
       const button = content?.querySelector(":scope > .button--wide");
       const metrics = content ? contentMetrics(content) : null;
       const reportedHeight = reportHeight.mock.lastCall?.[0] || 0;
+      const headerHeight = Number.parseFloat(view.getComputedStyle(view.document.querySelector(".osa-header")).height);
+      const workspace = view.document.querySelector(".osa-workspace");
+      const shellContent = view.document.querySelector(".osa-content");
+      const shellContentStyle = view.getComputedStyle(shellContent);
+      const verticalPadding = Number.parseFloat(shellContentStyle.paddingTop) + Number.parseFloat(shellContentStyle.paddingBottom);
+      const workspaceHeight = view.innerHeight - headerHeight;
+      const requiredPanelHeight = (metrics?.requiredPanelHeight || 0) + headerHeight + verticalPadding;
       return {
-        buttonFits: Boolean(button) && button.getBoundingClientRect().bottom <= reportedHeight,
+        buttonFits: Boolean(button) && button.getBoundingClientRect().bottom + headerHeight + Number.parseFloat(shellContentStyle.paddingTop) <= view.innerHeight,
         clientHeight: content?.clientHeight || 0,
         contentFits: (content?.scrollHeight || 0) <= (content?.clientHeight || 0),
-        reportCoversContent: reportedHeight === metrics?.requiredPanelHeight,
+        reportCoversContent: reportedHeight === view.innerHeight && requiredPanelHeight <= view.innerHeight,
         reportedHeight,
-        requiredPanelHeight: metrics?.requiredPanelHeight || 0,
+        requiredPanelHeight,
+        headerHeight,
+        workspaceHeight,
+        workspaceOverflow: view.getComputedStyle(workspace).overflowY,
         scrollHeight: content?.scrollHeight || 0,
       };
     },
@@ -328,27 +341,42 @@ async function continueThroughRecordingTest(panel, click) {
   await click(continueButton);
 }
 
+async function requestLogin(panel) {
+  if (panel.document.querySelector(".auth-step")) return;
+  const login = [...panel.document.querySelectorAll("button")].find(button => button.textContent.trim() === "Přihlásit se");
+  expect(login).toBeDefined();
+  await React.act(async () => login.click());
+}
+
+async function openAccount(panel, identity) {
+  // Identitu dodává skutečný auth kontrakt fixture, nikoli localStorage.
+  panel.document.defaultView.ludone.getAuthIdentity = vi.fn().mockResolvedValue(identity);
+  panel.document.defaultView.ludone.getAuthOrigin = vi.fn().mockResolvedValue("https://app.ludone.cz");
+  await React.act(async () => panel.document.querySelector('.osa-rail [data-page="settings"]').click());
+}
+
 describe("schválený klidový panel", () => {
-  it("ukazuje nahrávání, připravovaný LuTrack a pravdivý náhled dne v Astra pořadí", async () => {
+  it("ukazuje nahrávání, připravovaný LuTrack a pravdivý náhled dne v F pořadí", async () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
     try {
-      const content = [...panel.document.querySelector(".panel-scroll").children];
+      const content = [...panel.document.querySelector('[aria-label="Nahrávání schůzky"]').children];
       const rows = [...panel.document.querySelectorAll('[data-testid="idle-action-row"]')];
-      const futureFeature = panel.document.querySelector(".future-feature");
+      const futureFeature = panel.document.querySelector(".osa-lutrack");
       const dayPreview = panel.document.querySelector('[data-testid="day-preview"]');
 
-      expect(content).toEqual([futureFeature, rows[0], dayPreview]);
-      expect(panel.document.querySelector(".desktop-menubar__name")?.textContent).toBe("LuDone Desktop");
-      expect(futureFeature?.querySelector("h1")?.textContent).toBe("Pracovní čas se připravuje.");
-      expect(futureFeature?.textContent).toContain("Pracovní čas se připravuje.");
+      expect(content.indexOf(rows[0])).toBeLessThan(content.indexOf(dayPreview));
+      expect(content.indexOf(dayPreview)).toBeLessThan(content.indexOf(futureFeature));
+      expect(panel.document.querySelector(".osa-brand")?.textContent).toBe("LuDoneDesktop");
+      expect(futureFeature?.getAttribute("aria-disabled")).toBe("true");
+      expect(futureFeature?.textContent).toContain("LuTrack");
       expect(rows).toHaveLength(1);
-      expect(rows[0]?.querySelector("strong")?.textContent).toBe("Zachytit schůzku");
+      expect(rows[0]?.querySelector("strong")?.textContent).toBe("Připraveno k nahrávání");
       expect(futureFeature?.textContent).toContain("LuTrack");
       expect(futureFeature?.textContent).toContain("Připravujeme");
       const preparingControls = [...futureFeature.querySelectorAll("button, input")];
-      expect(preparingControls).toHaveLength(3);
+      expect(preparingControls).toHaveLength(0);
       expect(preparingControls.every((control) => control.disabled)).toBe(true);
-      expect(dayPreview?.textContent).toContain("Fronta je prázdná. Lokální nahrávky najdeš v Můj den.");
+      expect(dayPreview?.textContent).toContain("Zatím tu nejsou schůzky. Všechny místní nahrávky najdeš v historii.");
       expect(panel.document.querySelector(".global-status")).toBeNull();
       expect(panel.document.querySelector(".account-summary")).toBeNull();
       expect(panel.document.querySelector(".panel-close")).toBeNull();
@@ -390,22 +418,19 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+        expect(panel.document.querySelector(".osa-auth-status")?.dataset.authState)
           .toBe("signed-in");
       });
-      const header = panel.document.querySelector(".panel-header");
+      const header = panel.document.querySelector(".osa-header");
       expect(header.textContent).toContain("LuDone");
       expect(header.textContent).not.toContain("Dan Jirotka");
-      expect(header.querySelector("small")?.textContent.trim()).not.toBe("");
-      expect(header.querySelector(".panel-brand-mark")?.getAttribute("alt")).toBe("");
-      expect(panel.document.querySelector(".desktop-titlebar__quick-actions")?.getAttribute("aria-label"))
-        .toBe("Rychlé akce (⌘K)");
+      expect(panel.document.querySelector(".osa-auth-status")?.textContent.trim()).not.toBe("");
+      expect(header.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+      expect(panel.document.querySelector('.osa-rail [data-page="settings"]')?.getAttribute("aria-label")).toBe("Nastavení");
       expect(panel.document.querySelectorAll(".panel-settings-button")).toHaveLength(0);
       expect(panel.document.querySelectorAll(".panel-open-recordings")).toHaveLength(0);
-      expect(panel.document.querySelector(".desktop-navigation")?.textContent)
-        .toContain("Nastavení");
-      expect(panel.document.querySelector(".desktop-quick-actions")?.textContent)
-        .toContain("Nahrát schůzku");
+      expect(panel.document.querySelector('.osa-rail [data-page="home"]')).not.toBeNull();
+      expect(panel.document.querySelector('[aria-label="Spustit nahrávání"]')).not.toBeNull();
       expect(hasAuthSession).toHaveBeenCalledOnce();
       expect(reportTrayFacts).toHaveBeenCalledExactlyOnceWith({
         panelActionsAvailable: true,
@@ -426,6 +451,7 @@ describe("schválený klidový panel", () => {
     });
 
     try {
+      await requestLogin(panel);
       await vi.waitFor(() => {
         expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
           .toBe("Nejsi připojený");
@@ -452,11 +478,12 @@ describe("schválený klidový panel", () => {
       try {
         if (hasSession) {
           await vi.waitFor(() => {
-            expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+            expect(panel.document.querySelector(".osa-auth-status")?.dataset.authState)
               .toBe("signed-in");
           });
-          return panel.document.querySelector(".panel-header small")?.textContent.trim();
+          return panel.document.querySelector(".osa-auth-status")?.textContent.trim();
         }
+        await requestLogin(panel);
         await vi.waitFor(() => {
           expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
             .toBe("Nejsi připojený");
@@ -482,6 +509,7 @@ describe("schválený klidový panel", () => {
     });
 
     try {
+      await requestLogin(panel);
       await vi.waitFor(() => {
         expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
           .toBe("Nejsi připojený");
@@ -518,9 +546,10 @@ describe("schválený klidový panel", () => {
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Otevřít můj panel")));
 
-      expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+      expect(panel.document.querySelector(".osa-auth-status")?.dataset.authState)
         .toBe("signed-in");
-      expect(panel.document.querySelector(".panel-header")?.textContent).toContain("Dan Jirotka");
+      await openAccount(panel, USER);
+      expect(panel.document.querySelector('[data-testid="settings-identity-name"]')?.textContent).toBe("Dan Jirotka");
     } finally {
       await panel.cleanup();
     }
@@ -559,7 +588,7 @@ describe("schválený klidový panel", () => {
       finishSessionCheck(false);
       await React.act(async () => Promise.resolve());
 
-      expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+      expect(panel.document.querySelector(".osa-auth-status")?.dataset.authState)
         .toBe("signed-in");
       expect(reportTrayFacts.mock.calls).toEqual([
         [{
@@ -609,10 +638,11 @@ describe("schválený klidový panel", () => {
       await click([...panel.document.querySelectorAll("button")]
         .find((button) => button.textContent.includes("Otevřít můj panel")));
 
-      expect(panel.document.querySelector(".panel-header small")?.dataset.authState)
+      expect(panel.document.querySelector(".osa-auth-status")?.dataset.authState)
         .toBe("signed-in");
-      expect(panel.document.querySelector(".panel-header")?.textContent).toContain("dan@ludone.cz");
-      expect(panel.document.querySelector(".panel-header")?.textContent).not.toContain("undefined");
+      await openAccount(panel, { email: "dan@ludone.cz" });
+      expect(panel.document.querySelector('[data-testid="settings-identity-email"]')?.textContent).toBe("dan@ludone.cz");
+      expect(panel.document.querySelector('[data-testid="settings-account"]')?.textContent).not.toContain("undefined");
     } finally {
       await panel.cleanup();
     }
@@ -623,9 +653,9 @@ describe("schválený klidový panel", () => {
     try {
       expect(panel.document.querySelector('[data-testid="recording-daily-summary"]')).toBeNull();
       expect(panel.document.querySelector('[data-testid="tracking-daily-summary"]')).toBeNull();
-      expect(panel.document.querySelector(".future-feature")?.textContent)
-        .toContain("Pracovní čas se připravuje.");
-      expect(panel.document.querySelector(".panel-scroll").textContent).not.toContain("Dnes");
+      expect(panel.document.querySelector(".osa-lutrack")?.textContent)
+        .toContain("LuTrack");
+      expect(panel.document.querySelector(".osa-content").textContent).not.toContain("Dnes");
     } finally {
       await panel.cleanup();
     }
@@ -635,19 +665,17 @@ describe("schválený klidový panel", () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
     try {
       const recordingButton = panel.document.querySelector('[aria-label="Spustit nahrávání"]');
-      const futureFeature = panel.document.querySelector(".future-feature");
-      const settings = [...panel.document.querySelectorAll(".desktop-navigation__item")]
-        .find((button) => button.textContent.trim() === "Nastavení");
+      const futureFeature = panel.document.querySelector(".osa-lutrack");
+      const settings = panel.document.querySelector('.osa-rail [data-page="settings"]');
 
-      expect(recordingButton.querySelector('[aria-hidden="true"]').textContent).toBe("Nahrát");
-      expect(recordingButton.textContent).toContain("Spustit nahrávání");
+      expect(recordingButton.querySelector('[aria-hidden="true"]').textContent.trim()).toBe("Nahrávat schůzku");
+      expect(recordingButton.getAttribute("aria-label")).toBe("Spustit nahrávání");
       expect(futureFeature?.textContent).toContain("Připravujeme");
       const preparingControls = [...futureFeature.querySelectorAll("button, input, select")];
-      expect(preparingControls).toHaveLength(3);
+      expect(preparingControls).toHaveLength(0);
       expect(preparingControls.every((control) => control.disabled)).toBe(true);
-      expect(settings?.textContent.trim()).toBe("Nastavení");
-      expect(panel.document.querySelector(".desktop-titlebar__quick-actions"))
-        .not.toBeNull();
+      expect(settings?.getAttribute("aria-label")).toBe("Nastavení");
+      expect(panel.document.querySelector('.osa-rail [data-page="queue"]')).not.toBeNull();
     } finally {
       await panel.cleanup();
     }
@@ -659,7 +687,7 @@ describe("schválený klidový panel", () => {
     try {
       expect(queueFooterStatus(undefined)).toBeNull();
       expect(queueFooterStatus([{ state: "neznamy" }])).toBeNull();
-      expect(interactivePanel.document.querySelector('[data-testid="queue-status"]')).toBeNull();
+      expect(interactivePanel.document.querySelector(".osa-count")).toBeNull();
     } finally {
       await interactivePanel.cleanup();
     }
@@ -675,8 +703,8 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("2 čekají");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("2");
       });
       expect(listQueue).toHaveBeenCalledTimes(1);
     } finally {
@@ -693,12 +721,14 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká · 1 čeká na potvrzení");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("2");
       });
-      const status = panel.document.querySelector('[data-testid="queue-status"]');
+      const status = panel.document.querySelector('.osa-rail [data-page="queue"]');
       expect(status).not.toBeNull();
-      expect(status.textContent).not.toContain("2 čekají");
+      await React.act(async () => status.click());
+      expect(panel.document.querySelector('[data-testid="queue-waiting-summary"] strong')?.textContent).toBe("1 čeká na odeslání");
+      expect(panel.document.querySelector('[data-testid="queue-human-action"] strong')?.textContent).toBe("1 čeká na potvrzení vlastníka");
     } finally {
       await panel.cleanup();
     }
@@ -727,12 +757,12 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("1");
       });
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
 
-      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      const footer = panel.document.querySelector('.osa-rail [data-page="queue"]');
       await React.act(async () => {
         footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
@@ -741,8 +771,8 @@ describe("schválený klidový panel", () => {
       expect(screen?.querySelector("h2")?.textContent).toBe("Čeká fronta");
       expect(screen.hidden).toBe(false);
       expect(panel.document.defaultView.getComputedStyle(screen).display).not.toBe("none");
-      expect(screen.closest(".panel-scroll")).not.toBeNull();
-      expect(panel.document.defaultView.getComputedStyle(screen.closest(".panel-scroll")).overflowY)
+      expect(screen.closest(".osa-content")).not.toBeNull();
+      expect(panel.document.defaultView.getComputedStyle(screen.closest(".osa-workspace")).overflowY)
         .toBe("auto");
       expect(screen?.textContent).toContain("Nic se neztratilo, jen to zatím neodešlo.");
       expect(screen?.textContent).toContain("1 čeká na odeslání");
@@ -779,10 +809,10 @@ describe("schválený klidový panel", () => {
 
       try {
         await vi.waitFor(() => {
-          expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-            .toBe("1 čeká");
+          expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+            .toBe("1");
         });
-        const footer = panel.document.querySelector('[data-testid="queue-status"]');
+        const footer = panel.document.querySelector('.osa-rail [data-page="queue"]');
         await React.act(async () => {
           footer.dispatchEvent(
             new panel.document.defaultView.MouseEvent("click", { bubbles: true }),
@@ -837,10 +867,10 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("1");
       });
-      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      const footer = panel.document.querySelector('.osa-rail [data-page="queue"]');
       await React.act(async () => {
         footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
@@ -861,8 +891,8 @@ describe("schválený klidový panel", () => {
       await vi.waitFor(() => {
         expect(listQueue.mock.calls.length).toBeGreaterThan(readsBeforeCompletion);
       });
-      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-        .toBe("Vše odesláno");
+      expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+        .toBeUndefined();
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
 
       await React.act(async () => {
@@ -870,12 +900,17 @@ describe("schválený klidový panel", () => {
         await Promise.resolve();
       });
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("1");
       });
-      expect(panel.document.querySelector('[data-testid="queue-status"]')?.getAttribute("aria-expanded"))
-        .toBe("false");
+      expect(panel.document.querySelector('.osa-rail [data-page="queue"]')?.getAttribute("aria-current"))
+        .toBe("page");
+      expect(panel.document.querySelector('[data-testid="queue-waiting-summary"] strong')?.textContent).toBe("1 čeká na odeslání");
+      expect(panel.document.querySelector('.osa-shell')?.dataset.osaPage).toBe("queue");
+      await React.act(async () => panel.document.querySelector('.osa-rail [data-page="home"]').click());
+      expect(panel.document.querySelector('.osa-shell')?.dataset.osaPage).toBe("home");
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
+      expect(panel.document.querySelector('[aria-label="Spustit nahrávání"]')).not.toBeNull();
     } finally {
       await panel.cleanup();
     }
@@ -910,10 +945,10 @@ describe("schválený klidový panel", () => {
 
       try {
         await vi.waitFor(() => {
-          expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-            .toBe("1 čeká");
+          expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+            .toBe("1");
         });
-        const footer = panel.document.querySelector('[data-testid="queue-status"]');
+        const footer = panel.document.querySelector('.osa-rail [data-page="queue"]');
         await React.act(async () => {
           footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
         });
@@ -955,11 +990,11 @@ describe("schválený klidový panel", () => {
 
       try {
         await vi.waitFor(() => {
-          expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-            .toBe("1 čeká");
+          expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+            .toBe("1");
         });
         await React.act(async () => {
-          panel.document.querySelector('[data-testid="queue-status"]')
+          panel.document.querySelector('.osa-rail [data-page="queue"]')
             .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
         });
         await React.act(async () => {
@@ -1000,11 +1035,11 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("1");
       });
       await React.act(async () => {
-        panel.document.querySelector('[data-testid="queue-status"]')
+        panel.document.querySelector('.osa-rail [data-page="queue"]')
           .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
       await React.act(async () => {
@@ -1040,11 +1075,11 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("1");
       });
       await React.act(async () => {
-        panel.document.querySelector('[data-testid="queue-status"]')
+        panel.document.querySelector('.osa-rail [data-page="queue"]')
           .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
       await React.act(async () => {
@@ -1054,12 +1089,12 @@ describe("schválený klidový panel", () => {
       });
 
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-retry-feedback"]')?.textContent)
+        expect(panel.document.querySelector('.queue-card__retry-error[role="alert"]')?.textContent)
           .toBe(reason);
       });
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
-      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-        .toBe("Vše odesláno");
+      expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+        .toBeUndefined();
     } finally {
       await panel.cleanup();
     }
@@ -1101,11 +1136,11 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("1");
       });
       await React.act(async () => {
-        panel.document.querySelector('[data-testid="queue-status"]')
+        panel.document.querySelector('.osa-rail [data-page="queue"]')
           .dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
       await React.act(async () => {
@@ -1155,10 +1190,10 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká · 1 čeká na potvrzení");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("2");
       });
-      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      const footer = panel.document.querySelector('.osa-rail [data-page="queue"]');
       await React.act(async () => {
         footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
@@ -1196,10 +1231,10 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("1 čeká na potvrzení");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBe("1");
       });
-      const footer = panel.document.querySelector('[data-testid="queue-status"]');
+      const footer = panel.document.querySelector('.osa-rail [data-page="queue"]');
       await React.act(async () => {
         footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
@@ -1224,22 +1259,22 @@ describe("schválený klidový panel", () => {
 
     try {
       await vi.waitFor(() => {
-        expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-          .toBe("Vše odesláno");
+        expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+          .toBeUndefined();
       });
-      const footer = panel.document.querySelector('[data-testid="queue-status"]');
-      expect(footer.tagName).toBe("DIV");
-      footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
+      const footer = panel.document.querySelector('.osa-rail [data-page="queue"]');
+      expect(footer.tagName).toBe("BUTTON");
+      await React.act(async () => footer.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true })));
+      expect(panel.document.querySelector(".osa-shell")?.dataset.osaPage).toBe("queue");
       expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
       expect(panel.document.querySelectorAll('[data-testid="idle-action-row"]')).toHaveLength(1);
       expect(retryQueue).not.toHaveBeenCalled();
 
-      const settings = [...panel.document.querySelectorAll(".desktop-navigation__item")]
-        .find((button) => button.textContent.trim() === "Nastavení");
+      const settings = panel.document.querySelector('.osa-rail [data-page="settings"]');
       await React.act(async () => {
         settings.dispatchEvent(new panel.document.defaultView.MouseEvent("click", { bubbles: true }));
       });
-      expect(openSettings).toHaveBeenCalledOnce();
+      expect(panel.document.querySelector(".osa-shell")?.dataset.osaPage).toBe("settings");
     } finally {
       await panel.cleanup();
     }
@@ -1262,11 +1297,11 @@ describe("schválený klidový panel", () => {
         },
       });
       await React.act(async () => Promise.resolve());
-      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-        .toBe("1 čeká");
+      expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+        .toBe("1");
 
-      const futureControls = [...panel.document.querySelectorAll(".future-feature button, .future-feature input")];
-      expect(futureControls).toHaveLength(3);
+      const futureControls = [...panel.document.querySelectorAll(".osa-lutrack button, .osa-lutrack input")];
+      expect(futureControls).toHaveLength(0);
       expect(futureControls.every((control) => control.disabled)).toBe(true);
 
       await React.act(async () => {
@@ -1274,15 +1309,19 @@ describe("schválený klidový panel", () => {
       });
 
       expect(listQueue).toHaveBeenCalledTimes(2);
-      expect(panel.document.querySelector('[data-testid="queue-status"]')?.textContent)
-        .toBe("1 čeká na potvrzení");
+      expect(panel.document.querySelector('.osa-rail [data-page="queue"] .osa-count')?.textContent)
+        .toBe("1");
+      await React.act(async () => panel.document.querySelector('.osa-rail [data-page="queue"]').click());
+      expect(panel.document.querySelector('[data-testid="queue-waiting-summary"]')).toBeNull();
+      expect(panel.document.querySelector('[data-testid="queue-human-action"] strong')?.textContent)
+        .toBe("1 čeká na potvrzení vlastníka");
     } finally {
       await panel?.cleanup();
       vi.useRealTimers();
     }
   });
 
-  it("znovupřihlášení nahlásí výšku celého obsahu včetně tlačítka", async () => {
+  it("znovupřihlášení nahlásí přesných 660 px F a vejde se i s hlavičkou a tlačítkem", async () => {
     const setPanelContentHeight = vi.fn().mockResolvedValue(undefined);
     let geometry;
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
@@ -1296,6 +1335,7 @@ describe("schválený klidový panel", () => {
     });
 
     try {
+      await requestLogin(panel);
       await vi.waitFor(() => {
         expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
           .toBe("Nejsi připojený");
@@ -1310,8 +1350,11 @@ describe("schválený klidový panel", () => {
         clientHeight: 276,
         contentFits: true,
         reportCoversContent: true,
-        reportedHeight: 336,
-        requiredPanelHeight: 336,
+        reportedHeight: 660,
+        requiredPanelHeight: 420,
+        headerHeight: 48,
+        workspaceHeight: 612,
+        workspaceOverflow: "auto",
         scrollHeight: 276,
       });
     } finally {
@@ -1319,7 +1362,7 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("běžný onboarding si zachová původní třířádkovou výšku bez přetečení", async () => {
+  it("běžný onboarding se vejde do 660 px F i s hlavičkou a odsazením", async () => {
     const setPanelContentHeight = vi.fn().mockResolvedValue(undefined);
     let geometry;
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
@@ -1341,8 +1384,11 @@ describe("schválený klidový panel", () => {
         clientHeight: 430,
         contentFits: true,
         reportCoversContent: true,
-        reportedHeight: 493,
-        requiredPanelHeight: 493,
+        reportedHeight: 660,
+        requiredPanelHeight: 577,
+        headerHeight: 48,
+        workspaceHeight: 612,
+        workspaceOverflow: "auto",
         scrollHeight: 430,
       });
     } finally {
@@ -1350,7 +1396,7 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("po přepnutí přihlašovacího stavu přepočítá nahlášenou výšku", async () => {
+  it("po přepnutí přihlašovacího stavu zachová 660 px F a zpřístupní celý nový obsah", async () => {
     const setPanelContentHeight = vi.fn().mockResolvedValue(undefined);
     const beginAuth = vi.fn(() => new Promise(() => {}));
     let geometry;
@@ -1367,6 +1413,7 @@ describe("schválený klidový panel", () => {
     });
 
     try {
+      await requestLogin(panel);
       await vi.waitFor(() => {
         expect(panel.document.querySelector(".auth-step h1")?.textContent.trim())
           .toBe("Nejsi připojený");
@@ -1381,7 +1428,9 @@ describe("schválený klidový panel", () => {
       await geometry.flush();
 
       expect(beginAuth).toHaveBeenCalledOnce();
-      expect(setPanelContentHeight.mock.calls.map(([height]) => height)).toEqual([700, 336, 402]);
+      expect(setPanelContentHeight.mock.calls.map(([height]) => height)).toEqual([660]);
+      expect(panel.document.querySelector(".osa-shell")?.dataset.osaPage).toBe("onboarding");
+      expect(panel.document.querySelector('[data-testid="auth-waiting-screen"]')).not.toBeNull();
       expect(geometry.state(
         panel.document.querySelector(".onboarding.window-surface"),
         setPanelContentHeight,
@@ -1389,7 +1438,11 @@ describe("schválený klidový panel", () => {
         clientHeight: 342,
         contentFits: true,
         reportCoversContent: true,
-        reportedHeight: 402,
+        reportedHeight: 660,
+        requiredPanelHeight: 486,
+        headerHeight: 48,
+        workspaceHeight: 612,
+        workspaceOverflow: "auto",
         scrollHeight: 342,
       });
     } finally {
@@ -1397,20 +1450,20 @@ describe("schválený klidový panel", () => {
     }
   });
 
-  it("Astra panel drží návrhovou výšku a změna obsahu neposune místo ve scrollu", async () => {
-    const setPanelContentHeight = vi.fn().mockResolvedValue(700);
+  it("F panel drží návrhovou výšku a změna obsahu neposune místo ve scrollu", async () => {
+    const setPanelContentHeight = vi.fn().mockResolvedValue(660);
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
       ludone: { hasAuthSession: vi.fn().mockResolvedValue(true), setPanelContentHeight },
     });
-    const scrollContainer = panel.document.querySelector(".panel-scroll");
+    const scrollContainer = panel.document.querySelector(".osa-content");
 
     try {
       await React.act(async () => Promise.resolve());
-      expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(700);
+      expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(660);
       scrollContainer.scrollTop = 37;
-      panel.document.querySelector(".future-feature").setAttribute("data-measurement", "same-size");
+      panel.document.querySelector(".osa-lutrack").setAttribute("data-measurement", "same-size");
       await React.act(async () => Promise.resolve());
-      expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(700);
+      expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(660);
       expect(scrollContainer.scrollTop).toBe(37);
     } finally {
       await panel.cleanup();
@@ -1421,11 +1474,11 @@ describe("schválený klidový panel", () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]));
 
     try {
-      const feature = panel.document.querySelector(".future-feature");
-      expect(feature?.textContent).toContain("Pracovní čas se připravuje.");
+      const feature = panel.document.querySelector(".osa-lutrack");
+      expect(feature?.textContent).toContain("LuTrack");
       expect(feature?.textContent).toContain("Připravujeme");
       const preparingControls = [...feature.querySelectorAll("button, input, select")];
-      expect(preparingControls).toHaveLength(3);
+      expect(preparingControls).toHaveLength(0);
       expect(preparingControls.every((control) => control.disabled)).toBe(true);
       expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
     } finally {
@@ -1450,7 +1503,7 @@ describe("schválený klidový panel", () => {
     try {
       await React.act(async () => deliverCommand("start-tracking"));
       await React.act(async () => deliverCommand("stop-tracking"));
-      expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
+      expect(panel.document.querySelector(".osa-lutrack")?.textContent).toContain("Připravujeme");
       expect(panel.document.querySelector('[data-testid="tracking-running-state"]')).toBeNull();
       expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
       expect(onTrayCommand).toHaveBeenCalledOnce();
@@ -1508,7 +1561,7 @@ describe("schválený klidový panel", () => {
         tracking: false,
       }));
 
-      expect(panel.document.querySelector(".future-feature")?.textContent).toContain("Připravujeme");
+      expect(panel.document.querySelector(".osa-lutrack")?.textContent).toContain("Připravujeme");
       expect(panel.document.querySelector('[aria-label="Spustit LuTrack"]')).toBeNull();
       expect(panel.document.querySelector('[aria-label="Zastavit LuTrack"]')).toBeNull();
     } finally {
@@ -1542,7 +1595,7 @@ describe("schválený klidový panel", () => {
 
     try {
       await React.act(async () => Promise.resolve());
-      expect(panel.document.querySelector('[data-testid="queue-status"]')).toBeNull();
+      expect(panel.document.querySelector(".osa-count")).toBeNull();
     } finally {
       await panel.cleanup();
     }

@@ -15,7 +15,7 @@ import { RecordingTestStep } from "../src/components/RecordingTestStep.jsx";
 import { createAudioLevelMonitor, createStereoLevelSession } from "../src/lib/audio-levels.js";
 
 const mounted = [];
-const QUEUE_ERROR = "Stav fronty není dostupný. Počet čekajících záznamů není známý.";
+const QUEUE_ERROR = "Stav fronty není dostupný. Počet čekajících položek nelze ověřit.";
 const MEASUREMENT_ERROR = "Zvuk se nepodařilo změřit. Zkus test znovu.";
 const TONE_ERROR = "Zkušební zvuk se nepodařilo přehrát. Zkus to znovu.";
 
@@ -148,8 +148,8 @@ describe("1 — neznámá fronta a legitimně prázdná fronta", () => {
       : vi.fn().mockResolvedValue([{ state: "poškozeno" }]);
     const panel = setup({ listQueue });
     await panel.render(App);
-    expect(panel.document.querySelector('[role="alert"]')?.textContent).toBe(QUEUE_ERROR);
-    expect(panel.document.body.textContent).not.toContain("Vše odesláno");
+    expect(panel.document.querySelector('.osa-queue-unavailable[role="status"]')?.textContent).toBe(QUEUE_ERROR);
+    expect(panel.document.body.textContent).not.toContain("Zatím tu nejsou schůzky");
   });
 
   it("po selhání a obnově na prázdnou frontu odstraní upozornění", async () => {
@@ -159,8 +159,9 @@ describe("1 — neznámá fronta a legitimně prázdná fronta", () => {
     await panel.render(App);
     expect(panel.document.body.textContent).toContain(QUEUE_ERROR);
     await panel.refreshQueue();
+    expect(panel.document.querySelector(".osa-queue-unavailable")).toBeNull();
     expect(panel.document.querySelector('[role="alert"]')).toBeNull();
-    expect(panel.document.body.textContent).toContain("Vše odesláno");
+    expect(panel.document.body.textContent).toContain("Zatím tu nejsou schůzky");
   });
 
   it("prázdná fronta zůstane bez výstrahy i bez karty", async () => {
@@ -168,7 +169,7 @@ describe("1 — neznámá fronta a legitimně prázdná fronta", () => {
     await panel.render(App);
     expect(panel.document.querySelector('[role="alert"]')).toBeNull();
     expect(panel.document.querySelector('[data-testid="queue-screen"]')).toBeNull();
-    expect(panel.document.body.textContent).toContain("Vše odesláno");
+    expect(panel.document.body.textContent).toContain("Zatím tu nejsou schůzky");
   });
 });
 
