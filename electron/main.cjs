@@ -785,7 +785,7 @@ function refreshTray() {
     systemAudioLost,
     ...osaExportFacts(),
     attention: osaExportFacts().attention || osaQueueFacts.attention,
-    offline: !net.isOnline() || osaQueueFacts.offline,
+    offline: net.isOnline?.() === false || osaQueueFacts.offline,
   });
   const iconVariant = trayIconVariant();
   // `trayApplied` odděluje odvozený stav od naposledy skutečně vykresleného. Bez něj se při

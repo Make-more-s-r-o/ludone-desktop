@@ -1,0 +1,1086 @@
+{
+  "design": "F Osa",
+  "referenceOnly": true,
+  "records": [
+    {
+      "scenario": "ready",
+      "theme": "light",
+      "file": "light-ready.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 542,
+        "page": "home",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=ready&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "recording",
+      "theme": "light",
+      "file": "light-recording.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 598,
+        "page": "home",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=recording&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "saving",
+      "theme": "light",
+      "file": "light-saving.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 315,
+        "page": "home",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=saving&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "save",
+      "theme": "light",
+      "file": "light-save.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 648,
+        "page": "home",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=save&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "history",
+      "theme": "light",
+      "file": "light-history.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 724,
+        "y": 105,
+        "width": 460,
+        "height": 924,
+        "page": "library",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=history&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "detail",
+      "theme": "light",
+      "file": "light-detail.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=detail&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "sent",
+      "theme": "light",
+      "file": "light-sent.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=sent&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "queue",
+      "theme": "light",
+      "file": "light-queue.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=queue&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "settings",
+      "theme": "light",
+      "file": "light-settings.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 744,
+        "page": "settings",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "audio",
+      "theme": "light",
+      "file": "light-audio.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 783,
+        "page": "settings",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=light&revision=tray-20261005&tab=audio"
+    },
+    {
+      "scenario": "device",
+      "theme": "light",
+      "file": "light-device.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 677,
+        "page": "settings",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=light&revision=tray-20261005&tab=device"
+    },
+    {
+      "scenario": "storage",
+      "theme": "light",
+      "file": "light-storage.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 677,
+        "page": "settings",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=light&revision=tray-20261005&tab=storage"
+    },
+    {
+      "scenario": "diagnostics",
+      "theme": "light",
+      "file": "light-diagnostics.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 918,
+        "page": "settings",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=light&revision=tray-20261005&tab=diagnostics"
+    },
+    {
+      "scenario": "updates",
+      "theme": "light",
+      "file": "light-updates.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 493,
+        "page": "updates",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=updates&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "onboarding",
+      "theme": "light",
+      "file": "light-onboarding.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 744,
+        "y": 105,
+        "width": 440,
+        "height": 365,
+        "page": "onboarding",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=onboarding&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "tray",
+      "theme": "light",
+      "file": "light-tray.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 542,
+        "page": "home",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=tray&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "offline",
+      "theme": "light",
+      "file": "light-offline.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=offline&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "expired",
+      "theme": "light",
+      "file": "light-expired.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=expired&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "unclaimed",
+      "theme": "light",
+      "file": "light-unclaimed.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=unclaimed&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "rate",
+      "theme": "light",
+      "file": "light-rate.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=rate&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "missing",
+      "theme": "light",
+      "file": "light-missing.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=missing&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "system-lost",
+      "theme": "light",
+      "file": "light-system-lost.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 729,
+        "page": "home",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=system-lost&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "microphone-only",
+      "theme": "light",
+      "file": "light-microphone-only.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 729,
+        "page": "home",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=microphone-only&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "companies-error",
+      "theme": "light",
+      "file": "light-companies-error.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 756,
+        "page": "home",
+        "theme": "light"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=companies-error&theme=light&revision=tray-20261005"
+    },
+    {
+      "scenario": "ready",
+      "theme": "professional",
+      "file": "professional-ready.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 542,
+        "page": "home",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=ready&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "recording",
+      "theme": "professional",
+      "file": "professional-recording.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 598,
+        "page": "home",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=recording&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "saving",
+      "theme": "professional",
+      "file": "professional-saving.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 315,
+        "page": "home",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=saving&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "save",
+      "theme": "professional",
+      "file": "professional-save.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 648,
+        "page": "home",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=save&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "history",
+      "theme": "professional",
+      "file": "professional-history.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 724,
+        "y": 105,
+        "width": 460,
+        "height": 924,
+        "page": "library",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=history&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "detail",
+      "theme": "professional",
+      "file": "professional-detail.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=detail&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "sent",
+      "theme": "professional",
+      "file": "professional-sent.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=sent&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "queue",
+      "theme": "professional",
+      "file": "professional-queue.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=queue&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "settings",
+      "theme": "professional",
+      "file": "professional-settings.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 744,
+        "page": "settings",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "audio",
+      "theme": "professional",
+      "file": "professional-audio.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 783,
+        "page": "settings",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=professional&revision=tray-20261005&tab=audio"
+    },
+    {
+      "scenario": "device",
+      "theme": "professional",
+      "file": "professional-device.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 677,
+        "page": "settings",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=professional&revision=tray-20261005&tab=device"
+    },
+    {
+      "scenario": "storage",
+      "theme": "professional",
+      "file": "professional-storage.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 677,
+        "page": "settings",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=professional&revision=tray-20261005&tab=storage"
+    },
+    {
+      "scenario": "diagnostics",
+      "theme": "professional",
+      "file": "professional-diagnostics.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 918,
+        "page": "settings",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=professional&revision=tray-20261005&tab=diagnostics"
+    },
+    {
+      "scenario": "updates",
+      "theme": "professional",
+      "file": "professional-updates.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 493,
+        "page": "updates",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=updates&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "onboarding",
+      "theme": "professional",
+      "file": "professional-onboarding.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 744,
+        "y": 105,
+        "width": 440,
+        "height": 365,
+        "page": "onboarding",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=onboarding&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "tray",
+      "theme": "professional",
+      "file": "professional-tray.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 542,
+        "page": "home",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=tray&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "offline",
+      "theme": "professional",
+      "file": "professional-offline.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=offline&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "expired",
+      "theme": "professional",
+      "file": "professional-expired.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=expired&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "unclaimed",
+      "theme": "professional",
+      "file": "professional-unclaimed.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=unclaimed&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "rate",
+      "theme": "professional",
+      "file": "professional-rate.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=rate&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "missing",
+      "theme": "professional",
+      "file": "professional-missing.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=missing&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "system-lost",
+      "theme": "professional",
+      "file": "professional-system-lost.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 729,
+        "page": "home",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=system-lost&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "microphone-only",
+      "theme": "professional",
+      "file": "professional-microphone-only.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 729,
+        "page": "home",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=microphone-only&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "companies-error",
+      "theme": "professional",
+      "file": "professional-companies-error.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 756,
+        "page": "home",
+        "theme": "professional"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=companies-error&theme=professional&revision=tray-20261005"
+    },
+    {
+      "scenario": "ready",
+      "theme": "dark",
+      "file": "dark-ready.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 542,
+        "page": "home",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=ready&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "recording",
+      "theme": "dark",
+      "file": "dark-recording.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 598,
+        "page": "home",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=recording&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "saving",
+      "theme": "dark",
+      "file": "dark-saving.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 315,
+        "page": "home",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=saving&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "save",
+      "theme": "dark",
+      "file": "dark-save.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 648,
+        "page": "home",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=save&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "history",
+      "theme": "dark",
+      "file": "dark-history.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 724,
+        "y": 105,
+        "width": 460,
+        "height": 924,
+        "page": "library",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=history&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "detail",
+      "theme": "dark",
+      "file": "dark-detail.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=detail&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "sent",
+      "theme": "dark",
+      "file": "dark-sent.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=sent&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "queue",
+      "theme": "dark",
+      "file": "dark-queue.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=queue&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "settings",
+      "theme": "dark",
+      "file": "dark-settings.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 744,
+        "page": "settings",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "audio",
+      "theme": "dark",
+      "file": "dark-audio.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 783,
+        "page": "settings",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=dark&revision=tray-20261005&tab=audio"
+    },
+    {
+      "scenario": "device",
+      "theme": "dark",
+      "file": "dark-device.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 677,
+        "page": "settings",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=dark&revision=tray-20261005&tab=device"
+    },
+    {
+      "scenario": "storage",
+      "theme": "dark",
+      "file": "dark-storage.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 677,
+        "page": "settings",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=dark&revision=tray-20261005&tab=storage"
+    },
+    {
+      "scenario": "diagnostics",
+      "theme": "dark",
+      "file": "dark-diagnostics.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 918,
+        "page": "settings",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=settings&theme=dark&revision=tray-20261005&tab=diagnostics"
+    },
+    {
+      "scenario": "updates",
+      "theme": "dark",
+      "file": "dark-updates.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 493,
+        "page": "updates",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=updates&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "onboarding",
+      "theme": "dark",
+      "file": "dark-onboarding.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 744,
+        "y": 105,
+        "width": 440,
+        "height": 365,
+        "page": "onboarding",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=onboarding&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "tray",
+      "theme": "dark",
+      "file": "dark-tray.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 542,
+        "page": "home",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=tray&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "offline",
+      "theme": "dark",
+      "file": "dark-offline.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=offline&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "expired",
+      "theme": "dark",
+      "file": "dark-expired.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 972,
+        "page": "queue",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=expired&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "unclaimed",
+      "theme": "dark",
+      "file": "dark-unclaimed.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=unclaimed&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "rate",
+      "theme": "dark",
+      "file": "dark-rate.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=rate&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "missing",
+      "theme": "dark",
+      "file": "dark-missing.png",
+      "bounds": {
+        "selector": ".window",
+        "x": 170,
+        "y": 115,
+        "width": 860,
+        "height": 580,
+        "page": "detail",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=missing&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "system-lost",
+      "theme": "dark",
+      "file": "dark-system-lost.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 729,
+        "page": "home",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=system-lost&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "microphone-only",
+      "theme": "dark",
+      "file": "dark-microphone-only.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 729,
+        "page": "home",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=microphone-only&theme=dark&revision=tray-20261005"
+    },
+    {
+      "scenario": "companies-error",
+      "theme": "dark",
+      "file": "dark-companies-error.png",
+      "bounds": {
+        "selector": ".menu-popover",
+        "x": 764,
+        "y": 105,
+        "width": 420,
+        "height": 756,
+        "page": "home",
+        "theme": "dark"
+      },
+      "url": "http://127.0.0.1:63329/app.html?variant=f&scenario=companies-error&theme=dark&revision=tray-20261005"
+    }
+  ]
+}

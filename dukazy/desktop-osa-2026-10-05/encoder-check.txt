@@ -1,0 +1,4 @@
+/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-encoder-signature-ODyfnO/ffmpeg: replacing existing signature
+/var/folders/9q/pnp6hbt136x98kt5gckjmlm40000gn/T/ludone-encoder-signature-FWZ97Z/ffmpeg: replacing existing signature
+[encoder] PASS: zdroje a binárky arm64, x64 odpovídají locku, hashi a architektuře.
+EXIT_CODE=0

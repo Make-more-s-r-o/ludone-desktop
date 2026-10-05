@@ -13,7 +13,7 @@ dist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB
 dist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB
 dist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB
 dist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB
-dist/assets/index-PvTTfyLT.css                        148.98 kB │ gzip:  23.10 kB
-dist/assets/index-B4GUKpSS.js                         359.24 kB │ gzip: 108.66 kB
-✓ built in 326ms
+dist/assets/index-wuibMQPt.css                        150.28 kB │ gzip:  23.26 kB
+dist/assets/index-C94ZkFTP.js                         359.24 kB │ gzip: 108.62 kB
+✓ built in 342ms
 EXIT_CODE=0

@@ -1,0 +1,223 @@
+
+ RUN  v3.2.7 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa
+
+ ✓ tests/settings-audio-test.test.js (10 tests) 304ms
+ ❯ tests/renderer-failure-feedback.test.js (29 tests | 4 failed) 417ms
+   × 1 — neznámá fronta a legitimně prázdná fronta > oznámí odmítnuté čtení v panelu 64ms
+     → expected undefined to be 'Stav fronty není dostupný. Počet čeka…' // Object.is equality
+   × 1 — neznámá fronta a legitimně prázdná fronta > oznámí neplatná odpověď v panelu 14ms
+     → expected undefined to be 'Stav fronty není dostupný. Počet čeka…' // Object.is equality
+   × 1 — neznámá fronta a legitimně prázdná fronta > po selhání a obnově na prázdnou frontu odstraní upozornění 16ms
+     → expected 'LuDoneDesktopPřipraveno k nahrávání M…' to contain 'Stav fronty není dostupný. Počet čeka…'
+   × 1 — neznámá fronta a legitimně prázdná fronta > prázdná fronta zůstane bez výstrahy i bez karty 14ms
+     → expected 'LuDoneDesktopPřipraveno k nahrávání M…' to contain 'Vše odesláno'
+   ✓ 2 — záhlaví odpovídá položkám fronty > při trvalém selhání neslibuje zachování všeho; smíšená fronta false 7ms
+   ✓ 2 — záhlaví odpovídá položkám fronty > při trvalém selhání neslibuje zachování všeho; smíšená fronta true 5ms
+   ✓ 2 — záhlaví odpovídá položkám fronty > čekání bez chyby nevyvolá varování a prázdná karta zmizí 4ms
+   ✓ 3 — naměřená nula a nedostupné měření > odmítnuté resume oznámí v DOM místo naměřeného ticha 9ms
+   ✓ 3 — naměřená nula a nedostupné měření > skutečné ticho běžícího contextu naměří jako nulu bez chyby 10ms
+   ✓ 3 — naměřená nula a nedostupné měření > po úspěšném resume měří ticho bez chyby 6ms
+   ✓ 3 — naměřená nula a nedostupné měření > měřidlo za běhu rozliší zastavený context a skutečnou nulu 4ms
+   ✓ 4 — konfigurace a úmyslné zrušení přihlášení > před přihlášením i po jeho úmyslném zrušení zůstane bez chyby 23ms
+   ✓ 5 — neuložený přepínač a úmyslné vypnutí > Zobrazovat i ikonu v Docku: oznámí výjimka 51ms
+   ✓ 5 — neuložený přepínač a úmyslné vypnutí > Zobrazovat i ikonu v Docku: oznámí neplatný výsledek 26ms
+   ✓ 5 — neuložený přepínač a úmyslné vypnutí > Zobrazovat i ikonu v Docku: oznámí opačný výsledek 23ms
+   ✓ 5 — neuložený přepínač a úmyslné vypnutí > Zobrazovat i ikonu v Docku: výchozí vypnutí i úspěšné zapnutí a vypnutí zůstanou tiché 20ms
+   ✓ 5 — neuložený přepínač a úmyslné vypnutí > Spouštět po přihlášení do systému: oznámí výjimka 21ms
+   ✓ 5 — neuložený přepínač a úmyslné vypnutí > Spouštět po přihlášení do systému: oznámí neplatný výsledek 20ms
+   ✓ 5 — neuložený přepínač a úmyslné vypnutí > Spouštět po přihlášení do systému: oznámí opačný výsledek 20ms
+   ✓ 5 — neuložený přepínač a úmyslné vypnutí > Spouštět po přihlášení do systému: výchozí vypnutí i úspěšné zapnutí a vypnutí zůstanou tiché 21ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > dokončení tónu ze zavřeného pokusu neruší nový test 6ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > odmítnutí tónu ze zavřeného pokusu neruší nový test 4ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > při selhání gain odpojí i rozpracované uzly tónu 4ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > při selhání start odpojí i rozpracované uzly tónu 4ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > resume bez běžícího contextu nevydává za přehrání tónu 5ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > oznámí selhání resume a dovolí další pokus 4ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > oznámí selhání oscilátor a dovolí další pokus 4ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > oznámí selhání start a dovolí další pokus 5ms
+   ✓ 6 — neúspěšný tón a test bez přehrávání > bez tónu a po úspěšném tónu nehlásí selhání ani nepotvrdí tichý mikrofon 4ms
+ ❯ tests/settings.test.js (62 tests | 3 failed) 1369ms
+   ✓ poctivý výsledek odhlášení v Nastavení > potvrzené odhlášení na Macu i serveru zachová dosavadní úspěch 153ms
+   ✓ poctivý výsledek odhlášení v Nastavení > 'serverRevoked: false': ukáže varování a další krok, Mac zůstane odhlášený 49ms
+   ✓ poctivý výsledek odhlášení v Nastavení > 'chybějící serverRevoked': ukáže varování a další krok, Mac zůstane odhlášený 32ms
+   ✓ poctivý výsledek odhlášení v Nastavení > neúspěšné lokální odhlášení zachová reakci na 'recording-active' 30ms
+   ✓ poctivý výsledek odhlášení v Nastavení > neúspěšné lokální odhlášení zachová reakci na 'tracking-active' 34ms
+   ✓ poctivý výsledek odhlášení v Nastavení > neúspěšné lokální odhlášení zachová reakci na 'offline' 29ms
+   ✓ poctivý výsledek odhlášení v Nastavení > výjimka z odhlášení zachová chybu a znovu ověří účet 24ms
+   ✓ Nastavení bez nefunkčního přepínače hovorů > ve Zvuku nenabízí nefunkční přepínač a vysvětlí ruční spuštění 24ms
+   ✓ Nastavení bez nefunkčního přepínače hovorů > při změně retence ukládá jen funkční nastavení 32ms
+   × pět částí Nastavení > ukáže sekce Nastavení v jednom přehledu a zachová jejich samostatné ovládání 26ms
+     → expected [ 'Účet', 'Zvuk', 'Záznamy', …(2) ] to deeply equal [ 'Účet', 'Zvuk', 'Záznamy', …(2) ]
+   × pět částí Nastavení > kliknutí na záložku Nahrávky a její akci předá přesný snímek 21ms
+     → Záložka Nahrávky neexistuje: expected undefined to be defined
+   ✓ pět částí Nastavení > skloňuje v Záznamech i Diagnostice všechny stavy pro 1 22ms
+   ✓ pět částí Nastavení > skloňuje v Záznamech i Diagnostice všechny stavy pro 2 21ms
+   ✓ pět částí Nastavení > skloňuje v Záznamech i Diagnostice všechny stavy pro 4 23ms
+   ✓ pět částí Nastavení > skloňuje v Záznamech i Diagnostice všechny stavy pro 5 23ms
+   ✓ pět částí Nastavení > skloňuje v Záznamech i Diagnostice všechny stavy pro 16 45ms
+   ✓ pět částí Nastavení > v Účtu ukáže zařízení, dvě pevná prostředí a umí odhlásit tento Mac 35ms
+   ✓ pět částí Nastavení > přepnutí na labs nejdřív potvrdí a odhlásí, teprve potom změní origin 17ms
+   ✓ pět částí Nastavení > produkční přepnutí používá jedinou atomickou operaci 16ms
+   ✓ pět částí Nastavení > bez potvrzení prostředí nezmění a ani neodhlásí 13ms
+   ✓ pět částí Nastavení > neúspěšný logout znovu ověří souběžný falešný stav odhlášeno 24ms
+   ✓ pět částí Nastavení > neúspěšné lokální odhlášení nepřepne prostředí 27ms
+   ✓ pět částí Nastavení > odmítnutý logout netvrdí, že je Mac odhlášený 18ms
+   ✓ pět částí Nastavení > dvojitá změna před překreslením spustí jen jedno potvrzení a odhlášení 16ms
+   ✓ pět částí Nastavení > během ručního odhlášení nespustí souběžné přepnutí prostředí 17ms
+   ✓ pět částí Nastavení > při LUDONE_ORIGIN override ukáže efektivní prostředí a změnu nehlásí jako úspěch 16ms
+   ✓ pět částí Nastavení > pozdní odpověď identity po přepnutí nevrátí starý účet 18ms
+   ✓ pět částí Nastavení > v Diagnostice ukáže verzi, architekturu, oba stavy oprávnění a doložené spojení 16ms
+   ✓ pět částí Nastavení > export spouští bez rendererového payloadu a nevykreslí podstrčená citlivá pole 17ms
+   ✓ pět částí Nastavení > při vadných počtech fronty nevymýšlí nulu 14ms
+   ✓ pravdivá identita v Nastavení > výběr firmy se načte jen klikem a uloží explicitní ID bez odeslání fronty 14ms
+   ✓ pravdivá identita v Nastavení > vykreslí skutečné jméno, e-mail, odvozený avatar a nakonfigurovaný origin 14ms
+   ✓ pravdivá identita v Nastavení > bez jména ukáže e-mail právě jednou a avatar odvodí z něj 14ms
+   ✓ pravdivá identita v Nastavení > dlouhý e-mail v kartě Účet nenastaví běžné lámání uprostřed slova 36ms
+   ✓ pravdivá identita v Nastavení > bez session ukáže nepřihlášený stav a nikdy připojení 18ms
+   ✓ pravdivá identita v Nastavení > chybu při čtení identity ukáže jako neznámý stav 14ms
+   ✓ pravdivá identita v Nastavení > během čekání na identitu zůstane v neznámém stavu 15ms
+   ✓ pravdivá identita v Nastavení > chybu konfigurace cíle nepřekryje zadrátovanou adresou 14ms
+   ✓ pravdivá identita v Nastavení > doslovnou atrapu undefined nepoužije jako jméno 14ms
+   ✓ pravdivá identita v Nastavení > zjevně neplatný e-mail nestačí k tvrzení, že je účet připojený 15ms
+   ✓ pravdivá identita v Nastavení > po opětovném zaostření znovu ověří session a nenechá připojený starý účet 18ms
+   ✓ pravdivá identita v Nastavení > pomalejší stará odpověď nepřepíše novější stav session 15ms
+   ✓ systémová nastavení > vykreslí doslovné texty a načte oba skutečné stavy z hlavního procesu 14ms
+   ✓ systémová nastavení > vykreslí i opačnou kombinaci skutečných boolean stavů 15ms
+   ✓ systémová nastavení > po chybě změny Docku přepínač znovu načte realitu a ponechá viditelnou chybu 16ms
+   ✓ systémová nastavení > kliknutí oba přepínače uplatní hned přes boolean API bez kopie v localStorage 19ms
+   ✓ přímý vstup do části Nastavení > otevře Nastavení přímo na zvukových zdrojích 14ms
+   × přímý vstup do části Nastavení > otevře Nahrávky z hlavního panelu a přijímá jen známé záložky 16ms
+     → expected undefined to be 'settings-tab-recordingQueue' // Object.is equality
+   ✓ přímý vstup do části Nastavení > sjednocuje Teď, Můj den a Nastavení a LuTrack ponechá bez ovládání 18ms
+   ✓ běžný vstup a rychlá akce Zvuk > načte viditelnou diagnostiku při čerstvém otevření bez výběru skryté záložky 14ms
+   ✓ běžný vstup a rychlá akce Zvuk > chybu čerstvého načtení neponechá jako nekonečné načítání ani úspěch 14ms
+   ✓ běžný vstup a rychlá akce Zvuk > opakovaná rychlá akce Zvuk navede focus a scroll i na již otevřené stránce 19ms
+   ✓ detail aktualizace > bez nové verze nenabízí prázdný detail: {} 13ms
+   ✓ detail aktualizace > bez nové verze nenabízí prázdný detail: {"checkFailed":true} 13ms
+   ✓ detail aktualizace > bez nové verze nenabízí prázdný detail: {"manualCheckState":"current"} 13ms
+   ✓ detail aktualizace > konkrétní aktualizace detail nabídne: {"availableVersion":"9.8.8"} 13ms
+   ✓ detail aktualizace > konkrétní aktualizace detail nabídne: {"downloading":true} 14ms
+   ✓ detail aktualizace > konkrétní aktualizace detail nabídne: {"downloadedVersion":"9.8.8"} 13ms
+   ✓ skutečná rychlá akce Zvuk > klik rychlé akce opakovaně fokusuje Zvuk a běžný návrat z dne požadavek neopakuje 26ms
+   ✓ konzistentní identita a prostředí při obnově > auth událost se stejným e-mailem obnoví změněný origin 16ms
+   ✓ konzistentní identita a prostředí při obnově > čekající origin nezveřejní novou identitu a starý origin nepřepíše novější snapshot 17ms
+   ✓ konzistentní identita a prostředí při obnově > chyba originu po auth události neponechá dřívější platný scope 15ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/renderer-failure-feedback.test.js > 1 — neznámá fronta a legitimně prázdná fronta > oznámí odmítnuté čtení v panelu
+ FAIL  tests/renderer-failure-feedback.test.js > 1 — neznámá fronta a legitimně prázdná fronta > oznámí neplatná odpověď v panelu
+AssertionError: expected undefined to be 'Stav fronty není dostupný. Počet čeka…' // Object.is equality
+
+- Expected: 
+"Stav fronty není dostupný. Počet čekajících záznamů není známý."
+
++ Received: 
+undefined
+
+ ❯ tests/renderer-failure-feedback.test.js:151:73
+    149|     const panel = setup({ listQueue });
+    150|     await panel.render(App);
+    151|     expect(panel.document.querySelector('[role="alert"]')?.textContent…
+       |                                                                         ^
+    152|     expect(panel.document.body.textContent).not.toContain("Vše odeslán…
+    153|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  tests/renderer-failure-feedback.test.js > 1 — neznámá fronta a legitimně prázdná fronta > po selhání a obnově na prázdnou frontu odstraní upozornění
+AssertionError: expected 'LuDoneDesktopPřipraveno k nahrávání M…' to contain 'Stav fronty není dostupný. Počet čeka…'
+
+Expected: "Stav fronty není dostupný. Počet čekajících záznamů není známý."
+Received: "LuDoneDesktopPřipraveno k nahrávání Mikrofon Zvuk schůzky Nahrávat schůzkuSpustit nahrávání Zkouška zvukuRozhodnete po schůzceFirma není dostupná · Rozhodnete po schůzcePoslední schůzkyPoslední schůzkyVšechny Stav fronty není dostupný.LuTrack Připravujeme"
+
+ ❯ tests/renderer-failure-feedback.test.js:160:45
+    158|     Object.defineProperty(panel.document, "visibilityState", { value: …
+    159|     await panel.render(App);
+    160|     expect(panel.document.body.textContent).toContain(QUEUE_ERROR);
+       |                                             ^
+    161|     await panel.refreshQueue();
+    162|     expect(panel.document.querySelector('[role="alert"]')).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  tests/renderer-failure-feedback.test.js > 1 — neznámá fronta a legitimně prázdná fronta > prázdná fronta zůstane bez výstrahy i bez karty
+AssertionError: expected 'LuDoneDesktopPřipraveno k nahrávání M…' to contain 'Vše odesláno'
+
+Expected: "Vše odesláno"
+Received: "LuDoneDesktopPřipraveno k nahrávání Mikrofon Zvuk schůzky Nahrávat schůzkuSpustit nahrávání Zkouška zvukuRozhodnete po schůzceFirma není dostupná · Rozhodnete po schůzcePoslední schůzkyPoslední schůzkyVšechny Zatím tu nejsou schůzky. Všechny místní nahrávky najdeš v historii.LuTrack Připravujeme"
+
+ ❯ tests/renderer-failure-feedback.test.js:171:45
+    169|     expect(panel.document.querySelector('[role="alert"]')).toBeNull();
+    170|     expect(panel.document.querySelector('[data-testid="queue-screen"]'…
+    171|     expect(panel.document.body.textContent).toContain("Vše odesláno");
+       |                                             ^
+    172|   });
+    173| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  tests/settings.test.js > pět částí Nastavení > ukáže sekce Nastavení v jednom přehledu a zachová jejich samostatné ovládání
+AssertionError: expected [ 'Účet', 'Zvuk', 'Záznamy', …(2) ] to deeply equal [ 'Účet', 'Zvuk', 'Záznamy', …(2) ]
+
+- Expected
++ Received
+
+  [
+    "Účet",
+    "Zvuk",
+    "Záznamy",
+-   "Nahrávky",
++   "Zařízení",
+    "Diagnostika",
+  ]
+
+ ❯ tests/settings.test.js:349:57
+    347|       const tabs = [...settings.document.querySelectorAll('[role="tab"…
+    348|       expect(tablist?.getAttribute("aria-label")).toBe("Části nastaven…
+    349|       expect(tabs.map((tab) => tab.textContent.trim())).toEqual([
+       |                                                         ^
+    350|         "Účet",
+    351|         "Zvuk",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  tests/settings.test.js > pět částí Nastavení > kliknutí na záložku Nahrávky a její akci předá přesný snímek
+AssertionError: Záložka Nahrávky neexistuje: expected undefined to be defined
+ ❯ selectTab tests/settings.test.js:312:46
+    310|   const tab = [...settings.document.querySelectorAll('[role="tab"]')]
+    311|     .find((candidate) => candidate.textContent.trim() === label);
+    312|   expect(tab, `Záložka ${label} neexistuje`).toBeDefined();
+       |                                              ^
+    313|   await React.act(async () => {
+    314|     tab.click();
+ ❯ tests/settings.test.js:441:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  tests/settings.test.js > přímý vstup do části Nastavení > otevře Nahrávky z hlavního panelu a přijímá jen známé záložky
+AssertionError: expected undefined to be 'settings-tab-recordingQueue' // Object.is equality
+
+- Expected: 
+"settings-tab-recordingQueue"
+
++ Received: 
+undefined
+
+ ❯ tests/settings.test.js:1360:33
+    1358|     try {
+    1359|       const selectedTab = () => settings.document.querySelector('[role…
+    1360|       expect(selectedTab()?.id).toBe("settings-tab-recordingQueue");
+       |                                 ^
+    1361| 
+    1362|       await React.act(async () => settings.requestSettingsTab("account…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+
+ Test Files  2 failed | 1 passed (3)
+      Tests  7 failed | 94 passed (101)
+   Start at  13:51:02
+   Duration  1.85s (transform 128ms, setup 19ms, collect 953ms, tests 2.09s, environment 0ms, prepare 70ms)
+
+EXIT_CODE=1

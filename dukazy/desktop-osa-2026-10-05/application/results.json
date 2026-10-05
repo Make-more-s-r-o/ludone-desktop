@@ -1,0 +1,193 @@
+{
+  "exitCode": 0,
+  "observations": [
+    {
+      "check": "onboarding-first-use",
+      "pass": true
+    },
+    {
+      "check": "home-420-and-system-font",
+      "pass": true
+    },
+    {
+      "check": "lutrack-inactive",
+      "pass": true
+    },
+    {
+      "check": "light-home-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "light-library-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "light-queue-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "light-settings-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "light-updates-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "professional-home-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "professional-library-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "professional-queue-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "professional-settings-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "professional-updates-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "dark-home-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "dark-library-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "dark-queue-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "dark-settings-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "dark-updates-no-horizontal-overflow",
+      "pass": true
+    },
+    {
+      "check": "library-460",
+      "pass": true
+    },
+    {
+      "check": "real-manifest-loaded",
+      "pass": true
+    },
+    {
+      "check": "pagination-first-seven",
+      "pass": true
+    },
+    {
+      "check": "pagination-reaches-rest",
+      "pass": true
+    },
+    {
+      "check": "library-search-period-pagination",
+      "pass": true
+    },
+    {
+      "check": "real-search-filters-disk-recordings",
+      "pass": true
+    },
+    {
+      "check": "actual-protected-audio-decoder",
+      "pass": true,
+      "readyState": 1
+    },
+    {
+      "check": "five-settings-sections",
+      "pass": true
+    },
+    {
+      "check": "settings-no-second-window",
+      "pass": true
+    },
+    {
+      "check": "detail-separate-860-580",
+      "pass": true
+    },
+    {
+      "check": "detail-actual-fixture",
+      "pass": true
+    },
+    {
+      "check": "two-synthetic-sources",
+      "pass": true
+    },
+    {
+      "check": "signed-out-offline-recording-priority",
+      "pass": true,
+      "tray": "recording"
+    },
+    {
+      "check": "hidden-panel-recording-authority",
+      "pass": true,
+      "hidden": "recording"
+    },
+    {
+      "check": "main-clock-advances-while-hidden",
+      "pass": true
+    },
+    {
+      "check": "hidden-panel-time-continues",
+      "pass": true,
+      "before": "00:00",
+      "after": "00:02"
+    },
+    {
+      "check": "system-audio-loss-main-priority",
+      "pass": true
+    },
+    {
+      "check": "live-stop-outside-home",
+      "pass": true
+    },
+    {
+      "check": "main-save-decision-priority",
+      "pass": true,
+      "tray": "decision"
+    },
+    {
+      "check": "explicit-local-and-send-actions",
+      "pass": true
+    },
+    {
+      "check": "recording-persisted-on-disk",
+      "pass": true
+    },
+    {
+      "check": "one-stereo-delivery-file",
+      "pass": true
+    },
+    {
+      "check": "new-recording-playback-selects-stereo",
+      "pass": true
+    },
+    {
+      "check": "upload-held-without-network",
+      "pass": true,
+      "transportEnabled": false
+    },
+    {
+      "check": "renderer-crash-main-finalizes-and-recovers",
+      "pass": true
+    },
+    {
+      "check": "crashed-recording-preserved",
+      "pass": true
+    },
+    {
+      "check": "restart-preserves-recordings-and-held-intent",
+      "pass": true
+    }
+  ],
+  "physicalAudioVerified": false
+}

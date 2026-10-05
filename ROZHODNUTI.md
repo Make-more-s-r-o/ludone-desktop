@@ -210,3 +210,10 @@ D21 mění pouze formát a potřebnou konverzi v D20; bezpečnost fronty a jeden
 ## D22 — pověření k vydání 0.1.4 (23. 9. 2026)
 
 Dan odpověděl „Ano, tak vydej“ na výslovnou otázku, zda má koordinátor vydat připravenou 0.1.4. Koordinátor smí vytvořit a pushnout tag v0.1.4 a dokončit podepsané a notarizované vydání na stahnout.ludone.cz/desktop/ včetně aktualizačního feedu. Pověření samo nedokládá úspěšnou publikaci ani instalaci na Macu; ty vyžadují samostatné důkazy. Existující záloha klíče a přístupy se znovu nevyžadují.
+
+
+## D23 — zahájení celé F Osa bez pověření k vydání (5. 10. 2026)
+
+Dan přímo schválil celou vybranou F i poslední podobu ikon: „ok, schvaluju, můžeš to pustit ty? nebo ne musím já?“ Navazující přímé zadání pověřuje vývojem, testy, průběžnými commity, push a PR na existující `feat/desktop-osa`. Nejde jen o přípravu promptu. Podklady `95ff0b2c7a6d92a6f92efe80f9a030fc57d240ea`, main základ `2dd73fb2821f81fad3d9087381c72fd4d127e927`.
+
+Nahrávání, rozhodnutí, historie, odesílání a nastavení zůstávají v tray panelu; samostatné okno až pro detail. LuTrack neaktivní. Původní brány se nesmějí oslabit; schválení návrhu není výjimka pro červené měřidlo. Finální tag, merge do main, vydání a produkční instalace vyžadují samostatný další pokyn. [Stav implementace a přejímky](docs/behy/desktop-osa-2026-10-05/STAV.md).

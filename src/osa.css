@@ -68,3 +68,16 @@ html[data-theme=dark]:has(.osa-shell){--osa-surface:#161d1b;--osa-alt:#1d2624;--
 .osa-shell--detail .recording-queue-card__detail{display:flex;flex-direction:column;gap:12px}.osa-shell--detail .recording-queue-card__detail>*{order:3}.osa-shell--detail .recording-queue-card__detail-heading{order:0}.osa-shell--detail .recording-queue-card__detail>.osa-stations{order:1}.osa-shell--detail .recording-queue-card__storage{order:2}.osa-shell--detail .settings-window[data-page] .recording-queue-card__storage dl{font-size:14px;line-height:1.5}
 .osa-shell--detail .recordings-dashboard>button{align-self:flex-end;min-width:120px;background:none;border:0;font-size:14px}.osa-shell--detail .settings-window[data-page] .settings-group{padding:0}
 .osa-shell .recording-card__idle-footer>.recording-card__sources,.osa-shell .recording-card__idle-footer>small{display:none}.osa-shell .day-preview__item-copy{gap:3px}.osa-shell .day-preview__item{padding:8px 0;border:0}.osa-shell .day-preview__state{font-size:13px}.osa-shell .day-preview__list{gap:0}.osa-shell .osa-rail .osa-rail__low{margin-top:auto}
+/* Kompaktní F řádky: stav patří k názvu, čas a velikost pod něj. */
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-timeline__entry{display:block;padding:8px 0 8px 18px;margin:0;min-height:0}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-timeline__time{display:none}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-timeline__entry:before{left:5px;top:23px;width:8px;height:8px;border:2px solid var(--osa-accent)}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-dashboard__list:before{left:5px;background:var(--osa-line)}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card{border:0;background:none;box-shadow:none}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__summary{display:grid;grid-template-columns:minmax(0,1fr) 16px;grid-template-areas:"heading arrow" "facts arrow";height:auto;min-height:0;gap:5px 8px;padding:4px 0;border:0;background:none;text-align:left}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__heading{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:0;grid-area:heading}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__heading>strong{font-size:15px;flex:1;min-height:0}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__delivery{font-size:12px;max-width:45%;border-radius:5px;white-space:normal;flex:none}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__facts{font-size:13px;display:flex;flex-wrap:wrap;gap:4px 8px;grid-area:facts;min-height:0}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__source-icon,.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__local,.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__detail-label{display:none}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-dashboard__notice{font-size:13px;line-height:1.45;padding:8px 10px}.osa-shell .recordings-day__heading{margin:14px 0 4px}

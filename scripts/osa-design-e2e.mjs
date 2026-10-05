@@ -259,7 +259,7 @@ try {
   await panel.evaluate("(()=>{const el=document.querySelector('input[type=search]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));})()");
   await waitFor(()=>panel.evaluate(`Boolean(document.querySelector('[data-recording-id="${fixtureRecordingId}"]'))`),'search restored');
   const playback = await panel.evaluate(`(async()=>{const snapshot=await window.ludone.listLocalRecordings();const item=snapshot.items.find(i=>i.id==='${fixtureRecordingId}');const media=await window.ludone.playRecording({id:item.id,queueRev:item.revision,fileRev:item.fileRevision});const audio=new Audio(media.url);window.__osaTestAudio=audio;await new Promise((resolve,reject)=>{audio.onloadedmetadata=resolve;audio.onerror=()=>reject(new Error('Audio decoder: '+audio.error?.code));setTimeout(()=>reject(new Error('Audio metadata timeout')),6000);audio.load();});const facts={duration:audio.duration,readyState:audio.readyState,url:media.url};audio.pause();audio.removeAttribute('src');audio.load();return facts;})()`);
-  check('actual-protected-audio-decoder',playback.readyState>=1&&playback.url.startsWith('ludone://app/media/'),playback);
+  check('actual-protected-audio-decoder',playback.readyState>=1&&playback.url.startsWith('ludone://app/media/'),{readyState:playback.readyState});
 
   await navigate('settings');
   check('five-settings-sections',await panel.evaluate("document.querySelectorAll('.osa-settings-section').length===5"));
@@ -287,6 +287,9 @@ try {
   const mainAfter=await panel.evaluate('window.ludone.getRecordingActivity()');
   check('main-clock-advances-while-hidden',mainAfter.active&&mainAfter.startedAt===mainBefore.startedAt&&mainAfter.title!==mainBefore.title);
   await visible();await delay(200);const after=await panel.evaluate("document.querySelector('.elapsed')?.textContent");check('hidden-panel-time-continues',before!==after,{before,after});await navigate('library');
+  await panel.evaluate('window.__ludoneE2ESyntheticAudio.loseSystemTrack()');
+  await waitFor(()=>panel.evaluate("window.ludone.getTrayState().then(s=>s==='recording-audio-lost')"),'main system audio loss');
+  check('system-audio-loss-main-priority',true);await screenshot('recording-system-lost');
   check('live-stop-outside-home',await panel.evaluate("Boolean(document.querySelector('.osa-live-strip button:not(:disabled)'))"));
   await click('.osa-live-strip button');
   await waitFor(()=>panel.evaluate("Boolean(document.querySelector('.recording-card--saved'))"),'safe save decision',20000);
@@ -296,6 +299,8 @@ try {
   await click('.recording-saved__skip');
   await waitFor(()=>panel.evaluate("!document.querySelector('.recording-card--saved')"),'local save');
   const manifests=await readdir(path.join(dataRoot,'user-data','nahravky'));check('recording-persisted-on-disk',manifests.filter(n=>n.endsWith('.manifest.json')).length>=10);
+  check('one-stereo-delivery-file',manifests.filter(n=>n.endsWith('-stereo.webm')).length===1);
+  check('new-recording-playback-selects-stereo',await panel.evaluate("(async()=>{const s=await window.ludone.listLocalRecordings();const i=s.items.find(i=>!i.id.startsWith('40000000')&&i.localState==='complete-audio');const r=await window.ludone.playRecording({id:i.id,queueRev:i.revision,fileRev:i.fileRevision});return r.label==='Stereo nahrávka';})()"));
   check('upload-held-without-network',await panel.evaluate("window.ludone.listLocalRecordings().then(s=>s.items.filter(i=>i.state!=='odeslano').every(i=>i.uploadIntent!=='approved'))"),{transportEnabled:false});
   await navigate('home');await installSyntheticAudioCapture(panel);await click('.recording-card .idle-feature-row__action');
   await waitFor(()=>panel.evaluate("document.querySelector('.recording-card')?.classList.contains('is-active')"),'second recording');
@@ -308,6 +313,16 @@ try {
   await navigate('library');await screenshot('crash-recovered');
   const recoveredManifests=await readdir(path.join(dataRoot,'user-data','nahravky'));
   check('crashed-recording-preserved',recoveredManifests.filter(n=>n.endsWith('.manifest.json')).length>=11);
+  await waitFor(()=>panel.evaluate("window.ludone.getRecordingActivity().then(a=>!a.active&&!a.saving)"),'crash disk flush');
+  panel.close();child.kill('SIGTERM');await Promise.race([new Promise(r=>child.once('exit',r)),delay(3000)]);if(child.exitCode===null)child.kill('SIGKILL');
+  child=spawn(electronBinary,['.',`--remote-debugging-port=${port}`,'--disable-background-timer-throttling','--disable-renderer-backgrounding'],{cwd:projectRoot,env:{...process.env,LUDONE_E2E:'1',LUDONE_DESIGN_E2E:'1',DESKTOP_UPLOAD_ENABLED:'false',LUDONE_DATA_DIR:dataRoot,LUDONE_E2E_HARD_STOP_MS:'120000'},stdio:['ignore','pipe','pipe']});
+  child.stdout.on('data',b=>log+=b);child.stderr.on('data',b=>log+=b);
+  const restartedTarget=await waitFor(async()=>(await getTargets(port)).find(t=>t.type==='page'&&t.url.includes('/dist/index.html')&&!t.url.includes('#settings')),'restarted panel');
+  panel=await connect(restartedTarget);await waitFor(()=>panel.evaluate("Boolean(document.querySelector('.osa-rail'))"),'persisted onboarding');
+  await navigate('library');
+  await waitFor(()=>panel.evaluate("window.ludone.listLocalRecordings().then(s=>s.items.length>=11)"),'restart recovery');
+  check('restart-preserves-recordings-and-held-intent',await panel.evaluate("window.ludone.listLocalRecordings().then(s=>s.items.length>=11&&s.items.every(i=>i.uploadIntent!=='approved'))"));
+  await screenshot('restarted-library');
   exitCode=0;
 } catch(error) {console.error('FAIL',error.stack);observations.push({error:error.message});}
 finally { panel?.close();detail?.close();if(child&&child.exitCode===null){child.kill('SIGTERM');await Promise.race([new Promise(r=>child.once('exit',r)),delay(3000)]);if(child.exitCode===null)child.kill('SIGKILL');} await writeFile(path.join(outputDir,'electron.log'),log);await writeFile(path.join(outputDir,'results.json'),JSON.stringify({exitCode,observations,physicalAudioVerified:false},null,2));console.log(`Důkazy: ${outputDir}\nexit code: ${exitCode}`);process.exitCode=exitCode; }

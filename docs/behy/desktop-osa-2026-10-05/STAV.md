@@ -24,3 +24,15 @@
 - Rutinní sandboxové schválení zápisu Git metadat a síťových operací následně umožnilo cherry-picky a instalaci. Bez změny OS oprávnění, bez administrátorského hesla, bez čtení tajemství.
 
 🟡 Implementace je integrovaná, probíhá rozšířená automatizovaná přejímka a příprava review. ⛔ Fyzický zvuk a ui-smoke/audio-smoke nebyly provedeny.
+
+## Checkpoint 3 — review a předání
+
+- 🧪 Poslední skutečný Electron běh: 45 samostatných PASS, exit 0. Tři témata × pět hlavních stránek; skutečná historie devíti manifestů na dvou stránkách, hledání, detail, audio dekodér, stop mimo home, main hodiny při skrytém panelu, výpadek systémového zvuku, místní uložení jednoho stereo derivátu, přehrání správného derivátu, zachování při crash a skutečný restart bez změny held souhlasu.
+- 🧪 Scoped lint, typecheck a build PASS; F unit 15/15; core auth/queue/export/dashboard 385/385. Původní i F nativeImage PASS. Produkční závislosti: audit 0 zranitelností. Připnutý encoder pro oba Macy: check exit 0.
+- 🧪 Nezávislé finální review citlivého diffu bez dalších konkrétních P1/P2. [Doslovný závěr](REVIEW.md).
+- ⚠️ Celá původní unit sada: 201 FAIL / 1468 PASS / 3 původní skipy. Čistá brána nad `61840348`: 155 lint chyb návrhových podkladů (stejné jako výchozí stav). F akceptace včetně původních kontrol správně končí exit 1. [Konkrétní přechodové rozpory](ROZPOR-BRAN.md); měřidla a baseline beze změny.
+- 72 referenčních snímků a finální skutečné Electron snímky jsou archivované v `dukazy/desktop-osa-2026-10-05/`. Pouze syntetické důkazy, žádné uživatelské profily nebo zvuk. Pomocné klony byly po bezpečné integraci a verzování důkazů odstraněné.
+- 🟡 0.1.8 připravena pro existující podepsaný/notarizovaný workflow; samotné podepsané artefakty nebyly vytvořeny ani vydány. Klíče a produkční instalace nedotčené.
+- ⛔ Fyzický zvuk, reálná serverová firma/upload/expirace, 24 skutečných situací ve všech tématech, více monitorů a instalace aktualizace nepřijaté. [Konkrétní krátká Mac přejímka](MAC-PREJIMKA.md).
+
+🟡 Implementace předaná do draft review. Není vydaná ani označená jako kompletně zelená akceptace. Push a URL PR doplní závěrečný checkpoint.

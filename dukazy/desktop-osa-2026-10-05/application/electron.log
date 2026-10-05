@@ -1,0 +1,29 @@
+
+DevTools listening on ws://127.0.0.1:52068/devtools/browser/6de02283-9315-4b02-924d-65ed1661d697
+[tray] 2026-10-05T11:55:31.510Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] Při startu obnoveno nahrávek: 9.
+[queue] odesláno 0, konec: žádná položka není připravená
+[tray] 2026-10-05T11:55:37.334Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=9 přihlášen=false
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T11-55-37-334Z-3fc4d63a.
+[tray] 2026-10-05T11:55:39.900Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=9 přihlášen=false
+[tray] 2026-10-05T11:55:40.059Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=9 přihlášen=false
+[recording] Uloženo: mikrofon 40765 B, systém 40765 B.
+[queue] Zařazeno 3fc4d63a-8457-48e3-b840-09b49b412710 (recording).
+[tray] 2026-10-05T11:55:40.087Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=10 přihlášen=false
+[tray] 2026-10-05T11:55:40.499Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=10 přihlášen=false
+[recording-export] Uloženo 3fc4d63a-8457-48e3-b840-09b49b412710; rozdíl startů 0 ms.
+[tray] 2026-10-05T11:55:40.548Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=10 přihlášen=false
+[tray] 2026-10-05T11:55:40.942Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=10 přihlášen=false
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T11-55-40-942Z-738e1d7d.
+[recording] Renderer skončil: {"reason":"crashed","exitCode":5}
+[tray] 2026-10-05T11:55:41.350Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=10 přihlášen=false
+[recording] Uloženo: mikrofon 0 B, systém 0 B.
+[recording] Session uzavřena po události „pád rendereru“: mikrofon 0 B, systém 0 B.
+[recording] Session uzavřena po události „navigace nebo reload“: mikrofon 0 B, systém 0 B.
+
+DevTools listening on ws://127.0.0.1:52068/devtools/browser/6b482d7a-42b5-498b-b3d6-8b4c74d3809b
+[tray] 2026-10-05T11:55:42.001Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[queue] Obnova přeskočila neplatný nebo nedokončený manifest; soubory zůstaly beze změny.
+[queue] odesláno 0, konec: žádná položka není připravená

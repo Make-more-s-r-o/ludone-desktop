@@ -276,13 +276,14 @@ function SettingsSections({ embedded, activePage, activeTab, onSelect, children 
 }
 
 export function SettingsApp({ embedded = false, initialSection, queueOnly = false }) {
+  const detailId = !embedded ? new URL(window.location.href).searchParams.get("recordingId") : null;
   const [initialTab] = useState(() => initialSection ?? new URL(window.location.href).searchParams.get("settingsTab"));
   const [activeTab, setActiveTab] = useState(() => (
-    !embedded || initialTab === "day" || initialTab === "recordingQueue" ? "recordingQueue"
+    detailId || initialTab === "day" || initialTab === "recordingQueue" ? "recordingQueue"
       : (SETTINGS_TABS.some((item) => item.id === initialTab) ? initialTab : "account")
   ));
   const [activePage, setActivePage] = useState(() => (
-    !embedded || ["day", "recordingQueue"].includes(initialTab) ? "day" : "settings"
+    detailId || ["day", "recordingQueue"].includes(initialTab) ? "day" : "settings"
   ));
   const [audioNavigationRequest, setAudioNavigationRequest] = useState(initialTab === "audio" ? 1 : 0);
   const [recordingDetailOpen, setRecordingDetailOpen] = useState(false);
@@ -1127,7 +1128,7 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
                 onDetailChange={setRecordingDetailOpen}
                 osa
                 queueOnly={queueOnly}
-                detailId={!embedded ? new URL(window.location.href).searchParams.get("recordingId") : null}
+                detailId={detailId}
               />
             </section>
           )}
