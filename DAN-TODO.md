@@ -1,6 +1,6 @@
 # Co čeká na Dana — LuDone Desktop
 
-**5. 10. 2026 — F Osa k review:** 🧪 Implementace a bezpečné syntetické Electron ověření jsou připravené; 🟡 [fyzická Mac přejímka](docs/behy/desktop-osa-2026-10-05/MAC-PREJIMKA.md) a [rozhodnutí o přechodu starých bran](docs/behy/desktop-osa-2026-10-05/ROZPOR-BRAN.md) čekají. Design ani ikony znovu neschvalovat. Žádný tag, merge, vydání ani produkční instalace nejsou provedené.
+**5. 10. 2026 — F Osa k review:** 🧪 Implementace, čisté brány a syntetická Electron přejímka připravené. Rovnocenný přechod bran Dan výslovně schválil a kontroly prošly; design ani ikony znovu neschvalovat. 🟡 Zbývá [fyzická Mac přejímka](docs/behy/desktop-osa-2026-10-05/MAC-PREJIMKA.md): skutečný zvuk, oprávnění, server, monitory a release přejímka. Žádný tag, merge, vydání ani produkční instalace nejsou provedené.
 
 **30. 9. 2026 — 0.1.7 vydaná:** ✅ podpis, notarizace, publikace a veřejný feed ověřené. Nic dalšího nerozhodovat, neslučovat PR ani nehledat hesla. Aktualizuj přes **Nastavení → Zkontrolovat aktualizace → Aktualizovat** a proveď [krátkou Mac přejímku](docs/changes/desktop-astra-parity-0-1-6/MAC-PREJIMKA.md): firma po znovuotevření, soukromá lokální nahrávka po restartu a jeden skutečný upload se zvukem. 🧪 1 654 PASS, 35 hlavních podmínek, 18 stavů a 41 produktových cest; review bez P1/P2. 🟡 Zbývá jen toto lidské měření.
 

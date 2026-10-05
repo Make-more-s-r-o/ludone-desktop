@@ -1,39 +1,25 @@
-# Důkazy F Osa — 5. 10. 2026
+# Důkazy F Osa — závěrečná akceptace 5. 10. 2026
 
-🧪 Izolované testy, nikoli fyzická zvuková přejímka. Poslední Electron běh: 45 samostatných PASS, exit 0; `osa-e2e-visual-final.txt`. Syntetický mikrofon 440 Hz, systém 880 Hz, oddělený profil a upload vypnutý. Nahrávky ani profile data nejsou součástí tohoto archivu.
+🧪 Zelené automatizované testy. Fyzický zvuk a skutečný server tím nejsou ověřené. Auth/transport používá pouze veřejnou syntetickou identitu v izolovaném profilu; žádný skutečný účet, upload ani externí síť. Profily a nahrávky nejsou archivované.
 
-## Výsledky
-
-| Kontrola | Stav | Výpis |
+| Kontrola | Výsledek | Doslovný výpis |
 |---|---|---|
-| F logika, stav tray, bezpečné audio range / FIFO / stale revize | 🧪 15 PASS | `akceptace/unit-F.txt` |
-| Auth / queue / export / dashboard základní regresní moduly | 🧪 385 PASS | `core-unit.txt` |
-| Lint implementačních cest, typecheck, build | 🧪 exit 0 | `osa-lint.txt`, `akceptace/typecheck.txt`, `osa-build.txt` |
-| Původní tray nativeImage a nové F masky 18/36 px | 🧪 exit 0 | `akceptace/tray-image-puvodni.txt`, `akceptace/tray-image-F.txt` |
-| Electron shell, tři témata, panel / UUID detail, search, dvě stránky historie | 🧪 PASS | `osa-e2e-visual-final.txt` |
-| Main čas při skrytém panelu, offline/signed-out aktivita, výpadek systémového zvuku | 🧪 PASS | stejný výpis |
-| Skutečný audio decoder, jeden stereo derivát, chráněné přehrávání tohoto derivátu | 🧪 PASS | stejný výpis |
-| Stop mimo home, rozhodnutí, místní uložení bez uploadu, crash zachování, restart | 🧪 PASS | stejný výpis |
-| Encoder arm64 + x64: zdrojové hashe, Mach-O, podpisová odolnost | 🧪 exit 0 | `encoder-check.txt` |
-| Audit produkčních závislostí | 🧪 0 zranitelností | `audit-production.json` |
-| Úplný audit včetně vývojových závislostí | ⚠️ 7 nálezů: 3 high, 4 moderate; exit 1 | `audit-all.json` |
-| Celá původní unit sada | ⚠️ 201 FAIL / 1468 PASS / 3 původní skipy | `akceptace/unit-vsechny-puvodni-i-nove.txt` |
-| Původní čistá brána | ⚠️ 155 výchozích lint chyb | `final-gates-clean.txt` |
-| F doplňková akceptace včetně původních kontrol | ⚠️ exit 1, dvě samostatné FAIL | `akceptace-final.txt` |
-| Fyzický zvuk, produkční server, monitory a instalace aktualizace | ⛔ neověřeno | [Mac přejímka](../../docs/behy/desktop-osa-2026-10-05/MAC-PREJIMKA.md) |
+| Původní brány v čistém klonu | 🧪 exit 0 | [gates:clean](gates-clean-final.txt) |
+| Celá sada | 🧪 1708 PASS / 0 FAIL / 3 původní skipy | [unit](akceptace/unit-vsechny-puvodni-i-nove.txt) |
+| Kompletní F akceptace | 🧪 všech 10 samostatných PASS, exit 0 | [F](akceptace-f-final.txt) |
+| Audit lockfile | 🧪 0 známých nálezů, exit 0 | [audit](audit-final.json) |
+| Encoder obou architektur | 🧪 exit 0 | [encoder](encoder-final.txt) |
+| Skutečný Electron 24 situací × 3 témata | 🧪 72 snímků, exit 0 | [výpis](akceptace/Electron-F-24x3-auth-a-detail.txt), [manifest](application-final/results.json) |
 
-Průběžné neúspěšné výpisy zůstávají zachované. Jejich FAIL se nesmí zaměňovat za finální PASS nebo skrývat. Výpisy jsou doslovné včetně whitespace testovacího runneru. [Rozpor bran](../../docs/behy/desktop-osa-2026-10-05/ROZPOR-BRAN.md) a [nezávislé review](../../docs/behy/desktop-osa-2026-10-05/REVIEW.md).
+Electron ověřuje skutečné služby a disková data: hlavní čas při skrytí panelu, ztrátu systému a jen mikrofon, stereo derivát a dekodér, crash/restart, převzetí vlastníka bez uploadu, CAS detailu a Save/Discard/Stay, zachování výchozí firmy po restartu i firemní přístup nové nahrávky. Testovací adaptér odpovídá na nativní dialogy a změny selectu vyvolává přes renderer události. Skutečný server je výslovně `productionServerVerified: false`.
 
-## Návrh a skutečná aplikace
+`reference/` obsahuje schválený návrh ze samostatné návrhové podsložky na loopbacku. `application-final/` obsahuje aktuální skutečný Electron, 72 kanonických snímků a veřejný audit transportu. `application/` je dřívější průběžný archiv. `akceptace-pred-migraci/` zachovává předchozí doslovné neúspěšné výpisy; nejsou finálním výsledkem. V Git historii zůstávají další checkpointy.
 
-`reference/`: všech 24 schválených situací × 3 témata, 72 referenčních snímků ze samotné návrhové podsložky na loopbacku. `application/`: skutečný Electron se syntetickými lokálními daty. Nejde o 72 funkčně ověřených produkčních stavů; přihlášené serverové scénáře a fyzické systémové dialogy čekají na Mac přejímku.
-
-| Kompozice | Návrh | Electron |
+| Situace | Schválený návrh | Skutečný Electron |
 |---|---|---|
-| Světlé nahrávání | [reference](reference/light-ready.png) | [aplikace](application/light-home.png) |
-| Profesionální nahrávání | [reference](reference/professional-ready.png) | [aplikace](application/professional-home.png) |
-| Tmavé nahrávání | [reference](reference/dark-ready.png) | [aplikace](application/dark-home.png) |
-| Samostatný detail / dvě stanice | [reference](reference/light-detail.png) | [aplikace](application/detail.png) |
-| Historie / sedm položek na stránku | [reference](reference/light-history.png) | [aplikace](application/light-library.png) |
+| Připravené nahrávání | [reference](reference/light-ready.png) | [aplikace](application-final/light-ready.png) |
+| Historie | [reference](reference/light-history.png) | [aplikace](application-final/light-history.png) |
+| Detail | [reference](reference/light-detail.png) | [aplikace](application-final/light-detail.png) |
+| Fronta | [reference](reference/dark-queue.png) | [aplikace](application-final/dark-queue.png) |
 
-Rozdíly jsou věcné: skutečná aplikace nevykresluje zelené ověření zdrojů před spuštěním/poslechem, neověřená lokální fixtura nemá potvrzeného vlastníka ani firmu, serverovou stanici nelze naplnit pouhým odesláním a skutečné Mac / LuDone akce mají vlastní guards. Přidané místní přehrávání skutečně otevírá povolený audio soubor. Reference má ukázkovou přihlášenou firmu a fiktivní serverové stavy; v izolovaném běhu jsou tyto akce pravdivě zamčené. Systémové písmo, levá rail navigace, svislá osa a dvě stanice jsou převzaty z F.
+Panel má skutečně omezenou výšku a vnitřní posouvání. Nepotvrzuje zeleně zvuk před jeho spuštěním; uloženou firmu bez načteného názvu označuje pravdivým obecným textem. Historie má skutečně změřené středy uzlů na ose do 1 px. Vizuální review a fyzická přejímka jsou v [dokumentaci běhu](../../docs/behy/desktop-osa-2026-10-05/STAV.md).

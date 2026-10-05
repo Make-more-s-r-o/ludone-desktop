@@ -1,4 +1,19 @@
-# Rozbor červených kontrol po opravě setupu
+# Rozpory původních kontrol a jejich uzavření
+
+🧪 Původních 111 FAIL je nyní vyřešeno rovnocennou migrací schválenou Danem. Celá sada má 1708 PASS / 0 FAIL / 3 původní skipy. Čistá brána nad `56800d3` prošla (exit 0). Historická tabulka níže uchovává doslovné první chyby původního checkpointu; samotné první chyby nejsou analýzou příčin.
+
+| Příčina | Konkrétní řešení a review |
+|---|---|
+| Původní Astra DOM/okno/pořadí/šířka | Stejné funkční podmínky přes skutečné F selektory a původní testové služby; [UI mapa](MIGRACE-UI-TESTU.md), [queue mapa](MIGRACE-QUEUE-TESTU.md) |
+| Panel získal oprávněné settings služby | Záporné testy měří samostatné cizí BrowserWindow stejného původu; všechny podřízené rámce, payloady a scoped identity zachované |
+| Starý tray harness a priority | Skutečné main dependencies, F záznam/saving/decision/offline/attention souběhy; původních109 případů zachováno a22 přidáno; [mapa](MIGRACE-AUTHORITY-TESTU.md) |
+| Ztracený feedback při prázdné frontě a dlouhý obsah | Skutečné produkční opravy `2d26ba7`, původní funkční testy znovu zelené |
+| Oslabené exact-once během migrace | Nezávislé review zachytilo P2; obnoveno přesné jedno volání, nikoli pouze přítomnost události; [review](REVIEW-AUTH-UI.md) |
+| Runtime komprese PNG, lint návrhových podkladů a závislosti | Node24.19.0, explicitní importy/global vazby bez ESLint výjimek, minimální bezpečné patch verze; oficiální runtime ověřen na Macu i Linux CI; golden beze změny |
+
+Automatické review první dávku geometrie odmítlo jako možné oslabení. Dávka se neprovedla; následně schválené silnější měření obsahuje přesnou F výšku, intrinsic budget, dosažitelnost a scroll. Počty původních případů zachované, žádné nové skipy/baseline. Přechod F není povolením vynechat bezpečnostní podmínky.
+
+## Historický checkpoint před migrací
 
 Celkem 1682: 1568 PASS, 111 FAIL, 3 původní skipy. Assertions zůstávají zachované.
 

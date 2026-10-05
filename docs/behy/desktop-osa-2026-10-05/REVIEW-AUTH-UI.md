@@ -80,3 +80,7 @@ Duration 333ms
 EXIT_CODE=0
 ```
 Fyzicka pre jimka Macu nebyla provedena.
+
+### Závěrečné doplnění auditu transportu
+
+Připomínka nezávislého review k pořadí čtení auditu po restartu byla zapracovaná: předchozí audit se načítá až po potvrzeném ukončení procesu. Zápis je synchronní a atomický při každé transportní události. Finální E2E ověřuje všechny procesy, jediný projekční hook na proces a pouze povolené GET; žádný upload. Produkční auth/IPC/queue tímto testovacím adaptérem nejsou nahrazené.

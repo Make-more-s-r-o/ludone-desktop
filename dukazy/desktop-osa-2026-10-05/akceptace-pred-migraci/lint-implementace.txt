@@ -1,0 +1,2 @@
+$ npx eslint src electron scripts/osa-design-e2e.mjs scripts/osa-reference-capture.mjs scripts/akceptace/F-Osa.mjs tests/osa-tray-image-electron.js
+EXIT_CODE=0

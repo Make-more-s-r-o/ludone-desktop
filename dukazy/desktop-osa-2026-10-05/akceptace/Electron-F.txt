@@ -28,19 +28,23 @@ PASS five-settings-sections
 PASS settings-no-second-window
 PASS detail-separate-860-580
 PASS detail-actual-fixture
+PASS detail-react-playback-advances
 PASS two-synthetic-sources
 PASS signed-out-offline-recording-priority
 PASS hidden-panel-recording-authority
 PASS main-clock-advances-while-hidden
 PASS hidden-panel-time-continues
+PASS system-audio-loss-main-priority
 PASS live-stop-outside-home
 PASS main-save-decision-priority
 PASS explicit-local-and-send-actions
 PASS recording-persisted-on-disk
+PASS one-stereo-delivery-file
+PASS new-recording-playback-selects-stereo
 PASS upload-held-without-network
 PASS renderer-crash-main-finalizes-and-recovers
 PASS crashed-recording-preserved
 PASS restart-preserves-recordings-and-held-intent
-Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.runtime/osa-e2e/2026-10-05T11-52-13.207Z
+Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.runtime/osa-e2e/2026-10-05T15-32-37.854Z
 exit code: 0
 EXIT_CODE=0

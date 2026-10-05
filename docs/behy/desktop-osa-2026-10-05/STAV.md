@@ -68,3 +68,12 @@
 - Opraveny skutečné regrese: chybové hlášení retry zůstává viditelné i po vyprázdnění fronty; dlouhé stránky mají posouvání uvnitř dostupné plochy panelu (`2d26ba7`).
 - ⚠️ Automatické review odmítlo dávku změn geometrických testů jako možné oslabení měřidla. Dávka se neprovedla; probíhá návrh rovnocenného měření skutečné F kompozice. Žádné skipy ani baseline nepřidané.
 - 🟡 Izolovaná syntetická auth/transport fixtura je pouze samostatný testovací entrypoint mimo produkční balení. Nečte skutečný účet ani klíčenku, zakazuje externí síť i upload. Ověření ukazatelem a Save/Discard/Stay ještě probíhá.
+
+### Závěrečný checkpoint — implementace a automatizovaná akceptace
+
+- 🧪 Implementační commit `56800d3`: čisté `gates:clean` exit 0, kompletní F akceptace všech 10 PASS / exit 0. Celá sada 1711 kontrol: 1708 PASS, 0 FAIL, 3 původní skipy. Původní golden PNG, bezpečnostní podmínky a počty testů zachované.
+- 🧪 Skutečný Electron 24 situací × 3 témata, všech 72 snímků; závěrečný běh `2026-10-05T15-32-52.179Z`. Středy historie měřené do 1 px, Save/Discard/Stay přes skutečný CAS, firma po skutečném restartu i výchozí firemní přístup nové nahrávky. Syntetická identita/transport, žádný skutečný server ani upload.
+- 🧪 Audit lockfile 0 známých nálezů; encoder arm64/x64 ověřen. Nezávislé auth/IPC/queue review bez zbývajících P1/P2. Doslovné výpisy v `dukazy/desktop-osa-2026-10-05/`, staré neúspěšné checkpointy zachované odděleně.
+- 🧪 GitHub CI nad `7275bdc` PASS (běh `37332103081`); poslední oprava geometrie navíc prošla čistým klonem. Finální push a CI budou potvrzené následným checkpointem.
+- 🟡 Draft PR [#160](https://github.com/Make-more-s-r-o/ludone-desktop/pull/160) připravený k review. Verze 0.1.8 a existující podpisový/notarizační workflow připravené, bez použití podpisových tajemství.
+- ⛔ Zbývá pouze výslovně uvedená [fyzická Mac přejímka](MAC-PREJIMKA.md): ui-smoke/audio-smoke, skutečný poslech a oprávnění, server/upload/expirace/offline souběhy, nativní select/dialogy, lišta a více monitorů. Finální podpis, tag, merge, vydání a produkční instalace vyžadují další pokyn; neprovedené.

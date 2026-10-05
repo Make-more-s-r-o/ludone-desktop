@@ -1,0 +1,78 @@
+
+DevTools listening on ws://127.0.0.1:54216/devtools/browser/7c1b87d5-1d37-4d8b-bf23-412036e6babf
+[tray] 2026-10-05T15:34:34.758Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[tray] 2026-10-05T15:34:34.866Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[queue] Obnova přeskočila neplatný nebo nedokončený manifest; soubory zůstaly beze změny.
+[queue] odesláno 0, konec: žádná položka není připravená
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'upload-companies:list': Error: Syntetická síť je offline
+    at fixtureFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/scripts/osa-auth-e2e-bootstrap.cjs:52:35)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:50:26)
+    at fetchOffer (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:2575:44)
+    at timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:34)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:39)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495)
+Error occurred in handler for 'auth:session-state': Error: IPC odmítnuto: aplikace se ukončuje
+    at /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:339:27
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:120511)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'queue:list': Error: IPC odmítnuto: aplikace se ukončuje
+    at /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/main.cjs:339:27
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:120511)
+    at Session.emit (node:events:514:28)

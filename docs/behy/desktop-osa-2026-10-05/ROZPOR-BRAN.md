@@ -1,3 +1,5 @@
+> Historický checkpoint. Závěrečné vyřešení po výslovném schválení F je v [aktuálním mapování](ROZPORY-BRAN.md).
+
 # Původní brány a F Osa
 
 ⚠️ F akceptace není výjimka ani nová baseline. Všechny původní testy, ESLint konfigurace, skipy a CI jsou beze změny. Redesign schválený Danem nepromíjí jejich selhání. PR zůstává draft pro review; merge a vydání vyžadují vyřešení tohoto přechodu.
