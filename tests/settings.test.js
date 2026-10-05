@@ -349,8 +349,8 @@ describe("pět částí Nastavení", () => {
       expect(tabs.map((tab) => tab.textContent.trim())).toEqual([
         "Účet",
         "Zvuk",
-        "Ukládání",
         "Zařízení",
+        "Ukládání",
         "Diagnostika",
       ]);
       expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual([
