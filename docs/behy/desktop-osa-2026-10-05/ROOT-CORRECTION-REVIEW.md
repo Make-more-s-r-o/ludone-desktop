@@ -31,8 +31,10 @@ uzavřeno čtecím review a doloženými automatizovanými kontrolami.
   updater guardy zůstávají; test splice vyžaduje jejich přesnou shodu a je
   pouze v izolovaném test entrypointu. CAS, vlastnictví a idempotence se
   produkčním diffem nemění. Nevznikl nový skip ani baseline.
-- Dependency diff nepřibyl; archivovaný audit celého lockfile uvádí nula
-  nálezů. Review neprovedlo nové síťové auditování registru.
+- Dependency diff nepřibyl. Root navíc provedl aktuální síťový audit celého
+  lockfile: nula nálezů, exit 0; doslovný JSON a příkaz jsou v
+  `dukazy/desktop-osa-2026-10-05/root-p2-review/`. GitHub při pushi upozornil
+  na 12 nálezů výchozí větve; tento údaj není nález opraveného lockfile PR.
 - Root ověřil přes GitHub run `37364309970`, job `111945764820`, přesný head
   `51bfd101f6a87186e8a973813f30832bd769b5d9`: stav `queued`, nikoli SUCCESS.
 

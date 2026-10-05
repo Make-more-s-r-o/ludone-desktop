@@ -1,0 +1,2 @@
+COMMAND: npm audit --package-lock-only --json
+EXIT_CODE=0
