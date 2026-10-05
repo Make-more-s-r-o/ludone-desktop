@@ -221,6 +221,8 @@ Dan požádal o další dva kreativnější návrhy od Sonnetu 5.5, konkrétní 
 
 ## Vybraný směr F — 5. 10. 2026
 
+**Navazující schválení a start:** Dan po posouzení poslední podoby ikon výslovně napsal „ok, schvaluju, můžeš to pustit ty? nebo ne musím já?“ Celá F i poslední ikony jsou schválené k implementaci. Vývoj byl spuštěn na dev-ludone Macu mini v izolované `feat/desktop-osa`, na Sol 6.1 s nízkým effortem. [Dohledatelný záznam](docs/changes/desktop-complete-designs-2026-10-01/REMOTE-START.md). Následující odstavce zachovávají stav před tímto souhlasem; neblokují schválenou implementaci. Finální publikace čeká na review skutečného výsledku a výslovný pokyn pro vydání.
+
 Dan upřesnil hlavně **systémové ikony horní lišty**. [Konečné rozpracování k posouzení](docs/changes/desktop-complete-designs-2026-10-01/F-TRAY-KONTRAKT.md) zachovává originální značku a odděluje nahrávání, ukládání, rozhodnutí, frontu a omezení. Aktivní místní záznam nepřekryje síť ani přihlášení. Připravit předání na **dev-ludone Mac mini**, nikoli spustit produkční vývoj; [samostatné zadání](docs/changes/desktop-complete-designs-2026-10-01/IMPLEMENTACE-F.md) a prompt jsou uložené.
 
 

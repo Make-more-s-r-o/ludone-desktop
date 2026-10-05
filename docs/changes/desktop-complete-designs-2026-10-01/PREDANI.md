@@ -1,5 +1,7 @@
 # Předání na dev-ludone Mac mini
 
+**Navazující start 5. 10. 2026:** Dan výslovně schválil celou F i poslední ikony a požádal o zahájení. Vývoj již běží na dev-ludone v oddělené `feat/desktop-osa`; [záznam skutečného spuštění](REMOTE-START.md). Níže uložená příprava a čekání na pokyn popisují předchozí checkpoint, nikoli dnešní blokátor. Produkční aplikace a release zůstávají samostatným budoucím ověřením.
+
 5. 10. 2026. Doporučený další běh: **dev-ludone Mac mini**, nikoli zasedačkový `macmini`. Vývoj používá skutečné macOS; cloud může sloužit pro omezený renderer/unit test experiment a review. Finální tray, oprávnění, oba zvukové kanály a balíček musí ověřit Mac.
 
 ## Ověřená připravenost

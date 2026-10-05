@@ -1,6 +1,8 @@
 # Sedm kompletních návrhů LuDone Desktop z horní lišty
 
-**5. 10. 2026 — aktuální:** Dan vybral **F Osa** a upřesnil hlavně ikony **horní systémové lišty**. [Nový přehled deseti stavů](design/f-tray.html), [kontrakt](F-TRAY-KONTRAKT.md), [celé implementační zadání](IMPLEMENTACE-F.md) a [předání s promptem pro Mac mini](PREDANI.md) jsou připravené. Čtecí remote preflight prošel; vývoj ještě není zahájený.
+**5. 10. 2026 — schváleno a spuštěno:** Dan schválil celou F Osa i poslední menu bar ikony a pověřil Codex spuštěním. ✅ Vzdálený vývoj na dev-ludone Macu mini skutečně zahájen; 🟡 implementace pokračuje na `feat/desktop-osa`, Sol 6.1 low. [Záznam startu](REMOTE-START.md). Následující přípravné checkpointy jsou historické; produkční implementace a nové vydání ještě nejsou ověřené.
+
+**5. 10. 2026 — přípravný checkpoint před schválením:** Dan vybral **F Osa** a upřesnil hlavně ikony **horní systémové lišty**. [Nový přehled deseti stavů](design/f-tray.html), [kontrakt](F-TRAY-KONTRAKT.md), [celé implementační zadání](IMPLEMENTACE-F.md) a [předání s promptem pro Mac mini](PREDANI.md) byly připravené. Čtecí remote preflight prošel; v tomto checkpointu vývoj ještě nebyl zahájený.
 
 **Předchozí ikonový průchod 5. 10. 2026:** Dan vybral **F Osa**, ikony ještě rozpracovat. [Upravená F](design/viewer.html?variant=f&preview=icons-20261005), [přehled ikon](design/f-icons.html) a [rozsah revize](F-IKONY.md). Kompozice je od Sonnetu, ikonová vrstva od Codexu; původní podoba a ostatní návrhy jsou zachované. 🟡 Ikony čekají na posouzení. Produkce ani vydání se v této etapě nemění; starší výběrové checkpointy níže jsou historické.
 
