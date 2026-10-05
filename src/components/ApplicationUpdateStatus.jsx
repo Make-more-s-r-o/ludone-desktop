@@ -82,7 +82,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
   ) return null;
 
   return (
-    <div className={`application-update-status${showDetails ? " application-update-status--detail" : ""}`}>
+    <div className={`application-update-status${!showVersion ? " application-update-status--compact" : ""}${showDetails ? " application-update-status--detail" : ""}`}>
       {showDetails && <div className="application-update-detail__summary">
         <LuDoneMark size={30} />
         <div><strong>LuDone Desktop{(downloadedVersion || availableVersion) && ` · ${downloadedVersion || availableVersion}`}</strong>

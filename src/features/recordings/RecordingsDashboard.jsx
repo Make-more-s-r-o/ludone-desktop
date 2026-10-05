@@ -1,3 +1,4 @@
+import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { selectOsaRecordings, osaRecordingStatus, osaRecordingNode } from "../../lib/osa-recordings.js";
 import { OsaHistoryControls, OsaStations } from "../../components/osa/index.js";
 import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
@@ -644,19 +645,19 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                       const response = await window.ludone.playRecording({ id: item.id, queueRev: item.revision, fileRev: item.fileRevision });
                       if (active.current && /^ludone:\/\/app\/media\/[0-9a-f-]{36}$/u.test(response?.url)) setPlayback({ id: item.id, url: response.url, label: response.label });
                     } catch { setVerificationErrorById((current) => ({ ...current, [item.id]: "Zvuk se nepodařilo otevřít. Obnov přehled a zkus to znovu." })); }
-                  }}>Přehrát dostupný zvuk</button>}
+                  }}><OsaIcon name="play" size={17} /> Přehrát dostupný zvuk</button>}
                   {playback?.id === item.id && <audio controls autoPlay src={playback.url} aria-label={playback.label || "Přehrávání místní nahrávky"} onError={() => setVerificationErrorById((current) => ({ ...current, [item.id]: "Zvuk už není dostupný; obnov přehled." }))} />}
                 {item.fileRevision && item.localState !== "invalid-manifest" && (
                   <button type="button" className="button button--small recording-action--reveal"
                     disabled={item.recordingInProgress || actingId !== null}
-                    onClick={() => void runAction(item, "revealRecording")}>Ukázat ve Finderu</button>
+                    onClick={() => void runAction(item, "revealRecording")}><OsaIcon name="folder" size={17} /> Ukázat ve Finderu</button>
                 )}
                 {item.canDelete && (
                   <button type="button" className="button button--small recording-action--delete"
                     disabled={item.recordingInProgress || actingId !== null}
-                    onClick={() => void runAction(item, "deleteRecording")}>Přesunout do koše</button>
+                    onClick={() => void runAction(item, "deleteRecording")}><OsaIcon name="trash" size={17} /> Přesunout do koše</button>
                 )}
-</> }} server={{ status: verified ? "Dokončeno · ověřeno" : deliveryStateLabel(item), verified: Boolean(verified), description: "Přepis a analýza jsou na webu", actions: <>                {claimable && (
+</> }} server={{ status: verified ? "Dokončeno · ověřeno" : deliveryStateLabel(item), verified: Boolean(verified), error: Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]).join(" · ") : "Přepis a analýza jsou na webu", actions: <>                {claimable && (
                   <button
                     type="button"
                     className="button button--small recording-action--claim"
@@ -678,9 +679,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   </button>
                 )}
                 {item.canSend && (
-                  <button type="button" className="button button--small recording-action--send"
+                  <button type="button" className="button button--primary recording-action--send"
                     disabled={item.recordingInProgress || authState !== "signed-in" || actingId !== null || preferencesById[item.id]?.dirty || preferenceFailedById[item.id]}
-                    onClick={() => void runAction(item, "sendRecording")}>Uložit a odeslat</button>
+                    onClick={() => void runAction(item, "sendRecording")}><OsaIcon name="cloud" size={17} /> Uložit a odeslat</button>
                 )}
                 {item.canRetry && (
                   <button type="button" className="button button--small recording-action--retry"

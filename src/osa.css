@@ -112,3 +112,25 @@ html[data-theme=dark]:has(.osa-shell){--osa-surface:#161d1b;--osa-alt:#1d2624;--
 .osa-shell .settings-window[data-page] .recordings-dashboard__list{padding:0 0 0 30px}.osa-shell .settings-window[data-page] .recordings-dashboard__list:before{left:6px;top:22px;bottom:0}.osa-shell--detail .settings-window[data-page] .recordings-dashboard__list{padding:0}
 .osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-timeline__entry{padding-left:0}.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-timeline__entry:before{left:-28px}
 .osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-timeline__entry:before{box-sizing:border-box;transform:none}.osa-shell .recordings-day__heading:before{box-sizing:border-box;left:-31px}
+
+/* Bezpečný Stop musí zůstat čitelný i při ztrátě zdroje. */
+.osa-shell .recording-outage__stop:not(:disabled){background:var(--osa-rec);color:#fff;border:1px solid var(--osa-rec);font-weight:650}
+.osa-shell .recording-outage__stop:not(:disabled):hover{background:#8e2632;color:#fff}
+.osa-shell .osa-destination:disabled{opacity:1;cursor:default;color:var(--osa-muted)}
+.osa-shell--detail .recording-queue-card__detail>.recording-upload-preferences{order:2}
+.osa-shell--detail .recording-queue-card__storage{order:4;padding:8px 0;border:0;background:none}
+.osa-shell--detail .recording-queue-card__storage dl{display:grid;grid-template-columns:100px minmax(0,1fr);gap:2px 8px;margin:4px 0}
+.osa-shell--detail .recording-queue-card__storage h2{font-size:15px}
+.osa-shell--detail .recording-upload-preferences{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 12px;padding:0}
+.osa-shell--detail .recording-upload-preferences>p{grid-column:1/-1;margin:0;font-size:12px}
+.osa-shell--detail .recording-upload-preferences label{gap:3px}.osa-shell--detail .recording-upload-preferences select{min-height:32px}
+.osa-shell--detail .recording-queue-card__verification{order:2;margin:0;padding:6px;border-left:2px solid var(--osa-accent)}
+.osa-shell .osa-station__actions .recording-action--send:not(:disabled){background:var(--osa-accent);border-color:var(--osa-accent);color:#fff;font-weight:650}
+.osa-shell .osa-station__actions .recording-action--delete:not(:disabled){color:#a22c3a;border-color:#a22c3a;background:var(--osa-surface)}
+html[data-theme=dark] .osa-shell .osa-station__actions .recording-action--delete:not(:disabled){color:#ff98a5;border-color:#ff98a5}
+.osa-shell--detail .recording-upload-preferences>label:nth-of-type(1){grid-column:1;grid-row:1}.osa-shell--detail .recording-upload-preferences>select:nth-of-type(1){grid-column:1;grid-row:2}.osa-shell--detail .recording-upload-preferences>label:nth-of-type(2){grid-column:2;grid-row:1}.osa-shell--detail .recording-upload-preferences>select:nth-of-type(2){grid-column:2;grid-row:2}.osa-shell--detail .recording-upload-preferences>small{grid-column:1/-1;font-size:12px}
+
+.osa-shell .recording-outage__stop:not(:disabled){background:#9d2635;border-color:#9d2635;color:#fff}
+.osa-shell--detail .application-update-status{display:none}
+.osa-shell .application-update-status--compact .feature-card{padding:6px 8px;min-height:0}.osa-shell .application-update-status--compact .idle-feature-row__copy>small,.osa-shell .application-update-status--compact .application-update-detail__open{display:none}.osa-shell .application-update-status--compact .application-update-status__actions{display:flex;margin-top:4px}.osa-shell .application-update-status--compact .idle-feature-row__action{width:auto;min-height:28px;height:auto;padding:4px 10px;font-size:12px}
+html[data-theme=dark] .osa-shell .osa-station__actions .recording-action--send:not(:disabled){color:#102821}

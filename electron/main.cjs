@@ -3285,6 +3285,20 @@ handleValidated("recordings:play", ["panel", "settings"], async (event, payload,
   playbackOffers.set(token, { event, payload: { ...payload }, expiresAt: Date.now() + 60 * 60 * 1000 });
   return { url: `ludone://app/media/${token}`, label: row.label };
 });
+// Pouze pevná lokální složka; renderer neposílá cestu ani oprávnění.
+handleValidated("recordings:folder", ["panel", "settings"], (_event, ...extraPayload) => {
+  requireNoPayload("recordings:folder", extraPayload);
+  const directory = path.join(app.getPath("userData"), "nahravky");
+  fs.mkdirSync(directory, { recursive: true });
+  const stat = fs.lstatSync(directory);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("Složka nahrávek není bezpečně dostupná");
+  shell.showItemInFolder(directory);
+  return { outcome: "shown" };
+});
+handleValidated("settings:shortcuts", ["panel", "settings"], (_event, ...extraPayload) => {
+  requireNoPayload("settings:shortcuts", extraPayload);
+  return [...prijateZkratky].map(([action, accelerator]) => ({ action, accelerator }));
+});
 handleValidated("recordings:reveal", ["panel", "settings"], async (event, payload, ...extraPayload) => {
   if (extraPayload.length > 0 || !validRecordingFileActionPayload(payload)) {
     throw new TypeError("Kanál recordings:reveal očekává GUID a platné revize");

@@ -1455,11 +1455,12 @@ describe("schválený klidový panel", () => {
     const panel = await renderInteractivePanel(vi.fn().mockResolvedValue([]), {
       ludone: { hasAuthSession: vi.fn().mockResolvedValue(true), setPanelContentHeight },
     });
-    const scrollContainer = panel.document.querySelector(".osa-content");
+    const scrollContainer = panel.document.querySelector(".osa-workspace");
 
     try {
       await React.act(async () => Promise.resolve());
       expect(setPanelContentHeight).toHaveBeenCalledExactlyOnceWith(660);
+      expect(panel.document.defaultView.getComputedStyle(scrollContainer).overflowY).toMatch(/auto|scroll/);
       scrollContainer.scrollTop = 37;
       panel.document.querySelector(".osa-lutrack").setAttribute("data-measurement", "same-size");
       await React.act(async () => Promise.resolve());

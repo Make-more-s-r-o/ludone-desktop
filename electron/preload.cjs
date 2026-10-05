@@ -341,6 +341,8 @@ contextBridge.exposeInMainWorld("ludone", {
   retryRecording: (value) => ipcRenderer.invoke("recordings:retry", requireRecordingAction(value, true)),
   deleteRecording: (value) => ipcRenderer.invoke("recordings:delete", requireRecordingAction(value)),
   playRecording: (value) => ipcRenderer.invoke("recordings:play", requireRecordingAction(value)),
+  showRecordingsFolder: () => ipcRenderer.invoke("recordings:folder"),
+  getShortcuts: () => ipcRenderer.invoke("settings:shortcuts"),
   revealRecording: (value) => ipcRenderer.invoke("recordings:reveal", requireRecordingAction(value)),
   verifyRecording: (clientRecordingId, expectedRevision) => {
     requireRecordingReference(clientRecordingId, expectedRevision);

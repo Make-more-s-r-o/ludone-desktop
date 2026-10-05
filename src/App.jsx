@@ -312,9 +312,9 @@ export function App() {
           <RecordingCard ref={recordingCardRef} canSend={panelActionsAvailable}
             onActivityChange={handleRecordingChange}
             onOpenSources={() => { setSettingsTab("audio"); navigate("settings"); }} trayCommand={trayCommand} />
-          {!recording.active && !recording.pendingSave && <>
+          {!recording.pendingSave && <>
             {queueSnapshot.unavailable && <p className="osa-queue-unavailable" role="status">Stav fronty není dostupný. Počet čekajících položek nelze ověřit.</p>}
-            <OsaDestination identity={panelActionsAvailable ? (user?.email || "valid-session") : null} onOpenAccount={() => { setSettingsTab("account"); navigate("settings"); }} />
+            <OsaDestination identity={panelActionsAvailable ? (user?.email || "valid-session") : null} readOnly={recording.active} onOpenAccount={() => { setSettingsTab("account"); navigate("settings"); }} />
             <RecordingDayPreview items={queueSnapshot.items} unavailable={queueSnapshot.unavailable} onOpenDay={() => navigate("library")} />
             <p className="osa-lutrack" aria-disabled="true">LuTrack <small>Připravujeme</small></p>
           </>}
@@ -330,7 +330,7 @@ export function App() {
         {shellPage === "library" && <SettingsApp embedded initialSection="day" />}
         {shellPage === "settings" && <>
           {sessionExists === false && <button type="button" className="button" onClick={() => setAuthRequested(true)}>Přihlásit se</button>}
-          <SettingsApp key={settingsTab} embedded initialSection={settingsTab} />
+          <SettingsApp onNavigate={navigate} key={settingsTab} embedded initialSection={settingsTab} />
         </>}
         {shellPage === "updates" && <p>Před instalací aktualizace bezpečně dokončíme nahrávání i uložení.</p>}
         {recording.pendingSave && page !== "home" && <button type="button" className="button button--primary" onClick={() => navigate("home")}>Dokončit uložení</button>}

@@ -362,6 +362,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       // D9: výslovná konfigurace jedné nahrávky; přesný CAS/payload měří queue-wiring.
       "recordings:configure-upload",
       "recordings:delete",
+      "recordings:folder",
       "recordings:list-local",
       "recordings:open-detail",
       "recordings:play",
@@ -380,6 +381,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "settings:set-dock-visible",
       "settings:set-open-at-login",
       "settings:set-upload-enabled",
+      "settings:shortcuts",
       "test:capture-window",
       "test:click-tray",
       "test:quit",
