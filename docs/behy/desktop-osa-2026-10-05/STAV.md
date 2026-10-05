@@ -60,3 +60,11 @@
 - 🧪 26 cílených kontrol detail guardu, uzlů/badge a původních tray PNG PASS, exit 0 (`osa-detail-and-png.txt`).
 - 🧪 Electron E2E po změně historie a skutečném React playbacku PASS, exit 0 (`osa-e2e-history.txt`). Syntetická cesta není fyzický poslech.
 - 🟡 Otázka na rovnocenný přechod vizuálních a oprávněných rolových očekávání staré Astra brány je předložena člověku dle IMPLEMENTACE-F.md. Implementace pokračuje v nezávislých částech; kompletní matice 24×3 dosud není splněna.
+
+### Checkpoint — výslovná migrace F a CI runtime
+
+- Dan výslovně odpověděl „Schvaluji rovnocenný přechod na F“ na konkrétní nahrazení Astra rozměrů, rolí a priority. Kontroly cizích oken/rámců, identity, revizí a fronty i počty původních testů zůstávají závazné.
+- 🧪 Převzat koordinovaný root commit `995626f`: oficiální Node 24.19.0, čisté npm ci, lint, typecheck a původní PNG prošly také v CI. Celá sada tohoto checkpointu stále 111 FAIL; nejde o kompletní zelenou bránu. Doslovné důkazy v `ROOT-CI-REVIEW.md` a `root-ci-runtime/`.
+- Opraveny skutečné regrese: chybové hlášení retry zůstává viditelné i po vyprázdnění fronty; dlouhé stránky mají posouvání uvnitř dostupné plochy panelu (`2d26ba7`).
+- ⚠️ Automatické review odmítlo dávku změn geometrických testů jako možné oslabení měřidla. Dávka se neprovedla; probíhá návrh rovnocenného měření skutečné F kompozice. Žádné skipy ani baseline nepřidané.
+- 🟡 Izolovaná syntetická auth/transport fixtura je pouze samostatný testovací entrypoint mimo produkční balení. Nečte skutečný účet ani klíčenku, zakazuje externí síť i upload. Ověření ukazatelem a Save/Discard/Stay ještě probíhá.

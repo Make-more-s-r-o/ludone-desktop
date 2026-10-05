@@ -1004,6 +1004,13 @@ function loadTraySpaceWarningPreload(invokeResult = true) {
   return { api: exposedApi, exposedName, invoke };
 }
 
+function createForeignEvent(harness) {
+  // Stejný původ nestačí: cizí BrowserWindow není vlastněný panel ani detail.
+  const window = new harness.electron.BrowserWindow({});
+  window.loadFile(path.join(process.cwd(), "dist/index.html"), { hash: "settings" });
+  return { sender: window.webContents, senderFrame: window.webContents.mainFrame };
+}
+
 function openSettingsAndCreateEvent(harness, initialTab) {
   const panelContents = harness.windows[0].webContents;
   const panelEvent = { sender: panelContents, senderFrame: panelContents.mainFrame };
@@ -1068,17 +1075,15 @@ describe("zobrazení přehledu nahrávek z hlavního panelu", () => {
 
     openSettings(panelEvent, "recordingQueue");
 
-    const settings = harness.windows[1];
-    expect(settings.getSize()).toEqual([640, 744]);
-    expect(settings.loadCalls.at(-1).options).toEqual({
-      hash: "settings",
-      query: { settingsTab: "recordingQueue" },
-    });
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(panel.getSize()[0]).toBe(420);
+    expect(panel.webContents.send).toHaveBeenCalledWith("settings:select-tab", "recordingQueue");
+    expect(harness.windows).toHaveLength(1);
+    const callsBeforeInvalid = panel.webContents.send.mock.calls.length;
+    openSettings(panelEvent, "unknown");
+    expect(panel.webContents.send).toHaveBeenCalledTimes(callsBeforeInvalid);
     openSettings(panelEvent, "diagnostics");
-    consoleError.mockRestore();
-    expect(settings.loadCalls).toHaveLength(1);
-    expect(harness.windows).toHaveLength(2);
+    expect(panel.webContents.send).toHaveBeenLastCalledWith("settings:select-tab", "diagnostics");
+    expect(harness.windows).toHaveLength(1);
   });
 
   it("otevře nastavení zvukových zdrojů přímo na odpovídající záložce", async () => {
@@ -1089,22 +1094,20 @@ describe("zobrazení přehledu nahrávek z hlavního panelu", () => {
 
     harness.ipcListeners.get("settings:open")(panelEvent, "audio");
 
-    expect(harness.windows[1].loadCalls.at(-1).options).toEqual({
-      hash: "settings",
-      query: { settingsTab: "audio" },
-    });
+    expect(panel.webContents.send).toHaveBeenCalledWith("settings:select-tab", "audio");
+    expect(harness.windows).toHaveLength(1);
   });
 
   it("otevře Můj den a návrat do Teď povolí pouze ověřenému oknu Nastavení", async () => {
     const harness = await loadMain();
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness, "day");
+    const { settingsEvent } = openSettingsAndCreateEvent(harness, "day");
     const settings = harness.windows[1];
     const panel = harness.windows[0];
 
     expect(settings.loadCalls.at(-1).options).toEqual({
       hash: "settings",
-      query: { settingsTab: "day" },
+      query: { recordingId: "40000000-0000-4000-8000-000000000001" },
     });
 
     const returnToPanel = harness.ipcListeners.get("settings:return-to-panel");
@@ -1113,7 +1116,7 @@ describe("zobrazení přehledu nahrávek z hlavního panelu", () => {
     returnToPanel(settingsEvent, "unexpected");
     expect(panel.isVisible()).toBe(false);
     expect(settings.isDestroyed()).toBe(false);
-    returnToPanel(panelEvent);
+    returnToPanel(createForeignEvent(harness));
     expect(panel.isVisible()).toBe(false);
     expect(settings.isDestroyed()).toBe(false);
 
@@ -1129,10 +1132,11 @@ describe("zobrazení přehledu nahrávek z hlavního panelu", () => {
     const { panelEvent } = openSettingsAndCreateEvent(harness, "recordingQueue");
     const settings = harness.windows[1];
     settings.webContents.send.mockClear();
+    harness.windows[0].webContents.send.mockClear();
 
     harness.ipcListeners.get("settings:open")(panelEvent, "account");
 
-    expect(settings.webContents.send).toHaveBeenCalledExactlyOnceWith("settings:select-tab", "account");
+    expect(harness.windows[0].webContents.send).toHaveBeenCalledExactlyOnceWith("settings:select-tab", "account");
     expect(harness.windows).toHaveLength(2);
   });
 
@@ -1739,12 +1743,12 @@ describe("uložený vypínač odesílání v hlavním procesu", () => {
   it("IPC odmítne cizí okno, podřízený rám, neplatný boolean i argumenty navíc", async () => {
     const harness = await loadMain();
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
 
     for (const { suffix } of switches) {
       const get = harness.ipcHandlers.get(`settings:get-${suffix}`);
       const set = harness.ipcHandlers.get(`settings:set-${suffix}`);
-      for (const event of [panelEvent, { ...settingsEvent, senderFrame: {} }]) {
+      for (const event of [createForeignEvent(harness), { ...settingsEvent, senderFrame: {} }]) {
         expect(() => get(event)).toThrow(/nedůvěryhodný odesílatel/u);
         expect(() => set(event, true)).toThrow(/nedůvěryhodný odesílatel/u);
       }
@@ -2077,8 +2081,8 @@ describe("zjištění uložené OAuth session", () => {
         expect(dom.window.document.querySelector('[data-testid="settings-account-status"]')?.textContent)
           .toBe("Přihlášení vypršelo");
       });
-      expect(dom.window.document.querySelector('[data-testid="auth-error-action"]')?.textContent)
-        .toBe("Přihlásit se znovu");
+      expect(dom.window.document.querySelector('#panel .osa-shell [role="status"] button')?.textContent)
+        .toBe("Přihlásit se");
       expect(dom.window.document.querySelector(".connected")).toBeNull();
       expect(dom.window.document.body.textContent).not.toContain("TESTOVACI");
       expect(await readFile(tokenPath)).toEqual(blob);
@@ -2311,10 +2315,10 @@ describe("zjištění uložené OAuth session", () => {
       createLogoutController: vi.fn(() => ({ logout })),
     });
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const switchOrigin = harness.ipcHandlers.get("auth:switch-origin");
 
-    expect(() => switchOrigin(panelEvent, "https://labs.ludone.cz"))
+    expect(() => switchOrigin(createForeignEvent(harness), "https://labs.ludone.cz"))
       .toThrow(/nedůvěryhodný odesílatel/u);
     await expect(switchOrigin(settingsEvent, "https://utocnik.example"))
       .rejects.toThrow(/známý origin|prostředí/u);
@@ -2512,7 +2516,7 @@ describe("zjištění uložené OAuth session", () => {
   it("kanál identity vrátí nastavení jen jméno a e-mail z platné šifrované session", async () => {
     const harness = await loadMain();
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const identity = harness.ipcHandlers.get("auth:identity");
     const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
     await mkdir(path.dirname(tokenPath), { recursive: true });
@@ -2528,7 +2532,7 @@ describe("zjištění uložené OAuth session", () => {
     const response = await identity(settingsEvent);
     expect(Object.keys(response).sort()).toEqual(["email", "name"]);
     expect(JSON.stringify(response)).not.toMatch(/TAJNY|accessToken|refreshToken|clientId/u);
-    expect(() => identity(panelEvent)).toThrow(/nedůvěryhodný odesílatel/);
+    expect(() => identity(createForeignEvent(harness))).toThrow(/nedůvěryhodný odesílatel/);
   });
 
   it("kanál identity rozliší chybějící session, chybějící jméno a nečitelnou identitu", async () => {
@@ -2583,7 +2587,7 @@ describe("zjištění uložené OAuth session", () => {
   it("origin vrací validovanou konfiguraci a identitu nespojí se session jiného originu", async () => {
     const harness = await loadMain({ env: { LUDONE_ORIGIN: "https://labs.ludone.cz" } });
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const identity = harness.ipcHandlers.get("auth:identity");
     const origin = harness.ipcHandlers.get("auth:origin");
     const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
@@ -2595,7 +2599,7 @@ describe("zjištění uložené OAuth session", () => {
     expect(origin).toBeTypeOf("function");
     expect(origin(settingsEvent)).toBe("https://labs.ludone.cz");
     await expect(identity(settingsEvent)).resolves.toBeNull();
-    expect(() => origin(panelEvent)).toThrow(/nedůvěryhodný odesílatel/);
+    expect(() => origin(createForeignEvent(harness))).toThrow(/nedůvěryhodný odesílatel/);
   });
 
   it("uložené labs přežije restart hlavního procesu", async () => {
@@ -2642,11 +2646,11 @@ describe("zjištění uložené OAuth session", () => {
   it("kanál změny prostředí přijme jen okno settings", async () => {
     const harness = await loadMain();
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const setOrigin = harness.ipcHandlers.get("auth:set-origin");
 
     expect(setOrigin).toBeTypeOf("function");
-    expect(() => setOrigin(panelEvent, "https://labs.ludone.cz"))
+    expect(() => setOrigin(createForeignEvent(harness), "https://labs.ludone.cz"))
       .toThrow(/nedůvěryhodný odesílatel/u);
     await expect(setOrigin(settingsEvent, "https://labs.ludone.cz"))
       .resolves.toBe("https://labs.ludone.cz");
@@ -3108,8 +3112,8 @@ describe("výška panelu podle obsahu", () => {
     const appliedHeight = await resize(event, 40);
 
     expect(appliedHeight).toBe(180);
-    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(400, 180, false);
-    expect(panel.getSize()).toEqual([400, 180]);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(420, 180, false);
+    expect(panel.getSize()).toEqual([420, 180]);
   });
 
   it("výšku nad monitorem ořízne pod spodní hranu pracovní plochy", async () => {
@@ -3122,7 +3126,7 @@ describe("výška panelu podle obsahu", () => {
     const bounds = panel.getBounds();
 
     expect(appliedHeight).toBe(584);
-    expect(bounds).toEqual({ x: 8, y: 32, width: 400, height: 584 });
+    expect(bounds).toEqual({ x: 8, y: 32, width: 420, height: 584 });
     expect(bounds.y + bounds.height).toBe(616);
   });
 
@@ -3131,7 +3135,7 @@ describe("výška panelu podle obsahu", () => {
 
     await resize(event, 320);
 
-    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(400, 320, false);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(420, 320, false);
     expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
     expect(panel.setSize.mock.invocationCallOrder[0])
       .toBeLessThan(panel.setPosition.mock.invocationCallOrder[0]);
@@ -3149,7 +3153,7 @@ describe("výška panelu podle obsahu", () => {
     harness.electron.screen.getDisplayMatching.mockReturnValue(lowDisplay);
     harness.electron.screen.emit("display-metrics-changed");
 
-    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(400, 366, false);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(420, 366, false);
     expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
     expect(panel.setSize.mock.invocationCallOrder[0])
       .toBeLessThan(panel.setPosition.mock.invocationCallOrder[0]);
@@ -3159,7 +3163,7 @@ describe("výška panelu podle obsahu", () => {
     harness.electron.screen.getDisplayMatching.mockReturnValue(highDisplay);
     harness.electron.screen.emit("display-metrics-changed");
 
-    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(400, 700, false);
+    expect(panel.setSize).toHaveBeenCalledExactlyOnceWith(420, 700, false);
     expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(8, 26, false);
   });
 
@@ -3226,9 +3230,9 @@ describe("šablonové ikony v liště", () => {
   });
 
   it.each([
-    ["tracking", false, true, false],
+    ["idle", false, true, false],
     ["recording", true, false, false],
-    ["recording-tracking", true, true, false],
+    ["recording", true, true, false],
     ["recording-audio-lost", true, false, true],
     ["recording-microphone-only", true, false, false],
   ])("aktivní stav %s použije šablonu se stejnými bajty v obou motivech", async (
@@ -3251,8 +3255,8 @@ describe("šablonové ikony v liště", () => {
     expect(harness.ipcHandlers.get("tray:get-state")(event)).toBe(state);
     const activeImage = tray.setImage.mock.calls.at(-1)?.[0];
     const callsAfterStart = tray.setImage.mock.calls.length;
-    const expectedBytes = readFileSync(path.join(mainDirectory, "ikony", `dark-${state}.png`));
-    const expectedRetinaBytes = readFileSync(path.join(mainDirectory, "ikony", `dark-${state}@2x.png`));
+    const expectedBytes = readFileSync(path.join(mainDirectory, "osa-ikony", `${state}.png`));
+    const expectedRetinaBytes = readFileSync(path.join(mainDirectory, "osa-ikony", `${state}@2x.png`));
 
     expect(activeImage.sourceBytes.equals(expectedBytes)).toBe(true);
     expect(activeImage.retinaBytes.equals(expectedRetinaBytes)).toBe(true);
@@ -3773,7 +3777,7 @@ describe("viditelnost ikony a klikání na lištu", () => {
 
     expect(panel.visible).toBe(true);
     expect(panel.focused).toBe(true);
-    expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(1_032, 26, false);
+    expect(panel.setPosition).toHaveBeenCalledExactlyOnceWith(1_012, 26, false);
     expect(tray.popUpContextMenu).not.toHaveBeenCalled();
   });
 });
@@ -3881,7 +3885,7 @@ describe("průběžný titulek lišty", () => {
     const recording = await harness.ipcHandlers.get("recording:begin")(event, ["microphone"]);
     try {
       expect(getTrayState(event)).toBe("recording-microphone-only");
-      expect(harness.trays[0].setToolTip).toHaveBeenLastCalledWith("LuDone · nahrává jen mikrofon");
+      expect(harness.trays[0].setToolTip).toHaveBeenLastCalledWith("LuDone · Nahrává se · jen mikrofon");
       reportFacts(event, { panelActionsAvailable: true, signedIn: true, systemAudioLost: true, tracking: false });
       expect(getTrayState(event)).not.toBe("recording-audio-lost");
       expect(getTrayState(event)).toBe("recording-microphone-only");
@@ -4258,7 +4262,7 @@ describe("produkční zapojení odchozí fronty", () => {
       })),
     });
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const verify = harness.ipcHandlers.get("recordings:verify");
     const openWeb = harness.ipcHandlers.get("recordings:open-web");
     await expect(verify(settingsEvent, id, revision)).resolves.toMatchObject({
@@ -4274,8 +4278,8 @@ describe("produkční zapojení odchozí fronty", () => {
     );
     await expect(Promise.resolve().then(() => verify(settingsEvent, id, revision, "navíc")))
       .rejects.toThrow(/GUID.*revizi/u);
-    expect(() => verify(panelEvent, id, revision)).toThrow(/nedůvěryhodný/u);
-    expect(() => openWeb(panelEvent, id, revision, "delivery")).toThrow(/nedůvěryhodný/u);
+    expect(() => verify(createForeignEvent(harness), id, revision)).toThrow(/nedůvěryhodný/u);
+    expect(() => openWeb(createForeignEvent(harness), id, revision, "delivery")).toThrow(/nedůvěryhodný/u);
   });
 
   it("pojmenování přes preload předá časování, GUID i název na přesné IPC kanály", async () => {
@@ -4325,9 +4329,9 @@ describe("produkční zapojení odchozí fronty", () => {
   });
 
   it("IPC fronty používá předepsané role odesílatele", () => {
-    expect(mainCode).toContain('handleValidated("queue:claim-recording", ["settings"]');
+    expect(mainCode).toContain('handleValidated("queue:claim-recording", ["panel", "settings"]');
     expect(mainCode).toContain('handleValidated("queue:list", ["panel", "settings"]');
-    expect(mainCode).toContain('handleValidated("recordings:list-local", ["settings"]');
+    expect(mainCode).toContain('handleValidated("recordings:list-local", ["panel", "settings"]');
     expect(mainCode).toContain('handleValidated("queue:retry", ["panel"]');
   });
 
@@ -4424,14 +4428,14 @@ describe("produkční zapojení odchozí fronty", () => {
       accessExpiresAt: Date.now() + 60_000,
     });
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const claim = harness.ipcHandlers.get("queue:claim-recording");
 
     await expect(claim(settingsEvent, id, revision)).resolves.toMatchObject({
       claimed: false,
       items: [candidateItem],
     });
-    expect(() => claim(panelEvent, id, revision)).toThrow(/nedůvěryhodný odesílatel/u);
+    expect(() => claim(createForeignEvent(harness), id, revision)).toThrow(/nedůvěryhodný odesílatel/u);
     expect(claimRecording).not.toHaveBeenCalled();
   });
 
@@ -4757,7 +4761,7 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(await harness.ipcHandlers.get("queue:list")(event)).toEqual([
       expect.objectContaining({ id: started.sessionId, state: "ceka" }),
     ]);
-    expect(getTrayState(event)).toBe("queue-waiting");
+    expect(getTrayState(event)).toBe("idle");
   });
 
   it("persistovanou čekající frontu ukáže už před dlouhou obnovou při startu", async () => {
@@ -4765,7 +4769,7 @@ describe("produkční zapojení odchozí fronty", () => {
       deletedFiles: [],
       deletedItems: [],
       errors: [],
-      keptItems: [{ state: "ceka" }],
+      keptItems: [{ state: "ceka", uploadIntent: "approved" }],
     }));
     const harness = await loadMain({
       applyRetention,
@@ -5621,9 +5625,9 @@ describe("produkční zapojení odchozí fronty", () => {
     });
 
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const listLocal = harness.ipcHandlers.get("recordings:list-local");
-    await expect(Promise.resolve().then(() => listLocal(panelEvent)))
+    await expect(Promise.resolve().then(() => listLocal(createForeignEvent(harness))))
       .rejects.toThrow(/nedůvěryhodný odesílatel/u);
     await expect(listLocal(settingsEvent)).resolves.toMatchObject({
       unreadableCount: 0,
@@ -8214,6 +8218,9 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     const panel = await mountUpdatePanel(harness, { onboardingComplete });
     try {
       const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+      if (onboardingComplete) {
+        await React.act(async () => { panel.document.querySelector('.osa-rail [data-page="updates"]').click(); });
+      }
       expect(panel.document.querySelector('[data-testid="application-version"]')?.textContent)
         .toBe(`Verze ${manifest.version}`);
       expect(panel.document.querySelector('[data-testid="update-available"]')).toBeNull();
@@ -8222,7 +8229,7 @@ describe("viditelnost automatických aktualizací v panelu", () => {
       expect(panel.document.querySelector('[data-testid="update-check-failed"]')).toBeNull();
       if (onboardingComplete) {
         expect(panel.document.querySelector('[data-testid="update-check-now"]'))
-          .toBeNull();
+          .not.toBeNull();
       }
     } finally {
       await panel.close();
@@ -8506,7 +8513,7 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     vi.stubGlobal("fetch", fetch);
     const harness = await loadMain();
     await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const session = { ...storedAuthSession(), accessExpiresAt: Date.now() + 600_000 };
     await writeStoredAuthSession(harness, session);
     const list = harness.ipcHandlers.get("upload-companies:list");
@@ -8538,7 +8545,7 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     }));
     await expect(list(settingsEvent)).rejects.toMatchObject({ code: "invalid_company_offer" });
 
-    expect(() => select(panelEvent, offer.offerToken, companyId)).toThrow(/nedůvěryhodný/u);
+    expect(() => select(createForeignEvent(harness), offer.offerToken, companyId)).toThrow(/nedůvěryhodný/u);
     expect(() => select({ ...settingsEvent, senderFrame: {} }, offer.offerToken, companyId))
       .toThrow(/nedůvěryhodný/u);
     await expect(select(settingsEvent, offer.offerToken, companyId, "navíc"))
@@ -8634,11 +8641,11 @@ describe("úzké IPC preferencí nahrávky", () => {
     const offer = await harness.ipcHandlers.get("upload-companies:list")(panelEvent);
     expect(offer.companies).toEqual([{ id: companyId, name: "Firma" }]);
     expect(JSON.stringify(offer)).not.toMatch(/accessToken|ownerFingerprint/u);
-    expect(() => harness.ipcHandlers.get("upload-companies:select")(panelEvent, offer.offerToken, companyId)).toThrow(/nedůvěryhodný/u);
+    expect(() => harness.ipcHandlers.get("upload-companies:select")(createForeignEvent(harness), offer.offerToken, companyId)).toThrow(/nedůvěryhodný/u);
     const configure = harness.ipcHandlers.get("recordings:configure-upload");
     const payload = { id: "9e586e55-d688-43f1-8a80-a3d61e754f3e", queueRev: `sha256:${"a".repeat(64)}`,
       fileRev: `sha256:${"b".repeat(64)}`, companyId, offerToken: offer.offerToken, visibility: "company" };
-    expect(() => configure(panelEvent, payload)).toThrow(/nedůvěryhodný/u);
+    expect(() => configure(createForeignEvent(harness), payload)).toThrow(/nedůvěryhodný/u);
     expect(() => configure({ ...settingsEvent, senderFrame: {} }, payload)).toThrow(/nedůvěryhodný/u);
     await expect(configure(settingsEvent, { ...payload, visibility: "public" })).rejects.toThrow(/preference/u);
     await expect(configure(settingsEvent, { ...payload, extra: true })).rejects.toThrow(/konfigurace/u);
@@ -8662,13 +8669,13 @@ describe("lokální uložený default firmy", () => {
   it("vrátí pouze uložený GUID ze scoped platné relace, bez sítě a jen Settings", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
     const harness = await loadMain(); await harness.runReady();
-    const { panelEvent, settingsEvent } = openSettingsAndCreateEvent(harness);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
     const get = harness.ipcHandlers.get("upload-companies:default");
     await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: Date.now() + 600_000 });
     await expect(get(settingsEvent)).resolves.toEqual({ companyId });
     expect(fetch).not.toHaveBeenCalled(); expect(harness.electron.net.fetch).not.toHaveBeenCalled();
-    expect(() => get(panelEvent)).toThrow(/nedůvěryhodný/u);
+    expect(() => get(createForeignEvent(harness))).toThrow(/nedůvěryhodný/u);
     expect(() => get({ ...settingsEvent, senderFrame: {} })).toThrow(/nedůvěryhodný/u);
     await expect(get(settingsEvent, "navíc")).rejects.toThrow();
     await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: 0 });

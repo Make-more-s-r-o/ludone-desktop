@@ -1,0 +1,4 @@
+COMMAND=/Users/dev_ludone/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vitest/vitest.mjs run --reporter=json --outputFile=/private/tmp/osa-full-report.json
+JSON report written to /private/tmp/osa-full-report.json
+
+EXIT_CODE=0
