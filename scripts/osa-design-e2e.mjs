@@ -18,7 +18,7 @@ const observations = [];
 await mkdir(outputDir, { recursive: true });
 async function seedLocalRecordingFixture() {
   const recordingsDirectory = path.join(dataRoot, "user-data", "nahravky");
-  await mkdir(recordingsDirectory, { recursive: true });
+  await mkdir(recordingsDirectory, { recursive: true, mode: 0o700 });
   const startedAt = new Date(Date.now() - 90_000);
   const endedAt = new Date(startedAt.getTime() + 2_220);
   const audioPath = path.join(recordingsDirectory, "astra-e2e-synthetic-audio.webm");
@@ -47,6 +47,16 @@ async function seedLocalRecordingFixture() {
       },
     },
   }, null, 2)}\n`, { mode: 0o600, flag: "wx" });
+  const baseManifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  for (let index = 2; index <= 9; index++) {
+    const id = '40000000-0000-4000-8000-' + String(index).padStart(12, '0');
+    const name = `osa-fixture-${index}`;
+    const createdAt = new Date(startedAt.getTime() - index * 60_000).toISOString();
+    const manifest = { ...baseManifest, clientRecordingId: id, createdAt,
+      tracks: { microphone: { ...baseManifest.tracks.microphone, fileName: name + '.webm' } } };
+    await writeFile(path.join(recordingsDirectory,name+'.webm'),media,{mode:0o600});
+    await writeFile(path.join(recordingsDirectory,name+'.manifest.json'),JSON.stringify(manifest),{mode:0o600});
+  }
   return { audioPath, manifestPath };
 }
 
@@ -101,7 +111,7 @@ class CdpClient {
       returnByValue: true,
     });
     if (result.exceptionDetails) {
-      throw new Error(result.result?.description ?? "JavaScript v rendereru selhal.");
+      throw new Error(result.exceptionDetails.exception?.description ?? result.result?.description ?? "JavaScript v rendereru selhal.");
     }
     return result.result.value;
   }
@@ -238,14 +248,18 @@ try {
   check('library-460',await panel.evaluate('innerWidth===460'));
   await waitFor(()=>panel.evaluate(`Boolean(document.querySelector('[data-recording-id="${fixtureRecordingId}"]'))`),'disk fixture');
   check('real-manifest-loaded',true);
+  check('pagination-first-seven',await panel.evaluate("document.querySelectorAll('[data-recording-id]').length===7"));
+  await click('[aria-label="Další stránka"]');
+  check('pagination-reaches-rest',await panel.evaluate("document.querySelectorAll('[data-recording-id]').length===2"));
+  await click('[aria-label="Předchozí stránka"]');
   check('library-search-period-pagination',await panel.evaluate("Boolean(document.querySelector('input[type=search]') && document.querySelector('.osa-pagination') && document.querySelector('option[value=custom]'))"));
   await panel.evaluate("(()=>{const el=document.querySelector('input[type=search]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'nenalezitelná položka');el.dispatchEvent(new Event('input',{bubbles:true}));})()");
   await waitFor(()=>panel.evaluate("document.querySelectorAll('[data-recording-id]').length===0"),'real search no results');
   check('real-search-filters-disk-recordings',true);
   await panel.evaluate("(()=>{const el=document.querySelector('input[type=search]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));})()");
   await waitFor(()=>panel.evaluate(`Boolean(document.querySelector('[data-recording-id="${fixtureRecordingId}"]'))`),'search restored');
-  const playback = await panel.evaluate(`(async()=>{const snapshot=await window.ludone.listLocalRecordings();const item=snapshot.items.find(i=>i.id==='${fixtureRecordingId}');const media=await window.ludone.playRecording({id:item.id,queueRev:item.revision,fileRev:item.fileRevision});const response=await fetch(media.url,{headers:{Range:'bytes=0-31'}});return {status:response.status,type:response.headers.get('Content-Type'),size:(await response.arrayBuffer()).byteLength,url:media.url};})()`);
-  check('actual-protected-audio-range',playback.status===206&&playback.size===32&&playback.type==='audio/webm'&&playback.url.startsWith('ludone://app/media/'));
+  const playback = await panel.evaluate(`(async()=>{const snapshot=await window.ludone.listLocalRecordings();const item=snapshot.items.find(i=>i.id==='${fixtureRecordingId}');const media=await window.ludone.playRecording({id:item.id,queueRev:item.revision,fileRev:item.fileRevision});const audio=new Audio(media.url);window.__osaTestAudio=audio;await new Promise((resolve,reject)=>{audio.onloadedmetadata=resolve;audio.onerror=()=>reject(new Error('Audio decoder: '+audio.error?.code));setTimeout(()=>reject(new Error('Audio metadata timeout')),6000);audio.load();});const facts={duration:audio.duration,readyState:audio.readyState,url:media.url};audio.pause();audio.removeAttribute('src');audio.load();return facts;})()`);
+  check('actual-protected-audio-decoder',playback.readyState>=1&&playback.url.startsWith('ludone://app/media/'),playback);
 
   await navigate('settings');
   check('five-settings-sections',await panel.evaluate("document.querySelectorAll('.osa-settings-section').length===5"));
@@ -262,6 +276,7 @@ try {
   await click('.recording-card .idle-feature-row__action');
   await waitFor(()=>panel.evaluate("document.querySelector('.recording-card')?.classList.contains('is-active')"),'recording');
   check('two-synthetic-sources',await panel.evaluate('window.__ludoneE2ESyntheticAudio.sourceCount()===2'));
+  const mainBefore=await panel.evaluate('window.ludone.getRecordingActivity()');
   const before=await panel.evaluate("document.querySelector('.elapsed')?.textContent");
   await panel.send('Network.enable');await panel.send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});await delay(300);
   const offline=await panel.evaluate('window.ludone.getTrayState()');
@@ -269,6 +284,8 @@ try {
   await panel.evaluate('window.ludone.hidePanel()');await delay(1600);
   const hidden=await panel.evaluate('window.ludone.getTrayState()');
   check('hidden-panel-recording-authority',hidden==='recording',{hidden});
+  const mainAfter=await panel.evaluate('window.ludone.getRecordingActivity()');
+  check('main-clock-advances-while-hidden',mainAfter.active&&mainAfter.startedAt===mainBefore.startedAt&&mainAfter.title!==mainBefore.title);
   await visible();await delay(200);const after=await panel.evaluate("document.querySelector('.elapsed')?.textContent");check('hidden-panel-time-continues',before!==after,{before,after});await navigate('library');
   check('live-stop-outside-home',await panel.evaluate("Boolean(document.querySelector('.osa-live-strip button:not(:disabled)'))"));
   await click('.osa-live-strip button');
@@ -278,8 +295,8 @@ try {
   check('explicit-local-and-send-actions',await panel.evaluate("document.querySelector('.recording-card--saved').textContent.includes('Nechat na Macu') && document.querySelector('.recording-card--saved').textContent.includes('Uložit a odeslat')"));
   await click('.recording-saved__skip');
   await waitFor(()=>panel.evaluate("!document.querySelector('.recording-card--saved')"),'local save');
-  const manifests=await readdir(path.join(dataRoot,'user-data','nahravky'));check('recording-persisted-on-disk',manifests.filter(n=>n.endsWith('.manifest.json')).length>=2);
-  check('upload-disabled',true,{transportEnabled:false});
+  const manifests=await readdir(path.join(dataRoot,'user-data','nahravky'));check('recording-persisted-on-disk',manifests.filter(n=>n.endsWith('.manifest.json')).length>=10);
+  check('upload-held-without-network',await panel.evaluate("window.ludone.listLocalRecordings().then(s=>s.items.filter(i=>i.state!=='odeslano').every(i=>i.uploadIntent!=='approved'))"),{transportEnabled:false});
   await navigate('home');await installSyntheticAudioCapture(panel);await click('.recording-card .idle-feature-row__action');
   await waitFor(()=>panel.evaluate("document.querySelector('.recording-card')?.classList.contains('is-active')"),'second recording');
   await panel.send('Page.crash').catch(()=>{});panel.close();
@@ -290,7 +307,7 @@ try {
   check('renderer-crash-main-finalizes-and-recovers',true);
   await navigate('library');await screenshot('crash-recovered');
   const recoveredManifests=await readdir(path.join(dataRoot,'user-data','nahravky'));
-  check('crashed-recording-preserved',recoveredManifests.filter(n=>n.endsWith('.manifest.json')).length>=3);
+  check('crashed-recording-preserved',recoveredManifests.filter(n=>n.endsWith('.manifest.json')).length>=11);
   exitCode=0;
 } catch(error) {console.error('FAIL',error.stack);observations.push({error:error.message});}
 finally { panel?.close();detail?.close();if(child&&child.exitCode===null){child.kill('SIGTERM');await Promise.race([new Promise(r=>child.once('exit',r)),delay(3000)]);if(child.exitCode===null)child.kill('SIGKILL');} await writeFile(path.join(outputDir,'electron.log'),log);await writeFile(path.join(outputDir,'results.json'),JSON.stringify({exitCode,observations,physicalAudioVerified:false},null,2));console.log(`Důkazy: ${outputDir}\nexit code: ${exitCode}`);process.exitCode=exitCode; }

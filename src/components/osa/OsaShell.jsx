@@ -35,7 +35,7 @@ export function OsaShell({ page = "home", onNavigate, recording, queueCount = 0,
           <strong>{recording.elapsed}</strong>
           <button type="button" onClick={recording.onStop} disabled={!recording.onStop}>Zastavit</button>
         </div>}
-        {page !== "detail" && page !== "onboarding" && <h1 className="osa-page-title">{title}</h1>}
+        {page !== "home" && page !== "detail" && page !== "onboarding" && <h1 className="osa-page-title">{title}</h1>}
         <div className="osa-content">{children}</div>
       </div>
     </div>

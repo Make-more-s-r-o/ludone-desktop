@@ -1,5 +1,6 @@
 import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
 import {
@@ -827,6 +828,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
       // Příprava i ukládání jsou aktivní fáze. `idle` se nahlásí až poté, co
       // finishRecording doběhne a hlavní proces stihne položku zařadit do fronty.
       active: session.phase !== "idle",
+      phase: session.phase,
       pendingSave: savedRecording !== null,
       startedAt: session.startedAt,
       systemAudioState: session.systemAudioState,
@@ -950,7 +952,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
         <>
           <span className="idle-feature-row__icon"><MicIcon variant="idle" /></span>
           <span className="idle-feature-row__copy">
-            <strong>Zachytit schůzku</strong>
+            <strong>Připraveno k nahrávání</strong>
             {notice ? (
               <small
                 className={`idle-feature-row__notice idle-feature-row__notice--${notice.type}`}
@@ -967,7 +969,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
             ) : todaySummary ? (
               <small data-testid="recording-daily-summary">{todaySummary}</small>
             ) : (
-              <small className="recording-card__description">Mikrofon + systémový zvuk</small>
+              <span className="osa-source-plan"><span><OsaIcon name="record" size={18} /> Mikrofon</span><span><OsaIcon name="sound" size={18} /> Zvuk schůzky</span></span>
             )}
           </span>
           <button
@@ -976,11 +978,11 @@ export const RecordingCard = forwardRef(function RecordingCard({
             aria-label="Spustit nahrávání"
             onClick={() => start()}
           >
-            <span aria-hidden="true">Nahrát</span>
+            <span aria-hidden="true"><OsaIcon name="start" size={16} /> Nahrávat schůzku</span>
             <span className="sr-only">Spustit nahrávání</span>
           </button>
           <div className="recording-card__idle-footer">
-            <small>Po stopu vybereš, kam nahrávku uložit.</small>
+            <button type="button" className="osa-audio-check" onClick={onOpenSources} disabled={typeof onOpenSources !== "function"}><OsaIcon name="sound" size={18} /> Zkouška zvuku</button><small>Rozhodnete po schůzce</small>
             <button
               type="button"
               className="recording-card__sources"

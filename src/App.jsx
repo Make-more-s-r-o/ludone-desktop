@@ -1,6 +1,7 @@
 import "./features/recording/panel-polish.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Onboarding } from "./components/Onboarding.jsx";
+import { OsaDestination } from "./components/osa/OsaDestination.jsx";
 import { OsaShell } from "./components/osa/index.js";
 import { SettingsApp } from "./components/Settings.jsx";
 import { useElapsedTime, formatElapsed } from "./hooks/useElapsedTime.js";
@@ -10,7 +11,7 @@ import { ApplicationUpdateStatus } from "./components/ApplicationUpdateStatus.js
 import { RecordingCard } from "./features/recording/RecordingCard.jsx";
 import { QueueCard } from "./features/queue/QueueCard.jsx";
 import { RecordingDayPreview } from "./features/recordings/RecordingDayPreview.jsx";
-import { queueFooterStatus, queuePanelSummary } from "./lib/panel.js";
+import { queueFooterStatus } from "./lib/panel.js";
 
 const ONBOARDING_KEY = "ludone.prototype.onboarding-complete";
 const QUEUE_REFRESH_INTERVAL_MS = 1_000;
@@ -291,13 +292,13 @@ export function App() {
   }
 
   const shellPage = authRequested || (!onboardingComplete && !recordingControlsAvailable) ? "onboarding" : page;
-  const summary = queuePanelSummary(queueSnapshot.items);
+  const pendingUploadCount = (queueSnapshot.items ?? []).filter((item) => item.state === "ceka" && item.uploadIntent === "approved" && !item.requiresHumanAction).length;
   return (
     <PanelContentHeightReporter fixedHeight={660}>
       <OsaShell page={shellPage} onNavigate={navigate}
         onClose={() => window.ludone.hidePanel()}
-        queueCount={summary ? summary.waitingCount + summary.failedCount + summary.humanActionCount : 0}
-        recording={{ ...recording, elapsed: formatElapsed(elapsed), onStop: () => recordingCardRef.current?.stop() }}>
+        queueCount={pendingUploadCount}
+        recording={{ ...recording, elapsed: formatElapsed(elapsed), label: recording.phase === "checking" ? "Připravuje se" : recording.phase === "stopping" ? "Ukládá se" : "Nahrává se", onStop: recording.phase === "recording" ? () => recordingCardRef.current?.stop() : undefined }}>
         <DesktopConnectivityNotice />
         <ApplicationUpdateStatus showVersion={page === "updates"} allowManualCheck={page === "updates"} />
         {shellPage === "onboarding" && <>
@@ -310,6 +311,7 @@ export function App() {
             onActivityChange={handleRecordingChange}
             onOpenSources={() => { setSettingsTab("audio"); navigate("settings"); }} trayCommand={trayCommand} />
           {!recording.active && !recording.pendingSave && <>
+            <OsaDestination identity={panelActionsAvailable ? (user?.email || "valid-session") : null} onOpenAccount={() => { setSettingsTab("account"); navigate("settings"); }} />
             <RecordingDayPreview items={queueSnapshot.items} unavailable={queueSnapshot.unavailable} onOpenDay={() => navigate("library")} />
             <p className="osa-lutrack" aria-disabled="true">LuTrack <small>Připravujeme</small></p>
           </>}

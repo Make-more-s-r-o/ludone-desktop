@@ -776,7 +776,7 @@ function refreshTray() {
     && recordingSession.tracks.has("microphone")
   ));
   const tracking = appState.trackingOwners.size > 0;
-  const queueWaiting = appState.outboundQueueWaitingCount > 0;
+  const queueWaiting = osaQueueFacts.pendingCount > 0;
   const next = deriveOsaTrayState({
     microphoneOnly,
     queueWaiting,
@@ -803,7 +803,7 @@ function refreshTray() {
       trayVariantApplied = iconVariant;
     }
   }
-  if (tray) tray.setToolTip(`${OSA_TRAY_LABELS[trayState]}${queueWaiting ? ` · ${appState.outboundQueueWaitingCount} čeká` : ""}`);
+  if (tray) tray.setToolTip(`${OSA_TRAY_LABELS[trayState]}${queueWaiting ? ` · ${osaQueueFacts.pendingCount} čeká` : ""}`);
   refreshTrayTitle();
 }
 
@@ -2176,12 +2176,16 @@ function outboundQueueItemsFromResult(result) {
   return null;
 }
 
-const osaQueueFacts = { offline: false, attention: false };
+const osaQueueFacts = { offline: false, attention: false, pendingCount: 0 };
 
 function updateOutboundQueueTrayFact(result) {
   const items = outboundQueueItemsFromResult(result);
   if (items === null) return false;
   const waitingCount = items.filter((item) => item?.state === "ceka").length;
+  // Held nahrávka není souhlas s uploadem, proto nenavyšuje čekající badge.
+  osaQueueFacts.pendingCount = items.filter((item) => item?.state === "ceka"
+    && item.requiresHumanAction !== true
+    && ((item.kind ?? "recording") !== "recording" || item.uploadIntent === "approved")).length;
   osaQueueFacts.attention = items.some((item) => item.state === "selhalo" || item.requiresHumanAction === true);
   osaQueueFacts.offline = items.some((item) => item.state !== "odeslano" && /offline|network|síť|připojení/iu.test(item.lastFailureReason ?? ""));
   appState.outboundQueueWaitingCount = waitingCount;
