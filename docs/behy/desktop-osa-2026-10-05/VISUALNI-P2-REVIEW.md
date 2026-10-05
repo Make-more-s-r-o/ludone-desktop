@@ -4,7 +4,8 @@
 `.runtime/osa-auth-e2e/2026-10-05T19-24-52.724Z` proti verzovaným
 `dukazy/desktop-osa-2026-10-05/reference/`.
 
-⚠️ Dva konkrétní P2 zůstávají. Vizuální přejímka není hotová.
+🧪 Oba níže historicky zaznamenané P2 byly uzavřeny opakováním nad `c8b2fb5`.
+Celkovou funkční ani fyzickou přejímku tento čtecí report neprohlašuje za hotovou.
 
 ## Rozsah
 
@@ -71,3 +72,28 @@ Tento review nemění produkci, testy ani měřidla.
 ⛔ Fyzický Mac zvuk, lidský poslech, produkční síť/upload, skutečná systémová
 lišta, nativní dialogy a instalace aktualizace tímto nejsou ověřené.
 Identita a transport jsou syntetické; zelená automatická cesta je nejvýše 🧪.
+
+## Opakovaná přejímka obou P2 nad c8b2fb5
+
+Nový skutečný Electron běh `2026-10-05T19-30-41.850Z`.
+Osobně otevřeny všechny nové onboarding kroky v light/professional/dark
+(18 PNG) a history/queue v každém ze tří témat (6 PNG).
+Na třech onboarding kontaktlistech a v plném originálu audio je osa svislá,
+šest uzlů má společnou levou souřadnici a nepřekrývá ikony ani nadpisy.
+P2 onboardingu je tímto vizuálně uzavřen; root doplnil skutečnou DOM assertion
+pořadí uzlů nad skutečně načtenou kaskádou CSS.
+
+History a queue již obsahují nejvýše jeden update banner.
+Professional/dark mají jediný stažený update blok; light zachycuje stav před
+stažením. Na queue zůstává při zachované scroll pozici horní část jediného
+banneru mimo viewport, druhý banner již nikde není a seznam je dostupný v
+prvním viewportu. P2 duplicity je tímto vizuálně uzavřen; root doplnil DOM
+assertion nejvýše jednoho banneru pro history/queue.
+
+Všechny nové originály byly zkopírovány bez úprav do
+`dukazy/desktop-osa-2026-10-05/p2-review/final/`, SHA-256 v jeho `ORIGINALY.md`.
+Ostatní situace jsou pokryty předchozím úplným review; tento follow-up posuzuje
+jen změněnou osu a vlastníka update sdělení. Žádný nový P2 v obnovované části.
+
+⛔ Fyzický zvuk a lidský poslech na Macu, produkční upload, nativní dialogy,
+systémová lišta a instalace zůstávají neověřené. Výsledek je nejvýše 🧪.
