@@ -124,3 +124,12 @@ Otevřeny pouze dva nově požadované skutečné snímky: `complete-light-histo
 ⚠️ Zůstává malé P3 vycentrování: v obou obrázcích je osa přibližně x=94, středy malých položkových uzlů kolem x=90 a středy denních kruhů kolem x=98. Pozice jsou vizuální odhad ze skutečných snímků, nikoli tvrzení subpixelového DOM měření. Denní a položkové uzly tedy stále nemají stejný střed. Doporučeno jednotné box sizing pseudo-elementů a společná středová kotva; rozdílná šířka kruhů a border bez společného středu vytváří tyto zbylé odchylky. Předáno koordinátorovi jako drobný P3, nikoli nový P2 či funkční blokace.
 
 Tento dodatek neotevíral další snímky, neprováděl source/test změny a neprohlašuje za zelený celý probíhající runtime nebo CI. Fyzický Mac/zvuk a serverová produkce tím zůstávají ⛔ neověřené.
+
+
+## Uzavření P3 osy po 56800d3 — runtime 15-32-52.179Z
+
+Osobně otevřeny tři skutečné snímky `complete-light-history.png`, `complete-professional-history.png` a `complete-dark-history.png` z `.runtime/osa-auth-e2e/2026-10-05T15-32-52.179Z/`.
+
+🧪 P3 vycentrování osy uzavřen: v light, professional i dark leží denní kruh Dnes a malé položkové uzly na společné svislé ose; celý denní kruh i prohlédnuté malé kruhy jsou viditelné bez levého ořezu. Předchozí odchylka středů kolem 4 px již na těchto snímcích není patrná. Osobní vizuální kontrola potvrzuje odstranění reprodukovaného nálezu; přesná DOM tolerance do 1 px byla samostatně oznámena koordinátorem a není měřením odvozeným z obrázku.
+
+V těchto třech snímcích nebyl zjištěn další konkrétní P2/P3 osy. Tento úzký dodatek neprohlašuje celý runtime ani CI za zelený a neznamená osobní kontrolu všech 72 stavů. Fyzický Mac, skutečná zvuková cesta a produkční server zůstávají tímto review ⛔ neověřené. Produkční ani testovací soubory nebyly změněny.
