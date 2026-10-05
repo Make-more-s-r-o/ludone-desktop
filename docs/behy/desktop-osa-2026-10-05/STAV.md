@@ -98,3 +98,8 @@
 - 🧪 Nezávislé vizuální review všech 24×3 a všech šesti onboarding kroků×3; následná obnova 18 onboarding + 6 history/queue snímků uzavřela oba dodatečné P2. Bez zbývajících konkrétních P2 v tomto review; `VISUALNI-P2-REVIEW.md`. Nezávislé auth/IPC/queue/test-bootstrap review bez nového P1/P2.
 - 🟡 Všechny adaptéry auth, permissions a updateru jsou výslovně syntetické v izolovaném test entrypointu. Produkční OAuth/permission/update ochrany beze změny. Zvuk je nadále nejvýš 🧪; žádný produkční server/upload/download/install. Historické `998d86a` snímky uložené v `application-root-review-998d86a/`, původní výpisy v `akceptace-pred-p2/`, neúspěšné korekce v `p2-correction/`.
 - 🟡 Opravy připravené k novému nezávislému převzetí rootem v existujícím draft PR #160. Push/CI potvrzení následuje. Fyzická Mac přejímka a nový pokyn pro vydání zůstávají nutné; žádný merge/tag/podpis/publikace/produkční instalace.
+
+### Opravený push a předání
+
+- 🧪 Opravená implementace, matice i review pushnuté v `51bfd10` do původní `feat/desktop-osa`. Draft PR #160 má aktualizovaný popis. Čistý integrační checkout zůstává pro nezávislé převzetí; oba nové vlastní worker checkouty odstraněné až po verzování jejich unikátních důkazů.
+- 🟡 GitHub CI `37364309970` nad tímto pushem čeká na přidělení runneru (`queued`, žádný test dosud nespustil). Doslovný stav v `p2-correction/ci-status-51bfd10.json`. Následující commit doplňuje pouze toto pravdivé předání a funkční PR odkazy; poslední CI se ověří zvlášť. Fyzická Mac přejímka stále ⛔, další vydání ani instalace neprovedené.
