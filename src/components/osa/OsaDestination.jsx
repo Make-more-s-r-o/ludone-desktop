@@ -10,10 +10,7 @@ export function OsaDestination({ identity, onOpenAccount }) {
     if (!identity) return undefined;
     Promise.resolve().then(() => window.ludone.getUploadCompanyDefault()).then(async (stored) => {
       if (!current || !stored?.companyId) return;
-      const offer = await window.ludone.listUploadCompanies();
-      if (!current) return;
-      const company = offer?.companies?.find((item) => item.id === stored.companyId);
-      if (typeof company?.name === "string") setLabel(company.name);
+      setLabel("Výchozí firma uložená");
     }).catch(() => { if (current) setLabel("Firma není dostupná"); });
     return () => { current = false; };
   }, [identity]);

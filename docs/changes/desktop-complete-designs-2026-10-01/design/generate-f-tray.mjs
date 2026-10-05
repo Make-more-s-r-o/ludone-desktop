@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+import console from 'node:console';
 /* Reprodukovatelné exporty návrhu. Žádné produkční ikony se nepřepisují. */
 import fs from 'node:fs';
 import path from 'node:path';

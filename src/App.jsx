@@ -11,6 +11,7 @@ import { ApplicationUpdateStatus } from "./components/ApplicationUpdateStatus.js
 import { RecordingCard } from "./features/recording/RecordingCard.jsx";
 import { QueueCard } from "./features/queue/QueueCard.jsx";
 import { RecordingDayPreview } from "./features/recordings/RecordingDayPreview.jsx";
+import { osaQueueCount } from "./lib/osa-recordings.js";
 import { queueFooterStatus } from "./lib/panel.js";
 
 const ONBOARDING_KEY = "ludone.prototype.onboarding-complete";
@@ -292,12 +293,13 @@ export function App() {
   }
 
   const shellPage = authRequested || (!onboardingComplete && !recordingControlsAvailable) ? "onboarding" : page;
-  const pendingUploadCount = (queueSnapshot.items ?? []).filter((item) => item.state === "ceka" && item.uploadIntent === "approved" && !item.requiresHumanAction).length;
+  const pendingUploadCount = osaQueueCount(queueSnapshot.items);
   return (
     <PanelContentHeightReporter fixedHeight={660}>
       <OsaShell page={shellPage} onNavigate={navigate}
         onClose={() => window.ludone.hidePanel()}
         queueCount={pendingUploadCount}
+        authState={sessionState === "valid" ? "signed-in" : sessionState === "expired" ? "expired" : sessionState === null ? "checking" : "signed-out"}
         recording={{ ...recording, elapsed: formatElapsed(elapsed), label: recording.phase === "checking" ? "Připravuje se" : recording.phase === "stopping" ? "Ukládá se" : "Nahrává se", onStop: recording.phase === "recording" ? () => recordingCardRef.current?.stop() : undefined }}>
         <DesktopConnectivityNotice />
         <ApplicationUpdateStatus showVersion={page === "updates"} allowManualCheck={page === "updates"} />
@@ -311,6 +313,7 @@ export function App() {
             onActivityChange={handleRecordingChange}
             onOpenSources={() => { setSettingsTab("audio"); navigate("settings"); }} trayCommand={trayCommand} />
           {!recording.active && !recording.pendingSave && <>
+            {queueSnapshot.unavailable && <p className="osa-queue-unavailable" role="status">Stav fronty není dostupný. Počet čekajících položek nelze ověřit.</p>}
             <OsaDestination identity={panelActionsAvailable ? (user?.email || "valid-session") : null} onOpenAccount={() => { setSettingsTab("account"); navigate("settings"); }} />
             <RecordingDayPreview items={queueSnapshot.items} unavailable={queueSnapshot.unavailable} onOpenDay={() => navigate("library")} />
             <p className="osa-lutrack" aria-disabled="true">LuTrack <small>Připravujeme</small></p>

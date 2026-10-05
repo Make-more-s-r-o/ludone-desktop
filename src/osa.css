@@ -81,3 +81,20 @@ html[data-theme=dark]:has(.osa-shell){--osa-surface:#161d1b;--osa-alt:#1d2624;--
 .osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__facts{font-size:13px;display:flex;flex-wrap:wrap;gap:4px 8px;grid-area:facts;min-height:0}
 .osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__source-icon,.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__local,.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__detail-label{display:none}
 .osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recordings-dashboard__notice{font-size:13px;line-height:1.45;padding:8px 10px}.osa-shell .recordings-day__heading{margin:14px 0 4px}
+
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] [data-osa-node=unverified]:before{border-color:var(--osa-muted);background:var(--osa-surface)}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] [data-osa-node=verified]:before{border-color:var(--osa-accent);background:var(--osa-accent)}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] [data-osa-node=error]:before{border-color:var(--osa-danger);background:var(--osa-danger)}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] [data-osa-node=pending]:before{border-color:var(--osa-warn);background:var(--osa-surface)}
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] [data-osa-node=recording]:before{border-color:var(--osa-rec);background:var(--osa-rec)}
+
+/* F: hledání a období v jednom řádku, stavové segmenty a spodní stránkování. */
+.osa-shell .osa-filter-bar{flex-wrap:nowrap}.osa-shell .osa-filter-bar .osa-search{flex:1 1 0!important;min-width:0}.osa-shell .osa-filter-bar .osa-period{flex:0 1 120px;min-width:90px}
+.osa-status-filters{display:flex;gap:3px;margin-top:8px;flex-wrap:wrap}.osa-status-filters button{border:0;background:none;color:var(--osa-muted);border-radius:6px;padding:5px 7px;font-size:12px}.osa-status-filters button[aria-pressed=true]{background:var(--osa-soft);color:var(--osa-accent)}
+.osa-history-controls--pagination{position:sticky;bottom:0;background:var(--osa-surface);border-top:1px solid var(--osa-line);margin-top:auto;padding-top:3px}
+.osa-shell--library .recordings-dashboard{display:flex;flex-direction:column;min-height:490px}.osa-shell--library .recordings-dashboard__toolbar{position:absolute;right:18px;top:54px}.osa-shell--library .recordings-dashboard__toolbar button{font-size:0;background:none;border:0}.osa-shell--library .recordings-dashboard__toolbar button svg{width:16px;height:16px}
+.osa-shell--library .recordings-dashboard__notice{padding:3px 0!important;background:none;border:0;margin:5px 0;font-size:12px!important}
+.osa-shell--home .recording-card{padding-bottom:12px}.osa-shell--home .day-preview__list{margin-top:8px}.osa-shell--home .day-preview__item{padding:5px 0}.osa-shell--home .osa-destination{margin-bottom:12px}.osa-shell--home .osa-lutrack{padding:8px 0;margin-bottom:0}
+.osa-auth-status{align-self:center;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--osa-alt);color:var(--osa-muted);font-size:11px;font-weight:650;margin-top:5px}.osa-auth-status[data-auth-state=signed-in]{background:var(--osa-soft);color:var(--osa-accent)}.osa-auth-status[data-auth-state=expired]{color:var(--osa-warn)}
+.osa-queue-unavailable{font-size:13px;color:var(--osa-warn);margin:0 0 8px}
+.osa-shell--home .day-preview__item-copy{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;width:100%;min-width:0}.osa-shell--home .day-preview__item-copy>strong{grid-column:1;grid-row:1}.osa-shell--home .day-preview__item-copy>small:not(.day-preview__state){grid-column:1/-1;grid-row:2}.osa-shell--home .day-preview__item-copy>.day-preview__state{grid-column:2;grid-row:1;max-width:125px;text-align:right;font-size:12px}

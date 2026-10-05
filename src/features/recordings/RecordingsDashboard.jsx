@@ -1,4 +1,4 @@
-import { selectOsaRecordings, osaRecordingStatus } from "../../lib/osa-recordings.js";
+import { selectOsaRecordings, osaRecordingStatus, osaRecordingNode } from "../../lib/osa-recordings.js";
 import { OsaHistoryControls, OsaStations } from "../../components/osa/index.js";
 import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -391,7 +391,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   };
   const configure = async (item) => {
     const choice = preferencesById[item.id]?.value;
-    if (!choice || actingId !== null || !item.revision || !item.fileRevision || item.uploadPreferencesLocked) return;
+    if (!choice || actingId !== null || !item.revision || !item.fileRevision || item.uploadPreferencesLocked) return false;
     const identity = identityRef.current;
     setActingId(item.id);
     setPreferenceMessageById((current) => ({ ...current, [item.id]: "Ukládám volby…" }));
@@ -405,13 +405,26 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       setPreferenceFailedById((current) => ({ ...current, [item.id]: false }));
       setPreferencesById((current) => ({ ...current, [item.id]: { value: null, dirty: false } }));
       setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby jsou uložené. Odeslání spustíš dalším kliknutím." }));
+      if (detailId) await window.ludone.setDetailDirty(false);
+      return true;
     } catch {
       setPreferenceFailedById((current) => ({ ...current, [item.id]: true }));
       await load();
       setPreferencesById((current) => ({ ...current, [item.id]: { value: null, dirty: true } }));
       setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby se nepodařilo uložit. Přehled byl obnoven; ověř volby a ulož je znovu." }));
+      return false;
     } finally { if (active.current) setActingId(null); }
   };
+  const saveBeforeClose = useRef(null);
+  saveBeforeClose.current = async (id) => {
+    const item = view.items.find((candidate) => candidate.id === detailId);
+    const success = item ? await configure(item) : false;
+    await window.ludone.finishDetailSave(id, success);
+  };
+  useEffect(() => {
+    if (!detailId || typeof window.ludone?.onDetailSaveRequested !== "function") return undefined;
+    return window.ludone.onDetailSaveRequested((id) => { void saveBeforeClose.current?.(id); });
+  }, [detailId]);
   const runAction = async (item, method) => {
     if (["sendRecording", "retryRecording"].includes(method) && (preferencesById[item.id]?.dirty || preferenceFailedById[item.id])) return;
     if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method !== "deleteRecording"
@@ -440,7 +453,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
 
   return (
     <div className={`recordings-dashboard${openDetailId ? " recordings-dashboard--detail" : ""}`} data-testid="recordings-dashboard">
-      {osa && !detailId && <OsaHistoryControls query={query} result={selected} onChange={(patch) => setQuery((current) => ({ ...current, ...patch, page: patch.page ?? 1 }))} />}
+      {osa && !detailId && <OsaHistoryControls placement="filters" query={query} result={selected} onChange={(patch) => setQuery((current) => ({ ...current, ...patch, page: patch.page ?? 1 }))} />}
       {osa && selected.error && <p role="alert">{selected.error}</p>}
       {detailId && <button type="button" className="button button--small" onClick={() => window.ludone.returnToNowPanel()}>Zpět do panelu</button>}
       {detailId && view.state === "ready" && filteredItems.length === 0 && <p role="status">Nahrávka už není v místním přehledu dostupná.</p>}
@@ -524,7 +537,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
             const canVerify = item.source === "queue" && item.ownership === "current"
               && item.revision && item.localState !== "invalid-manifest";
             return (
-              <li className="recordings-timeline__entry" key={item.id} data-recording-id={item.id}
+              <li className="recordings-timeline__entry" key={item.id} data-recording-id={item.id} data-osa-node={osaRecordingNode(item, Boolean(verified))}
                 data-recording-state={item.state} data-upload-intent={item.uploadIntent}
                 data-detail-active={openDetailId === item.id ? "true" : "false"}>
                 <time className="recordings-timeline__time" dateTime={item.createdAt ?? undefined}>
@@ -603,7 +616,13 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                           locked={item.uploadPreferencesLocked} disabled={authState !== "signed-in"} busy={actingId !== null}
                           onChange={(value, dirty) => {
                             setPreferencesById((current) => ({ ...current, [item.id]: { value, dirty } }));
+
                             if (dirty && value) setPreferenceMessageById((current) => ({ ...current, [item.id]: "Neuložená změna. Uložení voleb samo nic neodešle." }));
+                          }}
+                          onUserChange={() => {
+                            if (detailId) void window.ludone.setDetailDirty(true).catch(() => {
+                              setPreferenceFailedById((current) => ({ ...current, [item.id]: true }));
+                            });
                           }}
                           onSave={() => void configure(item)} stateMessage={preferenceMessageById[item.id]} stateError={preferenceFailedById[item.id]} />
                       )}
@@ -717,6 +736,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
           )}
         </ul>
       )}
+      {osa && !detailId && <OsaHistoryControls placement="pagination" query={query} result={selected} onChange={(patch) => setQuery((current) => ({ ...current, ...patch, page: patch.page ?? 1 }))} />}
     </div>
   );
 }

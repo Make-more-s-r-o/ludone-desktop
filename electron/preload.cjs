@@ -402,5 +402,19 @@ contextBridge.exposeInMainWorld("ludone", {
     ipcRenderer.send("settings:open", initialTab);
   },
   onSettingsTabRequested,
+  setDetailDirty: (value) => {
+    if (typeof value !== "boolean") throw new TypeError("Neplatný stav změn");
+    return ipcRenderer.invoke("detail:set-dirty", value);
+  },
+  finishDetailSave: (id, success) => {
+    if (typeof id !== "string" || !OFFER_TOKEN_PATTERN.test(id) || typeof success !== "boolean") throw new TypeError("Neplatné potvrzení uložení");
+    return ipcRenderer.invoke("detail:saved-before-close", id, success);
+  },
+  onDetailSaveRequested: (callback) => {
+    if (typeof callback !== "function") throw new TypeError("Odběratel musí být funkce");
+    const listener = (_event, id) => { if (typeof id === "string" && OFFER_TOKEN_PATTERN.test(id)) callback(id); };
+    ipcRenderer.on("detail:save-before-close", listener);
+    return () => ipcRenderer.removeListener("detail:save-before-close", listener);
+  },
   closeSettings: () => ipcRenderer.send("settings:close"),
 });

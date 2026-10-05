@@ -44,3 +44,19 @@
 ⚠️ Dodatečný úplný lockfile audit: 7 nálezů (3 high, 4 moderate) ve vývojových závislostech; produkční audit zůstává 0. GitHub při pushi zvlášť upozornil na 12 nálezů své výchozí větve. Tyto dvě sady nejsou totožný stav. Závislosti nebyly v rámci F měněny, pouze verze aplikace na 0.1.8. `audit-all.json` a exit 1 jsou uložené pro review; nepoužívá se force upgrade nebo změna testovací baseline.
 
 🟡 K převzetí zbývá rozhodnutí o bezpečném přechodu bran, dependency review a fyzická přejímka dle `MAC-PREJIMKA.md`. Danovo schválení F/ikon a zahájení platí, znovu se nevyžaduje. Tag, main merge, publikace i produkční instalace čekají na další pověření.
+
+## Pokračování po review — 5. 10., 16:00
+
+- 🧪 Původní ESLint po opravě explicitních global/import vazeb návrhu prochází bez změny konfigurace. Referenční A–G zdroj zůstává v historii podkladů; F generátor i 72 referenčních záběrů procházejí.
+- ⚠️ Čistý main `2dd73fb` na původním runtime: 1653 PASS, 1 FAIL (PNG komprese), 3 existující skipy. Výpis `main-2dd-gates.txt`. Nejde o novou výjimku ani baseline.
+- 🧪 Pinned bundled Node 24.19.0 reprodukuje původní PNG byte-for-byte; generator a golden PNG nejsou upravené. Ověření oficiální distribuce CI zůstává 🟡.
+- 🧪 Minimální opravený Vitest 4.1.11 a kompatibilní transitive patche: audit lockfile 0 známých zranitelností (`dependency-audit-after.json`). npm10 resolver selhal; dočasný npm11 v temp vyřešil lock bez force a bez systémové instalace.
+- 🟡 Detail má ochranu neuložených voleb pro close/back/replacement/quit. Save volá pouze stávající configure s CAS; aktualizace při dirty čeká. Probíhá review a další ověření skutečného UI.
+- ⚠️ Celá jednotková sada dosud není zelená. Přesné původní assertions nejsou odstraněné ani oslabené; migrace setupu/selektorů se posuzuje odděleně od skutečných rozporů staré Astra kompozice.
+
+### Checkpoint po opravě prostředí původních testů
+
+- 🧪 1682 kontrol: 1568 PASS, 111 FAIL, 3 původní skipy. Oprava setupu obnovila běh skutečných služeb; zbývající červené kontroly nejsou potlačeny (`continuation-unit-report.json`, `ROZPORY-BRAN.md`).
+- 🧪 26 cílených kontrol detail guardu, uzlů/badge a původních tray PNG PASS, exit 0 (`osa-detail-and-png.txt`).
+- 🧪 Electron E2E po změně historie a skutečném React playbacku PASS, exit 0 (`osa-e2e-history.txt`). Syntetická cesta není fyzický poslech.
+- 🟡 Otázka na rovnocenný přechod vizuálních a oprávněných rolových očekávání staré Astra brány je předložena člověku dle IMPLEMENTACE-F.md. Implementace pokračuje v nezávislých částech; kompletní matice 24×3 dosud není splněna.

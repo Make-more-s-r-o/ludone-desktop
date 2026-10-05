@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { Linter } from "eslint";
 import { describe, expect, it } from "vitest";
+import osaTrayModule from "../electron/osa-tray.cjs";
 import trackingModule from "../electron/tracking.cjs";
 
 const { TRACKING_STATES } = trackingModule;
+const { deriveOsaTrayState, OSA_TRAY_LABELS } = osaTrayModule;
 const parsedSources = new Map();
 
 function sourceCodeFor(source) {
@@ -163,7 +165,14 @@ function trayHarness({
     "tryInstallDownloadedUpdate",
     "authSessionTransitionPromise",
     "REPORTED_FACT_KEYS",
+    "deriveOsaTrayState",
+    "OSA_TRAY_LABELS",
+    "osaQueueFacts",
+    "net",
     `"use strict";
+     const recordingCompletionsInFlight = new Set();
+     const osaTrayImage = trayImage;
+     ${functionSource(mainCodeWithoutComments, "osaExportFacts")}
      let trayState = "signed-out";
      let trayApplied = false;
      let trayVariantApplied;
@@ -234,6 +243,10 @@ function trayHarness({
       () => {},
       null,
       reportedFactKeys,
+      deriveOsaTrayState,
+      OSA_TRAY_LABELS,
+      { pendingCount: queueWaitingCount, attention: false, offline: false },
+      { isOnline: () => true },
     ),
   };
 }

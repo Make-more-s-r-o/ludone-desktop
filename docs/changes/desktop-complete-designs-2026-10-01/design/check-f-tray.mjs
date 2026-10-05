@@ -1,3 +1,6 @@
+import console from 'node:console';
+import { Buffer } from 'node:buffer';
+import process from 'node:process';
 /* Akceptace přípravy, nikoli náhrada produkčních testů nebo Mac přejímky. */
 import fs from 'node:fs';
 import path from 'node:path';

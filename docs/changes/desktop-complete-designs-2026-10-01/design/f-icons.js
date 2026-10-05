@@ -41,31 +41,31 @@
   if (button?.querySelector('svg')) button.querySelector('svg').outerHTML = icon(name);
  }
  function apply(s) {
-  const trigger = document.querySelector('.menubar-trigger');
+  const trigger = globalThis.document.querySelector('.menubar-trigger');
   const image=trigger.querySelector('img,.f-icon,.f-tray-icon');
   const live = trigger.querySelector('.menu-live-status');
-  const tray=window.LuDoneFTray.describe({
+  const tray=globalThis.LuDoneFTray.describe({
    phase:s.phase,systemLost:s.systemLost,microphoneOnly:s.microphoneOnly,signed:s.signed,network:s.network,
    time:live.querySelector('[data-live-time]')?.textContent,
    pendingCount:s.recordings.filter(r=>['queued','rate'].includes(r.status)).length,
    attentionCount:s.recordings.filter(r=>['failed','unclaimed','missing','partial','unknown'].includes(r.status)).length
   });
-  if(image)image.outerHTML=window.LuDoneFTray.svg(tray.name);
+  if(image)image.outerHTML=globalThis.LuDoneFTray.svg(tray.name);
   live.innerHTML=tray.text?`<span${s.phase==='recording'?' data-live-time':''}>${tray.text}</span>`:'';
   trigger.dataset.trayState=tray.name;
   trigger.setAttribute('aria-label',tray.label);
   trigger.title = trigger.getAttribute('aria-label');
-  replace(document.querySelector('[data-action=tray-menu]'), 'more');
-  replace(document.querySelector('.head-actions [data-action=sources]'), 'sources');
-  replace(document.querySelector('[data-action=start]'), 'start');
-  document.querySelectorAll('.f-rail button').forEach(button => {
+  replace(globalThis.document.querySelector('[data-action=tray-menu]'), 'more');
+  replace(globalThis.document.querySelector('.head-actions [data-action=sources]'), 'sources');
+  replace(globalThis.document.querySelector('[data-action=start]'), 'start');
+  globalThis.document.querySelectorAll('.f-rail button').forEach(button => {
    const label = button.title;
    if (!button.querySelector('.f-nav-tooltip')) button.insertAdjacentHTML('beforeend', `<span class="f-nav-tooltip" aria-hidden="true">${label}</span>`);
   });
   const sections = {account:'user',audio:'sound',device:'device',storage:'storage',diagnostics:'diagnostics'};
-  document.querySelectorAll('.settings-nav button[data-tab]').forEach(button => {
+  globalThis.document.querySelectorAll('.settings-nav button[data-tab]').forEach(button => {
    if (!button.querySelector('.f-icon')) button.insertAdjacentHTML('afterbegin', icon(sections[button.dataset.tab]));
   });
  }
- window.LuDoneFIcons = {icon, apply, paths};
+ globalThis.LuDoneFIcons = {icon, apply, paths};
 })();

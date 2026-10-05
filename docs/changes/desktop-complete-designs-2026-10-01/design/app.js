@@ -1,21 +1,21 @@
 /* Samostatná maketa: pouze fiktivní data v paměti, žádné Electron API nebo HTTP. */
-const $ = (s) => document.querySelector(s);
-const query = new URLSearchParams(location.search);
+const $ = (s) => globalThis.document.querySelector(s);
+const query = new globalThis.URLSearchParams(globalThis.location.search);
 const concepts = { a: ['Mac','mac.css'], b: ['Studio','studio.css'], c: ['Deník','journal.css'], d: ['Sloupec · Sonnet 5.5','sonnet-d.css'], e: ['Kapsle · Sonnet 5.5','sonnet-e.css'], f: ['Osa · Sonnet 5.5','sonnet-f.css'], g: ['Příkaz · Sonnet 5.5','sonnet-g.css'] };
 const concept = concepts[query.get('variant')] ? query.get('variant') : 'a';
 const refinedFIcons = concept==='f' && query.get('icons')!=='original';
-document.body.dataset.concept = concept;
-if(query.get('embedded')==='1')document.body.classList.add('embedded');
-document.documentElement.dataset.theme = ['light','dark','professional'].includes(query.get('theme')) ? query.get('theme') : 'light';
-const style = document.createElement('link'); style.rel='stylesheet'; style.href=concepts[concept][1]+'?v=16'; document.head.append(style);
-const menuStyle=document.createElement('link');menuStyle.rel='stylesheet';menuStyle.href='menu.css?v=1';document.head.append(menuStyle);
-if(['d','e'].includes(concept))document.head.append(style);
-const integrationStyle=document.createElement('link');integrationStyle.rel='stylesheet';integrationStyle.href='menu-integration.css?v=1';document.head.append(integrationStyle);
+globalThis.document.body.dataset.concept = concept;
+if(query.get('embedded')==='1')globalThis.document.body.classList.add('embedded');
+globalThis.document.documentElement.dataset.theme = ['light','dark','professional'].includes(query.get('theme')) ? query.get('theme') : 'light';
+const style = globalThis.document.createElement('link'); style.rel='stylesheet'; style.href=concepts[concept][1]+'?v=16'; globalThis.document.head.append(style);
+const menuStyle=globalThis.document.createElement('link');menuStyle.rel='stylesheet';menuStyle.href='menu.css?v=1';globalThis.document.head.append(menuStyle);
+if(['d','e'].includes(concept))globalThis.document.head.append(style);
+const integrationStyle=globalThis.document.createElement('link');integrationStyle.rel='stylesheet';integrationStyle.href='menu-integration.css?v=1';globalThis.document.head.append(integrationStyle);
 /* Nové směry mohou přestavět prezentaci; funkční stav a akce zůstávají společné. */
 if(['f','g'].includes(concept)){
- document.head.append(style);
- const creativeIntegration=document.createElement('link');creativeIntegration.rel='stylesheet';creativeIntegration.href='creative-integration.css?v=1';document.head.append(creativeIntegration);
- if(refinedFIcons){const iconsStyle=document.createElement('link');iconsStyle.rel='stylesheet';iconsStyle.href='f-icons.css?v=2';document.head.append(iconsStyle);}
+ globalThis.document.head.append(style);
+ const creativeIntegration=globalThis.document.createElement('link');creativeIntegration.rel='stylesheet';creativeIntegration.href='creative-integration.css?v=1';globalThis.document.head.append(creativeIntegration);
+ if(refinedFIcons){const iconsStyle=globalThis.document.createElement('link');iconsStyle.rel='stylesheet';iconsStyle.href='f-icons.css?v=2';globalThis.document.head.append(iconsStyle);}
 }
 const paths = {
  record:'<rect x="8" y="2" width="8" height="13" rx="4"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>',
@@ -33,7 +33,7 @@ const paths = {
  tray:'<path d="M4 4h16v16H4zM7 9l4 4 6-6"/>', alert:'<path d="m12 3 10 18H2zM12 9v5M12 17v.01"/>', user:'<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/>',
  waveform:'<path d="M3 10v4M7 6v12M11 3v18M15 7v10M19 5v14M23 10v4"/>', play:'<path d="m7 4 14 8-14 8z"/>'
 };
-const icon = (name) => refinedFIcons ? window.LuDoneFIcons.icon(name) : `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.info}</svg>`;
+const icon = (name) => refinedFIcons ? globalThis.LuDoneFIcons.icon(name) : `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.info}</svg>`;
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const btn = (text, action, cls='', glyph='', extra='') => `<button type="button" class="btn ${cls}" data-action="${action}" ${extra}>${glyph?icon(glyph):''}${text}</button>`;
 const companies = ['Ateliér Sever s.r.o.','Studio Forma','LuDone Demo'];
@@ -77,9 +77,9 @@ function globalNotice(){
 let menuOpen=true;
 function render(){
  const windowView=state.page==='detail';
- document.body.dataset.surface=windowView?'window':'tray';
- document.body.dataset.page=state.page;
- document.body.dataset.phase=state.phase;
+ globalThis.document.body.dataset.surface=windowView?'window':'tray';
+ globalThis.document.body.dataset.page=state.page;
+ globalThis.document.body.dataset.phase=state.phase;
  const workspace=$('.workspace');
  (windowView?$('.app-layout'):$('.menu-popover-body')).append(workspace);
  $('.window').hidden=!windowView;
@@ -92,9 +92,9 @@ function render(){
  const renderers={home:home,library:history,queue:queuePage,detail:detail,settings:settings,updates:updates,onboarding:onboarding};
  $('.content').innerHTML=(state.phase==='recording'&&state.page!=='home'?`<div class="live-strip"><span><i class="dot red"></i>Nahrává se <b data-live-time>${clock()}</b></span>${btn('Zastavit','stop','stop-button','stop')}</div>`:'')+(renderers[state.page]||home)();
  $('.app-title span').textContent=state.phase==='recording'?'LuDone · nahrává se':'LuDone Desktop';
- document.querySelectorAll('.menu-tab').forEach(button=>button.classList.toggle('active',button.dataset.page===state.page));
- window.applyLuDoneLayout?.();
- if(refinedFIcons)window.LuDoneFIcons.apply(state);
+ globalThis.document.querySelectorAll('.menu-tab').forEach(button=>button.classList.toggle('active',button.dataset.page===state.page));
+ globalThis.applyLuDoneLayout?.();
+ if(refinedFIcons)globalThis.LuDoneFIcons.apply(state);
 }
 function clock(){return Math.floor(state.seconds/60).toString().padStart(2,'0')+':'+(state.seconds%60).toString().padStart(2,'0');}
 function home(){
@@ -141,7 +141,7 @@ function settings(){return `<div class="settings-layout"><nav class="settings-na
 function settingContent(){
  if(state.tab==='account')return `<section class="settings-section"><h2>Účet a odesílání</h2><div class="group"><div class="setting-row"><span class="avatar">AK</span><div class="setting-label"><strong>${state.signed?'Alex Král':'Odhlášeno'}</strong><small>${state.signed?'alex@example.invalid':'Lokální nahrávky zůstávají uložené.'}</small></div>${btn(state.signed?'Odhlásit':'Přihlásit',state.signed?'logout':'login','subtle')}</div><div class="setting-row"><div class="field"><label for="default-company">Výchozí firma</label><select id="default-company" data-field="company-choice" ${state.companyError?'disabled':''}>${companyOptions(state.companyChoice)}</select><small>Pro nové nahrávky. U jednotlivé schůzky ji můžete změnit.</small>${state.companyError?btn('Načíst firmy','load-companies'):''}${state.companyDirty?btn('Uložit výchozí firmu','save-company','primary'):''}</div></div>${toggle('Nové nahrávky odesílat automaticky','auto','Starší schůzky se tím neodešlou.')}</div><details class="technical"><summary>Pokročilé · prostředí</summary><div class="setting-row"><div class="setting-label"><strong>Server LuDone</strong><small>${state.environment==='prod'?'app.ludone.cz':'labs.ludone.cz'}</small></div><select data-field="environment" aria-label="Prostředí"><option value="prod" ${state.environment==='prod'?'selected':''}>Produkce</option><option value="labs" ${state.environment==='labs'?'selected':''}>Labs</option></select></div></details></section>`;
  if(state.tab==='audio')return `<section class="settings-section"><h2>Zvuk schůzky</h2><div class="group"><div class="setting-row"><div class="setting-label"><strong>${icon('record')} Mikrofon</strong><small>Levý kanál</small></div>${state.mic?'<span class="badge sent">Povoleno</span>':btn('Povolit','grant-mic')}</div><div class="setting-row"><div class="setting-label"><strong>${icon('sound')} Systémový zvuk</strong><small>Pravý kanál</small></div>${state.system?'<span class="badge sent">Povoleno</span>':btn('Nastavení macOS','grant-system')}</div></div><h3>Zkouška zvuku</h3><p class="small-note">Spusťte zkoušku a ověřte oba kanály poslechem.</p>${testUI()}<p class="small-note">Jeden výsledný soubor · mikrofon vlevo, schůzka vpravo.</p></section>`;
- if(state.tab==='device')return `<section class="settings-section"><h2>Tento Mac</h2><div class="group">${toggle('Ikona také v Docku','dock')}${toggle('Spouštět po přihlášení','launch')}</div><h3>Vzhled</h3><div class="segment" style="margin-top:17px;display:inline-flex" role="group" aria-label="Barevné téma">${[['light','Světlé'],['professional','Profesionální'],['dark','Tmavé']].map(([v,l])=>`<button class="${document.documentElement.dataset.theme===v?'active':''}" data-action="theme" data-value="${v}" aria-pressed="${document.documentElement.dataset.theme===v}">${l}</button>`).join('')}</div><div style="margin-top:30px">${btn('Klávesové zkratky','shortcuts','','keyboard')}${btn('Panel v liště','tray','subtle','tray')}</div></section>`;
+ if(state.tab==='device')return `<section class="settings-section"><h2>Tento Mac</h2><div class="group">${toggle('Ikona také v Docku','dock')}${toggle('Spouštět po přihlášení','launch')}</div><h3>Vzhled</h3><div class="segment" style="margin-top:17px;display:inline-flex" role="group" aria-label="Barevné téma">${[['light','Světlé'],['professional','Profesionální'],['dark','Tmavé']].map(([v,l])=>`<button class="${globalThis.document.documentElement.dataset.theme===v?'active':''}" data-action="theme" data-value="${v}" aria-pressed="${globalThis.document.documentElement.dataset.theme===v}">${l}</button>`).join('')}</div><div style="margin-top:30px">${btn('Klávesové zkratky','shortcuts','','keyboard')}${btn('Panel v liště','tray','subtle','tray')}</div></section>`;
  if(state.tab==='storage')return `<section class="settings-section"><h2>Lokální soubory</h2><div class="group"><div class="setting-row"><div class="field"><label for="retention">Po odeslání ponechat na Macu</label><select id="retention" data-field="retention">${[['0','Ihned smazat'],['1','24 hodin'],['7','7 dní'],['30','30 dní'],['never','Nemazat']].map(([v,l])=>`<option value="${v}" ${state.retention===v?'selected':''}>${l}</option>`).join('')}</select><small>Neodeslané nahrávky se automaticky nemažou.</small></div></div><div class="setting-row"><div class="setting-label"><strong>${state.recordings.length} nahrávek</strong><small>Přehled lokálního archivu</small></div>${btn('Zobrazit složku','finder','','folder')}</div></div>${btn('Přejít na odesílání','nav','','cloud','data-page="queue"')}</section>`;
  return `<section class="settings-section"><h2>Diagnostika</h2><p class="small-note">Přehled stavu pro podporu. Neobsahuje zvuk ani přístupové tokeny.</p><div class="diag-grid">${[['Verze','0.1.7'],['Architektura','Apple Silicon'],['Mikrofon',state.mic?'Povoleno':'Chybí oprávnění'],['Systémový zvuk',state.system?'Povoleno':'Chybí oprávnění'],['Server',state.network?'Připojení v pořádku':'Offline'],['Přihlášení',state.signed?'Aktivní · upload povolen':'Vypršelo']].map(([l,v])=>`<div><small>${l}</small><strong>${v}</strong></div>`).join('')}</div>${btn('Exportovat diagnostiku','export','','folder')}${btn('Ověřit zvuk','sources','subtle','sound')}</section>`;
 }
@@ -156,10 +156,10 @@ function onboarding(){
  return `<div class="onboarding"><div class="steps" aria-label="Krok ${step+1} z 5">${Array.from({length:5},(_,i)=>`<i class="${i<=step?'active':''}"></i>`).join('')}</div>${pages[step]}</div>`;
 }
 let modalReturnFocus;
-function modal(title,body,actions){modalReturnFocus=document.activeElement;$('.modal-layer').innerHTML=`<section class="sheet" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><header class="sheet-head"><h2 id="dialog-title">${title}</h2><button class="icon-btn" data-action="close-modal" aria-label="Zavřít">${icon('close')}</button></header><div class="sheet-body">${body}</div><footer class="sheet-actions">${actions}</footer></section>`;$('.modal-layer').hidden=false;requestAnimationFrame(()=>$('.modal-layer').querySelector('input,select,button')?.focus());}
+function modal(title,body,actions){modalReturnFocus=globalThis.document.activeElement;$('.modal-layer').innerHTML=`<section class="sheet" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><header class="sheet-head"><h2 id="dialog-title">${title}</h2><button class="icon-btn" data-action="close-modal" aria-label="Zavřít">${icon('close')}</button></header><div class="sheet-body">${body}</div><footer class="sheet-actions">${actions}</footer></section>`;$('.modal-layer').hidden=false;globalThis.requestAnimationFrame(()=>$('.modal-layer').querySelector('input,select,button')?.focus());}
 function closeModal(){ $('.modal-layer').hidden=true;modalReturnFocus?.isConnected&&modalReturnFocus.focus(); }
 let toastTimer;
-function toast(text){$('.toast').textContent=text;$('.toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('.toast').hidden=true,4200);}
+function toast(text){$('.toast').textContent=text;$('.toast').hidden=false;globalThis.clearTimeout(toastTimer);toastTimer=globalThis.setTimeout(()=>$('.toast').hidden=true,4200);}
 function login(){modal('Přihlášení v prohlížeči',`<p>Potvrďte účet a oprávnění k odesílání v LuDone. Tato ukázka neotevírá skutečné přihlášení.</p><div class="notice"><div><strong>Čekám na prohlížeč</strong><p>app.ludone.cz · platnost odkazu 10 minut</p></div></div><p class="small-note">Pokud se prohlížeč neotevřel, zkopírujte odkaz.</p>${btn('Kopírovat odkaz','copy-login','subtle','web')}`,btn('Zrušit','close-modal')+btn('Simulovat návrat','login-complete','primary'));}
 function navigate(page){
  if(state.draftDirty&&state.page==='detail'&&page!=='detail'){modal('Uložit změny?',`<p>Firma a přístup této schůzky mají neuložené změny.</p>`,btn('Zůstat','close-modal')+btn('Zahodit změny','discard-nav','','',`data-page="${page}"`)+btn('Uložit a přejít','save-nav','primary','',`data-page="${page}"`));return;}
@@ -191,7 +191,7 @@ function applyScenario(name){
 function openTray(){menuOpen=true;closeModal();navigate('home');}
 
 let recordOriginal;
-document.addEventListener('click',event=>{
+globalThis.document.addEventListener('click',event=>{
  const el=event.target.closest('[data-action]');if(!el||el.disabled)return;const action=el.dataset.action,r=current();
  if(action==='menu-toggle'){if(state.page==='detail'){openTray();}else{menuOpen=!menuOpen;render();}return;}
  if(action==='hide-menu'){menuOpen=false;render();return;}
@@ -201,7 +201,7 @@ document.addEventListener('click',event=>{
  if(action==='close-modal'){closeModal();return;}
  if(action==='start'){menuOpen=true;closeModal();if(state.phase==='draft'||state.phase==='finalizing'){state.page='home';render();return;}if(!state.mic){state.page='settings';state.tab='audio';render();toast('Nejprve povolte mikrofon.');return;}if(!state.system){modal('Nahrávat jen mikrofon?',`<p>Druhá strana schůzky se nezachytí. Můžete povolit systémový zvuk nebo pokračovat omezeně.</p>`,btn('Zvuk a oprávnění','quick-nav','','sound','data-page="settings" data-tab="audio"')+btn('Nahrát jen mikrofon','start-microphone','primary'));return;}if(state.phase==='draft'){state.page='home';render();return;}state.microphoneOnly=false;state.phase='recording';state.seconds=0;state.page='home';render();return;}
  if(action==='start-microphone'){closeModal();state.microphoneOnly=true;state.phase='recording';state.seconds=0;state.page='home';render();return;}
- if(action==='stop'){menuOpen=true;closeModal();state.phase='finalizing';state.page='home';render();setTimeout(()=>{state.phase='draft';state.draft={title:'Nová schůzka',company:state.defaultCompany,visibility:'company'};if(state.auto&&state.signed&&state.network&&state.scope&&state.defaultCompany&&!state.companyError){saveRecording(true);}else render();},650);return;}
+ if(action==='stop'){menuOpen=true;closeModal();state.phase='finalizing';state.page='home';render();globalThis.setTimeout(()=>{state.phase='draft';state.draft={title:'Nová schůzka',company:state.defaultCompany,visibility:'company'};if(state.auto&&state.signed&&state.network&&state.scope&&state.defaultCompany&&!state.companyError){saveRecording(true);}else render();},650);return;}
  if(action==='save-send'||action==='save-local'){saveRecording(action==='save-send');return;}
  if(action==='sources'){closeModal();state.tab='audio';navigate('settings');return;}
  if(action==='refresh'){render();toast('Přehled obnoven · pouze fiktivní data');return;}
@@ -231,7 +231,7 @@ document.addEventListener('click',event=>{
  if(action==='save-company'){state.defaultCompany=state.companyChoice;state.companyDirty=false;render();toast('Výchozí firma uložena pro nové schůzky.');return;}
  if(action==='load-companies'){state.companyError=false;render();toast('Nabídka firem obnovena · simulace');return;}
  if(action==='discard-nav'||action==='save-nav'){if(action==='save-nav'&&state.companyDirty)state.defaultCompany=state.companyChoice;if(action==='discard-nav'){state.companyChoice=state.defaultCompany;if(recordOriginal&&r&&state.draftDirty)Object.assign(r,recordOriginal);}state.companyDirty=false;state.draftDirty=false;closeModal();navigate(el.dataset.page);return;}
- if(action==='theme'){document.documentElement.dataset.theme=el.dataset.value;$('.theme-select').value=el.dataset.value;render();return;}
+ if(action==='theme'){globalThis.document.documentElement.dataset.theme=el.dataset.value;$('.theme-select').value=el.dataset.value;render();return;}
  if(action==='grant-mic'||action==='grant-system'){modal(action==='grant-mic'?'Povolit mikrofon':'Povolit systémový zvuk',`<p>${action==='grant-system'?'V nastavení macOS povolte LuDone záznam systémového zvuku. Pak se vraťte do aplikace.':'macOS zobrazí žádost o přístup k mikrofonu.'}</p><p class="small-note">Tady je pouze návrh postupu, žádná skutečná žádost se neposílá.</p>`,btn('Zrušit','close-modal')+btn('Simulovat povolení','grant-confirm','primary','',`data-key="${action==='grant-mic'?'mic':'system'}"`));return;}
  if(action==='grant-confirm'){state[el.dataset.key]=true;closeModal();render();return;}
  if(action==='permission-check'){render();toast('Ukázka kontroly oprávnění dokončena.');return;}
@@ -248,7 +248,7 @@ document.addEventListener('click',event=>{
  if(action==='shortcuts'){modal('Klávesové zkratky',`<div class="shortcut-row"><span>Rychlé akce</span><kbd>⌘ K</kbd></div><div class="shortcut-row"><span>Ukončit nahrávání</span><kbd>⌃ ⌥ R</kbd></div><div class="shortcut-row"><span>Panel v liště</span><kbd>⌃ ⌥ L</kbd></div><div class="shortcut-row"><span>Nahrát / zastavit v maketě</span><kbd>⌘ ⇧ R</kbd></div><div class="shortcut-row"><span>Hledat v nahrávkách</span><kbd>⌘ F</kbd></div><div class="shortcut-row"><span>Nastavení</span><kbd>⌘ ,</kbd></div><div class="shortcut-row"><span>Zavřít dialog</span><kbd>Esc</kbd></div>`,btn('Hotovo','close-modal','primary'));return;}
  if(action==='tray'){openTray();return;}
  if(action==='tray-menu'){modal('LuDone · nabídka',`<div class="detail-actions">${btn('Otevřít LuDone na webu','open-web','','web')}${btn('Nastavení','quick-nav','','settings','data-page="settings"')}${btn('Aktualizace','quick-nav','','update','data-page="updates"')+btn('Klávesové zkratky','shortcuts','','keyboard')+btn('O aplikaci','about','','info')}${btn('Ukončit LuDone','quit','danger')}</div>`,btn('Zavřít','close-modal'));return;}
- if(action==='check-update'){state.update='downloading';render();setTimeout(()=>{state.update='ready';render();toast('Fiktivní verze 0.1.8 je připravená.');},900);return;}
+ if(action==='check-update'){state.update='downloading';render();globalThis.setTimeout(()=>{state.update='ready';render();toast('Fiktivní verze 0.1.8 je připravená.');},900);return;}
  if(action==='defer'){state.deferred=true;render();toast('Aktualizace odložena. Najdete ji v navigaci.');return;}
  if(action==='install'){state.installRequested=true;render();if(state.phase==='idle')finishInstall();return;}
  if(action==='update-notification'){modal('Ukázka oznámení macOS',`<div class="notice"><img src="LuDone.svg" width="28" alt=""><div><strong>LuDone Desktop</strong><p>Nová verze je připravená. Aktualizujte, až se vám to hodí.</p></div></div>`,btn('Hotovo','close-modal','primary'));return;}
@@ -256,7 +256,7 @@ document.addEventListener('click',event=>{
  if(action==='onboarding-next'){state.onboarding=Math.min(4,state.onboarding+1);render();return;}
  if(action==='finish-onboarding'){state.page='home';render();return;}
 });
-document.addEventListener('input',event=>{
+globalThis.document.addEventListener('input',event=>{
  const el=event.target,key=el.dataset.field;
  if(key==='draft-title'){state.draft.title=el.value;return;}
  if(key==='search'){
@@ -265,7 +265,7 @@ document.addEventListener('input',event=>{
   search.focus({preventScroll:true});search.setSelectionRange(start,end);$('.content').scrollTop=scroll;
  }
 });
-document.addEventListener('change',event=>{
+globalThis.document.addEventListener('change',event=>{
  const el=event.target,key=el.dataset.field;
  if(key==='period'){state.period=el.value;state.pageIndex=0;render();if(el.value==='custom')$('[data-action=range]').click();return;}
  if(key==='draft-company')state.draft.company=el.value;
@@ -276,11 +276,11 @@ document.addEventListener('change',event=>{
  if(key==='heard-mic')state.heardMic=el.checked;
  if(key==='heard-system')state.heardSystem=el.checked;
  if(key==='environment'){modal('Změnit prostředí?',`<p>Pro přechod na jiný server je potřeba nové přihlášení. Místní nahrávky zůstanou zachované.</p>`,btn('Zrušit','close-modal')+btn('Změnit a odhlásit','environment-confirm','primary','',`data-value="${el.value}"`));return;}
- if(key){render();document.querySelector(`[data-field="${key}"]`)?.focus({preventScroll:true});}
+ if(key){render();globalThis.document.querySelector(`[data-field="${key}"]`)?.focus({preventScroll:true});}
 });
-document.addEventListener('keydown',event=>{
+globalThis.document.addEventListener('keydown',event=>{
  if(event.key==='Escape'){if(!$('.modal-layer').hidden){closeModal();}else if(state.page!=='detail'){menuOpen=false;render();}return;}
- if(!$('.modal-layer').hidden&&event.key==='Tab'){const items=[...$('.sheet').querySelectorAll('button:not(:disabled),input,select,a[href]')];const i=items.indexOf(document.activeElement);if(event.shiftKey&&i===0){event.preventDefault();items.at(-1)?.focus();}else if(!event.shiftKey&&i===items.length-1){event.preventDefault();items[0]?.focus();}return;}
+ if(!$('.modal-layer').hidden&&event.key==='Tab'){const items=[...$('.sheet').querySelectorAll('button:not(:disabled),input,select,a[href]')];const i=items.indexOf(globalThis.document.activeElement);if(event.shiftKey&&i===0){event.preventDefault();items.at(-1)?.focus();}else if(!event.shiftKey&&i===items.length-1){event.preventDefault();items[0]?.focus();}return;}
  if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();if(!$('.modal-layer').hidden)closeModal();else $('[data-action=quick-actions]')?.click();return;}
  if(!$('.modal-layer').hidden)return;
  if(event.ctrlKey&&event.altKey&&event.key.toLowerCase()==='l'){event.preventDefault();openTray();return;}
@@ -289,17 +289,20 @@ document.addEventListener('keydown',event=>{
  if((event.metaKey||event.ctrlKey)&&event.key===','){event.preventDefault();navigate('settings');}
  if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='f'){event.preventDefault();navigate('library');$('[data-field=search]')?.focus();}
 });
-document.body.innerHTML=`<header class="preview-bar"><div class="preview-label"><strong>${concept.toUpperCase()} · ${concepts[concept][0]}</strong> <span class="muted">Celá aplikace · klikací maketa</span></div><a href="index.html">Porovnat návrhy</a><select class="scenario" aria-label="Ukázková situace">${scenarios.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><select class="theme-select" aria-label="Téma makety"><option value="light">Světlé</option><option value="professional">Profesionální</option><option value="dark">Tmavé</option></select><button data-action="reset-preview">Reset</button></header><section class="menubar-scene" aria-label="Návrh ovládání z horní lišty"><header class="mac-menubar"><span class="menu-os-brand" aria-hidden="true">◆ &nbsp; LuDone Desktop</span><button class="menubar-trigger" data-action="menu-toggle" aria-label="LuDone v horní liště" aria-expanded="true"><img src="LuDone.svg" alt=""><span class="menu-live-status"></span></button><span class="menu-os-time" aria-hidden="true">Pá 10:32</span></header><section class="menu-popover" aria-label="Panel LuDone"><header class="menu-popover-header"><div class="menu-brand"><img src="LuDone.svg" alt=""><h1 class="menu-popover-title">LuDone</h1></div><div class="popover-actions"><button class="icon-btn" data-action="tray-menu" aria-label="Další možnosti">${icon('settings')}</button><button class="icon-btn" data-action="hide-menu" aria-label="Zavřít panel">${icon('close')}</button></div></header><div class="menu-popover-body"></div><footer class="menu-popover-footer"><button class="menu-tab" data-action="nav" data-page="home" aria-label="Nahrávat">${icon('record')}<span>Nahrávat</span></button><button class="menu-tab" data-action="nav" data-page="library" aria-label="Nahrávky">${icon('library')}<span>Nahrávky</span></button><button class="menu-tab" data-action="nav" data-page="queue" aria-label="Odesílání">${icon('cloud')}<span>Odesílání</span></button><button class="menu-tab" data-action="nav" data-page="settings" aria-label="Nastavení">${icon('settings')}<span>Nastavení</span></button></footer></section></section><div class="desktop-stage"><div class="window"><header class="titlebar"><span class="traffic"><button class="window-close" data-action="tray" aria-label="Zavřít detail a vrátit se do lišty"></button><i></i><i></i></span><div class="app-title"><img src="LuDone.svg" alt=""><span>LuDone Desktop</span></div><div class="window-actions"><button class="icon-btn" data-action="tray" aria-label="Panel v liště" title="Panel v liště">${icon('tray')}</button><button class="icon-btn" data-action="quick-actions" aria-label="Rychlé akce (⌘K)" title="Rychlé akce (⌘K)">${icon('keyboard')}</button></div></header><div class="app-layout"><nav class="app-nav" aria-label="Hlavní navigace"></nav><main class="workspace"><header class="workspace-head menu-page-head"></header><div class="global-notice menu-notice"></div><div class="content menu-content"></div></main></div></div></div><div class="modal-layer" hidden></div><div class="toast" hidden role="status"></div>`;
-$('.theme-select').value=document.documentElement.dataset.theme;
-$('.theme-select').addEventListener('change',event=>{document.documentElement.dataset.theme=event.target.value;render();});
+globalThis.document.body.innerHTML=`<header class="preview-bar"><div class="preview-label"><strong>${concept.toUpperCase()} · ${concepts[concept][0]}</strong> <span class="muted">Celá aplikace · klikací maketa</span></div><a href="index.html">Porovnat návrhy</a><select class="scenario" aria-label="Ukázková situace">${scenarios.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><select class="theme-select" aria-label="Téma makety"><option value="light">Světlé</option><option value="professional">Profesionální</option><option value="dark">Tmavé</option></select><button data-action="reset-preview">Reset</button></header><section class="menubar-scene" aria-label="Návrh ovládání z horní lišty"><header class="mac-menubar"><span class="menu-os-brand" aria-hidden="true">◆ &nbsp; LuDone Desktop</span><button class="menubar-trigger" data-action="menu-toggle" aria-label="LuDone v horní liště" aria-expanded="true"><img src="LuDone.svg" alt=""><span class="menu-live-status"></span></button><span class="menu-os-time" aria-hidden="true">Pá 10:32</span></header><section class="menu-popover" aria-label="Panel LuDone"><header class="menu-popover-header"><div class="menu-brand"><img src="LuDone.svg" alt=""><h1 class="menu-popover-title">LuDone</h1></div><div class="popover-actions"><button class="icon-btn" data-action="tray-menu" aria-label="Další možnosti">${icon('settings')}</button><button class="icon-btn" data-action="hide-menu" aria-label="Zavřít panel">${icon('close')}</button></div></header><div class="menu-popover-body"></div><footer class="menu-popover-footer"><button class="menu-tab" data-action="nav" data-page="home" aria-label="Nahrávat">${icon('record')}<span>Nahrávat</span></button><button class="menu-tab" data-action="nav" data-page="library" aria-label="Nahrávky">${icon('library')}<span>Nahrávky</span></button><button class="menu-tab" data-action="nav" data-page="queue" aria-label="Odesílání">${icon('cloud')}<span>Odesílání</span></button><button class="menu-tab" data-action="nav" data-page="settings" aria-label="Nastavení">${icon('settings')}<span>Nastavení</span></button></footer></section></section><div class="desktop-stage"><div class="window"><header class="titlebar"><span class="traffic"><button class="window-close" data-action="tray" aria-label="Zavřít detail a vrátit se do lišty"></button><i></i><i></i></span><div class="app-title"><img src="LuDone.svg" alt=""><span>LuDone Desktop</span></div><div class="window-actions"><button class="icon-btn" data-action="tray" aria-label="Panel v liště" title="Panel v liště">${icon('tray')}</button><button class="icon-btn" data-action="quick-actions" aria-label="Rychlé akce (⌘K)" title="Rychlé akce (⌘K)">${icon('keyboard')}</button></div></header><div class="app-layout"><nav class="app-nav" aria-label="Hlavní navigace"></nav><main class="workspace"><header class="workspace-head menu-page-head"></header><div class="global-notice menu-notice"></div><div class="content menu-content"></div></main></div></div></div><div class="modal-layer" hidden></div><div class="toast" hidden role="status"></div>`;
+$('.theme-select').value=globalThis.document.documentElement.dataset.theme;
+$('.theme-select').addEventListener('change',event=>{globalThis.document.documentElement.dataset.theme=event.target.value;render();});
 $('.scenario').addEventListener('change',event=>applyScenario(event.target.value));
 $('[data-action=reset-preview]').addEventListener('click',()=>applyScenario($('.scenario').value));
 applyScenario(scenarios.some(([v])=>v===query.get('scenario'))?query.get('scenario'):'ready');
 if(state.page==='settings'&&tabs.some(([id])=>id===query.get('tab'))){state.tab=query.get('tab');render();}
-setInterval(()=>{if(state.phase==='recording'){state.seconds++;document.querySelectorAll('[data-live-time]').forEach(el=>el.textContent=clock());}},1000);
+globalThis.setInterval(()=>{if(state.phase==='recording'){state.seconds++;globalThis.document.querySelectorAll('[data-live-time]').forEach(el=>el.textContent=clock());}},1000);
+
+// Výslovné sdílené rozhraní návrhu; getter sleduje výměnu scénáře.
+globalThis.LuDonePreview = Object.freeze({ get state() { return state; }, icon });
 
 /* Oddělený prezentační hook se volá až po inicializaci fiktivního stavu. */
 if(['f','g'].includes(concept)){
- const layoutScript=document.createElement('script');layoutScript.src=`sonnet-${concept}-layout.js?v=1`;
- layoutScript.onload=()=>render();document.head.append(layoutScript);
+ const layoutScript=globalThis.document.createElement('script');layoutScript.src=`sonnet-${concept}-layout.js?v=1`;
+ layoutScript.onload=()=>render();globalThis.document.head.append(layoutScript);
 }

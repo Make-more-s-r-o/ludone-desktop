@@ -19,6 +19,7 @@ const {
   shell,
   systemPreferences,
 } = require("electron");
+const { createDetailCloseGuard } = require("./detail-close.cjs");
 const { createHash, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -1143,11 +1144,17 @@ function createSettingsWindow(initialTab = "account") {
   panelWindow?.webContents.send("settings:select-tab", initialTab);
 }
 
+let detailCloseGuard;
+
 function createRecordingDetailWindow(recordingId) {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
-    settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), { hash: "settings", query: { recordingId } });
-    settingsWindow.show();
-    settingsWindow.focus();
+    const currentWindow = settingsWindow;
+    void detailCloseGuard.request(() => {
+      if (currentWindow.isDestroyed() || currentWindow !== settingsWindow) return;
+      currentWindow.loadFile(path.join(DIST_ROOT, "index.html"), { hash: "settings", query: { recordingId } });
+      currentWindow.show();
+      currentWindow.focus();
+    });
     return;
   }
 
@@ -1175,6 +1182,26 @@ function createRecordingDetailWindow(recordingId) {
     },
   });
 
+  const detailWindow = settingsWindow;
+  detailCloseGuard = createDetailCloseGuard({
+    choose: async () => {
+      const answer = await dialog.showMessageBox(detailWindow, {
+        type: "question", title: "Neuložené volby nahrávky",
+        message: "Uložit změnu firmy a přístupu před zavřením?",
+        detail: "Uložení voleb samo nic neodešle.",
+        buttons: ["Uložit", "Zahodit změny", "Zůstat"], defaultId: 2, cancelId: 2,
+      });
+      return ["save", "discard", "stay"][answer.response] ?? "stay";
+    },
+    requestSave: (id) => detailWindow.webContents.send("detail:save-before-close", id),
+  });
+  const guard = detailCloseGuard;
+  detailWindow.webContents.on("render-process-gone", () => guard.cancel());
+  detailWindow.on("close", (event) => {
+    if (!guard.dirty) return;
+    event.preventDefault();
+    void guard.request(() => { if (!detailWindow.isDestroyed()) detailWindow.close(); });
+  });
   settingsWindow.loadFile(path.join(DIST_ROOT, "index.html"), {
     hash: "settings",
     query: { recordingId },
@@ -1186,6 +1213,7 @@ function createRecordingDetailWindow(recordingId) {
   settingsWindow.on("closed", () => {
     invalidateUploadCompanySelection();
     settingsWindow = undefined;
+    detailCloseGuard = undefined;
   });
 }
 
@@ -2059,6 +2087,14 @@ onValidated("recordings:open-detail", ["panel"], (_event, id, ...extraPayload) =
   createRecordingDetailWindow(id);
 });
 onValidated("settings:close", ["panel", "settings"], () => settingsWindow?.close());
+handleValidated("detail:set-dirty", ["settings"], (_event, value, ...extra) => {
+  if (extra.length || typeof value !== "boolean" || !detailCloseGuard) throw new TypeError("Neplatný stav detailu");
+  detailCloseGuard.setDirty(value);
+});
+handleValidated("detail:saved-before-close", ["settings"], (_event, id, success, ...extra) => {
+  if (extra.length || typeof id !== "string" || !QUEUE_ITEM_ID_PATTERN.test(id) || typeof success !== "boolean" || !detailCloseGuard) throw new TypeError("Neplatné potvrzení detailu");
+  detailCloseGuard.saved(id, success);
+});
 handleValidated("settings:get-device-name", ["panel", "settings"], (_event, ...extraPayload) => {
   requireNoPayload("settings:get-device-name", extraPayload);
   if (IS_TEST_RUN && process.env.LUDONE_DESIGN_E2E === "1") return "Testovací Mac";
@@ -4005,6 +4041,7 @@ function updateBlockingActivityIsRunning() {
   // serializační bariéra fronty níž. Export stage se smaže až po potvrzeném
   // `recording:export`, takže zahrnuje i uloženou nahrávku čekající na pojmenování.
   return recordingInterruptionIsBlocked()
+    || detailCloseGuard?.dirty === true
     || appState.trackingOwners.size > 0;
 }
 
@@ -5251,6 +5288,11 @@ app.on("activate", () => {
 });
 
 app.on("before-quit", (event) => {
+  if (detailCloseGuard?.dirty) {
+    event.preventDefault();
+    void detailCloseGuard.request(() => app.quit());
+    return;
+  }
   outboundQueueScheduler?.stop();
   clearTimeout(trayVisibilityTimer);
   trayVisibilityTimer = undefined;

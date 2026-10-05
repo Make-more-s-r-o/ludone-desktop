@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { osaRecordingStatus, selectOsaRecordings } from "../src/lib/osa-recordings.js";
+import { osaRecordingStatus, osaRecordingNode, osaQueueCount, selectOsaRecordings } from "../src/lib/osa-recordings.js";
 
 const row = (id, createdAt, extra = {}) => ({ id, createdAt, title: "Porada", ...extra });
 
@@ -47,5 +47,29 @@ describe("F Osa skutečný seznam", () => {
     const result = selectOsaRecordings(items);
     expect(result.items.map(i => i.id)).toEqual(["a", "b", "c"]);
     expect(result.groups.map(g => [g.key, g.items.length])).toEqual([["2026-10-05", 2], ["unknown", 1]]);
+  });
+});
+
+
+describe("F uzly a fronta", () => {
+  it("odliší odesláno bez serverové odpovědi od čerstvě ověřeného", () => {
+    const sent = { state: "odeslano", ownership: "current", localState: "complete-audio" };
+    expect(osaRecordingNode(sent)).toBe("unverified");
+    expect(osaRecordingNode(sent, true)).toBe("verified");
+    expect(osaRecordingNode({ ...sent, recordingInProgress: true }, true)).toBe("recording");
+  });
+  it("chyba i čekání na vlastníka jsou v badge, held není schválení uploadu", () => {
+    const items = [
+      { state: "ceka", uploadIntent: "held" },
+      { state: "ceka", uploadIntent: "approved" },
+      { state: "selhalo" },
+      { state: "ceka", uploadIntent: "held", requiresHumanAction: true },
+      { state: "odeslano" },
+    ];
+    expect(osaQueueCount(items)).toBe(3);
+    expect(osaRecordingNode(items[0])).toBe("local");
+    expect(osaRecordingNode(items[1])).toBe("pending");
+    expect(osaRecordingNode(items[2])).toBe("error");
+    expect(osaRecordingNode(items[3])).toBe("error");
   });
 });

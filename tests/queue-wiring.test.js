@@ -1011,6 +1011,8 @@ function openSettingsAndCreateEvent(harness, initialTab) {
   expect(openSettings).toBeTypeOf("function");
   if (initialTab === undefined) openSettings(panelEvent);
   else openSettings(panelEvent, initialTab);
+  // F ponechává nastavení v panelu; služby role settings měříme přes skutečný detail.
+  harness.ipcListeners.get("recordings:open-detail")(panelEvent, "40000000-0000-4000-8000-000000000001");
   const settingsContents = harness.windows[1]?.webContents;
   expect(settingsContents).toBeTruthy();
   return {

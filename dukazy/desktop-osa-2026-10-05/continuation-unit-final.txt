@@ -1,0 +1,2 @@
+JSON report written to /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/dukazy/desktop-osa-2026-10-05/continuation-unit-report.json
+EXIT_CODE=1

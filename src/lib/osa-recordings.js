@@ -82,3 +82,17 @@ export function selectOsaRecordings(items, query = {}, now = new Date()) {
   }
   return { items: pageRows.map(row => row.item), total, page, pageCount, pageSize: OSA_PAGE_SIZE, groups, error };
 }
+
+// Uzly nemají odvozovat serverové ověření ze samotného odeslání.
+export function osaRecordingNode(item, verified = false) {
+  if (item.recordingInProgress) return "recording";
+  if (osaRecordingStatus(item) === "attention") return "error";
+  if (verified) return "verified";
+  if (item.state === "odeslano") return "unverified";
+  if (osaRecordingStatus(item) === "waiting") return "pending";
+  return "local";
+}
+
+export function osaQueueCount(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && ["waiting", "attention"].includes(osaRecordingStatus(item))).length;
+}

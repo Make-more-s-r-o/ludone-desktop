@@ -270,6 +270,12 @@ try {
   await waitFor(()=>detail.evaluate("Boolean(document.querySelector('.recording-queue-card__detail'))"),'detail content');
   check('detail-separate-860-580',await detail.evaluate('innerWidth===860 && innerHeight===580'));
   check('detail-actual-fixture',await detail.evaluate(`Boolean(document.querySelector('[data-recording-id="${fixtureRecordingId}"]'))`));
+  await detail.evaluate("document.querySelector('.osa-station button')?.click()");
+  await waitFor(()=>detail.evaluate("Boolean(document.querySelector('audio'))"),'React playback element');
+  await detail.evaluate("document.querySelector('audio').muted=true");
+  await waitFor(()=>detail.evaluate("document.querySelector('audio')?.currentTime>0.1"),'React playback advances');
+  check('detail-react-playback-advances',await detail.evaluate("document.querySelector('audio').readyState>=2 && !document.querySelector('audio').error"));
+  await detail.evaluate("document.querySelector('audio').pause()");
   await screenshot('detail',detail);
   await panel.evaluate('window.ludone.returnToNowPanel()');await delay(300);await navigate('home');
   await installSyntheticAudioCapture(panel);

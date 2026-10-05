@@ -77,8 +77,8 @@ async function renderSettings({
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
   };
-  const logoutMock = vi.fn(logout);
-  const setAuthOriginMock = vi.fn(setAuthOrigin);
+  const logoutMock = vi.fn(() => logout());
+  const setAuthOriginMock = vi.fn((value) => setAuthOrigin(value));
   let settingsTabRequested;
   let authSessionChanged;
   const switchAuthOriginImplementation = switchAuthOrigin ?? (async (value) => {
