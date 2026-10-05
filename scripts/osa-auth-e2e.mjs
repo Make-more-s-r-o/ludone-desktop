@@ -19,8 +19,10 @@ function check(name, value) {
   if (!value) throw new Error(name);
 }
 let exitCode = 1;
+let matrix = [];
+const modes = (process.env.LUDONE_OSA_MODES || "complete,expired,companies-error,rate,incomplete,mismatch,offline").split(",");
 try {
-  for (const mode of (process.env.LUDONE_OSA_MODES || "complete,expired,companies-error,rate,incomplete,mismatch,offline").split(",")) {
+  for (const mode of modes) {
     const parent = await realpath(await mkdtemp(path.join(os.tmpdir(), "ludone-osa-auth-e2e-")));
     const root = path.join(parent, "isolated-data");
     await mkdir(root, { mode: 0o700 });
@@ -45,14 +47,16 @@ try {
     const clickText = async (text, client = detail) => {
       await client.send("Page.bringToFront");
       await delay(400);
-      await client.evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(text)}));if(!b)throw new Error('Chybí tlačítko');b.dataset.osaPointerTarget='true';})()`);
+      await client.evaluate(`(()=>{document.querySelector('[data-osa-pointer-target]')?.removeAttribute('data-osa-pointer-target');const b=[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(text)}));if(!b)throw new Error('Chybí tlačítko');b.dataset.osaPointerTarget='true';})()`);
       await click('[data-osa-pointer-target="true"]', client);
-      await client.evaluate("document.querySelector('[data-osa-pointer-target]')?.removeAttribute('data-osa-pointer-target')");
     };
     const capture = async (name, client = panel) => {
+      await delay(200);
+      await client.evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
       const data = await client.evaluate("window.ludone.testCaptureWindow()");
       if (!data?.startsWith("data:image/png;base64,")) throw new Error("Chybí nativní snímek");
       await writeFile(path.join(output, `${mode}-${name}.png`), Buffer.from(data.split(",")[1], "base64"));
+      check(`${mode}-${name}-system-font`, await client.evaluate("[...document.querySelectorAll('h1,h2,h3,p,button,label,select,input,strong,small,time')].filter(el=>el.getClientRects().length).every(el=>getComputedStyle(el).fontFamily.includes('-apple-system'))"));
       check(`${mode}-${name}-no-horizontal-overflow`, await client.evaluate("document.documentElement.scrollWidth<=innerWidth"));
     };
     const navigate = async page => {
@@ -65,7 +69,7 @@ try {
       await waitFor(() => panel.evaluate("Boolean(document.querySelector('.osa-shell'))"), "shell");
       if (mode === "complete") {
         for (const theme of ["light", "professional", "dark"]) {
-          await panel.evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
+          await panel.evaluate(`localStorage.setItem('ludone.desktop.theme',${JSON.stringify(theme)});document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
           await capture(`${theme}-onboarding`);
         }
       }
@@ -81,7 +85,7 @@ try {
       const snapshot = await panel.evaluate("window.ludone.listLocalRecordings()");
       check(`${mode}-four-real-disk-recordings`, snapshot.items.length === 4);
       for (const theme of ["light", "professional", "dark"]) {
-        await panel.evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
+        await panel.evaluate(`localStorage.setItem('ludone.desktop.theme',${JSON.stringify(theme)});document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
         await navigate("home"); await capture(`${theme}-ready`);
         await navigate("library"); await capture(`${theme}-history`);
         if (mode === "complete") {
@@ -97,7 +101,7 @@ try {
         const detailTarget = await waitFor(async () => (await getTargets(port)).find(item => item.url.includes("recordingId=")), "detail");
         detail?.close(); detail = await connect(detailTarget);
         await waitFor(() => detail.evaluate("Boolean(document.querySelector('.recording-queue-card__detail'))"), "detail loaded");
-        await detail.evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
+        await detail.evaluate(`localStorage.setItem('ludone.desktop.theme',${JSON.stringify(theme)});document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
         if (!["expired", "companies-error", "offline"].includes(mode)) {
           await clickText("Ověřit v LuDone");
           const expected = { complete: "complete", incomplete: "incomplete", mismatch: "mismatch", rate: "rate_limited" }[mode];
@@ -119,7 +123,7 @@ try {
             await panel.evaluate(`window.ludone.openRecordingDetail('40000000-0000-4000-8000-000000000${fixtureId}')`);
             detail = await connect(await waitFor(async () => (await getTargets(port)).find(t=>t.url.includes("recordingId=")), scenario));
             await waitFor(() => detail.evaluate("Boolean(document.querySelector('.recording-queue-card__detail'))"), scenario);
-            await detail.evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
+            await detail.evaluate(`localStorage.setItem('ludone.desktop.theme',${JSON.stringify(theme)});document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
             check(`${theme}-${scenario}-actual-disk-state`, await detail.evaluate(scenario === "unclaimed" ? "document.body.textContent.includes('Převzít')" : "!document.querySelector('.osa-station button')?.textContent.includes('Přehrát')"));
             await capture(`${theme}-${scenario}`,detail);
             await detail.evaluate("window.ludone.closeSettings()"); detail.close();detail=null;
@@ -138,6 +142,7 @@ try {
           await capture(`${theme}-saving`);
           await unlink(path.join(root, ".public-hold-finalization"));
           await waitFor(() => panel.evaluate("Boolean(document.querySelector('.recording-card--saved'))"), "real save decision", 20000);
+          check(`${theme}-save-actions-side-by-side-visible`, await panel.evaluate("(()=>{const buttons=[...document.querySelectorAll('.recording-saved__actions>button')];if(buttons.length!==2)return false;const [a,b]=buttons.map(el=>el.getBoundingClientRect());return a.width>0&&b.width>0&&Math.abs(a.top-b.top)<2&&a.bottom<=innerHeight&&b.bottom<=innerHeight;})()"));
           await capture(`${theme}-save`);
           await click('.recording-saved__skip');
           await waitFor(() => panel.evaluate("!document.querySelector('.recording-card--saved')"), "local decision persisted");
@@ -160,7 +165,7 @@ try {
         const claimed = await detail.evaluate("window.ludone.listLocalRecordings().then(s=>s.items.find(i=>i.id.endsWith('003')))");
         check("claim-disk-owner-without-upload", claimed.uploadIntent === "held" && claimed.ownership === "current");
         for (const theme of ["light", "professional", "dark"]) {
-          await detail.evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
+          await detail.evaluate(`localStorage.setItem('ludone.desktop.theme',${JSON.stringify(theme)});document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
           await capture(`${theme}-local-detail`, detail);
         }
         const targetVisibility = claimed.uploadPreferences?.visibility === "private" ? "company" : "private";
@@ -214,7 +219,19 @@ try {
       if (mode === "complete" && scenarioCompleted) check("dirty-all-three-dialog-decisions", JSON.stringify(audit.dialogChoices) === "[2,1,0]");
     }
   }
+  if (["complete", "expired", "companies-error", "rate", "offline"].every(mode => modes.includes(mode))) {
+    const scenes = { ready: ["complete", "ready"], recording: ["complete", "recording"], saving: ["complete", "saving"], save: ["complete", "save"], history: ["complete", "history"], detail: ["complete", "local-detail"], sent: ["complete", "detail"], queue: ["complete", "queue"], offline: ["offline", "queue"], expired: ["expired", "queue"], unclaimed: ["complete", "unclaimed"], rate: ["rate", "detail"], missing: ["complete", "missing"], "system-lost": ["complete", "system-lost"], "microphone-only": ["complete", "microphone-only"], "companies-error": ["companies-error", "detail"], onboarding: ["complete", "onboarding"], settings: ["complete", "account"], "settings-audio": ["complete", "audio"], "settings-device": ["complete", "device"], "settings-storage": ["complete", "storage"], "settings-diagnostics": ["complete", "diagnostics"], updates: ["complete", "updates"], tray: ["complete", "tray"] };
+    for (const [scenario, [mode, view]] of Object.entries(scenes)) {
+      for (const theme of ["light", "professional", "dark"]) {
+        const file = `${mode}-${theme}-${view}.png`;
+        const bytes = await readFile(path.join(output, file));
+        check(`matrix-${scenario}-${theme}`, bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
+        matrix.push({ scenario, theme, file, actualElectron: true, syntheticIdentity: true, syntheticTransport: true });
+      }
+    }
+    check("matrix-24-scenarios-three-themes", matrix.length === 72);
+  }
   exitCode = 0;
 } catch (error) { console.error(error.message); }
-await writeFile(path.join(output, "results.json"), JSON.stringify({ exitCode, observations, syntheticIdentity: true, syntheticTransport: true, productionServerVerified: false }, null, 2));
+await writeFile(path.join(output, "results.json"), JSON.stringify({ exitCode, observations, matrix, matrixComplete: matrix.length === 72, syntheticIdentity: true, syntheticTransport: true, productionServerVerified: false }, null, 2));
 console.log(`Důkazy: ${output}\nEXIT_CODE=${exitCode}`); process.exitCode = exitCode;

@@ -928,7 +928,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
               Ukončit LuDone
             </button>
           ) : (
-            <>
+            <div className="recording-saved__actions">
               <button
                 type="submit"
                 className="button button--primary button--wide"
@@ -945,7 +945,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
               >
                 Nechat na Macu
               </button>
-            </>
+            </div>
           )}
         </form>
       ) : session.phase === "idle" ? (

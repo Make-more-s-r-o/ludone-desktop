@@ -17,6 +17,7 @@ const checks = [
   ["tray-image-puvodni", "npm", ["run", "test:tray-image"]],
   ["tray-image-F", path.join(root,"node_modules/.bin/electron"), ["tests/osa-tray-image-electron.js"]],
   ["Electron-F", "node", ["scripts/osa-design-e2e.mjs"]],
+  ["Electron-F-24x3-auth-a-detail", "node", ["scripts/osa-auth-e2e.mjs"]],
 ];
 let failures = 0;
 for (const [label, command, args] of checks) {

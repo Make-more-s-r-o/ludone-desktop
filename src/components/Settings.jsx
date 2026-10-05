@@ -26,8 +26,8 @@ const DEFAULTS = {
 const SETTINGS_TABS = Object.freeze([
   { id: "account", label: "Účet" },
   { id: "audio", label: "Zvuk" },
-  { id: "recordings", label: "Ukládání" },
   { id: "device", label: "Zařízení" },
+  { id: "recordings", label: "Ukládání" },
   { id: "diagnostics", label: "Diagnostika" },
 ]);
 const SETTINGS_TAB_ICONS = Object.freeze({
@@ -870,6 +870,7 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
                 label="Automaticky odesílat nové nahrávky"
               />
             </div>
+            <details className="osa-account-advanced"><summary>Pokročilé nastavení</summary>
             <div className="settings-row settings-row--environment" data-testid="settings-environment-row">
               <div>
                 <strong><label htmlFor="settings-environment">Prostředí</label></strong>
@@ -911,6 +912,7 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
                 <strong>{destination.origin ?? "Adresa není známá"}</strong>
               </span>
             </div>
+            </details>
             <div className="settings-action-row">
               <button
                 type="button"
