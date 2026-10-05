@@ -90,7 +90,9 @@ try {
       for (const theme of ["light", "professional", "dark"]) {
         await panel.evaluate(`localStorage.setItem('ludone.desktop.theme',${JSON.stringify(theme)});document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
         await navigate("home"); await capture(`${theme}-ready`);
-        await navigate("library"); await capture(`${theme}-history`);
+        await navigate("library");
+        check(`${theme}-${mode}-history-node-centers`, await panel.evaluate("(()=>{const list=document.querySelector('.recordings-dashboard__list');const entries=[...document.querySelectorAll('.recordings-timeline__entry,.recordings-day__heading')];if(!list||!entries.length)return false;const line=getComputedStyle(list,'::before');const center=list.getBoundingClientRect().left+parseFloat(line.left)+parseFloat(line.width)/2;return entries.every(el=>{const node=getComputedStyle(el,'::before');const x=el.getBoundingClientRect().left+parseFloat(node.left)+parseFloat(node.width)/2;return Math.abs(x-center)<=1;});})()"));
+        await capture(`${theme}-history`);
         if (mode === "complete") {
           await navigate("settings");
           for (const [scenario, section] of [["account", "account"], ["audio", "audio"], ["device", "device"], ["storage", "recordings"], ["diagnostics", "diagnostics"]]) {
