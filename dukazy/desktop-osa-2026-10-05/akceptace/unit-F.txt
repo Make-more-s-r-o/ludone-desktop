@@ -5,7 +5,7 @@ $ npx vitest run tests/osa-playback.test.js tests/osa-tray.test.js tests/osa-rec
 
  Test Files  3 passed (3)
       Tests  17 passed (17)
-   Start at  17:32:25
-   Duration  86ms (transform 30ms, setup 28ms, import 19ms, tests 24ms, environment 0ms)
+   Start at  21:30:14
+   Duration  105ms (transform 46ms, setup 45ms, import 24ms, tests 32ms, environment 0ms)
 
 EXIT_CODE=0

@@ -5,15 +5,15 @@ $ npm run build
 
 vite v7.3.6 building client environment for production...
 transforming...
-✓ 70 modules transformed.
+✓ 71 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/index.html                                         0.66 kB │ gzip:   0.39 kB
+dist/index.html                                         0.66 kB │ gzip:   0.38 kB
 dist/assets/instrument-sans-latin-ext-oUstOPQL.woff2   11.09 kB
 dist/assets/public-sans-latin-ext-NN8edoJ2.woff2       18.37 kB
 dist/assets/public-sans-latin-CcEC6YbM.woff2           26.64 kB
 dist/assets/instrument-sans-latin-CclBWeUS.woff2       29.90 kB
-dist/assets/index-CJXEhDCN.css                        158.06 kB │ gzip:  24.19 kB
-dist/assets/index-BgYV6LvS.js                         360.78 kB │ gzip: 109.47 kB
-✓ built in 373ms
+dist/assets/index-DIQvJACc.css                        165.46 kB │ gzip:  25.39 kB
+dist/assets/index-DJK3eQIA.js                         362.11 kB │ gzip: 109.90 kB
+✓ built in 425ms
 EXIT_CODE=0

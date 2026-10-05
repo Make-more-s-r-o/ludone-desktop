@@ -81,3 +81,20 @@
 ### Push a PR
 
 - 🧪 Implementace a důkazy pushnuté do `feat/desktop-osa`, commit `75a1e7a`; draft PR #160 má aktualizovaný popis. 🧪 CI běh `37334116319` PASS (1m33s), veřejný výsledek `ci-final.json`. Následující commity doplňují pouze dokumentaci a archiv nezávislého review. Po převzetí důkazů budou odstraněny pouze vlastní worker checkouty; integrační checkout zůstává pro PR review.
+
+### Nezávislé vrácení k opravě — 5. 10. 2026 večer
+
+- ⚠️ Root po prohlédnutí všech 24×3 vrátil produktovou přejímku `998d86a` k opravě; zelené brány zůstávají pravdivým checkpointem, nikoli dokončením vizuální akceptace. Převzat docs review `0ca59c5` jako `d03246a`; konkrétní nálezy v `ROOT-FINAL-REVIEW.md`.
+- Probíhají opravy kontrastu aktivního Stop, hierarchie detailu a dosažitelnosti firemních voleb, skutečného F onboardingu, správného scroll owneru a sémantiky chyb firem / limitu / připravené aktualizace. Kontext cíle a posledních schůzek při nahrávání obnovovaný pouze ke čtení; LuTrack neaktivní.
+- 🧪 Izolovaný onboarding pracovník: 51 relevantních původních testů PASS; geometrický model F 43 původních idle testů PASS. Nové nastavení IPC: 324 targeted PASS (7 dodatečných případů), typecheck/lint exit 0, nezávislé bezpečnostní review bez P1/P2. Integrační celek a nová matice ještě čekají.
+- ⚠️ Automatické review odmítlo odstranění dodatečné staré kontroly chyby firmy a později volnější audio assertion. Ani odmítnutá dávka se neprovedla. Starý scénář firmy zachovaný navíc ke správnému post-stop flow; audio disabled kontrola zachovaná, nově navázaná na výslovné potvrzení poslechu člověkem.
+- 🟡 Updater je testován pouze izolovaným inertním veřejným adaptérem přes skutečný controller/IPC; žádný produkční download/install. Permission a auth adaptér jsou syntetické, skutečný profil a OS oprávnění nejsou čtené ani měněné. Fyzický Mac/server zůstávají ⛔.
+
+### Závěrečné opravy po nezávislém root review
+
+- 🧪 Implementační commit `c8b2fb5`: původní `gates:clean` v čistém klonu exit 0; celá sada 1718 kontrol / 1715 PASS / 0 FAIL / 3 původní skipy. Kompletní F akceptace všech 10 PASS, exit 0. Žádné snížení počtu původních testů/assertions, baseline ani skip přidané.
+- 🧪 Finální skutečný Electron `2026-10-05T19-30-41.850Z`: 577 kontrol, 24×3 kanonických snímků a navíc všechny kroky onboardingu ve třech tématech. Stop při výpadku má měřený kontrast a pointer průchod; volby detailu jsou v prvním viewportu a skutečný scroll owner měří overflow, nenulovou pozici i stabilitu.
+- 🧪 Chyba firem skutečně po stopu: výchozí firma a vlastní název zachované, skutečný retry nabídky, disabled send a dostupné místní uložení. Rate-limit je v prvním viewportu serverové stanice s dostupnou recovery. Updater controller přes UI/IPC: stažená veřejná verze, blokace při živém nahrávání, odklad, jedna inertní instalace teprve po explicitním potvrzení v bezpečném stavu a jedno oznámení na verzi přes skutečný restart.
+- 🧪 Nezávislé vizuální review všech 24×3 a všech šesti onboarding kroků×3; následná obnova 18 onboarding + 6 history/queue snímků uzavřela oba dodatečné P2. Bez zbývajících konkrétních P2 v tomto review; `VISUALNI-P2-REVIEW.md`. Nezávislé auth/IPC/queue/test-bootstrap review bez nového P1/P2.
+- 🟡 Všechny adaptéry auth, permissions a updateru jsou výslovně syntetické v izolovaném test entrypointu. Produkční OAuth/permission/update ochrany beze změny. Zvuk je nadále nejvýš 🧪; žádný produkční server/upload/download/install. Historické `998d86a` snímky uložené v `application-root-review-998d86a/`, původní výpisy v `akceptace-pred-p2/`, neúspěšné korekce v `p2-correction/`.
+- 🟡 Opravy připravené k novému nezávislému převzetí rootem v existujícím draft PR #160. Push/CI potvrzení následuje. Fyzická Mac přejímka a nový pokyn pro vydání zůstávají nutné; žádný merge/tag/podpis/publikace/produkční instalace.

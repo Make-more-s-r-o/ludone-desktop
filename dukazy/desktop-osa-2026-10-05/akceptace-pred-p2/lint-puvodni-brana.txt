@@ -1,0 +1,6 @@
+$ npm run lint
+
+> ludone-desktop-prototype@0.1.8 lint
+> eslint .
+
+EXIT_CODE=0

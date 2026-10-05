@@ -45,6 +45,6 @@ PASS upload-held-without-network
 PASS renderer-crash-main-finalizes-and-recovers
 PASS crashed-recording-preserved
 PASS restart-preserves-recordings-and-held-intent
-Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.runtime/osa-e2e/2026-10-05T15-32-37.854Z
+Důkazy: /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/.runtime/osa-e2e/2026-10-05T19-30-26.605Z
 exit code: 0
 EXIT_CODE=0

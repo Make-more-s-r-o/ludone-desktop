@@ -1,6 +1,14 @@
 {
   "syntheticTransport": true,
+  "syntheticAuthFlow": true,
+  "syntheticPermissions": true,
+  "syntheticUpdater": true,
   "identityHookCount": 1,
   "dialogChoices": [],
+  "updaterAudit": {
+    "checks": 1,
+    "installs": 0,
+    "notifications": 0
+  },
   "calls": []
 }

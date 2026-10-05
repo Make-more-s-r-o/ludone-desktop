@@ -9,7 +9,7 @@
 - 🧪 Root ověřil GitHub CI `37334535319`: SUCCESS. Čistý klon a F akceptace
   mají doslovné výpisy s exit 0; celá sada 1708 PASS, 0 FAIL, 3 původní skipy.
 - 🧪 Archivovaný audit celého lockfile uvádí 0 známých nálezů, exit 0.
-- 🧪 `application-final/results.json`: exit 0, 458 observations bez FAIL,
+- 🧪 `application-root-review-998d86a/results.json`: exit 0, 458 observations bez FAIL,
   72 kanonických PNG a další dirty-dialog snímek. Identita a transport jsou
   výslovně syntetické, `productionServerVerified=false`.
 - Tři nezávislí čtecí Sol revieweři skutečně otevřeli všech 24 kontaktních
@@ -33,7 +33,7 @@ systémová lišta a instalace aktualizace nejsou tímto review ověřené.
 
 ## P2-01 — aktivní Stop při výpadku není čitelný
 
-Důkaz: `application-final/{light,professional,dark}-system-lost.png`.
+Důkaz: `application-root-review-998d86a/{light,professional,dark}-system-lost.png`.
 `RecordingCard.jsx` má aktivní `.recording-outage__stop`, ale zděděná barva
 `--panel-sunken` splývá s později změněným pozadím `--panel-card`.
 „Ukončit“ vypadá zakázané; v dark je téměř černé na černém. Test jej přesto klikne.
@@ -44,7 +44,7 @@ Přejímka musí ověřit enabled stav, kontrast, hit-test a pointer průchod.
 
 ## P2-02 — detail nemá hierarchii akcí a voleb F
 
-Důkaz: `application-final/{light,professional,dark}-detail.png` proti
+Důkaz: `application-root-review-998d86a/{light,professional,dark}-detail.png` proti
 `reference/*-detail.png`; root i reviewer potvrdili aktuálního vlastníka.
 „Uložit a odeslat“ má jen `button button--small`, stejný neutrální vzhled jako
 Finder/ověření. Koš ztratil výstražnou roli. Editovatelné volby firmy/přístupu
@@ -57,7 +57,7 @@ Přejímka local/locked/error ve třech tématech, CAS a Save bez uploadu.
 
 ## P2-03 — onboarding je stále starý rám uvnitř F
 
-Důkaz: `application-final/*-onboarding.png`. Vnější F hlavička obsahuje další
+Důkaz: `application-root-review-998d86a/*-onboarding.png`. Vnější F hlavička obsahuje další
 Astra rám s falešnými semafory a Teď / Můj den / Nastavení. Reference má
 jednoduchý průvodce s vlastní svislou osou. Jde o skutečnou kompoziční odchylku,
 nikoli rozdíl testovacích jmen.

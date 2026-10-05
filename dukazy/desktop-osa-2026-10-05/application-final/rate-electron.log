@@ -1,7 +1,6 @@
 
-DevTools listening on ws://127.0.0.1:54132/devtools/browser/29c0b448-0c18-4cbe-99eb-699ae781c96b
-[tray] 2026-10-05T15:34:01.956Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
-[updater] V E2E běhu jsou automatické aktualizace vypnuté.
-[tray] 2026-10-05T15:34:02.057Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+DevTools listening on ws://127.0.0.1:65408/devtools/browser/1494ac22-24eb-4d62-b5e0-8d55984091b2
+[tray] 2026-10-05T19:32:19.323Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[tray] 2026-10-05T19:32:19.458Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
 [queue] Obnova přeskočila neplatný nebo nedokončený manifest; soubory zůstaly beze změny.
 [queue] odesláno 0, konec: žádná položka není připravená

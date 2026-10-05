@@ -5,7 +5,7 @@
 | Kontrola | Výsledek | Doslovný výpis |
 |---|---|---|
 | Původní brány v čistém klonu | 🧪 exit 0 | [gates:clean](gates-clean-final.txt) |
-| Celá sada | 🧪 1708 PASS / 0 FAIL / 3 původní skipy | [unit](akceptace/unit-vsechny-puvodni-i-nove.txt) |
+| Celá sada | 🧪 1715 PASS / 0 FAIL / 3 původní skipy | [unit](akceptace/unit-vsechny-puvodni-i-nove.txt) |
 | Kompletní F akceptace | 🧪 všech 10 samostatných PASS, exit 0 | [F](akceptace-f-final.txt) |
 | Audit lockfile | 🧪 0 známých nálezů, exit 0 | [audit](audit-final.json) |
 | Encoder obou architektur | 🧪 exit 0 | [encoder](encoder-final.txt) |
@@ -23,3 +23,9 @@ Electron ověřuje skutečné služby a disková data: hlavní čas při skrytí
 | Fronta | [reference](reference/dark-queue.png) | [aplikace](application-final/dark-queue.png) |
 
 Panel má skutečně omezenou výšku a vnitřní posouvání. Nepotvrzuje zeleně zvuk před jeho spuštěním; uloženou firmu bez načteného názvu označuje pravdivým obecným textem. Historie má skutečně změřené středy uzlů na ose do 1 px. Vizuální review a fyzická přejímka jsou v [dokumentaci běhu](../../docs/behy/desktop-osa-2026-10-05/STAV.md).
+
+## Korekce po root review
+
+Aktuální `application-final/` pochází z finálního P2 běhu nad `c8b2fb5`. Včetně všech kroků onboardingu navíc. Syntetické auth/permission/updater adaptéry jsou explicitně označené v manifestu/auditu; žádný skutečný účet, OS oprávnění, produkční server ani instalátor. Updater controller ověřuje blokaci při nahrávání, odklad a inertní callback až po explicitním potvrzení, jednou oznámení na verzi napříč dvěma procesy.
+
+Historické snímky vrácené rootem k opravě zůstávají v `application-root-review-998d86a/`, původní zelené výpisy v `akceptace-pred-p2/` a všechny selhávající korekce v `p2-correction/`. Přísnější skutečné měření zahrnuje kontrast a pointer Stop, první viewport editací, nenulový skutečný scroll owner, svislou osu, jediný banner a sémantické chyby/recovery. [Úplné vizuální review a následné uzavření P2](../../docs/behy/desktop-osa-2026-10-05/VISUALNI-P2-REVIEW.md).

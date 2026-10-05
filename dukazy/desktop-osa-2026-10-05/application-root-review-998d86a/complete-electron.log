@@ -1,0 +1,92 @@
+
+DevTools listening on ws://127.0.0.1:54024/devtools/browser/c1760df9-0761-4dc9-8afe-d6aeadd7e6f6
+[tray] 2026-10-05T15:32:52.363Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[tray] 2026-10-05T15:32:52.499Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[queue] Obnova přeskočila neplatný nebo nedokončený manifest; soubory zůstaly beze změny.
+[queue] odesláno 0, konec: žádná položka není připravená
+[tray] 2026-10-05T15:33:03.390Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T15-33-03-390Z-39f31307.
+[tray] 2026-10-05T15:33:03.896Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[tray] 2026-10-05T15:33:04.538Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[recording] Uloženo: mikrofon 15617 B, systém 12761 B.
+[queue] Zařazeno 39f31307-bc0c-4a82-8025-7eb8711e53f3 (recording).
+[tray] 2026-10-05T15:33:04.907Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+[tray] 2026-10-05T15:33:05.499Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+[recording-export] Uloženo 39f31307-bc0c-4a82-8025-7eb8711e53f3; rozdíl startů 0 ms.
+[tray] 2026-10-05T15:33:05.555Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+[tray] 2026-10-05T15:33:05.915Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=3 přihlášen=true
+[recording] Připraven mikrofonní soubor s prefixem 2026-10-05T15-33-05-915Z-62cc8e0e.
+[tray] 2026-10-05T15:33:06.629Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=3 přihlášen=true
+[recording] Uloženo: mikrofon 9821 B.
+[queue] Zařazeno 62cc8e0e-637c-4c2e-afb6-a6508674e418 (recording).
+[tray] 2026-10-05T15:33:06.661Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[tray] 2026-10-05T15:33:07.033Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[recording-export] Uloženo 62cc8e0e-637c-4c2e-afb6-a6508674e418; jednostopý režim bez porovnání stop.
+[tray] 2026-10-05T15:33:07.084Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[tray] 2026-10-05T15:33:17.293Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T15-33-17-293Z-512bfb6c.
+[tray] 2026-10-05T15:33:17.718Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[tray] 2026-10-05T15:33:18.369Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=4 přihlášen=true
+[recording] Uloženo: mikrofon 15617 B, systém 13082 B.
+[queue] Zařazeno 512bfb6c-65d3-495a-8499-347c19a2d4e4 (recording).
+[tray] 2026-10-05T15:33:18.774Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=5 přihlášen=true
+[tray] 2026-10-05T15:33:19.340Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=5 přihlášen=true
+[recording-export] Uloženo 512bfb6c-65d3-495a-8499-347c19a2d4e4; rozdíl startů 0 ms.
+[tray] 2026-10-05T15:33:19.383Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=5 přihlášen=true
+[tray] 2026-10-05T15:33:19.755Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=5 přihlášen=true
+[recording] Připraven mikrofonní soubor s prefixem 2026-10-05T15-33-19-755Z-c9313b85.
+[tray] 2026-10-05T15:33:20.455Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=5 přihlášen=true
+[recording] Uloženo: mikrofon 9821 B.
+[queue] Zařazeno c9313b85-ae2c-4a81-99e8-cf63d85f172f (recording).
+[tray] 2026-10-05T15:33:20.490Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=6 přihlášen=true
+[tray] 2026-10-05T15:33:20.858Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=6 přihlášen=true
+[recording-export] Uloženo c9313b85-ae2c-4a81-99e8-cf63d85f172f; jednostopý režim bez porovnání stop.
+[tray] 2026-10-05T15:33:20.910Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=6 přihlášen=true
+[tray] 2026-10-05T15:33:31.090Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=6 přihlášen=true
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T15-33-31-090Z-c4d54bbe.
+[tray] 2026-10-05T15:33:31.512Z stav=recording-audio-lost nahrávání=true výpadekZvuku=true jenMikrofon=false lutrack=false fronta=6 přihlášen=true
+[tray] 2026-10-05T15:33:32.150Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=6 přihlášen=true
+[recording] Uloženo: mikrofon 15617 B, systém 13082 B.
+[queue] Zařazeno c4d54bbe-c1f9-497b-b4b1-a91b1a81a016 (recording).
+[tray] 2026-10-05T15:33:32.545Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=7 přihlášen=true
+[tray] 2026-10-05T15:33:33.137Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=7 přihlášen=true
+[recording-export] Uloženo c4d54bbe-c1f9-497b-b4b1-a91b1a81a016; rozdíl startů 0 ms.
+[tray] 2026-10-05T15:33:33.186Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=7 přihlášen=true
+[tray] 2026-10-05T15:33:33.549Z stav=recording-microphone-only nahrávání=true výpadekZvuku=false jenMikrofon=true lutrack=false fronta=7 přihlášen=true
+[recording] Připraven mikrofonní soubor s prefixem 2026-10-05T15-33-33-549Z-d47d13b5.
+[tray] 2026-10-05T15:33:34.268Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=7 přihlášen=true
+[recording] Uloženo: mikrofon 9821 B.
+[queue] Zařazeno d47d13b5-c0c3-4186-abfc-10830c41dfe9 (recording).
+[tray] 2026-10-05T15:33:34.299Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=8 přihlášen=true
+[tray] 2026-10-05T15:33:34.670Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=8 přihlášen=true
+[recording-export] Uloženo d47d13b5-c0c3-4186-abfc-10830c41dfe9; jednostopý režim bez porovnání stop.
+[tray] 2026-10-05T15:33:34.720Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=8 přihlášen=true
+[tray] 2026-10-05T15:33:35.687Z stav=attention nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=8 přihlášen=true
+Error occurred in handler for 'upload-companies:list': Error: context_changed
+    at failure (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:10:24)
+    at requireGuard (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:14:62)
+    at stillCurrent (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:85:5)
+    at Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:115:11)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'context_changed'
+}
+
+DevTools listening on ws://127.0.0.1:54024/devtools/browser/c4d9522b-255b-4246-a6fb-43faf2fe1768
+[tray] 2026-10-05T15:33:42.555Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[tray] 2026-10-05T15:33:42.654Z stav=attention nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=8 přihlášen=true
+[queue] Obnovenou nahrávku se nepodařilo zapsat do fronty; soubory zůstaly beze změny.
+[queue] Obnovenou nahrávku se nepodařilo zapsat do fronty; soubory zůstaly beze změny.
+[queue] Obnovenou nahrávku se nepodařilo zapsat do fronty; soubory zůstaly beze změny.
+[queue] Obnova přeskočila neplatný nebo nedokončený manifest; soubory zůstaly beze změny.
+[queue] odesláno 0, konec: žádná položka není připravená
+[tray] 2026-10-05T15:33:43.494Z stav=recording nahrávání=true výpadekZvuku=false jenMikrofon=false lutrack=false fronta=8 přihlášen=true
+[recording] Připraveny oddělené soubory s prefixem 2026-10-05T15-33-43-494Z-558bfdff.
+[tray] 2026-10-05T15:33:44.449Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=8 přihlášen=true
+[recording] Uloženo: mikrofon 12719 B, systém 12719 B.
+[queue] Zařazeno 558bfdff-8df3-4435-9c89-4a0d307d7ff7 (recording).
+[tray] 2026-10-05T15:33:44.486Z stav=decision nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=9 přihlášen=true
+[tray] 2026-10-05T15:33:44.844Z stav=saving nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=9 přihlášen=true
+[recording-export] Uloženo 558bfdff-8df3-4435-9c89-4a0d307d7ff7; rozdíl startů 0 ms.
+[tray] 2026-10-05T15:33:44.895Z stav=attention nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=9 přihlášen=true

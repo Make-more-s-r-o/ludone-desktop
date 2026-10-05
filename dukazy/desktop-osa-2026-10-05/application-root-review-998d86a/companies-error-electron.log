@@ -1,0 +1,115 @@
+
+DevTools listening on ws://127.0.0.1:54107/devtools/browser/1df49a3c-e9e8-421a-adf6-b28aed2d7d73
+[tray] 2026-10-05T15:33:53.589Z stav=signed-out nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=0 přihlášen=false
+[updater] V E2E běhu jsou automatické aktualizace vypnuté.
+[tray] 2026-10-05T15:33:53.713Z stav=idle nahrávání=false výpadekZvuku=false jenMikrofon=false lutrack=false fronta=2 přihlášen=true
+[queue] Obnova přeskočila neplatný nebo nedokončený manifest; soubory zůstaly beze změny.
+[queue] odesláno 0, konec: žádná položka není připravená
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
+Error occurred in handler for 'upload-companies:list': Error: Seznam firem selhal (HTTP 403)
+    at companiesError (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:21:24)
+    at fetchCompanies (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/companies.cjs:66:11)
+    at async timedFetch (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:102:14)
+    at async Object.load (/Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/desktop-osa/electron/upload-company-selection.cjs:116:33)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:2:120495) {
+  code: 'forbidden',
+  status: 403
+}
