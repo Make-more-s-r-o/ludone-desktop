@@ -16,6 +16,7 @@
 | Stop mimo home, rozhodnutí, místní uložení bez uploadu, crash zachování, restart | 🧪 PASS | stejný výpis |
 | Encoder arm64 + x64: zdrojové hashe, Mach-O, podpisová odolnost | 🧪 exit 0 | `encoder-check.txt` |
 | Audit produkčních závislostí | 🧪 0 zranitelností | `audit-production.json` |
+| Úplný audit včetně vývojových závislostí | ⚠️ 7 nálezů: 3 high, 4 moderate; exit 1 | `audit-all.json` |
 | Celá původní unit sada | ⚠️ 201 FAIL / 1468 PASS / 3 původní skipy | `akceptace/unit-vsechny-puvodni-i-nove.txt` |
 | Původní čistá brána | ⚠️ 155 výchozích lint chyb | `final-gates-clean.txt` |
 | F doplňková akceptace včetně původních kontrol | ⚠️ exit 1, dvě samostatné FAIL | `akceptace-final.txt` |

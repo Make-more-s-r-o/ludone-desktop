@@ -12,4 +12,4 @@
 
 🟡 Verze připravena na 0.1.8. Bundle ID, hardened runtime, entitlements, notarizace, oba architekturní cíle a generický update feed zůstávají v existujícím workflow. Encoder pro arm64 i x64 odpovídá připnutým hashům a architekturám. Podpisové klíče ani účty tento běh nečetl nebo nepřenášel.
 
-⚠️ Nejdřív rozhodnout přechod starých Astra kontraktů na F se zachováním bezpečnostních podmínek a vyřešit červenou původní bránu. `F-Osa.mjs` je doplňkové měřidlo, nepovoluje výjimku. Podepsané/notarizované vydání se spustí stávajícím `release-macos.yml` až po review, fyzické přejímce a novém výslovném pokynu. Tag, merge, publikace a produkční instalace v tomto běhu neproběhly.
+⚠️ Vyřešit dependency review sedmi nálezů vývojových závislostí (3 high, 4 moderate; produkční audit je 0). Nejdřív rozhodnout přechod starých Astra kontraktů na F se zachováním bezpečnostních podmínek a vyřešit červenou původní bránu. `F-Osa.mjs` je doplňkové měřidlo, nepovoluje výjimku. Podepsané/notarizované vydání se spustí stávajícím `release-macos.yml` až po review, fyzické přejímce a novém výslovném pokynu. Tag, merge, publikace a produkční instalace v tomto běhu neproběhly.

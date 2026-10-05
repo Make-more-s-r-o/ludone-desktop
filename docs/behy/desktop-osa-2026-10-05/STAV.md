@@ -36,3 +36,11 @@
 - ⛔ Fyzický zvuk, reálná serverová firma/upload/expirace, 24 skutečných situací ve všech tématech, více monitorů a instalace aktualizace nepřijaté. [Konkrétní krátká Mac přejímka](MAC-PREJIMKA.md).
 
 🟡 Implementace předaná do draft review. Není vydaná ani označená jako kompletně zelená akceptace. Push a URL PR doplní závěrečný checkpoint.
+
+## Checkpoint 4 — push a draft PR
+
+✅ Větev pushnutá na origin a založen [draft PR #160](https://github.com/Make-more-s-r-o/ludone-desktop/pull/160). PR je připojený k této úloze. Nejde o merge ani vydání.
+
+⚠️ Dodatečný úplný lockfile audit: 7 nálezů (3 high, 4 moderate) ve vývojových závislostech; produkční audit zůstává 0. GitHub při pushi zvlášť upozornil na 12 nálezů své výchozí větve. Tyto dvě sady nejsou totožný stav. Závislosti nebyly v rámci F měněny, pouze verze aplikace na 0.1.8. `audit-all.json` a exit 1 jsou uložené pro review; nepoužívá se force upgrade nebo změna testovací baseline.
+
+🟡 K převzetí zbývá rozhodnutí o bezpečném přechodu bran, dependency review a fyzická přejímka dle `MAC-PREJIMKA.md`. Danovo schválení F/ikon a zahájení platí, znovu se nevyžaduje. Tag, main merge, publikace i produkční instalace čekají na další pověření.
