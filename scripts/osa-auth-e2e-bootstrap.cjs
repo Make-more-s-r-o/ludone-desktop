@@ -33,6 +33,7 @@ const safeStorage = {
   },
 };
 const calls = [];
+const recordCall = call => { calls.push(call); persistAudit(); };
 let identityHookCount = 0;
 const dialogChoices = [];
 let fixturePrepared;
@@ -44,15 +45,15 @@ async function fixtureFetch(input, options = {}) {
   const url = new globalThis.URL(typeof input === "string" ? input : input.url);
   const method = options.method ?? (typeof input === "object" ? input.method : null) ?? "GET";
   const call = { method, path: url.pathname, allowed: false };
-  calls.push(call);
+  recordCall(call);
   if (url.origin !== identity.issuer || url.search || url.hash || url.username || url.password || method !== "GET") throw new Error("Fixtura zablokovala nepovolený transport");
   if (url.pathname === "/api/nahravky/uploads/firmy") {
-    call.allowed = true;
+    call.allowed = true; persistAudit();
     if (mode === "offline") throw new Error("Syntetická síť je offline");
-    return mode === "companies-error" ? response({ code: "forbidden" }, 403) : response({ companies: [{ id: companyId, name: "Testovací firma · dlouhý název pro ověření kompozice a přístupu" }], defaultCompanyId: companyId });
+    return mode === "companies-error" ? response({ code: "forbidden" }, 403) : response({ companies: [{ id: companyId, name: "Testovací firma · dlouhý název pro ověření kompozice a přístupu" }, { id: "50000000-0000-4000-8000-000000000002", name: "Druhá testovací firma pro ověření restartu" }], defaultCompanyId: companyId });
   }
   if (/^\/api\/nahravky\/uploads\/60000000-0000-4000-8000-00000000000[12]$/u.test(url.pathname)) {
-    call.allowed = true;
+    call.allowed = true; persistAudit();
     if (mode === "offline") throw new Error("Syntetická síť je offline");
     if (mode === "rate") return response({ code: "rate_limited" }, 429, { "retry-after": "60" });
     return response({ state: mode === "incomplete" ? "uploading" : "stored", declaredBytes: media.length, sha256: mode === "mismatch" ? "0".repeat(64) : sha256, missing: mode === "incomplete" ? [0] : [] });
@@ -67,7 +68,7 @@ const net = new Proxy(electron.net, { get(target, key) {
     if (!file.startsWith(fs.realpathSync(path.join(project, "dist")) + path.sep)) throw new Error("Fixtura odmítla cizí soubor");
     return target.fetch(input, options);
   };
-  if (key === "request") return () => { calls.push({ method: "net.request", path: "blocked", allowed: false }); throw new Error("Fixtura blokuje net.request"); };
+  if (key === "request") return () => { recordCall({ method: "net.request", path: "blocked", allowed: false }); throw new Error("Fixtura blokuje net.request"); };
   if (key === "isOnline") return () => mode !== "offline";
   return Reflect.get(target, key);
 } });
@@ -91,7 +92,7 @@ const dialog = new Proxy(electron.dialog, { get(target, key) {
 const shell = new Proxy(electron.shell, { get(target, key) {
   if (key === "openExternal") return async (url) => {
     const value = new globalThis.URL(url);
-    calls.push({ method: "shell.openExternal", path: value.pathname, allowed: false });
+    recordCall({ method: "shell.openExternal", path: value.pathname, allowed: false });
     throw new Error("Fixtura blokuje externí aplikaci");
   };
   return Reflect.get(target, key);
@@ -143,7 +144,11 @@ Module.prototype._compile = function(source, filename) {
   return realCompile.call(this, source, filename);
 };
 globalThis.fetch = fixtureFetch;
-const persistAudit = () => fs.writeFileSync(path.join(root, "transport-audit.json"), JSON.stringify({ syntheticTransport: true, identityHookCount, dialogChoices, calls }, null, 2));
+const persistAudit = () => {
+  const temporary = path.join(root, ".public-transport-audit.tmp");
+  fs.writeFileSync(temporary, JSON.stringify({ syntheticTransport: true, identityHookCount, dialogChoices, calls }, null, 2), { mode: 0o600 });
+  fs.renameSync(temporary, path.join(root, "transport-audit.json"));
+};
 process.on("exit", persistAudit);
 setInterval(persistAudit, 100).unref();
 (async () => {
@@ -186,7 +191,7 @@ setInterval(persistAudit, 100).unref();
   await electron.app.whenReady();
   electron.session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
     const allowed = /^(?:file:|ludone:|devtools:|data:)/u.test(details.url);
-    if (!allowed) calls.push({ method: details.method, path: new globalThis.URL(details.url).pathname, allowed: false, renderer: true });
+    if (!allowed) recordCall({ method: details.method, path: new globalThis.URL(details.url).pathname, allowed: false, renderer: true });
     callback({ cancel: !allowed });
   });
   fixturePrepared();

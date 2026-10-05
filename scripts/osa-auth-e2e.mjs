@@ -27,11 +27,13 @@ try {
     const root = path.join(parent, "isolated-data");
     await mkdir(root, { mode: 0o700 });
     await writeFile(path.join(root, ".public-synthetic-identity"), "OSA_PUBLIC_FIXTURE_V1\n", { mode: 0o600 });
-    const port = await freePort(); let log = ""; let panel; let detail; let scenarioCompleted = false;
-    const child = spawn(electron, ["scripts/osa-auth-e2e-bootstrap.cjs", `--remote-debugging-port=${port}`, "--disable-background-timer-throttling"], {
+    const port = await freePort(); let log = ""; let panel; let detail; let scenarioCompleted = false; const priorAudits = [];
+    const launch = () => { const started = spawn(electron, ["scripts/osa-auth-e2e-bootstrap.cjs", `--remote-debugging-port=${port}`, "--disable-background-timer-throttling"], {
       cwd: project, env: { ...process.env, LUDONE_E2E: "1", LUDONE_DESIGN_E2E: "1", LUDONE_OSA_AUTH_E2E: "1", LUDONE_OSA_TRANSPORT_FIXTURE: mode, LUDONE_DATA_DIR: root, DESKTOP_UPLOAD_ENABLED: "false", LUDONE_E2E_HARD_STOP_MS: "300000" }, stdio: ["ignore", "pipe", "pipe"],
     });
-    child.stdout.on("data", value => { log += value; }); child.stderr.on("data", value => { log += value; });
+    started.stdout.on("data", value => { log += value; }); started.stderr.on("data", value => { log += value; });
+    return started; };
+    let child = launch();
     const connect = async target => { const client = new CdpClient(target.webSocketDebuggerUrl); await client.ready; await client.send("Page.enable"); return client; };
     const click = async (selector, client = panel) => {
       await client.send("Page.bringToFront");
@@ -204,6 +206,29 @@ try {
         detail.close(); detail = null;
         const saved = await snapshotItem();
         check("dirty-save-actual-CAS-without-upload", saved.uploadPreferences?.visibility === targetVisibility && saved.uploadIntent === "held");
+        const secondCompany = "50000000-0000-4000-8000-000000000002";
+        await navigate("settings");
+        await waitFor(() => panel.evaluate("Boolean(document.querySelector('[data-testid=upload-company-select]:not(:disabled)'))"), "account company offer");
+        await panel.evaluate(`(()=>{const el=document.querySelector('[data-testid=upload-company-select]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(el,${JSON.stringify(secondCompany)});el.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+        await click('[data-testid="upload-company-save"]');
+        await waitFor(() => panel.evaluate(`window.ludone.getUploadCompanyDefault().then(v=>v.companyId===${JSON.stringify(secondCompany)})`), "stored explicit company");
+        await delay(200);
+        panel.close(); child.kill("SIGTERM");
+        await Promise.race([new Promise(resolve => child.once("exit", resolve)), delay(3000)]);
+        if (child.exitCode === null) { child.kill("SIGKILL"); await new Promise(resolve=>child.once("exit",resolve)); }
+        priorAudits.push(JSON.parse(await readFile(path.join(root, "transport-audit.json"), "utf8")));
+        child = launch();
+        panel = await connect(await waitFor(async () => (await getTargets(port)).find(t=>t.url.includes("/dist/index.html")&&!t.url.includes("#settings")), "actual restarted panel"));
+        await waitFor(() => panel.evaluate("document.querySelector('.osa-auth-status')?.dataset.authState==='signed-in'"), "restarted scoped session");
+        check("company-default-survives-actual-process-restart", await panel.evaluate(`window.ludone.getUploadCompanyDefault().then(v=>v.companyId===${JSON.stringify(secondCompany)})`));
+        await navigate("home"); await installSyntheticAudioCapture(panel);
+        await click('.recording-card .idle-feature-row__action');
+        await waitFor(() => panel.evaluate("window.ludone.getTrayState().then(s=>s==='recording')"), "post-restart recording");
+        await delay(500); await click('[data-testid=recording-stop]');
+        await waitFor(() => panel.evaluate("Boolean(document.querySelector('.recording-card--saved'))"), "post-restart save", 20000);
+        check("new-recording-uses-stored-company-and-company-visibility", await panel.evaluate(`document.querySelector('[data-testid=recording-upload-company]')?.value===${JSON.stringify(secondCompany)}&&document.querySelector('[data-testid=recording-upload-visibility]')?.value==='company'`));
+        await click('.recording-saved__skip');
+        await waitFor(() => panel.evaluate("!document.querySelector('.recording-card--saved')"), "post-restart local decision");
       }
       scenarioCompleted = true;
     } catch (error) {
@@ -211,9 +236,15 @@ try {
       throw error;
     } finally {
       panel?.close(); detail?.close();
-      if (child.exitCode === null) { child.kill("SIGTERM"); await Promise.race([new Promise(resolve => child.once("exit", resolve)), delay(3000)]); if (child.exitCode === null) child.kill("SIGKILL"); }
+      if (child.exitCode === null) { child.kill("SIGTERM"); await Promise.race([new Promise(resolve => child.once("exit", resolve)), delay(3000)]); if (child.exitCode === null) { child.kill("SIGKILL"); await new Promise(resolve=>child.once("exit",resolve)); } }
       await writeFile(path.join(output, `${mode}-electron.log`), log);
       const audit = JSON.parse(await readFile(path.join(root, "transport-audit.json"), "utf8"));
+      if (priorAudits.length) {
+        check("prior-processes-one-hook-and-no-upload", priorAudits.every(a=>a.identityHookCount===1&&a.calls.every(c=>c.allowed&&c.method==="GET")));
+        audit.dialogChoices = [...priorAudits.flatMap(a=>a.dialogChoices), ...audit.dialogChoices];
+        audit.calls = [...priorAudits.flatMap(a=>a.calls), ...audit.calls];
+        audit.processCount = priorAudits.length + 1;
+      }
       await writeFile(path.join(output, `${mode}-transport.json`), JSON.stringify(audit, null, 2));
       check(`${mode}-one-identity-projection-hook`, audit.identityHookCount === 1);
       check(`${mode}-no-unexpected-network`, audit.calls.every(call => call.allowed));
