@@ -1,5 +1,13 @@
 # Rozhodnutí — LuDone Desktop
 
+**5. 10. 2026 — pověření dotáhnout vydání F Osa 0.1.8:** Po předání opraveného
+výsledku a nezávislém review Dan zadal „tak ohlídej vydání a pak končíme“.
+Koordinátor dokončí přijetí PR #160, tag a existující podepsané/notarizované
+publikační workflow po zeleném CI přesného finálního headu. Starší nepověření
+k release je tím nahrazeno. Fyzický zvuk, produkční upload a instalace na Danově
+Macu zůstávají samostatnou neověřenou přejímkou; publikace není důkazem jejich
+funkčnosti. Po ověřené veřejné publikaci se dohled ukončí.
+
 **5. 10. 2026 — F Osa schválena k implementaci:** Dan přímo schválil celou F včetně posledních menu bar ikon a požádal o spuštění na dev-ludone Macu mini. Pro tento redesign platí systémové čitelné písmo a panel horní lišty se samostatným oknem až pro detail; historický směr A14 a starší Astra rozvržení nejsou vizuálním cílem tohoto běhu. LuTrack je jen neaktivní řádek; backend se nemění. Existující funkční a bezpečnostní brány nesmějí být oslabené. [Provozní brief](docs/behy/desktop-osa-2026-10-05/START.md). Finální tag/publikace čekají na kontrolu výsledku a nové výslovné pověření.
 
 Zápis z 19.–20. 8. 2026. Slouží k tomu, aby se nemuselo znovu rozhodovat to, co už rozhodnuté je.

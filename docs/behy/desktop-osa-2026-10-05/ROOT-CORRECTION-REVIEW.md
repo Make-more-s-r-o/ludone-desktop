@@ -72,3 +72,21 @@ ověřil zdroj, doslovné archivované výsledky a pixely proti referenci.
 
 Po dokončení CI nad přesným finálním headem lze předat automatizovanou část
 k lidské Mac přejímce. Samotné ukončení agentova turnu není splnění této podmínky.
+
+## Pověření k vydání a infrastruktura CI
+
+Dan po předání oprav zadal „tak ohlídej vydání a pak končíme“. Nové pověření
+k release je v `ROZHODNUTI.md`; fyzické ověření se tím neprohlašuje za provedené.
+Head `c0e5e03` přidal proti posouzenému `51bfd10` pouze dokumentaci a důkazy,
+bez změny produkce, testů, workflow či lockfile.
+
+⚠️ CI `37364801320` nad `c0e5e03` skončilo před spuštěním kteréhokoli kroku.
+GitHub uvedl: „The job was not acquired by Runner of type hosted even after
+multiple attempts“. Nejde o testové selhání ani zelený výsledek. Root požádal
+o opakování nezměněného běhu; attempt 2 byl přijat, job `111953324827` queued.
+Brány, runner policy a oprávnění se nemění.
+
+Root přebírá pouze dokumentační integraci vlastního review a auditu do PR,
+aby jejich unikátní důkazy nebyly po úklidu ztracené. Vývojový agent je idle;
+žádný souběžný zapisovatel nebyl spuštěn. Po této dokumentační integraci se
+ověří nové CI přesného headu, nikoli starší superseded run.
