@@ -77,3 +77,7 @@
 - 🧪 GitHub CI nad `7275bdc` PASS (běh `37332103081`); poslední oprava geometrie navíc prošla čistým klonem. Finální push a CI budou potvrzené následným checkpointem.
 - 🟡 Draft PR [#160](https://github.com/Make-more-s-r-o/ludone-desktop/pull/160) připravený k review. Verze 0.1.8 a existující podpisový/notarizační workflow připravené, bez použití podpisových tajemství.
 - ⛔ Zbývá pouze výslovně uvedená [fyzická Mac přejímka](MAC-PREJIMKA.md): ui-smoke/audio-smoke, skutečný poslech a oprávnění, server/upload/expirace/offline souběhy, nativní select/dialogy, lišta a více monitorů. Finální podpis, tag, merge, vydání a produkční instalace vyžadují další pokyn; neprovedené.
+
+### Push a PR
+
+- 🧪 Implementace a důkazy pushnuté do `feat/desktop-osa`, commit `75a1e7a`; draft PR #160 má aktualizovaný popis. 🧪 CI běh `37334116319` PASS (1m33s), veřejný výsledek `ci-final.json`. Následující commity doplňují pouze dokumentaci a archiv nezávislého review. Po převzetí důkazů budou odstraněny pouze vlastní worker checkouty; integrační checkout zůstává pro PR review.

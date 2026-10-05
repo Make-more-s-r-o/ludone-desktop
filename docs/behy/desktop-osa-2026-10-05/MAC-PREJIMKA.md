@@ -12,6 +12,6 @@
 
 🟡 Verze připravena na 0.1.8. Bundle ID, hardened runtime, entitlements, notarizace, oba architekturní cíle a generický update feed zůstávají v existujícím workflow. Encoder pro arm64 i x64 odpovídá připnutým hashům a architekturám. Podpisové klíče ani účty tento běh nečetl nebo nepřenášel.
 
-🧪 Dependency audit celého zamčeného stromu je 0 nálezů. Dan schválil rovnocenný přechod Astra→F a čisté brány prošly se zachovanými počty a bezpečnostními podmínkami. F akceptace je doplněná o24×3 skutečných Electron snímků, syntetickou auth/transport cestu, neuložené volby a původní regresní testy. Historické neúspěšné výpisy zůstávají archivované.
+🧪 Dependency audit celého zamčeného stromu je 0 nálezů. Dan schválil rovnocenný přechod Astra→F a čisté brány prošly se zachovanými počty a bezpečnostními podmínkami. F akceptace je doplněná o 24×3 skutečných Electron snímků, syntetickou auth/transport cestu, neuložené volby a původní regresní testy. Historické neúspěšné výpisy zůstávají archivované.
 
 🟡 Podepsané/notarizované vydání se spustí stávajícím `release-macos.yml` až po review, fyzické přejímce a novém výslovném pokynu. Podpisový klíč musí být před prvním použitím uložen ve firemním správci hesel; tento běh jej nečetl. Tag, merge, publikace a produkční instalace neproběhly.
