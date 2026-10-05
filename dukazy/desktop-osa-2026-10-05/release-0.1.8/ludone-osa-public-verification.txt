@@ -1,0 +1,12 @@
+PASS podepsaný archiv: manifest, velikosti a SHA-512 čtyř balíčků
+PASS původní veřejná přejímka: feed, velikosti a dostupnost všech artefaktů
+PASS latest-mac.yml: celý obsah SHA-256 odpovídá podepsanému archivu
+PASS LuDone-Desktop-0.1.8-arm64.dmg: celý obsah SHA-256 odpovídá podepsanému archivu
+PASS LuDone-Desktop-0.1.8-arm64.dmg.blockmap: celý obsah SHA-256 odpovídá podepsanému archivu
+PASS LuDone-Desktop-0.1.8-arm64.zip: celý obsah SHA-256 odpovídá podepsanému archivu
+PASS LuDone-Desktop-0.1.8-arm64.zip.blockmap: celý obsah SHA-256 odpovídá podepsanému archivu
+PASS LuDone-Desktop-0.1.8-x64.dmg: celý obsah SHA-256 odpovídá podepsanému archivu
+PASS LuDone-Desktop-0.1.8-x64.dmg.blockmap: celý obsah SHA-256 odpovídá podepsanému archivu
+PASS LuDone-Desktop-0.1.8-x64.zip: celý obsah SHA-256 odpovídá podepsanému archivu
+PASS LuDone-Desktop-0.1.8-x64.zip.blockmap: celý obsah SHA-256 odpovídá podepsanému archivu
+EXIT_CODE=0
