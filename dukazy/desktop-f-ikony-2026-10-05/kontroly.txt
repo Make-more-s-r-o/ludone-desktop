@@ -1,0 +1,29 @@
+$ node --check /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/f-icons.js
+(žádný výstup)
+EXIT CODE: 0
+PASS: f-icons.js
+
+$ node --check /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/app.js
+(žádný výstup)
+EXIT CODE: 0
+PASS: app.js
+
+$ node --check /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/viewer.js
+(žádný výstup)
+EXIT CODE: 0
+PASS: viewer.js
+
+$ node --check /Users/dan/Dev/ClaudeCode/ludone-desktop/.claude/worktrees/desktop-clarity-preview/docs/changes/desktop-complete-designs-2026-10-01/design/creative.js
+(žádný výstup)
+EXIT CODE: 0
+PASS: creative.js
+
+$ node --check /var/folders/l9/yvbg4nr522z6qzg0bnqr12zw0000gn/T/tmpklryc3ot.js
+(žádný výstup)
+EXIT CODE: 0
+PASS: inline JS f-icons.html
+
+$ git diff --check
+(žádný výstup)
+EXIT CODE: 0
+PASS: git diff

@@ -3,6 +3,7 @@ const $ = (s) => document.querySelector(s);
 const query = new URLSearchParams(location.search);
 const concepts = { a: ['Mac','mac.css'], b: ['Studio','studio.css'], c: ['Deník','journal.css'], d: ['Sloupec · Sonnet 5.5','sonnet-d.css'], e: ['Kapsle · Sonnet 5.5','sonnet-e.css'], f: ['Osa · Sonnet 5.5','sonnet-f.css'], g: ['Příkaz · Sonnet 5.5','sonnet-g.css'] };
 const concept = concepts[query.get('variant')] ? query.get('variant') : 'a';
+const refinedFIcons = concept==='f' && query.get('icons')!=='original';
 document.body.dataset.concept = concept;
 if(query.get('embedded')==='1')document.body.classList.add('embedded');
 document.documentElement.dataset.theme = ['light','dark','professional'].includes(query.get('theme')) ? query.get('theme') : 'light';
@@ -14,6 +15,7 @@ const integrationStyle=document.createElement('link');integrationStyle.rel='styl
 if(['f','g'].includes(concept)){
  document.head.append(style);
  const creativeIntegration=document.createElement('link');creativeIntegration.rel='stylesheet';creativeIntegration.href='creative-integration.css?v=1';document.head.append(creativeIntegration);
+ if(refinedFIcons){const iconsStyle=document.createElement('link');iconsStyle.rel='stylesheet';iconsStyle.href='f-icons.css?v=1';document.head.append(iconsStyle);}
 }
 const paths = {
  record:'<rect x="8" y="2" width="8" height="13" rx="4"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>',
@@ -31,7 +33,7 @@ const paths = {
  tray:'<path d="M4 4h16v16H4zM7 9l4 4 6-6"/>', alert:'<path d="m12 3 10 18H2zM12 9v5M12 17v.01"/>', user:'<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/>',
  waveform:'<path d="M3 10v4M7 6v12M11 3v18M15 7v10M19 5v14M23 10v4"/>', play:'<path d="m7 4 14 8-14 8z"/>'
 };
-const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.info}</svg>`;
+const icon = (name) => refinedFIcons ? window.LuDoneFIcons.icon(name) : `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.info}</svg>`;
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const btn = (text, action, cls='', glyph='', extra='') => `<button type="button" class="btn ${cls}" data-action="${action}" ${extra}>${glyph?icon(glyph):''}${text}</button>`;
 const companies = ['Ateliér Sever s.r.o.','Studio Forma','LuDone Demo'];
@@ -92,6 +94,7 @@ function render(){
  $('.app-title span').textContent=state.phase==='recording'?'LuDone · nahrává se':'LuDone Desktop';
  document.querySelectorAll('.menu-tab').forEach(button=>button.classList.toggle('active',button.dataset.page===state.page));
  window.applyLuDoneLayout?.();
+ if(refinedFIcons)window.LuDoneFIcons.apply(state);
 }
 function clock(){return Math.floor(state.seconds/60).toString().padStart(2,'0')+':'+(state.seconds%60).toString().padStart(2,'0');}
 function home(){

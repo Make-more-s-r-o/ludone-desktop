@@ -41,13 +41,16 @@ function show(){
  url.searchParams.set('variant',variant);
  url.searchParams.set('scenario',tab?'settings':view.value);
  url.searchParams.set('theme',theme.value);
+ if(variant==='f')url.searchParams.set('revision','icons-20261005');
+ if(params.get('icons')==='original')url.searchParams.set('icons','original');
  if(tab)url.searchParams.set('tab',tab);
  document.querySelector('#standalone').href=url.href;
  url.searchParams.set('embedded','1');
  iframe.src=url.href;
  document.body.dataset.theme=theme.value;
  document.querySelectorAll('[data-variant]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.variant===variant)));
- document.querySelector('#author').textContent=authors[variant];
+ document.querySelector('#author').textContent=authors[variant]+(variant==='f'&&params.get('icons')!=='original'?' · ikony Codex':'');
+ document.querySelector('#f-icons-link').hidden=variant!=='f';
  document.title=`LuDone · ${variant.toUpperCase()} · ${view.selectedOptions[0].textContent}`;
 }
 document.querySelectorAll('[data-variant]').forEach(button=>button.addEventListener('click',()=>{variant=button.dataset.variant;show();}));

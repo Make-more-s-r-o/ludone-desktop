@@ -234,3 +234,10 @@ Tento checkpoint nahrazuje starší designové odhady pouze pro nynější výb�
 2. 🧪 Koordinátor proklikal 138 finálních obrazovek ve třech tématech, celý běžný tok a malé šířky. Doslovné autorské soubory, opravy, syntaxe, review a snímky jsou v [archivu](dukazy/desktop-sonnet-creative-2026-10-02/README.md).
 3. 🟡 Dan vybere směr; [F/G vedle sebe přes VPN](http://100.101.162.108:53302/creative.html). Implementace produkce začne až po výslovném schválení.
 4. ⛔ Nevzniklo vydání, změna serveru ani ověření skutečného zvuku/uploadu.
+
+## Vybraná F a ikony — 5. 10. 2026
+
+1. Dan zvolil F Osa; další celé varianty se nyní netvoří.
+2. 🧪 Ikony jsou sjednocené pouze v HTML F; zachovaná původní značka LuDone, monochromatický znak lišty, přístupné názvy/fokus a aktivní značka navigace. [Podoba a rozsah](docs/changes/desktop-complete-designs-2026-10-01/F-IKONY.md), [důkazy](dukazy/desktop-f-ikony-2026-10-05/README.md).
+3. 🟡 Dan posoudí rozpracované ikony. Po jejich schválení lze připravit implementační etapu a E2E skutečné aplikace podle F.
+4. ⛔ Produkční implementace ani vydání F se v této etapě neprovádějí.

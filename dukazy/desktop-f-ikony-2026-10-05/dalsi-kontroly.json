@@ -1,0 +1,220 @@
+{
+  "firstAttempt": [
+    {
+      "type": "narrow-F",
+      "screen": "ready",
+      "pass": false,
+      "headerButtons": [
+        36,
+        36
+      ],
+      "overflow": false,
+      "panelWidth": 420,
+      "source": "http://100.101.162.108:53302/app.html?variant=f&scenario=ready&theme=light&revision=icons-20261005&embedded=1"
+    },
+    {
+      "type": "narrow-F",
+      "screen": "save",
+      "pass": false,
+      "headerButtons": [
+        36,
+        36
+      ],
+      "overflow": false,
+      "panelWidth": 420,
+      "source": "http://100.101.162.108:53302/app.html?variant=f&scenario=save&theme=light&revision=icons-20261005&embedded=1"
+    },
+    {
+      "type": "narrow-F",
+      "screen": "settings",
+      "pass": false,
+      "headerButtons": [
+        36,
+        36
+      ],
+      "overflow": false,
+      "panelWidth": 420,
+      "source": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=light&revision=icons-20261005&embedded=1"
+    },
+    {
+      "type": "narrow-F",
+      "screen": "recording",
+      "pass": false,
+      "headerButtons": [
+        36,
+        36
+      ],
+      "overflow": false,
+      "panelWidth": 420,
+      "source": "http://100.101.162.108:53302/app.html?variant=f&scenario=recording&theme=light&revision=icons-20261005&embedded=1"
+    },
+    {
+      "type": "narrow-gallery",
+      "pass": true,
+      "scrollWidth": 385,
+      "width": 385
+    },
+    {
+      "type": "other-preserved",
+      "expected": "a",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "a"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "b",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "b"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "c",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "c"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "d",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "d"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "e",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "e"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "g",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "g"
+    }
+  ],
+  "final": [
+    {
+      "screen": "ready",
+      "pass": true,
+      "headerButtons": [
+        36,
+        36
+      ],
+      "icons": 33,
+      "overflow": false,
+      "panelWidth": 361,
+      "width": 385
+    },
+    {
+      "screen": "save",
+      "pass": true,
+      "headerButtons": [
+        36,
+        36
+      ],
+      "icons": 23,
+      "overflow": false,
+      "panelWidth": 361,
+      "width": 385
+    },
+    {
+      "screen": "settings",
+      "pass": true,
+      "headerButtons": [
+        36,
+        36
+      ],
+      "icons": 24,
+      "overflow": false,
+      "panelWidth": 361,
+      "width": 385
+    },
+    {
+      "screen": "recording",
+      "pass": true,
+      "headerButtons": [
+        36,
+        36
+      ],
+      "icons": 32,
+      "overflow": false,
+      "panelWidth": 361,
+      "width": 385
+    },
+    {
+      "type": "original-F",
+      "pass": true,
+      "icons": 0,
+      "markImage": true,
+      "styles": [
+        "base.css?v=16",
+        "menu.css?v=1",
+        "menu-integration.css?v=1",
+        "sonnet-f.css?v=16",
+        "creative-integration.css?v=1"
+      ]
+    }
+  ],
+  "otherVariants": [
+    {
+      "type": "other-preserved",
+      "expected": "a",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "a"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "b",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "b"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "c",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "c"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "d",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "d"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "e",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "e"
+    },
+    {
+      "type": "other-preserved",
+      "expected": "g",
+      "pass": true,
+      "newIcons": 0,
+      "oldMark": true,
+      "variant": "g"
+    }
+  ],
+  "note": "První úzká kontrola mířila na neaktivní kartu bez aplikovaného viewportu; skutečné cílové rozměry ověřené až v samostatné kartě F."
+}

@@ -1,0 +1,5112 @@
+{
+  "initial": [
+    {
+      "theme": "light",
+      "screen": "ready",
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "recording",
+      "pass": true,
+      "icons": 32,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "save",
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "history",
+      "pass": true,
+      "icons": 37,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "detail",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "sent",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "queue",
+      "pass": true,
+      "icons": 30,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "settings",
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "audio",
+      "pass": true,
+      "icons": 27,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "device",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "storage",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "diagnostics",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "updates",
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "onboarding",
+      "pass": false,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "tray",
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "offline",
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "expired",
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "unclaimed",
+      "pass": false,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "rate",
+      "pass": false,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "missing",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "system-lost",
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 1
+    },
+    {
+      "theme": "light",
+      "screen": "microphone-only",
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 1
+    },
+    {
+      "theme": "light",
+      "screen": "companies-error",
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "ready",
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "recording",
+      "pass": true,
+      "icons": 32,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "save",
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "history",
+      "pass": true,
+      "icons": 37,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "detail",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "sent",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "queue",
+      "pass": true,
+      "icons": 30,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "settings",
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "audio",
+      "pass": true,
+      "icons": 27,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "device",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "storage",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "diagnostics",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "updates",
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "onboarding",
+      "pass": false,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "tray",
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "offline",
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "expired",
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "unclaimed",
+      "pass": false,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "rate",
+      "pass": false,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "missing",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "system-lost",
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 1
+    },
+    {
+      "theme": "professional",
+      "screen": "microphone-only",
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 1
+    },
+    {
+      "theme": "professional",
+      "screen": "companies-error",
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "ready",
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "recording",
+      "pass": true,
+      "icons": 32,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "save",
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "history",
+      "pass": true,
+      "icons": 37,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "detail",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "sent",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "queue",
+      "pass": true,
+      "icons": 30,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "settings",
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "audio",
+      "pass": true,
+      "icons": 27,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "device",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "storage",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "diagnostics",
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "updates",
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "onboarding",
+      "pass": false,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "tray",
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "offline",
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "expired",
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": "page",
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "unclaimed",
+      "pass": false,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "rate",
+      "pass": false,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "missing",
+      "pass": false,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": null,
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "current": "page",
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "system-lost",
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 1
+    },
+    {
+      "theme": "dark",
+      "screen": "microphone-only",
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 1
+    },
+    {
+      "theme": "dark",
+      "screen": "companies-error",
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "rail": [
+        {
+          "current": "page",
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "current": null,
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "warning": 0
+    }
+  ],
+  "final": [
+    {
+      "theme": "light",
+      "screen": "ready",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=ready&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "recording",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 32,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=recording&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "save",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "draft",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=save&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "history",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 37,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "library",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=history&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "detail",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=detail&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "sent",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=sent&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "queue",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 30,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=queue&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "settings",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "audio",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 27,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=light&revision=icons-20261005&tab=audio&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "device",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=light&revision=icons-20261005&tab=device&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "storage",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=light&revision=icons-20261005&tab=storage&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "diagnostics",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=light&revision=icons-20261005&tab=diagnostics&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "updates",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "updates",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=updates&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "onboarding",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "onboarding",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=onboarding&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "tray",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=tray&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "offline",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=offline&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "expired",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=expired&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "unclaimed",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=unclaimed&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "rate",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=rate&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "missing",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=missing&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "light",
+      "screen": "system-lost",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=system-lost&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 1
+    },
+    {
+      "theme": "light",
+      "screen": "microphone-only",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=microphone-only&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 1
+    },
+    {
+      "theme": "light",
+      "screen": "companies-error",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "draft",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=companies-error&theme=light&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "ready",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=ready&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "recording",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 32,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=recording&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "save",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "draft",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=save&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "history",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 37,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "library",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=history&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "detail",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=detail&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "sent",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=sent&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "queue",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 30,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=queue&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "settings",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "audio",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 27,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=professional&revision=icons-20261005&tab=audio&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "device",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=professional&revision=icons-20261005&tab=device&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "storage",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=professional&revision=icons-20261005&tab=storage&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "diagnostics",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=professional&revision=icons-20261005&tab=diagnostics&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "updates",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "updates",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=updates&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "onboarding",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "onboarding",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=onboarding&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "tray",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=tray&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "offline",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=offline&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "expired",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=expired&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "unclaimed",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=unclaimed&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "rate",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=rate&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "missing",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=missing&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "professional",
+      "screen": "system-lost",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=system-lost&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 1
+    },
+    {
+      "theme": "professional",
+      "screen": "microphone-only",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=microphone-only&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 1
+    },
+    {
+      "theme": "professional",
+      "screen": "companies-error",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "draft",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=companies-error&theme=professional&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "ready",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=ready&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "recording",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 32,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=recording&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "save",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "draft",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=save&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "history",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 37,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "library",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=history&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "detail",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=detail&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "sent",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=sent&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "queue",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 30,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=queue&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "settings",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "audio",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 27,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=dark&revision=icons-20261005&tab=audio&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "device",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=dark&revision=icons-20261005&tab=device&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "storage",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=dark&revision=icons-20261005&tab=storage&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "diagnostics",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 26,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "settings",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=settings&theme=dark&revision=icons-20261005&tab=diagnostics&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "updates",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "updates",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=updates&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "onboarding",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 20,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "onboarding",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=onboarding&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "tray",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 33,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=tray&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "offline",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=offline&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "expired",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 31,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "queue",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=expired&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "unclaimed",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=unclaimed&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "rate",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=rate&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "missing",
+      "hiddenRail": true,
+      "pass": true,
+      "icons": 23,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "detail",
+      "phase": "idle",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 0
+        },
+        {
+          "label": "Nahrávky",
+          "size": 0
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 0
+        },
+        {
+          "label": "Nastavení",
+          "size": 0
+        },
+        {
+          "label": "Aktualizace",
+          "size": 0
+        }
+      ],
+      "surface": "window",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=missing&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    },
+    {
+      "theme": "dark",
+      "screen": "system-lost",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=system-lost&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 1
+    },
+    {
+      "theme": "dark",
+      "screen": "microphone-only",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 34,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "recording",
+      "rail": [
+        {
+          "label": "Nahrávání, právě se nahrává",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=microphone-only&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 1
+    },
+    {
+      "theme": "dark",
+      "screen": "companies-error",
+      "hiddenRail": false,
+      "pass": true,
+      "icons": 24,
+      "mark": "brand",
+      "more": "more",
+      "overflow": false,
+      "page": "home",
+      "phase": "draft",
+      "rail": [
+        {
+          "label": "Nahrávání",
+          "size": 40
+        },
+        {
+          "label": "Nahrávky",
+          "size": 40
+        },
+        {
+          "label": "Odesílání, čeká 27",
+          "size": 40
+        },
+        {
+          "label": "Nastavení",
+          "size": 40
+        },
+        {
+          "label": "Aktualizace",
+          "size": 40
+        }
+      ],
+      "surface": "tray",
+      "url": "http://100.101.162.108:53302/app.html?variant=f&scenario=companies-error&theme=dark&revision=icons-20261005&embedded=1",
+      "warning": 0
+    }
+  ]
+}

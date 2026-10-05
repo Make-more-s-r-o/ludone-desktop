@@ -8,6 +8,7 @@ function show(){
  for(const variant of ['f','g']){
   const tab=['audio','device','storage','diagnostics'].includes(view.value)?view.value:null;
   const qs=new URLSearchParams({variant,scenario:tab?'settings':view.value,theme:theme.value,embedded:'1'});
+  if(variant==='f')qs.set('revision','icons-20261005');
   if(tab)qs.set('tab',tab);
   document.querySelector(`#${variant}-frame`).src='app.html?'+qs;
   document.querySelector(`#${variant}-link`).href=`viewer.html?variant=${variant}&scenario=${view.value}&theme=${theme.value}`;

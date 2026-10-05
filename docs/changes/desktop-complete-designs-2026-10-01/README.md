@@ -1,5 +1,7 @@
 # Sedm kompletních návrhů LuDone Desktop z horní lišty
 
+**5. 10. 2026:** Dan vybral **F Osa**, ikony ještě rozpracovat. [Upravená F](design/viewer.html?variant=f&preview=icons-20261005), [přehled ikon](design/f-icons.html) a [rozsah revize](F-IKONY.md). Kompozice je od Sonnetu, ikonová vrstva od Codexu; původní podoba a ostatní návrhy jsou zachované. 🟡 Ikony čekají na posouzení. Produkce ani vydání se v této etapě nemění; starší výběrové checkpointy níže jsou historické.
+
 Dan 1. 10. požádal o tři odlišné minimalistické návrhy celé aplikace; implementaci zahájit až po schválení. Dne 2. 10. upřesnil nahrávání z horní lišty a další dva návrhy od Sonnetu 5.5. Tento běh upravuje pouze HTML makety s fiktivními daty.
 
 | Návrh | Autor | Panel | Samostatný detail | Směr |

@@ -218,3 +218,7 @@ Požadavek je zapracovaný pouze do samostatných maket A–E; jde o přijaté z
 ## Kreativní doplnění návrhů — 2. 10. 2026
 
 Dan požádal o další dva kreativnější návrhy od Sonnetu 5.5, konkrétní reference a designový skill. F Osa a G Příkaz vznikly jako samostatné kompletní makety. Mohou měnit strukturu prezentace a navigaci, společné funkce a bezpečnostní významy zůstávají. Vzhled ani jedna varianta tím nejsou schválené; dřívější zákaz implementace před výběrem trvá. [Podklady a evidence](docs/changes/desktop-complete-designs-2026-10-01/README.md).
+
+## Vybraný směr F — 5. 10. 2026
+
+Dan zvolil „Tak varianta F jen ikony jště rozpracovat“. F Osa je vybraný směr, zbývá posouzení ikon. Původní značka LuDone z Opus/DS se zachovává; monochromatická lišta a sjednocené ovladače jsou rozpracované v [ikonovém náhledu](docs/changes/desktop-complete-designs-2026-10-01/F-IKONY.md). Nejde o schválení této nové sady, produkční implementace nebo vydání. Původní návrhy i doslovné autorské soubory zůstávají uložené.
