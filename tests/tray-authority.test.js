@@ -145,8 +145,16 @@ function trayHarness({
   sessions = [],
   systemAudioLostOwners = [],
   trackingOwners = [],
+  exports = [],
+  completions = [],
+  attention = false,
+  offline = false,
+  online = true,
 } = {}) {
   const finalized = [];
+  const trackingFacts = new Set(trackingOwners);
+  const queueFacts = { pendingCount: queueWaitingCount, attention, offline };
+  const completionFacts = new Set(completions);
   const factory = Function(
     "recordingOwnersPreparing",
     "recordingSessions",
@@ -169,8 +177,8 @@ function trayHarness({
     "OSA_TRAY_LABELS",
     "osaQueueFacts",
     "net",
+    "recordingCompletionsInFlight",
     `"use strict";
-     const recordingCompletionsInFlight = new Set();
      const osaTrayImage = trayImage;
      ${functionSource(mainCodeWithoutComments, "osaExportFacts")}
      let trayState = "signed-out";
@@ -181,11 +189,14 @@ function trayHarness({
      ${functionSource(mainCodeWithoutComments, "hasLiveSystemAudioLoss")}
      ${functionSource(mainCodeWithoutComments, "deriveTrayState")}
      ${functionSource(mainCodeWithoutComments, "refreshTray")}
+     ${functionSource(mainCodeWithoutComments, "outboundQueueItemsFromResult")}
+     ${functionSource(mainCodeWithoutComments, "updateOutboundQueueTrayFact")}
      ${functionSource(mainCodeWithoutComments, "finalizeRecordingSessionsForOwner")}
      ${functionSource(mainCodeWithoutComments, "forgetOwnerActivity")}
      ${functionSource(mainCodeWithoutComments, "applyReportedFacts")}
      return {
        refreshTray,
+       updateOutboundQueueTrayFact,
        forgetOwnerActivity,
        applyReportedFacts,
        hasLiveRecording,
@@ -204,16 +215,19 @@ function trayHarness({
     finalized,
     images,
     tooltips,
+    trackingFacts,
+    queueFacts,
+    completionFacts,
     ...factory(
       new Map(preparing),
       new Map(sessions),
-      new Map(),
+      new Map(exports),
       {
         outboundQueueWaitingCount: queueWaitingCount,
         panelActionOwners: new Set(),
         signedIn,
         systemAudioLostOwners: new Set(systemAudioLostOwners),
-        trackingOwners: new Set(trackingOwners),
+        trackingOwners: trackingFacts,
       },
       trayIconName,
       trayIconVariant,
@@ -245,8 +259,9 @@ function trayHarness({
       reportedFactKeys,
       deriveOsaTrayState,
       OSA_TRAY_LABELS,
-      { pendingCount: queueWaitingCount, attention: false, offline: false },
-      { isOnline: () => true },
+      queueFacts,
+      { isOnline: () => online },
+      completionFacts,
     ),
   };
 }
@@ -274,7 +289,8 @@ describe("autorita stavu tray ikony", () => {
   // Týž invariant, přesunutý na funkci, která nahradila `updateTray`. Kdyby se smazal
   // místo přesunutí, bylo by to oslabení brány.
   it("uložený stav lišty používá stejné čisté mapování", () => {
-    expect(functionSource(mainCodeWithoutComments, "refreshTray")).toContain("trayIconName(");
+    expect(functionSource(mainCodeWithoutComments, "refreshTray")).toContain("deriveOsaTrayState(");
+    expect(functionSource(mainCodeWithoutComments, "refreshTray")).toContain("osaTrayImage(trayState)");
   });
 
   it.each([
@@ -319,7 +335,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
   it.each([
     [{ signedIn: false }, "signed-out"],
     [{ signedIn: true }, "idle"],
-    [{ signedIn: true, trackingOwners: [1] }, "tracking"],
+    [{ signedIn: true, trackingOwners: [1] }, "idle"],
     [{ signedIn: true, preparing: [[1, { cancelled: false }]] }, "recording"],
     [{ signedIn: true, sessions: [["s", { ownerId: 1 }]] }, "recording"],
     [{ signedIn: true, queueWaitingCount: 1 }, "queue-waiting"],
@@ -332,13 +348,13 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
       },
       "recording-audio-lost",
     ],
-    // Souběh se neztratí: nahrávání zůstává hlavní agenda a LuTrack odznak.
+    // Souběh se neztratí: F nahrávání zůstává hlavní agenda, LuTrack je neaktivní.
     [
       { signedIn: true, trackingOwners: [1], preparing: [[1, { cancelled: false }]] },
-      "recording-tracking",
+      "recording",
     ],
     // Výpadek je zhoršená varianta hlavní nahrávací agendy. Překryje LuTrack i frontu,
-    // ale přihlášení zůstává nejvyšší historickou prioritou.
+    // a místní nahrávání má přednost i před chybějícím přihlášením.
     [
       {
         signedIn: true,
@@ -351,7 +367,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     ],
     [
       { signedIn: true, trackingOwners: [1], queueWaitingCount: 2 },
-      "tracking",
+      "queue-waiting",
     ],
     [
       {
@@ -361,7 +377,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
         queueWaitingCount: 2,
         systemAudioLostOwners: [1],
       },
-      "signed-out",
+      "recording",
     ],
     // Zrušená příprava a doběhnutá session se za nahrávání NEPOČÍTAJÍ.
     [{ signedIn: true, preparing: [[1, { cancelled: true }]] }, "idle"],
@@ -387,7 +403,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     expect(harness.getTrayState()).not.toBe("recording-audio-lost");
     expect(harness.getTrayState()).toBe("recording-microphone-only");
     expect(harness.images.at(-1)).toBe("obrazek:recording-microphone-only");
-    expect(harness.tooltips.at(-1)).toBe("L·jen mikrofon");
+    expect(harness.tooltips.at(-1)).toBe(`LuDone · Nahrává se · jen mikrofon${input.queueWaitingCount ? ` · ${input.queueWaitingCount} čeká` : ""}`);
   });
 
   it.each([
@@ -421,7 +437,7 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
     expect(harness.getTrayState()).toBe("recording-audio-lost");
   });
 
-  it("při souběhu spojí fakt LuTracku se skutečným nahráváním z hlavního procesu", () => {
+  it("při souběhu zachová skutečné nahrávání a LuTrack nepřidá aktivní stav", () => {
     const harness = trayHarness({
       signedIn: true,
       preparing: [[7, { cancelled: false }]],
@@ -435,9 +451,9 @@ describe("stav vlastní hlavní proces, ne renderer", () => {
       systemAudioLost: false,
       tracking: true,
     })).toBe(true);
-    expect(harness.getTrayState()).toBe("recording-tracking");
-    expect(harness.images.at(-1)).toBe("obrazek:recording-tracking");
-    expect(harness.tooltips.at(-1)).toBe("L·nahrává+lutrack");
+    expect(harness.getTrayState()).toBe("recording");
+    expect(harness.images.at(-1)).toBe("obrazek:recording");
+    expect(harness.tooltips.at(-1)).toBe("LuDone · Nahrává se");
   });
 });
 
@@ -449,7 +465,7 @@ describe("pád rendereru", () => {
       preparing: [[7, { cancelled: false }]],
     });
     harness.refreshTray();
-    expect(harness.getTrayState()).toBe("recording-tracking");
+    expect(harness.getTrayState()).toBe("recording");
 
     harness.forgetOwnerActivity(7, "pád rendereru");
 
@@ -475,7 +491,8 @@ describe("pád rendereru", () => {
     const harness = trayHarness({ signedIn: true, trackingOwners: [7, 9] });
     harness.refreshTray();
     harness.forgetOwnerActivity(7, "pád rendereru");
-    expect(harness.getTrayState()).toBe("tracking");
+    expect(harness.getTrayState()).toBe("idle");
+    expect([...harness.trackingFacts]).toEqual([9]);
   });
 
   it("po pádu odstraní i rendererový fakt výpadku, ne výpadek cizí živé session", () => {
@@ -510,13 +527,13 @@ describe("lišta se překresluje jen při skutečné změně", () => {
     harness.refreshTray();
     harness.applyReportedFacts(3, {
       panelActionsAvailable: true,
-      signedIn: true,
+      signedIn: false,
       systemAudioLost: false,
       tracking: true,
     });
-    expect(harness.getTrayState()).toBe("tracking");
-    expect(harness.images.at(-1)).toBe("obrazek:tracking");
-    expect(harness.tooltips.at(-1)).toBe("L·lutrack");
+    expect(harness.getTrayState()).toBe("signed-out");
+    expect(harness.images.at(-1)).toBe("obrazek:signed-out");
+    expect(harness.tooltips.at(-1)).toBe("LuDone · Přihlásit se");
   });
 });
 
@@ -641,7 +658,8 @@ describe("kanál faktů nesmí být tray:set-state pod jiným jménem", () => {
       systemAudioLost: false,
       tracking: true,
     })).toBe(true);
-    expect(harness.getTrayState()).toBe("tracking");
+    expect(harness.getTrayState()).toBe("idle");
+    expect([...harness.trackingFacts]).toEqual([1]);
   });
 
   it("výpadek přijme jen jako boolean, neplatný report stav nezmění a obnova vrátí nahrávání", () => {
@@ -685,7 +703,7 @@ describe("první vykreslení lišty", () => {
     const harness = trayHarness({ signedIn: false });
     harness.refreshTray();
     expect(harness.images.at(-1)).toBe("obrazek:signed-out");
-    expect(harness.tooltips.at(-1)).toBe("L·odhlášeno");
+    expect(harness.tooltips.at(-1)).toBe("LuDone · Přihlásit se");
   });
 
   it("podruhé už na lištu nesahá", () => {
@@ -788,4 +806,79 @@ describe("každá změna časovače lištu přepočítá z faktu hlavního proce
       expect(harness.refreshSnapshots).toEqual([expectedOwners]);
     },
   );
+});
+
+// F rozšiřuje původní autoritu o skutečné dokončování, rozhodnutí a frontu.
+describe("F souběhy autoritativních faktů", () => {
+  it.each([
+    [{ signedIn: true }, "idle"],
+    [{ signedIn: false }, "signed-out"],
+    [{ preparing: [[1, { cancelled: false }]], signedIn: false, offline: true, queueWaitingCount: 2 }, "recording"],
+    [{ preparing: [[1, { sources: ["microphone"], cancelled: false }]] }, "recording-microphone-only"],
+    [{ preparing: [[1, { sources: ["microphone", "system"], cancelled: false }]], systemAudioLostOwners: [1] }, "recording-audio-lost"],
+    [{ completions: ["s"], signedIn: false }, "saving"],
+    [{ exports: [["s", { finalizePromise: Promise.resolve(), finalizationSettled: false }]] }, "saving"],
+    [{ exports: [["s", { recordingFinishSucceeded: true, finalizationSettled: true, result: { ok: true } }]] }, "decision"],
+    [{ signedIn: true, online: false, queueWaitingCount: 2 }, "offline"],
+    [{ signedIn: true, offline: true, queueWaitingCount: 2, attention: true }, "offline"],
+    [{ signedIn: true, online: false }, "idle"],
+    [{ signedIn: true, attention: true, queueWaitingCount: 2 }, "attention"],
+    [{ signedIn: true, exports: [["s", { result: { ok: false }, finalizationSettled: true }]] }, "attention"],
+    [{ signedIn: true, exports: [["s", { result: { ok: false }, releaseRequested: true }]] }, "idle"],
+    [{ signedIn: true, queueWaitingCount: 2 }, "queue-waiting"],
+  ])("F odvodí %j jako %s", (input, expected) => {
+    const harness = trayHarness(input);
+    harness.refreshTray();
+    expect(harness.getTrayState()).toBe(expected);
+    expect(harness.images.at(-1)).toBe(`obrazek:${expected}`);
+    expect(harness.tooltips.at(-1)).toBe(`${OSA_TRAY_LABELS[expected]}${input.queueWaitingCount ? ` · ${input.queueWaitingCount} čeká` : ""}`);
+  });
+
+  it("změna počtu při stejné ikoně obnoví skutečný tooltip", () => {
+    const harness = trayHarness({ signedIn: true, queueWaitingCount: 1 });
+    harness.refreshTray();
+    const images = harness.images.length;
+    expect(harness.tooltips.at(-1)).toBe("LuDone · Čeká na odeslání · 1 čeká");
+    harness.queueFacts.pendingCount = 3;
+    harness.refreshTray();
+    expect(harness.images.length).toBe(images);
+    expect(harness.tooltips.at(-1)).toBe("LuDone · Čeká na odeslání · 3 čeká");
+  });
+
+  it("obsahuje přesně deset stavů F a žádný aktivní LuTrack", () => {
+    expect(Object.keys(OSA_TRAY_LABELS).sort()).toEqual(["idle", "recording", "recording-audio-lost", "recording-microphone-only", "saving", "decision", "signed-out", "offline", "attention", "queue-waiting"].sort());
+  });
+});
+
+// Počty a problémy fronty vytváří skutečný main reduktor, nikoli renderer.
+describe("F skutečné queue facts", () => {
+  it("held draft nemá čekající badge, explicitně approved položka ano", () => {
+    const harness = trayHarness({ signedIn: true });
+    expect(harness.updateOutboundQueueTrayFact([{ state: "ceka", kind: "recording", uploadIntent: "held" }])).toBe(true);
+    expect(harness.getTrayState()).toBe("idle");
+    expect(harness.queueFacts.pendingCount).toBe(0);
+    expect(harness.updateOutboundQueueTrayFact({ queue: { items: [{ state: "ceka", kind: "recording", uploadIntent: "approved" }] } })).toBe(true);
+    expect(harness.getTrayState()).toBe("queue-waiting");
+    expect(harness.queueFacts.pendingCount).toBe(1);
+    expect(harness.tooltips.at(-1)).toBe("LuDone · Čeká na odeslání · 1 čeká");
+  });
+
+  it("zásah vlastníka nepředstírá čekající upload a neznámý výsledek fakta nepřepíše", () => {
+    const harness = trayHarness({ signedIn: true });
+    expect(harness.updateOutboundQueueTrayFact({ items: [{ state: "ceka", requiresHumanAction: true, uploadIntent: "approved" }] })).toBe(true);
+    expect(harness.queueFacts.pendingCount).toBe(0);
+    expect(harness.getTrayState()).toBe("attention");
+    expect(harness.updateOutboundQueueTrayFact({ unrelated: [] })).toBe(false);
+    expect(harness.getTrayState()).toBe("attention");
+  });
+
+  it("offline důvod ovlivní jen schválené čekající odesílání", () => {
+    const harness = trayHarness({ signedIn: true });
+    const item = { state: "ceka", lastFailureReason: "Síťový požadavek selhal", uploadIntent: "approved" };
+    expect(harness.updateOutboundQueueTrayFact([item])).toBe(true);
+    expect(harness.queueFacts.offline).toBe(true);
+    expect(harness.getTrayState()).toBe("offline");
+    expect(harness.updateOutboundQueueTrayFact([{ ...item, uploadIntent: "held" }])).toBe(true);
+    expect(harness.getTrayState()).toBe("idle");
+  });
 });

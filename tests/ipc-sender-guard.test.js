@@ -53,6 +53,7 @@ const createPermissionGuard = Function(
   ${functionSource(mainSource, "isAllowedMediaPermission")}
   return {
     isAllowedMediaPermission,
+    requireTrustedSender,
     setWindows(panel, settings, traySpaceWarning) {
       panelWindow = panel;
       settingsWindow = settings;
@@ -334,15 +335,19 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "auth:session-state",
       "auth:set-origin",
       "auth:switch-origin",
+      "detail:set-dirty",
+      "detail:saved-before-close",
       "diagnostics:export",
       "diagnostics:get",
       "panel:hide",
+      "panel:set-page",
       "panel:set-content-height",
       "permission:request",
       "permission:status",
       "queue:claim-recording",
       "queue:list",
       "queue:retry",
+      "recording:get-activity",
       "recording:append",
       "recording:begin",
       "recording:confirm-export-failure",
@@ -352,11 +357,14 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "recording:export",
       "recording:finish",
       "recording:finish-export",
+      "recording:request-stop",
       "recording:save-decision",
       // D9: výslovná konfigurace jedné nahrávky; přesný CAS/payload měří queue-wiring.
       "recordings:configure-upload",
       "recordings:delete",
       "recordings:list-local",
+      "recordings:open-detail",
+      "recordings:play",
       "recordings:open-web",
       "recordings:retry",
       "recordings:reveal",
@@ -372,6 +380,7 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "settings:set-dock-visible",
       "settings:set-open-at-login",
       "settings:set-upload-enabled",
+      "test:capture-window",
       "test:click-tray",
       "test:quit",
       "tracking:get-state",
@@ -400,19 +409,19 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
     expect(functionSource(mainSource, "installMediaHandlers")).toContain("isTrustedPanelFrame");
   });
 
-  it("🔴 výběr firmy přijímá jen hlavní rám okna Nastavení", () => {
+  it("🔴 výběr firmy přijímá jen hlavní rám vlastního panelu či detailu", () => {
     expect(mainSource).toContain(
-      'handleValidated("upload-companies:select", ["settings"],',
+      'handleValidated("upload-companies:select", ["panel", "settings"],',
     );
-    expect(mainSource).toContain("requireTrustedSender(event, [\"settings\"])");
+    expect(mainSource).toContain("requireTrustedSender(event, [\"panel\", \"settings\"])");
   });
 
-  it("preference nahrávky a čtení výchozí firmy mají jen oprávnění Nastavení", () => {
+  it("preference nahrávky a čtení výchozí firmy mají jen oprávnění vlastního panelu a detailu", () => {
     expect(mainSource).toContain(
-      'handleValidated("recordings:configure-upload", ["settings"],',
+      'handleValidated("recordings:configure-upload", ["panel", "settings"],',
     );
     expect(mainSource).toContain(
-      'handleValidated("upload-companies:default", ["settings"],',
+      'handleValidated("upload-companies:default", ["panel", "settings"],',
     );
     expect(mainSource).toContain('requireNoPayload("upload-companies:default", extraPayload)');
   });
@@ -426,5 +435,21 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       "systemAudioLost",
       "tracking",
     ]);
+  });
+});
+
+// Nová role panelu neznamená libovolné důvěryhodně vypadající okno.
+describe("F role patří skutečně vlastněným oknům", () => {
+  it.each(["panel", "settings"])("%s vyžaduje vlastní mainFrame a odmítne cizí okno", (kind) => {
+    const panel = createWebContents();
+    const detail = createWebContents(`${trustedUrl}#settings`);
+    const foreign = createWebContents(`${trustedUrl}#settings`);
+    permissionGuard.setWindows({ webContents: panel }, { webContents: detail });
+    const owner = kind === "panel" ? panel : detail;
+    expect(() => permissionGuard.requireTrustedSender({ sender: owner, senderFrame: owner.mainFrame }, ["panel", "settings"])).not.toThrow();
+    expect(() => permissionGuard.requireTrustedSender({ sender: owner, senderFrame: {} }, ["panel", "settings"])).toThrow();
+    expect(() => permissionGuard.requireTrustedSender({ sender: foreign, senderFrame: foreign.mainFrame }, ["panel", "settings"])).toThrow();
+    expect(() => permissionGuard.requireTrustedSender({ sender: owner }, ["panel", "settings"])).toThrow();
+    expect(() => permissionGuard.requireTrustedSender({ sender: owner, senderFrame: owner.mainFrame }, [kind === "panel" ? "settings" : "panel"])).toThrow();
   });
 });
