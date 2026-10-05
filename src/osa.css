@@ -106,3 +106,7 @@ html[data-theme=dark]:has(.osa-shell){--osa-surface:#161d1b;--osa-alt:#1d2624;--
 
 /* F používá systémové písmo i ve zděděných vnitřních regionech Astra. */
 .osa-shell *{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif!important}
+/* Stavová zpráva má vlastní řádek; hover nesmí převzít tmavé Astra pozadí. */
+.osa-shell .idle-feature-row__copy{display:flex;flex-direction:column;gap:4px}
+.osa-shell .osa-station__actions .button:not(:disabled):hover{background:var(--osa-soft);color:var(--osa-text);border-color:var(--osa-line)}
+.osa-shell .settings-window[data-page] .recordings-dashboard__list{padding:0 0 0 30px}.osa-shell .settings-window[data-page] .recordings-dashboard__list:before{left:6px;top:22px;bottom:0}.osa-shell--detail .settings-window[data-page] .recordings-dashboard__list{padding:0}

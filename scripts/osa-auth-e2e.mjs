@@ -51,6 +51,7 @@ try {
       await click('[data-osa-pointer-target="true"]', client);
     };
     const capture = async (name, client = panel) => {
+      if (client === detail) await client.evaluate("document.querySelector('.osa-workspace').scrollTop=0");
       await delay(200);
       await client.evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
       const data = await client.evaluate("window.ludone.testCaptureWindow()");
@@ -107,6 +108,7 @@ try {
           const expected = { complete: "complete", incomplete: "incomplete", mismatch: "mismatch", rate: "rate_limited" }[mode];
           await waitFor(() => detail.evaluate(`Boolean(document.querySelector('.recording-queue-card__track[data-status=${expected}]'))`), `actual verifier ${expected}`).catch(async error => {await capture(`${theme}-verifier-failed`,detail);throw error;});
           check(`${theme}-${mode}-actual-verifier`, true);
+          check(`${theme}-${mode}-verified-action-hover-readable`, await detail.evaluate("(()=>{const el=document.querySelector('.recording-action--verify');if(!el)return false;const style=getComputedStyle(el);const luminance=color=>{const values=color.match(/[0-9.]+/g).slice(0,3).map(Number).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return .2126*values[0]+.7152*values[1]+.0722*values[2];};const a=luminance(style.color),b=luminance(style.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5;})()"));
         }
         if (mode === "companies-error") {
           await waitFor(() => detail.evaluate("document.body.textContent.includes('Firmy nelze ověřit')"), "actual company failure");
