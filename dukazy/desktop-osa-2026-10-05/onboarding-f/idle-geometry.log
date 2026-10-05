@@ -1,0 +1,15 @@
+
+> ludone-desktop-prototype@0.1.8 test:unit
+> vitest run tests/idle-panel.test.js
+
+
+ RUN  v4.1.11 /Users/dev_ludone/Dev/ludone-desktop/.claude/worktrees/osa-onboarding-f
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  21:16:50
+   Duration  1.22s (transform 133ms, setup 9ms, import 346ms, tests 795ms, environment 0ms)
+
+
+EXIT_CODE=0

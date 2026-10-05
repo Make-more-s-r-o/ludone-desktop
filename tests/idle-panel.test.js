@@ -11,7 +11,8 @@ import { UPLOAD_DISABLED_REASON } from "../src/lib/queue.js";
 const USER = { name: "Dan Jirotka", email: "dan@ludone.cz" };
 const onboardingAudioFrames = new WeakMap();
 const RENDERER_STYLES = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
-  + readFileSync(new URL("../src/osa.css", import.meta.url), "utf8");
+  + readFileSync(new URL("../src/osa.css", import.meta.url), "utf8")
+  + readFileSync(new URL("../src/components/osa/osa-onboarding.css", import.meta.url), "utf8");
 
 const ONBOARDING_CONTENT_HEIGHTS = {
   // JSDOM nemá layout engine. Vkládáme proto jen deterministickou intrinsic výšku
@@ -41,59 +42,22 @@ function installOnboardingGeometry(view) {
 
   const originalRect = view.HTMLElement.prototype.getBoundingClientRect;
   const naturalHeight = (element) => {
-    if (element.classList.contains("onboarding__topbar")) return 58;
-    if (element.classList.contains("step-track")) return 3;
     for (const [className, height] of Object.entries(ONBOARDING_CONTENT_HEIGHTS)) {
       if (element.classList.contains(className)) return height;
     }
     return 0;
   };
-  const layoutFor = (surface) => {
-    const tracks = view.getComputedStyle(surface).gridTemplateRows
-      .match(/minmax\([^)]*\)|-?\d+(?:\.\d+)?px/g) || [];
-    const placements = new Map();
-    const occupiedRows = new Set();
-    let nextAutoRow = 0;
-
-    for (const child of surface.children) {
-      const explicitRow = Number.parseInt(view.getComputedStyle(child).gridRowStart, 10);
-      let row = Number.isInteger(explicitRow) && explicitRow > 0 ? explicitRow - 1 : null;
-      if (row === null) {
-        while (occupiedRows.has(nextAutoRow)) nextAutoRow += 1;
-        row = nextAutoRow;
-        nextAutoRow += 1;
-      }
-      placements.set(child, row);
-      occupiedRows.add(row);
-    }
-
-    const rowHeights = tracks.map((track, row) => {
-      const fixedHeight = track.endsWith("px") ? Number.parseFloat(track) : null;
-      if (fixedHeight !== null) return fixedHeight;
-      return Math.max(0, ...[...placements.entries()]
-        .filter(([, childRow]) => childRow === row)
-        .map(([child]) => naturalHeight(child)));
-    });
-    // JSDOM neumí dopočítat šířku shorthand borderu s CSS proměnnou; Chromium ano.
-    const borderTop = Number.parseFloat(view.getComputedStyle(surface).borderTopWidth) || 1;
-    const borderBottom = Number.parseFloat(view.getComputedStyle(surface).borderBottomWidth) || 1;
-    return { borderBottom, borderTop, placements, rowHeights };
-  };
   const contentMetrics = (content) => {
-    const surface = content.closest(".onboarding.window-surface");
+    const surface = content.closest(".osa-onboarding");
     if (!surface) return null;
-    const layout = layoutFor(surface);
-    const row = layout.placements.get(content);
-    if (!Number.isInteger(row)) return null;
-    const top = layout.borderTop + layout.rowHeights
-      .slice(0, row)
-      .reduce((sum, height) => sum + height, 0);
+    // F již nemá druhou hlavičku ani horizontální progress řádek. Stanice osy
+    // je normální blok; její intrinsic výška patří do scrollujícího workspace.
     const scrollHeight = naturalHeight(content);
     return {
-      clientHeight: layout.rowHeights[row] || 0,
-      requiredPanelHeight: top + scrollHeight + layout.borderBottom,
+      clientHeight: scrollHeight,
+      requiredPanelHeight: scrollHeight,
       scrollHeight,
-      top,
+      top: 0,
     };
   };
 
@@ -114,17 +78,6 @@ function installOnboardingGeometry(view) {
     },
   });
   view.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-    if (
-      this.matches(".onboarding.window-surface")
-      && this.style.height === "auto"
-      && this.style.maxHeight === "none"
-    ) {
-      const layout = layoutFor(this);
-      const height = layout.borderTop
-        + layout.rowHeights.reduce((sum, rowHeight) => sum + rowHeight, 0)
-        + layout.borderBottom;
-      return new view.DOMRect(0, 0, 400, height);
-    }
     if (this.matches(".onboarding__content")) {
       const metrics = contentMetrics(this);
       return new view.DOMRect(0, metrics?.top || 0, 400, metrics?.clientHeight || 0);
@@ -172,7 +125,7 @@ function installOnboardingGeometry(view) {
         requiredPanelHeight,
         headerHeight,
         workspaceHeight,
-        workspaceOverflow: view.getComputedStyle(workspace).overflowY,
+        workspaceOverflow: view.getComputedStyle(workspace).overflowY || view.getComputedStyle(workspace).overflow,
         scrollHeight: content?.scrollHeight || 0,
       };
     },
@@ -1343,7 +1296,7 @@ describe("schválený klidový panel", () => {
       await geometry.flush();
 
       expect(geometry.state(
-        panel.document.querySelector(".onboarding.window-surface"),
+        panel.document.querySelector(".osa-onboarding"),
         setPanelContentHeight,
       )).toEqual({
         buttonFits: true,
@@ -1351,7 +1304,7 @@ describe("schválený klidový panel", () => {
         contentFits: true,
         reportCoversContent: true,
         reportedHeight: 660,
-        requiredPanelHeight: 420,
+        requiredPanelHeight: 360,
         headerHeight: 48,
         workspaceHeight: 612,
         workspaceOverflow: "auto",
@@ -1377,7 +1330,7 @@ describe("schválený klidový panel", () => {
       await geometry.flush();
 
       expect(geometry.state(
-        panel.document.querySelector(".onboarding.window-surface"),
+        panel.document.querySelector(".osa-onboarding"),
         setPanelContentHeight,
       )).toEqual({
         buttonFits: true,
@@ -1385,7 +1338,7 @@ describe("schválený klidový panel", () => {
         contentFits: true,
         reportCoversContent: true,
         reportedHeight: 660,
-        requiredPanelHeight: 577,
+        requiredPanelHeight: 514,
         headerHeight: 48,
         workspaceHeight: 612,
         workspaceOverflow: "auto",
@@ -1432,14 +1385,14 @@ describe("schválený klidový panel", () => {
       expect(panel.document.querySelector(".osa-shell")?.dataset.osaPage).toBe("onboarding");
       expect(panel.document.querySelector('[data-testid="auth-waiting-screen"]')).not.toBeNull();
       expect(geometry.state(
-        panel.document.querySelector(".onboarding.window-surface"),
+        panel.document.querySelector(".osa-onboarding"),
         setPanelContentHeight,
       )).toMatchObject({
         clientHeight: 342,
         contentFits: true,
         reportCoversContent: true,
         reportedHeight: 660,
-        requiredPanelHeight: 486,
+        requiredPanelHeight: 426,
         headerHeight: 48,
         workspaceHeight: 612,
         workspaceOverflow: "auto",
