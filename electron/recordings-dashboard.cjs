@@ -236,6 +236,16 @@ async function inspectManifest(recordingsDirectory, manifestPath, derivativePath
       : null;
   const sizeBytes = existing.length > 0
     ? existing.reduce((sum, track) => sum + track.sizeBytes, 0) : null;
+  // Velikost se uživateli ukazuje podle souboru, který jde na server: hotový stereo.webm,
+  // jinak smíchaný master. Původní stopy jsou jen místní kopie a sčítají se zvlášť.
+  const uploadIndex = ["-stereo.webm", "-stereo-master.webm"].map((suffix) => (
+    derivatives.findIndex((file, index) => file.exists
+      && path.basename(derivativePaths[index]).endsWith(suffix))
+  )).find((index) => index >= 0);
+  const uploadSizeBytes = uploadIndex === undefined ? null : derivatives[uploadIndex].sizeBytes;
+  const existingOriginals = tracks.filter((track) => track.exists);
+  const originalsSizeBytes = existingOriginals.length > 0
+    ? existingOriginals.reduce((sum, track) => sum + track.sizeBytes, 0) : null;
   return {
     identifiedId,
     uploadPreferencesLocked: typeof parsed.sessionId === "string" && parsed.sessionId.length > 0,
@@ -246,6 +256,9 @@ async function inspectManifest(recordingsDirectory, manifestPath, derivativePath
     localState,
     localReason,
     sizeBytes,
+    uploadSizeBytes,
+    originalsSizeBytes,
+    originalsCount: existingOriginals.length,
     sources: validated.sources,
     trackNames: Object.fromEntries(validated.sources.map(
       (source) => [source, validated.manifest.tracks[source].fileName],
@@ -431,6 +444,9 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       createdAt: inspected.createdAt ?? projected.createdAt ?? null,
       durationMs: inspected.durationMs ?? projected.durationMs ?? null,
       sizeBytes: inspected.invalid ? null : inspected.sizeBytes,
+      uploadSizeBytes: inspected.invalid ? null : inspected.uploadSizeBytes ?? null,
+      originalsSizeBytes: inspected.invalid ? null : inspected.originalsSizeBytes ?? null,
+      originalsCount: inspected.invalid ? 0 : inspected.originalsCount ?? 0,
       deliveryState: rawItem.delivery?.state ?? null,
       allowedActions: {
         claim: !inspected.invalid
@@ -478,6 +494,9 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       createdAt: inspected.createdAt ?? null,
       durationMs: inspected.durationMs ?? null,
       sizeBytes: inspected.invalid ? null : inspected.sizeBytes,
+      uploadSizeBytes: inspected.invalid ? null : inspected.uploadSizeBytes ?? null,
+      originalsSizeBytes: inspected.invalid ? null : inspected.originalsSizeBytes ?? null,
+      originalsCount: inspected.invalid ? 0 : inspected.originalsCount ?? 0,
       localState: inspected.invalid ? "invalid-manifest" : inspected.localState,
       localReason: inspected.invalid ? "Primární manifest nelze bezpečně přečíst." : inspected.localReason ?? null,
       fileRevision: inspected.fileRevision ?? null,

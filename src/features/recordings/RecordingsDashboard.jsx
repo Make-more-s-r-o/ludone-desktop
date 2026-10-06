@@ -4,6 +4,7 @@ import { OsaHistoryControls, OsaStations } from "../../components/osa/index.js";
 import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon, MicIcon, RefreshIcon, WaitingIcon } from "../../components/Icons.jsx";
+import { formatSize as formatSharedSize, recordingSizeText } from "../../lib/format-size.js";
 
 import "./day-polish.css";
 
@@ -49,6 +50,9 @@ function normalizeRecordingItem(value) {
     createdAt,
     durationMs: safeNonNegativeInteger(value.durationMs),
     sizeBytes: safeNonNegativeInteger(value.sizeBytes),
+    uploadSizeBytes: safeNonNegativeInteger(value.uploadSizeBytes),
+    originalsSizeBytes: safeNonNegativeInteger(value.originalsSizeBytes),
+    originalsCount: safeNonNegativeInteger(value.originalsCount) ?? 0,
     blockReason: safeText(value.blockReason) ?? safeText(value.lastFailureReason),
     ownership: ["unknown", "current", "other", "unavailable"].includes(value.ownership)
       ? value.ownership
@@ -149,9 +153,15 @@ function formatDuration(value) {
 
 function formatSize(value) {
   if (value === null) return "Velikost není známá";
-  if (value < 1_000) return `${value} B`;
-  if (value < 1_000_000) return `${Math.max(1, Math.round(value / 1_000))} kB`;
-  return `${new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 1 }).format(value / 1_000_000)} MB`;
+  return formatSharedSize(value);
+}
+
+function itemSizeText(item) {
+  return recordingSizeText({
+    uploadBytes: item.uploadSizeBytes,
+    originalsBytes: item.originalsSizeBytes,
+    originalsCount: item.originalsCount,
+  }) ?? formatSize(item.sizeBytes ?? null);
 }
 
 function accountExplanation(authState) {
@@ -573,7 +583,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     <span className="recording-queue-card__facts">
                       <span>{formatCreatedAt(item.createdAt)}</span>
                       <span>{formatDuration(item.durationMs)}</span>
-                      {item.sizeBytes !== null && <span>{formatSize(item.sizeBytes)}</span>}
+                      {item.sizeBytes !== null && <span>{itemSizeText(item)}</span>}
                     </span>
                     <span className={`recording-queue-card__local recording-queue-card__local--${item.localState}`}>
                       {item.recordingInProgress ? "Nahrávání ještě není dokončené" : item.localState === "complete-audio" ? "Zvuk připraven" : LOCAL_STATE_LABELS[item.localState]}
@@ -584,7 +594,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   <div className="recording-queue-card__detail">
                     <header className="recording-queue-card__detail-heading">
                       <h1>{item.title ?? "Nahrávka"}</h1>
-                      <p>{formatCreatedAt(item.createdAt)} · {formatDuration(item.durationMs)} · {formatSize(item.sizeBytes)}</p>
+                      <p>{formatCreatedAt(item.createdAt)} · {formatDuration(item.durationMs)} · {itemSizeText(item)}</p>
                     </header>
                     <ol className="recording-queue-card__journey" aria-label="Postup nahrávky">
                       {["Na Macu", "Ve frontě", "Odesláno", "Ověřeno"].map((label, index) => (

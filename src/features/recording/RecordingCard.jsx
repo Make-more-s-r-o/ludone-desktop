@@ -11,6 +11,7 @@ import {
   stopStreams,
 } from "../../lib/audio-levels.js";
 import { countLabel } from "../../lib/count-label.js";
+import { recordingSizeText } from "../../lib/format-size.js";
 import { createStereoCapture } from "../../lib/stereo-recording.js";
 import {
   AudioLevelMeter,
@@ -196,14 +197,15 @@ function formatRecordingElapsed(totalSeconds) {
 }
 
 function sizeLabel(files) {
-  const bytes = Object.values(files ?? {}).reduce((total, file) => (
-    total + (Number.isFinite(file?.size) ? file.size : 0)
-  ), 0);
-  if (bytes < 1_024) return `${bytes} B`;
-  if (bytes < 1_024 * 1_024) return `${Math.round(bytes / 1_024)} kB`;
-  return `${new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 1 }).format(
-    bytes / (1_024 * 1_024),
-  )} MB`;
+  const tracks = Object.values(files ?? {}).filter((file) => Number.isFinite(file?.size));
+  // Smíchaný master vzniká až po uložení originálů, takže tady jeho velikost neznáme.
+  // Ukazujeme proto jen součet místních původních stop a říkáme, co to je.
+  const text = recordingSizeText({
+    uploadBytes: null,
+    originalsBytes: tracks.reduce((total, file) => total + file.size, 0),
+    originalsCount: tracks.length,
+  });
+  return text ?? "velikost neznámá";
 }
 
 function savedRecordingMetadata(recording) {
