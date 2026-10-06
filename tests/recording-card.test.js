@@ -1222,7 +1222,7 @@ describe("RecordingCard", () => {
 
       expect(panel.document.querySelector(
         ".recording-saved__meta small:last-child",
-      )?.textContent).toBe(`${expected} · 10 B`);
+      )?.textContent).toBe(`${expected} · původní stopy na Macu 10 B`);
     } finally {
       await panel.cleanup();
     }

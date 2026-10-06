@@ -390,6 +390,26 @@ describe("dashboard fronty nahrávek", () => {
     }
   });
 
+  it("hlavní velikost je odesílaný soubor a původní stopy jsou uvedené zvlášť", async () => {
+    const dashboard = await renderDashboard({
+      listQueue: () => Promise.resolve([{
+        ...ITEM,
+        sizeBytes: 200_000_000,
+        uploadSizeBytes: 46_300_000,
+        originalsSizeBytes: 153_700_000,
+        originalsCount: 2,
+      }]),
+    });
+    try {
+      await vi.waitFor(() => expect(
+        dashboard.document.body.textContent.replace(/\s/gu, " "),
+      ).toContain("46,3 MB · místně navíc 2 původní stopy 153,7 MB"));
+      expect(dashboard.document.body.textContent).not.toContain("200 MB");
+    } finally {
+      await dashboard.cleanup();
+    }
+  });
+
   it("jiný účet může znovu převzít dosud drženou nahrávku", async () => {
     const dashboard = await renderDashboard({
       listQueue: () => Promise.resolve([{
