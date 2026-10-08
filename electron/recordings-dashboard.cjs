@@ -448,12 +448,14 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       originalsSizeBytes: inspected.invalid ? null : inspected.originalsSizeBytes ?? null,
       originalsCount: inspected.invalid ? 0 : inspected.originalsCount ?? 0,
       deliveryState: rawItem.delivery?.state ?? null,
+      uploadLocked: projected.uploadLocked === true,
       allowedActions: {
         claim: !inspected.invalid
           && inspected.localState !== "missing-audio"
           && ["ceka", "selhalo"].includes(projected.state)
           && ["unknown", "other"].includes(projected.ownership),
-        delete: !inspected.invalid && projected.state !== "odesila",
+        delete: !inspected.invalid && projected.state !== "odesila"
+          && !projected.uploadLocked,
         retry: !inspected.invalid && inspected.localState !== "missing-audio"
           && projected.ownership === "current" && projected.uploadIntent === "approved"
           && (projected.state === "selhalo"

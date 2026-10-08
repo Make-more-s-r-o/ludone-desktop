@@ -252,6 +252,14 @@ async function renderRecordingCard(options = {}) {
       if (!trackTimings?.system) delete result.files.system;
       return Promise.resolve(result);
     }),
+    listLocalRecordings: vi.fn().mockResolvedValue({ items: [{
+      id: SESSION_ID,
+      revision: `sha256:${"a".repeat(64)}`,
+      fileRevision: `sha256:${"b".repeat(64)}`,
+      allowedActions: { delete: true },
+      uploadLocked: false,
+    }] }),
+    deleteRecording: vi.fn().mockResolvedValue({ outcome: "deleted" }),
     finishRecordingExport: vi.fn().mockResolvedValue(
       options.finishRecordingExportResult ?? { ok: true },
     ),
@@ -624,6 +632,39 @@ async function enterRecordingName(panel, name) {
 }
 
 describe("RecordingCard", () => {
+  it("maže zastavenou nahrávku až po potvrzení a úspěšné smazání skryje kartu", async () => {
+    const view = await renderRecordingCard();
+    try {
+      await React.act(async () => view.currentButton().click());
+      await vi.waitFor(() => expect(view.phase()).toBe("recording"));
+      await stopRecording(view);
+      await vi.waitFor(() => expect(view.document.querySelector('[data-testid="delete-recording"]')).not.toBeNull());
+      await React.act(async () => view.document.querySelector('[data-testid="delete-recording"]').click());
+      expect(view.ludone.deleteRecording).not.toHaveBeenCalled();
+      await React.act(async () => view.document.querySelector('[data-testid="confirm-delete-recording"]').click());
+      await vi.waitFor(() => expect(view.ludone.deleteRecording).toHaveBeenCalledOnce());
+      expect(view.phase()).toBe("idle");
+      expect(view.document.querySelector('[data-recording-phase="saved"]')).toBeNull();
+    } finally { await view.cleanup(); }
+  });
+
+  it("zastavená karta nedovolí smazání při upload locku ze serverového stavu", async () => {
+    const view = await renderRecordingCard();
+    try {
+      await React.act(async () => view.currentButton().click());
+      await vi.waitFor(() => expect(view.phase()).toBe("recording"));
+      await stopRecording(view);
+      await vi.waitFor(() => expect(view.document.querySelector('[data-testid="delete-recording"]')).not.toBeNull());
+      view.ludone.listLocalRecordings.mockResolvedValue({ items: [{
+        id: SESSION_ID, revision: `sha256:${"a".repeat(64)}`, fileRevision: `sha256:${"b".repeat(64)}`,
+        allowedActions: { delete: false }, uploadLocked: true,
+      }] });
+      await React.act(async () => view.document.querySelector('[data-testid="delete-recording"]').click());
+      await React.act(async () => view.document.querySelector('[data-testid="confirm-delete-recording"]').click());
+      await vi.waitFor(() => expect(view.document.body.textContent).toContain("Odesílání už začalo"));
+      expect(view.ludone.deleteRecording).not.toHaveBeenCalled();
+    } finally { await view.cleanup(); }
+  });
 
   it.each([
     ["send", "Uložit a odeslat", 'button[type="submit"]'],

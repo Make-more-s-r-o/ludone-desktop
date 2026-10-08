@@ -64,6 +64,7 @@ function normalizeRecordingItem(value) {
     localReason: safeText(value.localReason),
     canClaim: value.allowedActions?.claim === true,
     canDelete: value.allowedActions?.delete === true,
+    uploadLocked: value.uploadLocked === true,
     canRetry: value.allowedActions?.retry === true,
     canSend: value.allowedActions?.send === true,
   };
@@ -438,7 +439,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   }, [detailId]);
   const runAction = async (item, method) => {
     if (["sendRecording", "retryRecording"].includes(method) && (preferencesById[item.id]?.dirty || preferenceFailedById[item.id])) return;
-    if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method !== "deleteRecording"
+    if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method === "deleteRecording" && item.uploadLocked)
+      || (method !== "deleteRecording"
       && method !== "revealRecording" && !item.revision)
       || typeof window.ludone?.[method] !== "function") return;
     setActingId(item.id);
@@ -665,7 +667,11 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                 {item.canDelete && (
                   <button type="button" className="button button--small recording-action--delete"
                     disabled={item.recordingInProgress || actingId !== null}
-                    onClick={() => void runAction(item, "deleteRecording")}><OsaIcon name="trash" size={17} /> Přesunout do koše</button>
+                    onClick={() => {
+                      if (window.confirm("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.")) {
+                        void runAction(item, "deleteRecording");
+                      }
+                    }}><OsaIcon name="trash" size={17} /> Smazat nahrávku</button>
                 )}
 </> }} server={{ status: verified ? "Dokončeno · ověřeno" : verification && Object.values(verification.tracks).some(result => result.status !== "complete") ? VERIFICATION_LABELS[Object.values(verification.tracks).find(result => result.status !== "complete").status] : deliveryStateLabel(item), verified: Boolean(verified), error: Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? [...new Set(Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]))].join(" · ") : "Přepis a analýza jsou na webu", actions: <>                {claimable && (
                   <button

@@ -69,6 +69,7 @@ async function renderDashboard({
   retryRecording = () => Promise.resolve({ outcome: "sent" }),
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
+  dom.window.confirm = vi.fn(() => true);
   const ludone = {
     claimRecording: vi.fn(claimRecording),
     deleteRecording: vi.fn(deleteRecording),
@@ -254,7 +255,7 @@ describe("dashboard fronty nahrávek", () => {
     });
     try {
       const button = [...dashboard.document.querySelectorAll("button")]
-        .find((candidate) => candidate.textContent.trim() === "Přesunout do koše");
+        .find((candidate) => candidate.textContent.trim() === "Smazat nahrávku");
       await React.act(async () => button.click());
       await vi.waitFor(() => expect(dashboard.document.body.textContent)
         .toContain("Zbývající soubory i záznam ve frontě zůstaly zachované."));
@@ -266,6 +267,26 @@ describe("dashboard fronty nahrávek", () => {
     } finally {
       await dashboard.cleanup();
     }
+  });
+
+  it("před smazáním vyžádá potvrzení a při odmítnutí nevolá IPC", async () => {
+    const deletable = { ...ITEM, ownership: "current", allowedActions: { ...ITEM.allowedActions, delete: true } };
+    const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [deletable], unreadableCount: 0 }) });
+    dashboard.document.defaultView.confirm.mockReturnValue(false);
+    try {
+      const button = [...dashboard.document.querySelectorAll("button")].find((candidate) => candidate.textContent.includes("Smazat nahrávku"));
+      await React.act(async () => button.click());
+      expect(dashboard.document.defaultView.confirm).toHaveBeenCalledWith("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.");
+      expect(dashboard.ludone.deleteRecording).not.toHaveBeenCalled();
+    } finally { await dashboard.cleanup(); }
+  });
+
+  it("neukáže smazání pro položku s důkazem zahájeného uploadu", async () => {
+    const locked = { ...ITEM, uploadLocked: true, ownership: "current", allowedActions: { ...ITEM.allowedActions, delete: false } };
+    const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [locked], unreadableCount: 0 }) });
+    try {
+      expect([...dashboard.document.querySelectorAll("button")].some((button) => button.textContent.includes("Smazat nahrávku"))).toBe(false);
+    } finally { await dashboard.cleanup(); }
   });
   it("server nevolá při renderu ani refreshi a ověří obě stopy jen po ručním kliku", async () => {
     const currentItem = { ...ITEM, ownership: "current", allowedActions: { ...ITEM.allowedActions, claim: false } };
@@ -544,7 +565,7 @@ describe("dashboard fronty nahrávek", () => {
       expect([...dashboard.document.querySelectorAll(".recording-queue-card button")]
         .map((button) => button.textContent.trim())).toEqual([
         "Ukázat ve Finderu",
-        "Přesunout do koše",
+        "Smazat nahrávku",
       ]);
       const refresh = [...dashboard.document.querySelectorAll("button")]
         .find((button) => button.textContent.trim() === "Obnovit přehled");
