@@ -2883,7 +2883,7 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
     if (exportStage.releaseRequested && !deferredQuitRequest && !downloadedUpdatePending) {
       throw new RecordingExportUserError("Stereo export už není dostupný");
     }
-    if (exportStage.exportInFlight) {
+    if (exportStage.exportInFlight || exportStage.deleteInFlight) {
       throw new RecordingExportUserError("Stereo export už probíhá");
     }
     exportStage.exportInFlight = true;
@@ -3235,12 +3235,18 @@ function validRecordingFileActionPayload(payload) {
       || (typeof payload.queueRev === "string" && QUEUE_ITEM_REVISION_PATTERN.test(payload.queueRev)))
     && typeof payload.fileRev === "string" && QUEUE_ITEM_REVISION_PATTERN.test(payload.fileRev);
 }
-function recordingFileActionGuard(event) {
+function recordingFileActionGuard(event, deletingStage = null) {
   try {
     requireTrustedSender(event, ["panel", "settings"]);
     return recordingOwnersPreparing.size === 0 && recordingSessions.size === 0
       && recordingCompletionsInFlight.size === 0
-      && recordingExportStages.size === 0 && outboundQueueSendsInFlight === 0;
+      && (recordingExportStages.size === 0 || (
+        deletingStage !== null && recordingExportStages.size === 1
+        && recordingExportStages.get(deletingStage.sessionId) === deletingStage
+        && deletingStage.owner === event.sender
+        && deletingStage.recordingFinishSucceeded && deletingStage.finalizationSettled
+        && deletingStage.result?.ok === true && !deletingStage.exportInFlight
+      )) && outboundQueueSendsInFlight === 0;
   } catch { return false; }
 }
 handleValidated("recordings:delete", ["panel", "settings"], async (event, payload, ...extraPayload) => {
@@ -3264,13 +3270,29 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
     buttons: ["Zrušit", "Přesunout do koše"], cancelId: 0, defaultId: 0, noLink: true,
   });
   if (response.response !== 1) return { outcome: "cancelled" };
-  return (await getOutboundQueueStore()).deleteRecording({
-    clientRecordingId: payload.id,
-    expectedRevision: payload.queueRev,
-    expectedFileRevision: payload.fileRev,
-    trashItem: (filePath) => shell.trashItem(filePath),
-    guard: async () => recordingFileActionGuard(event),
-  });
+  const deletingStage = recordingExportStages.get(payload.id) ?? null;
+  if (!recordingFileActionGuard(event, deletingStage) || deletingStage?.deleteInFlight) {
+    throw new Error("Akci už nelze bezpečně potvrdit");
+  }
+  // Výjimka patří pouze potvrzenému GUID. Fáze zůstává evidovaná až do
+  // úspěchu koše; při chybě lze rozhodnutí opakovat bez odemčení exportu.
+  if (deletingStage) deletingStage.deleteInFlight = true;
+  try {
+    const result = await (await getOutboundQueueStore()).deleteRecording({
+      clientRecordingId: payload.id,
+      expectedRevision: payload.queueRev,
+      expectedFileRevision: payload.fileRev,
+      trashItem: (filePath) => shell.trashItem(filePath),
+      guard: async () => recordingFileActionGuard(event, deletingStage),
+    });
+    if (result.outcome === "deleted" && deletingStage) {
+      deletingStage.releaseRequested = true;
+      completeRecordingExportStageRelease(deletingStage);
+    }
+    return result;
+  } finally {
+    if (deletingStage) deletingStage.deleteInFlight = false;
+  }
 });
 handleValidated("recordings:play", ["panel", "settings"], async (event, payload, ...extraPayload) => {
   if (extraPayload.length || !validRecordingFileActionPayload(payload)) throw new TypeError("Přehrávání vyžaduje GUID a revize");
