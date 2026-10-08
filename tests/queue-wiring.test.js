@@ -5757,6 +5757,64 @@ describe("produkční zapojení odchozí fronty", () => {
     }
   });
 
+  it("potvrzené delete po finish-export smaže skutečné soubory bez save rozhodnutí", async () => {
+    const harness = await loadMain();
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const list = harness.ipcHandlers.get("recordings:list-local");
+    const row = (await list(event)).items.find((item) => item.id === sessionId);
+    const directory = path.join(harness.userDataPath, "nahravky");
+    const before = await readdir(directory);
+    expect(before.length).toBeGreaterThanOrEqual(4);
+    harness.electron.shell.trashItem.mockImplementation(async (filePath) => rm(filePath));
+    harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+    await expect(harness.ipcHandlers.get("recordings:delete")(event, {
+      id: row.id, queueRev: row.revision, fileRev: row.fileRevision,
+    })).resolves.toEqual({ outcome: "deleted" });
+    expect(await readdir(directory)).toEqual([]);
+    expect((await list(event)).items.find((item) => item.id === sessionId)).toBeUndefined();
+    const queue = JSON.parse(await readFile(path.join(harness.userDataPath, "queue", "outgoing.json"), "utf8"));
+    expect(queue.items).toEqual([]);
+    await expect(harness.ipcHandlers.get("recording:export")(event, sessionId, {
+      recordingName: "Smazaná", openUploadPage: false,
+    })).rejects.toThrow();
+  });
+
+  it("potvrzené delete během probíhajícího exportu odmítne skutečný store", async () => {
+    let resolveExport;
+    const harness = await loadMain({ exportRecordingCopy: vi.fn(() => new Promise((resolve) => {
+      resolveExport = resolve;
+    })) });
+    const { event, sessionId, exportRecording } = await prepareRecordingExport(harness);
+    const exporting = exportRecording(event, sessionId, { recordingName: "Export", openUploadPage: false });
+    await vi.waitFor(() => expect(resolveExport).toBeTypeOf("function"));
+    const row = (await harness.ipcHandlers.get("recordings:list-local")(event)).items.find((item) => item.id === sessionId);
+    harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+    await expect(harness.ipcHandlers.get("recordings:delete")(event, {
+      id: row.id, queueRev: row.revision, fileRev: row.fileRevision,
+    })).rejects.toThrow(/bezpečně/u);
+    expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+    resolveExport({ clientRecordingId: sessionId, fileName: "export.webm" });
+    await exporting;
+  });
+
+  it("delete jiné nahrávky neuzavře čekající exportní fázi", async () => {
+    const harness = await loadMain();
+    const first = await prepareRecordingExport(harness);
+    await first.exportRecording(first.event, first.sessionId, { recordingName: "První", openUploadPage: false });
+    const { sessionId: secondId } = await harness.ipcHandlers.get("recording:begin")(first.event);
+    await harness.ipcHandlers.get("recording:append")(first.event, secondId, "stereo", 0,
+      Uint8Array.from(stereoWebmBytes()).buffer);
+    const timing = { startedAt: "2026-09-03T08:00:00.100Z", endedAt: "2026-09-03T08:30:00.100Z" };
+    await harness.ipcHandlers.get("recording:finish")(first.event, secondId, { microphone: timing, system: timing });
+    await harness.ipcHandlers.get("recording:finish-export")(first.event, secondId, { succeeded: true, timing });
+    const row = (await harness.ipcHandlers.get("recordings:list-local")(first.event)).items.find((item) => item.id === first.sessionId);
+    harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+    await expect(harness.ipcHandlers.get("recordings:delete")(first.event, {
+      id: row.id, queueRev: row.revision, fileRev: row.fileRevision,
+    })).rejects.toThrow(/bezpečně/u);
+    expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+  });
+
   it("native delete zrušení, stale potvrzení a platné potvrzení drží skutečný store i koš", async () => {
     const harness = await loadMain();
     const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);

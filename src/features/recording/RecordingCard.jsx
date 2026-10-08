@@ -246,6 +246,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
     setUploadPreferences(null);
   }), []);
   const [exportError, setExportError] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [quitExportFailure, setQuitExportFailure] = useState(null);
   const [recoveringSystemAudio, setRecoveringSystemAudio] = useState(false);
   const startInFlight = useRef(false);
@@ -462,6 +464,30 @@ export const RecordingCard = forwardRef(function RecordingCard({
       setExportError(describeError(error));
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function deleteStoppedRecording() {
+    if (!savedRecording || deleting || typeof window.ludone?.listLocalRecordings !== "function") return;
+    setDeleting(true);
+    setExportError(null);
+    try {
+      const snapshot = await window.ludone.listLocalRecordings();
+      const item = snapshot?.items?.find((candidate) => candidate.id === savedRecording.clientRecordingId);
+      if (!item?.allowedActions?.delete || item.uploadLocked || !item.fileRevision) {
+        throw new Error("Odesílání už začalo nebo stav nahrávky nelze ověřit; smazání není dostupné.");
+      }
+      const result = await window.ludone.deleteRecording({
+        id: item.id, queueRev: item.revision, fileRev: item.fileRevision,
+      });
+      if (result?.outcome !== "deleted") throw new Error("Nahrávku se nepodařilo smazat.");
+      setSavedRecording(null);
+      setDeleteConfirm(false);
+      setNotice({ type: "success", text: "Nahrávka byla smazána z tohoto Macu." });
+    } catch (error) {
+      setExportError(describeError(error));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -903,6 +929,15 @@ export const RecordingCard = forwardRef(function RecordingCard({
           <small id="recording-name-hint" className="recording-saved__hint">
             Nahrávka už je místně zachovaná. Odesílání začne jen tvou volbou.
           </small>
+          {deleteConfirm && (
+            <div role="alertdialog" aria-label="Potvrdit smazání">
+              <p>Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.</p>
+              <button type="button" className="button button--small recording-action--delete"
+                data-testid="confirm-delete-recording" disabled={deleting} onClick={() => void deleteStoppedRecording()}>Smazat nahrávku</button>
+              <button type="button" className="button button--small" disabled={deleting}
+                onClick={() => setDeleteConfirm(false)}>Zrušit</button>
+            </div>
+          )}
           {!canSend && <p className="recording-saved__hint">Před odesláním obnov přihlášení. Na Macu lze nahrávku nechat i bez něj.</p>}
           {quitExportFailure ? (
             <p
@@ -947,6 +982,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
               >
                 Nechat na Macu
               </button>
+              <button type="button" className="button button--wide recording-action--delete"
+                data-testid="delete-recording" disabled={exporting || deleting || typeof window.ludone?.deleteRecording !== "function"}
+                onClick={() => setDeleteConfirm(true)}>Smazat nahrávku</button>
             </div>
           )}
         </form>

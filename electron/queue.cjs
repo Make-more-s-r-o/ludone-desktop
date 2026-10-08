@@ -1514,6 +1514,9 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
       const target = await freshActionTarget(clientRecordingId, expectedRevision, expectedFileRevision);
       if (target.rawItem?.state === "odesila") throw new Error("Nahrávka se právě odesílá");
+      if (target.rawItem && recordingUploadLocked(target.rawItem)) {
+        throw new Error("Odesílání už začalo; nahrávku nelze smazat");
+      }
       if (!target.rawItem?.delivery) {
         const { descriptorPaths } = require("./meeting-audio.cjs");
         const root = path.dirname(target.manifestPath);
@@ -1714,7 +1717,13 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       currentQueue = queue;
       loaded = true;
       const queueItems = reduceForLocalDashboard(queueModule, queue, currentOwnerFingerprint);
-      return createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory });
+      const snapshot = await createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory });
+      for (const item of snapshot.items) {
+        const rawItem = queue.items.find((candidate) => candidate.clientRecordingId === item.id);
+        item.uploadLocked = rawItem ? recordingUploadLocked(rawItem) : false;
+        if (item.allowedActions) item.allowedActions.delete = item.allowedActions.delete && !item.uploadLocked;
+      }
+      return snapshot;
     });
   }
 
