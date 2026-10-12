@@ -655,8 +655,26 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     <OsaStations mac={{ status: item.localState === "complete-audio" ? "Zvuk připraven" : LOCAL_STATE_LABELS[item.localState], error: item.localState !== "complete-audio", description: "Místní kopie na tomto Macu", actions: <>{osa && item.fileRevision && item.localState === "complete-audio" && <button type="button" className="button button--small" disabled={item.recordingInProgress || actingId !== null} onClick={async () => {
                     try {
                       const response = await window.ludone.playRecording({ id: item.id, queueRev: item.revision, fileRev: item.fileRevision });
-                      if (active.current && /^ludone:\/\/app\/media\/[0-9a-f-]{36}$/u.test(response?.url)) setPlayback({ id: item.id, url: response.url, label: response.label });
-                    } catch { setVerificationErrorById((current) => ({ ...current, [item.id]: "Zvuk se nepodařilo otevřít. Obnov přehled a zkus to znovu." })); }
+                      if (!active.current) return;
+                      if (response?.outcome === "ready" && /^ludone:\/\/app\/media\/[0-9a-f-]{36}$/u.test(response?.url)) {
+                        setVerificationErrorById((current) => ({ ...current, [item.id]: null }));
+                        setPlayback({ id: item.id, url: response.url, label: response.label });
+                      } else {
+                        const message = response?.outcome === "missing"
+                          ? "Zvuk na tomto Macu chybí nebo je neúplný. Původní stopy zkontroluj ve Finderu."
+                          : response?.outcome === "stale"
+                            ? "Přehled nahrávek je zastaralý. Obnov ho a zkus přehrání znovu."
+                            : "Přehrání teď nejde bezpečně potvrdit. Zkus to znovu.";
+                        setPlayback(null);
+                        setVerificationErrorById((current) => ({ ...current, [item.id]: message }));
+                      }
+                    } catch (error) {
+                      console.error("Přehrávání místní nahrávky selhalo", error);
+                      if (active.current) {
+                        setPlayback(null);
+                        setVerificationErrorById((current) => ({ ...current, [item.id]: "Při otevírání zvuku došlo k chybě aplikace. Zkus přehrání znovu." }));
+                      }
+                    }
                   }}><OsaIcon name="play" size={17} /> Přehrát dostupný zvuk</button>}
                   {playback?.id === item.id && <audio controls autoPlay src={playback.url} aria-label={playback.label || "Přehrávání místní nahrávky"} onError={() => setVerificationErrorById((current) => ({ ...current, [item.id]: "Zvuk už není dostupný; obnov přehled." }))} />}
                 {item.fileRevision && item.localState !== "invalid-manifest" && (
