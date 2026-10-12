@@ -51,6 +51,7 @@ const { createRecordingUploadSend } = require("./upload-client.cjs");
 const {
   createLivePendingDelivery,
   ensureMeetingAudioReady,
+  MeetingAudioError,
 } = require("./meeting-audio.cjs");
 const { createRecordingVerifier } = require("./recording-verification.cjs");
 const { createUploadCompanySelectionController } = require("./upload-company-selection.cjs");
@@ -2835,12 +2836,41 @@ function recordingExportFailureMessage(error, exportStage) {
   return `${detail} ${recordingTracksPreservedMessage(exportStage)}`;
 }
 
+// Text chyby smí do logu jen u chyb, které vyrábí sama aplikace nebo encoder (ten
+// už cesty a názvy souborů redigoval). Systémové chyby mívají v textu cílovou cestu
+// odvozenou z názvu schůzky, ty zapisujeme jen jako kód.
+function recordingExportFailureDetail(error) {
+  const parts = [];
+  if (error instanceof Error && error.name) parts.push(`typ ${error.name}`);
+  const failureClass = typeof error?.failureClass === "string" ? error.failureClass : null;
+  if (failureClass) parts.push(`třída ${failureClass}`);
+  const code = recordingExportSystemCode(error);
+  const ownCode = error instanceof MeetingAudioError
+    || (code !== null && code.startsWith("MEDIA_ENCODER_"));
+  if (ownCode && typeof error.message === "string") parts.push(`zpráva: ${error.message}`);
+  if (ownCode && typeof error.diagnostic === "string" && error.diagnostic.length > 0) {
+    parts.push(`encoder: ${error.diagnostic.slice(-1_000)}`);
+  }
+  return parts.join("; ");
+}
+
 function logRecordingExportFailure(error) {
   const code = recordingExportSystemCode(error);
   const codeDetail = code ? ` (kód ${code})` : "";
-  console.error(
-    `[recording-export] Export selhal${codeDetail}; původní stopy zůstaly uložené.`,
-  );
+  const detail = recordingExportFailureDetail(error);
+  const line = `[recording-export] Export selhal${codeDetail}; původní stopy zůstaly uložené.`
+    + `${detail ? ` ${detail}` : ""}`;
+  console.error(line);
+  try {
+    // Zabalená aplikace nemá kam console psát; bez souboru se příčina nedá zpětně zjistit.
+    fs.appendFileSync(
+      path.join(app.getPath("logs"), "recording-export.log"),
+      `${new Date().toISOString()} ${line}\n`,
+      { mode: 0o600 },
+    );
+  } catch {
+    // Diagnostika nesmí rozbít odpověď uživateli.
+  }
 }
 
 function validateRecordingUploadPreferences(value) {
