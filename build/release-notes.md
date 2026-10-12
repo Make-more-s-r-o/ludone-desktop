@@ -1,3 +1,3 @@
-Nahrávky lze po zastavení smazat z panelu i z přehledu nahrávek. Smazání je potřeba potvrdit a je dostupné jen do chvíle, než se nahrávka začne odesílat. Do koše se přesunou všechny její stopy.
+Pokud místní zvuk chybí nebo se přehled nahrávek změnil, aplikace při pokusu o přehrání vysvětlí problém a poradí další krok.
 
-V přehledu nahrávek se zvlášť zobrazuje velikost odeslaného souboru a místní původní stopy.
+Když se nahrávku nepodaří připravit nebo přehrát, aplikace uloží více informací pro dohledání příčiny.
