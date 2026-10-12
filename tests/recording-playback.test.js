@@ -20,6 +20,21 @@ afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
+/** @typedef {{ outcome: string | undefined, label?: string, filePath?: string }} PlaybackHarnessRow */
+/** @typedef {{ clientRecordingId: string, expectedRevision: string, expectedFileRevision: string, guard: () => Promise<boolean> }} PlaybackResolverInput */
+/** @typedef {{ row?: PlaybackHarnessRow, error?: Error, guards?: boolean[], logsFail?: boolean, resolver?: (input: PlaybackResolverInput) => Promise<PlaybackHarnessRow> }} PlaybackHarnessOptions */
+
+/**
+ * @param {PlaybackHarnessOptions} [options={}]
+ * @returns {{
+ *   invoke: (value?: unknown, ...extra: unknown[]) => Promise<PlaybackHarnessRow>,
+ *   resolveRecordingAudio: (input: PlaybackResolverInput) => Promise<PlaybackHarnessRow>,
+ *   offers: Map<string, unknown>,
+ *   payload: { id: string, queueRev: string, fileRev: string },
+ *   logger: { error: ReturnType<typeof vi.fn> },
+ *   logPath: string
+ * }}
+ */
 function harness({ row = { outcome: "ready", label: "Místní zvuk" }, error, guards = [true], logsFail = false, resolver } = {}) {
   const root = fs.mkdtempSync(path.join(tmpdir(), "ludone-playback-"));
   roots.push(root);

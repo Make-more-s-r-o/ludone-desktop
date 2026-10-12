@@ -2,6 +2,7 @@ import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { RecordingsDashboard } from "../src/features/recordings/RecordingsDashboard.jsx";
 
 const ID = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
