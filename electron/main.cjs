@@ -2875,11 +2875,7 @@ function logRecordingExportFailure(error) {
   console.error(line);
   try {
     // Zabalená aplikace nemá kam console psát; bez souboru se příčina nedá zpětně zjistit.
-    fs.appendFileSync(
-      path.join(app.getPath("logs"), "recording-export.log"),
-      `${new Date().toISOString()} ${line}\n`,
-      { mode: 0o600 },
-    );
+    appendPrivateDiagnosticLog("recording-export.log", line);
   } catch {
     // Diagnostika nesmí rozbít odpověď uživateli.
   }
@@ -2897,6 +2893,21 @@ function recordingPlaybackErrorOutcome(error) {
 
 function recordingPlaybackOutcome(value) {
   return ["missing", "stale", "unconfirmed"].includes(value) ? value : "unconfirmed";
+}
+
+// Soukromý diagnostický log: bez následování symlinku, jen běžný soubor a práva 0600
+// i u souboru, který už existoval s širšími právy (mode v appendFileSync platí jen při vzniku).
+function appendPrivateDiagnosticLog(fileName, line) {
+  const flags = fs.constants.O_WRONLY | fs.constants.O_APPEND | fs.constants.O_CREAT
+    | (fs.constants.O_NOFOLLOW ?? 0);
+  const fd = fs.openSync(path.join(app.getPath("logs"), fileName), flags, 0o600);
+  try {
+    if (!fs.fstatSync(fd).isFile()) throw new Error("Diagnostický log není běžný soubor");
+    fs.fchmodSync(fd, 0o600);
+    fs.writeSync(fd, `${new Date().toISOString()} ${line}\n`);
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 function logRecordingPlaybackFailure(outcome, error = null) {
@@ -2918,8 +2929,7 @@ function logRecordingPlaybackFailure(outcome, error = null) {
     + (error === null ? "" : `; typ=${type}; kód=${code}; zpráva=Akci přehrávání nelze dokončit; třída=${failureClass}`);
   console.error(line);
   try {
-    fs.appendFileSync(path.join(app.getPath("logs"), "recording-playback.log"),
-      `${new Date().toISOString()} ${line}\n`, { mode: 0o600 });
+    appendPrivateDiagnosticLog("recording-playback.log", line);
   } catch {
     // Diagnostika nesmí změnit výsledek akce; nelogujeme ani cestu selhaného zápisu.
     console.error("[recording-playback] Diagnostický log nelze zapsat");

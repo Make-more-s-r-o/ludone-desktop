@@ -91,6 +91,23 @@ describe("IPC přehrávání a soukromý diagnostický log", () => {
     for (const secret of [title, filePath, test.payload.id]) expect(log).not.toContain(secret);
     expect(fs.statSync(test.logPath).mode & 0o777).toBe(0o600);
   });
+  it("existující log s právy 0644 se při zápisu zúží na 0600", async () => {
+    const test = harness({ row: { outcome: "missing" } });
+    fs.writeFileSync(test.logPath, "starší řádek\n", { mode: 0o644 });
+    fs.chmodSync(test.logPath, 0o644);
+    await expect(test.invoke()).resolves.toEqual({ outcome: "missing" });
+    expect(fs.statSync(test.logPath).mode & 0o777).toBe(0o600);
+    expect(fs.readFileSync(test.logPath, "utf8")).toMatch(/starší řádek\n.*outcome=missing/su);
+  });
+  it("symlink místo logu se nenásleduje a cíl zůstane nedotčený", async () => {
+    const test = harness({ row: { outcome: "missing" } });
+    const target = path.join(path.dirname(test.logPath), "cizi-soubor.txt");
+    fs.writeFileSync(target, "obsah\n", { mode: 0o644 });
+    fs.symlinkSync(target, test.logPath);
+    await expect(test.invoke()).resolves.toEqual({ outcome: "missing" });
+    expect(fs.readFileSync(target, "utf8")).toBe("obsah\n");
+    expect(fs.statSync(target).mode & 0o777).toBe(0o644);
+  });
   it("chyba delivery zachová vlastní kód a třídu bez libovolného textu", async () => {
     const error = new MeetingAudioError("delivery_identity_mismatch", "Tajná porada /Users/dan/zvuk.webm", "permanent");
     const test = harness({ error });
