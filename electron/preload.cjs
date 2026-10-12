@@ -340,7 +340,15 @@ contextBridge.exposeInMainWorld("ludone", {
   sendRecording: (value) => ipcRenderer.invoke("recordings:send", requireRecordingAction(value, true)),
   retryRecording: (value) => ipcRenderer.invoke("recordings:retry", requireRecordingAction(value, true)),
   deleteRecording: (value) => ipcRenderer.invoke("recordings:delete", requireRecordingAction(value)),
-  playRecording: (value) => ipcRenderer.invoke("recordings:play", requireRecordingAction(value)),
+  playRecording: (value) => ipcRenderer.invoke("recordings:play", requireRecordingAction(value))
+    .then((result) => {
+      if (result?.outcome === "ready" && typeof result.url === "string"
+        && /^ludone:\/\/app\/media\/[0-9a-f-]{36}$/u.test(result.url)) {
+        return { outcome: "ready", url: result.url, label: result.label };
+      }
+      return { outcome: ["missing", "stale", "unconfirmed"].includes(result?.outcome)
+        ? result.outcome : "unconfirmed" };
+    }),
   showRecordingsFolder: () => ipcRenderer.invoke("recordings:folder"),
   getShortcuts: () => ipcRenderer.invoke("settings:shortcuts"),
   revealRecording: (value) => ipcRenderer.invoke("recordings:reveal", requireRecordingAction(value)),

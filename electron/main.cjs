@@ -185,18 +185,30 @@ function registerAppProtocol() {
     const mediaMatch = /^ludone:\/\/app\/media\/([0-9a-f-]{36})$/u.exec(request.url);
     if (mediaMatch) {
       const offer = playbackOffers.get(mediaMatch[1]);
-      if (!offer || Date.now() > offer.expiresAt || !recordingFileActionGuard(offer.event)) return new Response(null, { status: 403 });
+      if (!offer || Date.now() > offer.expiresAt || !recordingFileActionGuard(offer.event)) {
+        logRecordingPlaybackFailure("unconfirmed");
+        return new Response(null, { status: 403 });
+      }
+      let failedOutcome = null;
       try {
-        return await recordingAudioResponse(request, async () => {
+        const response = await recordingAudioResponse(request, async () => {
           if (!recordingFileActionGuard(offer.event)) throw new Error("Přehrávání už nelze potvrdit");
           const row = await (await getOutboundQueueStore()).resolveRecordingAudio({
             clientRecordingId: offer.payload.id, expectedRevision: offer.payload.queueRev,
             expectedFileRevision: offer.payload.fileRev, guard: async () => recordingFileActionGuard(offer.event),
           });
-          if (row.outcome !== "ready") throw new Error("Zvuk už není dostupný");
+          if (row?.outcome !== "ready") {
+            failedOutcome = recordingPlaybackOutcome(row?.outcome);
+            throw new Error("Zvuk už není dostupný");
+          }
           return row;
         });
-      } catch { return new Response(null, { status: 409 }); }
+        if (response.status >= 400) logRecordingPlaybackFailure("unconfirmed");
+        return response;
+      } catch (error) {
+        logRecordingPlaybackFailure(failedOutcome ?? recordingPlaybackErrorOutcome(error) ?? "unconfirmed", error);
+        return new Response(null, { status: 409 });
+      }
     }
     const requestedPath = decodeURIComponent(new URL(request.url).pathname)
       .replace(/^\/+/, "") || "index.html";
@@ -2863,13 +2875,64 @@ function logRecordingExportFailure(error) {
   console.error(line);
   try {
     // Zabalená aplikace nemá kam console psát; bez souboru se příčina nedá zpětně zjistit.
-    fs.appendFileSync(
-      path.join(app.getPath("logs"), "recording-export.log"),
-      `${new Date().toISOString()} ${line}\n`,
-      { mode: 0o600 },
-    );
+    appendPrivateDiagnosticLog("recording-export.log", line);
   } catch {
     // Diagnostika nesmí rozbít odpověď uživateli.
+  }
+}
+
+// Resolver zatím pro revize a guardy používá tyto pevné chyby bez kódu.
+// Rozpoznáváme jen přesné vlastní věty; cizí chybu nikdy nevydáváme za ready.
+function recordingPlaybackErrorOutcome(error) {
+  if (["Snímek nahrávky je neaktuální; načtěte seznam znovu",
+    "Soubory nahrávky se během přípravy akce změnily", "Zvukový soubor se změnil"]
+    .includes(error?.message)) return "stale";
+  if (error?.message === "Přehrávání už nelze potvrdit") return "unconfirmed";
+  return null;
+}
+
+function recordingPlaybackOutcome(value) {
+  return ["missing", "stale", "unconfirmed"].includes(value) ? value : "unconfirmed";
+}
+
+// Soukromý diagnostický log: bez následování symlinku, jen běžný soubor a práva 0600
+// i u souboru, který už existoval s širšími právy (mode v appendFileSync platí jen při vzniku).
+function appendPrivateDiagnosticLog(fileName, line) {
+  const flags = fs.constants.O_WRONLY | fs.constants.O_APPEND | fs.constants.O_CREAT
+    | (fs.constants.O_NOFOLLOW ?? 0);
+  const fd = fs.openSync(path.join(app.getPath("logs"), fileName), flags, 0o600);
+  try {
+    if (!fs.fstatSync(fd).isFile()) throw new Error("Diagnostický log není běžný soubor");
+    fs.fchmodSync(fd, 0o600);
+    fs.writeSync(fd, `${new Date().toISOString()} ${line}\n`);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function logRecordingPlaybackFailure(outcome, error = null) {
+  // Žádný libovolný text chyby, jméno schůzky, cesta ani identifikátor.
+  const type = error instanceof MeetingAudioError ? "MeetingAudioError"
+    : error instanceof SyntaxError ? "SyntaxError" : error instanceof TypeError ? "TypeError"
+    : error instanceof RangeError ? "RangeError" : error instanceof Error ? "Error" : "unknown";
+  const systemCode = recordingExportSystemCode(error);
+  const deliveryCode = error instanceof MeetingAudioError
+    && ["delivery_asset_invalid", "delivery_asset_changed", "delivery_identity_mismatch",
+      "delivery_source_changed", "delivery_unbound_output_unsafe", "legacy_incomplete",
+      "legacy_manifest_invalid"].includes(error.code) ? error.code : null;
+  const code = deliveryCode ?? (["ENOENT", "EACCES", "EPERM", "EIO", "ENOSPC", "EMFILE", "ENFILE",
+    "EINVAL", "EISDIR", "ENOTDIR", "ELOOP", "EBADF"].includes(systemCode) ? systemCode : "unknown");
+  const failureClass = ["paused", "permanent", "retryable"].includes(error?.failureClass)
+    ? error.failureClass : "unknown";
+  const safeOutcome = recordingPlaybackOutcome(outcome);
+  const line = `[recording-playback] outcome=${safeOutcome}`
+    + (error === null ? "" : `; typ=${type}; kód=${code}; zpráva=Akci přehrávání nelze dokončit; třída=${failureClass}`);
+  console.error(line);
+  try {
+    appendPrivateDiagnosticLog("recording-playback.log", line);
+  } catch {
+    // Diagnostika nesmí změnit výsledek akce; nelogujeme ani cestu selhaného zápisu.
+    console.error("[recording-playback] Diagnostický log nelze zapsat");
   }
 }
 
@@ -3325,17 +3388,31 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
   }
 });
 handleValidated("recordings:play", ["panel", "settings"], async (event, payload, ...extraPayload) => {
-  if (extraPayload.length || !validRecordingFileActionPayload(payload)) throw new TypeError("Přehrávání vyžaduje GUID a revize");
-  if (!recordingFileActionGuard(event)) throw new Error("Přehrávání nyní není dostupné");
-  const row = await (await getOutboundQueueStore()).resolveRecordingAudio({
-    clientRecordingId: payload.id, expectedRevision: payload.queueRev, expectedFileRevision: payload.fileRev,
-    guard: async () => recordingFileActionGuard(event),
-  });
-  if (row.outcome !== "ready" || !recordingFileActionGuard(event)) throw new Error("Zvuk už není dostupný");
-  for (const [key, value] of playbackOffers) if (Date.now() > value.expiresAt || value.event.sender.isDestroyed()) playbackOffers.delete(key);
-  const token = randomUUID();
-  playbackOffers.set(token, { event, payload: { ...payload }, expiresAt: Date.now() + 60 * 60 * 1000 });
-  return { url: `ludone://app/media/${token}`, label: row.label };
+  try {
+    if (extraPayload.length || !validRecordingFileActionPayload(payload)) throw new TypeError("Přehrávání vyžaduje GUID a revize");
+    if (!recordingFileActionGuard(event)) {
+      logRecordingPlaybackFailure("unconfirmed");
+      return { outcome: "unconfirmed" };
+    }
+    const row = await (await getOutboundQueueStore()).resolveRecordingAudio({
+      clientRecordingId: payload.id, expectedRevision: payload.queueRev, expectedFileRevision: payload.fileRev,
+      guard: async () => recordingFileActionGuard(event),
+    });
+    if (row?.outcome !== "ready" || !recordingFileActionGuard(event)) {
+      const outcome = row?.outcome === "ready" ? "unconfirmed" : recordingPlaybackOutcome(row?.outcome);
+      logRecordingPlaybackFailure(outcome);
+      return { outcome };
+    }
+    for (const [key, value] of playbackOffers) if (Date.now() > value.expiresAt || value.event.sender.isDestroyed()) playbackOffers.delete(key);
+    const token = randomUUID();
+    playbackOffers.set(token, { event, payload: { ...payload }, expiresAt: Date.now() + 60 * 60 * 1000 });
+    return { outcome: "ready", url: `ludone://app/media/${token}`, label: row.label };
+  } catch (error) {
+    const outcome = recordingPlaybackErrorOutcome(error);
+    logRecordingPlaybackFailure(outcome ?? "unconfirmed", error);
+    if (outcome !== null) return { outcome };
+    throw error;
+  }
 });
 // Pouze pevná lokální složka; renderer neposílá cestu ani oprávnění.
 handleValidated("recordings:folder", ["panel", "settings"], (_event, ...extraPayload) => {
