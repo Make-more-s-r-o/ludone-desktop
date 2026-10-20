@@ -7,6 +7,10 @@ import { describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.jsx";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { RecordingCard } from "../src/features/recording/RecordingCard.jsx";
+import { savedRecordingAge } from "../src/features/recording/recording-copy.js";
+
+// Zobrazení časů v kartě záměrně používá místní pásmo; připni ho pro tyto testy.
+process.env.TZ = "Europe/Prague";
 
 const SESSION_ID = "session-test-1";
 const DEFAULT_RECORDING_NAME = "2. září 2026, 14:00";
@@ -1266,6 +1270,152 @@ describe("RecordingCard", () => {
       )?.textContent).toBe(`${expected} · původní stopy na Macu 10 B`);
     } finally {
       await panel.cleanup();
+    }
+  });
+
+  it.each([
+    { minutes: 59, stale: false },
+    { minutes: 61, stale: true },
+  ])("stáří po $minutes minutách je stale=$stale", ({ minutes, stale }) => {
+    const endedAt = new Date("2026-10-16T17:48:00.000Z");
+    const now = new Date(endedAt.getTime() + minutes * 60_000);
+
+    expect(savedRecordingAge(endedAt, now).stale).toBe(stale);
+  });
+
+  it("stáří čtyř dnů má české skloňování", () => {
+    expect(savedRecordingAge(
+      "2026-10-16T17:48:00.000Z",
+      "2026-10-20T17:48:00.000Z",
+    )).toEqual({ stale: true, label: "před 4 dny" });
+  });
+
+  it("minuty a hodiny skloňuje v instrumentálu po slově před", () => {
+    const endedAt = new Date("2026-10-16T17:48:00.000Z");
+
+    expect(savedRecordingAge(endedAt, new Date(endedAt.getTime() + 2 * 60_000)).label)
+      .toBe("před 2 minutami");
+    expect(savedRecordingAge(endedAt, new Date(endedAt.getTime() + 2 * 60 * 60_000)).label)
+      .toBe("před 2 hodinami");
+  });
+
+  it("čerstvá nahrávka zachová dosavadní text", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-16T18:47:00.000Z"));
+    const panel = await renderRecordingCard({ finishRecordingResult: {
+      startedAt: "2026-10-16T17:31:00.000Z",
+      endedAt: "2026-10-16T17:48:00.000Z",
+    } });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      expect(panel.document.querySelector(".recording-saved__stopped")?.textContent.trim())
+        .toBe("Zvuk bezpečně zastaven");
+      expect(panel.document.querySelector(".recording-saved__meta small:first-child")?.textContent)
+        .toBe("16. října, 19:31–19:48");
+    } finally {
+      await panel.cleanup();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("stará nahrávka ukáže čekání, stáří a rok při změně kalendářního roku", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2027-01-02T12:00:00.000Z"));
+    const panel = await renderRecordingCard({ finishRecordingResult: {
+      startedAt: "2026-12-31T10:00:00.000Z",
+      endedAt: "2026-12-31T10:17:00.000Z",
+    } });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      expect(panel.document.querySelector(".recording-saved__stopped")?.textContent.trim())
+        .toBe("Nahrávka čeká na odeslání");
+      expect(panel.document.querySelector(".recording-saved__meta small:first-child")?.textContent)
+        .toBe("31. prosince 2026, 11:00–11:17 · před 2 dny");
+    } finally {
+      await panel.cleanup();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("otevřený dialog přejde na starou nahrávku po překročení hodiny", async () => {
+    vi.useFakeTimers();
+    const endedAt = "2026-10-16T17:48:00.000Z";
+    vi.setSystemTime(new Date(Date.parse(endedAt) + 59 * 60_000));
+    const panel = await renderRecordingCard({ finishRecordingResult: {
+      startedAt: "2026-10-16T17:31:00.000Z",
+      endedAt,
+    } });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      expect(panel.document.querySelector(".recording-saved__stopped")?.textContent.trim())
+        .toBe("Zvuk bezpečně zastaven");
+
+      await React.act(async () => vi.advanceTimersByTimeAsync(60_001));
+
+      expect(panel.document.querySelector(".recording-saved__stopped")?.textContent.trim())
+        .toBe("Nahrávka čeká na odeslání");
+      expect(panel.document.querySelector(".recording-saved__meta small:first-child")?.textContent)
+        .toBe("16. října, 19:31–19:48 · před 1 hodinou");
+    } finally {
+      await panel.cleanup();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("UTC časy zobrazí v místním pásmu Europe/Prague", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-16T18:47:00.000Z"));
+    const panel = await renderRecordingCard({ finishRecordingResult: {
+      startedAt: "2026-10-16T17:31:00.000Z",
+      endedAt: "2026-10-16T17:48:00.000Z",
+    } });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      expect(panel.document.querySelector(".recording-saved__meta small:first-child")?.textContent)
+        .toBe("16. října, 19:31–19:48");
+    } finally {
+      await panel.cleanup();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("přechod z CEST na CET zachová dvě 02:30 a skutečnou délku 60 minut", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-25T02:00:00.000Z"));
+    const startedAt = "2026-10-25T00:30:00.000Z";
+    const endedAt = "2026-10-25T01:30:00.000Z";
+    const panel = await renderRecordingCard({ finishRecordingResult: { startedAt, endedAt } });
+
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+
+      expect(new Date(startedAt).getTimezoneOffset()).toBe(-120);
+      expect(new Date(endedAt).getTimezoneOffset()).toBe(-60);
+      expect(Date.parse(endedAt) - Date.parse(startedAt)).toBe(60 * 60_000);
+      expect(panel.document.querySelector(".recording-saved__meta small:first-child")?.textContent)
+        .toBe("25. října, 02:30–02:30");
+      expect(panel.document.querySelector(".recording-saved__meta small:last-child")?.textContent)
+        .toContain("60 minut");
+    } finally {
+      await panel.cleanup();
+      vi.clearAllTimers();
+      vi.useRealTimers();
     }
   });
 

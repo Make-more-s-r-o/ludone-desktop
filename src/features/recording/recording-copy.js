@@ -1,6 +1,47 @@
+import { countLabel } from "../../lib/count-label.js";
+
 export const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží a nahrávka bude jednostopá — jen se dozvíš, že chybí druhá strana.";
 
 export const MICROPHONE_REQUIRED_TEXT = "Tvůj hlas. Bez něj nenahraješ nic.";
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * Vrátí stáří uložené nahrávky pro dialog po zastavení.
+ * @param {string | number | Date} endedAt
+ * @param {string | number | Date} [now]
+ * @returns {{ stale: boolean, label: string }}
+ */
+export function savedRecordingAge(endedAt, now = new Date()) {
+  const timestamp = (value) => {
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === "string" || typeof value === "number") return new Date(value).getTime();
+    return Number.NaN;
+  };
+  const endedAtMs = timestamp(endedAt);
+  const nowMs = timestamp(now);
+  if (!Number.isFinite(endedAtMs) || !Number.isFinite(nowMs)) {
+    return { stale: false, label: "stáří neznámé" };
+  }
+
+  const ageMs = nowMs - endedAtMs;
+  if (ageMs <= 0) return { stale: false, label: "právě teď" };
+
+  const stale = ageMs > HOUR_MS;
+  if (ageMs >= DAY_MS) {
+    const days = Math.floor(ageMs / DAY_MS);
+    return { stale, label: `před ${countLabel(days, "dnem", "dny", "dny")}` };
+  }
+  if (ageMs >= HOUR_MS) {
+    const hours = Math.floor(ageMs / HOUR_MS);
+    return { stale, label: `před ${countLabel(hours, "hodinou", "hodinami", "hodinami")}` };
+  }
+
+  const minutes = Math.max(1, Math.floor(ageMs / MINUTE_MS));
+  return { stale, label: `před ${countLabel(minutes, "minutou", "minutami", "minutami")}` };
+}
 
 /**
  * 🔴 Panel psal u systémového zvuku slovo „ticho" i tehdy, když se stopa vůbec nezískala.
