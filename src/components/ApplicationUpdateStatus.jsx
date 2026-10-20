@@ -32,6 +32,9 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [actionFailed, setActionFailed] = useState(false);
   const acceptedRevision = useRef(-1);
+  const updateStatusRef = useRef(null);
+  const detailsTriggerRef = useRef(null);
+  const restoreDetailsFocusRef = useRef(false);
   const applyStatus = useCallback((next) => {
     if (!Number.isSafeInteger(next?.revision) || next.revision < acceptedRevision.current) return;
     acceptedRevision.current = next.revision;
@@ -58,6 +61,34 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
   const downloading = status.downloading === true;
   const hasUpdate = Boolean(availableVersion || downloading || downloadedVersion);
   const showDetails = detailsOpen && hasUpdate;
+
+  useEffect(() => {
+    if (!showDetails) return undefined;
+
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        restoreDetailsFocusRef.current = true;
+        setDetailsOpen(false);
+      }
+    };
+    const closeOnOutsideClick = (event) => {
+      if (!updateStatusRef.current?.contains(event.target)) setDetailsOpen(false);
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("click", closeOnOutsideClick);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("click", closeOnOutsideClick);
+    };
+  }, [showDetails]);
+
+  useEffect(() => {
+    if (showDetails || !restoreDetailsFocusRef.current) return;
+    restoreDetailsFocusRef.current = false;
+    detailsTriggerRef.current?.focus();
+  }, [showDetails]);
+
   const benefit = typeof status.benefit === "string" && status.benefit.trim()
     ? status.benefit.trim()
     : null;
@@ -82,7 +113,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
   ) return null;
 
   return (
-    <div className={`application-update-status${!showVersion ? " application-update-status--compact" : ""}${showDetails ? " application-update-status--detail" : ""}`}>
+    <div ref={updateStatusRef} className={`application-update-status${!showVersion ? " application-update-status--compact" : ""}${showDetails ? " application-update-status--detail" : ""}`}>
       {showDetails && <div className="application-update-detail__summary">
         <LuDoneMark size={30} />
         <div><strong>LuDone Desktop{(downloadedVersion || availableVersion) && ` · ${downloadedVersion || availableVersion}`}</strong>
@@ -99,7 +130,7 @@ export function ApplicationUpdateStatus({ showVersion = true, allowManualCheck =
         <p>Instalace počká na dokončení nahrávání, ukládání a měření času. Běžící činnosti se samy nezastaví.</p>
         <p>Restart proběhne až po vašem kliknutí na „Aktualizovat a restartovat“.</p>
       </div>}
-      {hasUpdate && !showDetails && <button type="button" className="application-update-detail__open" onClick={() => setDetailsOpen(true)}>Zobrazit aktualizaci</button>}
+      {hasUpdate && !showDetails && <button ref={detailsTriggerRef} type="button" className="application-update-detail__open" onClick={() => setDetailsOpen(true)}>Zobrazit aktualizaci</button>}
       {showVersion && <ApplicationVersion />}
       <div aria-live="polite" aria-atomic="true">
         {!downloadedVersion && downloading && (

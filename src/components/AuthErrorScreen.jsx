@@ -99,7 +99,9 @@ export function AuthErrorScreen({ busy, onRetry, reason, embedded = false }) {
 
   return (
     <Container
-      className={embedded ? "auth-error-panel auth-error-panel--embedded" : "panel window-surface auth-error-panel"}
+      className={embedded
+        ? "auth-error-screen auth-error-panel auth-error-panel--embedded"
+        : "auth-error-screen panel window-surface auth-error-panel"}
       data-testid="auth-error-screen"
       data-auth-error-reason={reason}
       data-auth-error-state={failure.state}
@@ -131,17 +133,19 @@ export function AuthErrorScreen({ busy, onRetry, reason, embedded = false }) {
         </p>
       </div>
 
-      {failure.action && <button
-        type="button"
-        className={`button auth-error-panel__action auth-error-panel__action--${failure.actionTone}`}
-        data-testid="auth-error-action"
-        data-auth-error-action-kind={failure.actionKind}
-        disabled={busy}
-        onClick={onRetry}
-        autoFocus
-      >
-        {busy ? "Čekám na prohlížeč…" : failure.action}
-      </button>}
+      {failure.action && <div className="auth-error-panel__actions" data-testid="auth-error-actions">
+        <button
+          type="button"
+          className={`button auth-error-panel__action auth-error-panel__action--${failure.actionTone}`}
+          data-testid="auth-error-action"
+          data-auth-error-action-kind={failure.actionKind}
+          disabled={busy}
+          onClick={onRetry}
+          autoFocus
+        >
+          {busy ? "Čekám na prohlížeč…" : failure.action}
+        </button>
+      </div>}
 
       {failure.details && (
         <div className="auth-error-panel__details" data-testid="auth-error-details">
