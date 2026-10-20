@@ -1828,6 +1828,16 @@ svg {
   background: var(--panel-page);
 }
 
+/* Obsah musí být nad absolutním pseudo-elementem, který kreslí podklad panelu. */
+.auth-error-panel.panel.window-surface > * {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-error-panel.panel.window-surface > .application-update-status {
+  flex: 0 0 auto;
+}
+
 .auth-error-panel--embedded {
   display: flex;
   flex-direction: column;
@@ -1839,6 +1849,12 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 13px;
+}
+
+.auth-error-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .auth-error-panel__heading {
@@ -1948,6 +1964,21 @@ svg {
   color: var(--panel-subtle);
   font-size: 10.5px;
   line-height: 1.4;
+}
+
+/* Obě existující volby při vypršení relace zůstávají ve stejné svislé ose. */
+.osa-content:has(.auth-error-screen[data-auth-error-state="session-expired"]) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.osa-content:has(.auth-error-screen[data-auth-error-state="session-expired"]) > .osa-onboarding + .button {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--panel-hair);
+  background: transparent;
+  color: var(--panel-muted);
 }
 
 .tray-space-warning.auth-error-panel.panel.window-surface {

@@ -1,9 +1,12 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { Onboarding } from "../src/components/Onboarding.jsx";
+
+const AUTH_ERROR_STYLES = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 const REASONS = [
   ["vyprselo", "expired", "retry"],
@@ -25,7 +28,7 @@ async function click(element, view) {
   });
 }
 
-async function renderAuthFailure(reason, nextResult) {
+async function renderAuthFailure(reason, nextResult, onboardingProps = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const beginAuth = vi.fn()
     .mockResolvedValueOnce({ ok: false, duvod: reason });
@@ -45,15 +48,23 @@ async function renderAuthFailure(reason, nextResult) {
 
   const root = createRoot(dom.window.document.querySelector("#root"));
   mountedRoots.push({ dom, root });
+  const onboarding = React.createElement(Onboarding, {
+    onAuthenticated: vi.fn(),
+    onComplete: vi.fn(),
+    ...onboardingProps,
+  });
   await React.act(async () => {
-    root.render(React.createElement(Onboarding, {
-      onAuthenticated: vi.fn(),
-      onComplete: vi.fn(),
-    }));
+    root.render(onboardingProps.sessionExpired
+      ? React.createElement("div", { className: "osa-content" },
+        onboarding,
+        React.createElement("button", { type: "button", className: "button" }, "Nahrávat bez přihlášení"))
+      : onboarding);
   });
 
-  await click(dom.window.document.querySelector(".welcome-step .button--wide"), dom.window);
-  await click(dom.window.document.querySelector(".auth-step .button--wide"), dom.window);
+  if (!onboardingProps.sessionExpired) {
+    await click(dom.window.document.querySelector(".welcome-step .button--wide"), dom.window);
+    await click(dom.window.document.querySelector(".auth-step .button--wide"), dom.window);
+  }
 
   return { beginAuth, document: dom.window.document, view: dom.window };
 }
@@ -164,6 +175,44 @@ describe("chybové obrazovky přihlášení", () => {
     const continuity = panel.document.querySelector('[data-testid="auth-offline-continuity"]');
 
     expect(continuity?.textContent.trim()).toBeTruthy();
+  });
+
+  it("vypršená relace nabízí viditelné přihlášení a verzi až pod akcí", async () => {
+    const panel = await renderAuthFailure(undefined, undefined, { sessionExpired: true });
+    const screen = panel.document.querySelector('[data-testid="auth-error-screen"]');
+    const actions = screen?.querySelector('[data-testid="auth-error-actions"]');
+    const signIn = screen?.querySelector('[data-testid="auth-error-action"]');
+    const version = screen?.querySelector('[data-testid="application-version"]');
+    const versionCard = screen?.querySelector(".application-update-status");
+
+    expect(screen?.dataset.authErrorState).toBe("session-expired");
+    expect(signIn?.tagName).toBe("BUTTON");
+    expect(signIn?.textContent.trim()).toMatch(/^Přihlásit se/);
+    expect(signIn?.disabled).toBe(false);
+    expect(versionCard).not.toBeNull();
+    expect(versionCard?.contains(signIn)).toBe(false);
+    expect(version?.parentElement).toBe(versionCard);
+    expect(actions?.nextElementSibling).toBe(versionCard);
+
+    const style = panel.document.createElement("style");
+    style.textContent = AUTH_ERROR_STYLES;
+    panel.document.head.append(style);
+
+    const expiredContent = panel.document.querySelector(
+      '.osa-content:has(.auth-error-screen[data-auth-error-state="session-expired"])',
+    );
+    const continueWithoutSignIn = panel.document.querySelector(
+      '.osa-content:has(.auth-error-screen[data-auth-error-state="session-expired"]) > .osa-onboarding + .button',
+    );
+    expect(expiredContent).not.toBeNull();
+    expect(continueWithoutSignIn).not.toBeNull();
+    expect(panel.view.getComputedStyle(expiredContent).display).toBe("flex");
+    expect(["absolute", "fixed"]).not.toContain(
+      panel.view.getComputedStyle(versionCard).position,
+    );
+
+    await click(signIn, panel.view);
+    expect(panel.beginAuth).toHaveBeenCalledTimes(1);
   });
 
   it.each(["vyprselo", "odmitnuto", "uloziste", "bez-site", "neznama"])(
