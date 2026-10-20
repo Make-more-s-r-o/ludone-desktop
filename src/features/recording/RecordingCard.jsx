@@ -22,11 +22,14 @@ import {
   MICROPHONE_ONLY_TEXT,
   MICROPHONE_REQUIRED_TEXT,
   microphoneOnlyReason,
+  savedRecordingAge,
 } from "./recording-copy.js";
+import { recorderEventTimestamp } from "./recorder-timestamp.js";
 import { watchSystemAudioTrack } from "./system-audio-health.js";
 
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
 const RECORDING_TIMESLICE_MS = 1_000;
+const SAVED_AGE_REFRESH_MS = 60_000;
 // Shodné se serverem: String.length po trim(), tedy UTF-16 jednotky.
 // Mění se současně na serveru i v electron/recording-export.cjs.
 const MAX_UPLOAD_NAME_UTF16_UNITS = 500;
@@ -44,12 +47,6 @@ function recorderOptions() {
     }
   }
   return undefined;
-}
-
-function recorderEventTimestamp(event) {
-  const monotonicTimestamp = window.performance?.timeOrigin + event.timeStamp;
-  const timestamp = Number.isFinite(monotonicTimestamp) ? monotonicTimestamp : Date.now();
-  return new Date(timestamp).toISOString();
 }
 
 function createPersistentRecorder(recorder, sessionId, source, onFailure) {
@@ -208,12 +205,22 @@ function sizeLabel(files) {
   return text ?? "velikost neznámá";
 }
 
-function savedRecordingMetadata(recording) {
-  const date = recordingDate(recording.startedAt, { day: "numeric", month: "long" });
+function savedRecordingMetadata(recording, now) {
+  const startedAtDate = new Date(recording.startedAt);
+  const currentDate = new Date(now);
+  const dateOptions = { day: "numeric", month: "long" };
+  if (Number.isFinite(startedAtDate.getTime())
+    && Number.isFinite(currentDate.getTime())
+    && startedAtDate.getFullYear() !== currentDate.getFullYear()) {
+    dateOptions.year = "numeric";
+  }
+  const date = recordingDate(recording.startedAt, dateOptions);
   const startedAt = recordingDate(recording.startedAt, { hour: "2-digit", minute: "2-digit" });
   const endedAt = recordingDate(recording.endedAt, { hour: "2-digit", minute: "2-digit" });
+  const age = savedRecordingAge(recording.endedAt, currentDate);
   return {
-    interval: `${date}, ${startedAt}–${endedAt}`,
+    stale: age.stale,
+    interval: `${date}, ${startedAt}–${endedAt}${age.stale ? ` · ${age.label}` : ""}`,
     summary: `${durationLabel(recording.startedAt, recording.endedAt)} · ${sizeLabel(recording.files)}`,
   };
 }
@@ -235,6 +242,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
   });
   const [notice, setNotice] = useState(null);
   const [savedRecording, setSavedRecording] = useState(null);
+  const [savedAgeNow, setSavedAgeNow] = useState(() => Date.now());
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
   const [uploadPreferences, setUploadPreferences] = useState(null);
@@ -277,6 +285,12 @@ export const RecordingCard = forwardRef(function RecordingCard({
     );
     return () => { active = false; };
   }, [microphoneOnly]);
+
+  useEffect(() => {
+    if (!savedRecording) return undefined;
+    const intervalId = window.setInterval(() => setSavedAgeNow(Date.now()), SAVED_AGE_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, [savedRecording]);
 
   const microphoneOnlyNote = microphoneOnly
     ? microphoneOnlyReason({
@@ -369,12 +383,14 @@ export const RecordingCard = forwardRef(function RecordingCard({
         });
         if (saved) {
           setRecordingName(suggestedRecordingName(saved.startedAt));
+          setSavedAgeNow(Date.now());
           setSavedRecording(saved);
         }
       } else {
         setNotice(null);
         if (saved) {
           setRecordingName(suggestedRecordingName(saved.startedAt));
+          setSavedAgeNow(Date.now());
           setSavedRecording(saved);
         }
       }
@@ -868,7 +884,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
     checking: "Kontrola",
     stopping: "Ukládám",
   }[session.phase];
-  const savedMetadata = savedRecording ? savedRecordingMetadata(savedRecording) : null;
+  const savedMetadata = savedRecording ? savedRecordingMetadata(savedRecording, savedAgeNow) : null;
 
   return (
     <section
@@ -894,7 +910,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
           }}
         >
           <div role="status" aria-live="polite">
-            <p className="eyebrow recording-saved__stopped">Zvuk bezpečně zastaven</p>
+            <p className="eyebrow recording-saved__stopped">
+              {savedMetadata.stale ? "Nahrávka čeká na odeslání" : "Zvuk bezpečně zastaven"}
+            </p>
             <h2>Kam s nahrávkou?</h2>
             <span className="sr-only">Nahrávka uložena</span>
           </div>
