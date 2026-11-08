@@ -265,3 +265,11 @@ describe("opakovaná zkouška zvuku v Nastavení", () => {
     expect(settings.button("Spustit zkoušku")).toBeDefined();
   });
 });
+
+it("bez preload mostu zobrazí neznámou retenci i velikost a zvukový panel zůstane dostupný", async () => {
+  const settings = await renderSettingsAudio();
+  const select = settings.document.querySelector('.settings-select select');
+  expect(select.disabled).toBe(true);
+  expect(select.textContent).toContain("Retenci nelze zjistit");
+  expect(settings.document.querySelector('[data-testid="settings-storage"]').textContent).toContain("Velikost nelze zjistit");
+});

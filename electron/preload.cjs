@@ -295,6 +295,15 @@ contextBridge.exposeInMainWorld("ludone", {
     return ipcRenderer.invoke("upload-companies:select", offerToken, companyId)
       .then((value) => requireUploadCompanySelection(value, companyId));
   },
+  getRetention: () => ipcRenderer.invoke("settings:get-retention"),
+  setRetention: (policy) => ipcRenderer.invoke("settings:set-retention", policy),
+  getRecordingStorage: () => ipcRenderer.invoke("recordings:storage"),
+  onRecordingStorageChanged: (callback) => {
+    if (typeof callback !== "function") throw new TypeError("Očekáván callback");
+    const listener = () => callback();
+    ipcRenderer.on("recordings:storage-changed", listener);
+    return () => ipcRenderer.removeListener("recordings:storage-changed", listener);
+  },
   getDeviceName: () => ipcRenderer.invoke("settings:get-device-name"),
   getDockVisible: () => getBooleanSetting("settings:get-dock-visible"),
   setDockVisible: (value) => setBooleanSetting("settings:set-dock-visible", value),

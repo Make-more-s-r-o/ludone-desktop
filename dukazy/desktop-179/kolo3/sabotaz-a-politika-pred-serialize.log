@@ -1,0 +1,67 @@
+$ ./node_modules/.bin/vitest run tests/runtime-retention-wiring.test.js -t čekající úklid přes main --reporter=verbose
+
+ RUN  v4.1.11 /Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek
+
+ ↓ tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání recordingOwnersPreparing a po uvolnění uklidí stejné soubory
+ ↓ tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání recordingSessions a po uvolnění uklidí stejné soubory
+ ↓ tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání recordingCompletionsInFlight a po uvolnění uklidí stejné soubory
+ ↓ tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání recordingExportStages a po uvolnění uklidí stejné soubory
+ ↓ tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání outboundQueueSendsInFlight a po uvolnění uklidí stejné soubory
+ × tests/runtime-retention-wiring.test.js > čekající úklid přes main respektuje potvrzenou změnu na Nemazat před dokončením uploadu 110ms
+   → expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array []
+
+
+Number of calls: 1
+
+ × tests/runtime-retention-wiring.test.js > čekající úklid přes main respektuje potvrzenou změnu na 30 dní po odeslání před dokončením uploadu 94ms
+   → expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array []
+
+
+Number of calls: 1
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/runtime-retention-wiring.test.js > čekající úklid přes main respektuje potvrzenou změnu na Nemazat před dokončením uploadu
+ FAIL  tests/runtime-retention-wiring.test.js > čekající úklid přes main respektuje potvrzenou změnu na 30 dní po odeslání před dokončením uploadu
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array []
+
+
+Number of calls: 1
+
+ ❯ tests/runtime-retention-wiring.test.js:171:27
+    169|     cleanup = retain();
+    170|     await vi.waitFor(() => expect(requested).toHaveBeenCalledOnce());
+    171|     expect(getPolicy).not.toHaveBeenCalled();
+       |                           ^
+    172|     expect(settings.set(policy)).toBe(policy);
+    173|     release();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 5 skipped (7)
+   Start at  00:01:49
+   Duration  335ms (transform 38ms, setup 9ms, import 40ms, tests 205ms, environment 0ms)
+
+
+EXIT_CODE=1

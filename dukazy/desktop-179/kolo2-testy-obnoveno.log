@@ -1,0 +1,12 @@
+$ ./node_modules/.bin/vitest run tests/retention.test.js tests/settings.test.js tests/settings-persistence.test.js tests/recording-storage.test.js tests/queue-wiring.test.js tests/ipc-sender-guard.test.js tests/queue.test.js tests/queue-scheduler.test.js tests/runtime-retention-wiring.test.js
+
+ RUN  v4.1.11 /Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek
+
+
+ Test Files  9 passed (9)
+      Tests  651 passed (651)
+   Start at  23:49:14
+   Duration  12.03s (transform 965ms, setup 74ms, import 1.62s, tests 17.42s, environment 0ms)
+
+
+EXIT=0

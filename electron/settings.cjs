@@ -144,6 +144,30 @@ function createQueueOwnerSecretStore({ filePath, log = console.warn } = {}) {
   };
 }
 
+// Oddělený soubor umožňuje jednorázově převzít historickou volbu bez změny politiky.
+function createRetentionSettingsStore({ filePath, log = console.warn }) {
+  const { RETENTION_POLICIES } = require("./retention.cjs");
+  const known = new Set(Object.values(RETENTION_POLICIES));
+  const existed = fs.existsSync(filePath);
+  let stored = readApplicationSettings(filePath, log);
+  const normalize = (value) => known.has(value) ? value : RETENTION_POLICIES.NEMAZAT;
+  const set = (value) => {
+    if (!known.has(value)) throw new TypeError("Neplatná retence");
+    const next = { schemaVersion: SCHEMA_VERSION, retention: value };
+    saveSettingsAtomically(filePath, next, log);
+    stored = next;
+    return value;
+  };
+  return Object.freeze({
+    get: () => normalize(stored.retention),
+    migrate(value) {
+      if (!existed && !Object.prototype.hasOwnProperty.call(stored, "retention")) set(normalize(value));
+      return normalize(stored.retention);
+    },
+    set,
+  });
+}
+
 /**
  * @param {{filePath?: unknown, log?: unknown}} [options]
  */
@@ -275,6 +299,7 @@ module.exports = {
   AUTH_ORIGINS,
   DEFAULT_AUTH_ORIGIN,
   createApplicationSettingsStore,
+  createRetentionSettingsStore,
   createAuthOriginStore,
   createDockVisibilityStore,
 };

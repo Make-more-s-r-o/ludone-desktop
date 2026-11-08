@@ -36,6 +36,9 @@ function deferred() {
 async function renderSettings({
   initialTab,
   confirmEnvironmentChange = /** @type {() => boolean} */ (() => true),
+  getRetention = undefined,
+  setRetention = undefined,
+  getRecordingStorage = undefined,
   deviceName = () => Promise.resolve("MacBook-Pro-Dan"),
   diagnostics = () => Promise.resolve(DIAGNOSTICS),
   dockVisible = () => Promise.resolve(false),
@@ -88,6 +91,9 @@ async function renderSettings({
     return { ...result, origin: effectiveOrigin };
   });
   const ludone = {
+    getRetention,
+    setRetention,
+    getRecordingStorage,
     getUpdateStatus: vi.fn(updateStatus),
     beginAuth: vi.fn(),
     closeSettings: vi.fn(),
@@ -280,8 +286,9 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
     }
   });
 
-  it("při změně retence ukládá jen funkční nastavení", async () => {
-    const settings = await renderSettings();
+  it("při změně retence ukládá účinné nastavení přes main", async () => {
+    const setRetention = vi.fn(async value => value);
+    const settings = await renderSettings({ getRetention: async () => "Nemazat", setRetention });
     try {
       await selectTab(settings, "Ukládání");
       const retention = settings.document.querySelector(".settings-select select");
@@ -289,10 +296,9 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
         retention.value = "30 dní po odeslání";
         retention.dispatchEvent(new settings.document.defaultView.Event("change", { bubbles: true }));
       });
-      expect(settings.localStorage.setItem).toHaveBeenCalledExactlyOnceWith(
-        "ludone.prototype.settings",
-        JSON.stringify({ retention: "30 dní po odeslání" }),
-      );
+      expect(setRetention).toHaveBeenCalledExactlyOnceWith("30 dní po odeslání");
+      expect(retention.value).toBe("30 dní po odeslání");
+      expect(settings.localStorage.setItem).not.toHaveBeenCalled();
     } finally {
       await settings.cleanup();
     }
@@ -1545,4 +1551,49 @@ describe("konzistentní identita a prostředí při obnově", () => {
       expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.origin).toBeUndefined();
     } finally { await settings.cleanup(); }
   });
+});
+
+
+describe("účinná retence a místo", () => {
+  it.each(["Nemazat", "7 dní po odeslání", "Ihned smazat"])("UI zobrazí účinnou hodnotu mainu %s", async (policy) => {
+    const view = await renderSettings({
+      getRetention: async () => policy,
+      getRecordingStorage: async () => ({ bytes: 692, files: 10, complete: true }),
+    });
+    try {
+      expect(view.document.querySelector(".settings-select select").value).toBe(policy);
+      expect(view.document.querySelector('[data-testid="settings-storage"]').textContent).toContain("692 B");
+    } finally { await view.cleanup(); }
+  });
+
+  it("bez mostu retence ukáže neznámý stav a zakáže změnu", async () => {
+    const view = await renderSettings();
+    try {
+      const select = view.document.querySelector(".settings-select select");
+      expect(select.value).toBe("");
+      expect(select.disabled).toBe(true);
+      expect(select.textContent).toContain("Retenci nelze zjistit");
+      expect(view.document.querySelector('[data-testid="settings-storage"]').textContent).toContain("Velikost nelze zjistit");
+      expect(view.localStorage.setItem).not.toHaveBeenCalled();
+    } finally { await view.cleanup(); }
+  });
+});
+
+it.each(["retence", "velikost"])("nedostupná %s neshodí druhý údaj", async missing => {
+  const view = await renderSettings({
+    getRetention: missing === "retence" ? async () => { throw new Error("offline"); } : async () => "Nemazat",
+    getRecordingStorage: missing === "velikost" ? async () => { throw new Error("offline"); }
+      : async () => ({ bytes: 42, complete: true }),
+  });
+  try {
+    const select = view.document.querySelector(".settings-select select");
+    const storage = view.document.querySelector('[data-testid="settings-storage"]').textContent;
+    if (missing === "retence") {
+      expect(select.textContent).toContain("Retenci nelze zjistit");
+      expect(storage).toContain("42 B");
+    } else {
+      expect(select.value).toBe("Nemazat");
+      expect(storage).toContain("Velikost nelze zjistit");
+    }
+  } finally { await view.cleanup(); }
 });

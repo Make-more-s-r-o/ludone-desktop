@@ -857,7 +857,7 @@ async function recoverOrphanedRecordings({
  * Vlastník perzistentní fronty. Všechny operace nad jedním souborem řadí do
  * jediného promise řetězu, aby souběžná IPC volání nemohla přepsat novější stav.
  */
-function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
+function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecordingSent = () => {} }) {
   if (typeof filePath !== "string" || filePath.length === 0) {
     throw new TypeError("filePath fronty je povinný");
   }
@@ -1635,6 +1635,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
       ? withCooldown(result.queue, currentOwnerFingerprint, result.retryAt)
       : result.queue;
     if (queueAfterResult !== currentQueue) await commit(queueAfterResult);
+    if (result.outcome === "sent" && (result.item?.kind ?? "recording") === "recording") onRecordingSent();
     return { queueModule, result: { ...result, queue: queueAfterResult } };
   }
 
@@ -1999,7 +2000,27 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send }) {
     });
   }
 
+  // Retence sdílí transakční řadu s uploadem a všemi zápisy fronty.
+  // Dva současné spouštěče dostanou tentýž výsledek, nikoli druhý průchod.
+  let retentionInFlight = null;
+  /** @param {{ policy?: unknown, getPolicy?: () => unknown, now?: number | Date, guard?: () => boolean }} options */
+  function retainRecordings({ policy, getPolicy = () => policy, now, guard = () => true }) {
+    if (retentionInFlight) return retentionInFlight;
+    const operation = serialize(async () => {
+      const queue = await ensureLoaded();
+      const result = await require("./retention.cjs").applyRetention({
+        queue, policy: getPolicy(), now: now ?? Date.now(), recordingsDirectory, guard, getPolicy,
+        persistDeletion: () => commit(queue),
+      });
+      if (result.deletedItems.length > 0) await commit({ ...queue, items: result.keptItems });
+      return result;
+    });
+    retentionInFlight = operation.finally(() => { retentionInFlight = null; });
+    return retentionInFlight;
+  }
+
   return Object.freeze({
+    retainRecordings,
     actOnRecording,
     configureRecordingUpload,
     claimRecording,

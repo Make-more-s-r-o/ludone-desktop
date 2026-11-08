@@ -652,7 +652,7 @@ async function submitRecordingName(client, value) {
 // Tyto dvě hodnoty jsou úmyslně pevné. Druhá je běžný testovací cíl a produkční
 // default slouží jako náhradní cíl, když jej přihlášený profil už změnil na 30 dní.
 // tests/retention.test.js hlídá, že obě volby existují a default zůstává ve shodě s UI.
-const OCEKAVANA_VYCHOZI_RETENCE = "7 dní po odeslání";
+const OCEKAVANA_VYCHOZI_RETENCE = "Nemazat";
 const NASTAVOVANA_RETENCE = "30 dní po odeslání";
 
 async function selectSettingsTab(client, id, expectedText) {

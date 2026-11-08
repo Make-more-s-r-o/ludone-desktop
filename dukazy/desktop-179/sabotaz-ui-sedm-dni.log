@@ -1,0 +1,32 @@
+
+ RUN  v4.1.11 /Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek
+
+ ❯ tests/settings.test.js (66 tests | 1 failed | 65 skipped) 130ms
+     × bez uložené volby nenabízí sedmidenní mazání jako účinný výchozí stav 130ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/settings.test.js > účinná retence a místo #179 > bez uložené volby nenabízí sedmidenní mazání jako účinný výchozí stav
+AssertionError: expected '7 dní po odeslání' to be 'Nemazat' // Object.is equality
+
+Expected: "Nemazat"
+Received: "7 dní po odeslání"
+
+ ❯ tests/settings.test.js:1572:76
+    1570|     const view = await renderSettings();
+    1571|     try {
+    1572|       expect(view.document.querySelector(".settings-select select").va…
+       |                                                                            ^
+    1573|       expect(view.localStorage.setItem).not.toHaveBeenCalled();
+    1574|     } finally { await view.cleanup(); }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 65 skipped (66)
+   Start at  23:42:51
+   Duration  574ms (transform 105ms, setup 10ms, import 349ms, tests 130ms, environment 0ms)
+
+
+EXIT=1

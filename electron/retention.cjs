@@ -386,6 +386,73 @@ async function verifyDeletionCandidate(candidate, recordingsRoot, queueItems) {
   return { ok: true, plannedFiles, inspectedFiles };
 }
 
+// Záznam vzniká až po úplném ověření a musí být trvale uložen před prvním unlinkem.
+// Váže plán na konkrétní položku a inode každého souboru. Obnova smí tolerovat
+// zmizelé cíle, ale nikdy nový obsah, jinou položku, sdílenou či cizí cestu.
+function deletionIdentity(item) {
+  return createHash("sha256").update(JSON.stringify([
+    item.clientRecordingId, item.kind, item.state, item.sentAt, item.recoveredIncomplete,
+    item.manifestPath, item.sourceManifestPath, item.tracks, item.delivery,
+  ])).digest("hex");
+}
+
+function deletionRecord(item, verified) {
+  return {
+    version: 1,
+    identity: deletionIdentity(item),
+    files: verified.plannedFiles.map((file, index) => {
+      const inspected = verified.inspectedFiles[index];
+      return {
+        ...file,
+        inspected: {
+          missing: inspected.missing,
+          ...(inspected.stats ? { stats: Object.fromEntries(
+            ["dev", "ino", "size", "mtimeMs", "ctimeMs"].map(key => [key, inspected.stats[key]]),
+          ) } : {}),
+        },
+      };
+    }),
+  };
+}
+
+async function resumeDeletion(candidate, recordingsRoot, queueItems) {
+  const item = candidate.item;
+  const record = item.retentionDeletion;
+  const invalid = { ok: false, error: { code: "RETENTION_RESUME_INVALID" } };
+  const primaryPath = item.sourceManifestPath ?? item.manifestPath;
+  if (!recordingsRoot || record?.version !== 1 || record.identity !== deletionIdentity(item)
+    || !Array.isArray(record.files) || record.files.length === 0
+    || !isImmediateChild(recordingsRoot, primaryPath)) return invalid;
+  const recoveryPath = `${primaryPath}${RECOVERY_SIDECAR_SUFFIX}`;
+  const expectedPaths = new Set([
+    primaryPath, ...candidate.files.map(file => file.filePath),
+    ...(item.delivery ? [item.delivery.sidecarPath,
+      ...(item.delivery.masterPath ? [item.delivery.masterPath] : []),
+      ...(item.delivery.state === "ready" ? [item.delivery.filePath] : [])] : []),
+    ...(record.files.some(file => file?.filePath === recoveryPath) ? [recoveryPath] : []),
+  ]);
+  const plannedPaths = new Set(record.files.map(file => file?.filePath));
+  if (plannedPaths.size !== record.files.length || plannedPaths.size !== expectedPaths.size
+    || record.files.some(file => !file || !isImmediateChild(recordingsRoot, file.filePath)
+      || !expectedPaths.has(file.filePath) || !file.inspected
+      || typeof file.inspected.missing !== "boolean")) return invalid;
+  if (queueItems.some(other => other !== item
+    && itemPaths(other).some(filePath => plannedPaths.has(filePath)))) {
+    return { ok: false, error: { code: "SHARED_RECORDING_FILE" } };
+  }
+  const inspectedFiles = [];
+  for (const file of record.files) {
+    const current = await inspectRegularPath(file.filePath, { allowMissing: true });
+    if (!current.ok) return { ok: false, error: current.error };
+    if (!current.missing && (file.inspected.missing || !file.inspected.stats
+      || !sameFileStats(file.inspected.stats, current.stats))) {
+      return { ok: false, error: { code: "FILE_CHANGED", source: file.source } };
+    }
+    inspectedFiles.push(current);
+  }
+  return { ok: true, plannedFiles: record.files.map(({ filePath, source }) => ({ filePath, source })), inspectedFiles };
+}
+
 /**
  * Přijímá jen tvar, který do fronty zapisuje `Date#toISOString`.
  * @param {unknown} value
@@ -440,9 +507,10 @@ function planRetention(queue, policy, now) {
 }
 
 /**
- * @param {{ queue: { items?: Array<Record<string, unknown>> }, policy: unknown, now: number | Date, recordingsDirectory?: string, unlinkFile?: typeof unlink }} options
+ * @param {{ queue: { items?: Array<Record<string, unknown>> }, policy: unknown, now: number | Date, recordingsDirectory?: string, unlinkFile?: typeof unlink, guard?: () => boolean, getPolicy?: () => unknown, persistDeletion?: () => Promise<unknown> }} options
  */
-async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkFile = unlink }) {
+async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkFile = unlink,
+  guard = () => true, getPolicy = () => policy, persistDeletion = async () => {} }) {
   const plan = planRetention(queue, policy, now);
   const deletedFiles = [];
   const deletedItems = [];
@@ -460,8 +528,11 @@ async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkF
   }
 
   for (const candidate of plan.toDelete) {
+    if (!guard()) break;
     const items = Array.isArray(queue?.items) ? queue.items : [];
-    const verified = await verifyDeletionCandidate(candidate, recordingsRoot, items);
+    const verified = candidate.item.retentionDeletion === undefined
+      ? await verifyDeletionCandidate(candidate, recordingsRoot, items)
+      : await resumeDeletion(candidate, recordingsRoot, items);
     if (!verified.ok) {
       errors.push(verified.error);
       continue;
@@ -479,7 +550,16 @@ async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkF
       });
       continue;
     }
+    const plannedLimit = retentionMs(policy);
+    const policyStillAllows = () => {
+      const currentLimit = retentionMs(getPolicy());
+      return currentLimit !== null && currentLimit <= plannedLimit;
+    };
+    if (!guard() || !policyStillAllows()) break;
+    candidate.item.retentionDeletion ??= deletionRecord(candidate.item, verified);
+    await persistDeletion();
     let itemFailed = false;
+    let interrupted = false;
     for (let index = 0; index < verified.plannedFiles.length; index += 1) {
       if (verified.inspectedFiles[index].missing) continue;
       const { filePath, source } = verified.plannedFiles[index];
@@ -487,6 +567,11 @@ async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkF
         if (!await trackStillMatches(filePath, verified.inspectedFiles[index])) {
           itemFailed = true;
           errors.push({ code: "FILE_CHANGED", source });
+          break;
+        }
+        if (!guard() || !policyStillAllows()) {
+          itemFailed = true;
+          interrupted = true;
           break;
         }
         await unlinkFile(filePath);
@@ -501,6 +586,7 @@ async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkF
       }
     }
     if (!itemFailed) deletedItems.push(candidate.item);
+    if (interrupted) break;
   }
 
   const deleted = new Set(deletedItems);

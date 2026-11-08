@@ -1,0 +1,103 @@
+$ ./node_modules/.bin/vitest run tests/retention.test.js -t po 1 unlinku --reporter=verbose
+
+ RUN  v4.1.11 /Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek
+
+ ↓ tests/retention.test.js > úklid jednostopé nahrávky > smaže mikrofonní stopu odeslanou před osmi dny
+ ↓ tests/retention.test.js > úklid jednostopé nahrávky > čerstvou jednostopou nechá být, stejně jako dvoustopou
+ ↓ tests/retention.test.js > úklid jednostopé nahrávky > neodeslanou jednostopou nesmaže ani po osmi dnech
+ ↓ tests/retention.test.js > úklid jednostopé nahrávky > položku bez mikrofonní stopy nesmaže a nespadne na ní
+ ↓ tests/retention.test.js > úklid jednostopé nahrávky > dvě stopy se stejnou cestou odmítne, ať nemaže tentýž soubor dvakrát
+ ↓ tests/retention.test.js > úklid jednostopé nahrávky > nesmaže, když manifest o druhé stopě mluví a fronta ji nemá
+ ↓ tests/retention.test.js > retence 7 dní > smaže obě stopy nahrávky odeslané před osmi dny
+ ↓ tests/retention.test.js > retence 7 dní > «Ihned smazat» smaže hned po odeslání
+ ↓ tests/retention.test.js > retence 7 dní > nesmaže žádnou stopu po nahrazení odeslané kopie: jinou velikost
+ ↓ tests/retention.test.js > retence 7 dní > nesmaže žádnou stopu po nahrazení odeslané kopie: jiný obsah stejné velikosti
+ ↓ tests/retention.test.js > retence 7 dní > obnovenou incomplete nahrávku automatická retence nikdy nesmaže
+ ↓ tests/retention.test.js > retence 7 dní > nechá nahrávku odeslanou před šesti dny a smaže jen tu osmidenní
+ ↓ tests/retention.test.js > retence 7 dní > NEODESLANOU nahrávku nesmaže, ani když je stará osm dní
+ ↓ tests/retention.test.js > retence 7 dní > položka s časem odeslání, ale NEODESLANÝM stavem, přežije
+ ↓ tests/retention.test.js > retence 7 dní > neznámá hodnota nastavení nemaže nic (fail-closed)
+ ↓ tests/retention.test.js > retence 7 dní > nekanonický čas odeslání nemaže nic (fail-closed)
+ ↓ tests/retention.test.js > retence 7 dní > «Nemazat» nechá i rok starou odeslanou nahrávku na disku
+ ↓ tests/retention.test.js > retence 7 dní > nikdy nesmaže položku, která ještě nebyla odeslána
+ ↓ tests/retention.test.js > retence 7 dní > manifest smaže až po obou stopách
+ ↓ tests/retention.test.js > retence 7 dní > smaže nahrávku přesně na hranici sedmi dnů
+ ↓ tests/retention.test.js > retence 7 dní > chybějící stopu považuje za uklizenou a smaže druhou
+ ↓ tests/retention.test.js > retence 7 dní > poškozená fronta nesmaže vnořený cizí soubor ani druhou platnou stopu
+ ↓ tests/retention.test.js > retence 7 dní > nesmaže shodnou kopii stopy, která leží MIMO adresář nahrávek
+ ↓ tests/retention.test.js > retence 7 dní > nesmaže nic, když identita manifestu nesouhlasí s položkou fronty
+ ↓ tests/retention.test.js > retence 7 dní > částečné selhání ponechá položku a nezastaví úklid další nahrávky
+ ↓ tests/retention.test.js > retence 7 dní > chyba úklidu nikdy nevrátí cestu ani název schůzky
+ ↓ tests/retention.test.js > retence 7 dní > odeslanou časovou položku ignoruje a neskenuje dočasný adresář
+ ↓ tests/retention.test.js > retence 7 dní > mapuje přesné popisky nastavení na bezpečné doby retence
+ ↓ tests/retention.test.js > retence jediného stereo WebM/Opus > před prvním smazáním ověří všechny originály i deriváty
+ ↓ tests/retention.test.js > retence jediného stereo WebM/Opus > cizí přímou cestu podvrženou jako WebM/Opus odmítne
+ ↓ tests/retention.test.js > retence jediného stereo WebM/Opus > chybí-li ready WebM/Opus, nesmaže žádný soubor
+ ↓ tests/retention.test.js > retence jediného stereo WebM/Opus > má jiný obsah-li ready WebM/Opus, nesmaže žádný soubor
+ ↓ tests/retention.test.js > retence jediného stereo WebM/Opus > symlink místo ready WebM/Opus blokuje úklid a nesmaže jeho cíl
+ ↓ tests/retention.test.js > retence jediného stereo WebM/Opus > smaže master, WebM/Opus, originály, oba sidecary a primární manifest jako poslední
+ ↓ tests/retention.test.js > retence jediného stereo WebM/Opus > částečné selhání ponechá queue položku a nesmaže primární manifest
+ ↓ tests/retention.test.js > ui-smoke nastavuje retenci na hodnotu, která v nabídce existuje > OCEKAVANA_VYCHOZI_RETENCE je jedna z nabízených voleb
+ ↓ tests/retention.test.js > ui-smoke nastavuje retenci na hodnotu, která v nabídce existuje > NASTAVOVANA_RETENCE je jedna z nabízených voleb
+ ↓ tests/retention.test.js > ui-smoke nastavuje retenci na hodnotu, která v nabídce existuje > nastavovaná hodnota se LIŠÍ od výchozí, jinak by kontrola byla tautologie
+ ↓ tests/retention.test.js > ui-smoke nastavuje retenci na hodnotu, která v nabídce existuje > očekávaná výchozí hodnota sedí s tou v Settings.jsx
+ ↓ tests/retention.test.js > průběžná retence > start a průběžný běh smažou stejný seznam: Ihned smazat
+ ↓ tests/retention.test.js > průběžná retence > start a průběžný běh smažou stejný seznam: 24 hodin po odeslání
+ ↓ tests/retention.test.js > průběžná retence > start a průběžný běh smažou stejný seznam: 7 dní po odeslání
+ ↓ tests/retention.test.js > průběžná retence > start a průběžný běh smažou stejný seznam: 30 dní po odeslání
+ ↓ tests/retention.test.js > průběžná retence > start a průběžný běh smažou stejný seznam: Nemazat
+ ↓ tests/retention.test.js > průběžná retence > dva současné spouštěče sdílejí jeden běh
+ ↓ tests/retention.test.js > průběžná retence > během aktivního nahrávání nic nemaže, ani při změně guardu během preflightu
+ ↓ tests/retention.test.js > průběžná retence > během aktivního upload nic nemaže, ani při změně guardu během preflightu
+ ↓ tests/retention.test.js > retence čeká za skutečným uploadem a spouštěč dostane až trvale uložené odeslání
+ × tests/retention.test.js > obnova přerušené retence > po 1 unlinku obnoví jen ověřenou položku i po načtení fronty z disku 24ms
+   → expected [ { code: 'ENOENT' } ] to deeply equal []
+ ↓ tests/retention.test.js > obnova přerušené retence > po 2 unlinku obnoví jen ověřenou položku i po načtení fronty z disku
+ ↓ tests/retention.test.js > obnova přerušené retence > po 3 unlinku obnoví jen ověřenou položku i po načtení fronty z disku
+ ↓ tests/retention.test.js > obnova přerušené retence > po 4 unlinku obnoví jen ověřenou položku i po načtení fronty z disku
+ ↓ tests/retention.test.js > obnova přerušené retence > po 5 unlinku obnoví jen ověřenou položku i po načtení fronty z disku
+ ↓ tests/retention.test.js > obnova přerušené retence > po 6 unlinku obnoví jen ověřenou položku i po načtení fronty z disku
+ ↓ tests/retention.test.js > obnova přerušené retence > po 7 unlinku obnoví jen ověřenou položku i po načtení fronty z disku
+ ↓ tests/retention.test.js > obnova přerušené retence > obnova odmítne změnu: obsah
+ ↓ tests/retention.test.js > obnova přerušené retence > obnova odmítne změnu: symlink
+ ↓ tests/retention.test.js > obnova přerušené retence > obnova odmítne změnu: identita
+ ↓ tests/retention.test.js > obnova přerušené retence > obnova odmítne změnu: sdílení
+ ↓ tests/retention.test.js > obnova přerušené retence > bez záznamu rozpracovaného úklidu chybějící master stále blokuje mazání
+ ↓ tests/retention.test.js > změna na Nemazat po prvním unlinku okamžitě zastaví celý běh
+ ↓ tests/retention.test.js > změna na 30 dní po odeslání po prvním unlinku okamžitě zastaví celý běh
+ ↓ tests/retention.test.js > dva uploady v jedné pumpě se při okamžité retenci uklidí se skutečným časem
+ ↓ tests/retention.test.js > chyba trvalého zápisu záznamu úklidu nedovolí první unlink
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/retention.test.js > obnova přerušené retence > po 1 unlinku obnoví jen ověřenou položku i po načtení fronty z disku
+AssertionError: expected [ { code: 'ENOENT' } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "code": "ENOENT",
++   },
++ ]
+
+ ❯ tests/retention.test.js:1184:30
+    1182|         queueModulePromise: import("../src/lib/queue.js"), send: async…
+    1183|       const resumed = await store.retainRecordings({ policy: RETENTION…
+    1184|       expect(resumed.errors).toEqual([]);
+       |                              ^
+    1185|       expect(resumed.deletedItems.map(item => item.clientRecordingId))…
+    1186|       expect(resumed.deletedFiles).toHaveLength(7 - stopAfter);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 63 skipped (64)
+   Start at  00:01:49
+   Duration  169ms (transform 48ms, setup 9ms, import 56ms, tests 25ms, environment 0ms)
+
+
+EXIT_CODE=1
