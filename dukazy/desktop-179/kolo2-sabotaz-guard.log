@@ -1,0 +1,137 @@
+$ ./node_modules/.bin/vitest run tests/runtime-retention-wiring.test.js
+SABOTÁŽ: retentionFilesIdle → return true
+
+ RUN  v4.1.11 /Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek
+
+ ❯ tests/runtime-retention-wiring.test.js (5 tests | 5 failed) 97ms
+   × průběžný úklid přes main chrání recordingOwnersPreparing a po uvolnění uklidí stejné soubory #179 27ms
+   × průběžný úklid přes main chrání recordingSessions a po uvolnění uklidí stejné soubory #179 17ms
+   × průběžný úklid přes main chrání recordingCompletionsInFlight a po uvolnění uklidí stejné soubory #179 17ms
+   × průběžný úklid přes main chrání recordingExportStages a po uvolnění uklidí stejné soubory #179 18ms
+   × průběžný úklid přes main chrání outboundQueueSendsInFlight a po uvolnění uklidí stejné soubory #179 17ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání recordingOwnersPreparing a po uvolnění uklidí stejné soubory #179
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-lPWGVV/nahravky/stara-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-lPWGVV/nahravky/stara-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-lPWGVV/nahravky/stara.manifest.json",
++ ]
+
+ ❯ tests/runtime-retention-wiring.test.js:120:32
+    118|
+    119|   const blocked = await retain();
+    120|   expect(blocked.deletedFiles).toEqual([]);
+       |                                ^
+    121|   expect(blocked.deletedItems).toEqual([]);
+    122|   expect(existsSync(fixture.microphonePath)).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání recordingSessions a po uvolnění uklidí stejné soubory #179
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-3RpczZ/nahravky/stara-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-3RpczZ/nahravky/stara-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-3RpczZ/nahravky/stara.manifest.json",
++ ]
+
+ ❯ tests/runtime-retention-wiring.test.js:120:32
+    118|
+    119|   const blocked = await retain();
+    120|   expect(blocked.deletedFiles).toEqual([]);
+       |                                ^
+    121|   expect(blocked.deletedItems).toEqual([]);
+    122|   expect(existsSync(fixture.microphonePath)).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání recordingCompletionsInFlight a po uvolnění uklidí stejné soubory #179
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-QombXV/nahravky/stara-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-QombXV/nahravky/stara-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-QombXV/nahravky/stara.manifest.json",
++ ]
+
+ ❯ tests/runtime-retention-wiring.test.js:120:32
+    118|
+    119|   const blocked = await retain();
+    120|   expect(blocked.deletedFiles).toEqual([]);
+       |                                ^
+    121|   expect(blocked.deletedItems).toEqual([]);
+    122|   expect(existsSync(fixture.microphonePath)).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání recordingExportStages a po uvolnění uklidí stejné soubory #179
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-TSV2XM/nahravky/stara-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-TSV2XM/nahravky/stara-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-TSV2XM/nahravky/stara.manifest.json",
++ ]
+
+ ❯ tests/runtime-retention-wiring.test.js:120:32
+    118|
+    119|   const blocked = await retain();
+    120|   expect(blocked.deletedFiles).toEqual([]);
+       |                                ^
+    121|   expect(blocked.deletedItems).toEqual([]);
+    122|   expect(existsSync(fixture.microphonePath)).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/runtime-retention-wiring.test.js > průběžný úklid přes main chrání outboundQueueSendsInFlight a po uvolnění uklidí stejné soubory #179
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-rZ4oaG/nahravky/stara-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-rZ4oaG/nahravky/stara-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/desktop-179-guard-rZ4oaG/nahravky/stara.manifest.json",
++ ]
+
+ ❯ tests/runtime-retention-wiring.test.js:120:32
+    118|
+    119|   const blocked = await retain();
+    120|   expect(blocked.deletedFiles).toEqual([]);
+       |                                ^
+    121|   expect(blocked.deletedItems).toEqual([]);
+    122|   expect(existsSync(fixture.microphonePath)).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed (5)
+   Start at  23:49:05
+   Duration  228ms (transform 35ms, setup 10ms, import 40ms, tests 97ms, environment 0ms)
+
+
+EXIT=1

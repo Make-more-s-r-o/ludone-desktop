@@ -1,0 +1,7 @@
+$ npm run typecheck
+
+> ludone-desktop-prototype@0.1.11 typecheck
+> tsc --noEmit -p jsconfig.json
+
+
+EXIT=0

@@ -1,0 +1,123 @@
+
+ RUN  v4.1.11 /Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek
+
+ ❯ tests/retention.test.js (48 tests | 4 failed | 43 skipped) 106ms
+     × start a průběžný běh smažou stejný seznam: Ihned smazat 33ms
+     × start a průběžný běh smažou stejný seznam: 24 hodin po odeslání 22ms
+     × start a průběžný běh smažou stejný seznam: 7 dní po odeslání 21ms
+     × start a průběžný běh smažou stejný seznam: 30 dní po odeslání 17ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/retention.test.js > průběžná retence #179 > start a průběžný běh smažou stejný seznam: Ihned smazat
+AssertionError: expected [ …(10) ] to deeply equal [ …(7) ]
+
+- Expected
++ Received
+
+@@ -4,6 +4,9 @@
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-bExWuF/runtime/nahravky/jedna-mikrofon.webm",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-bExWuF/runtime/nahravky/jedna-system.webm",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-bExWuF/runtime/nahravky/jedna.manifest.json.meeting-audio-v1.json",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-bExWuF/runtime/nahravky/jedna.manifest.json.recovered-upload-v1.json",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-bExWuF/runtime/nahravky/jedna.manifest.json",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-bExWuF/runtime/nahravky/neuplna-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-bExWuF/runtime/nahravky/neuplna-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-bExWuF/runtime/nahravky/neuplna.manifest.json",
+  ]
+
+ ❯ tests/retention.test.js:1087:36
+    1085|       const startup = await applyRetention({ queue, policy, now: NOW, …
+    1086|       const runtime = await store.retainRecordings({ policy, now: NOW …
+    1087|       expect(runtime.deletedFiles).toEqual(startup.deletedFiles);
+       |                                    ^
+    1088|       expect(runtime.deletedItems.map(item => item.clientRecordingId))
+    1089|         .toEqual(startup.deletedItems.map(item => item.clientRecording…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/retention.test.js > průběžná retence #179 > start a průběžný běh smažou stejný seznam: 24 hodin po odeslání
+AssertionError: expected [ …(10) ] to deeply equal [ …(7) ]
+
+- Expected
++ Received
+
+@@ -4,6 +4,9 @@
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-zFpdCI/runtime/nahravky/jedna-mikrofon.webm",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-zFpdCI/runtime/nahravky/jedna-system.webm",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-zFpdCI/runtime/nahravky/jedna.manifest.json.meeting-audio-v1.json",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-zFpdCI/runtime/nahravky/jedna.manifest.json.recovered-upload-v1.json",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-zFpdCI/runtime/nahravky/jedna.manifest.json",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-zFpdCI/runtime/nahravky/neuplna-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-zFpdCI/runtime/nahravky/neuplna-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-zFpdCI/runtime/nahravky/neuplna.manifest.json",
+  ]
+
+ ❯ tests/retention.test.js:1087:36
+    1085|       const startup = await applyRetention({ queue, policy, now: NOW, …
+    1086|       const runtime = await store.retainRecordings({ policy, now: NOW …
+    1087|       expect(runtime.deletedFiles).toEqual(startup.deletedFiles);
+       |                                    ^
+    1088|       expect(runtime.deletedItems.map(item => item.clientRecordingId))
+    1089|         .toEqual(startup.deletedItems.map(item => item.clientRecording…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/retention.test.js > průběžná retence #179 > start a průběžný běh smažou stejný seznam: 7 dní po odeslání
+AssertionError: expected [ …(10) ] to deeply equal [ …(7) ]
+
+- Expected
++ Received
+
+@@ -4,6 +4,9 @@
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-hqP2jP/runtime/nahravky/jedna-mikrofon.webm",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-hqP2jP/runtime/nahravky/jedna-system.webm",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-hqP2jP/runtime/nahravky/jedna.manifest.json.meeting-audio-v1.json",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-hqP2jP/runtime/nahravky/jedna.manifest.json.recovered-upload-v1.json",
+    "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-hqP2jP/runtime/nahravky/jedna.manifest.json",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-hqP2jP/runtime/nahravky/neuplna-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-hqP2jP/runtime/nahravky/neuplna-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-hqP2jP/runtime/nahravky/neuplna.manifest.json",
+  ]
+
+ ❯ tests/retention.test.js:1087:36
+    1085|       const startup = await applyRetention({ queue, policy, now: NOW, …
+    1086|       const runtime = await store.retainRecordings({ policy, now: NOW …
+    1087|       expect(runtime.deletedFiles).toEqual(startup.deletedFiles);
+       |                                    ^
+    1088|       expect(runtime.deletedItems.map(item => item.clientRecordingId))
+    1089|         .toEqual(startup.deletedItems.map(item => item.clientRecording…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/retention.test.js > průběžná retence #179 > start a průběžný běh smažou stejný seznam: 30 dní po odeslání
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-9dUARf/runtime/nahravky/neuplna-mikrofon.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-9dUARf/runtime/nahravky/neuplna-system.webm",
++   "/var/folders/nx/qdc3fgn93dj3_nlffz68kmzm0000gp/T/ludone-retention-9dUARf/runtime/nahravky/neuplna.manifest.json",
++ ]
+
+ ❯ tests/retention.test.js:1087:36
+    1085|       const startup = await applyRetention({ queue, policy, now: NOW, …
+    1086|       const runtime = await store.retainRecordings({ policy, now: NOW …
+    1087|       expect(runtime.deletedFiles).toEqual(startup.deletedFiles);
+       |                                    ^
+    1088|       expect(runtime.deletedItems.map(item => item.clientRecordingId))
+    1089|         .toEqual(startup.deletedItems.map(item => item.clientRecording…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 1 passed | 43 skipped (48)
+   Start at  23:42:51
+   Duration  258ms (transform 49ms, setup 10ms, import 58ms, tests 106ms, environment 0ms)
+
+
+EXIT=1

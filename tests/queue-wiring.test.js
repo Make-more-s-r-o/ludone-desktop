@@ -8890,3 +8890,46 @@ describe("F lokální složka a skutečně přijaté zkratky", () => {
     expect(preload.invoke.mock.calls).toEqual([["recordings:folder"], ["settings:shortcuts"]]);
   });
 });
+
+describe("retence a velikost přes skutečné IPC #179", () => {
+  it.each([null, "{rozbité", JSON.stringify({ retention: "vadná" }), JSON.stringify({ retention: "30 dní po odeslání" })])(
+    "hlavní proces vrací stejnou účinnou retenci po migraci %s", async storedSettings => {
+      const harness = await loadMain({ storedSettings });
+      await harness.runReady();
+      const { settingsEvent } = openSettingsAndCreateEvent(harness);
+      const getter = harness.ipcHandlers.get("settings:get-retention");
+      const setter = harness.ipcHandlers.get("settings:set-retention");
+      const expected = storedSettings?.includes("30 dní") ? "30 dní po odeslání" : "Nemazat";
+      expect(await getter(settingsEvent)).toBe(expected);
+      expect(await setter(settingsEvent, "24 hodin po odeslání")).toBe("24 hodin po odeslání");
+      expect(await getter(settingsEvent)).toBe("24 hodin po odeslání");
+      await expect(setter(settingsEvent, "nesmysl")).rejects.toThrow();
+      await expect(setter(settingsEvent, "Nemazat", true)).rejects.toThrow();
+      await expect(getter(settingsEvent, true)).rejects.toThrow();
+      const untrusted = { ...settingsEvent, sender: { getURL: () => "https://cizi.test" } };
+      await expect(Promise.resolve().then(() => getter(untrusted))).rejects.toThrow();
+      const measure = harness.ipcHandlers.get("recordings:storage");
+      await expect(Promise.resolve().then(() => measure(untrusted))).rejects.toThrow();
+      await expect(Promise.resolve().then(() => measure(settingsEvent, true))).rejects.toThrow();
+      expect(await measure(settingsEvent)).toMatchObject({ bytes: 0, files: 0, complete: true });
+    },
+  );
+});
+
+it("hodinový spouštěč použije aktuální volbu přes main store bez restartu #179", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  try {
+    const harness = await loadMain();
+    const fixture = await writeOldSentRecording(harness.userDataPath);
+    await harness.runReady();
+    await waitForQueuePump(harness);
+    expect(await fileExists(fixture.microphonePath)).toBe(true);
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    await harness.ipcHandlers.get("settings:set-retention")(settingsEvent, "Ihned smazat");
+    await vi.advanceTimersByTimeAsync(60 * 60 * 1000);
+    // Soupis počká na stejnou transakční řadu jako právě běžící retence.
+    await harness.ipcHandlers.get("queue:list")(settingsEvent);
+    expect(await fileExists(fixture.microphonePath)).toBe(false);
+    expect(await fileExists(fixture.systemPath)).toBe(false);
+  } finally { vi.useRealTimers(); }
+});

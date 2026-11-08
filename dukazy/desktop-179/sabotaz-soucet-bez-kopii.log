@@ -1,0 +1,41 @@
+
+ RUN  v4.1.11 /Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek
+
+ ❯ tests/recording-storage.test.js (8 tests | 1 failed | 7 skipped) 9ms
+   × sečte originály, system, master, delivery, manifesty, queue i dočasné JSON a encoder; bez Stažených a symlinků 9ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/recording-storage.test.js > sečte originály, system, master, delivery, manifesty, queue i dočasné JSON a encoder; bez Stažených a symlinků
+AssertionError: expected { bytes: 532, files: 8, …(2) } to match object { bytes: 592, files: 10, …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "bytes": 592,
++   "bytes": 532,
+    "complete": true,
+-   "files": 10,
++   "files": 8,
+  }
+
+ ❯ tests/recording-storage.test.js:36:59
+     34|   await symlink(foreign, path.join(userData, "nahravky", "cizi"));
+     35|   await link(path.join(userData, "nahravky/stereo.webm"), path.join(us…
+     36|   expect(await storage.measureRecordingStorage(userData)).toMatchObjec…
+       |                                                           ^
+     37|   await rm(path.join(userData, "nahravky"), { recursive: true });
+     38|   expect(await storage.measureRecordingStorage(userData)).toMatchObjec…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 skipped (8)
+   Start at  23:42:52
+   Duration  117ms (transform 14ms, setup 11ms, import 13ms, tests 9ms, environment 0ms)
+
+
+EXIT=1

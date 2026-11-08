@@ -1049,3 +1049,106 @@ describe("ui-smoke nastavuje retenci na hodnotu, která v nabídce existuje", ()
     expect(vychoziVUi).toBe(vychoziVKodu);
   });
 });
+
+describe("průběžná retence #179", () => {
+  async function runtimeStore(queue) {
+    // Produkční store odvozuje kořen nahrávek z cesty fronty.
+    const root = path.join(temporaryDirectory, "runtime");
+    await mkdir(path.join(root, "queue"), { recursive: true });
+    const filePath = path.join(root, "queue", "outgoing.json");
+    // Fixture ponechá stejnou identitu cest pro start i průběžný běh.
+    // Kořen fixture je dočasně přemístěn před vytvořením nahrávek v testu níže.
+    await queueStore.saveQueueAtomically(filePath, queue);
+    return queueStore.createOutboundQueueStore({
+      filePath, queueModulePromise: import("../src/lib/queue.js"), send: async () => {},
+    });
+  }
+
+  it.each(Object.values(RETENTION_POLICIES))("start a průběžný běh smažou stejný seznam: %s", async (policy) => {
+    const originalRoot = temporaryDirectory;
+    temporaryDirectory = path.join(originalRoot, "runtime", "nahravky");
+    await mkdir(temporaryDirectory, { recursive: true });
+    try {
+      const sent = await createSentStereoRecording({ recoverySidecar: true });
+      const incomplete = await createSentRecording({
+        queue: sent.queue, suffix: "neuplna",
+        clientRecordingId: "c5fa6924-d07a-442e-a917-a63dc5a4e0f0", sentAt: NOW - 40 * DAY_MS,
+      });
+      const queue = { ...incomplete.queue, items: incomplete.queue.items.map(item =>
+        item.clientRecordingId === "c5fa6924-d07a-442e-a917-a63dc5a4e0f0"
+          ? { ...item, recoveredIncomplete: true } : item) };
+      const filePath = path.join(originalRoot, "runtime", "queue", "outgoing.json");
+      await queueStore.saveQueueAtomically(filePath, queue);
+      const store = queueStore.createOutboundQueueStore({
+        filePath, queueModulePromise: import("../src/lib/queue.js"), send: async () => {},
+      });
+      const startup = await applyRetention({ queue, policy, now: NOW, unlinkFile: async () => {} });
+      const runtime = await store.retainRecordings({ policy, now: NOW });
+      expect(runtime.deletedFiles).toEqual(startup.deletedFiles);
+      expect(runtime.deletedItems.map(item => item.clientRecordingId))
+        .toEqual(startup.deletedItems.map(item => item.clientRecordingId));
+      expect(existsSync(incomplete.microphonePath)).toBe(true);
+      expect((await store.retainRecordings({ policy, now: NOW })).deletedFiles).toEqual([]);
+    } finally {
+      temporaryDirectory = originalRoot;
+    }
+  });
+
+  it("dva současné spouštěče sdílejí jeden běh", async () => {
+    const store = await runtimeStore(createQueue());
+    const first = store.retainRecordings({ policy: RETENTION_POLICIES.IHNED, now: NOW });
+    const second = store.retainRecordings({ policy: RETENTION_POLICIES.IHNED, now: NOW });
+    expect(first).toBe(second);
+    await first;
+  });
+
+  it.each(["nahrávání", "upload"])("během aktivního %s nic nemaže, ani při změně guardu během preflightu", async () => {
+    const sent = await createSentStereoRecording();
+    const unlinkFile = vi.fn(async () => {});
+    const result = await applyRetention({ queue: sent.queue,
+      policy: RETENTION_POLICIES.IHNED, now: NOW, guard: () => false, unlinkFile });
+    expect(result.deletedFiles).toEqual([]);
+    expect(unlinkFile).not.toHaveBeenCalled();
+    let checks = 0;
+    await applyRetention({ queue: sent.queue, policy: RETENTION_POLICIES.IHNED, now: NOW,
+      guard: () => ++checks === 1, unlinkFile });
+    expect(checks).toBeGreaterThan(1);
+    expect(unlinkFile).not.toHaveBeenCalled();
+  });
+});
+
+it("retence čeká za skutečným uploadem a spouštěč dostane až trvale uložené odeslání", async () => {
+  const originalRoot = temporaryDirectory;
+  temporaryDirectory = path.join(originalRoot, "nahravky");
+  await mkdir(temporaryDirectory, { recursive: true });
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let started;
+  const sending = new Promise(resolve => { started = resolve; });
+  try {
+    const pending = await createQueuedRecording({});
+    const owner = `sha256:${"a".repeat(64)}`;
+    const queue = { ...pending.queue, items: pending.queue.items.map(item => ({ ...item, ownerFingerprint: owner })) };
+    const filePath = path.join(originalRoot, "queue", "outgoing.json");
+    await queueStore.saveQueueAtomically(filePath, queue);
+    const committedStates = [];
+    const store = queueStore.createOutboundQueueStore({
+      filePath, queueModulePromise: import("../src/lib/queue.js"),
+      send: async () => { started(); await gate; },
+      onRecordingSent: () => committedStates.push(JSON.parse(readFileSync(filePath, "utf8")).items[0].state),
+    });
+    const pump = store.pump({ DESKTOP_UPLOAD_ENABLED: ENABLED_SETTING }, owner);
+    await sending;
+    const retentionRun = store.retainRecordings({ policy: RETENTION_POLICIES.IHNED, now: Date.now() + DAY_MS });
+    await Promise.resolve();
+    expect(existsSync(pending.microphonePath)).toBe(true);
+    expect(committedStates).toEqual([]);
+    release();
+    await pump;
+    expect(committedStates).toEqual(["odeslano"]);
+    expect((await retentionRun).deletedFiles).toContain(pending.microphonePath);
+  } finally {
+    release();
+    temporaryDirectory = originalRoot;
+  }
+});

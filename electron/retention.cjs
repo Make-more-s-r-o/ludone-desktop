@@ -440,9 +440,9 @@ function planRetention(queue, policy, now) {
 }
 
 /**
- * @param {{ queue: { items?: Array<Record<string, unknown>> }, policy: unknown, now: number | Date, recordingsDirectory?: string, unlinkFile?: typeof unlink }} options
+ * @param {{ queue: { items?: Array<Record<string, unknown>> }, policy: unknown, now: number | Date, recordingsDirectory?: string, unlinkFile?: typeof unlink, guard?: () => boolean }} options
  */
-async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkFile = unlink }) {
+async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkFile = unlink, guard = () => true }) {
   const plan = planRetention(queue, policy, now);
   const deletedFiles = [];
   const deletedItems = [];
@@ -460,6 +460,7 @@ async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkF
   }
 
   for (const candidate of plan.toDelete) {
+    if (!guard()) break;
     const items = Array.isArray(queue?.items) ? queue.items : [];
     const verified = await verifyDeletionCandidate(candidate, recordingsRoot, items);
     if (!verified.ok) {
@@ -487,6 +488,10 @@ async function applyRetention({ queue, policy, now, recordingsDirectory, unlinkF
         if (!await trackStillMatches(filePath, verified.inspectedFiles[index])) {
           itemFailed = true;
           errors.push({ code: "FILE_CHANGED", source });
+          break;
+        }
+        if (!guard()) {
+          itemFailed = true;
           break;
         }
         await unlinkFile(filePath);

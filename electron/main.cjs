@@ -55,10 +55,12 @@ const {
 } = require("./meeting-audio.cjs");
 const { createRecordingVerifier } = require("./recording-verification.cjs");
 const { createUploadCompanySelectionController } = require("./upload-company-selection.cjs");
+const { measureRecordingStorage } = require("./recording-storage.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
   AUTH_ORIGINS,
   createApplicationSettingsStore,
+  createRetentionSettingsStore,
   createAuthOriginStore,
   createDockVisibilityStore,
   createQueueOwnerSecretStore,
@@ -464,6 +466,16 @@ const applicationSettingsStore = createApplicationSettingsStore({
   filePath: path.join(app.getPath("userData"), "nastaveni", "aplikace.json"),
   log: (message) => console.warn(message),
 });
+const retentionSettingsStore = createRetentionSettingsStore({
+  filePath: path.join(app.getPath("userData"), "nastaveni", "retence.json"),
+});
+let retentionTimer;
+function notifyRecordingStorageChanged() {
+  for (const window of [panelWindow, settingsWindow]) {
+    if (window && isTrustedWebContents(window.webContents)) window.webContents.send("recordings:storage-changed");
+  }
+}
+
 const dockVisibilityStore = createDockVisibilityStore({ settingsStore: applicationSettingsStore });
 const authOriginStore = createAuthOriginStore({
   filePath: path.join(app.getPath("userData"), "nastaveni", "prostredi.json"),
@@ -1966,6 +1978,7 @@ async function finalizeRecordingSession(sessionId, finalState, trackTimings = nu
     }
 
     recordingSessions.delete(sessionId);
+    notifyRecordingStorageChanged();
     refreshTray();
     if (!recordingSession.owner.isDestroyed()) {
       recordingSession.owner.removeListener("destroyed", recordingSession.destroyedListener);
@@ -2306,7 +2319,7 @@ async function applyOutboundQueueRetention(panelStartup) {
   try {
     const filePath = outboundQueueFilePath();
     const queue = await loadQueue(filePath);
-    const policy = await readRetentionPolicy(panelStartup);
+    const policy = retentionSettingsStore.migrate(await readRetentionPolicy(panelStartup));
     const result = await applyRetention({
       queue,
       policy,
@@ -2330,6 +2343,40 @@ async function applyOutboundQueueRetention(panelStartup) {
     };
   }
 }
+
+// Guard se vyhodnocuje opakovaně i uvnitř asynchronního úklidu před mazáním.
+function retentionFilesIdle() {
+  return recordingOwnersPreparing.size === 0 && recordingSessions.size === 0
+    && recordingCompletionsInFlight.size === 0 && recordingExportStages.size === 0
+    && outboundQueueSendsInFlight === 0;
+}
+async function retainOutboundRecordings() {
+  const store = await getOutboundQueueStore();
+  const result = await store.retainRecordings({
+    policy: retentionSettingsStore.get(), guard: retentionFilesIdle,
+  });
+  notifyRecordingStorageChanged();
+  return result;
+}
+function scheduleRuntimeRetention() {
+  void retainOutboundRecordings().catch(() => console.error("[retention] Průběžný úklid selhal; další pokus proběhne později."));
+}
+handleValidated("settings:get-retention", ["panel", "settings"], async (_event, ...extraPayload) => {
+  requireNoPayload("settings:get-retention", extraPayload);
+  await outboundQueueRetentionReady;
+  return retentionSettingsStore.get();
+});
+handleValidated("settings:set-retention", ["panel", "settings"], async (_event, policy, ...extraPayload) => {
+  if (extraPayload.length || !KNOWN_RETENTION_POLICIES.has(policy)) throw new TypeError("Neplatná retence");
+  await outboundQueueRetentionReady;
+  const value = retentionSettingsStore.set(policy);
+  notifyRecordingStorageChanged();
+  return value;
+});
+handleValidated("recordings:storage", ["panel", "settings"], (_event, ...extraPayload) => {
+  requireNoPayload("recordings:storage", extraPayload);
+  return measureRecordingStorage(app.getPath("userData"));
+});
 
 function desktopKillswitch(environmentValue) {
   return environmentValue === undefined ? "true" : environmentValue;
@@ -2736,6 +2783,7 @@ async function getOutboundQueueStore() {
       filePath: outboundQueueFilePath(),
       queueModulePromise,
       send: createQueueSend(),
+      onRecordingSent: scheduleRuntimeRetention,
     });
   }
   return outboundQueueStore;
@@ -3089,6 +3137,7 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
   } finally {
     if (claimedExport) {
       exportStage.exportInFlight = false;
+      notifyRecordingStorageChanged();
       refreshTray();
       completeRecordingExportStageRelease(exportStage);
     }
@@ -5403,6 +5452,8 @@ app.whenReady().then(async () => {
   // by obešla bariéru obnovy osiřelých nahrávek.
   updateOutboundQueueTrayFact(retentionResult.keptItems);
   markOutboundQueueRetentionReady();
+  retentionTimer = setInterval(scheduleRuntimeRetention, 60 * 60 * 1000);
+  retentionTimer.unref();
   void recoverOutboundRecordings()
     .catch(() => {
       console.error("[queue] Obnova nahrávek neočekávaně selhala; start pokračuje.");
@@ -5436,6 +5487,7 @@ app.on("before-quit", (event) => {
     void detailCloseGuard.request(() => app.quit());
     return;
   }
+  clearInterval(retentionTimer);
   outboundQueueScheduler?.stop();
   clearTimeout(trayVisibilityTimer);
   trayVisibilityTimer = undefined;

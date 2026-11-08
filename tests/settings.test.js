@@ -36,6 +36,9 @@ function deferred() {
 async function renderSettings({
   initialTab,
   confirmEnvironmentChange = /** @type {() => boolean} */ (() => true),
+  getRetention = undefined,
+  setRetention = undefined,
+  getRecordingStorage = undefined,
   deviceName = () => Promise.resolve("MacBook-Pro-Dan"),
   diagnostics = () => Promise.resolve(DIAGNOSTICS),
   dockVisible = () => Promise.resolve(false),
@@ -88,6 +91,9 @@ async function renderSettings({
     return { ...result, origin: effectiveOrigin };
   });
   const ludone = {
+    getRetention,
+    setRetention,
+    getRecordingStorage,
     getUpdateStatus: vi.fn(updateStatus),
     beginAuth: vi.fn(),
     closeSettings: vi.fn(),
@@ -1544,5 +1550,27 @@ describe("konzistentní identita a prostředí při obnově", () => {
       expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.destinationState).toBe("unknown");
       expect(settings.document.querySelector('[data-testid="settings-destination"]').dataset.origin).toBeUndefined();
     } finally { await settings.cleanup(); }
+  });
+});
+
+
+describe("účinná retence a místo #179", () => {
+  it.each(["Nemazat", "7 dní po odeslání", "Ihned smazat"])("UI zobrazí účinnou hodnotu mainu %s", async (policy) => {
+    const view = await renderSettings({
+      getRetention: async () => policy,
+      getRecordingStorage: async () => ({ bytes: 692, files: 10, complete: true }),
+    });
+    try {
+      expect(view.document.querySelector(".settings-select select").value).toBe(policy);
+      expect(view.document.querySelector('[data-testid="settings-storage"]').textContent).toContain("692 B");
+    } finally { await view.cleanup(); }
+  });
+
+  it("bez uložené volby nenabízí sedmidenní mazání jako účinný výchozí stav", async () => {
+    const view = await renderSettings();
+    try {
+      expect(view.document.querySelector(".settings-select select").value).toBe("Nemazat");
+      expect(view.localStorage.setItem).not.toHaveBeenCalled();
+    } finally { await view.cleanup(); }
   });
 });

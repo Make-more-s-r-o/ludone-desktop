@@ -1,0 +1,33 @@
+$ ./node_modules/.bin/vitest run tests/retention.test.js tests/settings.test.js tests/settings-persistence.test.js tests/recording-storage.test.js tests/queue-wiring.test.js tests/ipc-sender-guard.test.js tests/queue.test.js tests/queue-scheduler.test.js
+
+ RUN  v4.1.11 /Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek
+
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:15456:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async FetchDownloader.download (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/FetchDownloader.js:46:30)
+    at async file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/index.js:158:9
+    at async useAndRemoveDirectory (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/utils.js:10:18)
+    at async downloadArtifact (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/index.js:154:12)
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:15456:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async FetchDownloader.download (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/FetchDownloader.js:46:30)
+    at async file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/index.js:158:9
+    at async useAndRemoveDirectory (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/utils.js:10:18)
+    at async downloadArtifact (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/index.js:154:12)
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:15456:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async FetchDownloader.download (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/FetchDownloader.js:46:30)
+    at async file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/index.js:158:9
+    at async useAndRemoveDirectory (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/utils.js:10:18)
+    at async downloadArtifact (file:///Users/dev_ludone/orca/workspaces/ludone-desktop/desktop-179-misto-nahravek/node_modules/@electron/get/dist/index.js:154:12)
+
+ Test Files  8 passed (8)
+      Tests  646 passed (646)
+   Start at  23:43:11
+   Duration  10.99s (transform 942ms, setup 71ms, import 1.60s, tests 15.50s, environment 0ms)
+
+
+EXIT=0
