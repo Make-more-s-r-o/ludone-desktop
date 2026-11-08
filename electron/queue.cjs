@@ -2003,12 +2003,14 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
   // Retence sdílí transakční řadu s uploadem a všemi zápisy fronty.
   // Dva současné spouštěče dostanou tentýž výsledek, nikoli druhý průchod.
   let retentionInFlight = null;
-  function retainRecordings({ policy, now = Date.now(), guard = () => true }) {
+  /** @param {{ policy?: unknown, getPolicy?: () => unknown, now?: number | Date, guard?: () => boolean }} options */
+  function retainRecordings({ policy, getPolicy = () => policy, now, guard = () => true }) {
     if (retentionInFlight) return retentionInFlight;
     const operation = serialize(async () => {
       const queue = await ensureLoaded();
       const result = await require("./retention.cjs").applyRetention({
-        queue, policy, now, recordingsDirectory, guard,
+        queue, policy: getPolicy(), now: now ?? Date.now(), recordingsDirectory, guard, getPolicy,
+        persistDeletion: () => commit(queue),
       });
       if (result.deletedItems.length > 0) await commit({ ...queue, items: result.keptItems });
       return result;

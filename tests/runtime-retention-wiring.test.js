@@ -88,7 +88,7 @@ async function writeOldSentRecording(userDataPath) {
 it.each([
   "recordingOwnersPreparing", "recordingSessions", "recordingCompletionsInFlight",
   "recordingExportStages", "outboundQueueSendsInFlight",
-])("průběžný úklid přes main chrání %s a po uvolnění uklidí stejné soubory #179", async operation => {
+])("průběžný úklid přes main chrání %s a po uvolnění uklidí stejné soubory", async operation => {
   const userDataPath = await mkdtemp(path.join(tmpdir(), "desktop-179-guard-"));
   roots.push(userDataPath);
   const fixture = await writeOldSentRecording(userDataPath);
@@ -131,4 +131,50 @@ it.each([
   expect(existsSync(fixture.microphonePath)).toBe(false);
   expect(existsSync(fixture.systemPath)).toBe(false);
   expect(state.notifyRecordingStorageChanged).toHaveBeenCalledTimes(2);
+});
+
+it.each(["Nemazat", "30 dní po odeslání"])("čekající úklid přes main respektuje potvrzenou změnu na %s před dokončením uploadu", async policy => {
+  const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-policy-race-"));
+  roots.push(userDataPath);
+  const fixture = await writeOldSentRecording(userDataPath);
+  const queue = JSON.parse(readFileSync(fixture.queuePath, "utf8"));
+  const owner = `sha256:${"a".repeat(64)}`;
+  Object.assign(queue.items[0], { state: "ceka", sentAt: null, server: {}, ownerFingerprint: owner, uploadIntent: "approved" });
+  await queueStore.saveQueueAtomically(fixture.queuePath, queue);
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let started;
+  const sending = new Promise(resolve => { started = resolve; });
+  const store = queueStore.createOutboundQueueStore({ filePath: fixture.queuePath,
+    queueModulePromise: Promise.resolve(queueModule), send: async () => { started(); await gate; } });
+  const settings = (await import("../electron/settings.cjs")).default.createRetentionSettingsStore({
+    filePath: path.join(userDataPath, "retence.json"),
+  });
+  settings.set("Ihned smazat");
+  const getPolicy = vi.fn(() => settings.get());
+  const requested = vi.fn(options => store.retainRecordings(options));
+  const retain = runInNewContext([
+    productionFunction("retentionFilesIdle"), productionFunction("retainOutboundRecordings"),
+    "retainOutboundRecordings;",
+  ].join("\n"), {
+    recordingOwnersPreparing: new Map(), recordingSessions: new Map(), recordingCompletionsInFlight: new Set(),
+    recordingExportStages: new Map(), outboundQueueSendsInFlight: 0,
+    getOutboundQueueStore: async () => ({ retainRecordings: requested }),
+    retentionSettingsStore: { get: getPolicy }, notifyRecordingStorageChanged: vi.fn(),
+  });
+  const pump = store.pump({ DESKTOP_UPLOAD_ENABLED: "true" }, owner);
+  let cleanup;
+  try {
+    await sending;
+    cleanup = retain();
+    await vi.waitFor(() => expect(requested).toHaveBeenCalledOnce());
+    expect(getPolicy).not.toHaveBeenCalled();
+    expect(settings.set(policy)).toBe(policy);
+    release();
+    expect((await pump).odeslanoVDavce).toBe(1);
+    expect((await cleanup).deletedFiles).toEqual([]);
+    expect(existsSync(fixture.microphonePath)).toBe(true);
+    expect(existsSync(fixture.systemPath)).toBe(true);
+    expect(JSON.parse(readFileSync(fixture.queuePath, "utf8")).items).toHaveLength(1);
+  } finally { release(); await pump; await cleanup; }
 });

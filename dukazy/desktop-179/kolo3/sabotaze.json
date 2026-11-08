@@ -1,0 +1,17 @@
+[
+  {
+    "sabotaz": "a-politika-pred-serialize",
+    "exit_code": 1,
+    "vraceno": true
+  },
+  {
+    "sabotaz": "b-bez-obnovy",
+    "exit_code": 1,
+    "vraceno": true
+  },
+  {
+    "sabotaz": "c-cas-pri-planovani",
+    "exit_code": 1,
+    "vraceno": true
+  }
+]

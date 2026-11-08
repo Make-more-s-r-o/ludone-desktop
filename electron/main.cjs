@@ -2324,6 +2324,9 @@ async function applyOutboundQueueRetention(panelStartup) {
       queue,
       policy,
       now: Date.now(),
+      getPolicy: () => retentionSettingsStore.get(),
+      guard: retentionFilesIdle,
+      persistDeletion: () => saveQueueAtomically(filePath, queue),
       recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
     });
     if (result.deletedItems.length > 0) {
@@ -2353,7 +2356,7 @@ function retentionFilesIdle() {
 async function retainOutboundRecordings() {
   const store = await getOutboundQueueStore();
   const result = await store.retainRecordings({
-    policy: retentionSettingsStore.get(), guard: retentionFilesIdle,
+    getPolicy: () => retentionSettingsStore.get(), guard: retentionFilesIdle,
   });
   notifyRecordingStorageChanged();
   return result;

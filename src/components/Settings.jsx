@@ -284,23 +284,35 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
   const [retentionReady, setRetentionReady] = useState(false);
   const [retentionError, setRetentionError] = useState(false);
   const [storage, setStorage] = useState(null);
+  const [storageError, setStorageError] = useState(false);
   useEffect(() => {
     let active = true;
     const refresh = async () => {
       try {
-        const policy = await window.ludone.getRetention?.();
-        if (active && typeof policy === "string") {
+        const policy = await window.ludone?.getRetention?.();
+        if (!["Ihned smazat", "24 hodin po odeslání", "7 dní po odeslání", "30 dní po odeslání", "Nemazat"].includes(policy)) {
+          throw new Error("Retenci nelze zjistit");
+        }
+        if (active) {
           setSettings({ retention: policy });
           setRetentionReady(true);
+          setRetentionError(false);
         }
-        const measured = await window.ludone.getRecordingStorage?.();
-        if (active && measured) setStorage(measured);
       } catch {
-        if (active) setRetentionError(true);
+        if (active) { setRetentionError(true); setRetentionReady(false); }
+      }
+      try {
+        const measured = await window.ludone?.getRecordingStorage?.();
+        if (!measured || !isSafeCount(measured.bytes) || typeof measured.complete !== "boolean") {
+          throw new Error("Velikost nelze zjistit");
+        }
+        if (active) { setStorage(measured); setStorageError(false); }
+      } catch {
+        if (active) { setStorage(null); setStorageError(true); }
       }
     };
     void refresh();
-    const unsubscribe = window.ludone.onRecordingStorageChanged?.(refresh);
+    const unsubscribe = window.ludone?.onRecordingStorageChanged?.(refresh);
     // Otevřené nastavení sleduje také soubory právě vznikajícího záznamu.
     const timer = window.setInterval(refresh, 15000);
     return () => { active = false; unsubscribe?.(); window.clearInterval(timer); };
@@ -312,7 +324,7 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
   const [folderError, setFolderError] = useState(false);
   useEffect(() => {
     let current = true;
-    Promise.resolve().then(() => window.ludone.getShortcuts?.()).then(value => { if (current && Array.isArray(value)) setShortcuts(value); }).catch(() => {});
+    Promise.resolve().then(() => window.ludone?.getShortcuts?.()).then(value => { if (current && Array.isArray(value)) setShortcuts(value); }).catch(() => {});
     return () => { current = false; };
   }, []);
   const [device, setDevice] = useState({ state: "unknown", name: null });
@@ -328,23 +340,16 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
   const dock = useSystemBooleanSetting("getDockVisible", "setDockVisible");
   const login = useSystemBooleanSetting("getOpenAtLogin", "setOpenAtLogin");
   const automaticUpload = useSystemBooleanSetting("getUploadEnabled", "setUploadEnabled");
-  const update = async (key, value) => {
+  const update = async (value) => {
+    if (!retentionReady || typeof window.ludone?.setRetention !== "function") return;
     setRetentionError(false);
+    setRetentionReady(false);
     try {
-      if (window.ludone.setRetention) {
-        setRetentionReady(false);
-        const saved = await window.ludone.setRetention(value);
-        setSettings({ retention: saved });
-        setRetentionReady(true);
-      } else {
-        // Samostatný prototyp bez IPC zachovává historický formát nastavení.
-        const nextSettings = { ...settings, [key]: value };
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSettings));
-        setSettings(nextSettings);
-      }
+      const saved = await window.ludone.setRetention(value);
+      setSettings({ retention: saved });
+      setRetentionReady(true);
     } catch {
       setRetentionError(true);
-      setRetentionReady(true);
     }
   };
 
@@ -1134,8 +1139,8 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
             </div>
             <label className="settings-select">
               <span><strong>Ponechat na tomto Macu</strong><small>Po odeslání do LuDone</small></span>
-              <select aria-label="Ponechat na tomto Macu" disabled={Boolean(window.ludone.getRetention) && !retentionReady} value={window.ludone.getRetention && !retentionReady ? "" : settings.retention} onChange={(event) => update("retention", event.target.value)}>
-                {window.ludone.getRetention && !retentionReady && <option value="">Zjišťuji nastavení…</option>}
+              <select aria-label="Ponechat na tomto Macu" disabled={!retentionReady || typeof window.ludone?.setRetention !== "function"} value={retentionReady ? settings.retention : ""} onChange={(event) => update(event.target.value)}>
+                {!retentionReady && <option value="">{retentionError ? "Retenci nelze zjistit" : "Zjišťuji nastavení…"}</option>}
                 <option>Ihned smazat</option>
                 <option>24 hodin po odeslání</option>
                 <option>7 dní po odeslání</option>
@@ -1146,10 +1151,10 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
             <div className="settings-action-row"><button type="button" className="button button--small" onClick={() => { setFolderError(false); Promise.resolve().then(() => window.ludone.showRecordingsFolder()).catch(() => setFolderError(true)); }}>Zobrazit složku</button>
               {onNavigate && <button type="button" className="button button--small" onClick={() => onNavigate("queue")}>Přejít na odesílání</button>}</div>
             {folderError && <p role="alert">Složku nahrávek se nepodařilo zobrazit.</p>}
-            {retentionError && <p role="alert">Nastavení retence se nepodařilo načíst nebo uložit.</p>}
+            {retentionError && typeof window.ludone?.getRetention === "function" && <p role="alert">Nastavení retence se nepodařilo načíst nebo uložit.</p>}
             <div className="settings-row settings-row--static" data-testid="settings-storage">
               <div><strong>Místo v aplikaci</strong><small>
-                {storage ? `${new Intl.NumberFormat("cs-CZ").format(storage.bytes)} B${storage.complete ? "" : " (neúplný součet)"}` : "Velikost se zjišťuje…"}
+                {storage ? `${new Intl.NumberFormat("cs-CZ").format(storage.bytes)} B${storage.complete ? "" : " (neúplný součet)"}` : storageError ? "Velikost nelze zjistit" : "Velikost se zjišťuje…"}
               </small><small>Všechny místní kopie zvuku, metadata a dočasné soubory. Exporty ve Stažených jsou mimo aplikaci.</small></div>
             </div>
             <p className="settings-hint">Neodeslané záznamy se automaticky nemažou.</p>

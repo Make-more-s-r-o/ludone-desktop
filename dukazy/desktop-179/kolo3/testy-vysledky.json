@@ -1,0 +1,259 @@
+{
+  "prikaz": [
+    "./node_modules/.bin/vitest",
+    "run",
+    "tests/auth-controller-wiring.test.js",
+    "tests/auth-empty-store.test.js",
+    "tests/auth-identity-fallback.test.js",
+    "tests/auth-panel-blur-guard.test.js",
+    "tests/diagnostics.test.js",
+    "tests/fronta-symetrie.test.js",
+    "tests/ipc-sender-guard.test.js",
+    "tests/kalendar-zrusen.test.js",
+    "tests/logout.test.js",
+    "tests/manifest.test.js",
+    "tests/panel-blur-guard.test.js",
+    "tests/queue-wiring.test.js",
+    "tests/queue.test.js",
+    "tests/recording-actions.test.js",
+    "tests/recording-order-guard.test.js",
+    "tests/recording-playback.test.js",
+    "tests/recording-storage.test.js",
+    "tests/renderer-failure-feedback.test.js",
+    "tests/retention.test.js",
+    "tests/runtime-retention-wiring.test.js",
+    "tests/session-reentry.test.js",
+    "tests/settings-audio-permissions.test.js",
+    "tests/settings-audio-test.test.js",
+    "tests/settings-persistence.test.js",
+    "tests/settings.test.js",
+    "tests/tracking-timer.test.js",
+    "tests/tray-authority.test.js",
+    "tests/upload-client.test.js",
+    "tests/zapojeni-odhlaseni.test.js",
+    "tests/zkratky-bez-kryti.test.js",
+    "--reporter=verbose",
+    "--reporter=json",
+    "--outputFile.json=/private/tmp/desktop-179-kolo3-tests-final.json"
+  ],
+  "exit_code": 0,
+  "stav": "🧪 zelené testy",
+  "testy": {
+    "celkem": 1184,
+    "pass": 1181,
+    "fail": 0,
+    "skip": 3
+  },
+  "soubory": [
+    {
+      "soubor": "tests/auth-controller-wiring.test.js",
+      "stav": "passed",
+      "pass": 48,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/auth-empty-store.test.js",
+      "stav": "passed",
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/auth-identity-fallback.test.js",
+      "stav": "passed",
+      "pass": 29,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/auth-panel-blur-guard.test.js",
+      "stav": "passed",
+      "pass": 6,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/diagnostics.test.js",
+      "stav": "passed",
+      "pass": 6,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/fronta-symetrie.test.js",
+      "stav": "passed",
+      "pass": 3,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/ipc-sender-guard.test.js",
+      "stav": "passed",
+      "pass": 24,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/kalendar-zrusen.test.js",
+      "stav": "passed",
+      "pass": 3,
+      "fail": 0,
+      "skip": 1
+    },
+    {
+      "soubor": "tests/logout.test.js",
+      "stav": "passed",
+      "pass": 22,
+      "fail": 0,
+      "skip": 1
+    },
+    {
+      "soubor": "tests/manifest.test.js",
+      "stav": "passed",
+      "pass": 10,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/panel-blur-guard.test.js",
+      "stav": "passed",
+      "pass": 6,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/queue-wiring.test.js",
+      "stav": "passed",
+      "pass": 308,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/queue.test.js",
+      "stav": "passed",
+      "pass": 153,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/recording-actions.test.js",
+      "stav": "passed",
+      "pass": 18,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/recording-order-guard.test.js",
+      "stav": "passed",
+      "pass": 1,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/recording-playback.test.js",
+      "stav": "passed",
+      "pass": 36,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/recording-storage.test.js",
+      "stav": "passed",
+      "pass": 8,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/renderer-failure-feedback.test.js",
+      "stav": "passed",
+      "pass": 29,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/retention.test.js",
+      "stav": "passed",
+      "pass": 64,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/runtime-retention-wiring.test.js",
+      "stav": "passed",
+      "pass": 7,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/session-reentry.test.js",
+      "stav": "passed",
+      "pass": 12,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/settings-audio-permissions.test.js",
+      "stav": "passed",
+      "pass": 11,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/settings-audio-test.test.js",
+      "stav": "passed",
+      "pass": 11,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/settings-persistence.test.js",
+      "stav": "passed",
+      "pass": 31,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/settings.test.js",
+      "stav": "passed",
+      "pass": 68,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/tracking-timer.test.js",
+      "stav": "passed",
+      "pass": 58,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/tray-authority.test.js",
+      "stav": "passed",
+      "pass": 101,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/upload-client.test.js",
+      "stav": "passed",
+      "pass": 79,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "soubor": "tests/zapojeni-odhlaseni.test.js",
+      "stav": "passed",
+      "pass": 11,
+      "fail": 0,
+      "skip": 1
+    },
+    {
+      "soubor": "tests/zkratky-bez-kryti.test.js",
+      "stav": "passed",
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    }
+  ]
+}
