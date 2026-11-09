@@ -97,13 +97,28 @@ it.each([
     queueModulePromise: Promise.resolve(queueModule),
     send: async () => {},
   });
+  const order = [];
+  const observedStore = {
+    ...store,
+    retainRecordings(options) {
+      order.push("retain");
+      return store.retainRecordings(options);
+    },
+  };
+  const recordingCopyOperations = new Map([["copy", {}]]);
+  const cancelRecordingCopyOperations = vi.fn(() => {
+    order.push("cancel");
+    recordingCopyOperations.clear();
+  });
   const state = {
     recordingOwnersPreparing: new Map(),
     recordingSessions: new Map(),
     recordingCompletionsInFlight: new Set(),
     recordingExportStages: new Map(),
+    recordingCopyOperations,
     outboundQueueSendsInFlight: 0,
-    getOutboundQueueStore: async () => store,
+    cancelRecordingCopyOperations,
+    getOutboundQueueStore: async () => observedStore,
     retentionSettingsStore: { get: () => "Ihned smazat" },
     notifyRecordingStorageChanged: vi.fn(),
   };
@@ -117,6 +132,8 @@ it.each([
   ].join("\n"), state);
 
   const blocked = await retain();
+  expect(order.slice(0, 2)).toEqual(["cancel", "retain"]);
+  expect(recordingCopyOperations.size).toBe(0);
   expect(blocked.deletedFiles).toEqual([]);
   expect(blocked.deletedItems).toEqual([]);
   expect(existsSync(fixture.microphonePath)).toBe(true);
@@ -126,6 +143,7 @@ it.each([
   if (operation === "outboundQueueSendsInFlight") state.outboundQueueSendsInFlight = 0;
   else state[operation].clear();
   const cleaned = await retain();
+  expect(order.slice(2, 4)).toEqual(["cancel", "retain"]);
   expect(cleaned.errors).toEqual([]);
   expect(cleaned.deletedItems).toHaveLength(1);
   expect(existsSync(fixture.microphonePath)).toBe(false);
@@ -158,7 +176,8 @@ it.each(["Nemazat", "30 dní po odeslání"])("čekající úklid přes main res
     "retainOutboundRecordings;",
   ].join("\n"), {
     recordingOwnersPreparing: new Map(), recordingSessions: new Map(), recordingCompletionsInFlight: new Set(),
-    recordingExportStages: new Map(), outboundQueueSendsInFlight: 0,
+    recordingExportStages: new Map(), recordingCopyOperations: new Map(),
+    cancelRecordingCopyOperations: vi.fn(), outboundQueueSendsInFlight: 0,
     getOutboundQueueStore: async () => ({ retainRecordings: requested }),
     retentionSettingsStore: { get: getPolicy }, notifyRecordingStorageChanged: vi.fn(),
   });

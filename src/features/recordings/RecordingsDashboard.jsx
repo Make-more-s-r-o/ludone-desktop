@@ -47,6 +47,8 @@ function normalizeRecordingItem(value) {
     uploadPreferencesLocked: value.uploadPreferencesLocked === true,
     uploadIntent: value.uploadIntent === "approved" ? "approved" : "held",
     state: safeText(value.state) ?? "neznámý",
+    deliveryState: ["pending", "ready", "failed"].includes(value.deliveryState)
+      ? value.deliveryState : null,
     createdAt,
     durationMs: safeNonNegativeInteger(value.durationMs),
     sizeBytes: safeNonNegativeInteger(value.sizeBytes),
@@ -248,15 +250,26 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   const [preferencesById, setPreferencesById] = useState({});
   const [preferenceMessageById, setPreferenceMessageById] = useState({});
   const [preferenceFailedById, setPreferenceFailedById] = useState({});
+  const [copyExportNameById, setCopyExportNameById] = useState({});
+  const [copyExportMessageById, setCopyExportMessageById] = useState({});
+  const [copyExportingId, setCopyExportingId] = useState(null);
   const openDetailIdRef = useRef(detailId);
   const active = useRef(true);
   const claimInFlight = useRef(false);
+  const copyExportOperation = useRef(null);
+  const copyExportLifecycle = useRef(0);
+  const copyExportNameRef = useRef({});
+  const copyExportNameGeneration = useRef(new Map());
+  const copyExportItems = useRef(view.items);
+  copyExportItems.current = view.items;
   const loadGeneration = useRef(0);
   const verificationGeneration = useRef(0);
   const previousAuthState = useRef(authState);
   const currentIdentity = identityKey(authIdentity) && typeof authOrigin === "string" && authOrigin
     ? `${authOrigin}|${identityKey(authIdentity)}` : null;
   const identityRef = useRef(currentIdentity);
+  const copyExportIdentity = useRef(currentIdentity);
+  copyExportIdentity.current = currentIdentity;
   const authRef = useRef(authState);
   authRef.current = authState;
 
@@ -276,6 +289,19 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       .then((snapshotValue) => {
         if (active.current && requestGeneration === loadGeneration.current) {
           const snapshot = normalizeSnapshot(snapshotValue);
+          const copyOperation = copyExportOperation.current;
+          const latestCopyItem = copyOperation
+            ? snapshot.items.find((candidate) => candidate.id === copyOperation.id)
+            : null;
+          if (copyOperation && (
+            !latestCopyItem
+            || latestCopyItem.revision !== copyOperation.queueRev
+            || latestCopyItem.fileRevision !== copyOperation.fileRev
+          )) {
+            copyExportOperation.current = null;
+            copyExportLifecycle.current += 1;
+            setCopyExportingId((current) => current === copyOperation.id ? null : current);
+          }
           setVerificationById((current) => Object.fromEntries(Object.entries(current).filter(([id, result]) => {
             const item = snapshot.items.find((candidate) => candidate.id === id);
             return item && !item.recordingInProgress && item.ownership === "current"
@@ -300,12 +326,22 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   useEffect(() => {
     active.current = true;
     void load();
-    return () => { active.current = false; };
+    return () => {
+      active.current = false;
+      copyExportLifecycle.current += 1;
+    };
   }, [load]);
 
   useEffect(() => {
     const identityChanged = currentIdentity && identityRef.current !== currentIdentity;
     const invalid = authState === "signed-out" || authState === "expired" || (authState === "signed-in" && !currentIdentity);
+    const copyOperation = copyExportOperation.current;
+    if (copyOperation && (invalid || authState !== "signed-in"
+      || copyOperation.identity !== currentIdentity)) {
+      copyExportOperation.current = null;
+      copyExportLifecycle.current += 1;
+      setCopyExportingId((current) => current === copyOperation.id ? null : current);
+    }
     if (identityChanged || invalid) {
       verificationGeneration.current += 1;
       setVerificationById({});
@@ -426,6 +462,68 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby se nepodařilo uložit. Přehled byl obnoven; ověř volby a ulož je znovu." }));
       return false;
     } finally { if (active.current) setActingId(null); }
+  };
+  const exportCopy = async (item) => {
+    if (item.recordingInProgress || copyExportOperation.current !== null || item.ownership !== "current"
+      || !item.revision || !item.fileRevision
+      || typeof window.ludone?.exportRecordingCopy !== "function") return;
+    const name = copyExportNameRef.current[item.id] ?? item.title ?? "";
+    const operation = {
+      id: item.id,
+      identity: copyExportIdentity.current,
+      queueRev: item.revision,
+      fileRev: item.fileRevision,
+      lifecycle: copyExportLifecycle.current,
+      nameGeneration: copyExportNameGeneration.current.get(item.id) ?? 0,
+    };
+    copyExportOperation.current = operation;
+    setCopyExportingId(item.id);
+    setCopyExportMessageById((current) => ({ ...current, [item.id]: "" }));
+    const isCurrent = () => {
+      const latestItem = copyExportItems.current.find((candidate) => candidate.id === operation.id);
+      return active.current
+        && copyExportOperation.current === operation
+        && copyExportLifecycle.current === operation.lifecycle
+        && copyExportIdentity.current === operation.identity
+        && (copyExportNameGeneration.current.get(operation.id) ?? 0) === operation.nameGeneration
+        && latestItem?.revision === operation.queueRev
+        && latestItem?.fileRevision === operation.fileRev;
+    };
+    try {
+      const result = await window.ludone.exportRecordingCopy(item.id, {
+        queueRev: item.revision,
+        fileRev: item.fileRevision,
+        recordingName: name,
+      });
+      if (isCurrent()) {
+        setCopyExportMessageById((current) => ({
+          ...current,
+          [item.id]: result?.ok === true
+            ? `Kopie ${result.fileName} je uložená ve Stažených.`
+            : result?.message || "Kopii se nepodařilo uložit.",
+        }));
+      }
+    } catch {
+      if (isCurrent()) setCopyExportMessageById((current) => ({
+        ...current,
+        [item.id]: "Kopii se nepodařilo uložit. Nahrávka zůstala beze změny.",
+      }));
+    } finally {
+      if (copyExportOperation.current === operation) {
+        copyExportOperation.current = null;
+        if (active.current) setCopyExportingId(null);
+      }
+    }
+  };
+  const updateCopyExportName = (id, event) => {
+    const value = event.currentTarget.value;
+    copyExportNameRef.current = { ...copyExportNameRef.current, [id]: value };
+    copyExportNameGeneration.current.set(
+      id,
+      (copyExportNameGeneration.current.get(id) ?? 0) + 1,
+    );
+    setCopyExportNameById((current) => ({ ...current, [id]: value }));
+    setCopyExportMessageById((current) => ({ ...current, [id]: "" }));
   };
   const saveBeforeClose = useRef(null);
   saveBeforeClose.current = async (id) => {
@@ -622,6 +720,35 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                         <dt>Uložení</dt><dd>{recordingSourceLabel(item)}</dd>
                       </dl>
                     </section>
+                    {item.source === "queue" && item.ownership === "current"
+                      && item.deliveryState === "ready" && !item.recordingInProgress
+                      && item.revision && item.fileRevision
+                      && typeof window.ludone?.exportRecordingCopy === "function" && (
+                        <section className="recording-queue-card__copy" aria-label="Export kopie">
+                          <h2>Exportovat kopii</h2>
+                          <label htmlFor={`recording-copy-name-${item.id}`}>Název souboru</label>
+                          <input
+                            id={`recording-copy-name-${item.id}`}
+                            className="recording-queue-card__copy-name"
+                            data-testid="recording-copy-name"
+                            type="text"
+                            value={copyExportNameById[item.id] ?? item.title ?? ""}
+                            onChange={(event) => updateCopyExportName(item.id, event)}
+                            onInput={(event) => updateCopyExportName(item.id, event)}
+                          />
+                          <button type="button" className="button button--small"
+                            data-testid="export-saved-recording-copy"
+                            disabled={copyExportingId !== null}
+                            onClick={() => void exportCopy(item)}>
+                            Exportovat kopii…
+                          </button>
+                          {copyExportMessageById[item.id] && (
+                            <p className="recording-queue-card__copy-status" data-testid="recording-copy-export-status" role="status">
+                              {copyExportMessageById[item.id]}
+                            </p>
+                          )}
+                        </section>
+                      )}
                     {openDetailId === item.id && item.ownership === "current" && !item.recordingInProgress
                       && typeof window.ludone?.configureRecordingUpload === "function" && (
                         <RecordingUploadPreferences key={`${item.id}:${item.revision}:${currentIdentity}`}

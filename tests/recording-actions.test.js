@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -7,6 +8,7 @@ import queueStore from "../electron/queue.cjs";
 import meetingAudio from "../electron/meeting-audio.cjs";
 
 const { createLivePendingDelivery, ensureMeetingAudioReady } = meetingAudio;
+const require = createRequire(import.meta.url);
 
 const OWNER = `sha256:${"a".repeat(64)}`;
 const roots = new Set();
@@ -408,6 +410,80 @@ describe("bezpečné lokální akce nahrávky", () => {
       expectedFileRevision: value.row.fileRevision,
       guard: async () => true,
     })).rejects.toThrow(/neaktuální|změnily/u);
+  });
+
+  it("pozastavené ověření exportu mimo řadu neblokuje store.list()", async () => {
+    const value = await fixture();
+    const recordingsDirectory = path.dirname(value.audioPath);
+    const masterPath = path.join(recordingsDirectory, "porada-stereo-master.webm");
+    await writeFile(masterPath, "stereo-master");
+    const pending = await createLivePendingDelivery({
+      captureSources: "microphone",
+      clientRecordingId: value.id,
+      startedAt: value.manifest.tracks.microphone.startedAt,
+      endedAt: value.manifest.tracks.microphone.endedAt,
+      manifestPath: value.manifestPath,
+      masterPath,
+      recordingsDirectory,
+    });
+    const deliveryBytes = Buffer.from("stereo-webm-opus");
+    const ready = await ensureMeetingAudioReady({
+      attempts: 0,
+      clientRecordingId: value.id,
+      delivery: pending,
+      manifestPath: value.manifestPath,
+      ownerFingerprint: OWNER,
+      server: {},
+      state: "ceka",
+      tracks: { microphone: value.audioPath },
+    }, {
+      prepareStereoWebm: async ({ outputPath }) => {
+        await writeFile(outputPath, deliveryBytes);
+        return { outputPath, size: deliveryBytes.length,
+          mime: "audio/webm", channels: 2, encoderVersion: "test-list-unblocked" };
+      },
+      recordingsDirectory,
+    });
+    await value.store.setRecordingDelivery(value.id, ready);
+    const row = (await value.store.listLocalRecordings(OWNER)).items
+      .find((item) => item.id === value.id);
+    const fs = require("node:fs").promises;
+    const originalOpen = fs.open.bind(fs);
+    let blocked = false;
+    let releaseAudioRead;
+    let reportAudioRead;
+    const audioReadReached = new Promise((resolve) => { reportAudioRead = resolve; });
+    const release = new Promise((resolve) => { releaseAudioRead = resolve; });
+    const openSpy = vi.spyOn(fs, "open").mockImplementation(async (filePath, ...args) => {
+      if (!blocked && path.resolve(String(filePath)) === path.resolve(value.audioPath)) {
+        blocked = true;
+        reportAudioRead();
+        await release;
+      }
+      return originalOpen(filePath, ...args);
+    });
+    const resolving = value.store.resolveRecordingExportCopyTarget({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      currentOwnerFingerprint: OWNER,
+      guard: async () => true,
+    });
+    try {
+      await audioReadReached;
+      const listed = await Promise.race([
+        value.store.list(OWNER).then((items) => ({ items })),
+        new Promise((resolve) => setTimeout(() => resolve({ timedOut: true }), 250)),
+      ]);
+      expect(listed.timedOut).not.toBe(true);
+      expect(listed.items).toHaveLength(1);
+      releaseAudioRead();
+      await expect(resolving).resolves.toMatchObject({ outcome: "ready" });
+    } finally {
+      releaseAudioRead();
+      openSpy.mockRestore();
+      await resolving.catch(() => {});
+    }
   });
 });
 

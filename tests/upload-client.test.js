@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, open, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, open, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -269,6 +269,48 @@ describe("vlastník nahrávky před uploadem", () => {
     for (const [, options] of server.fetchImpl.mock.calls) {
       expect(requestHeaders(options).get("authorization")).toBe(`Bearer ${TOKEN}`);
     }
+  });
+
+  it("upload čte hotové delivery přímo z nahravky/", async () => {
+    const fixture = await recordingFixture();
+    const recordingsDirectory = path.join(path.dirname(fixture.manifestPath), "nahravky");
+    const deliveryPath = path.join(recordingsDirectory, `${CLIENT_RECORDING_ID}-stereo.webm`);
+    const deliveryBytes = Buffer.from("stereo delivery uložené v nahravky");
+    await mkdir(recordingsDirectory);
+    await writeFile(deliveryPath, deliveryBytes);
+    const item = {
+      ...fixture.item,
+      delivery: {
+        version: 1,
+        state: "ready",
+        clientRecordingId: CLIENT_RECORDING_ID,
+        source: "separate-tracks",
+        captureSources: "microphone",
+        channels: 2,
+        channelMap: { left: "microphone", right: "silence" },
+        startedAt: STARTED_AT,
+        endedAt: ENDED_AT,
+        mime: "audio/webm",
+        filePath: deliveryPath,
+        sidecarPath: `${deliveryPath}.meeting-audio-v1.json`,
+        masterPath: null,
+        masterSizeBytes: null,
+        masterSha256: null,
+        sizeBytes: deliveryBytes.byteLength,
+        sha256: sha256(deliveryBytes),
+        encoderVersion: "test",
+      },
+    };
+    const server = createStatefulServer();
+    const { send } = createSend(server.fetchImpl, createLogger(), { requireSingleDelivery: true });
+
+    await expect(send(item)).resolves.toMatchObject({ completedUploads: 1 });
+
+    const uploadPart = server.fetchImpl.mock.calls.find(([input, options]) => (
+      requestPath(input).includes("/casti/") && options.method === "PUT"
+    ));
+    expect(path.dirname(item.delivery.filePath)).toBe(recordingsDirectory);
+    expect(uploadPart?.[1].body).toEqual(deliveryBytes);
   });
 
   it("🔴 každý požadavek zakazuje přesměrování", async () => {

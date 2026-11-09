@@ -245,9 +245,17 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [savedAgeNow, setSavedAgeNow] = useState(() => Date.now());
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [copyExporting, setCopyExporting] = useState(false);
   const [uploadPreferences, setUploadPreferences] = useState(null);
   const [pickerInitial, setPickerInitial] = useState(null);
   const [pickerRefresh, setPickerRefresh] = useState(0);
+  const [copyExportNotice, setCopyExportNotice] = useState(null);
+  const savedRecordingRef = useRef(savedRecording);
+  savedRecordingRef.current = savedRecording;
+  const copyExportOperation = useRef(null);
+  const copyExportGeneration = useRef(0);
+  const copyExportLifecycle = useRef(0);
+  const cardMounted = useRef(true);
   const uploadAuthGeneration = useRef(0);
   useEffect(() => window.ludone?.onAuthSessionChanged?.(() => {
     uploadAuthGeneration.current += 1;
@@ -442,7 +450,6 @@ export const RecordingCard = forwardRef(function RecordingCard({
         : result.outcome === "saved_local"
           ? "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."
           : "";
-      // Starší exportní most nemá potvrzený stav odeslání; zachovává vlastní potvrzení souboru.
       const modernOutcome = typeof modernDecision === "function";
       const outcomeText = result.outcome === "saved_local"
         ? "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."
@@ -450,18 +457,60 @@ export const RecordingCard = forwardRef(function RecordingCard({
           ? "Uloženo na Macu. Nahrávka čeká ve frontě k odeslání."
           : result.outcome === "sent"
             ? "Uloženo a odesláno."
-            : "Uloženo na Macu. Stav odeslání není potvrzený.";
+            : "Nahrávka byla uložena na Macu. Stav odeslání není potvrzený.";
       setNotice({
         type: "success",
-        text: modernOutcome ? `${outcomeText}${manual && decision === "keep" && supportsPreferences && !freshPreferences ? " Volby pro odeslání nastavíš v detailu nahrávky." : ""}`
-          : `Soubor ${result.fileName} je uložený ve Stažených. ${deliveryDetail} Přehrajete ho v prohlížeči nebo ve VLC.`,
-        openRecordings: modernOutcome,
+        text: `${outcomeText}${modernOutcome && manual && decision === "keep" && supportsPreferences && !freshPreferences
+          ? " Volby pro odeslání nastavíš v detailu nahrávky." : ""}`,
+        openRecordings: modernOutcome || Boolean(deliveryDetail),
       });
     } catch (error) {
       setExportError(describeError(error));
       if (manual && supportsPreferences) { setPickerInitial(uploadPreferences); setPickerRefresh((value) => value + 1); }
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function exportSavedRecordingCopy(recording, name) {
+    if (!recording || copyExporting || typeof window.ludone?.exportRecordingCopy !== "function") return;
+    if (name.trim().length > MAX_UPLOAD_NAME_UTF16_UNITS) {
+      setExportError("Název je příliš dlouhý. Zkraťte ho.");
+      return;
+    }
+    const operation = {
+      clientRecordingId: recording.clientRecordingId,
+      generation: ++copyExportGeneration.current,
+      lifecycle: copyExportLifecycle.current,
+      authGeneration: uploadAuthGeneration.current,
+    };
+    copyExportOperation.current = operation;
+    setCopyExporting(true);
+    setCopyExportNotice(null);
+    const isCurrent = () => cardMounted.current
+      && copyExportOperation.current === operation
+      && copyExportGeneration.current === operation.generation
+      && copyExportLifecycle.current === operation.lifecycle
+      && uploadAuthGeneration.current === operation.authGeneration
+      && savedRecordingRef.current?.clientRecordingId === operation.clientRecordingId;
+    try {
+      const result = await window.ludone.exportRecordingCopy(recording.clientRecordingId, {
+        recordingName: name,
+      });
+      if (isCurrent()) {
+        if (!result?.ok) throw new Error(result?.message || "Export kopie se nepodařil");
+        setCopyExportNotice({
+          clientRecordingId: recording.clientRecordingId,
+          text: `Kopie ${result.fileName} je uložená ve Stažených.`,
+        });
+      }
+    } catch (error) {
+      if (isCurrent()) setExportError(describeError(error));
+    } finally {
+      if (copyExportOperation.current === operation) {
+        copyExportOperation.current = null;
+        if (cardMounted.current) setCopyExporting(false);
+      }
     }
   }
 
@@ -784,11 +833,16 @@ export const RecordingCard = forwardRef(function RecordingCard({
 
   useImperativeHandle(ref, () => ({ start, stop }));
 
-  useEffect(() => () => {
-    const runtime = runtimeRef.current;
-    runtime?.recoveryController?.abort();
-    runtime?.cleanupTrackListeners?.();
-    runtime?.levelMonitor?.dispose();
+  useEffect(() => {
+    cardMounted.current = true;
+    return () => {
+      cardMounted.current = false;
+      copyExportLifecycle.current += 1;
+      const runtime = runtimeRef.current;
+      runtime?.recoveryController?.abort();
+      runtime?.cleanupTrackListeners?.();
+      runtime?.levelMonitor?.dispose();
+    };
   }, []);
 
   useEffect(() => {
@@ -937,7 +991,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
             aria-invalid={Boolean(quitExportFailure || exportError || notice?.type === "error")}
             onInput={(event) => {
               setRecordingName(event.currentTarget.value);
+              copyExportGeneration.current += 1;
               setExportError(null);
+              setCopyExportNotice(null);
             }}
           />
           {typeof window.ludone?.listUploadCompanies === "function" && <RecordingUploadPreferences
@@ -947,6 +1003,11 @@ export const RecordingCard = forwardRef(function RecordingCard({
           <small id="recording-name-hint" className="recording-saved__hint">
             Nahrávka už je místně zachovaná. Odesílání začne jen tvou volbou.
           </small>
+          {copyExportNotice?.clientRecordingId === savedRecording.clientRecordingId && (
+            <p className="recording-saved__hint" data-testid="recording-copy-export-status" role="status">
+              {copyExportNotice.text}
+            </p>
+          )}
           {deleteConfirm && (
             <div role="alertdialog" aria-label="Potvrdit smazání">
               <p>Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.</p>
@@ -1000,6 +1061,13 @@ export const RecordingCard = forwardRef(function RecordingCard({
               >
                 Nechat na Macu
               </button>
+              {typeof window.ludone?.exportRecordingCopy === "function" && (
+                <button type="button" className="button button--wide recording-action--copy"
+                  data-testid="export-recording-copy" disabled={copyExporting}
+                  onClick={() => void exportSavedRecordingCopy(savedRecording, recordingName)}>
+                  Exportovat kopii…
+                </button>
+              )}
               <button type="button" className="button button--wide recording-action--delete"
                 data-testid="delete-recording" disabled={exporting || deleting || typeof window.ludone?.deleteRecording !== "function"}
                 onClick={() => setDeleteConfirm(true)}>Smazat nahrávku</button>

@@ -560,6 +560,9 @@ describe("odhlášení", () => {
     const createLogoutController = vi.fn(() => ({ logout }));
     const hasLiveRecording = vi.fn(() => false);
     const trackingWorkBlocksQuit = vi.fn(() => false);
+    const hasRecordingExportInFlight = vi.fn(() => false);
+    const copyOperations = new Map();
+    const cancelRecordingCopyOperations = vi.fn(() => copyOperations.clear());
     const notifyPanelAuthSessionChanged = vi.fn();
     const runAuthSessionTransition = vi.fn(async (operation) => {
       notifyPanelAuthSessionChanged();
@@ -591,6 +594,8 @@ describe("odhlášení", () => {
       "authOriginChangeInFlight",
       "hasLiveRecording",
       "trackingWorkBlocksQuit",
+      "hasRecordingExportInFlight",
+      "cancelRecordingCopyOperations",
       "notifyPanelAuthSessionChanged",
       "runAuthSessionTransition",
       "requireNoPayload",
@@ -611,6 +616,8 @@ describe("odhlášení", () => {
       false,
       hasLiveRecording,
       trackingWorkBlocksQuit,
+      hasRecordingExportInFlight,
+      cancelRecordingCopyOperations,
       notifyPanelAuthSessionChanged,
       runAuthSessionTransition,
       requireNoPayload,
@@ -646,8 +653,23 @@ describe("odhlášení", () => {
     });
     expect(logout).not.toHaveBeenCalled();
 
+    hasRecordingExportInFlight.mockReturnValueOnce(true);
+    await expect(captured.handler()).resolves.toEqual({
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "recording-export-active",
+    });
+    expect(logout).not.toHaveBeenCalled();
+
+    // Nahrazuje dřívější odmítnutí logoutu kvůli rezervaci: kopie se zruší,
+    // ale ochrany běžící nahrávky, LuTracku i interní delivery zůstávají výš.
+    copyOperations.set("nahravka-1", {});
     const returned = await captured.handler();
     expect(returned).toBe(sentinel);
+    expect(copyOperations.size).toBe(0);
+    expect(cancelRecordingCopyOperations).toHaveBeenCalledOnce();
+    expect(cancelRecordingCopyOperations.mock.invocationCallOrder[0])
+      .toBeLessThan(logout.mock.invocationCallOrder[0]);
     expect(logout).toHaveBeenCalledOnce();
     expect(invalidateRecordingVerifier).toHaveBeenCalledOnce();
     expect(invalidateRecordingVerifier.mock.invocationCallOrder[0])

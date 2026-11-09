@@ -1086,14 +1086,21 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     });
   }
 
-  function setRecordingDelivery(clientRecordingId, delivery) {
+  function setRecordingDelivery(clientRecordingId, delivery, { guard = undefined } = {}) {
+    if (guard !== undefined && typeof guard !== "function") {
+      throw new TypeError("Guard delivery musí být funkce");
+    }
     return serialize(async () => {
+      if (guard && await guard() !== true) throw new Error("Aktualizaci delivery už nelze potvrdit");
       const queueModule = await loadQueueModule();
+      if (guard && await guard() !== true) throw new Error("Aktualizaci delivery už nelze potvrdit");
       const queue = await ensureLoaded();
+      if (guard && await guard() !== true) throw new Error("Aktualizaci delivery už nelze potvrdit");
       const current = queue.items.find((item) => item.clientRecordingId === clientRecordingId);
       const progressed = current?.delivery
         ? queueModule.applyServerProgress(queue, clientRecordingId, { delivery })
         : queueModule.attachRecordingDelivery(queue, clientRecordingId, delivery);
+      if (guard && await guard() !== true) throw new Error("Aktualizaci delivery už nelze potvrdit");
       await commit(progressed.queue);
       return progressed.item;
     });
@@ -1317,12 +1324,22 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     });
   }
 
-  async function freshActionTarget(clientRecordingId, expectedRevision, expectedFileRevision) {
-    const loadedQueue = await loadQueue(filePath, { includeMigration: true });
-    const queue = loadedQueue.queue;
-    currentQueue = queue;
-    loaded = true;
-    migrationPending = loadedQueue.migrated;
+  async function freshActionTarget(
+    clientRecordingId,
+    expectedRevision,
+    expectedFileRevision,
+    { queueSnapshot = null, updateStoreState = true, recheckFresh = true } = {},
+  ) {
+    let queue = queueSnapshot;
+    if (queue === null) {
+      const loadedQueue = await loadQueue(filePath, { includeMigration: true });
+      queue = loadedQueue.queue;
+      if (updateStoreState) {
+        currentQueue = queue;
+        loaded = true;
+        migrationPending = loadedQueue.migrated;
+      }
+    }
     const queueModule = await loadQueueModule();
     const queueItems = reduceForLocalDashboard(queueModule, queue, null);
     const snapshot = await createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory });
@@ -1459,18 +1476,21 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     if (sharedDerivativeReference) {
       throw new Error("Soubor delivery používá také jiná queue položka");
     }
-    const latestQueueItems = reduceForLocalDashboard(queueModule, queue, null);
-    const latestSnapshot = await createLocalRecordingsSnapshot({
-      queue, queueItems: latestQueueItems, recordingsDirectory,
-    });
-    const latestProjected = latestSnapshot.items.find((item) => item.id === clientRecordingId);
-    if (!latestProjected || latestProjected.revision !== expectedRevision
-      || latestProjected.fileRevision !== expectedFileRevision) {
-      throw new Error("Soubory nahrávky se během přípravy akce změnily");
+    if (recheckFresh) {
+      const latestQueueItems = reduceForLocalDashboard(queueModule, queue, null);
+      const latestSnapshot = await createLocalRecordingsSnapshot({
+        queue, queueItems: latestQueueItems, recordingsDirectory,
+      });
+      const latestProjected = latestSnapshot.items.find((item) => item.id === clientRecordingId);
+      if (!latestProjected || latestProjected.revision !== expectedRevision
+        || latestProjected.fileRevision !== expectedFileRevision) {
+        throw new Error("Soubory nahrávky se během přípravy akce změnily");
+      }
     }
     return {
       audioPaths,
       derivativePaths,
+      manifest,
       manifestPath: primaryPath,
       projected,
       queue,
@@ -1577,6 +1597,149 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
       }
       return { outcome: "missing" };
     });
+  }
+
+  function resolveRecordingExportCopyTarget({
+    clientRecordingId,
+    expectedRevision,
+    expectedFileRevision,
+    currentOwnerFingerprint,
+    guard,
+  }) {
+    if (typeof guard !== "function") throw new TypeError("Export kopie vyžaduje guard");
+    if (typeof clientRecordingId !== "string" || !UUID_PATTERN.test(clientRecordingId)) {
+      throw new TypeError("clientRecordingId musí být GUID");
+    }
+    if (typeof expectedRevision !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
+      || typeof expectedFileRevision !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(expectedFileRevision)) {
+      throw new TypeError("Export kopie vyžaduje platné revize");
+    }
+    if (typeof currentOwnerFingerprint !== "string"
+      || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(currentOwnerFingerprint)) {
+      throw new TypeError("Export kopie vyžaduje ověřeného vlastníka nahrávky");
+    }
+
+    const freezeSnapshot = (value) => {
+      if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+      for (const child of Object.values(value)) freezeSnapshot(child);
+      return Object.freeze(value);
+    };
+
+    return (async () => {
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      // Diskové čtení může čekat na filesystem. Nespouštěj ho v operations řadě:
+      // export je jen čtení a nesmí zastavit list(), zápisy ani bariéru updateru.
+      const loadedQueue = await loadQueue(filePath, { includeMigration: true });
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      const diskQueue = loadedQueue.queue;
+      const diskItem = diskQueue.items.find((item) => (
+        (item.kind ?? "recording") === "recording"
+        && item.clientRecordingId === clientRecordingId
+      )) ?? null;
+      const diskItemJson = diskItem === null ? null : JSON.stringify(diskItem);
+      const captured = await serialize(async () => {
+        if (loaded) {
+          const memoryItem = currentQueue?.items.find((item) => (
+            (item.kind ?? "recording") === "recording"
+            && item.clientRecordingId === clientRecordingId
+          )) ?? null;
+          const memoryItemJson = memoryItem === null ? null : JSON.stringify(memoryItem);
+          if (memoryItemJson !== diskItemJson) {
+            throw new Error("Soubory nahrávky se během přípravy akce změnily");
+          }
+        }
+        const queue = freezeSnapshot(structuredClone(diskQueue));
+        const rawItem = queue.items.find((item) => (
+          (item.kind ?? "recording") === "recording"
+          && item.clientRecordingId === clientRecordingId
+        )) ?? null;
+        return { queue, rawItemJson: rawItem === null ? null : JSON.stringify(rawItem) };
+      });
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      const rawItem = captured.queue.items.find((item) => (
+        (item.kind ?? "recording") === "recording"
+        && item.clientRecordingId === clientRecordingId
+      )) ?? null;
+      if (!rawItem || rawItem.ownerFingerprint !== currentOwnerFingerprint) {
+        throw new Error("Nahrávka nepatří aktuálnímu účtu");
+      }
+      if (!rawItem.delivery || rawItem.delivery.state !== "ready") return { outcome: "not_ready" };
+
+      const { validateDescriptor } = require("./meeting-audio.cjs");
+      const delivery = validateDescriptor(rawItem.delivery, recordingsDirectory);
+      if (delivery.clientRecordingId !== clientRecordingId) {
+        throw new Error("Delivery nepatří této nahrávce");
+      }
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      const deliveryBeforeValidation = await stableTrashStat(delivery.filePath);
+      if (deliveryBeforeValidation === null) return { outcome: "missing" };
+      if (deliveryBeforeValidation.size !== delivery.sizeBytes) {
+        throw new Error("Delivery se během přípravy exportu změnilo");
+      }
+
+      let target;
+      try {
+        target = await freshActionTarget(
+          clientRecordingId,
+          expectedRevision,
+          expectedFileRevision,
+          { queueSnapshot: captured.queue, updateStoreState: false },
+        );
+      } catch (error) {
+        if (error?.code === "ENOENT") {
+          const missing = await fs.promises.lstat(delivery.filePath).then(
+            () => false,
+            (statError) => statError?.code === "ENOENT",
+          );
+          if (missing) return { outcome: "missing" };
+        }
+        throw error;
+      }
+      if (target.rawItem?.ownerFingerprint !== currentOwnerFingerprint
+        || target.rawItem?.delivery?.filePath !== delivery.filePath
+        || target.rawItem?.delivery?.state !== "ready"
+        || !target.derivativePaths.includes(delivery.filePath)) {
+        throw new Error("Delivery se během přípravy exportu změnilo");
+      }
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+
+      // Znovu čti disk mimo společnou serializaci a pod zámkem porovnej jen cache.
+      const latestOnDisk = await loadQueue(filePath, { includeMigration: true });
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      const latestDiskItem = latestOnDisk.queue.items.find((item) => (
+        (item.kind ?? "recording") === "recording"
+        && item.clientRecordingId === clientRecordingId
+      )) ?? null;
+      const latestDiskItemJson = latestDiskItem === null ? null : JSON.stringify(latestDiskItem);
+      if (latestDiskItemJson !== captured.rawItemJson) {
+        throw new Error("Soubory nahrávky se během přípravy akce změnily");
+      }
+      await serialize(async () => {
+        if (!loaded) return;
+        const latestMemoryItem = currentQueue?.items.find((item) => (
+          (item.kind ?? "recording") === "recording"
+          && item.clientRecordingId === clientRecordingId
+        )) ?? null;
+        const latestMemoryItemJson = latestMemoryItem === null ? null : JSON.stringify(latestMemoryItem);
+        if (latestMemoryItemJson !== captured.rawItemJson) {
+          throw new Error("Soubory nahrávky se během přípravy akce změnily");
+        }
+      });
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      const fileStat = await stableTrashStat(delivery.filePath);
+      if (fileStat === null) return { outcome: "missing" };
+      if (fileStat.size !== delivery.sizeBytes) {
+        throw new Error("Delivery se během přípravy exportu změnilo");
+      }
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      return {
+        outcome: "ready",
+        filePath: delivery.filePath,
+        manifest: target.manifest,
+        stereoTiming: { startedAt: delivery.startedAt, endedAt: delivery.endedAt },
+        deliveryIdentity: { sizeBytes: delivery.sizeBytes, sha256: delivery.sha256 },
+      };
+    })();
   }
 
   function revealRecording({ clientRecordingId, expectedRevision, expectedFileRevision, guard }) {
@@ -2036,6 +2199,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     revealRecording,
     resolveRecordingAudio,
     retry,
+    resolveRecordingExportCopyTarget,
     setRecordingDelivery,
   });
 }

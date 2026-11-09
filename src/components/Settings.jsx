@@ -63,6 +63,7 @@ const PERMISSION_LABELS = Object.freeze({
 function logoutFailureMessage(reason) {
   const messages = {
     "recording-active": "Nejdřív ukonči nahrávání.",
+    "recording-export-active": "Počkej na dokončení práce s nahrávkou.",
     "tracking-active": "Nejdřív zastav LuTrack.",
   };
   return messages[reason] ?? "Odhlášení se nepodařilo.";

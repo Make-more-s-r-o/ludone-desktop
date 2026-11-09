@@ -1,0 +1,324 @@
+{
+  "ffmpeg": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "libopus": "libopus 1.6.1",
+  "source_sha256": "74a2c5cd6c4b31d3f6094a47fa41f73d3cc87677c9c8574fb7a0fb2197233f56",
+  "files": {
+    "upload_96_180": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-96kbps-180s.webm",
+      "bytes": 2000537,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 40.010740000000006,
+      "sha256": "2e5589f5a24441703d2a979fab177f9472fb47d7fb6939bca9bbe7e66d5b55b3",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "2000537"
+        }
+      }
+    },
+    "master_96": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-180s.webm",
+      "bytes": 2000581,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 40.01162,
+      "sha256": "48a0a004c00f595ab2fcc7a3ad25572bfda461fc22a875134856dfb069b90d99",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "2000581"
+        }
+      }
+    },
+    "upload_96_60": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-96kbps-60s.webm",
+      "bytes": 667387,
+      "duration_source_s": 60,
+      "duration_decoded_s": 60.0,
+      "mb_h": 40.04322,
+      "sha256": "a13b144b95b3abf35104abdc389e21451f60b00a1dd17b0582d6d06d1f4b2002",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "60.008000",
+          "size": "667387"
+        }
+      }
+    },
+    "upload_64_180": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-64kbps-180s.webm",
+      "bytes": 1308340,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 26.166800000000002,
+      "sha256": "7f893ae9ba8bff18c60c7458947c01905947eacad60aa3a0c1e608194857f7e0",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "1308340"
+        }
+      }
+    },
+    "master_64": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-180s.webm",
+      "bytes": 1308384,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 26.167679999999997,
+      "sha256": "a60c8cfd620857a6930a2b3b399177a661140363dc53ccd72cd26b987697b148",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "1308384"
+        }
+      }
+    },
+    "upload_64_60": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-64kbps-60s.webm",
+      "bytes": 436819,
+      "duration_source_s": 60,
+      "duration_decoded_s": 60.0,
+      "mb_h": 26.20914,
+      "sha256": "474417d18f8ac3d63307edf76c1768c4341601bae2d02120843af9d4c2ffa6c8",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "60.008000",
+          "size": "436819"
+        }
+      }
+    },
+    "upload_48_180": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-48kbps-180s.webm",
+      "bytes": 991670,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 19.8334,
+      "sha256": "1c06f413071ad8b2370449ff634d131f02bb8366250832fb56fa3e2db3b73a09",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "991670"
+        }
+      }
+    },
+    "master_48": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-180s.webm",
+      "bytes": 991714,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 19.83428,
+      "sha256": "35cae1114cc49a2276d7ba22a4182850e489392c0b79815904672f5be69756ee",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "991714"
+        }
+      }
+    },
+    "upload_48_60": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-48kbps-60s.webm",
+      "bytes": 331088,
+      "duration_source_s": 60,
+      "duration_decoded_s": 60.0,
+      "mb_h": 19.86528,
+      "sha256": "97d5629cc9c94411921b317fd2763c4a6b94a2d4dac819b089afb39221d2ef16",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "60.008000",
+          "size": "331088"
+        }
+      }
+    },
+    "original_mic_128": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/original-mic-128kbps-180s.webm",
+      "bytes": 2616396,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 52.32791999999999,
+      "sha256": "bc6fbfd6f3015aea880a9dbb437c6f82f5509c5fa272363957dc993ab73794b5",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 1
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "2616396"
+        }
+      }
+    },
+    "original_system_128": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/original-system-128kbps-180s.webm",
+      "bytes": 1997040,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 39.9408,
+      "sha256": "a305d5d7e333b53ec6f6224426b5b1f2c1646b5afa2d4c63776072ff24c68d37",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "1997040"
+        }
+      }
+    },
+    "mono48_180": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/mono-16khz-48kbps-180s.webm",
+      "bytes": 1060644,
+      "duration_source_s": 180,
+      "duration_decoded_s": 180.0,
+      "mb_h": 21.21288,
+      "sha256": "e5b6f1597dc0c3662e22cde9cf9d1b34bed632bad17ac6e49ae0d4e366cd3990",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 1
+          }
+        ],
+        "format": {
+          "duration": "180.008000",
+          "size": "1060644"
+        }
+      }
+    },
+    "mono48_60": {
+      "path": "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/mono-16khz-48kbps-60s.webm",
+      "bytes": 352842,
+      "duration_source_s": 60,
+      "duration_decoded_s": 60.0,
+      "mb_h": 21.17052,
+      "sha256": "351f4ef72aa924fe33919e2d142c5e089e85866a12f180726f7cfbc628bbf886",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "opus",
+            "sample_rate": "48000",
+            "channels": 1
+          }
+        ],
+        "format": {
+          "duration": "60.008000",
+          "size": "352842"
+        }
+      }
+    }
+  },
+  "totals": {
+    "originals_mb_h": 92.26872,
+    "96": {
+      "today_with_download": 212.30182000000002,
+      "without_download_before_upload": 172.29108,
+      "without_download_after_verified_upload_and_master_release": 132.27946
+    },
+    "64": {
+      "today_with_download": 170.76999999999998,
+      "without_download_before_upload": 144.6032,
+      "without_download_after_verified_upload_and_master_release": 118.43552
+    },
+    "48": {
+      "today_with_download": 151.7698,
+      "without_download_before_upload": 131.93640000000002,
+      "without_download_after_verified_upload_and_master_release": 112.10212
+    }
+  }
+}
