@@ -1507,7 +1507,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
       && first.mtimeMs === second.mtimeMs && first.ctimeMs === second.ctimeMs;
   }
 
-  function deleteRecording({ clientRecordingId, expectedRevision, expectedFileRevision, guard, trashItem }) {
+  function deleteRecording({ clientRecordingId, expectedRevision, expectedFileRevision, guard, trashItem, reserve }) {
     if (typeof guard !== "function" || typeof trashItem !== "function") {
       throw new TypeError("Smazání vyžaduje guard a koš");
     }
@@ -1517,6 +1517,13 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
       if (target.rawItem?.state === "odesila") throw new Error("Nahrávka se právě odesílá");
       if (target.rawItem && recordingUploadLocked(target.rawItem)) {
         throw new Error("Odesílání už začalo; nahrávku nelze smazat");
+      }
+      if (reserve !== undefined && typeof reserve !== "function") {
+        throw new TypeError("Smazání vyžaduje callback rezervace souborů");
+      }
+      if (reserve) {
+        reserve();
+        if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
       }
       if (!target.rawItem?.delivery) {
         const { descriptorPaths } = require("./meeting-audio.cjs");
@@ -1586,8 +1593,12 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     expectedFileRevision,
     currentOwnerFingerprint,
     guard,
+    reserve,
   }) {
     if (typeof guard !== "function") throw new TypeError("Export kopie vyžaduje guard");
+    if (reserve !== undefined && typeof reserve !== "function") {
+      throw new TypeError("Export kopie vyžaduje callback rezervace souborů");
+    }
     if (typeof clientRecordingId !== "string" || !UUID_PATTERN.test(clientRecordingId)) {
       throw new TypeError("clientRecordingId musí být GUID");
     }
@@ -1635,6 +1646,10 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
         throw new Error("Delivery se během přípravy exportu změnilo");
       }
       if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      if (reserve) {
+        reserve();
+        if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      }
       return {
         outcome: "ready",
         filePath: delivery.filePath,

@@ -224,6 +224,7 @@ describe("poctivý výsledek odhlášení v Nastavení", () => {
 
   it.each([
     { reason: "recording-active", message: "Nejdřív ukonči nahrávání." },
+    { reason: "recording-export-active", message: "Počkej na dokončení práce s nahrávkou." },
     { reason: "tracking-active", message: "Nejdřív zastav LuTrack." },
     { reason: "offline", message: "Odhlášení se nepodařilo." },
   ])("neúspěšné lokální odhlášení zachová reakci na $reason", async ({ reason, message }) => {

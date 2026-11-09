@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
+import { chmod, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -818,6 +818,61 @@ async function prepareRecordingExport(harness, {
     });
   }
   return { event, exportRecording, finishExport, sessionId };
+}
+
+async function prepareStoredRecordingCopy(harness) {
+  await writeStoredAuthSession(harness, {
+    ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+  });
+  const { event, sessionId } = await prepareRecordingExport(harness);
+  await harness.ipcHandlers.get("recording:save-decision")(
+    event, sessionId, { decision: "keep", recordingName: "Rezervovaná porada" },
+  );
+  const row = (await harness.ipcHandlers.get("recordings:list-local")(event))
+    .items.find((candidate) => candidate.id === sessionId);
+  if (!row) throw new Error("Uložená nahrávka se nenašla");
+  return { event, row, sessionId };
+}
+
+function createPausedRecordingCopy() {
+  let resolveCopy;
+  let reportStarted;
+  const started = new Promise((resolve) => { reportStarted = resolve; });
+  const exportRecordingCopy = vi.fn(() => new Promise((resolve) => {
+    resolveCopy = resolve;
+    reportStarted();
+  }));
+  return {
+    exportRecordingCopy,
+    started,
+    finish(clientRecordingId) {
+      if (!resolveCopy) return;
+      const finish = resolveCopy;
+      resolveCopy = undefined;
+      finish({ clientRecordingId, fileName: "rezervovana-kopie.webm" });
+    },
+  };
+}
+
+async function startPausedStoredCopy(harness, gate) {
+  const fixture = await prepareStoredRecordingCopy(harness);
+  const exporting = harness.ipcHandlers.get("recording:export-copy")(
+    fixture.event,
+    fixture.sessionId,
+    {
+      queueRev: fixture.row.revision,
+      fileRev: fixture.row.fileRevision,
+      recordingName: "Rezervovaná porada",
+    },
+  );
+  const started = await Promise.race([
+    gate.started.then(() => ({ kind: "started" })),
+    exporting.then((result) => ({ kind: "finished", result }), (error) => ({ kind: "error", error })),
+  ]);
+  if (started.kind !== "started") {
+    throw new Error(`Export skončil před kopií: ${started.kind} ${JSON.stringify(started.result ?? started.error)}`);
+  }
+  return { ...fixture, exporting };
 }
 
 function systemExportError(code, message) {
@@ -6599,6 +6654,198 @@ describe("výslovná volba stránky přes exportní IPC", () => {
       .filter((name) => name.endsWith(".webm"))).toEqual([]);
     await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
     expect(harness.electron.shell.openExternal).toHaveBeenCalledTimes(0);
+  });
+});
+
+describe("rezervace uložené kopie proti souběžným zásahům", () => {
+  it("běžící kopie zastaví retenci; po uvolnění se stejná retence provede", async () => {
+    const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-export-retention-"));
+    const oldRecording = await writeOldSentRecording(userDataPath);
+    await chmod(path.join(userDataPath, "nahravky"), 0o700);
+    const gate = createPausedRecordingCopy();
+    const realCreateStore = actualRequire("./queue.cjs").createOutboundQueueStore;
+    let runRuntimeRetention;
+    let retentionPromise;
+    const createOutboundQueueStore = vi.fn((options) => {
+      runRuntimeRetention = options.onRecordingSent;
+      const store = realCreateStore(options);
+      return {
+        ...store,
+        retainRecordings(retentionOptions) {
+          retentionPromise = store.retainRecordings(retentionOptions);
+          return retentionPromise;
+        },
+      };
+    });
+    const harness = await loadMain({
+      userDataPath,
+      storedSettings: JSON.stringify({ retention: "Nemazat" }),
+      exportRecordingCopy: gate.exportRecordingCopy,
+      createOutboundQueueStore,
+    });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      expect(runRuntimeRetention).toBeTypeOf("function");
+      await harness.ipcHandlers.get("settings:set-retention")(fixture.event, "7 dní po odeslání");
+
+      runRuntimeRetention();
+      await vi.waitFor(() => expect(retentionPromise).toBeInstanceOf(Promise));
+      const blocked = await retentionPromise;
+      expect(blocked.deletedItems).toEqual([]);
+      expect(existsSync(oldRecording.microphonePath)).toBe(true);
+      expect(existsSync(oldRecording.systemPath)).toBe(true);
+
+      gate.finish(fixture.sessionId);
+      await expect(fixture.exporting).resolves.toMatchObject({ ok: true });
+      retentionPromise = undefined;
+      runRuntimeRetention();
+      await vi.waitFor(() => expect(retentionPromise).toBeInstanceOf(Promise));
+      const cleaned = await retentionPromise;
+      expect(cleaned.deletedItems).toHaveLength(1);
+      expect(existsSync(oldRecording.microphonePath)).toBe(false);
+      expect(existsSync(oldRecording.systemPath)).toBe(false);
+    } finally {
+      if (fixture) {
+        gate.finish(fixture.sessionId);
+        await fixture.exporting;
+      }
+    }
+  }, 20_000);
+
+  it("potvrzené mazání během kopie odmítne koš a zachová zdroj", async () => {
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+      await expect(harness.ipcHandlers.get("recordings:delete")(fixture.event, {
+        id: fixture.row.id,
+        queueRev: fixture.row.revision,
+        fileRev: fixture.row.fileRevision,
+      })).rejects.toThrow(/bezpečně/u);
+      expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+      const queue = JSON.parse(await readFile(
+        path.join(harness.userDataPath, "queue", "outgoing.json"),
+        "utf8",
+      ));
+      const deliveryPath = queue.items.find((item) => item.clientRecordingId === fixture.sessionId).delivery.filePath;
+      await expect(readFile(deliveryPath)).resolves.toEqual(stereoWebmBytes());
+    } finally {
+      if (fixture) {
+        gate.finish(fixture.sessionId);
+        await fixture.exporting;
+      }
+    }
+  });
+
+  it("odhlášení během kopie vrátí neúspěch a ponechá session", async () => {
+    const gate = createPausedRecordingCopy();
+    const logout = vi.fn(async () => ({ signedOutLocally: true, serverRevoked: true, reason: null }));
+    const harness = await loadMain({
+      exportRecordingCopy: gate.exportRecordingCopy,
+      createLogoutController: vi.fn(() => ({ logout })),
+    });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      await expect(harness.ipcHandlers.get("auth:logout")(fixture.event)).resolves.toEqual({
+        signedOutLocally: false,
+        serverRevoked: false,
+        reason: "recording-export-active",
+      });
+      expect(logout).not.toHaveBeenCalled();
+    } finally {
+      if (fixture) {
+        gate.finish(fixture.sessionId);
+        await fixture.exporting;
+      }
+    }
+  });
+
+  it("chyba kopie uvolní rezervaci i pro následné odhlášení", async () => {
+    const exportRecordingCopy = vi.fn().mockRejectedValue(
+      systemExportError("ENOSPC", "disk full"),
+    );
+    const logout = vi.fn(async () => ({ signedOutLocally: true, serverRevoked: true, reason: null }));
+    const harness = await loadMain({
+      exportRecordingCopy,
+      createLogoutController: vi.fn(() => ({ logout })),
+    });
+    const fixture = await prepareStoredRecordingCopy(harness);
+
+    await expect(harness.ipcHandlers.get("recording:export-copy")(
+      fixture.event,
+      fixture.sessionId,
+      {
+        queueRev: fixture.row.revision,
+        fileRev: fixture.row.fileRevision,
+        recordingName: "Rezervovaná porada",
+      },
+    )).resolves.toMatchObject({
+      ok: false,
+      recordingExported: false,
+      message: expect.stringContaining("Na disku není dost volného místa"),
+    });
+
+    await expect(harness.ipcHandlers.get("auth:logout")(fixture.event))
+      .resolves.toMatchObject({ signedOutLocally: true });
+    expect(logout).toHaveBeenCalledOnce();
+  });
+
+  it("přepnutí prostředí během kopie je odmítnuté", async () => {
+    const gate = createPausedRecordingCopy();
+    const logout = vi.fn(async () => ({ signedOutLocally: true, serverRevoked: true, reason: null }));
+    const harness = await loadMain({
+      exportRecordingCopy: gate.exportRecordingCopy,
+      createLogoutController: vi.fn(() => ({ logout })),
+    });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      await expect(harness.ipcHandlers.get("auth:switch-origin")(
+        fixture.event,
+        "https://labs.ludone.cz",
+      )).resolves.toMatchObject({
+        signedOutLocally: false,
+        reason: "recording-export-active",
+        origin: "https://app.ludone.cz",
+      });
+      await expect(harness.ipcHandlers.get("auth:set-origin")(
+        fixture.event,
+        "https://labs.ludone.cz",
+      )).rejects.toThrow(/práce se souborem/u);
+      expect(harness.ipcHandlers.get("auth:origin")(fixture.event)).toBe("https://app.ludone.cz");
+      expect(logout).not.toHaveBeenCalled();
+    } finally {
+      if (fixture) {
+        gate.finish(fixture.sessionId);
+        await fixture.exporting;
+      }
+    }
+  });
+
+  it("quit počká na dokončení už rozběhnuté kopie", async () => {
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      const quitEvent = { preventDefault: vi.fn() };
+      harness.electron.app.emit("before-quit", quitEvent);
+      expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+      expect(harness.electron.app.quit).not.toHaveBeenCalled();
+
+      gate.finish(fixture.sessionId);
+      await expect(fixture.exporting).resolves.toMatchObject({ ok: true });
+      await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    } finally {
+      if (fixture) {
+        gate.finish(fixture.sessionId);
+        await fixture.exporting;
+      }
+    }
   });
 });
 

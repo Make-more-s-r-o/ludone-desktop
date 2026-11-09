@@ -87,7 +87,7 @@ async function writeOldSentRecording(userDataPath) {
 
 it.each([
   "recordingOwnersPreparing", "recordingSessions", "recordingCompletionsInFlight",
-  "recordingExportStages", "outboundQueueSendsInFlight",
+  "recordingExportStages", "recordingFileReservations", "outboundQueueSendsInFlight",
 ])("průběžný úklid přes main chrání %s a po uvolnění uklidí stejné soubory", async operation => {
   const userDataPath = await mkdtemp(path.join(tmpdir(), "desktop-179-guard-"));
   roots.push(userDataPath);
@@ -102,6 +102,7 @@ it.each([
     recordingSessions: new Map(),
     recordingCompletionsInFlight: new Set(),
     recordingExportStages: new Map(),
+    recordingFileReservations: new Map(),
     outboundQueueSendsInFlight: 0,
     getOutboundQueueStore: async () => store,
     retentionSettingsStore: { get: () => "Ihned smazat" },

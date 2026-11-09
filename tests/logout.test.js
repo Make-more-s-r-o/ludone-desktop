@@ -560,6 +560,8 @@ describe("odhlášení", () => {
     const createLogoutController = vi.fn(() => ({ logout }));
     const hasLiveRecording = vi.fn(() => false);
     const trackingWorkBlocksQuit = vi.fn(() => false);
+    const hasRecordingExportInFlight = vi.fn(() => false);
+    const recordingFileReservations = new Map();
     const notifyPanelAuthSessionChanged = vi.fn();
     const runAuthSessionTransition = vi.fn(async (operation) => {
       notifyPanelAuthSessionChanged();
@@ -591,6 +593,8 @@ describe("odhlášení", () => {
       "authOriginChangeInFlight",
       "hasLiveRecording",
       "trackingWorkBlocksQuit",
+      "hasRecordingExportInFlight",
+      "recordingFileReservations",
       "notifyPanelAuthSessionChanged",
       "runAuthSessionTransition",
       "requireNoPayload",
@@ -611,6 +615,8 @@ describe("odhlášení", () => {
       false,
       hasLiveRecording,
       trackingWorkBlocksQuit,
+      hasRecordingExportInFlight,
+      recordingFileReservations,
       notifyPanelAuthSessionChanged,
       runAuthSessionTransition,
       requireNoPayload,
@@ -643,6 +649,23 @@ describe("odhlášení", () => {
       signedOutLocally: false,
       serverRevoked: false,
       reason: "tracking-active",
+    });
+    expect(logout).not.toHaveBeenCalled();
+
+    recordingFileReservations.set("nahravka-1", {});
+    await expect(captured.handler()).resolves.toEqual({
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "recording-export-active",
+    });
+    expect(logout).not.toHaveBeenCalled();
+    recordingFileReservations.clear();
+
+    hasRecordingExportInFlight.mockReturnValueOnce(true);
+    await expect(captured.handler()).resolves.toEqual({
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "recording-export-active",
     });
     expect(logout).not.toHaveBeenCalled();
 

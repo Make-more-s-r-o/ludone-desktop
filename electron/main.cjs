@@ -143,6 +143,9 @@ const recordingSessions = new Map();
 const recordingOwnersPreparing = new Map();
 const recordingExportStages = new Map();
 const recordingCompletionsInFlight = new Set();
+// Kopie delivery a přesun do koše drží rezervaci i mimo serializovanou operaci
+// fronty. Retence, změna identity a quit proto poznají práci až do konce I/O.
+const recordingFileReservations = new Map();
 const trackingMutationsInFlight = new Set();
 
 let tray;
@@ -587,7 +590,7 @@ function osaTrayImage(state) {
 }
 
 function osaExportFacts() {
-  let saving = recordingCompletionsInFlight.size > 0;
+  let saving = recordingCompletionsInFlight.size > 0 || recordingFileReservations.size > 0;
   let decision = false;
   let attention = false;
   for (const stage of recordingExportStages.values()) {
@@ -660,6 +663,24 @@ function hasRecordingExportInFlight() {
     if (exportStage.exportInFlight) return true;
   }
   return false;
+}
+
+function reserveRecordingFileOperation(clientRecordingId) {
+  if (recordingFileReservations.size > 0) {
+    throw new RecordingExportUserError("Jiná práce se souborem nahrávky právě probíhá; zkuste to znovu později");
+  }
+  const reservation = { clientRecordingId };
+  recordingFileReservations.set(clientRecordingId, reservation);
+  return reservation;
+}
+
+function releaseRecordingFileOperation(reservation) {
+  if (!reservation || recordingFileReservations.get(reservation.clientRecordingId) !== reservation) return;
+  recordingFileReservations.delete(reservation.clientRecordingId);
+  notifyRecordingStorageChanged();
+  refreshTray();
+  void maybeCompleteDeferredQuit();
+  void tryInstallDownloadedUpdate();
 }
 
 // Čistá funkce schválně — je to jediný způsob, jak tohle rozhodnutí otestovat bez GUI
@@ -2352,7 +2373,7 @@ async function applyOutboundQueueRetention(panelStartup) {
 function retentionFilesIdle() {
   return recordingOwnersPreparing.size === 0 && recordingSessions.size === 0
     && recordingCompletionsInFlight.size === 0 && recordingExportStages.size === 0
-    && outboundQueueSendsInFlight === 0;
+    && recordingFileReservations.size === 0 && outboundQueueSendsInFlight === 0;
 }
 async function retainOutboundRecordings() {
   const store = await getOutboundQueueStore();
@@ -3222,6 +3243,9 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
     throw new TypeError("Export uložené kopie vyžaduje GUID, název a platné revize");
   }
 
+  await outboundQueueRetentionReady;
+  ensureNewActivityIsAllowed("export kopie nahrávky");
+  let reservation = null;
   try {
     validateUploadRecordingName(options.recordingName);
     if (authOriginChangeInFlight) {
@@ -3231,7 +3255,9 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
     if (!context) {
       throw new RecordingExportUserError("Pro export kopie ověř přihlášený účet a prostředí LuDone");
     }
-    const guard = async () => recordingFileActionGuard(event)
+    const guard = async () => recordingFileActionGuard(event, null, reservation)
+      && !authOriginChangeInFlight && authLogoutsInFlight === 0
+      && authSessionTransitionPromise === null
       && await isRecordingVerificationContextCurrent(context);
     if (await guard() !== true) {
       throw new RecordingExportUserError("Akci exportu už nelze bezpečně potvrdit");
@@ -3242,6 +3268,9 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
       expectedFileRevision: options.fileRev,
       currentOwnerFingerprint: context.ownerFingerprint,
       guard,
+      reserve: () => {
+        reservation = reserveRecordingFileOperation(clientRecordingId);
+      },
     });
     if (target?.outcome === "missing") {
       return {
@@ -3270,6 +3299,14 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
       stagePath: target.filePath,
       stereoTiming: target.stereoTiming,
     });
+    if (await guard() !== true) {
+      return {
+        ok: false,
+        recordingExported: true,
+        fileName: result.fileName,
+        message: "Kopie byla uložena, ale přihlášení nebo stav nahrávky se změnil. Zkontroluj kopii ve Stažených.",
+      };
+    }
     requireTrustedSender(event, ["panel", "settings"]);
     console.log(`[recording-export] Výslovně uložena kopie ${result.clientRecordingId}.`);
     return { ok: true, clientRecordingId, fileName: result.fileName };
@@ -3284,6 +3321,8 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
       recordingExported: false,
       message: `${detail} Nahrávka ani ostatní soubory nebyly touto akcí smazány.`,
     };
+  } finally {
+    releaseRecordingFileOperation(reservation);
   }
 }
 
@@ -3535,11 +3574,16 @@ function validRecordingFileActionPayload(payload) {
       || (typeof payload.queueRev === "string" && QUEUE_ITEM_REVISION_PATTERN.test(payload.queueRev)))
     && typeof payload.fileRev === "string" && QUEUE_ITEM_REVISION_PATTERN.test(payload.fileRev);
 }
-function recordingFileActionGuard(event, deletingStage = null) {
+function recordingFileActionGuard(event, deletingStage = null, reservation = null) {
   try {
     requireTrustedSender(event, ["panel", "settings"]);
+    const reservationIsIdle = recordingFileReservations.size === 0 || (
+      reservation !== null && recordingFileReservations.size === 1
+      && recordingFileReservations.get(reservation.clientRecordingId) === reservation
+    );
     return recordingOwnersPreparing.size === 0 && recordingSessions.size === 0
       && recordingCompletionsInFlight.size === 0
+      && reservationIsIdle
       && (recordingExportStages.size === 0 || (
         deletingStage !== null && recordingExportStages.size === 1
         && recordingExportStages.get(deletingStage.sessionId) === deletingStage
@@ -3553,6 +3597,7 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
   if (extraPayload.length > 0 || !validRecordingFileActionPayload(payload)) {
     throw new TypeError("Kanál recordings:delete očekává GUID a platné revize");
   }
+  ensureNewActivityIsAllowed("mazání nahrávky");
   const snapshot = await (await getOutboundQueueStore()).listLocalRecordings(null);
   const row = snapshot.items.find((item) => item.id === payload.id
     && item.revision === payload.queueRev && item.fileRevision === payload.fileRev);
@@ -3577,13 +3622,17 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
   // Výjimka patří pouze potvrzenému GUID. Fáze zůstává evidovaná až do
   // úspěchu koše; při chybě lze rozhodnutí opakovat bez odemčení exportu.
   if (deletingStage) deletingStage.deleteInFlight = true;
+  let reservation = null;
   try {
     const result = await (await getOutboundQueueStore()).deleteRecording({
       clientRecordingId: payload.id,
       expectedRevision: payload.queueRev,
       expectedFileRevision: payload.fileRev,
       trashItem: (filePath) => shell.trashItem(filePath),
-      guard: async () => recordingFileActionGuard(event, deletingStage),
+      guard: async () => recordingFileActionGuard(event, deletingStage, reservation),
+      reserve: () => {
+        reservation = reserveRecordingFileOperation(payload.id);
+      },
     });
     if (result.outcome === "deleted" && deletingStage) {
       deletingStage.releaseRequested = true;
@@ -3591,6 +3640,7 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
     }
     return result;
   } finally {
+    releaseRecordingFileOperation(reservation);
     if (deletingStage) deletingStage.deleteInFlight = false;
   }
 });
@@ -3989,7 +4039,8 @@ function recordingInterruptionIsBlocked() {
   return recordingOwnersPreparing.size > 0
     || recordingSessions.size > 0
     || recordingCompletionsInFlight.size > 0
-    || recordingExportStages.size > 0;
+    || recordingExportStages.size > 0
+    || recordingFileReservations.size > 0;
 }
 
 function recordingExportAwaitsUserDecision() {
@@ -4012,6 +4063,7 @@ function quitActivitySnapshot() {
   const pendingExports = recordingExportStages.size;
   return `přípravy=${recordingOwnersPreparing.size}, session=${recordingSessions.size}, `
     + `dokončení=${recordingCompletionsInFlight.size}, finalizace-exportu=${pendingExports}, `
+    + `rezervace-souboru=${recordingFileReservations.size}, `
     + `mutace-lutrack=${trackingMutationsInFlight.size}, lutrack=${appState.trackingOwners.size}`;
 }
 
@@ -4179,6 +4231,10 @@ function armDeferredQuitTimeout(request) {
     if (request !== deferredQuitRequest || request.committed) return;
     if (request.userConfirmationRequired || recordingExportAwaitsUserDecision()) {
       console.warn("[quit] Ukončení zůstává odložené, dokud uživatel nerozhodne o uložené nahrávce.");
+      return;
+    }
+    if (recordingFileReservations.size > 0) {
+      console.warn("[quit] Ukončení zůstává odložené do dokončení práce se souborem nahrávky.");
       return;
     }
     commitDeferredQuit({
@@ -5258,6 +5314,9 @@ function requireIdleAuthOriginChange({ allowSignedIn = false } = {}) {
   if (trackingWorkBlocksQuit()) {
     throw new Error("Prostředí nelze změnit, dokud běží LuTrack");
   }
+  if (recordingFileReservations.size > 0) {
+    throw new Error("Prostředí nelze změnit během práce se souborem nahrávky");
+  }
   if (hasRecordingExportInFlight()) {
     throw new Error("Prostředí nelze změnit během handover exportu");
   }
@@ -5390,10 +5449,19 @@ function blockedAuthLogoutResult() {
       reason: "tracking-active",
     };
   }
+  if (recordingFileReservations.size > 0 || hasRecordingExportInFlight()) {
+    return {
+      signedOutLocally: false,
+      serverRevoked: false,
+      reason: "recording-export-active",
+    };
+  }
   return null;
 }
 
 async function executeAuthLogout() {
+  const blocked = blockedAuthLogoutResult();
+  if (blocked !== null) return blocked;
   authSessionGeneration += 1;
   invalidateRecordingVerifier();
   invalidateUploadCompanySelection();
