@@ -205,3 +205,58 @@ Každá změna implementace byla samostatně vrácena, cílený test spuštěn a
 | N3 | Kontrola otevřeného a pojmenovaného dočasného inode odstraněna. | 3 červené: cizí soubor, hardlink i symlink byly zveřejněny jako úspěšný export. |
 
 Soubory `electron/main.cjs`, `electron/queue.cjs` a `electron/recording-export.cjs` byly po sabotážích porovnány s kontrolními kopiemi přes `cmp -s`; všechny tři porovnání: exit 0.
+
+## Kolo 7 — opravy nálezů N1–N3 (9. 11. 2026)
+
+Pracovní adresář byl `/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost`; `HEAD` ověřený čtením worktree metadat byl `08949b1f4c66616d938b8e8eb351855ad053ccd5`. Nebyl spuštěn žádný příkaz Git, MCP, subagent ani instalace balíčků.
+Příkazy testů běžely pod Node `v24.22.2`.
+
+- **N1 — publikace:** export vytváří přes `fs.mkdtemp` skrytý `.ludone-export-*` adresář ve Stažených s právy `0700`; soubor uvnitř má `0600`. Před hardlinkem do cílového jména bez přepisu kontroluje `dev+ino` otevřeného deskriptoru proti pojmenovanému souboru. Cílový soubor, který již existuje, se ověří a nepřepisuje.
+- **N2 — úklid:** odstraní jen ověřené dočasné jméno uvnitř vlastního adresáře a prázdný adresář odstraní přes `rmdir`, bez rekurze. Při nesouladu identity nebo práv úklid přeskočí a zaloguje; test s cizím obsahem ověřuje, že zůstane zachován.
+- **N3 — identita:** fáze exportu se při zahájení i těsně před publikací váže na stabilní fingerprint účtu a origin. `queueOwnerFingerprint` už rozhodnutí o přímé kopii neovlivňuje. Přechod scope `mcp:read` → `nahravky:upload` stejného účtu export povolí; jiný účet i prostředí se odmítnou.
+
+### Zbytkové riziko podle modelu hrozby
+
+Proces pod stejným uživatelským účtem může v reálném čase vyměnit soubor uvnitř soukromého dočasného adresáře i po poslední kontrole inode. Akceptovaný test tuto situaci reprodukuje: link může zveřejnit nahrazený obsah a úklid jeho jméno ponechá, protože inode nesouhlasí. Tato obrana je mimo stanovený model hrozby; stejný proces má přímý přístup k nahrávkám v uživatelském profilu. Adresář `0700` chrání proti jiným uživatelům systému a izoluje souběžné exporty aplikace.
+
+### Cílené testy
+
+Doslovný příkaz a výsledek:
+
+~~~text
+$ PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/vitest run tests/recording-export.test.js tests/queue-wiring.test.js tests/recordings-dashboard.test.js tests/recording-card.test.js tests/logout.test.js tests/runtime-retention-wiring.test.js tests/recording-actions.test.js --maxWorkers=2
+
+ Test Files  7 passed (7)
+      Tests  614 passed | 1 skipped (615)
+exit_code: 0
+~~~
+
+Typecheck `PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/tsc --noEmit -p jsconfig.json`: prázdný výstup, exit 0.
+
+ESLint změněných JavaScriptových souborů `PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/eslint electron/recording-export.cjs electron/main.cjs tests/recording-export.test.js tests/queue-wiring.test.js scripts/akceptace/export-kopie-181.mjs`: prázdný výstup, exit 0.
+
+### Akceptační příkaz a doslovný výpis
+
+~~~text
+$ PATH=/opt/homebrew/opt/node@24/bin:$PATH node scripts/akceptace/export-kopie-181.mjs
+PASS: N3: stabilní identita účtu a prostředí panelové exportní fáze — 4 testů, exit 0.
+PASS: Zachovaná kontrola fronty: exportní čtení neblokuje serializované operace — 1 testů, exit 0.
+PASS: N1+N2: soukromý staging, bezpečný úklid a známé zbytkové riziko — 6 testů, exit 0.
+PASS: Nálezy kola 4: quit po timeoutu a poslední upravený název — 3 testů, exit 0.
+PASS: Atomický export: hotový soubor, metadata shodné kopie a kolize — 4 testů, exit 0.
+PASS: Přerušení: bariéry zápisu, publikace, timeout a ukončení — 6 testů, exit 0.
+PASS: Varianta A: žádná automatická kopie a explicitní export zůstává dostupný — 6 testů, exit 0.
+exit_code: 0
+~~~
+
+Skript pokryl 30 testů v sedmi skupinách.
+
+### Sabotáže N1–N3
+
+Každá sabotáž byla samostatná. Po běhu jsem zdroj obnovil kontrolní kopií a ověřil `cmp -s` s exit 0.
+
+| Nález | Sabotáž a cílený test | Červených | Obnova |
+|---|---|---:|---|
+| N1 | Dočasný soubor se vrátil přímo do Stažených; test ověřující privátní staging odmítl jeho umístění. | 1 | `electron/recording-export.cjs`; `cmp -s`: exit 0 |
+| N2 | `rmdir` byl nahrazen rekurzivním `rm`; test zjistil smazání cizího souboru v adresáři. | 1 | `electron/recording-export.cjs`; `cmp -s`: exit 0 |
+| N3 | Do vazby exportu bylo vráceno porovnání scope-závislého fingerprintu fronty; test přechodu scope stejného účtu zčervenal. | 1 | `electron/main.cjs`; `cmp -s`: exit 0 |

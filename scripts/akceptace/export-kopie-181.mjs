@@ -9,19 +9,19 @@ const vitest = resolve(root, "node_modules/vitest/vitest.mjs");
 
 const checks = [
   {
-    name: "N1: identita a prostředí panelové exportní fáze",
+    name: "N3: stabilní identita účtu a prostředí panelové exportní fáze",
     files: ["tests/queue-wiring.test.js"],
-    pattern: /po logoutu účtu A a loginu účtu B odmítne export staré fáze bez souboru|odmítne fázi vytvořenou v jiném prostředí|před publikací znovu ověří účet fáze bez spoléhání na generační čítač/u.source,
+    pattern: /po logoutu účtu A a loginu účtu B odmítne export staré fáze bez souboru|odmítne fázi vytvořenou v jiném prostředí|povolí export stejného účtu po změně scope z mcp:read na nahravky:upload|před publikací znovu ověří účet fáze přes stabilní otisk identity/u.source,
   },
   {
-    name: "N2: exportní čtení fronty neblokuje serializované operace",
+    name: "Zachovaná kontrola fronty: exportní čtení neblokuje serializované operace",
     files: ["tests/queue-wiring.test.js"],
     pattern: /pozastavené čtení exportu neblokuje list ani bezpečný restart po abortu/u.source,
   },
   {
-    name: "N3: výměna dočasného jména za cizí inode nebo alias zdroje",
+    name: "N1+N2: soukromý staging, bezpečný úklid a známé zbytkové riziko",
     files: ["tests/recording-export.test.js"],
-    pattern: /před zveřejněním odmítne nahrazené dočasné jméno za cizím souborem|před zveřejněním odmítne nahrazené dočasné jméno za hardlinkem zdroje|před zveřejněním odmítne nahrazené dočasné jméno za symlinkem zdroje/u.source,
+    pattern: /zveřejní jen hotový soubor přes nový režim 0600 a zdroj nechá beze změny|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za cizím souborem|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za hardlinkem zdroje|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za symlinkem zdroje|úklid nemaže cizí obsah soukromého adresáře ani nic mimo něj|zaznamená výměnu stejným uživatelem po poslední kontrole uvnitř soukromého adresáře/u.source,
   },
   {
     name: "Nálezy kola 4: quit po timeoutu a poslední upravený název",

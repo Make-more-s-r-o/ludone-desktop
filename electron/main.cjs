@@ -2681,14 +2681,15 @@ async function recordingExportStageMatchesCurrentIdentity(exportStage) {
     || authOriginChangeInFlight || authSessionTransitionPromise !== null) return false;
   const identity = await readRecordingExportIdentitySnapshot();
   if (!identity) return false;
+  // Kopie se váže na účet a prostředí; dostupnost fingerprintu fronty závisí
+  // na scope a nesmí po jeho změně odříznout export stejného účtu.
   return generation === authSessionGeneration
     && issuer === resolveCurrentAuthIssuer()
     && authAttemptsInFlight === 0 && authLogoutsInFlight === 0
     && !authOriginChangeInFlight && authSessionTransitionPromise === null
     && identity.generation === generation
     && identity.issuer === issuer
-    && exportStage.ownerIdentityFingerprint === identity.identityFingerprint
-    && exportStage.ownerFingerprint === identity.queueOwnerFingerprint;
+    && exportStage.ownerIdentityFingerprint === identity.identityFingerprint;
 }
 
 async function readUsableQueueOwnerFingerprint() {

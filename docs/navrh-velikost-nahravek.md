@@ -35,13 +35,38 @@ zastaví další práci. Volitelná kopie není povinnou agendou aplikace a jej�
 ukončení ani úklid nezdržují quit nebo updater.
 
 Zdroj se otevírá jen pro čtení přes ověřený deskriptor. Kopie se streamuje do
-nového náhodného dočasného souboru ve Stažených s právy `0600`; velikost a SHA-256
-se ověří před synchronizací a atomickým hardlinkem pod finálním názvem. Zrušení
-před předáním hardlinku finální soubor nevytvoří. Pokud už byla atomická operace
+nového souboru s právy `0600` v soukromém skrytém adresáři ve Stažených, který
+vzniká přes `fs.mkdtemp` s právy `0700`; velikost a SHA-256 se ověří před
+synchronizací a atomickým hardlinkem pod finálním názvem. Zrušení před předáním
+hardlinku finální soubor nevytvoří. Pokud už byla atomická operace
 předána filesystému, smí doběhnout pouze jako úplný ověřený soubor; výsledek
 zůstane označený jako nejistý, dokud se operace nevypořádá. Finální soubor se
 kvůli zrušení nikdy dodatečně nemaže. Úklid kontroluje identitu a odstraňuje jen
-dočasné jméno vytvořené daným pokusem; existující export ani zdroj nemění.
+dočasný soubor vytvořený daným pokusem, pak volá `rmdir` bez rekurze; existující
+export ani zdroj nemění.
+
+### Bezpečnost exportu
+
+Export nejprve ověří Stažené a vytvoří v nich skrytý adresář `.ludone-export-*`
+přes `fs.mkdtemp`. Adresář má práva `0700`, dočasný soubor `0600`. Před
+publikací se porovná `dev` a `ino` otevřeného deskriptoru s pojmenovaným souborem.
+Finální hardlink se vytvoří operací, která existující cíl nepřepíše. Úklid
+odstraní pouze ověřené dočasné jméno uvnitř daného adresáře a prázdný adresář
+samotný přes `rmdir`; při nesouhlasu identity nebo práv se úklid přeskočí a
+zapíše varování. Nikdy nepoužívá rekurzivní mazání.
+
+Vazba panelové fáze exportu se při zahájení i těsně před publikací ověřuje
+stabilním otiskem účtu a originem prostředí. Dostupnost otisku vlastníka fronty
+se může změnit se scope oprávnění; tato změna sama o sobě nepřepíná účet fáze.
+Kontrola vlastníka položky fronty zůstává samostatnou podmínkou fronty.
+
+Zbytkové riziko: proces běžící pod stejným uživatelským účtem může během exportu
+vyměnit jméno uvnitř soukromého adresáře. Tato situace je mimo model hrozby;
+stejný proces má přímý přístup i k nahrávkám v uživatelském profilu. Regresní
+test výměnu po poslední kontrole reprodukuje a zaznamenává, že v případě mimo
+tento model může být zveřejněn nahrazený obsah.
+Adresář s právy `0700` chrání staging před ostatními uživateli systému a izoluje
+souběžné exporty aplikace.
 
 Při ukončení procesu nebo zaseknutém filesystému může vlastní dočasný soubor
 zůstat ve Stažených. Aplikace jej při příštím spuštění nehledá ani hromadně
@@ -67,7 +92,7 @@ systém vpravo, bez druhého ztrátového překódování
 | `Stažené/LuDone-<čas>-<název>-<UUID>.webm` | Bajtová kopie uploadového souboru, žádné další kódování. | **Před variantou A:** `send`, `keep` i automatické odeslání vytvářely kopii. **Po variantě A:** vznikne jen výslovným „Exportovat kopii…“ v panelu nebo detailu uložené nahrávky. Není to kopie každého rozpracovaného záznamu ihned po startu. Aplikační retence tuto cizí složku neuklízí; kopie zůstává do zásahu uživatele. | `electron/main.cjs` (`recording:export-copy`); `electron/recording-export.cjs`; `src/features/recording/RecordingCard.jsx`; `src/features/recordings/RecordingsDashboard.jsx` |
 | `<prefix>.manifest.json`, `<prefix>.manifest.json.meeting-audio-v1.json` | JSON identity, časy, velikosti, SHA-256 a stav přípravy. Druhý soubor popisuje delivery a master. Bez bitrate. | Obnovovací manifest ještě před prvním chunkem, poté atomicky aktualizovaný. Delivery sidecar po dokončení masteru, následně ready. Existující retence je zahrnuje do ověřeného úklidu. | `electron/main.cjs:1627`, `:1641`, `:2861`; `src/lib/manifest.js:132`; `electron/meeting-audio.cjs:49`, `:183`, `:623`; `electron/retention.cjs:350` |
 | `<data>/queue/outgoing.json` | Sdílený JSON všech položek fronty; **neobsahuje další kopii audia**, jen cesty a stav. | Zařazení a každý postup se atomicky ukládají přes `.tmp`, fsync a rename. Neodeslané soubory jsou stále tytéž originály/master/delivery v `nahravky/`. Odstranění dokončené položky navazuje na existující retenci. | `electron/main.cjs:2228`; `electron/queue.cjs:393`; `src/lib/queue.js:330`; `electron/retention.cjs:475` |
-| `.media-encoder-*/<UUID>.webm`, JSON `.tmp`, případný `.recovered-upload-v1.json` | Pracovní WebM a malé JSON soubory při převodu, atomickém zápisu nebo obnově. | Převod nejprve zapíše celý výstup do soukromého adresáře; publikuje jej **hardlinkem**, pak odstraní dočasné jméno. Po pádu mohou zbýt pozůstatky. Obnovovací sidecar vzniká jen při recovery. | `electron/media-encoder.cjs:286`, `:319`, `:348`; `electron/meeting-audio.cjs:183`; `electron/queue.cjs:642`; `electron/retention.cjs:12` |
+| `.media-encoder-*/<UUID>.webm`, JSON `.tmp`, `.ludone-export-*/export.tmp`, případný `.recovered-upload-v1.json` | Pracovní WebM a malé JSON soubory při převodu, atomickém zápisu, obnově nebo ručním exportu. | Převod i ruční export nejprve zapisují do soukromého adresáře a publikují výstup **hardlinkem**, potom odstraní dočasné jméno a prázdný adresář bez rekurze. Po pádu mohou zbýt pozůstatky; aplikace je nehledá ani hromadně neodstraňuje. Obnovovací sidecar vzniká jen při recovery. | `electron/media-encoder.cjs:286`, `:319`, `:348`; `electron/recording-export.cjs`; `electron/meeting-audio.cjs:183`; `electron/queue.cjs:642`; `electron/retention.cjs:12` |
 | Uploadové části | Buffery v RAM, formát jsou úseky téhož WebM; žádné další trvalé lokální `.part` audio. | Čtou se z delivery při odesílání a mizí z paměti. Serverové části nejsou lokální úložiště Macu. | `electron/upload-client.cjs:824`, `:938` |
 
 Existující retence vybírá pouze `odeslano` s platným `sentAt`, po uplynutí zvolené

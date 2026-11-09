@@ -6836,7 +6836,31 @@ describe("identita panelové exportní fáze", () => {
       .filter((name) => name.endsWith(".webm"))).toEqual([]);
   });
 
-  it("před publikací znovu ověří účet fáze bez spoléhání na generační čítač", async () => {
+  it("povolí export stejného účtu po změně scope z mcp:read na nahravky:upload", async () => {
+    const harness = await loadMain();
+    const identity = { name: "Účet A", email: "a@ludone.cz" };
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession({ identity, scope: "mcp:read" }),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession({ identity, scope: "nahravky:upload" }),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    const result = await harness.ipcHandlers.get("recording:export-copy")(event, sessionId, {
+      recordingName: "Fáze stejného účtu",
+    });
+
+    expect(result).toMatchObject({ ok: true });
+    const downloadsDirectory = harness.electron.app.getPath("downloads");
+    const exported = (await readdir(downloadsDirectory)).filter((name) => name.endsWith(".webm"));
+    expect(exported).toHaveLength(1);
+    await expect(readFile(path.join(downloadsDirectory, exported[0]))).resolves.toEqual(stereoWebmBytes());
+  });
+
+  it("před publikací znovu ověří účet fáze přes stabilní otisk identity", async () => {
     const gate = createPausedRecordingCopy();
     const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
     await writeStoredAuthSession(harness, {

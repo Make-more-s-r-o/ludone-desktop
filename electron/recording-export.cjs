@@ -1,4 +1,4 @@
-const { createHash, randomBytes } = require("node:crypto");
+const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { Transform, Writable } = require("node:stream");
@@ -457,6 +457,10 @@ function validateTestHooks(value) {
   return value;
 }
 
+function logTemporaryCleanupWarning(message) {
+  console.warn(`[recording-export] Úklid soukromého dočasného exportu přeskočen: ${message}.`);
+}
+
 /**
  * @param {object} options
  * @param {string} options.downloadsDirectory
@@ -551,6 +555,8 @@ async function exportRecordingCopy({
   let sourceStream;
   let transformStream;
   let outputStream;
+  let temporaryDirectoryPath;
+  let temporaryDirectoryIdentity;
   let temporaryPath;
   let temporaryIdentity;
   let temporaryCleanupPromise;
@@ -561,21 +567,66 @@ async function exportRecordingCopy({
     outputStream?.destroy();
   };
   const cleanupTemporary = () => {
-    if (!temporaryPath || !temporaryIdentity) return Promise.resolve(false);
+    if (!temporaryDirectoryPath || !temporaryDirectoryIdentity) return Promise.resolve(false);
     if (temporaryCleanupPromise) return temporaryCleanupPromise;
     temporaryCleanupPromise = (async () => {
-      await hooks.beforeCleanup?.({ filePath: temporaryPath });
-      let current;
+      await hooks.beforeCleanup?.({ filePath: temporaryPath, directoryPath: temporaryDirectoryPath });
+      const privateDirectoryPath = path.resolve(temporaryDirectoryPath);
+      if (path.dirname(privateDirectoryPath) !== downloadsRoot
+        || !path.basename(privateDirectoryPath).startsWith(".ludone-export-")) {
+        logTemporaryCleanupWarning("adresář neleží přímo ve Stažených pod vlastním skrytým názvem");
+        return false;
+      }
+      if (temporaryPath && temporaryIdentity) {
+        if (path.dirname(path.resolve(temporaryPath)) !== privateDirectoryPath) {
+          logTemporaryCleanupWarning("dočasný soubor leží mimo vlastní adresář");
+          return false;
+        }
+        let current;
+        try {
+          current = await fs.promises.lstat(temporaryPath);
+        } catch (error) {
+          if (error?.code !== "ENOENT") {
+            logTemporaryCleanupWarning("dočasný soubor nelze bezpečně ověřit");
+            return false;
+          }
+        }
+        if (current) {
+          if (!current.isFile() || current.isSymbolicLink()
+            || !sameFileIdentity(temporaryIdentity, fileIdentity(current))) {
+            logTemporaryCleanupWarning("identita dočasného souboru se změnila");
+            return false;
+          }
+          try {
+            await fs.promises.unlink(temporaryPath);
+          } catch {
+            logTemporaryCleanupWarning("dočasný soubor nelze odstranit");
+            return false;
+          }
+        }
+      }
+      let currentDirectory;
       try {
-        current = await fs.promises.lstat(temporaryPath);
+        currentDirectory = await fs.promises.lstat(temporaryDirectoryPath);
       } catch (error) {
         if (error?.code === "ENOENT") return false;
-        throw error;
+        logTemporaryCleanupWarning("soukromý adresář nelze bezpečně ověřit");
+        return false;
       }
-      if (!current.isFile() || current.isSymbolicLink()) return false;
-      if (!sameFileIdentity(temporaryIdentity, fileIdentity(current))) return false;
-      await fs.promises.unlink(temporaryPath);
-      return true;
+      if (!currentDirectory.isDirectory() || currentDirectory.isSymbolicLink()
+        || (currentDirectory.mode & 0o777) !== 0o700
+        || !sameFileIdentity(temporaryDirectoryIdentity, fileIdentity(currentDirectory))) {
+        logTemporaryCleanupWarning("identita nebo práva soukromého adresáře se změnily");
+        return false;
+      }
+      try {
+        await fs.promises.rmdir(temporaryDirectoryPath);
+        return true;
+      } catch (error) {
+        if (error?.code === "ENOENT") return false;
+        logTemporaryCleanupWarning("soukromý adresář není prázdný nebo jej nelze odstranit");
+        return false;
+      }
     })();
     temporaryCleanupPromise.catch(() => {});
     return temporaryCleanupPromise;
@@ -655,7 +706,56 @@ async function exportRecordingCopy({
       void downloadsHandle.close().catch(() => {});
     }
 
-    temporaryPath = path.join(downloadsRoot, `.ludone-export-${randomBytes(24).toString("hex")}.tmp`);
+    const temporaryDirectoryReady = fs.promises.mkdtemp(path.join(downloadsRoot, ".ludone-export-"))
+      .then(async (directoryPath) => {
+        temporaryDirectoryPath = directoryPath;
+        const stats = await fs.promises.lstat(directoryPath).catch((error) => {
+          logTemporaryCleanupWarning("nový soukromý adresář nelze ověřit");
+          throw error;
+        });
+        temporaryDirectoryIdentity = fileIdentity(stats);
+        if (!stats.isDirectory() || stats.isSymbolicLink() || (stats.mode & 0o777) !== 0o700) {
+          throw new Error("Soukromý dočasný adresář nemá bezpečný typ nebo práva 0700");
+        }
+        return directoryPath;
+      });
+    temporaryDirectoryReady.catch(() => {});
+    temporaryDirectoryPath = await awaitAbortable(temporaryDirectoryReady, signal, state, () => {
+      void temporaryDirectoryReady.then(() => cleanupTemporary(), () => {});
+    });
+    const temporaryDirectoryStats = await awaitAbortable(
+      fs.promises.lstat(temporaryDirectoryPath),
+      signal,
+      state,
+    );
+    if (!temporaryDirectoryStats.isDirectory() || temporaryDirectoryStats.isSymbolicLink()
+      || (temporaryDirectoryStats.mode & 0o777) !== 0o700
+      || !sameFileIdentity(temporaryDirectoryIdentity, fileIdentity(temporaryDirectoryStats))) {
+      throw new Error("Soukromý dočasný adresář se během přípravy změnil");
+    }
+    const temporaryDirectoryOpenPromise = fs.promises.open(temporaryDirectoryPath,
+      fs.constants.O_RDONLY
+        | (fs.constants.O_NOFOLLOW ?? 0)
+        | (fs.constants.O_DIRECTORY ?? 0));
+    const temporaryDirectoryHandle = await awaitAbortable(
+      temporaryDirectoryOpenPromise,
+      signal,
+      state,
+      () => { void temporaryDirectoryOpenPromise.then((lateHandle) => lateHandle.close(), () => {}); },
+    );
+    try {
+      const openedTemporaryDirectory = await awaitAbortable(temporaryDirectoryHandle.stat(), signal, state);
+      throwIfAborted(signal, state);
+      if (!openedTemporaryDirectory.isDirectory()
+        || (openedTemporaryDirectory.mode & 0o777) !== 0o700
+        || !sameFileIdentity(temporaryDirectoryIdentity, fileIdentity(openedTemporaryDirectory))) {
+        throw new Error("Soukromý dočasný adresář se během otevření změnil");
+      }
+    } finally {
+      void temporaryDirectoryHandle.close().catch(() => {});
+    }
+
+    temporaryPath = path.join(temporaryDirectoryPath, "export.tmp");
     const temporaryOpenPromise = fs.promises.open(temporaryPath,
       fs.constants.O_CREAT
         | fs.constants.O_EXCL
@@ -755,10 +855,10 @@ async function exportRecordingCopy({
     if (mayPublish !== true) throw new Error("Export už nelze bezpečně zveřejnit");
     throwIfAborted(signal, state);
 
-    // Cizí proces mohl během kopírování vyměnit dočasné jméno. Ověř, že
-    // otevřený deskriptor i cesta stále ukazují na náš ověřený inode; lstat
-    // záměrně neprochází případný symlink. Po kontrole už nesmí být žádný await
-    // před předáním atomického linku.
+    // Náhodný adresář s právy 0700 drží dočasné jméno mimo dosah jiných uživatelů
+    // i souběžných exportních pokusů aplikace. Před publikací ověř, že otevřený
+    // deskriptor a pojmenovaný soubor stále označují stejný inode. lstat
+    // záměrně neprochází případný symlink; po této kontrole následuje přímo link.
     const temporaryOpened = regularFileIdentity(
       await awaitAbortable(temporaryHandle.stat(), signal, state),
       "Dočasný export",

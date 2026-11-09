@@ -884,17 +884,37 @@ describe("atomický a přerušitelný export kopie", () => {
     const bytesBefore = await readFile(options.stagePath);
     const chmodSpy = vi.spyOn(fs, "chmod");
     const unlinkSpy = vi.spyOn(fs, "unlink");
+    const rmdirSpy = vi.spyOn(fs, "rmdir");
+    let temporaryDirectoryPath;
 
     try {
-      const result = await exportRecordingCopy(options);
+      const result = await exportRecordingCopy({
+        ...options,
+        testHooks: {
+          beforePublish: async ({ temporaryPath }) => {
+            temporaryDirectoryPath = path.dirname(temporaryPath);
+            const directory = await fs.lstat(temporaryDirectoryPath);
+            expect(path.dirname(temporaryDirectoryPath)).toBe(options.downloadsDirectory);
+            expect(path.basename(temporaryDirectoryPath)).toMatch(/^\.ludone-export-/u);
+            expect(directory.isDirectory()).toBe(true);
+            expect(directory.mode & 0o777).toBe(0o700);
+            expect(await readdir(options.downloadsDirectory)).toEqual([
+              path.basename(temporaryDirectoryPath),
+            ]);
+            expect(await readdir(temporaryDirectoryPath)).toEqual([path.basename(temporaryPath)]);
+          },
+        },
+      });
       const target = await fs.lstat(result.filePath);
       expect(await readFile(result.filePath)).toEqual(bytesBefore);
       expect(await readFile(options.stagePath)).toEqual(bytesBefore);
       expect(target.mode & 0o777).toBe(0o600);
       expect(await readdir(options.downloadsDirectory)).toEqual([result.fileName]);
       expect(chmodSpy).not.toHaveBeenCalled();
-      expect(unlinkSpy.mock.calls.every(([file]) => path.basename(String(file)).startsWith(".ludone-export-")))
-        .toBe(true);
+      expect(unlinkSpy.mock.calls.map(([file]) => path.dirname(String(file))))
+        .toEqual([temporaryDirectoryPath]);
+      expect(rmdirSpy.mock.calls.map(([directory]) => String(directory)))
+        .toEqual([temporaryDirectoryPath]);
       expect(await fs.lstat(options.stagePath)).toMatchObject({
         dev: sourceBefore.dev,
         ino: sourceBefore.ino,
@@ -905,6 +925,7 @@ describe("atomický a přerušitelný export kopie", () => {
     } finally {
       chmodSpy.mockRestore();
       unlinkSpy.mockRestore();
+      rmdirSpy.mockRestore();
     }
   });
 
@@ -1002,40 +1023,120 @@ describe("atomický a přerušitelný export kopie", () => {
     ["cizím souborem", "foreign"],
     ["hardlinkem zdroje", "hardlink"],
     ["symlinkem zdroje", "symlink"],
-  ])("před zveřejněním odmítne nahrazené dočasné jméno za %s", async (_label, replacement) => {
+  ])("před zveřejněním odmítne nahrazené jméno v soukromém adresáři za %s", async (_label, replacement) => {
     const options = await prepare();
     const fs = await import("node:fs/promises");
     const sourceBytes = await readFile(options.stagePath);
     let replacedPath;
+    let temporaryDirectoryPath;
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await expect(exportRecordingCopy({
-      ...options,
-      testHooks: {
-        beforePublish: async ({ temporaryPath }) => {
-          const temporaryName = (await readdir(options.downloadsDirectory))
-            .find((name) => name.endsWith(".tmp"));
-          replacedPath = temporaryPath ?? path.join(options.downloadsDirectory, temporaryName);
-          await fs.unlink(replacedPath);
-          if (replacement === "foreign") {
-            await writeFile(temporaryPath, Buffer.from("cizí obsah"));
-          } else if (replacement === "hardlink") {
-            await fs.link(options.stagePath, temporaryPath);
-          } else {
-            await fs.symlink(options.stagePath, temporaryPath);
-          }
+    try {
+      await expect(exportRecordingCopy({
+        ...options,
+        testHooks: {
+          beforePublish: async ({ temporaryPath }) => {
+            replacedPath = temporaryPath;
+            temporaryDirectoryPath = path.dirname(temporaryPath);
+            const directory = await fs.lstat(temporaryDirectoryPath);
+            expect(path.dirname(temporaryDirectoryPath)).toBe(options.downloadsDirectory);
+            expect(directory.mode & 0o777).toBe(0o700);
+            await fs.unlink(replacedPath);
+            if (replacement === "foreign") {
+              await writeFile(temporaryPath, Buffer.from("cizí obsah"));
+            } else if (replacement === "hardlink") {
+              await fs.link(options.stagePath, temporaryPath);
+            } else {
+              await fs.symlink(options.stagePath, temporaryPath);
+            }
+          },
         },
-      },
-    })).rejects.toThrow(/Dočasný export (?:se během přípravy změnil|není běžný soubor)/u);
+      })).rejects.toThrow(/Dočasný export (?:se během přípravy změnil|není běžný soubor)/u);
 
-    expect((await readdir(options.downloadsDirectory)).some((name) => name.endsWith(".webm"))).toBe(false);
-    expect(await readFile(options.stagePath)).toEqual(sourceBytes);
-    if (replacement === "foreign") {
-      await expect(readFile(replacedPath, "utf8")).resolves.toBe("cizí obsah");
-    } else if (replacement === "symlink") {
-      await expect(fs.readlink(replacedPath)).resolves.toBe(options.stagePath);
-    } else {
-      const sourceStat = await fs.lstat(options.stagePath);
-      expect(await fs.lstat(replacedPath)).toMatchObject({ dev: sourceStat.dev, ino: sourceStat.ino });
+      expect((await readdir(options.downloadsDirectory)).some((name) => name.endsWith(".webm"))).toBe(false);
+      expect(await readdir(options.downloadsDirectory)).toEqual([path.basename(temporaryDirectoryPath)]);
+      expect(await readFile(options.stagePath)).toEqual(sourceBytes);
+      expect(warning).toHaveBeenCalled();
+      if (replacement === "foreign") {
+        await expect(readFile(replacedPath, "utf8")).resolves.toBe("cizí obsah");
+      } else if (replacement === "symlink") {
+        await expect(fs.readlink(replacedPath)).resolves.toBe(options.stagePath);
+      } else {
+        const sourceStat = await fs.lstat(options.stagePath);
+        expect(await fs.lstat(replacedPath)).toMatchObject({ dev: sourceStat.dev, ino: sourceStat.ino });
+      }
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
+  it("úklid nemaže cizí obsah soukromého adresáře ani nic mimo něj", async () => {
+    const options = await prepare();
+    const fs = require("node:fs").promises;
+    const sourceBytes = await readFile(options.stagePath);
+    const foreignBytes = Buffer.from("ponechat cizí soubor");
+    const unlinkSpy = vi.spyOn(fs, "unlink");
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    let temporaryDirectoryPath;
+    let foreignPath;
+
+    try {
+      const result = await exportRecordingCopy({
+        ...options,
+        testHooks: {
+          beforeCleanup: async ({ directoryPath }) => {
+            temporaryDirectoryPath = directoryPath;
+            foreignPath = path.join(directoryPath, "cizi-soubor");
+            await writeFile(foreignPath, foreignBytes);
+          },
+        },
+      });
+
+      await expect(readFile(result.filePath)).resolves.toEqual(sourceBytes);
+      await expect(readFile(options.stagePath)).resolves.toEqual(sourceBytes);
+      await expect(readFile(foreignPath)).resolves.toEqual(foreignBytes);
+      expect(unlinkSpy.mock.calls.map(([file]) => String(file)))
+        .toEqual([path.join(temporaryDirectoryPath, "export.tmp")]);
+      expect((await readdir(options.downloadsDirectory)).sort()).toEqual([
+        result.fileName,
+        path.basename(temporaryDirectoryPath),
+      ].sort());
+      expect(warning).toHaveBeenCalled();
+    } finally {
+      unlinkSpy.mockRestore();
+      warning.mockRestore();
+    }
+  });
+
+  it("zaznamená výměnu stejným uživatelem po poslední kontrole uvnitř soukromého adresáře", async () => {
+    const options = await prepare();
+    const fs = require("node:fs").promises;
+    const originalLink = fs.link.bind(fs);
+    const foreignBytes = Buffer.from("cizích 12 B");
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    let temporaryDirectoryPath;
+    const linkSpy = vi.spyOn(fs, "link").mockImplementation(async (source, target) => {
+      temporaryDirectoryPath = path.dirname(String(source));
+      const directory = await fs.lstat(temporaryDirectoryPath);
+      expect(path.dirname(temporaryDirectoryPath)).toBe(options.downloadsDirectory);
+      expect(directory.mode & 0o777).toBe(0o700);
+      await fs.unlink(source);
+      await writeFile(String(source), foreignBytes);
+      return originalLink(source, target);
+    });
+
+    try {
+      const result = await exportRecordingCopy(options);
+      expect(await readFile(result.filePath)).toEqual(foreignBytes);
+      expect(await readFile(options.stagePath)).toEqual(stereoWebmBytes());
+      expect((await readdir(options.downloadsDirectory)).sort()).toEqual([
+        result.fileName,
+        path.basename(temporaryDirectoryPath),
+      ].sort());
+      expect(warning).toHaveBeenCalled();
+    } finally {
+      linkSpy.mockRestore();
+      warning.mockRestore();
     }
   });
 
