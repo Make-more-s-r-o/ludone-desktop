@@ -1507,7 +1507,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
       && first.mtimeMs === second.mtimeMs && first.ctimeMs === second.ctimeMs;
   }
 
-  function deleteRecording({ clientRecordingId, expectedRevision, expectedFileRevision, guard, trashItem, reserve }) {
+  function deleteRecording({ clientRecordingId, expectedRevision, expectedFileRevision, guard, trashItem, reserve = undefined }) {
     if (typeof guard !== "function" || typeof trashItem !== "function") {
       throw new TypeError("Smazání vyžaduje guard a koš");
     }

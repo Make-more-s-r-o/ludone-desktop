@@ -315,7 +315,12 @@ function fakeElectron(userDataPath, {
       openAtLogin: loginItemState.openAtLogin,
       status: loginItemState.openAtLogin ? "enabled" : "not-registered",
     })),
-    getPath: vi.fn(() => userDataPath),
+    getPath: vi.fn((name) => {
+      if (!["appData", "downloads", "logs", "userData"].includes(name)) {
+        throw new Error(`Neočekávaná cesta Electronu: ${name}`);
+      }
+      return userDataPath;
+    }),
     isPackaged,
     quit: vi.fn(),
     // Napevno `true` znamenalo, že se druhá instance nedala v testu vůbec vyrobit — a právě
@@ -5973,6 +5978,11 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
   });
 
+  /** @type {Array<[string, {
+   *   microphone: { startedAt: string, endedAt: string },
+   *   system: { startedAt: string, endedAt: string },
+   *   stereo: { startedAt: string, endedAt: string },
+   * }]>} */
   const invalidRecordingTimelines = [
     ["stereo začne později", {
       microphone: { startedAt: "2026-09-03T08:00:00.100Z", endedAt: "2026-09-03T08:30:00.100Z" },
@@ -5991,11 +6001,15 @@ describe("produkční zapojení odchozí fronty", () => {
     }],
   ];
 
-  it.each(
-    invalidRecordingTimelines.flatMap(([timingCase, timings]) => (
-      ["send", "keep"].map((decision) => [decision, timingCase, timings])
-    )),
-  )("save-decision %s odmítne nahrávku, když %s", async (decision, _timingCase, timings) => {
+  const invalidRecordingScenarios = invalidRecordingTimelines.flatMap(([timingCase, timings]) => (
+    ["send", "keep"].map((decision) => ({
+      label: `save-decision ${decision} odmítne nahrávku, když ${timingCase}`,
+      decision,
+      timings,
+    }))
+  ));
+
+  it.each(invalidRecordingScenarios)("$label", async ({ decision, timings }) => {
     const harness = await loadMain();
     const { event, sessionId } = await prepareRecordingExport(harness, { timings });
 
@@ -6840,6 +6854,38 @@ describe("rezervace uložené kopie proti souběžným zásahům", () => {
       gate.finish(fixture.sessionId);
       await expect(fixture.exporting).resolves.toMatchObject({ ok: true });
       await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+    } finally {
+      if (fixture) {
+        gate.finish(fixture.sessionId);
+        await fixture.exporting;
+      }
+    }
+  });
+
+  it("vynucený quit po selhání předání Stop počká na rezervovanou kopii", async () => {
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      await harness.ipcHandlers.get("recording:begin")(fixture.event);
+      fixture.event.sender.send.mockImplementation((channel) => {
+        if (channel === "tray:command") throw new Error("panel nepřijal příkaz");
+      });
+
+      const quitEvent = { preventDefault: vi.fn() };
+      harness.electron.app.emit("before-quit", quitEvent);
+
+      expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
+      expect(fixture.event.sender.send).toHaveBeenCalledWith("tray:command");
+      expect(harness.electron.app.quit).not.toHaveBeenCalled();
+
+      gate.finish(fixture.sessionId);
+      await expect(fixture.exporting).resolves.toMatchObject({ recordingExported: true });
+      await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+      expect(harness.quietConsole.error).toHaveBeenCalledWith(
+        expect.stringContaining("Příkaz k čistému zastavení nahrávání se nepodařilo předat"),
+      );
     } finally {
       if (fixture) {
         gate.finish(fixture.sessionId);

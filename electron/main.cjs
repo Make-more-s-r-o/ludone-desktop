@@ -4152,6 +4152,10 @@ function ensureNewActivityIsAllowed(activity) {
 function commitDeferredQuit({ forced = false, reason = "" } = {}) {
   const request = deferredQuitRequest;
   if (!request || request.committed) return;
+  if (recordingFileReservations.size > 0) {
+    console.warn("[quit] Ukončení zůstává odložené do dokončení práce se souborem nahrávky.");
+    return;
+  }
   request.committed = true;
   clearTimeout(request.timeoutId);
   isQuitting = true;
