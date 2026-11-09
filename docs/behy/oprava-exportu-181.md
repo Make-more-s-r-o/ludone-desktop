@@ -260,3 +260,42 @@ Každá sabotáž byla samostatná. Po běhu jsem zdroj obnovil kontrolní kopi�
 | N1 | Dočasný soubor se vrátil přímo do Stažených; test ověřující privátní staging odmítl jeho umístění. | 1 | `electron/recording-export.cjs`; `cmp -s`: exit 0 |
 | N2 | `rmdir` byl nahrazen rekurzivním `rm`; test zjistil smazání cizího souboru v adresáři. | 1 | `electron/recording-export.cjs`; `cmp -s`: exit 0 |
 | N3 | Do vazby exportu bylo vráceno porovnání scope-závislého fingerprintu fronty; test přechodu scope stejného účtu zčervenal. | 1 | `electron/main.cjs`; `cmp -s`: exit 0 |
+
+## Kolo 8 — osiřelý soukromý adresář po abortu během open/stat (9. 11. 2026)
+
+Pracovní adresář byl `/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost`. `HEAD` byl ověřen přímým čtením worktree metadat jako `869ef6b931c336f03687e71569bc4a919bc6f6e6`; nebyl spuštěn žádný git příkaz, MCP, subagent ani instalace balíčků. Ověření proběhlo pod Node `v24.22.2`.
+
+- **Oprava:** úklid si neukládá konečný výsledek, dokud nedoběhne příprava dočasného souboru (`open` a první `stat`). Při abortu se export vrátí bez čekání; úklid pokračuje po dokončení pozdní operace, ověří `dev+ino`, odstraní pouze vlastní soubor přes `unlink` a poté vlastní prázdný adresář přes nerekurzivní `rmdir`. Stávající test zachování cizího obsahu v soukromém adresáři zůstává.
+- **Regrese:** dvě nové sondy pozastaví návrat z `open` a prvního `stat`; v obou ověřují okamžitý abort, následné odstranění dočasného souboru i adresáře a zachování cizího souboru ve Stažených.
+
+### Cílené testy
+
+~~~text
+$ PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/vitest run tests/recording-export.test.js tests/queue-wiring.test.js tests/recordings-dashboard.test.js tests/recording-card.test.js tests/logout.test.js tests/runtime-retention-wiring.test.js tests/recording-actions.test.js --maxWorkers=2
+
+ Test Files  7 passed (7)
+      Tests  616 passed | 1 skipped (617)
+exit_code: 0
+~~~
+
+Typecheck `PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/tsc --noEmit -p jsconfig.json`: prázdný výstup, exit 0.
+
+ESLint `PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/eslint electron/recording-export.cjs tests/recording-export.test.js scripts/akceptace/export-kopie-181.mjs`: prázdný výstup, exit 0.
+
+### Akceptační příkaz a doslovný výpis
+
+~~~text
+$ PATH=/opt/homebrew/opt/node@24/bin:$PATH node scripts/akceptace/export-kopie-181.mjs
+PASS: N3: stabilní identita účtu a prostředí panelové exportní fáze — 4 testů, exit 0.
+PASS: Zachovaná kontrola fronty: exportní čtení neblokuje serializované operace — 1 testů, exit 0.
+PASS: N1+N2: soukromý staging, bezpečný úklid a pozdní abort při přípravě — 8 testů, exit 0.
+PASS: Nálezy kola 4: quit po timeoutu a poslední upravený název — 3 testů, exit 0.
+PASS: Atomický export: hotový soubor, metadata shodné kopie a kolize — 4 testů, exit 0.
+PASS: Přerušení: bariéry zápisu, publikace, timeout a ukončení — 6 testů, exit 0.
+PASS: Varianta A: žádná automatická kopie a explicitní export zůstává dostupný — 6 testů, exit 0.
+exit_code: 0
+~~~
+
+### Sabotáž
+
+Předčasné zapamatování úklidu bylo znovu zavedeno vynecháním čekání na dokončení přípravy. Obě regresní sondy zčervenaly: zůstal soukromý adresář s dočasným souborem a `rmdir` skončil na neprázdném adresáři. **2 červené testy.** Opravený `electron/recording-export.cjs` byl obnoven z kontrolní kopie; `cmp -s`: exit 0. Kontrolní kopie byla následně odstraněna.

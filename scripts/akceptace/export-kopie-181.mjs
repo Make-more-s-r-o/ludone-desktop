@@ -19,9 +19,9 @@ const checks = [
     pattern: /pozastavené čtení exportu neblokuje list ani bezpečný restart po abortu/u.source,
   },
   {
-    name: "N1+N2: soukromý staging, bezpečný úklid a známé zbytkové riziko",
+    name: "N1+N2: soukromý staging, bezpečný úklid a pozdní abort při přípravě",
     files: ["tests/recording-export.test.js"],
-    pattern: /zveřejní jen hotový soubor přes nový režim 0600 a zdroj nechá beze změny|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za cizím souborem|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za hardlinkem zdroje|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za symlinkem zdroje|úklid nemaže cizí obsah soukromého adresáře ani nic mimo něj|zaznamená výměnu stejným uživatelem po poslední kontrole uvnitř soukromého adresáře/u.source,
+    pattern: /zveřejní jen hotový soubor přes nový režim 0600 a zdroj nechá beze změny|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za cizím souborem|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za hardlinkem zdroje|před zveřejněním odmítne nahrazené jméno v soukromém adresáři za symlinkem zdroje|úklid nemaže cizí obsah soukromého adresáře ani nic mimo něj|zaznamená výměnu stejným uživatelem po poslední kontrole uvnitř soukromého adresáře|abort během openu uklidí pozdě otevřený soubor i adresář a zachová cizí soubor|abort během prvního statu uklidí pozdě získanou identitu bez čekání a zachová cizí soubor/u.source,
   },
   {
     name: "Nálezy kola 4: quit po timeoutu a poslední upravený název",

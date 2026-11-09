@@ -853,6 +853,15 @@ describe("atomický a přerušitelný export kopie", () => {
     return { promise, resolve };
   }
 
+  async function waitForPrivateDirectoryRemoval(downloadsDirectory) {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const entries = await readdir(downloadsDirectory);
+      if (!entries.some((name) => name.startsWith(".ludone-export-"))) return entries;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    return readdir(downloadsDirectory);
+  }
+
   async function prepare(options = {}) {
     const root = await mkdtemp(path.join(tmpdir(), "ludone-copy-boundary-test-"));
     roots.add(root);
@@ -1228,6 +1237,90 @@ describe("atomický a přerušitelný export kopie", () => {
 
     const next = await exportRecordingCopy(options);
     expect(await readFile(next.filePath)).toEqual(stereoWebmBytes());
+  });
+
+  it("abort během openu uklidí pozdě otevřený soubor i adresář a zachová cizí soubor", async () => {
+    const options = await prepare();
+    const foreignPath = path.join(options.downloadsDirectory, "cizi-soubor.txt");
+    const foreignBytes = Buffer.from("ponechat mimo soukromý adresář");
+    await writeFile(foreignPath, foreignBytes);
+
+    const controller = new AbortController();
+    const openReached = deferred();
+    const releaseOpen = deferred();
+    const fs = require("node:fs").promises;
+    const originalOpen = fs.open.bind(fs);
+    const openSpy = vi.spyOn(fs, "open").mockImplementation((filePath, ...args) => {
+      const opened = originalOpen(filePath, ...args);
+      if (path.basename(String(filePath)) !== "export.tmp") return opened;
+      return opened.then(async (handle) => {
+        openReached.resolve();
+        await releaseOpen.promise;
+        return handle;
+      });
+    });
+
+    try {
+      const pending = exportRecordingCopy({ ...options, signal: controller.signal });
+      await openReached.promise;
+      controller.abort();
+      await expect(pending).rejects.toMatchObject({ name: "AbortError", recordingExported: false });
+
+      releaseOpen.resolve();
+      await expect(waitForPrivateDirectoryRemoval(options.downloadsDirectory))
+        .resolves.toEqual([path.basename(foreignPath)]);
+      await expect(readFile(foreignPath)).resolves.toEqual(foreignBytes);
+    } finally {
+      releaseOpen.resolve();
+      openSpy.mockRestore();
+    }
+  });
+
+  it("abort během prvního statu uklidí pozdě získanou identitu bez čekání a zachová cizí soubor", async () => {
+    const options = await prepare();
+    const foreignPath = path.join(options.downloadsDirectory, "cizi-soubor.txt");
+    const foreignBytes = Buffer.from("ponechat mimo soukromý adresář");
+    await writeFile(foreignPath, foreignBytes);
+
+    const controller = new AbortController();
+    const statReached = deferred();
+    const releaseStat = deferred();
+    const fs = require("node:fs").promises;
+    const originalOpen = fs.open.bind(fs);
+    const openSpy = vi.spyOn(fs, "open").mockImplementation((filePath, ...args) => {
+      const opened = originalOpen(filePath, ...args);
+      if (path.basename(String(filePath)) !== "export.tmp") return opened;
+      return opened.then((handle) => {
+        const originalStat = handle.stat.bind(handle);
+        let firstStat = true;
+        handle.stat = (...statArgs) => {
+          const result = originalStat(...statArgs);
+          if (!firstStat) return result;
+          firstStat = false;
+          return result.then(async (stats) => {
+            statReached.resolve();
+            await releaseStat.promise;
+            return stats;
+          });
+        };
+        return handle;
+      });
+    });
+
+    try {
+      const pending = exportRecordingCopy({ ...options, signal: controller.signal });
+      await statReached.promise;
+      controller.abort();
+      await expect(pending).rejects.toMatchObject({ name: "AbortError", recordingExported: false });
+
+      releaseStat.resolve();
+      await expect(waitForPrivateDirectoryRemoval(options.downloadsDirectory))
+        .resolves.toEqual([path.basename(foreignPath)]);
+      await expect(readFile(foreignPath)).resolves.toEqual(foreignBytes);
+    } finally {
+      releaseStat.resolve();
+      openSpy.mockRestore();
+    }
   });
 
   it("zrušení před publikací se vrátí, i když úklidový hook nikdy nedokončí", async () => {

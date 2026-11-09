@@ -559,6 +559,7 @@ async function exportRecordingCopy({
   let temporaryDirectoryIdentity;
   let temporaryPath;
   let temporaryIdentity;
+  let temporaryPreparationPromise;
   let temporaryCleanupPromise;
 
   const destroyStreams = () => {
@@ -568,6 +569,23 @@ async function exportRecordingCopy({
   };
   const cleanupTemporary = () => {
     if (!temporaryDirectoryPath || !temporaryDirectoryIdentity) return Promise.resolve(false);
+    // open() nebo první stat() mohou doběhnout až po zrušení. Nezkoušej
+    // rmdir ani si nezapamatuj výsledek úklidu, dokud příprava neodhalí inode.
+    // Čekající volající na tenhle promise nečeká: při abortu se odpojí přes
+    // awaitAbortable a úklid pokračuje po dokončení přípravy na pozadí.
+    if (temporaryPreparationPromise) {
+      const preparation = temporaryPreparationPromise;
+      return preparation.then(
+        () => {
+          if (temporaryPreparationPromise === preparation) temporaryPreparationPromise = undefined;
+          return cleanupTemporary();
+        },
+        () => {
+          if (temporaryPreparationPromise === preparation) temporaryPreparationPromise = undefined;
+          return cleanupTemporary();
+        },
+      );
+    }
     if (temporaryCleanupPromise) return temporaryCleanupPromise;
     temporaryCleanupPromise = (async () => {
       await hooks.beforeCleanup?.({ filePath: temporaryPath, directoryPath: temporaryDirectoryPath });
@@ -771,7 +789,6 @@ async function exportRecordingCopy({
           throw new Error("Dočasný export nemá práva 0600");
         }
         if (signal.aborted) {
-          void cleanupTemporary().catch(() => {});
           void handle.close().catch(() => {});
           throw abortError(signal, state);
         }
@@ -781,9 +798,10 @@ async function exportRecordingCopy({
         throw error;
       }
     });
+    temporaryPreparationPromise = temporaryReady;
     temporaryReady.catch(() => {});
     temporaryHandle = await awaitAbortable(temporaryReady, signal, state, () => {
-      void temporaryReady.then(() => cleanupTemporary(), () => {});
+      void temporaryReady.then(cleanupTemporary, cleanupTemporary).catch(() => {});
     });
     throwIfAborted(signal, state);
 
