@@ -1,0 +1,1166 @@
+[
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost/dukazy/meet-2026-09-01/referencni.aiff"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-stream_loop",
+      "-1",
+      "-i",
+      "/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost/dukazy/meet-2026-09-01/referencni.aiff",
+      "-filter_complex",
+      "[0:a]aresample=48000,asplit=2[a][b];[a]volume='if(lt(mod(t,30),18),0.7,0)':eval=frame[m];[b]adelay=7000,volume='if(between(mod(t,30),12,27),0.55,0)':eval=frame[s];[m][s]join=inputs=2:channel_layout=stereo[v];anoisesrc=color=pink:amplitude=0.002:sample_rate=48000:duration=180:seed=179[n1];anoisesrc=color=pink:amplitude=0.002:sample_rate=48000:duration=180:seed=180[n2];[n1][n2]join=inputs=2:channel_layout=stereo[n];[v][n]amix=inputs=2:normalize=0[out]",
+      "-map",
+      "[out]",
+      "-t",
+      "180",
+      "-c:a",
+      "pcm_s16le",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-180s.wav"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-ss",
+      "30",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-180s.wav",
+      "-t",
+      "60",
+      "-c:a",
+      "pcm_s16le",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-60s.wav"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-180s.wav",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "96k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "node",
+      "-e",
+      "const m=require(process.argv[1]);process.stdout.write(JSON.stringify(m.conversionArguments({stereoWebmPath:process.argv[2],temporaryPath:process.argv[3]})));",
+      "/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost/electron/media-encoder.cjs",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-180s.webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-96kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-vn",
+      "-c:a",
+      "copy",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-96kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-60s.wav",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "96k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "node",
+      "-e",
+      "const m=require(process.argv[1]);process.stdout.write(JSON.stringify(m.conversionArguments({stereoWebmPath:process.argv[2],temporaryPath:process.argv[3]})));",
+      "/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost/electron/media-encoder.cjs",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-60s.webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-96kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-60s.webm",
+      "-map",
+      "0:a:0",
+      "-vn",
+      "-c:a",
+      "copy",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-96kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-180s.wav",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "64k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "node",
+      "-e",
+      "const m=require(process.argv[1]);process.stdout.write(JSON.stringify(m.conversionArguments({stereoWebmPath:process.argv[2],temporaryPath:process.argv[3]})));",
+      "/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost/electron/media-encoder.cjs",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-180s.webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-64kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-vn",
+      "-c:a",
+      "copy",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-64kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-60s.wav",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "64k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "node",
+      "-e",
+      "const m=require(process.argv[1]);process.stdout.write(JSON.stringify(m.conversionArguments({stereoWebmPath:process.argv[2],temporaryPath:process.argv[3]})));",
+      "/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost/electron/media-encoder.cjs",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-60s.webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-64kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-60s.webm",
+      "-map",
+      "0:a:0",
+      "-vn",
+      "-c:a",
+      "copy",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-64kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-180s.wav",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "48k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "node",
+      "-e",
+      "const m=require(process.argv[1]);process.stdout.write(JSON.stringify(m.conversionArguments({stereoWebmPath:process.argv[2],temporaryPath:process.argv[3]})));",
+      "/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost/electron/media-encoder.cjs",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-180s.webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-48kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-vn",
+      "-c:a",
+      "copy",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-48kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-60s.wav",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "48k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "node",
+      "-e",
+      "const m=require(process.argv[1]);process.stdout.write(JSON.stringify(m.conversionArguments({stereoWebmPath:process.argv[2],temporaryPath:process.argv[3]})));",
+      "/Users/dev_ludone/orca/workspaces/ludone-desktop/issue-179-velikost/electron/media-encoder.cjs",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-60s.webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-48kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-60s.webm",
+      "-map",
+      "0:a:0",
+      "-vn",
+      "-c:a",
+      "copy",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-48kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-180s.wav",
+      "-af",
+      "pan=mono|c0=c0",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "128k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "48000",
+      "-ac",
+      "1",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/original-mic-128kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-180s.wav",
+      "-af",
+      "pan=stereo|c0=c1|c1=c1",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "128k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/original-system-128kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-180s.wav",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "48k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "16000",
+      "-ac",
+      "1",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/mono-16khz-48kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-n",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/reference-60s.wav",
+      "-vn",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "48k",
+      "-vbr",
+      "on",
+      "-application",
+      "audio",
+      "-frame_duration",
+      "60",
+      "-ar",
+      "16000",
+      "-ac",
+      "1",
+      "-map_metadata",
+      "-1",
+      "-f",
+      "webm",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/mono-16khz-48kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-96kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-96kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-96kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-96kbps-60s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-64kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-64kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-64kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-64kbps-60s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-48kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-48kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-48kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/poslech-48kbps-60s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/original-mic-128kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/original-mic-128kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/original-system-128kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/original-system-128kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/mono-16khz-48kbps-180s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/mono-16khz-48kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration,size:stream=codec_name,sample_rate,channels",
+      "-of",
+      "json",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/mono-16khz-48kbps-60s.webm"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/mono-16khz-48kbps-60s.webm",
+      "-map",
+      "0:a:0",
+      "-f",
+      "s16le",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-96kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-c:a",
+      "copy",
+      "-f",
+      "data",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-96kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-c:a",
+      "copy",
+      "-f",
+      "data",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-64kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-c:a",
+      "copy",
+      "-f",
+      "data",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-64kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-c:a",
+      "copy",
+      "-f",
+      "data",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/master-48kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-c:a",
+      "copy",
+      "-f",
+      "data",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/private/tmp/claude-502/-Users-dev-ludone-orca-workspaces-LuDone-issues-prijem/8eaafbc1-0572-4687-983a-2767e5449e92/scratchpad/desktop-179/upload-48kbps-180s.webm",
+      "-map",
+      "0:a:0",
+      "-c:a",
+      "copy",
+      "-f",
+      "data",
+      "-"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/ffmpeg",
+      "-version"
+    ],
+    "exit_code": 0,
+    "stderr": ""
+  }
+]
