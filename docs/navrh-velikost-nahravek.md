@@ -2,6 +2,14 @@
 
 9. 11. 2026; podklad: commit `7e043c228ec7b85dafcf57cdb87d401496d1f596`.
 
+## Stav
+
+Varianta A je provedena v aktuálním panelu: `send`, `keep` ani automatické odeslání
+kopii do Stažených nevytváří. Kopii vytvoří výslovné „Exportovat kopii…“. Starší
+exportní IPC zůstává uživatelem vyžádanou kompatibilní cestou pro ruční práci se
+souborem. Upload dál čte delivery soubor z `nahravky/`. Varianty B a C čekají na
+rozhodnutí.
+
 **Doporučení:** přestat automaticky vytvářet kopii do Stažených a ponechat ji jako
 výslovné „Exportovat kopii…“. To v tomto vzorku ušetří **40,01 MB na hodinu** bez
 změny zvuku a bez mazání existujících souborů. Dále navrhuji k samostatnému
@@ -11,7 +19,8 @@ celková úspora by pak byla **80,02 MB/h (37,69 %)**. Originální stopy zůst�
 **64 kb/s je kandidát k poslechu a porovnání přepisu**, nikoli ověřená náhrada D21.
 S oběma výše uvedenými opatřeními by celkové audio kleslo z **212,30 na 118,44 MB/h**.
 48 kb/s je další srovnávací vzorek. Tento dokument nemění aplikaci, nastavení,
-retenci ani soubory uživatele. Nezavádí strop místa ani mazání neodeslaných nahrávek.
+retenci ani soubory uživatele. Implementace varianty A nemění nastavení, retenci
+ani existující soubory. Nezavádí strop místa ani mazání neodeslaných nahrávek.
 
 🧪 Výpočty, existence souborů, dekódování a shoda paketů při remuxu prošly kontrolou.
 🟡 Čísla jsou extrapolací tříminutové simulace ve FFmpeg, nikoli změřením živého
@@ -140,10 +149,9 @@ Dnešní měřič prostoru deduplikuje hardlinky (`electron/recording-storage.cj
 
 ## Navržené změny a podmínky
 
-1. **Stažené:** novou automatickou kopii nahradit výslovným exportem na vyžádání.
+1. **Stažené — provedeno:** automatickou kopii nahradilo výslovné „Exportovat kopii…“.
    Uložení i upload dál pracují s interní delivery. Již existující soubory ve
-   Stažených neprocházet ani nemazat. Přejmenovat hlášky a návod tak, aby netvrdily,
-   že automatická kopie vznikla. Změřit i obnovený upload po restartu.
+   Stažených se neprocházejí ani nemažou.
 2. **Master:** jen návrh k samostatnému schválení. Smí zaniknout až při současném
    splnění: hotový a dekódovatelný výstup s očekávanou délkou a oběma správnými
    kanály; trvalý lokální SHA-256 a velikost delivery; serverový `stored` se shodnou
@@ -165,8 +173,8 @@ Dnešní měřič prostoru deduplikuje hardlinky (`electron/recording-storage.cj
    neměnné bajty nikdy nepřekódovávat. Původních 128 kb/s v této kalkulaci neměním.
 
 Nezavádí se limit velikosti disku, kratší retence, mazání fronty ani snižování
-kvality originálů. Neodeslané audio zůstává zachované. V tomto kroku se nemění
-**žádný** kód; i body 1–4 jsou návrhy, ne provedené zásahy.
+kvality originálů. Neodeslané audio zůstává zachované. Provedena je pouze varianta A;
+varianty B a C čekají na rozhodnutí.
 
 ## Co ověřit před vydáním
 

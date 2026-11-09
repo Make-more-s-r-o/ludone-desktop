@@ -3007,12 +3007,108 @@ async function resolveRecordingUploadPreferences(event, preferences, roles, comm
   });
 }
 
+async function prepareCompletedRecordingDelivery(exportStage, clientRecordingId) {
+  const manifest = JSON.parse(await fs.promises.readFile(exportStage.manifestPath, "utf8"));
+  if (manifest.clientRecordingId !== clientRecordingId) {
+    throw new RecordingExportUserError("Identifikátor exportu nesouhlasí s manifestem");
+  }
+  const persistedDelivery = exportStage.delivery ?? await persistLiveMeetingDelivery(exportStage);
+  if (!persistedDelivery) throw new RecordingExportUserError("Stereo delivery ještě není připravené");
+  const delivery = await ensureMeetingAudioReady({
+    attempts: 0,
+    clientRecordingId,
+    delivery: persistedDelivery,
+    manifestPath: exportStage.manifestPath,
+    ownerFingerprint: exportStage.ownerFingerprint,
+    server: {},
+    state: "ceka",
+    tracks: Object.fromEntries(
+      [...exportStage.tracks].map(([source, track]) => [source, track.filePath]),
+    ),
+  }, {
+    encoderOptions: {
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
+      projectRoot: path.resolve(__dirname, ".."),
+    },
+    recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
+  });
+  exportStage.delivery = delivery;
+  const store = await getOutboundQueueStore();
+  await store.setRecordingDelivery(clientRecordingId, delivery);
+  return { delivery, manifest, store };
+}
+
+async function exportCompletedRecordingCopy(event, clientRecordingId, options) {
+  const exportStage = ownedRecordingExportStage(event, clientRecordingId);
+  if (!options || typeof options !== "object" || Array.isArray(options)
+    || Object.keys(options).sort().join("|") !== "recordingName") {
+    throw new TypeError("Export kopie očekává právě název nahrávky");
+  }
+  let claimedExport = false;
+  try {
+    validateUploadRecordingName(options.recordingName);
+    if (authOriginChangeInFlight) {
+      throw new RecordingExportUserError("Handover nelze zahájit během změny prostředí");
+    }
+    if (exportStage.releaseRequested && !deferredQuitRequest && !downloadedUpdatePending) {
+      throw new RecordingExportUserError("Stereo export už není dostupný");
+    }
+    if (exportStage.exportInFlight || exportStage.deleteInFlight) {
+      throw new RecordingExportUserError("Stereo export už probíhá");
+    }
+    exportStage.exportInFlight = true;
+    refreshTray();
+    claimedExport = true;
+    const ready = await waitForRecordingExportStage(exportStage);
+    if (!ready.ok) return ready;
+    const { delivery, manifest } = await prepareCompletedRecordingDelivery(exportStage, clientRecordingId);
+    const result = await exportRecordingCopy({
+      downloadsDirectory: app.getPath("downloads"),
+      manifest,
+      openExternal: (url) => shell.openExternal(url),
+      openUploadPage: false,
+      origin: resolveCurrentAuthIssuer(),
+      recordingName: options.recordingName,
+      stagePath: delivery.filePath,
+      stereoTiming: exportStage.timing,
+    });
+    console.log(`[recording-export] Výslovně uložena kopie ${result.clientRecordingId}.`);
+    return { ok: true, clientRecordingId, fileName: result.fileName };
+  } catch (error) {
+    if (error?.recordingExported === true) {
+      return {
+        ok: false,
+        recordingExported: true,
+        fileName: error.fileName,
+        message: "Soubor je uložený ve Stažených, ale nahrávací stránku se nepodařilo otevřít. "
+          + recordingTracksPreservedMessage(exportStage),
+      };
+    }
+    logRecordingExportFailure(error);
+    return {
+      ok: false,
+      recordingExported: false,
+      message: recordingExportFailureMessage(error, exportStage),
+    };
+  } finally {
+    if (claimedExport) {
+      exportStage.exportInFlight = false;
+      notifyRecordingStorageChanged();
+      refreshTray();
+      completeRecordingExportStageRelease(exportStage);
+    }
+  }
+}
+
 /**
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {string} clientRecordingId
  * @param {{ recordingName?: string, decision: "send" | "keep", uploadPreferences?: any }} options
  */
-async function exportCompletedRecording(event, clientRecordingId, options) {
+// Modern save-decision volby potřebují jen interní delivery. Kopii ponechává pouze
+// starší ruční exportní IPC; aktuální panel má samostatnou akci „Exportovat kopii…“.
+async function exportCompletedRecording(event, clientRecordingId, options, { includeDownloadCopy = false } = {}) {
   const exportStage = ownedRecordingExportStage(event, clientRecordingId);
   if (!options || !["send", "keep"].includes(options.decision)) {
     throw new TypeError("Rozhodnutí musí být send nebo keep");
@@ -3035,35 +3131,8 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
     claimedExport = true;
     const ready = await waitForRecordingExportStage(exportStage);
     if (!ready.ok) return ready;
-    const manifest = JSON.parse(await fs.promises.readFile(exportStage.manifestPath, "utf8"));
-    if (manifest.clientRecordingId !== clientRecordingId) {
-      throw new RecordingExportUserError("Identifikátor exportu nesouhlasí s manifestem");
-    }
-    const persistedDelivery = exportStage.delivery ?? await persistLiveMeetingDelivery(exportStage);
-    if (!persistedDelivery) throw new RecordingExportUserError("Stereo delivery ještě není připravené");
-    const delivery = await ensureMeetingAudioReady({
-      attempts: 0,
-      clientRecordingId,
-      delivery: persistedDelivery,
-      manifestPath: exportStage.manifestPath,
-      ownerFingerprint: exportStage.ownerFingerprint,
-      server: {},
-      state: "ceka",
-      tracks: Object.fromEntries(
-        [...exportStage.tracks].map(([source, track]) => [source, track.filePath]),
-      ),
-    }, {
-      encoderOptions: {
-        isPackaged: app.isPackaged,
-        resourcesPath: process.resourcesPath,
-        projectRoot: path.resolve(__dirname, ".."),
-      },
-      recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
-    });
-    exportStage.delivery = delivery;
-    const store = await getOutboundQueueStore();
-    await store.setRecordingDelivery(clientRecordingId, delivery);
-    const result = await exportRecordingCopy({
+    const { delivery, manifest, store } = await prepareCompletedRecordingDelivery(exportStage, clientRecordingId);
+    const result = includeDownloadCopy ? await exportRecordingCopy({
       downloadsDirectory: app.getPath("downloads"),
       manifest,
       openExternal: (url) => shell.openExternal(url),
@@ -3072,7 +3141,12 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
       recordingName,
       stagePath: delivery.filePath,
       stereoTiming: exportStage.timing,
-    });
+    }) : {
+      clientRecordingId,
+      format: exportStage.result.format,
+      startedAt: delivery.startedAt,
+      endedAt: delivery.endedAt,
+    };
     const decide = async (preferences = undefined, preferenceGuard = undefined) => store.decideRecording(
       clientRecordingId,
       exportStage.ownerFingerprint,
@@ -3104,7 +3178,9 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
     const timingDetail = result.trackStartDeltaMs === null
       ? "jednostopý režim bez porovnání stop"
       : `rozdíl startů ${result.trackStartDeltaMs} ms`;
-    console.log(`[recording-export] Uloženo ${result.clientRecordingId}; ${timingDetail}.`);
+    if (includeDownloadCopy) {
+      console.log(`[recording-export] Uloženo ${result.clientRecordingId}; ${timingDetail}.`);
+    }
     const queueOutcome = decided.approved ? "queued" : "saved_local";
     if (decided.approved) {
       void pumpOutboundQueue();
@@ -3113,12 +3189,14 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
       ok: true,
       outcome: queueOutcome,
       clientRecordingId: result.clientRecordingId,
-      fileName: result.fileName,
       format: result.format,
       startedAt: result.startedAt,
       endedAt: result.endedAt,
-      trackStartDeltaMs: result.trackStartDeltaMs,
-      trackDurationDeltaMs: result.trackDurationDeltaMs,
+      ...(includeDownloadCopy ? {
+        fileName: result.fileName,
+        trackStartDeltaMs: result.trackStartDeltaMs,
+        trackDurationDeltaMs: result.trackDurationDeltaMs,
+      } : {}),
     };
   } catch (error) {
     if (error?.recordingExported === true) {
@@ -3269,7 +3347,11 @@ handleValidated("recording:export", ["panel"], async (event, clientRecordingId, 
   return exportCompletedRecording(event, clientRecordingId, {
     recordingName: options?.recordingName,
     decision: options?.openUploadPage === true ? "send" : "keep",
-  });
+  }, { includeDownloadCopy: true });
+});
+handleValidated("recording:export-copy", ["panel"], (event, clientRecordingId, options, ...extraPayload) => {
+  if (extraPayload.length > 0) throw new TypeError("Export kopie přijímá právě GUID a název nahrávky");
+  return exportCompletedRecordingCopy(event, clientRecordingId, options);
 });
 handleValidated("queue:list", ["panel", "settings"], async () => {
   await waitForOutboundQueueRecovery();

@@ -4291,6 +4291,7 @@ describe("produkční zapojení odchozí fronty", () => {
 
     await api.finishRecordingExport("session-1", { succeeded: true, timing });
     await api.exportRecording("session-1", { recordingName: "Porada provozu", openUploadPage: true });
+    await api.exportRecordingCopy("session-1", { recordingName: "Porada provozu" });
 
     expect(invoke).toHaveBeenNthCalledWith(
       1,
@@ -4303,6 +4304,12 @@ describe("produkční zapojení odchozí fronty", () => {
       "recording:export",
       "session-1",
       { recordingName: "Porada provozu", openUploadPage: true },
+    );
+    expect(invoke).toHaveBeenNthCalledWith(
+      3,
+      "recording:export-copy",
+      "session-1",
+      { recordingName: "Porada provozu" },
     );
   });
 
@@ -5875,23 +5882,9 @@ describe("produkční zapojení odchozí fronty", () => {
       .toBeUndefined();
   });
 
-  it("save-decision po exportní kopii a ztrátě auth uloží title jako held a neotevře web", async () => {
-    let harness;
-    const exportRecordingCopy = vi.fn(async ({ manifest, recordingName }) => {
-      const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
-      await rm(tokenPath, { force: true });
-      return {
-        clientRecordingId: manifest.clientRecordingId,
-        endedAt: manifest.closedAt,
-        fileName: "porada.webm",
-        format: "webm",
-        startedAt: manifest.createdAt,
-        trackDurationDeltaMs: 0,
-        trackStartDeltaMs: 0,
-        recordingName,
-      };
-    });
-    harness = await loadMain({ exportRecordingCopy });
+  it("save-decision po ztrátě auth uloží title jako held bez kopie", async () => {
+    const exportRecordingCopy = vi.fn();
+    const harness = await loadMain({ exportRecordingCopy });
     await writeStoredAuthSession(harness, {
       ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
     });
@@ -5901,10 +5894,11 @@ describe("produkční zapojení odchozí fronty", () => {
 
     await expect(Promise.resolve().then(() => decide(event, sessionId, options, "navíc")))
       .rejects.toThrow(/právě GUID/u);
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    await rm(tokenPath, { force: true });
     await expect(decide(event, sessionId, options)).resolves.toMatchObject({
       ok: true,
       outcome: "saved_local",
-      fileName: "porada.webm",
     });
     const queue = JSON.parse(await readFile(
       path.join(harness.userDataPath, "queue", "outgoing.json"),
@@ -5914,8 +5908,25 @@ describe("produkční zapojení odchozí fronty", () => {
       title: "Porada výroby",
       uploadIntent: "held",
     });
-    expect(exportRecordingCopy).toHaveBeenCalledOnce();
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+    expect(exportRecordingCopy).not.toHaveBeenCalled();
     expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+  });
+
+  it("save-decision keep uloží lokální položku bez kopie do Stažených", async () => {
+    const exportRecordingCopy = vi.fn();
+    const harness = await loadMain({ exportRecordingCopy });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+
+    await expect(harness.ipcHandlers.get("recording:save-decision")(
+      event, sessionId, { decision: "keep", recordingName: "Lokální porada" },
+    )).resolves.toMatchObject({ ok: true, outcome: "saved_local" });
+
+    const downloadedWebm = (await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"));
+    expect(downloadedWebm).toEqual([]);
+    expect(exportRecordingCopy).not.toHaveBeenCalled();
   });
 
   it("save-decision vrátí queued po durable volbě ještě před dokončením upload pumpy", async () => {
@@ -5959,6 +5970,7 @@ describe("produkční zapojení odchozí fronty", () => {
     ]);
     expect(promptResult).toBe("resolved");
     await expect(decision).resolves.toMatchObject({ ok: true, outcome: "queued" });
+    expect(exportRecordingCopy).not.toHaveBeenCalled();
 
     releasePump();
     await pumpGate;
@@ -6353,6 +6365,28 @@ describe("produkční zapojení odchozí fronty", () => {
 });
 
 describe("výslovná volba stránky přes exportní IPC", () => {
+  it("výslovný export kopie uloží delivery do Stažených bez rozhodnutí o odeslání", async () => {
+    const harness = await loadMain();
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const { api, invoke } = loadPreload();
+    invoke.mockImplementation((channel, ...args) => harness.ipcHandlers.get(channel)(event, ...args));
+
+    const result = await api.exportRecordingCopy(sessionId, { recordingName: "Porada provozu" });
+
+    expect(result).toMatchObject({ ok: true, clientRecordingId: sessionId });
+    await expect(readFile(path.join(harness.electron.app.getPath("downloads"), result.fileName)))
+      .resolves.toEqual(stereoWebmBytes());
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+    const queue = JSON.parse(await readFile(
+      path.join(harness.userDataPath, "queue", "outgoing.json"),
+      "utf8",
+    ));
+    expect(queue.items.find((item) => item.clientRecordingId === sessionId)).toMatchObject({
+      uploadIntent: "held",
+      state: "ceka",
+    });
+  });
+
   it("501 jednotek přes preload odmítne, zachová soubory a po opravě export zopakuje", async () => {
     const harness = await loadMain();
     const { event, sessionId } = await prepareRecordingExport(harness);

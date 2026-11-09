@@ -101,6 +101,15 @@ function requireRecordingDecision(value) {
     ...(value.uploadPreferences !== undefined ? { uploadPreferences: requireUploadPreferences(value.uploadPreferences) } : {}) };
 }
 
+function requireRecordingCopyOptions(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).sort().join("|") !== "recordingName"
+    || typeof value.recordingName !== "string") {
+    throw new TypeError("Export kopie vyžaduje právě název nahrávky");
+  }
+  return { recordingName: value.recordingName };
+}
+
 function requireAuthOrigin(value) {
   if (!AUTH_ORIGINS.includes(value)) {
     throw new TypeError("Hodnota prostředí musí být jeden ze dvou známých originů");
@@ -328,6 +337,8 @@ contextBridge.exposeInMainWorld("ludone", {
     ipcRenderer.invoke("recording:confirm-export-failure", sessionId),
   saveRecordingDecision: (clientRecordingId, volby) =>
     ipcRenderer.invoke("recording:save-decision", clientRecordingId, requireRecordingDecision(volby)),
+  exportRecordingCopy: (clientRecordingId, volby) =>
+    ipcRenderer.invoke("recording:export-copy", clientRecordingId, requireRecordingCopyOptions(volby)),
   exportRecording: (clientRecordingId, volby) =>
     ipcRenderer.invoke("recording:export", clientRecordingId, volby),
   listQueue: () => ipcRenderer.invoke("queue:list"),

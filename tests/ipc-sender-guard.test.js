@@ -355,6 +355,8 @@ describe("ochrana odesílatele nahrávacího IPC", () => {
       // openUploadPage je povinný bez defaultu; volbu i průchod preloadem spouští
       // tests/queue-wiring.test.js v „výslovná volba stránky přes exportní IPC“.
       "recording:export",
+      // Výslovný export kopie má oddělený IPC, který nemění rozhodnutí fronty.
+      "recording:export-copy",
       "recording:finish",
       "recording:finish-export",
       "recording:request-stop",

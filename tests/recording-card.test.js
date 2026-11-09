@@ -272,6 +272,10 @@ async function renderRecordingCard(options = {}) {
       ok: true,
       fileName: `LuDone-${SESSION_ID}.webm`,
     }),
+    exportRecordingCopy: vi.fn().mockResolvedValue({
+      ok: true,
+      fileName: `LuDone-${SESSION_ID}.webm`,
+    }),
     hasAuthSession: vi.fn().mockResolvedValue(true),
     listQueue: vi.fn().mockResolvedValue(options.queueItems ?? []),
     openSettings: vi.fn(),
@@ -692,6 +696,7 @@ describe("RecordingCard", () => {
         recordingName: "Porada výroby",
       });
       expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
+      expect(panel.ludone.exportRecordingCopy).not.toHaveBeenCalled();
     } finally {
       await panel.cleanup();
     }
@@ -710,6 +715,28 @@ describe("RecordingCard", () => {
         decision: "send",
         recordingName: DEFAULT_RECORDING_NAME,
       });
+      expect(panel.ludone.exportRecordingCopy).not.toHaveBeenCalled();
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("výslovně exportuje kopii ve Stažených bez rozhodnutí o odeslání", async () => {
+    const panel = await renderRecordingCard({ modernDecision: true });
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await enterRecordingName(panel, "Porada výroby");
+      await panel.click(panel.document.querySelector('[data-testid="export-recording-copy"]'));
+
+      expect(panel.ludone.exportRecordingCopy).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        recordingName: "Porada výroby",
+      });
+      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+      expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
+      expect(panel.phase()).toBe("saved");
+      expect(panel.document.querySelector('[data-testid="recording-copy-export-status"]')?.textContent)
+        .toContain("Kopie LuDone-session-test-1.webm je uložená ve Stažených.");
     } finally {
       await panel.cleanup();
     }
