@@ -153,3 +153,55 @@ Zelené kontroly: pomalá platná kopie před timeoutem; opakovaný shodný expo
 - Změny pravidel, lhůt, výběru či ochrany runtime retence: 0; změněné je pouze zrušení volitelných kopií před vložením retence do fronty.
 - npm run gates a npm run build nebyly v tomto běhu spuštěny: vyžadují CI nad finálním headem. Lokální build nebyl spuštěn, protože zapisuje artefakty dist mimo povolený rozsah změn.
 - Skutečné ukončení macOS/Electron, GUI, zvuk, instalace aktualizace a upload nejsou tímto paměťovým testem ověřeny; zůstávají samostatnými lidskými přejímkami.
+
+## Kolo 6 — review nálezy N1–N3 (9. 11. 2026)
+
+Výchozí `HEAD` byl ověřen přímým čtením worktree reference: `505f257ed8e57ad3cbacfff970313a116a07d360`. V tomto kole nebyla spuštěna žádná git operace, MCP, subagent ani instalace závislostí.
+
+- **N1 — panelová fáze a identita:** fáze ukládá origin a otisk účtu vzniklý při nahrávání. Otisk identity se počítá i pro starší `mcp:read` session, která nemá platný otisk vlastníka fronty. Před zahájením exportu a znovu v podmínce `canPublish` se porovnává aktuální účet i prostředí. Regrese pokrývají logout A → login B, změnu prostředí a výměnu účtu těsně před publikací bez změny generačního čítače.
+- **N2 — serializace fronty:** načtení `outgoing.json` na začátku i konci ověřování probíhá mimo společný operations řetěz. V řetězu zůstává pouze krátké porovnání položky se stavem v paměti. Regrese pozastaví exportní čtení, zruší export a ověří, že projde `store.list()` i `updateRestartIsSafe()`.
+- **N3 — inode dočasného souboru:** těsně před `link()` se porovná `dev+ino` otevřeného deskriptoru s `lstat` dočasného jména a ověří velikost. `lstat` symlink nenásleduje. Testy odmítnou náhradu cizím souborem, hardlinkem zdrojové nahrávky i symlinkem na zdroj. Úklid cizí inode neodstraní.
+
+### Cílené testy a statické kontroly
+
+Příkaz pod Node v24.22.2:
+
+~~~text
+$ PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/vitest run tests/recording-card.test.js tests/logout.test.js tests/recording-actions.test.js tests/upload-client.test.js tests/ipc-sender-guard.test.js tests/recording-storage.test.js tests/queue.test.js tests/recording-export.test.js tests/recording-playback.test.js tests/runtime-retention-wiring.test.js tests/queue-wiring.test.js tests/recordings-dashboard.test.js tests/renderer-failure-feedback.test.js tests/retention.test.js --maxWorkers=2
+
+ Test Files  14 passed (14)
+      Tests  1005 passed | 1 skipped (1006)
+exit: 0
+~~~
+
+Typecheck `PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/tsc --noEmit -p jsconfig.json`: prázdný výstup, exit 0.
+
+ESLint `PATH=/opt/homebrew/opt/node@24/bin:$PATH ./node_modules/.bin/eslint electron/main.cjs electron/queue.cjs electron/recording-export.cjs tests/recording-export.test.js tests/queue-wiring.test.js scripts/akceptace/export-kopie-181.mjs`: prázdný výstup, exit 0.
+
+### Akceptační skript
+
+`PATH=/opt/homebrew/opt/node@24/bin:$PATH node scripts/akceptace/export-kopie-181.mjs`:
+
+~~~text
+PASS: N1: identita a prostředí panelové exportní fáze — 3 testů, exit 0.
+PASS: N2: exportní čtení fronty neblokuje serializované operace — 1 testů, exit 0.
+PASS: N3: výměna dočasného jména za cizí inode nebo alias zdroje — 3 testů, exit 0.
+PASS: Nálezy kola 4: quit po timeoutu a poslední upravený název — 3 testů, exit 0.
+PASS: Atomický export: hotový soubor, metadata shodné kopie a kolize — 4 testů, exit 0.
+PASS: Přerušení: bariéry zápisu, publikace, timeout a ukončení — 6 testů, exit 0.
+PASS: Varianta A: žádná automatická kopie a explicitní export zůstává dostupný — 6 testů, exit 0.
+~~~
+
+Skript pokrývá 26 testů v sedmi skupinách; všechny skončily exit 0.
+
+### Sabotáže N1–N3
+
+Každá změna implementace byla samostatně vrácena, cílený test spuštěn a zdroj obnoven z kontrolní kopie. `cmp -s` po každém obnovení skončil exit 0.
+
+| Nález | Sabotáž | Výsledek |
+|---|---|---|
+| N1 | Kontrola `recordingExportStageMatchesCurrentIdentity` vrácena na bezpodmínečné `true`. | 3 červené: účet B, jiné prostředí a změna účtu před publikací byly zveřejněny. |
+| N2 | Počáteční `loadQueue(outgoing.json)` vráceno dovnitř `serialize`. | 1 červený test se 2 červenými asercemi: `store.list()` i restartovací bariéra updateru zůstaly blokované. |
+| N3 | Kontrola otevřeného a pojmenovaného dočasného inode odstraněna. | 3 červené: cizí soubor, hardlink i symlink byly zveřejněny jako úspěšný export. |
+
+Soubory `electron/main.cjs`, `electron/queue.cjs` a `electron/recording-export.cjs` byly po sabotážích porovnány s kontrolními kopiemi přes `cmp -s`; všechny tři porovnání: exit 0.

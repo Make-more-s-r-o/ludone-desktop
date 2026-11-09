@@ -998,6 +998,47 @@ describe("atomický a přerušitelný export kopie", () => {
     expect(await readFile(stagePath)).toEqual(stereoWebmBytes());
   });
 
+  it.each([
+    ["cizím souborem", "foreign"],
+    ["hardlinkem zdroje", "hardlink"],
+    ["symlinkem zdroje", "symlink"],
+  ])("před zveřejněním odmítne nahrazené dočasné jméno za %s", async (_label, replacement) => {
+    const options = await prepare();
+    const fs = await import("node:fs/promises");
+    const sourceBytes = await readFile(options.stagePath);
+    let replacedPath;
+
+    await expect(exportRecordingCopy({
+      ...options,
+      testHooks: {
+        beforePublish: async ({ temporaryPath }) => {
+          const temporaryName = (await readdir(options.downloadsDirectory))
+            .find((name) => name.endsWith(".tmp"));
+          replacedPath = temporaryPath ?? path.join(options.downloadsDirectory, temporaryName);
+          await fs.unlink(replacedPath);
+          if (replacement === "foreign") {
+            await writeFile(temporaryPath, Buffer.from("cizí obsah"));
+          } else if (replacement === "hardlink") {
+            await fs.link(options.stagePath, temporaryPath);
+          } else {
+            await fs.symlink(options.stagePath, temporaryPath);
+          }
+        },
+      },
+    })).rejects.toThrow(/Dočasný export (?:se během přípravy změnil|není běžný soubor)/u);
+
+    expect((await readdir(options.downloadsDirectory)).some((name) => name.endsWith(".webm"))).toBe(false);
+    expect(await readFile(options.stagePath)).toEqual(sourceBytes);
+    if (replacement === "foreign") {
+      await expect(readFile(replacedPath, "utf8")).resolves.toBe("cizí obsah");
+    } else if (replacement === "symlink") {
+      await expect(fs.readlink(replacedPath)).resolves.toBe(options.stagePath);
+    } else {
+      const sourceStat = await fs.lstat(options.stagePath);
+      expect(await fs.lstat(replacedPath)).toMatchObject({ dev: sourceStat.dev, ino: sourceStat.ino });
+    }
+  });
+
   it("před zveřejněním odmítne změněný SHA-256 a původní soubor nedotkne", async () => {
     const options = await prepare();
     const before = await readFile(options.stagePath);

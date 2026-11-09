@@ -1735,7 +1735,15 @@ async function createRecordingSession(event, sources) {
     // Vlastník je snapshot ze začátku nahrávání. Pozdější přihlášení nesmí
     // anonymně pořízenou nahrávku automaticky přivlastnit prvnímu účtu.
     const automaticUpload = applicationSettingsStore.get("uploadEnabled");
-    const ownerFingerprint = await readCurrentQueueOwnerFingerprint();
+    const ownerOrigin = resolveCurrentAuthIssuer();
+    const ownerGeneration = authSessionGeneration;
+    const identitySnapshot = await readRecordingExportIdentitySnapshot();
+    const ownerFingerprint = identitySnapshot === null
+      ? await readCurrentQueueOwnerFingerprint()
+      : identitySnapshot.queueOwnerFingerprint;
+    if (ownerGeneration !== authSessionGeneration || ownerOrigin !== resolveCurrentAuthIssuer()) {
+      throw new Error("Při zahájení nahrávání se změnila identita nebo prostředí");
+    }
     const timestamp = startedAt.toISOString().replace(/[:.]/g, "-");
     const sessionId = randomUUID();
     const prefix = `${timestamp}-${sessionId.slice(0, 8)}`;
@@ -1793,6 +1801,9 @@ async function createRecordingSession(event, sources) {
       ownerId,
       owner: event.sender,
       ownerFingerprint,
+      ownerOrigin,
+      ownerIdentityFingerprint: identitySnapshot?.identityFingerprint ?? null,
+      ownerIdentityKnown: identitySnapshot !== null,
       automaticUpload,
       track: exportTrack,
       manifestPath,
@@ -2624,6 +2635,62 @@ async function readCurrentQueueOwnerFingerprint() {
   }
 }
 
+async function readRecordingExportIdentitySnapshot() {
+  const generation = authSessionGeneration;
+  const issuer = resolveCurrentAuthIssuer();
+  if (authAttemptsInFlight > 0 || authLogoutsInFlight > 0
+    || authOriginChangeInFlight || authSessionTransitionPromise !== null) return null;
+  let storedSession;
+  try {
+    storedSession = await readStoredAuthSession();
+  } catch {
+    return null;
+  }
+  if (generation !== authSessionGeneration || issuer !== resolveCurrentAuthIssuer()
+    || authAttemptsInFlight > 0 || authLogoutsInFlight > 0
+    || authOriginChangeInFlight || authSessionTransitionPromise !== null) return null;
+  if (storedSession === null) {
+    return Object.freeze({
+      generation,
+      issuer,
+      identityFingerprint: null,
+      queueOwnerFingerprint: null,
+    });
+  }
+  if (storedSession.issuer !== issuer) return null;
+  // Identitu fáze odvozujeme i ze starší mcp:read session. Ta nesmí dostat
+  // queueOwnerFingerprint, ale její účet se při pozdějším exportu stále porovnává.
+  const identityFingerprint = deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get());
+  if (typeof identityFingerprint !== "string") return null;
+  return Object.freeze({
+    generation,
+    issuer,
+    identityFingerprint,
+    queueOwnerFingerprint: storedSessionMatchesCurrentAuth(storedSession)
+      ? identityFingerprint
+      : null,
+  });
+}
+
+async function recordingExportStageMatchesCurrentIdentity(exportStage) {
+  const generation = authSessionGeneration;
+  const issuer = resolveCurrentAuthIssuer();
+  if (!exportStage || exportStage.ownerOrigin !== issuer
+    || exportStage.ownerIdentityKnown !== true
+    || authAttemptsInFlight > 0 || authLogoutsInFlight > 0
+    || authOriginChangeInFlight || authSessionTransitionPromise !== null) return false;
+  const identity = await readRecordingExportIdentitySnapshot();
+  if (!identity) return false;
+  return generation === authSessionGeneration
+    && issuer === resolveCurrentAuthIssuer()
+    && authAttemptsInFlight === 0 && authLogoutsInFlight === 0
+    && !authOriginChangeInFlight && authSessionTransitionPromise === null
+    && identity.generation === generation
+    && identity.issuer === issuer
+    && exportStage.ownerIdentityFingerprint === identity.identityFingerprint
+    && exportStage.ownerFingerprint === identity.queueOwnerFingerprint;
+}
+
 async function readUsableQueueOwnerFingerprint() {
   try {
     const storedSession = await readUsableAuthSession();
@@ -3200,6 +3267,13 @@ async function exportCompletedRecordingCopy(event, clientRecordingId, options) {
   );
   let claimedInternalDelivery = false;
   try {
+    const identityMatches = await awaitRecordingCopyOperation(
+      recordingExportStageMatchesCurrentIdentity(exportStage),
+      operation,
+    );
+    if (!identityMatches) {
+      throw new RecordingExportUserError("Nahrávka patří jinému účtu nebo prostředí");
+    }
     if (exportStage.exportInFlight || exportStage.deleteInFlight) {
       throw new RecordingExportUserError("Interní delivery se už připravuje");
     }
@@ -3236,7 +3310,9 @@ async function exportCompletedRecordingCopy(event, clientRecordingId, options) {
       signal: operation.controller.signal,
       stagePath: delivery.filePath,
       stereoTiming: exportStage.timing,
-      canPublish: () => recordingCopyOperationIsCurrent(operation),
+      canPublish: async () => recordingCopyOperationIsCurrent(operation)
+        && await recordingExportStageMatchesCurrentIdentity(exportStage)
+        && recordingCopyOperationIsCurrent(operation),
       onPublicationSubmitted: ({ fileName }) => {
         if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
         operation.publicationSubmitted = true;

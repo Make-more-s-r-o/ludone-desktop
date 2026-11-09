@@ -1627,9 +1627,28 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
 
     return (async () => {
       if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      // Diskové čtení může čekat na filesystem. Nespouštěj ho v operations řadě:
+      // export je jen čtení a nesmí zastavit list(), zápisy ani bariéru updateru.
+      const loadedQueue = await loadQueue(filePath, { includeMigration: true });
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      const diskQueue = loadedQueue.queue;
+      const diskItem = diskQueue.items.find((item) => (
+        (item.kind ?? "recording") === "recording"
+        && item.clientRecordingId === clientRecordingId
+      )) ?? null;
+      const diskItemJson = diskItem === null ? null : JSON.stringify(diskItem);
       const captured = await serialize(async () => {
-        const loadedQueue = await loadQueue(filePath, { includeMigration: true });
-        const queue = freezeSnapshot(structuredClone(loadedQueue.queue));
+        if (loaded) {
+          const memoryItem = currentQueue?.items.find((item) => (
+            (item.kind ?? "recording") === "recording"
+            && item.clientRecordingId === clientRecordingId
+          )) ?? null;
+          const memoryItemJson = memoryItem === null ? null : JSON.stringify(memoryItem);
+          if (memoryItemJson !== diskItemJson) {
+            throw new Error("Soubory nahrávky se během přípravy akce změnily");
+          }
+        }
+        const queue = freezeSnapshot(structuredClone(diskQueue));
         const rawItem = queue.items.find((item) => (
           (item.kind ?? "recording") === "recording"
           && item.clientRecordingId === clientRecordingId
@@ -1684,14 +1703,25 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
       }
       if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
 
+      // Znovu čti disk mimo společnou serializaci a pod zámkem porovnej jen cache.
+      const latestOnDisk = await loadQueue(filePath, { includeMigration: true });
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      const latestDiskItem = latestOnDisk.queue.items.find((item) => (
+        (item.kind ?? "recording") === "recording"
+        && item.clientRecordingId === clientRecordingId
+      )) ?? null;
+      const latestDiskItemJson = latestDiskItem === null ? null : JSON.stringify(latestDiskItem);
+      if (latestDiskItemJson !== captured.rawItemJson) {
+        throw new Error("Soubory nahrávky se během přípravy akce změnily");
+      }
       await serialize(async () => {
-        const latest = await loadQueue(filePath, { includeMigration: true });
-        const latestItem = latest.queue.items.find((item) => (
+        if (!loaded) return;
+        const latestMemoryItem = currentQueue?.items.find((item) => (
           (item.kind ?? "recording") === "recording"
           && item.clientRecordingId === clientRecordingId
         )) ?? null;
-        const latestJson = latestItem === null ? null : JSON.stringify(latestItem);
-        if (latestJson !== captured.rawItemJson) {
+        const latestMemoryItemJson = latestMemoryItem === null ? null : JSON.stringify(latestMemoryItem);
+        if (latestMemoryItemJson !== captured.rawItemJson) {
           throw new Error("Soubory nahrávky se během přípravy akce změnily");
         }
       });

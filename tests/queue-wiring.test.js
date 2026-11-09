@@ -5540,6 +5540,11 @@ describe("produkční zapojení odchozí fronty", () => {
     const finish = harness.ipcHandlers.get("recording:finish");
     const finishExport = harness.ipcHandlers.get("recording:finish-export");
     const exportRecording = harness.ipcHandlers.get("recording:export-copy");
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    await expect(harness.ipcHandlers.get("auth:set-origin")(
+      settingsEvent,
+      "https://labs.ludone.cz",
+    )).resolves.toBe("https://labs.ludone.cz");
     const microphoneTiming = {
       startedAt: "2026-09-02T12:00:00.100Z",
       endedAt: "2026-09-02T12:30:00.500Z",
@@ -5560,11 +5565,6 @@ describe("produkční zapojení odchozí fronty", () => {
       system: systemTiming,
     });
     expect(saved.trackStartDeltaMs).toBe(25);
-    const { settingsEvent } = openSettingsAndCreateEvent(harness);
-    await expect(harness.ipcHandlers.get("auth:set-origin")(
-      settingsEvent,
-      "https://labs.ludone.cz",
-    )).resolves.toBe("https://labs.ludone.cz");
     const pendingExport = exportRecording(event, sessionId, { recordingName: "Porada / provozu: Q3" });
     await finishExport(event, sessionId, {
       succeeded: true,
@@ -6769,6 +6769,170 @@ describe("výslovná volba stránky přes exportní IPC", () => {
       .filter((name) => name.endsWith(".webm"))).toEqual([]);
     await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
     expect(harness.electron.shell.openExternal).toHaveBeenCalledTimes(0);
+  });
+});
+
+describe("identita panelové exportní fáze", () => {
+  it("po logoutu účtu A a loginu účtu B odmítne export staré fáze bez souboru", async () => {
+    let finishLogin;
+    const loginResult = new Promise((resolve) => { finishLogin = resolve; });
+    const createAuthController = vi.fn(() => ({
+      start: vi.fn(async () => ({
+        authorizationUrl: "https://app.ludone.cz/api/oauth/authorize?state=test",
+        cancel: vi.fn(),
+        result: loginResult,
+      })),
+    }));
+    const createLogoutController = vi.fn(({ app }) => ({
+      logout: vi.fn(async () => {
+        await rm(actualRequire("./auth.cjs").tokenSessionFilePath(app), { force: true });
+        return { signedOutLocally: true, serverRevoked: true, reason: null };
+      }),
+    }));
+    const harness = await loadMain({ createAuthController, createLogoutController });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession({ identity: { name: "Účet A", email: "a@ludone.cz" }, scope: "mcp:read" }),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const downloadsDirectory = harness.electron.app.getPath("downloads");
+
+    await expect(harness.ipcHandlers.get("auth:logout")(event)).resolves.toMatchObject({
+      signedOutLocally: true,
+    });
+    const login = harness.ipcHandlers.get("auth:begin")(event);
+    await vi.waitFor(() => expect(createAuthController.mock.results[0].value.start).toHaveBeenCalledOnce());
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession({ identity: { name: "Účet B", email: "b@ludone.cz" }, scope: "mcp:read" }),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    finishLogin({ user: { name: "Účet B", email: "b@ludone.cz" } });
+    await expect(login).resolves.toMatchObject({ ok: true });
+
+    const result = await harness.ipcHandlers.get("recording:export-copy")(event, sessionId, {
+      recordingName: "Stará fáze účtu A",
+    });
+
+    expect(result).toMatchObject({ ok: false, recordingExported: false });
+    expect((await readdir(downloadsDirectory)).filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
+  it("odmítne fázi vytvořenou v jiném prostředí", async () => {
+    let currentOrigin = "https://app.ludone.cz";
+    const originStore = {
+      get: vi.fn(() => currentOrigin),
+      set: vi.fn(async (origin) => { currentOrigin = origin; return origin; }),
+    };
+    const harness = await loadMain({ createAuthOriginStore: () => originStore });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    currentOrigin = "https://labs.ludone.cz";
+
+    const result = await harness.ipcHandlers.get("recording:export-copy")(event, sessionId, {
+      recordingName: "Fáze z jiného prostředí",
+    });
+
+    expect(result).toMatchObject({ ok: false, recordingExported: false });
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
+  it("před publikací znovu ověří účet fáze bez spoléhání na generační čítač", async () => {
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession({ identity: { name: "Účet A", email: "a@ludone.cz" }, scope: "mcp:read" }),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const exportRequest = harness.ipcHandlers.get("recording:export-copy")(event, sessionId, {
+      recordingName: "Fáze účtu A",
+    });
+    await gate.started;
+
+    // Simuluje výměnu uložené identity mimo běžné auth handlery: generace zůstane
+    // stejná, takže rozhodující musí být kontrola vlastníka přímo před publikací.
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession({ identity: { name: "Účet B", email: "b@ludone.cz" }, scope: "mcp:read" }),
+      accessExpiresAt: Date.now() + 60_000,
+    });
+    gate.finish();
+
+    await expect(exportRequest).resolves.toMatchObject({ ok: false, recordingExported: false });
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+});
+
+describe("exportní čtení fronty mimo společnou serializaci", () => {
+  it("pozastavené čtení exportu neblokuje list ani bezpečný restart po abortu", async () => {
+    let store;
+    const createOutboundQueueStore = vi.fn((options) => {
+      store = actualRequire("./queue.cjs").createOutboundQueueStore(options);
+      return store;
+    });
+    const autoUpdater = fakeAutoUpdater();
+    const harness = await loadMain({
+      autoUpdater,
+      createOutboundQueueStore,
+      createLogoutController: vi.fn(() => ({
+        logout: vi.fn(async () => ({ signedOutLocally: true, serverRevoked: true, reason: null })),
+      })),
+      isPackaged: true,
+    });
+    const fixture = await prepareStoredRecordingCopy(harness);
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const queueContents = await readFile(queuePath, "utf8");
+    const fsPromises = actualRequire("node:fs").promises;
+    const originalReadFile = fsPromises.readFile.bind(fsPromises);
+    const readStarted = createTestBarrier();
+    const releaseRead = createTestBarrier();
+    let pauseNextQueueRead = true;
+    const readSpy = vi.spyOn(fsPromises, "readFile").mockImplementation((filePath, ...args) => {
+      if (pauseNextQueueRead && path.resolve(String(filePath)) === queuePath) {
+        pauseNextQueueRead = false;
+        readStarted.release();
+        return releaseRead.promise.then(() => queueContents);
+      }
+      return originalReadFile(filePath, ...args);
+    });
+    let exportRequest;
+    try {
+      exportRequest = harness.ipcHandlers.get("recording:export-copy")(
+        fixture.event,
+        fixture.sessionId,
+        {
+          queueRev: fixture.row.revision,
+          fileRev: fixture.row.fileRevision,
+          recordingName: "Pozastavený export",
+        },
+      );
+      await readStarted.promise;
+
+      await expect(harness.ipcHandlers.get("auth:logout")(fixture.event)).resolves.toMatchObject({
+        signedOutLocally: true,
+      });
+      await expect(exportRequest).resolves.toMatchObject({ ok: false, recordingExported: false });
+
+      const listOutcome = await Promise.race([
+        store.list().then(() => "settled"),
+        new Promise((resolve) => setTimeout(() => resolve("blocked"), 100)),
+      ]);
+
+      const installStarted = createTestBarrier();
+      autoUpdater.quitAndInstall.mockImplementation(() => installStarted.release());
+      autoUpdater.emit("update-downloaded", { version: "1.2.3" });
+      harness.ipcHandlers.get("updater:install")(fixture.event, { expectedVersion: "1.2.3" });
+      const updateOutcome = await Promise.race([
+        installStarted.promise.then(() => "settled"),
+        new Promise((resolve) => setTimeout(() => resolve("blocked"), 100)),
+      ]);
+      expect.soft(listOutcome).toBe("settled");
+      expect.soft(updateOutcome).toBe("settled");
+    } finally {
+      releaseRead.release();
+      readSpy.mockRestore();
+      await exportRequest;
+    }
   });
 });
 

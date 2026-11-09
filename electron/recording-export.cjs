@@ -748,12 +748,32 @@ async function exportRecordingCopy({
 
     await awaitAbortable(temporaryHandle.sync(), signal, state, cancelWork);
     throwIfAborted(signal, state);
-    await awaitAbortable(Promise.resolve(hooks.beforePublish?.({ filePath })), signal, state);
+    await awaitAbortable(Promise.resolve(hooks.beforePublish?.({ filePath, temporaryPath })), signal, state);
     throwIfAborted(signal, state);
     const mayPublish = await awaitAbortable(Promise.resolve(canPublish()), signal, state);
     throwIfAborted(signal, state);
     if (mayPublish !== true) throw new Error("Export už nelze bezpečně zveřejnit");
     throwIfAborted(signal, state);
+
+    // Cizí proces mohl během kopírování vyměnit dočasné jméno. Ověř, že
+    // otevřený deskriptor i cesta stále ukazují na náš ověřený inode; lstat
+    // záměrně neprochází případný symlink. Po kontrole už nesmí být žádný await
+    // před předáním atomického linku.
+    const temporaryOpened = regularFileIdentity(
+      await awaitAbortable(temporaryHandle.stat(), signal, state),
+      "Dočasný export",
+    );
+    throwIfAborted(signal, state);
+    const temporaryNamed = regularFileIdentity(
+      await awaitAbortable(fs.promises.lstat(temporaryPath), signal, state),
+      "Dočasný export",
+    );
+    throwIfAborted(signal, state);
+    if (!sameFileIdentity(temporaryIdentity, temporaryOpened)
+      || !sameFileIdentity(temporaryOpened, temporaryNamed)
+      || temporaryOpened.size !== expectedDelivery.sizeBytes) {
+      throw new Error("Dočasný export se během přípravy změnil");
+    }
 
     const linkPromise = fs.promises.link(temporaryPath, filePath);
     state.publicationSubmitted = true;
