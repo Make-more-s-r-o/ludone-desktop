@@ -1238,6 +1238,7 @@ function createPanelWindow() {
   panelContents.on("render-process-gone", (_event, details) => {
     console.error(`[recording] Renderer skončil: ${JSON.stringify(details)}`);
     pendingTrayCommands.length = 0;
+    cancelRecordingCopyOperations("renderer-destroyed", { ownerId: panelContents.id });
     forgetOwnerActivity(panelContents.id, "pád rendereru");
   });
   panelContents.on("render-process-gone", () => {
@@ -1255,6 +1256,7 @@ function createPanelWindow() {
   });
   panelContents.once("destroyed", () => {
     pendingTrayCommands.length = 0;
+    cancelRecordingCopyOperations("renderer-destroyed", { ownerId: panelContents.id });
     forgetOwnerActivity(panelContents.id, "zničení okna");
   });
   panelContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
@@ -1262,6 +1264,7 @@ function createPanelWindow() {
       // Rychlá akce patří dokumentu, který byl aktivní při kliknutí. Zejména
       // staré „Ukončit nahrávání“ se nesmí po reloadu aplikovat na novou session.
       pendingTrayCommands.length = 0;
+      cancelRecordingCopyOperations("renderer-destroyed", { ownerId: panelContents.id });
       forgetOwnerActivity(panelContents.id, "navigace nebo reload");
     }
   });
@@ -2138,7 +2141,6 @@ async function finalizeRecordingSession(sessionId, finalState, trackTimings = nu
 }
 
 function finalizeRecordingSessionsForOwner(ownerId, reason) {
-  cancelRecordingCopyOperations("renderer-destroyed", { ownerId });
   const preparation = recordingOwnersPreparing.get(ownerId);
   if (preparation) preparation.cancelled = true;
   for (const recordingSession of recordingSessions.values()) {

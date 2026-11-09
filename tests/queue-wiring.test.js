@@ -6544,31 +6544,74 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     ["keep", "saved_local"],
     ["send", "queued"],
   ])("po rozhodnutí %s lze exportovat kopii z trvalé identity", async (decision, outcome) => {
-    const createRecordingUploadSend = vi.fn(() => vi.fn(async () => ({ outcome: "sent" })));
+    const sendStarted = createTestBarrier();
+    const finishSend = createTestBarrier();
+    const sendRecording = vi.fn(async () => {
+      sendStarted.release();
+      await finishSend.promise;
+      return { outcome: "sent" };
+    });
+    const createRecordingUploadSend = vi.fn(() => sendRecording);
     const harness = await loadMain({ createRecordingUploadSend });
-    await writeStoredAuthSession(harness, {
-      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
-    });
-    const { event, sessionId } = await prepareRecordingExport(harness);
-    await expect(harness.ipcHandlers.get("recording:save-decision")(
-      event, sessionId, { decision, recordingName: "Trvalá porada" },
-    )).resolves.toMatchObject({ ok: true, outcome });
+    try {
+      await writeStoredAuthSession(harness, {
+        ...storedAuthSession(), accessExpiresAt: Date.now() + 24 * 60 * 60 * 1_000,
+      });
+      const { event, sessionId } = await prepareRecordingExport(harness);
+      let item = decision === "send"
+        ? (await harness.ipcHandlers.get("recordings:list-local")(event))
+          .items.find((candidate) => candidate.id === sessionId)
+        : null;
+      if (item) expect(item).toMatchObject({ ownership: "current" });
+      await expect(harness.ipcHandlers.get("recording:save-decision")(
+        event, sessionId, { decision, recordingName: "Trvalá porada" },
+      )).resolves.toMatchObject({ ok: true, outcome });
 
-    const item = (await harness.ipcHandlers.get("recordings:list-local")(event))
-      .items.find((candidate) => candidate.id === sessionId);
-    expect(item).toMatchObject({ ownership: "current", deliveryState: "ready" });
-    const { api, invoke } = loadPreload();
-    invoke.mockImplementation((channel, ...args) => harness.ipcHandlers.get(channel)(event, ...args));
-    const result = await api.exportRecordingCopy(sessionId, {
-      queueRev: item.revision,
-      fileRev: item.fileRevision,
-      recordingName: "Trvalá porada",
-    });
+      const { api, invoke } = loadPreload();
+      invoke.mockImplementation((channel, ...args) => harness.ipcHandlers.get(channel)(event, ...args));
 
-    expect(result, JSON.stringify(result)).toMatchObject({ ok: true, clientRecordingId: sessionId });
-    await expect(readFile(path.join(harness.electron.app.getPath("downloads"), result.fileName)))
-      .resolves.toEqual(stereoWebmBytes());
-    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+      if (decision === "send") {
+        // Send běží na pozadí. Změříme odmítnutí souběhu a pak počkáme na trvalý
+        // výsledek fronty; finální export nesmí záviset na rychlosti runneru.
+        await sendStarted.promise;
+        const inFlightResult = await api.exportRecordingCopy(sessionId, {
+          queueRev: item.revision,
+          fileRev: item.fileRevision,
+          recordingName: "Trvalá porada",
+        });
+        expect(inFlightResult).toMatchObject({ ok: false, recordingExported: false });
+        expect(inFlightResult.message).toContain("Akci exportu už nelze bezpečně potvrdit");
+        expect((await readdir(harness.electron.app.getPath("downloads")))
+          .filter((name) => name.endsWith(".webm"))).toEqual([]);
+
+        finishSend.release();
+        const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+        await vi.waitFor(async () => {
+          const queue = JSON.parse(await readFile(queuePath, "utf8"));
+          expect(queue.items.find((candidate) => candidate.clientRecordingId === sessionId))
+            .toMatchObject({ state: "odeslano" });
+        }, { timeout: 15_000, interval: 25 });
+        expect(createRecordingUploadSend).toHaveBeenCalledOnce();
+        expect(sendRecording).toHaveBeenCalledOnce();
+      }
+
+      item = (await harness.ipcHandlers.get("recordings:list-local")(event))
+        .items.find((candidate) => candidate.id === sessionId);
+      expect(item).toMatchObject({ ownership: "current", deliveryState: "ready" });
+
+      const result = await api.exportRecordingCopy(sessionId, {
+        queueRev: item.revision,
+        fileRev: item.fileRevision,
+        recordingName: "Trvalá porada",
+      });
+
+      expect(result, JSON.stringify(result)).toMatchObject({ ok: true, clientRecordingId: sessionId });
+      await expect(readFile(path.join(harness.electron.app.getPath("downloads"), result.fileName)))
+        .resolves.toEqual(stereoWebmBytes());
+      expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+    } finally {
+      finishSend.release();
+    }
   });
 
   it("chybějící delivery oznámí retenci a při exportu nic nemaže", async () => {
