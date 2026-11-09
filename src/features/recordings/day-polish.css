@@ -8,6 +8,11 @@
 .recordings-dashboard .recording-queue-card__heading strong, .recordings-dashboard .recording-queue-card__detail-heading h1, .recordings-dashboard dd, .recordings-dashboard .recording-queue-card__issue { overflow-wrap: anywhere; }
 .recordings-dashboard .recording-queue-card__actions { flex-wrap: wrap; }
 .recordings-dashboard .recording-queue-card__actions button { max-width: 100%; white-space: normal; }
+.recordings-dashboard .recording-queue-card__copy { display: grid; width: 100%; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-elevated-2); }
+.recordings-dashboard .recording-queue-card__copy h2 { margin: 0; font-size: 13px; }
+.recordings-dashboard .recording-queue-card__copy label { color: var(--panel-subtle); font-size: 11px; }
+.recordings-dashboard .recording-queue-card__copy-name { width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-elevated); color: var(--foreground); font: inherit; }
+.recordings-dashboard .recording-queue-card__copy-status { margin: 0; color: var(--panel-subtle); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
 .recordings-dashboard .recording-queue-card__technical { margin-top: 16px; color: var(--panel-subtle); font-size: 11px; }
 .recordings-dashboard .recording-queue-card__context-card { padding: 10px; opacity: .8; }
 .recordings-dashboard summary:focus-visible, .recordings-dashboard button:focus-visible { outline: 2px solid var(--panel-accent); outline-offset: 3px; }

@@ -779,7 +779,23 @@ function stereoWebmBytes() {
   ]);
 }
 
-async function prepareRecordingExport(harness, { finishStereo = true } = {}) {
+async function prepareRecordingExport(harness, {
+  finishStereo = true,
+  timings = {
+    microphone: {
+      startedAt: "2026-09-03T08:00:00.100Z",
+      endedAt: "2026-09-03T08:30:00.100Z",
+    },
+    system: {
+      startedAt: "2026-09-03T08:00:00.125Z",
+      endedAt: "2026-09-03T08:30:00.125Z",
+    },
+    stereo: {
+      startedAt: "2026-09-03T08:00:00.075Z",
+      endedAt: "2026-09-03T08:30:00.150Z",
+    },
+  },
+} = {}) {
   await harness.runReady();
   const panelContents = harness.windows[0].webContents;
   const event = { sender: panelContents, senderFrame: panelContents.mainFrame };
@@ -792,22 +808,13 @@ async function prepareRecordingExport(harness, { finishStereo = true } = {}) {
 
   await append(event, sessionId, "stereo", 0, Uint8Array.from(stereoWebmBytes()).buffer);
   await finish(event, sessionId, {
-    microphone: {
-      startedAt: "2026-09-03T08:00:00.100Z",
-      endedAt: "2026-09-03T08:30:00.100Z",
-    },
-    system: {
-      startedAt: "2026-09-03T08:00:00.125Z",
-      endedAt: "2026-09-03T08:30:00.125Z",
-    },
+    microphone: timings.microphone,
+    system: timings.system,
   });
   if (finishStereo) {
     await finishExport(event, sessionId, {
       succeeded: true,
-      timing: {
-        startedAt: "2026-09-03T08:00:00.075Z",
-        endedAt: "2026-09-03T08:30:00.150Z",
-      },
+      timing: timings.stereo,
     });
   }
   return { event, exportRecording, finishExport, sessionId };
@@ -3008,8 +3015,9 @@ describe("zjištění uložené OAuth session", () => {
       };
     });
     const harness = await loadMain({ exportRecordingCopy });
-    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
-    const exporting = exportRecording(event, sessionId, { recordingName: "Schůzka", openUploadPage: true });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const exportCopy = harness.ipcHandlers.get("recording:export-copy");
+    const exporting = exportCopy(event, sessionId, { recordingName: "Schůzka" });
     await expect(exportStarted).resolves.toBe("https://app.ludone.cz");
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
 
@@ -5460,7 +5468,7 @@ describe("produkční zapojení odchozí fronty", () => {
     const append = harness.ipcHandlers.get("recording:append");
     const finish = harness.ipcHandlers.get("recording:finish");
     const finishExport = harness.ipcHandlers.get("recording:finish-export");
-    const exportRecording = harness.ipcHandlers.get("recording:export");
+    const exportRecording = harness.ipcHandlers.get("recording:export-copy");
     const microphoneTiming = {
       startedAt: "2026-09-02T12:00:00.100Z",
       endedAt: "2026-09-02T12:30:00.500Z",
@@ -5486,7 +5494,7 @@ describe("produkční zapojení odchozí fronty", () => {
       settingsEvent,
       "https://labs.ludone.cz",
     )).resolves.toBe("https://labs.ludone.cz");
-    const pendingExport = exportRecording(event, sessionId, { recordingName: "Porada / provozu: Q3", openUploadPage: true });
+    const pendingExport = exportRecording(event, sessionId, { recordingName: "Porada / provozu: Q3" });
     await finishExport(event, sessionId, {
       succeeded: true,
       timing: {
@@ -5496,12 +5504,7 @@ describe("produkční zapojení odchozí fronty", () => {
     });
     const exported = await pendingExport;
 
-    expect(exported).toMatchObject({
-      ok: true,
-      clientRecordingId: sessionId,
-      format: { container: "WebM", codec: "Opus", channels: 2 },
-      trackStartDeltaMs: 25,
-    });
+    expect(exported).toMatchObject({ ok: true, clientRecordingId: sessionId });
     expect(exported.fileName).toContain("Porada-provozu-Q3");
     expect(exported.fileName).not.toMatch(/[/:]/);
     const exportLogs = harness.quietConsole.log.mock.calls
@@ -5510,7 +5513,7 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(exportLogs).toEqual([expect.stringContaining(sessionId)]);
     expect(exportLogs.join("\n")).not.toContain("Porada");
     expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
-    await expect(readFile(path.join(harness.userDataPath, exported.fileName)))
+    await expect(readFile(path.join(harness.electron.app.getPath("downloads"), exported.fileName)))
       .resolves.toEqual(stereoWebmBytes());
     await expect(readFile(path.join(
       harness.userDataPath,
@@ -5533,7 +5536,7 @@ describe("produkční zapojení odchozí fronty", () => {
     const append = harness.ipcHandlers.get("recording:append");
     const finish = harness.ipcHandlers.get("recording:finish");
     const finishExport = harness.ipcHandlers.get("recording:finish-export");
-    const exportRecording = harness.ipcHandlers.get("recording:export");
+    const exportRecording = harness.ipcHandlers.get("recording:export-copy");
     const microphoneTiming = {
       startedAt: "2026-09-02T12:00:00.100Z",
       endedAt: "2026-09-02T12:00:01.100Z",
@@ -5562,7 +5565,7 @@ describe("produkční zapojení odchozí fronty", () => {
       + `${safeSecretName}-${sessionId}.webm`;
     await writeFile(path.join(harness.userDataPath, conflictingFileName), "jiný obsah");
 
-    await expect(exportRecording(event, sessionId, { recordingName: secretName, openUploadPage: true }))
+    await expect(exportRecording(event, sessionId, { recordingName: secretName }))
       .resolves.toMatchObject({ ok: false, recordingExported: false });
     const serializedLogs = JSON.stringify([
       ...harness.quietConsole.error.mock.calls,
@@ -5791,8 +5794,9 @@ describe("produkční zapojení odchozí fronty", () => {
     const harness = await loadMain({ exportRecordingCopy: vi.fn(() => new Promise((resolve) => {
       resolveExport = resolve;
     })) });
-    const { event, sessionId, exportRecording } = await prepareRecordingExport(harness);
-    const exporting = exportRecording(event, sessionId, { recordingName: "Export", openUploadPage: false });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const exportCopy = harness.ipcHandlers.get("recording:export-copy");
+    const exporting = exportCopy(event, sessionId, { recordingName: "Export" });
     await vi.waitFor(() => expect(resolveExport).toBeTypeOf("function"));
     const row = (await harness.ipcHandlers.get("recordings:list-local")(event)).items.find((item) => item.id === sessionId);
     harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
@@ -5914,6 +5918,47 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
   });
 
+  const invalidRecordingTimelines = [
+    ["stereo začne později", {
+      microphone: { startedAt: "2026-09-03T08:00:00.100Z", endedAt: "2026-09-03T08:30:00.100Z" },
+      system: { startedAt: "2026-09-03T08:00:00.125Z", endedAt: "2026-09-03T08:30:00.125Z" },
+      stereo: { startedAt: "2026-09-03T08:00:05.075Z", endedAt: "2026-09-03T08:30:00.150Z" },
+    }],
+    ["stereo skončí dříve", {
+      microphone: { startedAt: "2026-09-03T08:00:00.100Z", endedAt: "2026-09-03T08:30:00.100Z" },
+      system: { startedAt: "2026-09-03T08:00:00.125Z", endedAt: "2026-09-03T08:30:00.125Z" },
+      stereo: { startedAt: "2026-09-03T08:00:00.075Z", endedAt: "2026-09-03T08:29:55.150Z" },
+    }],
+    ["starty stop se liší nad limit", {
+      microphone: { startedAt: "2026-09-03T08:00:00.100Z", endedAt: "2026-09-03T08:30:00.100Z" },
+      system: { startedAt: "2026-09-03T08:00:05.125Z", endedAt: "2026-09-03T08:30:05.125Z" },
+      stereo: { startedAt: "2026-09-03T08:00:00.075Z", endedAt: "2026-09-03T08:30:05.150Z" },
+    }],
+  ];
+
+  it.each(
+    invalidRecordingTimelines.flatMap(([timingCase, timings]) => (
+      ["send", "keep"].map((decision) => [decision, timingCase, timings])
+    )),
+  )("save-decision %s odmítne nahrávku, když %s", async (decision, _timingCase, timings) => {
+    const harness = await loadMain();
+    const { event, sessionId } = await prepareRecordingExport(harness, { timings });
+
+    const result = await harness.ipcHandlers.get("recording:save-decision")(
+      event, sessionId, { decision, recordingName: "Časová osa" },
+    );
+
+    expect(result).toMatchObject({ ok: false, recordingExported: false });
+    expect(result.message).toContain("Export se nepodařilo dokončit");
+    const queue = JSON.parse(await readFile(
+      path.join(harness.userDataPath, "queue", "outgoing.json"), "utf8",
+    ));
+    expect(queue.items.find((item) => item.clientRecordingId === sessionId))
+      .toMatchObject({ state: "ceka", uploadIntent: "held" });
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
   it("save-decision keep uloží lokální položku bez kopie do Stažených", async () => {
     const exportRecordingCopy = vi.fn();
     const harness = await loadMain({ exportRecordingCopy });
@@ -5927,6 +5972,27 @@ describe("produkční zapojení odchozí fronty", () => {
       .filter((name) => name.endsWith(".webm"));
     expect(downloadedWebm).toEqual([]);
     expect(exportRecordingCopy).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["send", true],
+    ["keep", false],
+  ])("starší recording:export při volbě %s nevytvoří kopii", async (decision, openUploadPage) => {
+    const exportRecordingCopy = vi.fn();
+    const harness = await loadMain({ exportRecordingCopy });
+    const { event, sessionId, exportRecording } = await prepareRecordingExport(harness);
+
+    const result = await exportRecording(event, sessionId, {
+      recordingName: "Kompatibilní most",
+      openUploadPage,
+    });
+
+    expect(result).toMatchObject({ ok: true, clientRecordingId: sessionId });
+    expect(result).not.toHaveProperty("fileName");
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+    expect(exportRecordingCopy).not.toHaveBeenCalled();
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
   });
 
   it("save-decision vrátí queued po durable volbě ještě před dokončením upload pumpy", async () => {
@@ -6387,6 +6453,69 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     });
   });
 
+  it.each([
+    ["keep", "saved_local"],
+    ["send", "queued"],
+  ])("po rozhodnutí %s lze exportovat kopii z trvalé identity", async (decision, outcome) => {
+    const createRecordingUploadSend = vi.fn(() => vi.fn(async () => ({ outcome: "sent" })));
+    const harness = await loadMain({ createRecordingUploadSend });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    await expect(harness.ipcHandlers.get("recording:save-decision")(
+      event, sessionId, { decision, recordingName: "Trvalá porada" },
+    )).resolves.toMatchObject({ ok: true, outcome });
+
+    const item = (await harness.ipcHandlers.get("recordings:list-local")(event))
+      .items.find((candidate) => candidate.id === sessionId);
+    expect(item).toMatchObject({ ownership: "current", deliveryState: "ready" });
+    const { api, invoke } = loadPreload();
+    invoke.mockImplementation((channel, ...args) => harness.ipcHandlers.get(channel)(event, ...args));
+    const result = await api.exportRecordingCopy(sessionId, {
+      queueRev: item.revision,
+      fileRev: item.fileRevision,
+      recordingName: "Trvalá porada",
+    });
+
+    expect(result, JSON.stringify(result)).toMatchObject({ ok: true, clientRecordingId: sessionId });
+    await expect(readFile(path.join(harness.electron.app.getPath("downloads"), result.fileName)))
+      .resolves.toEqual(stereoWebmBytes());
+    expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
+  });
+
+  it("chybějící delivery oznámí retenci a při exportu nic nemaže", async () => {
+    const harness = await loadMain();
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    await harness.ipcHandlers.get("recording:save-decision")(
+      event, sessionId, { decision: "keep", recordingName: "Lokální porada" },
+    );
+    const item = (await harness.ipcHandlers.get("recordings:list-local")(event))
+      .items.find((candidate) => candidate.id === sessionId);
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const queue = JSON.parse(await readFile(queuePath, "utf8"));
+    const deliveryPath = queue.items.find((candidate) => candidate.clientRecordingId === sessionId).delivery.filePath;
+    await rm(deliveryPath);
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const filesBefore = await readdir(recordingsDirectory);
+
+    const result = await harness.ipcHandlers.get("recording:export-copy")(event, sessionId, {
+      queueRev: item.revision,
+      fileRev: item.fileRevision,
+      recordingName: "Lokální porada",
+    });
+
+    expect(result).toMatchObject({ ok: false, recordingExported: false });
+    expect(result.message).toContain("mohl být odstraněn retencí");
+    expect(result.message).toContain("Nic nebylo smazáno");
+    expect(await readdir(recordingsDirectory)).toEqual(filesBefore);
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
   it("501 jednotek přes preload odmítne, zachová soubory a po opravě export zopakuje", async () => {
     const harness = await loadMain();
     const { event, sessionId } = await prepareRecordingExport(harness);
@@ -6416,9 +6545,9 @@ describe("výslovná volba stránky přes exportní IPC", () => {
       recordingName: corrected, openUploadPage: true,
     });
     expect(result.ok).toBe(true);
-    expect(Buffer.byteLength(result.fileName, "utf8")).toBeLessThanOrEqual(255);
-    await expect(readFile(path.join(harness.userDataPath, result.fileName)))
-      .resolves.toEqual(stereoWebmBytes());
+    expect(result).not.toHaveProperty("fileName");
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
     expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
   });
 
@@ -6426,7 +6555,7 @@ describe("výslovná volba stránky přes exportní IPC", () => {
   // Cena je hlavně v přípravě a skutečném exportu přes main, včetně zápisů a fsync.
   // Každá volba potřebuje vlastní nahrávku: export ji spotřebuje. Není tu zbytečné
   // čekání ani generování; rezervu 10 s proto dostává jen tento parametrizovaný test.
-  it.each([false, true])("přenese openUploadPage=%s přes skutečný preload až ke kopii", async (openUploadPage) => {
+  it.each([false, true])("starší preloadový most s openUploadPage=%s neuloží kopii", async (openUploadPage) => {
     const harness = await loadMain();
     const { event, sessionId } = await prepareRecordingExport(harness);
     const { api, invoke } = loadPreload();
@@ -6435,8 +6564,9 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     const result = await api.exportRecording(sessionId, { recordingName: "Porada", openUploadPage });
 
     expect(result.ok).toBe(true);
-    await expect(readFile(path.join(harness.userDataPath, result.fileName)))
-      .resolves.toEqual(stereoWebmBytes());
+    expect(result).not.toHaveProperty("fileName");
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
     expect(harness.electron.shell.openExternal).not.toHaveBeenCalled();
   }, 10_000);
 
@@ -6453,7 +6583,7 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     },
   );
 
-  it("Jen uložit dokončí i odložený quit bez otevření prohlížeče", async () => {
+  it("Jen uložit dokončí odložený quit bez kopie a bez otevření prohlížeče", async () => {
     const harness = await loadMain();
     const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
     const quitEvent = { preventDefault: vi.fn() };
@@ -6464,8 +6594,9 @@ describe("výslovná volba stránky přes exportní IPC", () => {
     const result = await exportRecording(event, sessionId, { recordingName: "", openUploadPage: false });
 
     expect(result.ok).toBe(true);
-    await expect(readFile(path.join(harness.userDataPath, result.fileName)))
-      .resolves.toEqual(stereoWebmBytes());
+    expect(result).not.toHaveProperty("fileName");
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
     await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
     expect(harness.electron.shell.openExternal).toHaveBeenCalledTimes(0);
   });
@@ -6479,9 +6610,11 @@ describe("soukromí chyb stereo exportu", () => {
       systemExportError("ENOSPC", rawMessage),
     );
     const harness = await loadMain({ exportRecordingCopy });
-    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+    const { event, sessionId } = await prepareRecordingExport(harness);
 
-    const result = await exportRecording(event, sessionId, { recordingName: "Pohovor Novak", openUploadPage: true });
+    const result = await harness.ipcHandlers.get("recording:export-copy")(
+      event, sessionId, { recordingName: "Pohovor Novak" },
+    );
 
     expect(exportRecordingCopy).toHaveBeenCalledOnce();
     expect(result).toMatchObject({ ok: false, recordingExported: false });
@@ -6519,10 +6652,10 @@ describe("soukromí chyb stereo exportu", () => {
     const unmarkedExport = vi.fn().mockRejectedValue(new Error("Stereo export už probíhá"));
     const unmarkedHarness = await loadMain({ exportRecordingCopy: unmarkedExport });
     const unmarkedFixture = await prepareRecordingExport(unmarkedHarness);
-    const unmarkedResult = await unmarkedFixture.exportRecording(
+    const unmarkedResult = await unmarkedHarness.ipcHandlers.get("recording:export-copy")(
       unmarkedFixture.event,
       unmarkedFixture.sessionId,
-      { recordingName: "Druhý pokus", openUploadPage: true },
+      { recordingName: "Druhý pokus" },
     );
 
     expect(unmarkedExport).toHaveBeenCalledOnce();
@@ -6590,9 +6723,11 @@ describe("soukromí chyb stereo exportu", () => {
       systemExportError("EACCES", rawMessage),
     );
     const harness = await loadMain({ exportRecordingCopy });
-    const { event, exportRecording, sessionId } = await prepareRecordingExport(harness);
+    const { event, sessionId } = await prepareRecordingExport(harness);
 
-    await exportRecording(event, sessionId, { recordingName: "Pohovor Novak", openUploadPage: true });
+    await harness.ipcHandlers.get("recording:export-copy")(
+      event, sessionId, { recordingName: "Pohovor Novak" },
+    );
 
     expect(exportRecordingCopy).toHaveBeenCalledOnce();
     const serializedLogs = JSON.stringify([

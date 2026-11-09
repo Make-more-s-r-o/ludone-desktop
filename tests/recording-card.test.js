@@ -110,6 +110,7 @@ const MICROPHONE_ONLY_TEXT = "Můžeš povolit jen mikrofon. Časovač poběží
  *   modernDecisionOutcome?: "queued" | "saved_local",
  *   microphoneError?: Error | DOMException,
  *   queueItems?: Array<Record<string, unknown>>,
+ *   recordingIds?: string[],
  *   renderApp?: boolean,
  * }} [options]
  */
@@ -200,6 +201,7 @@ async function renderRecordingCard(options = {}) {
   const displayCapture = deferred();
   const recoveryCapture = deferred();
   const beginRecordingAttempt = deferred();
+  let recordingIdIndex = 0;
   const getUserMedia = vi.fn(() => {
     if (options.microphoneError) return Promise.reject(options.microphoneError);
     return options.deferCapture ? microphoneCapture.promise : Promise.resolve(microphoneStream);
@@ -245,14 +247,16 @@ async function renderRecordingCard(options = {}) {
   };
 
   const ludone = {
-    beginRecording: vi.fn(() => (
-      options.deferBegin
+    beginRecording: vi.fn(() => {
+      const sessionId = options.recordingIds?.[recordingIdIndex] ?? SESSION_ID;
+      recordingIdIndex += 1;
+      return options.deferBegin
         ? beginRecordingAttempt.promise
-        : Promise.resolve({ sessionId: SESSION_ID })
-    )),
+        : Promise.resolve({ sessionId });
+    }),
     appendRecordingChunk: vi.fn().mockResolvedValue({ sequence: 0, bytes: 4 }),
-    finishRecording: vi.fn((_sessionId, trackTimings) => {
-      const result = { ...recordingResult(), ...options.finishRecordingResult };
+    finishRecording: vi.fn((sessionId, trackTimings) => {
+      const result = { ...recordingResult(), clientRecordingId: sessionId, ...options.finishRecordingResult };
       if (!trackTimings?.system) delete result.files.system;
       return Promise.resolve(result);
     }),
@@ -721,6 +725,50 @@ describe("RecordingCard", () => {
     }
   });
 
+  it.each([
+    ["send", true, 'button[type="submit"]'],
+    ["keep", false, '[data-testid="skip-recording-name"]'],
+  ])("starší renderer potvrzuje %s bez tvrzení o Stažených", async (decision, openUploadPage, selector) => {
+    const panel = await renderRecordingCard();
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await enterRecordingName(panel, "Porada výroby");
+      await panel.click(panel.document.querySelector(selector));
+      await panel.waitForPhase("idle");
+
+      expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        recordingName: "Porada výroby", openUploadPage,
+      });
+      expect(panel.ludone.exportRecordingCopy).not.toHaveBeenCalled();
+      const status = panel.document.querySelector('[role="status"]')?.textContent ?? "";
+      expect(status).toContain("Nahrávka byla uložena na Macu");
+      expect(status).not.toContain("Stažených");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("automatické odeslání přes starší most nevytvoří kopii ani neslibuje Stažené", async () => {
+    const panel = await renderRecordingCard({ finishRecordingResult: { automaticUpload: true } });
+    try {
+      await startRecording(panel);
+      await panel.click(panel.currentButton());
+      await panel.waitForPhase("idle");
+
+      expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        recordingName: DEFAULT_RECORDING_NAME,
+        openUploadPage: true,
+      });
+      expect(panel.ludone.exportRecordingCopy).not.toHaveBeenCalled();
+      const status = panel.document.querySelector('[role="status"]')?.textContent ?? "";
+      expect(status).toContain("Nahrávka byla uložena na Macu");
+      expect(status).not.toContain("Stažených");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
   it("výslovně exportuje kopii ve Stažených bez rozhodnutí o odeslání", async () => {
     const panel = await renderRecordingCard({ modernDecision: true });
     try {
@@ -737,6 +785,35 @@ describe("RecordingCard", () => {
       expect(panel.phase()).toBe("saved");
       expect(panel.document.querySelector('[data-testid="recording-copy-export-status"]')?.textContent)
         .toContain("Kopie LuDone-session-test-1.webm je uložená ve Stažených.");
+    } finally {
+      await panel.cleanup();
+    }
+  });
+
+  it("po změně clientRecordingId nezobrazuje potvrzení kopie předchozí nahrávky", async () => {
+    const panel = await renderRecordingCard({
+      recordingIds: [SESSION_ID, "session-test-2"],
+      modernDecision: true,
+    });
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await enterRecordingName(panel, "První porada");
+      await panel.click(panel.document.querySelector('[data-testid="export-recording-copy"]'));
+      expect(panel.document.querySelector('[data-testid="recording-copy-export-status"]')?.textContent)
+        .toContain("Kopie LuDone-session-test-1.webm je uložená ve Stažených.");
+      await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
+      await panel.waitForPhase("idle");
+
+      await panel.click(panel.document.querySelector('[aria-label="Spustit nahrávání"]'));
+      await panel.waitForPhase("recording");
+      await expect(panel.ludone.beginRecording.mock.results[1].value).resolves.toMatchObject({
+        sessionId: "session-test-2",
+      });
+      await stopRecording(panel);
+
+      expect(panel.ludone.beginRecording).toHaveBeenCalledTimes(2);
+      expect(panel.document.querySelector('[data-testid="recording-copy-export-status"]')).toBeNull();
     } finally {
       await panel.cleanup();
     }
@@ -1593,7 +1670,7 @@ describe("RecordingCard", () => {
   it.each([
     ["Nechat na Macu", '[data-testid="skip-recording-name"]', false],
     ["Uložit a odeslat", 'button[type="submit"]', true],
-  ])("%s potvrdí uložení ve Stažených a poradí přehrání WebM", async (label, selector, openUploadPage) => {
+  ])("%s potvrdí místní uložení bez tvrzení o kopii ve Stažených", async (label, selector, openUploadPage) => {
     const panel = await renderRecordingCard();
     try {
       await startRecording(panel);
@@ -1607,11 +1684,11 @@ describe("RecordingCard", () => {
         recordingName: expect.any(String),
         openUploadPage,
       });
+      expect(panel.ludone.exportRecordingCopy).not.toHaveBeenCalled();
       expect(panel.document.querySelector('[role="status"]')?.textContent)
-        .toContain(`Soubor LuDone-${SESSION_ID}.webm je uložený ve Stažených.`);
-      const notice = panel.document.querySelector('[role="status"]');
-      expect(notice.textContent).toContain("Přehrajete ho v prohlížeči nebo ve VLC.");
-      expect(notice.closest('[hidden], .sr-only')).toBeNull();
+        .toContain("Nahrávka byla uložena na Macu.");
+      expect(panel.document.querySelector('[role="status"]')?.textContent)
+        .not.toContain("Stažených");
     } finally {
       await panel.cleanup();
     }

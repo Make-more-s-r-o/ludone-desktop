@@ -443,7 +443,6 @@ export const RecordingCard = forwardRef(function RecordingCard({
         : result.outcome === "saved_local"
           ? "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."
           : "";
-      // Starší exportní most nemá potvrzený stav odeslání; zachovává vlastní potvrzení souboru.
       const modernOutcome = typeof modernDecision === "function";
       const outcomeText = result.outcome === "saved_local"
         ? "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."
@@ -451,12 +450,12 @@ export const RecordingCard = forwardRef(function RecordingCard({
           ? "Uloženo na Macu. Nahrávka čeká ve frontě k odeslání."
           : result.outcome === "sent"
             ? "Uloženo a odesláno."
-            : "Uloženo na Macu. Stav odeslání není potvrzený.";
+            : "Nahrávka byla uložena na Macu. Stav odeslání není potvrzený.";
       setNotice({
         type: "success",
-        text: modernOutcome ? `${outcomeText}${manual && decision === "keep" && supportsPreferences && !freshPreferences ? " Volby pro odeslání nastavíš v detailu nahrávky." : ""}`
-          : `Soubor ${result.fileName} je uložený ve Stažených. ${deliveryDetail} Přehrajete ho v prohlížeči nebo ve VLC.`,
-        openRecordings: modernOutcome,
+        text: `${outcomeText}${modernOutcome && manual && decision === "keep" && supportsPreferences && !freshPreferences
+          ? " Volby pro odeslání nastavíš v detailu nahrávky." : ""}`,
+        openRecordings: modernOutcome || Boolean(deliveryDetail),
       });
     } catch (error) {
       setExportError(describeError(error));
@@ -480,7 +479,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
         recordingName: name,
       });
       if (!result?.ok) throw new Error(result?.message || "Export kopie se nepodařil");
-      setCopyExportNotice(`Kopie ${result.fileName} je uložená ve Stažených.`);
+      setCopyExportNotice({
+        clientRecordingId: recording.clientRecordingId,
+        text: `Kopie ${result.fileName} je uložená ve Stažených.`,
+      });
     } catch (error) {
       setExportError(describeError(error));
     } finally {
@@ -971,7 +973,11 @@ export const RecordingCard = forwardRef(function RecordingCard({
           <small id="recording-name-hint" className="recording-saved__hint">
             Nahrávka už je místně zachovaná. Odesílání začne jen tvou volbou.
           </small>
-          {copyExportNotice && <p className="recording-saved__hint" data-testid="recording-copy-export-status" role="status">{copyExportNotice}</p>}
+          {copyExportNotice?.clientRecordingId === savedRecording.clientRecordingId && (
+            <p className="recording-saved__hint" data-testid="recording-copy-export-status" role="status">
+              {copyExportNotice.text}
+            </p>
+          )}
           {deleteConfirm && (
             <div role="alertdialog" aria-label="Potvrdit smazání">
               <p>Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.</p>

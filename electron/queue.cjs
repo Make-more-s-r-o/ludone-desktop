@@ -1471,6 +1471,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     return {
       audioPaths,
       derivativePaths,
+      manifest,
       manifestPath: primaryPath,
       projected,
       queue,
@@ -1576,6 +1577,70 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
         }
       }
       return { outcome: "missing" };
+    });
+  }
+
+  function resolveRecordingExportCopyTarget({
+    clientRecordingId,
+    expectedRevision,
+    expectedFileRevision,
+    currentOwnerFingerprint,
+    guard,
+  }) {
+    if (typeof guard !== "function") throw new TypeError("Export kopie vyžaduje guard");
+    if (typeof clientRecordingId !== "string" || !UUID_PATTERN.test(clientRecordingId)) {
+      throw new TypeError("clientRecordingId musí být GUID");
+    }
+    if (typeof expectedRevision !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(expectedRevision)
+      || typeof expectedFileRevision !== "string" || !QUEUE_ITEM_REVISION_PATTERN.test(expectedFileRevision)) {
+      throw new TypeError("Export kopie vyžaduje platné revize");
+    }
+    if (typeof currentOwnerFingerprint !== "string"
+      || !QUEUE_OWNER_FINGERPRINT_PATTERN.test(currentOwnerFingerprint)) {
+      throw new TypeError("Export kopie vyžaduje ověřeného vlastníka nahrávky");
+    }
+
+    return serialize(async () => {
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      const loadedQueue = await loadQueue(filePath, { includeMigration: true });
+      const rawItem = loadedQueue.queue.items.find((item) => (
+        (item.kind ?? "recording") === "recording"
+        && item.clientRecordingId === clientRecordingId
+      ));
+      if (!rawItem || rawItem.ownerFingerprint !== currentOwnerFingerprint) {
+        throw new Error("Nahrávka nepatří aktuálnímu účtu");
+      }
+      if (!rawItem.delivery || rawItem.delivery.state !== "ready") return { outcome: "not_ready" };
+
+      const { validateDescriptor } = require("./meeting-audio.cjs");
+      const delivery = validateDescriptor(rawItem.delivery, recordingsDirectory);
+      if (delivery.clientRecordingId !== clientRecordingId) {
+        throw new Error("Delivery nepatří této nahrávce");
+      }
+      if (await stableTrashStat(delivery.filePath) === null) return { outcome: "missing" };
+
+      let target;
+      try {
+        target = await freshActionTarget(clientRecordingId, expectedRevision, expectedFileRevision);
+      } catch (error) {
+        if (error?.code === "ENOENT" && await stableTrashStat(delivery.filePath) === null) {
+          return { outcome: "missing" };
+        }
+        throw error;
+      }
+      if (target.rawItem?.ownerFingerprint !== currentOwnerFingerprint
+        || target.rawItem?.delivery?.filePath !== delivery.filePath
+        || target.rawItem?.delivery?.state !== "ready"
+        || !target.derivativePaths.includes(delivery.filePath)) {
+        throw new Error("Delivery se během přípravy exportu změnilo");
+      }
+      if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
+      return {
+        outcome: "ready",
+        filePath: delivery.filePath,
+        manifest: target.manifest,
+        stereoTiming: { startedAt: delivery.startedAt, endedAt: delivery.endedAt },
+      };
     });
   }
 
@@ -2036,6 +2101,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     revealRecording,
     resolveRecordingAudio,
     retry,
+    resolveRecordingExportCopyTarget,
     setRecordingDelivery,
   });
 }

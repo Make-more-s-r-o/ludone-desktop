@@ -47,6 +47,8 @@ function normalizeRecordingItem(value) {
     uploadPreferencesLocked: value.uploadPreferencesLocked === true,
     uploadIntent: value.uploadIntent === "approved" ? "approved" : "held",
     state: safeText(value.state) ?? "neznámý",
+    deliveryState: ["pending", "ready", "failed"].includes(value.deliveryState)
+      ? value.deliveryState : null,
     createdAt,
     durationMs: safeNonNegativeInteger(value.durationMs),
     sizeBytes: safeNonNegativeInteger(value.sizeBytes),
@@ -248,6 +250,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   const [preferencesById, setPreferencesById] = useState({});
   const [preferenceMessageById, setPreferenceMessageById] = useState({});
   const [preferenceFailedById, setPreferenceFailedById] = useState({});
+  const [copyExportNameById, setCopyExportNameById] = useState({});
+  const [copyExportMessageById, setCopyExportMessageById] = useState({});
   const openDetailIdRef = useRef(detailId);
   const active = useRef(true);
   const claimInFlight = useRef(false);
@@ -426,6 +430,33 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby se nepodařilo uložit. Přehled byl obnoven; ověř volby a ulož je znovu." }));
       return false;
     } finally { if (active.current) setActingId(null); }
+  };
+  const exportCopy = async (item) => {
+    if (item.recordingInProgress || actingId !== null || item.ownership !== "current"
+      || !item.revision || !item.fileRevision
+      || typeof window.ludone?.exportRecordingCopy !== "function") return;
+    setActingId(item.id);
+    setCopyExportMessageById((current) => ({ ...current, [item.id]: "" }));
+    try {
+      const result = await window.ludone.exportRecordingCopy(item.id, {
+        queueRev: item.revision,
+        fileRev: item.fileRevision,
+        recordingName: copyExportNameById[item.id] ?? item.title ?? "",
+      });
+      setCopyExportMessageById((current) => ({
+        ...current,
+        [item.id]: result?.ok === true
+          ? `Kopie ${result.fileName} je uložená ve Stažených.`
+          : result?.message || "Kopii se nepodařilo uložit.",
+      }));
+    } catch {
+      if (active.current) setCopyExportMessageById((current) => ({
+        ...current,
+        [item.id]: "Kopii se nepodařilo uložit. Nahrávka zůstala beze změny.",
+      }));
+    } finally {
+      if (active.current) setActingId(null);
+    }
   };
   const saveBeforeClose = useRef(null);
   saveBeforeClose.current = async (id) => {
@@ -622,6 +653,36 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                         <dt>Uložení</dt><dd>{recordingSourceLabel(item)}</dd>
                       </dl>
                     </section>
+                    {item.source === "queue" && item.ownership === "current"
+                      && item.deliveryState === "ready" && !item.recordingInProgress
+                      && item.revision && item.fileRevision
+                      && typeof window.ludone?.exportRecordingCopy === "function" && (
+                        <section className="recording-queue-card__copy" aria-label="Export kopie">
+                          <h2>Exportovat kopii</h2>
+                          <label htmlFor={`recording-copy-name-${item.id}`}>Název souboru</label>
+                          <input
+                            id={`recording-copy-name-${item.id}`}
+                            className="recording-queue-card__copy-name"
+                            data-testid="recording-copy-name"
+                            type="text"
+                            value={copyExportNameById[item.id] ?? item.title ?? ""}
+                            onChange={(event) => setCopyExportNameById((current) => ({
+                              ...current, [item.id]: event.currentTarget.value,
+                            }))}
+                          />
+                          <button type="button" className="button button--small"
+                            data-testid="export-saved-recording-copy"
+                            disabled={actingId !== null}
+                            onClick={() => void exportCopy(item)}>
+                            Exportovat kopii…
+                          </button>
+                          {copyExportMessageById[item.id] && (
+                            <p className="recording-queue-card__copy-status" data-testid="recording-copy-export-status" role="status">
+                              {copyExportMessageById[item.id]}
+                            </p>
+                          )}
+                        </section>
+                      )}
                     {openDetailId === item.id && item.ownership === "current" && !item.recordingInProgress
                       && typeof window.ludone?.configureRecordingUpload === "function" && (
                         <RecordingUploadPreferences key={`${item.id}:${item.revision}:${currentIdentity}`}

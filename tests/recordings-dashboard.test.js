@@ -49,6 +49,7 @@ function deferred() {
  *   authState?: string,
  *   claimRecording?: (...args: any[]) => Promise<any>,
  *   deleteRecording?: (...args: any[]) => Promise<any>,
+ *   exportRecordingCopy?: (...args: any[]) => Promise<any>,
  *   listQueue?: () => Promise<any[]>,
  *   listLocalRecordings?: () => Promise<any>,
  *   verifyRecording?: (...args: any[]) => Promise<any>,
@@ -60,6 +61,7 @@ async function renderDashboard({
   authState = "signed-in",
   claimRecording = () => Promise.resolve({ claimed: false, items: [ITEM] }),
   deleteRecording = () => Promise.resolve({ outcome: "deleted" }),
+  exportRecordingCopy = () => Promise.resolve({ ok: true, fileName: "LuDone-porada.webm" }),
   listQueue,
   listLocalRecordings = listQueue
     ? async () => ({ items: await listQueue(), unreadableCount: 0 })
@@ -73,6 +75,7 @@ async function renderDashboard({
   const ludone = {
     claimRecording: vi.fn(claimRecording),
     deleteRecording: vi.fn(deleteRecording),
+    exportRecordingCopy: vi.fn(exportRecordingCopy),
     listLocalRecordings: vi.fn(listLocalRecordings),
     verifyRecording: vi.fn(verifyRecording),
     openRecordingInLuDone: vi.fn(openRecordingInLuDone),
@@ -795,6 +798,36 @@ async function chooseUpload(panel, selector, value) {
   await React.act(async () => { const select = panel.document.querySelector(selector); select.value = value;
     select.dispatchEvent(new panel.document.defaultView.Event("change", { bubbles: true })); });
 }
+it.each([
+  ["odeslané", "odeslano"],
+  ["ponechané", "ceka"],
+])("detail %s nahrávky nabízí výslovný export připraveného delivery", async (_label, state) => {
+  const item = {
+    ...ITEM,
+    ownership: "current",
+    state,
+    title: "Porada výroby",
+    deliveryState: "ready",
+    allowedActions: { claim: false, delete: false, retry: false, send: false },
+  };
+  const panel = await renderDashboard({
+    listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }),
+  });
+  try {
+    await openUploadDetail(panel);
+    const input = panel.document.querySelector('[data-testid="recording-copy-name"]');
+    expect(input.value).toBe("Porada výroby");
+    await React.act(async () => panel.document.querySelector('[data-testid="export-saved-recording-copy"]').click());
+
+    expect(panel.ludone.exportRecordingCopy).toHaveBeenCalledExactlyOnceWith(ID, {
+      queueRev: REVISION,
+      fileRev: ITEM.fileRevision,
+      recordingName: "Porada výroby",
+    });
+    expect(panel.document.querySelector('[data-testid="recording-copy-export-status"]')?.textContent)
+      .toContain("Kopie LuDone-porada.webm je uložená ve Stažených.");
+  } finally { await panel.cleanup(); }
+});
 it("detail uloží přesný CAS payload bez send, obnoví revize a nový explicitní send používá novou revizi", async () => {
   const companyId = "22222222-2222-4222-8222-222222222222";
   const offerToken = "offer-token-0000000000000001";
