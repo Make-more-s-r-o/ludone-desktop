@@ -790,6 +790,52 @@ describe("RecordingCard", () => {
     }
   });
 
+  it.each([
+    ["keep", '[data-testid="skip-recording-name"]'],
+    ["send", 'button[type="submit"]'],
+  ])("čekající kopie nezablokuje rozhodnutí %s", async (_decision, selector) => {
+    const copy = deferred();
+    const panel = await renderRecordingCard({ modernDecision: true });
+    panel.ludone.exportRecordingCopy.mockReturnValueOnce(copy.promise);
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await panel.click(panel.document.querySelector('[data-testid="export-recording-copy"]'));
+      expect(panel.document.querySelector('[data-testid="export-recording-copy"]').disabled).toBe(true);
+      expect(panel.document.querySelector(selector).disabled).toBe(false);
+
+      await panel.click(panel.document.querySelector(selector));
+      await vi.waitFor(() => expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledOnce());
+      expect(panel.ludone.exportRecordingCopy).toHaveBeenCalledOnce();
+      copy.resolve({ ok: true, fileName: `LuDone-${SESSION_ID}.webm` });
+      await Promise.resolve();
+    } finally {
+      copy.resolve({ ok: true, fileName: `LuDone-${SESSION_ID}.webm` });
+      await panel.cleanup();
+    }
+  });
+
+  it("čekající kopie nezablokuje potvrzený koš", async () => {
+    const copy = deferred();
+    const panel = await renderRecordingCard();
+    panel.ludone.exportRecordingCopy.mockReturnValueOnce(copy.promise);
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await panel.click(panel.document.querySelector('[data-testid="export-recording-copy"]'));
+      const deleteButton = panel.document.querySelector('[data-testid="delete-recording"]');
+      expect(deleteButton.disabled).toBe(false);
+      await panel.click(deleteButton);
+      await panel.click(panel.document.querySelector('[data-testid="confirm-delete-recording"]'));
+      await vi.waitFor(() => expect(panel.ludone.deleteRecording).toHaveBeenCalledOnce());
+      expect(panel.ludone.exportRecordingCopy).toHaveBeenCalledOnce();
+      copy.resolve({ ok: true, fileName: `LuDone-${SESSION_ID}.webm` });
+    } finally {
+      copy.resolve({ ok: true, fileName: `LuDone-${SESSION_ID}.webm` });
+      await panel.cleanup();
+    }
+  });
+
   it("po změně clientRecordingId nezobrazuje potvrzení kopie předchozí nahrávky", async () => {
     const panel = await renderRecordingCard({
       recordingIds: [SESSION_ID, "session-test-2"],

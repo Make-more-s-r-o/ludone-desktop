@@ -1,4 +1,5 @@
 import { mkdtemp, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -8,7 +9,7 @@ import { createStereoCapture } from "../src/lib/stereo-recording.js";
 const require = createRequire(import.meta.url);
 const {
   buildRecordingUploadUrl,
-  exportRecordingCopy,
+  exportRecordingCopy: exportRecordingCopyImpl,
   inspectOpusWebm,
   recordingTimeline,
 } = require("../electron/recording-export.cjs");
@@ -23,6 +24,19 @@ const FILE_PREFIX = "LuDone-2026-09-02T12-00-00-100Z-";
 const FILE_SUFFIX = `-${CLIENT_RECORDING_ID}.webm`;
 // Rezerva pro osmibajtový dodatek při vytvoření kopie ve Finderu.
 const NAME_BYTE_BUDGET = 255 - Buffer.byteLength(FILE_PREFIX + FILE_SUFFIX, "utf8") - 8;
+
+async function exportRecordingCopy(options) {
+  const delivery = await readFile(options.stagePath);
+  return exportRecordingCopyImpl({
+    ...options,
+    expectedDelivery: options.expectedDelivery ?? {
+      sizeBytes: delivery.length,
+      sha256: createHash("sha256").update(delivery).digest("hex"),
+    },
+    signal: options.signal ?? new AbortController().signal,
+    canPublish: options.canPublish ?? (() => true),
+  });
+}
 
 afterEach(async () => {
   const { rm } = await import("node:fs/promises");
@@ -829,5 +843,337 @@ describe("odmítnutí názvu nad serverovým limitem", () => {
     expect(
       nazevZUrl(buildRecordingUploadUrl("https://labs.ludone.cz", { nazev })),
     ).toBe(nazev);
+  });
+});
+
+describe("atomický a přerušitelný export kopie", () => {
+  function deferred() {
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    return { promise, resolve };
+  }
+
+  async function prepare(options = {}) {
+    const root = await mkdtemp(path.join(tmpdir(), "ludone-copy-boundary-test-"));
+    roots.add(root);
+    const downloadsDirectory = path.join(root, "downloads");
+    const stagePath = options.stagePath ?? path.join(root, "stereo.webm");
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(downloadsDirectory);
+    await writeFile(stagePath, options.bytes ?? stereoWebmBytes());
+    return {
+      root,
+      downloadsDirectory,
+      stagePath,
+      manifest: completeManifest(),
+      openExternal: vi.fn(async () => undefined),
+      openUploadPage: false,
+      origin: "https://app.ludone.cz",
+      stereoTiming: {
+        startedAt: "2026-09-02T12:00:00.090Z",
+        endedAt: "2026-09-02T13:00:00.170Z",
+      },
+      ...options,
+    };
+  }
+
+  it("zveřejní jen hotový soubor přes nový režim 0600 a zdroj nechá beze změny", async () => {
+    const options = await prepare();
+    const fs = require("node:fs").promises;
+    const sourceBefore = await fs.lstat(options.stagePath);
+    const bytesBefore = await readFile(options.stagePath);
+    const chmodSpy = vi.spyOn(fs, "chmod");
+    const unlinkSpy = vi.spyOn(fs, "unlink");
+
+    try {
+      const result = await exportRecordingCopy(options);
+      const target = await fs.lstat(result.filePath);
+      expect(await readFile(result.filePath)).toEqual(bytesBefore);
+      expect(await readFile(options.stagePath)).toEqual(bytesBefore);
+      expect(target.mode & 0o777).toBe(0o600);
+      expect(await readdir(options.downloadsDirectory)).toEqual([result.fileName]);
+      expect(chmodSpy).not.toHaveBeenCalled();
+      expect(unlinkSpy.mock.calls.every(([file]) => path.basename(String(file)).startsWith(".ludone-export-")))
+        .toBe(true);
+      expect(await fs.lstat(options.stagePath)).toMatchObject({
+        dev: sourceBefore.dev,
+        ino: sourceBefore.ino,
+        mode: sourceBefore.mode,
+        size: sourceBefore.size,
+        mtimeMs: sourceBefore.mtimeMs,
+      });
+    } finally {
+      chmodSpy.mockRestore();
+      unlinkSpy.mockRestore();
+    }
+  });
+
+  it("opakovaný shodný export ponechá inode i metadata cíle beze změny", async () => {
+    const options = await prepare();
+    const first = await exportRecordingCopy(options);
+    const fs = await import("node:fs/promises");
+    const before = await fs.lstat(first.filePath);
+    const second = await exportRecordingCopy(options);
+    const after = await fs.lstat(first.filePath);
+
+    expect(second.filePath).toBe(first.filePath);
+    expect(after).toMatchObject({
+      dev: before.dev,
+      ino: before.ino,
+      mode: before.mode,
+      size: before.size,
+      mtimeMs: before.mtimeMs,
+      ctimeMs: before.ctimeMs,
+    });
+    expect(await readdir(options.downloadsDirectory)).toEqual([first.fileName]);
+  });
+
+  it("odmítne odlišný obsah pod existujícím jménem a zachová původní cíl", async () => {
+    const options = await prepare();
+    const first = await exportRecordingCopy(options);
+    const fs = await import("node:fs/promises");
+    const before = await fs.lstat(first.filePath);
+    const original = await readFile(first.filePath);
+    const changed = Buffer.from(original);
+    changed[changed.length - 1] ^= 0x01;
+    await writeFile(options.stagePath, changed);
+
+    await expect(exportRecordingCopy(options)).rejects.toThrow(/jiný soubor/);
+    expect(await readFile(first.filePath)).toEqual(original);
+    expect(await fs.lstat(first.filePath)).toMatchObject({
+      dev: before.dev,
+      ino: before.ino,
+      mode: before.mode,
+      size: before.size,
+      mtimeMs: before.mtimeMs,
+      ctimeMs: before.ctimeMs,
+    });
+    expect((await readdir(options.downloadsDirectory)).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+  });
+
+  it("odmítne symlink zdroje i symlink na existujícím cíli bez následování", async () => {
+    const fs = await import("node:fs/promises");
+    const sourceOptions = await prepare();
+    const symlinkPath = path.join(sourceOptions.root, "source-link.webm");
+    await fs.symlink(sourceOptions.stagePath, symlinkPath);
+    await expect(exportRecordingCopy({ ...sourceOptions, stagePath: symlinkPath }))
+      .rejects.toThrow(/Zdroj delivery není běžný soubor/);
+    expect(await readdir(sourceOptions.downloadsDirectory)).toEqual([]);
+
+    const targetOptions = await prepare();
+    const targetName = `LuDone-2026-09-02T12-00-00-100Z-${CLIENT_RECORDING_ID}.webm`;
+    const targetPath = path.join(targetOptions.downloadsDirectory, targetName);
+    const otherPath = path.join(targetOptions.root, "untouched.webm");
+    await writeFile(otherPath, "cizí cíl");
+    await fs.symlink(otherPath, targetPath);
+    await expect(exportRecordingCopy(targetOptions)).rejects.toThrow(/Existující export není běžný soubor/);
+    expect(await fs.readlink(targetPath)).toBe(otherPath);
+    expect(await readFile(otherPath, "utf8")).toBe("cizí cíl");
+  });
+
+  it("odmítne, když je finální jméno aliasem samotného zdroje", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "ludone-copy-alias-test-"));
+    roots.add(root);
+    const downloadsDirectory = path.join(root, "downloads");
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(downloadsDirectory);
+    const stagePath = path.join(
+      downloadsDirectory,
+      `LuDone-2026-09-02T12-00-00-100Z-${CLIENT_RECORDING_ID}.webm`,
+    );
+    await writeFile(stagePath, stereoWebmBytes());
+    await expect(exportRecordingCopy({
+      downloadsDirectory,
+      manifest: completeManifest(),
+      openExternal: vi.fn(),
+      openUploadPage: false,
+      origin: "https://app.ludone.cz",
+      stagePath,
+      stereoTiming: {
+        startedAt: "2026-09-02T12:00:00.090Z",
+        endedAt: "2026-09-02T13:00:00.170Z",
+      },
+    })).rejects.toThrow(/aliasem zdroje/);
+    expect(await readdir(downloadsDirectory)).toEqual([path.basename(stagePath)]);
+    expect(await readFile(stagePath)).toEqual(stereoWebmBytes());
+  });
+
+  it("před zveřejněním odmítne změněný SHA-256 a původní soubor nedotkne", async () => {
+    const options = await prepare();
+    const before = await readFile(options.stagePath);
+    const changed = Buffer.from(before);
+    changed[changed.length - 1] ^= 0x01;
+
+    await expect(exportRecordingCopy({
+      ...options,
+      testHooks: {
+        beforeSourceOpen: () => writeFile(options.stagePath, changed),
+      },
+    })).rejects.toThrow(/SHA-256/);
+    expect(await readdir(options.downloadsDirectory)).toEqual([]);
+    expect(await readFile(options.stagePath)).toEqual(changed);
+  });
+
+  it("při ENOSPC po částečném zápisu uklidí jen vlastní dočasný soubor", async () => {
+    const options = await prepare();
+    const original = await readFile(options.stagePath);
+    const error = Object.assign(new Error("disk full"), { code: "ENOSPC" });
+    await expect(exportRecordingCopy({
+      ...options,
+      testHooks: { afterPartialWrite: () => { throw error; } },
+    })).rejects.toMatchObject({ code: "ENOSPC" });
+    expect(await readdir(options.downloadsDirectory)).toEqual([]);
+    expect(await readFile(options.stagePath)).toEqual(original);
+  });
+
+  it("EACCES při otevření zdroje vrátí chybu bez změny delivery a Stažených", async () => {
+    const options = await prepare();
+    const original = await readFile(options.stagePath);
+    const fs = require("node:fs").promises;
+    const open = fs.open.bind(fs);
+    const denied = Object.assign(new Error("access denied"), { code: "EACCES" });
+    const spy = vi.spyOn(fs, "open").mockImplementation((filePath, ...args) => {
+      if (path.resolve(String(filePath)) === path.resolve(options.stagePath)) {
+        return Promise.reject(denied);
+      }
+      return open(filePath, ...args);
+    });
+    try {
+      await expect(exportRecordingCopy(options)).rejects.toMatchObject({ code: "EACCES" });
+      expect(await readFile(options.stagePath)).toEqual(original);
+      expect(await readdir(options.downloadsDirectory)).toEqual([]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("chybějící zdroj odmítne bez vytvoření cíle", async () => {
+    const options = await prepare();
+    const fs = await import("node:fs/promises");
+    await fs.rm(options.stagePath);
+
+    await expect(exportRecordingCopy(options)).rejects.toMatchObject({ code: "ENOENT" });
+    expect(await readdir(options.downloadsDirectory)).toEqual([]);
+  });
+
+  it("po zrušení v bariéře prvního zápisu nevytvoří cíl a dovolí nový export", async () => {
+    const options = await prepare();
+    const controller = new AbortController();
+    const partialWrite = deferred();
+    const releaseWrite = deferred();
+    const pending = exportRecordingCopy({
+      ...options,
+      signal: controller.signal,
+      testHooks: {
+        afterPartialWrite: () => {
+          partialWrite.resolve();
+          return releaseWrite.promise;
+        },
+      },
+    });
+    await partialWrite.promise;
+    controller.abort();
+    releaseWrite.resolve();
+    await expect(pending).rejects.toMatchObject({
+      name: "AbortError",
+      recordingExported: false,
+    });
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if ((await readdir(options.downloadsDirectory)).length === 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    await expect(readdir(options.downloadsDirectory)).resolves.toEqual([]);
+
+    const next = await exportRecordingCopy(options);
+    expect(await readFile(next.filePath)).toEqual(stereoWebmBytes());
+  });
+
+  it("zrušení před publikací se vrátí, i když úklidový hook nikdy nedokončí", async () => {
+    const options = await prepare();
+    const controller = new AbortController();
+    const publishReached = deferred();
+    const cleanupReached = deferred();
+    const pending = exportRecordingCopy({
+      ...options,
+      signal: controller.signal,
+      testHooks: {
+        beforePublish: () => {
+          publishReached.resolve();
+          return new Promise(() => {});
+        },
+        beforeCleanup: () => {
+          cleanupReached.resolve();
+          return new Promise(() => {});
+        },
+      },
+    });
+    await publishReached.promise;
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({
+      name: "AbortError",
+      recordingExported: false,
+    });
+    await cleanupReached.promise;
+    expect((await readdir(options.downloadsDirectory)).some((name) => name.endsWith(".webm"))).toBe(false);
+  });
+
+  it("rozliší zrušení po předání linku a přijme jen úplný finální soubor", async () => {
+    const options = await prepare();
+    const controller = new AbortController();
+    let submittedPath;
+    await expect(exportRecordingCopy({
+      ...options,
+      signal: controller.signal,
+      onPublicationSubmitted: ({ filePath }) => {
+        submittedPath = filePath;
+        controller.abort();
+      },
+    })).rejects.toMatchObject({
+      name: "AbortError",
+      recordingExported: null,
+      publicationPending: true,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    try {
+      expect(await readFile(submittedPath)).toEqual(stereoWebmBytes());
+    } catch (error) {
+      expect(error.code).toBe("ENOENT");
+    }
+    const entries = await readdir(options.downloadsDirectory);
+    expect(entries.filter((name) => name.endsWith(".tmp"))).toEqual([]);
+    expect(await readFile(options.stagePath)).toEqual(stereoWebmBytes());
+  });
+
+  it("zahrne timeout do celého pokusu", async () => {
+    const options = await prepare();
+    const never = deferred();
+    const pending = exportRecordingCopy({
+      ...options,
+      testHooks: { timeoutMs: 20, beforeSourceOpen: () => never.promise },
+    });
+    await expect(pending).rejects.toMatchObject({
+      name: "TimeoutError",
+      code: "EXPORT_TIMEOUT",
+      recordingExported: false,
+    });
+    never.resolve();
+  });
+
+  it("dokončí pomalou platnou kopii před timeoutem", async () => {
+    const slowOptions = await prepare();
+    const entered = deferred();
+    const result = exportRecordingCopy({
+      ...slowOptions,
+      testHooks: {
+        timeoutMs: 100,
+        afterChunk: () => new Promise((resolve) => {
+          entered.resolve();
+          setTimeout(resolve, 30);
+        }),
+      },
+    });
+    await entered.promise;
+    const exported = await result;
+    expect(await readFile(exported.filePath)).toEqual(stereoWebmBytes());
   });
 });

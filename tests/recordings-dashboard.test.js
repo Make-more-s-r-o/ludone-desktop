@@ -828,6 +828,127 @@ it.each([
       .toContain("Kopie LuDone-porada.webm je uložená ve Stažených.");
   } finally { await panel.cleanup(); }
 });
+it("po několika skutečných úpravách exportuje poslední název se snapshot revizemi", async () => {
+  const item = {
+    ...ITEM,
+    ownership: "current",
+    state: "ceka",
+    title: "Původní název",
+    deliveryState: "ready",
+    allowedActions: { claim: false, delete: false, retry: false, send: false },
+  };
+  const panel = await renderDashboard({
+    listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }),
+  });
+  try {
+    await openUploadDetail(panel);
+    const input = panel.document.querySelector('[data-testid="recording-copy-name"]');
+    const valueSetter = Object.getOwnPropertyDescriptor(
+      Object.getPrototypeOf(input),
+      "value",
+    ).set;
+    for (const value of ["První změna", "Druhá změna", "Poslední název"]) {
+      await React.act(async () => {
+        valueSetter.call(input, value);
+        input.dispatchEvent(new panel.document.defaultView.InputEvent("input", {
+          bubbles: true,
+          data: value,
+          inputType: "insertText",
+        }));
+      });
+    }
+
+    await React.act(async () => panel.document.querySelector(
+      '[data-testid="export-saved-recording-copy"]',
+    ).click());
+
+    expect(panel.ludone.exportRecordingCopy).toHaveBeenCalledExactlyOnceWith(ID, {
+      queueRev: REVISION,
+      fileRev: ITEM.fileRevision,
+      recordingName: "Poslední název",
+    });
+  } finally { await panel.cleanup(); }
+});
+
+it("změna revize uvolní starý export a jeho pozdní finally neodblokuje novější kopii", async () => {
+  const first = deferred();
+  const second = deferred();
+  const nextRevision = `sha256:${"d".repeat(64)}`;
+  let item = {
+    ...ITEM,
+    ownership: "current",
+    state: "ceka",
+    title: "Porada výroby",
+    deliveryState: "ready",
+    allowedActions: { claim: false, delete: false, retry: false, send: false },
+  };
+  const exportRecordingCopy = vi.fn()
+    .mockReturnValueOnce(first.promise)
+    .mockReturnValueOnce(second.promise);
+  const panel = await renderDashboard({
+    exportRecordingCopy,
+    listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }),
+  });
+  try {
+    await openUploadDetail(panel);
+    const selector = '[data-testid="export-saved-recording-copy"]';
+    await React.act(async () => panel.document.querySelector(selector).click());
+    expect(panel.document.querySelector(selector).disabled).toBe(true);
+
+    item = { ...item, revision: nextRevision };
+    await React.act(async () => [...panel.document.querySelectorAll("button")]
+      .find((button) => button.textContent.includes("Obnovit přehled")).click());
+    await vi.waitFor(() => expect(panel.ludone.listLocalRecordings).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(panel.document.querySelector(selector).disabled).toBe(false));
+
+    await React.act(async () => panel.document.querySelector(selector).click());
+    expect(exportRecordingCopy).toHaveBeenCalledTimes(2);
+    expect(panel.document.querySelector(selector).disabled).toBe(true);
+    first.resolve({ ok: true, fileName: "stara-kopie.webm" });
+    await React.act(async () => { await Promise.resolve(); });
+    expect(panel.document.querySelector(selector).disabled).toBe(true);
+    expect(panel.document.querySelector('[data-testid="recording-copy-export-status"]')).toBeNull();
+
+    second.resolve({ ok: true, fileName: "nova-kopie.webm" });
+    await vi.waitFor(() => expect(panel.document.querySelector(
+      '[data-testid="recording-copy-export-status"]',
+    )?.textContent).toContain("nova-kopie.webm"));
+  } finally {
+    first.resolve({ ok: true, fileName: "stara-kopie.webm" });
+    second.resolve({ ok: true, fileName: "nova-kopie.webm" });
+    await panel.cleanup();
+  }
+});
+
+it("změna identity a odmountování ignorují pozdní výsledek kopie", async () => {
+  const pending = deferred();
+  const item = {
+    ...ITEM,
+    ownership: "current",
+    state: "ceka",
+    title: "Porada výroby",
+    deliveryState: "ready",
+    allowedActions: { claim: false, delete: false, retry: false, send: false },
+  };
+  const panel = await renderDashboard({
+    exportRecordingCopy: () => pending.promise,
+    listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }),
+  });
+  await openUploadDetail(panel);
+  await React.act(async () => panel.document.querySelector(
+    '[data-testid="export-saved-recording-copy"]',
+  ).click());
+
+  await panel.rerender("signed-in", "other@ludone.cz");
+  await vi.waitFor(() => expect(panel.ludone.listLocalRecordings).toHaveBeenCalledTimes(2));
+  await vi.waitFor(() => expect(panel.document.querySelector(
+    '[data-testid="export-saved-recording-copy"]',
+  ).disabled).toBe(false));
+  await panel.cleanup();
+  pending.resolve({ ok: true, fileName: "pozdni-kopie.webm" });
+  await React.act(async () => { await Promise.resolve(); });
+});
+
 it("detail uloží přesný CAS payload bez send, obnoví revize a nový explicitní send používá novou revizi", async () => {
   const companyId = "22222222-2222-4222-8222-222222222222";
   const offerToken = "offer-token-0000000000000001";

@@ -245,10 +245,17 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [savedAgeNow, setSavedAgeNow] = useState(() => Date.now());
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [copyExporting, setCopyExporting] = useState(false);
   const [uploadPreferences, setUploadPreferences] = useState(null);
   const [pickerInitial, setPickerInitial] = useState(null);
   const [pickerRefresh, setPickerRefresh] = useState(0);
   const [copyExportNotice, setCopyExportNotice] = useState(null);
+  const savedRecordingRef = useRef(savedRecording);
+  savedRecordingRef.current = savedRecording;
+  const copyExportOperation = useRef(null);
+  const copyExportGeneration = useRef(0);
+  const copyExportLifecycle = useRef(0);
+  const cardMounted = useRef(true);
   const uploadAuthGeneration = useRef(0);
   useEffect(() => window.ludone?.onAuthSessionChanged?.(() => {
     uploadAuthGeneration.current += 1;
@@ -466,27 +473,44 @@ export const RecordingCard = forwardRef(function RecordingCard({
   }
 
   async function exportSavedRecordingCopy(recording, name) {
-    if (!recording || exporting || typeof window.ludone?.exportRecordingCopy !== "function") return;
+    if (!recording || copyExporting || typeof window.ludone?.exportRecordingCopy !== "function") return;
     if (name.trim().length > MAX_UPLOAD_NAME_UTF16_UNITS) {
       setExportError("Název je příliš dlouhý. Zkraťte ho.");
       return;
     }
-    setExporting(true);
-    setExportError(null);
+    const operation = {
+      clientRecordingId: recording.clientRecordingId,
+      generation: ++copyExportGeneration.current,
+      lifecycle: copyExportLifecycle.current,
+      authGeneration: uploadAuthGeneration.current,
+    };
+    copyExportOperation.current = operation;
+    setCopyExporting(true);
     setCopyExportNotice(null);
+    const isCurrent = () => cardMounted.current
+      && copyExportOperation.current === operation
+      && copyExportGeneration.current === operation.generation
+      && copyExportLifecycle.current === operation.lifecycle
+      && uploadAuthGeneration.current === operation.authGeneration
+      && savedRecordingRef.current?.clientRecordingId === operation.clientRecordingId;
     try {
       const result = await window.ludone.exportRecordingCopy(recording.clientRecordingId, {
         recordingName: name,
       });
-      if (!result?.ok) throw new Error(result?.message || "Export kopie se nepodařil");
-      setCopyExportNotice({
-        clientRecordingId: recording.clientRecordingId,
-        text: `Kopie ${result.fileName} je uložená ve Stažených.`,
-      });
+      if (isCurrent()) {
+        if (!result?.ok) throw new Error(result?.message || "Export kopie se nepodařil");
+        setCopyExportNotice({
+          clientRecordingId: recording.clientRecordingId,
+          text: `Kopie ${result.fileName} je uložená ve Stažených.`,
+        });
+      }
     } catch (error) {
-      setExportError(describeError(error));
+      if (isCurrent()) setExportError(describeError(error));
     } finally {
-      setExporting(false);
+      if (copyExportOperation.current === operation) {
+        copyExportOperation.current = null;
+        if (cardMounted.current) setCopyExporting(false);
+      }
     }
   }
 
@@ -809,11 +833,16 @@ export const RecordingCard = forwardRef(function RecordingCard({
 
   useImperativeHandle(ref, () => ({ start, stop }));
 
-  useEffect(() => () => {
-    const runtime = runtimeRef.current;
-    runtime?.recoveryController?.abort();
-    runtime?.cleanupTrackListeners?.();
-    runtime?.levelMonitor?.dispose();
+  useEffect(() => {
+    cardMounted.current = true;
+    return () => {
+      cardMounted.current = false;
+      copyExportLifecycle.current += 1;
+      const runtime = runtimeRef.current;
+      runtime?.recoveryController?.abort();
+      runtime?.cleanupTrackListeners?.();
+      runtime?.levelMonitor?.dispose();
+    };
   }, []);
 
   useEffect(() => {
@@ -962,6 +991,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
             aria-invalid={Boolean(quitExportFailure || exportError || notice?.type === "error")}
             onInput={(event) => {
               setRecordingName(event.currentTarget.value);
+              copyExportGeneration.current += 1;
               setExportError(null);
               setCopyExportNotice(null);
             }}
@@ -1033,7 +1063,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
               </button>
               {typeof window.ludone?.exportRecordingCopy === "function" && (
                 <button type="button" className="button button--wide recording-action--copy"
-                  data-testid="export-recording-copy" disabled={exporting}
+                  data-testid="export-recording-copy" disabled={copyExporting}
                   onClick={() => void exportSavedRecordingCopy(savedRecording, recordingName)}>
                   Exportovat kopii…
                 </button>

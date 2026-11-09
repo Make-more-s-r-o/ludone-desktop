@@ -1,6 +1,8 @@
-const { createHash } = require("node:crypto");
+const { createHash, randomBytes } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { Transform, Writable } = require("node:stream");
+const { pipeline } = require("node:stream/promises");
 
 const OPUS_HEAD = Buffer.from("OpusHead", "ascii");
 const WEBM_MAGIC = Buffer.from([0x1a, 0x45, 0xdf, 0xa3]);
@@ -11,6 +13,7 @@ const MAX_EXPORT_FILE_NAME_BYTES = 255;
 // Osm bajtů nechává místo např. pro „ (99999)“ při duplikování ve Finderu.
 // Formát času a GUID se do rezervy neodhaduje: měří se celá skutečná pevná část.
 const EXPORT_FILE_NAME_RESERVE_BYTES = 8;
+const EXPORT_ATTEMPT_TIMEOUT_MS = 120_000;
 const RECORDING_NAME_SEGMENTER = new Intl.Segmenter("cs", { granularity: "grapheme" });
 const CONTROL_OR_FORMAT_CHARACTER = /[\p{Cc}\p{Cf}]/u;
 
@@ -255,40 +258,203 @@ function exportFileName(clientRecordingId, startedAt, recordingName, extension =
   return `${prefix}${nameSegment}${suffix}`;
 }
 
-async function readHeader(filePath) {
-  const handle = await fs.promises.open(filePath, "r");
-  try {
-    const buffer = Buffer.alloc(HEADER_READ_BYTES);
-    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-    return buffer.subarray(0, bytesRead);
-  } finally {
-    await handle.close();
-  }
+/** @returns {Error & { code?: string, recordingExported?: boolean | null, publicationPending?: boolean, fileName?: string }} */
+function abortError(signal, state) {
+  const timedOut = signal.reason?.name === "TimeoutError";
+  const error = /** @type {Error & { code?: string, recordingExported?: boolean | null, publicationPending?: boolean, fileName?: string }} */ (new Error(timedOut
+    ? "Export kopie překročil časový limit"
+    : "Export kopie byl zrušen"));
+  error.name = timedOut ? "TimeoutError" : "AbortError";
+  error.code = timedOut ? "EXPORT_TIMEOUT" : "ABORT_ERR";
+  error.recordingExported = state.published ? true : state.publicationSubmitted ? null : false;
+  error.publicationPending = state.publicationSubmitted && !state.published;
+  if (state.publicationSubmitted || state.published) error.fileName = state.fileName;
+  return error;
 }
 
-async function fileSha256(filePath) {
+function throwIfAborted(signal, state) {
+  if (signal.aborted) throw abortError(signal, state);
+}
+
+function awaitAbortable(value, signal, state, onAbort = undefined) {
+  const promise = Promise.resolve(value);
+  if (signal.aborted) {
+    onAbort?.();
+    promise.catch(() => {});
+    return Promise.reject(abortError(signal, state));
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, result) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener("abort", onSignalAbort);
+      callback(result);
+    };
+    const onSignalAbort = () => {
+      onAbort?.();
+      finish(reject, abortError(signal, state));
+    };
+    signal.addEventListener("abort", onSignalAbort, { once: true });
+    promise.then(
+      (result) => finish(resolve, result),
+      (error) => finish(reject, error),
+    );
+  });
+}
+
+function fileIdentity(stats) {
+  return {
+    dev: stats.dev,
+    ino: stats.ino,
+    size: stats.size,
+    mode: stats.mode,
+    mtimeMs: stats.mtimeMs,
+    ctimeMs: stats.ctimeMs,
+  };
+}
+
+function sameFileIdentity(first, second) {
+  return first.dev === second.dev && first.ino === second.ino;
+}
+
+function sameFileSnapshot(first, second) {
+  return sameFileIdentity(first, second)
+    && first.size === second.size
+    && first.mode === second.mode
+    && first.mtimeMs === second.mtimeMs
+    && first.ctimeMs === second.ctimeMs;
+}
+
+function regularFileIdentity(stats, label) {
+  if (!stats.isFile() || stats.isSymbolicLink()) {
+    throw new Error(`${label} není běžný soubor`);
+  }
+  return fileIdentity(stats);
+}
+
+async function readHeaderFromHandle(handle, signal, state) {
+  const buffer = Buffer.alloc(HEADER_READ_BYTES);
+  const result = await awaitAbortable(handle.read(buffer, 0, buffer.length, 0), signal, state);
+  throwIfAborted(signal, state);
+  return buffer.subarray(0, result.bytesRead);
+}
+
+function makeHashTransform({ hash, count, signal, state, afterChunk }) {
+  return new Transform({
+    transform(chunk, _encoding, callback) {
+      try {
+        throwIfAborted(signal, state);
+        hash.update(chunk);
+        count.bytes += chunk.length;
+      } catch (error) {
+        callback(error);
+        return;
+      }
+      Promise.resolve(afterChunk?.({ bytesCopied: count.bytes, chunkBytes: chunk.length }))
+        .then(() => {
+          try {
+            throwIfAborted(signal, state);
+            callback(null, chunk);
+          } catch (error) {
+            callback(error);
+          }
+        }, callback);
+    },
+  });
+}
+
+async function streamHash(handle, { signal, state, afterChunk = undefined }) {
   const hash = createHash("sha256");
-  for await (const chunk of fs.createReadStream(filePath)) hash.update(chunk);
-  return hash.digest("hex");
+  const count = { bytes: 0 };
+  const source = handle.createReadStream({ autoClose: false, start: 0 });
+  const transform = makeHashTransform({ hash, count, signal, state, afterChunk });
+  const sink = new Writable({ write(_chunk, _encoding, callback) { callback(); } });
+  const work = pipeline(source, transform, sink);
+  work.catch(() => {});
+  await awaitAbortable(work, signal, state, () => {
+    source.destroy();
+    transform.destroy();
+    sink.destroy();
+    void handle.close().catch(() => {});
+  });
+  throwIfAborted(signal, state);
+  return { bytes: count.bytes, sha256: hash.digest("hex") };
 }
 
-async function copyExportOnce(sourcePath, targetPath) {
+async function verifyExistingExport({
+  filePath,
+  expectedSizeBytes,
+  expectedSha256,
+  sourceIdentity,
+  signal,
+  state,
+}) {
+  const beforePath = await awaitAbortable(fs.promises.lstat(filePath), signal, state);
+  throwIfAborted(signal, state);
+  const before = regularFileIdentity(beforePath, "Existující export");
+  const openPromise = fs.promises.open(filePath,
+    fs.constants.O_RDONLY
+      | (fs.constants.O_NOFOLLOW ?? 0)
+      | (fs.constants.O_NONBLOCK ?? 0));
+  let handle;
   try {
-    await fs.promises.copyFile(sourcePath, targetPath, fs.constants.COPYFILE_EXCL);
-  } catch (error) {
-    if (error?.code !== "EEXIST") throw error;
-    const [sourceStat, targetStat] = await Promise.all([
-      fs.promises.stat(sourcePath),
-      fs.promises.stat(targetPath),
-    ]);
-    if (
-      sourceStat.size !== targetStat.size
-      || await fileSha256(sourcePath) !== await fileSha256(targetPath)
-    ) {
-      throw new Error(`Ve Stažených už existuje jiný soubor ${path.basename(targetPath)}`);
+    handle = await awaitAbortable(openPromise, signal, state, () => {
+      void openPromise.then((lateHandle) => lateHandle.close(), () => {});
+    });
+    throwIfAborted(signal, state);
+    const opened = regularFileIdentity(
+      await awaitAbortable(handle.stat(), signal, state, () => { void handle.close().catch(() => {}); }),
+      "Existující export",
+    );
+    throwIfAborted(signal, state);
+    const currentPath = regularFileIdentity(
+      await awaitAbortable(fs.promises.lstat(filePath), signal, state),
+      "Existující export",
+    );
+    throwIfAborted(signal, state);
+    if (!sameFileSnapshot(before, opened) || !sameFileSnapshot(opened, currentPath)) {
+      throw new Error("Existující export se během ověření změnil");
     }
+    if (sameFileIdentity(opened, sourceIdentity)) {
+      throw new Error("Cílový soubor je aliasem zdroje nahrávky");
+    }
+    if (opened.size !== expectedSizeBytes) {
+      throw new Error(`Ve Stažených už existuje jiný soubor ${path.basename(filePath)}`);
+    }
+    const identity = await streamHash(handle, { signal, state });
+    throwIfAborted(signal, state);
+    const afterHandle = regularFileIdentity(
+      await awaitAbortable(handle.stat(), signal, state),
+      "Existující export",
+    );
+    throwIfAborted(signal, state);
+    const afterPath = regularFileIdentity(
+      await awaitAbortable(fs.promises.lstat(filePath), signal, state),
+      "Existující export",
+    );
+    throwIfAborted(signal, state);
+    if (!sameFileSnapshot(opened, afterHandle) || !sameFileSnapshot(afterHandle, afterPath)) {
+      throw new Error("Existující export se během ověření změnil");
+    }
+    if (identity.bytes !== expectedSizeBytes || identity.sha256 !== expectedSha256) {
+      throw new Error(`Ve Stažených už existuje jiný soubor ${path.basename(filePath)}`);
+    }
+    return false;
+  } finally {
+    if (handle) void handle.close().catch(() => {});
   }
-  await fs.promises.chmod(targetPath, 0o600);
+}
+
+function validateTestHooks(value) {
+  if (value === undefined) return {};
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || Object.entries(value).some(([key, hook]) => key === "timeoutMs"
+      ? !Number.isSafeInteger(hook) || hook <= 0 || hook > EXPORT_ATTEMPT_TIMEOUT_MS
+      : hook !== undefined && typeof hook !== "function")) {
+    throw new TypeError("Testovací bariéry exportu jsou neplatné");
+  }
+  return value;
 }
 
 /**
@@ -301,20 +467,51 @@ async function copyExportOnce(sourcePath, targetPath) {
  * @param {string} [options.recordingName]
  * @param {string} options.stagePath
  * @param {{ startedAt: string, endedAt: string }} options.stereoTiming
+ * @param {{ sizeBytes: number, sha256: string }} options.expectedDelivery
+ * @param {AbortSignal} options.signal
+ * @param {() => boolean | Promise<boolean>} options.canPublish
+ * @param {(result: { fileName: string, filePath: string }) => void} [options.onPublicationSubmitted]
+ * @param {(result: { created: boolean, errorCode?: string }) => void} [options.onPublicationSettled]
+ * @param {Record<string, any>} [options.testHooks]
  */
 async function exportRecordingCopy({
+  canPublish,
   downloadsDirectory,
+  expectedDelivery,
   manifest: manifestValue,
   openExternal,
   openUploadPage,
   origin,
   recordingName = "",
+  onPublicationSubmitted = undefined,
+  onPublicationSettled = undefined,
   stagePath,
+  signal: externalSignal,
   stereoTiming,
+  testHooks: hooksValue = undefined,
 }) {
   if (typeof openUploadPage !== "boolean") {
     throw new TypeError("openUploadPage musí být výslovně boolean");
   }
+  if (!externalSignal || typeof externalSignal.aborted !== "boolean"
+    || typeof externalSignal.addEventListener !== "function") {
+    throw new TypeError("Export kopie vyžaduje AbortSignal");
+  }
+  if (typeof canPublish !== "function") {
+    throw new TypeError("Export kopie vyžaduje podmínku publikace");
+  }
+  if (!expectedDelivery || typeof expectedDelivery !== "object"
+    || !Number.isSafeInteger(expectedDelivery.sizeBytes) || expectedDelivery.sizeBytes <= 0
+    || !/^[a-f0-9]{64}$/u.test(expectedDelivery.sha256)) {
+    throw new TypeError("Export kopie vyžaduje ověřenou velikost a SHA-256 delivery");
+  }
+  if (onPublicationSubmitted !== undefined && typeof onPublicationSubmitted !== "function") {
+    throw new TypeError("Oznámení publikace musí být funkce");
+  }
+  if (onPublicationSettled !== undefined && typeof onPublicationSettled !== "function") {
+    throw new TypeError("Výsledek publikace musí být funkce");
+  }
+  const hooks = validateTestHooks(hooksValue);
   const manifest = requiredManifest(manifestValue);
   const timeline = recordingTimeline(manifest, stereoTiming);
   // Název odmítneme před kopírováním; staging zůstane připravený k dalšímu pokusu.
@@ -325,9 +522,6 @@ async function exportRecordingCopy({
     nazev: recordingName,
   }, manifest);
   const extension = path.extname(stagePath).toLowerCase();
-  const format = extension === ".mp3"
-    ? inspectMp3(await readHeader(stagePath))
-    : inspectOpusWebm(await readHeader(stagePath));
   const fileName = exportFileName(
     manifest.clientRecordingId,
     timeline.startedAt,
@@ -339,34 +533,330 @@ async function exportRecordingCopy({
   if (path.dirname(filePath) !== downloadsRoot) {
     throw new Error("Název exportu opustil složku Stažené");
   }
-  await copyExportOnce(stagePath, filePath);
-  try {
-    if (openUploadPage) await openExternal(uploadUrl);
-  } catch (error) {
-    const exportedError = Object.assign(
-      error instanceof Error ? error : new Error(String(error)),
-      {
-        recordingExported: true,
-        fileName,
-        filePath,
-        uploadUrl,
-      },
-    );
-    throw exportedError;
-  }
-  return {
-    clientRecordingId: manifest.clientRecordingId,
-    fileName,
-    filePath,
-    format,
-    startedAt: timeline.startedAt,
-    endedAt: timeline.endedAt,
-    stereoStartedAt: timeline.stereoStartedAt,
-    stereoEndedAt: timeline.stereoEndedAt,
-    trackStartDeltaMs: timeline.trackStartDeltaMs,
-    trackDurationDeltaMs: timeline.trackDurationDeltaMs,
-    uploadUrl,
+  const controller = new AbortController();
+  const state = { fileName, publicationSubmitted: false, published: false };
+  const relayAbort = () => controller.abort(externalSignal.reason);
+  if (externalSignal.aborted) relayAbort();
+  else externalSignal.addEventListener("abort", relayAbort, { once: true });
+  const signal = controller.signal;
+  const timeoutReason = Object.assign(new Error("Export kopie překročil časový limit"), {
+    name: "TimeoutError",
+  });
+  const timeoutId = setTimeout(
+    () => controller.abort(timeoutReason),
+    hooks.timeoutMs ?? EXPORT_ATTEMPT_TIMEOUT_MS,
+  );
+  let sourceHandle;
+  let temporaryHandle;
+  let sourceStream;
+  let transformStream;
+  let outputStream;
+  let temporaryPath;
+  let temporaryIdentity;
+  let temporaryCleanupPromise;
+
+  const destroyStreams = () => {
+    sourceStream?.destroy();
+    transformStream?.destroy();
+    outputStream?.destroy();
   };
+  const cleanupTemporary = () => {
+    if (!temporaryPath || !temporaryIdentity) return Promise.resolve(false);
+    if (temporaryCleanupPromise) return temporaryCleanupPromise;
+    temporaryCleanupPromise = (async () => {
+      await hooks.beforeCleanup?.({ filePath: temporaryPath });
+      let current;
+      try {
+        current = await fs.promises.lstat(temporaryPath);
+      } catch (error) {
+        if (error?.code === "ENOENT") return false;
+        throw error;
+      }
+      if (!current.isFile() || current.isSymbolicLink()) return false;
+      if (!sameFileIdentity(temporaryIdentity, fileIdentity(current))) return false;
+      await fs.promises.unlink(temporaryPath);
+      return true;
+    })();
+    temporaryCleanupPromise.catch(() => {});
+    return temporaryCleanupPromise;
+  };
+  const closeHandlesWithoutWaiting = () => {
+    if (sourceHandle) void sourceHandle.close().catch(() => {});
+    if (temporaryHandle) void temporaryHandle.close().catch(() => {});
+  };
+  const cancelWork = () => {
+    destroyStreams();
+    void cleanupTemporary().catch(() => {});
+    closeHandlesWithoutWaiting();
+  };
+
+  try {
+    throwIfAborted(signal, state);
+    await awaitAbortable(Promise.resolve(hooks.beforeSourceOpen?.()), signal, state);
+    throwIfAborted(signal, state);
+
+    const sourcePath = path.resolve(stagePath);
+    const sourcePathStats = regularFileIdentity(
+      await awaitAbortable(fs.promises.lstat(sourcePath), signal, state),
+      "Zdroj delivery",
+    );
+    throwIfAborted(signal, state);
+    const sourceOpenPromise = fs.promises.open(sourcePath,
+      fs.constants.O_RDONLY
+        | (fs.constants.O_NOFOLLOW ?? 0)
+        | (fs.constants.O_NONBLOCK ?? 0));
+    sourceHandle = await awaitAbortable(sourceOpenPromise, signal, state, () => {
+      void sourceOpenPromise.then((lateHandle) => lateHandle.close(), () => {});
+    });
+    throwIfAborted(signal, state);
+    const sourceOpened = regularFileIdentity(
+      await awaitAbortable(sourceHandle.stat(), signal, state, () => {
+        void sourceHandle.close().catch(() => {});
+      }),
+      "Zdroj delivery",
+    );
+    throwIfAborted(signal, state);
+    const sourceAfterOpen = regularFileIdentity(
+      await awaitAbortable(fs.promises.lstat(sourcePath), signal, state),
+      "Zdroj delivery",
+    );
+    throwIfAborted(signal, state);
+    if (!sameFileSnapshot(sourcePathStats, sourceOpened)
+      || !sameFileSnapshot(sourceOpened, sourceAfterOpen)) {
+      throw new Error("Zdroj delivery se během otevření změnil");
+    }
+    if (sourceOpened.size !== expectedDelivery.sizeBytes) {
+      throw new Error("Velikost zdroje delivery nesouhlasí s ověřenou identitou");
+    }
+    const sourceIdentity = sourceOpened;
+    const header = await readHeaderFromHandle(sourceHandle, signal, state);
+    const format = extension === ".mp3" ? inspectMp3(header) : inspectOpusWebm(header);
+    throwIfAborted(signal, state);
+
+    const downloadsPathStats = await awaitAbortable(fs.promises.lstat(downloadsRoot), signal, state);
+    throwIfAborted(signal, state);
+    if (!downloadsPathStats.isDirectory() || downloadsPathStats.isSymbolicLink()) {
+      throw new Error("Adresář Stažené není bezpečný adresář");
+    }
+    const downloadsIdentity = fileIdentity(downloadsPathStats);
+    const downloadsOpenPromise = fs.promises.open(downloadsRoot,
+      fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    const downloadsHandle = await awaitAbortable(downloadsOpenPromise, signal, state, () => {
+      void downloadsOpenPromise.then((lateHandle) => lateHandle.close(), () => {});
+    });
+    try {
+      const openedDownloads = await awaitAbortable(downloadsHandle.stat(), signal, state);
+      throwIfAborted(signal, state);
+      if (!openedDownloads.isDirectory()
+        || !sameFileIdentity(downloadsIdentity, fileIdentity(openedDownloads))) {
+        throw new Error("Adresář Stažené se během exportu změnil");
+      }
+    } finally {
+      void downloadsHandle.close().catch(() => {});
+    }
+
+    temporaryPath = path.join(downloadsRoot, `.ludone-export-${randomBytes(24).toString("hex")}.tmp`);
+    const temporaryOpenPromise = fs.promises.open(temporaryPath,
+      fs.constants.O_CREAT
+        | fs.constants.O_EXCL
+        | fs.constants.O_WRONLY
+        | (fs.constants.O_NOFOLLOW ?? 0),
+      0o600);
+    const temporaryReady = temporaryOpenPromise.then(async (handle) => {
+      temporaryHandle = handle;
+      try {
+        const createdStats = await handle.stat();
+        temporaryIdentity = regularFileIdentity(createdStats, "Dočasný export");
+        if ((createdStats.mode & 0o777) !== 0o600) {
+          throw new Error("Dočasný export nemá práva 0600");
+        }
+        if (signal.aborted) {
+          void cleanupTemporary().catch(() => {});
+          void handle.close().catch(() => {});
+          throw abortError(signal, state);
+        }
+        return handle;
+      } catch (error) {
+        if (!temporaryIdentity) void handle.close().catch(() => {});
+        throw error;
+      }
+    });
+    temporaryReady.catch(() => {});
+    temporaryHandle = await awaitAbortable(temporaryReady, signal, state, () => {
+      void temporaryReady.then(() => cleanupTemporary(), () => {});
+    });
+    throwIfAborted(signal, state);
+
+    const hash = createHash("sha256");
+    const count = { bytes: 0 };
+    sourceStream = sourceHandle.createReadStream({ autoClose: false, start: 0 });
+    transformStream = makeHashTransform({
+      hash,
+      count,
+      signal,
+      state,
+      afterChunk: hooks.afterChunk,
+    });
+    outputStream = new Writable({
+      write(chunk, _encoding, callback) {
+        const bytes = Buffer.from(chunk);
+        const writeRange = async (start, end) => {
+          let offset = start;
+          while (offset < end) {
+            throwIfAborted(signal, state);
+            const result = await temporaryHandle.write(bytes, offset, end - offset, null);
+            if (result.bytesWritten === 0) throw new Error("Zápis dočasného exportu se zastavil");
+            offset += result.bytesWritten;
+          }
+        };
+        const write = async () => {
+          if (hooks.afterPartialWrite && bytes.length > 1) {
+            const split = Math.floor(bytes.length / 2);
+            await writeRange(0, split);
+            await hooks.afterPartialWrite({ bytesWritten: split, chunkBytes: bytes.length });
+            await writeRange(split, bytes.length);
+            return;
+          }
+          await writeRange(0, bytes.length);
+        };
+        write().then(() => callback(), callback);
+      },
+    });
+    const writing = pipeline(sourceStream, transformStream, outputStream);
+    writing.catch(() => {});
+    await awaitAbortable(writing, signal, state, cancelWork);
+    throwIfAborted(signal, state);
+    const copiedSha256 = hash.digest("hex");
+    if (count.bytes !== expectedDelivery.sizeBytes || copiedSha256 !== expectedDelivery.sha256) {
+      throw new Error("Zdroj delivery neodpovídá ověřené velikosti nebo SHA-256");
+    }
+
+    const sourceAfterCopy = regularFileIdentity(
+      await awaitAbortable(sourceHandle.stat(), signal, state),
+      "Zdroj delivery",
+    );
+    throwIfAborted(signal, state);
+    const sourcePathAfterCopy = regularFileIdentity(
+      await awaitAbortable(fs.promises.lstat(sourcePath), signal, state),
+      "Zdroj delivery",
+    );
+    throwIfAborted(signal, state);
+    if (!sameFileSnapshot(sourceIdentity, sourceAfterCopy)
+      || !sameFileSnapshot(sourceAfterCopy, sourcePathAfterCopy)) {
+      throw new Error("Zdroj delivery se během exportu změnil");
+    }
+
+    await awaitAbortable(temporaryHandle.sync(), signal, state, cancelWork);
+    throwIfAborted(signal, state);
+    await awaitAbortable(Promise.resolve(hooks.beforePublish?.({ filePath })), signal, state);
+    throwIfAborted(signal, state);
+    const mayPublish = await awaitAbortable(Promise.resolve(canPublish()), signal, state);
+    throwIfAborted(signal, state);
+    if (mayPublish !== true) throw new Error("Export už nelze bezpečně zveřejnit");
+    throwIfAborted(signal, state);
+
+    const linkPromise = fs.promises.link(temporaryPath, filePath);
+    state.publicationSubmitted = true;
+    onPublicationSubmitted?.({ fileName, filePath });
+    const publication = linkPromise.then(() => {
+      state.published = true;
+      onPublicationSettled?.({ created: true });
+      return true;
+    }, (error) => {
+      if (error?.code === "EEXIST") state.publicationSubmitted = false;
+      onPublicationSettled?.({
+        created: false,
+        ...(typeof error?.code === "string" ? { errorCode: error.code } : {}),
+      });
+      throw error;
+    });
+    publication.catch(() => {});
+    let created;
+    try {
+      created = await awaitAbortable(publication, signal, state, cancelWork);
+    } catch (error) {
+      if (signal.aborted) throw error;
+      if (error?.code !== "EEXIST") throw error;
+      created = await verifyExistingExport({
+        filePath,
+        expectedSizeBytes: expectedDelivery.sizeBytes,
+        expectedSha256: expectedDelivery.sha256,
+        sourceIdentity,
+        signal,
+        state,
+      });
+      throwIfAborted(signal, state);
+    }
+    throwIfAborted(signal, state);
+
+    if (created) {
+      const directoryOpenPromise = fs.promises.open(downloadsRoot,
+        fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+      const directoryHandle = await awaitAbortable(directoryOpenPromise, signal, state, () => {
+        void directoryOpenPromise.then((lateHandle) => lateHandle.close(), () => {});
+      });
+      try {
+        const currentDirectory = await awaitAbortable(directoryHandle.stat(), signal, state);
+        throwIfAborted(signal, state);
+        if (!currentDirectory.isDirectory()
+          || !sameFileIdentity(downloadsIdentity, fileIdentity(currentDirectory))) {
+          throw new Error("Adresář Stažené se změnil při zveřejnění exportu");
+        }
+        await awaitAbortable(directoryHandle.sync(), signal, state, () => {
+          void directoryHandle.close().catch(() => {});
+        });
+        throwIfAborted(signal, state);
+      } finally {
+        void directoryHandle.close().catch(() => {});
+      }
+    }
+
+    await awaitAbortable(cleanupTemporary(), signal, state, cancelWork);
+    throwIfAborted(signal, state);
+    await awaitAbortable(sourceHandle.close(), signal, state);
+    sourceHandle = null;
+    throwIfAborted(signal, state);
+    await awaitAbortable(temporaryHandle.close(), signal, state);
+    temporaryHandle = null;
+    throwIfAborted(signal, state);
+
+    if (openUploadPage) {
+      await awaitAbortable(Promise.resolve(openExternal(uploadUrl)), signal, state);
+    }
+    throwIfAborted(signal, state);
+    return {
+      clientRecordingId: manifest.clientRecordingId,
+      fileName,
+      filePath,
+      format,
+      startedAt: timeline.startedAt,
+      endedAt: timeline.endedAt,
+      stereoStartedAt: timeline.stereoStartedAt,
+      stereoEndedAt: timeline.stereoEndedAt,
+      trackStartDeltaMs: timeline.trackStartDeltaMs,
+      trackDurationDeltaMs: timeline.trackDurationDeltaMs,
+      uploadUrl,
+    };
+  } catch (error) {
+    destroyStreams();
+    try {
+      await awaitAbortable(cleanupTemporary(), signal, state);
+    } catch { /* zrušení nesmí čekat na úklid dočasného souboru */ }
+    closeHandlesWithoutWaiting();
+    if (signal.aborted) throw abortError(signal, state);
+    if (state.published) {
+      error.recordingExported = true;
+      error.fileName = fileName;
+      error.filePath = filePath;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+    externalSignal.removeEventListener("abort", relayAbort);
+    if (temporaryPath && temporaryIdentity && !temporaryCleanupPromise) {
+      void cleanupTemporary().catch(() => {});
+    }
+  }
 }
 
 module.exports = {

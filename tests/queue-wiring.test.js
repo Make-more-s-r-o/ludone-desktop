@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { chmod, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -839,22 +839,54 @@ async function prepareStoredRecordingCopy(harness) {
   return { event, row, sessionId };
 }
 
-function createPausedRecordingCopy() {
-  let resolveCopy;
+function createTestBarrier() {
+  let resolve;
+  const promise = new Promise((done) => { resolve = done; });
+  return { promise, release: () => resolve() };
+}
+
+function createPausedRecordingCopy(extraHooks = {}) {
+  let releaseCopy;
   let reportStarted;
+  let startCount = 0;
+  const startWaiters = [];
   const started = new Promise((resolve) => { reportStarted = resolve; });
-  const exportRecordingCopy = vi.fn(() => new Promise((resolve) => {
-    resolveCopy = resolve;
+  const noteStarted = () => {
+    startCount += 1;
     reportStarted();
+    for (let index = startWaiters.length - 1; index >= 0; index -= 1) {
+      if (startCount >= startWaiters[index].count) {
+        startWaiters[index].resolve();
+        startWaiters.splice(index, 1);
+      }
+    }
+  };
+  const realExport = actualRequire("./recording-export.cjs").exportRecordingCopy;
+  const exportRecordingCopy = vi.fn((options) => realExport({
+    ...options,
+    testHooks: {
+      ...extraHooks,
+      beforeSourceOpen: async (context) => {
+        await new Promise((resolve) => {
+          releaseCopy = resolve;
+          noteStarted();
+        });
+        await extraHooks.beforeSourceOpen?.(context);
+      },
+    },
   }));
   return {
     exportRecordingCopy,
     started,
-    finish(clientRecordingId) {
-      if (!resolveCopy) return;
-      const finish = resolveCopy;
-      resolveCopy = undefined;
-      finish({ clientRecordingId, fileName: "rezervovana-kopie.webm" });
+    waitForStarts(count) {
+      if (startCount >= count) return Promise.resolve();
+      return new Promise((resolve) => startWaiters.push({ count, resolve }));
+    },
+    finish() {
+      if (!releaseCopy) return;
+      const finish = releaseCopy;
+      releaseCopy = undefined;
+      finish();
     },
   };
 }
@@ -3054,46 +3086,25 @@ describe("zjištění uložené OAuth session", () => {
     expect(stored.companyTabidooId).toBe(firmaB);
   });
 
-  it("změnu prostředí odmítne, dokud handover drží původní origin", async () => {
-    let releaseExport;
-    let reportExportStarted;
-    const exportStarted = new Promise((resolve) => {
-      reportExportStarted = resolve;
-    });
-    const exportRecordingCopy = vi.fn(async ({ manifest, origin }) => {
-      reportExportStarted(origin);
-      await new Promise((resolve) => {
-        releaseExport = resolve;
-      });
-      return {
-        clientRecordingId: manifest.clientRecordingId,
-        endedAt: manifest.closedAt,
-        fileName: "schuzka.webm",
-        format: "webm",
-        startedAt: manifest.createdAt,
-        trackStartDeltaMs: 0,
-      };
-    });
-    const harness = await loadMain({ exportRecordingCopy });
+  it("auth:set-origin zruší kopii a provede změnu prostředí", async () => {
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
     const { event, sessionId } = await prepareRecordingExport(harness);
     const exportCopy = harness.ipcHandlers.get("recording:export-copy");
     const exporting = exportCopy(event, sessionId, { recordingName: "Schůzka" });
-    await expect(exportStarted).resolves.toBe("https://app.ludone.cz");
+    await gate.started;
+    expect(gate.exportRecordingCopy.mock.calls[0][0].origin).toBe("https://app.ludone.cz");
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
 
     await expect(harness.ipcHandlers.get("auth:set-origin")(
       settingsEvent,
       "https://labs.ludone.cz",
-    )).rejects.toThrow(/export|handover/u);
-    expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
-      .toBe("https://app.ludone.cz");
-
-    releaseExport();
-    await expect(exporting).resolves.toMatchObject({ ok: true, clientRecordingId: sessionId });
-    await expect(harness.ipcHandlers.get("auth:set-origin")(
-      settingsEvent,
-      "https://labs.ludone.cz",
     )).resolves.toBe("https://labs.ludone.cz");
+    expect(harness.ipcHandlers.get("auth:origin")(settingsEvent))
+      .toBe("https://labs.ludone.cz");
+
+    await expect(exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+    gate.finish();
   });
 
   it("preload předá identity a origin přes oddělené bezargumentové kanály", async () => {
@@ -5849,23 +5860,30 @@ describe("produkční zapojení odchozí fronty", () => {
     })).rejects.toThrow();
   });
 
-  it("potvrzené delete během probíhajícího exportu odmítne skutečný store", async () => {
-    let resolveExport;
-    const harness = await loadMain({ exportRecordingCopy: vi.fn(() => new Promise((resolve) => {
-      resolveExport = resolve;
-    })) });
+  it("potvrzený delete během kopie zruší stejnou operaci a provede skutečný store", async () => {
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
     const { event, sessionId } = await prepareRecordingExport(harness);
-    const exportCopy = harness.ipcHandlers.get("recording:export-copy");
-    const exporting = exportCopy(event, sessionId, { recordingName: "Export" });
-    await vi.waitFor(() => expect(resolveExport).toBeTypeOf("function"));
+    const exporting = harness.ipcHandlers.get("recording:export-copy")(
+      event,
+      sessionId,
+      { recordingName: "Export" },
+    );
+    await gate.started;
     const row = (await harness.ipcHandlers.get("recordings:list-local")(event)).items.find((item) => item.id === sessionId);
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const filesBefore = await readdir(recordingsDirectory);
+    harness.electron.shell.trashItem.mockImplementation(async (filePath) => rm(filePath));
     harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
     await expect(harness.ipcHandlers.get("recordings:delete")(event, {
       id: row.id, queueRev: row.revision, fileRev: row.fileRevision,
-    })).rejects.toThrow(/bezpečně/u);
-    expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
-    resolveExport({ clientRecordingId: sessionId, fileName: "export.webm" });
-    await exporting;
+    })).resolves.toEqual({ outcome: "deleted" });
+    expect(harness.electron.shell.trashItem.mock.calls.map(([filePath]) => path.basename(filePath)).sort())
+      .toEqual([...filesBefore].sort());
+    expect(await readdir(recordingsDirectory)).toEqual([]);
+    await expect(exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
   });
 
   it("delete jiné nahrávky neuzavře čekající exportní fázi", async () => {
@@ -6585,6 +6603,89 @@ describe("výslovná volba stránky přes exportní IPC", () => {
       .filter((name) => name.endsWith(".webm"))).toEqual([]);
   });
 
+  it("stará revize exportu odmítne bez otevření exportéru a bez změny dat", async () => {
+    const exportRecordingCopy = vi.fn();
+    const harness = await loadMain({ exportRecordingCopy });
+    const fixture = await prepareStoredRecordingCopy(harness);
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const queueBefore = await readFile(queuePath, "utf8");
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const filesBefore = await Promise.all((await readdir(recordingsDirectory)).map(async (name) => ({
+      name,
+      bytes: await readFile(path.join(recordingsDirectory, name)),
+    })));
+
+    const result = await harness.ipcHandlers.get("recording:export-copy")(
+      fixture.event,
+      fixture.sessionId,
+      {
+        queueRev: `sha256:${"f".repeat(64)}`,
+        fileRev: fixture.row.fileRevision,
+        recordingName: "Rezervovaná porada",
+      },
+    );
+
+    expect(result).toMatchObject({ ok: false, recordingExported: false });
+    expect(exportRecordingCopy).not.toHaveBeenCalled();
+    expect(await readFile(queuePath, "utf8")).toBe(queueBefore);
+    for (const file of filesBefore) {
+      await expect(readFile(path.join(recordingsDirectory, file.name))).resolves.toEqual(file.bytes);
+    }
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
+  it("zastaralá fileRev exportu odmítne před otevřením exportéru", async () => {
+    const exportRecordingCopy = vi.fn();
+    const harness = await loadMain({ exportRecordingCopy });
+    const fixture = await prepareStoredRecordingCopy(harness);
+
+    const result = await harness.ipcHandlers.get("recording:export-copy")(
+      fixture.event,
+      fixture.sessionId,
+      {
+        queueRev: fixture.row.revision,
+        fileRev: `sha256:${"e".repeat(64)}`,
+        recordingName: "Rezervovaná porada",
+      },
+    );
+
+    expect(result).toMatchObject({ ok: false, recordingExported: false });
+    expect(exportRecordingCopy).not.toHaveBeenCalled();
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
+  it("cizího vlastníka exportu odmítne podle nového snapshotu", async () => {
+    const exportRecordingCopy = vi.fn();
+    const harness = await loadMain({ exportRecordingCopy });
+    const fixture = await prepareStoredRecordingCopy(harness);
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const queue = JSON.parse(await readFile(queuePath, "utf8"));
+    queue.items.find((item) => item.clientRecordingId === fixture.sessionId).ownerFingerprint =
+      `sha256:${"0".repeat(64)}`;
+    await writeFile(queuePath, JSON.stringify(queue));
+    const row = (await harness.ipcHandlers.get("recordings:list-local")(fixture.event))
+      .items.find((item) => item.id === fixture.sessionId);
+    const queueBefore = await readFile(queuePath, "utf8");
+
+    const result = await harness.ipcHandlers.get("recording:export-copy")(
+      fixture.event,
+      fixture.sessionId,
+      {
+        queueRev: row.revision,
+        fileRev: row.fileRevision,
+        recordingName: "Rezervovaná porada",
+      },
+    );
+
+    expect(result).toMatchObject({ ok: false, recordingExported: false });
+    expect(exportRecordingCopy).not.toHaveBeenCalled();
+    expect(await readFile(queuePath, "utf8")).toBe(queueBefore);
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
   it("501 jednotek přes preload odmítne, zachová soubory a po opravě export zopakuje", async () => {
     const harness = await loadMain();
     const { event, sessionId } = await prepareRecordingExport(harness);
@@ -6671,11 +6772,372 @@ describe("výslovná volba stránky přes exportní IPC", () => {
   });
 });
 
-describe("rezervace uložené kopie proti souběžným zásahům", () => {
-  it("běžící kopie zastaví retenci; po uvolnění se stejná retence provede", async () => {
-    const userDataPath = await mkdtemp(path.join(tmpdir(), "ludone-export-retention-"));
-    const oldRecording = await writeOldSentRecording(userDataPath);
-    await chmod(path.join(userDataPath, "nahravky"), 0o700);
+describe("přerušení volitelné kopie při souběžných zásazích", () => {
+  // Nahrazuje dřívější povinnost čekat na dlouhou rezervaci: kopie se přeruší,
+  // zatímco původní akce aplikace a samostatné kontroly zachování dat zůstávají.
+  it("nekončící kopie nezadrží běžný quit ani tři další Cmd+Q po 15 sekundách", async () => {
+    vi.useFakeTimers();
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      const requestQuit = () => {
+        const event = { preventDefault: vi.fn() };
+        harness.electron.app.emit("before-quit", event);
+        if (!event.preventDefault.mock.calls.length) harness.electron.app.quit();
+        return event;
+      };
+      expect(requestQuit().preventDefault).not.toHaveBeenCalled();
+      await expect(fixture.exporting).resolves.toMatchObject({
+        ok: false,
+        recordingExported: false,
+      });
+
+      await vi.advanceTimersByTimeAsync(15_000);
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        expect(requestQuit().preventDefault).not.toHaveBeenCalled();
+      }
+
+      expect(harness.electron.app.quit).toHaveBeenCalledTimes(4);
+    } finally {
+      if (fixture) {
+        gate.finish();
+        await fixture.exporting;
+      }
+    }
+  });
+
+  it("po timeoutu dokončená kopie neobnoví timeout visícího LuTracku", async () => {
+    vi.useFakeTimers();
+    const gate = createPausedRecordingCopy();
+    const trackingState = { schemaVersion: 1, aktualni: null, uzavrene: [] };
+    const trackingStore = {
+      getState: () => structuredClone(trackingState),
+      load: vi.fn(async () => structuredClone(trackingState)),
+      start: vi.fn(async () => {
+        const entry = {
+          clientTimeEntryId: "98e55275-b912-447c-a0de-417b1860f9d9",
+          projectId: PROJECT_A,
+          startedAt: "2026-09-02T12:00:00.000Z",
+          state: "bezi",
+        };
+        trackingState.aktualni = entry;
+        return { outcome: "started", entry, closed: null };
+      }),
+      stop: vi.fn(() => new Promise(() => {})),
+      switchProject: vi.fn(),
+      resolveRecovered: vi.fn(),
+    };
+    const harness = await loadMain({
+      createTrackingStore: () => trackingStore,
+      env: { DESKTOP_TIME_ENABLED: "true" },
+      exportRecordingCopy: gate.exportRecordingCopy,
+    });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      await harness.ipcHandlers.get("tracking:start")(fixture.event, { projectId: PROJECT_A });
+
+      const quitEvent = { preventDefault: vi.fn() };
+      harness.electron.app.emit("before-quit", quitEvent);
+      await vi.waitFor(() => expect(trackingStore.stop).toHaveBeenCalledOnce());
+      await vi.advanceTimersByTimeAsync(15_000);
+      expect(harness.electron.app.quit).toHaveBeenCalledOnce();
+
+      await expect(fixture.exporting).resolves.toMatchObject({
+        ok: false,
+        recordingExported: false,
+      });
+
+      gate.finish();
+      await fixture.exporting;
+      await vi.advanceTimersByTimeAsync(15_000);
+      expect(harness.electron.app.quit).toHaveBeenCalledOnce();
+    } finally {
+      if (fixture) {
+        gate.finish();
+        await fixture.exporting;
+      }
+    }
+  });
+
+  it("zrušení po prvním skutečně zapsaném bloku předá quit a odstraní jen staging", async () => {
+    const firstWrite = createTestBarrier();
+    const releaseWrite = createTestBarrier();
+    const gate = createPausedRecordingCopy({
+      afterPartialWrite: () => {
+        firstWrite.release();
+        return releaseWrite.promise;
+      },
+    });
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    const fixture = await startPausedStoredCopy(harness, gate);
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const protectedFiles = await Promise.all((await readdir(recordingsDirectory)).map(async (name) => ({
+      name,
+      bytes: await readFile(path.join(recordingsDirectory, name)),
+    })));
+    const downloadsDirectory = harness.electron.app.getPath("downloads");
+    gate.finish();
+    await firstWrite.promise;
+
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+    expect(quitEvent.preventDefault).not.toHaveBeenCalled();
+    harness.electron.app.quit();
+    releaseWrite.release();
+    await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+    expect((await readdir(downloadsDirectory)).filter((name) => name.endsWith(".webm"))).toEqual([]);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect((await readdir(downloadsDirectory)).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+    for (const file of protectedFiles) {
+      await expect(readFile(path.join(recordingsDirectory, file.name))).resolves.toEqual(file.bytes);
+    }
+  });
+
+  it("zrušení v bariéře před publikací nevyrobí finální soubor", async () => {
+    const publishReached = createTestBarrier();
+    const releasePublish = createTestBarrier();
+    const gate = createPausedRecordingCopy({
+      beforePublish: () => {
+        publishReached.release();
+        return releasePublish.promise;
+      },
+    });
+    const logout = vi.fn(async () => ({ signedOutLocally: true, serverRevoked: true, reason: null }));
+    const harness = await loadMain({
+      exportRecordingCopy: gate.exportRecordingCopy,
+      createLogoutController: vi.fn(() => ({ logout })),
+    });
+    const fixture = await startPausedStoredCopy(harness, gate);
+    const downloadsDirectory = harness.electron.app.getPath("downloads");
+    gate.finish();
+    await publishReached.promise;
+
+    await expect(harness.ipcHandlers.get("auth:logout")(fixture.event)).resolves.toMatchObject({
+      signedOutLocally: true,
+      serverRevoked: true,
+    });
+    await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+    expect((await readdir(downloadsDirectory)).filter((name) => name.endsWith(".webm"))).toEqual([]);
+    releasePublish.release();
+  });
+
+  it("quit během již předaného linku nečeká a případný cíl je úplný", async () => {
+    const cleanupReached = createTestBarrier();
+    const releaseCleanup = createTestBarrier();
+    const gate = createPausedRecordingCopy({
+      beforeCleanup: () => {
+        cleanupReached.release();
+        return releaseCleanup.promise;
+      },
+    });
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    const fixture = await startPausedStoredCopy(harness, gate);
+    const downloadsDirectory = harness.electron.app.getPath("downloads");
+    gate.finish();
+    await cleanupReached.promise;
+
+    const quitEvent = { preventDefault: vi.fn() };
+    harness.electron.app.emit("before-quit", quitEvent);
+    expect(quitEvent.preventDefault).not.toHaveBeenCalled();
+    harness.electron.app.quit();
+    await expect(fixture.exporting).resolves.toMatchObject({
+      ok: false,
+      recordingExported: null,
+      publicationPending: true,
+    });
+    let finalNames = (await readdir(downloadsDirectory)).filter((name) => name.endsWith(".webm"));
+    expect(finalNames).toHaveLength(1);
+    await expect(readFile(path.join(downloadsDirectory, finalNames[0])))
+      .resolves.toEqual(stereoWebmBytes());
+
+    releaseCleanup.release();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect((await readdir(downloadsDirectory)).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+  });
+
+  it("timeout hlavního exportéru vyřídí skutečný IPC bez pozdního úspěchu", async () => {
+    const gate = createPausedRecordingCopy({ timeoutMs: 25 });
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    const fixture = await startPausedStoredCopy(harness, gate);
+
+    await expect(fixture.exporting).resolves.toMatchObject({
+      ok: false,
+      recordingExported: false,
+      message: expect.stringContaining("časový limit"),
+    });
+    gate.finish();
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
+  it("120sekundová lhůta pokrývá i ověření snapshotu před otevřením exportéru", async () => {
+    vi.useFakeTimers();
+    const targetStarted = createTestBarrier();
+    const realCreateStore = actualRequire("./queue.cjs").createOutboundQueueStore;
+    const createOutboundQueueStore = vi.fn((options) => {
+      const store = realCreateStore(options);
+      return {
+        ...store,
+        resolveRecordingExportCopyTarget() {
+          targetStarted.release();
+          return new Promise(() => {});
+        },
+      };
+    });
+    const exportRecordingCopy = vi.fn();
+    const harness = await loadMain({ createOutboundQueueStore, exportRecordingCopy });
+    const fixture = await prepareStoredRecordingCopy(harness);
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const queueBefore = await readFile(queuePath, "utf8");
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const filesBefore = await Promise.all((await readdir(recordingsDirectory)).map(async (name) => ({
+      name,
+      bytes: await readFile(path.join(recordingsDirectory, name)),
+    })));
+
+    const request = harness.ipcHandlers.get("recording:export-copy")(
+      fixture.event,
+      fixture.sessionId,
+      {
+        queueRev: fixture.row.revision,
+        fileRev: fixture.row.fileRevision,
+        recordingName: "Rezervovaná porada",
+      },
+    );
+    await targetStarted.promise;
+    await vi.advanceTimersByTimeAsync(120_000);
+    await expect(request).resolves.toMatchObject({
+      ok: false,
+      recordingExported: false,
+      message: expect.stringContaining("časový limit"),
+    });
+    expect(exportRecordingCopy).not.toHaveBeenCalled();
+    expect(await readFile(queuePath, "utf8")).toBe(queueBefore);
+    for (const file of filesBefore) {
+      await expect(readFile(path.join(recordingsDirectory, file.name))).resolves.toEqual(file.bytes);
+    }
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+  });
+
+  it("současný export stejného GUID odmítne a pozdější skutečný pokus projde", async () => {
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    let fixture;
+    try {
+      fixture = await startPausedStoredCopy(harness, gate);
+      const exportCopy = harness.ipcHandlers.get("recording:export-copy");
+      await expect(exportCopy(fixture.event, fixture.sessionId, {
+        queueRev: fixture.row.revision,
+        fileRev: fixture.row.fileRevision,
+        recordingName: "Rezervovaná porada",
+      })).rejects.toThrow(/už připravuje/u);
+      expect(gate.exportRecordingCopy).toHaveBeenCalledOnce();
+      gate.finish();
+      await expect(fixture.exporting).resolves.toMatchObject({ ok: true, clientRecordingId: fixture.sessionId });
+
+      const retry = exportCopy(fixture.event, fixture.sessionId, {
+        queueRev: fixture.row.revision,
+        fileRev: fixture.row.fileRevision,
+        recordingName: "Rezervovaná porada",
+      });
+      await gate.waitForStarts(2);
+      gate.finish();
+      const result = await retry;
+      expect(result).toMatchObject({ ok: true, clientRecordingId: fixture.sessionId });
+      expect(gate.exportRecordingCopy).toHaveBeenCalledTimes(2);
+      expect((await readdir(harness.electron.app.getPath("downloads")))
+        .filter((name) => name.endsWith(".webm"))).toEqual([result.fileName]);
+    } finally {
+      if (fixture) {
+        gate.finish();
+        await fixture.exporting;
+      }
+    }
+  });
+
+  it("zničení vlastnícího rendereru zruší kopii bez změny fronty a zvuku", async () => {
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
+    const fixture = await startPausedStoredCopy(harness, gate);
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const protectedFiles = await Promise.all((await readdir(recordingsDirectory)).map(async (name) => ({
+      name,
+      bytes: await readFile(path.join(recordingsDirectory, name)),
+    })));
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const queueBefore = await readFile(queuePath, "utf8");
+
+    fixture.event.sender.destroy();
+    await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+    expect(await readFile(queuePath, "utf8")).toBe(queueBefore);
+    for (const file of protectedFiles) {
+      await expect(readFile(path.join(recordingsDirectory, file.name))).resolves.toEqual(file.bytes);
+    }
+    expect((await readdir(harness.electron.app.getPath("downloads")))
+      .filter((name) => name.endsWith(".webm"))).toEqual([]);
+    gate.finish();
+  });
+
+  it("úspěšný auth:begin zruší kopii jako přechod identity", async () => {
+    const gate = createPausedRecordingCopy();
+    const createAuthController = vi.fn(() => ({
+      start: vi.fn(async () => ({
+        authorizationUrl: "https://app.ludone.cz/api/oauth/authorize?state=test",
+        cancel: vi.fn(),
+        result: Promise.resolve({ user: { name: "Test", email: "test@ludone.cz" } }),
+      })),
+    }));
+    const harness = await loadMain({
+      createAuthController,
+      exportRecordingCopy: gate.exportRecordingCopy,
+    });
+    const fixture = await startPausedStoredCopy(harness, gate);
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const queueBefore = await readFile(queuePath, "utf8");
+
+    await expect(harness.ipcHandlers.get("auth:begin")(fixture.event)).resolves.toMatchObject({ ok: true });
+    await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+    expect(await readFile(queuePath, "utf8")).toBe(queueBefore);
+    gate.finish();
+  });
+
+  it("souhlas uživatele s aktualizací zruší kopii před quitAndInstall", async () => {
+    const autoUpdater = fakeAutoUpdater();
+    const gate = createPausedRecordingCopy();
+    const harness = await loadMain({
+      autoUpdater,
+      exportRecordingCopy: gate.exportRecordingCopy,
+      isPackaged: true,
+    });
+    const fixture = await startPausedStoredCopy(harness, gate);
+    const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+    const queueBefore = await readFile(queuePath, "utf8");
+    const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+    const protectedFiles = await Promise.all((await readdir(recordingsDirectory)).map(async (name) => ({
+      name,
+      bytes: await readFile(path.join(recordingsDirectory, name)),
+    })));
+
+    autoUpdater.emit("update-downloaded", { version: "1.2.3" });
+    harness.ipcHandlers.get("updater:install")(fixture.event, { expectedVersion: "1.2.3" });
+    await vi.waitFor(() => expect(autoUpdater.quitAndInstall).toHaveBeenCalledOnce());
+    expect(gate.exportRecordingCopy.mock.calls[0][0].signal.aborted).toBe(true);
+    await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+    expect(await readFile(queuePath, "utf8")).toBe(queueBefore);
+    for (const file of protectedFiles) {
+      await expect(readFile(path.join(recordingsDirectory, file.name))).resolves.toEqual(file.bytes);
+    }
+    expect(autoUpdater.quitAndInstall.mock.invocationCallOrder[0])
+      .toBeGreaterThan(gate.exportRecordingCopy.mock.invocationCallOrder[0]);
+    gate.finish();
+  });
+
+  it("runtime retence zruší kopii stejného GUID a uklidí přesně oprávněné soubory", async () => {
     const gate = createPausedRecordingCopy();
     const realCreateStore = actualRequire("./queue.cjs").createOutboundQueueStore;
     let runRuntimeRetention;
@@ -6692,69 +7154,94 @@ describe("rezervace uložené kopie proti souběžným zásahům", () => {
       };
     });
     const harness = await loadMain({
-      userDataPath,
       storedSettings: JSON.stringify({ retention: "Nemazat" }),
       exportRecordingCopy: gate.exportRecordingCopy,
       createOutboundQueueStore,
     });
     let fixture;
     try {
-      fixture = await startPausedStoredCopy(harness, gate);
+      fixture = await prepareStoredRecordingCopy(harness);
+      const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+      await chmod(recordingsDirectory, 0o700);
+      const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+      const queue = JSON.parse(await readFile(queuePath, "utf8"));
+      const queued = queue.items.find((item) => item.clientRecordingId === fixture.sessionId);
+      queued.state = "odeslano";
+      queued.sentAt = new Date(Date.now() - 8 * DAY_MS).toISOString();
+      queued.server = { recordingId: "server-recording", uploadedBytes: { microphone: 8, system: 6 } };
+      await writeFile(queuePath, JSON.stringify(queue));
+      fixture.row = (await harness.ipcHandlers.get("recordings:list-local")(fixture.event))
+        .items.find((item) => item.id === fixture.sessionId);
+      const filesBefore = await readdir(recordingsDirectory);
+      // Dřívější rezervace bránila retenci. Nová cesta nejprve kopii zruší;
+      // níže kontrolujeme původní retenci i přesný výčet jejích oprávněných cílů.
+      const exporting = harness.ipcHandlers.get("recording:export-copy")(fixture.event, fixture.sessionId, {
+        queueRev: fixture.row.revision,
+        fileRev: fixture.row.fileRevision,
+        recordingName: "Retenční porada",
+      });
+      fixture.exporting = exporting;
+      await gate.started;
       expect(runRuntimeRetention).toBeTypeOf("function");
       await harness.ipcHandlers.get("settings:set-retention")(fixture.event, "7 dní po odeslání");
 
       runRuntimeRetention();
       await vi.waitFor(() => expect(retentionPromise).toBeInstanceOf(Promise));
-      const blocked = await retentionPromise;
-      expect(blocked.deletedItems).toEqual([]);
-      expect(existsSync(oldRecording.microphonePath)).toBe(true);
-      expect(existsSync(oldRecording.systemPath)).toBe(true);
-
-      gate.finish(fixture.sessionId);
-      await expect(fixture.exporting).resolves.toMatchObject({ ok: true });
-      retentionPromise = undefined;
-      runRuntimeRetention();
-      await vi.waitFor(() => expect(retentionPromise).toBeInstanceOf(Promise));
       const cleaned = await retentionPromise;
-      expect(cleaned.deletedItems).toHaveLength(1);
-      expect(existsSync(oldRecording.microphonePath)).toBe(false);
-      expect(existsSync(oldRecording.systemPath)).toBe(false);
+      expect(cleaned.errors).toEqual([]);
+      expect(cleaned.deletedItems.map((item) => item.clientRecordingId)).toEqual([fixture.sessionId]);
+      expect(cleaned.deletedFiles.map((filePath) => path.basename(filePath)).sort())
+        .toEqual([...filesBefore].sort());
+      expect(await readdir(recordingsDirectory)).toEqual([]);
+      expect(JSON.parse(await readFile(queuePath, "utf8")).items).toEqual([]);
+      await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+      gate.finish();
     } finally {
       if (fixture) {
-        gate.finish(fixture.sessionId);
+        gate.finish();
         await fixture.exporting;
       }
     }
   }, 20_000);
 
-  it("potvrzené mazání během kopie odmítne koš a zachová zdroj", async () => {
+  it("potvrzený koš zruší kopii stejného GUID a přesune přesně ověřené soubory", async () => {
     const gate = createPausedRecordingCopy();
     const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
     let fixture;
     try {
       fixture = await startPausedStoredCopy(harness, gate);
+      const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+      const filesBefore = await readdir(recordingsDirectory);
+      expect(filesBefore.length).toBeGreaterThan(0);
+      // Původní rezervace koš odmítla; nový kontrakt provede potvrzený koš po
+      // zrušení kopie a níže dál ověřuje přesný seznam souborů i odstranění řádku.
+      harness.electron.shell.trashItem.mockImplementation(async (filePath) => rm(filePath));
       harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
       await expect(harness.ipcHandlers.get("recordings:delete")(fixture.event, {
         id: fixture.row.id,
         queueRev: fixture.row.revision,
         fileRev: fixture.row.fileRevision,
-      })).rejects.toThrow(/bezpečně/u);
-      expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+      })).resolves.toEqual({ outcome: "deleted" });
+      expect(harness.electron.shell.trashItem.mock.calls.map(([filePath]) => path.basename(filePath)).sort())
+        .toEqual([...filesBefore].sort());
+      expect(await readdir(recordingsDirectory)).toEqual([]);
       const queue = JSON.parse(await readFile(
         path.join(harness.userDataPath, "queue", "outgoing.json"),
         "utf8",
       ));
-      const deliveryPath = queue.items.find((item) => item.clientRecordingId === fixture.sessionId).delivery.filePath;
-      await expect(readFile(deliveryPath)).resolves.toEqual(stereoWebmBytes());
+      expect(queue.items).toEqual([]);
+      await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+      expect((await readdir(harness.electron.app.getPath("downloads")))
+        .filter((name) => name.endsWith(".webm"))).toEqual([]);
     } finally {
       if (fixture) {
-        gate.finish(fixture.sessionId);
+        gate.finish();
         await fixture.exporting;
       }
     }
   });
 
-  it("odhlášení během kopie vrátí neúspěch a ponechá session", async () => {
+  it("odhlášení během kopie pokračuje a ponechá frontu i soubory beze změny", async () => {
     const gate = createPausedRecordingCopy();
     const logout = vi.fn(async () => ({ signedOutLocally: true, serverRevoked: true, reason: null }));
     const harness = await loadMain({
@@ -6764,15 +7251,28 @@ describe("rezervace uložené kopie proti souběžným zásahům", () => {
     let fixture;
     try {
       fixture = await startPausedStoredCopy(harness, gate);
-      await expect(harness.ipcHandlers.get("auth:logout")(fixture.event)).resolves.toEqual({
-        signedOutLocally: false,
-        serverRevoked: false,
-        reason: "recording-export-active",
+      const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+      const filesBefore = await Promise.all((await readdir(recordingsDirectory)).map(async (name) => ({
+        name,
+        bytes: await readFile(path.join(recordingsDirectory, name)),
+      })));
+      const queuePath = path.join(harness.userDataPath, "queue", "outgoing.json");
+      const queueBefore = await readFile(queuePath, "utf8");
+      // Dříve rezervace blokovala logout. Nyní logout pokračuje, zatímco tyto
+      // samostatné aserce chrání queue i všechny původní soubory.
+      await expect(harness.ipcHandlers.get("auth:logout")(fixture.event)).resolves.toMatchObject({
+        signedOutLocally: true,
+        serverRevoked: true,
       });
-      expect(logout).not.toHaveBeenCalled();
+      expect(logout).toHaveBeenCalledOnce();
+      await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+      expect(await readFile(queuePath, "utf8")).toBe(queueBefore);
+      for (const file of filesBefore) {
+        await expect(readFile(path.join(recordingsDirectory, file.name))).resolves.toEqual(file.bytes);
+      }
     } finally {
       if (fixture) {
-        gate.finish(fixture.sessionId);
+        gate.finish();
         await fixture.exporting;
       }
     }
@@ -6808,10 +7308,15 @@ describe("rezervace uložené kopie proti souběžným zásahům", () => {
     expect(logout).toHaveBeenCalledOnce();
   });
 
-  it("přepnutí prostředí během kopie je odmítnuté", async () => {
+  it("auth:switch-origin odhlásí a přepne prostředí i při probíhající kopii", async () => {
     const gate = createPausedRecordingCopy();
-    const logout = vi.fn(async () => ({ signedOutLocally: true, serverRevoked: true, reason: null }));
-    const harness = await loadMain({
+    let harness;
+    const logout = vi.fn(async () => {
+      const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+      await rm(tokenPath, { force: true });
+      return { signedOutLocally: true, serverRevoked: true, reason: null };
+    });
+    harness = await loadMain({
       exportRecordingCopy: gate.exportRecordingCopy,
       createLogoutController: vi.fn(() => ({ logout })),
     });
@@ -6822,25 +7327,22 @@ describe("rezervace uložené kopie proti souběžným zásahům", () => {
         fixture.event,
         "https://labs.ludone.cz",
       )).resolves.toMatchObject({
-        signedOutLocally: false,
-        reason: "recording-export-active",
-        origin: "https://app.ludone.cz",
+        signedOutLocally: true,
+        serverRevoked: true,
+        origin: "https://labs.ludone.cz",
       });
-      await expect(harness.ipcHandlers.get("auth:set-origin")(
-        fixture.event,
-        "https://labs.ludone.cz",
-      )).rejects.toThrow(/práce se souborem/u);
-      expect(harness.ipcHandlers.get("auth:origin")(fixture.event)).toBe("https://app.ludone.cz");
-      expect(logout).not.toHaveBeenCalled();
+      expect(harness.ipcHandlers.get("auth:origin")(fixture.event)).toBe("https://labs.ludone.cz");
+      expect(logout).toHaveBeenCalledOnce();
+      await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
     } finally {
       if (fixture) {
-        gate.finish(fixture.sessionId);
+        gate.finish();
         await fixture.exporting;
       }
     }
   });
 
-  it("quit počká na dokončení už rozběhnuté kopie", async () => {
+  it("běžný quit nečeká na rozběhnutou kopii", async () => {
     const gate = createPausedRecordingCopy();
     const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
     let fixture;
@@ -6848,27 +7350,31 @@ describe("rezervace uložené kopie proti souběžným zásahům", () => {
       fixture = await startPausedStoredCopy(harness, gate);
       const quitEvent = { preventDefault: vi.fn() };
       harness.electron.app.emit("before-quit", quitEvent);
-      expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
-      expect(harness.electron.app.quit).not.toHaveBeenCalled();
-
-      gate.finish(fixture.sessionId);
-      await expect(fixture.exporting).resolves.toMatchObject({ ok: true });
-      await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+      expect(quitEvent.preventDefault).not.toHaveBeenCalled();
+      harness.electron.app.quit();
+      expect(harness.electron.app.quit).toHaveBeenCalledOnce();
+      await expect(fixture.exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+      gate.finish();
     } finally {
       if (fixture) {
-        gate.finish(fixture.sessionId);
+        gate.finish();
         await fixture.exporting;
       }
     }
   });
 
-  it("vynucený quit po selhání předání Stop počká na rezervovanou kopii", async () => {
+  it("selhání předání Stop zachová nový záznam a quit nepřeruší kvůli kopii", async () => {
     const gate = createPausedRecordingCopy();
     const harness = await loadMain({ exportRecordingCopy: gate.exportRecordingCopy });
     let fixture;
     try {
       fixture = await startPausedStoredCopy(harness, gate);
       await harness.ipcHandlers.get("recording:begin")(fixture.event);
+      const recordingsDirectory = path.join(harness.userDataPath, "nahravky");
+      const protectedFiles = await Promise.all((await readdir(recordingsDirectory)).map(async (name) => ({
+        name,
+        bytes: await readFile(path.join(recordingsDirectory, name)),
+      })));
       fixture.event.sender.send.mockImplementation((channel) => {
         if (channel === "tray:command") throw new Error("panel nepřijal příkaz");
       });
@@ -6878,17 +7384,23 @@ describe("rezervace uložené kopie proti souběžným zásahům", () => {
 
       expect(quitEvent.preventDefault).toHaveBeenCalledOnce();
       expect(fixture.event.sender.send).toHaveBeenCalledWith("tray:command");
-      expect(harness.electron.app.quit).not.toHaveBeenCalled();
+      expect(harness.electron.app.quit).toHaveBeenCalledOnce();
+      await expect(fixture.exporting).resolves.toMatchObject({
+        ok: false,
+        recordingExported: false,
+      });
 
-      gate.finish(fixture.sessionId);
-      await expect(fixture.exporting).resolves.toMatchObject({ recordingExported: true });
-      await vi.waitFor(() => expect(harness.electron.app.quit).toHaveBeenCalledOnce());
+      gate.finish();
+      await fixture.exporting;
+      for (const file of protectedFiles) {
+        await expect(readFile(path.join(recordingsDirectory, file.name))).resolves.toEqual(file.bytes);
+      }
       expect(harness.quietConsole.error).toHaveBeenCalledWith(
         expect.stringContaining("Příkaz k čistému zastavení nahrávání se nepodařilo předat"),
       );
     } finally {
       if (fixture) {
-        gate.finish(fixture.sessionId);
+        gate.finish();
         await fixture.exporting;
       }
     }

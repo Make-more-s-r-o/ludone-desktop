@@ -116,6 +116,7 @@ const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
 const OFFER_TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const RETENTION_READ_TIMEOUT_MS = 1_000;
 const EXPORT_STAGE_READY_TIMEOUT_MS = 15_000;
+const EXPORT_COPY_ATTEMPT_TIMEOUT_MS = 120_000;
 const GRACEFUL_QUIT_TIMEOUT_MS = 15_000;
 const MAX_RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
 const RECORDING_EXPORT_TRACKS_PRESERVED = "Původní dvě stopy zůstaly uložené.";
@@ -143,9 +144,8 @@ const recordingSessions = new Map();
 const recordingOwnersPreparing = new Map();
 const recordingExportStages = new Map();
 const recordingCompletionsInFlight = new Set();
-// Kopie delivery a přesun do koše drží rezervaci i mimo serializovanou operaci
-// fronty. Retence, změna identity a quit proto poznají práci až do konce I/O.
-const recordingFileReservations = new Map();
+// Výslovné kopie jsou přerušitelné a nikdy se neúčastní guardů povinných agend.
+const recordingCopyOperations = new Map();
 const trackingMutationsInFlight = new Set();
 
 let tray;
@@ -590,7 +590,7 @@ function osaTrayImage(state) {
 }
 
 function osaExportFacts() {
-  let saving = recordingCompletionsInFlight.size > 0 || recordingFileReservations.size > 0;
+  let saving = recordingCompletionsInFlight.size > 0;
   let decision = false;
   let attention = false;
   for (const stage of recordingExportStages.values()) {
@@ -665,22 +665,126 @@ function hasRecordingExportInFlight() {
   return false;
 }
 
-function reserveRecordingFileOperation(clientRecordingId) {
-  if (recordingFileReservations.size > 0) {
-    throw new RecordingExportUserError("Jiná práce se souborem nahrávky právě probíhá; zkuste to znovu později");
+function registerRecordingCopyOperation(event, clientRecordingId, roles, exportStage = null) {
+  const existing = recordingCopyOperations.get(clientRecordingId);
+  if (existing && !existing.cancelled && !existing.settled) {
+    throw new RecordingExportUserError("Kopie této nahrávky se už připravuje");
   }
-  const reservation = { clientRecordingId };
-  recordingFileReservations.set(clientRecordingId, reservation);
-  return reservation;
+  const operation = {
+    cancelled: false,
+    cancelReason: null,
+    controller: new AbortController(),
+    event,
+    exportStage,
+    generation: authSessionGeneration,
+    id: clientRecordingId,
+    origin: resolveCurrentAuthIssuer(),
+    publicationSubmitted: false,
+    publishedFileName: null,
+    roles: [...roles],
+    sender: event.sender,
+    settled: false,
+    destroyedListener: null,
+    timeoutId: undefined,
+  };
+  operation.destroyedListener = () => cancelRecordingCopyOperation(operation, "renderer-destroyed");
+  recordingCopyOperations.set(clientRecordingId, operation);
+  operation.sender.once("destroyed", operation.destroyedListener);
+  operation.timeoutId = setTimeout(
+    () => cancelRecordingCopyOperation(operation, "EXPORT_TIMEOUT"),
+    EXPORT_COPY_ATTEMPT_TIMEOUT_MS,
+  );
+  return operation;
 }
 
-function releaseRecordingFileOperation(reservation) {
-  if (!reservation || recordingFileReservations.get(reservation.clientRecordingId) !== reservation) return;
-  recordingFileReservations.delete(reservation.clientRecordingId);
-  notifyRecordingStorageChanged();
-  refreshTray();
-  void maybeCompleteDeferredQuit();
-  void tryInstallDownloadedUpdate();
+function unregisterRecordingCopyOperation(operation) {
+  if (!operation || operation.settled) return;
+  operation.settled = true;
+  clearTimeout(operation.timeoutId);
+  if (recordingCopyOperations.get(operation.id) === operation) {
+    recordingCopyOperations.delete(operation.id);
+  }
+  operation.sender.removeListener("destroyed", operation.destroyedListener);
+}
+
+function cancelRecordingCopyOperation(operation, reason) {
+  if (!operation || operation.cancelled || operation.settled) return false;
+  operation.cancelled = true;
+  operation.cancelReason = reason;
+  if (recordingCopyOperations.get(operation.id) === operation) {
+    recordingCopyOperations.delete(operation.id);
+  }
+  clearTimeout(operation.timeoutId);
+  operation.sender.removeListener("destroyed", operation.destroyedListener);
+  operation.controller.abort(Object.assign(new Error("Export kopie byl zrušen"), {
+    name: "AbortError",
+    code: reason,
+  }));
+  return true;
+}
+
+function cancelRecordingCopyOperations(reason, { clientRecordingId = null, ownerId = null } = {}) {
+  let cancelled = 0;
+  for (const operation of [...recordingCopyOperations.values()]) {
+    if (clientRecordingId !== null && operation.id !== clientRecordingId) continue;
+    if (ownerId !== null && operation.sender.id !== ownerId) continue;
+    if (cancelRecordingCopyOperation(operation, reason)) cancelled += 1;
+  }
+  return cancelled;
+}
+
+function recordingCopyOperationIsCurrent(operation) {
+  if (!operation || operation.cancelled || operation.controller.signal.aborted
+    || operation.settled || recordingCopyOperations.get(operation.id) !== operation
+    || operation.sender.isDestroyed()
+    || operation.generation !== authSessionGeneration
+    || operation.origin !== resolveCurrentAuthIssuer()) return false;
+  try {
+    requireTrustedSender(operation.event, operation.roles);
+  } catch {
+    return false;
+  }
+  if (operation.exportStage) {
+    const activeStage = recordingExportStages.get(operation.id);
+    if (activeStage && activeStage !== operation.exportStage) return false;
+    if (operation.exportStage.sessionId !== operation.id
+      || operation.exportStage.owner !== operation.sender
+      || operation.exportStage.ownerId !== operation.sender.id
+      || operation.exportStage.ownerGone
+      || operation.exportStage.releaseRequested) return false;
+  }
+  return true;
+}
+
+function recordingCopyAbortError(operation) {
+  const error = new Error("Export kopie byl zrušen");
+  error.name = "AbortError";
+  error.code = operation.cancelReason ?? "ABORT_ERR";
+  error.recordingExported = operation.publicationSubmitted ? null : false;
+  error.publicationPending = operation.publicationSubmitted;
+  if (operation.publicationSubmitted) error.fileName = operation.publishedFileName;
+  return error;
+}
+
+function awaitRecordingCopyOperation(value, operation) {
+  const promise = Promise.resolve(value);
+  const { signal } = operation.controller;
+  if (signal.aborted) {
+    promise.catch(() => {});
+    return Promise.reject(recordingCopyAbortError(operation));
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, result) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener("abort", onAbort);
+      callback(result);
+    };
+    const onAbort = () => finish(reject, recordingCopyAbortError(operation));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then((result) => finish(resolve, result), (error) => finish(reject, error));
+  });
 }
 
 // Čistá funkce schválně — je to jediný způsob, jak tohle rozhodnutí otestovat bez GUI
@@ -2023,6 +2127,7 @@ async function finalizeRecordingSession(sessionId, finalState, trackTimings = nu
 }
 
 function finalizeRecordingSessionsForOwner(ownerId, reason) {
+  cancelRecordingCopyOperations("renderer-destroyed", { ownerId });
   const preparation = recordingOwnersPreparing.get(ownerId);
   if (preparation) preparation.cancelled = true;
   for (const recordingSession of recordingSessions.values()) {
@@ -2373,10 +2478,11 @@ async function applyOutboundQueueRetention(panelStartup) {
 function retentionFilesIdle() {
   return recordingOwnersPreparing.size === 0 && recordingSessions.size === 0
     && recordingCompletionsInFlight.size === 0 && recordingExportStages.size === 0
-    && recordingFileReservations.size === 0 && outboundQueueSendsInFlight === 0;
+    && outboundQueueSendsInFlight === 0;
 }
 async function retainOutboundRecordings() {
   const store = await getOutboundQueueStore();
+  cancelRecordingCopyOperations("runtime-retention");
   const result = await store.retainRecordings({
     getPolicy: () => retentionSettingsStore.get(), guard: retentionFilesIdle,
   });
@@ -2880,7 +2986,7 @@ async function waitForRecordingExportStage(exportStage) {
   return Promise.race([exportStage.ready, timeout]).finally(() => clearTimeout(timeoutId));
 }
 
-function persistLiveMeetingDelivery(exportStage) {
+function persistLiveMeetingDelivery(exportStage, guard = undefined) {
   if (!exportStage?.recordingFinishSucceeded || !exportStage.result?.ok) {
     return Promise.resolve(exportStage?.delivery ?? null);
   }
@@ -2888,6 +2994,7 @@ function persistLiveMeetingDelivery(exportStage) {
   if (exportStage.deliveryPromise) return exportStage.deliveryPromise;
   exportStage.deliveryPromise = (async () => {
     const manifest = JSON.parse(await fs.promises.readFile(exportStage.manifestPath, "utf8"));
+    if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
     const timeline = completedRecordingTimeline(manifest.tracks);
     const delivery = await createLivePendingDelivery({
       captureSources: exportStage.tracks.has("system") ? "microphone+system" : "microphone",
@@ -2898,7 +3005,11 @@ function persistLiveMeetingDelivery(exportStage) {
       masterPath: exportStage.track.filePath,
       recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
     });
-    await (await getOutboundQueueStore()).setRecordingDelivery(exportStage.sessionId, delivery);
+    if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
+    const store = await getOutboundQueueStore();
+    if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
+    await store.setRecordingDelivery(exportStage.sessionId, delivery, { guard });
+    if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
     exportStage.delivery = delivery;
     return delivery;
   })().catch((error) => {
@@ -3029,12 +3140,15 @@ async function resolveRecordingUploadPreferences(event, preferences, roles, comm
   });
 }
 
-async function prepareCompletedRecordingDelivery(exportStage, clientRecordingId) {
+async function prepareCompletedRecordingDelivery(exportStage, clientRecordingId, guard = undefined) {
   const manifest = JSON.parse(await fs.promises.readFile(exportStage.manifestPath, "utf8"));
+  if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
   if (manifest.clientRecordingId !== clientRecordingId) {
     throw new RecordingExportUserError("Identifikátor exportu nesouhlasí s manifestem");
   }
-  const persistedDelivery = exportStage.delivery ?? await persistLiveMeetingDelivery(exportStage);
+  const persistedDelivery = exportStage.delivery
+    ?? await persistLiveMeetingDelivery(exportStage, guard);
+  if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
   if (!persistedDelivery) throw new RecordingExportUserError("Stereo delivery ještě není připravené");
   const delivery = await ensureMeetingAudioReady({
     attempts: 0,
@@ -3055,9 +3169,12 @@ async function prepareCompletedRecordingDelivery(exportStage, clientRecordingId)
     },
     recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
   });
+  if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
   exportStage.delivery = delivery;
   const store = await getOutboundQueueStore();
-  await store.setRecordingDelivery(clientRecordingId, delivery);
+  if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
+  await store.setRecordingDelivery(clientRecordingId, delivery, { guard });
+  if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
   return { delivery, manifest, store };
 }
 
@@ -3067,34 +3184,80 @@ async function exportCompletedRecordingCopy(event, clientRecordingId, options) {
     || Object.keys(options).sort().join("|") !== "recordingName") {
     throw new TypeError("Export kopie očekává právě název nahrávky");
   }
-  let claimedExport = false;
+  validateUploadRecordingName(options.recordingName);
+  ensureNewActivityIsAllowed("export kopie nahrávky");
+  if (authOriginChangeInFlight) {
+    throw new RecordingExportUserError("Handover nelze zahájit během změny prostředí");
+  }
+  if (exportStage.releaseRequested || exportStage.ownerGone) {
+    throw new RecordingExportUserError("Stereo export už není dostupný");
+  }
+  const operation = registerRecordingCopyOperation(
+    event,
+    clientRecordingId,
+    ["panel"],
+    exportStage,
+  );
+  let claimedInternalDelivery = false;
   try {
-    validateUploadRecordingName(options.recordingName);
-    if (authOriginChangeInFlight) {
-      throw new RecordingExportUserError("Handover nelze zahájit během změny prostředí");
-    }
-    if (exportStage.releaseRequested && !deferredQuitRequest && !downloadedUpdatePending) {
-      throw new RecordingExportUserError("Stereo export už není dostupný");
-    }
     if (exportStage.exportInFlight || exportStage.deleteInFlight) {
-      throw new RecordingExportUserError("Stereo export už probíhá");
+      throw new RecordingExportUserError("Interní delivery se už připravuje");
     }
     exportStage.exportInFlight = true;
     refreshTray();
-    claimedExport = true;
-    const ready = await waitForRecordingExportStage(exportStage);
+    claimedInternalDelivery = true;
+    const ready = await awaitRecordingCopyOperation(
+      waitForRecordingExportStage(exportStage),
+      operation,
+    );
     if (!ready.ok) return ready;
-    const { delivery, manifest } = await prepareCompletedRecordingDelivery(exportStage, clientRecordingId);
-    const result = await exportRecordingCopy({
+    if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
+    const { delivery, manifest } = await awaitRecordingCopyOperation(
+      prepareCompletedRecordingDelivery(
+        exportStage,
+        clientRecordingId,
+        () => recordingCopyOperationIsCurrent(operation),
+      ),
+      operation,
+    );
+    if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
+    exportStage.exportInFlight = false;
+    claimedInternalDelivery = false;
+    notifyRecordingStorageChanged();
+    refreshTray();
+    const copyPromise = exportRecordingCopy({
       downloadsDirectory: app.getPath("downloads"),
+      expectedDelivery: { sizeBytes: delivery.sizeBytes, sha256: delivery.sha256 },
       manifest,
       openExternal: (url) => shell.openExternal(url),
       openUploadPage: false,
       origin: resolveCurrentAuthIssuer(),
       recordingName: options.recordingName,
+      signal: operation.controller.signal,
       stagePath: delivery.filePath,
       stereoTiming: exportStage.timing,
+      canPublish: () => recordingCopyOperationIsCurrent(operation),
+      onPublicationSubmitted: ({ fileName }) => {
+        if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
+        operation.publicationSubmitted = true;
+        operation.publishedFileName = fileName;
+      },
+      onPublicationSettled: ({ created }) => {
+        if (!created) {
+          operation.publicationSubmitted = false;
+          operation.publishedFileName = null;
+        }
+      },
     });
+    const result = await awaitRecordingCopyOperation(copyPromise, operation);
+    if (!recordingCopyOperationIsCurrent(operation)) {
+      return {
+        ok: false,
+        recordingExported: true,
+        fileName: result.fileName,
+        message: "Kopie je uložená ve Stažených, ale stav panelu se změnil. Zkontroluj ji tam.",
+      };
+    }
     console.log(`[recording-export] Výslovně uložena kopie ${result.clientRecordingId}.`);
     return { ok: true, clientRecordingId, fileName: result.fileName };
   } catch (error) {
@@ -3107,6 +3270,30 @@ async function exportCompletedRecordingCopy(event, clientRecordingId, options) {
           + recordingTracksPreservedMessage(exportStage),
       };
     }
+    if (error?.recordingExported === null || operation.publicationSubmitted) {
+      return {
+        ok: false,
+        recordingExported: null,
+        fileName: error.fileName ?? operation.publishedFileName,
+        publicationPending: true,
+        message: "Export byl přerušen při atomickém zveřejnění. Úplná kopie se může objevit ve Stažených; ověř její stav.",
+      };
+    }
+    if (operation.cancelReason === "EXPORT_TIMEOUT") {
+      return {
+        ok: false,
+        recordingExported: false,
+        message: "Export kopie překročil časový limit. Zkuste to znovu. "
+          + recordingTracksPreservedMessage(exportStage),
+      };
+    }
+    if (operation.controller.signal.aborted) {
+      return {
+        ok: false,
+        recordingExported: false,
+        message: "Export kopie byl přerušen. Původní nahrávka zůstala zachovaná.",
+      };
+    }
     logRecordingExportFailure(error);
     return {
       ok: false,
@@ -3114,12 +3301,13 @@ async function exportCompletedRecordingCopy(event, clientRecordingId, options) {
       message: recordingExportFailureMessage(error, exportStage),
     };
   } finally {
-    if (claimedExport) {
+    if (claimedInternalDelivery) {
       exportStage.exportInFlight = false;
       notifyRecordingStorageChanged();
       refreshTray();
       completeRecordingExportStageRelease(exportStage);
     }
+    unregisterRecordingCopyOperation(operation);
   }
 }
 
@@ -3243,35 +3431,48 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
     throw new TypeError("Export uložené kopie vyžaduje GUID, název a platné revize");
   }
 
-  await outboundQueueRetentionReady;
   ensureNewActivityIsAllowed("export kopie nahrávky");
-  let reservation = null;
+  validateUploadRecordingName(options.recordingName);
+  if (authOriginChangeInFlight) {
+    throw new RecordingExportUserError("Handover nelze zahájit během změny prostředí");
+  }
+  const operation = registerRecordingCopyOperation(
+    event,
+    clientRecordingId,
+    ["panel", "settings"],
+  );
   try {
-    validateUploadRecordingName(options.recordingName);
-    if (authOriginChangeInFlight) {
-      throw new RecordingExportUserError("Handover nelze zahájit během změny prostředí");
-    }
-    const context = await readRecordingVerificationContext();
+    await awaitRecordingCopyOperation(outboundQueueRetentionReady, operation);
+    if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
+    ensureNewActivityIsAllowed("export kopie nahrávky");
+    const context = await awaitRecordingCopyOperation(readRecordingVerificationContext(), operation);
+    if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
     if (!context) {
       throw new RecordingExportUserError("Pro export kopie ověř přihlášený účet a prostředí LuDone");
     }
-    const guard = async () => recordingFileActionGuard(event, null, reservation)
-      && !authOriginChangeInFlight && authLogoutsInFlight === 0
-      && authSessionTransitionPromise === null
-      && await isRecordingVerificationContextCurrent(context);
+    const guard = async () => {
+      if (!recordingCopyOperationIsCurrent(operation)
+        || authOriginChangeInFlight || authLogoutsInFlight !== 0
+        || authSessionTransitionPromise !== null || !recordingFileActionGuard(event)) return false;
+      const current = await awaitRecordingCopyOperation(
+        isRecordingVerificationContextCurrent(context),
+        operation,
+      );
+      return current === true && recordingCopyOperationIsCurrent(operation);
+    };
     if (await guard() !== true) {
       throw new RecordingExportUserError("Akci exportu už nelze bezpečně potvrdit");
     }
-    const target = await (await getOutboundQueueStore()).resolveRecordingExportCopyTarget({
+    const store = await awaitRecordingCopyOperation(getOutboundQueueStore(), operation);
+    if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
+    const target = await awaitRecordingCopyOperation(store.resolveRecordingExportCopyTarget({
       clientRecordingId,
       expectedRevision: options.queueRev,
       expectedFileRevision: options.fileRev,
       currentOwnerFingerprint: context.ownerFingerprint,
       guard,
-      reserve: () => {
-        reservation = reserveRecordingFileOperation(clientRecordingId);
-      },
-    });
+    }), operation);
+    if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
     if (target?.outcome === "missing") {
       return {
         ok: false,
@@ -3286,20 +3487,43 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
         message: "Stereo kopie ještě není připravená. Obnov detail nahrávky a zkus to znovu.",
       };
     }
-    if (await guard() !== true) {
+    if (await guard() !== true || !recordingCopyOperationIsCurrent(operation)) {
       throw new RecordingExportUserError("Přihlášení nebo stav nahrávky se změnil; export nebyl zahájen");
     }
-    const result = await exportRecordingCopy({
+    const copyPromise = exportRecordingCopy({
       downloadsDirectory: app.getPath("downloads"),
+      expectedDelivery: target.deliveryIdentity,
       manifest: target.manifest,
       openExternal: (url) => shell.openExternal(url),
       openUploadPage: false,
-      origin: resolveCurrentAuthIssuer(),
+      origin: context.issuer,
       recordingName: options.recordingName,
+      signal: operation.controller.signal,
       stagePath: target.filePath,
       stereoTiming: target.stereoTiming,
+      canPublish: async () => {
+        if (!recordingCopyOperationIsCurrent(operation)) return false;
+        const identityCurrent = await isRecordingVerificationContextCurrent(context);
+        return identityCurrent === true && recordingCopyOperationIsCurrent(operation);
+      },
+      onPublicationSubmitted: ({ fileName }) => {
+        if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
+        operation.publicationSubmitted = true;
+        operation.publishedFileName = fileName;
+      },
+      onPublicationSettled: ({ created }) => {
+        if (!created) {
+          operation.publicationSubmitted = false;
+          operation.publishedFileName = null;
+        }
+      },
     });
-    if (await guard() !== true) {
+    const result = await awaitRecordingCopyOperation(copyPromise, operation);
+    const identityCurrent = await awaitRecordingCopyOperation(
+      isRecordingVerificationContextCurrent(context),
+      operation,
+    );
+    if (identityCurrent !== true || !recordingCopyOperationIsCurrent(operation)) {
       return {
         ok: false,
         recordingExported: true,
@@ -3311,9 +3535,41 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
     console.log(`[recording-export] Výslovně uložena kopie ${result.clientRecordingId}.`);
     return { ok: true, clientRecordingId, fileName: result.fileName };
   } catch (error) {
-    logRecordingExportFailure(error);
+    if (error?.recordingExported === true) {
+      return {
+        ok: false,
+        recordingExported: true,
+        fileName: error.fileName ?? operation.publishedFileName,
+        message: "Kopie je uložená ve Stažených, ale stav účtu nebo aplikace se změnil. Zkontroluj ji tam.",
+      };
+    }
+    if (error?.recordingExported === null || operation.publicationSubmitted) {
+      return {
+        ok: false,
+        recordingExported: null,
+        fileName: error.fileName ?? operation.publishedFileName,
+        publicationPending: true,
+        message: "Export byl přerušen při atomickém zveřejnění. Úplná kopie se může objevit ve Stažených; ověř její stav.",
+      };
+    }
+    if (operation.cancelReason === "EXPORT_TIMEOUT") {
+      return {
+        ok: false,
+        recordingExported: false,
+        message: "Export kopie překročil časový limit. Zkuste to znovu.",
+      };
+    }
+    if (operation.controller.signal.aborted) {
+      return {
+        ok: false,
+        recordingExported: false,
+        message: "Export kopie byl přerušen. Nahrávka zůstala zachovaná.",
+      };
+    }
     const detail = error instanceof RecordingExportUserError || error instanceof RecordingNameValidationError
       ? error.message
+      : error?.code === "EXPORT_TIMEOUT"
+        ? "Export kopie překročil časový limit. Zkuste to znovu."
       : RECORDING_EXPORT_SYSTEM_ERRORS.get(recordingExportSystemCode(error))
         ?? RECORDING_EXPORT_GENERIC_ERROR;
     return {
@@ -3322,7 +3578,7 @@ async function exportStoredRecordingCopy(event, clientRecordingId, options) {
       message: `${detail} Nahrávka ani ostatní soubory nebyly touto akcí smazány.`,
     };
   } finally {
-    releaseRecordingFileOperation(reservation);
+    unregisterRecordingCopyOperation(operation);
   }
 }
 
@@ -3574,16 +3830,11 @@ function validRecordingFileActionPayload(payload) {
       || (typeof payload.queueRev === "string" && QUEUE_ITEM_REVISION_PATTERN.test(payload.queueRev)))
     && typeof payload.fileRev === "string" && QUEUE_ITEM_REVISION_PATTERN.test(payload.fileRev);
 }
-function recordingFileActionGuard(event, deletingStage = null, reservation = null) {
+function recordingFileActionGuard(event, deletingStage = null) {
   try {
     requireTrustedSender(event, ["panel", "settings"]);
-    const reservationIsIdle = recordingFileReservations.size === 0 || (
-      reservation !== null && recordingFileReservations.size === 1
-      && recordingFileReservations.get(reservation.clientRecordingId) === reservation
-    );
     return recordingOwnersPreparing.size === 0 && recordingSessions.size === 0
       && recordingCompletionsInFlight.size === 0
-      && reservationIsIdle
       && (recordingExportStages.size === 0 || (
         deletingStage !== null && recordingExportStages.size === 1
         && recordingExportStages.get(deletingStage.sessionId) === deletingStage
@@ -3615,6 +3866,7 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
     buttons: ["Zrušit", "Přesunout do koše"], cancelId: 0, defaultId: 0, noLink: true,
   });
   if (response.response !== 1) return { outcome: "cancelled" };
+  cancelRecordingCopyOperations("trash-confirmed", { clientRecordingId: payload.id });
   const deletingStage = recordingExportStages.get(payload.id) ?? null;
   if (!recordingFileActionGuard(event, deletingStage) || deletingStage?.deleteInFlight) {
     throw new Error("Akci už nelze bezpečně potvrdit");
@@ -3622,17 +3874,13 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
   // Výjimka patří pouze potvrzenému GUID. Fáze zůstává evidovaná až do
   // úspěchu koše; při chybě lze rozhodnutí opakovat bez odemčení exportu.
   if (deletingStage) deletingStage.deleteInFlight = true;
-  let reservation = null;
   try {
     const result = await (await getOutboundQueueStore()).deleteRecording({
       clientRecordingId: payload.id,
       expectedRevision: payload.queueRev,
       expectedFileRevision: payload.fileRev,
       trashItem: (filePath) => shell.trashItem(filePath),
-      guard: async () => recordingFileActionGuard(event, deletingStage, reservation),
-      reserve: () => {
-        reservation = reserveRecordingFileOperation(payload.id);
-      },
+      guard: async () => recordingFileActionGuard(event, deletingStage),
     });
     if (result.outcome === "deleted" && deletingStage) {
       deletingStage.releaseRequested = true;
@@ -3640,7 +3888,6 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
     }
     return result;
   } finally {
-    releaseRecordingFileOperation(reservation);
     if (deletingStage) deletingStage.deleteInFlight = false;
   }
 });
@@ -4039,8 +4286,7 @@ function recordingInterruptionIsBlocked() {
   return recordingOwnersPreparing.size > 0
     || recordingSessions.size > 0
     || recordingCompletionsInFlight.size > 0
-    || recordingExportStages.size > 0
-    || recordingFileReservations.size > 0;
+    || recordingExportStages.size > 0;
 }
 
 function recordingExportAwaitsUserDecision() {
@@ -4063,7 +4309,6 @@ function quitActivitySnapshot() {
   const pendingExports = recordingExportStages.size;
   return `přípravy=${recordingOwnersPreparing.size}, session=${recordingSessions.size}, `
     + `dokončení=${recordingCompletionsInFlight.size}, finalizace-exportu=${pendingExports}, `
-    + `rezervace-souboru=${recordingFileReservations.size}, `
     + `mutace-lutrack=${trackingMutationsInFlight.size}, lutrack=${appState.trackingOwners.size}`;
 }
 
@@ -4152,10 +4397,6 @@ function ensureNewActivityIsAllowed(activity) {
 function commitDeferredQuit({ forced = false, reason = "" } = {}) {
   const request = deferredQuitRequest;
   if (!request || request.committed) return;
-  if (recordingFileReservations.size > 0) {
-    console.warn("[quit] Ukončení zůstává odložené do dokončení práce se souborem nahrávky.");
-    return;
-  }
   request.committed = true;
   clearTimeout(request.timeoutId);
   isQuitting = true;
@@ -4235,10 +4476,6 @@ function armDeferredQuitTimeout(request) {
     if (request !== deferredQuitRequest || request.committed) return;
     if (request.userConfirmationRequired || recordingExportAwaitsUserDecision()) {
       console.warn("[quit] Ukončení zůstává odložené, dokud uživatel nerozhodne o uložené nahrávce.");
-      return;
-    }
-    if (recordingFileReservations.size > 0) {
-      console.warn("[quit] Ukončení zůstává odložené do dokončení práce se souborem nahrávky.");
       return;
     }
     commitDeferredQuit({
@@ -4530,6 +4767,7 @@ async function tryInstallDownloadedUpdate() {
     console.log("[updater] Stažená aktualizace se instaluje; aplikace se restartuje.");
     // electron-updater zavírá okna ještě před Electron událostí before-quit. Flag proto
     // nastavujeme sami a IPC od této chvíle nepřijme novou nahrávku ani LuTrack.
+    cancelRecordingCopyOperations("update-install");
     isQuitting = true;
     autoUpdateClient.quitAndInstall(false, true);
   } catch (error) {
@@ -5318,9 +5556,6 @@ function requireIdleAuthOriginChange({ allowSignedIn = false } = {}) {
   if (trackingWorkBlocksQuit()) {
     throw new Error("Prostředí nelze změnit, dokud běží LuTrack");
   }
-  if (recordingFileReservations.size > 0) {
-    throw new Error("Prostředí nelze změnit během práce se souborem nahrávky");
-  }
   if (hasRecordingExportInFlight()) {
     throw new Error("Prostředí nelze změnit během handover exportu");
   }
@@ -5344,6 +5579,7 @@ handleValidated("auth:set-origin", ["panel", "settings"], async (_event, authOri
   authOriginChangeInFlight = true;
   try {
     requireIdleAuthOriginChange();
+    cancelRecordingCopyOperations("environment-change");
 
     // Renderer vždy nejdřív volá auth:logout. Tahle kontrola drží stejné pořadí i
     // proti přímému invoke z okna Nastavení a nepolyká poškozenou session jako
@@ -5413,6 +5649,7 @@ handleValidated("auth:begin", ["panel"], async () => {
     activeAuthAttempts.delete(attempt);
   }
   if (result?.ok === true) {
+    cancelRecordingCopyOperations("identity-transition");
     authSessionGeneration += 1;
     invalidateRecordingVerifier();
     invalidateUploadCompanySelection();
@@ -5453,7 +5690,7 @@ function blockedAuthLogoutResult() {
       reason: "tracking-active",
     };
   }
-  if (recordingFileReservations.size > 0 || hasRecordingExportInFlight()) {
+  if (hasRecordingExportInFlight()) {
     return {
       signedOutLocally: false,
       serverRevoked: false,
@@ -5466,6 +5703,7 @@ function blockedAuthLogoutResult() {
 async function executeAuthLogout() {
   const blocked = blockedAuthLogoutResult();
   if (blocked !== null) return blocked;
+  cancelRecordingCopyOperations("logout");
   authSessionGeneration += 1;
   invalidateRecordingVerifier();
   invalidateUploadCompanySelection();
@@ -5512,6 +5750,7 @@ handleValidated("auth:switch-origin", ["panel", "settings"], async (_event, auth
   const blocked = blockedAuthLogoutResult();
   if (blocked !== null) return authOriginSwitchResponse(blocked, resolveCurrentAuthIssuer());
   requireIdleAuthOriginChange({ allowSignedIn: true });
+  cancelRecordingCopyOperations("environment-change");
 
   return runAuthSessionTransition(async () => {
     authOriginChangeInFlight = true;
@@ -5712,6 +5951,7 @@ app.on("activate", () => {
 });
 
 app.on("before-quit", (event) => {
+  cancelRecordingCopyOperations("quit");
   if (detailCloseGuard?.dirty) {
     event.preventDefault();
     void detailCloseGuard.request(() => app.quit());

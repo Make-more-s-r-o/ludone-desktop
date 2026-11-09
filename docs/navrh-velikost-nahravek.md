@@ -26,6 +26,30 @@ ani existující soubory. Nezavádí strop místa ani mazání neodeslaných nah
 🟡 Čísla jsou extrapolací tříminutové simulace ve FFmpeg, nikoli změřením živého
 záznamu v aplikaci. ⛔ Lidský poslech, GUI, živý záznam a přepis Gemini neověřeny.
 
+## Zrušení ruční kopie
+
+Export ruční kopie má lhůtu 120 sekund od přijetí IPC požadavku. Zrušení je
+nevratné: quit, instalace schválené aktualizace, logout, změna prostředí nebo
+identity, potvrzený koš stejné nahrávky, zánik vlastnícího rendereru či timeout
+zastaví další práci. Volitelná kopie není povinnou agendou aplikace a její
+ukončení ani úklid nezdržují quit nebo updater.
+
+Zdroj se otevírá jen pro čtení přes ověřený deskriptor. Kopie se streamuje do
+nového náhodného dočasného souboru ve Stažených s právy `0600`; velikost a SHA-256
+se ověří před synchronizací a atomickým hardlinkem pod finálním názvem. Zrušení
+před předáním hardlinku finální soubor nevytvoří. Pokud už byla atomická operace
+předána filesystému, smí doběhnout pouze jako úplný ověřený soubor; výsledek
+zůstane označený jako nejistý, dokud se operace nevypořádá. Finální soubor se
+kvůli zrušení nikdy dodatečně nemaže. Úklid kontroluje identitu a odstraňuje jen
+dočasné jméno vytvořené daným pokusem; existující export ani zdroj nemění.
+
+Při ukončení procesu nebo zaseknutém filesystému může vlastní dočasný soubor
+zůstat ve Stažených. Aplikace jej při příštím spuštění nehledá ani hromadně
+neodstraňuje; uživatel jej může zkontrolovat ručně. Tato cesta nemění výběr
+retence, její lhůty ani ochranu neodeslaných či neúplných nahrávek. Send, keep,
+automatické odeslání a upload nadále používají interní delivery bez kopie do
+Stažených; kopii vytváří jen samostatná výslovná volba varianty A.
+
 ## Co dnes vzniká na disku
 
 `<data>` znamená `app.getPath("userData")`, `<prefix>` čas a prvních osm znaků UUID.
