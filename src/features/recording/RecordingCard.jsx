@@ -31,6 +31,7 @@ import { recordingDeletionFailureMessage } from "./deletion-message.js";
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
 const RECORDING_TIMESLICE_MS = 1_000;
 const SAVED_AGE_REFRESH_MS = 60_000;
+const LOCAL_SAVE_NOTICE_MS = 10_000;
 // Shodné se serverem: String.length po trim(), tedy UTF-16 jednotky.
 // Mění se současně na serveru i v electron/recording-export.cjs.
 const MAX_UPLOAD_NAME_UTF16_UNITS = 500;
@@ -327,6 +328,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [quitExportFailure, setQuitExportFailure] = useState(null);
   const [recoveringSystemAudio, setRecoveringSystemAudio] = useState(false);
   const startInFlight = useRef(false);
+  const startOperationRef = useRef(null);
   const stopRequestedDuringStart = useRef(false);
   const lastTrayCommandId = useRef(null);
   const microphoneMeterRef = useRef(null);
@@ -335,7 +337,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const isRecording = session.phase === "recording";
   const microphoneOnly = session.recordingMode === "microphone-only";
   const systemAudioLost = isRecording && session.systemAudioState === "lost";
-  const systemSourceState = microphoneOnly ? "unavailable" : (systemAudioLost ? "lost" : "live");
+  const systemAudioStarting = isRecording && session.systemAudioState === "starting";
+  const systemSourceState = microphoneOnly ? "unavailable"
+    : (systemAudioLost ? "lost" : (systemAudioStarting ? "starting" : "live"));
   const elapsed = useElapsedTime(isRecording, session.startedAt);
   const [systemAudioPermission, setSystemAudioPermission] = useState(null);
 
@@ -360,12 +364,20 @@ export const RecordingCard = forwardRef(function RecordingCard({
     return () => window.clearInterval(intervalId);
   }, [savedRecording]);
 
+  useEffect(() => {
+    if (!notice?.dismissAfter) return undefined;
+    const timeoutId = window.setTimeout(() => {
+      setNotice((current) => (current === notice ? null : current));
+    }, notice.dismissAfter);
+    return () => window.clearTimeout(timeoutId);
+  }, [notice]);
+
   const microphoneOnlyNote = microphoneOnly
     ? microphoneOnlyReason({
       permission: systemAudioPermission,
       error: session.systemAudioError,
     })
-    : MICROPHONE_ONLY_TEXT;
+    : null;
 
   async function finishRuntime(runtime, initialError = null) {
     if (runtime.finishPromise) return runtime.finishPromise;
@@ -532,6 +544,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
         text: `${outcomeText}${modernOutcome && manual && decision === "keep" && supportsPreferences && !freshPreferences
           ? " Volby pro odeslání nastavíš v detailu nahrávky." : ""}`,
         openRecordings: modernOutcome || Boolean(deliveryDetail),
+        dismissAfter: result.outcome === "saved_local" ? LOCAL_SAVE_NOTICE_MS : null,
       });
     } catch (error) {
       setExportError(autoSelectCompany && error?.message !== "Vyber cílovou firmu. Výchozí firmu se nepodařilo určit."
@@ -649,7 +662,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
     if (runtimeRef.current !== runtime || runtime.closing) return;
     setSession((current) => (
       current.phase === "recording"
-        ? { ...current, systemAudioState: nextState }
+        ? { ...current, systemAudioState: nextState === "live" && !runtime.systemRecorderStarted
+          ? "starting" : nextState }
         : current
     ));
   }
@@ -720,6 +734,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
   async function start() {
     if (startInFlight.current || runtimeRef.current || session.phase !== "idle") return;
     startInFlight.current = true;
+    const operation = { controller: new window.AbortController(), capture: null, committed: false };
+    startOperationRef.current = operation;
     stopRequestedDuringStart.current = false;
     setNotice(null);
     setSavedRecording(null);
@@ -733,6 +749,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
       labels: null,
       systemAudioState: "inactive",
       systemAudioError: null,
+      startStep: "checking",
     });
     let capture;
     let runtime;
@@ -742,7 +759,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
     let sharedAudioContext;
 
     try {
-      capture = await captureAudioSources();
+      capture = await captureAudioSources({ signal: operation.controller.signal });
+      operation.capture = capture;
+      if (operation.controller.signal.aborted) throw new DOMException("Příprava byla zrušena", "AbortError");
       const options = recorderOptions();
       const hasSystemAudio = Boolean(capture.systemStream && capture.systemTrack);
       const recordingMode = hasSystemAudio ? "two-track" : "microphone-only";
@@ -755,8 +774,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
           audioDependencies,
         )
         : null;
+      if (operation.controller.signal.aborted) throw new DOMException("Příprava byla zrušena", "AbortError");
       exportCapture = stereoCapture
         ?? await createMicrophoneOnlyExportCapture(capture.microphoneTrack, audioDependencies);
+      if (operation.controller.signal.aborted) throw new DOMException("Příprava byla zrušena", "AbortError");
       const microphoneRecordingStream = new MediaStream([capture.microphoneTrack]);
       const microphoneRecorder = new MediaRecorder(microphoneRecordingStream, options);
       const systemRecorder = hasSystemAudio
@@ -767,6 +788,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
       if (systemRecorder) levelMonitor.replaceSource("system", stereoCapture.systemStream);
       const exportRecorder = new MediaRecorder(exportCapture.stream, { ...options, audioBitsPerSecond: 96_000 });
       const sources = hasSystemAudio ? ["microphone", "system"] : ["microphone"];
+      // Po předání hlavnímu procesu už neexistuje storno rozpracované session.
+      // Zrušení proto nabízíme po celou kontrolu zdrojů, před tímto předáním.
+      operation.committed = true;
+      setSession((current) => ({ ...current, startStep: "starting" }));
       const persistence = await window.ludone.beginRecording(sources);
       runtime = {
         sessionId: persistence.sessionId,
@@ -781,6 +806,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
         stereoCapture,
         levelMonitor,
         systemAudioLost: false,
+        systemRecorderStarted: false,
         systemStream: capture.systemStream,
         systemTrack: capture.systemTrack,
         unwatchSystemTrack: null,
@@ -810,6 +836,28 @@ export const RecordingCard = forwardRef(function RecordingCard({
           runtime.exportError ??= error;
         },
       );
+      const showRecordingStarted = () => {
+        if (runtime.closing || stopRequestedDuringStart.current) return;
+        setSession((current) => (current.phase === "recording" ? current : {
+          phase: "recording",
+          recordingMode,
+          startedAt: Date.now(),
+          labels: {
+            microphone: capture.microphoneTrack.label || "Mikrofon",
+            system: capture.systemTrack?.label || null,
+          },
+          systemAudioState: hasSystemAudio
+            ? (runtime.systemAudioLost ? "lost" : (runtime.systemRecorderStarted ? "live" : "starting"))
+            : "unavailable",
+          systemAudioError: hasSystemAudio ? null : (capture.systemAudioError ?? null),
+        }));
+      };
+      exportRecorder.addEventListener("start", showRecordingStarted, { once: true });
+      microphoneRecorder.addEventListener("start", showRecordingStarted, { once: true });
+      systemRecorder?.addEventListener("start", () => {
+        runtime.systemRecorderStarted = true;
+        if (!runtime.closing) setRuntimeSystemAudioState(runtime, runtime.systemAudioLost ? "lost" : "live");
+      }, { once: true });
       const requiredTracks = [[capture.microphoneTrack, "Mikrofonní stopa"]];
       if (capture.systemTrack) {
         requiredTracks.push([capture.systemTrack, "Systémová stopa"]);
@@ -862,31 +910,17 @@ export const RecordingCard = forwardRef(function RecordingCard({
         await finishRuntime(runtime);
         return;
       }
-      setSession({
-        phase: "recording",
-        recordingMode,
-        startedAt: Date.now(),
-        labels: {
-          microphone: capture.microphoneTrack.label || "Mikrofon",
-          system: capture.systemTrack?.label || null,
-        },
-        systemAudioState: hasSystemAudio
-          ? (runtime.systemAudioLost ? "lost" : "live")
-          : "unavailable",
-        // Důvod, proč druhá stopa nepřišla. Aplikace ho znala už dřív, jen ho zahazovala —
-        // a bez něj vypadá odepřené oprávnění na obrazovce stejně jako skutečné ticho.
-        systemAudioError: hasSystemAudio ? null : (capture.systemAudioError ?? null),
-      });
     } catch (error) {
       if (runtime) {
         await finishRuntime(runtime, error);
       } else {
         if (capture) stopStreams(capture.streams);
         levelMonitor?.dispose();
-        if (exportCapture) await exportCapture.close().catch(() => {});
+        if (exportCapture || stereoCapture) await (exportCapture ?? stereoCapture).close().catch(() => {});
         else if (sharedAudioContext && sharedAudioContext.context.state !== "closed") {
           await sharedAudioContext.context.close().catch(() => {});
         }
+        if (operation.controller.signal.aborted) return;
         setSession({
           phase: "idle",
           recordingMode: null,
@@ -900,9 +934,29 @@ export const RecordingCard = forwardRef(function RecordingCard({
         });
       }
     } finally {
-      stopRequestedDuringStart.current = false;
-      startInFlight.current = false;
+      if (startOperationRef.current === operation) {
+        startOperationRef.current = null;
+        stopRequestedDuringStart.current = false;
+        startInFlight.current = false;
+      }
     }
+  }
+
+  function cancelRecordingCheck() {
+    const operation = startOperationRef.current;
+    if (!operation || operation.committed) return;
+    operation.controller.abort();
+    if (operation.capture) stopStreams(operation.capture.streams);
+    startOperationRef.current = null;
+    startInFlight.current = false;
+    stopRequestedDuringStart.current = false;
+    setSession({
+      phase: "idle",
+      recordingMode: null,
+      startedAt: null,
+      labels: null,
+      systemAudioState: "inactive",
+    });
   }
 
   function stop() {
@@ -921,6 +975,11 @@ export const RecordingCard = forwardRef(function RecordingCard({
     return () => {
       cardMounted.current = false;
       copyExportLifecycle.current += 1;
+      const operation = startOperationRef.current;
+      if (operation && !operation.committed) {
+        operation.controller.abort();
+        if (operation.capture) stopStreams(operation.capture.streams);
+      }
       const runtime = runtimeRef.current;
       runtime?.recoveryController?.abort();
       runtime?.cleanupTrackListeners?.();
@@ -949,6 +1008,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
       }
       const accessibleLevel = {
         lost: `${label}: stopa ztracena`,
+        starting: `${label}: spouští se`,
         unavailable: `${label}: stopa nedostupná`,
       }[sourceState] ?? (measurementState === "unavailable"
         ? `${label}: měřidlo nedostupné`
@@ -1224,9 +1284,15 @@ export const RecordingCard = forwardRef(function RecordingCard({
       ) : null}
 
       {session.phase === "checking" && (
-        <div className="recording-progress" role="status">
-          <p>Kontroluji mikrofon i systémový zvuk…</p>
-          <small>{MICROPHONE_ONLY_TEXT}</small>
+        <div className="recording-progress">
+          <div role="status" aria-live="polite">
+            <p><span className="recording-progress__spinner" aria-hidden="true" /> {session.startStep === "starting" ? "Spouštím nahrávání…" : "Připravuji nahrávání…"}</p>
+            <small>{session.startStep === "starting" ? "Zvuk je připravený, spouštím záznam." : "Ověřuji mikrofon a zvuk z počítače."}</small>
+          </div>
+          {session.startStep !== "starting" && (
+            <button type="button" className="button button--small recording-progress__cancel"
+              data-testid="cancel-recording-check" onClick={cancelRecordingCheck}>Zrušit</button>
+          )}
         </div>
       )}
 
@@ -1311,9 +1377,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
             )}
           </div>
           <p className="recording-running__format">Výsledkem bude jedna stereo nahrávka.</p>
+          {systemAudioStarting && <p role="status">Spouštím zvuk z počítače…</p>}
           {microphoneOnly && (
             <div className="recording-mode-note" role="status" aria-atomic="true">
-              {microphoneOnlyNote}
+              {MICROPHONE_ONLY_TEXT} {microphoneOnlyNote}
             </div>
           )}
 
