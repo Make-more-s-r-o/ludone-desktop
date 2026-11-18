@@ -534,6 +534,8 @@ let authSessionTransitionPromise = null;
 let claimDialogGeneration = 0;
 let recordingVerifier;
 let uploadCompanySelectionController;
+// Tato vazba je náhodná a žije jen v procesu; neobsahuje issuer ani subject.
+let uploadCompanyIdentityBinding = null;
 const activeAuthAttempts = new Set();
 const AUTH_CANCEL_CHANNEL = "auth:cancel";
 
@@ -3194,8 +3196,8 @@ function logRecordingPlaybackFailure(outcome, error = null) {
 function validateRecordingUploadPreferences(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
     || Object.keys(value).sort().join("|") !== "companyId|offerToken|visibility"
-    || !COMPANY_ID_PATTERN.test(value.companyId ?? "")
-    || !OFFER_TOKEN_PATTERN.test(value.offerToken ?? "")
+    || typeof value.companyId !== "string" || !COMPANY_ID_PATTERN.test(value.companyId)
+    || typeof value.offerToken !== "string" || !OFFER_TOKEN_PATTERN.test(value.offerToken)
     || !["private", "company"].includes(value.visibility)) throw new TypeError("Neplatné preference uploadu");
   return value;
 }
@@ -5596,10 +5598,18 @@ handleValidated("upload-companies:default", ["panel", "settings"], async (event,
     || !/^[^\s@]+@[^\s@]+$/u.test(email)) {
     return { companyId: null };
   }
-  const companyId = COMPANY_ID_PATTERN.test(storedSession.companyTabidooId ?? "")
+  const companyId = typeof storedSession.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(storedSession.companyTabidooId)
     ? storedSession.companyTabidooId : null;
+  const identity = companyIdentity(storedSession);
+  let identityBinding = null;
+  if (identity) {
+    if (uploadCompanyIdentityBinding?.issuer !== identity.issuer || uploadCompanyIdentityBinding?.subject !== identity.subject) {
+      uploadCompanyIdentityBinding = { ...identity, value: randomUUID() };
+    }
+    identityBinding = uploadCompanyIdentityBinding.value;
+  }
   return { companyId, ...(companyId && validCompanyName(storedSession.companyTabidooName)
-    ? { companyName: storedSession.companyTabidooName } : {}) };
+    ? { companyName: storedSession.companyTabidooName } : {}), ...(identityBinding ? { identityBinding } : {}) };
 });
 
 handleValidated("upload-companies:list", ["settings", "panel"], (event, ...extraPayload) => {

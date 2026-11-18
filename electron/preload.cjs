@@ -43,7 +43,7 @@ function requireUploadCompanyOffer(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
     || !Array.isArray(value.companies) || typeof value.offerToken !== "string"
     || !OFFER_TOKEN_PATTERN.test(value.offerToken)
-    || (value.selectedCompanyId !== null && !COMPANY_ID_PATTERN.test(value.selectedCompanyId))) {
+    || (value.selectedCompanyId !== null && (typeof value.selectedCompanyId !== "string" || !COMPANY_ID_PATTERN.test(value.selectedCompanyId)))) {
     throw new TypeError("Hlavní proces nevrátil platnou nabídku firem");
   }
   const seen = new Set();
@@ -75,6 +75,24 @@ function requireUploadCompanySelection(value, companyId) {
     ...(value.remembered === false ? { remembered: false } : {}) };
 }
 
+function requireUploadCompanyDefault(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).some((key) => !["companyId", "companyName", "identityBinding"].includes(key))
+    || !Object.hasOwn(value, "companyId")
+    || (value.companyId !== null && (typeof value.companyId !== "string" || !COMPANY_ID_PATTERN.test(value.companyId)))
+    || (Object.hasOwn(value, "identityBinding") && (typeof value.identityBinding !== "string"
+      || !OFFER_TOKEN_PATTERN.test(value.identityBinding)))
+    || (Object.hasOwn(value, "companyName") && (value.companyId === null
+      || typeof value.companyName !== "string" || value.companyName.length < 1 || value.companyName.length > 160
+      || value.companyName.trim() !== value.companyName || [...value.companyName].some((character) => {
+        const code = character.codePointAt(0);
+        return code <= 31 || code === 127;
+      })))) {
+    throw new TypeError("Neplatná uložená výchozí firma");
+  }
+  return value;
+}
+
 function requireRecordingAction(value, queueRevisionRequired = false) {
   if (!value || typeof value !== "object" || Array.isArray(value)
     || typeof value.id !== "string" || !QUEUE_ITEM_ID_PATTERN.test(value.id)
@@ -90,7 +108,8 @@ function requireRecordingAction(value, queueRevisionRequired = false) {
 function requireUploadPreferences(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
     || Object.keys(value).sort().join("|") !== "companyId|offerToken|visibility"
-    || !COMPANY_ID_PATTERN.test(value.companyId ?? "") || !OFFER_TOKEN_PATTERN.test(value.offerToken ?? "")
+    || typeof value.companyId !== "string" || !COMPANY_ID_PATTERN.test(value.companyId)
+    || typeof value.offerToken !== "string" || !OFFER_TOKEN_PATTERN.test(value.offerToken)
     || !["private", "company"].includes(value.visibility)) throw new TypeError("Neplatné preference uploadu");
   return { companyId: value.companyId, offerToken: value.offerToken, visibility: value.visibility };
 }
@@ -296,20 +315,11 @@ contextBridge.exposeInMainWorld("ludone", {
       .then(requireAuthOriginSwitchResponse);
   },
   logout: () => ipcRenderer.invoke("auth:logout"),
-  getUploadCompanyDefault: () => ipcRenderer.invoke("upload-companies:default").then((value) => {
-    if (!value || typeof value !== "object" || Array.isArray(value)
-      || !["companyId", "companyId|companyName"].includes(Object.keys(value).sort().join("|"))
-      || (value.companyId !== null && !COMPANY_ID_PATTERN.test(value.companyId ?? ""))
-      || (Object.hasOwn(value, "companyName") && (value.companyId === null
-        || typeof value.companyName !== "string" || value.companyName.length < 1 || value.companyName.length > 160
-        || value.companyName.trim() !== value.companyName || [...value.companyName].some((character) => {
-          const code = character.codePointAt(0);
-          return code <= 31 || code === 127;
-        })))) {
-      throw new TypeError("Neplatná uložená výchozí firma");
-    }
+  getUploadCompanyDefault: () => ipcRenderer.invoke("upload-companies:default").then(requireUploadCompanyDefault).then((value) => {
     return { companyId: value.companyId, ...(value.companyName ? { companyName: value.companyName } : {}) };
   }),
+  getUploadCompanyIdentity: () => ipcRenderer.invoke("upload-companies:default")
+    .then(requireUploadCompanyDefault).then((value) => value.identityBinding ?? null),
   listUploadCompanies: () => ipcRenderer.invoke("upload-companies:list")
     .then(requireUploadCompanyOffer),
   selectUploadCompany: (offerToken, companyId) => {

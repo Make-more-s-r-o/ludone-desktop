@@ -1,5 +1,5 @@
 import { RecordingUploadPreferences, freshRecordingUploadPreferences, uploadCompanyErrorMessage } from "../../components/UploadCompanySelector.jsx";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
@@ -250,6 +250,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [uploadPreferences, setUploadPreferences] = useState(null);
   const [pickerInitial, setPickerInitial] = useState(null);
   const [pickerRefresh, setPickerRefresh] = useState(0);
+  const [pickerOwner, setPickerOwner] = useState(null);
+  const [verifiedUploadIdentity, setVerifiedUploadIdentity] = useState(null);
   const [copyExportNotice, setCopyExportNotice] = useState(null);
   const savedRecordingRef = useRef(savedRecording);
   savedRecordingRef.current = savedRecording;
@@ -258,10 +260,49 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const copyExportLifecycle = useRef(0);
   const cardMounted = useRef(true);
   const uploadAuthGeneration = useRef(0);
+  const identityRequest = useRef(0);
+  const lastUploadIdentity = useRef(null);
+  const pickerOwnerSerial = useRef(0);
+  const uploadIdentityVerified = useRef(false);
+  const canSendRef = useRef(canSend);
+  canSendRef.current = canSend;
+  const refreshUploadIdentity = useCallback(() => {
+    const request = ++identityRequest.current;
+    uploadIdentityVerified.current = false;
+    setVerifiedUploadIdentity(null);
+    setUploadPreferences(null);
+    if (!canSendRef.current || typeof window.ludone?.getAuthIdentity !== "function"
+      || typeof window.ludone?.getAuthOrigin !== "function") return;
+    Promise.resolve().then(() => Promise.all([window.ludone.getAuthIdentity(), window.ludone.getAuthOrigin(),
+      typeof window.ludone.getUploadCompanyIdentity === "function" ? window.ludone.getUploadCompanyIdentity() : null]))
+      .then(([identity, origin, binding]) => {
+        if (identityRequest.current !== request || !canSendRef.current) return;
+        const email = typeof identity?.email === "string" ? identity.email.trim() : "";
+        if (!/^[^\s@]+@[^\s@]+$/u.test(email) || typeof origin !== "string" || !origin) {
+          lastUploadIdentity.current = null;
+          return;
+        }
+        // Bez ověřeného subjectu nelze rozpracovanou volbu bezpečně převést přes změnu relace.
+        const key = typeof binding === "string" ? binding : `unbound:${request}`;
+        if (lastUploadIdentity.current !== key) {
+          lastUploadIdentity.current = key;
+          setPickerInitial(null);
+          setPickerOwner({ key, serial: ++pickerOwnerSerial.current });
+        }
+        uploadIdentityVerified.current = true;
+        setVerifiedUploadIdentity(key);
+      }).catch(() => {
+        if (identityRequest.current === request) lastUploadIdentity.current = null;
+      });
+  }, []);
+  useEffect(() => {
+    refreshUploadIdentity();
+    return () => { identityRequest.current += 1; };
+  }, [canSend, refreshUploadIdentity]);
   useEffect(() => window.ludone?.onAuthSessionChanged?.(() => {
     uploadAuthGeneration.current += 1;
-    setUploadPreferences(null);
-  }), []);
+    refreshUploadIdentity();
+  }), [refreshUploadIdentity]);
   const [exportError, setExportError] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -414,7 +455,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
 
   async function exportSavedRecording(recording, name, decision, manual = false) {
     const supportsPreferences = typeof window.ludone?.listUploadCompanies === "function";
-    if (manual && decision === "send" && supportsPreferences && !uploadPreferences) {
+    if (manual && decision === "send" && supportsPreferences && (!uploadIdentityVerified.current || !uploadPreferences)) {
       setExportError("Před odesláním ověř a vyber cílovou firmu.");
       return;
     }
@@ -427,6 +468,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
     setExporting(true);
     setExportError(null);
     const generation = uploadAuthGeneration.current;
+    const uploadIdentity = lastUploadIdentity.current;
     const autoSelectCompany = !manual && decision === "send" && recording.automaticUpload === true
       && typeof window.ludone?.getUploadCompanyDefault === "function" && supportsPreferences;
     if (autoSelectCompany) setAutoResolvingCompany(true);
@@ -476,7 +518,11 @@ export const RecordingCard = forwardRef(function RecordingCard({
     } catch (error) {
       setExportError(autoSelectCompany && error?.message !== "Vyber cílovou firmu. Výchozí firmu se nepodařilo určit."
         ? `Automatické odeslání se nespustilo. ${uploadCompanyErrorMessage(error)}` : describeError(error));
-      if (manual && supportsPreferences) { setPickerInitial(uploadPreferences); setPickerRefresh((value) => value + 1); }
+      if (manual && supportsPreferences && generation === uploadAuthGeneration.current
+        && uploadIdentityVerified.current && uploadIdentity === lastUploadIdentity.current) {
+        setPickerInitial(uploadPreferences);
+        setPickerRefresh((value) => value + 1);
+      }
     } finally {
       if (autoSelectCompany) setAutoResolvingCompany(false);
       setExporting(false);
@@ -558,6 +604,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
       });
       if (result?.outcome !== "deleted") throw new Error("Nahrávku se nepodařilo smazat.");
       setSavedRecording(null);
+      setPickerInitial(null);
+      setUploadPreferences(null);
       setDeleteConfirm(false);
       setNotice({ type: "success", text: "Nahrávka byla smazána z tohoto Macu." });
     } catch (error) {
@@ -1007,10 +1055,15 @@ export const RecordingCard = forwardRef(function RecordingCard({
               setCopyExportNotice(null);
             }}
           />
-          {typeof window.ludone?.listUploadCompanies === "function" && <RecordingUploadPreferences
-            key={savedRecording.clientRecordingId} defaultVisibility="company" disabled={!canSend || autoResolvingCompany} busy={exporting}
-            initialValue={pickerInitial} refreshToken={pickerRefresh}
-            onChange={(value) => setUploadPreferences(value)} />}
+          {typeof window.ludone?.listUploadCompanies === "function" && pickerOwner && <div hidden={!canSend || verifiedUploadIdentity !== pickerOwner.key}>
+            <RecordingUploadPreferences key={`${savedRecording.clientRecordingId}:${pickerOwner.serial}`}
+              identityKey={pickerOwner.key} defaultVisibility="company"
+              disabled={!canSend || verifiedUploadIdentity !== pickerOwner.key || autoResolvingCompany} busy={exporting}
+              initialValue={pickerInitial} refreshToken={pickerRefresh}
+              onChange={(value) => setUploadPreferences(value)} />
+          </div>}
+          {typeof window.ludone?.listUploadCompanies === "function" && (!canSend || !verifiedUploadIdentity)
+            && <p role="status">Ověřuji účet pro výběr cílové firmy.</p>}
           <small id="recording-name-hint" className="recording-saved__hint">
             Nahrávka už je místně zachovaná. Odesílání začne jen tvou volbou.
           </small>
@@ -1059,7 +1112,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
               <button
                 type="submit"
                 className="button button--primary button--wide"
-                disabled={exporting || !canSend || (typeof window.ludone?.listUploadCompanies === "function" && !uploadPreferences)}
+                disabled={exporting || !canSend || (typeof window.ludone?.listUploadCompanies === "function" && (!verifiedUploadIdentity || !uploadPreferences))}
               >
                 Uložit a odeslat
               </button>

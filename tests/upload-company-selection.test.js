@@ -100,6 +100,16 @@ describe("controller výběru upload firmy", () => {
     expect(h.commitChoice).toHaveBeenCalledWith(expect.objectContaining({ companyId: A, companyName: "Alfa" }));
   });
 
+  it("K6 výsledek potvrzuje již provedený zápis i když relace po commitu vyprší", async () => {
+    let current = true;
+    const h = harness({ isContextCurrent: vi.fn(async () => current),
+      commitChoice: vi.fn(async () => { current = false; return true; }) });
+    const loaded = await h.controller.load({ requesterKey: "settings", guard: () => true });
+    await expect(h.controller.select({ requesterKey: "settings", offerToken: loaded.offerToken,
+      companyId: A, guard: () => true })).resolves.toEqual({ saved: true, selectedCompanyId: A });
+    expect(h.commitChoice).toHaveBeenCalledOnce();
+  });
+
   it("🔴 necommitne firmu odebranou z nové nabídky", async () => {
     const h = harness({
       fetchOffer: vi.fn()

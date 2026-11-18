@@ -9801,7 +9801,7 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     expect(stored.companyTabidooId).toBe(companyId);
     expect(stored.companyTabidooName).toBe("Make more s.r.o.");
     await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent))
-      .resolves.toEqual({ companyId, companyName: "Make more s.r.o." });
+      .resolves.toEqual({ companyId, companyName: "Make more s.r.o.", identityBinding: expect.any(String) });
     expect(JSON.stringify(offer)).not.toMatch(/accessToken|ownerFingerprint|TAJNY/u);
 
     fetch.mockResolvedValueOnce(/** @type {any} */ ({
@@ -9932,6 +9932,53 @@ describe("úzké IPC preferencí nahrávky", () => {
 });
 
 describe("lokální uložený default firmy", () => {
+  it("K5 neprůhledná identita v IPC rozliší subject se stejným e-mailem a neprozradí subject", async () => {
+    const harness = await loadMain(); await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const bridge = loadPreload((channel, ...args) => harness.ipcHandlers.get(channel)(settingsEvent, ...args));
+    const session = { ...storedAuthSession(), userinfoSubject: "testovaci-subjekt-42", accessExpiresAt: Date.now() + 60_000 };
+    await writeStoredAuthSession(harness, session);
+    const first = await bridge.api.getUploadCompanyIdentity();
+    expect(first).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(first).not.toContain(session.userinfoSubject);
+    expect(await bridge.api.getUploadCompanyIdentity()).toBe(first);
+    expect(await bridge.api.getUploadCompanyDefault()).toEqual({ companyId: null });
+    await writeStoredAuthSession(harness, { ...session, userinfoSubject: "testovaci-subjekt-99" });
+    expect(await bridge.api.getUploadCompanyIdentity()).not.toBe(first);
+    delete session.userinfoSubject;
+    await writeStoredAuthSession(harness, session);
+    expect(await bridge.api.getUploadCompanyIdentity()).toBeNull();
+    await expect(loadPreload({ companyId: null, identityBinding: [first] }).api.getUploadCompanyIdentity()).rejects.toThrow(/výchozí firma/u);
+  });
+  it("K6 vypršení během userinfo v IPC neohlásí chybu až po zápisu", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    let entered; const started = new Promise((resolve) => { entered = resolve; });
+    let release; const pending = new Promise((resolve) => { release = resolve; });
+    vi.stubGlobal("fetch", vi.fn(async (url) => {
+      if (new URL(url).pathname === "/api/mcp/oauth/userinfo") {
+        entered(); await pending;
+        return { ok: true, status: 200, json: async () => ({ sub: "42", email: "ada@ludone.cz" }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ companies: [{ id: companyId, name: "Firma" }], defaultCompanyId: null }) };
+    }));
+    const harness = await loadMain(); await harness.runReady();
+    const originalNow = Date.now; let now = originalNow();
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), accessExpiresAt: now + 1000 });
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    const before = await readFile(tokenPath);
+    const defaultPath = path.join(path.dirname(tokenPath), "upload-company-defaults.json");
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const list = harness.ipcHandlers.get("upload-companies:list");
+    const select = harness.ipcHandlers.get("upload-companies:select");
+    const offer = await list(settingsEvent);
+    const selecting = select(settingsEvent, offer.offerToken, companyId);
+    const result = selecting.then((value) => ({ value }), (error) => ({ error }));
+    await started; now += 2000; release();
+    expect((await result).error).toMatchObject({ code: "context_changed" });
+    expect((await readFile(tokenPath)).equals(before)).toBe(true);
+    await expect(readFile(defaultPath)).rejects.toMatchObject({ code: "ENOENT" });
+  });
   it.each(["ověřený subject", "výpadek userinfo"])("N6 %s projde výběrem až do bezpečné odpovědi preloadu", async (mode) => {
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
     const fetch = vi.fn(async (url) => {
@@ -9964,6 +10011,14 @@ describe("lokální uložený default firmy", () => {
       { companyId, companyName: "" }, { companyId, companyName: "Firma\nDalší" },
       { companyId: null, companyName: "Firma" }, { companyId, companyName: "Firma", token: "navíc" },
     ]) await expect(loadPreload(value).api.getUploadCompanyDefault()).rejects.toThrow(/výchozí firma/u);
+  });
+  it("K7 IPC i preload odmítnou GUID předané jako pole", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    await expect(loadPreload({ companyId: [companyId] }).api.getUploadCompanyDefault()).rejects.toThrow(/výchozí firma/u);
+    const harness = await loadMain(); await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: [companyId], accessExpiresAt: 0 });
+    await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent)).resolves.toEqual({ companyId: null });
   });
   it("spolu s ID bezpečně předá poslední známý název i z prošlé relace", async () => {
     const harness = await loadMain(); await harness.runReady();

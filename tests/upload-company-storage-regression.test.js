@@ -23,7 +23,14 @@ it("N5 odmítne symlink a příliš velký soubor bez čtení cizí předvolby",
   await symlink(target, file);
   await expect(readCompanyDefault(root, session)).resolves.toBeNull();
   await fs.unlink(file);
-  await writeFile(file, ` ${" ".repeat(256 * 1024)}[]`);
+  await writeFile(file, `${" ".repeat(256 * 1024)}${JSON.stringify([{ issuer: session.issuer, subject: "42", companyId }])}`);
+  await expect(readCompanyDefault(root, session)).resolves.toBeNull();
+});
+
+it("K7 odmítne GUID uložené v poli místo řetězce", async () => {
+  const root = await directory();
+  await writeFile(path.join(root, "upload-company-defaults.json"),
+    JSON.stringify([{ issuer: session.issuer, subject: "42", companyId: [companyId] }]));
   await expect(readCompanyDefault(root, session)).resolves.toBeNull();
 });
 

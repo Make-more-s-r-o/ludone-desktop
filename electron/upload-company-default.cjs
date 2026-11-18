@@ -61,7 +61,7 @@ async function readEntries(directory) {
     const value = JSON.parse(buffer.subarray(0, length).toString("utf8"));
     if (!Array.isArray(value) || value.length > 1000) return [];
     return value.filter((entry) => entry && typeof entry.issuer === "string"
-      && validCompanySubject(entry.subject) && COMPANY_ID.test(entry.companyId ?? ""))
+      && validCompanySubject(entry.subject) && typeof entry.companyId === "string" && COMPANY_ID.test(entry.companyId))
       .map(({ issuer, subject, companyId, companyName }) => ({ issuer, subject, companyId,
         ...(validCompanyName(companyName) ? { companyName } : {}) }));
   } catch {
@@ -82,7 +82,7 @@ async function readCompanyDefault(directory, session) {
 // Volající serializuje tento zápis se změnami šifrované relace.
 async function writeCompanyDefault(directory, session, companyId) {
   const identity = companyIdentity(session);
-  if (!identity || (companyId !== null && !COMPANY_ID.test(companyId ?? ""))) return;
+  if (!identity || (companyId !== null && (typeof companyId !== "string" || !COMPANY_ID.test(companyId)))) return;
   const entries = await readEntries(directory);
   const previous = entries.find((entry) => entry.issuer === identity.issuer && entry.subject === identity.subject);
   const next = entries.filter((entry) => entry.issuer !== identity.issuer || entry.subject !== identity.subject);

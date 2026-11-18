@@ -14,7 +14,7 @@ function validCompanies(value) {
   const ids = new Set();
   const companies = [];
   for (const company of value) {
-    if (!company || typeof company !== "object" || !COMPANY_ID_PATTERN.test(company.id ?? "")
+    if (!company || typeof company !== "object" || typeof company.id !== "string" || !COMPANY_ID_PATTERN.test(company.id)
       || typeof company.name !== "string" || company.name.length < 1 || company.name.length > 160
       || company.name.trim() !== company.name || hasControlCharacters(company.name)
       || ids.has(company.id)) return null;
@@ -78,7 +78,7 @@ export function UploadCompanySelector({ authState }) {
     if (authenticated && typeof window.ludone?.getUploadCompanyDefault === "function") {
       Promise.resolve().then(() => window.ludone.getUploadCompanyDefault()).then((value) => {
         if (generationRef.current !== generation) return;
-        if (COMPANY_ID_PATTERN.test(value?.companyId ?? "")) {
+        if (typeof value?.companyId === "string" && COMPANY_ID_PATTERN.test(value.companyId)) {
           setView({ state: "loading", storedCompanyId: value.companyId, storedCompanyName: value.companyName });
           void loadCompanies(value.companyId, value.companyName);
         } else setView(interrupted
@@ -226,7 +226,7 @@ export function UploadCompanySelector({ authState }) {
 
 // Jedna nabídka patří konkrétnímu účtu; samotná editace nikdy neschvaluje upload.
 export function RecordingUploadPreferences({ initialValue, defaultVisibility = "private", identityKey = "panel",
-  disabled = false, busy = false, locked = false, refreshToken = 0, saveVersion = 0, onChange, onUserChange, onConflictChange, onSave, stateMessage, stateError = false, surface = "panel" }) {
+  disabled = false, busy = false, locked = false, refreshToken = 0, saveVersion = 0, onChange, onUserChange, onConflictChange, onAcceptStored, onSave, stateMessage, stateError = false, surface = "panel" }) {
   const id = useId();
   const generation = useRef(0);
   const changeRef = useRef(onChange);
@@ -237,6 +237,7 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
   const initialCompany = initialValue?.companyId ?? "";
   const initialVisibility = initialValue?.visibility ?? defaultVisibility;
   const baseline = useRef({ choice: initialCompany, visibility: initialVisibility });
+  const editBaseline = useRef({ choice: initialCompany, visibility: initialVisibility });
   const edited = useRef(false);
   const [view, setView] = useState(() => ({ state: "loading", choice: initialCompany,
     companies: initialCompany ? [{ id: initialCompany, name: initialValue?.companyName || `Uložená firma (${initialCompany})` }] : [],
@@ -257,6 +258,7 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
     lastSaveVersion.current = saveVersion;
     const current = viewRef.current;
     if (current.choice === initialCompany && current.visibility === initialVisibility) {
+      editBaseline.current = { choice: initialCompany, visibility: initialVisibility };
       setCurrent({ ...current, conflict: false });
       conflictRef.current?.(false);
     }
@@ -271,7 +273,7 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
       try {
         const saved = await window.ludone.getUploadCompanyDefault();
         if (request !== generation.current) return;
-        if (COMPANY_ID_PATTERN.test(saved?.companyId ?? "")) {
+        if (typeof saved?.companyId === "string" && COMPANY_ID_PATTERN.test(saved.companyId)) {
           const savedName = validCompanies([{ id: saved.companyId, name: saved.companyName }])?.[0]?.name;
           current = { ...viewRef.current, choice: saved.companyId,
             companies: [{ id: saved.companyId, name: savedName ?? `Uložená firma (${saved.companyId})` }] };
@@ -302,7 +304,7 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
           unavailable: true });
         return;
       }
-      if (!edited.current && !baseline.current.choice) baseline.current = { choice, visibility: current.visibility };
+      if (!edited.current && !baseline.current.choice) editBaseline.current = { choice, visibility: current.visibility };
       setCurrent({ ...offer, choice, visibility: current.visibility, conflict: current.conflict, defaultReason, state: "ready" });
       changeRef.current?.(choice ? { companyId: choice, offerToken: offer.offerToken, visibility: current.visibility } : null, undefined);
     } catch (error) {
@@ -326,7 +328,7 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
   }, [load, locked, identityKey, refreshToken, setCurrent]);
   const update = (choice, visibility) => {
     edited.current = true;
-    const dirty = choice !== baseline.current.choice || visibility !== baseline.current.visibility;
+    const dirty = choice !== editBaseline.current.choice || visibility !== editBaseline.current.visibility;
     const unavailable = Boolean(choice && view.availableCompanyIds && !view.availableCompanyIds.includes(choice));
     setCurrent({ ...viewRef.current, choice, visibility, unavailable });
     changeRef.current?.(choice && !unavailable ? { companyId: choice, offerToken: view.offerToken, visibility } : null, dirty);
@@ -341,11 +343,13 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
     const available = current.availableCompanyIds ?? current.companies.map((company) => company.id);
     const unavailable = Boolean(choice && !available.includes(choice));
     edited.current = false;
+    editBaseline.current = { choice, visibility };
     setCurrent({ ...current, choice, visibility, companies, unavailable, conflict: false });
     changeRef.current?.(choice && !unavailable && current.state === "ready"
       ? { companyId: choice, offerToken: current.offerToken, visibility } : null, false);
     onUserChange?.(false);
     conflictRef.current?.(false);
+    if (choice && !unavailable && current.state === "ready") onAcceptStored?.();
   };
   return (
     <div className="recording-upload-preferences" data-testid="recording-upload-preferences" data-surface={surface}>

@@ -1395,16 +1395,16 @@ function createAuthController(options) {
                     ? decryptStoredSession(safeStorage, previousSession) : null;
                   const previousIdentity = companyIdentity(previous);
                   const nextIdentity = companyIdentity(encryptedSession);
-                  if (previousIdentity && COMPANY_ID_PATTERN.test(previous.companyTabidooId ?? "")) {
+                  if (previousIdentity && typeof previous.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(previous.companyTabidooId)) {
                     await writeCompanyDefault(storage.directory, previous, previous.companyTabidooId).catch(() => {});
                   }
                   if (nextIdentity) {
                     const sameIdentity = previousIdentity?.issuer === nextIdentity.issuer
                       && previousIdentity.subject === nextIdentity.subject;
                     const savedDefault = await readCompanyDefault(storage.directory, encryptedSession).catch(() => null);
-                    const companyId = sameIdentity && COMPANY_ID_PATTERN.test(previous.companyTabidooId ?? "")
+                    const companyId = sameIdentity && typeof previous.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(previous.companyTabidooId)
                       ? previous.companyTabidooId : savedDefault?.companyId;
-                    if (COMPANY_ID_PATTERN.test(companyId ?? "")) {
+                    if (typeof companyId === "string" && COMPANY_ID_PATTERN.test(companyId)) {
                       encryptedSession.companyTabidooId = companyId;
                       const companyName = sameIdentity && previous.companyTabidooId === companyId && validCompanyName(previous.companyTabidooName)
                         ? previous.companyTabidooName : savedDefault?.companyId === companyId ? savedDefault.companyName : null;
@@ -1662,7 +1662,7 @@ function updateStoredAuthSessionCompany({
   const mazeFirmu = companyTabidooId === null;
   const firma = typeof companyTabidooId === "string" ? companyTabidooId : "";
   if ((!mazeFirmu && !COMPANY_ID_PATTERN.test(firma))
-    || (mazeFirmu && !COMPANY_ID_PATTERN.test(expectedCompanyId ?? ""))) {
+    || (mazeFirmu && (typeof expectedCompanyId !== "string" || !COMPANY_ID_PATTERN.test(expectedCompanyId)))) {
     // Nesmysl se do relace nezapisuje: odesílání by pak selhalo až na serveru a vypadalo
     // by to jako vada spojení, ne jako vadná uložená hodnota.
     return Promise.reject(new Error("Identifikátor firmy musí být GUID"));
@@ -1710,9 +1710,11 @@ function updateStoredAuthSessionCompany({
     }
 
     const updatedSession = { ...session };
+    let checkedUserinfo = false;
     if (!mazeFirmu && !validCompanySubject(session.userinfoSubject) && typeof fetchImpl === "function"
       && typeof session.accessToken === "string" && session.accessToken.length > 0
       && Number.isFinite(session.accessExpiresAt) && session.accessExpiresAt > Date.now()) {
+      checkedUserinfo = true;
       try {
         const issuer = normalizedIssuer(session.issuer);
         if (issuer === session.issuer && session.resource === `${issuer}/api/mcp`) {
@@ -1742,6 +1744,12 @@ function updateStoredAuthSessionCompany({
       companyTabidooId: previousDefault?.companyId,
       companyTabidooName: previousDefault?.companyName,
     }, previousDefault?.companyId ?? null);
+    if ((guard !== undefined || checkedUserinfo)
+      && (!Number.isFinite(session.accessExpiresAt) || session.accessExpiresAt <= Date.now()
+        || typeof session.accessToken !== "string" || !session.accessToken.trim())) return null;
+    if (guard !== undefined) {
+      try { if (guard() !== true) return null; } catch { return null; }
+    }
     try {
       await writeCompanyDefault(storage.directory, updatedSession, mazeFirmu ? null : firma);
     } catch (error) {
@@ -1751,9 +1759,10 @@ function updateStoredAuthSessionCompany({
     try {
       await persistEncryptedSession(safeStorage, updatedSession, storage);
     } catch (error) {
-      await restoreDefault();
-      const current = await readEncryptedSession(storage);
-      if (current === null || !current.equals(encrypted)) await restoreEncryptedSession(storage, encrypted);
+      const rollbackErrors = [];
+      try { await restoreDefault(); } catch (rollbackError) { rollbackErrors.push(rollbackError); }
+      try { await restoreEncryptedSession(storage, encrypted); } catch (rollbackError) { rollbackErrors.push(rollbackError); }
+      if (rollbackErrors.length) throw new AggregateError([error, ...rollbackErrors], error.message, { cause: error });
       throw error;
     }
     return updatedSession;

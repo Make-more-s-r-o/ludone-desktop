@@ -558,7 +558,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
     return window.ludone.onDetailSaveRequested((id) => { void saveBeforeClose.current?.(id); });
   }, [detailId]);
   const runAction = async (item, method) => {
-    if (method !== "revealRecording" && (authState !== "signed-in" || !currentIdentity
+    if (!["revealRecording", "deleteRecording"].includes(method) && (authState !== "signed-in" || !currentIdentity
       || view.snapshotIdentity !== currentIdentity || view.snapshotAuthEpoch !== renderAuth.current.epoch)) return;
     const preference = preferencesById[item.id];
     const mismatched = !item.uploadPreferencesLocked && preference
@@ -566,7 +566,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
         || preference.value.visibility !== item.uploadPreferences?.visibility);
     if (["sendRecording", "retryRecording"].includes(method)
       && (preference?.dirty || preference?.conflict || mismatched || preferenceFailedById[item.id])) return;
-    if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method === "deleteRecording" && item.uploadLocked)
+    if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method === "deleteRecording" && (item.uploadLocked || !item.canDelete))
       || (method !== "deleteRecording"
       && method !== "revealRecording" && !item.revision)
       || typeof window.ludone?.[method] !== "function") return;
@@ -664,7 +664,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
               && view.snapshotAuthEpoch === renderAuth.current.epoch;
             const item = authState === "signed-in" && !snapshotMatches
               ? { ...snapshotItem, ownership: "unavailable", uploadPreferences: null,
-                canClaim: false, canDelete: false, canRetry: false, canSend: false }
+                canClaim: false, canRetry: false, canSend: false }
               : snapshotItem;
             const claimable = snapshotMatches && item.source === "queue" && item.canClaim
               && ["unknown", "other"].includes(item.ownership)
@@ -821,6 +821,11 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                           onConflictChange={(conflict) => setPreferencesById((current) => ({
                             ...current, [item.id]: { ...current[item.id], conflict },
                           }))}
+                          onAcceptStored={() => {
+                            if (!verifiedEditorOwner) return;
+                            setPreferenceFailedById((current) => ({ ...current, [item.id]: false }));
+                            setPreferenceMessageById((current) => ({ ...current, [item.id]: "Převzaté volby jsou uložené." }));
+                          }}
                           onSave={() => void configure(item)} stateMessage={preferenceMessageById[item.id]} stateError={preferenceFailedById[item.id]} /></div>
                       )}
                     <section className="recording-queue-card__context-card" aria-label="Pracovní kontext">
@@ -866,9 +871,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     disabled={item.recordingInProgress || actingId !== null}
                     onClick={() => void runAction(item, "revealRecording")}><OsaIcon name="folder" size={17} /> Ukázat ve Finderu</button>
                 )}
-                {snapshotMatches && item.canDelete && (
+                {item.canDelete && (
                   <button type="button" className="button button--small recording-action--delete"
-                    disabled={item.recordingInProgress || actingId !== null}
+                    disabled={item.recordingInProgress || item.uploadLocked || !item.fileRevision || actingId !== null}
                     onClick={() => {
                       if (window.confirm("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.")) {
                         void runAction(item, "deleteRecording");

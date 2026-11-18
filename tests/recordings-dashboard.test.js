@@ -1,5 +1,6 @@
 import * as React from "react";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -11,6 +12,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { RecordingsDashboard } from "../src/features/recordings/RecordingsDashboard.jsx";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { RecordingDayPreview } from "../src/features/recordings/RecordingDayPreview.jsx";
+import { OsaShell } from "../src/components/osa/OsaShell.jsx";
+import { SettingsApp } from "../src/components/Settings.jsx";
 
 const ID = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
 const REVISION = `sha256:${"a".repeat(64)}`;
@@ -796,6 +799,73 @@ async function chooseUpload(panel, selector, value) {
     select.dispatchEvent(new panel.document.defaultView.Event("change", { bubbles: true })); });
 }
 
+it("K2 prázdné uložené volby se předvyplní bez konfliktu i po obnově a lze je potvrdit a odeslat", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  let item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: null, allowedActions: { send: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.getUploadCompanyDefault = vi.fn(async () => ({ companyId, companyName: "Beta" }));
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
+    selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn(async ({ visibility }) => {
+    item = { ...item, uploadPreferences: { companyId, companyName: "Beta", visibility }, revision: `sha256:${"b".repeat(64)}` };
+    return { configured: true };
+  });
+  panel.ludone.sendRecording = vi.fn(async () => ({ outcome: "queued" }));
+  try {
+    await openUploadDetail(panel);
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(companyId);
+    expect(panel.document.body.textContent).not.toMatch(/volby.*mezitím.*změnil/iu);
+    await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(companyId);
+    expect(panel.document.body.textContent).not.toMatch(/volby.*mezitím.*změnil/iu);
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(false);
+    await React.act(async () => panel.document.querySelector('.recording-action--send').click());
+    expect(panel.ludone.sendRecording).toHaveBeenCalledOnce();
+  } finally { await panel.cleanup(); }
+});
+
+it.each(["signed-out", "expired"])("K3 místní nahrávku lze smazat při stavu %s", async (authState) => {
+  const item = { ...ITEM, source: "orphan", ownership: "unavailable", revision: null,
+    allowedActions: { claim: false, delete: true, retry: false, send: false } };
+  const panel = await renderDashboard({ authState, listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  try {
+    await openUploadDetail(panel);
+    const button = panel.document.querySelector('.recording-action--delete');
+    expect(button).not.toBeNull();
+    await React.act(async () => button.click());
+    expect(panel.ludone.deleteRecording).toHaveBeenCalledExactlyOnceWith({ id: ID, queueRev: null, fileRev: item.fileRevision });
+    expect(panel.document.defaultView.confirm).toHaveBeenCalledOnce();
+  } finally { await panel.cleanup(); }
+});
+
+it("K4 stale_snapshot po převzetí ověřených nových voleb dovolí odeslání", async () => {
+  const first = "11111111-1111-4111-8111-111111111111";
+  const second = "22222222-2222-4222-8222-222222222222";
+  let item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId: first, companyName: "Alfa", visibility: "private" }, allowedActions: { send: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: first, name: "Alfa" }, { id: second, name: "Beta" }],
+    selectedCompanyId: first, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn(async () => {
+    item = { ...item, revision: `sha256:${"b".repeat(64)}`, uploadPreferences: { companyId: second, companyName: "Beta", visibility: "private" } };
+    throw new Error("stale_snapshot");
+  });
+  panel.ludone.sendRecording = vi.fn(async () => ({ outcome: "queued" }));
+  try {
+    await openUploadDetail(panel);
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.document.body.textContent).toContain("Volby se nepodařilo uložit");
+    await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Převzít nové volby")).click());
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(second);
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(false);
+    await React.act(async () => panel.document.querySelector('.recording-action--send').click());
+    expect(panel.ludone.sendRecording).toHaveBeenCalledOnce();
+  } finally { await panel.cleanup(); }
+});
+
 it("obnova přehledu nechá otevřený editor, jeho volbu a scroll na místě", async () => {
   const companyId = "22222222-2222-4222-8222-222222222222";
   const pending = deferred(); let loads = 0;
@@ -970,29 +1040,50 @@ it("N3 přerušené ukládání nepokračuje po návratu stejného e-mailu bez n
   } finally { await panel.cleanup(); }
 });
 
-it("N8 detail hlásí skutečnou editaci a při obnově zachová scroll settings-content", async () => {
+it("K9 detail hlásí skutečnou editaci a při obnově zachová scroll produkčního OsaShellu", async () => {
   const companyId = "22222222-2222-4222-8222-222222222222";
   const item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
     uploadPreferences: { companyId, companyName: "Beta", visibility: "private" }, allowedActions: { send: true } };
-  const panel = await renderDashboard({ detailId: ID, listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
-  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
-    selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
-  panel.ludone.configureRecordingUpload = vi.fn();
-  panel.ludone.setDetailDirty = vi.fn(async () => {});
+  const dom = new JSDOM('<div id="root"></div>', { url: `https://ludone.test/?recordingId=${ID}#settings` });
+  const style = dom.window.document.createElement("style");
+  style.textContent = readFileSync(new URL("../src/osa.css", import.meta.url), "utf8");
+  dom.window.document.head.append(style);
+  const listeners = new Set();
+  const ludone = {
+    getAuthSessionState: vi.fn(async () => "valid"),
+    getAuthIdentity: vi.fn(async () => ({ email: "test@ludone.cz", name: "Test" })),
+    getAuthOrigin: vi.fn(async () => "https://ludone.test"),
+    onAuthSessionChanged: (callback) => { listeners.add(callback); return () => listeners.delete(callback); },
+    listLocalRecordings: vi.fn(async () => ({ items: [item], unreadableCount: 0 })),
+    listUploadCompanies: vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
+      selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" })),
+    configureRecordingUpload: vi.fn(), setDetailDirty: vi.fn(async () => {}),
+  };
+  Object.defineProperty(dom.window, "ludone", { value: ludone });
+  for (const [key, value] of Object.entries({ window: dom.window, document: dom.window.document,
+    Node: dom.window.Node, HTMLElement: dom.window.HTMLElement, React, IS_REACT_ACT_ENVIRONMENT: true })) vi.stubGlobal(key, value);
+  const root = createRoot(dom.window.document.querySelector("#root"));
+  const panel = { document: dom.window.document };
   try {
-    await panel.rerender("signed-in");
-    await openUploadDetail(panel);
-    const scroller = panel.document.querySelector('.settings-content');
+    await React.act(async () => root.render(React.createElement(OsaShell, { page: "detail" }, React.createElement(SettingsApp))));
+    await vi.waitFor(() => expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]')).not.toBeNull());
+    const scroller = panel.document.querySelector('.osa-workspace');
     expect(scroller).not.toBeNull();
+    expect(panel.document.defaultView.getComputedStyle(panel.document.querySelector('.recordings-dashboard__toolbar')).display).toBe("none");
     scroller.scrollTop = 240;
     await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
-    expect(panel.ludone.setDetailDirty).toHaveBeenCalledWith(true);
-    panel.ludone.setDetailDirty.mockClear();
-    await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
-    expect(panel.document.querySelector('.settings-content')).toBe(scroller);
+    expect(ludone.setDetailDirty).toHaveBeenCalledWith(true);
+    ludone.setDetailDirty.mockClear();
+    const previousLoads = ludone.listLocalRecordings.mock.calls.length;
+    const pending = deferred(); ludone.getAuthIdentity.mockImplementationOnce(() => pending.promise);
+    await React.act(async () => { for (const listener of [...listeners]) listener(); });
+    await React.act(async () => pending.resolve({ email: "test@ludone.cz", name: "Test" }));
+    await vi.waitFor(() => expect(ludone.listLocalRecordings.mock.calls.length).toBeGreaterThan(previousLoads));
+    expect(panel.document.querySelector('.osa-workspace')).toBe(scroller);
     expect(scroller.scrollTop).toBe(240);
-    expect(panel.ludone.setDetailDirty).not.toHaveBeenCalled();
-  } finally { await panel.cleanup(); }
+    expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("company");
+    expect(ludone.setDetailDirty).not.toHaveBeenCalled();
+  } finally { await React.act(async () => root.unmount()); dom.window.close(); }
 });
 
 it("dočasně neznámé přihlášení neshodí editor ani volbu při návratu stejného účtu", async () => {
