@@ -47,8 +47,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #186 | Čerstvou nahrávku nejde smazat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #193 → main abb364c |
 | #194 | Nestabilní test z #189 + Zastavit v Nastavení | ✅ sloučeno | PR #195 → main fa5508b | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
-| #187 | UI drobnosti | ✅ body 5–9, 11 sloučeny (PR #196 → main 5dd81c2); body 2/3 → #184 | — | body 1/4/10 hotové jinde; 2/3 → #184 |
-| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | 🔵 review + CI, PR #197 (draft, Fixes #184 #187) | `fix/recording-fewer-clicks` @ 1f695a6 | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
+| #187 | UI drobnosti | ✅ zavřeno (PR #196 + #197) | main 1e8c143 | body 1/4/10 hotové jinde; 2/3 → #184 |
+| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #197 → main 1e8c143 | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
 ## Danova rozhodnutí (chat, 18. 11. 2026 ~16:00)
 
@@ -206,3 +206,18 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 ~23:30 — review #184 k3 (sol 6.2 max): PŘIJMOUT. CI #197 na 519473f FAIL: (N1) recording-card „zastavení dokončí rozepsanou session“ 24≠25 — nestabilní i lokálně (1/6); (N2) queue-wiring K7 — pojistka fetch, stejný souběh jako #194 v dalším testu bloku (lokálně 6/6). Kolo 4 (N1 příčina + srovnání s main, N2 celý blok deterministicky jako #195) běží.
   ⚠️ Vlastní chyba: v dávce příkazů jsem spustil `git checkout -q origin/main --`, strom se odpojil na origin/main; ihned vráceno `git switch fix/recording-fewer-clicks`, strom byl čistý, nic se neztratilo (práce commitnutá a pushnutá).
 - 18. 11. 2026 ~23:45 — #184 kolo 4 EXIT=0 (terra 6.1 / max), 3758d45 (jen testy, 2 soubory): N1 nezavedla #184 (nezávislé odečty skutečných hodin → 24/25 ms, totéž na main), test řídí obě hodiny, aserce 25 ms zachována, 15/15; N2 celý blok výchozí firmy deterministicky (7 testů), 10/10. Claude review diffu testů: žádná aserce neubyla. 🧪 recording-card 146, queue-wiring 357. Čeká se na CI.
+- 18. 11. 2026 ~23:55 — CI #197 PASS na 3758d45. **PR #197 sloučen squash → main 1e8c143**; #184 zavřené (komentář s kroky), #187 zavřené
+  (PR #196 + #197). Větev smazána lokálně i remote, panely zavřené, strom zpět na makerfaireczech/ludone-desktop-opravy = origin/main.
+  kombinace #184: terra 6.1 max → sol 6.2 max, 4 kola (VRÁTIT ×2, PŘIJMOUT; kolo 4 jen testy po pádu CI).
+  **Všech 6 proklik issues (#182–#187) sloučeno.** Otázka na vydání 0.1.12: Q-20261118-211459-ludone-desktop-1c5e (bez odpovědi nic nevydávám).
+  Paměť: ludone-desktop-lokalni-brany-a-ci.md. Odložené follow-upy bez štítku proklik: #188, #190, #191.
+
+## Souhrn kombinací
+| Issue | PR | autor → reviewer | kola | verdikt |
+|---|---|---|---|---|
+| #182/#183 | #189 | terra 6.1 max → sol 6.2 max | 5 | PŘIJMOUT S VÝHRADAMI |
+| #186 | #192 | terra 6.1 max → sol 6.2 max | 2 | PŘIJMOUT S VÝHRADAMI |
+| #185 | #193 | terra 6.1 max → sol 6.2 max | 2 | PŘIJMOUT S VÝHRADAMI |
+| #194 | #195 | terra 6.1 max → sol 6.2 max | 1 | VRÁTIT (P2) → sloučeno, P2 do #190 |
+| #187 | #196 | terra 6.1 max → sol 6.2 max | 3 | PŘIJMOUT |
+| #184 (+#187) | #197 | terra 6.1 max → sol 6.2 max | 4 | PŘIJMOUT |
