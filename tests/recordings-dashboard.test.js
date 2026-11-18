@@ -363,6 +363,22 @@ describe("dashboard fronty nahrávek", () => {
       expect([...dashboard.document.querySelectorAll("button")].some((button) => button.textContent.includes("Smazat nahrávku"))).toBe(false);
     } finally { await dashboard.cleanup(); }
   });
+  it("W3 u stavu Odesláno samostatně uvádí, že server nebyl ověřen", async () => {
+    const dashboard = await renderDashboard({
+      listLocalRecordings: async () => ({
+        items: [{ ...ITEM, state: "odeslano", ownership: "current" }], unreadableCount: 0,
+      }),
+    });
+    try {
+      const server = dashboard.document.querySelector('[data-station="pending"]');
+      expect(server.querySelector(":scope > strong").textContent).toBe("Odesláno");
+      expect(server.querySelector(":scope > p").textContent).toBe("Na serveru neověřeno");
+      expect(dashboard.ludone.verifyRecording).not.toHaveBeenCalled();
+    } finally {
+      await dashboard.cleanup();
+    }
+  });
+
   it("server nevolá při renderu ani refreshi a ověří obě stopy jen po ručním kliku", async () => {
     const currentItem = { ...ITEM, ownership: "current", allowedActions: { ...ITEM.allowedActions, claim: false } };
     const verifyRecording = vi.fn(async () => ({

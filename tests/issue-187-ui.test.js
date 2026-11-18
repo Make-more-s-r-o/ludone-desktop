@@ -18,6 +18,7 @@ const { OsaHistoryControls } = await controlsModule;
 const { OsaShell } = await shellModule;
 
 const REVISION = `sha256:${"a".repeat(64)}`;
+const CREATED_AT = new Date(2026, 10, 18, 15, 0, 30).toISOString();
 const IDS = [
   "11111111-1111-4111-8111-111111111111",
   "22222222-2222-4222-8222-222222222222",
@@ -27,7 +28,7 @@ const IDS = [
 
 function recording(id, overrides = {}) {
   return {
-    id, kind: "recording", title: "Porada", createdAt: "2026-11-18T14:00:00.000Z",
+    id, kind: "recording", title: "Porada", createdAt: CREATED_AT,
     durationMs: 60_000, sizeBytes: 1024, state: "ceka", uploadIntent: "held",
     source: "queue", localState: "complete-audio", ownership: "current",
     revision: REVISION, fileRevision: REVISION,
@@ -109,12 +110,37 @@ describe("#187 – drobnosti v panelu", () => {
   });
 
   it.each([
-    [null, "Schůzka"],
-    ["   ", "Schůzka"],
-    ["2. září 2026, 14:00 – Rozpočet – porada", "Rozpočet – porada"],
-    ["Poznámky k 2. září 2026, 14:00", "Poznámky k 2. září 2026, 14:00"],
-  ])("U6 u názvu %s zobrazí %s", (title, expected) => {
-    expect(recordingDisplayTitle(title)).toBe(expected);
+    [null, CREATED_AT, "Schůzka"],
+    ["   ", CREATED_AT, "Schůzka"],
+    ["2. září 2026, 14:00 – Rozpočet – porada", new Date(2026, 8, 2, 14, 0).toISOString(), "Rozpočet – porada"],
+    ["01. ledna 2026, 0:05 — Půlnoc", new Date(2026, 0, 1, 0, 5, 59).toISOString(), "Půlnoc"],
+    ["Poznámky k 2. září 2026, 14:00", CREATED_AT, "Poznámky k 2. září 2026, 14:00"],
+  ])("U6 u názvu %s zobrazí vlastní název podle data nahrávky", (title, createdAt, expected) => {
+    expect(recordingDisplayTitle(title, createdAt)).toBe(expected);
+  });
+
+  it.each([
+    ["20. listopadu 2026, 16:00 – Kontrola termínu", CREATED_AT],
+    ["18. listopadu 2026, 15:01 – Jiný čas", CREATED_AT],
+    ["18. října 2026, 15:00 – Jiný měsíc", CREATED_AT],
+    ["18. listopadu 2025, 15:00 – Jiný rok", CREATED_AT],
+    ["18. listopadu 2026, 15:00 – Neznámý začátek", null],
+    ["18. listopadu 2026, 15:00", "neplatné datum"],
+  ])("W1 zachová celý název %s, když se začátek neshoduje nebo není známý", (title, createdAt) => {
+    expect(recordingDisplayTitle(title, createdAt)).toBe(title);
+  });
+
+  it("W1 zobrazí vlastní termín v seznamu, detailu i náhledu", async () => {
+    const title = "20. listopadu 2026, 16:00 – Kontrola termínu";
+    const item = recording(IDS[0], { title });
+    const panel = await dashboard([item]);
+    try {
+      expect(panel.document.querySelector(".recording-queue-card__heading strong").textContent).toBe(title);
+      expect(panel.document.querySelector(".recording-queue-card__detail-heading h1").textContent).toBe(title);
+    } finally { await panel.cleanup(); }
+    const preview = await mount(React.createElement(RecordingDayPreview, { items: [item] }));
+    try { expect(preview.document.querySelector(".day-preview__item-copy strong").textContent).toBe(title); }
+    finally { await preview.cleanup(); }
   });
 
   it("U7 skloňuje počty ve stránkování včetně nuly a dvaceti jedna", async () => {

@@ -759,7 +759,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     <span className="recording-queue-card__detail-date">{dayLabel(item.createdAt)} · {formatClockTime(item.createdAt)}</span>
                     <span className="recording-queue-card__source-icon" aria-hidden="true"><MicIcon /></span>
                     <span className="recording-queue-card__heading">
-                      <strong>{recordingDisplayTitle(item.title)}</strong>
+                      <strong>{recordingDisplayTitle(item.title, item.createdAt)}</strong>
                       <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.recordingInProgress ? "active" : verified ? "verified" : item.source === "orphan" ? "local" : item.state}`}>
                         {deliveryStateLabel(item, verified)}
                       </span>
@@ -777,7 +777,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   </summary>
                   <div className="recording-queue-card__detail">
                     <header className="recording-queue-card__detail-heading">
-                      <h1>{recordingDisplayTitle(item.title)}</h1>
+                      <h1>{recordingDisplayTitle(item.title, item.createdAt)}</h1>
                       <p>{formatCreatedAt(item.createdAt)} · {formatDuration(item.durationMs)} · {itemSizeText(item)}</p>
                     </header>
                     <ol className="recording-queue-card__journey" aria-label="Postup nahrávky">
@@ -923,7 +923,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                       }
                     }}><OsaIcon name="trash" size={17} /> Smazat nahrávku</button>
                 )}
-</> }} server={{ status: verification && !verified ? VERIFICATION_LABELS[Object.values(verification.tracks).find(result => result.status !== "complete").status] : deliveryStateLabel(item, verified), verified: Boolean(verified), error: Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? [...new Set(Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]))].join(" · ") : item.state === "odeslano" ? "Odesláno podle stavu fronty. Na serveru neověřeno." : "Přepis a analýza jsou na webu", actions: <>                {claimable && (<>
+</> }} server={{ status: verification && !verified ? VERIFICATION_LABELS[Object.values(verification.tracks).find(result => result.status !== "complete").status] : deliveryStateLabel(item, verified), verified: Boolean(verified), error: Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? [...new Set(Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]))].join(" · ") : item.state === "odeslano" ? "Na serveru neověřeno" : "Přepis a analýza jsou na webu", actions: <>                {claimable && (<>
                   <button
                     type="button"
                     className="button button--small recording-action--claim"

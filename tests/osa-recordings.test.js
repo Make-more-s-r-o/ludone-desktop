@@ -18,6 +18,18 @@ describe("F Osa skutečný seznam", () => {
     expect(selectOsaRecordings(items, { search: "PRISTI" }).items.map(i => i.id)).toEqual(["a"]);
     expect(selectOsaRecordings(items, { search: "zluty kun" }).items.map(i => i.id)).toEqual(["b"]);
   });
+  it("W2 najde zobrazený zástupný název i původní uložené datum", () => {
+    const createdAt = new Date(2026, 10, 18, 15, 0).toISOString();
+    const automatic = row("automatic", createdAt, { title: "18. listopadu 2026, 15:00", companyName: "Žlutý kůň" });
+    const empty = row("empty", null, { title: "" });
+    const named = row("named", createdAt, { title: "18. listopadu 2026, 15:00 – Porada výroby" });
+    const items = [automatic, empty, named];
+    expect(selectOsaRecordings(items, { search: "SCHUZKA" }).items.map(item => item.id)).toEqual(["automatic", "empty"]);
+    expect(selectOsaRecordings(items, { search: "18. listopadu 2026" }).items.map(item => item.id)).toEqual(["automatic", "named"]);
+    expect(selectOsaRecordings(items, { search: "15:00 zluty" }).items.map(item => item.id)).toEqual(["automatic"]);
+    expect(selectOsaRecordings(items, { search: "porada vyroby" }).items.map(item => item.id)).toEqual(["named"]);
+    expect(automatic.title).toBe("18. listopadu 2026, 15:00");
+  });
   it("vlastní rozsah zahrne celý místní den a neznámá data jen v celém archivu", () => {
     const items = [row("start", new Date(2026, 9, 25, 0).toISOString()), row("end", new Date(2026, 9, 25, 23, 59, 59, 999).toISOString()), row("next", new Date(2026, 9, 26, 0).toISOString()), row("unknown", "bad")];
     expect(selectOsaRecordings(items, { period: "custom", from: "2026-10-25", to: "2026-10-25" }).items.map(i => i.id)).toEqual(["end", "start"]);

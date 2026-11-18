@@ -8,7 +8,7 @@ function safeItems(value) {
     .map((item) => ({
       recordingInProgress: item.recordingInProgress === true,
       id: item.id,
-      title: recordingDisplayTitle(item.title),
+      title: recordingDisplayTitle(item.title, item.createdAt),
       createdAt: typeof item.createdAt === "string" && Number.isFinite(Date.parse(item.createdAt))
         ? item.createdAt
         : null,
