@@ -196,3 +196,5 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   zůstává otevřené kvůli bodům 2/3), komentář s kroky pro Dana; větev smazána, panely zavřené.
   kombinace: terra 6.1 max → sol 6.2 max, 3 kola (VRÁTIT ×2, PŘIJMOUT); odloženo #190 bod 8.
 - 18. 11. 2026 ~22:10 — #184 start na fix/recording-fewer-clicks z 5dd81c2 (Codex terra max, packet scratchpad/packet-184.md).
+- 18. 11. 2026 ~22:30 — #184 kolo 1 EXIT=0 (terra 6.1 / max), 1fd367f pushnutý (8 souborů, tsc exit 0): přepínač Soukromá/Firemní (localStorage, první použití Firemní), řádek s firmou → Nastavení, předvyplnění, ověření nabídky beze změny; 4 kliky vč. otevření panelu.
+  **Claude kontrola: kolo 1 ODSTRANILO existující volitelný přepínač „Nové nahrávky odesílat automaticky“ a jeho cestu** — mimo Danovo rozhodnutí (to se týkalo nové cesty). Rozhodl jsem sám: vrátit přepínač i chování (výchozí vypnuto) → kolo 2 (Y1–Y3) běží.
