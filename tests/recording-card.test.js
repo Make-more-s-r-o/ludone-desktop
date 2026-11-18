@@ -855,6 +855,37 @@ describe("zpětná vazba při startu nahrávání", () => {
     }
   });
 
+  it.each([
+    ["systémového", "deferSystemStart", "resolveSystemRecorderStart"],
+    ["mikrofonního", "deferMicrophoneStart", "resolveMicrophoneRecorderStart"],
+  ])("v nastavení zdrojů povolí Zastavit až po potvrzení %s rekordéru", async (_label, option, resolveStart) => {
+    const panel = await renderRecordingCard({ renderApp: true, [option]: true });
+    try {
+      await panel.click(panel.currentButton());
+      expect(panel.phase()).toBe("recording");
+      await panel.click(panel.document.querySelector('[data-testid="recording-open-sources"]'));
+      expect(panel.document.querySelector(".osa-shell").dataset.osaPage).toBe("settings");
+      expect(panel.document.querySelector("#audio-settings-title")).not.toBeNull();
+      const stopButton = panel.document.querySelector(".osa-live-strip button");
+      expect(stopButton.disabled).toBe(true);
+      await React.act(async () => { stopButton.click(); });
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+      await React.act(async () => { panel[resolveStart](); });
+      expect(stopButton.disabled).toBe(false);
+      expect(panel.recorders[0].state).toBe("recording");
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+      await React.act(async () => { stopButton.click(); });
+      await panel.waitForPhase("saved");
+      expect(panel.ludone.finishRecording).toHaveBeenCalledOnce();
+    } finally {
+      if (panel.phase() === "recording") {
+        await React.act(async () => { panel[resolveStart](); });
+        await stopRecording(panel);
+      }
+      await panel.cleanup();
+    }
+  });
+
   it("při výpadku během startu ponechá i náhradní zastavení vypnuté do potvrzení rekordérů", async () => {
     const panel = await renderRecordingCard({ deferSystemStart: true });
     try {

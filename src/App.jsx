@@ -41,7 +41,7 @@ export function App() {
   const [user, setUser] = useState(null);
   const [sessionState, setSessionState] = useState(null);
   const sessionExists = sessionState === null ? null : sessionState === "valid";
-  const [recording, setRecording] = useState({ active: false, systemAudioState: "inactive" });
+  const [recording, setRecording] = useState({ active: false, readyForStop: false, systemAudioState: "inactive" });
   const tracking = { active: false };
   const [page, setPage] = useState("home");
   const [settingsTab, setSettingsTab] = useState("account");
@@ -300,7 +300,7 @@ export function App() {
         onClose={() => window.ludone.hidePanel()}
         queueCount={pendingUploadCount}
         authState={sessionState === "valid" ? "signed-in" : sessionState === "expired" ? "expired" : sessionState === null ? "checking" : "signed-out"}
-        recording={{ ...recording, elapsed: formatElapsed(elapsed), label: recording.phase === "checking" ? "Připravuje se" : recording.phase === "stopping" ? "Ukládá se" : "Nahrává se", onStop: recording.phase === "recording" ? () => recordingCardRef.current?.stop() : undefined }}>
+        recording={{ ...recording, elapsed: formatElapsed(elapsed), label: recording.phase === "checking" ? "Připravuje se" : recording.phase === "stopping" ? "Ukládá se" : "Nahrává se", onStop: recording.phase === "recording" && recording.readyForStop ? () => recordingCardRef.current?.stop() : undefined }}>
         <DesktopConnectivityNotice />
         <ApplicationUpdateStatus showVersion={page === "updates"} allowManualCheck={page === "updates"} />
         {shellPage === "onboarding" && <>
