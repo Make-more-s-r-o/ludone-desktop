@@ -10033,13 +10033,58 @@ describe("lokální uložený default firmy", () => {
     await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent)).resolves.toEqual({ companyId: null });
   });
   it("spolu s ID bezpečně předá poslední známý název i z prošlé relace", async () => {
-    const harness = await loadMain(); await harness.runReady();
-    const { settingsEvent } = openSettingsAndCreateEvent(harness);
-    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
-    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId,
-      companyTabidooName: "Make more s.r.o.", accessExpiresAt: 0 });
-    await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent))
-      .resolves.toEqual({ companyId, companyName: "Make more s.r.o." });
+    let releaseRecovery;
+    const recoveryReleased = new Promise((resolve) => { releaseRecovery = resolve; });
+    let releaseFetch;
+    const fetchReleased = new Promise((resolve) => { releaseFetch = resolve; });
+    let fetchStack;
+    let fetchUrl;
+    const fetch = vi.fn(async (url) => {
+      fetchUrl = url;
+      fetchStack = new Error().stack;
+      await fetchReleased;
+      throw new Error("offline");
+    });
+    vi.stubGlobal("fetch", fetch);
+    const pump = vi.fn(async () => ({ outcome: "idle" }));
+    const nextRecordingRetryAt = vi.fn(async () => null);
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({ pump, nextRecordingRetryAt }),
+      recoverOrphanedRecordings: async () => {
+        await recoveryReleased;
+        return { alreadyQueued: 0, recovered: 0, skipped: 0 };
+      },
+    });
+    try {
+      await harness.runReady();
+      const { settingsEvent } = openSettingsAndCreateEvent(harness);
+      const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+      await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId,
+        companyTabidooName: "Make more s.r.o.", accessExpiresAt: 0,
+        refreshToken: "refresh-pro-test-vychozi-firmy" });
+      const getDefault = harness.ipcHandlers.get("upload-companies:default");
+      expect(fetch).not.toHaveBeenCalled();
+      await expect(getDefault(settingsEvent)).resolves.toEqual({ companyId, companyName: "Make more s.r.o." });
+      expect(fetch).not.toHaveBeenCalled();
+
+      // Startovací obnova fronty může doběhnout až po zápisu prošlé relace.
+      releaseRecovery();
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+      expect(new URL(fetchUrl).pathname).toBe("/.well-known/oauth-authorization-server");
+      expect(fetchStack).toContain("discoverEndpoints");
+      expect(fetchStack).toContain("auth.cjs");
+      expect(pump).not.toHaveBeenCalled();
+      const callsBeforeHandler = fetch.mock.calls.length;
+      await expect(getDefault(settingsEvent)).resolves.toEqual({ companyId, companyName: "Make more s.r.o." });
+      expect(fetch).toHaveBeenCalledTimes(callsBeforeHandler);
+      expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+      releaseFetch();
+      await vi.waitFor(() => expect(nextRecordingRetryAt).toHaveBeenCalledOnce());
+      expect(pump).toHaveBeenCalledOnce();
+    } finally {
+      releaseRecovery();
+      releaseFetch();
+    }
   });
   it("vrátí firmu i z prošlé relace bez síťového požadavku", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);

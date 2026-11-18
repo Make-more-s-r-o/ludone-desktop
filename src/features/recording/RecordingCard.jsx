@@ -1080,10 +1080,11 @@ export const RecordingCard = forwardRef(function RecordingCard({
       active: session.phase !== "idle",
       phase: session.phase,
       pendingSave: savedRecording !== null,
+      readyForStop,
       startedAt: session.startedAt,
       systemAudioState: session.systemAudioState,
     });
-  }, [onActivityChange, savedRecording, session.phase, session.systemAudioState, session.startedAt]);
+  }, [onActivityChange, readyForStop, savedRecording, session.phase, session.systemAudioState, session.startedAt]);
 
   const statusLabel = {
     idle: "Připraveno",
