@@ -110,3 +110,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   kombinace: terra 6.1 max → sol 6.2 max, kolo 2 VRÁTIT. Pojistka: další neúspěch = 3 kola po sobě ⇒ před kolem 4 nezávislá analýza příčiny jiným modelem.
 - 18. 11. 2026 ~18:05 — kolo 3 EXIT=0 (terra 6.1 / max), commit 12ff68d pushnutý. identityBinding = náhodné UUID v procesu (ne sub) ⇒ OK.
   🧪 cílené testy na 12ff68d: 9 souborů, 691 PASS (= předpověď Codexu), eslint EXIT 0. Draft PR #189 (CI souběžně). Review k3 běží.
+- 18. 11. 2026 17:50 — CI PR #189 (run 44350233531) FAIL v gates: typecheck, 11× TS chyba (JSDoc typ relace bez companyTabidooId/Name/userinfoSubject, statický import .jsx v testech, detailId/authBridge v typech helperů). Příčina: zadání zakazovalo tsc nad projektem. Výpis: scratchpad/ci-189-typecheck.txt. Oprava v dalším kole po verdiktu review k3 (review čte strom, teď nezapisovat).
