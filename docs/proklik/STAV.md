@@ -47,7 +47,7 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #186 | Čerstvou nahrávku nejde smazat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #193 → main abb364c |
 | #194 | Nestabilní test z #189 + Zastavit v Nastavení | ✅ sloučeno | PR #195 → main fa5508b | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
-| #187 | UI drobnosti | 🔵 Codex implementuje (U5–U9, U11) | `fix/ui-polish` | body 1/4/10 hotové jinde; 2/3 → #184 |
+| #187 | UI drobnosti | 🔵 review + CI, PR #196 (draft, Refs) | `fix/ui-polish` @ a213445 | body 1/4/10 hotové jinde; 2/3 → #184 |
 | #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
 ## Danova rozhodnutí (chat, 18. 11. 2026 ~16:00)
@@ -186,3 +186,6 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 ~21:10 — #187 start na fix/ui-polish z fa5508b (Codex terra max). Packet #184 připraven (scratchpad/packet-184.md):
   přepínač Soukromá/Firemní (poslední volba, první použití = Firemní jako dosud), řádek s firmou místo „Firmu zvolíte před odesláním“,
   předvyplněný formulář po Ukončit, BEZ samoodeslání, důvod zašedlého tlačítka. ROZHODNUTI.md zapíše orchestrátor v PR.
+- 18. 11. 2026 ~21:30 — #187 EXIT=0 (terra 6.1 / max), a213445 pushnutý (9 souborů, nový tests/issue-187-ui.test.js, tsc exit 0).
+  Změna očekávání pořadí v recordings-dashboard = U5 (záměr). 🧪 issue-187-ui 13, recordings-dashboard 69 PASS.
+  Draft PR #196 (Refs #187 — zavře ho až PR #184, body 2/3), review + CI běží.
