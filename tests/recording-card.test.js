@@ -2207,6 +2207,26 @@ it("K5 stopform při neověřené identitě skryje volbu, stejnému účtu vrát
   } finally { await panel.cleanup(); }
 });
 
+it.each([
+  "Uložená session neobsahuje ověřitelnou identitu",
+  "Error invoking remote method 'auth:identity': Error: Uložená session neobsahuje ověřitelnou identitu",
+])("E2 produkční chyba identity vysvětlí chybějící e-mail a vyzve k novému přihlášení: %s", async (message) => {
+  const panel = await renderRecordingCard({ modernDecision: true });
+  const companyId = "11111111-1111-4111-8111-111111111111";
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Alfa" }],
+    selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  try {
+    await startRecording(panel); await stopRecording(panel);
+    panel.ludone.getAuthIdentity.mockRejectedValueOnce(new Error(message));
+    await panel.changeAccount({ email: "a@example.test" });
+    const alert = [...panel.document.querySelectorAll('[role="alert"]')].find((element) => !element.closest("[hidden]"));
+    expect(alert.textContent).toMatch(/e-mail/iu);
+    expect(alert.textContent).toMatch(/přihlas se znovu.*Nastavení/iu);
+    expect(alert.textContent).not.toContain("Důvod se nepodařilo zjistit");
+    expect(panel.document.querySelector('button[type="submit"]').disabled).toBe(true);
+  } finally { await panel.cleanup(); }
+});
+
 it.each(["chyba čtení", "neplatný e-mail"])("T4 %s nabídne opakování a zachová volbu jen stejnému účtu", async (failure) => {
   const panel = await renderRecordingCard({ modernDecision: true });
   const first = "11111111-1111-4111-8111-111111111111";

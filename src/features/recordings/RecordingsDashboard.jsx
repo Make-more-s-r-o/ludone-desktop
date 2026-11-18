@@ -522,7 +522,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
     } finally { if (active.current) setActingId(null); }
   };
   const exportCopy = async (item) => {
-    if (item.recordingInProgress || copyExportOperation.current !== null || item.ownership !== "current"
+    if (authRef.current !== "signed-in" || !copyExportIdentity.current
+      || view.snapshotIdentity !== copyExportIdentity.current || view.snapshotAuthEpoch !== renderAuth.current.epoch
+      || item.recordingInProgress || copyExportOperation.current !== null || item.ownership !== "current"
       || !item.revision || !item.fileRevision
       || typeof window.ludone?.exportRecordingCopy !== "function") return;
     const name = copyExportNameRef.current[item.id] ?? item.title ?? "";
@@ -722,6 +724,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
             const verifiedEditorOwner = snapshotMatches && item.ownership === "current";
             const retainedEditor = preferencesById[item.id] && (authState !== "signed-in"
               || (preferencesById[item.id].identity === currentIdentity && !snapshotMatches));
+            const retainedCopy = !snapshotMatches && view.snapshotIdentity
+              && (authState === "unknown" || (authState === "signed-in" && currentIdentity === view.snapshotIdentity));
             const preference = preferencesById[item.id];
             const mismatchedPreferences = !item.uploadPreferencesLocked && preference
               && (!preference.value || preference.value.companyId !== item.uploadPreferences?.companyId
@@ -799,11 +803,12 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                         <dt>Uložení</dt><dd>{recordingSourceLabel(item)}</dd>
                       </dl>
                     </section>
-                    {snapshotMatches && item.source === "queue" && item.ownership === "current"
-                      && item.deliveryState === "ready" && !item.recordingInProgress
-                      && item.revision && item.fileRevision
+                    {(snapshotMatches || retainedCopy) && snapshotItem.source === "queue" && snapshotItem.ownership === "current"
+                      && snapshotItem.deliveryState === "ready" && !snapshotItem.recordingInProgress
+                      && snapshotItem.revision && snapshotItem.fileRevision
                       && typeof window.ludone?.exportRecordingCopy === "function" && (
-                        <section className="recording-queue-card__copy" aria-label="Export kopie">
+                        <section className="recording-queue-card__copy" aria-label="Export kopie"
+                          hidden={!snapshotMatches} style={!snapshotMatches ? { display: "grid", visibility: "hidden" } : undefined}>
                           <h2>Exportovat kopii</h2>
                           <label htmlFor={`recording-copy-name-${item.id}`}>Název souboru</label>
                           <input
@@ -812,12 +817,13 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                             data-testid="recording-copy-name"
                             type="text"
                             value={copyExportNameById[item.id] ?? item.title ?? ""}
+                            disabled={!snapshotMatches}
                             onChange={(event) => updateCopyExportName(item.id, event)}
                             onInput={(event) => updateCopyExportName(item.id, event)}
                           />
                           <button type="button" className="button button--small"
                             data-testid="export-saved-recording-copy"
-                            disabled={copyExportingId !== null}
+                            disabled={!snapshotMatches || copyExportingId !== null}
                             onClick={() => void exportCopy(item)}>
                             Exportovat kopii…
                           </button>

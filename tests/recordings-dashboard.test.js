@@ -1091,9 +1091,10 @@ it("K9 detail hlásí skutečnou editaci a při obnově zachová scroll produkč
   } finally { await React.act(async () => root.unmount()); dom.window.close(); }
 });
 
-async function renderFocusDetail() {
+async function renderFocusDetail(readyExport = false) {
   const companyId = "22222222-2222-4222-8222-222222222222";
   let item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    ...(readyExport ? { deliveryState: "ready", title: "Porada výroby" } : {}),
     uploadPreferences: { companyId, companyName: "Beta", visibility: "private" }, allowedActions: { send: true } };
   const dom = new JSDOM('<div id="root"></div>', { url: `https://ludone.test/?recordingId=${ID}#settings` });
   const style = dom.window.document.createElement("style");
@@ -1104,6 +1105,7 @@ async function renderFocusDetail() {
     getAuthIdentity: vi.fn(async () => ({ email: "test@ludone.cz", name: "Test" })),
     getAuthOrigin: vi.fn(async () => "https://ludone.test"),
     listLocalRecordings: vi.fn(async () => ({ items: [item], unreadableCount: 0 })),
+    exportRecordingCopy: vi.fn(async () => ({ ok: true, fileName: "kopie.webm" })),
     listUploadCompanies: vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
       selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" })),
     configureRecordingUpload: vi.fn(async ({ visibility }) => {
@@ -1128,6 +1130,80 @@ async function renderFocusDetail() {
     async cleanup() { await React.act(async () => root.unmount()); dom.window.close(); },
   };
 }
+
+it("E1 focus zachová místo exportu a zablokuje ovládání při ověřování i čekání na snímek", async () => {
+  const panel = await renderFocusDetail(true);
+  const identity = deferred();
+  const snapshot = deferred();
+  panel.ludone.getAuthIdentity.mockImplementationOnce(() => identity.promise);
+  panel.ludone.listLocalRecordings.mockImplementationOnce(() => snapshot.promise);
+  try {
+    const section = panel.document.querySelector('[aria-label="Export kopie"]');
+    const input = section.querySelector('[data-testid="recording-copy-name"]');
+    const button = section.querySelector('[data-testid="export-saved-recording-copy"]');
+    const scroller = panel.document.querySelector(".osa-workspace");
+    expect(input.value).toBe("Porada výroby");
+    expect(input.disabled).toBe(false);
+    expect(button.disabled).toBe(false);
+    const valueSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value").set;
+    await React.act(async () => {
+      valueSetter.call(input, "Vlastní název kopie");
+      input.dispatchEvent(new panel.document.defaultView.InputEvent("input", { bubbles: true }));
+    });
+    scroller.scrollTop = 240;
+
+    const expectReserved = () => {
+      expect(panel.document.querySelector('[aria-label="Export kopie"]')).toBe(section);
+      expect(panel.document.defaultView.getComputedStyle(section).display).not.toBe("none");
+      expect(panel.document.defaultView.getComputedStyle(section).visibility).toBe("hidden");
+      expect(input.disabled).toBe(true);
+      expect(button.disabled).toBe(true);
+      expect(scroller.scrollTop).toBe(240);
+      button.click();
+      expect(panel.ludone.exportRecordingCopy).not.toHaveBeenCalled();
+    };
+
+    await panel.focus();
+    expectReserved();
+    await React.act(async () => identity.resolve({ email: "test@ludone.cz", name: "Test" }));
+    expectReserved();
+    await React.act(async () => snapshot.resolve(panel.snapshot()));
+    expect(panel.document.querySelector('[aria-label="Export kopie"]')).toBe(section);
+    expect(panel.document.defaultView.getComputedStyle(section).visibility).toBe("visible");
+    expect(input.disabled).toBe(false);
+    expect(button.disabled).toBe(false);
+    expect(input.value).toBe("Vlastní název kopie");
+    expect(scroller.scrollTop).toBe(240);
+  } finally {
+    await React.act(async () => { identity.resolve({ email: "test@ludone.cz" }); snapshot.resolve(panel.snapshot()); });
+    await panel.cleanup();
+  }
+});
+
+it("E1 export zůstane skrytý a neaktivní pro neověřený účet a při změně účtu zmizí", async () => {
+  const panel = await renderFocusDetail(true);
+  const identity = deferred();
+  const snapshot = deferred();
+  panel.ludone.getAuthIdentity.mockImplementationOnce(() => identity.promise);
+  panel.ludone.listLocalRecordings.mockImplementationOnce(() => snapshot.promise);
+  try {
+    await panel.focus();
+    const section = panel.document.querySelector('[aria-label="Export kopie"]');
+    expect(panel.document.defaultView.getComputedStyle(section).visibility).toBe("hidden");
+    expect(section.querySelector('[data-testid="recording-copy-name"]').disabled).toBe(true);
+    expect(section.querySelector('[data-testid="export-saved-recording-copy"]').disabled).toBe(true);
+    await React.act(async () => identity.resolve({ email: "jiny@ludone.cz", name: "Jiný" }));
+    expect(panel.document.querySelector('[aria-label="Export kopie"]')).toBeNull();
+    const otherSnapshot = panel.snapshot();
+    otherSnapshot.items = otherSnapshot.items.map((item) => ({ ...item, ownership: "other" }));
+    await React.act(async () => snapshot.resolve(otherSnapshot));
+    expect(panel.document.querySelector('[aria-label="Export kopie"]')).toBeNull();
+    expect(panel.ludone.exportRecordingCopy).not.toHaveBeenCalled();
+  } finally {
+    await React.act(async () => { identity.resolve({ email: "jiny@ludone.cz" }); snapshot.resolve(panel.snapshot()); });
+    await panel.cleanup();
+  }
+});
 
 it("T2 focus během ověřování a čekání na snímek zachová místo editoru i scroll bez dirty", async () => {
   const panel = await renderFocusDetail();

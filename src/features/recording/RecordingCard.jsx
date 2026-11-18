@@ -304,7 +304,12 @@ export const RecordingCard = forwardRef(function RecordingCard({
         uploadIdentityVerified.current = true;
         setVerifiedUploadIdentity(key);
       }).catch((error) => {
-        if (identityRequest.current === request) setUploadIdentityError(`Účet se nepodařilo ověřit. ${uploadCompanyErrorMessage(error)}`);
+        if (identityRequest.current === request) {
+          setUploadIdentityError(typeof error?.message === "string"
+            && /(?:^|: )Uložená session neobsahuje ověřitelnou identitu$/u.test(error.message)
+            ? "Přihlášení nemá ověřený e-mail. Přihlas se znovu v Nastavení."
+            : `Účet se nepodařilo ověřit. ${uploadCompanyErrorMessage(error)}`);
+        }
       });
   }, []);
   useEffect(() => {
