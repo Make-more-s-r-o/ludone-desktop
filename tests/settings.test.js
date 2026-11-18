@@ -3,8 +3,9 @@ import { createRoot } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
-import { SettingsApp } from "../src/components/Settings.jsx";
+const settingsModule = /** @type {Promise<{ SettingsApp: React.ComponentType<any> }>} */
+  (vi.importActual("../src/components/Settings.jsx"));
+const { SettingsApp } = await settingsModule;
 
 // Styl se vloží do CSSOM JSDOM; testy níže ověřují vypočtený styl, ne text souboru.
 const settingsStyles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
@@ -65,6 +66,8 @@ async function renderSettings({
   }>)} */ (undefined),
   setDockVisible = (value) => Promise.resolve(value),
   setOpenAtLogin = (value) => Promise.resolve(value),
+  getUploadEnabled = () => Promise.resolve(false),
+  setUploadEnabled = (value) => Promise.resolve(value),
   selectUploadCompany = (_offerToken, companyId) => Promise.resolve({
     saved: true, selectedCompanyId: companyId,
   }),
@@ -112,6 +115,7 @@ async function renderSettings({
     getDiagnostics: vi.fn(diagnostics),
     getDockVisible: vi.fn(dockVisible),
     getOpenAtLogin: vi.fn(openAtLogin),
+    getUploadEnabled: vi.fn(getUploadEnabled),
     listLocalRecordings: vi.fn(listLocalRecordings),
     listUploadCompanies: vi.fn(listUploadCompanies),
     claimRecording: vi.fn(claimRecording),
@@ -121,6 +125,7 @@ async function renderSettings({
     switchAuthOrigin: vi.fn(switchAuthOriginImplementation),
     setDockVisible: vi.fn(setDockVisible),
     setOpenAtLogin: vi.fn(setOpenAtLogin),
+    setUploadEnabled: vi.fn(setUploadEnabled),
     selectUploadCompany: vi.fn(selectUploadCompany),
   };
   Object.defineProperty(dom.window, "localStorage", {
@@ -282,6 +287,23 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
       expect(uploadPanel?.textContent).toContain("Nahrávání spouštíš ručně.");
       expect(uploadPanel?.textContent).toContain("Platí jen pro nové záznamy.");
       expect(settings.localStorage.setItem).not.toHaveBeenCalled();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("přepínač automatického odesílání čte a mění nastavení v hlavním procesu", async () => {
+    const settings = await renderSettings();
+    try {
+      const toggle = settings.document.querySelector('[data-testid="automatic-upload-setting"] [role="switch"]');
+      expect(settings.ludone.getUploadEnabled).toHaveBeenCalledOnce();
+      expect(toggle.getAttribute("aria-checked")).toBe("false");
+      await React.act(async () => { toggle.click(); });
+      expect(settings.ludone.setUploadEnabled).toHaveBeenLastCalledWith(true);
+      expect(toggle.getAttribute("aria-checked")).toBe("true");
+      await React.act(async () => { toggle.click(); });
+      expect(settings.ludone.setUploadEnabled).toHaveBeenLastCalledWith(false);
+      expect(toggle.getAttribute("aria-checked")).toBe("false");
     } finally {
       await settings.cleanup();
     }

@@ -227,3 +227,13 @@ Dan odpověděl „Ano, tak vydej“ na výslovnou otázku, zda má koordinátor
 Dan přímo schválil celou vybranou F i poslední podobu ikon: „ok, schvaluju, můžeš to pustit ty? nebo ne musím já?“ Navazující přímé zadání pověřuje vývojem, testy, průběžnými commity, push a PR na existující `feat/desktop-osa`. Nejde jen o přípravu promptu. Podklady `95ff0b2c7a6d92a6f92efe80f9a030fc57d240ea`, main základ `2dd73fb2821f81fad3d9087381c72fd4d127e927`.
 
 Nahrávání, rozhodnutí, historie, odesílání a nastavení zůstávají v tray panelu; samostatné okno až pro detail. LuTrack neaktivní. Původní brány se nesmějí oslabit; schválení návrhu není výjimka pro červené měřidlo. Finální tag, merge do main, vydání a produkční instalace vyžadují samostatný další pokyn. [Stav implementace a přejímky](docs/behy/desktop-osa-2026-10-05/STAV.md).
+
+
+## D24 — méně kliků při nahrávání: Soukromá / Firemní, odeslání jedním klikem (18. 11. 2026)
+
+Dan v chatu session „🖥 opravy z prokliku“ (#184) rozhodl:
+
+1. Na obrazovce Nahrávání je přepínač **Soukromá / Firemní**. Výchozí poloha je **poslední použitá volba**, uložená lokálně na Macu. Při prvním použití začíná na Firemní, takže výchozí „firemní“ z 0.1.7 platí, dokud ho uživatel nezmění.
+2. **Bez samoodeslání po Ukončit:** formulář „Kam s nahrávkou?“ má firmu i přístup předvyplněné a odeslání potvrdí jeden klik.
+
+Existující volitelný přepínač „Nové nahrávky odesílat automaticky“ (výchozí vypnutý) zůstává beze změny. Rozhodnutí se týká výchozí cesty, ne zrušení této volby. Existující nahrávky a jejich uložené volby se nemění. Implementace: PR k #184, spolu s body 2 a 3 z #187.

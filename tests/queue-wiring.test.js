@@ -4534,12 +4534,14 @@ describe("produkční zapojení odchozí fronty", () => {
     }]) {
       const claimRecording = vi.fn();
       const pump = vi.fn(async () => ({ outcome: "idle" }));
+      const nextRecordingRetryAt = vi.fn(async () => null);
       const harness = await loadMain({
         createOutboundQueueStore: () => ({
           claimRecording,
           enqueueRecording: vi.fn(),
           enqueueTimeEntry: vi.fn(),
           list: vi.fn(async () => []),
+          nextRecordingRetryAt,
           pump,
           retry: vi.fn(),
         }),
@@ -4548,9 +4550,11 @@ describe("produkční zapojení odchozí fronty", () => {
       // Startupová transportní pumpa může token obnovit. Tady měříme samostatné
       // lokální převzetí, takže expiraci nastavíme až po dokončeném startupu.
       await vi.waitFor(() => expect(pump).toHaveBeenCalledOnce());
+      await vi.waitFor(() => expect(nextRecordingRetryAt).toHaveBeenCalledOnce());
       if (session) await writeStoredAuthSession(harness, session);
       const { settingsEvent } = openSettingsAndCreateEvent(harness);
       harness.electron.net.fetch.mockClear();
+      const callsBeforeHandler = fetchImpl.mock.calls.length;
 
       await expect(harness.ipcHandlers.get("queue:claim-recording")(
         settingsEvent,
@@ -4560,6 +4564,7 @@ describe("produkční zapojení odchozí fronty", () => {
       expect(claimRecording).not.toHaveBeenCalled();
       expect(harness.electron.dialog.showMessageBox).not.toHaveBeenCalled();
       expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+      expect(fetchImpl).toHaveBeenCalledTimes(callsBeforeHandler);
       expect(fetchImpl).not.toHaveBeenCalled();
     }
   });
@@ -9944,8 +9949,37 @@ describe("úzké IPC preferencí nahrávky", () => {
 });
 
 describe("lokální uložený default firmy", () => {
+  async function loadMainWithCompletedRecovery() {
+    let releaseRecovery;
+    const recoveryReleased = new Promise((resolve) => { releaseRecovery = resolve; });
+    const recover = vi.fn(async () => {
+      await recoveryReleased;
+      return { alreadyQueued: 0, recovered: 0, skipped: 0 };
+    });
+    const pump = vi.fn(async () => ({ outcome: "idle" }));
+    const nextRecordingRetryAt = vi.fn(async () => null);
+    const harness = await loadMain({
+      createOutboundQueueStore: () => ({ pump, nextRecordingRetryAt }),
+      recoverOrphanedRecordings: recover,
+    });
+    try {
+      await harness.runReady();
+      await vi.waitFor(() => expect(recover).toHaveBeenCalledOnce());
+      expect(pump).not.toHaveBeenCalled();
+      // Dokonči i obě čtení vlastníka při startu, než test zapíše vlastní relaci.
+      releaseRecovery();
+      await vi.waitFor(() => expect(nextRecordingRetryAt).toHaveBeenCalledOnce());
+      expect(pump).toHaveBeenCalledOnce();
+      return harness;
+    } finally {
+      releaseRecovery();
+    }
+  }
+
   it("K5 neprůhledná identita v IPC rozliší subject se stejným e-mailem a neprozradí subject", async () => {
-    const harness = await loadMain(); await harness.runReady();
+    const fetch = vi.fn(async () => { throw new Error("Nečekaná obnova tokenu"); });
+    vi.stubGlobal("fetch", fetch);
+    const harness = await loadMainWithCompletedRecovery();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const bridge = loadPreload((channel, ...args) => harness.ipcHandlers.get(channel)(settingsEvent, ...args));
     const session = { ...storedAuthSession(), userinfoSubject: "testovaci-subjekt-42", accessExpiresAt: Date.now() + 60_000 };
@@ -9961,6 +9995,7 @@ describe("lokální uložený default firmy", () => {
     await writeStoredAuthSession(harness, session);
     expect(await bridge.api.getUploadCompanyIdentity()).toBeNull();
     await expect(loadPreload({ companyId: null, identityBinding: [first] }).api.getUploadCompanyIdentity()).rejects.toThrow(/výchozí firma/u);
+    expect(fetch).not.toHaveBeenCalled();
   });
   it("K6 vypršení během userinfo v IPC neohlásí chybu až po zápisu", async () => {
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
@@ -9973,7 +10008,7 @@ describe("lokální uložený default firmy", () => {
       }
       return { ok: true, status: 200, json: async () => ({ companies: [{ id: companyId, name: "Firma" }], defaultCompanyId: null }) };
     }));
-    const harness = await loadMain(); await harness.runReady();
+    const harness = await loadMainWithCompletedRecovery();
     const originalNow = Date.now; let now = originalNow();
     vi.spyOn(Date, "now").mockImplementation(() => now);
     await writeStoredAuthSession(harness, { ...storedAuthSession(), accessExpiresAt: now + 1000 });
@@ -10001,7 +10036,7 @@ describe("lokální uložený default firmy", () => {
       return { ok: true, status: 200, json: async () => ({ companies: [{ id: companyId, name: "Firma" }], defaultCompanyId: null }) };
     });
     vi.stubGlobal("fetch", fetch);
-    const harness = await loadMain(); await harness.runReady();
+    const harness = await loadMainWithCompletedRecovery();
     await writeStoredAuthSession(harness, { ...storedAuthSession(), accessExpiresAt: Date.now() + 600_000 });
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const settings = loadPreload((channel, ...args) => harness.ipcHandlers.get(channel)(settingsEvent, ...args));
@@ -10027,10 +10062,15 @@ describe("lokální uložený default firmy", () => {
   it("K7 IPC i preload odmítnou GUID předané jako pole", async () => {
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
     await expect(loadPreload({ companyId: [companyId] }).api.getUploadCompanyDefault()).rejects.toThrow(/výchozí firma/u);
-    const harness = await loadMain(); await harness.runReady();
+    const fetch = vi.fn(async () => { throw new Error("Nečekaná obnova tokenu"); });
+    vi.stubGlobal("fetch", fetch);
+    const harness = await loadMainWithCompletedRecovery();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
     await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: [companyId], accessExpiresAt: 0 });
+    const callsBeforeHandler = fetch.mock.calls.length;
     await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent)).resolves.toEqual({ companyId: null });
+    expect(fetch).toHaveBeenCalledTimes(callsBeforeHandler);
+    expect(harness.electron.net.fetch).not.toHaveBeenCalled();
   });
   it("spolu s ID bezpečně předá poslední známý název i z prošlé relace", async () => {
     let releaseRecovery;
@@ -10088,36 +10128,46 @@ describe("lokální uložený default firmy", () => {
   });
   it("vrátí firmu i z prošlé relace bez síťového požadavku", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
-    const harness = await loadMain(); await harness.runReady();
+    const harness = await loadMainWithCompletedRecovery();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
     await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: 0 });
+    const callsBeforeHandler = fetch.mock.calls.length;
     await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent)).resolves.toEqual({ companyId });
+    expect(fetch).toHaveBeenCalledTimes(callsBeforeHandler);
     expect(fetch).not.toHaveBeenCalled();
     expect(harness.electron.net.fetch).not.toHaveBeenCalled();
   });
   it("při čtení uloženého defaultu použije stejnou normalizaci e-mailu jako identita", async () => {
-    const harness = await loadMain(); await harness.runReady();
+    const fetch = vi.fn(async () => { throw new Error("Nečekaná obnova tokenu"); });
+    vi.stubGlobal("fetch", fetch);
+    const harness = await loadMainWithCompletedRecovery();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
     await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId,
       identity: { email: "  ada@ludone.cz  " }, accessExpiresAt: 0 });
+    const callsBeforeHandler = fetch.mock.calls.length;
     await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent)).resolves.toEqual({ companyId });
+    expect(fetch).toHaveBeenCalledTimes(callsBeforeHandler);
   });
   it("vrátí pouze uložený GUID ze scoped relace, bez sítě a jen Settings", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
-    const harness = await loadMain(); await harness.runReady();
+    const harness = await loadMainWithCompletedRecovery();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
     const get = harness.ipcHandlers.get("upload-companies:default");
     await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: Date.now() + 600_000 });
+    const callsBeforeValidHandler = fetch.mock.calls.length;
     await expect(get(settingsEvent)).resolves.toEqual({ companyId });
+    expect(fetch).toHaveBeenCalledTimes(callsBeforeValidHandler);
     expect(fetch).not.toHaveBeenCalled(); expect(harness.electron.net.fetch).not.toHaveBeenCalled();
     expect(() => get(createForeignEvent(harness))).toThrow(/nedůvěryhodný/u);
     expect(() => get({ ...settingsEvent, senderFrame: {} })).toThrow(/nedůvěryhodný/u);
     await expect(get(settingsEvent, "navíc")).rejects.toThrow();
     await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: 0 });
+    const callsBeforeExpiredHandler = fetch.mock.calls.length;
     await expect(get(settingsEvent)).resolves.toEqual({ companyId });
+    expect(fetch).toHaveBeenCalledTimes(callsBeforeExpiredHandler);
     expect(fetch).not.toHaveBeenCalled();
   });
 });

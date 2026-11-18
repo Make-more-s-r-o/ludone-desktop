@@ -48,6 +48,27 @@ export function uploadCompanyErrorMessage(error) {
   return "Důvod se nepodařilo zjistit. Zkus to znovu.";
 }
 
+// Uložená předvolba je pouze vodítko; název a dostupnost potvrzuje aktuální nabídka.
+export async function readRecordingDefaultCompany() {
+  if (typeof window.ludone?.getUploadCompanyDefault !== "function") throw new Error("bridge_unavailable");
+  const saved = await window.ludone.getUploadCompanyDefault();
+  if (saved?.companyId == null) return null;
+  if (typeof saved.companyId !== "string" || !COMPANY_ID_PATTERN.test(saved.companyId)) throw new Error("invalid_company_offer");
+  const companyName = validCompanies([{ id: saved.companyId, name: saved.companyName }])?.[0]?.name;
+  return { companyId: saved.companyId, ...(companyName ? { companyName } : {}) };
+}
+
+export async function verifiedRecordingDefaultCompany(savedPromise = readRecordingDefaultCompany(), isCurrent = () => true) {
+  const saved = await savedPromise;
+  if (!saved || !isCurrent()) return null;
+  if (typeof window.ludone?.listUploadCompanies !== "function") throw new Error("bridge_unavailable");
+  const offer = normalizeOffer(await window.ludone.listUploadCompanies());
+  if (!offer) throw new Error("invalid_company_offer");
+  const company = offer.companies.find(({ id }) => id === saved.companyId);
+  if (!company) throw new Error("company_unavailable");
+  return { companyId: company.id, companyName: company.name };
+}
+
 export function UploadCompanySelector({ authState }) {
   const authenticated = authState?.state === "signed-in";
   const lastIdentity = useRef(null);
@@ -225,8 +246,8 @@ export function UploadCompanySelector({ authState }) {
 }
 
 // Jedna nabídka patří konkrétnímu účtu; samotná editace nikdy neschvaluje upload.
-export function RecordingUploadPreferences({ initialValue, defaultVisibility = "private", identityKey = "panel",
-  disabled = false, busy = false, locked = false, refreshToken = 0, saveVersion = 0, onChange, onUserChange, onConflictChange, onAcceptStored, onSave, stateMessage, stateError = false, surface = "panel" }) {
+export function RecordingUploadPreferences({ initialValue, initialCompanyPromise, defaultVisibility = "private", identityKey = "panel",
+  disabled = false, busy = false, locked = false, refreshToken = 0, saveVersion = 0, onChange, onUserChange, onConflictChange, onAcceptStored, onSave, onStatusChange, stateMessage, stateError = false, surface = "panel" }) {
   const id = useId();
   const generation = useRef(0);
   const changeRef = useRef(onChange);
@@ -244,6 +265,13 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
     visibility: initialVisibility }));
   const viewRef = useRef(view);
   const setCurrent = useCallback((next) => { viewRef.current = next; setView(next); }, []);
+  useEffect(() => {
+    const reason = view.state === "loading" ? "Ověřuji cílovou firmu."
+      : view.state === "error" ? `Firmu nelze ověřit. ${view.reason}`
+        : view.unavailable ? "Zvolenou firmu nelze ověřit. Vyber jinou firmu."
+          : !view.choice ? "Vyber cílovou firmu." : null;
+    onStatusChange?.(reason);
+  }, [onStatusChange, view.state, view.reason, view.unavailable, view.choice]);
   useEffect(() => {
     const previous = baseline.current;
     baseline.current = { choice: initialCompany, visibility: initialVisibility };
@@ -269,6 +297,16 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
     let defaultReason = "";
     changeRef.current?.(null, undefined);
     setCurrent({ ...current, state: "loading", reason: "" });
+    if (!current.choice && !edited.current && initialCompanyPromise) {
+      const saved = await initialCompanyPromise;
+      if (request !== generation.current) return;
+      if (saved?.companyId && COMPANY_ID_PATTERN.test(saved.companyId)) {
+        const savedName = validCompanies([{ id: saved.companyId, name: saved.companyName }])?.[0]?.name;
+        current = { ...viewRef.current, choice: saved.companyId,
+          companies: [{ id: saved.companyId, name: savedName ?? `Uložená firma (${saved.companyId})` }] };
+        setCurrent({ ...current, state: "loading" });
+      }
+    }
     if (!current.choice && !edited.current && typeof window.ludone?.getUploadCompanyDefault === "function") {
       try {
         const saved = await window.ludone.getUploadCompanyDefault();
@@ -311,7 +349,7 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
       if (request !== generation.current) return;
       setCurrent({ ...viewRef.current, state: "error", reason: uploadCompanyErrorMessage(error) });
     }
-  }, [disabled, setCurrent]);
+  }, [disabled, initialCompanyPromise, setCurrent]);
   useEffect(() => {
     if (locked) {
       generation.current += 1;

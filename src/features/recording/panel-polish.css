@@ -128,3 +128,33 @@
   margin: 0;
   overscroll-behavior: contain;
 }
+
+/* Cíl je součástí nové volby před startem; starý souhrnný řádek by ji zdvojoval. */
+.osa-shell--home .osa-destination { display: none; }
+.recording-card__visibility { display: flex; gap: 6px; margin: 8px 0 5px; }
+.recording-card__visibility button {
+  flex: 1;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--panel-hair);
+  border-radius: 8px;
+  background: var(--panel-page);
+  color: var(--panel-text);
+  font: inherit;
+  cursor: pointer;
+}
+.recording-card__visibility button[aria-pressed="true"] {
+  border-color: var(--panel-accent);
+  background: var(--panel-accent-soft);
+  color: var(--panel-accent);
+  font-weight: 600;
+}
+.recording-card__visibility button:focus-visible,
+.recording-card__company button:focus-visible { outline: 2px solid var(--panel-accent); outline-offset: 2px; }
+.recording-card__company { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; color: var(--panel-muted); font-size: 13px; }
+.recording-card__company span { min-width: 0; overflow-wrap: anywhere; }
+.recording-card__company button { border: 0; padding: 0; background: transparent; color: var(--panel-accent); font: inherit; text-decoration: underline; cursor: pointer; }
+.recording-card__preference-warning { display: block; color: var(--panel-bad); }
+.osa-shell .recording-saved__actions:has(#recording-send-disabled-reason) { flex-wrap: wrap; }
+.osa-shell .recording-saved__actions:has(#recording-send-disabled-reason) > button[type="submit"],
+.osa-shell #recording-send-disabled-reason { flex: 0 0 100%; }
