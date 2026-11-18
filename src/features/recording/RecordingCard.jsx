@@ -276,6 +276,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const uploadIdentityVerified = useRef(false);
   const recordingChoices = useRef(null);
   const defaultCompanyRequest = useRef(null);
+  const defaultCompanyIdle = useRef(true);
+  defaultCompanyIdle.current = session.phase === "idle" && !savedRecording && !exporting;
   const canSendRef = useRef(canSend);
   canSendRef.current = canSend;
   const refreshUploadIdentity = useCallback(() => {
@@ -334,6 +336,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
   }), [refreshUploadIdentity]);
   useEffect(() => {
     const refresh = () => {
+      if (!defaultCompanyIdle.current) return;
       setDefaultCompany({ state: "loading", identityKey: null, company: null });
       setDefaultCompanyRefresh((value) => value + 1);
     };
@@ -342,6 +345,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
   }, []);
   useEffect(() => {
     let active = true;
+    if (!defaultCompanyIdle.current) return () => { active = false; };
     if (!canSend || !verifiedUploadIdentity) {
       setDefaultCompany({ state: canSend && !uploadIdentityError ? "loading" : "unavailable", identityKey: null, company: null });
       return () => { active = false; };
@@ -361,7 +365,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
         choice.company = company;
       }
     });
-    verifiedRecordingDefaultCompany(savedPromise).then((company) => {
+    verifiedRecordingDefaultCompany(savedPromise, () => active && defaultCompanyIdle.current).then((company) => {
       if (active) setDefaultCompany({ state: company ? "ready" : "empty", identityKey, company });
     }).catch(() => {
       if (active) setDefaultCompany({ state: "unavailable", identityKey, company: null });
@@ -370,7 +374,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
       active = false;
       if (defaultCompanyRequest.current === request) defaultCompanyRequest.current = null;
     };
-  }, [canSend, verifiedUploadIdentity, uploadIdentityError, defaultCompanyRefresh]);
+  }, [canSend, verifiedUploadIdentity, uploadIdentityError, defaultCompanyRefresh, session.phase, savedRecording, exporting]);
   const [exportError, setExportError] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -552,6 +556,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
       setExportError("Název je příliš dlouhý. Zkraťte ho.");
       return;
     }
+    defaultCompanyIdle.current = false;
     setExporting(true);
     setExportError(null);
     const generation = uploadAuthGeneration.current;
@@ -567,11 +572,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
         }) : null;
       if (autoSelectCompany) {
         const choice = recordingChoices.current;
-        // Firma a přístup patří ke spuštěné nahrávce, nesmí přejít na jiný účet.
-        if (choice && (!uploadIdentityVerified.current || choice.identityKey !== lastUploadIdentity.current
+        // Je-li identita ze startu známá, nesmí se změnit; jinak vlastníka ověří hlavní proces.
+        if (choice && (!uploadIdentityVerified.current || (choice.identityKey && choice.identityKey !== lastUploadIdentity.current)
           || choice.authGeneration !== uploadAuthGeneration.current)) throw new Error("identity_changed");
-        const savedDefault = choice?.company ?? await choice?.defaultRequest?.storedPromise
-          ?? await window.ludone.getUploadCompanyDefault();
+        const savedDefault = await window.ludone.getUploadCompanyDefault();
         if (!savedDefault?.companyId) throw new Error("Vyber cílovou firmu. Výchozí firmu se nepodařilo určit.");
         freshPreferences = await freshRecordingUploadPreferences({ companyId: savedDefault.companyId, visibility: choice?.visibility ?? "company" });
       }
@@ -801,6 +805,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
 
   async function start() {
     if (startInFlight.current || runtimeRef.current || session.phase !== "idle") return;
+    defaultCompanyIdle.current = false;
     const defaultRequest = defaultCompanyRequest.current?.identityKey === verifiedUploadIdentity
       ? defaultCompanyRequest.current : null;
     recordingChoices.current = {

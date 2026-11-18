@@ -58,9 +58,9 @@ export async function readRecordingDefaultCompany() {
   return { companyId: saved.companyId, ...(companyName ? { companyName } : {}) };
 }
 
-export async function verifiedRecordingDefaultCompany(savedPromise = readRecordingDefaultCompany()) {
+export async function verifiedRecordingDefaultCompany(savedPromise = readRecordingDefaultCompany(), isCurrent = () => true) {
   const saved = await savedPromise;
-  if (!saved) return null;
+  if (!saved || !isCurrent()) return null;
   if (typeof window.ludone?.listUploadCompanies !== "function") throw new Error("bridge_unavailable");
   const offer = normalizeOffer(await window.ludone.listUploadCompanies());
   if (!offer) throw new Error("invalid_company_offer");
