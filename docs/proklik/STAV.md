@@ -42,8 +42,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 
 | Issue | Název | Stav | Větev / PR | Poznámka |
 |---|---|---|---|---|
-| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 review kola 3, PR #189 (draft) | `fix/upload-company-default` @ 12ff68d | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
-| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 review kola 3, PR #189 (draft) | `fix/upload-company-default` @ 12ff68d | — |
+| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 kolo 4 (zúžené), PR #189 (draft) | `fix/upload-company-default` @ 12ff68d | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
+| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 kolo 4 (zúžené), PR #189 (draft) | `fix/upload-company-default` @ 12ff68d | — |
 | #186 | Čerstvou nahrávku nejde smazat | ⏳ ve frontě | — | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
@@ -79,7 +79,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | `term_9b6ef6f7-1fd6-4283-95ce-eb1305b8d957` | #182+#183 kolo 2, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-2-1795016336579.log` | EXIT=0, převzato (a55b055), zavřeno |
 | `term_5254fbdd-…` | #182+#183 review kola 2, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-2-1795017783289.log` | EXIT=0, VRÁTIT, zavřeno |
 | `term_6acb1378-5798-4644-9818-b4d90f13d544` | #182+#183 kolo 3, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-3-1795018834875.log` | EXIT=0, převzato (12ff68d), zavřeno |
-| (review k3) | #182+#183 review kola 3, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-3-1795020083994.log` | běží |
+| `term_3a0fbc37-…` | #182+#183 review kola 3, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-3-1795020083994.log` | EXIT=0, VRÁTIT, zavřeno |
+| (kolo 4) | #182+#183 kolo 4 ZÚŽENÉ, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-4-uzke-1795021055694.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -111,3 +112,9 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 ~18:05 — kolo 3 EXIT=0 (terra 6.1 / max), commit 12ff68d pushnutý. identityBinding = náhodné UUID v procesu (ne sub) ⇒ OK.
   🧪 cílené testy na 12ff68d: 9 souborů, 691 PASS (= předpověď Codexu), eslint EXIT 0. Draft PR #189 (CI souběžně). Review k3 běží.
 - 18. 11. 2026 17:50 — CI PR #189 (run 44350233531) FAIL v gates: typecheck, 11× TS chyba (JSDoc typ relace bez companyTabidooId/Name/userinfoSubject, statický import .jsx v testech, detailId/authBridge v typech helperů). Příčina: zadání zakazovalo tsc nad projektem. Výpis: scratchpad/ci-189-typecheck.txt. Oprava v dalším kole po verdiktu review k3 (review čte strom, teď nezapisovat).
+- 18. 11. 2026 ~18:10 — review k3 (sol 6.2 max, 0 subagentů): VRÁTIT, 1× P1 (typecheck = CI) + 7× P2. **Třetí VRÁTIT po sobě ⇒ pojistka:**
+  nezávislý rozbor příčiny (Claude Opus, jiný model než autor terra): nekonverguje, protože každé kolo přidá stavovou logiku a review
+  na max najde další okrajové případy (diff ~2000 ř.). **Změna přístupu:** kolo 4 ZÚŽENÉ na T1 typecheck (P1), T2 skok scrollu
+  (přímo #183), T3 falešné „uložení selhalo“ po fokusu (častý případ), T4 zaseknuté „Ověřuji účet“; povolen jeden běh tsc.
+  Rozhodl jsem sám: zbylé 4 okrajové P2 (dvojitá chyba disku, availableCompanyIds, výsledek ověření po unknown, chybové kódy) ⇒ issue #190.
+  Review 4 bude ověřovat jen T1–T4 + regrese. kombinace: terra 6.1 max → sol 6.2 max, kola 1–3 VRÁTIT.
