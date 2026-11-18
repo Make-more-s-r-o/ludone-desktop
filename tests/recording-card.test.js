@@ -1745,6 +1745,10 @@ describe("RecordingCard", () => {
 
   it("zastavení dokončí rozepsanou session", async () => {
     const panel = await renderRecordingCard();
+    // Události rekordérů mají pevné časové značky; oba převodní časy musí mít
+    // stejnou kotvu, jinak jejich nezávislé odečty kolísají o milisekundu.
+    const wallClock = vi.spyOn(Date, "now").mockReturnValue(1_788_349_200_000);
+    const monotonicClock = vi.spyOn(globalThis.performance, "now").mockReturnValue(1_000);
 
     try {
       await startRecording(panel);
@@ -1771,6 +1775,8 @@ describe("RecordingCard", () => {
       )).toBe(25);
       expect(panel.phase()).toBe("saved");
     } finally {
+      wallClock.mockRestore();
+      monotonicClock.mockRestore();
       await panel.cleanup();
     }
   });
