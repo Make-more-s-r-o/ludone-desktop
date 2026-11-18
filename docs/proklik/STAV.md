@@ -81,3 +81,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
 - 18. 11. 2026 15:20 — start: pravidla přečtena, Node 24.19 ověřen, fronta `proklik` prázdná.
 - 18. 11. 2026 15:50 — 6 nových issues (#182–#187), komentáře s rozborem, otázka k #184, Codex na #182+#183.
+- 18. 11. 2026 16:22 — tik: žádné nové issues; Codex #182/#183 v závěru (13 změněných + 2 nové soubory, z toho 6 existujících testů ⇒ číst diff testů zvlášť), EXIT zatím ne.
