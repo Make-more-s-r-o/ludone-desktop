@@ -81,7 +81,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | `term_6acb1378-5798-4644-9818-b4d90f13d544` | #182+#183 kolo 3, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-3-1795018834875.log` | EXIT=0, převzato (12ff68d), zavřeno |
 | `term_3a0fbc37-…` | #182+#183 review kola 3, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-3-1795020083994.log` | EXIT=0, VRÁTIT, zavřeno |
 | `term_7bb5287a-…` | #182+#183 kolo 4 ZÚŽENÉ, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-4-uzke-1795021055694.log` | EXIT=0, převzato (b98fb9b), zavřeno |
-| (review k4) | #182+#183 úzké review kola 4, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-4-1795021925141.log` | běží |
+| `term_01b4e1f8-…` | #182+#183 úzké review kola 4, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-4-1795021925141.log` | EXIT=0, VRÁTIT (3× P2), zavřeno |
+| (kolo 5) | #182+#183 kolo 5 malé (E1 export blok, E2 hláška), terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-5-male-1795022485279.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -121,3 +122,6 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   Review 4 bude ověřovat jen T1–T4 + regrese. kombinace: terra 6.1 max → sol 6.2 max, kola 1–3 VRÁTIT.
 - 18. 11. 2026 ~18:30 — kolo 4 EXIT=0 (terra 6.1 / max), b98fb9b pushnutý (6 souborů, +284/−19), bez @ts-* potlačení a beze změny jsconfig/package.json;
   Codex: tsc exit 0. 🧪 moje cílené: recordings-dashboard 60, recording-card 96, auth-identity-fallback 50 PASS. Úzké review k4 + CI #189 běží (hlídač čeká na obojí).
+- 18. 11. 2026 ~18:45 — CI #189 na b98fb9b ZELENÉ (gates pass), MERGEABLE CLEAN. Úzké review k4 (sol 6.2 max): VRÁTIT 3× P2 (žádné P0/P1).
+  Rozhodl jsem sám: E1 zmizení bloku Exportovat kopii při obnově (scroll u spodu = přesně scénář #183) + E2 hláška u chybějícího e-mailu
+  → malé kolo 5; T3 vzácná souběžnost uložení × selhání snímku → #190 (bod 5). Po kole 5: krátké review jen E1/E2 a sloučit.
