@@ -58,6 +58,7 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
   max, review `gpt-6.2-sol` max; ani #187 nejde na lunu.
 - **#176:** jen připsat zjištění (hotovo, komentář v issue).
 - Otázka Q-20261118-144830-ludone-desktop-a6dd odpovězena v chatu a uzavřena.
+- **Vydání (Dan, chat 18. 11.):** nová verze (0.1.12) **až po sloučení všech šesti** (#182–#187). Jednotlivé PR jen slučovat do `main`, nic netagovat. Až bude šestý sloučený, připravit vydání a před tagem/podpisem se Dana ještě jednou zeptat (brief: nic nevydávat bez Dana).
 
 ### Rozbor #182 (čtení kódu, ⛔ neověřeno během)
 - Výchozí firma je v šifrované session (`companyTabidooId`). Refresh ji zachová, **nové přihlášení
