@@ -19,8 +19,8 @@ import {
 } from "./AudioLevelMeter.jsx";
 import { createMicrophoneOnlyExportCapture } from "./microphone-only-capture.js";
 import {
-  MICROPHONE_ONLY_TEXT,
   MICROPHONE_REQUIRED_TEXT,
+  RECORDING_MICROPHONE_ONLY_TEXT,
   microphoneOnlyReason,
   savedRecordingAge,
 } from "./recording-copy.js";
@@ -327,6 +327,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [deleting, setDeleting] = useState(false);
   const [quitExportFailure, setQuitExportFailure] = useState(null);
   const [recoveringSystemAudio, setRecoveringSystemAudio] = useState(false);
+  const [readyForStop, setReadyForStop] = useState(false);
   const startInFlight = useRef(false);
   const startOperationRef = useRef(null);
   const stopRequestedDuringStart = useRef(false);
@@ -737,6 +738,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
     const operation = { controller: new window.AbortController(), capture: null, committed: false };
     startOperationRef.current = operation;
     stopRequestedDuringStart.current = false;
+    setReadyForStop(false);
     setNotice(null);
     setSavedRecording(null);
     setRecordingName("");
@@ -766,6 +768,12 @@ export const RecordingCard = forwardRef(function RecordingCard({
       const hasSystemAudio = Boolean(capture.systemStream && capture.systemTrack);
       const recordingMode = hasSystemAudio ? "two-track" : "microphone-only";
       sharedAudioContext = createSharedAudioContext();
+      const { context } = sharedAudioContext;
+      // Příprava grafu může čekat na resume() neomezeně dlouho, proto při
+      // zrušení zavíráme kontext přímo a nečekáme na dokončení přípravy.
+      operation.controller.signal.addEventListener("abort", () => {
+        if (context.state !== "closed") void context.close().catch(() => {});
+      }, { once: true });
       const audioDependencies = { AudioContext: sharedAudioContext.AudioContext };
       stereoCapture = hasSystemAudio
         ? await createStereoCapture(
@@ -910,6 +918,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
         await finishRuntime(runtime);
         return;
       }
+      setReadyForStop(true);
     } catch (error) {
       if (runtime) {
         await finishRuntime(runtime, error);
@@ -1380,7 +1389,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
           {systemAudioStarting && <p role="status">Spouštím zvuk z počítače…</p>}
           {microphoneOnly && (
             <div className="recording-mode-note" role="status" aria-atomic="true">
-              {MICROPHONE_ONLY_TEXT} {microphoneOnlyNote}
+              {RECORDING_MICROPHONE_ONLY_TEXT} {microphoneOnlyNote}
             </div>
           )}
 
@@ -1413,6 +1422,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
                   type="button"
                   className="recording-outage__stop"
                   data-testid="degraded-recording-stop"
+                  disabled={!readyForStop}
                   onClick={stop}
                 >
                   Ukončit
@@ -1424,6 +1434,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
               type="button"
               className="recording-running__stop"
               data-testid="recording-stop"
+              disabled={!readyForStop}
               onClick={stop}
             >
               Ukončit a uložit

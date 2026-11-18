@@ -105,6 +105,7 @@ const MICROPHONE_ONLY_TEXT = "Nahrává se jen mikrofon. Druhou stranu hovoru ne
  *   deferBegin?: boolean,
  *   deferAudioResume?: boolean,
  *   deferCapture?: boolean,
+ *   deferExportStart?: boolean,
  *   deferFirstCaptureOnly?: boolean,
  *   deferMicrophoneStart?: boolean,
  *   deferRecovery?: boolean,
@@ -345,6 +346,7 @@ async function renderRecordingCard(options = {}) {
     start(timeslice) {
       this.timeslice = timeslice;
       this.state = "recording";
+      if (options.deferExportStart && this.index === 2) return;
       if (options.deferMicrophoneStart && this.index === 0) return;
       if (options.deferSystemStart && this.index === 1) return;
       this.emitStart();
@@ -394,7 +396,7 @@ async function renderRecordingCard(options = {}) {
       this.destinationCount = 0;
       this.sampleRate = 48_000;
       this.state = options.deferAudioResume ? "suspended" : "running";
-      this.close = vi.fn(async () => undefined);
+      this.close = vi.fn(async () => { this.state = "closed"; });
       audioContexts.push(this);
     }
 
@@ -455,7 +457,10 @@ async function renderRecordingCard(options = {}) {
 
     resume() {
       return options.deferAudioResume
-        ? audioResumeAttempt.promise.then(() => { this.state = "running"; })
+        ? audioResumeAttempt.promise.then(() => {
+          if (this.state === "closed") throw new DOMException("Kontext byl uzavřen", "InvalidStateError");
+          this.state = "running";
+        })
         : Promise.resolve();
     }
   }
@@ -545,6 +550,9 @@ async function renderRecordingCard(options = {}) {
     },
     resolveSystemRecorderStart() {
       recorders[1].emitStart();
+    },
+    resolveExportRecorderStart() {
+      recorders[2].emitStart();
     },
     resolveMicrophoneRecorderStart() {
       recorders[0].emitStart();
@@ -709,10 +717,29 @@ describe("zpětná vazba při startu nahrávání", () => {
       expect(panel.phase()).toBe("idle");
       expect(panel.microphoneTrack.stop).toHaveBeenCalled();
       expect(panel.systemTrack.stop).toHaveBeenCalled();
-      await React.act(async () => { panel.resolveAudioResume(); await Promise.resolve(); });
       expect(panel.audioContexts[0].close).toHaveBeenCalled();
+      await React.act(async () => { panel.resolveAudioResume(); await Promise.resolve(); });
       expect(panel.ludone.beginRecording).not.toHaveBeenCalled();
       expect(panel.recorders).toHaveLength(0);
+    } finally {
+      await React.act(async () => { panel.resolveAudioResume(); });
+      await panel.cleanup();
+    }
+  });
+
+  it("při uzavření karty zavře čekající zvukový kontext i při jednostopé přípravě", async () => {
+    const panel = await renderRecordingCard({
+      deferAudioResume: true,
+      displayError: new DOMException("Systémový zvuk není dostupný", "NotAllowedError"),
+    });
+    try {
+      await panel.click(panel.currentButton());
+      expect(panel.phase()).toBe("checking");
+      expect(panel.audioContexts).toHaveLength(1);
+      await panel.unmount();
+      expect(panel.microphoneTrack.stop).toHaveBeenCalled();
+      expect(panel.audioContexts[0].close).toHaveBeenCalled();
+      expect(panel.ludone.beginRecording).not.toHaveBeenCalled();
     } finally {
       await React.act(async () => { panel.resolveAudioResume(); });
       await panel.cleanup();
@@ -759,6 +786,31 @@ describe("zpětná vazba při startu nahrávání", () => {
     }
   });
 
+  it("zůstane při přípravě až do první události start rekordéru", async () => {
+    const panel = await renderRecordingCard({ deferExportStart: true });
+    let exportStarted = false;
+    try {
+      await panel.click(panel.currentButton());
+      expect(panel.recorders).toHaveLength(3);
+      expect(panel.recorders[2].state).toBe("recording");
+      expect(panel.phase()).toBe("checking");
+      expect(panel.document.body.textContent).toContain("Spouštím nahrávání");
+      expect(panel.document.querySelector('[data-testid="recording-running-state"]')).toBeNull();
+      exportStarted = true;
+      await React.act(async () => { panel.resolveExportRecorderStart(); });
+      expect(panel.phase()).toBe("recording");
+      expect(panel.document.querySelector('[data-testid="recording-running-state"]')?.textContent)
+        .toMatch(/Nahrává se/i);
+    } finally {
+      if (!exportStarted) {
+        await React.act(async () => { panel.resolveExportRecorderStart(); });
+      }
+      await panel.waitForPhase("recording");
+      await stopRecording(panel);
+      await panel.cleanup();
+    }
+  });
+
   it("stav nahrávání se objeví po startu stereo záznamu i při čekání na mikrofonní rekordér", async () => {
     const panel = await renderRecordingCard({ deferMicrophoneStart: true });
     try {
@@ -767,6 +819,9 @@ describe("zpětná vazba při startu nahrávání", () => {
       expect(panel.phase()).toBe("recording");
       expect(panel.document.querySelector('[data-testid="recording-running-state"]')?.textContent)
         .toMatch(/Nahrává se/i);
+      expect(panel.currentButton().disabled).toBe(true);
+      await React.act(async () => { panel.resolveMicrophoneRecorderStart(); });
+      expect(panel.currentButton().disabled).toBe(false);
     } finally {
       await React.act(async () => { panel.resolveMicrophoneRecorderStart(); });
       await panel.waitForPhase("recording");
@@ -775,12 +830,60 @@ describe("zpětná vazba při startu nahrávání", () => {
     }
   });
 
-  it("zastavení hned po viditelném startu se během potvrzování druhé stopy neztratí", async () => {
+  it("povolí zastavení až po potvrzení systémového rekordéru", async () => {
     const panel = await renderRecordingCard({ deferSystemStart: true });
     try {
       await panel.click(panel.currentButton());
       expect(panel.phase()).toBe("recording");
+      const stopButton = panel.document.querySelector('[data-testid="recording-stop"]');
+      expect(stopButton.disabled).toBe(true);
+      await React.act(async () => { stopButton.click(); });
+      expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
+      expect(panel.recorders[0].state).toBe("recording");
+      await React.act(async () => { panel.resolveSystemRecorderStart(); });
+      expect(stopButton.disabled).toBe(false);
+      await panel.click(stopButton);
+      expect(panel.recorders[0].state).toBe("inactive");
+      await panel.waitForPhase("saved");
+      expect(panel.ludone.finishRecording).toHaveBeenCalledOnce();
+    } finally {
+      if (panel.phase() === "recording") {
+        await React.act(async () => { panel.resolveSystemRecorderStart(); });
+        await stopRecording(panel);
+      }
+      await panel.cleanup();
+    }
+  });
+
+  it("při výpadku během startu ponechá i náhradní zastavení vypnuté do potvrzení rekordérů", async () => {
+    const panel = await renderRecordingCard({ deferSystemStart: true });
+    try {
       await panel.click(panel.currentButton());
+      await React.act(async () => {
+        panel.systemTrack.readyState = "ended";
+        panel.systemTrack.dispatchEvent(new panel.document.defaultView.Event("ended"));
+      });
+      const stopButton = panel.document.querySelector('[data-testid="degraded-recording-stop"]');
+      expect(stopButton.disabled).toBe(true);
+      await React.act(async () => { panel.resolveSystemRecorderStart(); });
+      expect(stopButton.disabled).toBe(false);
+      await panel.click(stopButton);
+      await panel.waitForPhase("saved");
+    } finally {
+      if (panel.phase() === "recording") {
+        await React.act(async () => { panel.resolveSystemRecorderStart(); });
+        await stopRecording(panel);
+      }
+      await panel.cleanup();
+    }
+  });
+
+  it("požadavek lišty na zastavení se během potvrzování druhé stopy neztratí", async () => {
+    const panel = await renderRecordingCard({ deferSystemStart: true });
+    try {
+      await panel.click(panel.currentButton());
+      expect(panel.phase()).toBe("recording");
+      await panel.setTrayCommand({ id: 1, name: "stop-recording" });
       expect(panel.ludone.finishRecording).not.toHaveBeenCalled();
       await React.act(async () => { panel.resolveSystemRecorderStart(); });
       await panel.waitForPhase("saved");
