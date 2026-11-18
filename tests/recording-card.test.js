@@ -2173,7 +2173,7 @@ it("nový stopform uloží firmu a private override atomicky; account default ne
 });
 
 it("K5 stopform při neověřené identitě skryje volbu, stejnému účtu vrátí draft a jinému načte jeho default", async () => {
-  const panel = await renderRecordingCard({ modernDecision: true, authBridge: true });
+  const panel = await renderRecordingCard({ modernDecision: true });
   const first = "11111111-1111-4111-8111-111111111111";
   const draft = "22222222-2222-4222-8222-222222222222";
   const second = "33333333-3333-4333-8333-333333333333";
@@ -2204,6 +2204,48 @@ it("K5 stopform při neověřené identitě skryje volbu, stejnému účtu vrát
     await panel.click(panel.document.querySelector('button[type="submit"]'));
     expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledWith(SESSION_ID,
       expect.objectContaining({ uploadPreferences: expect.objectContaining({ companyId: second }) }));
+  } finally { await panel.cleanup(); }
+});
+
+it.each(["chyba čtení", "neplatný e-mail"])("T4 %s nabídne opakování a zachová volbu jen stejnému účtu", async (failure) => {
+  const panel = await renderRecordingCard({ modernDecision: true });
+  const first = "11111111-1111-4111-8111-111111111111";
+  const draft = "22222222-2222-4222-8222-222222222222";
+  const second = "33333333-3333-4333-8333-333333333333";
+  let company = first;
+  panel.ludone.getUploadCompanyDefault = vi.fn(async () => ({ companyId: company, companyName: company === first ? "Alfa" : "Gama" }));
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: company === first
+    ? [{ id: first, name: "Alfa" }, { id: draft, name: "Beta" }] : [{ id: second, name: "Gama" }],
+    selectedCompanyId: company, offerToken: "offer-token-0000000000000001" }));
+  const failNextIdentity = () => {
+    if (failure === "chyba čtení") panel.ludone.getAuthIdentity.mockRejectedValueOnce(new Error("offline"));
+    else panel.ludone.getAuthIdentity.mockResolvedValueOnce({ email: "neplatný" });
+  };
+  try {
+    await startRecording(panel); await stopRecording(panel);
+    const select = panel.document.querySelector('[data-testid="recording-upload-company"]');
+    await React.act(async () => { select.value = draft; select.dispatchEvent(new panel.document.defaultView.Event("change", { bubbles: true })); });
+    failNextIdentity();
+    await panel.changeAccount({ email: "a@example.test" });
+    expect(panel.document.body.textContent).not.toContain("Ověřuji účet pro výběr cílové firmy");
+    const alert = [...panel.document.querySelectorAll('[role="alert"]')].find((element) => !element.closest("[hidden]"));
+    expect(alert.textContent).toMatch(/účet|identit/iu);
+    expect(alert.textContent).toMatch(failure === "chyba čtení" ? /Zkontroluj síť/u : /platný e-mail/u);
+    expect(panel.document.querySelector('[data-testid="recording-upload-preferences"]').closest("[hidden]")).not.toBeNull();
+    expect(panel.document.querySelector('button[type="submit"]').disabled).toBe(true);
+    await panel.click([...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Zkusit znovu")));
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(draft);
+    expect(panel.document.querySelector('button[type="submit"]').disabled).toBe(false);
+
+    failNextIdentity();
+    company = second;
+    panel.setAccountBinding("22222222-2222-4222-8222-222222222222");
+    await panel.changeAccount({ email: "b@example.test" });
+    expect(panel.document.querySelector('[data-testid="recording-upload-preferences"]').closest("[hidden]")).not.toBeNull();
+    await panel.click([...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Zkusit znovu")));
+    expect(panel.document.body.textContent).not.toContain("Beta");
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(second);
+    expect(panel.document.querySelector('button[type="submit"]').disabled).toBe(false);
   } finally { await panel.cleanup(); }
 });
 

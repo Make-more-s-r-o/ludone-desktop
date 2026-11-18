@@ -252,6 +252,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [pickerRefresh, setPickerRefresh] = useState(0);
   const [pickerOwner, setPickerOwner] = useState(null);
   const [verifiedUploadIdentity, setVerifiedUploadIdentity] = useState(null);
+  const [uploadIdentityError, setUploadIdentityError] = useState(null);
   const [copyExportNotice, setCopyExportNotice] = useState(null);
   const savedRecordingRef = useRef(savedRecording);
   savedRecordingRef.current = savedRecording;
@@ -271,15 +272,26 @@ export const RecordingCard = forwardRef(function RecordingCard({
     uploadIdentityVerified.current = false;
     setVerifiedUploadIdentity(null);
     setUploadPreferences(null);
-    if (!canSendRef.current || typeof window.ludone?.getAuthIdentity !== "function"
-      || typeof window.ludone?.getAuthOrigin !== "function") return;
+    setUploadIdentityError(null);
+    if (!canSendRef.current) {
+      setUploadIdentityError("Účet nelze ověřit. Obnov přihlášení.");
+      return;
+    }
+    if (typeof window.ludone?.getAuthIdentity !== "function" || typeof window.ludone?.getAuthOrigin !== "function") {
+      setUploadIdentityError("Ověření účtu není v této aplikaci dostupné.");
+      return;
+    }
     Promise.resolve().then(() => Promise.all([window.ludone.getAuthIdentity(), window.ludone.getAuthOrigin(),
       typeof window.ludone.getUploadCompanyIdentity === "function" ? window.ludone.getUploadCompanyIdentity() : null]))
       .then(([identity, origin, binding]) => {
         if (identityRequest.current !== request || !canSendRef.current) return;
         const email = typeof identity?.email === "string" ? identity.email.trim() : "";
-        if (!/^[^\s@]+@[^\s@]+$/u.test(email) || typeof origin !== "string" || !origin) {
-          lastUploadIdentity.current = null;
+        if (!/^[^\s@]+@[^\s@]+$/u.test(email)) {
+          setUploadIdentityError("Účet se nepodařilo ověřit: chybí platný e-mail.");
+          return;
+        }
+        if (typeof origin !== "string" || !origin) {
+          setUploadIdentityError("Účet se nepodařilo ověřit: chybí adresa prostředí.");
           return;
         }
         // Bez ověřeného subjectu nelze rozpracovanou volbu bezpečně převést přes změnu relace.
@@ -291,8 +303,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
         }
         uploadIdentityVerified.current = true;
         setVerifiedUploadIdentity(key);
-      }).catch(() => {
-        if (identityRequest.current === request) lastUploadIdentity.current = null;
+      }).catch((error) => {
+        if (identityRequest.current === request) setUploadIdentityError(`Účet se nepodařilo ověřit. ${uploadCompanyErrorMessage(error)}`);
       });
   }, []);
   useEffect(() => {
@@ -1063,7 +1075,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
               onChange={(value) => setUploadPreferences(value)} />
           </div>}
           {typeof window.ludone?.listUploadCompanies === "function" && (!canSend || !verifiedUploadIdentity)
-            && <p role="status">Ověřuji účet pro výběr cílové firmy.</p>}
+            && (uploadIdentityError ? <>
+              <p role="alert">{uploadIdentityError}</p>
+              <button type="button" className="button button--small" disabled={!canSend} onClick={refreshUploadIdentity}>Zkusit znovu</button>
+            </> : <p role="status">Ověřuji účet pro výběr cílové firmy.</p>)}
           <small id="recording-name-hint" className="recording-saved__hint">
             Nahrávka už je místně zachovaná. Odesílání začne jen tvou volbou.
           </small>

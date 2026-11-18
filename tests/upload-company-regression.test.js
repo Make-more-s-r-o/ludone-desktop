@@ -2,7 +2,10 @@ import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
-import { RecordingUploadPreferences, UploadCompanySelector, uploadCompanyErrorMessage } from "../src/components/UploadCompanySelector.jsx";
+const companyModule = /** @type {Promise<{
+ * RecordingUploadPreferences: React.ComponentType, UploadCompanySelector: React.ComponentType, uploadCompanyErrorMessage: (error: Error) => string,
+ * }>} */ (vi.importActual("../src/components/UploadCompanySelector.jsx"));
+const { RecordingUploadPreferences, UploadCompanySelector, uploadCompanyErrorMessage } = await companyModule;
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";

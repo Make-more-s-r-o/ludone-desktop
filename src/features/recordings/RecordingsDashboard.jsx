@@ -263,6 +263,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   const copyExportItems = useRef(view.items);
   copyExportItems.current = view.items;
   const loadGeneration = useRef(0);
+  const pendingConfiguration = useRef(null);
   const verificationGeneration = useRef(0);
   const previousAuthState = useRef(authState);
   const currentIdentity = identityKey(authIdentity) && typeof authOrigin === "string" && authOrigin
@@ -316,7 +317,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
               && result.identity && result.identity === identityRef.current
               && item.revision === result.revision && item.fileRevision === result.fileRevision;
           })));
-          setView({ state: "ready", ...snapshot, snapshotIdentity: requestIdentity, snapshotAuthEpoch: requestAuthEpoch, refreshing: false, message: "" });
+          setView({ state: "ready", ...snapshot, snapshotIdentity: requestIdentity, snapshotAuthEpoch: requestAuthEpoch,
+            snapshotGeneration: requestGeneration, refreshing: false, message: "" });
           if (openDetailIdRef.current && !snapshot.items.some((item) => item.id === openDetailIdRef.current)) {
             openDetailIdRef.current = null;
             setOpenDetailId(null);
@@ -339,6 +341,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
     return () => {
       active.current = false;
       copyExportLifecycle.current += 1;
+      pendingConfiguration.current?.resolve("identity_changed");
+      pendingConfiguration.current = null;
     };
   }, [load]);
 
@@ -370,6 +374,27 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       }
     }
   }, [authState, currentIdentity, load]);
+
+  useEffect(() => {
+    const pending = pendingConfiguration.current;
+    if (!pending || authState === "unknown") return;
+    let error = null;
+    if (authState !== "signed-in" || currentIdentity !== pending.identity) {
+      error = "identity_changed";
+    } else if (view.message && !view.refreshing) {
+      error = "snapshot_unavailable";
+    } else if (view.snapshotIdentity === pending.identity && view.snapshotAuthEpoch === renderAuth.current.epoch
+      && view.snapshotGeneration >= pending.snapshotGeneration) {
+      const saved = view.items.find((item) => item.id === pending.id);
+      if (saved?.ownership !== "current" || saved.fileRevision !== pending.fileRevision
+        || saved.uploadPreferences?.companyId !== pending.preferences.companyId
+        || saved.uploadPreferences?.visibility !== pending.preferences.visibility) error = "stale_snapshot";
+    } else {
+      return;
+    }
+    pendingConfiguration.current = null;
+    pending.resolve(error);
+  }, [authState, currentIdentity, view]);
 
   const verify = async (item) => {
     if (
@@ -463,15 +488,23 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       && authEpoch === renderAuth.current.epoch;
     setActingId(item.id);
     setPreferenceMessageById((current) => ({ ...current, [item.id]: "Ukládám volby…" }));
+    let writeConfirmed = false;
     try {
       const preferences = await freshRecordingUploadPreferences(choice);
       if (!isCurrent()) throw new Error("identity_changed");
       const result = await window.ludone.configureRecordingUpload({ id: item.id, queueRev: item.revision,
         fileRev: item.fileRevision, ...preferences });
       if (result?.configured !== true) throw new Error("not_configured");
-      if (!isCurrent()) throw new Error("identity_changed");
-      await load();
-      if (!isCurrent()) throw new Error("identity_changed");
+      writeConfirmed = true;
+      if (!active.current) return false;
+      const verifiedSnapshot = new Promise((resolve) => {
+        pendingConfiguration.current = { id: item.id, identity, fileRevision: item.fileRevision, preferences,
+          snapshotGeneration: loadGeneration.current + 1, resolve };
+      });
+      void load();
+      const verificationError = await verifiedSnapshot;
+      if (!active.current) return false;
+      if (verificationError) throw new Error(verificationError);
       setPreferenceFailedById((current) => ({ ...current, [item.id]: false }));
       setPreferencesById((current) => ({ ...current, [item.id]: { ...current[item.id], value: preferences, dirty: false,
         saveVersion: (current[item.id]?.saveVersion ?? 0) + 1 } }));
@@ -479,9 +512,12 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       if (detailId) await window.ludone.setDetailDirty(false);
       return true;
     } catch (error) {
+      if (!active.current) return false;
       setPreferenceFailedById((current) => ({ ...current, [item.id]: true }));
-      if (authRef.current !== "unknown") await load();
-      setPreferenceMessageById((current) => ({ ...current, [item.id]: `Volby se nepodařilo uložit. ${uploadCompanyErrorMessage(error)} Ověř volby a ulož je znovu.` }));
+      if (!writeConfirmed && authRef.current !== "unknown") await load();
+      setPreferenceMessageById((current) => ({ ...current, [item.id]: writeConfirmed
+        ? `Uložení bylo potvrzeno, ale výsledek nelze ověřit. ${uploadCompanyErrorMessage(error)} Ověř volby znovu.`
+        : `Volby se nepodařilo uložit. ${uploadCompanyErrorMessage(error)} Ověř volby a ulož je znovu.` }));
       return false;
     } finally { if (active.current) setActingId(null); }
   };
@@ -794,7 +830,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                       )}
                     {openDetailId === item.id && (verifiedEditorOwner || retainedEditor) && !item.recordingInProgress
                       && typeof window.ludone?.configureRecordingUpload === "function" && (
-                        <div hidden={!verifiedEditorOwner}><RecordingUploadPreferences key={item.id}
+                        <div hidden={!verifiedEditorOwner} style={!verifiedEditorOwner ? { display: "block", visibility: "hidden" } : undefined}><RecordingUploadPreferences key={item.id}
                           initialValue={snapshotItem.uploadPreferences} identityKey={currentIdentity} surface="detail"
                           saveVersion={preferencesById[item.id]?.saveVersion ?? 0}
                           locked={item.uploadPreferencesLocked} disabled={!verifiedEditorOwner} busy={actingId !== null}

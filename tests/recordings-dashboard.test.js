@@ -12,8 +12,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { RecordingsDashboard } from "../src/features/recordings/RecordingsDashboard.jsx";
 // @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
 import { RecordingDayPreview } from "../src/features/recordings/RecordingDayPreview.jsx";
-import { OsaShell } from "../src/components/osa/OsaShell.jsx";
-import { SettingsApp } from "../src/components/Settings.jsx";
+const osaShellModule = /** @type {Promise<{ OsaShell: React.ComponentType<{ page: string, children?: React.ReactNode }> }>} */
+  (vi.importActual("../src/components/osa/OsaShell.jsx"));
+const settingsModule = /** @type {Promise<{ SettingsApp: React.ComponentType }>} */
+  (vi.importActual("../src/components/Settings.jsx"));
+const { OsaShell } = await osaShellModule;
+const { SettingsApp } = await settingsModule;
 
 const ID = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
 const REVISION = `sha256:${"a".repeat(64)}`;
@@ -52,6 +56,7 @@ function deferred() {
  *   authState?: string,
  *   claimRecording?: (...args: any[]) => Promise<any>,
  *   deleteRecording?: (...args: any[]) => Promise<any>,
+ *   detailId?: string|null,
  *   exportRecordingCopy?: (...args: any[]) => Promise<any>,
  *   listQueue?: () => Promise<any[]>,
  *   listLocalRecordings?: () => Promise<any>,
@@ -1084,6 +1089,151 @@ it("K9 detail hlásí skutečnou editaci a při obnově zachová scroll produkč
     expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("company");
     expect(ludone.setDetailDirty).not.toHaveBeenCalled();
   } finally { await React.act(async () => root.unmount()); dom.window.close(); }
+});
+
+async function renderFocusDetail() {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  let item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId, companyName: "Beta", visibility: "private" }, allowedActions: { send: true } };
+  const dom = new JSDOM('<div id="root"></div>', { url: `https://ludone.test/?recordingId=${ID}#settings` });
+  const style = dom.window.document.createElement("style");
+  style.textContent = readFileSync(new URL("../src/osa.css", import.meta.url), "utf8");
+  dom.window.document.head.append(style);
+  const ludone = {
+    getAuthSessionState: vi.fn(async () => "valid"),
+    getAuthIdentity: vi.fn(async () => ({ email: "test@ludone.cz", name: "Test" })),
+    getAuthOrigin: vi.fn(async () => "https://ludone.test"),
+    listLocalRecordings: vi.fn(async () => ({ items: [item], unreadableCount: 0 })),
+    listUploadCompanies: vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
+      selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" })),
+    configureRecordingUpload: vi.fn(async ({ visibility }) => {
+      item = { ...item, revision: `sha256:${"b".repeat(64)}`,
+        uploadPreferences: { ...item.uploadPreferences, visibility } };
+      return { configured: true };
+    }),
+    setDetailDirty: vi.fn(async () => {}),
+    sendRecording: vi.fn(async () => ({ outcome: "queued" })),
+  };
+  Object.defineProperty(dom.window, "ludone", { value: ludone });
+  for (const [key, value] of Object.entries({ window: dom.window, document: dom.window.document,
+    Node: dom.window.Node, HTMLElement: dom.window.HTMLElement, React, IS_REACT_ACT_ENVIRONMENT: true })) vi.stubGlobal(key, value);
+  const root = createRoot(dom.window.document.querySelector("#root"));
+  await React.act(async () => root.render(React.createElement(OsaShell, { page: "detail" }, React.createElement(SettingsApp))));
+  await vi.waitFor(() => expect(dom.window.document.querySelector('[data-testid="recording-upload-visibility"]')).not.toBeNull());
+  return {
+    document: dom.window.document,
+    ludone,
+    snapshot: () => ({ items: [item], unreadableCount: 0 }),
+    async focus() { await React.act(async () => dom.window.dispatchEvent(new dom.window.Event("focus"))); },
+    async cleanup() { await React.act(async () => root.unmount()); dom.window.close(); },
+  };
+}
+
+it("T2 focus během ověřování a čekání na snímek zachová místo editoru i scroll bez dirty", async () => {
+  const panel = await renderFocusDetail();
+  const identity = deferred();
+  const snapshot = deferred();
+  panel.ludone.getAuthIdentity.mockImplementationOnce(() => identity.promise);
+  panel.ludone.listLocalRecordings.mockImplementationOnce(() => snapshot.promise);
+  try {
+    const scroller = panel.document.querySelector(".osa-workspace");
+    const editor = panel.document.querySelector('[data-testid="recording-upload-preferences"]').parentElement;
+    const previousLoads = panel.ludone.listLocalRecordings.mock.calls.length;
+    scroller.scrollTop = 240;
+    panel.ludone.setDetailDirty.mockClear();
+    await panel.focus();
+    expect(panel.document.defaultView.getComputedStyle(editor).display).not.toBe("none");
+    expect(panel.document.defaultView.getComputedStyle(editor).visibility).toBe("hidden");
+    expect(scroller.scrollTop).toBe(240);
+    await React.act(async () => identity.resolve({ email: "test@ludone.cz", name: "Test" }));
+    expect(panel.ludone.listLocalRecordings).toHaveBeenCalledTimes(previousLoads + 1);
+    expect(panel.document.defaultView.getComputedStyle(editor).display).not.toBe("none");
+    expect(scroller.scrollTop).toBe(240);
+    expect(panel.ludone.setDetailDirty).not.toHaveBeenCalled();
+    await React.act(async () => snapshot.resolve(panel.snapshot()));
+    expect(panel.document.defaultView.getComputedStyle(editor).visibility).toBe("visible");
+    expect(scroller.scrollTop).toBe(240);
+    expect(panel.ludone.setDetailDirty).not.toHaveBeenCalled();
+  } finally {
+    await React.act(async () => { identity.resolve({ email: "test@ludone.cz" }); snapshot.resolve(panel.snapshot()); });
+    await panel.cleanup();
+  }
+});
+
+it("T3 potvrzené uložení po focusu počká na nový snímek téhož účtu", async () => {
+  const panel = await renderFocusDetail();
+  const identity = deferred();
+  const snapshot = deferred();
+  try {
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    expect(panel.ludone.setDetailDirty).toHaveBeenCalledWith(true);
+    panel.ludone.listLocalRecordings.mockImplementationOnce(() => snapshot.promise);
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.ludone.configureRecordingUpload).toHaveBeenCalledOnce();
+    panel.ludone.getAuthIdentity.mockImplementationOnce(() => identity.promise);
+    await panel.focus();
+    await React.act(async () => snapshot.resolve(panel.snapshot()));
+    expect(panel.document.body.textContent).not.toContain("Volby se nepodařilo uložit");
+    await React.act(async () => identity.resolve({ email: "test@ludone.cz", name: "Test" }));
+    await vi.waitFor(() => expect(panel.document.body.textContent).toContain("Volby jsou uložené"));
+    expect(panel.document.body.textContent).not.toContain("Volby se nepodařilo uložit");
+    expect(panel.document.querySelector(".recording-action--send").disabled).toBe(false);
+    expect(panel.ludone.setDetailDirty).toHaveBeenLastCalledWith(false);
+  } finally {
+    await React.act(async () => { identity.resolve({ email: "test@ludone.cz" }); snapshot.resolve(panel.snapshot()); });
+    await panel.cleanup();
+  }
+});
+
+it("T3 potvrzený zápis neoznačí za ověřený pod jiným účtem", async () => {
+  const panel = await renderFocusDetail();
+  const snapshot = deferred();
+  try {
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    panel.ludone.listLocalRecordings.mockImplementationOnce(() => snapshot.promise);
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.ludone.configureRecordingUpload).toHaveBeenCalledOnce();
+    panel.ludone.getAuthIdentity.mockResolvedValueOnce({ email: "jiny@ludone.cz", name: "Jiný" });
+    await panel.focus();
+    await React.act(async () => snapshot.resolve(panel.snapshot()));
+    expect(panel.ludone.setDetailDirty).not.toHaveBeenCalledWith(false);
+    expect(panel.document.body.textContent).not.toContain("Volby jsou uložené");
+    expect(panel.document.querySelector(".recording-action--send")?.disabled ?? true).toBe(true);
+  } finally {
+    await React.act(async () => snapshot.resolve(panel.snapshot()));
+    await panel.cleanup();
+  }
+});
+
+it("T3 změna voleb po potvrzeném zápisu neodblokuje odeslání", async () => {
+  const panel = await renderFocusDetail();
+  try {
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    panel.ludone.listLocalRecordings.mockImplementationOnce(async () => {
+      const snapshot = panel.snapshot();
+      return { ...snapshot, items: snapshot.items.map((item) => ({ ...item,
+        uploadPreferences: { ...item.uploadPreferences, visibility: "private" } })) };
+    });
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.ludone.configureRecordingUpload).toHaveBeenCalledOnce();
+    expect(panel.ludone.setDetailDirty).not.toHaveBeenCalledWith(false);
+    expect(panel.document.body.textContent).toContain("Uložení bylo potvrzeno, ale výsledek nelze ověřit");
+    expect(panel.document.querySelector(".recording-action--send").disabled).toBe(true);
+  } finally { await panel.cleanup(); }
+});
+
+it("T3 chyba snímku po potvrzeném zápisu nehlásí neúspěšné uložení", async () => {
+  const panel = await renderFocusDetail();
+  try {
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    panel.ludone.listLocalRecordings.mockRejectedValueOnce(new Error("disk"));
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.ludone.configureRecordingUpload).toHaveBeenCalledOnce();
+    expect(panel.document.body.textContent).toContain("Uložení bylo potvrzeno, ale výsledek nelze ověřit");
+    expect(panel.document.body.textContent).not.toContain("Volby se nepodařilo uložit");
+    expect(panel.ludone.setDetailDirty).not.toHaveBeenCalledWith(false);
+    expect(panel.document.querySelector(".recording-action--send").disabled).toBe(true);
+  } finally { await panel.cleanup(); }
 });
 
 it("dočasně neznámé přihlášení neshodí editor ani volbu při návratu stejného účtu", async () => {

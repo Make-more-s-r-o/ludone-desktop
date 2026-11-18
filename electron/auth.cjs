@@ -339,6 +339,24 @@ async function registerPublicClient(fetchImpl, endpoint, redirectUri, scope) {
   return requiredString(registration.client_id, "client_id");
 }
 
+/**
+ * @typedef {{
+ *   v: number,
+ *   issuer: string,
+ *   clientId: string,
+ *   resource: string,
+ *   scope: string,
+ *   accessToken: string,
+ *   refreshToken: string|null,
+ *   tokenType: string,
+ *   accessExpiresAt: number|null,
+ *   identity: { email: string|null, name: string|null },
+ *   userinfoSubject?: string,
+ *   companyTabidooId?: string,
+ *   companyTabidooName?: string,
+ * }} AuthSession
+ */
+
 function normalizeIdentity(value) {
   const identity = value?.user ?? value?.identity ?? value?.account ?? value;
   const rawEmail = identity?.email;
@@ -1371,6 +1389,7 @@ function createAuthController(options) {
             );
             const expiresIn = Number(tokenResponse.expires_in);
 
+            /** @type {AuthSession} */
             const encryptedSession = {
               v: 1,
               issuer,
@@ -1647,7 +1666,7 @@ const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
  * a zápis se zahodí, jakmile neodpovídá tomu, co volající viděl — stejná opatrnost,
  * jakou má obnova tokenu.
  *
- * @returns {Promise<object|null>} aktualizovaná relace, nebo `null`, když se neuložila
+ * @returns {Promise<AuthSession|null>} aktualizovaná relace, nebo `null`, když se neuložila
  */
 function updateStoredAuthSessionCompany({
   app,
