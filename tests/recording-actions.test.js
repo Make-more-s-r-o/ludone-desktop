@@ -183,6 +183,131 @@ describe("bezpečné lokální akce nahrávky", () => {
     expect(await readFile(masterPath, "utf8")).toBe("stereo-master");
     expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
   });
+
+  it("po dokončení převodu před zápisem do fronty smaže ověřený ready sidecar i všechny soubory", async () => {
+    const value = await fixture();
+    const recordingsDirectory = path.dirname(value.audioPath);
+    const masterPath = path.join(recordingsDirectory, "porada-stereo-master.webm");
+    await writeFile(masterPath, "stereo-master");
+    const pending = await createLivePendingDelivery({
+      captureSources: "microphone", clientRecordingId: value.id,
+      startedAt: value.manifest.tracks.microphone.startedAt,
+      endedAt: value.manifest.tracks.microphone.endedAt,
+      manifestPath: value.manifestPath, masterPath, recordingsDirectory,
+    });
+    await value.store.setRecordingDelivery(value.id, pending);
+    const deliveryBytes = Buffer.from("dokončený stereo převod");
+    const ready = await ensureMeetingAudioReady({
+      attempts: 0, clientRecordingId: value.id, delivery: pending,
+      manifestPath: value.manifestPath, server: {}, state: "ceka",
+      tracks: { microphone: value.audioPath },
+    }, {
+      prepareStereoWebm: async ({ outputPath }) => {
+        await writeFile(outputPath, deliveryBytes);
+        return { outputPath, size: deliveryBytes.length, mime: "audio/webm", channels: 2,
+          encoderVersion: "test-delete" };
+      },
+      recordingsDirectory,
+    });
+    const row = (await value.store.listLocalRecordings()).items.find((item) => item.id === value.id);
+    await expect(value.store.revealRecording({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      guard: async () => true,
+    })).rejects.toThrow(/sidecar nesouhlasí s frontou/u);
+    const secondManifestPath = path.join(recordingsDirectory, "druha.manifest.json");
+    await writeFile(secondManifestPath, JSON.stringify({
+      ...value.manifest,
+      clientRecordingId: "22222222-2222-4222-8222-222222222222",
+      tracks: { microphone: { ...value.manifest.tracks.microphone,
+        fileName: path.basename(ready.filePath), sizeBytes: deliveryBytes.length,
+        sha256: createHash("sha256").update(deliveryBytes).digest("hex") } },
+    }));
+    const sharedTrash = vi.fn();
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      guard: async () => true,
+      trashItem: sharedTrash,
+    })).rejects.toThrow(/jiný primární manifest/u);
+    expect(sharedTrash).not.toHaveBeenCalled();
+    await rm(secondManifestPath);
+    await writeFile(ready.filePath, "cizí změněný obsah");
+    const unsafeTrash = vi.fn();
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      guard: async () => true,
+      trashItem: unsafeTrash,
+    })).rejects.toThrow(/Stereo WebM se změnil/u);
+    expect(unsafeTrash).not.toHaveBeenCalled();
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
+    await writeFile(ready.filePath, deliveryBytes);
+    const trashed = [];
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: row.revision,
+      expectedFileRevision: row.fileRevision,
+      guard: async () => true,
+      trashItem: async (file) => { trashed.push(path.basename(file)); await rm(file); },
+    })).resolves.toEqual({ outcome: "deleted" });
+    expect(trashed.sort()).toEqual([
+      path.basename(value.audioPath), path.basename(masterPath), path.basename(ready.filePath),
+      path.basename(ready.sidecarPath), path.basename(value.manifestPath),
+    ].sort());
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(0);
+  });
+
+  it("neodstraní záznam, dokud v adresáři zůstávají soukromé dočasné soubory převodu", async () => {
+    const value = await fixture();
+    const temporaryDirectory = path.join(path.dirname(value.audioPath), ".media-encoder-test");
+    await mkdir(temporaryDirectory);
+    await writeFile(path.join(temporaryDirectory, "cast.webm"), "soukromá data");
+    const trashItem = vi.fn();
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: value.row.revision,
+      expectedFileRevision: value.row.fileRevision,
+      guard: async () => true,
+      trashItem,
+    })).rejects.toThrow(/dočasné soubory převodu/iu);
+    expect(trashItem).not.toHaveBeenCalled();
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
+    await expect(readFile(path.join(temporaryDirectory, "cast.webm"), "utf8"))
+      .resolves.toBe("soukromá data");
+  });
+
+  it("selhaný úklid dočasných souborů nepovažuje za dokončené stereo delivery", async () => {
+    const value = await fixture();
+    const recordingsDirectory = path.dirname(value.audioPath);
+    const masterPath = path.join(recordingsDirectory, "porada-stereo-master.webm");
+    await writeFile(masterPath, "stereo-master");
+    const pending = await createLivePendingDelivery({
+      captureSources: "microphone", clientRecordingId: value.id,
+      startedAt: value.manifest.tracks.microphone.startedAt,
+      endedAt: value.manifest.tracks.microphone.endedAt,
+      manifestPath: value.manifestPath, masterPath, recordingsDirectory,
+    });
+    const bytes = Buffer.from("stereo");
+    await expect(ensureMeetingAudioReady({
+      attempts: 0, clientRecordingId: value.id, delivery: pending,
+      manifestPath: value.manifestPath, server: {}, state: "ceka",
+      tracks: { microphone: value.audioPath },
+    }, {
+      prepareStereoWebm: async ({ outputPath }) => {
+        await writeFile(outputPath, bytes);
+        return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
+          encoderVersion: "test-delete", cleanupWarning: "temporary_cleanup_failed" };
+      },
+      recordingsDirectory,
+    })).rejects.toMatchObject({ code: "delivery_cleanup_failed" });
+    expect(JSON.parse(await readFile(pending.sidecarPath, "utf8")).state).toBe("pending");
+    await expect(readFile(masterPath, "utf8")).resolves.toBe("stereo-master");
+  });
+
   it("přesune audio, známý sidecar a manifest poslední a teprve pak odstraní queue řádek", async () => {
     const value = await fixture({ sidecar: true });
     const canonicalRoot = await realpath(path.dirname(value.audioPath));
@@ -368,7 +493,7 @@ describe("bezpečné lokální akce nahrávky", () => {
       expectedFileRevision: value.row.fileRevision,
       guard,
       trashItem,
-    })).resolves.toEqual({ outcome: "partial_failure" });
+    })).resolves.toEqual({ outcome: "partial_failure", reason: "guard_changed" });
     expect(trashItem).not.toHaveBeenCalled();
     expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
   });
@@ -385,7 +510,24 @@ describe("bezpečné lokální akce nahrávky", () => {
       expectedFileRevision: value.row.fileRevision,
       guard: async () => true,
       trashItem,
-    })).resolves.toEqual({ outcome: "partial_failure" });
+    })).resolves.toEqual({ outcome: "partial_failure", reason: "trash_failed" });
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
+    await expect(readFile(value.manifestPath, "utf8")).resolves.toContain(value.id);
+  });
+
+  it("změnu souboru během přesunu vrátí jako konkrétní důvod částečného selhání", async () => {
+    const value = await fixture({ sidecar: true });
+    const trashItem = vi.fn(async () => {
+      await writeFile(value.sidecarPath, "změněný sidecar");
+    });
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: value.row.revision,
+      expectedFileRevision: value.row.fileRevision,
+      guard: async () => true,
+      trashItem,
+    })).resolves.toEqual({ outcome: "partial_failure", reason: "file_changed" });
+    expect(trashItem).toHaveBeenCalledTimes(1);
     expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
     await expect(readFile(value.manifestPath, "utf8")).resolves.toContain(value.id);
   });

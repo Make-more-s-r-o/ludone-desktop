@@ -443,13 +443,14 @@ async function createLivePendingDelivery({
  * @param {{prepareStereoWebm?: Function, onDescriptorPrepared?: Function, encoderOptions?: {
  *   isPackaged?: boolean, resourcesPath?: string, projectRoot?: string,
  *   arch?: string, platform?: string
- * }, recordingsDirectory: string}} options
+ * }, recordingsDirectory: string, signal?: AbortSignal}} options
  */
 async function ensureMeetingAudioReady(item, {
   prepareStereoWebm,
   encoderOptions = {},
   onDescriptorPrepared,
   recordingsDirectory,
+  signal,
 }) {
   if (typeof recordingsDirectory !== "string") throw new TypeError("recordingsDirectory je povinný");
   const primaryPath = directChild(
@@ -603,7 +604,16 @@ async function ensureMeetingAudioReady(item, {
     systemWebmPath: item.tracks?.system,
     timing: descriptor.timing,
     outputPath: descriptor.filePath,
+    signal,
   });
+  if (typeof converted?.cleanupWarning === "string"
+    && converted.cleanupWarning.split(",").includes("temporary_cleanup_failed")) {
+    throw new MeetingAudioError(
+      "delivery_cleanup_failed",
+      "Dočasné soubory převodu zůstaly na disku; nahrávku nelze bezpečně dokončit",
+      "permanent",
+    );
+  }
   const identity = await fileIdentity(descriptor.filePath);
   if (converted?.outputPath !== descriptor.filePath
     || converted?.mime !== "audio/webm"
@@ -624,7 +634,7 @@ async function ensureMeetingAudioReady(item, {
   return ready;
 }
 
-async function verifyMeetingAudioForDeletion(item, recordingsDirectory) {
+async function verifyMeetingAudioForDeletion(item, recordingsDirectory, { allowCompletedPending = false } = {}) {
   if (!item?.delivery) return [];
   const descriptor = validateDescriptor(item.delivery, recordingsDirectory);
   const primaryPath = directChild(
@@ -643,9 +653,14 @@ async function verifyMeetingAudioForDeletion(item, recordingsDirectory) {
   ) throw new MeetingAudioError("delivery_identity_mismatch", "Delivery nepatří mazané nahrávce", "permanent");
   await manifestForLegacy(item, recordingsDirectory);
   const sidecar = await readSidecar(descriptor.sidecarPath, recordingsDirectory);
-  if (!sameDescriptorIdentity(descriptor, sidecar) || sidecar.state !== descriptor.state
-    || sidecar.sizeBytes !== descriptor.sizeBytes || sidecar.sha256 !== descriptor.sha256
-    || sidecar.encoderVersion !== descriptor.encoderVersion) {
+  // Převod mohl dokončit sidecar těsně před zrušením exportu, kdy fronta ještě
+  // obsahovala pending. Identitu cíle ověříme stejně přísně jako u ready.
+  const completedAfterPending = allowCompletedPending && descriptor.state === "pending" && sidecar.state === "ready"
+    && !hasDeliveryUploadEvidence(item);
+  if (!sameDescriptorIdentity(descriptor, sidecar) || (!completedAfterPending && (
+    sidecar.state !== descriptor.state || sidecar.sizeBytes !== descriptor.sizeBytes
+    || sidecar.sha256 !== descriptor.sha256 || sidecar.encoderVersion !== descriptor.encoderVersion
+  ))) {
     throw new MeetingAudioError("delivery_identity_mismatch", "Delivery sidecar nesouhlasí s frontou", "permanent");
   }
   if (descriptor.masterPath !== null) {
@@ -654,9 +669,10 @@ async function verifyMeetingAudioForDeletion(item, recordingsDirectory) {
       throw new MeetingAudioError("delivery_source_changed", "Stereo master se změnil", "permanent");
     }
   }
-  if (descriptor.state === "ready") {
+  const deletionDelivery = completedAfterPending ? sidecar : descriptor;
+  if (deletionDelivery.state === "ready") {
     const delivery = await fileIdentity(descriptor.filePath);
-    if (delivery.sizeBytes !== descriptor.sizeBytes || delivery.sha256 !== descriptor.sha256) {
+    if (delivery.sizeBytes !== deletionDelivery.sizeBytes || delivery.sha256 !== deletionDelivery.sha256) {
       throw new MeetingAudioError("delivery_identity_mismatch", "Stereo WebM se změnil", "permanent");
     }
   } else {
@@ -675,7 +691,7 @@ async function verifyMeetingAudioForDeletion(item, recordingsDirectory) {
   }
   return [
     ...(descriptor.masterPath === null ? [] : [descriptor.masterPath]),
-    ...(descriptor.state === "ready" ? [descriptor.filePath] : []),
+    ...(deletionDelivery.state === "ready" ? [descriptor.filePath] : []),
     descriptor.sidecarPath,
   ];
 }

@@ -3213,7 +3213,7 @@ async function resolveRecordingUploadPreferences(event, preferences, roles, comm
   });
 }
 
-async function prepareCompletedRecordingDelivery(exportStage, clientRecordingId, guard = undefined) {
+async function prepareCompletedRecordingDelivery(exportStage, clientRecordingId, guard = undefined, signal = undefined) {
   const manifest = JSON.parse(await fs.promises.readFile(exportStage.manifestPath, "utf8"));
   if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
   if (manifest.clientRecordingId !== clientRecordingId) {
@@ -3241,6 +3241,7 @@ async function prepareCompletedRecordingDelivery(exportStage, clientRecordingId,
       projectRoot: path.resolve(__dirname, ".."),
     },
     recordingsDirectory: path.join(app.getPath("userData"), "nahravky"),
+    signal,
   });
   if (guard && await guard() !== true) throw new Error("Export kopie byl zrušen");
   exportStage.delivery = delivery;
@@ -3292,14 +3293,19 @@ async function exportCompletedRecordingCopy(event, clientRecordingId, options) {
     );
     if (!ready.ok) return ready;
     if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
-    const { delivery, manifest } = await awaitRecordingCopyOperation(
-      prepareCompletedRecordingDelivery(
-        exportStage,
-        clientRecordingId,
-        () => recordingCopyOperationIsCurrent(operation),
-      ),
-      operation,
+    const preparation = prepareCompletedRecordingDelivery(
+      exportStage,
+      clientRecordingId,
+      () => recordingCopyOperationIsCurrent(operation),
+      operation.controller.signal,
     );
+    exportStage.deliveryPreparationPromise = preparation;
+    void preparation.then(() => {
+      if (exportStage.deliveryPreparationPromise === preparation) exportStage.deliveryPreparationPromise = null;
+    }, () => {
+      if (exportStage.deliveryPreparationPromise === preparation) exportStage.deliveryPreparationPromise = null;
+    });
+    const { delivery, manifest } = await awaitRecordingCopyOperation(preparation, operation);
     if (!recordingCopyOperationIsCurrent(operation)) throw recordingCopyAbortError(operation);
     exportStage.exportInFlight = false;
     claimedInternalDelivery = false;
@@ -3939,7 +3945,13 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
   const snapshot = await (await getOutboundQueueStore()).listLocalRecordings(null);
   const row = snapshot.items.find((item) => item.id === payload.id
     && item.revision === payload.queueRev && item.fileRevision === payload.fileRev);
-  if (!row || row.allowedActions?.delete !== true) throw new Error("Nahrávku už nelze smazat");
+  if (!row || row.allowedActions?.delete !== true) {
+    const current = snapshot.items.find((item) => item.id === payload.id);
+    if (current?.state === "odesila") throw new Error("Nahrávka se právě odesílá");
+    if (current?.uploadLocked) throw new Error("Odesílání už začalo; nahrávku nelze smazat");
+    if (current?.localState === "invalid-manifest") throw new Error("Manifest nahrávky nelze bezpečně přečíst");
+    throw new Error("Nahrávka se změnila nebo už není v přehledu dostupná; obnov přehled");
+  }
   const response = await dialog.showMessageBox(event.sender === panelWindow?.webContents ? panelWindow : settingsWindow, {
     type: "warning",
     title: "Přesunout nahrávku do koše?",
@@ -3953,15 +3965,29 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
     buttons: ["Zrušit", "Přesunout do koše"], cancelId: 0, defaultId: 0, noLink: true,
   });
   if (response.response !== 1) return { outcome: "cancelled" };
-  cancelRecordingCopyOperations("trash-confirmed", { clientRecordingId: payload.id });
   const deletingStage = recordingExportStages.get(payload.id) ?? null;
-  if (!recordingFileActionGuard(event, deletingStage) || deletingStage?.deleteInFlight) {
+  if (deletingStage?.deleteInFlight) {
     throw new Error("Akci už nelze bezpečně potvrdit");
   }
   // Výjimka patří pouze potvrzenému GUID. Fáze zůstává evidovaná až do
   // úspěchu koše; při chybě lze rozhodnutí opakovat bez odemčení exportu.
   if (deletingStage) deletingStage.deleteInFlight = true;
   try {
+    cancelRecordingCopyOperations("trash-confirmed", { clientRecordingId: payload.id });
+    // Zrušení čekání na export samo neukončuje encoder. Před košem počkáme i na
+    // skutečné dokončení jeho práce a znovu ověříme původní guard a revize.
+    if (deletingStage?.deliveryPreparationPromise) {
+      try {
+        await deletingStage.deliveryPreparationPromise;
+      } catch (error) {
+        if (error?.code !== "MEDIA_ENCODER_ABORTED" && error?.message !== "Export kopie byl zrušen") {
+          throw new Error("Převod nahrávky se nepodařilo bezpečně ukončit; zkontroluj přehled a zkus to znovu");
+        }
+      }
+    }
+    if (!recordingFileActionGuard(event, deletingStage)) {
+      throw new Error("Akci už nelze bezpečně potvrdit");
+    }
     const result = await (await getOutboundQueueStore()).deleteRecording({
       clientRecordingId: payload.id,
       expectedRevision: payload.queueRev,

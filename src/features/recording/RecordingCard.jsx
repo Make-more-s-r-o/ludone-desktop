@@ -26,6 +26,7 @@ import {
 } from "./recording-copy.js";
 import { recorderEventTimestamp } from "./recorder-timestamp.js";
 import { watchSystemAudioTrack } from "./system-audio-health.js";
+import { recordingDeletionFailureMessage } from "./deletion-message.js";
 
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
 const RECORDING_TIMESLICE_MS = 1_000;
@@ -613,20 +614,26 @@ export const RecordingCard = forwardRef(function RecordingCard({
     try {
       const snapshot = await window.ludone.listLocalRecordings();
       const item = snapshot?.items?.find((candidate) => candidate.id === savedRecording.clientRecordingId);
-      if (!item?.allowedActions?.delete || item.uploadLocked || !item.fileRevision) {
-        throw new Error("Odesílání už začalo nebo stav nahrávky nelze ověřit; smazání není dostupné.");
+      if (item?.uploadLocked) throw new Error("Odesílání už začalo; nahrávku nelze smazat");
+      if (item?.state === "odesila") throw new Error("Nahrávka se právě odesílá");
+      if (!item?.allowedActions?.delete || !item.fileRevision) {
+        throw new Error("Stav nahrávky nelze ověřit; smazání není dostupné");
       }
       const result = await window.ludone.deleteRecording({
         id: item.id, queueRev: item.revision, fileRev: item.fileRevision,
       });
-      if (result?.outcome !== "deleted") throw new Error("Nahrávku se nepodařilo smazat.");
+      if (result?.outcome === "cancelled") return;
+      if (result?.outcome !== "deleted") {
+        setExportError(recordingDeletionFailureMessage(result));
+        return;
+      }
       setSavedRecording(null);
       setPickerInitial(null);
       setUploadPreferences(null);
       setDeleteConfirm(false);
       setNotice({ type: "success", text: "Nahrávka byla smazána z tohoto Macu." });
     } catch (error) {
-      setExportError(describeError(error));
+      setExportError(recordingDeletionFailureMessage(error));
     } finally {
       setDeleting(false);
     }
@@ -1094,7 +1101,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
           )}
           {deleteConfirm && (
             <div role="alertdialog" aria-label="Potvrdit smazání">
-              <p>Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.</p>
+              <p>Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vrátit.</p>
               <button type="button" className="button button--small recording-action--delete"
                 data-testid="confirm-delete-recording" disabled={deleting} onClick={() => void deleteStoppedRecording()}>Smazat nahrávku</button>
               <button type="button" className="button button--small" disabled={deleting}

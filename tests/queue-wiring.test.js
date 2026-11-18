@@ -539,6 +539,7 @@ function fakeElectron(userDataPath, {
  *   deferSettingsRead?: boolean,
  *   env?: Record<string, string | undefined>,
  *   exportRecordingCopy?: (...args: any[]) => Promise<any>,
+ *   prepareStereoWebm?: (...args: any[]) => Promise<any>,
  *   isPackaged?: boolean,
  *   loginItemState?: {openAtLogin: boolean},
  *   loadQueue?: (...args: any[]) => Promise<any>,
@@ -571,6 +572,7 @@ async function loadMain({
   deferSettingsRead = false,
   env = {},
   exportRecordingCopy,
+  prepareStereoWebm,
   gotSingleInstanceLock = true,
   isPackaged = false,
   loginItemState,
@@ -687,7 +689,7 @@ async function loadMain({
           }
           return meetingAudio.ensureMeetingAudioReady(item, {
             ...options,
-            prepareStereoWebm: async ({ outputPath }) => {
+            prepareStereoWebm: prepareStereoWebm ?? (async ({ outputPath }) => {
             const bytes = stereoWebmBytes();
             await writeFile(outputPath, bytes);
             return {
@@ -700,7 +702,7 @@ async function loadMain({
               source: item.delivery?.source ?? "separate-tracks",
               encoderVersion: "queue-wiring-test",
             };
-            },
+            }),
           });
         },
       };
@@ -5858,6 +5860,111 @@ describe("produkční zapojení odchozí fronty", () => {
     await expect(harness.ipcHandlers.get("recording:export")(event, sessionId, {
       recordingName: "Smazaná", openUploadPage: false,
     })).rejects.toThrow();
+  });
+
+  it("potvrzený koš počká na zrušení běžícího stereo převodu a nenechá soukromý soubor", async () => {
+    const gate = createTestBarrier();
+    let reportStarted;
+    /** @type {Promise<AbortSignal | undefined>} */
+    const started = new Promise((resolve) => { reportStarted = resolve; });
+    let reportSettled;
+    const settled = new Promise((resolve) => { reportSettled = resolve; });
+    const prepareStereoWebm = vi.fn(async ({ outputPath, signal }) => {
+      try {
+        reportStarted(signal);
+        await gate.promise;
+        if (!signal || signal.aborted) throw Object.assign(new Error("Převod byl zrušen"), {
+          code: "MEDIA_ENCODER_ABORTED",
+        });
+        const bytes = stereoWebmBytes();
+        await writeFile(outputPath, bytes);
+        return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
+          encoderVersion: "queue-wiring-test" };
+      } finally { reportSettled(); }
+    });
+    const harness = await loadMain({ prepareStereoWebm });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const exporting = harness.ipcHandlers.get("recording:export-copy")(
+      event, sessionId, { recordingName: "Kopie" },
+    );
+    let deletion;
+    try {
+      const signal = await started;
+      const list = harness.ipcHandlers.get("recordings:list-local");
+      const row = (await list(event)).items.find((item) => item.id === sessionId);
+      const directory = path.join(harness.userDataPath, "nahravky");
+      const before = await readdir(directory);
+      expect(before.some((name) => name.endsWith("-stereo-master.webm"))).toBe(true);
+      expect(before.some((name) => name.endsWith("-stereo.webm"))).toBe(false);
+      harness.electron.shell.trashItem.mockImplementation(async (filePath) => rm(filePath));
+      harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+      deletion = harness.ipcHandlers.get("recordings:delete")(event, {
+        id: row.id, queueRev: row.revision, fileRev: row.fileRevision,
+      }).then((value) => ({ value }), (error) => ({ error }));
+      await vi.waitFor(() => expect(signal?.aborted).toBe(true));
+      expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+      gate.release();
+      expect(await deletion).toEqual({ value: { outcome: "deleted" } });
+      expect(harness.electron.shell.trashItem.mock.calls.map(([filePath]) => path.basename(filePath)).sort())
+        .toEqual([...before].sort());
+      expect(await readdir(directory)).toEqual([]);
+      const queue = JSON.parse(await readFile(path.join(harness.userDataPath, "queue", "outgoing.json"), "utf8"));
+      expect(queue.items).toEqual([]);
+      await expect(exporting).resolves.toMatchObject({ ok: false, recordingExported: false });
+    } finally {
+      gate.release();
+      await settled;
+      await exporting;
+      if (deletion) await deletion;
+    }
+  });
+
+  it("převod dokončený při zrušení zachová nahrávku a po nové revizi umožní bezpečný koš", async () => {
+    const gate = createTestBarrier();
+    let reportStarted;
+    /** @type {Promise<AbortSignal | undefined>} */
+    const started = new Promise((resolve) => { reportStarted = resolve; });
+    const prepareStereoWebm = vi.fn(async ({ outputPath, signal }) => {
+      reportStarted(signal);
+      await gate.promise;
+      const bytes = stereoWebmBytes();
+      await writeFile(outputPath, bytes);
+      return { outputPath, size: bytes.length, mime: "audio/webm", channels: 2,
+        encoderVersion: "queue-wiring-test" };
+    });
+    const harness = await loadMain({ prepareStereoWebm });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const exporting = harness.ipcHandlers.get("recording:export-copy")(
+      event, sessionId, { recordingName: "Kopie" },
+    );
+    let firstDelete;
+    try {
+      const signal = await started;
+      const list = harness.ipcHandlers.get("recordings:list-local");
+      const remove = harness.ipcHandlers.get("recordings:delete");
+      const row = (await list(event)).items.find((item) => item.id === sessionId);
+      const directory = path.join(harness.userDataPath, "nahravky");
+      harness.electron.shell.trashItem.mockImplementation(async (filePath) => rm(filePath));
+      harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+      firstDelete = remove(event, { id: row.id, queueRev: row.revision, fileRev: row.fileRevision })
+        .then((value) => ({ value }), (error) => ({ error }));
+      await vi.waitFor(() => expect(signal?.aborted).toBe(true));
+      gate.release();
+      expect((await firstDelete).error?.message).toMatch(/neaktuální|změnily/u);
+      expect(harness.electron.shell.trashItem).not.toHaveBeenCalled();
+      expect((await list(event)).items.some((item) => item.id === sessionId)).toBe(true);
+      const fresh = (await list(event)).items.find((item) => item.id === sessionId);
+      harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+      await expect(remove(event, {
+        id: fresh.id, queueRev: fresh.revision, fileRev: fresh.fileRevision,
+      })).resolves.toEqual({ outcome: "deleted" });
+      expect(await readdir(directory)).toEqual([]);
+      expect((await list(event)).items).toEqual([]);
+    } finally {
+      gate.release();
+      await exporting;
+      if (firstDelete) await firstDelete;
+    }
   });
 
   it("potvrzený delete během kopie zruší stejnou operaci a provede skutečný store", async () => {

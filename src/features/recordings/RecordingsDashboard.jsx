@@ -917,7 +917,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   <button type="button" className="button button--small recording-action--delete"
                     disabled={item.recordingInProgress || item.uploadLocked || !item.fileRevision || actingId !== null}
                     onClick={() => {
-                      if (window.confirm("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.")) {
+                      if (window.confirm("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vrátit.")) {
                         void runAction(item, "deleteRecording");
                       }
                     }}><OsaIcon name="trash" size={17} /> Smazat nahrávku</button>
