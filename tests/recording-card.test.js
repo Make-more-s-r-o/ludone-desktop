@@ -655,6 +655,47 @@ async function enterRecordingName(panel, name) {
 }
 
 describe("RecordingCard", () => {
+  it("zrušení nativního koše ponechá formulář bez chybového upozornění", async () => {
+    const panel = await renderRecordingCard();
+    panel.ludone.deleteRecording.mockResolvedValueOnce({ outcome: "cancelled" });
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await panel.click(panel.document.querySelector('[data-testid="delete-recording"]'));
+      await panel.click(panel.document.querySelector('[data-testid="confirm-delete-recording"]'));
+      await vi.waitFor(() => expect(panel.ludone.deleteRecording).toHaveBeenCalledOnce());
+      expect(panel.document.querySelector('[data-recording-phase="saved"]')).not.toBeNull();
+      expect(panel.document.querySelector(".recording-saved__error")).toBeNull();
+    } finally { await panel.cleanup(); }
+  });
+
+  it("částečný koš vysvětlí změněný soubor a nabídne opakování", async () => {
+    const panel = await renderRecordingCard();
+    panel.ludone.deleteRecording.mockResolvedValueOnce({ outcome: "partial_failure", reason: "file_changed" });
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await panel.click(panel.document.querySelector('[data-testid="delete-recording"]'));
+      await panel.click(panel.document.querySelector('[data-testid="confirm-delete-recording"]'));
+      await vi.waitFor(() => expect(panel.document.body.textContent).toMatch(/soubor se změnil/iu));
+      expect(panel.document.body.textContent).toMatch(/zkus.+znovu/iu);
+      expect(panel.document.querySelector('[data-recording-phase="saved"]')).not.toBeNull();
+    } finally { await panel.cleanup(); }
+  });
+
+  it("chybu zahájeného odesílání zobrazí s dalším postupem", async () => {
+    const panel = await renderRecordingCard();
+    panel.ludone.deleteRecording.mockRejectedValueOnce(new Error("Odesílání už začalo; nahrávku nelze smazat"));
+    try {
+      await startRecording(panel);
+      await stopRecording(panel);
+      await panel.click(panel.document.querySelector('[data-testid="delete-recording"]'));
+      await panel.click(panel.document.querySelector('[data-testid="confirm-delete-recording"]'));
+      await vi.waitFor(() => expect(panel.document.body.textContent).toMatch(/odesílání už začalo/iu));
+      expect(panel.document.body.textContent).toMatch(/zkontroluj.+přehled/iu);
+    } finally { await panel.cleanup(); }
+  });
+
   it("maže zastavenou nahrávku až po potvrzení a úspěšné smazání skryje kartu", async () => {
     const view = await renderRecordingCard();
     try {

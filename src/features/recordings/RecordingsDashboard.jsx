@@ -5,6 +5,7 @@ import { RecordingUploadPreferences, freshRecordingUploadPreferences, uploadComp
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon, MicIcon, RefreshIcon, WaitingIcon } from "../../components/Icons.jsx";
 import { formatSize as formatSharedSize, recordingSizeText } from "../../lib/format-size.js";
+import { recordingDeletionFailureMessage } from "../recording/deletion-message.js";
 
 import "./day-polish.css";
 
@@ -614,15 +615,18 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
         id: item.id, queueRev: item.revision, fileRev: item.fileRevision,
       });
       await load();
-      if (result?.outcome === "partial_failure" && active.current) {
+      if (active.current && (result?.outcome === "partial_failure"
+        || (method === "deleteRecording" && result?.outcome !== "deleted" && result?.outcome !== "cancelled"))) {
         setVerificationErrorById((current) => ({
           ...current,
-          [item.id]: "Část souborů se nepodařilo přesunout. Zbývající soubory i záznam ve frontě zůstaly zachované.",
+          [item.id]: method === "deleteRecording" ? recordingDeletionFailureMessage(result)
+            : "Část souborů se nepodařilo přesunout. Zbývající soubory i záznam ve frontě zůstaly zachované.",
         }));
       }
-    } catch {
+    } catch (error) {
       if (active.current) setVerificationErrorById((current) => ({
-        ...current, [item.id]: "Akci nelze provést nad neaktuální nahrávkou. Obnov přehled.",
+        ...current, [item.id]: method === "deleteRecording" ? recordingDeletionFailureMessage(error)
+          : "Akci nelze provést nad neaktuální nahrávkou. Obnov přehled.",
       }));
     } finally {
       if (active.current) setActingId(null);
@@ -917,7 +921,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   <button type="button" className="button button--small recording-action--delete"
                     disabled={item.recordingInProgress || item.uploadLocked || !item.fileRevision || actingId !== null}
                     onClick={() => {
-                      if (window.confirm("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.")) {
+                      if (window.confirm("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vrátit.")) {
                         void runAction(item, "deleteRecording");
                       }
                     }}><OsaIcon name="trash" size={17} /> Smazat nahrávku</button>

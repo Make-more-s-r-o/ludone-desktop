@@ -260,7 +260,7 @@ describe("dashboard fronty nahrávek", () => {
       ownership: "current",
       allowedActions: { ...ITEM.allowedActions, claim: false, delete: true },
     };
-    const deleteRecording = vi.fn(async () => ({ outcome: "partial_failure" }));
+    const deleteRecording = vi.fn(async () => ({ outcome: "partial_failure", reason: "file_changed" }));
     const dashboard = await renderDashboard({
       deleteRecording,
       listLocalRecordings: async () => ({ items: [deletable], unreadableCount: 0 }),
@@ -270,7 +270,9 @@ describe("dashboard fronty nahrávek", () => {
         .find((candidate) => candidate.textContent.trim() === "Smazat nahrávku");
       await React.act(async () => button.click());
       await vi.waitFor(() => expect(dashboard.document.body.textContent)
-        .toContain("Zbývající soubory i záznam ve frontě zůstaly zachované."));
+        .toContain("Soubor se změnil během přesunu do koše."));
+      expect(dashboard.document.body.textContent)
+        .toContain("Zbývající soubory i záznam ve frontě zůstaly zachované.");
       expect(deleteRecording).toHaveBeenCalledExactlyOnceWith({
         id: ID,
         queueRev: REVISION,
@@ -281,6 +283,65 @@ describe("dashboard fronty nahrávek", () => {
     }
   });
 
+  it.each([
+    ["guard_changed", "Bezpečný stav pro mazání už nelze potvrdit."],
+    ["access_denied", "macOS nepovolil přístup k některému souboru."],
+    ["trash_failed", "Přesun do koše selhal; podrobnější důvod není k dispozici."],
+  ])("u částečného přesunu zobrazí důvod %s", async (reason, message) => {
+    const deletable = { ...ITEM, allowedActions: { ...ITEM.allowedActions, delete: true } };
+    const dashboard = await renderDashboard({
+      deleteRecording: async () => ({ outcome: "partial_failure", reason }),
+      listLocalRecordings: async () => ({ items: [deletable], unreadableCount: 0 }),
+    });
+    try {
+      const button = [...dashboard.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.trim() === "Smazat nahrávku");
+      await React.act(async () => button.click());
+      const row = dashboard.document.querySelector(`[data-recording-id="${ID}"]`);
+      await vi.waitFor(() => expect(row.querySelector(".recording-queue-card__verification-error")?.textContent)
+        .toContain(message));
+    } finally { await dashboard.cleanup(); }
+  });
+
+  it.each([
+    ["Nahrávka se právě odesílá", "Nahrávka se právě odesílá. Počkej na dokončení"],
+    ["Odesílání už začalo; nahrávku nelze smazat", "Odesílání už začalo, nahrávku nelze smazat."],
+    ["Snímek nahrávky je neaktuální; načtěte seznam znovu", "Nahrávka nebo její soubory se změnily."],
+  ])("při odmítnutí mazání %s zobrazí skutečný důvod", async (reason, message) => {
+    const deletable = { ...ITEM, allowedActions: { ...ITEM.allowedActions, delete: true } };
+    const dashboard = await renderDashboard({
+      deleteRecording: async () => { throw new Error(reason); },
+      listLocalRecordings: async () => ({ items: [deletable], unreadableCount: 0 }),
+    });
+    try {
+      const button = [...dashboard.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.trim() === "Smazat nahrávku");
+      await React.act(async () => button.click());
+      const row = dashboard.document.querySelector(`[data-recording-id="${ID}"]`);
+      await vi.waitFor(() => expect(row.querySelector(".recording-queue-card__verification-error")?.textContent)
+        .toContain(message));
+    } finally { await dashboard.cleanup(); }
+  });
+
+  it("zrušení nativního koše v přehledu neohlásí chybu a zachová položku", async () => {
+    const deletable = { ...ITEM, allowedActions: { ...ITEM.allowedActions, delete: true } };
+    const dashboard = await renderDashboard({
+      deleteRecording: async () => ({ outcome: "cancelled" }),
+      listLocalRecordings: async () => ({ items: [deletable], unreadableCount: 0 }),
+    });
+    try {
+      const button = [...dashboard.document.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent.trim() === "Smazat nahrávku");
+      await React.act(async () => button.click());
+      expect(dashboard.ludone.deleteRecording).toHaveBeenCalledOnce();
+      await vi.waitFor(() => expect(dashboard.ludone.listLocalRecordings).toHaveBeenCalledTimes(2));
+      const row = dashboard.document.querySelector(`[data-recording-id="${ID}"]`);
+      expect(row).not.toBeNull();
+      expect(row.querySelector(".recording-queue-card__verification-error")).toBeNull();
+      expect(row.querySelector(".recording-action--delete")?.hasAttribute("disabled")).toBe(false);
+    } finally { await dashboard.cleanup(); }
+  });
+
   it("před smazáním vyžádá potvrzení a při odmítnutí nevolá IPC", async () => {
     const deletable = { ...ITEM, ownership: "current", allowedActions: { ...ITEM.allowedActions, delete: true } };
     const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [deletable], unreadableCount: 0 }) });
@@ -288,7 +349,7 @@ describe("dashboard fronty nahrávek", () => {
     try {
       const button = [...dashboard.document.querySelectorAll("button")].find((candidate) => candidate.textContent.includes("Smazat nahrávku"));
       await React.act(async () => button.click());
-      expect(dashboard.document.defaultView.confirm).toHaveBeenCalledWith("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vratit.");
+      expect(dashboard.document.defaultView.confirm).toHaveBeenCalledWith("Opravdu smazat? Nahrávka se smaže z tohoto Macu a nejde vrátit.");
       expect(dashboard.ludone.deleteRecording).not.toHaveBeenCalled();
     } finally { await dashboard.cleanup(); }
   });

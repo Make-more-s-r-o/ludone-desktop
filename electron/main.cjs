@@ -3939,7 +3939,13 @@ handleValidated("recordings:delete", ["panel", "settings"], async (event, payloa
   const snapshot = await (await getOutboundQueueStore()).listLocalRecordings(null);
   const row = snapshot.items.find((item) => item.id === payload.id
     && item.revision === payload.queueRev && item.fileRevision === payload.fileRev);
-  if (!row || row.allowedActions?.delete !== true) throw new Error("Nahrávku už nelze smazat");
+  if (!row || row.allowedActions?.delete !== true) {
+    const current = snapshot.items.find((item) => item.id === payload.id);
+    if (current?.state === "odesila") throw new Error("Nahrávka se právě odesílá");
+    if (current?.uploadLocked) throw new Error("Odesílání už začalo; nahrávku nelze smazat");
+    if (current?.localState === "invalid-manifest") throw new Error("Manifest nahrávky nelze bezpečně přečíst");
+    throw new Error("Nahrávka se změnila nebo už není v přehledu dostupná; obnov přehled");
+  }
   const response = await dialog.showMessageBox(event.sender === panelWindow?.webContents ? panelWindow : settingsWindow, {
     type: "warning",
     title: "Přesunout nahrávku do koše?",

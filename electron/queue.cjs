@@ -1569,8 +1569,12 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
             await trashItem(planned[index]);
           }
         }
-      } catch {
-        return { outcome: "partial_failure" };
+      } catch (error) {
+        const reason = ["Soubor se před přesunem změnil", "Soubor se během kontroly změnil"]
+          .includes(error?.message) ? "file_changed"
+          : error?.message === "Akci už nelze bezpečně potvrdit" ? "guard_changed"
+            : ["EACCES", "EPERM"].includes(error?.code) ? "access_denied" : "trash_failed";
+        return { outcome: "partial_failure", reason };
       }
       if (target.rawItem) {
         const items = target.queue.items.filter((item) => item !== target.rawItem);

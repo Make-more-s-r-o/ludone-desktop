@@ -110,6 +110,25 @@ describe("bezpečné lokální akce nahrávky", () => {
     expect(await readFile(masterPath, "utf8")).toBe("osiřelý-stereo-master");
   });
 
+  it("dočasný adresář jiného převodu neblokuje koš této nahrávky", async () => {
+    const value = await fixture();
+    const temporaryDirectory = path.join(path.dirname(value.audioPath), ".media-encoder-jiny");
+    await mkdir(temporaryDirectory);
+    const otherFile = path.join(temporaryDirectory, "cast.webm");
+    await writeFile(otherFile, "jiná nahrávka");
+    const trashed = [];
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: value.row.revision,
+      expectedFileRevision: value.row.fileRevision,
+      guard: async () => true,
+      trashItem: async (file) => { trashed.push(path.basename(file)); await rm(file); },
+    })).resolves.toEqual({ outcome: "deleted" });
+    expect(trashed.sort()).toEqual([path.basename(value.audioPath), path.basename(value.manifestPath)].sort());
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(0);
+    await expect(readFile(otherFile, "utf8")).resolves.toBe("jiná nahrávka");
+  });
+
   it("smaže jeden připravený WebM, trvalý master, sidecar a originál pod stejnou revizí", async () => {
     const value = await fixture();
     const recordingsDirectory = path.dirname(value.audioPath);
@@ -183,6 +202,7 @@ describe("bezpečné lokální akce nahrávky", () => {
     expect(await readFile(masterPath, "utf8")).toBe("stereo-master");
     expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
   });
+
   it("přesune audio, známý sidecar a manifest poslední a teprve pak odstraní queue řádek", async () => {
     const value = await fixture({ sidecar: true });
     const canonicalRoot = await realpath(path.dirname(value.audioPath));
@@ -368,7 +388,7 @@ describe("bezpečné lokální akce nahrávky", () => {
       expectedFileRevision: value.row.fileRevision,
       guard,
       trashItem,
-    })).resolves.toEqual({ outcome: "partial_failure" });
+    })).resolves.toEqual({ outcome: "partial_failure", reason: "guard_changed" });
     expect(trashItem).not.toHaveBeenCalled();
     expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
   });
@@ -385,7 +405,24 @@ describe("bezpečné lokální akce nahrávky", () => {
       expectedFileRevision: value.row.fileRevision,
       guard: async () => true,
       trashItem,
-    })).resolves.toEqual({ outcome: "partial_failure" });
+    })).resolves.toEqual({ outcome: "partial_failure", reason: "trash_failed" });
+    expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
+    await expect(readFile(value.manifestPath, "utf8")).resolves.toContain(value.id);
+  });
+
+  it("změnu souboru během přesunu vrátí jako konkrétní důvod částečného selhání", async () => {
+    const value = await fixture({ sidecar: true });
+    const trashItem = vi.fn(async () => {
+      await writeFile(value.sidecarPath, "změněný sidecar");
+    });
+    await expect(value.store.deleteRecording({
+      clientRecordingId: value.id,
+      expectedRevision: value.row.revision,
+      expectedFileRevision: value.row.fileRevision,
+      guard: async () => true,
+      trashItem,
+    })).resolves.toEqual({ outcome: "partial_failure", reason: "file_changed" });
+    expect(trashItem).toHaveBeenCalledTimes(1);
     expect((await queueStore.loadQueue(value.queuePath)).items).toHaveLength(1);
     await expect(readFile(value.manifestPath, "utf8")).resolves.toContain(value.id);
   });

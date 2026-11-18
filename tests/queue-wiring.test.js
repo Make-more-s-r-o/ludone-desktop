@@ -5846,11 +5846,23 @@ describe("produkční zapojení odchozí fronty", () => {
     const directory = path.join(harness.userDataPath, "nahravky");
     const before = await readdir(directory);
     expect(before.length).toBeGreaterThanOrEqual(4);
+    expect(before.some((name) => name.endsWith("-stereo-master.webm"))).toBe(true);
+    expect(before.some((name) => name.endsWith("-mikrofon.webm"))).toBe(true);
+    expect(before.some((name) => name.endsWith("-system.webm"))).toBe(true);
+    expect(before.some((name) => name.endsWith(".manifest.json"))).toBe(true);
+    expect(before.some((name) => name.endsWith(".manifest.json.meeting-audio-v1.json"))).toBe(true);
+    expect(before.some((name) => name.endsWith("-stereo.webm"))).toBe(false);
+    expect(row.deliveryState).toBe("pending");
+    const queuedBefore = JSON.parse(await readFile(path.join(harness.userDataPath, "queue", "outgoing.json"), "utf8"));
+    expect(queuedBefore.items.find((item) => item.clientRecordingId === sessionId))
+      .toMatchObject({ state: "ceka", uploadIntent: "held", delivery: { state: "pending" } });
     harness.electron.shell.trashItem.mockImplementation(async (filePath) => rm(filePath));
     harness.electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
     await expect(harness.ipcHandlers.get("recordings:delete")(event, {
       id: row.id, queueRev: row.revision, fileRev: row.fileRevision,
     })).resolves.toEqual({ outcome: "deleted" });
+    expect(harness.electron.shell.trashItem.mock.calls.map(([filePath]) => path.basename(filePath)).sort())
+      .toEqual([...before].sort());
     expect(await readdir(directory)).toEqual([]);
     expect((await list(event)).items.find((item) => item.id === sessionId)).toBeUndefined();
     const queue = JSON.parse(await readFile(path.join(harness.userDataPath, "queue", "outgoing.json"), "utf8"));
