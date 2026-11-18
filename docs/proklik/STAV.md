@@ -46,7 +46,7 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | — |
 | #186 | Čerstvou nahrávku nejde smazat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #193 → main abb364c |
-| #194 | Nestabilní test z #189 + Zastavit v Nastavení | 🔵 Codex implementuje | `fix/flaky-company-test` | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
+| #194 | Nestabilní test z #189 + Zastavit v Nastavení | 🔵 review + CI, PR #195 (draft) | `fix/flaky-company-test` @ e2cd818 | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
 | #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
@@ -176,3 +176,7 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   komentář s kroky pro Dana; větev smazána lokálně i remote, panely zavřené.
   kombinace: autor gpt-6.1-terra max, reviewer gpt-6.2-sol max, 2 kola (VRÁTIT, pak PŘIJMOUT S VÝHRADAMI → #194).
 - 18. 11. 2026 ~20:45 — #194 start na fix/flaky-company-test z abb364c (Codex terra max, packet scratchpad/packet-194.md). Pak #187, #184.
+- 18. 11. 2026 ~21:00 — #194 EXIT=0 (terra 6.1 / max), e2cd818 pushnutý (4 soubory). Příčina flaky testu: závod v testu — obnova fronty
+  po runReady u prošlé relace spouští OAuth discovery, jen když čtení vlastníka nepředběhne zápis relace; handler síť nevolá ⇒ ne vada kódu.
+  Test deterministický, pojistka fetch beze změny; F1 10/10 PASS. Zastavit v Nastavení až po readyForStop. 🧪 queue-wiring 357, recording-card 119.
+  Draft PR #195, review + CI běží.
