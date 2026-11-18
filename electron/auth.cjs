@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
+const { companyIdentity, readCompanyDefault, validCompanyName, validCompanySubject, writeCompanyDefault } = require("./upload-company-default.cjs");
 
 const LOOPBACK_HOST = "127.0.0.1";
 const CALLBACK_PATH = "/callback";
@@ -338,6 +339,24 @@ async function registerPublicClient(fetchImpl, endpoint, redirectUri, scope) {
   return requiredString(registration.client_id, "client_id");
 }
 
+/**
+ * @typedef {{
+ *   v: number,
+ *   issuer: string,
+ *   clientId: string,
+ *   resource: string,
+ *   scope: string,
+ *   accessToken: string,
+ *   refreshToken: string|null,
+ *   tokenType: string,
+ *   accessExpiresAt: number|null,
+ *   identity: { email: string|null, name: string|null },
+ *   userinfoSubject?: string,
+ *   companyTabidooId?: string,
+ *   companyTabidooName?: string,
+ * }} AuthSession
+ */
+
 function normalizeIdentity(value) {
   const identity = value?.user ?? value?.identity ?? value?.account ?? value;
   const rawEmail = identity?.email;
@@ -411,7 +430,7 @@ async function requestMcpIdentity(fetchImpl, issuer, accessToken, signal) {
   return parseMcpIdentity(await response.json());
 }
 
-async function resolveUserIdentity(options, fetchImpl, accessToken, tokenResponse, issuer) {
+async function resolveUserIdentity(options, fetchImpl, accessToken, tokenResponse, issuer, captureSubject) {
   const hasConfiguredResolver = typeof options.resolveIdentity === "function" || options.identityEndpoint;
   // Explicitní resolver je autorita pro identitu daného scope. Token response může nést
   // stejně pojmenovaná, ale neověřená pole; při chybě ani částečné odpovědi jimi proto
@@ -442,6 +461,7 @@ async function resolveUserIdentity(options, fetchImpl, accessToken, tokenRespons
             redirect: "error",
             signal,
           }, "Načtení identity uživatele");
+          if (validCompanySubject(result?.sub)) captureSubject(result.sub);
           identity = mergeIdentity(normalizeIdentity(result), identity);
         } catch {
           // Když autoritativní endpoint nedopoví, identita zůstane neznámá.
@@ -1104,6 +1124,10 @@ async function logoutEncryptedSession({ app, safeStorage, fetchImpl, logger }) {
 
       let signedOutLocally = false;
       try {
+        if (COMPANY_ID_PATTERN.test(session?.companyTabidooId ?? "")) {
+          // Migrace starší relace je best-effort: odhlášení nesmí záviset na předvolbě.
+          await writeCompanyDefault(storage.directory, session, session.companyTabidooId).catch(() => {});
+        }
         await removeEncryptedSession(storage);
         signedOutLocally = true;
       } catch {
@@ -1354,15 +1378,18 @@ function createAuthController(options) {
           let sessionPersisted = false;
           try {
             const accessToken = requiredString(tokenResponse.access_token, "access_token");
+            let userinfoSubject = null;
             const identity = await resolveUserIdentity(
               options,
               fetchImpl,
               accessToken,
               tokenResponse,
               issuer,
+              (subject) => { userinfoSubject = subject; },
             );
             const expiresIn = Number(tokenResponse.expires_in);
 
+            /** @type {AuthSession} */
             const encryptedSession = {
               v: 1,
               issuer,
@@ -1376,12 +1403,33 @@ function createAuthController(options) {
               tokenType: typeof tokenResponse.token_type === "string" ? tokenResponse.token_type : "Bearer",
               accessExpiresAt: Number.isFinite(expiresIn) ? Date.now() + expiresIn * 1000 : null,
               identity,
+              ...(userinfoSubject ? { userinfoSubject } : {}),
             };
             await coordinator.commitLogin(
               loginTicket,
               async () => {
                 await withTokenStorageTransaction(async () => {
                   const previousSession = await readEncryptedSession(storage);
+                  const previous = scope === UPLOAD_SCOPE && previousSession !== null
+                    ? decryptStoredSession(safeStorage, previousSession) : null;
+                  const previousIdentity = companyIdentity(previous);
+                  const nextIdentity = companyIdentity(encryptedSession);
+                  if (previousIdentity && typeof previous.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(previous.companyTabidooId)) {
+                    await writeCompanyDefault(storage.directory, previous, previous.companyTabidooId).catch(() => {});
+                  }
+                  if (nextIdentity) {
+                    const sameIdentity = previousIdentity?.issuer === nextIdentity.issuer
+                      && previousIdentity.subject === nextIdentity.subject;
+                    const savedDefault = await readCompanyDefault(storage.directory, encryptedSession).catch(() => null);
+                    const companyId = sameIdentity && typeof previous.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(previous.companyTabidooId)
+                      ? previous.companyTabidooId : savedDefault?.companyId;
+                    if (typeof companyId === "string" && COMPANY_ID_PATTERN.test(companyId)) {
+                      encryptedSession.companyTabidooId = companyId;
+                      const companyName = sameIdentity && previous.companyTabidooId === companyId && validCompanyName(previous.companyTabidooName)
+                        ? previous.companyTabidooName : savedDefault?.companyId === companyId ? savedDefault.companyName : null;
+                      if (validCompanyName(companyName)) encryptedSession.companyTabidooName = companyName;
+                    }
+                  }
                   try {
                     await persistEncryptedSession(safeStorage, encryptedSession, storage);
                   } catch (error) {
@@ -1609,11 +1657,8 @@ const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
 /**
  * Zapíše do ULOŽENÉ relace vybranou firmu, pod kterou se budou odesílat nahrávky.
  *
- * Firma patří k přihlášenému účtu, ne ke stroji — proto bydlí uvnitř šifrované relace
- * a ne v nastavení aplikace. Má to dva důsledky, oba žádoucí a oba zadarmo: odhlášení
- * i přepnutí prostředí mažou celý soubor relace, takže volba zmizí sama a nemůže
- * „prosáknout“ k dalšímu účtu na stejném Macu; a obnovu tokenu volba přežije, protože
- * `refreshStoredAuthSession` relaci rozšiřuje, nesestavuje ji znovu.
+ * Firma patří k účtu a issueru. Vedle šifrované relace se ukládá i lokální předvolba
+ * bez tokenů, aby přežila odhlášení; cizí účet ani prostředí ji nesmí převzít.
  *
  * 🔴 Zápis NIKDY nevychází ze snímku, který držel volající. Mezi jeho přečtením a tímhle
  * zápisem se mohl člověk odhlásit nebo přihlásit jiným účtem; přepsat cizí relaci vlastní
@@ -1621,23 +1666,28 @@ const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
  * a zápis se zahodí, jakmile neodpovídá tomu, co volající viděl — stejná opatrnost,
  * jakou má obnova tokenu.
  *
- * @returns {Promise<object|null>} aktualizovaná relace, nebo `null`, když se neuložila
+ * @returns {Promise<AuthSession|null>} aktualizovaná relace, nebo `null`, když se neuložila
  */
 function updateStoredAuthSessionCompany({
   app,
   safeStorage,
   companyTabidooId,
+  companyName = undefined,
   expectedCompanyId = undefined,
   storedSession,
   guard = undefined,
+  fetchImpl = undefined,
 }) {
   const mazeFirmu = companyTabidooId === null;
   const firma = typeof companyTabidooId === "string" ? companyTabidooId : "";
   if ((!mazeFirmu && !COMPANY_ID_PATTERN.test(firma))
-    || (mazeFirmu && !COMPANY_ID_PATTERN.test(expectedCompanyId ?? ""))) {
+    || (mazeFirmu && (typeof expectedCompanyId !== "string" || !COMPANY_ID_PATTERN.test(expectedCompanyId)))) {
     // Nesmysl se do relace nezapisuje: odesílání by pak selhalo až na serveru a vypadalo
     // by to jako vada spojení, ne jako vadná uložená hodnota.
     return Promise.reject(new Error("Identifikátor firmy musí být GUID"));
+  }
+  if (companyName !== undefined && !validCompanyName(companyName)) {
+    return Promise.reject(new Error("Název firmy není platný"));
   }
   if (!storedSession || typeof storedSession !== "object") {
     return Promise.reject(new Error("Chybí snímek přihlašovací relace"));
@@ -1659,6 +1709,7 @@ function updateStoredAuthSessionCompany({
       || session.scope !== UPLOAD_SCOPE
       || storedSession.scope !== UPLOAD_SCOPE
       || session.accessToken !== storedSession.accessToken
+      || session.userinfoSubject !== storedSession.userinfoSubject
       || typeof session.identity?.email !== "string"
       || session.identity.email !== storedSession.identity?.email
       || (session.identity.name ?? null) !== (storedSession.identity?.name ?? null)
@@ -1678,9 +1729,61 @@ function updateStoredAuthSessionCompany({
     }
 
     const updatedSession = { ...session };
-    if (mazeFirmu) delete updatedSession.companyTabidooId;
-    else updatedSession.companyTabidooId = firma;
-    await persistEncryptedSession(safeStorage, updatedSession, storage);
+    let checkedUserinfo = false;
+    if (!mazeFirmu && !validCompanySubject(session.userinfoSubject) && typeof fetchImpl === "function"
+      && typeof session.accessToken === "string" && session.accessToken.length > 0
+      && Number.isFinite(session.accessExpiresAt) && session.accessExpiresAt > Date.now()) {
+      checkedUserinfo = true;
+      try {
+        const issuer = normalizedIssuer(session.issuer);
+        if (issuer === session.issuer && session.resource === `${issuer}/api/mcp`) {
+          let subject = null;
+          const identity = await resolveUserIdentity({ identityEndpoint: `${issuer}/api/mcp/oauth/userinfo` },
+            fetchImpl, session.accessToken, null, issuer, (value) => { subject = value; });
+          if (validCompanySubject(subject) && identity.email === session.identity.email) updatedSession.userinfoSubject = subject;
+        }
+      } catch {
+        // Bez ověřeného subjectu zůstane firma jen v této relaci.
+      }
+      if (guard !== undefined) {
+        try { if (guard() !== true) return null; } catch { return null; }
+      }
+    }
+    if (mazeFirmu) {
+      delete updatedSession.companyTabidooId;
+      delete updatedSession.companyTabidooName;
+    } else {
+      updatedSession.companyTabidooId = firma;
+      if (companyName !== undefined) updatedSession.companyTabidooName = companyName;
+      else if (session.companyTabidooId !== firma) delete updatedSession.companyTabidooName;
+    }
+    const previousDefault = await readCompanyDefault(storage.directory, updatedSession);
+    const restoreDefault = () => writeCompanyDefault(storage.directory, {
+      ...updatedSession,
+      companyTabidooId: previousDefault?.companyId,
+      companyTabidooName: previousDefault?.companyName,
+    }, previousDefault?.companyId ?? null);
+    if ((guard !== undefined || checkedUserinfo)
+      && (!Number.isFinite(session.accessExpiresAt) || session.accessExpiresAt <= Date.now()
+        || typeof session.accessToken !== "string" || !session.accessToken.trim())) return null;
+    if (guard !== undefined) {
+      try { if (guard() !== true) return null; } catch { return null; }
+    }
+    try {
+      await writeCompanyDefault(storage.directory, updatedSession, mazeFirmu ? null : firma);
+    } catch (error) {
+      await restoreDefault().catch(() => {});
+      throw error;
+    }
+    try {
+      await persistEncryptedSession(safeStorage, updatedSession, storage);
+    } catch (error) {
+      const rollbackErrors = [];
+      try { await restoreDefault(); } catch (rollbackError) { rollbackErrors.push(rollbackError); }
+      try { await restoreEncryptedSession(storage, encrypted); } catch (rollbackError) { rollbackErrors.push(rollbackError); }
+      if (rollbackErrors.length) throw new AggregateError([error, ...rollbackErrors], error.message, { cause: error });
+      throw error;
+    }
     return updatedSession;
   });
 }

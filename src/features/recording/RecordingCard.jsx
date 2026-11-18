@@ -1,5 +1,5 @@
-import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { RecordingUploadPreferences, freshRecordingUploadPreferences, uploadCompanyErrorMessage } from "../../components/UploadCompanySelector.jsx";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
@@ -245,10 +245,14 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [savedAgeNow, setSavedAgeNow] = useState(() => Date.now());
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [autoResolvingCompany, setAutoResolvingCompany] = useState(false);
   const [copyExporting, setCopyExporting] = useState(false);
   const [uploadPreferences, setUploadPreferences] = useState(null);
   const [pickerInitial, setPickerInitial] = useState(null);
   const [pickerRefresh, setPickerRefresh] = useState(0);
+  const [pickerOwner, setPickerOwner] = useState(null);
+  const [verifiedUploadIdentity, setVerifiedUploadIdentity] = useState(null);
+  const [uploadIdentityError, setUploadIdentityError] = useState(null);
   const [copyExportNotice, setCopyExportNotice] = useState(null);
   const savedRecordingRef = useRef(savedRecording);
   savedRecordingRef.current = savedRecording;
@@ -257,10 +261,65 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const copyExportLifecycle = useRef(0);
   const cardMounted = useRef(true);
   const uploadAuthGeneration = useRef(0);
+  const identityRequest = useRef(0);
+  const lastUploadIdentity = useRef(null);
+  const pickerOwnerSerial = useRef(0);
+  const uploadIdentityVerified = useRef(false);
+  const canSendRef = useRef(canSend);
+  canSendRef.current = canSend;
+  const refreshUploadIdentity = useCallback(() => {
+    const request = ++identityRequest.current;
+    uploadIdentityVerified.current = false;
+    setVerifiedUploadIdentity(null);
+    setUploadPreferences(null);
+    setUploadIdentityError(null);
+    if (!canSendRef.current) {
+      setUploadIdentityError("Účet nelze ověřit. Obnov přihlášení.");
+      return;
+    }
+    if (typeof window.ludone?.getAuthIdentity !== "function" || typeof window.ludone?.getAuthOrigin !== "function") {
+      setUploadIdentityError("Ověření účtu není v této aplikaci dostupné.");
+      return;
+    }
+    Promise.resolve().then(() => Promise.all([window.ludone.getAuthIdentity(), window.ludone.getAuthOrigin(),
+      typeof window.ludone.getUploadCompanyIdentity === "function" ? window.ludone.getUploadCompanyIdentity() : null]))
+      .then(([identity, origin, binding]) => {
+        if (identityRequest.current !== request || !canSendRef.current) return;
+        const email = typeof identity?.email === "string" ? identity.email.trim() : "";
+        if (!/^[^\s@]+@[^\s@]+$/u.test(email)) {
+          setUploadIdentityError("Účet se nepodařilo ověřit: chybí platný e-mail.");
+          return;
+        }
+        if (typeof origin !== "string" || !origin) {
+          setUploadIdentityError("Účet se nepodařilo ověřit: chybí adresa prostředí.");
+          return;
+        }
+        // Bez ověřeného subjectu nelze rozpracovanou volbu bezpečně převést přes změnu relace.
+        const key = typeof binding === "string" ? binding : `unbound:${request}`;
+        if (lastUploadIdentity.current !== key) {
+          lastUploadIdentity.current = key;
+          setPickerInitial(null);
+          setPickerOwner({ key, serial: ++pickerOwnerSerial.current });
+        }
+        uploadIdentityVerified.current = true;
+        setVerifiedUploadIdentity(key);
+      }).catch((error) => {
+        if (identityRequest.current === request) {
+          setUploadIdentityError(typeof error?.message === "string"
+            && /(?:^|: )Uložená session neobsahuje ověřitelnou identitu$/u.test(error.message)
+            ? "Přihlášení nemá ověřený e-mail. Přihlas se znovu v Nastavení."
+            : `Účet se nepodařilo ověřit. ${uploadCompanyErrorMessage(error)}`);
+        }
+      });
+  }, []);
+  useEffect(() => {
+    refreshUploadIdentity();
+    return () => { identityRequest.current += 1; };
+  }, [canSend, refreshUploadIdentity]);
   useEffect(() => window.ludone?.onAuthSessionChanged?.(() => {
     uploadAuthGeneration.current += 1;
-    setUploadPreferences(null);
-  }), []);
+    refreshUploadIdentity();
+  }), [refreshUploadIdentity]);
   const [exportError, setExportError] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -413,7 +472,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
 
   async function exportSavedRecording(recording, name, decision, manual = false) {
     const supportsPreferences = typeof window.ludone?.listUploadCompanies === "function";
-    if (manual && decision === "send" && supportsPreferences && !uploadPreferences) {
+    if (manual && decision === "send" && supportsPreferences && (!uploadIdentityVerified.current || !uploadPreferences)) {
       setExportError("Před odesláním ověř a vyber cílovou firmu.");
       return;
     }
@@ -426,12 +485,21 @@ export const RecordingCard = forwardRef(function RecordingCard({
     setExporting(true);
     setExportError(null);
     const generation = uploadAuthGeneration.current;
+    const uploadIdentity = lastUploadIdentity.current;
+    const autoSelectCompany = !manual && decision === "send" && recording.automaticUpload === true
+      && typeof window.ludone?.getUploadCompanyDefault === "function" && supportsPreferences;
+    if (autoSelectCompany) setAutoResolvingCompany(true);
     try {
-      const freshPreferences = manual && uploadPreferences
+      let freshPreferences = manual && uploadPreferences
         ? await freshRecordingUploadPreferences(uploadPreferences).catch((error) => {
           if (decision === "keep") return null;
           throw error;
         }) : null;
+      if (autoSelectCompany) {
+        const savedDefault = await window.ludone.getUploadCompanyDefault();
+        if (!savedDefault?.companyId) throw new Error("Vyber cílovou firmu. Výchozí firmu se nepodařilo určit.");
+        freshPreferences = await freshRecordingUploadPreferences({ companyId: savedDefault.companyId, visibility: "company" });
+      }
       if (generation !== uploadAuthGeneration.current) throw new Error("Přihlášení se změnilo. Ověř volby znovu.");
       const modernDecision = window.ludone.saveRecordingDecision;
       const result = typeof modernDecision === "function"
@@ -465,9 +533,15 @@ export const RecordingCard = forwardRef(function RecordingCard({
         openRecordings: modernOutcome || Boolean(deliveryDetail),
       });
     } catch (error) {
-      setExportError(describeError(error));
-      if (manual && supportsPreferences) { setPickerInitial(uploadPreferences); setPickerRefresh((value) => value + 1); }
+      setExportError(autoSelectCompany && error?.message !== "Vyber cílovou firmu. Výchozí firmu se nepodařilo určit."
+        ? `Automatické odeslání se nespustilo. ${uploadCompanyErrorMessage(error)}` : describeError(error));
+      if (manual && supportsPreferences && generation === uploadAuthGeneration.current
+        && uploadIdentityVerified.current && uploadIdentity === lastUploadIdentity.current) {
+        setPickerInitial(uploadPreferences);
+        setPickerRefresh((value) => value + 1);
+      }
     } finally {
+      if (autoSelectCompany) setAutoResolvingCompany(false);
       setExporting(false);
     }
   }
@@ -547,6 +621,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
       });
       if (result?.outcome !== "deleted") throw new Error("Nahrávku se nepodařilo smazat.");
       setSavedRecording(null);
+      setPickerInitial(null);
+      setUploadPreferences(null);
       setDeleteConfirm(false);
       setNotice({ type: "success", text: "Nahrávka byla smazána z tohoto Macu." });
     } catch (error) {
@@ -996,10 +1072,18 @@ export const RecordingCard = forwardRef(function RecordingCard({
               setCopyExportNotice(null);
             }}
           />
-          {typeof window.ludone?.listUploadCompanies === "function" && <RecordingUploadPreferences
-            key={savedRecording.clientRecordingId} defaultVisibility="company" disabled={!canSend} busy={exporting}
-            initialValue={pickerInitial} refreshToken={pickerRefresh}
-            onChange={(value) => setUploadPreferences(value)} />}
+          {typeof window.ludone?.listUploadCompanies === "function" && pickerOwner && <div hidden={!canSend || verifiedUploadIdentity !== pickerOwner.key}>
+            <RecordingUploadPreferences key={`${savedRecording.clientRecordingId}:${pickerOwner.serial}`}
+              identityKey={pickerOwner.key} defaultVisibility="company"
+              disabled={!canSend || verifiedUploadIdentity !== pickerOwner.key || autoResolvingCompany} busy={exporting}
+              initialValue={pickerInitial} refreshToken={pickerRefresh}
+              onChange={(value) => setUploadPreferences(value)} />
+          </div>}
+          {typeof window.ludone?.listUploadCompanies === "function" && (!canSend || !verifiedUploadIdentity)
+            && (uploadIdentityError ? <>
+              <p role="alert">{uploadIdentityError}</p>
+              <button type="button" className="button button--small" disabled={!canSend} onClick={refreshUploadIdentity}>Zkusit znovu</button>
+            </> : <p role="status">Ověřuji účet pro výběr cílové firmy.</p>)}
           <small id="recording-name-hint" className="recording-saved__hint">
             Nahrávka už je místně zachovaná. Odesílání začne jen tvou volbou.
           </small>
@@ -1048,7 +1132,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
               <button
                 type="submit"
                 className="button button--primary button--wide"
-                disabled={exporting || !canSend || (typeof window.ludone?.listUploadCompanies === "function" && !uploadPreferences)}
+                disabled={exporting || !canSend || (typeof window.ludone?.listUploadCompanies === "function" && (!verifiedUploadIdentity || !uploadPreferences))}
               >
                 Uložit a odeslat
               </button>

@@ -39,7 +39,7 @@ function validateOffer(value) {
   const companies = value.companies.map((company) => {
     if (!company || typeof company !== "object") throw failure("invalid_offer");
     const { id, name } = company;
-    if (!COMPANY_ID_PATTERN.test(id ?? "") || typeof name !== "string"
+    if (typeof id !== "string" || !COMPANY_ID_PATTERN.test(id) || typeof name !== "string"
       || name.length < 1 || name.length > 160 || name.trim() !== name || hasControlCharacters(name)
       || seen.has(id)) throw failure("invalid_offer");
     seen.add(id);
@@ -47,7 +47,7 @@ function validateOffer(value) {
   });
   const defaultCompanyId = value.defaultCompanyId ?? null;
   if (defaultCompanyId !== null
-    && (!COMPANY_ID_PATTERN.test(defaultCompanyId) || !seen.has(defaultCompanyId))) {
+    && (typeof defaultCompanyId !== "string" || !COMPANY_ID_PATTERN.test(defaultCompanyId) || !seen.has(defaultCompanyId))) {
     throw failure("invalid_offer");
   }
   return { companies: Object.freeze(companies), defaultCompanyId };
@@ -118,7 +118,7 @@ function createUploadCompanySelectionController({
     if (loads.get(requesterKey) !== serial) throw failure("stale_offer");
 
     const selected = context.storedSession.companyTabidooId;
-    const selectedCompanyId = COMPANY_ID_PATTERN.test(selected ?? "")
+    const selectedCompanyId = typeof selected === "string" && COMPANY_ID_PATTERN.test(selected)
       && offer.companies.some(({ id }) => id === selected) ? selected : null;
     const offerToken = randomUUID();
     if (typeof offerToken !== "string" || offerToken.length < 16 || offerToken.length > 128) {
@@ -138,7 +138,7 @@ function createUploadCompanySelectionController({
     validateRequest(requesterKey, guard);
     const snapshot = snapshots.get(requesterKey);
     if (!snapshot || snapshot.offerToken !== offerToken || now() >= snapshot.expiresAt
-      || !COMPANY_ID_PATTERN.test(companyId ?? "")
+      || typeof companyId !== "string" || !COMPANY_ID_PATTERN.test(companyId)
       || !snapshot.companies.some(({ id }) => id === companyId)) throw failure("stale_offer");
     snapshots.delete(requesterKey);
     const expectedEpoch = epoch;
@@ -152,16 +152,19 @@ function createUploadCompanySelectionController({
     const committed = await commit({ context, companyId, companyName: freshOffer.companies.find(({ id }) => id === companyId).name, guard: async () => {
       try { await stillCurrent(context, guard, expectedEpoch); return true; } catch { return false; }
     } });
-    await stillCurrent(context, guard, expectedEpoch);
-    if (!committed) throw failure("commit_rejected");
+    if (!committed) {
+      await stillCurrent(context, guard, expectedEpoch);
+      throw failure("commit_rejected");
+    }
     return committed;
   }
 
   async function select(request) {
-    const committed = await resolve({ ...request, commit: ({ context, companyId }) =>
-      commitChoice({ context, companyId, guard: request.guard }) });
-    if (committed !== true) throw failure("commit_rejected");
-    return { saved: true, selectedCompanyId: request.companyId };
+    const committed = await resolve({ ...request, commit: ({ context, companyId, companyName }) =>
+      commitChoice({ context, companyId, companyName, guard: request.guard }) });
+    if (committed !== true && committed?.remembered !== false) throw failure("commit_rejected");
+    return { saved: true, selectedCompanyId: request.companyId,
+      ...(committed?.remembered === false ? { remembered: false } : {}) };
   }
 
   function invalidate() {

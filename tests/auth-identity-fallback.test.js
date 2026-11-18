@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { promises as fs } from "node:fs";
-import { readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
+import { readFile, mkdtemp, rm, mkdir, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -12,6 +12,7 @@ const {
   UPLOAD_SCOPE,
   createAuthController,
   tokenSessionFilePath,
+  updateStoredAuthSessionCompany,
 } = require("../electron/auth.cjs");
 
 const ISSUER = "https://app.ludone.cz";
@@ -213,6 +214,304 @@ async function readSession(harness) {
 function loggedText(logger) {
   return [...logger.log.mock.calls, ...logger.warn.mock.calls].flat().join("\n");
 }
+
+describe("výchozí firma po novém přihlášení", () => {
+  const firma = "11111111-1111-4111-8111-111111111111";
+  const uploadOptions = { scope: UPLOAD_SCOPE, identityEndpoint: `${ISSUER}/api/mcp/oauth/userinfo` };
+
+  it("přežije nové přihlášení stejného účtu i změnu jeho zobrazovaného jména", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const second = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ sub: "42", email: "dan@ludone.cz", name: "Nové jméno" }) });
+    await completeLogin(second);
+    expect((await readSession(second)).companyTabidooId).toBe(firma);
+  });
+
+  it("přežije odhlášení, ale jiný účet ani issuer ji nepřevezme", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    await first.controller.logout();
+    const other = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ email: "jiny@ludone.cz" }) });
+    await completeLogin(other);
+    expect((await readSession(other)).companyTabidooId).toBeUndefined();
+    await other.controller.logout();
+    const labs = await createHarness({ ...uploadOptions, issuer: "https://labs.ludone.cz",
+      identityEndpoint: "https://labs.ludone.cz/api/mcp/oauth/userinfo", appData: first.app.getPath() });
+    await completeLogin(labs);
+    expect((await readSession(labs)).companyTabidooId).toBeUndefined();
+    await labs.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBe(firma);
+  });
+
+  it("přímé přihlášení jiného účtu nepřevezme cizí firmu a návrat ji obnoví", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const other = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ email: "jiny@ludone.cz" }) });
+    await completeLogin(other);
+    expect((await readSession(other)).companyTabidooId).toBeUndefined();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBe(firma);
+  });
+
+  it("odmítnutou a vymazanou firmu po odhlášení z lokální předvolby neobnoví", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: null, expectedCompanyId: firma });
+    await first.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBeUndefined();
+  });
+
+  it("jiný subjekt se stejným znovu přiděleným e-mailem nesmí převzít cizí firmu", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const other = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ sub: "99", email: "dan@ludone.cz" }) });
+    await completeLogin(other);
+    expect((await readSession(other)).companyTabidooId).toBeUndefined();
+  });
+
+  it("stejný ověřený subjekt zachová volbu i po změně e-mailu", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const renamed = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ sub: "42", email: "novy@ludone.cz" }) });
+    await completeLogin(renamed);
+    expect((await readSession(renamed)).companyTabidooId).toBe(firma);
+  });
+
+  it("lokální předvolba má práva 0600 a neobsahuje přihlašovací tokeny", async () => {
+    const harness = await createHarness(uploadOptions);
+    await completeLogin(harness);
+    const session = await readSession(harness);
+    await updateStoredAuthSessionCompany({ app: harness.app, safeStorage: harness.safeStorage,
+      storedSession: session, companyTabidooId: firma });
+    const file = path.join(path.dirname(tokenSessionFilePath(harness.app)), "upload-company-defaults.json");
+    expect((await stat(file)).mode & 0o777).toBe(0o600);
+    const contents = await readFile(file, "utf8");
+    expect(contents).not.toContain(session.accessToken);
+    expect(contents).not.toContain(session.refreshToken);
+    expect(JSON.parse(contents)).toEqual([{ issuer: ISSUER, subject: "42", companyId: firma }]);
+  });
+
+  it("ověřený název výchozí firmy přežije odhlášení a slouží pro offline zobrazení", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma, companyName: "Alfa s.r.o." });
+    await first.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect(await readSession(again)).toMatchObject({ companyTabidooId: firma, companyTabidooName: "Alfa s.r.o." });
+  });
+
+  it("starou relaci bez ověřeného subjectu po odhlášení nepřipíše novému účtu", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    const session = { ...await readSession(first), companyTabidooId: firma };
+    delete session.userinfoSubject;
+    await writeFile(tokenSessionFilePath(first.app), JSON.stringify(session));
+    await first.controller.logout();
+    const unknown = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ name: "Neznámý" }) });
+    await completeLogin(unknown);
+    expect((await readSession(unknown)).companyTabidooId).toBeUndefined();
+    await unknown.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBeUndefined();
+  });
+
+  it("N2 poškozený soubor předvolby se při čtení ignoruje a při zápisu opraví", async () => {
+    const harness = await createHarness(uploadOptions); await completeLogin(harness);
+    const session = await readSession(harness);
+    const file = path.join(path.dirname(tokenSessionFilePath(harness.app)), "upload-company-defaults.json");
+    await writeFile(file, "{poškozený");
+    const { readCompanyDefault } = require("../electron/upload-company-default.cjs");
+    await expect(readCompanyDefault(path.dirname(file), session)).resolves.toBeNull();
+    await updateStoredAuthSessionCompany({ app: harness.app, safeStorage: harness.safeStorage, storedSession: session, companyTabidooId: firma });
+    expect(JSON.parse(await readFile(file, "utf8"))).toEqual([{ issuer: ISSUER, subject: "42", companyId: firma }]);
+  });
+
+  it("N2 smazání firmy také opraví poškozený soubor předvoleb", async () => {
+    const harness = await createHarness(uploadOptions); await completeLogin(harness);
+    await updateStoredAuthSessionCompany({ app: harness.app, safeStorage: harness.safeStorage,
+      storedSession: await readSession(harness), companyTabidooId: firma });
+    const file = path.join(path.dirname(tokenSessionFilePath(harness.app)), "upload-company-defaults.json");
+    await writeFile(file, "{poškozený");
+    await updateStoredAuthSessionCompany({ app: harness.app, safeStorage: harness.safeStorage,
+      storedSession: await readSession(harness), companyTabidooId: null, expectedCompanyId: firma });
+    expect(JSON.parse(await readFile(file, "utf8"))).toEqual([]);
+    const again = await createHarness({ ...uploadOptions, appData: harness.app.getPath() }); await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBeUndefined();
+  });
+
+  it.each(["uložení", "smazání"])("N2 chyba předvolby při %s nezmění relaci ani další přihlášení", async (mode) => {
+    const first = await createHarness(uploadOptions); await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const before = await readSession(first);
+    const rename = fs.rename.bind(fs);
+    const spy = vi.spyOn(fs, "rename").mockImplementation(async (from, to) => {
+      if (String(to).endsWith("upload-company-defaults.json")) throw Object.assign(new Error("disk full"), { code: "ENOSPC" });
+      return rename(from, to);
+    });
+    await expect(updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage, storedSession: before,
+      companyTabidooId: mode === "smazání" ? null : "22222222-2222-4222-8222-222222222222", expectedCompanyId: firma })).rejects.toThrow("disk full");
+    spy.mockRestore();
+    expect(await readSession(first)).toEqual(before);
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() }); await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBe(firma);
+  });
+
+  it("N2 selhání zápisu relace po předvolbě vrátí předchozí stav i po novém přihlášení", async () => {
+    const first = await createHarness(uploadOptions); await completeLogin(first);
+    const before = await readSession(first);
+    const order = []; const rename = fs.rename.bind(fs);
+    const spy = vi.spyOn(fs, "rename").mockImplementation(async (from, to) => {
+      if (String(to).endsWith("upload-company-defaults.json")) order.push("preference");
+      if (String(to) === tokenSessionFilePath(first.app)) { order.push("session"); throw new Error("session write failed"); }
+      return rename(from, to);
+    });
+    await expect(updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: before, companyTabidooId: firma })).rejects.toThrow("session write failed");
+    spy.mockRestore();
+    expect(order.slice(0, 2)).toEqual(["preference", "session"]);
+    expect(await readSession(first)).toEqual(before);
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() }); await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBeUndefined();
+  });
+
+  it("N2 selhání po přejmenování relace obnoví původní relaci i předvolbu", async () => {
+    const first = await createHarness(uploadOptions); await completeLogin(first);
+    const before = await readSession(first); const chmod = fs.chmod.bind(fs); let fail = true;
+    const spy = vi.spyOn(fs, "chmod").mockImplementation(async (target, mode) => {
+      if (String(target) === tokenSessionFilePath(first.app) && fail) { fail = false; throw new Error("sync failed"); }
+      return chmod(target, mode);
+    });
+    await expect(updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: before, companyTabidooId: firma })).rejects.toThrow("sync failed");
+    spy.mockRestore();
+    expect(await readSession(first)).toEqual(before);
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() }); await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBeUndefined();
+  });
+
+  it("K1 trvalá chyba fsync po rename relace nepřeskočí obnovu žádného souboru", async () => {
+    const first = await createHarness(uploadOptions); await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const before = await readSession(first);
+    const sessionFile = tokenSessionFilePath(first.app);
+    const originalSession = await readFile(sessionFile);
+    const directory = path.dirname(sessionFile);
+    const preferenceFile = path.join(directory, "upload-company-defaults.json");
+    const originalPreference = await readFile(preferenceFile, "utf8");
+    const rename = fs.rename.bind(fs); const open = fs.open.bind(fs);
+    let failed = false; let directoryFailures = 0;
+    vi.spyOn(fs, "rename").mockImplementation(async (from, to) => {
+      const result = await rename(from, to);
+      if (String(to) === sessionFile) failed = true;
+      return result;
+    });
+    vi.spyOn(fs, "open").mockImplementation(async (...args) => {
+      const handle = await open(...args);
+      if (String(args[0]) === directory) {
+        const sync = handle.sync.bind(handle);
+        handle.sync = async () => {
+          if (failed) { directoryFailures += 1; throw new Error("trvalá chyba fsync"); }
+          return sync();
+        };
+      }
+      return handle;
+    });
+    const error = await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: before, companyTabidooId: "22222222-2222-4222-8222-222222222222" }).catch((failure) => failure);
+    vi.restoreAllMocks();
+    expect(error).toBeInstanceOf(AggregateError);
+    expect(error.errors.map((failure) => failure.message)).toEqual(Array(3).fill("trvalá chyba fsync"));
+    expect(directoryFailures).toBe(3);
+    expect((await readFile(sessionFile)).equals(originalSession)).toBe(true);
+    expect(await readFile(preferenceFile, "utf8")).toBe(originalPreference);
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() }); await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBe(firma);
+  });
+
+  it("K6 vypršení během userinfo nezapíše relaci ani předvolbu", async () => {
+    const first = await createHarness(uploadOptions); await completeLogin(first);
+    const legacy = await readSession(first); delete legacy.userinfoSubject;
+    legacy.accessExpiresAt = Date.now() + 1000;
+    const sessionFile = tokenSessionFilePath(first.app);
+    await writeFile(sessionFile, JSON.stringify(legacy));
+    const preferenceFile = path.join(path.dirname(sessionFile), "upload-company-defaults.json");
+    const originalNow = Date.now; let now = originalNow();
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    let entered; const started = new Promise((resolve) => { entered = resolve; });
+    let release; const pending = new Promise((resolve) => { release = resolve; });
+    const saving = updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: legacy, companyTabidooId: firma, fetchImpl: async () => { entered(); await pending;
+        return jsonResponse({ sub: "42", email: legacy.identity.email }); } });
+    await started; now += 2000; release();
+    await expect(saving).resolves.toBeNull();
+    expect((await readFile(sessionFile)).equals(Buffer.from(JSON.stringify(legacy)))).toBe(true);
+    await expect(readFile(preferenceFile)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("N6 starší relaci při výslovné volbě ověří subjectem a zachová firmu po přihlášení", async () => {
+    const first = await createHarness(uploadOptions); await completeLogin(first);
+    const legacy = await readSession(first); delete legacy.userinfoSubject;
+    await writeFile(tokenSessionFilePath(first.app), JSON.stringify(legacy));
+    first.fetchImpl.mockClear();
+    const saved = await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: legacy, companyTabidooId: firma, fetchImpl: first.fetchImpl });
+    expect(saved.userinfoSubject).toBe("42");
+    expect(first.fetchImpl).toHaveBeenCalledTimes(1);
+    expect(first.fetchImpl.mock.calls[0][0]).toBe(`${ISSUER}/api/mcp/oauth/userinfo`);
+    expect(first.fetchImpl.mock.calls[0][1]).toMatchObject({ redirect: "error" });
+    await first.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() }); await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBe(firma);
+  });
+
+  it.each(["offline", "jiný e-mail", "prošlý token"])("N6 %s zachová firmu pouze v relaci bez neoprávněné předvolby", async (mode) => {
+    const first = await createHarness(uploadOptions); await completeLogin(first);
+    const legacy = await readSession(first); delete legacy.userinfoSubject;
+    if (mode === "prošlý token") legacy.accessExpiresAt = 1;
+    await writeFile(tokenSessionFilePath(first.app), JSON.stringify(legacy));
+    const fetchImpl = vi.fn(async () => {
+      if (mode === "offline") throw new Error("offline");
+      return jsonResponse({ sub: "jiný-subject", email: "jiny@example.test" });
+    });
+    const saved = await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: legacy, companyTabidooId: firma, fetchImpl });
+    expect(saved.companyTabidooId).toBe(firma);
+    expect(saved.userinfoSubject).toBeUndefined();
+    expect(fetchImpl).toHaveBeenCalledTimes(mode === "prošlý token" ? 0 : 1);
+    await first.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() }); await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBeUndefined();
+  });
+});
 
 afterEach(async () => {
   vi.useRealTimers();

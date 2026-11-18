@@ -977,6 +977,27 @@ describe("pět částí Nastavení", () => {
 });
 
 describe("pravdivá identita v Nastavení", () => {
+  it("změna přihlášení uprostřed načítání firem dá v účtu viditelnou zprávu", async () => {
+    const account = deferred(); const companies = deferred(); let identities = 0;
+    const settings = await renderSettings({
+      identity: () => ++identities === 1
+        ? Promise.resolve({ name: "Ada Lovelace", email: "ada@ludone.cz" }) : account.promise,
+      listUploadCompanies: () => companies.promise,
+    });
+    try {
+      await expectAccountState(settings, "signed-in");
+      const load = [...settings.document.querySelectorAll("button")].find((button) => button.textContent.includes("Načíst firmy"));
+      await React.act(async () => load.click());
+      expect(settings.document.querySelector('[data-testid="upload-company-default"]').textContent).toContain("Načítám firmy");
+      await React.act(async () => settings.requestAuthSessionChange());
+      await React.act(async () => account.resolve({ name: "Ada Lovelace", email: "ada@ludone.cz" }));
+      await expectAccountState(settings, "signed-in");
+      await React.act(async () => companies.resolve({ companies: [], selectedCompanyId: null,
+        offerToken: "11111111-1111-4111-8111-111111111111" }));
+      expect(settings.document.querySelector('[data-testid="upload-company-default"] [role="alert"]')).not.toBeNull();
+    } finally { await settings.cleanup(); }
+  });
+
   it("výběr firmy se načte jen klikem a uloží explicitní ID bez odeslání fronty", async () => {
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
     const settings = await renderSettings({

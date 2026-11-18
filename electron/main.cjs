@@ -55,6 +55,7 @@ const {
 } = require("./meeting-audio.cjs");
 const { createRecordingVerifier } = require("./recording-verification.cjs");
 const { createUploadCompanySelectionController } = require("./upload-company-selection.cjs");
+const { companyIdentity, validCompanyName } = require("./upload-company-default.cjs");
 const { measureRecordingStorage } = require("./recording-storage.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
@@ -533,6 +534,8 @@ let authSessionTransitionPromise = null;
 let claimDialogGeneration = 0;
 let recordingVerifier;
 let uploadCompanySelectionController;
+// Tato vazba je náhodná a žije jen v procesu; neobsahuje issuer ani subject.
+let uploadCompanyIdentityBinding = null;
 const activeAuthAttempts = new Set();
 const AUTH_CANCEL_CHANNEL = "auth:cancel";
 
@@ -2841,13 +2844,13 @@ function getUploadCompanySelectionController() {
         signal,
         trustedRemoteEndpoint,
       }),
-      commitChoice: async ({ context, companyId, guard }) => (await updateStoredAuthSessionCompany({
-        app,
-        safeStorage,
-        companyTabidooId: companyId,
-        storedSession: context.storedSession,
-        guard,
-      })) !== null,
+      commitChoice: async ({ context, companyId, companyName, guard }) => {
+        const session = await updateStoredAuthSessionCompany({
+          app, safeStorage, companyTabidooId: companyId, companyName,
+          storedSession: context.storedSession, guard, fetchImpl: globalThis.fetch,
+        });
+        return session === null ? false : companyIdentity(session) ? true : { remembered: false };
+      },
       now: Date.now,
       randomUUID,
     });
@@ -3193,8 +3196,8 @@ function logRecordingPlaybackFailure(outcome, error = null) {
 function validateRecordingUploadPreferences(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
     || Object.keys(value).sort().join("|") !== "companyId|offerToken|visibility"
-    || !COMPANY_ID_PATTERN.test(value.companyId ?? "")
-    || !OFFER_TOKEN_PATTERN.test(value.offerToken ?? "")
+    || typeof value.companyId !== "string" || !COMPANY_ID_PATTERN.test(value.companyId)
+    || typeof value.offerToken !== "string" || !OFFER_TOKEN_PATTERN.test(value.offerToken)
     || !["private", "company"].includes(value.visibility)) throw new TypeError("Neplatné preference uploadu");
   return value;
 }
@@ -3818,11 +3821,16 @@ handleValidated("recordings:configure-upload", ["panel", "settings"], async (eve
   const preferences = { companyId: payload.companyId, offerToken: payload.offerToken, visibility: payload.visibility };
   return resolveRecordingUploadPreferences(event, preferences, ["panel", "settings"], async ({ context, uploadPreferences, guard }) => {
     const store = await getOutboundQueueStore();
-    return store.configureRecordingUpload({ clientRecordingId: payload.id, expectedRevision: payload.queueRev,
-      expectedFileRevision: payload.fileRev, currentOwnerFingerprint: context.ownerFingerprint, uploadPreferences,
-      guard: async () => !recordingSessions.has(payload.id) && !recordingCompletionsInFlight.has(payload.id)
-        && await guard() === true,
-    });
+    try {
+      return await store.configureRecordingUpload({ clientRecordingId: payload.id, expectedRevision: payload.queueRev,
+        expectedFileRevision: payload.fileRev, currentOwnerFingerprint: context.ownerFingerprint, uploadPreferences,
+        guard: async () => !recordingSessions.has(payload.id) && !recordingCompletionsInFlight.has(payload.id)
+          && await guard() === true,
+      });
+    } catch (error) {
+      if (error?.message === "Preference nelze změnit; načtěte aktuální nahrávku") throw new Error("stale_snapshot");
+      throw error;
+    }
   });
 });
 handleValidated("recordings:list-local", ["panel", "settings"], async () => {
@@ -5585,12 +5593,23 @@ handleValidated("upload-companies:default", ["panel", "settings"], async (event,
   if (!guard()) return { companyId: null };
   const storedSession = await readStoredAuthSession();
   requireTrustedSender(event, ["panel", "settings"]);
-  if (!guard() || storedAuthSessionState(storedSession) !== "valid"
-    || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE) {
+  const email = normalizedIdentityPart(storedSession?.identity?.email);
+  if (!guard() || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE
+    || !/^[^\s@]+@[^\s@]+$/u.test(email)) {
     return { companyId: null };
   }
-  return { companyId: COMPANY_ID_PATTERN.test(storedSession.companyTabidooId ?? "")
-    ? storedSession.companyTabidooId : null };
+  const companyId = typeof storedSession.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(storedSession.companyTabidooId)
+    ? storedSession.companyTabidooId : null;
+  const identity = companyIdentity(storedSession);
+  let identityBinding = null;
+  if (identity) {
+    if (uploadCompanyIdentityBinding?.issuer !== identity.issuer || uploadCompanyIdentityBinding?.subject !== identity.subject) {
+      uploadCompanyIdentityBinding = { ...identity, value: randomUUID() };
+    }
+    identityBinding = uploadCompanyIdentityBinding.value;
+  }
+  return { companyId, ...(companyId && validCompanyName(storedSession.companyTabidooName)
+    ? { companyName: storedSession.companyTabidooName } : {}), ...(identityBinding ? { identityBinding } : {}) };
 });
 
 handleValidated("upload-companies:list", ["settings", "panel"], (event, ...extraPayload) => {
