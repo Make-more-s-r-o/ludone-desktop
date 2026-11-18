@@ -1,7 +1,7 @@
 import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { selectOsaRecordings, osaRecordingStatus, osaRecordingNode } from "../../lib/osa-recordings.js";
 import { OsaHistoryControls, OsaStations } from "../../components/osa/index.js";
-import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
+import { RecordingUploadPreferences, freshRecordingUploadPreferences, uploadCompanyErrorMessage } from "../../components/UploadCompanySelector.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon, MicIcon, RefreshIcon, WaitingIcon } from "../../components/Icons.jsx";
 import { formatSize as formatSharedSize, recordingSizeText } from "../../lib/format-size.js";
@@ -275,6 +275,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
 
   const load = useCallback(() => {
     const requestGeneration = ++loadGeneration.current;
+    const requestIdentity = identityRef.current;
     verificationGeneration.current += 1;
     setVerificationErrorById({});
     setVerifyingId(null);
@@ -283,7 +284,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       setView({ state: "error", items: [], unreadableCount: 0, message: "Přehled nahrávek není dostupný." });
       return Promise.resolve();
     }
-    setView((current) => ({ ...current, state: "loading", message: "" }));
+    setView((current) => current.state === "ready"
+      ? { ...current, refreshing: true, message: "" }
+      : { ...current, state: "loading", message: "" });
     return Promise.resolve()
       .then(() => listLocalRecordings())
       .then((snapshotValue) => {
@@ -308,7 +311,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
               && result.identity && result.identity === identityRef.current
               && item.revision === result.revision && item.fileRevision === result.fileRevision;
           })));
-          setView({ state: "ready", ...snapshot, message: "" });
+          setView({ state: "ready", ...snapshot, snapshotIdentity: requestIdentity, refreshing: false, message: "" });
           if (openDetailIdRef.current && !snapshot.items.some((item) => item.id === openDetailIdRef.current)) {
             openDetailIdRef.current = null;
             setOpenDetailId(null);
@@ -318,7 +321,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       })
       .catch(() => {
         if (active.current && requestGeneration === loadGeneration.current) {
-          setView({ state: "error", items: [], unreadableCount: 0, message: "Nahrávky se nepodařilo načíst." });
+          setView((current) => current.state === "ready"
+            ? { ...current, refreshing: false, message: "Přehled se nepodařilo obnovit. Zobrazuji poslední známý stav." }
+            : { state: "error", items: [], unreadableCount: 0, message: "Nahrávky se nepodařilo načíst." });
         }
       });
   }, [onDetailChange]);
@@ -352,7 +357,12 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
     if (invalid) identityRef.current = null;
     if (previousAuthState.current !== authState || identityChanged) {
       previousAuthState.current = authState;
-      void load();
+      if (authState === "unknown") {
+        loadGeneration.current += 1;
+        setView((current) => current.refreshing ? { ...current, refreshing: false } : current);
+      } else {
+        void load();
+      }
     }
   }, [authState, currentIdentity, load]);
 
@@ -451,15 +461,14 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       if (result?.configured !== true) throw new Error("not_configured");
       await load();
       setPreferenceFailedById((current) => ({ ...current, [item.id]: false }));
-      setPreferencesById((current) => ({ ...current, [item.id]: { value: null, dirty: false } }));
+      setPreferencesById((current) => ({ ...current, [item.id]: { ...current[item.id], value: preferences, dirty: false } }));
       setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby jsou uložené. Odeslání spustíš dalším kliknutím." }));
       if (detailId) await window.ludone.setDetailDirty(false);
       return true;
-    } catch {
+    } catch (error) {
       setPreferenceFailedById((current) => ({ ...current, [item.id]: true }));
-      await load();
-      setPreferencesById((current) => ({ ...current, [item.id]: { value: null, dirty: true } }));
-      setPreferenceMessageById((current) => ({ ...current, [item.id]: "Volby se nepodařilo uložit. Přehled byl obnoven; ověř volby a ulož je znovu." }));
+      if (authRef.current !== "unknown") await load();
+      setPreferenceMessageById((current) => ({ ...current, [item.id]: `Volby se nepodařilo uložit. ${uploadCompanyErrorMessage(error)} Ověř volby a ulož je znovu.` }));
       return false;
     } finally { if (active.current) setActingId(null); }
   };
@@ -592,7 +601,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
         <button
           type="button"
           className="button button--small"
-          disabled={view.state === "loading"}
+          disabled={view.state === "loading" || view.refreshing || authState === "unknown"}
           onClick={() => void load()}
         >
           <RefreshIcon />
@@ -606,6 +615,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
         Převzetí nahrávky ji neodešle.{disabledExplanation ? ` ${disabledExplanation}` : ""}
       </p>
       {view.state === "loading" && <p role="status">Načítám nahrávky…</p>}
+      {view.state === "ready" && view.message && <p role="alert">{view.message}</p>}
       {view.state === "error" && (
         <div className="recordings-dashboard__error" role="alert">
           <p>{view.message}</p>
@@ -647,6 +657,10 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
               : item.ownership === "other" ? "Jiný účet" : "Vlastník není ověřen";
             const canVerify = item.source === "queue" && item.ownership === "current"
               && item.revision && item.localState !== "invalid-manifest";
+            const verifiedEditorOwner = authState === "signed-in" && currentIdentity
+              && view.snapshotIdentity === currentIdentity && item.ownership === "current";
+            const retainedEditor = preferencesById[item.id] && (authState !== "signed-in"
+              || (preferencesById[item.id].identity === currentIdentity && view.snapshotIdentity !== currentIdentity));
             return (
               <li className="recordings-timeline__entry" key={item.id} data-recording-id={item.id} data-osa-node={osaRecordingNode(item, Boolean(verified))}
                 data-recording-state={item.state} data-upload-intent={item.uploadIntent}
@@ -749,18 +763,28 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                           )}
                         </section>
                       )}
-                    {openDetailId === item.id && item.ownership === "current" && !item.recordingInProgress
+                    {openDetailId === item.id && (verifiedEditorOwner || retainedEditor) && !item.recordingInProgress
                       && typeof window.ludone?.configureRecordingUpload === "function" && (
-                        <RecordingUploadPreferences key={`${item.id}:${item.revision}:${currentIdentity}`}
+                        <RecordingUploadPreferences key={item.id}
                           initialValue={item.uploadPreferences} identityKey={currentIdentity} surface="detail"
-                          locked={item.uploadPreferencesLocked} disabled={authState !== "signed-in"} busy={actingId !== null}
+                          locked={item.uploadPreferencesLocked} disabled={!verifiedEditorOwner} busy={actingId !== null}
                           onChange={(value, dirty) => {
-                            setPreferencesById((current) => ({ ...current, [item.id]: { value, dirty } }));
+                            setPreferencesById((current) => {
+                              const previous = verifiedEditorOwner && current[item.id]?.identity !== currentIdentity
+                                ? null : current[item.id];
+                              return { ...current, [item.id]: { value,
+                                dirty: value && dirty !== undefined ? dirty : previous?.dirty ?? false,
+                                identity: verifiedEditorOwner ? currentIdentity : previous?.identity ?? null } };
+                            });
 
                             if (dirty && value) setPreferenceMessageById((current) => ({ ...current, [item.id]: "Neuložená změna. Uložení voleb samo nic neodešle." }));
                           }}
-                          onUserChange={() => {
-                            if (detailId) void window.ludone.setDetailDirty(true).catch(() => {
+                          onUserChange={(dirty) => {
+                            setPreferencesById((current) => ({ ...current, [item.id]: { ...current[item.id], dirty } }));
+                            if (!dirty && !preferenceFailedById[item.id]) setPreferenceMessageById((current) => ({
+                              ...current, [item.id]: "Žádné neuložené změny.",
+                            }));
+                            if (detailId) void window.ludone.setDetailDirty(dirty).catch(() => {
                               setPreferenceFailedById((current) => ({ ...current, [item.id]: true }));
                             });
                           }}

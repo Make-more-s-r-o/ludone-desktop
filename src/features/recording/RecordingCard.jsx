@@ -1,4 +1,4 @@
-import { RecordingUploadPreferences, freshRecordingUploadPreferences } from "../../components/UploadCompanySelector.jsx";
+import { RecordingUploadPreferences, freshRecordingUploadPreferences, uploadCompanyErrorMessage } from "../../components/UploadCompanySelector.jsx";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
@@ -245,6 +245,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [savedAgeNow, setSavedAgeNow] = useState(() => Date.now());
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [autoResolvingCompany, setAutoResolvingCompany] = useState(false);
   const [copyExporting, setCopyExporting] = useState(false);
   const [uploadPreferences, setUploadPreferences] = useState(null);
   const [pickerInitial, setPickerInitial] = useState(null);
@@ -426,12 +427,20 @@ export const RecordingCard = forwardRef(function RecordingCard({
     setExporting(true);
     setExportError(null);
     const generation = uploadAuthGeneration.current;
+    const autoSelectCompany = !manual && decision === "send" && recording.automaticUpload === true
+      && typeof window.ludone?.getUploadCompanyDefault === "function" && supportsPreferences;
+    if (autoSelectCompany) setAutoResolvingCompany(true);
     try {
-      const freshPreferences = manual && uploadPreferences
+      let freshPreferences = manual && uploadPreferences
         ? await freshRecordingUploadPreferences(uploadPreferences).catch((error) => {
           if (decision === "keep") return null;
           throw error;
         }) : null;
+      if (autoSelectCompany) {
+        const savedDefault = await window.ludone.getUploadCompanyDefault();
+        if (!savedDefault?.companyId) throw new Error("Vyber cílovou firmu. Výchozí firmu se nepodařilo určit.");
+        freshPreferences = await freshRecordingUploadPreferences({ companyId: savedDefault.companyId, visibility: "company" });
+      }
       if (generation !== uploadAuthGeneration.current) throw new Error("Přihlášení se změnilo. Ověř volby znovu.");
       const modernDecision = window.ludone.saveRecordingDecision;
       const result = typeof modernDecision === "function"
@@ -465,9 +474,11 @@ export const RecordingCard = forwardRef(function RecordingCard({
         openRecordings: modernOutcome || Boolean(deliveryDetail),
       });
     } catch (error) {
-      setExportError(describeError(error));
+      setExportError(autoSelectCompany && error?.message !== "Vyber cílovou firmu. Výchozí firmu se nepodařilo určit."
+        ? `Automatické odeslání se nespustilo. ${uploadCompanyErrorMessage(error)}` : describeError(error));
       if (manual && supportsPreferences) { setPickerInitial(uploadPreferences); setPickerRefresh((value) => value + 1); }
     } finally {
+      if (autoSelectCompany) setAutoResolvingCompany(false);
       setExporting(false);
     }
   }
@@ -997,7 +1008,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
             }}
           />
           {typeof window.ludone?.listUploadCompanies === "function" && <RecordingUploadPreferences
-            key={savedRecording.clientRecordingId} defaultVisibility="company" disabled={!canSend} busy={exporting}
+            key={savedRecording.clientRecordingId} defaultVisibility="company" disabled={!canSend || autoResolvingCompany} busy={exporting}
             initialValue={pickerInitial} refreshToken={pickerRefresh}
             onChange={(value) => setUploadPreferences(value)} />}
           <small id="recording-name-hint" className="recording-saved__hint">

@@ -2160,6 +2160,31 @@ it("nový stopform uloží firmu a private override atomicky; account default ne
     expect(panel.ludone.selectUploadCompany).not.toHaveBeenCalled();
   } finally { await panel.cleanup(); }
 });
+
+it("automatické odeslání připne ověřenou výchozí firmu k nahrávce", async () => {
+  const panel = await renderRecordingCard({ modernDecision: true, finishRecordingResult: { automaticUpload: true } });
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const offerToken = "offer-token-0000000000000001";
+  panel.ludone.getUploadCompanyDefault = vi.fn(async () => ({ companyId }));
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken }));
+  try {
+    await startRecording(panel); await panel.click(panel.currentButton()); await panel.waitForPhase("idle");
+    expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledWith(SESSION_ID, expect.objectContaining({
+      decision: "send", uploadPreferences: { companyId, offerToken, visibility: "company" },
+    }));
+  } finally { await panel.cleanup(); }
+});
+
+it("automatické odeslání bez výchozí firmy ponechá rozhodnutí uživateli", async () => {
+  const panel = await renderRecordingCard({ modernDecision: true, finishRecordingResult: { automaticUpload: true } });
+  panel.ludone.getUploadCompanyDefault = vi.fn(async () => ({ companyId: null }));
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [], selectedCompanyId: null, offerToken: "offer-token-0000000000000001" }));
+  try {
+    await startRecording(panel); await stopRecording(panel);
+    expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+    expect(panel.document.body.textContent).toMatch(/výchozí firm|cílovou firm/u);
+  } finally { await panel.cleanup(); }
+});
 it("stopform bez nabídky odmítne send, ale ponechá místní uložení", async () => {
   const panel = await renderRecordingCard({ modernDecision: true });
   panel.ludone.listUploadCompanies = vi.fn(async () => { throw new Error("offline"); });

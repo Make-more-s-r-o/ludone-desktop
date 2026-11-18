@@ -9799,6 +9799,9 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
     const stored = JSON.parse(harness.electron.safeStorage.decryptString(await readFile(tokenPath)));
     expect(stored.companyTabidooId).toBe(companyId);
+    expect(stored.companyTabidooName).toBe("Make more s.r.o.");
+    await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent))
+      .resolves.toEqual({ companyId, companyName: "Make more s.r.o." });
     expect(JSON.stringify(offer)).not.toMatch(/accessToken|ownerFingerprint|TAJNY/u);
 
     fetch.mockResolvedValueOnce(/** @type {any} */ ({
@@ -9929,7 +9932,43 @@ describe("úzké IPC preferencí nahrávky", () => {
 });
 
 describe("lokální uložený default firmy", () => {
-  it("vrátí pouze uložený GUID ze scoped platné relace, bez sítě a jen Settings", async () => {
+  it("preload přijme jen platný lokální název bez dalších polí", async () => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const valid = loadPreload({ companyId, companyName: "Make more s.r.o." });
+    await expect(valid.api.getUploadCompanyDefault()).resolves.toEqual({ companyId, companyName: "Make more s.r.o." });
+    for (const value of [
+      { companyId, companyName: "" }, { companyId, companyName: "Firma\nDalší" },
+      { companyId: null, companyName: "Firma" }, { companyId, companyName: "Firma", token: "navíc" },
+    ]) await expect(loadPreload(value).api.getUploadCompanyDefault()).rejects.toThrow(/výchozí firma/u);
+  });
+  it("spolu s ID bezpečně předá poslední známý název i z prošlé relace", async () => {
+    const harness = await loadMain(); await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId,
+      companyTabidooName: "Make more s.r.o.", accessExpiresAt: 0 });
+    await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent))
+      .resolves.toEqual({ companyId, companyName: "Make more s.r.o." });
+  });
+  it("vrátí firmu i z prošlé relace bez síťového požadavku", async () => {
+    const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+    const harness = await loadMain(); await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: 0 });
+    await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent)).resolves.toEqual({ companyId });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(harness.electron.net.fetch).not.toHaveBeenCalled();
+  });
+  it("při čtení uloženého defaultu použije stejnou normalizaci e-mailu jako identita", async () => {
+    const harness = await loadMain(); await harness.runReady();
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId,
+      identity: { email: "  ada@ludone.cz  " }, accessExpiresAt: 0 });
+    await expect(harness.ipcHandlers.get("upload-companies:default")(settingsEvent)).resolves.toEqual({ companyId });
+  });
+  it("vrátí pouze uložený GUID ze scoped relace, bez sítě a jen Settings", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
     const harness = await loadMain(); await harness.runReady();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
@@ -9942,7 +9981,7 @@ describe("lokální uložený default firmy", () => {
     expect(() => get({ ...settingsEvent, senderFrame: {} })).toThrow(/nedůvěryhodný/u);
     await expect(get(settingsEvent, "navíc")).rejects.toThrow();
     await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: companyId, accessExpiresAt: 0 });
-    await expect(get(settingsEvent)).resolves.toEqual({ companyId: null });
+    await expect(get(settingsEvent)).resolves.toEqual({ companyId });
     expect(fetch).not.toHaveBeenCalled();
   });
 });

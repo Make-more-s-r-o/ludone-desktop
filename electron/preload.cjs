@@ -294,11 +294,17 @@ contextBridge.exposeInMainWorld("ludone", {
   logout: () => ipcRenderer.invoke("auth:logout"),
   getUploadCompanyDefault: () => ipcRenderer.invoke("upload-companies:default").then((value) => {
     if (!value || typeof value !== "object" || Array.isArray(value)
-      || Object.keys(value).join("|") !== "companyId"
-      || (value.companyId !== null && !COMPANY_ID_PATTERN.test(value.companyId ?? ""))) {
+      || !["companyId", "companyId|companyName"].includes(Object.keys(value).sort().join("|"))
+      || (value.companyId !== null && !COMPANY_ID_PATTERN.test(value.companyId ?? ""))
+      || (Object.hasOwn(value, "companyName") && (value.companyId === null
+        || typeof value.companyName !== "string" || value.companyName.length < 1 || value.companyName.length > 160
+        || value.companyName.trim() !== value.companyName || [...value.companyName].some((character) => {
+          const code = character.codePointAt(0);
+          return code <= 31 || code === 127;
+        })))) {
       throw new TypeError("Neplatná uložená výchozí firma");
     }
-    return { companyId: value.companyId };
+    return { companyId: value.companyId, ...(value.companyName ? { companyName: value.companyName } : {}) };
   }),
   listUploadCompanies: () => ipcRenderer.invoke("upload-companies:list")
     .then(requireUploadCompanyOffer),

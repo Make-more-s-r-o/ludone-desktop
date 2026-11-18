@@ -158,8 +158,8 @@ function createUploadCompanySelectionController({
   }
 
   async function select(request) {
-    const committed = await resolve({ ...request, commit: ({ context, companyId }) =>
-      commitChoice({ context, companyId, guard: request.guard }) });
+    const committed = await resolve({ ...request, commit: ({ context, companyId, companyName }) =>
+      commitChoice({ context, companyId, companyName, guard: request.guard }) });
     if (committed !== true) throw failure("commit_rejected");
     return { saved: true, selectedCompanyId: request.companyId };
   }

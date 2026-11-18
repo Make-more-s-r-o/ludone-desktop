@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { promises as fs } from "node:fs";
-import { readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
+import { readFile, mkdtemp, rm, mkdir, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -12,6 +12,7 @@ const {
   UPLOAD_SCOPE,
   createAuthController,
   tokenSessionFilePath,
+  updateStoredAuthSessionCompany,
 } = require("../electron/auth.cjs");
 
 const ISSUER = "https://app.ludone.cz";
@@ -213,6 +214,134 @@ async function readSession(harness) {
 function loggedText(logger) {
   return [...logger.log.mock.calls, ...logger.warn.mock.calls].flat().join("\n");
 }
+
+describe("výchozí firma po novém přihlášení", () => {
+  const firma = "11111111-1111-4111-8111-111111111111";
+  const uploadOptions = { scope: UPLOAD_SCOPE, identityEndpoint: `${ISSUER}/api/mcp/oauth/userinfo` };
+
+  it("přežije nové přihlášení stejného účtu i změnu jeho zobrazovaného jména", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const second = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ sub: "42", email: "dan@ludone.cz", name: "Nové jméno" }) });
+    await completeLogin(second);
+    expect((await readSession(second)).companyTabidooId).toBe(firma);
+  });
+
+  it("přežije odhlášení, ale jiný účet ani issuer ji nepřevezme", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    await first.controller.logout();
+    const other = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ email: "jiny@ludone.cz" }) });
+    await completeLogin(other);
+    expect((await readSession(other)).companyTabidooId).toBeUndefined();
+    await other.controller.logout();
+    const labs = await createHarness({ ...uploadOptions, issuer: "https://labs.ludone.cz",
+      identityEndpoint: "https://labs.ludone.cz/api/mcp/oauth/userinfo", appData: first.app.getPath() });
+    await completeLogin(labs);
+    expect((await readSession(labs)).companyTabidooId).toBeUndefined();
+    await labs.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBe(firma);
+  });
+
+  it("přímé přihlášení jiného účtu nepřevezme cizí firmu a návrat ji obnoví", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const other = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ email: "jiny@ludone.cz" }) });
+    await completeLogin(other);
+    expect((await readSession(other)).companyTabidooId).toBeUndefined();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBe(firma);
+  });
+
+  it("odmítnutou a vymazanou firmu po odhlášení z lokální předvolby neobnoví", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: null, expectedCompanyId: firma });
+    await first.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBeUndefined();
+  });
+
+  it("jiný subjekt se stejným znovu přiděleným e-mailem nesmí převzít cizí firmu", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const other = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ sub: "99", email: "dan@ludone.cz" }) });
+    await completeLogin(other);
+    expect((await readSession(other)).companyTabidooId).toBeUndefined();
+  });
+
+  it("stejný ověřený subjekt zachová volbu i po změně e-mailu", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma });
+    const renamed = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ sub: "42", email: "novy@ludone.cz" }) });
+    await completeLogin(renamed);
+    expect((await readSession(renamed)).companyTabidooId).toBe(firma);
+  });
+
+  it("lokální předvolba má práva 0600 a neobsahuje přihlašovací tokeny", async () => {
+    const harness = await createHarness(uploadOptions);
+    await completeLogin(harness);
+    const session = await readSession(harness);
+    await updateStoredAuthSessionCompany({ app: harness.app, safeStorage: harness.safeStorage,
+      storedSession: session, companyTabidooId: firma });
+    const file = path.join(path.dirname(tokenSessionFilePath(harness.app)), "upload-company-defaults.json");
+    expect((await stat(file)).mode & 0o777).toBe(0o600);
+    const contents = await readFile(file, "utf8");
+    expect(contents).not.toContain(session.accessToken);
+    expect(contents).not.toContain(session.refreshToken);
+    expect(JSON.parse(contents)).toEqual([{ issuer: ISSUER, subject: "42", companyId: firma }]);
+  });
+
+  it("ověřený název výchozí firmy přežije odhlášení a slouží pro offline zobrazení", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    await updateStoredAuthSessionCompany({ app: first.app, safeStorage: first.safeStorage,
+      storedSession: await readSession(first), companyTabidooId: firma, companyName: "Alfa s.r.o." });
+    await first.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect(await readSession(again)).toMatchObject({ companyTabidooId: firma, companyTabidooName: "Alfa s.r.o." });
+  });
+
+  it("starou relaci bez ověřeného subjectu po odhlášení nepřipíše novému účtu", async () => {
+    const first = await createHarness(uploadOptions);
+    await completeLogin(first);
+    const session = { ...await readSession(first), companyTabidooId: firma };
+    delete session.userinfoSubject;
+    await writeFile(tokenSessionFilePath(first.app), JSON.stringify(session));
+    await first.controller.logout();
+    const unknown = await createHarness({ ...uploadOptions, appData: first.app.getPath(),
+      userinfoHandler: async () => jsonResponse({ name: "Neznámý" }) });
+    await completeLogin(unknown);
+    expect((await readSession(unknown)).companyTabidooId).toBeUndefined();
+    await unknown.controller.logout();
+    const again = await createHarness({ ...uploadOptions, appData: first.app.getPath() });
+    await completeLogin(again);
+    expect((await readSession(again)).companyTabidooId).toBeUndefined();
+  });
+});
 
 afterEach(async () => {
   vi.useRealTimers();

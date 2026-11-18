@@ -55,6 +55,7 @@ const {
 } = require("./meeting-audio.cjs");
 const { createRecordingVerifier } = require("./recording-verification.cjs");
 const { createUploadCompanySelectionController } = require("./upload-company-selection.cjs");
+const { validCompanyName } = require("./upload-company-default.cjs");
 const { measureRecordingStorage } = require("./recording-storage.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
@@ -2841,10 +2842,11 @@ function getUploadCompanySelectionController() {
         signal,
         trustedRemoteEndpoint,
       }),
-      commitChoice: async ({ context, companyId, guard }) => (await updateStoredAuthSessionCompany({
+      commitChoice: async ({ context, companyId, companyName, guard }) => (await updateStoredAuthSessionCompany({
         app,
         safeStorage,
         companyTabidooId: companyId,
+        companyName,
         storedSession: context.storedSession,
         guard,
       })) !== null,
@@ -5585,12 +5587,15 @@ handleValidated("upload-companies:default", ["panel", "settings"], async (event,
   if (!guard()) return { companyId: null };
   const storedSession = await readStoredAuthSession();
   requireTrustedSender(event, ["panel", "settings"]);
-  if (!guard() || storedAuthSessionState(storedSession) !== "valid"
-    || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE) {
+  const email = normalizedIdentityPart(storedSession?.identity?.email);
+  if (!guard() || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE
+    || !/^[^\s@]+@[^\s@]+$/u.test(email)) {
     return { companyId: null };
   }
-  return { companyId: COMPANY_ID_PATTERN.test(storedSession.companyTabidooId ?? "")
-    ? storedSession.companyTabidooId : null };
+  const companyId = COMPANY_ID_PATTERN.test(storedSession.companyTabidooId ?? "")
+    ? storedSession.companyTabidooId : null;
+  return { companyId, ...(companyId && validCompanyName(storedSession.companyTabidooName)
+    ? { companyName: storedSession.companyTabidooName } : {}) };
 });
 
 handleValidated("upload-companies:list", ["settings", "panel"], (event, ...extraPayload) => {

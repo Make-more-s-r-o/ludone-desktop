@@ -97,7 +97,7 @@ describe("controller výběru upload firmy", () => {
     expect(second.status).toBe("rejected");
     expect(h.fetchOffer).toHaveBeenCalledTimes(2);
     expect(h.commitChoice).toHaveBeenCalledTimes(1);
-    expect(h.commitChoice).toHaveBeenCalledWith(expect.objectContaining({ companyId: A }));
+    expect(h.commitChoice).toHaveBeenCalledWith(expect.objectContaining({ companyId: A, companyName: "Alfa" }));
   });
 
   it("🔴 necommitne firmu odebranou z nové nabídky", async () => {
