@@ -45,7 +45,7 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #182 | Nová nahrávka nedostane výchozí firmu | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
 | #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | — |
 | #186 | Čerstvou nahrávku nejde smazat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
-| #185 | Není poznat, že nahrává | 🔵 review + CI, PR #193 (draft) | `fix/recording-feedback` @ ebd50dc | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
+| #185 | Není poznat, že nahrává | 🔵 kolo 2, PR #193 (draft) | `fix/recording-feedback` @ ebd50dc | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
 | #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
@@ -89,7 +89,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | `term_5bdea623-…` | #186 kolo 2 zjednodušení, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-186-kolo-2-zjednoduseni-1795025298562.log` | EXIT=0, převzato (512b719), zavřeno |
 | `term_96beeffa-…` | #186 review kola 2, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-186-kolo-2-1795025955758.log` | EXIT=0, PŘIJMOUT S VÝHRADAMI, zavřeno |
 | `term_68c3d5cc-…` | #185 implementace, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-185-je-poznat-ze-nahrava-1795026502705.log` | EXIT=0, převzato (ebd50dc), zavřeno |
-| (review 185) | #185 review, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-185-1795027447587.log` | běží |
+| `term_4f005b90-…` | #185 review, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-185-1795027447587.log` | EXIT=0, VRÁTIT, zavřeno |
+| (#185 k2) | #185 kolo 2, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-185-kolo-2-1795027967839.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -159,3 +160,6 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   (varování až při skutečně chybějící stopě) — zkontrolováno, není oslaben. 🧪 recording-card 113 PASS. Draft PR #193, review + CI běží.
 - Packet #187 připraven (scratchpad/packet-187.md): body U5–U9, U11. Rozhodl jsem sám: body 1 (#185), 4 (#186), 10 (#189) už hotové;
   body 2 a 3 (obrazovka Nahrávání: firma+přístup, důvod zašedlého tlačítka) přesouvám do #184, ať se nepíšou dvakrát.
+- 18. 11. 2026 ~20:00 — review #185 (sol 6.2 max, 0 subagentů): VRÁTIT 1× P1 + 3× P2; CI #193 FAIL na tests/onboarding-missing-steps.test.js
+  (= P1: sdílená konstanta MICROPHONE_ONLY_TEXT změněna i pro onboarding). Kolo 2: V1 vrátit konstantu + nová pro nahrávání,
+  V2 zavřít AudioContext při zrušení, V3 Ukončit až po potvrzení rekordérů, V4 test odloženého startu.
