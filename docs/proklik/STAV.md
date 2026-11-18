@@ -48,7 +48,7 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #185 | Není poznat, že nahrává | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #193 → main abb364c |
 | #194 | Nestabilní test z #189 + Zastavit v Nastavení | ✅ sloučeno | PR #195 → main fa5508b | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ✅ body 5–9, 11 sloučeny (PR #196 → main 5dd81c2); body 2/3 → #184 | — | body 1/4/10 hotové jinde; 2/3 → #184 |
-| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | 🔵 Codex implementuje | `fix/recording-fewer-clicks` | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
+| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | 🔵 review + CI, PR #197 (draft, Fixes #184 #187) | `fix/recording-fewer-clicks` @ 1f695a6 | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
 ## Danova rozhodnutí (chat, 18. 11. 2026 ~16:00)
 
@@ -198,3 +198,6 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 ~22:10 — #184 start na fix/recording-fewer-clicks z 5dd81c2 (Codex terra max, packet scratchpad/packet-184.md).
 - 18. 11. 2026 ~22:30 — #184 kolo 1 EXIT=0 (terra 6.1 / max), 1fd367f pushnutý (8 souborů, tsc exit 0): přepínač Soukromá/Firemní (localStorage, první použití Firemní), řádek s firmou → Nastavení, předvyplnění, ověření nabídky beze změny; 4 kliky vč. otevření panelu.
   **Claude kontrola: kolo 1 ODSTRANILO existující volitelný přepínač „Nové nahrávky odesílat automaticky“ a jeho cestu** — mimo Danovo rozhodnutí (to se týkalo nové cesty). Rozhodl jsem sám: vrátit přepínač i chování (výchozí vypnuto) → kolo 2 (Y1–Y3) běží.
+- 18. 11. 2026 ~22:45 — #184 kolo 2 EXIT=0 (terra 6.1 / max), 3a6918a: přepínač automatického odesílání vrácen (Settings.jsx = main; původní testy
+  vráceny + nový test přepínače). 🧪 settings 71, recording-card 141, recording-visibility 7. Orchestrátor zapsal **D24 do ROZHODNUTI.md** (1f695a6).
+  Draft PR #197 (Fixes #184, Fixes #187), review + CI běží.
