@@ -46,8 +46,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | — |
 | #186 | Čerstvou nahrávku nejde smazat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #193 → main abb364c |
-| #194 | Nestabilní test z #189 + Zastavit v Nastavení | 🔵 review + CI, PR #195 (draft) | `fix/flaky-company-test` @ e2cd818 | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
-| #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
+| #194 | Nestabilní test z #189 + Zastavit v Nastavení | ✅ sloučeno | PR #195 → main fa5508b | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
+| #187 | UI drobnosti | 🔵 Codex implementuje (U5–U9, U11) | `fix/ui-polish` | body 1/4/10 hotové jinde; 2/3 → #184 |
 | #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
 ## Danova rozhodnutí (chat, 18. 11. 2026 ~16:00)
@@ -180,3 +180,9 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   po runReady u prošlé relace spouští OAuth discovery, jen když čtení vlastníka nepředběhne zápis relace; handler síť nevolá ⇒ ne vada kódu.
   Test deterministický, pojistka fetch beze změny; F1 10/10 PASS. Zastavit v Nastavení až po readyForStop. 🧪 queue-wiring 357, recording-card 119.
   Draft PR #195, review + CI běží.
+- 18. 11. 2026 ~21:10 — review #194 (sol 6.2 max): VRÁTIT 1× P2 (test nerozliší handler × fronta u sdíleného příslibu obnovy). CI PASS na e2cd818.
+  Rozhodl jsem sám: sloučit (test jen zpevňuje proti main, nic neoslabuje; sousední test bez sítě dál platí) a P2 → #190 bod 7.
+  **PR #195 sloučen squash → main fa5508b**, #194 zavřené; větev smazána, panely zavřené. kombinace: terra 6.1 max → sol 6.2 max, 1 kolo.
+- 18. 11. 2026 ~21:10 — #187 start na fix/ui-polish z fa5508b (Codex terra max). Packet #184 připraven (scratchpad/packet-184.md):
+  přepínač Soukromá/Firemní (poslední volba, první použití = Firemní jako dosud), řádek s firmou místo „Firmu zvolíte před odesláním“,
+  předvyplněný formulář po Ukončit, BEZ samoodeslání, důvod zašedlého tlačítka. ROZHODNUTI.md zapíše orchestrátor v PR.
