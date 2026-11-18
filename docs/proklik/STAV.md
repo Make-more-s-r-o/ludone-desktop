@@ -221,3 +221,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 | #194 | #195 | terra 6.1 max → sol 6.2 max | 1 | VRÁTIT (P2) → sloučeno, P2 do #190 |
 | #187 | #196 | terra 6.1 max → sol 6.2 max | 3 | PŘIJMOUT |
 | #184 (+#187) | #197 | terra 6.1 max → sol 6.2 max | 4 | PŘIJMOUT |
+- 18. 11. 2026 22:46 — tik: žádné nové proklik issues, žádné zprávy; Q k vydání 0.1.12 bez odpovědi (open). Nic nevydáno.
