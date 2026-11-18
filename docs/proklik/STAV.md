@@ -42,8 +42,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 
 | Issue | Název | Stav | Větev / PR | Poznámka |
 |---|---|---|---|---|
-| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 kolo 4 (zúžené), PR #189 (draft) | `fix/upload-company-default` @ 12ff68d | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
-| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 kolo 4 (zúžené), PR #189 (draft) | `fix/upload-company-default` @ 12ff68d | — |
+| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 úzké review k4 + CI, PR #189 (draft) | `fix/upload-company-default` @ b98fb9b | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
+| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 úzké review k4 + CI, PR #189 (draft) | `fix/upload-company-default` @ b98fb9b | — |
 | #186 | Čerstvou nahrávku nejde smazat | ⏳ ve frontě | — | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
@@ -80,7 +80,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | `term_5254fbdd-…` | #182+#183 review kola 2, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-2-1795017783289.log` | EXIT=0, VRÁTIT, zavřeno |
 | `term_6acb1378-5798-4644-9818-b4d90f13d544` | #182+#183 kolo 3, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-3-1795018834875.log` | EXIT=0, převzato (12ff68d), zavřeno |
 | `term_3a0fbc37-…` | #182+#183 review kola 3, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-3-1795020083994.log` | EXIT=0, VRÁTIT, zavřeno |
-| (kolo 4) | #182+#183 kolo 4 ZÚŽENÉ, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-4-uzke-1795021055694.log` | běží |
+| `term_7bb5287a-…` | #182+#183 kolo 4 ZÚŽENÉ, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-4-uzke-1795021055694.log` | EXIT=0, převzato (b98fb9b), zavřeno |
+| (review k4) | #182+#183 úzké review kola 4, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-4-1795021925141.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -118,3 +119,5 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   (přímo #183), T3 falešné „uložení selhalo“ po fokusu (častý případ), T4 zaseknuté „Ověřuji účet“; povolen jeden běh tsc.
   Rozhodl jsem sám: zbylé 4 okrajové P2 (dvojitá chyba disku, availableCompanyIds, výsledek ověření po unknown, chybové kódy) ⇒ issue #190.
   Review 4 bude ověřovat jen T1–T4 + regrese. kombinace: terra 6.1 max → sol 6.2 max, kola 1–3 VRÁTIT.
+- 18. 11. 2026 ~18:30 — kolo 4 EXIT=0 (terra 6.1 / max), b98fb9b pushnutý (6 souborů, +284/−19), bez @ts-* potlačení a beze změny jsconfig/package.json;
+  Codex: tsc exit 0. 🧪 moje cílené: recordings-dashboard 60, recording-card 96, auth-identity-fallback 50 PASS. Úzké review k4 + CI #189 běží (hlídač čeká na obojí).
