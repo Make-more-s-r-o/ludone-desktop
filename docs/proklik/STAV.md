@@ -42,9 +42,9 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 
 | Issue | Název | Stav | Větev / PR | Poznámka |
 |---|---|---|---|---|
-| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 review k5 + CI, PR #189 (draft) | `fix/upload-company-default` @ 7648ace | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
-| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 review k5 + CI, PR #189 (draft) | `fix/upload-company-default` @ 7648ace | — |
-| #186 | Čerstvou nahrávku nejde smazat | ⏳ ve frontě | — | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
+| #182 | Nová nahrávka nedostane výchozí firmu | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
+| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | — |
+| #186 | Čerstvou nahrávku nejde smazat | 🔵 Codex implementuje | `fix/recording-delete-fresh` | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
 | #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
@@ -83,7 +83,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | `term_7bb5287a-…` | #182+#183 kolo 4 ZÚŽENÉ, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-4-uzke-1795021055694.log` | EXIT=0, převzato (b98fb9b), zavřeno |
 | `term_01b4e1f8-…` | #182+#183 úzké review kola 4, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-4-1795021925141.log` | EXIT=0, VRÁTIT (3× P2), zavřeno |
 | `term_d4ef6115-…` | #182+#183 kolo 5 malé, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-5-male-1795022485279.log` | EXIT=0, převzato (7648ace), zavřeno |
-| (review k5) | #182+#183 review kola 5 (E1/E2), sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-5-1795022963820.log` | běží |
+| `term_ad1668cd-…` | #182+#183 review kola 5, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-5-1795022963820.log` | EXIT=0, PŘIJMOUT S VÝHRADAMI, zavřeno |
+| (#186) | #186 implementace, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-186-mazani-cerstve-nahravky-1795023485683.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -128,3 +129,8 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   → malé kolo 5; T3 vzácná souběžnost uložení × selhání snímku → #190 (bod 5). Po kole 5: krátké review jen E1/E2 a sloučit.
 - 18. 11. 2026 ~18:55 — kolo 5 EXIT=0 (terra 6.1 / max), 7648ace pushnutý (4 soubory, +115/−8, 0× @ts-*, tsc exit 0 dle Codexu).
   Claude review podmínky exportu: přísnější (blok jen visibility:hidden + disabled během obnovy; exportCopy nově vyžaduje signed-in + shodu identity a epochy snímku). 🧪 recordings-dashboard 62, recording-card 98 PASS. Review k5 + CI běží.
+- 18. 11. 2026 ~19:05 — review k5 (sol 6.2 max, 0 subagentů): PŘIJMOUT S VÝHRADAMI (1× P2 syntetický input na disabled poli → #190 bod 6).
+  CI #189 gates PASS na přesném 7648ace. **PR #189 sloučen squash → main 77c13cb**, #182 a #183 zavřené (Fixes), komentáře s 5 kroky pro Dana.
+  Větev fix/upload-company-default smazána lokálně i remote, panely zavřené.
+  kombinace: autor gpt-6.1-terra max, reviewer gpt-6.2-sol max, 5 kol (VRÁTIT×4, pak PŘIJMOUT S VÝHRADAMI); odloženo #188, #190.
+- 18. 11. 2026 ~19:05 — #186 start na fix/recording-delete-fresh z 77c13cb (Codex terra max; packet s povoleným 1× tsc).
