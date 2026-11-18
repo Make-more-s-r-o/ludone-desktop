@@ -201,3 +201,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 ~22:45 — #184 kolo 2 EXIT=0 (terra 6.1 / max), 3a6918a: přepínač automatického odesílání vrácen (Settings.jsx = main; původní testy
   vráceny + nový test přepínače). 🧪 settings 71, recording-card 141, recording-visibility 7. Orchestrátor zapsal **D24 do ROZHODNUTI.md** (1f695a6).
   Draft PR #197 (Fixes #184, Fixes #187), review + CI běží.
+- 18. 11. 2026 ~23:00 — review #184 (sol 6.2 max, 0 subagentů): VRÁTIT 3× P1 (souběhy): Z1 automatika bere firmu ze startu (regrese vs main), Z2 fokus během odesílání zneplatní offerToken → stale_offer (týká se i cesty jedním klikem), Z3 start před ověřením účtu = falešná změna identity (regrese vs main). CI #197 PASS na 1f695a6. Kolo 3 (Z1–Z3, princip „kde main fungoval, vrátit jeho chování“) běží.
