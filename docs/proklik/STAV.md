@@ -190,3 +190,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   Změna očekávání pořadí v recordings-dashboard = U5 (záměr). 🧪 issue-187-ui 13, recordings-dashboard 69 PASS.
   Draft PR #196 (Refs #187 — zavře ho až PR #184, body 2/3), review + CI běží.
 - 18. 11. 2026 ~21:20 — review #187 (sol 6.2 max, 0 subagentů): VRÁTIT 3× P2 (ořez ručně zadaného termínu v názvu, vyhledání „Schůzka“, dvojí popis Odesláno v detailu); CI #196 PASS na a213445. Malé kolo 2 (W1–W3) běží.
+- 18. 11. 2026 ~21:50 — review #187 k2 (sol 6.2 max): VRÁTIT 2× P2 (hranice minuty: ořez podle času relace místo začátku stopy; hledání přes spojený řetězec). CI #196 na 13ab101 FAIL: tests/recordings-status.test.js čeká starý text „Odesláno podle stavu fronty“ (W3 ho záměrně změnil; ROZHODNUTI ho nepředepisuje). Kolo 3 (X1 upravit jen tuto aserci + zachovat/ověřit invariant „netvrdit neprovedené ověření“, X2 stejný čas začátku, X3 oddělené hledání) běží.
