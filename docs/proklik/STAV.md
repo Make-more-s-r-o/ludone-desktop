@@ -42,8 +42,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 
 | Issue | Název | Stav | Větev / PR | Poznámka |
 |---|---|---|---|---|
-| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 opravné kolo 2 | `fix/upload-company-default` @ 9e7ff6d | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
-| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 opravné kolo 2 | `fix/upload-company-default` @ 9e7ff6d | — |
+| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 review kola 2 | `fix/upload-company-default` @ a55b055 | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
+| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 review kola 2 | `fix/upload-company-default` @ a55b055 | — |
 | #186 | Čerstvou nahrávku nejde smazat | ⏳ ve frontě | — | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
@@ -76,7 +76,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 |---|---|---|---|
 | `term_464c0a7a-dc84-430f-8acd-0f7648a5601a` | #182+#183 implementace, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-vychozi-firmy-182-183-1795013407939.log` | EXIT=0, převzato (commit 9e7ff6d) |
 | `term_59f98bfa-ebd2-453d-94b1-c98fa597ef38` | #182+#183 review, sol 6.2 max read-only | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-1795015414005.log` | EXIT=0, VRÁTIT, zavřeno |
-| `term_9b6ef6f7-1fd6-4283-95ce-eb1305b8d957` | #182+#183 kolo 2, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-2-1795016336579.log` | běží |
+| `term_9b6ef6f7-1fd6-4283-95ce-eb1305b8d957` | #182+#183 kolo 2, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-2-1795016336579.log` | EXIT=0, převzato (a55b055), zavřeno |
+| (review k2) | #182+#183 review kola 2, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-2-1795017783289.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -96,3 +97,7 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   upload-company-regression 15, recordings-dashboard 43, queue-wiring 351 — vše PASS (review je kvůli sandboxu pustit nemohlo).
   Větev pushnutá. kombinace: autor terra 6.1 max → reviewer sol 6.2 max, kolo 1 VRÁTIT.
 - 18. 11. 2026 ~17:05 — zpráva 🛰 Orca koordinátora (msg_586ee4565a1f, handle 🛰 term_00e4043d-…): Dan odešel, pracovat samostatně, levně, Danovi jen nutné otázky kanálem projektu; Claude limity napjaté (makemore 96 %). ⇒ autonomní režim, rozhodnutí do „Rozhodl jsem sám“. Modely beze změny: Danova přímá odpověď v chatu (terra 6.1 impl., sol 6.2 review) má přednost před obecným vzkazem (ten pro těžší práci říká totéž). BrightSight zmrazen (netýká se).
+- 18. 11. 2026 ~17:25 — kolo 2 EXIT=0 (terra 6.1 / max), commit a55b055 pushnutý (12 souborů, 28 nových testů, N1–N8 opraveny dle Codexu).
+  Claude review auth diffu k2: OK (userinfo jen přes resolveUserIdentity/trustedRemoteEndpoint, sub jen při shodě e-mailu, token se neukládá; předvolba před relací + rollback).
+  🧪 Moje cílené testy na a55b055: auth-identity-fallback 48, upload-company-regression 19, upload-company-storage-regression 3,
+  recordings-dashboard 51, queue-wiring 354, settings 70, ipc-sender-guard 24 — vše PASS; eslint electron src EXIT 0. Review k2 (sol 6.2) běží.
