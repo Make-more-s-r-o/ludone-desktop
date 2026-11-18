@@ -93,7 +93,8 @@ describe("pravdivé stavy lokálních nahrávek", () => {
     try {
       await vi.waitFor(() => expect(dashboard.card(ids.sent)).not.toBeNull());
       expect(dashboard.card(ids.sending).textContent).toContain("Odesílá se do LuDone");
-      expect(dashboard.card(ids.sent).textContent).toContain("Odesláno podle stavu fronty");
+      expect(dashboard.card(ids.sent).textContent).toContain("Na serveru neověřeno");
+      expect(dashboard.card(ids.sent).textContent).not.toContain("V LuDone ✓");
       expect(dashboard.card(ids.sent).textContent).not.toContain("čeká ve frontě");
       expect(dashboard.card(ids.sent).textContent).not.toContain("Na serveru je úplná");
       expect(dashboard.card(ids.sent).textContent).toContain("Místní fronta");

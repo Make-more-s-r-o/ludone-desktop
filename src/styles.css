@@ -1545,7 +1545,7 @@ svg {
 }
 
 .day-preview__item-copy .day-preview__state--odeslano {
-  color: var(--panel-ok);
+  color: var(--panel-subtle);
 }
 
 .queue-card {

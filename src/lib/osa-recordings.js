@@ -1,3 +1,5 @@
+import { recordingDisplayTitle } from "./recording-display.js";
+
 export const OSA_PAGE_SIZE = 7;
 
 function fold(value) {
@@ -61,7 +63,9 @@ export function selectOsaRecordings(items, query = {}, now = new Date()) {
   const selected = error ? [] : (Array.isArray(items) ? items : []).filter(item => item && typeof item === "object").map((item, index) => ({ item, index, date: itemDate(item.createdAt) })).filter(({ item, date }) => {
     if (from && (!date || date < from || date >= until)) return false;
     if (status !== "all" && osaRecordingStatus(item) !== status) return false;
-    return !search || fold([item.title, item.companyName, item.company?.name, item.uploadPreferences?.companyName].filter(Boolean).join(" ")).includes(search);
+    return !search
+      || fold([item.title, item.companyName, item.company?.name, item.uploadPreferences?.companyName].filter(Boolean).join(" ")).includes(search)
+      || fold(recordingDisplayTitle(item.title, item.createdAt)).includes(search);
   }).sort((a, b) => {
     const byDate = (b.date?.getTime() ?? -Infinity) - (a.date?.getTime() ?? -Infinity);
     if (byDate && !Number.isNaN(byDate)) return byDate;

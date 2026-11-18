@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, CheckIcon, MicIcon, RefreshIcon, WaitingIcon } from "../../components/Icons.jsx";
 import { formatSize as formatSharedSize, recordingSizeText } from "../../lib/format-size.js";
 import { recordingDeletionFailureMessage } from "../recording/deletion-message.js";
+import { countLabel } from "../../lib/count-label.js";
+import { recordingDisplayTitle } from "../../lib/recording-display.js";
 
 import "./day-polish.css";
 
@@ -126,7 +128,7 @@ function groupDays(items) {
     groups.get(key).items.push(item);
   }
   return [...groups.values()].sort((a, b) => a.key === "unknown" ? 1 : b.key === "unknown" ? -1 : b.key.localeCompare(a.key))
-    .map((group) => ({ ...group, items: group.items.sort((a, b) => Date.parse(a.createdAt ?? "") - Date.parse(b.createdAt ?? "")) }));
+    .map((group) => ({ ...group, items: group.items.sort((a, b) => Date.parse(b.createdAt ?? "") - Date.parse(a.createdAt ?? "")) }));
 }
 
 function identityKey(value) {
@@ -192,11 +194,12 @@ function recordingSourceLabel(item) {
   return item.source === "orphan" ? "Jen na Macu" : "Místní fronta";
 }
 
-function deliveryStateLabel(item) {
+function deliveryStateLabel(item, verified = false) {
   if (item.recordingInProgress) return "Nahrává se";
+  if (verified) return "V LuDone ✓";
   if (item.source === "orphan") return "Zůstává jen na tomto Macu";
   if (item.state === "odesila") return "Odesílá se do LuDone";
-  if (item.state === "odeslano") return "Odesláno podle stavu fronty";
+  if (item.state === "odeslano") return "Odesláno";
   if (item.state === "selhalo") return "Odeslání selhalo";
   if (item.state === "ceka" && item.uploadIntent === "approved") {
     return "Schváleno k odeslání · čeká ve frontě";
@@ -670,12 +673,6 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
           Obnovit přehled
         </button>
       </div>
-      <p
-        className={`recordings-dashboard__notice${disabledExplanation ? " recordings-dashboard__notice--account" : ""}`}
-        role={disabledExplanation ? "status" : undefined}
-      >
-        Převzetí nahrávky ji neodešle.{disabledExplanation ? ` ${disabledExplanation}` : ""}
-      </p>
       {view.state === "loading" && <p role="status">Načítám nahrávky…</p>}
       {view.state === "ready" && view.message && <p role="alert">{view.message}</p>}
       {view.state === "error" && (
@@ -699,7 +696,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
         <ul className="recordings-dashboard__list" aria-label="Lokální nahrávky">
           {groupDays(filteredItems).map((day) => (
             <li className="recordings-day" key={day.key} data-day={day.key}>
-              <h2 className="recordings-day__heading">{dayLabel(day.createdAt)} <span>{day.items.length} {day.items.length === 1 ? "nahrávka" : day.items.length < 5 ? "nahrávky" : "nahrávek"}</span></h2>
+              <h2 className="recordings-day__heading">{dayLabel(day.createdAt)} <span>{countLabel(day.items.length, "nahrávka", "nahrávky", "nahrávek")}</span></h2>
               <ul className="recordings-day__items">
           {day.items.map((snapshotItem) => {
             const snapshotMatches = authState === "signed-in" && currentIdentity && view.snapshotIdentity === currentIdentity
@@ -762,9 +759,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     <span className="recording-queue-card__detail-date">{dayLabel(item.createdAt)} · {formatClockTime(item.createdAt)}</span>
                     <span className="recording-queue-card__source-icon" aria-hidden="true"><MicIcon /></span>
                     <span className="recording-queue-card__heading">
-                      <strong>{item.title ?? "Nahrávka"}</strong>
-                      <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.recordingInProgress ? "active" : item.source === "orphan" ? "local" : item.state}`}>
-                        {deliveryStateLabel(item)}
+                      <strong>{recordingDisplayTitle(item.title, item.createdAt)}</strong>
+                      <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.recordingInProgress ? "active" : verified ? "verified" : item.source === "orphan" ? "local" : item.state}`}>
+                        {deliveryStateLabel(item, verified)}
                       </span>
                     </span>
                     <span className="recording-queue-card__facts">
@@ -780,7 +777,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   </summary>
                   <div className="recording-queue-card__detail">
                     <header className="recording-queue-card__detail-heading">
-                      <h1>{item.title ?? "Nahrávka"}</h1>
+                      <h1>{recordingDisplayTitle(item.title, item.createdAt)}</h1>
                       <p>{formatCreatedAt(item.createdAt)} · {formatDuration(item.durationMs)} · {itemSizeText(item)}</p>
                     </header>
                     <ol className="recording-queue-card__journey" aria-label="Postup nahrávky">
@@ -794,8 +791,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     <section className="recording-queue-card__storage" aria-labelledby={`recording-storage-${item.id}`}>
                       <div className="recording-queue-card__storage-heading">
                         <h2 id={`recording-storage-${item.id}`}>Uložení a přístup</h2>
-                        <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.recordingInProgress ? "active" : item.source === "orphan" ? "local" : item.state}`}>
-                          {deliveryStateLabel(item)}
+                        <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.recordingInProgress ? "active" : verified ? "verified" : item.source === "orphan" ? "local" : item.state}`}>
+                          {deliveryStateLabel(item, verified)}
                         </span>
                       </div>
                       <dl>
@@ -926,7 +923,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                       }
                     }}><OsaIcon name="trash" size={17} /> Smazat nahrávku</button>
                 )}
-</> }} server={{ status: verified ? "Dokončeno · ověřeno" : verification && Object.values(verification.tracks).some(result => result.status !== "complete") ? VERIFICATION_LABELS[Object.values(verification.tracks).find(result => result.status !== "complete").status] : deliveryStateLabel(item), verified: Boolean(verified), error: Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? [...new Set(Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]))].join(" · ") : "Přepis a analýza jsou na webu", actions: <>                {claimable && (
+</> }} server={{ status: verification && !verified ? VERIFICATION_LABELS[Object.values(verification.tracks).find(result => result.status !== "complete").status] : deliveryStateLabel(item, verified), verified: Boolean(verified), error: Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? [...new Set(Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]))].join(" · ") : item.state === "odeslano" ? "Na serveru neověřeno" : "Přepis a analýza jsou na webu", actions: <>                {claimable && (<>
                   <button
                     type="button"
                     className="button button--small recording-action--claim"
@@ -935,7 +932,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                   >
                     {claimingId === item.id ? "Přebírám…" : "Převzít pod svůj účet"}
                   </button>
-                )}
+                  <p>Převzetí nahrávky ji neodešle.</p>
+                </>)}
+                {!snapshotMatches && snapshotItem.canClaim && disabledExplanation && <p role="status">{disabledExplanation}</p>}
                 {canVerify && (
                   <button
                     type="button"
@@ -998,9 +997,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
             <li className="recording-queue-card recording-queue-card--invalid" data-testid="unreadable-recordings">
               <strong>Poškozená data bez bezpečné identity</strong>
               <p>
-                {view.unreadableCount === 1
-                  ? "Jednu nahrávku nelze bezpečně zobrazit ani použít."
-                  : `${view.unreadableCount} nahrávek nelze bezpečně zobrazit ani použít.`}
+                {countLabel(view.unreadableCount, "nahrávku", "nahrávky", "nahrávek")} nelze bezpečně zobrazit ani použít.
               </p>
             </li>
           )}
