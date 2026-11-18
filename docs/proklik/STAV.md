@@ -91,7 +91,7 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | `term_68c3d5cc-…` | #185 implementace, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-185-je-poznat-ze-nahrava-1795026502705.log` | EXIT=0, převzato (ebd50dc), zavřeno |
 | `term_4f005b90-…` | #185 review, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-185-1795027447587.log` | EXIT=0, VRÁTIT, zavřeno |
 | `term_63849f58-…` | #185 kolo 2, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-185-kolo-2-1795027967839.log` | EXIT=0, převzato (777d5eb), zavřeno |
-| (review 185 k2) | #185 review kola 2, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-185-kolo-2-1795028418720.log` | běží |
+| `review 185 k2` | #185 review kola 2, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-185-kolo-2-1795028418720.log` | EXIT=0, PŘIJMOUT S VÝHRADAMI |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -167,3 +167,7 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 ~20:15 — #185 kolo 2 EXIT=0 (terra 6.1 / max), 777d5eb pushnutý (3 soubory): onboarding text vrácen (test onboardingu beze změny),
   nová konstanta pro nahrávání, AudioContext zavřen při zrušení, Ukončit až po potvrzení rekordérů, test odloženého startu (mutací ověřen).
   🧪 recording-card 117, onboarding-missing-steps 23 PASS; tsc exit 0 dle Codexu. Review k2 + CI běží.
+- 18. 11. 2026 ~20:35 — review #185 k2 (sol 6.2 max, 0 subagentů): PŘIJMOUT S VÝHRADAMI (1× P2: Zastavit v Nastavení→Zdroje aktivní dřív).
+  CI #193 na 777d5eb FAIL — ale na NESTABILNÍM testu z #189 (queue-wiring „poslední známý název i z prošlé relace“ sáhl na skutečný fetch),
+  ne na #185. main CI zelené, lokálně 3/3 PASS. Rozhodl jsem sám: rerun failed jobu (měřidlo beze změny) + issue #194 (oprava příčiny
+  flaky testu + P2 Zastavit) jako další krok po #185.
