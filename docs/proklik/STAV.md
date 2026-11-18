@@ -189,3 +189,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 ~21:30 — #187 EXIT=0 (terra 6.1 / max), a213445 pushnutý (9 souborů, nový tests/issue-187-ui.test.js, tsc exit 0).
   Změna očekávání pořadí v recordings-dashboard = U5 (záměr). 🧪 issue-187-ui 13, recordings-dashboard 69 PASS.
   Draft PR #196 (Refs #187 — zavře ho až PR #184, body 2/3), review + CI běží.
+- 18. 11. 2026 ~21:20 — review #187 (sol 6.2 max, 0 subagentů): VRÁTIT 3× P2 (ořez ručně zadaného termínu v názvu, vyhledání „Schůzka“, dvojí popis Odesláno v detailu); CI #196 PASS na a213445. Malé kolo 2 (W1–W3) běží.
