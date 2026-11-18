@@ -66,6 +66,8 @@ async function renderSettings({
   }>)} */ (undefined),
   setDockVisible = (value) => Promise.resolve(value),
   setOpenAtLogin = (value) => Promise.resolve(value),
+  getUploadEnabled = () => Promise.resolve(false),
+  setUploadEnabled = (value) => Promise.resolve(value),
   selectUploadCompany = (_offerToken, companyId) => Promise.resolve({
     saved: true, selectedCompanyId: companyId,
   }),
@@ -113,6 +115,7 @@ async function renderSettings({
     getDiagnostics: vi.fn(diagnostics),
     getDockVisible: vi.fn(dockVisible),
     getOpenAtLogin: vi.fn(openAtLogin),
+    getUploadEnabled: vi.fn(getUploadEnabled),
     listLocalRecordings: vi.fn(listLocalRecordings),
     listUploadCompanies: vi.fn(listUploadCompanies),
     claimRecording: vi.fn(claimRecording),
@@ -122,6 +125,7 @@ async function renderSettings({
     switchAuthOrigin: vi.fn(switchAuthOriginImplementation),
     setDockVisible: vi.fn(setDockVisible),
     setOpenAtLogin: vi.fn(setOpenAtLogin),
+    setUploadEnabled: vi.fn(setUploadEnabled),
     selectUploadCompany: vi.fn(selectUploadCompany),
   };
   Object.defineProperty(dom.window, "localStorage", {
@@ -275,11 +279,31 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
       const panel = settings.document.querySelector("#settings-panel-audio");
       const uploadPanel = settings.document.querySelector("#settings-panel-account");
       expect(panel?.querySelectorAll('[role="switch"]')).toHaveLength(0);
-      expect(uploadPanel?.querySelector('[data-testid="automatic-upload-setting"] [role="switch"]')).toBeNull();
+      expect(uploadPanel?.querySelector('[data-testid="automatic-upload-setting"] [role="switch"]')
+        ?.getAttribute("aria-label"))
+        .toBe("Automaticky odesílat nové nahrávky");
       expect(panel?.textContent).not.toContain("Ostatní hovory");
       expect(panel?.textContent).not.toContain("Nejdřív se zeptat");
-      expect(uploadPanel?.textContent).toContain("Po ukončení nahrávání odeslání potvrdíš jedním kliknutím.");
+      expect(uploadPanel?.textContent).toContain("Nahrávání spouštíš ručně.");
+      expect(uploadPanel?.textContent).toContain("Platí jen pro nové záznamy.");
       expect(settings.localStorage.setItem).not.toHaveBeenCalled();
+    } finally {
+      await settings.cleanup();
+    }
+  });
+
+  it("přepínač automatického odesílání čte a mění nastavení v hlavním procesu", async () => {
+    const settings = await renderSettings();
+    try {
+      const toggle = settings.document.querySelector('[data-testid="automatic-upload-setting"] [role="switch"]');
+      expect(settings.ludone.getUploadEnabled).toHaveBeenCalledOnce();
+      expect(toggle.getAttribute("aria-checked")).toBe("false");
+      await React.act(async () => { toggle.click(); });
+      expect(settings.ludone.setUploadEnabled).toHaveBeenLastCalledWith(true);
+      expect(toggle.getAttribute("aria-checked")).toBe("true");
+      await React.act(async () => { toggle.click(); });
+      expect(settings.ludone.setUploadEnabled).toHaveBeenLastCalledWith(false);
+      expect(toggle.getAttribute("aria-checked")).toBe("false");
     } finally {
       await settings.cleanup();
     }

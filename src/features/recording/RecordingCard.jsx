@@ -248,6 +248,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [savedAgeNow, setSavedAgeNow] = useState(() => Date.now());
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [autoResolvingCompany, setAutoResolvingCompany] = useState(false);
   const [copyExporting, setCopyExporting] = useState(false);
   const [recordingVisibility, setRecordingVisibility] = useState(getRecordingVisibilityPreference);
   const [visibilityStored, setVisibilityStored] = useState(true);
@@ -530,6 +531,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
           setSavedRecording(saved);
         }
       }
+      if (saved?.automaticUpload === true) {
+        const defaultName = suggestedRecordingName(saved.startedAt);
+        await exportSavedRecording(saved, defaultName, "send");
+      }
       return saved;
     })();
     return runtime.finishPromise;
@@ -551,12 +556,27 @@ export const RecordingCard = forwardRef(function RecordingCard({
     setExportError(null);
     const generation = uploadAuthGeneration.current;
     const uploadIdentity = lastUploadIdentity.current;
+    const autoSelectCompany = !manual && decision === "send" && recording.automaticUpload === true
+      && typeof window.ludone?.getUploadCompanyDefault === "function" && supportsPreferences;
+    if (autoSelectCompany) setAutoResolvingCompany(true);
     try {
-      const freshPreferences = manual && uploadPreferences
+      let freshPreferences = manual && uploadPreferences
         ? await freshRecordingUploadPreferences(uploadPreferences).catch((error) => {
           if (decision === "keep") return null;
           throw error;
         }) : null;
+      if (autoSelectCompany) {
+        const choice = recordingChoices.current;
+        // Firma a přístup patří ke spuštěné nahrávce, nesmí přejít na jiný účet.
+        if (choice && (!uploadIdentityVerified.current || choice.identityKey !== lastUploadIdentity.current
+          || choice.authGeneration !== uploadAuthGeneration.current)) throw new Error("identity_changed");
+        const savedDefault = choice?.company ?? await choice?.defaultRequest?.storedPromise
+          ?? await window.ludone.getUploadCompanyDefault();
+        if (!savedDefault?.companyId) throw new Error("Vyber cílovou firmu. Výchozí firmu se nepodařilo určit.");
+        freshPreferences = await freshRecordingUploadPreferences({ companyId: savedDefault.companyId, visibility: choice?.visibility ?? "company" });
+      }
+      if (autoSelectCompany && (!canSendRef.current || !uploadIdentityVerified.current
+        || uploadIdentity !== lastUploadIdentity.current)) throw new Error("identity_changed");
       if (generation !== uploadAuthGeneration.current) throw new Error("Přihlášení se změnilo. Ověř volby znovu.");
       const modernDecision = window.ludone.saveRecordingDecision;
       const result = typeof modernDecision === "function"
@@ -593,13 +613,15 @@ export const RecordingCard = forwardRef(function RecordingCard({
         dismissAfter: result.outcome === "saved_local" ? LOCAL_SAVE_NOTICE_MS : null,
       });
     } catch (error) {
-      setExportError(describeError(error));
+      setExportError(autoSelectCompany && error?.message !== "Vyber cílovou firmu. Výchozí firmu se nepodařilo určit."
+        ? `Automatické odeslání se nespustilo. ${uploadCompanyErrorMessage(error)}` : describeError(error));
       if (manual && supportsPreferences && generation === uploadAuthGeneration.current
         && uploadIdentityVerified.current && uploadIdentity === lastUploadIdentity.current) {
         setPickerInitial(uploadPreferences);
         setPickerRefresh((value) => value + 1);
       }
     } finally {
+      if (autoSelectCompany) setAutoResolvingCompany(false);
       setExporting(false);
     }
   }
@@ -1218,7 +1240,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
           {typeof window.ludone?.listUploadCompanies === "function" && pickerOwner && <div hidden={!canSend || verifiedUploadIdentity !== pickerOwner.key}>
             <RecordingUploadPreferences key={`${savedRecording.clientRecordingId}:${pickerOwner.serial}`}
               identityKey={pickerOwner.key} defaultVisibility="company"
-              disabled={!canSend || verifiedUploadIdentity !== pickerOwner.key} busy={exporting}
+              disabled={!canSend || verifiedUploadIdentity !== pickerOwner.key || autoResolvingCompany} busy={exporting}
               initialValue={pickerInitial} initialCompanyPromise={pickerInitialCompanyPromise} refreshToken={pickerRefresh}
               onStatusChange={setUploadPreferencesReason}
               onChange={(value) => setUploadPreferences(value)} />

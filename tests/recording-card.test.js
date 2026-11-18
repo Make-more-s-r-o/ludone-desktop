@@ -483,6 +483,7 @@ async function renderRecordingCard(options = {}) {
   const root = createRoot(dom.window.document.querySelector("#root"));
   const onActivityChange = vi.fn();
   let trayCommand = null;
+  let canSend = options.canSend;
   if (options.storedVisibility !== undefined) {
     dom.window.localStorage.setItem("ludone.desktop.recording-visibility", options.storedVisibility);
   }
@@ -492,7 +493,7 @@ async function renderRecordingCard(options = {}) {
   await React.act(async () => {
     root.render(options.renderApp
       ? React.createElement(App)
-      : React.createElement(RecordingCard, { onActivityChange, trayCommand, canSend: options.canSend }));
+      : React.createElement(RecordingCard, { onActivityChange, trayCommand, canSend }));
   });
 
   const phase = () => dom.window.document
@@ -573,7 +574,13 @@ async function renderRecordingCard(options = {}) {
       await React.act(async () => {
         root.render(options.renderApp
           ? React.createElement(App)
-          : React.createElement(RecordingCard, { onActivityChange, trayCommand, canSend: options.canSend }));
+          : React.createElement(RecordingCard, { onActivityChange, trayCommand, canSend }));
+      });
+    },
+    async setCanSend(value) {
+      canSend = value;
+      await React.act(async () => {
+        root.render(React.createElement(RecordingCard, { onActivityChange, trayCommand, canSend }));
       });
     },
     rejectRecovery(error) {
@@ -1184,16 +1191,14 @@ describe("RecordingCard", () => {
     }
   });
 
-  it("staré automatické nastavení vyžaduje po finish výslovné potvrzení právě jednou", async () => {
+  it("automatický snapshot po finish spustí stejnou send cestu právě jednou", async () => {
     const panel = await renderRecordingCard({
       finishRecordingResult: { automaticUpload: true },
       modernDecision: true,
     });
     try {
       await startRecording(panel);
-      await stopRecording(panel);
-      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
-      await panel.click(panel.document.querySelector('button[type="submit"]'));
+      await panel.click(panel.currentButton());
       await panel.waitForPhase("idle");
       expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
         decision: "send",
@@ -1229,13 +1234,11 @@ describe("RecordingCard", () => {
     }
   });
 
-  it("potvrzené odeslání přes starší most nevytvoří kopii ani neslibuje Stažené", async () => {
+  it("automatické odeslání přes starší most nevytvoří kopii ani neslibuje Stažené", async () => {
     const panel = await renderRecordingCard({ finishRecordingResult: { automaticUpload: true } });
     try {
       await startRecording(panel);
-      await stopRecording(panel);
-      expect(panel.ludone.exportRecording).not.toHaveBeenCalled();
-      await panel.click(panel.document.querySelector('button[type="submit"]'));
+      await panel.click(panel.currentButton());
       await panel.waitForPhase("idle");
 
       expect(panel.ludone.exportRecording).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
@@ -2835,16 +2838,14 @@ it("K5 souběh nové identity a staré chyby neotevře nový formulář se staro
   } finally { await panel.cleanup(); }
 });
 
-it("potvrzené odeslání při starém automatickém nastavení připne ověřenou výchozí firmu", async () => {
+it("automatické odeslání připne ověřenou výchozí firmu k nahrávce", async () => {
   const panel = await renderRecordingCard({ modernDecision: true, finishRecordingResult: { automaticUpload: true } });
   const companyId = "22222222-2222-4222-8222-222222222222";
   const offerToken = "offer-token-0000000000000001";
   panel.ludone.getUploadCompanyDefault = vi.fn(async () => ({ companyId }));
   panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken }));
   try {
-    await startRecording(panel); await stopRecording(panel);
-    expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
-    await panel.click(panel.document.querySelector('button[type="submit"]')); await panel.waitForPhase("idle");
+    await startRecording(panel); await panel.click(panel.currentButton()); await panel.waitForPhase("idle");
     expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledWith(SESSION_ID, expect.objectContaining({
       decision: "send", uploadPreferences: { companyId, offerToken, visibility: "company" },
     }));
@@ -2933,14 +2934,14 @@ describe("P184 předvolby nové nahrávky", () => {
     },
   );
 
-  it("předá volbu a firmu ze startu, ale odeslání čeká na klik i při starém automatickém nastavení", async () => {
+  it("při vypnutém automatickém odesílání předá volbu a firmu ze startu až po kliku", async () => {
     let company = first;
     let tokenNumber = 0;
     const list = vi.fn(async () => offer(company, `offer-token-${String(++tokenNumber).padStart(16, "0")}`));
     const panel = await renderRecordingCard({
       modernDecision: true,
       storedVisibility: "private",
-      finishRecordingResult: { automaticUpload: true },
+      finishRecordingResult: { automaticUpload: false },
       ludoneOverrides: {
         getUploadCompanyDefault: vi.fn(async () => ({ companyId: company, companyName: company === first ? "Alfa" : "Beta" })),
         listUploadCompanies: list,
@@ -2962,6 +2963,146 @@ describe("P184 předvolby nové nahrávky", () => {
         recordingName: DEFAULT_RECORDING_NAME, decision: "send",
         uploadPreferences: { companyId: first, visibility: "private", offerToken: `offer-token-${String(tokenNumber).padStart(16, "0")}` },
       });
+    } finally { await panel.cleanup(); }
+  });
+
+  it("automatické odeslání zachová soukromý přístup a firmu zvolenou při startu", async () => {
+    let company = first;
+    let tokenNumber = 0;
+    const panel = await renderRecordingCard({
+      modernDecision: true,
+      storedVisibility: "private",
+      finishRecordingResult: { automaticUpload: true },
+      ludoneOverrides: {
+        getUploadCompanyDefault: vi.fn(async () => ({ companyId: company, companyName: company === first ? "Alfa" : "Beta" })),
+        listUploadCompanies: vi.fn(async () => offer(company, `offer-token-${String(++tokenNumber).padStart(16, "0")}`)),
+      },
+    });
+    try {
+      await startRecording(panel);
+      company = second;
+      await panel.click(panel.currentButton());
+      await panel.waitForPhase("idle");
+      expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        recordingName: DEFAULT_RECORDING_NAME,
+        decision: "send",
+        uploadPreferences: { companyId: first, visibility: "private", offerToken: `offer-token-${String(tokenNumber).padStart(16, "0")}` },
+      });
+    } finally { await panel.cleanup(); }
+  });
+
+  it("neúspěšné automatické ověření firmy zobrazí důvod a ponechá formulář", async () => {
+    const listUploadCompanies = vi.fn(async () => offer());
+    const panel = await renderRecordingCard({
+      modernDecision: true,
+      finishRecordingResult: { automaticUpload: true },
+      ludoneOverrides: {
+        getUploadCompanyDefault: vi.fn(async () => ({ companyId: first, companyName: "Alfa" })),
+        listUploadCompanies,
+      },
+    });
+    try {
+      await startRecording(panel);
+      listUploadCompanies.mockRejectedValue(new Error("offline"));
+      await stopRecording(panel);
+      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+      expect(panel.document.body.textContent).toContain("Automatické odeslání se nespustilo.");
+      expect(panel.document.body.textContent).toContain("Zkontroluj síť");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("automatické odeslání nezamění odebranou firmu za jinou", async () => {
+    let removed = false;
+    const panel = await renderRecordingCard({
+      modernDecision: true,
+      storedVisibility: "private",
+      finishRecordingResult: { automaticUpload: true },
+      ludoneOverrides: {
+        getUploadCompanyDefault: vi.fn(async () => ({ companyId: first, companyName: "Alfa" })),
+        listUploadCompanies: vi.fn(async () => removed
+          ? { companies: [{ id: second, name: "Beta" }], selectedCompanyId: second, offerToken: "offer-token-0000000000000002" }
+          : offer()),
+      },
+    });
+    try {
+      await startRecording(panel);
+      removed = true;
+      await stopRecording(panel);
+      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+      expect(panel.document.body.textContent).toContain("Automatické odeslání se nespustilo.");
+      expect(panel.document.body.textContent).toContain("Firma už není dostupná pro tento účet.");
+      expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("private");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("změna účtu během nahrávání zruší automatické odeslání s původní firmou", async () => {
+    let company = first;
+    const panel = await renderRecordingCard({
+      modernDecision: true,
+      finishRecordingResult: { automaticUpload: true },
+      ludoneOverrides: {
+        getUploadCompanyDefault: vi.fn(async () => ({ companyId: company, companyName: company === first ? "Alfa" : "Beta" })),
+        listUploadCompanies: vi.fn(async () => offer(company)),
+      },
+    });
+    try {
+      await startRecording(panel);
+      company = second;
+      panel.setAccountBinding(second);
+      await panel.changeAccount({ email: "b@example.test" });
+      await stopRecording(panel);
+      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+      expect(panel.document.body.textContent).toContain("Automatické odeslání se nespustilo.");
+      expect(panel.document.body.textContent).toContain("přihlášení");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("změna účtu při čekání na nabídku zastaví automatické odeslání", async () => {
+    const pendingOffer = deferred();
+    let company = first;
+    const listUploadCompanies = vi.fn().mockImplementation(async () => offer(company));
+    const panel = await renderRecordingCard({
+      modernDecision: true,
+      finishRecordingResult: { automaticUpload: true },
+      ludoneOverrides: {
+        getUploadCompanyDefault: vi.fn(async () => ({ companyId: company, companyName: company === first ? "Alfa" : "Beta" })),
+        listUploadCompanies,
+      },
+    });
+    try {
+      await startRecording(panel);
+      listUploadCompanies.mockReturnValueOnce(pendingOffer.promise);
+      await stopRecording(panel);
+      expect(panel.document.querySelector('button[type="submit"]').disabled).toBe(true);
+      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+      company = second;
+      panel.setAccountBinding(second);
+      await panel.changeAccount({ email: "b@example.test" });
+      await React.act(async () => { pendingOffer.resolve(offer(first)); });
+      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+      expect(panel.document.body.textContent).toContain("Automatické odeslání se nespustilo.");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("zneplatnění přihlášení při čekání na nabídku zastaví automatické odeslání", async () => {
+    const pendingOffer = deferred();
+    const listUploadCompanies = vi.fn().mockImplementation(async () => offer());
+    const panel = await renderRecordingCard({
+      modernDecision: true,
+      finishRecordingResult: { automaticUpload: true },
+      ludoneOverrides: {
+        getUploadCompanyDefault: vi.fn(async () => ({ companyId: first, companyName: "Alfa" })),
+        listUploadCompanies,
+      },
+    });
+    try {
+      await startRecording(panel);
+      listUploadCompanies.mockReturnValueOnce(pendingOffer.promise);
+      await stopRecording(panel);
+      await panel.setCanSend(false);
+      await React.act(async () => { pendingOffer.resolve(offer()); });
+      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+      expect(panel.document.body.textContent).toContain("Automatické odeslání se nespustilo.");
     } finally { await panel.cleanup(); }
   });
 

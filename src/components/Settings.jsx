@@ -340,6 +340,7 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
   );
   const dock = useSystemBooleanSetting("getDockVisible", "setDockVisible");
   const login = useSystemBooleanSetting("getOpenAtLogin", "setOpenAtLogin");
+  const automaticUpload = useSystemBooleanSetting("getUploadEnabled", "setUploadEnabled");
   const update = async (value) => {
     if (!retentionReady || typeof window.ludone?.setRetention !== "function") return;
     setRetentionError(false);
@@ -903,9 +904,15 @@ export function SettingsApp({ embedded = false, initialSection, queueOnly = fals
             <UploadCompanySelector authState={{ ...account, issuer: destination.origin }} />
             <div className="settings-row" data-testid="automatic-upload-setting">
               <div>
-                <strong>Odesílání nových nahrávek</strong>
-                <small>Po ukončení nahrávání odeslání potvrdíš jedním kliknutím.</small>
+                <strong>Nové nahrávky odesílat automaticky</strong>
+                <small>Nahrávání spouštíš ručně. Platí jen pro nové záznamy.</small>
               </div>
+              <Toggle
+                checked={automaticUpload.value}
+                disabled={!automaticUpload.loaded || automaticUpload.busy}
+                onChange={automaticUpload.update}
+                label="Automaticky odesílat nové nahrávky"
+              />
             </div>
             <details className="osa-account-advanced"><summary>Pokročilé nastavení</summary>
             <div className="settings-row settings-row--environment" data-testid="settings-environment-row">
