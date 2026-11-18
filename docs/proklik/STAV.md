@@ -38,14 +38,38 @@ Starší otevřené issues #167–#179 jen na Danův pokyn.
 
 ## Fronta issues `proklik`
 
+Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká na Danovu odpověď).
+
 | Issue | Název | Stav | Větev / PR | Poznámka |
 |---|---|---|---|---|
-| — | žádné otevřené (tik 18. 11. 15:20) | — | — | — |
+| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 Codex implementuje | `fix/upload-company-default` | společný PR s #183; kód přihlášení ⇒ Claude review nad diffem |
+| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 Codex implementuje | `fix/upload-company-default` | — |
+| #186 | Čerstvou nahrávku nejde smazat | ⏳ ve frontě | — | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
+| #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
+| #187 | UI drobnosti | ⏳ ve frontě | — | rutina (luna); bod 10 udělá už PR #182 |
+| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ❓ čeká na Dana | — | otázka Q-20261118-144830-ludone-desktop-a6dd; bez odpovědi do 19. 11. 12:00 varianta A (pamatuje poslední volbu) |
+
+### Rozbor #182 (čtení kódu, ⛔ neověřeno během)
+- Výchozí firma je v šifrované session (`companyTabidooId`). Refresh ji zachová, **nové přihlášení
+  zapíše session od nuly bez firmy** ⇒ každé přihlášení po vypršení ji smaže.
+- `upload-companies:default` vrací `null`, když je přístupový token prošlý (Mac po uspání).
+- Nastavení resetuje stav na `idle` při změně `identityKey` ⇒ „Načíst firmy“ bez reakce (hypotéza).
+
+## Rozhodl jsem sám
+
+- Model: brief říká Codex `gpt-6.1-terra` max + review `gpt-6.2-sol` max; issues nesou poznámku
+  „levný model (sol medium / luna)“ od proklik session. Jedu podle briefu a skillu (user turn),
+  #187 jako rutina na lunu. Rozpor nahlášen Danovi v reportu.
 
 ## Vlastní Codex panely
 
-Žádné.
+| Handle | Úkol | Log | Stav |
+|---|---|---|---|
+| `term_464c0a7a-dc84-430f-8acd-0f7648a5601a` | #182+#183 implementace, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-vychozi-firmy-182-183-1795013407939.log` | běží od 15:50 |
+
+Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
 ## Deník tiků
 
 - 18. 11. 2026 15:20 — start: pravidla přečtena, Node 24.19 ověřen, fronta `proklik` prázdná.
+- 18. 11. 2026 15:50 — 6 nových issues (#182–#187), komentáře s rozborem, otázka k #184, Codex na #182+#183.
