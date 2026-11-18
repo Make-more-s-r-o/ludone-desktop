@@ -1,4 +1,5 @@
 import { LuDoneMark } from "../Icons.jsx";
+import { useEffect, useRef } from "react";
 
 import { OsaIcon } from "./OsaIcon.jsx";
 
@@ -12,6 +13,17 @@ const pages = [
 
 // Stav i čas přicházejí z řídicího procesu; shell je pouze zobrazuje.
 export function OsaShell({ page = "home", onNavigate, recording, queueCount = 0, children, onClose, authState }) {
+  const workspaceRef = useRef(null);
+  useEffect(() => {
+    if (page === "detail") return undefined;
+    const resetOnShow = () => {
+      if (document.visibilityState === "visible" && workspaceRef.current) {
+        workspaceRef.current.scrollTop = 0;
+      }
+    };
+    document.addEventListener("visibilitychange", resetOnShow);
+    return () => document.removeEventListener("visibilitychange", resetOnShow);
+  }, [page]);
   const activePage = page === "detail" ? "library" : page;
   const title = pages.find(([key]) => key === activePage)?.[1] ?? "LuDone Desktop";
   return <main className={`osa-shell osa-shell--${page}`} data-osa-page={page} data-osa-recording={recording?.active ? "true" : "false"}>
@@ -30,7 +42,7 @@ export function OsaShell({ page = "home", onNavigate, recording, queueCount = 0,
         </button>)}
         {authState && <small className="osa-auth-status" data-auth-state={authState} title={{ "signed-in": "Přihlášeno", expired: "Přihlášení vypršelo", checking: "Ověřuji přihlášení", "signed-out": "Místní režim" }[authState]} aria-label={{ "signed-in": "Přihlášeno", expired: "Přihlášení vypršelo", checking: "Ověřuji přihlášení", "signed-out": "Místní režim" }[authState]}>{authState === "signed-in" ? "LD" : authState === "checking" ? "…" : "!"}</small>}
       </nav>}
-      <div className="osa-workspace">
+      <div className="osa-workspace" ref={workspaceRef}>
         {recording?.active && page !== "home" && <div className="osa-live-strip" role="status">
           <span className="osa-live-dot" aria-hidden="true" /><span>{recording.label ?? "Nahrává se"}</span>
           <strong>{recording.elapsed}</strong>

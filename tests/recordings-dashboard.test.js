@@ -8,14 +8,16 @@ import path from "node:path";
 import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
-import { RecordingsDashboard } from "../src/features/recordings/RecordingsDashboard.jsx";
-// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
-import { RecordingDayPreview } from "../src/features/recordings/RecordingDayPreview.jsx";
+const dashboardModule = /** @type {Promise<{ RecordingsDashboard: React.ComponentType<any> }>} */
+  (vi.importActual("../src/features/recordings/RecordingsDashboard.jsx"));
+const dayPreviewModule = /** @type {Promise<{ RecordingDayPreview: React.ComponentType<any> }>} */
+  (vi.importActual("../src/features/recordings/RecordingDayPreview.jsx"));
 const osaShellModule = /** @type {Promise<{ OsaShell: React.ComponentType<{ page: string, children?: React.ReactNode }> }>} */
   (vi.importActual("../src/components/osa/OsaShell.jsx"));
 const settingsModule = /** @type {Promise<{ SettingsApp: React.ComponentType }>} */
   (vi.importActual("../src/components/Settings.jsx"));
+const { RecordingsDashboard } = await dashboardModule;
+const { RecordingDayPreview } = await dayPreviewModule;
 const { OsaShell } = await osaShellModule;
 const { SettingsApp } = await settingsModule;
 
@@ -742,7 +744,7 @@ describe("pravdivá úplnost místního zvuku", () => {
 
 
 describe("produktové dotažení dne", () => {
-  it("dlouhou historii seskupí po místním dni a zachová chronologii i filtry", async () => {
+  it("dlouhou historii seskupí po místním dni a řadí od nejnovějších při zachování filtrů", async () => {
     const items = Array.from({ length: 24 }, (_, index) => ({ ...ITEM,
       id: `9e586e55-d688-43f1-8a80-${String(index).padStart(12, "0")}`,
       createdAt: new Date(2026, 8, 29 + Math.floor(index / 12), index % 12).toISOString(),
@@ -754,7 +756,7 @@ describe("produktové dotažení dne", () => {
       const days = [...dashboard.document.querySelectorAll("[data-day]")];
       expect(days.map((day) => day.getAttribute("data-day"))).toEqual(["2026-09-30", "2026-09-29", "unknown"]);
       expect(days[0].querySelectorAll("[data-recording-id]")).toHaveLength(12);
-      expect([...days[0].querySelectorAll("time")].map((time) => time.dateTime)).toEqual(items.filter((item) => new Date(item.createdAt).getDate() === 30).map((item) => item.createdAt).sort());
+      expect([...days[0].querySelectorAll("time")].map((time) => time.dateTime)).toEqual(items.filter((item) => new Date(item.createdAt).getDate() === 30).map((item) => item.createdAt).sort().reverse());
       await React.act(async () => dashboard.document.querySelector('[data-filter="delivery"]').click());
       expect(dashboard.document.querySelectorAll("[data-recording-id]")).toHaveLength(12);
     } finally { await dashboard.cleanup(); }

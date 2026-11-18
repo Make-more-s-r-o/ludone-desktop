@@ -1,4 +1,5 @@
 import { ArchiveIcon, ArrowRightIcon } from "../../components/Icons.jsx";
+import { recordingDisplayTitle } from "../../lib/recording-display.js";
 
 function safeItems(value) {
   if (!Array.isArray(value)) return [];
@@ -7,7 +8,7 @@ function safeItems(value) {
     .map((item) => ({
       recordingInProgress: item.recordingInProgress === true,
       id: item.id,
-      title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "Nahrávka",
+      title: recordingDisplayTitle(item.title),
       createdAt: typeof item.createdAt === "string" && Number.isFinite(Date.parse(item.createdAt))
         ? item.createdAt
         : null,
@@ -38,7 +39,7 @@ function stateLabel(item) {
   if (item.state === "ceka") return "Čeká na odeslání";
   if (item.state === "odesila") return "Odesílá se";
   if (item.state === "selhalo") return "Odeslání selhalo";
-  if (item.state === "odeslano") return "Odesláno · neověřeno";
+  if (item.state === "odeslano") return "Odesláno";
   return "Stav není ověřený";
 }
 

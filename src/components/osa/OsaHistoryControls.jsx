@@ -1,4 +1,6 @@
-const filters = [["all", "Vše"], ["local", "Na Macu"], ["waiting", "Čeká"], ["attention", "Pozornost"], ["sent", "V LuDone"]];
+import { countLabel } from "../../lib/count-label.js";
+
+const filters = [["all", "Vše"], ["local", "Na Macu"], ["waiting", "Čeká"], ["attention", "Pozornost"], ["sent", "Odesláno"]];
 export function OsaHistoryControls({ query = {}, onChange, result = {}, placement = "all" }) {
   const change = (patch) => onChange?.({ ...patch, page: 1 });
   const page = result.page ?? query.page ?? 1;
@@ -15,7 +17,7 @@ export function OsaHistoryControls({ query = {}, onChange, result = {}, placemen
       {query.period === "custom" && <div className="osa-date-range"><label>Od<input type="date" value={query.from ?? ""} onChange={(event) => change({ from: event.target.value })} /></label><label>Do<input type="date" value={query.to ?? ""} min={query.from || undefined} onChange={(event) => change({ to: event.target.value })} /></label></div>}
     </>}
     {placement !== "filters" && <div className="osa-pagination" aria-label="Stránkování nahrávek">
-      <span role="status">{result.total ?? 0} nahrávek · {page} / {pageCount}</span>
+      <span role="status">{countLabel(result.total ?? 0, "nahrávka", "nahrávky", "nahrávek")} · {page} / {pageCount}</span>
       <button type="button" disabled={page <= 1} onClick={() => onChange?.({ page: page - 1 })} aria-label="Předchozí stránka">‹</button>
       <button type="button" disabled={page >= pageCount} onClick={() => onChange?.({ page: page + 1 })} aria-label="Další stránka">›</button>
     </div>}
