@@ -45,7 +45,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #182 | Nová nahrávka nedostane výchozí firmu | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
 | #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | — |
 | #186 | Čerstvou nahrávku nejde smazat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
-| #185 | Není poznat, že nahrává | 🔵 review k2 + CI, PR #193 (draft) | `fix/recording-feedback` @ 777d5eb | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
+| #185 | Není poznat, že nahrává | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #193 → main abb364c |
+| #194 | Nestabilní test z #189 + Zastavit v Nastavení | 🔵 Codex implementuje | `fix/flaky-company-test` | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
 | #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
@@ -171,3 +172,7 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   CI #193 na 777d5eb FAIL — ale na NESTABILNÍM testu z #189 (queue-wiring „poslední známý název i z prošlé relace“ sáhl na skutečný fetch),
   ne na #185. main CI zelené, lokálně 3/3 PASS. Rozhodl jsem sám: rerun failed jobu (měřidlo beze změny) + issue #194 (oprava příčiny
   flaky testu + P2 Zastavit) jako další krok po #185.
+- 18. 11. 2026 ~20:45 — CI #193 rerun PASS na 777d5eb (potvrzen flaky test, ne vada #185). **PR #193 sloučen squash → main abb364c**, #185 zavřené,
+  komentář s kroky pro Dana; větev smazána lokálně i remote, panely zavřené.
+  kombinace: autor gpt-6.1-terra max, reviewer gpt-6.2-sol max, 2 kola (VRÁTIT, pak PŘIJMOUT S VÝHRADAMI → #194).
+- 18. 11. 2026 ~20:45 — #194 start na fix/flaky-company-test z abb364c (Codex terra max, packet scratchpad/packet-194.md). Pak #187, #184.
