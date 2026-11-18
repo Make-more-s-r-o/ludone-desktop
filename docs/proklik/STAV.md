@@ -42,8 +42,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 
 | Issue | Název | Stav | Větev / PR | Poznámka |
 |---|---|---|---|---|
-| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 opravné kolo 3 | `fix/upload-company-default` @ a55b055 | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
-| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 opravné kolo 3 | `fix/upload-company-default` @ a55b055 | — |
+| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 review kola 3, PR #189 (draft) | `fix/upload-company-default` @ 12ff68d | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
+| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 review kola 3, PR #189 (draft) | `fix/upload-company-default` @ 12ff68d | — |
 | #186 | Čerstvou nahrávku nejde smazat | ⏳ ve frontě | — | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
@@ -78,7 +78,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | `term_59f98bfa-ebd2-453d-94b1-c98fa597ef38` | #182+#183 review, sol 6.2 max read-only | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-1795015414005.log` | EXIT=0, VRÁTIT, zavřeno |
 | `term_9b6ef6f7-1fd6-4283-95ce-eb1305b8d957` | #182+#183 kolo 2, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-2-1795016336579.log` | EXIT=0, převzato (a55b055), zavřeno |
 | `term_5254fbdd-…` | #182+#183 review kola 2, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-2-1795017783289.log` | EXIT=0, VRÁTIT, zavřeno |
-| `term_6acb1378-5798-4644-9818-b4d90f13d544` | #182+#183 kolo 3, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-3-1795018834875.log` | běží |
+| `term_6acb1378-5798-4644-9818-b4d90f13d544` | #182+#183 kolo 3, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-3-1795018834875.log` | EXIT=0, převzato (12ff68d), zavřeno |
+| (review k3) | #182+#183 review kola 3, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-3-1795020083994.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -107,3 +108,5 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   převzetí voleb po stale_snapshot, firma účtu A ve formuláři po zastavení, expirace tokenu během userinfo, typ companyId, 2 slabé testy.
   Rozhodl jsem sám: P1 „znovupřidělený e-mail ⇒ stejný otisk vlastníka fronty“ = starší návrh fronty, mimo rozsah ⇒ issue #188 (bez štítku proklik).
   kombinace: terra 6.1 max → sol 6.2 max, kolo 2 VRÁTIT. Pojistka: další neúspěch = 3 kola po sobě ⇒ před kolem 4 nezávislá analýza příčiny jiným modelem.
+- 18. 11. 2026 ~18:05 — kolo 3 EXIT=0 (terra 6.1 / max), commit 12ff68d pushnutý. identityBinding = náhodné UUID v procesu (ne sub) ⇒ OK.
+  🧪 cílené testy na 12ff68d: 9 souborů, 691 PASS (= předpověď Codexu), eslint EXIT 0. Draft PR #189 (CI souběžně). Review k3 běží.
