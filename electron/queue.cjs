@@ -1328,7 +1328,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     clientRecordingId,
     expectedRevision,
     expectedFileRevision,
-    { queueSnapshot = null, updateStoreState = true, recheckFresh = true, allowCompletedPending = false } = {},
+    { queueSnapshot = null, updateStoreState = true, recheckFresh = true } = {},
   ) {
     let queue = queueSnapshot;
     if (queue === null) {
@@ -1461,30 +1461,11 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     let derivativePaths = [];
     if (rawItem?.delivery) {
       const { verifyMeetingAudioForDeletion } = require("./meeting-audio.cjs");
-      derivativePaths = await verifyMeetingAudioForDeletion(
-        rawItem, path.resolve(recordingsDirectory), { allowCompletedPending },
-      );
+      derivativePaths = await verifyMeetingAudioForDeletion(rawItem, path.resolve(recordingsDirectory));
     }
     const allTargetNames = new Set(
       [...audioPaths, ...derivativePaths].map((candidate) => path.basename(candidate)),
     );
-    const sharedDerivativeTrackReference = primaryManifests.some((candidate) => (
-      path.basename(candidate.path) !== path.basename(primaryPath)
-      && candidate.trackNames.some((name) => allTargetNames.has(name))
-    )) || queue.items.some((candidate) => (
-      candidate !== rawItem
-      && (candidate.kind ?? "recording") === "recording"
-      && Object.values(candidate.tracks ?? {}).some((trackPath) => {
-        if (typeof trackPath !== "string") return false;
-        const resolved = path.resolve(trackPath);
-        return (path.dirname(resolved) === root
-          || path.dirname(resolved) === path.resolve(recordingsDirectory))
-          && allTargetNames.has(path.basename(resolved));
-      })
-    ));
-    if (sharedDerivativeTrackReference) {
-      throw new Error("Soubor delivery používá také jiný primární manifest nebo queue položka");
-    }
     const sharedDerivativeReference = queue.items.some((candidate) => (
       candidate !== rawItem
       && (candidate.kind ?? "recording") === "recording"
@@ -1551,16 +1532,10 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     }
     return serialize(async () => {
       if (await guard() !== true) throw new Error("Akci už nelze bezpečně potvrdit");
-      const target = await freshActionTarget(
-        clientRecordingId, expectedRevision, expectedFileRevision, { allowCompletedPending: true },
-      );
+      const target = await freshActionTarget(clientRecordingId, expectedRevision, expectedFileRevision);
       if (target.rawItem?.state === "odesila") throw new Error("Nahrávka se právě odesílá");
       if (target.rawItem && recordingUploadLocked(target.rawItem)) {
         throw new Error("Odesílání už začalo; nahrávku nelze smazat");
-      }
-      const directoryEntries = await fs.promises.readdir(recordingsDirectory);
-      if (directoryEntries.some((entry) => entry.startsWith(".media-encoder-"))) {
-        throw new Error("Dočasné soubory převodu zůstaly na disku; mazání nelze bezpečně dokončit");
       }
       if (!target.rawItem?.delivery) {
         const { descriptorPaths } = require("./meeting-audio.cjs");
