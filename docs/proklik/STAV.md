@@ -95,3 +95,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   i před změnou, server kontroluje při INIT ⇒ do PR jako známé omezení. Moje cílené testy na 9e7ff6d: auth-identity-fallback 38,
   upload-company-regression 15, recordings-dashboard 43, queue-wiring 351 — vše PASS (review je kvůli sandboxu pustit nemohlo).
   Větev pushnutá. kombinace: autor terra 6.1 max → reviewer sol 6.2 max, kolo 1 VRÁTIT.
+- 18. 11. 2026 ~17:05 — zpráva 🛰 Orca koordinátora (msg_586ee4565a1f, handle 🛰 term_00e4043d-…): Dan odešel, pracovat samostatně, levně, Danovi jen nutné otázky kanálem projektu; Claude limity napjaté (makemore 96 %). ⇒ autonomní režim, rozhodnutí do „Rozhodl jsem sám“. Modely beze změny: Danova přímá odpověď v chatu (terra 6.1 impl., sol 6.2 review) má přednost před obecným vzkazem (ten pro těžší práci říká totéž). BrightSight zmrazen (netýká se).
