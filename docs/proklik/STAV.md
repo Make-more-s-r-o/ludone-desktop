@@ -47,8 +47,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #186 | Čerstvou nahrávku nejde smazat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #193 → main abb364c |
 | #194 | Nestabilní test z #189 + Zastavit v Nastavení | ✅ sloučeno | PR #195 → main fa5508b | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
-| #187 | UI drobnosti | 🔵 review + CI, PR #196 (draft, Refs) | `fix/ui-polish` @ a213445 | body 1/4/10 hotové jinde; 2/3 → #184 |
-| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
+| #187 | UI drobnosti | ✅ body 5–9, 11 sloučeny (PR #196 → main 5dd81c2); body 2/3 → #184 | — | body 1/4/10 hotové jinde; 2/3 → #184 |
+| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | 🔵 Codex implementuje | `fix/recording-fewer-clicks` | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
 ## Danova rozhodnutí (chat, 18. 11. 2026 ~16:00)
 
@@ -192,3 +192,7 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 ~21:20 — review #187 (sol 6.2 max, 0 subagentů): VRÁTIT 3× P2 (ořez ručně zadaného termínu v názvu, vyhledání „Schůzka“, dvojí popis Odesláno v detailu); CI #196 PASS na a213445. Malé kolo 2 (W1–W3) běží.
 - 18. 11. 2026 ~21:50 — review #187 k2 (sol 6.2 max): VRÁTIT 2× P2 (hranice minuty: ořez podle času relace místo začátku stopy; hledání přes spojený řetězec). CI #196 na 13ab101 FAIL: tests/recordings-status.test.js čeká starý text „Odesláno podle stavu fronty“ (W3 ho záměrně změnil; ROZHODNUTI ho nepředepisuje). Kolo 3 (X1 upravit jen tuto aserci + zachovat/ověřit invariant „netvrdit neprovedené ověření“, X2 stejný čas začátku, X3 oddělené hledání) běží.
 - 18. 11. 2026 ~22:00 — #187 kolo 3 EXIT=0 (terra 6.1 / max), e74c4a2 pushnutý: X1 aserce na nové znění + nová negativní kontrola „V LuDone ✓“ (invariant zpřísněn), X3 oddělené hledání. X2 (hranice minuty) neopraven — vyžaduje IPC projekci času stopy ⇒ #190 bod 8 (Rozhodl jsem sám). 🧪 recordings-status 2, issue-187-ui 21, recordings-dashboard 70. Review k3 + CI běží.
+- 18. 11. 2026 ~22:10 — review #187 k3 (sol 6.2 max): PŘIJMOUT. CI PASS na e74c4a2. **PR #196 sloučen squash → main 5dd81c2** (Refs #187, issue
+  zůstává otevřené kvůli bodům 2/3), komentář s kroky pro Dana; větev smazána, panely zavřené.
+  kombinace: terra 6.1 max → sol 6.2 max, 3 kola (VRÁTIT ×2, PŘIJMOUT); odloženo #190 bod 8.
+- 18. 11. 2026 ~22:10 — #184 start na fix/recording-fewer-clicks z 5dd81c2 (Codex terra max, packet scratchpad/packet-184.md).
