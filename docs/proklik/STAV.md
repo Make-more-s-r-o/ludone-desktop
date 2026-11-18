@@ -46,8 +46,18 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 Codex implementuje | `fix/upload-company-default` | — |
 | #186 | Čerstvou nahrávku nejde smazat | ⏳ ve frontě | — | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
-| #187 | UI drobnosti | ⏳ ve frontě | — | rutina (luna); bod 10 udělá už PR #182 |
-| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ❓ čeká na Dana | — | otázka Q-20261118-144830-ludone-desktop-a6dd; bez odpovědi do 19. 11. 12:00 varianta A (pamatuje poslední volbu) |
+| #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
+| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
+
+## Danova rozhodnutí (chat, 18. 11. 2026 ~16:00)
+
+- **#184 přepínač Soukromá / Firemní:** začíná na **poslední použité volbě**.
+- **#184 samoodeslání po Ukončit: NE.** Schválení zůstává; firma a přístup předvyplněné,
+  odeslání jedním klikem. (Issue text chtěl samoodeslání — Dan rozhodl jinak.)
+- **Modely:** „co nejnovější modely, tedy 6.2 sol / terra 6.1“ ⇒ implementace `gpt-6.1-terra`
+  max, review `gpt-6.2-sol` max; ani #187 nejde na lunu.
+- **#176:** jen připsat zjištění (hotovo, komentář v issue).
+- Otázka Q-20261118-144830-ludone-desktop-a6dd odpovězena v chatu a uzavřena.
 
 ### Rozbor #182 (čtení kódu, ⛔ neověřeno během)
 - Výchozí firma je v šifrované session (`companyTabidooId`). Refresh ji zachová, **nové přihlášení
@@ -57,9 +67,7 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 
 ## Rozhodl jsem sám
 
-- Model: brief říká Codex `gpt-6.1-terra` max + review `gpt-6.2-sol` max; issues nesou poznámku
-  „levný model (sol medium / luna)“ od proklik session. Jedu podle briefu a skillu (user turn),
-  #187 jako rutina na lunu. Rozpor nahlášen Danovi v reportu.
+- (Rozpor modelů brief × issues vyřešil Dan, viz výš.)
 
 ## Vlastní Codex panely
 
