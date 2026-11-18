@@ -9777,7 +9777,7 @@ describe("viditelnost automatických aktualizací v panelu", () => {
     const harness = await loadMain();
     await harness.runReady();
     const { settingsEvent } = openSettingsAndCreateEvent(harness);
-    const session = { ...storedAuthSession(), accessExpiresAt: Date.now() + 600_000 };
+    const session = { ...storedAuthSession(), userinfoSubject: "42", accessExpiresAt: Date.now() + 600_000 };
     await writeStoredAuthSession(harness, session);
     const list = harness.ipcHandlers.get("upload-companies:list");
     const select = harness.ipcHandlers.get("upload-companies:select");
@@ -9932,6 +9932,30 @@ describe("úzké IPC preferencí nahrávky", () => {
 });
 
 describe("lokální uložený default firmy", () => {
+  it.each(["ověřený subject", "výpadek userinfo"])("N6 %s projde výběrem až do bezpečné odpovědi preloadu", async (mode) => {
+    const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
+    const fetch = vi.fn(async (url) => {
+      if (new URL(url).pathname === "/api/mcp/oauth/userinfo") {
+        if (mode === "výpadek userinfo") throw new Error("offline");
+        return { ok: true, status: 200, json: async () => ({ sub: "42", email: "ada@ludone.cz" }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ companies: [{ id: companyId, name: "Firma" }], defaultCompanyId: null }) };
+    });
+    vi.stubGlobal("fetch", fetch);
+    const harness = await loadMain(); await harness.runReady();
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), accessExpiresAt: Date.now() + 600_000 });
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const settings = loadPreload((channel, ...args) => harness.ipcHandlers.get(channel)(settingsEvent, ...args));
+    const offer = await settings.api.listUploadCompanies();
+    await expect(settings.api.selectUploadCompany(offer.offerToken, companyId)).resolves.toEqual({
+      saved: true, selectedCompanyId: companyId, ...(mode === "výpadek userinfo" ? { remembered: false } : {}),
+    });
+    const tokenPath = actualRequire("./auth.cjs").tokenSessionFilePath(harness.electron.app);
+    const stored = JSON.parse(harness.electron.safeStorage.decryptString(await readFile(tokenPath)));
+    expect(stored.companyTabidooId).toBe(companyId);
+    expect(stored.userinfoSubject).toBe(mode === "ověřený subject" ? "42" : undefined);
+    expect(fetch.mock.calls.filter(([url]) => new URL(url).pathname === "/api/mcp/oauth/userinfo")).toHaveLength(1);
+  });
   it("preload přijme jen platný lokální název bez dalších polí", async () => {
     const companyId = "865a78f8-b47f-4bb8-8b34-f4ec07f6f516";
     const valid = loadPreload({ companyId, companyName: "Make more s.r.o." });
@@ -9992,6 +10016,20 @@ describe("preference IPC až do skutečného storu", () => {
   function companyResponse() {
     return { ok: true, status: 200, json: async () => ({ companies: [{ id: A, name: "Firma A" }, { id: B, name: "Firma B" }], defaultCompanyId: B }) };
   }
+  it("N7 skutečná chyba neaktuální konfigurace projde IPC jako bezpečný kód stale_snapshot", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => companyResponse()));
+    const harness = await loadMain();
+    await writeStoredAuthSession(harness, { ...storedAuthSession(), companyTabidooId: B, accessExpiresAt: Date.now() + 600_000 });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    await harness.ipcHandlers.get("recording:save-decision")(event, sessionId, { recordingName: "Porada", decision: "keep" });
+    const { settingsEvent } = openSettingsAndCreateEvent(harness);
+    const row = (await harness.ipcHandlers.get("recordings:list-local")(settingsEvent)).items.find((item) => item.id === sessionId);
+    const offer = await harness.ipcHandlers.get("upload-companies:list")(settingsEvent);
+    await expect(harness.ipcHandlers.get("recordings:configure-upload")(settingsEvent, {
+      id: sessionId, queueRev: `sha256:${"0".repeat(64)}`, fileRev: row.fileRevision,
+      companyId: A, offerToken: offer.offerToken, visibility: "private",
+    })).rejects.toThrow(/stale_snapshot/u);
+  });
   it("save přes panel a configure přes Settings uloží preference bez změny defaultu a vyžaduje nové revize", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => companyResponse()));
     const harness = await loadMain();

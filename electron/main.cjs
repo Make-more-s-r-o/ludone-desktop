@@ -55,7 +55,7 @@ const {
 } = require("./meeting-audio.cjs");
 const { createRecordingVerifier } = require("./recording-verification.cjs");
 const { createUploadCompanySelectionController } = require("./upload-company-selection.cjs");
-const { validCompanyName } = require("./upload-company-default.cjs");
+const { companyIdentity, validCompanyName } = require("./upload-company-default.cjs");
 const { measureRecordingStorage } = require("./recording-storage.cjs");
 const { RETENTION_POLICIES, applyRetention } = require("./retention.cjs");
 const {
@@ -2842,14 +2842,13 @@ function getUploadCompanySelectionController() {
         signal,
         trustedRemoteEndpoint,
       }),
-      commitChoice: async ({ context, companyId, companyName, guard }) => (await updateStoredAuthSessionCompany({
-        app,
-        safeStorage,
-        companyTabidooId: companyId,
-        companyName,
-        storedSession: context.storedSession,
-        guard,
-      })) !== null,
+      commitChoice: async ({ context, companyId, companyName, guard }) => {
+        const session = await updateStoredAuthSessionCompany({
+          app, safeStorage, companyTabidooId: companyId, companyName,
+          storedSession: context.storedSession, guard, fetchImpl: globalThis.fetch,
+        });
+        return session === null ? false : companyIdentity(session) ? true : { remembered: false };
+      },
       now: Date.now,
       randomUUID,
     });
@@ -3820,11 +3819,16 @@ handleValidated("recordings:configure-upload", ["panel", "settings"], async (eve
   const preferences = { companyId: payload.companyId, offerToken: payload.offerToken, visibility: payload.visibility };
   return resolveRecordingUploadPreferences(event, preferences, ["panel", "settings"], async ({ context, uploadPreferences, guard }) => {
     const store = await getOutboundQueueStore();
-    return store.configureRecordingUpload({ clientRecordingId: payload.id, expectedRevision: payload.queueRev,
-      expectedFileRevision: payload.fileRev, currentOwnerFingerprint: context.ownerFingerprint, uploadPreferences,
-      guard: async () => !recordingSessions.has(payload.id) && !recordingCompletionsInFlight.has(payload.id)
-        && await guard() === true,
-    });
+    try {
+      return await store.configureRecordingUpload({ clientRecordingId: payload.id, expectedRevision: payload.queueRev,
+        expectedFileRevision: payload.fileRev, currentOwnerFingerprint: context.ownerFingerprint, uploadPreferences,
+        guard: async () => !recordingSessions.has(payload.id) && !recordingCompletionsInFlight.has(payload.id)
+          && await guard() === true,
+      });
+    } catch (error) {
+      if (error?.message === "Preference nelze změnit; načtěte aktuální nahrávku") throw new Error("stale_snapshot");
+      throw error;
+    }
   });
 });
 handleValidated("recordings:list-local", ["panel", "settings"], async () => {

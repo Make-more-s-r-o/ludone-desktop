@@ -1657,6 +1657,7 @@ function updateStoredAuthSessionCompany({
   expectedCompanyId = undefined,
   storedSession,
   guard = undefined,
+  fetchImpl = undefined,
 }) {
   const mazeFirmu = companyTabidooId === null;
   const firma = typeof companyTabidooId === "string" ? companyTabidooId : "";
@@ -1709,6 +1710,24 @@ function updateStoredAuthSessionCompany({
     }
 
     const updatedSession = { ...session };
+    if (!mazeFirmu && !validCompanySubject(session.userinfoSubject) && typeof fetchImpl === "function"
+      && typeof session.accessToken === "string" && session.accessToken.length > 0
+      && Number.isFinite(session.accessExpiresAt) && session.accessExpiresAt > Date.now()) {
+      try {
+        const issuer = normalizedIssuer(session.issuer);
+        if (issuer === session.issuer && session.resource === `${issuer}/api/mcp`) {
+          let subject = null;
+          const identity = await resolveUserIdentity({ identityEndpoint: `${issuer}/api/mcp/oauth/userinfo` },
+            fetchImpl, session.accessToken, null, issuer, (value) => { subject = value; });
+          if (validCompanySubject(subject) && identity.email === session.identity.email) updatedSession.userinfoSubject = subject;
+        }
+      } catch {
+        // Bez ověřeného subjectu zůstane firma jen v této relaci.
+      }
+      if (guard !== undefined) {
+        try { if (guard() !== true) return null; } catch { return null; }
+      }
+    }
     if (mazeFirmu) {
       delete updatedSession.companyTabidooId;
       delete updatedSession.companyTabidooName;
@@ -1717,8 +1736,26 @@ function updateStoredAuthSessionCompany({
       if (companyName !== undefined) updatedSession.companyTabidooName = companyName;
       else if (session.companyTabidooId !== firma) delete updatedSession.companyTabidooName;
     }
-    await persistEncryptedSession(safeStorage, updatedSession, storage);
-    await writeCompanyDefault(storage.directory, updatedSession, mazeFirmu ? null : firma);
+    const previousDefault = await readCompanyDefault(storage.directory, updatedSession);
+    const restoreDefault = () => writeCompanyDefault(storage.directory, {
+      ...updatedSession,
+      companyTabidooId: previousDefault?.companyId,
+      companyTabidooName: previousDefault?.companyName,
+    }, previousDefault?.companyId ?? null);
+    try {
+      await writeCompanyDefault(storage.directory, updatedSession, mazeFirmu ? null : firma);
+    } catch (error) {
+      await restoreDefault().catch(() => {});
+      throw error;
+    }
+    try {
+      await persistEncryptedSession(safeStorage, updatedSession, storage);
+    } catch (error) {
+      await restoreDefault();
+      const current = await readEncryptedSession(storage);
+      if (current === null || !current.equals(encrypted)) await restoreEncryptedSession(storage, encrypted);
+      throw error;
+    }
     return updatedSession;
   });
 }

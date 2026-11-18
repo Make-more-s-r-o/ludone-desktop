@@ -67,22 +67,13 @@ export function UploadCompanySelector({ authState }) {
     if (authenticated) lastIdentity.current = identityKey;
     else if (authState?.state !== "unknown") lastIdentity.current = null;
     if (authState?.state === "unknown") {
-      if (previous?.identityKey === identityKey && identityKey !== "signed-out" && viewRef.current.state !== "idle") {
-        setView({ state: "error", storedCompanyId: viewRef.current.storedCompanyId, storedCompanyName: viewRef.current.storedCompanyName,
-          reason: "Přihlášení se během načítání změnilo. Načti firmy znovu." });
-      }
+      setView({ state: "idle" });
       return () => { generationRef.current += 1; };
     }
-    if (authenticated && previous?.suspended && previous.identityKey === identityKey) {
-      return () => { generationRef.current += 1; };
-    }
-    if (authenticated && previous?.identityKey === identityKey
-      && previous.generation !== authState?.generation && viewRef.current.state !== "idle") {
-      setView({ state: "error", storedCompanyId: viewRef.current.storedCompanyId, storedCompanyName: viewRef.current.storedCompanyName,
-        reason: "Přihlášení se během načítání změnilo. Načti firmy znovu." });
-      return () => { generationRef.current += 1; };
-    }
-    setView({ state: "idle" });
+    const interrupted = authenticated && (previous?.suspended || (previous?.identityKey === identityKey
+      && previous.generation !== authState?.generation && viewRef.current.state !== "idle"));
+    setView(authenticated && typeof window.ludone?.getUploadCompanyDefault === "function" ? { state: "loading" }
+      : interrupted ? { state: "error", reason: "Přihlášení se změnilo. Načti firmy znovu." } : { state: "idle" });
     const generation = generationRef.current;
     if (authenticated && typeof window.ludone?.getUploadCompanyDefault === "function") {
       Promise.resolve().then(() => window.ludone.getUploadCompanyDefault()).then((value) => {
@@ -90,7 +81,9 @@ export function UploadCompanySelector({ authState }) {
         if (COMPANY_ID_PATTERN.test(value?.companyId ?? "")) {
           setView({ state: "loading", storedCompanyId: value.companyId, storedCompanyName: value.companyName });
           void loadCompanies(value.companyId, value.companyName);
-        }
+        } else setView(interrupted
+          ? { state: "error", reason: "Přihlášení se změnilo. Načti firmy znovu." }
+          : { state: "idle" });
       }).catch((error) => {
         if (generationRef.current === generation) setView({ state: "error", reason: uploadCompanyErrorMessage(error) });
       });
@@ -111,15 +104,15 @@ export function UploadCompanySelector({ authState }) {
       if (generationRef.current !== generation) return;
       if (!offer) throw new Error("invalid_offer");
       if (offer.companies.length === 0) {
-        setView({ state: "no-company", storedCompanyId, storedCompanyName });
+        setView({ state: "no-company" });
         return;
       }
       setView({
         state: "ready",
         ...offer,
         choice: offer.selectedCompanyId ?? "",
-        storedCompanyId: offer.selectedCompanyId ?? storedCompanyId,
-        storedCompanyName,
+        storedCompanyId: offer.selectedCompanyId,
+        storedCompanyName: offer.selectedCompanyId === storedCompanyId ? storedCompanyName : null,
       });
     } catch (error) {
       if (generationRef.current === generation) setView({ state: "error", storedCompanyId, storedCompanyName, reason: uploadCompanyErrorMessage(error) });
@@ -143,7 +136,8 @@ export function UploadCompanySelector({ authState }) {
       if (generationRef.current !== generation) return;
       if (result?.saved !== true || result.selectedCompanyId !== pending.choice) throw new Error("not_saved");
       setView({ ...pending, storedCompanyId: pending.choice,
-        storedCompanyName: pending.companies.find(({ id }) => id === pending.choice)?.name, state: "saved" });
+        storedCompanyName: pending.companies.find(({ id }) => id === pending.choice)?.name,
+        remembered: result.remembered !== false, state: "saved" });
     } catch (error) {
       if (generationRef.current === generation) setView({ ...pending, state: "save-error", reason: uploadCompanyErrorMessage(error) });
     }
@@ -161,6 +155,12 @@ export function UploadCompanySelector({ authState }) {
         </select>
       </div>
     );
+  }
+
+  if (previousRef.current && (previousRef.current.identityKey !== identityKey || previousRef.current.suspended)) {
+    return <div className="settings-group upload-company-selector" data-testid="upload-company-default">
+      <h3>Výchozí firma pro nové nahrávky</h3><p role="status">Ověřuji uloženou firmu…</p>
+    </div>;
   }
 
   return (
@@ -214,7 +214,9 @@ export function UploadCompanySelector({ authState }) {
       {view.state === "ready" && <p role="status" data-testid="upload-company-state">{view.choice === view.storedCompanyId ? "Firma je uložená." : "Neuložená změna."}</p>}
       {view.state === "saved" && (
         <>
-          <p role="status" data-testid="upload-company-state">Firma je uložená.</p>
+          <p role="status" data-testid="upload-company-state">{view.remembered === false
+            ? "Firma je uložená pro toto přihlášení. Pro trvalé zapamatování je potřeba nové přihlášení."
+            : "Firma je uložená."}</p>
           <button className="button button--small" type="button" onClick={() => void loadCompanies(view.storedCompanyId, view.storedCompanyName)}>Změnit firmu</button>
         </>
       )}
@@ -224,11 +226,14 @@ export function UploadCompanySelector({ authState }) {
 
 // Jedna nabídka patří konkrétnímu účtu; samotná editace nikdy neschvaluje upload.
 export function RecordingUploadPreferences({ initialValue, defaultVisibility = "private", identityKey = "panel",
-  disabled = false, busy = false, locked = false, refreshToken = 0, onChange, onUserChange, onSave, stateMessage, stateError = false, surface = "panel" }) {
+  disabled = false, busy = false, locked = false, refreshToken = 0, saveVersion = 0, onChange, onUserChange, onConflictChange, onSave, stateMessage, stateError = false, surface = "panel" }) {
   const id = useId();
   const generation = useRef(0);
   const changeRef = useRef(onChange);
   changeRef.current = onChange;
+  const conflictRef = useRef(onConflictChange);
+  conflictRef.current = onConflictChange;
+  const lastSaveVersion = useRef(saveVersion);
   const initialCompany = initialValue?.companyId ?? "";
   const initialVisibility = initialValue?.visibility ?? defaultVisibility;
   const baseline = useRef({ choice: initialCompany, visibility: initialVisibility });
@@ -239,8 +244,23 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
   const viewRef = useRef(view);
   const setCurrent = useCallback((next) => { viewRef.current = next; setView(next); }, []);
   useEffect(() => {
+    const previous = baseline.current;
     baseline.current = { choice: initialCompany, visibility: initialVisibility };
-  }, [initialCompany, initialVisibility]);
+    if (!onSave || (previous.choice === initialCompany && previous.visibility === initialVisibility)) return;
+    const current = viewRef.current;
+    const conflict = Boolean(current.conflict || current.choice !== initialCompany || current.visibility !== initialVisibility);
+    setCurrent({ ...current, conflict });
+    conflictRef.current?.(conflict);
+  }, [initialCompany, initialVisibility, onSave, setCurrent]);
+  useEffect(() => {
+    if (lastSaveVersion.current === saveVersion) return;
+    lastSaveVersion.current = saveVersion;
+    const current = viewRef.current;
+    if (current.choice === initialCompany && current.visibility === initialVisibility) {
+      setCurrent({ ...current, conflict: false });
+      conflictRef.current?.(false);
+    }
+  }, [saveVersion, initialCompany, initialVisibility, setCurrent]);
   const load = useCallback(async () => {
     const request = ++generation.current;
     let current = viewRef.current;
@@ -277,13 +297,13 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
       if (choice && !offer.companies.some((company) => company.id === choice)) {
         const known = current.companies.find((company) => company.id === choice)
           ?? { id: choice, name: `Uložená firma (${choice})` };
-        setCurrent({ ...offer, choice, visibility: current.visibility, state: "ready",
+        setCurrent({ ...offer, choice, visibility: current.visibility, conflict: current.conflict, state: "ready",
           companies: [known, ...offer.companies], availableCompanyIds: offer.companies.map(({ id }) => id),
           unavailable: true });
         return;
       }
       if (!edited.current && !baseline.current.choice) baseline.current = { choice, visibility: current.visibility };
-      setCurrent({ ...offer, choice, visibility: current.visibility, defaultReason, state: "ready" });
+      setCurrent({ ...offer, choice, visibility: current.visibility, conflict: current.conflict, defaultReason, state: "ready" });
       changeRef.current?.(choice ? { companyId: choice, offerToken: offer.offerToken, visibility: current.visibility } : null, undefined);
     } catch (error) {
       if (request !== generation.current) return;
@@ -312,6 +332,21 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
     changeRef.current?.(choice && !unavailable ? { companyId: choice, offerToken: view.offerToken, visibility } : null, dirty);
     onUserChange?.(dirty);
   };
+  const acceptStored = () => {
+    const { choice, visibility } = baseline.current;
+    const current = viewRef.current;
+    const companies = choice && !current.companies.some((company) => company.id === choice)
+      ? [...current.companies, { id: choice, name: initialValue?.companyName || `Uložená firma (${choice})` }]
+      : current.companies;
+    const available = current.availableCompanyIds ?? current.companies.map((company) => company.id);
+    const unavailable = Boolean(choice && !available.includes(choice));
+    edited.current = false;
+    setCurrent({ ...current, choice, visibility, companies, unavailable, conflict: false });
+    changeRef.current?.(choice && !unavailable && current.state === "ready"
+      ? { companyId: choice, offerToken: current.offerToken, visibility } : null, false);
+    onUserChange?.(false);
+    conflictRef.current?.(false);
+  };
   return (
     <div className="recording-upload-preferences" data-testid="recording-upload-preferences" data-surface={surface}>
       {locked ? <p role="status">Firma a přístup jsou zamčené, protože odesílání už začalo.</p> : <>
@@ -327,6 +362,8 @@ export function RecordingUploadPreferences({ initialValue, defaultVisibility = "
           <option value="private">Soukromá</option><option value="company">Sdílená ve firmě</option>
         </select>
         <small>Přístup se řídí oprávněními v LuDone. Tyto volby nemění výchozí firmu účtu.</small>
+        {view.conflict && <><p role="alert">Volby se mezitím změnily jinde. Ulož viditelné volby, nebo převezmi nové uložené volby.</p>
+          <button type="button" className="button button--small" disabled={disabled || busy} onClick={acceptStored}>Převzít nové volby</button></>}
         {view.state === "error" && <><p role="alert">Firmy nelze ověřit. {view.reason} Před odesláním je načti znovu.</p>
           <button type="button" className="button button--small" disabled={disabled || busy} onClick={() => void load()}>Načíst firmy</button></>}
         {view.unavailable && <p role="alert">Zvolenou firmu nelze ověřit. Není v nabídce pro tento účet; vyber jinou firmu.</p>}

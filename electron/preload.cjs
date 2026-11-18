@@ -68,7 +68,11 @@ function requireUploadCompanySelection(value, companyId) {
     || value.saved !== true || value.selectedCompanyId !== companyId) {
     throw new TypeError("Hlavní proces nepotvrdil výběr firmy");
   }
-  return { saved: true, selectedCompanyId: companyId };
+  if (value.remembered !== undefined && typeof value.remembered !== "boolean") {
+    throw new TypeError("Hlavní proces vrátil neplatný stav zapamatování firmy");
+  }
+  return { saved: true, selectedCompanyId: companyId,
+    ...(value.remembered === false ? { remembered: false } : {}) };
 }
 
 function requireRecordingAction(value, queueRevisionRequired = false) {

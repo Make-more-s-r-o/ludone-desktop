@@ -6,6 +6,7 @@ const { randomUUID } = require("node:crypto");
 
 const COMPANY_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const FILE = "upload-company-defaults.json";
+const MAX_FILE_BYTES = 256 * 1024;
 
 function validCompanyName(value) {
   return typeof value === "string" && value.length > 0 && value.length <= 160
@@ -42,19 +43,32 @@ function companyIdentity(session) {
 }
 
 async function readEntries(directory) {
-  let contents;
+  let handle;
   try {
-    contents = await fs.promises.readFile(path.join(directory, FILE), "utf8");
-  } catch (error) {
-    if (error?.code === "ENOENT") return [];
-    throw error;
+    if (typeof fs.constants.O_NOFOLLOW !== "number" || typeof fs.constants.O_NONBLOCK !== "number") return [];
+    const flags = fs.constants.O_RDONLY | fs.constants.O_NONBLOCK | fs.constants.O_NOFOLLOW;
+    handle = await fs.promises.open(path.join(directory, FILE), flags);
+    const stats = await handle.stat();
+    if (!stats.isFile() || stats.size > MAX_FILE_BYTES) return [];
+    const buffer = Buffer.alloc(MAX_FILE_BYTES + 1);
+    let length = 0;
+    while (length < buffer.length) {
+      const { bytesRead } = await handle.read(buffer, length, buffer.length - length, length);
+      if (!bytesRead) break;
+      length += bytesRead;
+    }
+    if (length > MAX_FILE_BYTES) return [];
+    const value = JSON.parse(buffer.subarray(0, length).toString("utf8"));
+    if (!Array.isArray(value) || value.length > 1000) return [];
+    return value.filter((entry) => entry && typeof entry.issuer === "string"
+      && validCompanySubject(entry.subject) && COMPANY_ID.test(entry.companyId ?? ""))
+      .map(({ issuer, subject, companyId, companyName }) => ({ issuer, subject, companyId,
+        ...(validCompanyName(companyName) ? { companyName } : {}) }));
+  } catch {
+    return [];
+  } finally {
+    await handle?.close().catch(() => {});
   }
-  const value = JSON.parse(contents);
-  if (!Array.isArray(value) || value.length > 1000) throw new Error("Neplatný soubor předvoleb firem");
-  return value.filter((entry) => entry && typeof entry.issuer === "string"
-    && validCompanySubject(entry.subject) && COMPANY_ID.test(entry.companyId ?? ""))
-    .map(({ issuer, subject, companyId, companyName }) => ({ issuer, subject, companyId,
-      ...(validCompanyName(companyName) ? { companyName } : {}) }));
 }
 
 async function readCompanyDefault(directory, session) {
@@ -71,7 +85,6 @@ async function writeCompanyDefault(directory, session, companyId) {
   if (!identity || (companyId !== null && !COMPANY_ID.test(companyId ?? ""))) return;
   const entries = await readEntries(directory);
   const previous = entries.find((entry) => entry.issuer === identity.issuer && entry.subject === identity.subject);
-  if (companyId === null && !previous) return;
   const next = entries.filter((entry) => entry.issuer !== identity.issuer || entry.subject !== identity.subject);
   if (companyId !== null) {
     const name = session.companyTabidooId === companyId && validCompanyName(session.companyTabidooName)
@@ -79,17 +92,21 @@ async function writeCompanyDefault(directory, session, companyId) {
         ? previous.companyName : null;
     next.push({ ...identity, companyId, ...(name ? { companyName: name } : {}) });
   }
+  const contents = JSON.stringify(next);
+  if (next.length > 1000 || Buffer.byteLength(contents) > MAX_FILE_BYTES) {
+    throw new Error("Soubor předvoleb firem je příliš velký");
+  }
   await fs.promises.mkdir(directory, { recursive: true, mode: 0o700 });
   const temporary = path.join(directory, `.${FILE}.${randomUUID()}.tmp`);
   let handle;
   try {
     handle = await fs.promises.open(temporary, "wx", 0o600);
-    await handle.writeFile(JSON.stringify(next));
+    await handle.chmod(0o600);
+    await handle.writeFile(contents);
     await handle.sync();
     await handle.close();
     handle = undefined;
     await fs.promises.rename(temporary, path.join(directory, FILE));
-    await fs.promises.chmod(path.join(directory, FILE), 0o600);
     handle = await fs.promises.open(directory, "r");
     await handle.sync();
     await handle.close();

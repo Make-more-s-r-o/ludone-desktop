@@ -162,3 +162,52 @@ it("navrácení původní volby zruší příznak skutečné uživatelské změn
   await React.act(async () => { select.value = "private"; select.dispatchEvent(new panel.document.defaultView.Event("change", { bubbles: true })); });
   expect(onUserChange.mock.calls).toEqual([[true], [false]]);
 });
+
+it("N4 po unknown znovu načte předvolbu a prázdná nabídka zapomene starou firmu", async () => {
+  const authState = { state: "signed-in", issuer: "https://app.ludone.cz", identity: { email: "a@test.cz" } };
+  const getDefault = vi.fn().mockResolvedValueOnce({ companyId: A, companyName: "Alfa" })
+    .mockResolvedValueOnce({ companyId: null });
+  const list = vi.fn().mockResolvedValueOnce(offer).mockResolvedValue({ ...offer, selectedCompanyId: null });
+  const panel = await mount(UploadCompanySelector, { authState }, { getUploadCompanyDefault: getDefault, listUploadCompanies: list });
+  expect(panel.document.body.textContent).toContain("Uložená výchozí firma: Alfa");
+  await panel.render({ authState: { state: "unknown" } });
+  await panel.render({ authState });
+  expect(getDefault).toHaveBeenCalledTimes(2);
+  expect(panel.document.body.textContent).not.toContain("Uložená výchozí firma: Alfa");
+  await React.act(async () => panel.document.querySelector("button").click());
+  expect(panel.document.body.textContent).not.toContain("Uložená výchozí firma:");
+  expect(panel.document.querySelector('[data-testid="upload-company-select"]').value).toBe("");
+});
+
+it("N4 prázdný selectedCompanyId v nové nabídce odstraní předchozí ID a název", async () => {
+  const authState = { state: "signed-in", issuer: "https://app.ludone.cz", identity: { email: "a@test.cz" } };
+  const panel = await mount(UploadCompanySelector, { authState }, {
+    getUploadCompanyDefault: async () => ({ companyId: A, companyName: "Alfa" }),
+    listUploadCompanies: async () => ({ ...offer, selectedCompanyId: null }),
+  });
+  expect(panel.document.body.textContent).not.toContain("Uložená výchozí firma:");
+  expect(panel.document.querySelector('[data-testid="upload-company-select"]').value).toBe("");
+});
+
+it("N4 při čekání na znovuověření po unknown nezobrazí dřívější firmu", async () => {
+  let finish; const pending = new Promise((resolve) => { finish = resolve; });
+  const authState = { state: "signed-in", issuer: "https://app.ludone.cz", identity: { email: "a@test.cz" } };
+  const getDefault = vi.fn().mockResolvedValueOnce({ companyId: A, companyName: "Alfa" }).mockReturnValueOnce(pending);
+  const panel = await mount(UploadCompanySelector, { authState }, { getUploadCompanyDefault: getDefault, listUploadCompanies: async () => offer });
+  await panel.render({ authState: { state: "unknown" } });
+  await panel.render({ authState });
+  expect(panel.document.body.textContent).not.toContain("Alfa");
+  expect(panel.document.body.textContent).not.toContain(A);
+  await React.act(async () => finish({ companyId: null }));
+});
+
+it("N6 neověřený subject po uložení vysvětlí nutnost nového přihlášení", async () => {
+  const authState = { state: "signed-in", issuer: "https://app.ludone.cz", identity: { email: "a@test.cz" } };
+  const panel = await mount(UploadCompanySelector, { authState }, {
+    getUploadCompanyDefault: async () => ({ companyId: null }), listUploadCompanies: async () => offer,
+    selectUploadCompany: async () => ({ saved: true, selectedCompanyId: A, remembered: false }),
+  });
+  await React.act(async () => panel.document.querySelector("button").click());
+  await React.act(async () => panel.document.querySelector('[data-testid="upload-company-save"]').click());
+  expect(panel.document.body.textContent).toMatch(/zapamatován.*nové přihlášení|nové přihlášení.*zapamatován/iu);
+});

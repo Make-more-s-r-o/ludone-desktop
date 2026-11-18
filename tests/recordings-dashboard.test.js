@@ -61,6 +61,7 @@ async function renderDashboard({
   authState = "signed-in",
   claimRecording = () => Promise.resolve({ claimed: false, items: [ITEM] }),
   deleteRecording = () => Promise.resolve({ outcome: "deleted" }),
+  detailId = null,
   exportRecordingCopy = () => Promise.resolve({ ok: true, fileName: "LuDone-porada.webm" }),
   listQueue,
   listLocalRecordings = listQueue
@@ -70,7 +71,7 @@ async function renderDashboard({
   openRecordingInLuDone = () => Promise.resolve({ opened: true }),
   retryRecording = () => Promise.resolve({ outcome: "sent" }),
 } = {}) {
-  const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
+  const dom = new JSDOM('<div class="settings-content"><div id="root"></div></div>', { url: "https://ludone.test" });
   dom.window.confirm = vi.fn(() => true);
   const ludone = {
     claimRecording: vi.fn(claimRecording),
@@ -91,13 +92,13 @@ async function renderDashboard({
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const root = createRoot(dom.window.document.querySelector("#root"));
   await React.act(async () => {
-    root.render(React.createElement(RecordingsDashboard, { authState, authIdentity: { email: "test@ludone.cz" }, authOrigin: "https://ludone.test" }));
+    root.render(React.createElement(RecordingsDashboard, { authState, detailId, authIdentity: { email: "test@ludone.cz" }, authOrigin: "https://ludone.test" }));
   });
   await vi.waitFor(() => expect(ludone.listLocalRecordings).toHaveBeenCalledOnce());
   return {
     document: dom.window.document,
     async rerender(authState, email = "test@ludone.cz", authOrigin = "https://ludone.test") {
-      await React.act(async () => root.render(React.createElement(RecordingsDashboard, { authState, authIdentity: email ? { email } : null, authOrigin })));
+      await React.act(async () => root.render(React.createElement(RecordingsDashboard, { authState, detailId, authIdentity: email ? { email } : null, authOrigin })));
     },
     ludone,
     async cleanup() {
@@ -608,13 +609,11 @@ describe("dashboard fronty nahrávek", () => {
     ["signed-out", "nejdřív přihlas"],
     ["expired", "Přihlášení vypršelo"],
     ["unknown", "není ověřený"],
-  ])("stav %s vysvětlí blokaci a tlačítko zakáže", async (authState, explanation) => {
+  ])("stav %s vysvětlí blokaci a skryje akci bez ověřeného účtu", async (authState, explanation) => {
     const dashboard = await renderDashboard({ authState });
     try {
-      await vi.waitFor(() => expect(claimButton(dashboard)).toBeDefined());
-      expect(claimButton(dashboard).disabled).toBe(true);
+      expect(claimButton(dashboard)).toBeUndefined();
       expect(dashboard.document.body.textContent).toContain(explanation);
-      claimButton(dashboard).click();
       expect(dashboard.ludone.claimRecording).not.toHaveBeenCalled();
     } finally {
       await dashboard.cleanup();
@@ -770,13 +769,11 @@ it("neznámý origin nedovolí ověření ani při změně přihlášeného úč
   });
   try {
     await dashboard.rerender("signed-in", "first@ludone.cz", null);
-    const button = dashboard.document.querySelector(".recording-action--verify");
-    expect(button.disabled).toBe(true);
+    expect(dashboard.document.querySelector(".recording-action--verify")).toBeNull();
     expect(dashboard.document.body.textContent).toContain("potvrzený účet i prostředí LuDone");
-    await React.act(async () => button.click());
     expect(dashboard.ludone.verifyRecording).not.toHaveBeenCalled();
     await dashboard.rerender("signed-in", "second@ludone.cz", null);
-    expect(dashboard.document.querySelector(".recording-action--verify").disabled).toBe(true);
+    expect(dashboard.document.querySelector(".recording-action--verify")).toBeNull();
     expect(dashboard.document.body.textContent).not.toContain("Otevřít v LuDone");
     await dashboard.rerender("signed-in", "second@ludone.cz", "https://ludone.test");
     await React.act(async () => dashboard.document.querySelector(".recording-action--verify").click());
@@ -804,22 +801,195 @@ it("obnova přehledu nechá otevřený editor, jeho volbu a scroll na místě", 
   const pending = deferred(); let loads = 0;
   const item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
     uploadPreferences: { companyId, companyName: "Beta", visibility: "private" }, allowedActions: { send: true } };
-  const panel = await renderDashboard({ listLocalRecordings: async () => ++loads === 1
+  const panel = await renderDashboard({ detailId: ID, listLocalRecordings: async () => ++loads === 1
     ? { items: [item], unreadableCount: 0 } : pending.promise });
   panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
     selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
   panel.ludone.configureRecordingUpload = vi.fn();
-  panel.ludone.setDetailDirty = vi.fn();
+  panel.ludone.setDetailDirty = vi.fn(async () => {});
   try {
+    await panel.rerender("signed-in");
     await openUploadDetail(panel);
     const editor = panel.document.querySelector('[data-testid="recording-upload-preferences"]');
-    const scroller = panel.document.querySelector('[data-testid="recordings-dashboard"]');
+    const scroller = panel.document.querySelector('.settings-content');
     scroller.scrollTop = 240;
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    expect(panel.ludone.setDetailDirty).toHaveBeenCalledWith(true);
+    panel.ludone.setDetailDirty.mockClear();
     await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
     expect(panel.document.querySelector('[data-testid="recording-upload-preferences"]')).toBe(editor);
     await React.act(async () => pending.resolve({ items: [{ ...item, revision: `sha256:${"b".repeat(64)}` }], unreadableCount: 0 }));
     expect(panel.document.querySelector('[data-testid="recording-upload-preferences"]')).toBe(editor);
     expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(companyId);
+    expect(scroller.scrollTop).toBe(240);
+    expect(panel.ludone.setDetailDirty).not.toHaveBeenCalled();
+  } finally { await panel.cleanup(); }
+});
+
+it("N1 změna uloženého přístupu ve snímku zablokuje odeslání do potvrzení viditelné volby", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  let item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId, companyName: "Beta", visibility: "private" }, allowedActions: { send: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
+    selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn(async (preferences) => {
+    item = { ...item, revision: `sha256:${"c".repeat(64)}`,
+      uploadPreferences: { companyId, companyName: "Beta", visibility: preferences.visibility } };
+    return { configured: true };
+  });
+  panel.ludone.sendRecording = vi.fn();
+  try {
+    await openUploadDetail(panel);
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(false);
+    item = { ...item, revision: `sha256:${"b".repeat(64)}`, uploadPreferences: { ...item.uploadPreferences, visibility: "company" } };
+    await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
+    expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("private");
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(true);
+    expect(panel.document.body.textContent).toMatch(/volby.*mezitím.*změnil/iu);
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.ludone.configureRecordingUpload).toHaveBeenCalledWith(expect.objectContaining({ visibility: "private" }));
+    expect(panel.document.body.textContent).not.toMatch(/volby.*mezitím.*změnil/iu);
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(false);
+  } finally { await panel.cleanup(); }
+});
+
+it("N1 uložení ručně dorovnaných voleb zruší konflikt teprve po potvrzení", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  let item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId, companyName: "Beta", visibility: "private" }, allowedActions: { send: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
+    selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn(async () => ({ configured: true }));
+  try {
+    await openUploadDetail(panel);
+    item = { ...item, revision: `sha256:${"b".repeat(64)}`, uploadPreferences: { ...item.uploadPreferences, visibility: "company" } };
+    await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(true);
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    expect(panel.document.body.textContent).not.toMatch(/volby.*mezitím.*změnil/iu);
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(false);
+  } finally { await panel.cleanup(); }
+});
+
+it("N1 změna firmy jinde zachová rozpracovaný přístup a umožní převzít nové volby", async () => {
+  const first = "11111111-1111-4111-8111-111111111111";
+  const second = "22222222-2222-4222-8222-222222222222";
+  let item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId: first, companyName: "Alfa", visibility: "private" }, allowedActions: { send: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: first, name: "Alfa" }, { id: second, name: "Beta" }],
+    selectedCompanyId: first, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn(); panel.ludone.sendRecording = vi.fn(async () => ({ outcome: "queued" }));
+  try {
+    await openUploadDetail(panel);
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    item = { ...item, revision: `sha256:${"b".repeat(64)}`,
+      uploadPreferences: { companyId: second, companyName: "Beta", visibility: "private" } };
+    await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(first);
+    expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("company");
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(true);
+    await chooseUpload(panel, '[data-testid="recording-upload-company"]', second);
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "private");
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(true);
+    await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Převzít nové volby")).click());
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(second);
+    expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("private");
+    expect(panel.document.querySelector('.recording-action--send').disabled).toBe(false);
+    await React.act(async () => panel.document.querySelector('.recording-action--send').click());
+    expect(panel.ludone.sendRecording).toHaveBeenCalledOnce();
+    expect(panel.ludone.configureRecordingUpload).not.toHaveBeenCalled();
+  } finally { await panel.cleanup(); }
+});
+
+it.each(["čekající", "neúspěšné"])("N3 %s obnovení po změně účtu skryje cizí firmu a nepovolí cizí akce", async (stav) => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId, companyName: "Soukromá firma Alfa", visibility: "company" },
+    allowedActions: { send: true, retry: true, claim: false, delete: false } };
+  const pending = deferred(); let loads = 0;
+  const panel = await renderDashboard({ listLocalRecordings: async () => ++loads === 1
+    ? { items: [item], unreadableCount: 0 } : pending.promise });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Soukromá firma Alfa" }],
+    selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn();
+  try {
+    await openUploadDetail(panel);
+    await panel.rerender("signed-in", "jiny@ludone.cz");
+    if (stav === "neúspěšné") await React.act(async () => pending.reject(new Error("offline")));
+    expect(panel.document.body.textContent).not.toContain("Soukromá firma Alfa");
+    expect(panel.document.querySelector('.recording-action--send')?.disabled ?? true).toBe(true);
+    expect(panel.document.querySelector('.recording-action--retry')?.disabled ?? true).toBe(true);
+    expect(panel.document.querySelector('.recording-action--verify')?.disabled ?? true).toBe(true);
+  } finally { if (stav === "čekající") await React.act(async () => pending.resolve({ items: [], unreadableCount: 0 })); await panel.cleanup(); }
+});
+
+it("N3 po unknown zůstane firma skrytá až do čerstvého snímku i při stejném e-mailu", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId, companyName: "Firma Alfa", visibility: "private" }, allowedActions: { send: true } };
+  const pending = deferred(); let loads = 0;
+  const panel = await renderDashboard({ listLocalRecordings: async () => ++loads === 1
+    ? { items: [item], unreadableCount: 0 } : pending.promise });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Firma Alfa" }],
+    selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn();
+  try {
+    await openUploadDetail(panel);
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    await panel.rerender("unknown", null);
+    await panel.rerender("signed-in");
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').closest('[hidden]')).not.toBeNull();
+    expect(panel.document.querySelector('.recording-action--send')).toBeNull();
+    await React.act(async () => pending.resolve({ items: [item], unreadableCount: 0 }));
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').closest('[hidden]')).toBeNull();
+    expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("company");
+  } finally { await panel.cleanup(); }
+});
+
+it("N3 přerušené ukládání nepokračuje po návratu stejného e-mailu bez nového potvrzení", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId, companyName: "Beta", visibility: "private" }, allowedActions: { send: true } };
+  const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  const pending = deferred(); let calls = 0;
+  const offer = { companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" };
+  panel.ludone.listUploadCompanies = vi.fn(async () => ++calls === 2 ? pending.promise : offer);
+  panel.ludone.configureRecordingUpload = vi.fn(async () => ({ configured: true }));
+  try {
+    await openUploadDetail(panel);
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    await React.act(async () => panel.document.querySelector('[data-testid="recording-upload-preferences-save"]').click());
+    await panel.rerender("unknown", null);
+    await panel.rerender("signed-in");
+    await React.act(async () => pending.resolve(offer));
+    expect(panel.ludone.configureRecordingUpload).not.toHaveBeenCalled();
+  } finally { await panel.cleanup(); }
+});
+
+it("N8 detail hlásí skutečnou editaci a při obnově zachová scroll settings-content", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const item = { ...ITEM, ownership: "current", uploadIntent: "held", uploadPreferencesLocked: false,
+    uploadPreferences: { companyId, companyName: "Beta", visibility: "private" }, allowedActions: { send: true } };
+  const panel = await renderDashboard({ detailId: ID, listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
+  panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
+    selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" }));
+  panel.ludone.configureRecordingUpload = vi.fn();
+  panel.ludone.setDetailDirty = vi.fn(async () => {});
+  try {
+    await panel.rerender("signed-in");
+    await openUploadDetail(panel);
+    const scroller = panel.document.querySelector('.settings-content');
+    expect(scroller).not.toBeNull();
+    scroller.scrollTop = 240;
+    await chooseUpload(panel, '[data-testid="recording-upload-visibility"]', "company");
+    expect(panel.ludone.setDetailDirty).toHaveBeenCalledWith(true);
+    panel.ludone.setDetailDirty.mockClear();
+    await React.act(async () => [...panel.document.querySelectorAll("button")].find((button) => button.textContent.includes("Obnovit přehled")).click());
+    expect(panel.document.querySelector('.settings-content')).toBe(scroller);
     expect(scroller.scrollTop).toBe(240);
     expect(panel.ludone.setDetailDirty).not.toHaveBeenCalled();
   } finally { await panel.cleanup(); }
@@ -840,6 +1010,7 @@ it("dočasně neznámé přihlášení neshodí editor ani volbu při návratu s
     item = { ...original, ownership: "unknown" };
     await panel.rerender("unknown", null);
     expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(companyId);
+    expect(panel.document.querySelector('[data-testid="recording-upload-company"]').closest('[hidden]')).not.toBeNull();
     item = original;
     await panel.rerender("signed-in");
     expect(panel.document.querySelector('[data-testid="recording-upload-company"]').value).toBe(companyId);
@@ -864,6 +1035,7 @@ it("odhlášení ponechá rozpracovanou volbu viditelnou a po návratu téhož �
     const select = panel.document.querySelector('[data-testid="recording-upload-company"]');
     expect(select.value).toBe(companyId);
     expect(select.disabled).toBe(true);
+    expect(select.closest('[hidden]')).not.toBeNull();
     item = original;
     await panel.rerender("signed-in");
     expect(panel.document.querySelector('[data-testid="recording-upload-visibility"]').value).toBe("company");
@@ -1066,7 +1238,10 @@ it("detail uloží přesný CAS payload bez send, obnoví revize a nový explici
     uploadPreferences: { companyId, visibility: "private", companyName: "Beta" }, allowedActions: { send: true } };
   const panel = await renderDashboard({ listLocalRecordings: async () => ({ items: [item], unreadableCount: 0 }) });
   panel.ludone.listUploadCompanies = vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }], selectedCompanyId: companyId, offerToken }));
-  panel.ludone.configureRecordingUpload = vi.fn(async () => { item = { ...item, revision: nextRev }; return { configured: true }; });
+  panel.ludone.configureRecordingUpload = vi.fn(async ({ visibility }) => {
+    item = { ...item, revision: nextRev, uploadPreferences: { ...item.uploadPreferences, visibility } };
+    return { configured: true };
+  });
   panel.ludone.sendRecording = vi.fn(async () => ({ outcome: "queued" }));
   panel.ludone.selectUploadCompany = vi.fn();
   try {
@@ -1098,6 +1273,7 @@ it("stale preference chyba obnoví přehled a další send zůstane blokovaný i
     await React.act(async () => panel.document.querySelector('.recording-action--send').click());
     expect(panel.ludone.sendRecording).not.toHaveBeenCalled();
     expect(panel.document.body.textContent).toContain("Volby se nepodařilo uložit");
+    expect(panel.document.body.textContent).toMatch(/přehled.*zastaral.*načti/iu);
     expect(panel.document.querySelector('[data-testid="recording-upload-preferences-state"]').getAttribute("role")).toBe("alert");
   } finally { await panel.cleanup(); }
 });
