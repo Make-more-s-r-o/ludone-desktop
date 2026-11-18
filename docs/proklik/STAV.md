@@ -44,7 +44,7 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 |---|---|---|---|---|
 | #182 | Nová nahrávka nedostane výchozí firmu | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
 | #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | — |
-| #186 | Čerstvou nahrávku nejde smazat | 🔵 kolo 2 (zjednodušení) | `fix/recording-delete-fresh` @ 9e052e2 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
+| #186 | Čerstvou nahrávku nejde smazat | 🔵 review k2 + CI, PR #192 (draft) | `fix/recording-delete-fresh` @ 512b719 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
 | #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ⏳ ve frontě | — | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
@@ -86,7 +86,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | `term_ad1668cd-…` | #182+#183 review kola 5, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-kolo-5-1795022963820.log` | EXIT=0, PŘIJMOUT S VÝHRADAMI, zavřeno |
 | `term_b5ff4956-…` | #186 implementace, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-186-mazani-cerstve-nahravky-1795023485683.log` | EXIT=0, převzato (9e052e2), zavřeno |
 | `term_098ef146-…` | #186 review, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-186-1795024458180.log` | EXIT=0, VRÁTIT, zavřeno |
-| (#186 k2) | #186 kolo 2 zjednodušení, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-186-kolo-2-zjednoduseni-1795025298562.log` | běží |
+| `term_5bdea623-…` | #186 kolo 2 zjednodušení, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-186-kolo-2-zjednoduseni-1795025298562.log` | EXIT=0, převzato (512b719), zavřeno |
+| (review 186 k2) | #186 review kola 2, sol 6.2 max | `~/.claude/runs/.codex-logy/2026-11-18/review-186-kolo-2-1795025955758.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -144,3 +145,5 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   Rozhodl jsem sám: čekání na převod z PR VYJMOUT (souběh nebyl prokázanou příčinou; test okamžitého smazání prošel i před opravou) →
   kolo 2 = R1 revert převodové logiky, R2 ponechat cancelled≠chyba/důvody/hlášky/překlep, R3 stejné důvody v přehledu, R4 zpřísnit test.
   Souběh převodu + obnova po částečném přesunu ⇒ issue #191 (bez štítku proklik).
+- 18. 11. 2026 ~19:55 — #186 kolo 2 EXIT=0 (terra 6.1 / max), 512b719: převodová logika pryč (diff vs main 9 souborů +226/−18; main/queue jen texty + reason).
+  🧪 recording-actions 21, queue-wiring 357, recordings-dashboard 69, recording-card 101, queue 153, ipc-sender-guard 24 PASS; eslint 0. Draft PR #192, review k2 + CI běží.
