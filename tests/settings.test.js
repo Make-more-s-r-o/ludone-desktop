@@ -3,8 +3,9 @@ import { createRoot } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
-import { SettingsApp } from "../src/components/Settings.jsx";
+const settingsModule = /** @type {Promise<{ SettingsApp: React.ComponentType<any> }>} */
+  (vi.importActual("../src/components/Settings.jsx"));
+const { SettingsApp } = await settingsModule;
 
 // Styl se vloží do CSSOM JSDOM; testy níže ověřují vypočtený styl, ne text souboru.
 const settingsStyles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
@@ -274,13 +275,10 @@ describe("Nastavení bez nefunkčního přepínače hovorů", () => {
       const panel = settings.document.querySelector("#settings-panel-audio");
       const uploadPanel = settings.document.querySelector("#settings-panel-account");
       expect(panel?.querySelectorAll('[role="switch"]')).toHaveLength(0);
-      expect(uploadPanel?.querySelector('[data-testid="automatic-upload-setting"] [role="switch"]')
-        ?.getAttribute("aria-label"))
-        .toBe("Automaticky odesílat nové nahrávky");
+      expect(uploadPanel?.querySelector('[data-testid="automatic-upload-setting"] [role="switch"]')).toBeNull();
       expect(panel?.textContent).not.toContain("Ostatní hovory");
       expect(panel?.textContent).not.toContain("Nejdřív se zeptat");
-      expect(uploadPanel?.textContent).toContain("Nahrávání spouštíš ručně.");
-      expect(uploadPanel?.textContent).toContain("Platí jen pro nové záznamy.");
+      expect(uploadPanel?.textContent).toContain("Po ukončení nahrávání odeslání potvrdíš jedním kliknutím.");
       expect(settings.localStorage.setItem).not.toHaveBeenCalled();
     } finally {
       await settings.cleanup();

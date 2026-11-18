@@ -1,4 +1,4 @@
-import { RecordingUploadPreferences, freshRecordingUploadPreferences, uploadCompanyErrorMessage } from "../../components/UploadCompanySelector.jsx";
+import { RecordingUploadPreferences, freshRecordingUploadPreferences, readRecordingDefaultCompany, uploadCompanyErrorMessage, verifiedRecordingDefaultCompany } from "../../components/UploadCompanySelector.jsx";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
@@ -12,6 +12,7 @@ import {
 } from "../../lib/audio-levels.js";
 import { countLabel } from "../../lib/count-label.js";
 import { recordingSizeText } from "../../lib/format-size.js";
+import { getRecordingVisibilityPreference, persistRecordingVisibilityPreference } from "../../lib/recording-visibility.js";
 import { createStereoCapture } from "../../lib/stereo-recording.js";
 import {
   AudioLevelMeter,
@@ -247,10 +248,15 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [savedAgeNow, setSavedAgeNow] = useState(() => Date.now());
   const [recordingName, setRecordingName] = useState("");
   const [exporting, setExporting] = useState(false);
-  const [autoResolvingCompany, setAutoResolvingCompany] = useState(false);
   const [copyExporting, setCopyExporting] = useState(false);
+  const [recordingVisibility, setRecordingVisibility] = useState(getRecordingVisibilityPreference);
+  const [visibilityStored, setVisibilityStored] = useState(true);
+  const [defaultCompany, setDefaultCompany] = useState({ state: "loading", identityKey: null, company: null });
+  const [defaultCompanyRefresh, setDefaultCompanyRefresh] = useState(0);
   const [uploadPreferences, setUploadPreferences] = useState(null);
+  const [uploadPreferencesReason, setUploadPreferencesReason] = useState(null);
   const [pickerInitial, setPickerInitial] = useState(null);
+  const [pickerInitialCompanyPromise, setPickerInitialCompanyPromise] = useState(null);
   const [pickerRefresh, setPickerRefresh] = useState(0);
   const [pickerOwner, setPickerOwner] = useState(null);
   const [verifiedUploadIdentity, setVerifiedUploadIdentity] = useState(null);
@@ -267,6 +273,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const lastUploadIdentity = useRef(null);
   const pickerOwnerSerial = useRef(0);
   const uploadIdentityVerified = useRef(false);
+  const recordingChoices = useRef(null);
+  const defaultCompanyRequest = useRef(null);
   const canSendRef = useRef(canSend);
   canSendRef.current = canSend;
   const refreshUploadIdentity = useCallback(() => {
@@ -300,7 +308,8 @@ export const RecordingCard = forwardRef(function RecordingCard({
         const key = typeof binding === "string" ? binding : `unbound:${request}`;
         if (lastUploadIdentity.current !== key) {
           lastUploadIdentity.current = key;
-          setPickerInitial(null);
+          setPickerInitial(recordingChoices.current ? { visibility: recordingChoices.current.visibility } : null);
+          setPickerInitialCompanyPromise(null);
           setPickerOwner({ key, serial: ++pickerOwnerSerial.current });
         }
         uploadIdentityVerified.current = true;
@@ -322,6 +331,45 @@ export const RecordingCard = forwardRef(function RecordingCard({
     uploadAuthGeneration.current += 1;
     refreshUploadIdentity();
   }), [refreshUploadIdentity]);
+  useEffect(() => {
+    const refresh = () => {
+      setDefaultCompany({ state: "loading", identityKey: null, company: null });
+      setDefaultCompanyRefresh((value) => value + 1);
+    };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, []);
+  useEffect(() => {
+    let active = true;
+    if (!canSend || !verifiedUploadIdentity) {
+      setDefaultCompany({ state: canSend && !uploadIdentityError ? "loading" : "unavailable", identityKey: null, company: null });
+      return () => { active = false; };
+    }
+    const identityKey = verifiedUploadIdentity;
+    const savedPromise = readRecordingDefaultCompany();
+    const request = { identityKey, storedPromise: savedPromise.catch(() => null) };
+    defaultCompanyRequest.current = request;
+    setDefaultCompany({ state: "loading", identityKey, company: null });
+    request.storedPromise.then((company) => {
+      if (!active || !company) return;
+      setDefaultCompany((current) => current.identityKey === identityKey && current.state === "loading"
+        ? { ...current, company } : current);
+      const choice = recordingChoices.current;
+      if (choice?.defaultRequest === request && uploadIdentityVerified.current
+        && choice.identityKey === lastUploadIdentity.current && choice.authGeneration === uploadAuthGeneration.current) {
+        choice.company = company;
+      }
+    });
+    verifiedRecordingDefaultCompany(savedPromise).then((company) => {
+      if (active) setDefaultCompany({ state: company ? "ready" : "empty", identityKey, company });
+    }).catch(() => {
+      if (active) setDefaultCompany({ state: "unavailable", identityKey, company: null });
+    });
+    return () => {
+      active = false;
+      if (defaultCompanyRequest.current === request) defaultCompanyRequest.current = null;
+    };
+  }, [canSend, verifiedUploadIdentity, uploadIdentityError, defaultCompanyRefresh]);
   const [exportError, setExportError] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -456,6 +504,13 @@ export const RecordingCard = forwardRef(function RecordingCard({
         });
       }
 
+      if (saved && recordingChoices.current) {
+        const choice = recordingChoices.current;
+        const sameIdentity = uploadIdentityVerified.current && choice.identityKey === lastUploadIdentity.current;
+        const company = sameIdentity ? choice.company : null;
+        setPickerInitial({ visibility: choice.visibility, ...(company ?? {}) });
+        setPickerInitialCompanyPromise(sameIdentity ? choice.defaultRequest?.storedPromise ?? null : null);
+      }
       if (errors.length > 0) {
         const savedSuffix = saved ? ` Dosud zapsané soubory zůstaly zachované: ${savedMessage(saved)}` : "";
         setNotice({
@@ -474,10 +529,6 @@ export const RecordingCard = forwardRef(function RecordingCard({
           setSavedAgeNow(Date.now());
           setSavedRecording(saved);
         }
-      }
-      if (saved?.automaticUpload === true) {
-        const defaultName = suggestedRecordingName(saved.startedAt);
-        await exportSavedRecording(saved, defaultName, "send");
       }
       return saved;
     })();
@@ -500,20 +551,12 @@ export const RecordingCard = forwardRef(function RecordingCard({
     setExportError(null);
     const generation = uploadAuthGeneration.current;
     const uploadIdentity = lastUploadIdentity.current;
-    const autoSelectCompany = !manual && decision === "send" && recording.automaticUpload === true
-      && typeof window.ludone?.getUploadCompanyDefault === "function" && supportsPreferences;
-    if (autoSelectCompany) setAutoResolvingCompany(true);
     try {
-      let freshPreferences = manual && uploadPreferences
+      const freshPreferences = manual && uploadPreferences
         ? await freshRecordingUploadPreferences(uploadPreferences).catch((error) => {
           if (decision === "keep") return null;
           throw error;
         }) : null;
-      if (autoSelectCompany) {
-        const savedDefault = await window.ludone.getUploadCompanyDefault();
-        if (!savedDefault?.companyId) throw new Error("Vyber cílovou firmu. Výchozí firmu se nepodařilo určit.");
-        freshPreferences = await freshRecordingUploadPreferences({ companyId: savedDefault.companyId, visibility: "company" });
-      }
       if (generation !== uploadAuthGeneration.current) throw new Error("Přihlášení se změnilo. Ověř volby znovu.");
       const modernDecision = window.ludone.saveRecordingDecision;
       const result = typeof modernDecision === "function"
@@ -524,7 +567,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
       if (!result?.ok) throw new Error(result?.message || "Export se nepodařil");
       setSavedRecording(null);
       setPickerInitial(null);
+      setPickerInitialCompanyPromise(null);
       setUploadPreferences(null);
+      recordingChoices.current = null;
       setRecordingName("");
       setQuitExportFailure(null);
       const deliveryDetail = result.outcome === "queued"
@@ -548,15 +593,13 @@ export const RecordingCard = forwardRef(function RecordingCard({
         dismissAfter: result.outcome === "saved_local" ? LOCAL_SAVE_NOTICE_MS : null,
       });
     } catch (error) {
-      setExportError(autoSelectCompany && error?.message !== "Vyber cílovou firmu. Výchozí firmu se nepodařilo určit."
-        ? `Automatické odeslání se nespustilo. ${uploadCompanyErrorMessage(error)}` : describeError(error));
+      setExportError(describeError(error));
       if (manual && supportsPreferences && generation === uploadAuthGeneration.current
         && uploadIdentityVerified.current && uploadIdentity === lastUploadIdentity.current) {
         setPickerInitial(uploadPreferences);
         setPickerRefresh((value) => value + 1);
       }
     } finally {
-      if (autoSelectCompany) setAutoResolvingCompany(false);
       setExporting(false);
     }
   }
@@ -643,7 +686,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
       }
       setSavedRecording(null);
       setPickerInitial(null);
+      setPickerInitialCompanyPromise(null);
       setUploadPreferences(null);
+      recordingChoices.current = null;
       setDeleteConfirm(false);
       setNotice({ type: "success", text: "Nahrávka byla smazána z tohoto Macu." });
     } catch (error) {
@@ -734,6 +779,16 @@ export const RecordingCard = forwardRef(function RecordingCard({
 
   async function start() {
     if (startInFlight.current || runtimeRef.current || session.phase !== "idle") return;
+    const defaultRequest = defaultCompanyRequest.current?.identityKey === verifiedUploadIdentity
+      ? defaultCompanyRequest.current : null;
+    recordingChoices.current = {
+      visibility: recordingVisibility,
+      identityKey: verifiedUploadIdentity,
+      authGeneration: uploadAuthGeneration.current,
+      defaultRequest,
+      company: verifiedUploadIdentity && defaultCompany.identityKey === verifiedUploadIdentity
+        ? defaultCompany.company : null,
+    };
     startInFlight.current = true;
     const operation = { controller: new window.AbortController(), capture: null, committed: false };
     startOperationRef.current = operation;
@@ -1092,6 +1147,17 @@ export const RecordingCard = forwardRef(function RecordingCard({
     stopping: "Ukládám",
   }[session.phase];
   const savedMetadata = savedRecording ? savedRecordingMetadata(savedRecording, savedAgeNow) : null;
+  const visibleDefaultCompany = canSend && verifiedUploadIdentity && defaultCompany.identityKey === verifiedUploadIdentity
+    ? defaultCompany : { state: canSend && !uploadIdentityError ? "loading" : "unavailable", company: null };
+  const companyLabel = visibleDefaultCompany.state === "ready" ? `Cílová firma: ${visibleDefaultCompany.company.companyName}`
+    : visibleDefaultCompany.state === "empty" ? "Firma není vybraná"
+      : visibleDefaultCompany.state === "loading" ? "Ověřuji cílovou firmu…" : "Firmu nelze ověřit";
+  const sendDisabledReason = exporting ? "Probíhá ukládání nahrávky."
+    : !canSend ? "Přihlášení není dostupné. Obnov ho v Nastavení."
+      : typeof window.ludone?.listUploadCompanies === "function" && !verifiedUploadIdentity
+        ? (uploadIdentityError || "Ověřuji přihlášení pro odeslání.")
+        : typeof window.ludone?.listUploadCompanies === "function" && !uploadPreferences
+          ? (uploadPreferencesReason || "Ověřuji cílovou firmu.") : null;
 
   return (
     <section
@@ -1152,8 +1218,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
           {typeof window.ludone?.listUploadCompanies === "function" && pickerOwner && <div hidden={!canSend || verifiedUploadIdentity !== pickerOwner.key}>
             <RecordingUploadPreferences key={`${savedRecording.clientRecordingId}:${pickerOwner.serial}`}
               identityKey={pickerOwner.key} defaultVisibility="company"
-              disabled={!canSend || verifiedUploadIdentity !== pickerOwner.key || autoResolvingCompany} busy={exporting}
-              initialValue={pickerInitial} refreshToken={pickerRefresh}
+              disabled={!canSend || verifiedUploadIdentity !== pickerOwner.key} busy={exporting}
+              initialValue={pickerInitial} initialCompanyPromise={pickerInitialCompanyPromise} refreshToken={pickerRefresh}
+              onStatusChange={setUploadPreferencesReason}
               onChange={(value) => setUploadPreferences(value)} />
           </div>}
           {typeof window.ludone?.listUploadCompanies === "function" && (!canSend || !verifiedUploadIdentity)
@@ -1209,10 +1276,12 @@ export const RecordingCard = forwardRef(function RecordingCard({
               <button
                 type="submit"
                 className="button button--primary button--wide"
-                disabled={exporting || !canSend || (typeof window.ludone?.listUploadCompanies === "function" && (!verifiedUploadIdentity || !uploadPreferences))}
+                disabled={Boolean(sendDisabledReason)}
+                aria-describedby={sendDisabledReason ? "recording-send-disabled-reason" : undefined}
               >
                 Uložit a odeslat
               </button>
+              {sendDisabledReason && <p id="recording-send-disabled-reason" className="recording-saved__hint" role="status">{sendDisabledReason}</p>}
               <button
                 type="button"
                 className="button button--wide recording-saved__skip"
@@ -1259,6 +1328,24 @@ export const RecordingCard = forwardRef(function RecordingCard({
               <span className="osa-source-plan"><span><OsaIcon name="record" size={18} /> Mikrofon</span><span><OsaIcon name="sound" size={18} /> Zvuk schůzky</span></span>
             )}
           </span>
+          <div className="recording-card__visibility" role="group" aria-label="Přístup k nové nahrávce">
+            {[{ value: "private", label: "Soukromá" }, { value: "company", label: "Firemní" }].map(({ value, label }) => (
+              <button key={value} type="button" data-testid={`recording-visibility-${value}`}
+                aria-pressed={recordingVisibility === value}
+                onClick={() => {
+                  setRecordingVisibility(value);
+                  setVisibilityStored(persistRecordingVisibilityPreference(value));
+                }}>{label}</button>
+            ))}
+          </div>
+          {!visibilityStored && <small className="recording-card__preference-warning" role="status">Volbu se na tomto Macu nepodařilo zapamatovat.</small>}
+          <div className="recording-card__company" data-testid="recording-default-company">
+            <span>{companyLabel}</span>
+            <button type="button" data-testid="recording-default-company-change"
+              onClick={() => window.ludone.openSettings("account")}>
+              {visibleDefaultCompany.state === "empty" ? "Vybrat" : "Změnit"}
+            </button>
+          </div>
           <button
             type="button"
             className="idle-feature-row__action"
@@ -1269,7 +1356,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
             <span className="sr-only">Spustit nahrávání</span>
           </button>
           <div className="recording-card__idle-footer">
-            <button type="button" className="osa-audio-check" onClick={onOpenSources} disabled={typeof onOpenSources !== "function"}><OsaIcon name="sound" size={18} /> Zkouška zvuku</button><small>Rozhodnete po schůzce</small>
+            <button type="button" className="osa-audio-check" onClick={onOpenSources} disabled={typeof onOpenSources !== "function"}><OsaIcon name="sound" size={18} /> Zkouška zvuku</button>
             <button
               type="button"
               className="recording-card__sources"
