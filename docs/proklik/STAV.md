@@ -42,8 +42,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 
 | Issue | Název | Stav | Větev / PR | Poznámka |
 |---|---|---|---|---|
-| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 review | `fix/upload-company-default` @ 9e7ff6d | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
-| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 review | `fix/upload-company-default` @ 9e7ff6d | — |
+| #182 | Nová nahrávka nedostane výchozí firmu | 🔵 opravné kolo 2 | `fix/upload-company-default` @ 9e7ff6d | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
+| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | 🔵 opravné kolo 2 | `fix/upload-company-default` @ 9e7ff6d | — |
 | #186 | Čerstvou nahrávku nejde smazat | ⏳ ve frontě | — | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
 | #185 | Není poznat, že nahrává | ⏳ ve frontě | — | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ⏳ ve frontě | — | terra/sol (Dan: nejnovější modely, ne luna); bod 10 udělá už PR #182 |
@@ -75,7 +75,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 | Handle | Úkol | Log | Stav |
 |---|---|---|---|
 | `term_464c0a7a-dc84-430f-8acd-0f7648a5601a` | #182+#183 implementace, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-vychozi-firmy-182-183-1795013407939.log` | EXIT=0, převzato (commit 9e7ff6d) |
-| `term_59f98bfa-ebd2-453d-94b1-c98fa597ef38` | #182+#183 review, sol 6.2 max read-only | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-1795015414005.log` | běží |
+| `term_59f98bfa-ebd2-453d-94b1-c98fa597ef38` | #182+#183 review, sol 6.2 max read-only | `~/.claude/runs/.codex-logy/2026-11-18/review-182-183-1795015414005.log` | EXIT=0, VRÁTIT, zavřeno |
+| `term_9b6ef6f7-1fd6-4283-95ce-eb1305b8d957` | #182+#183 kolo 2, terra max | `~/.claude/runs/.codex-logy/2026-11-18/oprava-182-183-kolo-2-1795016336579.log` | běží |
 
 Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 
@@ -89,3 +90,8 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
   Ověřeno: server `ludone-app` vrací `sub = String(dbUser.id)` (userinfo/route.ts:109) ⇒ stabilní. Staré session `sub` nemají ⇒ po aktualizaci jednou vybrat firmu.
   Claude review: úpravy existujících testů OK (záměrná změna H2 + zpřísnění); dešifrování staré session bezpečné (vrací null);
   **P2: poškozený `upload-company-defaults.json` ⇒ `writeCompanyDefault` vyhodí po uložení session ⇒ trvalá chyba ukládání** → opravné kolo.
+- 18. 11. 2026 ~17:00 — review sol 6.2 max (turn_context ověřen, 0 subagentů): VRÁTIT, 5× P1 + 4× P2 → N1–N8 do kola 2
+  (zadání scratchpad/packet-182-183-kolo2.md). Nezařazeno: „uploader bere firmu z relace bez čerstvé nabídky“ = chování
+  i před změnou, server kontroluje při INIT ⇒ do PR jako známé omezení. Moje cílené testy na 9e7ff6d: auth-identity-fallback 38,
+  upload-company-regression 15, recordings-dashboard 43, queue-wiring 351 — vše PASS (review je kvůli sandboxu pustit nemohlo).
+  Větev pushnutá. kombinace: autor terra 6.1 max → reviewer sol 6.2 max, kolo 1 VRÁTIT.
