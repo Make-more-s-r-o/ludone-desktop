@@ -30,6 +30,14 @@ describe("F Osa skutečný seznam", () => {
     expect(selectOsaRecordings(items, { search: "porada vyroby" }).items.map(item => item.id)).toEqual(["named"]);
     expect(automatic.title).toBe("18. listopadu 2026, 15:00");
   });
+  it("X3 nespojuje původní vyhledávací text se zobrazeným názvem", () => {
+    const items = [row("porada", null)];
+    expect(selectOsaRecordings(items, { search: "Porada" }).items).toEqual(items);
+    expect(selectOsaRecordings(items, { search: "Porada Porada" }).items).toEqual([]);
+    const companyItems = [row("firma", null, { companyName: "Žlutý kůň" })];
+    expect(selectOsaRecordings(companyItems, { search: "porada zluty kun" }).items).toEqual(companyItems);
+    expect(selectOsaRecordings(companyItems, { search: "kun porada" }).items).toEqual([]);
+  });
   it("vlastní rozsah zahrne celý místní den a neznámá data jen v celém archivu", () => {
     const items = [row("start", new Date(2026, 9, 25, 0).toISOString()), row("end", new Date(2026, 9, 25, 23, 59, 59, 999).toISOString()), row("next", new Date(2026, 9, 26, 0).toISOString()), row("unknown", "bad")];
     expect(selectOsaRecordings(items, { period: "custom", from: "2026-10-25", to: "2026-10-25" }).items.map(i => i.id)).toEqual(["end", "start"]);
