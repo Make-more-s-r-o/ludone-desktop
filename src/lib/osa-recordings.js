@@ -1,4 +1,5 @@
 import { recordingDisplayTitle } from "./recording-display.js";
+import { recordingDeliveryStatus } from "./recording-delivery-status.js";
 
 export const OSA_PAGE_SIZE = 7;
 
@@ -22,10 +23,7 @@ function itemDate(value) {
 
 /** Prezentační filtr; neposkytuje oprávnění k žádné operaci fronty. */
 export function osaRecordingStatus(item) {
-  if (item.state === "odeslano") return "sent";
-  if (item.requiresHumanAction || item.state === "selhalo" || item.blockReason || ["incomplete", "partial-audio", "missing-audio", "invalid-manifest", "unreadable"].includes(item.localState)) return "attention";
-  if (item.uploadIntent === "held" || !item.state) return "local";
-  return "waiting";
+  return recordingDeliveryStatus(item).tone;
 }
 
 function dateKey(date) {
@@ -88,12 +86,12 @@ export function selectOsaRecordings(items, query = {}, now = new Date()) {
 }
 
 // Uzly nemají odvozovat serverové ověření ze samotného odeslání.
-export function osaRecordingNode(item, verified = false) {
+export function osaRecordingNode(item, verified = false, status = osaRecordingStatus(item)) {
   if (item.recordingInProgress) return "recording";
-  if (osaRecordingStatus(item) === "attention") return "error";
-  if (verified) return "verified";
+  if (status === "attention") return "error";
+  if (verified && status === "sent") return "verified";
   if (item.state === "odeslano") return "unverified";
-  if (osaRecordingStatus(item) === "waiting") return "pending";
+  if (status === "waiting") return "pending";
   return "local";
 }
 

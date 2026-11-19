@@ -166,8 +166,8 @@ describe("#187 – drobnosti v panelu", () => {
     finally { await noClaim.cleanup(); }
     const claim = await dashboard([recording(IDS[0], { ownership: "other", allowedActions: { claim: true } })]);
     try {
-      const actions = claim.document.querySelector('[data-station="pending"] .osa-station__actions');
-      expect(actions.textContent).toContain("Převzít pod svůj účet");
+      const actions = claim.document.querySelector('[data-station="error"] .osa-station__actions');
+      expect(actions.textContent).toContain("Převzít a odeslat");
       expect(actions.textContent).toContain("Převzetí nahrávky ji neodešle");
       expect(claim.document.querySelector(".recordings-dashboard__toolbar").parentElement.querySelector(":scope > .recordings-dashboard__notice")).toBeNull();
     } finally { await claim.cleanup(); }

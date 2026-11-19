@@ -120,7 +120,7 @@ async function renderDashboard({
 
 function claimButton(dashboard) {
   return [...dashboard.document.querySelectorAll("button")]
-    .find((button) => button.textContent.trim().includes("Převzít pod svůj účet"));
+    .find((button) => button.textContent.trim().includes("Převzít a odeslat"));
 }
 
 afterEach(() => {
@@ -180,6 +180,25 @@ describe("dashboard fronty nahrávek", () => {
         state: "ceka",
         uploadIntent: "approved",
       });
+      const automatic = await createLocalRecordingsSnapshot({
+        queue, queueItems: [{ ...projected, requiresHumanAction: false, blockReason: null,
+          lastFailureReason: "Síťový požadavek uploadu vypršel", nextAttemptAt: 1_800_000_000_000 }],
+        recordingsDirectory: root,
+      });
+      expect(automatic.items[0]).toMatchObject({ blockReason: null, nextAttemptAt: 1_800_000_000_000,
+        allowedActions: { retry: false } });
+      for (const [blockReason, expected] of [
+        ["unauthorized (HTTP 401)", "Server odmítl odeslání."],
+        ["insufficient_scope (HTTP 403)", "Přihlášení nemá oprávnění k odeslání."],
+        ["Není vybraná firma, pod kterou se má nahrávka odeslat", "Před odesláním je potřeba vybrat firmu."],
+        ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení."],
+        ["403 company_out_of_scope", "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení."],
+        ["Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení", "Seznam firem není dostupný."],
+      ]) {
+        const blocked = await createLocalRecordingsSnapshot({ queue,
+          queueItems: [{ ...projected, blockReason }], recordingsDirectory: root });
+        expect(blocked.items[0].blockReason).toBe(expected);
+      }
       for (const protectedItem of [
         { ...projected, uploadIntent: "held" },
         { ...projected, state: "odesila" },
@@ -483,7 +502,7 @@ describe("dashboard fronty nahrávek", () => {
       await vi.waitFor(() => expect(claimButton(dashboard)).toBeDefined());
       expect(dashboard.document.querySelectorAll(".recording-queue-card")).toHaveLength(2);
       expect([...dashboard.document.querySelectorAll(".recording-queue-card button")]
-        .filter((button) => button.textContent.includes("Převzít pod svůj účet"))).toHaveLength(1);
+        .filter((button) => button.textContent.includes("Převzít a odeslat"))).toHaveLength(1);
     } finally {
       await dashboard.cleanup();
     }

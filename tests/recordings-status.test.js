@@ -2,8 +2,9 @@ import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-// @ts-expect-error JSX produkčního rendereru při testu transformuje Vite.
-import { RecordingsDashboard } from "../src/features/recordings/RecordingsDashboard.jsx";
+const dashboardModule = /** @type {Promise<{ RecordingsDashboard: React.ComponentType<any> }>} */
+  (vi.importActual("../src/features/recordings/RecordingsDashboard.jsx"));
+const { RecordingsDashboard } = await dashboardModule;
 
 const REVISION = `sha256:${"a".repeat(64)}`;
 const FILE_REVISION = `sha256:${"b".repeat(64)}`;
@@ -82,7 +83,7 @@ describe("pravdivé stavy lokálních nahrávek", () => {
       recording(ids.held, { uploadIntent: "held" }),
       recording(ids.failed, {
         state: "selhalo",
-        blockReason: "Předchozí bezpečný pokus se nezdařil.",
+        blockReason: "network_error",
         localReason: "Jedna lokální stopa chybí.",
       }),
       recording(ids.unknown, { state: "neocekavany-stav" }),
@@ -92,7 +93,7 @@ describe("pravdivé stavy lokálních nahrávek", () => {
     ]);
     try {
       await vi.waitFor(() => expect(dashboard.card(ids.sent)).not.toBeNull());
-      expect(dashboard.card(ids.sending).textContent).toContain("Odesílá se do LuDone");
+      expect(dashboard.card(ids.sending).textContent).toContain("Odesílá se…");
       expect(dashboard.card(ids.sent).textContent).toContain("Na serveru neověřeno");
       expect(dashboard.card(ids.sent).textContent).not.toContain("V LuDone ✓");
       expect(dashboard.card(ids.sent).textContent).not.toContain("čeká ve frontě");
@@ -100,15 +101,15 @@ describe("pravdivé stavy lokálních nahrávek", () => {
       expect(dashboard.card(ids.sent).textContent).toContain("Místní fronta");
       expect(dashboard.card(ids.sent).textContent).not.toContain("V aplikaci");
       expect(dashboard.card(ids.approved).textContent)
-        .toContain("Schváleno k odeslání · čeká ve frontě");
-      expect(dashboard.card(ids.held).textContent).toContain("Zůstává na Macu");
+        .toContain("Čeká na odeslání");
+      expect(dashboard.card(ids.held).textContent).toContain("Jen na Macu");
       expect(dashboard.card(ids.held).textContent).toContain("Místní fronta");
-      expect(dashboard.card(ids.failed).textContent).toContain("Odeslání selhalo");
+      expect(dashboard.card(ids.failed).textContent).toContain("Neodešlo — server není dostupný");
       expect(dashboard.card(ids.failed).textContent).toContain("Jedna lokální stopa chybí.");
       expect(dashboard.card(ids.failed).textContent)
-        .toContain("Předchozí bezpečný pokus se nezdařil.");
+        .not.toContain("network_error");
       expect(dashboard.card(ids.unknown).textContent).toContain("Stav odeslání není známý");
-      expect(dashboard.card(ids.orphan).textContent).toContain("Zůstává jen na tomto Macu");
+      expect(dashboard.card(ids.orphan).textContent).toContain("Jen na Macu");
     } finally {
       await dashboard.cleanup();
     }

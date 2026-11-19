@@ -304,16 +304,30 @@ function safeQueueManifestPath(recordingsDirectory, configuredDirectory, item) {
 function safeQueueReason(value) {
   if (typeof value !== "string" || value.length === 0) return null;
   if (SAFE_LEGACY_REASONS.has(value)) return value;
+  if (value === "session_owner_unknown") return "Identitu aktuálního přihlášení nelze ověřit";
   if (/^(queue|session)_owner_[a-z0-9-]+$/u.test(value)) {
     return "Nahrávka čeká na potvrzení vlastnictví.";
   }
   const known = {
-    unauthorized: "Odeslání čeká na nové přihlášení.",
+    unauthorized: "Server odmítl odeslání.",
+    "unauthorized (HTTP 401)": "Server odmítl odeslání.",
+    network_error: "Server není dostupný.",
+    "Síťový požadavek uploadu vypršel": "Server není dostupný.",
+    "Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení": "Seznam firem není dostupný.",
     insufficient_scope: "Přihlášení nemá oprávnění k odeslání.",
+    "insufficient_scope (HTTP 403)": "Přihlášení nemá oprávnění k odeslání.",
+    "Pro upload chybí přihlášení": "Pro odeslání chybí přihlášení.",
+    "Přihlášení pro upload nelze načíst": "Pro odeslání chybí přihlášení.",
+    "Přihlášení patří jinému serveru": "Přihlášení patří jinému serveru",
     company_not_chosen: "Před odesláním je potřeba vybrat firmu.",
+    "Není vybraná firma, pod kterou se má nahrávka odeslat": "Před odesláním je potřeba vybrat firmu.",
+    "Pro upload chybí identifikátor firmy": "Před odesláním je potřeba vybrat firmu.",
     company_binding_missing: "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
+    "Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení": "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
+    "Uložená firma nahrávky není platná": "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
     company_out_of_scope: "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
     "company_out_of_scope (HTTP 403)": "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
+    "403 company_out_of_scope": "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
     "Nedokončenou obnovenou nahrávku nelze bezpečně převést na stereo WebM":
       "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo WebM.",
     "Nedokončenou nahrávku nelze bezpečně převést na stereo WebM":
@@ -355,7 +369,8 @@ function safeProjectedItem(projected) {
     ownership: ["unknown", "current", "other", "unavailable"].includes(projected.ownership)
       ? projected.ownership : "unavailable",
     requiresHumanAction: projected.requiresHumanAction === true,
-    blockReason: safeQueueReason(projected.blockReason ?? projected.lastFailureReason),
+    blockReason: safeQueueReason(projected.blockReason
+      ?? (projected.requiresHumanAction === true || projected.state === "selhalo" ? projected.lastFailureReason : null)),
     title: typeof projected.title === "string" ? projected.title : "",
     uploadIntent: projected.uploadIntent === "approved" ? "approved" : "held",
   };
