@@ -184,3 +184,17 @@ describe("review #201 kolo 4", () => {
     expect(status.label).not.toContain("další pokus v");
   });
 });
+
+describe("review #201 kolo 5", () => {
+  const retryAllowed = { retry: { allowed: true, reason: null }, send: { allowed: false, reason: null }, claim: { allowed: false, reason: null } };
+  it.each([
+    ["Přihlášení nelze ověřit.", "retry"],
+    ["Pro odeslání chybí přihlášení.", "retry"],
+    ["insufficient_scope (HTTP 403)", "login"],
+    ["Přihlášení patří jinému serveru", "login"],
+  ])("přihlášený s povoleným opakováním: %s → %s", (blockReason, expected) => {
+    const status = recordingDeliveryStatus({ state: "ceka", uploadIntent: "approved", ownership: "current",
+      localState: "complete-audio", requiresHumanAction: true, blockReason, actions: retryAllowed }, { authState: "signed-in" });
+    expect(status.action?.type).toBe(expected);
+  });
+});

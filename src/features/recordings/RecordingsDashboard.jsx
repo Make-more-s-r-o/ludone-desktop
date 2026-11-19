@@ -513,7 +513,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
     const status = recordingDeliveryStatus(item, { verified: Boolean(verified), authState,
       busy: actingId !== null, missingRevision: !item.revision || !item.fileRevision,
       preferenceDirty: preference?.dirty, preferenceConflict: preference?.conflict,
-      preferencesMismatch: mismatchedPreferences, preferenceFailed: preferenceFailedById[item.id],
+      preferencesMismatch: mismatchedPreferences, preferenceFailed: item.canConfigureUpload && preferenceFailedById[item.id],
       sendingDisabled: sendingDisabledById[item.id] === true, rateLimitedUntil });
     return [snapshotItem.id, { item, snapshotMatches, verification, verified, status }];
   }));
@@ -653,7 +653,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       && (!preference.value || preference.value.companyId !== item.uploadPreferences?.companyId
         || preference.value.visibility !== item.uploadPreferences?.visibility);
     if (["sendRecording", "retryRecording"].includes(method)
-      && (preference?.dirty || preference?.conflict || mismatched || preferenceFailedById[item.id])) return;
+      && (preference?.dirty || preference?.conflict || mismatched
+        || (item.canConfigureUpload && preferenceFailedById[item.id]))) return;
     if (method === "sendRecording" && !item.actions.send.allowed) return;
     if (method === "retryRecording" && !item.actions.retry.allowed) return;
     if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method === "deleteRecording" && (item.uploadLocked || !item.canDelete))

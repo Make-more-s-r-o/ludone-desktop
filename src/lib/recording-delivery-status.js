@@ -166,8 +166,10 @@ export function recordingDeliveryStatus(item, context = {}) {
     if (type === "claim" && !permitted(item, "claim") && permitted(item, "retry")) type = "retry";
     // Main rozhoduje o akcích: přihlášenému uživateli s povoleným opakováním nenabízej přihlášení
     // jen kvůli historickému důvodu (review #201 k4).
-    // Jen u neověřitelné identity; chybějící oprávnění nebo přihlášení opakování nevyřeší.
-    if (type === "login" && reason === "identitu přihlášení nelze ověřit" && permitted(item, "retry")) type = "retry";
+    // Uložený důvod přihlášení je historický: když je uživatel TEĎ přihlášený a main opakování povolí,
+    // nabídni opakování. Chybějící oprávnění nebo jiný server ale nové opakování nevyřeší (review #201 k5).
+    if (type === "login" && context.authState === "signed-in" && permitted(item, "retry")
+      && !["přihlášení nemá oprávnění k odeslání", "přihlášení patří jinému serveru"].includes(reason)) type = "retry";
   } else if (item.uploadIntent === "approved" && (item.sendingDisabledReason || context.sendingDisabled)) {
     reason = "odesílání je vypnuté";
     type = "retry";

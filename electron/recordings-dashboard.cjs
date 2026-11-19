@@ -316,6 +316,8 @@ function safeQueueReason(value, paused = false) {
   if (/^(queue|session)_owner_[a-z0-9-]+$/u.test(value)) {
     return "Nahrávka čeká na potvrzení vlastnictví.";
   }
+  // HTTP 429 i bez kódu v těle odpovědi (např. „upload_failed (HTTP 429)“) je známý limit serveru.
+  if (/^[a-z0-9_]+ \(HTTP 429\)$/u.test(value)) return "Server dočasně omezil odesílání.";
   const known = {
     unauthorized: "Server odmítl odeslání.",
     "rate_limited (HTTP 429)": "Server dočasně omezil odesílání.",

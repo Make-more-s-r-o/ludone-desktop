@@ -549,3 +549,18 @@ it("zamčený editor firmy neblokuje povolené opakování v otevřeném detailu
     await vi.waitFor(() => expect(retryRecording).toHaveBeenCalledOnce());
   } finally { await dashboard.cleanup(); }
 });
+
+it("po obnově relace nabídne opakování i u uloženého důvodu načtení přihlášení (review k5)", async () => {
+  const item = { ...base, requiresHumanAction: false, lastFailureReason: "Přihlášení pro upload nelze načíst",
+    blockReason: "Přihlášení nelze ověřit.", allowedActions: { retry: true } };
+  const retryRecording = vi.fn(async () => ({ outcome: "sent" }));
+  const dashboard = await mount(RecordingsDashboard, { item }, { retryRecording });
+  try {
+    const retry = dashboard.document.querySelector(".recording-action--retry");
+    expect(retry).not.toBeNull();
+    expect(retry.disabled).toBe(false);
+    expect(dashboard.document.querySelector(".recording-action--login")).toBeNull();
+    await React.act(async () => { retry.click(); });
+    await vi.waitFor(() => expect(retryRecording).toHaveBeenCalledOnce());
+  } finally { await dashboard.cleanup(); }
+});

@@ -46,7 +46,7 @@ it.each([false, true])("HTTP 503 storage_failed s retryable=%s projde frontou i 
     const error = new RecordingUploadError("storage_failed (HTTP 503)", { code: payload.code, status: 503,
       failureClass: failureClassForStatus(503, payload.code, payload) });
     const actual = await processNext(queue, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => { throw error; },
-      { currentOwnerFingerprint: owner, now: 1_800_000_000_000, random: () => 0 });
+      { currentOwnerFingerprint: owner, now: Date.now(), random: () => 0 });
     const item = await project(actual.queue);
     if (retryable) {
       expect(actual.outcome).toBe("retry_scheduled");
@@ -186,5 +186,15 @@ it("pauza s prošlým termínem opakování zachová důvod a povolí ruční op
     expect(item.blockReason).toBeTruthy();
     expect(item.actions.retry.allowed).toBe(true);
     expect(recordingDeliveryStatus(item).tone).toBe("attention");
+  });
+});
+
+it("HTTP 429 bez kódu v těle se v projekci ukáže jako známý limit (review k5)", async () => {
+  await withRecording(async ({ queue, project }) => {
+    queue.items[0] = { ...queue.items[0], state: "ceka", uploadIntent: "approved", requiresHumanAction: false,
+      lastFailureReason: "upload_failed (HTTP 429)", nextAttemptAt: null };
+    const item = await project(queue);
+    expect(item.blockReason).toBe("Server dočasně omezil odesílání.");
+    expect(recordingDeliveryStatus(item).label).not.toContain("důvod nezjištěn");
   });
 });
