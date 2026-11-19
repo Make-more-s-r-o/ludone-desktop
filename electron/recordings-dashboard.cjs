@@ -303,7 +303,10 @@ function safeQueueManifestPath(recordingsDirectory, configuredDirectory, item) {
 
 function knownPausedReason(value) {
   return typeof value === "string"
-    && /^(storage_disabled|quota_exceeded|session_missing|session_not_found)(?: \(HTTP [0-9]{3}\))?$/u.test(value);
+    && (value === "Přihlášení pro upload nelze načíst"
+      || /^(storage_disabled|quota_exceeded|session_missing|session_not_found)(?: \(HTTP [0-9]{3}\))?$/u.test(value)
+      || /^[a-z0-9_]+ \(HTTP 403\)$/u.test(value)
+      || value === "403 company_out_of_scope");
 }
 
 function safeQueueReason(value) {
@@ -316,7 +319,7 @@ function safeQueueReason(value) {
   const known = {
     unauthorized: "Server odmítl odeslání.",
     "unauthorized (HTTP 401)": "Server odmítl odeslání.",
-    network_error: "Server není dostupný.",
+    network_error: "Spojení se serverem se nepodařilo.",
     "Síťový požadavek uploadu vypršel": "Spojení se serverem se nepodařilo.",
     "Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení": "Seznam firem není dostupný.",
     insufficient_scope: "Přihlášení nemá oprávnění k odeslání.",
@@ -327,12 +330,12 @@ function safeQueueReason(value) {
     company_not_chosen: "Před odesláním je potřeba vybrat firmu.",
     "Není vybraná firma, pod kterou se má nahrávka odeslat": "Před odesláním je potřeba vybrat firmu.",
     "Pro upload chybí identifikátor firmy": "Před odesláním je potřeba vybrat firmu.",
-    company_binding_missing: "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
-    "Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení": "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
-    "Uložená firma nahrávky není platná": "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
-    company_out_of_scope: "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
-    "company_out_of_scope (HTTP 403)": "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
-    "403 company_out_of_scope": "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
+    company_binding_missing: "U této rozpracované nahrávky nelze bezpečně určit firmu.",
+    "Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení": "U této rozpracované nahrávky nelze bezpečně určit firmu.",
+    "Uložená firma nahrávky není platná": "U této rozpracované nahrávky nelze bezpečně určit firmu.",
+    company_out_of_scope: "Vybraná firma nahrávku nepřijala.",
+    "company_out_of_scope (HTTP 403)": "Vybraná firma nahrávku nepřijala.",
+    "403 company_out_of_scope": "Vybraná firma nahrávku nepřijala.",
     "Nedokončenou obnovenou nahrávku nelze bezpečně převést na stereo WebM":
       "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo WebM.",
     "Nedokončenou nahrávku nelze bezpečně převést na stereo WebM":
@@ -358,6 +361,8 @@ function safeQueueReason(value) {
   if (pausedCode === "storage_disabled") return "Úložiště serveru je dočasně vypnuté.";
   if (pausedCode === "quota_exceeded") return "Na serveru není dostatek místa pro nahrávku.";
   if (["session_missing", "session_not_found"].includes(pausedCode)) return "Serverovou relaci nahrávky nelze najít.";
+  if (value.startsWith("Síťový požadavek uploadu selhal:")) return "Spojení se serverem se nepodařilo.";
+  if (!Object.hasOwn(known, value) && /^[a-z0-9_]+ \(HTTP 403\)$/u.test(value)) return "Server odeslání odmítl.";
   return Object.hasOwn(known, value) ? known[value] : "Předchozí pokus se nezdařil.";
 }
 
@@ -460,8 +465,17 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       inspected.sizeBytes = undefined;
     }
     seenIds.add(projected.id);
+    // Stejný přepínač jako v main.cjs platí i pro ruční send a retry v blokovaných stavech.
+    const sendingDisabled = process.env.DESKTOP_UPLOAD_ENABLED !== undefined
+      && process.env.DESKTOP_UPLOAD_ENABLED !== "true";
+    // Limit patří účtu; otisk ani limit jiného vlastníka se do rendereru neposílají.
+    const cooldown = projected.ownership === "current" && rawItem.ownerFingerprint
+      ? (queue.uploadCooldowns ?? []).find((entry) => entry.ownerFingerprint === rawItem.ownerFingerprint
+        && Number.isSafeInteger(entry.retryAt) && entry.retryAt > Date.now()) : null;
     items.push({
       ...safeProjectedItem(projected),
+      sendingDisabledReason: sendingDisabled ? "odesílání je vypnuté" : null,
+      uploadRetryAt: cooldown?.retryAt ?? null,
       source: "queue",
       uploadPreferencesLocked: projected.uploadPreferencesLocked === true || inspected.uploadPreferencesLocked === true,
       localState: inspected.invalid ? "invalid-manifest" : inspected.localState,

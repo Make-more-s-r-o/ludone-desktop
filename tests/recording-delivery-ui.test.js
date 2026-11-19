@@ -39,11 +39,13 @@ async function mount(Component, props, methods = {}) {
 
 afterEach(() => vi.unstubAllGlobals());
 
-it("náhled odkáže do historie a seznam vysvětlí blokaci vlastnictví", async () => {
+it("náhled i seznam vysvětlí blokaci vlastnictví", async () => {
   const item = { ...base, ownership: "unknown", requiresHumanAction: true, blockReason: "queue_owner_unknown",
     allowedActions: { claim: true } };
-  const preview = await mount(RecordingDayPreview, { items: [item], onOpenDay: vi.fn() });
-  try { expect(preview.document.body.textContent).toContain("Stav odeslání zjistíš v historii"); }
+  const preview = await mount(RecordingDayPreview, { items: [item], onOpenDay: vi.fn() }, {
+    listLocalRecordings: vi.fn(async () => ({ items: [item], unreadableCount: 0 })),
+  });
+  try { await vi.waitFor(() => expect(preview.document.body.textContent).toContain("Neodešlo — vlastník nahrávky není potvrzený")); }
   finally { await preview.cleanup(); }
   const dashboard = await mount(RecordingsDashboard, { item });
   try {
@@ -169,14 +171,154 @@ it("chybějící oprávnění otevře účet a samo uživatele neodhlásí", asy
   } finally { await dashboard.cleanup(); }
 });
 
-it("R1 náhled bez kontroly souborů a přihlášení neodvozuje výsledek odeslání", async () => {
+it("K1 náhled bez místní projekce zobrazí známý stav fronty", async () => {
   const { localState, ...queueOnly } = base;
   expect(localState).toBe("complete-audio");
-  const preview = await mount(RecordingDayPreview, { items: [queueOnly], onOpenDay: vi.fn() });
+  const preview = await mount(RecordingDayPreview, { items: [queueOnly], onOpenDay: vi.fn() }, { listLocalRecordings: undefined });
   try {
-    expect(preview.document.body.textContent).toContain("Stav odeslání zjistíš v historii");
-    expect(preview.document.body.textContent).not.toContain("Čeká na odeslání");
+    expect(preview.document.body.textContent).toContain("Čeká na odeslání");
   } finally { await preview.cleanup(); }
+});
+
+it("K1 záložní snímek fronty nezamlčí známou blokaci ani neprozradí interní text", async () => {
+  const item = { ...base, requiresHumanAction: true, blockReason: "Síťový požadavek uploadu selhal: soukromá adresa" };
+  const preview = await mount(RecordingDayPreview, { items: [item], onOpenDay: vi.fn() }, { listLocalRecordings: undefined });
+  try {
+    expect(preview.document.body.textContent).toContain("Neodešlo — spojení se serverem se nepodařilo");
+    expect(preview.document.body.textContent).not.toContain("soukromá adresa");
+  } finally { await preview.cleanup(); }
+});
+
+it.each([
+  [{ ...base, uploadIntent: "held", allowedActions: { send: true } }, "Jen na Macu"],
+  [{ ...base, state: "odeslano" }, "Odesláno"],
+  [{ ...base, requiresHumanAction: true, blockReason: "unauthorized", allowedActions: { retry: true } }, "Neodešlo — server odmítl odeslání"],
+])("K1 náhled a historie přečtou tentýž místní snímek pro %s", async (item, expected) => {
+  const listLocalRecordings = vi.fn(async () => ({ items: [item], unreadableCount: 0 }));
+  const preview = await mount(RecordingDayPreview, { items: [{ ...item, blockReason: null }], onOpenDay: vi.fn() }, { listLocalRecordings });
+  try {
+    await vi.waitFor(() => expect(preview.document.querySelector(".day-preview__state")?.textContent).toBe(expected));
+    expect(listLocalRecordings).toHaveBeenCalled();
+  } finally { await preview.cleanup(); }
+  const dashboard = await mount(RecordingsDashboard, { item });
+  try { expect(dashboard.document.querySelector("summary .recording-queue-card__delivery").textContent).toBe(expected); }
+  finally { await dashboard.cleanup(); }
+});
+
+it("K1 změna účtu zahodí opožděný snímek předchozího účtu", async () => {
+  let finishOld;
+  let authChanged;
+  const oldSnapshot = new Promise((resolve) => { finishOld = resolve; });
+  const item = { ...base, requiresHumanAction: true, blockReason: "unauthorized", allowedActions: { retry: true } };
+  const listLocalRecordings = vi.fn().mockImplementationOnce(() => oldSnapshot)
+    .mockResolvedValue({ items: [item], unreadableCount: 0 });
+  const preview = await mount(RecordingDayPreview, { items: [base], onOpenDay: vi.fn() }, {
+    listLocalRecordings, getAuthSessionState: vi.fn(async () => "valid"),
+    onAuthSessionChanged: (callback) => { authChanged = callback; return () => {}; },
+  });
+  try {
+    await vi.waitFor(() => expect(listLocalRecordings).toHaveBeenCalledOnce());
+    await React.act(async () => authChanged());
+    await vi.waitFor(() => expect(preview.document.body.textContent).toContain("Neodešlo — server odmítl odeslání"));
+    await React.act(async () => finishOld({ items: [{ ...base, state: "odeslano" }] }));
+    expect(preview.document.body.textContent).toContain("Neodešlo — server odmítl odeslání");
+    expect(preview.document.body.textContent).not.toContain("Odesláno");
+  } finally { await preview.cleanup(); }
+});
+
+it("K1 náhled po vypršení relace obnoví stejný stav jako historie", async () => {
+  let session = "valid";
+  const preview = await mount(RecordingDayPreview, { items: [base], onOpenDay: vi.fn() }, {
+    getAuthSessionState: vi.fn(async () => session),
+    listLocalRecordings: vi.fn(async () => ({ items: [base], unreadableCount: 0 })),
+  });
+  try {
+    await vi.waitFor(() => expect(preview.document.body.textContent).toContain("Čeká na odeslání"));
+    session = "expired";
+    await vi.waitFor(() => expect(preview.document.body.textContent).toContain("Neodešlo — přihlášení vypršelo"), { timeout: 2_500 });
+  } finally { await preview.cleanup(); }
+});
+
+it.each([
+  [{ ...base, requiresHumanAction: true, blockReason: "insufficient_scope" }, "Přihlásit se v detailu"],
+  [{ ...base, requiresHumanAction: true, blockReason: "company_not_chosen" }, "Vybrat firmu v detailu"],
+])("K2 seznam neslibuje nepřítomné tlačítko v detailu", async (item, falsePromise) => {
+  const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
+  try {
+    expect(dashboard.document.querySelector("summary").textContent).not.toContain(falsePromise);
+    expect(dashboard.document.body.textContent).toContain("V panelu LuDone");
+  } finally { await dashboard.cleanup(); }
+});
+
+it("K4 zamčená připnutá výchozí firma může po obnovení přístupu zkusit odeslání znovu", async () => {
+  const item = { ...base, state: "selhalo", blockReason: "company_out_of_scope (HTTP 403)",
+    uploadPreferences: { companyId: null, visibility: "private" }, uploadPreferencesLocked: true,
+    allowedActions: { retry: true } };
+  const retryRecording = vi.fn(async () => ({ outcome: "sent" }));
+  const dashboard = await mount(RecordingsDashboard, { item, detailId: ID }, { retryRecording });
+  try {
+    const retry = dashboard.document.querySelector(".recording-action--retry");
+    expect(retry.disabled).toBe(false);
+    expect(dashboard.document.body.textContent).toContain("Po obnovení přístupu k této firmě");
+    expect(dashboard.document.body.textContent).not.toContain("vyber firmu pro odesílání");
+    await React.act(async () => retry.click());
+    expect(retryRecording).toHaveBeenCalledExactlyOnceWith({ id: ID, queueRev: REV, fileRev: REV });
+  } finally { await dashboard.cleanup(); }
+});
+
+it.each(["complete-audio", "partial-audio"])("K4 chybějící vazba firmy při stavu %s nevymýšlí řešení změnou výchozí firmy", async (localState) => {
+  const item = { ...base, localState, requiresHumanAction: true, blockReason: "company_binding_missing", allowedActions: { retry: true } };
+  const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
+  try {
+    expect(dashboard.document.body.textContent).toContain("u nahrávky nelze určit firmu");
+    expect(dashboard.document.body.textContent).not.toContain("vyber firmu pro odesílání");
+    expect(dashboard.document.querySelector(".recording-action--company")).toBeNull();
+    expect(dashboard.document.querySelector(".recording-action--retry")).toBeNull();
+  } finally { await dashboard.cleanup(); }
+});
+
+it("K5 vypnutý transport neblokuje povolené místní převzetí", async () => {
+  const item = { ...base, ownership: "other", requiresHumanAction: true, sendingDisabledReason: "odesílání je vypnuté",
+    allowedActions: { claim: true } };
+  const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
+  try {
+    const claim = dashboard.document.querySelector(".recording-action--claim");
+    expect(claim.disabled).toBe(false);
+    await React.act(async () => claim.click());
+    expect(dashboard.ludone.claimRecording).toHaveBeenCalledExactlyOnceWith(ID, REV);
+  } finally { await dashboard.cleanup(); }
+});
+
+it.each(["send", "retry"])("K5 aktivní limit účtu vypne %s a ukáže čas z odpovědi", async (action) => {
+  const retryAt = Date.now() + 120_000;
+  const item = action === "send" ? { ...base, uploadIntent: "held", allowedActions: { send: true } }
+    : { ...base, state: "selhalo", blockReason: "unauthorized", allowedActions: { retry: true } };
+  const sendRecording = vi.fn(async () => ({ outcome: "rate_limited", retryAt }));
+  const retryRecording = vi.fn(async () => ({ outcome: "rate_limited", retryAt }));
+  const dashboard = await mount(RecordingsDashboard, { item, detailId: ID }, { sendRecording, retryRecording });
+  try {
+    const button = dashboard.document.querySelector(`.recording-action--${action}`);
+    expect(button.disabled).toBe(false);
+    await React.act(async () => button.click());
+    expect(dashboard.document.querySelector(`.recording-action--${action}`).disabled).toBe(true);
+    const clock = new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(retryAt));
+    expect(button.parentElement.textContent).toContain(`do ${clock}`);
+    expect(action === "send" ? sendRecording : retryRecording).toHaveBeenCalledOnce();
+  } finally { await dashboard.cleanup(); }
+});
+
+it("K5 limit načtený z projekce po vypršení zpřístupní opakování", async () => {
+  const retryAt = Date.now() + 600;
+  const item = { ...base, state: "selhalo", blockReason: "unauthorized", uploadRetryAt: retryAt,
+    allowedActions: { retry: true } };
+  const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
+  try {
+    const retry = dashboard.document.querySelector(".recording-action--retry");
+    expect(retry.disabled).toBe(true);
+    const clock = new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(retryAt));
+    expect(retry.parentElement.textContent).toContain(`do ${clock}`);
+    await vi.waitFor(() => expect(retry.disabled).toBe(false), { timeout: 2_000 });
+  } finally { await dashboard.cleanup(); }
 });
 
 it("R1 filtr historie používá vypršelou relaci stejně jako červený řádek", async () => {

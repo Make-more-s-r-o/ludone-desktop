@@ -63,6 +63,7 @@ function normalizeRecordingItem(value) {
       ?? ((value.requiresHumanAction === true || value.state === "selhalo") ? safeText(value.lastFailureReason) : null),
     lastFailureReason: safeText(value.lastFailureReason),
     sendingDisabledReason: safeText(value.sendingDisabledReason),
+    uploadRetryAt: safeNonNegativeInteger(value.uploadRetryAt),
     nextAttemptAt: safeNonNegativeInteger(value.nextAttemptAt),
     ownership: ["unknown", "current", "other", "unavailable"].includes(value.ownership)
       ? value.ownership
@@ -235,6 +236,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   });
   const [claimingId, setClaimingId] = useState(null);
   const [sendingDisabledById, setSendingDisabledById] = useState({});
+  const [returnedCooldown, setReturnedCooldown] = useState(null);
+  const [clockTick, setClockTick] = useState(0);
   const [actingId, setActingId] = useState(null);
   const [verifyingId, setVerifyingId] = useState(null);
   const [verificationById, setVerificationById] = useState({});
@@ -466,6 +469,17 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   };
 
   const disabledExplanation = accountExplanation(authState);
+  const rateLimitedUntil = authState === "signed-in" && returnedCooldown?.identity === currentIdentity
+    ? returnedCooldown.retryAt : 0;
+  const deadlines = [rateLimitedUntil, ...view.items.map((item) => item.uploadRetryAt ?? 0)]
+    .filter((time) => time > Date.now());
+  const nextDeadline = deadlines.length > 0 ? Math.min(...deadlines) : null;
+  useEffect(() => {
+    if (nextDeadline === null) return undefined;
+    const delay = Math.min(Math.max(0, nextDeadline - Date.now()) + 20, 2_147_483_647);
+    const timer = window.setTimeout(() => setClockTick((tick) => tick + 1), delay);
+    return () => window.clearTimeout(timer);
+  }, [nextDeadline, clockTick]);
   const presentations = new Map(view.items.map((snapshotItem) => {
     const snapshotMatches = authState === "signed-in" && currentIdentity && view.snapshotIdentity === currentIdentity
       && view.snapshotAuthEpoch === renderAuth.current.epoch;
@@ -487,7 +501,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       busy: actingId !== null, missingRevision: !item.revision || !item.fileRevision,
       preferenceDirty: preference?.dirty, preferenceConflict: preference?.conflict,
       preferencesMismatch: mismatchedPreferences, preferenceFailed: preferenceFailedById[item.id],
-      sendingDisabled: sendingDisabledById[item.id] === true });
+      sendingDisabled: sendingDisabledById[item.id] === true, rateLimitedUntil });
     return [snapshotItem.id, { item, snapshotMatches, verification, verified, status }];
   }));
   const statusFor = (item) => presentations.get(item.id).status.tone;
@@ -630,12 +644,19 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       || (method !== "deleteRecording"
       && method !== "revealRecording" && !item.revision)
       || typeof window.ludone?.[method] !== "function") return;
+    const actionIdentity = currentIdentity;
+    const actionAuthEpoch = renderAuth.current.epoch;
     setActingId(item.id);
     try {
       const result = await window.ludone[method]({
         id: item.id, queueRev: item.revision, fileRev: item.fileRevision,
       });
       await load();
+      if (active.current && result?.outcome === "rate_limited" && Number.isSafeInteger(result.retryAt)
+        && result.retryAt > Date.now() && actionIdentity && identityRef.current === actionIdentity
+        && authRef.current === "signed-in" && renderAuth.current.epoch === actionAuthEpoch) {
+        setReturnedCooldown({ identity: actionIdentity, retryAt: result.retryAt });
+      }
       if (active.current && result?.outcome === "disabled") {
         setSendingDisabledById((current) => ({ ...current, [item.id]: true }));
       }
@@ -734,13 +755,15 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
             const retainedCopy = !snapshotMatches && view.snapshotIdentity
               && (authState === "unknown" || (authState === "signed-in" && currentIdentity === view.snapshotIdentity));
             const companyRejected = ["company_out_of_scope", "company_out_of_scope (HTTP 403)", "403 company_out_of_scope",
+              "Vybraná firma nahrávku nepřijala.",
               "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení."].includes(item.blockReason);
             const companyRepair = companyRejected && item.state === "selhalo" && !item.uploadPreferencesLocked;
             const canEditCompany = !item.uploadPreferencesLocked && (item.uploadIntent === "held" || companyRepair);
-            const retryCompanyReason = companyRejected && (item.uploadPreferences?.companyId || item.uploadPreferencesLocked)
+            const retryCompanyReason = companyRejected && item.uploadPreferences?.companyId
               ? (canEditCompany ? "Nejdřív změň a ulož firmu této nahrávky."
                 : "Firmu této nahrávky už nelze změnit. Obrať se na správce LuDone.") : null;
-            const claimDisabledReason = recordingDeliveryStatus(item, { busy: claimingId !== null, missingRevision: !item.revision }).disabledReason;
+            const claimDisabledReason = recordingDeliveryStatus(item, { busy: claimingId !== null,
+              missingRevision: !item.revision, transportAction: false }).disabledReason;
             const journeyStage = item.recordingInProgress ? -1 : verified && status.tone === "sent" ? 3
               : item.state === "odeslano" ? (item.localState === "complete-audio" ? 0 : -1)
                 : status.tone === "waiting" ? 1 : item.localState === "complete-audio" ? 0 : -1;
@@ -776,7 +799,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                       <span className={`recording-queue-card__delivery recording-queue-card__delivery--${verified && status.tone === "sent" ? "verified" : status.tone}`}>
                         {status.label}
                       </span>
-                      {status.action && <small className="recording-queue-card__next-action">{status.action.label} v detailu</small>}
+                      {status.action && <small className="recording-queue-card__next-action">{status.action.type === "login"
+                        ? "Přihlas se v panelu LuDone." : status.action.type === "company"
+                          ? "Zkontroluj firmu v panelu LuDone." : `${status.action.label} v detailu`}</small>}
                     </span>
                     <span className="recording-queue-card__facts">
                       <span>{formatCreatedAt(item.createdAt)}</span>
@@ -956,7 +981,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     : "V panelu LuDone otevři přihlášení a přihlas se znovu."}
                 </p>}
                 {status.action?.type === "company" && snapshotMatches && <>
-                  {retryCompanyReason && !canEditCompany ? <p role="status">{retryCompanyReason}</p>
+                  {companyRejected && item.uploadPreferencesLocked && !item.uploadPreferences?.companyId
+                    ? <p role="status">Pokud už odesílání začalo, musí zůstat původní firma. Po obnovení přístupu k této firmě zkus odeslání znovu.</p>
+                    : retryCompanyReason && !canEditCompany ? <p role="status">{retryCompanyReason}</p>
                     : canEditCompany ? <button type="button" className="button button--primary recording-action--company" onClick={(event) => {
                     const card = event.currentTarget.closest(".recording-queue-card");
                     const select = card?.querySelector('[data-testid="recording-upload-company"]');
@@ -980,7 +1007,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     onClick={() => void runAction(item, "sendRecording")}><OsaIcon name="cloud" size={17} /> Odeslat</button>
                   {status.disabledReason && <p className="recording-queue-card__action-reason" role="status">{status.disabledReason}</p>}
                 </>)}
-                {snapshotMatches && !verified && status.action?.type !== "login" && item.canRetry && (<>
+                {snapshotMatches && !verified && status.action?.type !== "login"
+                  && !status.reason?.includes("u nahrávky nelze určit firmu") && item.canRetry && (<>
                   <button type="button" className="button button--small recording-action--retry"
                     disabled={Boolean(status.disabledReason || retryCompanyReason)}
                     onClick={() => void runAction(item, "retryRecording")}>Zkusit znovu</button>

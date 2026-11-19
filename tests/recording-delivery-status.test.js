@@ -65,14 +65,14 @@ describe("společný stav odeslání nahrávky", () => {
     ["unauthorized (HTTP 401)", "server odmítl odeslání", "retry"],
     ["insufficient_scope (HTTP 403)", "přihlášení nemá oprávnění k odeslání", "login"],
     ["Není vybraná firma, pod kterou se má nahrávka odeslat", "chybí vybraná firma", "company"],
-    ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", "u nahrávky nelze určit firmu", "company"],
-    ["Uložená firma nahrávky není platná", "u nahrávky nelze určit firmu", "company"],
+    ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", "u nahrávky nelze určit firmu", null],
+    ["Uložená firma nahrávky není platná", "u nahrávky nelze určit firmu", null],
     ["Pro upload chybí přihlášení", "chybí přihlášení", "login"],
     ["Síťový požadavek uploadu vypršel", "spojení se serverem se nepodařilo", "retry"],
   ])("známý skutečně ukládaný důvod %s přeloží bez kódu", (blockReason, reason, action) => {
     const status = recordingDeliveryStatus({ ...base, requiresHumanAction: true, blockReason, allowedActions: { retry: true } });
     expect(status.label).toBe(`Neodešlo — ${reason}`);
-    expect(status.action?.type).toBe(action);
+    expect(status.action?.type ?? null).toBe(action);
   });
 
   it("pro neúplný zvuk neukazuje čekání ani nepovolenou akci", () => {
@@ -139,3 +139,19 @@ it("R6 zdravé záznamy bez potvrzeného vlastníka nezvyšují počet Odesílá
   const held = ["other", "unknown"].map((ownership) => ({ ...base, uploadIntent: "held", ownership }));
   expect(osaQueueCount(held)).toBe(0);
 });
+
+it.each(["expired", "signed-out"])("K6 poškozený osiřelý záznam při stavu %s nenabízí přihlášení", (authState) => {
+  const item = { ...base, source: "orphan", state: "orphan", ownership: "unavailable",
+    localState: "missing-audio", allowedActions: {} };
+  expect(recordingDeliveryStatus(item, { authState })).toMatchObject({
+    tone: "attention", label: "Problém — zvukové soubory chybí", action: null,
+  });
+});
+
+it.each(["network_error", "Síťový požadavek uploadu selhal: citlivá adresa [POST /upload]"])(
+  "K3 síťovou chybu %s přeloží bez vnitřních údajů", (blockReason) => {
+    const status = recordingDeliveryStatus({ ...base, state: "selhalo", blockReason, allowedActions: { retry: true } });
+    expect(status.label).toBe("Neodešlo — spojení se serverem se nepodařilo");
+    expect(status.action?.type).toBe("retry");
+  },
+);

@@ -191,8 +191,8 @@ describe("dashboard fronty nahrávek", () => {
         ["unauthorized (HTTP 401)", "Server odmítl odeslání."],
         ["insufficient_scope (HTTP 403)", "Přihlášení nemá oprávnění k odeslání."],
         ["Není vybraná firma, pod kterou se má nahrávka odeslat", "Před odesláním je potřeba vybrat firmu."],
-        ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení."],
-        ["403 company_out_of_scope", "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení."],
+        ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", "U této rozpracované nahrávky nelze bezpečně určit firmu."],
+        ["403 company_out_of_scope", "Vybraná firma nahrávku nepřijala."],
         ["Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení", "Seznam firem není dostupný."],
       ]) {
         const blocked = await createLocalRecordingsSnapshot({ queue,
@@ -233,7 +233,7 @@ describe("dashboard fronty nahrávek", () => {
     }
   });
 
-  it("initialized nahrávce bez pinu ukáže bezpečný pokyn k volbě firmy", async () => {
+  it("initialized nahrávce bez pinu vysvětlí chybějící bezpečnou vazbu", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "ludone-company-binding-"));
     try {
       const { createLocalRecordingsSnapshot } = actualRequire("../electron/recordings-dashboard.cjs");
@@ -251,7 +251,7 @@ describe("dashboard fronty nahrávek", () => {
         recordingsDirectory: root,
       });
       expect(snapshot.items[0].blockReason)
-        .toBe("U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.");
+        .toBe("U této rozpracované nahrávky nelze bezpečně určit firmu.");
       expect(snapshot.items[0].blockReason).not.toContain("company_binding_missing");
 
       for (const blockReason of ["company_out_of_scope", "company_out_of_scope (HTTP 403)"]) {
@@ -268,7 +268,7 @@ describe("dashboard fronty nahrávek", () => {
           recordingsDirectory: root,
         });
         expect(rejected.items[0].blockReason)
-          .toBe("Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.");
+          .toBe("Vybraná firma nahrávku nepřijala.");
       }
     } finally {
       await rm(root, { force: true, recursive: true });
@@ -1755,7 +1755,8 @@ it("R4 projekce skutečné pauzy storage_disabled se liší od plánovaného opa
       throw Object.assign(new Error(message), { code: failureClass === "paused" ? "storage_disabled" : "network_error", status: 503, failureClass });
     }, { currentOwnerFingerprint: owner, now: 1_800_000_000_000, random: () => 0 });
     const project = async (queue) => (await createLocalRecordingsSnapshot({ queue,
-      queueItems: reduceQueueForRenderer(queue, owner), recordingsDirectory: root })).items[0];
+      queueItems: reduceQueueForRenderer(queue, owner).map((item) => ({ ...item, revision: REVISION })),
+      recordingsDirectory: root })).items[0];
     const paused = await run("paused", "storage_disabled (HTTP 503)");
     const retry = await run("retryable", "network_error");
     expect(paused.outcome).toBe("paused");
@@ -1781,5 +1782,69 @@ it("R4 projekce skutečné pauzy storage_disabled se liší od plánovaného opa
       const failed = { ...queued, items: [{ ...queued.items[0], state: "selhalo", lastFailureReason: rawReason }] };
       expect(recordingDeliveryStatus(await project(failed)).label).toBe(expected);
     }
+
+    const { RecordingUploadError, failureClassForStatus } = actualRequire("../electron/upload-client.cjs");
+    for (const [code, message, status, expected] of [
+      ["session_missing", "Přihlášení pro upload nelze načíst", undefined, "Neodešlo — přihlášení nelze ověřit"],
+      ["forbidden", "forbidden (HTTP 403)", 403, "Neodešlo — server odeslání odmítl"],
+      ["scope_empty", "scope_empty (HTTP 403)", 403, "Neodešlo — server odeslání odmítl"],
+    ]) {
+      const error = new RecordingUploadError(message, { code, status,
+        failureClass: status ? failureClassForStatus(status, code) : "paused" });
+      const actual = await processNext(queued, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => { throw error; },
+        { currentOwnerFingerprint: owner, now: 1_800_000_000_000, random: () => 0 });
+      expect(actual.outcome).toBe("paused");
+      expect(actual.item.requiresHumanAction).toBe(false);
+      const projected = await project(actual.queue);
+      expect(recordingDeliveryStatus(projected).label).toBe(expected);
+      expect(projected.allowedActions.retry).toBe(true);
+    }
+    for (const message of ["network_error", "Síťový požadavek uploadu selhal: soukromá adresa [POST /upload]"]) {
+      const exhausted = { ...queued, items: [{ ...queued.items[0], attempts: 50 }] };
+      const actual = await processNext(exhausted, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => {
+        throw new RecordingUploadError(message, { code: "network_error", failureClass: "retryable" });
+      }, { currentOwnerFingerprint: owner, now: 1_800_000_000_000, random: () => 0 });
+      expect(actual.outcome).toBe("failed");
+      expect(recordingDeliveryStatus(await project(actual.queue)).label).toBe("Neodešlo — spojení se serverem se nepodařilo");
+    }
+
+    vi.stubEnv("DESKTOP_UPLOAD_ENABLED", "false");
+    try {
+      for (const changes of [
+        { state: "ceka", uploadIntent: "held", requiresHumanAction: true },
+        { state: "selhalo", uploadIntent: "approved", requiresHumanAction: true },
+      ]) {
+        const disabled = { ...queued, items: [{ ...queued.items[0], ...changes }] };
+        const projected = await project(disabled);
+        expect(projected.sendingDisabledReason).toBe("odesílání je vypnuté");
+        expect(recordingDeliveryStatus(projected).disabledReason).toBe("Odesílání je vypnuté.");
+        const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [projected] }) });
+        try {
+          const action = changes.uploadIntent === "held" ? "send" : "retry";
+          const button = /** @type {HTMLButtonElement} */ (dashboard.document.querySelector(`.recording-action--${action}`));
+          expect(button.disabled).toBe(true);
+          expect(button.parentElement.textContent).toContain("Odesílání je vypnuté.");
+        } finally { await dashboard.cleanup(); }
+      }
+      const foreign = { ...queued, items: [{ ...queued.items[0], ownerFingerprint: `sha256:${"e".repeat(64)}`,
+        requiresHumanAction: true }] };
+      const foreignItem = await project(foreign);
+      expect(foreignItem.allowedActions.claim).toBe(true);
+      expect(foreignItem.sendingDisabledReason).toBe("odesílání je vypnuté");
+      const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [foreignItem] }) });
+      try {
+        const claim = /** @type {HTMLButtonElement} */ (dashboard.document.querySelector(".recording-action--claim"));
+        expect(claim.disabled).toBe(false);
+      }
+      finally { await dashboard.cleanup(); }
+    } finally { vi.unstubAllEnvs(); }
+
+    const retryAt = Date.now() + 120_000;
+    const limited = { ...queued, uploadCooldowns: [{ ownerFingerprint: owner, retryAt }] };
+    const limitedItem = await project(limited);
+    expect(limitedItem.uploadRetryAt).toBe(retryAt);
+    expect(recordingDeliveryStatus(limitedItem).disabledReason).toContain("Server dočasně omezil odesílání");
+    const otherAccount = { ...limited, items: [{ ...limited.items[0], ownerFingerprint: `sha256:${"e".repeat(64)}` }] };
+    expect((await project(otherAccount)).uploadRetryAt).toBeNull();
   } finally { await rm(root, { recursive: true, force: true }); }
 });

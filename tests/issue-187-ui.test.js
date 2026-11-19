@@ -188,7 +188,7 @@ describe("#187 – drobnosti v panelu", () => {
       expect(panel.document.querySelector("[data-recording-id]").getAttribute("data-osa-node")).toBe("verified");
     } finally { await panel.cleanup(); }
     const preview = await mount(React.createElement(RecordingDayPreview, { items: [item] }));
-    try { expect(preview.document.querySelector(".day-preview__state").textContent).toBe("Stav odeslání zjistíš v historii"); }
+    try { expect(preview.document.querySelector(".day-preview__state").textContent).toBe("Odesláno"); }
     finally { await preview.cleanup(); }
   });
 

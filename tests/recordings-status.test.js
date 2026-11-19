@@ -104,7 +104,7 @@ describe("pravdivé stavy lokálních nahrávek", () => {
         .toContain("Čeká na odeslání");
       expect(dashboard.card(ids.held).textContent).toContain("Jen na Macu");
       expect(dashboard.card(ids.held).textContent).toContain("Místní fronta");
-      expect(dashboard.card(ids.failed).textContent).toContain("Neodešlo — server není dostupný");
+      expect(dashboard.card(ids.failed).textContent).toContain("Neodešlo — spojení se serverem se nepodařilo");
       expect(dashboard.card(ids.failed).textContent).toContain("Jedna lokální stopa chybí.");
       expect(dashboard.card(ids.failed).textContent)
         .not.toContain("network_error");

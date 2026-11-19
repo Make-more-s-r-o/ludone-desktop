@@ -19,15 +19,18 @@ const REASONS = new Map([
   ["Není vybraná firma, pod kterou se má nahrávka odeslat", ["chybí vybraná firma", "company"]],
   ["Pro upload chybí identifikátor firmy", ["chybí vybraná firma", "company"]],
   ["Před odesláním je potřeba vybrat firmu.", ["chybí vybraná firma", "company"]],
-  ["company_binding_missing", ["u nahrávky nelze určit firmu", "company"]],
-  ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", ["u nahrávky nelze určit firmu", "company"]],
-  ["Uložená firma nahrávky není platná", ["u nahrávky nelze určit firmu", "company"]],
-  ["U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.", ["u nahrávky nelze určit firmu", "company"]],
+  ["company_binding_missing", ["u nahrávky nelze určit firmu", null]],
+  ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", ["u nahrávky nelze určit firmu", null]],
+  ["Uložená firma nahrávky není platná", ["u nahrávky nelze určit firmu", null]],
+  ["U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.", ["u nahrávky nelze určit firmu", null]],
+  ["U této rozpracované nahrávky nelze bezpečně určit firmu.", ["u nahrávky nelze určit firmu", null]],
   ["company_out_of_scope", ["vybraná firma nahrávku nepřijala", "company"]],
   ["company_out_of_scope (HTTP 403)", ["vybraná firma nahrávku nepřijala", "company"]],
   ["403 company_out_of_scope", ["vybraná firma nahrávku nepřijala", "company"]],
   ["Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.", ["vybraná firma nahrávku nepřijala", "company"]],
-  ["network_error", ["server není dostupný", "retry"]],
+  ["Vybraná firma nahrávku nepřijala.", ["vybraná firma nahrávku nepřijala", "company"]],
+  ["Server odeslání odmítl.", ["server odeslání odmítl", "retry"]],
+  ["network_error", ["spojení se serverem se nepodařilo", "retry"]],
   ["Síťový požadavek uploadu vypršel", ["spojení se serverem se nepodařilo", "retry"]],
   ["Spojení se serverem se nepodařilo.", ["spojení se serverem se nepodařilo", "retry"]],
   ["Úložiště serveru je dočasně vypnuté.", ["úložiště serveru je dočasně vypnuté", "retry"]],
@@ -84,7 +87,14 @@ function actionFor(item, type) {
 
 function disabledReason(item, context) {
   if (item.recordingInProgress) return "Počkej na dokončení nahrávání.";
-  if (item.sendingDisabledReason || context.sendingDisabled) return "Odesílání je vypnuté.";
+  if (context.transportAction !== false) {
+    if (item.sendingDisabledReason || context.sendingDisabled) return "Odesílání je vypnuté.";
+    const retryAt = Math.max(item.uploadRetryAt ?? 0, context.rateLimitedUntil ?? 0);
+    if (Number.isSafeInteger(retryAt) && retryAt > Date.now() && Number.isFinite(new Date(retryAt).getTime())) {
+      const time = new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(retryAt));
+      return `Server dočasně omezil odesílání do ${time}.`;
+    }
+  }
   if (context.busy) return "Probíhá jiná akce. Počkej na její dokončení.";
   if (context.missingRevision) return "Obnov přehled; nahrávku teď nelze bezpečně ověřit.";
   if (context.preferenceConflict) return "Volby se změnily jinde. Ulož viditelné volby nebo převezmi uložené.";
@@ -98,7 +108,8 @@ function disabledReason(item, context) {
  * @param {any} item
  * @param {{verified?: boolean, authState?: string, busy?: boolean, missingRevision?: boolean,
  *   preferenceDirty?: boolean, preferenceConflict?: boolean, preferencesMismatch?: boolean,
- *   preferenceFailed?: boolean, sendingDisabled?: boolean, incompleteSnapshot?: boolean}} [context]
+ *   preferenceFailed?: boolean, sendingDisabled?: boolean, incompleteSnapshot?: boolean,
+ *   transportAction?: boolean, rateLimitedUntil?: number}} [context]
  */
 export function recordingDeliveryStatus(item, context = {}) {
   const disabled = disabledReason(item, context);
@@ -116,7 +127,9 @@ export function recordingDeliveryStatus(item, context = {}) {
   const signedOut = context.authState === "expired" || context.authState === "signed-out";
   const healthyHeld = item.state === "ceka" && item.uploadIntent === "held"
     && (heldAfterClaim || (!item.requiresHumanAction && !item.blockReason));
-  if (item.source === "orphan" && !localReason) return result("local", "Jen na Macu");
+  if (item.source === "orphan") {
+    return localReason ? result("attention", `Problém — ${localReason}`, localReason) : result("local", "Jen na Macu");
+  }
   if (healthyHeld && !localReason) {
     const type = signedOut ? "login" : ["other", "unknown"].includes(item.ownership) ? "claim" : "send";
     return result("local", "Jen na Macu", heldAfterClaim ? CLAIMED_HOLD : null, type);
@@ -133,8 +146,10 @@ export function recordingDeliveryStatus(item, context = {}) {
     type = "claim";
   } else if (!heldAfterClaim && (item.state === "selhalo" || item.requiresHumanAction || item.blockReason)) {
     const raw = item.blockReason || item.lastFailureReason;
-    const mapped = REASONS.get(raw) ?? (/^queue_owner_[a-z0-9-]+$/u.test(raw ?? "")
-      ? ["vlastník nahrávky není potvrzený", "claim"] : ["důvod nezjištěn", "retry"]);
+    const mapped = REASONS.get(raw) ?? (typeof raw === "string" && raw.startsWith("Síťový požadavek uploadu selhal:")
+      ? ["spojení se serverem se nepodařilo", "retry"]
+      : /^queue_owner_[a-z0-9-]+$/u.test(raw ?? "")
+        ? ["vlastník nahrávky není potvrzený", "claim"] : ["důvod nezjištěn", "retry"]);
     [reason, type] = mapped;
     if (type === "claim" && !permitted(item, "claim") && permitted(item, "retry")) type = "retry";
   } else if (item.uploadIntent === "approved" && (item.sendingDisabledReason || context.sendingDisabled)) {
