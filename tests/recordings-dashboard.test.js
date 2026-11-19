@@ -194,10 +194,10 @@ describe("dashboard fronty nahrávek", () => {
       });
       const automatic = await createLocalRecordingsSnapshot({
         queue, queueItems: [{ ...projected, requiresHumanAction: false, blockReason: null,
-          lastFailureReason: "Síťový požadavek uploadu vypršel", nextAttemptAt: 1_800_000_000_000 }],
+          lastFailureReason: "Síťový požadavek uploadu vypršel", nextAttemptAt: 4_102_444_800_000 }],
         recordingsDirectory: root,
       });
-      expect(automatic.items[0]).toMatchObject({ blockReason: null, nextAttemptAt: 1_800_000_000_000,
+      expect(automatic.items[0]).toMatchObject({ blockReason: null, nextAttemptAt: 4_102_444_800_000,
         allowedActions: { retry: false } });
       for (const [blockReason, expected] of [
         ["unauthorized (HTTP 401)", "Server odmítl odeslání."],
@@ -1766,7 +1766,7 @@ it("R4 projekce skutečné pauzy storage_disabled se liší od plánovaného opa
     queued.items[0] = { ...queued.items[0], uploadIntent: "approved", ownerFingerprint: owner };
     const run = async (failureClass, message) => processNext(queued, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => {
       throw Object.assign(new Error(message), { code: failureClass === "paused" ? "storage_disabled" : "network_error", status: 503, failureClass });
-    }, { currentOwnerFingerprint: owner, now: 1_800_000_000_000, random: () => 0 });
+    }, { currentOwnerFingerprint: owner, now: 4_102_444_800_000, random: () => 0 });
     const project = async (queue) => (await createLocalRecordingsSnapshot({ queue,
       queueItems: reduceQueueForRenderer(queue, owner).map((item) => ({ ...item, revision: REVISION })),
       recordingsDirectory: root })).items[0];
@@ -1805,7 +1805,7 @@ it("R4 projekce skutečné pauzy storage_disabled se liší od plánovaného opa
       const error = new RecordingUploadError(message, { code, status,
         failureClass: status ? failureClassForStatus(status, code) : "paused" });
       const actual = await processNext(queued, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => { throw error; },
-        { currentOwnerFingerprint: owner, now: 1_800_000_000_000, random: () => 0 });
+        { currentOwnerFingerprint: owner, now: 4_102_444_800_000, random: () => 0 });
       expect(actual.outcome).toBe("paused");
       expect(actual.item.requiresHumanAction).toBe(false);
       const projected = await project(actual.queue);
@@ -1816,7 +1816,7 @@ it("R4 projekce skutečné pauzy storage_disabled se liší od plánovaného opa
       const exhausted = { ...queued, items: [{ ...queued.items[0], attempts: 50 }] };
       const actual = await processNext(exhausted, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => {
         throw new RecordingUploadError(message, { code: "network_error", failureClass: "retryable" });
-      }, { currentOwnerFingerprint: owner, now: 1_800_000_000_000, random: () => 0 });
+      }, { currentOwnerFingerprint: owner, now: 4_102_444_800_000, random: () => 0 });
       expect(actual.outcome).toBe("failed");
       expect(recordingDeliveryStatus(await project(actual.queue)).label).toBe("Neodešlo — spojení se serverem se nepodařilo");
     }
