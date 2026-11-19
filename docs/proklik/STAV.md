@@ -61,6 +61,8 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 - Otázka Q-20261118-144830-ludone-desktop-a6dd odpovězena v chatu a uzavřena.
 - **Vydání (Dan, chat 18. 11.):** nová verze (0.1.12) **až po sloučení všech šesti** (#182–#187). Jednotlivé PR jen slučovat do `main`, nic netagovat. Až bude šestý sloučený, připravit vydání a před tagem/podpisem se Dana ještě jednou zeptat (brief: nic nevydávat bez Dana).
 
+- **Vydání 0.1.12 schváleno (Dan, chat této session 19. 11. 2026 ~9:10: „ano, vydej 0.1.12“).** Otázka Q-20261118-211459-ludone-desktop-1c5e zodpovězena a uzavřena. PR #198 `chore(release)` (verze + české poznámky; zahrnuje i #179 z PR #180/#181), pak tag `v0.1.12` → workflow `release-macos.yml`.
+
 ### Rozbor #182 (čtení kódu, ⛔ neověřeno během)
 - Výchozí firma je v šifrované session (`companyTabidooId`). Refresh ji zachová, **nové přihlášení
   zapíše session od nuly bez firmy** ⇒ každé přihlášení po vypršení ji smaže.
@@ -222,3 +224,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 | #187 | #196 | terra 6.1 max → sol 6.2 max | 3 | PŘIJMOUT |
 | #184 (+#187) | #197 | terra 6.1 max → sol 6.2 max | 4 | PŘIJMOUT |
 - 18. 11. 2026 22:46 — tik: žádné nové proklik issues, žádné zprávy; Q k vydání 0.1.12 bez odpovědi (open). Nic nevydáno.
+- 19. 11. 2026 ~9:10 — Dan schválil vydání 0.1.12. Založen PR #198 (ba89b2a), běží CI a Codex review sol 6.2 max read-only (panel term_78cb59d8). Bump verze a poznámky psal Claude sám (4 řádky, delegace by stála víc než práce).
