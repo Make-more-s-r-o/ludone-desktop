@@ -120,7 +120,7 @@ async function renderDashboard({
 
 function claimButton(dashboard) {
   return [...dashboard.document.querySelectorAll("button")]
-    .find((button) => button.textContent.trim().includes("Převzít a odeslat"));
+    .find((button) => button.textContent.trim().includes("Převzít nahrávku"));
 }
 
 afterEach(() => {
@@ -502,7 +502,7 @@ describe("dashboard fronty nahrávek", () => {
       await vi.waitFor(() => expect(claimButton(dashboard)).toBeDefined());
       expect(dashboard.document.querySelectorAll(".recording-queue-card")).toHaveLength(2);
       expect([...dashboard.document.querySelectorAll(".recording-queue-card button")]
-        .filter((button) => button.textContent.includes("Převzít a odeslat"))).toHaveLength(1);
+        .filter((button) => button.textContent.includes("Převzít nahrávku"))).toHaveLength(1);
     } finally {
       await dashboard.cleanup();
     }
@@ -1728,4 +1728,58 @@ it("zamčený failed progress detail nezmění draft a dovolí původní retry i
     expect(panel.ludone.listUploadCompanies).not.toHaveBeenCalled();
     expect(panel.ludone.configureRecordingUpload).not.toHaveBeenCalled();
   } finally { await panel.cleanup(); }
+});
+
+it("R4 projekce skutečné pauzy storage_disabled se liší od plánovaného opakování", async () => {
+  const { createQueue, enqueueRecording, processNext, reduceQueueForRenderer } = await import("../src/lib/queue.js");
+  const { recordingDeliveryStatus } = await import("../src/lib/recording-delivery-status.js");
+  const { createLocalRecordingsSnapshot } = actualRequire("../electron/recordings-dashboard.cjs");
+  const owner = `sha256:${"d".repeat(64)}`;
+  const root = await mkdtemp(path.join(tmpdir(), "ludone-paused-projection-"));
+  const manifestPath = path.join(root, "pause.manifest.json");
+  const microphonePath = path.join(root, "pause.webm");
+  const systemPath = path.join(root, "pause-system.webm");
+  const manifest = { schemaVersion: 1, clientRecordingId: ID, createdAt: "2026-09-14T10:00:00.000Z",
+    closedAt: "2026-09-14T10:00:01.000Z", state: "complete", tracks: { microphone: {
+      fileName: "pause.webm", sha256: "a".repeat(64), sizeBytes: 8,
+      startedAt: "2026-09-14T10:00:00.000Z", endedAt: "2026-09-14T10:00:01.000Z" }, system: {
+      fileName: "pause-system.webm", sha256: "b".repeat(64), sizeBytes: 6,
+      startedAt: "2026-09-14T10:00:00.000Z", endedAt: "2026-09-14T10:00:01.000Z" } } };
+  try {
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await writeFile(microphonePath, "mikrofon");
+    await writeFile(systemPath, "system");
+    const queued = enqueueRecording(createQueue(), { manifest, manifestPath, trackPaths: { microphone: microphonePath, system: systemPath } }).queue;
+    queued.items[0] = { ...queued.items[0], uploadIntent: "approved", ownerFingerprint: owner };
+    const run = async (failureClass, message) => processNext(queued, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => {
+      throw Object.assign(new Error(message), { code: failureClass === "paused" ? "storage_disabled" : "network_error", status: 503, failureClass });
+    }, { currentOwnerFingerprint: owner, now: 1_800_000_000_000, random: () => 0 });
+    const project = async (queue) => (await createLocalRecordingsSnapshot({ queue,
+      queueItems: reduceQueueForRenderer(queue, owner), recordingsDirectory: root })).items[0];
+    const paused = await run("paused", "storage_disabled (HTTP 503)");
+    const retry = await run("retryable", "network_error");
+    expect(paused.outcome).toBe("paused");
+    expect(retry.outcome).toBe("retry_scheduled");
+    const pausedItem = await project(paused.queue);
+    const retryItem = await project(retry.queue);
+    expect(pausedItem.allowedActions.retry).toBe(true);
+    expect(recordingDeliveryStatus(pausedItem).action).toEqual({ type: "retry", label: "Zkusit znovu" });
+    expect(recordingDeliveryStatus(pausedItem).label).toBe("Neodešlo — úložiště serveru je dočasně vypnuté");
+    expect(recordingDeliveryStatus(retryItem).label).toContain("další pokus v");
+    expect(retryItem.blockReason).toBeNull();
+    expect(retryItem.allowedActions.retry).toBe(false);
+    for (const patch of [
+      { ownerFingerprint: null }, { ownerFingerprint: `sha256:${"e".repeat(64)}` }, { uploadIntent: "held" },
+    ]) {
+      const protectedQueue = { ...paused.queue, items: [{ ...paused.queue.items[0], ...patch }] };
+      expect((await project(protectedQueue)).allowedActions.retry).toBe(false);
+    }
+    for (const [rawReason, expected] of [
+      ["Síťový požadavek uploadu vypršel", "Neodešlo — spojení se serverem se nepodařilo"],
+      ["Přihlášení pro upload nelze načíst", "Neodešlo — přihlášení nelze ověřit"],
+    ]) {
+      const failed = { ...queued, items: [{ ...queued.items[0], state: "selhalo", lastFailureReason: rawReason }] };
+      expect(recordingDeliveryStatus(await project(failed)).label).toBe(expected);
+    }
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

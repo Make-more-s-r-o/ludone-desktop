@@ -30,8 +30,8 @@ describe("společný stav odeslání nahrávky", () => {
     const item = { ...base, state: "odeslano" };
     expect(recordingDeliveryStatus(item).label).toBe("Odesláno");
     expect(recordingDeliveryStatus(item, { verified: true }).label).toBe("V LuDone ✓");
-    expect(recordingDeliveryStatus(base, { verified: true }).label).toBe("Čeká na odeslání");
-    expect(osaRecordingNode(base, true)).toBe("pending");
+    expect(recordingDeliveryStatus(base, { verified: true }).label).toBe("V LuDone ✓");
+    expect(osaRecordingNode(base, true)).toBe("verified");
   });
 
   it("čekajícímu automatickému opakování ukáže místní čas bez starého důvodu selhání", () => {
@@ -68,7 +68,7 @@ describe("společný stav odeslání nahrávky", () => {
     ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", "u nahrávky nelze určit firmu", "company"],
     ["Uložená firma nahrávky není platná", "u nahrávky nelze určit firmu", "company"],
     ["Pro upload chybí přihlášení", "chybí přihlášení", "login"],
-    ["Síťový požadavek uploadu vypršel", "server není dostupný", "retry"],
+    ["Síťový požadavek uploadu vypršel", "spojení se serverem se nepodařilo", "retry"],
   ])("známý skutečně ukládaný důvod %s přeloží bez kódu", (blockReason, reason, action) => {
     const status = recordingDeliveryStatus({ ...base, requiresHumanAction: true, blockReason, allowedActions: { retry: true } });
     expect(status.label).toBe(`Neodešlo — ${reason}`);
@@ -92,4 +92,50 @@ describe("společný stav odeslání nahrávky", () => {
     expect(recordingDeliveryStatus(item)).toMatchObject({ tone: "attention", label: "Stav odeslání není známý", action: null });
     expect(osaRecordingNode(item)).toBe("error");
   });
+});
+
+describe("regrese druhého kola", () => {
+  it.each(["ceka", "selhalo"])("úplné ověření má přednost před lokálním stavem %s", (state) => {
+    const item = { ...base, state };
+    expect(recordingDeliveryStatus(item, { verified: true })).toMatchObject({ tone: "sent", label: "V LuDone ✓", action: null });
+    expect(osaRecordingNode(item, true, "sent")).toBe("verified");
+  });
+
+  it.each(["unknown", "other"])("zdravé held s vlastníkem %s zůstane na Macu", (ownership) => {
+    const item = { ...base, uploadIntent: "held", ownership, allowedActions: { claim: true } };
+    expect(recordingDeliveryStatus(item)).toMatchObject({ tone: "local", label: "Jen na Macu" });
+  });
+
+  it.each([
+    ["insufficient_scope", "přihlášení nemá oprávnění k odeslání", "login"],
+    ["company_not_chosen", "chybí vybraná firma", "company"],
+  ])("část zvuku chybí a současně zůstane vidět blokace %s", (blockReason, reason, action) => {
+    const status = recordingDeliveryStatus({ ...base, localState: "partial-audio", requiresHumanAction: true, blockReason });
+    expect(status.label).toContain("část zvuku chybí");
+    expect(status.label).toContain(reason);
+    expect(status.action?.type).toBe(action);
+  });
+
+  it("vypnutý transport vysvětlí pod tlačítkem", () => {
+    expect(recordingDeliveryStatus({ ...base, sendingDisabledReason: "odesílání je vypnuté" }))
+      .toMatchObject({ tone: "attention", label: "Neodešlo — odesílání je vypnuté", disabledReason: "Odesílání je vypnuté." });
+  });
+
+  it("timeout a neověřené přihlášení nevyvozují příčinu", () => {
+    expect(recordingDeliveryStatus({ ...base, state: "selhalo", blockReason: "Síťový požadavek uploadu vypršel" }).label)
+      .toBe("Neodešlo — spojení se serverem se nepodařilo");
+    expect(recordingDeliveryStatus({ ...base, state: "selhalo", blockReason: "Přihlášení pro upload nelze načíst" }).label)
+      .toBe("Neodešlo — přihlášení nelze ověřit");
+  });
+
+  it("převzetí neslibuje odeslání", () => {
+    const status = recordingDeliveryStatus({ ...base, ownership: "other", allowedActions: { claim: true } });
+    expect(status.action?.label).toBe("Převzít nahrávku");
+  });
+});
+
+it("R6 zdravé záznamy bez potvrzeného vlastníka nezvyšují počet Odesílání", async () => {
+  const { osaQueueCount } = await import("../src/lib/osa-recordings.js");
+  const held = ["other", "unknown"].map((ownership) => ({ ...base, uploadIntent: "held", ownership }));
+  expect(osaQueueCount(held)).toBe(0);
 });

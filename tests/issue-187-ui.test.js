@@ -166,8 +166,9 @@ describe("#187 – drobnosti v panelu", () => {
     finally { await noClaim.cleanup(); }
     const claim = await dashboard([recording(IDS[0], { ownership: "other", allowedActions: { claim: true } })]);
     try {
-      const actions = claim.document.querySelector('[data-station="error"] .osa-station__actions');
-      expect(actions.textContent).toContain("Převzít a odeslat");
+      const actions = claim.document.querySelector(".recording-action--claim").closest(".osa-station__actions");
+      expect(claim.document.querySelector(".recording-queue-card__delivery").textContent).toBe("Jen na Macu");
+      expect(actions.textContent).toContain("Převzít nahrávku");
       expect(actions.textContent).toContain("Převzetí nahrávky ji neodešle");
       expect(claim.document.querySelector(".recordings-dashboard__toolbar").parentElement.querySelector(":scope > .recordings-dashboard__notice")).toBeNull();
     } finally { await claim.cleanup(); }
@@ -187,7 +188,7 @@ describe("#187 – drobnosti v panelu", () => {
       expect(panel.document.querySelector("[data-recording-id]").getAttribute("data-osa-node")).toBe("verified");
     } finally { await panel.cleanup(); }
     const preview = await mount(React.createElement(RecordingDayPreview, { items: [item] }));
-    try { expect(preview.document.querySelector(".day-preview__state").textContent).toBe("Odesláno"); }
+    try { expect(preview.document.querySelector(".day-preview__state").textContent).toBe("Stav odeslání zjistíš v historii"); }
     finally { await preview.cleanup(); }
   });
 

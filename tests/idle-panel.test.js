@@ -356,7 +356,7 @@ describe("schválený klidový panel", () => {
     try {
       await vi.waitFor(() => {
         expect(panel.document.querySelector('[data-testid="day-preview"]')?.textContent)
-          .toContain("Zůstává na Macu");
+          .toContain("Stav odeslání zjistíš v historii");
       });
       const previewText = panel.document.querySelector('[data-testid="day-preview"]')?.textContent ?? "";
       expect(previewText).not.toContain("Čeká na odeslání");

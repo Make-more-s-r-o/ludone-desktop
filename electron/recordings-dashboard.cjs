@@ -301,6 +301,11 @@ function safeQueueManifestPath(recordingsDirectory, configuredDirectory, item) {
   );
 }
 
+function knownPausedReason(value) {
+  return typeof value === "string"
+    && /^(storage_disabled|quota_exceeded|session_missing|session_not_found)(?: \(HTTP [0-9]{3}\))?$/u.test(value);
+}
+
 function safeQueueReason(value) {
   if (typeof value !== "string" || value.length === 0) return null;
   if (SAFE_LEGACY_REASONS.has(value)) return value;
@@ -312,12 +317,12 @@ function safeQueueReason(value) {
     unauthorized: "Server odmítl odeslání.",
     "unauthorized (HTTP 401)": "Server odmítl odeslání.",
     network_error: "Server není dostupný.",
-    "Síťový požadavek uploadu vypršel": "Server není dostupný.",
+    "Síťový požadavek uploadu vypršel": "Spojení se serverem se nepodařilo.",
     "Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení": "Seznam firem není dostupný.",
     insufficient_scope: "Přihlášení nemá oprávnění k odeslání.",
     "insufficient_scope (HTTP 403)": "Přihlášení nemá oprávnění k odeslání.",
     "Pro upload chybí přihlášení": "Pro odeslání chybí přihlášení.",
-    "Přihlášení pro upload nelze načíst": "Pro odeslání chybí přihlášení.",
+    "Přihlášení pro upload nelze načíst": "Přihlášení nelze ověřit.",
     "Přihlášení patří jinému serveru": "Přihlášení patří jinému serveru",
     company_not_chosen: "Před odesláním je potřeba vybrat firmu.",
     "Není vybraná firma, pod kterou se má nahrávka odeslat": "Před odesláním je potřeba vybrat firmu.",
@@ -349,6 +354,10 @@ function safeQueueReason(value) {
     "Stereo master se před převodem změnil":
       "Stereo master se před převodem změnil; originály zůstávají uložené.",
   };
+  const pausedCode = value.match(/^(storage_disabled|quota_exceeded|session_missing|session_not_found)(?: \(HTTP [0-9]{3}\))?$/u)?.[1];
+  if (pausedCode === "storage_disabled") return "Úložiště serveru je dočasně vypnuté.";
+  if (pausedCode === "quota_exceeded") return "Na serveru není dostatek místa pro nahrávku.";
+  if (["session_missing", "session_not_found"].includes(pausedCode)) return "Serverovou relaci nahrávky nelze najít.";
   return Object.hasOwn(known, value) ? known[value] : "Předchozí pokus se nezdařil.";
 }
 
@@ -370,7 +379,9 @@ function safeProjectedItem(projected) {
       ? projected.ownership : "unavailable",
     requiresHumanAction: projected.requiresHumanAction === true,
     blockReason: safeQueueReason(projected.blockReason
-      ?? (projected.requiresHumanAction === true || projected.state === "selhalo" ? projected.lastFailureReason : null)),
+      ?? (projected.requiresHumanAction === true || projected.state === "selhalo"
+        || knownPausedReason(projected.lastFailureReason)
+        ? projected.lastFailureReason : null)),
     title: typeof projected.title === "string" ? projected.title : "",
     uploadIntent: projected.uploadIntent === "approved" ? "approved" : "held",
   };
@@ -474,7 +485,8 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
         retry: !inspected.invalid && inspected.localState !== "missing-audio"
           && projected.ownership === "current" && projected.uploadIntent === "approved"
           && (projected.state === "selhalo"
-            || (projected.state === "ceka" && projected.requiresHumanAction === true)),
+            || (projected.state === "ceka" && (projected.requiresHumanAction === true
+              || knownPausedReason(projected.lastFailureReason)))),
         send: !inspected.invalid && inspected.localState !== "missing-audio"
           && projected.ownership === "current" && projected.state === "ceka"
           && projected.uploadIntent === "held",

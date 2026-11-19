@@ -11,7 +11,8 @@ const REASONS = new Map([
   ["session_owner_unknown", ["identitu přihlášení nelze ověřit", "login"]],
   ["Identitu aktuálního přihlášení nelze ověřit", ["identitu přihlášení nelze ověřit", "login"]],
   ["Pro upload chybí přihlášení", ["chybí přihlášení", "login"]],
-  ["Přihlášení pro upload nelze načíst", ["chybí přihlášení", "login"]],
+  ["Přihlášení pro upload nelze načíst", ["přihlášení nelze ověřit", "login"]],
+  ["Přihlášení nelze ověřit.", ["přihlášení nelze ověřit", "login"]],
   ["Pro odeslání chybí přihlášení.", ["chybí přihlášení", "login"]],
   ["Přihlášení patří jinému serveru", ["přihlášení patří jinému serveru", "login"]],
   ["company_not_chosen", ["chybí vybraná firma", "company"]],
@@ -27,7 +28,11 @@ const REASONS = new Map([
   ["403 company_out_of_scope", ["vybraná firma nahrávku nepřijala", "company"]],
   ["Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.", ["vybraná firma nahrávku nepřijala", "company"]],
   ["network_error", ["server není dostupný", "retry"]],
-  ["Síťový požadavek uploadu vypršel", ["server není dostupný", "retry"]],
+  ["Síťový požadavek uploadu vypršel", ["spojení se serverem se nepodařilo", "retry"]],
+  ["Spojení se serverem se nepodařilo.", ["spojení se serverem se nepodařilo", "retry"]],
+  ["Úložiště serveru je dočasně vypnuté.", ["úložiště serveru je dočasně vypnuté", "retry"]],
+  ["Na serveru není dostatek místa pro nahrávku.", ["na serveru není dostatek místa", "retry"]],
+  ["Serverovou relaci nahrávky nelze najít.", ["serverovou relaci nahrávky nelze najít", "retry"]],
   ["Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení", ["seznam firem není dostupný", "retry"]],
   ["Seznam firem není dostupný.", ["seznam firem není dostupný", "retry"]],
   ["Server není dostupný.", ["server není dostupný", "retry"]],
@@ -63,7 +68,7 @@ const LOCAL_REASONS = Object.freeze({
   unreadable: "data nahrávky nelze přečíst",
 });
 
-const ACTION_LABELS = Object.freeze({ send: "Odeslat", retry: "Zkusit znovu", claim: "Převzít a odeslat", login: "Přihlásit se", company: "Vybrat firmu" });
+const ACTION_LABELS = Object.freeze({ send: "Odeslat", retry: "Zkusit znovu", claim: "Převzít nahrávku", login: "Přihlásit se", company: "Vybrat firmu" });
 
 function permitted(item, action) {
   const key = `can${action[0].toUpperCase()}${action.slice(1)}`;
@@ -79,6 +84,7 @@ function actionFor(item, type) {
 
 function disabledReason(item, context) {
   if (item.recordingInProgress) return "Počkej na dokončení nahrávání.";
+  if (item.sendingDisabledReason || context.sendingDisabled) return "Odesílání je vypnuté.";
   if (context.busy) return "Probíhá jiná akce. Počkej na její dokončení.";
   if (context.missingRevision) return "Obnov přehled; nahrávku teď nelze bezpečně ověřit.";
   if (context.preferenceConflict) return "Volby se změnily jinde. Ulož viditelné volby nebo převezmi uložené.";
@@ -92,7 +98,7 @@ function disabledReason(item, context) {
  * @param {any} item
  * @param {{verified?: boolean, authState?: string, busy?: boolean, missingRevision?: boolean,
  *   preferenceDirty?: boolean, preferenceConflict?: boolean, preferencesMismatch?: boolean,
- *   preferenceFailed?: boolean}} [context]
+ *   preferenceFailed?: boolean, sendingDisabled?: boolean, incompleteSnapshot?: boolean}} [context]
  */
 export function recordingDeliveryStatus(item, context = {}) {
   const disabled = disabledReason(item, context);
@@ -100,36 +106,44 @@ export function recordingDeliveryStatus(item, context = {}) {
     tone, label, reason, action: actionFor(item, type), disabledReason: disabled,
   });
   if (item.recordingInProgress) return result("waiting", "Nahrává se");
-  if (item.state === "odeslano") return result("sent", context.verified ? "V LuDone ✓" : "Odesláno");
+  if (context.incompleteSnapshot) return result("unknown", "Stav odeslání zjistíš v historii");
+  if (context.verified) return result("sent", "V LuDone ✓");
+  if (item.state === "odeslano") return result("sent", "Odesláno");
 
   const localReason = Object.hasOwn(LOCAL_REASONS, item.localState) ? LOCAL_REASONS[item.localState] : null;
-  if (localReason) return result("attention", `${item.source === "orphan" ? "Problém" : "Neodešlo"} — ${localReason}`, localReason,
-    permitted(item, "claim") ? "claim" : "retry");
-
   const heldAfterClaim = item.state === "ceka" && item.uploadIntent === "held"
     && !["other", "unknown"].includes(item.ownership) && item.blockReason === CLAIMED_HOLD;
   const signedOut = context.authState === "expired" || context.authState === "signed-out";
-  if (item.source === "orphan") return result("local", "Jen na Macu");
-  if (item.state === "ceka" && !["other", "unknown"].includes(item.ownership)
-    && (heldAfterClaim || (item.uploadIntent === "held" && !item.requiresHumanAction && !item.blockReason))) {
-    return result("local", "Jen na Macu", heldAfterClaim ? CLAIMED_HOLD : null, signedOut ? "login" : "send");
+  const healthyHeld = item.state === "ceka" && item.uploadIntent === "held"
+    && (heldAfterClaim || (!item.requiresHumanAction && !item.blockReason));
+  if (item.source === "orphan" && !localReason) return result("local", "Jen na Macu");
+  if (healthyHeld && !localReason) {
+    const type = signedOut ? "login" : ["other", "unknown"].includes(item.ownership) ? "claim" : "send";
+    return result("local", "Jen na Macu", heldAfterClaim ? CLAIMED_HOLD : null, type);
   }
+
+  let reason = null;
+  let type = null;
   if (signedOut) {
-    const reason = context.authState === "expired" ? "přihlášení vypršelo" : "nejsi přihlášený";
-    return result("attention", `Neodešlo — ${reason}`, reason, "login");
-  }
-  const ownerProblem = item.source !== "orphan" && ["ceka", "selhalo"].includes(item.state)
-    && ["unknown", "other"].includes(item.ownership);
-  if (ownerProblem) {
-    const reason = item.ownership === "other" ? "nahrávka patří jinému účtu" : "vlastník nahrávky není potvrzený";
-    return result("attention", `Neodešlo — ${reason}`, reason, "claim");
-  }
-  if (!heldAfterClaim && (item.state === "selhalo" || item.requiresHumanAction || item.blockReason)) {
+    reason = context.authState === "expired" ? "přihlášení vypršelo" : "nejsi přihlášený";
+    type = "login";
+  } else if (item.source !== "orphan" && ["ceka", "selhalo"].includes(item.state)
+    && ["unknown", "other"].includes(item.ownership)) {
+    reason = item.ownership === "other" ? "nahrávka patří jinému účtu" : "vlastník nahrávky není potvrzený";
+    type = "claim";
+  } else if (!heldAfterClaim && (item.state === "selhalo" || item.requiresHumanAction || item.blockReason)) {
     const raw = item.blockReason || item.lastFailureReason;
     const mapped = REASONS.get(raw) ?? (/^queue_owner_[a-z0-9-]+$/u.test(raw ?? "")
       ? ["vlastník nahrávky není potvrzený", "claim"] : ["důvod nezjištěn", "retry"]);
-    const type = mapped[1] === "claim" && !permitted(item, "claim") && permitted(item, "retry") ? "retry" : mapped[1];
-    return result("attention", `Neodešlo — ${mapped[0]}`, mapped[0], type);
+    [reason, type] = mapped;
+    if (type === "claim" && !permitted(item, "claim") && permitted(item, "retry")) type = "retry";
+  } else if (item.uploadIntent === "approved" && (item.sendingDisabledReason || context.sendingDisabled)) {
+    reason = "odesílání je vypnuté";
+  }
+  if (localReason || reason) {
+    const details = [localReason, reason].filter(Boolean).join(" · ");
+    return result("attention", `${item.source === "orphan" ? "Problém" : "Neodešlo"} — ${details}`, details,
+      type ?? (localReason && !reason ? (permitted(item, "claim") ? "claim" : "retry") : null));
   }
   if (!item.state) {
     return result("local", "Jen na Macu", heldAfterClaim ? CLAIMED_HOLD : null, "send");

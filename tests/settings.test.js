@@ -472,7 +472,7 @@ describe("pět částí Nastavení", () => {
         expect(settings.document.querySelector(".recording-queue-card")).toBeTruthy();
       });
       const button = [...settings.document.querySelectorAll("button")]
-        .find((candidate) => candidate.textContent.trim() === "Převzít pod svůj účet");
+        .find((candidate) => candidate.textContent.trim() === "Převzít nahrávku");
       expect(button).toBeDefined();
       await React.act(async () => {
         button.click();

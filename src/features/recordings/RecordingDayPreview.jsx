@@ -66,7 +66,7 @@ export function RecordingDayPreview({ items, unavailable = false, onOpenDay }) {
       {!loading && !unavailable && recordings.length > 0 && (
         <ul className="day-preview__list" aria-label="Nahrávky ve frontě">
           {recordings.slice(0, 3).map((item) => {
-            const status = recordingDeliveryStatus(item);
+            const status = recordingDeliveryStatus(item, { incompleteSnapshot: true });
             return (
             <li className="day-preview__item" key={item.id}>
               <span className="day-preview__item-icon" aria-hidden="true"><ArchiveIcon /></span>
