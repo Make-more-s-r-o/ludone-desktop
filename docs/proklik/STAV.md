@@ -42,13 +42,13 @@ Pořadí: 1) #182+#183 → 2) #186 → 3) #185 → 4) #187 → 5) #184 (čeká n
 
 | Issue | Název | Stav | Větev / PR | Poznámka |
 |---|---|---|---|---|
-| #182 | Nová nahrávka nedostane výchozí firmu | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
-| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #189 → main 77c13cb | — |
-| #186 | Čerstvou nahrávku nejde smazat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
-| #185 | Není poznat, že nahrává | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #193 → main abb364c |
+| #182 | Nová nahrávka nedostane výchozí firmu | ✅ vydáno v 0.1.12 (🧪, čeká na proklik Dana) | PR #189 → main 77c13cb | implementace hotová (terra max, 36 nových testů); review sol 6.2 běží; Claude review: 1× P2 |
+| #183 | Detail: obnova smaže výběr firmy, scroll, dotaz | ✅ vydáno v 0.1.12 (🧪, čeká na proklik Dana) | PR #189 → main 77c13cb | — |
+| #186 | Čerstvou nahrávku nejde smazat | ✅ vydáno v 0.1.12 (🧪, čeká na proklik Dana) | PR #192 → main 6cc6968 | hypotéza: čeká na `-stereo.webm`; překlep „vratit“ |
+| #185 | Není poznat, že nahrává | ✅ vydáno v 0.1.12 (🧪, čeká na proklik Dana) | PR #193 → main abb364c |
 | #194 | Nestabilní test z #189 + Zastavit v Nastavení | ✅ sloučeno | PR #195 → main fa5508b | zvuk ⇒ nejvýš 🧪, ověření Dan na Macu |
 | #187 | UI drobnosti | ✅ zavřeno (PR #196 + #197) | main 1e8c143 | body 1/4/10 hotové jinde; 2/3 → #184 |
-| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ✅ sloučeno (🧪, čeká na 0.1.12 a Dana) | PR #197 → main 1e8c143 | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
+| #184 | Méně kliků: Soukromá/Firemní → Nahrávat | ✅ vydáno v 0.1.12 (🧪, čeká na proklik Dana) | PR #197 → main 1e8c143 | rozhodnuto Danem (níž); zapsat do `ROZHODNUTI.md` v PR |
 
 ## Danova rozhodnutí (chat, 18. 11. 2026 ~16:00)
 
@@ -226,3 +226,4 @@ Zadání: `scratchpad/packet-182-183.md` (session scratchpad).
 - 18. 11. 2026 22:46 — tik: žádné nové proklik issues, žádné zprávy; Q k vydání 0.1.12 bez odpovědi (open). Nic nevydáno.
 - 19. 11. 2026 ~9:10 — Dan schválil vydání 0.1.12. Založen PR #198 (ba89b2a), běží CI a Codex review sol 6.2 max read-only (panel term_78cb59d8). Bump verze a poznámky psal Claude sám (4 řádky, delegace by stála víc než práce).
 - 19. 11. 2026 ~9:45–9:56 — PR #198 sloučen (1e79f4e, review sol 6.2 3 kola: VRATIT, VRATIT, PRIJMOUT_S_VYHRADAMI; vždy jen nepřesné věty poznámek, kód beze změny). Tag v0.1.12 → běh 44490096456 zrušen GitHubem: runner macos-14 nepodporován. PR #199 (macos-15) sloučen 5b842e2, tag v0.1.12 smazán a založen znovu na 5b842e2 (ze starého nic nevyšlo). Běh 44490583130: brány ✅, sestavení a podpis ✅, **notarizace ✗ HTTP 403 „A required agreement is missing or has expired“** (Apple Developer, tým UF7G4Y6FS6). Nic nepublikováno, uživatelé na 0.1.11. **Čeká na Dana: podepsat smlouvu v Apple Developer**, pak `gh run rerun 44490583130` (tag beze změny). Okrajový případ firmy ve stejném panelu připsán k #190.
+- 19. 11. 2026 ~12:10–12:25 — Dan v chatu: smlouvu v Apple Developer podepsal. `gh run rerun 44490583130` (pokus 2): všechny kroky ✅ včetně notarizace, publikace a ověření feedu. **✅ LuDone Desktop 0.1.12 VYDÁNA** — https://stahnout.ludone.cz/desktop/latest-mac.yml hlásí `version: 0.1.12` (ověřeno curl). Otázka Q-20261119-085631 uzavřena. Opravy samotné dál 🧪 do Danova prokliku na Macu.
