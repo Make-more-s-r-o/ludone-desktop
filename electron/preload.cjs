@@ -77,9 +77,11 @@ function requireUploadCompanySelection(value, companyId) {
 
 function requireUploadCompanyDefault(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
-    || Object.keys(value).some((key) => !["companyId", "companyName", "identityBinding"].includes(key))
+    || Object.keys(value).some((key) => !["companyId", "companyName", "identityBinding", "pending"].includes(key))
     || !Object.hasOwn(value, "companyId")
     || (value.companyId !== null && (typeof value.companyId !== "string" || !COMPANY_ID_PATTERN.test(value.companyId)))
+    || (Object.hasOwn(value, "pending") && (typeof value.pending !== "boolean"
+      || (value.pending && (value.companyId !== null || Object.hasOwn(value, "identityBinding")))))
     || (Object.hasOwn(value, "identityBinding") && (typeof value.identityBinding !== "string"
       || !OFFER_TOKEN_PATTERN.test(value.identityBinding)))
     || (Object.hasOwn(value, "companyName") && (value.companyId === null
@@ -316,7 +318,8 @@ contextBridge.exposeInMainWorld("ludone", {
   },
   logout: () => ipcRenderer.invoke("auth:logout"),
   getUploadCompanyDefault: () => ipcRenderer.invoke("upload-companies:default").then(requireUploadCompanyDefault).then((value) => {
-    return { companyId: value.companyId, ...(value.companyName ? { companyName: value.companyName } : {}) };
+    return { companyId: value.companyId, ...(value.companyName ? { companyName: value.companyName } : {}),
+      ...(value.pending === true ? { pending: true } : {}) };
   }),
   getUploadCompanyIdentity: () => ipcRenderer.invoke("upload-companies:default")
     .then(requireUploadCompanyDefault).then((value) => value.identityBinding ?? null),

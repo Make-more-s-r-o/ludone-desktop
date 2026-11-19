@@ -5596,13 +5596,13 @@ handleValidated("upload-companies:default", ["panel", "settings"], async (event,
   const generation = authSessionGeneration;
   const selectionEpoch = uploadCompanySelectionEpoch;
   const guard = uploadCompanyGuard(event, generation, selectionEpoch);
-  if (!guard()) return { companyId: null };
+  if (!guard()) return { companyId: null, pending: true };
   const storedSession = await readStoredAuthSession();
   requireTrustedSender(event, ["panel", "settings"]);
   const email = normalizedIdentityPart(storedSession?.identity?.email);
   if (!guard() || !storedSessionMatchesCurrentAuth(storedSession) || storedSession.scope !== UPLOAD_SCOPE
     || !/^[^\s@]+@[^\s@]+$/u.test(email)) {
-    return { companyId: null };
+    return { companyId: null, pending: true };
   }
   const companyId = typeof storedSession.companyTabidooId === "string" && COMPANY_ID_PATTERN.test(storedSession.companyTabidooId)
     ? storedSession.companyTabidooId : null;

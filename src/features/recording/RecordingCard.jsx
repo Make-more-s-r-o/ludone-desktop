@@ -1,4 +1,4 @@
-import { RecordingUploadPreferences, freshRecordingUploadPreferences, readRecordingDefaultCompany, uploadCompanyErrorMessage, verifiedRecordingDefaultCompany } from "../../components/UploadCompanySelector.jsx";
+import { DEFAULT_COMPANY_MAX_RETRIES, DEFAULT_COMPANY_RETRY_DELAY_MS, RecordingUploadPreferences, freshRecordingUploadPreferences, readRecordingDefaultCompany, uploadCompanyErrorMessage, verifiedRecordingDefaultCompany } from "../../components/UploadCompanySelector.jsx";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
@@ -333,6 +333,10 @@ export const RecordingCard = forwardRef(function RecordingCard({
   useEffect(() => window.ludone?.onAuthSessionChanged?.(() => {
     uploadAuthGeneration.current += 1;
     refreshUploadIdentity();
+    if (defaultCompanyIdle.current) {
+      setDefaultCompany({ state: "loading", identityKey: null, company: null });
+      setDefaultCompanyRefresh((value) => value + 1);
+    }
   }), [refreshUploadIdentity]);
   useEffect(() => {
     const refresh = () => {
@@ -351,27 +355,46 @@ export const RecordingCard = forwardRef(function RecordingCard({
       return () => { active = false; };
     }
     const identityKey = verifiedUploadIdentity;
-    const savedPromise = readRecordingDefaultCompany();
-    const request = { identityKey, storedPromise: savedPromise.catch(() => null) };
-    defaultCompanyRequest.current = request;
-    setDefaultCompany({ state: "loading", identityKey, company: null });
-    request.storedPromise.then((company) => {
-      if (!active || !company) return;
-      setDefaultCompany((current) => current.identityKey === identityKey && current.state === "loading"
-        ? { ...current, company } : current);
-      const choice = recordingChoices.current;
-      if (choice?.defaultRequest === request && uploadIdentityVerified.current
-        && choice.identityKey === lastUploadIdentity.current && choice.authGeneration === uploadAuthGeneration.current) {
-        choice.company = company;
-      }
-    });
-    verifiedRecordingDefaultCompany(savedPromise, () => active && defaultCompanyIdle.current).then((company) => {
-      if (active) setDefaultCompany({ state: company ? "ready" : "empty", identityKey, company });
-    }).catch(() => {
-      if (active) setDefaultCompany({ state: "unavailable", identityKey, company: null });
-    });
+    const authGeneration = uploadAuthGeneration.current;
+    let timer = null;
+    let request = null;
+    const isCurrent = () => active && defaultCompanyIdle.current && authGeneration === uploadAuthGeneration.current;
+    const checkDefault = (retries) => {
+      if (!isCurrent()) return;
+      const savedPromise = readRecordingDefaultCompany();
+      request = { identityKey, storedPromise: savedPromise.then((company) => company?.pending ? null : company).catch(() => null) };
+      const currentRequest = request;
+      defaultCompanyRequest.current = currentRequest;
+      setDefaultCompany({ state: "loading", identityKey, company: null });
+      currentRequest.storedPromise.then((company) => {
+        if (!active || !company || authGeneration !== uploadAuthGeneration.current) return;
+        if (defaultCompanyIdle.current) {
+          setDefaultCompany((current) => current.identityKey === identityKey && current.state === "loading"
+            ? { ...current, company } : current);
+        }
+        const choice = recordingChoices.current;
+        if (choice?.defaultRequest === currentRequest && uploadIdentityVerified.current
+          && choice.identityKey === lastUploadIdentity.current && choice.authGeneration === uploadAuthGeneration.current) {
+          choice.company = company;
+        }
+      });
+      verifiedRecordingDefaultCompany(savedPromise, isCurrent).then((company) => {
+        if (!isCurrent()) return;
+        if (company?.pending) {
+          if (retries < DEFAULT_COMPANY_MAX_RETRIES) {
+            timer = window.setTimeout(() => checkDefault(retries + 1), DEFAULT_COMPANY_RETRY_DELAY_MS);
+          } else setDefaultCompany({ state: "unavailable", identityKey, company: null });
+          return;
+        }
+        setDefaultCompany({ state: company ? "ready" : "empty", identityKey, company });
+      }).catch(() => {
+        if (isCurrent()) setDefaultCompany({ state: "unavailable", identityKey, company: null });
+      });
+    };
+    checkDefault(0);
     return () => {
       active = false;
+      if (timer !== null) window.clearTimeout(timer);
       if (defaultCompanyRequest.current === request) defaultCompanyRequest.current = null;
     };
   }, [canSend, verifiedUploadIdentity, uploadIdentityError, defaultCompanyRefresh, session.phase, savedRecording, exporting]);
