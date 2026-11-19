@@ -99,6 +99,8 @@ describe("rozlišení nejisté výchozí firmy v IPC", () => {
     { companyId: null, pending: "true" },
     { companyId: COMPANY_ID, pending: true },
     { companyId: null, pending: true, extra: "navíc" },
+    // Nejistá odpověď nesmí nést vazbu identity (review #203, P3).
+    { companyId: null, pending: true, identityBinding: "123e4567-e89b-42d3-a456-426614174000" },
   ])("preload odmítne neplatný pending %o", async (value) => {
     await expect(preloadFor(value).getUploadCompanyDefault()).rejects.toThrow(/výchozí firma/u);
   });

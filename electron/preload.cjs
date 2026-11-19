@@ -81,7 +81,7 @@ function requireUploadCompanyDefault(value) {
     || !Object.hasOwn(value, "companyId")
     || (value.companyId !== null && (typeof value.companyId !== "string" || !COMPANY_ID_PATTERN.test(value.companyId)))
     || (Object.hasOwn(value, "pending") && (typeof value.pending !== "boolean"
-      || (value.pending && value.companyId !== null)))
+      || (value.pending && (value.companyId !== null || Object.hasOwn(value, "identityBinding")))))
     || (Object.hasOwn(value, "identityBinding") && (typeof value.identityBinding !== "string"
       || !OFFER_TOKEN_PATTERN.test(value.identityBinding)))
     || (Object.hasOwn(value, "companyName") && (value.companyId === null
