@@ -43,6 +43,18 @@ const ITEM = Object.freeze({
   ownerFingerprint: `sha256:${"f".repeat(64)}`,
 });
 
+function fixtureSnapshot(snapshot) {
+  if (!Array.isArray(snapshot?.items)) return snapshot;
+  return { ...snapshot, items: snapshot.items.map((item) => {
+    if (item.actions) return item;
+    const actions = Object.fromEntries(["send", "retry", "claim"].map((action) => [action,
+      { allowed: item.allowedActions?.[action] === true, reason: null }]));
+    const canConfigureUpload = !item.uploadPreferencesLocked && (item.uploadIntent === "held"
+      || (item.state === "selhalo" && String(item.blockReason).includes("company_out_of_scope")));
+    return { ...item, actions, canConfigureUpload };
+  }) };
+}
+
 function deferred() {
   let resolve;
   let reject;
@@ -87,7 +99,7 @@ async function renderDashboard({
     claimRecording: vi.fn(claimRecording),
     deleteRecording: vi.fn(deleteRecording),
     exportRecordingCopy: vi.fn(exportRecordingCopy),
-    listLocalRecordings: vi.fn(listLocalRecordings),
+    listLocalRecordings: vi.fn(async () => fixtureSnapshot(await listLocalRecordings())),
     verifyRecording: vi.fn(verifyRecording),
     openRecordingInLuDone: vi.fn(openRecordingInLuDone),
     retryRecording: vi.fn(retryRecording),
@@ -120,7 +132,7 @@ async function renderDashboard({
 
 function claimButton(dashboard) {
   return [...dashboard.document.querySelectorAll("button")]
-    .find((button) => button.textContent.trim().includes("Převzít pod svůj účet"));
+    .find((button) => button.textContent.trim().includes("Převzít nahrávku"));
 }
 
 afterEach(() => {
@@ -180,6 +192,25 @@ describe("dashboard fronty nahrávek", () => {
         state: "ceka",
         uploadIntent: "approved",
       });
+      const automatic = await createLocalRecordingsSnapshot({
+        queue, queueItems: [{ ...projected, requiresHumanAction: false, blockReason: null,
+          lastFailureReason: "Síťový požadavek uploadu vypršel", nextAttemptAt: 4_102_444_800_000 }],
+        recordingsDirectory: root,
+      });
+      expect(automatic.items[0]).toMatchObject({ blockReason: null, nextAttemptAt: 4_102_444_800_000,
+        allowedActions: { retry: false } });
+      for (const [blockReason, expected] of [
+        ["unauthorized (HTTP 401)", "Server odmítl odeslání."],
+        ["insufficient_scope (HTTP 403)", "Přihlášení nemá oprávnění k odeslání."],
+        ["Není vybraná firma, pod kterou se má nahrávka odeslat", "Před odesláním je potřeba vybrat firmu."],
+        ["Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení", "U této rozpracované nahrávky nelze bezpečně určit firmu."],
+        ["403 company_out_of_scope", "Vybraná firma nahrávku nepřijala."],
+        ["Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení", "Seznam firem není dostupný."],
+      ]) {
+        const blocked = await createLocalRecordingsSnapshot({ queue,
+          queueItems: [{ ...projected, blockReason }], recordingsDirectory: root });
+        expect(blocked.items[0].blockReason).toBe(expected);
+      }
       for (const protectedItem of [
         { ...projected, uploadIntent: "held" },
         { ...projected, state: "odesila" },
@@ -214,7 +245,7 @@ describe("dashboard fronty nahrávek", () => {
     }
   });
 
-  it("initialized nahrávce bez pinu ukáže bezpečný pokyn k volbě firmy", async () => {
+  it("initialized nahrávce bez pinu vysvětlí chybějící bezpečnou vazbu", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "ludone-company-binding-"));
     try {
       const { createLocalRecordingsSnapshot } = actualRequire("../electron/recordings-dashboard.cjs");
@@ -232,7 +263,7 @@ describe("dashboard fronty nahrávek", () => {
         recordingsDirectory: root,
       });
       expect(snapshot.items[0].blockReason)
-        .toBe("U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.");
+        .toBe("U této rozpracované nahrávky nelze bezpečně určit firmu.");
       expect(snapshot.items[0].blockReason).not.toContain("company_binding_missing");
 
       for (const blockReason of ["company_out_of_scope", "company_out_of_scope (HTTP 403)"]) {
@@ -249,7 +280,7 @@ describe("dashboard fronty nahrávek", () => {
           recordingsDirectory: root,
         });
         expect(rejected.items[0].blockReason)
-          .toBe("Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.");
+          .toBe("Vybraná firma nahrávku nepřijala.");
       }
     } finally {
       await rm(root, { force: true, recursive: true });
@@ -476,6 +507,7 @@ describe("dashboard fronty nahrávek", () => {
           id: "11111111-1111-4111-8111-111111111111",
           blockReason: "unauthorized",
           ownership: "current",
+          allowedActions: { claim: false, retry: true },
         },
       ]),
     });
@@ -483,7 +515,7 @@ describe("dashboard fronty nahrávek", () => {
       await vi.waitFor(() => expect(claimButton(dashboard)).toBeDefined());
       expect(dashboard.document.querySelectorAll(".recording-queue-card")).toHaveLength(2);
       expect([...dashboard.document.querySelectorAll(".recording-queue-card button")]
-        .filter((button) => button.textContent.includes("Převzít pod svůj účet"))).toHaveLength(1);
+        .filter((button) => button.textContent.includes("Převzít nahrávku"))).toHaveLength(1);
     } finally {
       await dashboard.cleanup();
     }
@@ -1138,7 +1170,7 @@ it("K9 detail hlásí skutečnou editaci a při obnově zachová scroll produkč
     getAuthIdentity: vi.fn(async () => ({ email: "test@ludone.cz", name: "Test" })),
     getAuthOrigin: vi.fn(async () => "https://ludone.test"),
     onAuthSessionChanged: (callback) => { listeners.add(callback); return () => listeners.delete(callback); },
-    listLocalRecordings: vi.fn(async () => ({ items: [item], unreadableCount: 0 })),
+    listLocalRecordings: vi.fn(async () => fixtureSnapshot({ items: [item], unreadableCount: 0 })),
     listUploadCompanies: vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
       selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" })),
     configureRecordingUpload: vi.fn(), setDetailDirty: vi.fn(async () => {}),
@@ -1183,7 +1215,7 @@ async function renderFocusDetail(readyExport = false) {
     getAuthSessionState: vi.fn(async () => "valid"),
     getAuthIdentity: vi.fn(async () => ({ email: "test@ludone.cz", name: "Test" })),
     getAuthOrigin: vi.fn(async () => "https://ludone.test"),
-    listLocalRecordings: vi.fn(async () => ({ items: [item], unreadableCount: 0 })),
+    listLocalRecordings: vi.fn(async () => fixtureSnapshot({ items: [item], unreadableCount: 0 })),
     exportRecordingCopy: vi.fn(async () => ({ ok: true, fileName: "kopie.webm" })),
     listUploadCompanies: vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
       selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" })),
@@ -1204,7 +1236,7 @@ async function renderFocusDetail(readyExport = false) {
   return {
     document: dom.window.document,
     ludone,
-    snapshot: () => ({ items: [item], unreadableCount: 0 }),
+    snapshot: () => fixtureSnapshot({ items: [item], unreadableCount: 0 }),
     async focus() { await React.act(async () => dom.window.dispatchEvent(new dom.window.Event("focus"))); },
     async cleanup() { await React.act(async () => root.unmount()); dom.window.close(); },
   };
@@ -1709,4 +1741,122 @@ it("zamčený failed progress detail nezmění draft a dovolí původní retry i
     expect(panel.ludone.listUploadCompanies).not.toHaveBeenCalled();
     expect(panel.ludone.configureRecordingUpload).not.toHaveBeenCalled();
   } finally { await panel.cleanup(); }
+});
+
+it("R4 projekce skutečné pauzy storage_disabled se liší od plánovaného opakování", async () => {
+  const { createQueue, enqueueRecording, processNext, reduceQueueForRenderer } = await import("../src/lib/queue.js");
+  const { recordingDeliveryStatus } = await import("../src/lib/recording-delivery-status.js");
+  const { createLocalRecordingsSnapshot } = actualRequire("../electron/recordings-dashboard.cjs");
+  const owner = `sha256:${"d".repeat(64)}`;
+  const root = await mkdtemp(path.join(tmpdir(), "ludone-paused-projection-"));
+  const manifestPath = path.join(root, "pause.manifest.json");
+  const microphonePath = path.join(root, "pause.webm");
+  const systemPath = path.join(root, "pause-system.webm");
+  const manifest = { schemaVersion: 1, clientRecordingId: ID, createdAt: "2026-09-14T10:00:00.000Z",
+    closedAt: "2026-09-14T10:00:01.000Z", state: "complete", tracks: { microphone: {
+      fileName: "pause.webm", sha256: "a".repeat(64), sizeBytes: 8,
+      startedAt: "2026-09-14T10:00:00.000Z", endedAt: "2026-09-14T10:00:01.000Z" }, system: {
+      fileName: "pause-system.webm", sha256: "b".repeat(64), sizeBytes: 6,
+      startedAt: "2026-09-14T10:00:00.000Z", endedAt: "2026-09-14T10:00:01.000Z" } } };
+  try {
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await writeFile(microphonePath, "mikrofon");
+    await writeFile(systemPath, "system");
+    const queued = enqueueRecording(createQueue(), { manifest, manifestPath, trackPaths: { microphone: microphonePath, system: systemPath } }).queue;
+    queued.items[0] = { ...queued.items[0], uploadIntent: "approved", ownerFingerprint: owner };
+    const run = async (failureClass, message) => processNext(queued, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => {
+      throw Object.assign(new Error(message), { code: failureClass === "paused" ? "storage_disabled" : "network_error", status: 503, failureClass });
+    }, { currentOwnerFingerprint: owner, now: 4_102_444_800_000, random: () => 0 });
+    const project = async (queue) => (await createLocalRecordingsSnapshot({ queue,
+      queueItems: reduceQueueForRenderer(queue, owner).map((item) => ({ ...item, revision: REVISION })),
+      recordingsDirectory: root })).items[0];
+    const paused = await run("paused", "storage_disabled (HTTP 503)");
+    const retry = await run("retryable", "network_error");
+    expect(paused.outcome).toBe("paused");
+    expect(retry.outcome).toBe("retry_scheduled");
+    const pausedItem = await project(paused.queue);
+    const retryItem = await project(retry.queue);
+    expect(pausedItem.allowedActions.retry).toBe(true);
+    expect(recordingDeliveryStatus(pausedItem).action).toEqual({ type: "retry", label: "Zkusit znovu" });
+    expect(recordingDeliveryStatus(pausedItem).label).toBe("Neodešlo — úložiště serveru je dočasně vypnuté");
+    expect(recordingDeliveryStatus(retryItem).label).toContain("další pokus v");
+    expect(retryItem.blockReason).toBeNull();
+    expect(retryItem.allowedActions.retry).toBe(false);
+    for (const patch of [
+      { ownerFingerprint: null }, { ownerFingerprint: `sha256:${"e".repeat(64)}` }, { uploadIntent: "held" },
+    ]) {
+      const protectedQueue = { ...paused.queue, items: [{ ...paused.queue.items[0], ...patch }] };
+      expect((await project(protectedQueue)).allowedActions.retry).toBe(false);
+    }
+    for (const [rawReason, expected] of [
+      ["Síťový požadavek uploadu vypršel", "Neodešlo — spojení se serverem se nepodařilo"],
+      ["Přihlášení pro upload nelze načíst", "Neodešlo — přihlášení nelze ověřit"],
+    ]) {
+      const failed = { ...queued, items: [{ ...queued.items[0], state: "selhalo", lastFailureReason: rawReason }] };
+      expect(recordingDeliveryStatus(await project(failed)).label).toBe(expected);
+    }
+
+    const { RecordingUploadError, failureClassForStatus } = actualRequire("../electron/upload-client.cjs");
+    for (const [code, message, status, expected] of [
+      ["session_missing", "Přihlášení pro upload nelze načíst", undefined, "Neodešlo — přihlášení nelze ověřit"],
+      ["forbidden", "forbidden (HTTP 403)", 403, "Neodešlo — server odeslání odmítl"],
+      ["scope_empty", "scope_empty (HTTP 403)", 403, "Neodešlo — server odeslání odmítl"],
+    ]) {
+      const error = new RecordingUploadError(message, { code, status,
+        failureClass: status ? failureClassForStatus(status, code) : "paused" });
+      const actual = await processNext(queued, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => { throw error; },
+        { currentOwnerFingerprint: owner, now: 4_102_444_800_000, random: () => 0 });
+      expect(actual.outcome).toBe("paused");
+      expect(actual.item.requiresHumanAction).toBe(false);
+      const projected = await project(actual.queue);
+      expect(recordingDeliveryStatus(projected).label).toBe(expected);
+      expect(projected.allowedActions.retry).toBe(true);
+    }
+    for (const message of ["network_error", "Síťový požadavek uploadu selhal: soukromá adresa [POST /upload]"]) {
+      const exhausted = { ...queued, items: [{ ...queued.items[0], attempts: 50 }] };
+      const actual = await processNext(exhausted, { DESKTOP_UPLOAD_ENABLED: "true" }, async () => {
+        throw new RecordingUploadError(message, { code: "network_error", failureClass: "retryable" });
+      }, { currentOwnerFingerprint: owner, now: 4_102_444_800_000, random: () => 0 });
+      expect(actual.outcome).toBe("failed");
+      expect(recordingDeliveryStatus(await project(actual.queue)).label).toBe("Neodešlo — spojení se serverem se nepodařilo");
+    }
+
+    vi.stubEnv("DESKTOP_UPLOAD_ENABLED", "false");
+    try {
+      for (const changes of [
+        { state: "ceka", uploadIntent: "held", requiresHumanAction: true },
+        { state: "selhalo", uploadIntent: "approved", requiresHumanAction: true },
+      ]) {
+        const disabled = { ...queued, items: [{ ...queued.items[0], ...changes }] };
+        const projected = await project(disabled);
+        expect(projected.sendingDisabledReason).toBe("odesílání je vypnuté");
+        expect(recordingDeliveryStatus(projected).disabledReason).toBe("Odesílání je vypnuté.");
+        const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [projected] }) });
+        try {
+          const action = changes.uploadIntent === "held" ? "send" : "retry";
+          expect(dashboard.document.querySelector(`.recording-action--${action}`)).toBeNull();
+          expect(dashboard.document.body.textContent).toContain("Odesílání je vypnuté.");
+        } finally { await dashboard.cleanup(); }
+      }
+      const foreign = { ...queued, items: [{ ...queued.items[0], ownerFingerprint: `sha256:${"e".repeat(64)}`,
+        requiresHumanAction: true }] };
+      const foreignItem = await project(foreign);
+      expect(foreignItem.allowedActions.claim).toBe(true);
+      expect(foreignItem.sendingDisabledReason).toBe("odesílání je vypnuté");
+      const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [foreignItem] }) });
+      try {
+        const claim = /** @type {HTMLButtonElement} */ (dashboard.document.querySelector(".recording-action--claim"));
+        expect(claim.disabled).toBe(false);
+      }
+      finally { await dashboard.cleanup(); }
+    } finally { vi.unstubAllEnvs(); }
+
+    const retryAt = Date.now() + 120_000;
+    const limited = { ...queued, uploadCooldowns: [{ ownerFingerprint: owner, retryAt }] };
+    const limitedItem = await project(limited);
+    expect(limitedItem.uploadRetryAt).toBe(retryAt);
+    expect(recordingDeliveryStatus(limitedItem).disabledReason).toContain("Server dočasně omezil odesílání");
+    const otherAccount = { ...limited, items: [{ ...limited.items[0], ownerFingerprint: `sha256:${"e".repeat(64)}` }] };
+    expect((await project(otherAccount)).uploadRetryAt).toBeNull();
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

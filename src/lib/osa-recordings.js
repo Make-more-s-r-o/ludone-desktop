@@ -1,4 +1,5 @@
 import { recordingDisplayTitle } from "./recording-display.js";
+import { recordingDeliveryStatus } from "./recording-delivery-status.js";
 
 export const OSA_PAGE_SIZE = 7;
 
@@ -21,11 +22,8 @@ function itemDate(value) {
 }
 
 /** Prezentační filtr; neposkytuje oprávnění k žádné operaci fronty. */
-export function osaRecordingStatus(item) {
-  if (item.state === "odeslano") return "sent";
-  if (item.requiresHumanAction || item.state === "selhalo" || item.blockReason || ["incomplete", "partial-audio", "missing-audio", "invalid-manifest", "unreadable"].includes(item.localState)) return "attention";
-  if (item.uploadIntent === "held" || !item.state) return "local";
-  return "waiting";
+export function osaRecordingStatus(item, context = {}) {
+  return recordingDeliveryStatus(item, context).tone;
 }
 
 function dateKey(date) {
@@ -37,8 +35,9 @@ function dateKey(date) {
  * Výběr z úplného skutečného seznamu bez změny vstupů. groups obsahuje pouze aktuální stránku.
  * @param {any[]} items
  * @param {{search?: string, period?: string, from?: string, to?: string, status?: string, filter?: string, page?: number}} query
+ * @param {(item: any) => string} statusFor
  */
-export function selectOsaRecordings(items, query = {}, now = new Date()) {
+export function selectOsaRecordings(items, query = {}, now = new Date(), statusFor = osaRecordingStatus) {
   query = query && typeof query === "object" ? query : {};
   const period = query.period ?? "all";
   let from = null;
@@ -62,7 +61,7 @@ export function selectOsaRecordings(items, query = {}, now = new Date()) {
   const status = ["local", "waiting", "sent", "attention"].includes(requestedStatus) ? requestedStatus : "all";
   const selected = error ? [] : (Array.isArray(items) ? items : []).filter(item => item && typeof item === "object").map((item, index) => ({ item, index, date: itemDate(item.createdAt) })).filter(({ item, date }) => {
     if (from && (!date || date < from || date >= until)) return false;
-    if (status !== "all" && osaRecordingStatus(item) !== status) return false;
+    if (status !== "all" && statusFor(item) !== status) return false;
     return !search
       || fold([item.title, item.companyName, item.company?.name, item.uploadPreferences?.companyName].filter(Boolean).join(" ")).includes(search)
       || fold(recordingDisplayTitle(item.title, item.createdAt)).includes(search);
@@ -88,12 +87,12 @@ export function selectOsaRecordings(items, query = {}, now = new Date()) {
 }
 
 // Uzly nemají odvozovat serverové ověření ze samotného odeslání.
-export function osaRecordingNode(item, verified = false) {
+export function osaRecordingNode(item, verified = false, status = osaRecordingStatus(item, { verified })) {
   if (item.recordingInProgress) return "recording";
-  if (osaRecordingStatus(item) === "attention") return "error";
-  if (verified) return "verified";
+  if (status === "attention") return "error";
+  if (verified && status === "sent") return "verified";
   if (item.state === "odeslano") return "unverified";
-  if (osaRecordingStatus(item) === "waiting") return "pending";
+  if (status === "waiting") return "pending";
   return "local";
 }
 

@@ -1,5 +1,5 @@
 import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
-import { selectOsaRecordings, osaRecordingStatus, osaRecordingNode } from "../../lib/osa-recordings.js";
+import { selectOsaRecordings, osaRecordingNode } from "../../lib/osa-recordings.js";
 import { OsaHistoryControls, OsaStations } from "../../components/osa/index.js";
 import { RecordingUploadPreferences, freshRecordingUploadPreferences, uploadCompanyErrorMessage } from "../../components/UploadCompanySelector.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import { formatSize as formatSharedSize, recordingSizeText } from "../../lib/for
 import { recordingDeletionFailureMessage } from "../recording/deletion-message.js";
 import { countLabel } from "../../lib/count-label.js";
 import { recordingDisplayTitle } from "../../lib/recording-display.js";
+import { recordingDeliveryStatus } from "../../lib/recording-delivery-status.js";
 
 import "./day-polish.css";
 
@@ -27,6 +28,15 @@ function safeNonNegativeInteger(value) {
   return Number.isSafeInteger(value) && value >= 0 ? value : null;
 }
 
+function normalizeActions(value) {
+  return Object.fromEntries(["send", "retry", "claim"].map((key) => {
+    const action = value?.[key];
+    const retryAt = safeNonNegativeInteger(action?.retryAt);
+    return [key, { allowed: action?.allowed === true, reason: safeText(action?.reason),
+      ...(retryAt !== null ? { retryAt } : {}) }];
+  }));
+}
+
 function normalizeRecordingItem(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   if (
@@ -39,6 +49,7 @@ function normalizeRecordingItem(value) {
     : null;
   const rawCreatedAt = safeText(value.createdAt);
   const createdAt = rawCreatedAt && Number.isFinite(Date.parse(rawCreatedAt)) ? rawCreatedAt : null;
+  const actions = normalizeActions(value.actions);
   return {
     recordingInProgress: value.recordingInProgress === true,
     id: value.id,
@@ -58,7 +69,12 @@ function normalizeRecordingItem(value) {
     uploadSizeBytes: safeNonNegativeInteger(value.uploadSizeBytes),
     originalsSizeBytes: safeNonNegativeInteger(value.originalsSizeBytes),
     originalsCount: safeNonNegativeInteger(value.originalsCount) ?? 0,
-    blockReason: safeText(value.blockReason) ?? safeText(value.lastFailureReason),
+    blockReason: safeText(value.blockReason)
+      ?? ((value.requiresHumanAction === true || value.state === "selhalo") ? safeText(value.lastFailureReason) : null),
+    lastFailureReason: safeText(value.lastFailureReason),
+    sendingDisabledReason: safeText(value.sendingDisabledReason),
+    uploadRetryAt: safeNonNegativeInteger(value.uploadRetryAt),
+    nextAttemptAt: safeNonNegativeInteger(value.nextAttemptAt),
     ownership: ["unknown", "current", "other", "unavailable"].includes(value.ownership)
       ? value.ownership
       : "unavailable",
@@ -67,11 +83,13 @@ function normalizeRecordingItem(value) {
     localState: ["complete-audio", "partial-audio", "missing-audio", "invalid-manifest"]
       .includes(value.localState) ? value.localState : "invalid-manifest",
     localReason: safeText(value.localReason),
-    canClaim: value.allowedActions?.claim === true,
+    actions,
+    canClaim: actions.claim.allowed && value.recordingInProgress !== true,
     canDelete: value.allowedActions?.delete === true,
+    canConfigureUpload: value.canConfigureUpload === true && value.recordingInProgress !== true,
     uploadLocked: value.uploadLocked === true,
-    canRetry: value.allowedActions?.retry === true,
-    canSend: value.allowedActions?.send === true,
+    canRetry: actions.retry.allowed && value.recordingInProgress !== true,
+    canSend: actions.send.allowed && value.recordingInProgress !== true,
   };
 }
 
@@ -194,20 +212,6 @@ function recordingSourceLabel(item) {
   return item.source === "orphan" ? "Jen na Macu" : "Místní fronta";
 }
 
-function deliveryStateLabel(item, verified = false) {
-  if (item.recordingInProgress) return "Nahrává se";
-  if (verified) return "V LuDone ✓";
-  if (item.source === "orphan") return "Zůstává jen na tomto Macu";
-  if (item.state === "odesila") return "Odesílá se do LuDone";
-  if (item.state === "odeslano") return "Odesláno";
-  if (item.state === "selhalo") return "Odeslání selhalo";
-  if (item.state === "ceka" && item.uploadIntent === "approved") {
-    return "Schváleno k odeslání · čeká ve frontě";
-  }
-  if (item.state === "ceka") return "Zůstává na Macu";
-  return "Stav odeslání není známý";
-}
-
 function isLocalOnly(item) {
   return item.source === "orphan" || (item.state === "ceka" && item.uploadIntent === "held");
 }
@@ -243,6 +247,9 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
     state: "loading", items: [], unreadableCount: 0, message: "",
   });
   const [claimingId, setClaimingId] = useState(null);
+  const [sendingDisabledById, setSendingDisabledById] = useState({});
+  const [returnedCooldown, setReturnedCooldown] = useState(null);
+  const [clockTick, setClockTick] = useState(0);
   const [actingId, setActingId] = useState(null);
   const [verifyingId, setVerifyingId] = useState(null);
   const [verificationById, setVerificationById] = useState({});
@@ -288,6 +295,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
     const requestAuthEpoch = renderAuth.current.epoch;
     verificationGeneration.current += 1;
     setVerificationErrorById({});
+    setSendingDisabledById({});
     setVerifyingId(null);
     const listLocalRecordings = window.ludone?.listLocalRecordings;
     if (typeof listLocalRecordings !== "function") {
@@ -444,7 +452,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
 
   const claim = async (item) => {
     if (
-      item.recordingInProgress || claimInFlight.current
+      item.recordingInProgress || !item.canClaim || claimInFlight.current
       || authState !== "signed-in"
       || !item.revision
       || typeof window.ludone?.claimRecording !== "function"
@@ -473,8 +481,45 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   };
 
   const disabledExplanation = accountExplanation(authState);
-  const osaItems = queueOnly ? view.items.filter((item) => ["waiting", "attention"].includes(osaRecordingStatus(item))) : view.items;
-  const selected = selectOsaRecordings(osaItems, query);
+  const rateLimitedUntil = authState === "signed-in" && returnedCooldown?.identity === currentIdentity
+    ? returnedCooldown.retryAt : 0;
+  const deadlines = [rateLimitedUntil, ...view.items.flatMap((item) => [item.actions.send.retryAt ?? 0, item.actions.retry.retryAt ?? 0])]
+    .filter((time) => time > Date.now());
+  const nextDeadline = deadlines.length > 0 ? Math.min(...deadlines) : null;
+  useEffect(() => {
+    if (nextDeadline === null) return undefined;
+    const delay = Math.min(Math.max(0, nextDeadline - Date.now()) + 20, 2_147_483_647);
+    const timer = window.setTimeout(() => { setClockTick((tick) => tick + 1); void load(); }, delay);
+    return () => window.clearTimeout(timer);
+  }, [nextDeadline, clockTick, load]);
+  const presentations = new Map(view.items.map((snapshotItem) => {
+    const snapshotMatches = authState === "signed-in" && currentIdentity && view.snapshotIdentity === currentIdentity
+      && view.snapshotAuthEpoch === renderAuth.current.epoch;
+    const item = authState === "signed-in" && !snapshotMatches
+      ? { ...snapshotItem, ownership: "unavailable", uploadPreferences: null,
+        canClaim: false, canRetry: false, canSend: false, actions: normalizeActions(null) }
+      : snapshotItem;
+    const cached = verificationById[item.id];
+    const verification = snapshotMatches && item.ownership === "current" && !item.recordingInProgress
+      && cached?.identity === currentIdentity && cached.revision === item.revision
+      && cached.fileRevision === item.fileRevision ? cached : null;
+    const verified = verification && Object.values(verification.tracks).length > 0
+      && Object.values(verification.tracks).every((track) => track.status === "complete");
+    // Rozpracované volby posuzuj jen tam, kde editor opravdu existuje; zamčený editor hlásí null (review #201 k4).
+    const preference = item.canConfigureUpload ? preferencesById[item.id] : undefined;
+    const mismatchedPreferences = !item.uploadPreferencesLocked && preference
+      && (!preference.value || preference.value.companyId !== item.uploadPreferences?.companyId
+        || preference.value.visibility !== item.uploadPreferences?.visibility);
+    const status = recordingDeliveryStatus(item, { verified: Boolean(verified), authState,
+      busy: actingId !== null, missingRevision: !item.revision || !item.fileRevision,
+      preferenceDirty: preference?.dirty, preferenceConflict: preference?.conflict,
+      preferencesMismatch: mismatchedPreferences, preferenceFailed: item.canConfigureUpload && preferenceFailedById[item.id],
+      sendingDisabled: sendingDisabledById[item.id] === true, rateLimitedUntil });
+    return [snapshotItem.id, { item, snapshotMatches, verification, verified, status }];
+  }));
+  const statusFor = (item) => presentations.get(item.id).status.tone;
+  const osaItems = queueOnly ? view.items.filter((item) => ["waiting", "attention"].includes(statusFor(item))) : view.items;
+  const selected = selectOsaRecordings(osaItems, query, new Date(), statusFor);
   const filteredItems = osa ? (detailId ? view.items.filter((item) => item.id === detailId) : selected.items) : view.items.filter((item) => matchesRecordingFilter(item, filter));
   const filterCounts = {
     all: view.items.length,
@@ -602,22 +647,36 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   const runAction = async (item, method) => {
     if (!["revealRecording", "deleteRecording"].includes(method) && (authState !== "signed-in" || !currentIdentity
       || view.snapshotIdentity !== currentIdentity || view.snapshotAuthEpoch !== renderAuth.current.epoch)) return;
-    const preference = preferencesById[item.id];
+    // Stejné pravidlo jako při vykreslení: rozpracované volby jen tam, kde editor existuje.
+    const preference = item.canConfigureUpload ? preferencesById[item.id] : undefined;
     const mismatched = !item.uploadPreferencesLocked && preference
       && (!preference.value || preference.value.companyId !== item.uploadPreferences?.companyId
         || preference.value.visibility !== item.uploadPreferences?.visibility);
     if (["sendRecording", "retryRecording"].includes(method)
-      && (preference?.dirty || preference?.conflict || mismatched || preferenceFailedById[item.id])) return;
+      && (preference?.dirty || preference?.conflict || mismatched
+        || (item.canConfigureUpload && preferenceFailedById[item.id]))) return;
+    if (method === "sendRecording" && !item.actions.send.allowed) return;
+    if (method === "retryRecording" && !item.actions.retry.allowed) return;
     if (item.recordingInProgress || actingId !== null || !item.fileRevision || (method === "deleteRecording" && (item.uploadLocked || !item.canDelete))
       || (method !== "deleteRecording"
       && method !== "revealRecording" && !item.revision)
       || typeof window.ludone?.[method] !== "function") return;
+    const actionIdentity = currentIdentity;
+    const actionAuthEpoch = renderAuth.current.epoch;
     setActingId(item.id);
     try {
       const result = await window.ludone[method]({
         id: item.id, queueRev: item.revision, fileRev: item.fileRevision,
       });
       await load();
+      if (active.current && result?.outcome === "rate_limited" && Number.isSafeInteger(result.retryAt)
+        && result.retryAt > Date.now() && actionIdentity && identityRef.current === actionIdentity
+        && authRef.current === "signed-in" && renderAuth.current.epoch === actionAuthEpoch) {
+        setReturnedCooldown({ identity: actionIdentity, retryAt: result.retryAt });
+      }
+      if (active.current && result?.outcome === "disabled") {
+        setSendingDisabledById((current) => ({ ...current, [item.id]: true }));
+      }
       if (active.current && (result?.outcome === "partial_failure"
         || (method === "deleteRecording" && result?.outcome !== "deleted" && result?.outcome !== "cancelled"))) {
         setVerificationErrorById((current) => ({
@@ -699,25 +758,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
               <h2 className="recordings-day__heading">{dayLabel(day.createdAt)} <span>{countLabel(day.items.length, "nahrávka", "nahrávky", "nahrávek")}</span></h2>
               <ul className="recordings-day__items">
           {day.items.map((snapshotItem) => {
-            const snapshotMatches = authState === "signed-in" && currentIdentity && view.snapshotIdentity === currentIdentity
-              && view.snapshotAuthEpoch === renderAuth.current.epoch;
-            const item = authState === "signed-in" && !snapshotMatches
-              ? { ...snapshotItem, ownership: "unavailable", uploadPreferences: null,
-                canClaim: false, canRetry: false, canSend: false }
-              : snapshotItem;
-            const claimable = snapshotMatches && item.source === "queue" && item.canClaim
-              && ["unknown", "other"].includes(item.ownership)
-              && ["ceka", "selhalo"].includes(item.state);
-            const cached = verificationById[item.id];
-            const verification = authState === "signed-in" && !item.recordingInProgress
-              && cached?.identity && cached.identity === currentIdentity ? cached : null;
-            const verified = verification
-              && Object.values(verification.tracks).length > 0
-              && Object.values(verification.tracks).every((track) => track.status === "complete");
-            const journeyStage = item.recordingInProgress ? -1 : verified ? 3
-              : item.state === "odeslano" ? (item.localState === "complete-audio" ? 0 : -1)
-                : item.state === "odesila" || (item.state === "ceka" && item.uploadIntent === "approved") ? 1
-                  : item.localState === "complete-audio" ? 0 : -1;
+            const { item, snapshotMatches, verification, verified, status } = presentations.get(snapshotItem.id);
+            const claimable = snapshotMatches && item.canClaim;
             const ownerLabel = !snapshotMatches ? "Vlastník není ověřen" : item.ownership === "current" ? "Tento účet"
               : item.ownership === "other" ? "Jiný účet" : "Vlastník není ověřen";
             const canVerify = snapshotMatches && item.source === "queue" && item.ownership === "current"
@@ -727,12 +769,14 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
               || (preferencesById[item.id].identity === currentIdentity && !snapshotMatches));
             const retainedCopy = !snapshotMatches && view.snapshotIdentity
               && (authState === "unknown" || (authState === "signed-in" && currentIdentity === view.snapshotIdentity));
-            const preference = preferencesById[item.id];
-            const mismatchedPreferences = !item.uploadPreferencesLocked && preference
-              && (!preference.value || preference.value.companyId !== item.uploadPreferences?.companyId
-                || preference.value.visibility !== item.uploadPreferences?.visibility);
+            const canEditCompany = item.canConfigureUpload;
+            const claimDisabledReason = recordingDeliveryStatus(item, { busy: claimingId !== null,
+              missingRevision: !item.revision, transportAction: false }).disabledReasons.claim;
+            const journeyStage = item.recordingInProgress ? -1 : verified && status.tone === "sent" ? 3
+              : item.state === "odeslano" ? (item.localState === "complete-audio" ? 0 : -1)
+                : status.tone === "waiting" ? 1 : item.localState === "complete-audio" ? 0 : -1;
             return (
-              <li className="recordings-timeline__entry" key={item.id} data-recording-id={item.id} data-osa-node={osaRecordingNode(item, Boolean(verified))}
+              <li className="recordings-timeline__entry" key={item.id} data-recording-id={item.id} data-osa-node={osaRecordingNode(item, Boolean(verified), status.tone)}
                 data-recording-state={item.state} data-upload-intent={item.uploadIntent}
                 data-detail-active={openDetailId === item.id ? "true" : "false"}>
                 <time className="recordings-timeline__time" dateTime={item.createdAt ?? undefined}>
@@ -760,9 +804,12 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     <span className="recording-queue-card__source-icon" aria-hidden="true"><MicIcon /></span>
                     <span className="recording-queue-card__heading">
                       <strong>{recordingDisplayTitle(item.title, item.createdAt)}</strong>
-                      <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.recordingInProgress ? "active" : verified ? "verified" : item.source === "orphan" ? "local" : item.state}`}>
-                        {deliveryStateLabel(item, verified)}
+                      <span className={`recording-queue-card__delivery recording-queue-card__delivery--${verified && status.tone === "sent" ? "verified" : status.tone}`}>
+                        {status.label}
                       </span>
+                      {status.action && <small className="recording-queue-card__next-action">{status.action.type === "login"
+                        ? "Přihlas se v panelu LuDone." : status.action.type === "company"
+                          ? "Zkontroluj firmu v panelu LuDone." : `${status.action.label} v detailu`}</small>}
                     </span>
                     <span className="recording-queue-card__facts">
                       <span>{formatCreatedAt(item.createdAt)}</span>
@@ -791,8 +838,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     <section className="recording-queue-card__storage" aria-labelledby={`recording-storage-${item.id}`}>
                       <div className="recording-queue-card__storage-heading">
                         <h2 id={`recording-storage-${item.id}`}>Uložení a přístup</h2>
-                        <span className={`recording-queue-card__delivery recording-queue-card__delivery--${item.recordingInProgress ? "active" : verified ? "verified" : item.source === "orphan" ? "local" : item.state}`}>
-                          {deliveryStateLabel(item, verified)}
+                        <span className={`recording-queue-card__delivery recording-queue-card__delivery--${verified && status.tone === "sent" ? "verified" : status.tone}`}>
+                          {status.label}
                         </span>
                       </div>
                       <dl>
@@ -840,7 +887,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                         <div hidden={!verifiedEditorOwner} style={!verifiedEditorOwner ? { display: "block", visibility: "hidden" } : undefined}><RecordingUploadPreferences key={item.id}
                           initialValue={snapshotItem.uploadPreferences} identityKey={currentIdentity} surface="detail"
                           saveVersion={preferencesById[item.id]?.saveVersion ?? 0}
-                          locked={item.uploadPreferencesLocked} disabled={!verifiedEditorOwner} busy={actingId !== null}
+                          locked={!canEditCompany} disabled={!verifiedEditorOwner} busy={actingId !== null}
                           onChange={(value, dirty) => {
                             setPreferencesById((current) => {
                               const previous = verifiedEditorOwner && current[item.id]?.identity !== currentIdentity
@@ -880,7 +927,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                       </div>
                     </section>
                     {!item.recordingInProgress && item.localReason && <p className="recording-queue-card__issue" role="status">{item.localReason}</p>}
-                    {!item.recordingInProgress && item.blockReason && item.blockReason !== item.localReason && <p className="recording-queue-card__issue" role="status">{item.blockReason}</p>}
+                    {!item.recordingInProgress && status.reason === "Převzatá nahrávka čeká na volbu odeslání" && <p className="recording-queue-card__issue" role="status">Převzatá nahrávka čeká na volbu odeslání. Vyber firmu a potvrď Odeslat.</p>}
                     <p className="recording-queue-card__web-note">Přepis a analýzu otevřeš v LuDone na webu.</p>
                     {item.recordingInProgress && <p role="status">Akce budou dostupné po dokončení nahrávání.</p>}
                     {!snapshotMatches && snapshotItem.ownership === "current" && <p role="status">Pro serverové ověření musí být potvrzený účet i prostředí LuDone.</p>}
@@ -923,18 +970,33 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                       }
                     }}><OsaIcon name="trash" size={17} /> Smazat nahrávku</button>
                 )}
-</> }} server={{ status: verification && !verified ? VERIFICATION_LABELS[Object.values(verification.tracks).find(result => result.status !== "complete").status] : deliveryStateLabel(item, verified), verified: Boolean(verified), error: Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? [...new Set(Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]))].join(" · ") : item.state === "odeslano" ? "Na serveru neověřeno" : "Přepis a analýza jsou na webu", actions: <>                {claimable && (<>
+</> }} server={{ status: verification && !verified ? VERIFICATION_LABELS[Object.values(verification.tracks).find(result => result.status !== "complete").status] : status.label, verified: Boolean(verified && status.tone === "sent"), error: status.tone === "attention" || Boolean(verification && Object.values(verification.tracks).some(result => result.status !== "complete")), description: verification ? [...new Set(Object.values(verification.tracks).map(result => VERIFICATION_LABELS[result.status]))].join(" · ") : item.state === "odeslano" ? "Na serveru neověřeno" : "Přepis a analýza jsou na webu", actions: <>                {claimable && (<>
                   <button
                     type="button"
-                    className="button button--small recording-action--claim"
-                    disabled={item.recordingInProgress || authState !== "signed-in" || claimingId !== null || !item.revision}
+                    className="button button--primary recording-action--claim"
+                    disabled={Boolean(claimDisabledReason)}
                     onClick={() => void claim(item)}
                   >
-                    {claimingId === item.id ? "Přebírám…" : "Převzít pod svůj účet"}
+                    {claimingId === item.id ? "Přebírám…" : "Převzít nahrávku"}
                   </button>
-                  <p>Převzetí nahrávky ji neodešle.</p>
+                  {claimDisabledReason && <p className="recording-queue-card__action-reason" role="status">{claimDisabledReason}</p>}
+                  <p>Převzetí nahrávky ji neodešle. Potom vyber firmu a výslovně potvrď odeslání.</p>
                 </>)}
                 {!snapshotMatches && snapshotItem.canClaim && disabledExplanation && <p role="status">{disabledExplanation}</p>}
+                {status.action?.type === "login" && <p role="status">
+                  {authState === "signed-in"
+                    ? "V panelu LuDone otevři Nastavení → Účet → Pokročilé nastavení, odhlas se a znovu přihlas."
+                    : "V panelu LuDone otevři přihlášení a přihlas se znovu."}
+                </p>}
+                {status.action?.type === "company" && snapshotMatches && <>
+                  {canEditCompany ? <button type="button" className="button button--primary recording-action--company" onClick={(event) => {
+                    const card = event.currentTarget.closest(".recording-queue-card");
+                    const select = card?.querySelector('[data-testid="recording-upload-company"]');
+                    if (select && !select.disabled) { select.scrollIntoView?.({ block: "nearest" }); select.focus(); }
+                  }}>Vybrat firmu</button> : item.uploadPreferencesLocked && item.canRetry
+                    ? <p role="status">Firma této nahrávky je pevně daná. Po obnovení přístupu k této firmě zkus odeslání znovu.</p>
+                    : !item.uploadPreferencesLocked && <p role="status">V panelu LuDone otevři Nastavení → Účet a vyber firmu pro odesílání.{item.canRetry ? " Potom se vrať k nahrávce a zvol Zkusit znovu." : ""}</p>}
+                </>}
                 {canVerify && (
                   <button
                     type="button"
@@ -946,16 +1008,21 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     {verifyingId === item.id ? "Ověřuji…" : "Ověřit v LuDone"}
                   </button>
                 )}
-                {snapshotMatches && item.canSend && (
+                {snapshotMatches && !verified && item.canSend && (<>
                   <button type="button" className="button button--primary recording-action--send"
-                    disabled={item.recordingInProgress || !snapshotMatches || actingId !== null || preference?.dirty || preference?.conflict || mismatchedPreferences || preferenceFailedById[item.id]}
-                    onClick={() => void runAction(item, "sendRecording")}><OsaIcon name="cloud" size={17} /> Uložit a odeslat</button>
-                )}
-                {snapshotMatches && item.canRetry && (
+                    disabled={Boolean(status.disabledReasons.send)}
+                    onClick={() => void runAction(item, "sendRecording")}><OsaIcon name="cloud" size={17} /> Odeslat</button>
+                  {status.disabledReasons.send && <p className="recording-queue-card__action-reason" role="status">{status.disabledReasons.send}</p>}
+                </>)}
+                {snapshotMatches && !verified && ["retry", "company"].includes(status.action?.type) && item.canRetry && (<>
                   <button type="button" className="button button--small recording-action--retry"
-                    disabled={item.recordingInProgress || !snapshotMatches || actingId !== null || preference?.dirty || preference?.conflict || mismatchedPreferences || preferenceFailedById[item.id]}
+                    disabled={Boolean(status.disabledReasons.retry)}
                     onClick={() => void runAction(item, "retryRecording")}>Zkusit znovu</button>
-                )}
+                  {status.disabledReasons.retry && <p className="recording-queue-card__action-reason" role="status">{status.disabledReasons.retry}</p>}
+                </>)}
+                {snapshotMatches && !verified && status.disabledReason && (!status.action
+                  || (status.action.type === "company" && !item.canRetry))
+                  && <p className="recording-queue-card__action-reason" role="status">{status.disabledReason}</p>}
 </> }} />
                 {verification && (
                   <div className="recording-queue-card__verification" aria-label="Výsledek serverového ověření">

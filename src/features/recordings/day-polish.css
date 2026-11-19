@@ -30,6 +30,11 @@
 .recordings-dashboard--detail .recordings-dashboard__today-empty { display: none; }
 .recordings-dashboard .recording-queue-card__delivery--odeslano { color: var(--panel-subtle); background: var(--panel-raised); }
 .recordings-dashboard .recording-queue-card__delivery--verified { color: var(--panel-ok); background: color-mix(in oklab, var(--panel-ok) 10%, var(--surface-elevated)); }
+.recordings-dashboard .recording-queue-card__delivery--attention { color: var(--panel-bad); }
+.recordings-dashboard .recording-queue-card__action-reason { flex: 0 0 100%; margin: 4px 0 0; font-size: 12px; line-height: 1.4; }
+.recordings-dashboard .recording-queue-card__next-action { flex: 0 0 100%; color: var(--panel-subtle); font-size: 12px; }
+.osa-shell:not(.osa-shell--detail) .settings-window[data-page] .recording-queue-card__heading { flex-wrap: wrap; }
+.day-preview__item-copy .day-preview__state--attention { color: var(--panel-bad); }
 .settings-window[data-page="day"] .recordings-dashboard__filter[aria-pressed="true"] span { color: inherit; }
 /* Stálá čitelná časová značka nezávisí na metrice právě načteného písma. */
 .settings-window[data-page="day"] .recordings-dashboard .recordings-timeline__time { height: 24px; padding-top: 10px; line-height: 14px; }

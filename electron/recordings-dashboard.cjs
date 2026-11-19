@@ -301,19 +301,44 @@ function safeQueueManifestPath(recordingsDirectory, configuredDirectory, item) {
   );
 }
 
-function safeQueueReason(value) {
+function pausedWithoutRetry(item) {
+  return item.state === "ceka" && item.uploadIntent === "approved"
+    && item.requiresHumanAction !== true
+    // Prošlý termín plánovač znovu nenaplánuje (review #201 k4): naplánované je jen budoucí opakování.
+    && !(Number.isSafeInteger(item.nextAttemptAt) && item.nextAttemptAt > Date.now())
+    && typeof item.lastFailureReason === "string" && item.lastFailureReason.trim().length > 0;
+}
+
+function safeQueueReason(value, paused = false) {
   if (typeof value !== "string" || value.length === 0) return null;
   if (SAFE_LEGACY_REASONS.has(value)) return value;
+  if (value === "session_owner_unknown") return "Identitu aktuálního přihlášení nelze ověřit";
   if (/^(queue|session)_owner_[a-z0-9-]+$/u.test(value)) {
     return "Nahrávka čeká na potvrzení vlastnictví.";
   }
+  // HTTP 429 i bez kódu v těle odpovědi (např. „upload_failed (HTTP 429)“) je známý limit serveru.
+  if (/^[a-z0-9_]+ \(HTTP 429\)$/u.test(value)) return "Server dočasně omezil odesílání.";
   const known = {
-    unauthorized: "Odeslání čeká na nové přihlášení.",
+    unauthorized: "Server odmítl odeslání.",
+    "rate_limited (HTTP 429)": "Server dočasně omezil odesílání.",
+    "unauthorized (HTTP 401)": "Server odmítl odeslání.",
+    network_error: "Spojení se serverem se nepodařilo.",
+    "Síťový požadavek uploadu vypršel": "Spojení se serverem se nepodařilo.",
+    "Seznam firem se nepodařilo získat; zkontrolujte přihlášení a spojení": "Seznam firem není dostupný.",
     insufficient_scope: "Přihlášení nemá oprávnění k odeslání.",
+    "insufficient_scope (HTTP 403)": "Přihlášení nemá oprávnění k odeslání.",
+    "Pro upload chybí přihlášení": "Pro odeslání chybí přihlášení.",
+    "Přihlášení pro upload nelze načíst": "Přihlášení nelze ověřit.",
+    "Přihlášení patří jinému serveru": "Přihlášení patří jinému serveru",
     company_not_chosen: "Před odesláním je potřeba vybrat firmu.",
-    company_binding_missing: "U této rozpracované nahrávky nelze bezpečně určit firmu. Otevřete Nastavení.",
-    company_out_of_scope: "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
-    "company_out_of_scope (HTTP 403)": "Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.",
+    "Není vybraná firma, pod kterou se má nahrávka odeslat": "Před odesláním je potřeba vybrat firmu.",
+    "Pro upload chybí identifikátor firmy": "Před odesláním je potřeba vybrat firmu.",
+    company_binding_missing: "U této rozpracované nahrávky nelze bezpečně určit firmu.",
+    "Rozpracovaná nahrávka nemá bezpečně uloženou firmu; otevřete Nastavení": "U této rozpracované nahrávky nelze bezpečně určit firmu.",
+    "Uložená firma nahrávky není platná": "U této rozpracované nahrávky nelze bezpečně určit firmu.",
+    company_out_of_scope: "Vybraná firma nahrávku nepřijala.",
+    "company_out_of_scope (HTTP 403)": "Vybraná firma nahrávku nepřijala.",
+    "403 company_out_of_scope": "Vybraná firma nahrávku nepřijala.",
     "Nedokončenou obnovenou nahrávku nelze bezpečně převést na stereo WebM":
       "Nahrávka nebyla dokončena a nelze ji bezpečně převést na stereo WebM.",
     "Nedokončenou nahrávku nelze bezpečně převést na stereo WebM":
@@ -335,7 +360,79 @@ function safeQueueReason(value) {
     "Stereo master se před převodem změnil":
       "Stereo master se před převodem změnil; originály zůstávají uložené.",
   };
-  return Object.hasOwn(known, value) ? known[value] : "Předchozí pokus se nezdařil.";
+  const pausedCode = value.match(/^(storage_disabled|quota_exceeded|session_missing|session_not_found)(?: \(HTTP [0-9]{3}\))?$/u)?.[1];
+  if (pausedCode === "storage_disabled") return "Úložiště serveru je dočasně vypnuté.";
+  if (pausedCode === "quota_exceeded") return "Na serveru není dostatek místa pro nahrávku.";
+  if (["session_missing", "session_not_found"].includes(pausedCode)) return "Serverovou relaci nahrávky nelze najít.";
+  if (value.startsWith("Síťový požadavek uploadu selhal:")) return "Spojení se serverem se nepodařilo.";
+  if (!Object.hasOwn(known, value) && /^[a-z0-9_]+ \(HTTP 403\)$/u.test(value)) return "Server odeslání odmítl.";
+  return Object.hasOwn(known, value) ? known[value]
+    : paused ? "Odeslání je pozastavené — důvod nezjištěn." : "Předchozí pokus se nezdařil.";
+}
+
+// Stejná kontrola jako po pokusu o navázání firmy v actOnRecording.
+function companyRebindConflict(original, rebound, companyTabidooId) {
+  return rebound === original && rebound.server?.companyTabidooId !== companyTabidooId;
+}
+
+function recordingActions({ rawItem, projected, inspected, queueModule, cooldown, sendingDisabled,
+  currentCompanyId, identityKnown }) {
+  const yes = () => ({ allowed: true, reason: null });
+  const no = (reason, retryAt = null) => ({ allowed: false, reason,
+    ...(retryAt !== null ? { retryAt } : {}) });
+  const localProblem = inspected.invalid ? "Data nahrávky nelze bezpečně přečíst."
+    : inspected.localState === "missing-audio" ? "Zvukové soubory chybí." : null;
+  const unavailableOwner = projected.ownership === "unavailable"
+    ? "Přihlášení k nahrávce nelze ověřit." : "Nahrávka nepatří aktuálnímu účtu.";
+  const common = localProblem ?? (projected.ownership !== "current" ? unavailableOwner : null);
+  const transport = sendingDisabled ? "Odesílání je vypnuté."
+    : cooldown ? "Server dočasně omezil odesílání." : null;
+  const transportNo = () => no(transport, cooldown?.retryAt ?? null);
+  const send = common ? no(common) : transport ? transportNo()
+    : projected.state === "ceka" && projected.uploadIntent === "held" ? yes()
+      : no("Nahrávka není připravená k ručnímu odeslání.");
+
+  let retry;
+  if (common) retry = no(common);
+  else if (transport) retry = transportNo();
+  else if (projected.uploadIntent !== "approved" || !(projected.state === "selhalo"
+    || (projected.state === "ceka" && (projected.requiresHumanAction === true || pausedWithoutRetry(projected))))) {
+    retry = no("Nahrávka zatím nevyžaduje ruční opakování.");
+  } else {
+    const original = { ...rawItem, state: projected.state,
+      lastFailureReason: rawItem.lastFailureReason ?? projected.lastFailureReason };
+    const queue = { schemaVersion: 1, items: [original] };
+    const rejected = ["company_out_of_scope (HTTP 403)", "403 company_out_of_scope"]
+      .includes(original.lastFailureReason);
+    if (rejected && original.uploadPreferences?.companyId != null) {
+      retry = no(projected.uploadPreferencesLocked || inspected.uploadPreferencesLocked
+        ? "Firmu této nahrávky už nelze změnit. Obrať se na správce LuDone."
+        : "Nejdřív změň a ulož firmu této nahrávky.");
+    } else if (rejected && !currentCompanyId) {
+      retry = no("Aktuální výchozí firmu nelze v tomto přehledu bezpečně ověřit.");
+    } else {
+      try {
+        const rebound = rejected
+          ? queueModule.rebindCompanyOutOfScopeItem(queue, original.clientRecordingId, currentCompanyId)
+          : { item: original, queue };
+        if (rejected && companyRebindConflict(original, rebound.item, currentCompanyId)) {
+          retry = no("Připnutá firma nahrávky neodpovídá aktuální výchozí firmě.");
+        } else {
+          const retried = queueModule.retryFailedItem(rebound.queue, original.clientRecordingId);
+          retry = retried.item === original && original.state !== "ceka"
+            ? no("Tuto nahrávku nelze bezpečně opakovat.") : yes();
+        }
+      } catch {
+        retry = no("Podmínky opakování nelze bezpečně ověřit.");
+      }
+    }
+  }
+  const claim = localProblem ? no(localProblem)
+    : !["ceka", "selhalo"].includes(projected.state) ? no("Nahrávku v tomto stavu nelze převzít.")
+      : !["unknown", "other"].includes(projected.ownership) ? no("Nahrávku nelze převzít pod tento účet.")
+        : projected.ownership === "unknown" && !identityKnown
+          ? no("Přihlášení k převzetí nelze v tomto přehledu ověřit.") : yes();
+  return { send, retry, claim };
 }
 
 function safeProjectedItem(projected) {
@@ -355,7 +452,9 @@ function safeProjectedItem(projected) {
     ownership: ["unknown", "current", "other", "unavailable"].includes(projected.ownership)
       ? projected.ownership : "unavailable",
     requiresHumanAction: projected.requiresHumanAction === true,
-    blockReason: safeQueueReason(projected.blockReason ?? projected.lastFailureReason),
+    blockReason: safeQueueReason(projected.blockReason
+      ?? (projected.requiresHumanAction === true || projected.state === "selhalo"
+        || pausedWithoutRetry(projected) ? projected.lastFailureReason : null), pausedWithoutRetry(projected)),
     title: typeof projected.title === "string" ? projected.title : "",
     uploadIntent: projected.uploadIntent === "approved" ? "approved" : "held",
   };
@@ -387,13 +486,22 @@ async function validateRecordingsRoot(root) {
   }
 }
 
-async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory }) {
+/**
+ * @param {{ queue: any, queueItems: any[], recordingsDirectory: string, currentCompanyId?: string | null,
+ *   identityKnown?: boolean }} options
+ */
+async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory, currentCompanyId = null,
+  identityKnown: identityKnownInput }) {
   const configuredRoot = path.resolve(recordingsDirectory);
   if (!queue || !Array.isArray(queue.items) || !Array.isArray(queueItems)) {
     throw new TypeError("lokální přehled vyžaduje platnou frontu a její projekci");
   }
   const { canonicalRoot: root, exists: rootExists } = await validateRecordingsRoot(configuredRoot);
   const queueById = new Map(queueItems.map((item) => [item.id, item]));
+  const queueModule = await import("../src/lib/queue.js");
+  // Výslovná informace od mainu má přednost; odhad z ostatních položek jen pro starší volající.
+  const identityKnown = typeof identityKnownInput === "boolean" ? identityKnownInput
+    : queueItems.some((item) => ["current", "other"].includes(item.ownership));
   const representedPaths = new Set();
   const seenIds = new Set();
   const items = [];
@@ -434,8 +542,19 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       inspected.sizeBytes = undefined;
     }
     seenIds.add(projected.id);
+    // Stejný přepínač jako v main.cjs platí i pro ruční send a retry v blokovaných stavech.
+    const sendingDisabled = process.env.DESKTOP_UPLOAD_ENABLED !== undefined
+      && process.env.DESKTOP_UPLOAD_ENABLED !== "true";
+    // Limit patří účtu; otisk ani limit jiného vlastníka se do rendereru neposílají.
+    const cooldown = projected.ownership === "current" && rawItem.ownerFingerprint
+      ? (queue.uploadCooldowns ?? []).find((entry) => entry.ownerFingerprint === rawItem.ownerFingerprint
+        && Number.isSafeInteger(entry.retryAt) && entry.retryAt > Date.now()) : null;
+    const actions = recordingActions({ rawItem, projected, inspected, queueModule, cooldown,
+      sendingDisabled, currentCompanyId, identityKnown });
     items.push({
       ...safeProjectedItem(projected),
+      sendingDisabledReason: sendingDisabled ? "odesílání je vypnuté" : null,
+      uploadRetryAt: cooldown?.retryAt ?? null,
       source: "queue",
       uploadPreferencesLocked: projected.uploadPreferencesLocked === true || inspected.uploadPreferencesLocked === true,
       localState: inspected.invalid ? "invalid-manifest" : inspected.localState,
@@ -449,20 +568,17 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       originalsCount: inspected.invalid ? 0 : inspected.originalsCount ?? 0,
       deliveryState: rawItem.delivery?.state ?? null,
       uploadLocked: projected.uploadLocked === true,
+      canConfigureUpload: !inspected.invalid && inspected.localState !== "missing-audio"
+        && projected.ownership === "current" && !projected.uploadPreferencesLocked
+        && !inspected.uploadPreferencesLocked
+        && (projected.uploadIntent === "held" || queueModule.recordingCompanyRepairAvailable(rawItem)),
+      actions,
       allowedActions: {
-        claim: !inspected.invalid
-          && inspected.localState !== "missing-audio"
-          && ["ceka", "selhalo"].includes(projected.state)
-          && ["unknown", "other"].includes(projected.ownership),
+        claim: actions.claim.allowed,
         delete: !inspected.invalid && projected.state !== "odesila"
           && !projected.uploadLocked,
-        retry: !inspected.invalid && inspected.localState !== "missing-audio"
-          && projected.ownership === "current" && projected.uploadIntent === "approved"
-          && (projected.state === "selhalo"
-            || (projected.state === "ceka" && projected.requiresHumanAction === true)),
-        send: !inspected.invalid && inspected.localState !== "missing-audio"
-          && projected.ownership === "current" && projected.state === "ceka"
-          && projected.uploadIntent === "held",
+        retry: actions.retry.allowed,
+        send: actions.send.allowed,
       },
     });
   }
@@ -502,6 +618,8 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
       localState: inspected.invalid ? "invalid-manifest" : inspected.localState,
       localReason: inspected.invalid ? "Primární manifest nelze bezpečně přečíst." : inspected.localReason ?? null,
       fileRevision: inspected.fileRevision ?? null,
+      actions: Object.fromEntries(["send", "retry", "claim"].map((action) => [action,
+        { allowed: false, reason: "Nahrávka není zařazená ve frontě." }])),
       allowedActions: { claim: false, delete: !inspected.invalid, retry: false, send: false },
     });
   }
@@ -510,5 +628,6 @@ async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDire
 
 module.exports = {
   createLocalRecordingsSnapshot,
+  companyRebindConflict,
   readStableRegularFile,
 };
