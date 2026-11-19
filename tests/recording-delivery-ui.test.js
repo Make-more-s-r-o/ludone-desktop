@@ -530,3 +530,22 @@ it("důvod zakázaného retry nezakáže samostatně povolené odeslání", asyn
     expect(dashboard.document.querySelector(".recording-action--retry")).toBeNull();
   } finally { await dashboard.cleanup(); }
 });
+
+it("zamčený editor firmy neblokuje povolené opakování v otevřeném detailu (review k4)", async () => {
+  const companyId = "22222222-2222-4222-8222-222222222222";
+  const item = { ...base, requiresHumanAction: true, canConfigureUpload: false,
+    blockReason: "Není vybraná firma, pod kterou se má nahrávka odeslat", allowedActions: { retry: true } };
+  const retryRecording = vi.fn(async () => ({ outcome: "sent" }));
+  const dashboard = await mount(RecordingsDashboard, { item }, { retryRecording, configureRecordingUpload: vi.fn(),
+    listUploadCompanies: vi.fn(async () => ({ companies: [{ id: companyId, name: "Alfa" }], selectedCompanyId: companyId,
+      offerToken: "offer-token-0000000000000001" })) });
+  try {
+    const detail = dashboard.document.querySelector("details.recording-queue-card");
+    await React.act(async () => { detail.open = true; detail.dispatchEvent(new dashboard.document.defaultView.Event("toggle")); });
+    const retry = dashboard.document.querySelector(".recording-action--retry");
+    await vi.waitFor(() => expect(retry.disabled).toBe(false));
+    expect(retry.parentElement.textContent).not.toContain("Ulož změněné volby");
+    await React.act(async () => { retry.click(); });
+    await vi.waitFor(() => expect(retryRecording).toHaveBeenCalledOnce());
+  } finally { await dashboard.cleanup(); }
+});

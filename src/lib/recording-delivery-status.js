@@ -5,6 +5,8 @@ const REASONS = new Map([
   ["unauthorized (HTTP 401)", ["server odmítl odeslání", "retry"]],
   ["Odeslání čeká na nové přihlášení.", ["server odmítl odeslání", "retry"]],
   ["Server odmítl odeslání.", ["server odmítl odeslání", "retry"]],
+  ["rate_limited (HTTP 429)", ["server dočasně omezil odesílání", "retry"]],
+  ["Server dočasně omezil odesílání.", ["server dočasně omezil odesílání", "retry"]],
   ["insufficient_scope", ["přihlášení nemá oprávnění k odeslání", "login"]],
   ["insufficient_scope (HTTP 403)", ["přihlášení nemá oprávnění k odeslání", "login"]],
   ["Přihlášení nemá oprávnění k odeslání.", ["přihlášení nemá oprávnění k odeslání", "login"]],
@@ -162,6 +164,10 @@ export function recordingDeliveryStatus(item, context = {}) {
         ? ["vlastník nahrávky není potvrzený", "claim"] : ["důvod nezjištěn", "retry"]);
     [reason, type] = mapped;
     if (type === "claim" && !permitted(item, "claim") && permitted(item, "retry")) type = "retry";
+    // Main rozhoduje o akcích: přihlášenému uživateli s povoleným opakováním nenabízej přihlášení
+    // jen kvůli historickému důvodu (review #201 k4).
+    // Jen u neověřitelné identity; chybějící oprávnění nebo přihlášení opakování nevyřeší.
+    if (type === "login" && reason === "identitu přihlášení nelze ověřit" && permitted(item, "retry")) type = "retry";
   } else if (item.uploadIntent === "approved" && (item.sendingDisabledReason || context.sendingDisabled)) {
     reason = "odesílání je vypnuté";
     type = "retry";
@@ -176,7 +182,7 @@ export function recordingDeliveryStatus(item, context = {}) {
   }
   if (item.state === "odesila") return result("waiting", "Odesílá se…");
   if (item.state === "ceka") {
-    const time = Number.isSafeInteger(item.nextAttemptAt) && item.nextAttemptAt > 0 ? new Date(item.nextAttemptAt) : null;
+    const time = Number.isSafeInteger(item.nextAttemptAt) && item.nextAttemptAt > Date.now() ? new Date(item.nextAttemptAt) : null;
     const next = time && Number.isFinite(time.getTime())
       ? ` · další pokus v ${new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(time)}` : "";
     const timeLimit = rateLimitTime(item, context);

@@ -35,7 +35,8 @@ describe("společný stav odeslání nahrávky", () => {
   });
 
   it("čekajícímu automatickému opakování ukáže místní čas bez starého důvodu selhání", () => {
-    const nextAttemptAt = new Date(2026, 10, 19, 14, 5).getTime();
+    // Budoucí termín: prošlý termín se jako další pokus nevypisuje (review #201 k4).
+    const nextAttemptAt = new Date(2099, 10, 19, 14, 5).getTime();
     const status = recordingDeliveryStatus({ ...base, nextAttemptAt, lastFailureReason: "network_error" });
     expect(status.tone).toBe("waiting");
     expect(status.label).toBe("Čeká na odeslání · další pokus v 14:05");
@@ -156,3 +157,30 @@ it.each(["network_error", "Síťový požadavek uploadu selhal: citlivá adresa 
     expect(status.action?.type).toBe("retry");
   },
 );
+
+describe("review #201 kolo 4", () => {
+  it("přihlášenému s povoleným opakováním nenabídne přihlášení kvůli historickému důvodu", () => {
+    const status = recordingDeliveryStatus({ state: "ceka", uploadIntent: "approved", ownership: "current",
+      localState: "complete-audio", requiresHumanAction: true, blockReason: "Identitu aktuálního přihlášení nelze ověřit",
+      actions: { retry: { allowed: true, reason: null }, send: { allowed: false, reason: null }, claim: { allowed: false, reason: null } } },
+    { authState: "signed-in" });
+    expect(status.action?.type).toBe("retry");
+  });
+
+  it("limit 429 je známý důvod, ne důvod nezjištěn", () => {
+    const status = recordingDeliveryStatus({ state: "ceka", uploadIntent: "approved", ownership: "current",
+      localState: "complete-audio", blockReason: "Server dočasně omezil odesílání.",
+      actions: { retry: { allowed: false, reason: null }, send: { allowed: false, reason: null }, claim: { allowed: false, reason: null } } },
+    { authState: "signed-in" });
+    expect(status.label).toContain("server dočasně omezil odesílání");
+    expect(status.label).not.toContain("důvod nezjištěn");
+  });
+
+  it("prošlý termín dalšího pokusu se nevypisuje jako budoucí opakování", () => {
+    const status = recordingDeliveryStatus({ state: "ceka", uploadIntent: "approved", ownership: "current",
+      localState: "complete-audio", nextAttemptAt: Date.now() - 60_000,
+      actions: { retry: { allowed: false, reason: null }, send: { allowed: false, reason: null }, claim: { allowed: false, reason: null } } },
+    { authState: "signed-in" });
+    expect(status.label).not.toContain("další pokus v");
+  });
+});

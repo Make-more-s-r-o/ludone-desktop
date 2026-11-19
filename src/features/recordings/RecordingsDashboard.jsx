@@ -505,7 +505,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
       && cached.fileRevision === item.fileRevision ? cached : null;
     const verified = verification && Object.values(verification.tracks).length > 0
       && Object.values(verification.tracks).every((track) => track.status === "complete");
-    const preference = preferencesById[item.id];
+    // Rozpracované volby posuzuj jen tam, kde editor opravdu existuje; zamčený editor hlásí null (review #201 k4).
+    const preference = item.canConfigureUpload ? preferencesById[item.id] : undefined;
     const mismatchedPreferences = !item.uploadPreferencesLocked && preference
       && (!preference.value || preference.value.companyId !== item.uploadPreferences?.companyId
         || preference.value.visibility !== item.uploadPreferences?.visibility);
@@ -646,7 +647,8 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
   const runAction = async (item, method) => {
     if (!["revealRecording", "deleteRecording"].includes(method) && (authState !== "signed-in" || !currentIdentity
       || view.snapshotIdentity !== currentIdentity || view.snapshotAuthEpoch !== renderAuth.current.epoch)) return;
-    const preference = preferencesById[item.id];
+    // Stejné pravidlo jako při vykreslení: rozpracované volby jen tam, kde editor existuje.
+    const preference = item.canConfigureUpload ? preferencesById[item.id] : undefined;
     const mismatched = !item.uploadPreferencesLocked && preference
       && (!preference.value || preference.value.companyId !== item.uploadPreferences?.companyId
         || preference.value.visibility !== item.uploadPreferences?.visibility);

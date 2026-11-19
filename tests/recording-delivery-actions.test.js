@@ -177,3 +177,14 @@ it("firma předaná z mainu dojde přes skutečnou frontu až k rozhodnutí o op
     expect((await store.listLocalRecordings(owner)).items[0].actions.retry.allowed).toBe(false);
   });
 });
+
+it("pauza s prošlým termínem opakování zachová důvod a povolí ruční opakování (review k4)", async () => {
+  await withRecording(async ({ queue, project }) => {
+    queue.items[0] = { ...queue.items[0], state: "ceka", uploadIntent: "approved", requiresHumanAction: false,
+      lastFailureReason: "storage_failed (HTTP 503)", nextAttemptAt: Date.now() - 60_000 };
+    const item = await project(queue);
+    expect(item.blockReason).toBeTruthy();
+    expect(item.actions.retry.allowed).toBe(true);
+    expect(recordingDeliveryStatus(item).tone).toBe("attention");
+  });
+});

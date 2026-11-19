@@ -303,7 +303,9 @@ function safeQueueManifestPath(recordingsDirectory, configuredDirectory, item) {
 
 function pausedWithoutRetry(item) {
   return item.state === "ceka" && item.uploadIntent === "approved"
-    && item.requiresHumanAction !== true && item.nextAttemptAt == null
+    && item.requiresHumanAction !== true
+    // Prošlý termín plánovač znovu nenaplánuje (review #201 k4): naplánované je jen budoucí opakování.
+    && !(Number.isSafeInteger(item.nextAttemptAt) && item.nextAttemptAt > Date.now())
     && typeof item.lastFailureReason === "string" && item.lastFailureReason.trim().length > 0;
 }
 
@@ -316,6 +318,7 @@ function safeQueueReason(value, paused = false) {
   }
   const known = {
     unauthorized: "Server odmítl odeslání.",
+    "rate_limited (HTTP 429)": "Server dočasně omezil odesílání.",
     "unauthorized (HTTP 401)": "Server odmítl odeslání.",
     network_error: "Spojení se serverem se nepodařilo.",
     "Síťový požadavek uploadu vypršel": "Spojení se serverem se nepodařilo.",
@@ -481,8 +484,12 @@ async function validateRecordingsRoot(root) {
   }
 }
 
+/**
+ * @param {{ queue: any, queueItems: any[], recordingsDirectory: string, currentCompanyId?: string | null,
+ *   identityKnown?: boolean }} options
+ */
 async function createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory, currentCompanyId = null,
-  identityKnown: identityKnownInput } = {}) {
+  identityKnown: identityKnownInput }) {
   const configuredRoot = path.resolve(recordingsDirectory);
   if (!queue || !Array.isArray(queue.items) || !Array.isArray(queueItems)) {
     throw new TypeError("lokální přehled vyžaduje platnou frontu a její projekci");
