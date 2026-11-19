@@ -5,20 +5,20 @@ import { osaRecordingNode, osaRecordingStatus } from "../src/lib/osa-recordings.
 const base = {
   state: "ceka", source: "queue", uploadIntent: "approved", ownership: "current",
   localState: "complete-audio", requiresHumanAction: false, blockReason: null,
-  allowedActions: { claim: false, send: false, retry: false },
+  actions: { claim: { allowed: false, reason: null }, send: { allowed: false, reason: null }, retry: { allowed: false, reason: null } },
 };
 
 describe("společný stav odeslání nahrávky", () => {
   it.each([
-    [{ ...base, uploadIntent: "held", allowedActions: { send: true } }, "local", "Jen na Macu", "send"],
+    [{ ...base, uploadIntent: "held", actions: { send: { allowed: true, reason: null } } }, "local", "Jen na Macu", "send"],
     [base, "waiting", "Čeká na odeslání", null],
     [{ ...base, state: "odesila" }, "waiting", "Odesílá se…", null],
     [{ ...base, state: "odeslano" }, "sent", "Odesláno", null],
-    [{ ...base, state: "selhalo", allowedActions: { retry: true } }, "attention", "Neodešlo — důvod nezjištěn", "retry"],
-    [{ ...base, requiresHumanAction: true, blockReason: "company_not_chosen", allowedActions: { retry: true } }, "attention", "Neodešlo — chybí vybraná firma", "company"],
-    [{ ...base, requiresHumanAction: true, blockReason: "insufficient_scope", allowedActions: { retry: true } }, "attention", "Neodešlo — přihlášení nemá oprávnění k odeslání", "login"],
-    [{ ...base, ownership: "other", allowedActions: { claim: true } }, "attention", "Neodešlo — nahrávka patří jinému účtu", "claim"],
-    [{ ...base, ownership: "unknown", allowedActions: { claim: true } }, "attention", "Neodešlo — vlastník nahrávky není potvrzený", "claim"],
+    [{ ...base, state: "selhalo", actions: { retry: { allowed: true, reason: null } } }, "attention", "Neodešlo — důvod nezjištěn", "retry"],
+    [{ ...base, requiresHumanAction: true, blockReason: "company_not_chosen", actions: { retry: { allowed: true, reason: null } } }, "attention", "Neodešlo — chybí vybraná firma", "company"],
+    [{ ...base, requiresHumanAction: true, blockReason: "insufficient_scope", actions: { retry: { allowed: true, reason: null } } }, "attention", "Neodešlo — přihlášení nemá oprávnění k odeslání", "login"],
+    [{ ...base, ownership: "other", actions: { claim: { allowed: true, reason: null } } }, "attention", "Neodešlo — nahrávka patří jinému účtu", "claim"],
+    [{ ...base, ownership: "unknown", actions: { claim: { allowed: true, reason: null } } }, "attention", "Neodešlo — vlastník nahrávky není potvrzený", "claim"],
   ])("stav %# odpovídá i tečce a navrhuje povolenou akci", (item, tone, label, action) => {
     const status = recordingDeliveryStatus(item);
     expect(status).toMatchObject({ tone, label, action: action ? { type: action } : null });
@@ -43,19 +43,19 @@ describe("společný stav odeslání nahrávky", () => {
 
   it("po převzetí výslovně čeká na novou volbu odeslání", () => {
     const item = { ...base, uploadIntent: "held", requiresHumanAction: true,
-      blockReason: "Převzatá nahrávka čeká na volbu odeslání", allowedActions: { send: true } };
+      blockReason: "Převzatá nahrávka čeká na volbu odeslání", actions: { send: { allowed: true, reason: null } } };
     expect(recordingDeliveryStatus(item)).toMatchObject({ tone: "local", label: "Jen na Macu", action: { type: "send" } });
     expect(osaRecordingStatus(item)).toBe("local");
     expect(recordingDeliveryStatus(item, { authState: "expired" }).label).toBe("Jen na Macu");
   });
 
   it("neznámý důvod neprozradí interní text a nenabízí nepovolené opakování", () => {
-    const item = { ...base, state: "selhalo", blockReason: "/soukrome/tajny-soubor", allowedActions: {} };
+    const item = { ...base, state: "selhalo", blockReason: "/soukrome/tajny-soubor", actions: {} };
     expect(recordingDeliveryStatus(item)).toMatchObject({ label: "Neodešlo — důvod nezjištěn", action: null });
   });
 
   it("neplete HTTP 401 se skutečně vypršelou relací", () => {
-    const item = { ...base, requiresHumanAction: true, blockReason: "unauthorized", allowedActions: { retry: true } };
+    const item = { ...base, requiresHumanAction: true, blockReason: "unauthorized", actions: { retry: { allowed: true, reason: null } } };
     const status = recordingDeliveryStatus(item);
     expect(status.label).toBe("Neodešlo — server odmítl odeslání");
     expect(status.action?.type).toBe("retry");
@@ -70,20 +70,20 @@ describe("společný stav odeslání nahrávky", () => {
     ["Pro upload chybí přihlášení", "chybí přihlášení", "login"],
     ["Síťový požadavek uploadu vypršel", "spojení se serverem se nepodařilo", "retry"],
   ])("známý skutečně ukládaný důvod %s přeloží bez kódu", (blockReason, reason, action) => {
-    const status = recordingDeliveryStatus({ ...base, requiresHumanAction: true, blockReason, allowedActions: { retry: true } });
+    const status = recordingDeliveryStatus({ ...base, requiresHumanAction: true, blockReason, actions: { retry: { allowed: true, reason: null } } });
     expect(status.label).toBe(`Neodešlo — ${reason}`);
     expect(status.action?.type ?? null).toBe(action);
   });
 
   it("pro neúplný zvuk neukazuje čekání ani nepovolenou akci", () => {
-    const item = { ...base, localState: "missing-audio", allowedActions: {} };
+    const item = { ...base, localState: "missing-audio", actions: {} };
     expect(recordingDeliveryStatus(item)).toMatchObject({ tone: "attention", label: "Neodešlo — zvukové soubory chybí", action: null });
     expect(osaRecordingNode(item)).toBe("error");
   });
 
   it("u neúplného osiřelého záznamu netvrdí neznámý výsledek odeslání", () => {
     const item = { ...base, source: "orphan", state: "orphan", ownership: "unavailable",
-      localState: "missing-audio", allowedActions: {} };
+      localState: "missing-audio", actions: {} };
     expect(recordingDeliveryStatus(item)).toMatchObject({ tone: "attention", label: "Problém — zvukové soubory chybí", action: null });
   });
 
@@ -102,7 +102,7 @@ describe("regrese druhého kola", () => {
   });
 
   it.each(["unknown", "other"])("zdravé held s vlastníkem %s zůstane na Macu", (ownership) => {
-    const item = { ...base, uploadIntent: "held", ownership, allowedActions: { claim: true } };
+    const item = { ...base, uploadIntent: "held", ownership, actions: { claim: { allowed: true, reason: null } } };
     expect(recordingDeliveryStatus(item)).toMatchObject({ tone: "local", label: "Jen na Macu" });
   });
 
@@ -117,7 +117,8 @@ describe("regrese druhého kola", () => {
   });
 
   it("vypnutý transport vysvětlí pod tlačítkem", () => {
-    expect(recordingDeliveryStatus({ ...base, sendingDisabledReason: "odesílání je vypnuté" }))
+    expect(recordingDeliveryStatus({ ...base, sendingDisabledReason: "odesílání je vypnuté",
+      actions: { retry: { allowed: false, reason: "Odesílání je vypnuté." } } }))
       .toMatchObject({ tone: "attention", label: "Neodešlo — odesílání je vypnuté", disabledReason: "Odesílání je vypnuté." });
   });
 
@@ -129,7 +130,7 @@ describe("regrese druhého kola", () => {
   });
 
   it("převzetí neslibuje odeslání", () => {
-    const status = recordingDeliveryStatus({ ...base, ownership: "other", allowedActions: { claim: true } });
+    const status = recordingDeliveryStatus({ ...base, ownership: "other", actions: { claim: { allowed: true, reason: null } } });
     expect(status.action?.label).toBe("Převzít nahrávku");
   });
 });
@@ -142,7 +143,7 @@ it("R6 zdravé záznamy bez potvrzeného vlastníka nezvyšují počet Odesílá
 
 it.each(["expired", "signed-out"])("K6 poškozený osiřelý záznam při stavu %s nenabízí přihlášení", (authState) => {
   const item = { ...base, source: "orphan", state: "orphan", ownership: "unavailable",
-    localState: "missing-audio", allowedActions: {} };
+    localState: "missing-audio", actions: {} };
   expect(recordingDeliveryStatus(item, { authState })).toMatchObject({
     tone: "attention", label: "Problém — zvukové soubory chybí", action: null,
   });
@@ -150,7 +151,7 @@ it.each(["expired", "signed-out"])("K6 poškozený osiřelý záznam při stavu 
 
 it.each(["network_error", "Síťový požadavek uploadu selhal: citlivá adresa [POST /upload]"])(
   "K3 síťovou chybu %s přeloží bez vnitřních údajů", (blockReason) => {
-    const status = recordingDeliveryStatus({ ...base, state: "selhalo", blockReason, allowedActions: { retry: true } });
+    const status = recordingDeliveryStatus({ ...base, state: "selhalo", blockReason, actions: { retry: { allowed: true, reason: null } } });
     expect(status.label).toBe("Neodešlo — spojení se serverem se nepodařilo");
     expect(status.action?.type).toBe("retry");
   },

@@ -30,6 +30,7 @@ const REASONS = new Map([
   ["Vybraná firma nahrávku nepřijala. Vyberte jinou firmu v části Účet v Nastavení.", ["vybraná firma nahrávku nepřijala", "company"]],
   ["Vybraná firma nahrávku nepřijala.", ["vybraná firma nahrávku nepřijala", "company"]],
   ["Server odeslání odmítl.", ["server odeslání odmítl", "retry"]],
+  ["Odeslání je pozastavené — důvod nezjištěn.", ["odeslání je pozastavené — důvod nezjištěn", "retry"]],
   ["network_error", ["spojení se serverem se nepodařilo", "retry"]],
   ["Síťový požadavek uploadu vypršel", ["spojení se serverem se nepodařilo", "retry"]],
   ["Spojení se serverem se nepodařilo.", ["spojení se serverem se nepodařilo", "retry"]],
@@ -74,8 +75,7 @@ const LOCAL_REASONS = Object.freeze({
 const ACTION_LABELS = Object.freeze({ send: "Odeslat", retry: "Zkusit znovu", claim: "Převzít nahrávku", login: "Přihlásit se", company: "Vybrat firmu" });
 
 function permitted(item, action) {
-  const key = `can${action[0].toUpperCase()}${action.slice(1)}`;
-  return item[key] === true || item.allowedActions?.[action] === true;
+  return item.actions?.[action]?.allowed === true;
 }
 
 function actionFor(item, type) {
@@ -85,21 +85,28 @@ function actionFor(item, type) {
   return { type, label: ACTION_LABELS[type] };
 }
 
-function disabledReason(item, context) {
+function rateLimitTime(item, context) {
+  const retryAt = Math.max(item.actions?.send?.retryAt ?? 0, item.actions?.retry?.retryAt ?? 0, context.rateLimitedUntil ?? 0);
+  return Number.isSafeInteger(retryAt) && retryAt > Date.now() && Number.isFinite(new Date(retryAt).getTime())
+    ? new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(retryAt)) : null;
+}
+
+function disabledReason(item, context, type) {
   if (item.recordingInProgress) return "Počkej na dokončení nahrávání.";
   if (context.transportAction !== false) {
-    if (item.sendingDisabledReason || context.sendingDisabled) return "Odesílání je vypnuté.";
-    const retryAt = Math.max(item.uploadRetryAt ?? 0, context.rateLimitedUntil ?? 0);
-    if (Number.isSafeInteger(retryAt) && retryAt > Date.now() && Number.isFinite(new Date(retryAt).getTime())) {
-      const time = new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(retryAt));
-      return `Server dočasně omezil odesílání do ${time}.`;
-    }
+    if (context.sendingDisabled) return "Odesílání je vypnuté.";
+    const time = rateLimitTime(item, context);
+    if (time) return `Server dočasně omezil odesílání do ${time}.`;
   }
   if (context.busy) return "Probíhá jiná akce. Počkej na její dokončení.";
   if (context.missingRevision) return "Obnov přehled; nahrávku teď nelze bezpečně ověřit.";
   if (context.preferenceConflict) return "Volby se změnily jinde. Ulož viditelné volby nebo převezmi uložené.";
   if (context.preferenceFailed) return "Uložení voleb se nepodařilo ověřit. Ulož volby znovu.";
   if (context.preferenceDirty || context.preferencesMismatch) return "Ulož změněné volby firmy a přístupu.";
+  const action = type === "company" ? "retry" : type;
+  if (["send", "retry", "claim"].includes(action) && item.actions?.[action]?.allowed === false) {
+    return item.actions[action].reason ?? null;
+  }
   return null;
 }
 
@@ -112,10 +119,13 @@ function disabledReason(item, context) {
  *   transportAction?: boolean, rateLimitedUntil?: number}} [context]
  */
 export function recordingDeliveryStatus(item, context = {}) {
-  const disabled = disabledReason(item, context);
-  const result = (tone, label, reason = null, type = null) => ({
-    tone, label, reason, action: actionFor(item, type), disabledReason: disabled,
-  });
+  const result = (tone, label, reason = null, type = null) => {
+    const time = tone === "attention" ? rateLimitTime(item, context) : null;
+    return { tone, label: `${label}${time ? ` · odesílání omezeno do ${time}` : ""}`, reason,
+      action: actionFor(item, type), disabledReason: disabledReason(item, context, type),
+      disabledReasons: Object.fromEntries(["send", "retry", "claim"].map((action) => [action,
+        disabledReason(item, context, action)])) };
+  };
   if (item.recordingInProgress) return result("waiting", "Nahrává se");
   if (context.incompleteSnapshot) return result("unknown", "Stav odeslání zjistíš v historii");
   if (context.verified) return result("sent", "V LuDone ✓");
@@ -154,6 +164,7 @@ export function recordingDeliveryStatus(item, context = {}) {
     if (type === "claim" && !permitted(item, "claim") && permitted(item, "retry")) type = "retry";
   } else if (item.uploadIntent === "approved" && (item.sendingDisabledReason || context.sendingDisabled)) {
     reason = "odesílání je vypnuté";
+    type = "retry";
   }
   if (localReason || reason) {
     const details = [localReason, reason].filter(Boolean).join(" · ");
@@ -168,7 +179,9 @@ export function recordingDeliveryStatus(item, context = {}) {
     const time = Number.isSafeInteger(item.nextAttemptAt) && item.nextAttemptAt > 0 ? new Date(item.nextAttemptAt) : null;
     const next = time && Number.isFinite(time.getTime())
       ? ` · další pokus v ${new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(time)}` : "";
-    return result("waiting", `Čeká na odeslání${next}`);
+    const timeLimit = rateLimitTime(item, context);
+    const limited = timeLimit ? ` · odesílání omezeno do ${timeLimit}` : "";
+    return result("waiting", `Čeká na odeslání${next}${limited}`);
   }
   return result("attention", "Stav odeslání není známý");
 }

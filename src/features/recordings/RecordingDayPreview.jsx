@@ -26,7 +26,7 @@ function safeItems(value) {
       lastFailureReason: typeof item.lastFailureReason === "string" ? item.lastFailureReason : null,
       nextAttemptAt: Number.isSafeInteger(item.nextAttemptAt) ? item.nextAttemptAt : null,
       sendingDisabledReason: typeof item.sendingDisabledReason === "string" ? item.sendingDisabledReason : null,
-      allowedActions: item.allowedActions,
+      actions: item.actions,
       localState: item.localState,
     }))
     .sort((first, second) => (Date.parse(second.createdAt ?? "") || 0) - (Date.parse(first.createdAt ?? "") || 0));

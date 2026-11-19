@@ -3833,10 +3833,24 @@ handleValidated("recordings:configure-upload", ["panel", "settings"], async (eve
     }
   });
 });
+// Jen pro projekci akcí v přehledu: stejný primární zdroj firmy jako resolveUploadCompanyId
+// (uložená volba v relaci), bez síťového dotazu. Nejistota = null; akce si firmu stejně ověří sama.
+async function readStoredUploadCompanyIdForDashboard() {
+  try {
+    const storedSession = await readStoredAuthSession();
+    if (!storedSessionMatchesCurrentAuth(storedSession)) return null;
+    const companyId = storedSession.companyTabidooId ?? storedSession.identity?.companyTabidooId;
+    return typeof companyId === "string" && COMPANY_ID_PATTERN.test(companyId) ? companyId : null;
+  } catch {
+    return null;
+  }
+}
+
 handleValidated("recordings:list-local", ["panel", "settings"], async () => {
   const currentOwnerFingerprint = await readCurrentValidQueueOwnerFingerprint();
+  const currentCompanyId = currentOwnerFingerprint === null ? null : await readStoredUploadCompanyIdForDashboard();
   const snapshot = await (await getOutboundQueueStore())
-    .listLocalRecordings(currentOwnerFingerprint);
+    .listLocalRecordings(currentOwnerFingerprint, { currentCompanyId });
   const items = await addQueueSendingAvailability(snapshot.items);
   // Recovery manifest běžící session je na disku záměrně neúplný. UI smí
   // tento stav odlišit pouze podle živé session hlavního procesu, ne podle stáří souboru.
@@ -3844,7 +3858,10 @@ handleValidated("recordings:list-local", ["panel", "settings"], async () => {
     if (!recordingSessions.has(item.id) && !recordingCompletionsInFlight.has(item.id)) return item;
     return { ...item, recordingInProgress: true,
       allowedActions: Object.fromEntries(Object.keys(item.allowedActions ?? {})
-        .map((action) => [action, false])) };
+        .map((action) => [action, false])),
+      // Běžící nahrávka nemá žádnou akci; důvod nese i nový tvar actions.
+      ...(item.actions ? { actions: Object.fromEntries(Object.keys(item.actions)
+        .map((action) => [action, { allowed: false, reason: "Nahrávání ještě běží." }])) } : {}) };
   }) };
 });
 async function runRecordingQueueAction(event, payload, mode) {

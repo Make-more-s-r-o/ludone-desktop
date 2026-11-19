@@ -1,4 +1,5 @@
 import * as React from "react";
+import { readFileSync } from "node:fs";
 import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
@@ -16,10 +17,30 @@ const base = { id: ID, kind: "recording", title: "Klárka", source: "queue", sta
   fileRevision: REV, createdAt: "2026-11-19T12:00:00.000Z", durationMs: 60_000,
   allowedActions: { claim: false, retry: false, send: false } };
 
+function snapshotItem(item) {
+  const actions = item.actions ?? Object.fromEntries(["send", "retry", "claim"].map(key => {
+    const limited = key !== "claim" && item.uploadRetryAt > Date.now();
+    const disabled = key !== "claim" && item.sendingDisabledReason;
+    return [key, limited ? { allowed: false, reason: "Server dočasně omezil odesílání.", retryAt: item.uploadRetryAt }
+      : disabled ? { allowed: false, reason: "Odesílání je vypnuté." }
+        : { allowed: item.allowedActions?.[key] === true, reason: null }];
+  }));
+  const canConfigureUpload = item.canConfigureUpload ?? (!item.uploadPreferencesLocked
+    && (item.uploadIntent === "held" || (item.state === "selhalo" && String(item.blockReason).includes("company_out_of_scope"))));
+  return { ...item, actions, canConfigureUpload };
+}
+
 async function mount(Component, props, methods = {}) {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://ludone.test" });
   const ludone = { listLocalRecordings: vi.fn(async () => ({ items: [props.item ?? base], unreadableCount: 0 })),
     claimRecording: vi.fn(async () => ({ claimed: false })), ...methods };
+  if (typeof ludone.listLocalRecordings === "function") {
+    const list = ludone.listLocalRecordings;
+    ludone.listLocalRecordings = vi.fn(async () => {
+      const snapshot = await list();
+      return { ...snapshot, items: snapshot.items.map(snapshotItem) };
+    });
+  }
   Object.defineProperty(dom.window, "ludone", { value: ludone });
   vi.stubGlobal("React", React);
   vi.stubGlobal("window", dom.window);
@@ -313,11 +334,10 @@ it("K5 limit načtený z projekce po vypršení zpřístupní opakování", asyn
     allowedActions: { retry: true } };
   const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
   try {
-    const retry = dashboard.document.querySelector(".recording-action--retry");
-    expect(retry.disabled).toBe(true);
+    expect(dashboard.document.querySelector(".recording-action--retry")).toBeNull();
     const clock = new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(retryAt));
-    expect(retry.parentElement.textContent).toContain(`do ${clock}`);
-    await vi.waitFor(() => expect(retry.disabled).toBe(false), { timeout: 2_000 });
+    expect(dashboard.document.body.textContent).toContain(`do ${clock}`);
+    await vi.waitFor(() => expect(dashboard.document.querySelector(".recording-action--retry")?.disabled).toBe(false), { timeout: 2_000 });
   } finally { await dashboard.cleanup(); }
 });
 
@@ -355,7 +375,8 @@ it("R3 schválená položka bez firmy neotevírá nezapisovatelný editor", asyn
 it("R3 odmítnutou zamčenou konkrétní firmu nelze opakovat", async () => {
   const item = { ...base, state: "selhalo", blockReason: "company_out_of_scope (HTTP 403)",
     uploadPreferences: { companyId: "22222222-2222-4222-8222-222222222222", visibility: "private" },
-    uploadPreferencesLocked: true, allowedActions: { retry: true } };
+    uploadPreferencesLocked: true, allowedActions: { retry: false },
+    actions: { retry: { allowed: false, reason: "Firmu této nahrávky už nelze změnit. Obrať se na správce LuDone." } } };
   const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
   try {
     const retry = dashboard.document.querySelector(".recording-action--retry");
@@ -368,9 +389,8 @@ it("R8 transport vypnutý při načtení vysvětlí disabled tlačítko", async 
   const item = { ...base, uploadIntent: "held", sendingDisabledReason: "odesílání je vypnuté", allowedActions: { send: true } };
   const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
   try {
-    const send = dashboard.document.querySelector(".recording-action--send");
-    expect(send.disabled).toBe(true);
-    expect(send.parentElement.textContent).toContain("Odesílání je vypnuté.");
+    expect(dashboard.document.querySelector(".recording-action--send")).toBeNull();
+    expect(dashboard.document.body.textContent).toContain("Odesílání je vypnuté.");
   } finally { await dashboard.cleanup(); }
 });
 
@@ -453,5 +473,60 @@ it("R6 cizí held zůstane lokální a v detailu dovolí rozhodnout o převzetí
     expect(row.querySelector("summary").textContent).toContain("Jen na Macu");
     expect(dashboard.document.querySelector(".recording-action--claim").textContent).toBe("Převzít nahrávku");
     expect(dashboard.document.body.textContent).toContain("Převzetí nahrávky ji neodešle");
+  } finally { await dashboard.cleanup(); }
+});
+
+it("N4 po rate_limited ukáže čas i v novém schváleném čekajícím snímku bez tlačítka", async () => {
+  const retryAt = Date.now() + 120_000;
+  const yes = { allowed: true, reason: null };
+  const no = { allowed: false, reason: "Server dočasně omezil odesílání.", retryAt };
+  /** @type {any} */
+  let latest = { ...base, uploadIntent: "held", allowedActions: { send: true },
+    actions: { send: yes, retry: { allowed: false, reason: "Čeká na odeslání." }, claim: { allowed: false, reason: null } } };
+  const listLocalRecordings = vi.fn(async () => ({ items: [latest], unreadableCount: 0 }));
+  const sendRecording = vi.fn(async () => {
+    latest = { ...base, allowedActions: { send: false, retry: false }, actions: { send: no, retry: no, claim: { allowed: false, reason: null } } };
+    return { outcome: "rate_limited", retryAt };
+  });
+  const dashboard = await mount(RecordingsDashboard, { item: latest, detailId: ID }, { listLocalRecordings, sendRecording });
+  try {
+    await React.act(async () => dashboard.document.querySelector(".recording-action--send").click());
+    expect(sendRecording).toHaveBeenCalledOnce();
+    expect(dashboard.document.querySelector(".recording-action--send")).toBeNull();
+    expect(dashboard.document.querySelector(".recording-action--retry")).toBeNull();
+    const clock = new Intl.DateTimeFormat("cs-CZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(retryAt));
+    expect(dashboard.document.body.textContent).toContain(clock);
+  } finally { await dashboard.cleanup(); }
+});
+
+it("N2 chybějící zvuk skryje nepovolené retry a žádný pokyn jej neslibuje", async () => {
+  const item = { ...base, requiresHumanAction: true, blockReason: "company_not_chosen", localState: "missing-audio",
+    allowedActions: { retry: true }, actions: { retry: { allowed: false, reason: "Zvukové soubory chybí." },
+      send: { allowed: false, reason: "Zvukové soubory chybí." }, claim: { allowed: false, reason: null } } };
+  const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
+  try {
+    expect(dashboard.document.querySelector(".recording-action--retry")).toBeNull();
+    expect(dashboard.document.body.textContent).not.toContain("zvol Zkusit znovu");
+    expect(dashboard.document.body.textContent).toContain("Zvukové soubory chybí");
+  } finally { await dashboard.cleanup(); }
+});
+
+it("N5 čekající položka náhledu používá barvu čekání", async () => {
+  const preview = await mount(RecordingDayPreview, { items: [base], onOpenDay: vi.fn() });
+  try {
+    await vi.waitFor(() => expect(preview.document.querySelector(".day-preview__state--waiting")).not.toBeNull());
+    const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+    expect(css).toMatch(/\.day-preview__state--waiting\s*\{\s*color:\s*var\(--panel-wait\)/u);
+  } finally { await preview.cleanup(); }
+});
+
+it("důvod zakázaného retry nezakáže samostatně povolené odeslání", async () => {
+  const item = { ...base, uploadIntent: "held", requiresHumanAction: true, blockReason: "unauthorized",
+    actions: { send: { allowed: true, reason: null }, retry: { allowed: false, reason: "Opakování není dostupné." },
+      claim: { allowed: false, reason: null } } };
+  const dashboard = await mount(RecordingsDashboard, { item, detailId: ID });
+  try {
+    expect(dashboard.document.querySelector(".recording-action--send").disabled).toBe(false);
+    expect(dashboard.document.querySelector(".recording-action--retry")).toBeNull();
   } finally { await dashboard.cleanup(); }
 });

@@ -164,7 +164,8 @@ describe("#187 – drobnosti v panelu", () => {
     const noClaim = await dashboard([recording(IDS[0])]);
     try { expect(noClaim.document.body.textContent).not.toContain("Převzetí nahrávky ji neodešle"); }
     finally { await noClaim.cleanup(); }
-    const claim = await dashboard([recording(IDS[0], { ownership: "other", allowedActions: { claim: true } })]);
+    const claim = await dashboard([recording(IDS[0], { ownership: "other", allowedActions: { claim: true },
+      actions: { claim: { allowed: true, reason: null } } })]);
     try {
       const actions = claim.document.querySelector(".recording-action--claim").closest(".osa-station__actions");
       expect(claim.document.querySelector(".recording-queue-card__delivery").textContent).toBe("Jen na Macu");

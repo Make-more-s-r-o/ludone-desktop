@@ -3,6 +3,7 @@ const path = require("node:path");
 const { createHash, createHmac, randomUUID } = require("node:crypto");
 const {
   createLocalRecordingsSnapshot,
+  companyRebindConflict,
   readStableRegularFile: readStableDashboardFile,
 } = require("./recordings-dashboard.cjs");
 
@@ -1301,7 +1302,7 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
           );
           queue = rebound.queue;
           item = rebound.item;
-          if (item === original && item.server?.companyTabidooId !== companyTabidooId) {
+          if (companyRebindConflict(original, item, companyTabidooId)) {
             throw new Error("Inicializovanou nahrávku nelze přesunout do jiné firmy");
           }
         }
@@ -1858,7 +1859,10 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     });
   }
 
-  function listLocalRecordings(currentOwnerFingerprint = null) {
+  function listLocalRecordings(currentOwnerFingerprint = null, { currentCompanyId = null } = {}) {
+    if (currentCompanyId !== null && typeof currentCompanyId !== "string") {
+      throw new TypeError("currentCompanyId musí být řetězec nebo null");
+    }
     if (
       currentOwnerFingerprint !== null
       && (
@@ -1885,7 +1889,9 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
       currentQueue = queue;
       loaded = true;
       const queueItems = reduceForLocalDashboard(queueModule, queue, currentOwnerFingerprint);
-      const snapshot = await createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory });
+      // Přihlášení a firmu zná main výslovně; projekce je nesmí odhadovat z ostatních položek.
+      const snapshot = await createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory,
+        currentCompanyId, identityKnown: currentOwnerFingerprint !== null });
       for (const item of snapshot.items) {
         const rawItem = queue.items.find((candidate) => candidate.clientRecordingId === item.id);
         item.uploadLocked = rawItem ? recordingUploadLocked(rawItem) : false;

@@ -1535,16 +1535,15 @@ svg {
   white-space: nowrap;
 }
 
-.day-preview__item-copy .day-preview__state--ceka,
-.day-preview__item-copy .day-preview__state--odesila {
+.day-preview__item-copy .day-preview__state--waiting {
   color: var(--panel-wait);
 }
 
-.day-preview__item-copy .day-preview__state--selhalo {
+.day-preview__item-copy .day-preview__state--attention {
   color: var(--panel-bad);
 }
 
-.day-preview__item-copy .day-preview__state--odeslano {
+.day-preview__item-copy .day-preview__state--sent {
   color: var(--panel-subtle);
 }
 

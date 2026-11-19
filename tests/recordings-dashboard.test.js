@@ -43,6 +43,18 @@ const ITEM = Object.freeze({
   ownerFingerprint: `sha256:${"f".repeat(64)}`,
 });
 
+function fixtureSnapshot(snapshot) {
+  if (!Array.isArray(snapshot?.items)) return snapshot;
+  return { ...snapshot, items: snapshot.items.map((item) => {
+    if (item.actions) return item;
+    const actions = Object.fromEntries(["send", "retry", "claim"].map((action) => [action,
+      { allowed: item.allowedActions?.[action] === true, reason: null }]));
+    const canConfigureUpload = !item.uploadPreferencesLocked && (item.uploadIntent === "held"
+      || (item.state === "selhalo" && String(item.blockReason).includes("company_out_of_scope")));
+    return { ...item, actions, canConfigureUpload };
+  }) };
+}
+
 function deferred() {
   let resolve;
   let reject;
@@ -87,7 +99,7 @@ async function renderDashboard({
     claimRecording: vi.fn(claimRecording),
     deleteRecording: vi.fn(deleteRecording),
     exportRecordingCopy: vi.fn(exportRecordingCopy),
-    listLocalRecordings: vi.fn(listLocalRecordings),
+    listLocalRecordings: vi.fn(async () => fixtureSnapshot(await listLocalRecordings())),
     verifyRecording: vi.fn(verifyRecording),
     openRecordingInLuDone: vi.fn(openRecordingInLuDone),
     retryRecording: vi.fn(retryRecording),
@@ -495,6 +507,7 @@ describe("dashboard fronty nahrávek", () => {
           id: "11111111-1111-4111-8111-111111111111",
           blockReason: "unauthorized",
           ownership: "current",
+          allowedActions: { claim: false, retry: true },
         },
       ]),
     });
@@ -1157,7 +1170,7 @@ it("K9 detail hlásí skutečnou editaci a při obnově zachová scroll produkč
     getAuthIdentity: vi.fn(async () => ({ email: "test@ludone.cz", name: "Test" })),
     getAuthOrigin: vi.fn(async () => "https://ludone.test"),
     onAuthSessionChanged: (callback) => { listeners.add(callback); return () => listeners.delete(callback); },
-    listLocalRecordings: vi.fn(async () => ({ items: [item], unreadableCount: 0 })),
+    listLocalRecordings: vi.fn(async () => fixtureSnapshot({ items: [item], unreadableCount: 0 })),
     listUploadCompanies: vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
       selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" })),
     configureRecordingUpload: vi.fn(), setDetailDirty: vi.fn(async () => {}),
@@ -1202,7 +1215,7 @@ async function renderFocusDetail(readyExport = false) {
     getAuthSessionState: vi.fn(async () => "valid"),
     getAuthIdentity: vi.fn(async () => ({ email: "test@ludone.cz", name: "Test" })),
     getAuthOrigin: vi.fn(async () => "https://ludone.test"),
-    listLocalRecordings: vi.fn(async () => ({ items: [item], unreadableCount: 0 })),
+    listLocalRecordings: vi.fn(async () => fixtureSnapshot({ items: [item], unreadableCount: 0 })),
     exportRecordingCopy: vi.fn(async () => ({ ok: true, fileName: "kopie.webm" })),
     listUploadCompanies: vi.fn(async () => ({ companies: [{ id: companyId, name: "Beta" }],
       selectedCompanyId: companyId, offerToken: "offer-token-0000000000000001" })),
@@ -1223,7 +1236,7 @@ async function renderFocusDetail(readyExport = false) {
   return {
     document: dom.window.document,
     ludone,
-    snapshot: () => ({ items: [item], unreadableCount: 0 }),
+    snapshot: () => fixtureSnapshot({ items: [item], unreadableCount: 0 }),
     async focus() { await React.act(async () => dom.window.dispatchEvent(new dom.window.Event("focus"))); },
     async cleanup() { await React.act(async () => root.unmount()); dom.window.close(); },
   };
@@ -1821,9 +1834,8 @@ it("R4 projekce skutečné pauzy storage_disabled se liší od plánovaného opa
         const dashboard = await renderDashboard({ listLocalRecordings: async () => ({ items: [projected] }) });
         try {
           const action = changes.uploadIntent === "held" ? "send" : "retry";
-          const button = /** @type {HTMLButtonElement} */ (dashboard.document.querySelector(`.recording-action--${action}`));
-          expect(button.disabled).toBe(true);
-          expect(button.parentElement.textContent).toContain("Odesílání je vypnuté.");
+          expect(dashboard.document.querySelector(`.recording-action--${action}`)).toBeNull();
+          expect(dashboard.document.body.textContent).toContain("Odesílání je vypnuté.");
         } finally { await dashboard.cleanup(); }
       }
       const foreign = { ...queued, items: [{ ...queued.items[0], ownerFingerprint: `sha256:${"e".repeat(64)}`,

@@ -447,6 +447,9 @@ describe("pět částí Nastavení", () => {
       localState: "complete-audio",
       fileRevision: `sha256:${"c".repeat(64)}`,
       allowedActions: { claim: true, delete: false, retry: false, send: false },
+      // Main posílá dostupnost akcí i v novém tvaru (#201); renderer bez něj žádnou akci nenabídne.
+      actions: { claim: { allowed: true, reason: null }, retry: { allowed: false, reason: null },
+        send: { allowed: false, reason: null } },
     };
     const claimedItem = {
       ...item,
@@ -454,6 +457,8 @@ describe("pět částí Nastavení", () => {
       blockReason: "Převzatá nahrávka čeká na volbu odeslání",
       ownership: "current",
       allowedActions: { claim: false, delete: false, retry: false, send: false },
+      actions: { claim: { allowed: false, reason: null }, retry: { allowed: false, reason: null },
+        send: { allowed: false, reason: null } },
     };
     const listLocalRecordings = vi.fn()
       .mockResolvedValueOnce({ items: [item], unreadableCount: 0 })
