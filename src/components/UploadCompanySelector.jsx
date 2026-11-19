@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 const COMPANY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+export const DEFAULT_COMPANY_RETRY_DELAY_MS = 2_000;
+export const DEFAULT_COMPANY_MAX_RETRIES = 3;
 
 function hasControlCharacters(value) {
   return [...value].some((character) => {
@@ -52,6 +54,7 @@ export function uploadCompanyErrorMessage(error) {
 export async function readRecordingDefaultCompany() {
   if (typeof window.ludone?.getUploadCompanyDefault !== "function") throw new Error("bridge_unavailable");
   const saved = await window.ludone.getUploadCompanyDefault();
+  if (saved?.pending === true) return { pending: true };
   if (saved?.companyId == null) return null;
   if (typeof saved.companyId !== "string" || !COMPANY_ID_PATTERN.test(saved.companyId)) throw new Error("invalid_company_offer");
   const companyName = validCompanies([{ id: saved.companyId, name: saved.companyName }])?.[0]?.name;
@@ -61,6 +64,7 @@ export async function readRecordingDefaultCompany() {
 export async function verifiedRecordingDefaultCompany(savedPromise = readRecordingDefaultCompany(), isCurrent = () => true) {
   const saved = await savedPromise;
   if (!saved || !isCurrent()) return null;
+  if (saved.pending) return saved;
   if (typeof window.ludone?.listUploadCompanies !== "function") throw new Error("bridge_unavailable");
   const offer = normalizeOffer(await window.ludone.listUploadCompanies());
   if (!offer) throw new Error("invalid_company_offer");
@@ -77,6 +81,8 @@ export function UploadCompanySelector({ authState }) {
     : authState?.state === "unknown" ? lastIdentity.current ?? "signed-out" : "signed-out";
   const generationRef = useRef(0);
   const previousRef = useRef(null);
+  const checkingDefaultRef = useRef(false);
+  const [defaultRefresh, setDefaultRefresh] = useState(0);
   const [view, setView] = useState({ state: "idle" });
   const viewRef = useRef(view);
   viewRef.current = view;
@@ -96,21 +102,55 @@ export function UploadCompanySelector({ authState }) {
     setView(authenticated && typeof window.ludone?.getUploadCompanyDefault === "function" ? { state: "loading" }
       : interrupted ? { state: "error", reason: "Přihlášení se změnilo. Načti firmy znovu." } : { state: "idle" });
     const generation = generationRef.current;
+    let timer = null;
+    let active = true;
     if (authenticated && typeof window.ludone?.getUploadCompanyDefault === "function") {
-      Promise.resolve().then(() => window.ludone.getUploadCompanyDefault()).then((value) => {
-        if (generationRef.current !== generation) return;
-        if (typeof value?.companyId === "string" && COMPANY_ID_PATTERN.test(value.companyId)) {
-          setView({ state: "loading", storedCompanyId: value.companyId, storedCompanyName: value.companyName });
-          void loadCompanies(value.companyId, value.companyName);
-        } else setView(interrupted
-          ? { state: "error", reason: "Přihlášení se změnilo. Načti firmy znovu." }
-          : { state: "idle" });
-      }).catch((error) => {
-        if (generationRef.current === generation) setView({ state: "error", reason: uploadCompanyErrorMessage(error) });
-      });
+      checkingDefaultRef.current = true;
+      const checkDefault = async (retries) => {
+        if (!active || generationRef.current !== generation) return;
+        try {
+          const value = await readRecordingDefaultCompany();
+          if (!active || generationRef.current !== generation) return;
+          if (value?.pending) {
+            if (retries < DEFAULT_COMPANY_MAX_RETRIES) {
+              setView({ state: "verifying-default" });
+              timer = window.setTimeout(() => void checkDefault(retries + 1), DEFAULT_COMPANY_RETRY_DELAY_MS);
+            } else {
+              checkingDefaultRef.current = false;
+              setView({ state: "default-unavailable" });
+            }
+            return;
+          }
+          checkingDefaultRef.current = false;
+          if (value?.companyId) {
+            setView({ state: "loading", storedCompanyId: value.companyId, storedCompanyName: value.companyName });
+            void loadCompanies(value.companyId, value.companyName);
+          } else setView(interrupted
+            ? { state: "error", reason: "Přihlášení se změnilo. Načti firmy znovu." }
+            : { state: "idle" });
+        } catch (error) {
+          if (active && generationRef.current === generation) {
+            checkingDefaultRef.current = false;
+            setView({ state: "error", reason: uploadCompanyErrorMessage(error) });
+          }
+        }
+      };
+      void checkDefault(0);
     }
-    return () => { generationRef.current += 1; };
-  }, [identityKey, authState?.generation, authState?.state]);
+    return () => {
+      active = false;
+      checkingDefaultRef.current = false;
+      if (timer !== null) window.clearTimeout(timer);
+      generationRef.current += 1;
+    };
+  }, [identityKey, authState?.generation, authState?.state, defaultRefresh]);
+
+  useEffect(() => window.ludone?.onAuthSessionChanged?.(() => {
+    if (!checkingDefaultRef.current && viewRef.current.state !== "default-unavailable") return;
+    generationRef.current += 1;
+    setView({ state: "verifying-default" });
+    setDefaultRefresh((value) => value + 1);
+  }), []);
 
   async function loadCompanies(storedCompanyId = null, storedCompanyName = null) {
     if (!authenticated) return;
@@ -193,6 +233,11 @@ export function UploadCompanySelector({ authState }) {
         <button className="button button--small" type="button" onClick={() => void loadCompanies(view.storedCompanyId, view.storedCompanyName)}>Načíst firmy</button>
       )}
       {view.state === "loading" && <p role="status" data-testid="upload-company-state">Načítám firmy…</p>}
+      {view.state === "verifying-default" && <p role="status" data-testid="upload-company-state">Ověřuji cílovou firmu…</p>}
+      {view.state === "default-unavailable" && <>
+        <p role="alert" data-testid="upload-company-state">Firmu nelze ověřit.</p>
+        <button className="button button--small" type="button" onClick={() => setDefaultRefresh((value) => value + 1)}>Zkusit znovu</button>
+      </>}
       {view.state === "error" && (
         <>
           <p role="alert" data-testid="upload-company-state">Firmy se nepodařilo načíst nebo uložit. {view.reason}{view.storedCompanyId ? " Uložená výchozí firma zůstává zachovaná; její název teď nelze ověřit." : ""}</p>

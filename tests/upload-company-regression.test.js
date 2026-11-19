@@ -214,3 +214,59 @@ it("N6 neověřený subject po uložení vysvětlí nutnost nového přihlášen
   await React.act(async () => panel.document.querySelector('[data-testid="upload-company-save"]').click());
   expect(panel.document.body.textContent).toMatch(/zapamatován.*nové přihlášení|nové přihlášení.*zapamatován/iu);
 });
+
+it("účet při pending čeká a po události přihlášení znovu ověří uloženou firmu", async () => {
+  let changed;
+  const getDefault = vi.fn().mockResolvedValueOnce({ companyId: null, pending: true })
+    .mockResolvedValue({ companyId: A, companyName: "Alfa" });
+  const list = vi.fn(async () => offer);
+  const panel = await mount(UploadCompanySelector, { authState: { state: "signed-in", generation: 1 } }, {
+    getUploadCompanyDefault: getDefault, listUploadCompanies: list,
+    onAuthSessionChanged: (callback) => { changed = callback; return () => {}; },
+  });
+  expect(panel.document.body.textContent).toContain("Ověřuji cílovou firmu…");
+  expect(panel.document.body.textContent).not.toContain("žádná firma");
+  expect(list).not.toHaveBeenCalled();
+  await React.act(async () => changed());
+  expect(getDefault).toHaveBeenCalledTimes(2);
+  expect(list).toHaveBeenCalledOnce();
+  expect(panel.document.body.textContent).toContain("Uložená výchozí firma: Alfa");
+});
+
+it("účet po vyčerpání opakování oznámí nedostupnost výchozí firmy", async () => {
+  vi.useFakeTimers();
+  try {
+    let saved = /** @type {{ companyId: string | null, pending: boolean }} */ ({ companyId: null, pending: true });
+    const getDefault = vi.fn(async () => saved);
+    const list = vi.fn(async () => offer);
+    const panel = await mount(UploadCompanySelector, { authState: { state: "signed-in", generation: 1 } }, {
+      getUploadCompanyDefault: getDefault, listUploadCompanies: list,
+    });
+    expect(panel.document.body.textContent).toContain("Ověřuji cílovou firmu…");
+    await React.act(async () => vi.advanceTimersByTimeAsync(6_000));
+    expect(getDefault).toHaveBeenCalledTimes(4);
+    expect(list).not.toHaveBeenCalled();
+    expect(panel.document.body.textContent).toContain("Firmu nelze ověřit");
+    expect(panel.document.body.textContent).not.toContain("žádná firma");
+    await React.act(async () => vi.advanceTimersByTimeAsync(20_000));
+    expect(getDefault).toHaveBeenCalledTimes(4);
+    saved = { companyId: A, pending: false };
+    await React.act(async () => panel.document.querySelector("button").click());
+    expect(getDefault).toHaveBeenCalledTimes(5);
+    expect(panel.document.body.textContent).toContain("Uložená výchozí firma: Alfa");
+  } finally { vi.clearAllTimers(); vi.useRealTimers(); }
+});
+
+it("účet zruší opakování výchozí firmy při odhlášení", async () => {
+  vi.useFakeTimers();
+  try {
+    const getDefault = vi.fn(async () => ({ companyId: null, pending: true }));
+    const panel = await mount(UploadCompanySelector, { authState: { state: "signed-in", generation: 1 } }, {
+      getUploadCompanyDefault: getDefault, listUploadCompanies: vi.fn(async () => offer),
+    });
+    await panel.render({ authState: { state: "signed-out", generation: 2 } });
+    await React.act(async () => vi.advanceTimersByTimeAsync(6_000));
+    expect(getDefault).toHaveBeenCalledOnce();
+    expect(panel.document.body.textContent).toContain("Vyžaduje přihlášení");
+  } finally { vi.clearAllTimers(); vi.useRealTimers(); }
+});

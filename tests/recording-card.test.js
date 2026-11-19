@@ -3491,3 +3491,109 @@ describe("P184 předvolby nové nahrávky", () => {
     } finally { await panel.cleanup(); }
   });
 });
+
+describe("přechodná výchozí firma při obnově přihlášení", () => {
+  const companyId = "11111111-1111-4111-8111-111111111111";
+  const offer = { companies: [{ id: companyId, name: "Alfa" }], selectedCompanyId: companyId,
+    offerToken: "offer-token-0000000000000001" };
+
+  it("pending zůstává načítáním a událost obnovení načte a ověří firmu znovu", async () => {
+    const getDefault = vi.fn().mockResolvedValueOnce({ companyId: null, pending: true })
+      .mockResolvedValue({ companyId, companyName: "Alfa" });
+    const list = vi.fn(async () => offer);
+    const panel = await renderRecordingCard({ canSend: true, ludoneOverrides: { getUploadCompanyDefault: getDefault, listUploadCompanies: list } });
+    try {
+      expect(panel.document.querySelector('[data-testid="recording-default-company"]').textContent).toContain("Ověřuji cílovou firmu…");
+      expect(panel.document.body.textContent).not.toContain("Firma není vybraná");
+      expect(list).not.toHaveBeenCalled();
+      await panel.changeAccount({ email: "a@example.test" });
+      expect(getDefault).toHaveBeenCalledTimes(2);
+      expect(list).toHaveBeenCalledOnce();
+      expect(panel.document.querySelector('[data-testid="recording-default-company"]').textContent).toContain("Cílová firma: Alfa");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("časované opakování načte firmu i bez události přihlášení", async () => {
+    vi.useFakeTimers();
+    const getDefault = vi.fn().mockResolvedValueOnce({ companyId: null, pending: true })
+      .mockResolvedValue({ companyId, companyName: "Alfa" });
+    const list = vi.fn(async () => offer);
+    const panel = await renderRecordingCard({ canSend: true, ludoneOverrides: { getUploadCompanyDefault: getDefault, listUploadCompanies: list } });
+    try {
+      await React.act(async () => vi.advanceTimersByTimeAsync(1_999));
+      expect(getDefault).toHaveBeenCalledOnce();
+      expect(list).not.toHaveBeenCalled();
+      await React.act(async () => vi.advanceTimersByTimeAsync(1));
+      expect(getDefault).toHaveBeenCalledTimes(2);
+      expect(list).toHaveBeenCalledOnce();
+      expect(panel.document.body.textContent).toContain("Cílová firma: Alfa");
+    } finally { await panel.cleanup(); vi.clearAllTimers(); vi.useRealTimers(); }
+  });
+
+  it("po třech omezených opakováních ukáže nedostupnost a dál se nedotazuje", async () => {
+    vi.useFakeTimers();
+    const getDefault = vi.fn(async () => ({ companyId: null, pending: true }));
+    const list = vi.fn(async () => offer);
+    const panel = await renderRecordingCard({ canSend: true, ludoneOverrides: { getUploadCompanyDefault: getDefault, listUploadCompanies: list } });
+    try {
+      expect(panel.document.body.textContent).toContain("Ověřuji cílovou firmu…");
+      await React.act(async () => vi.advanceTimersByTimeAsync(6_000));
+      expect(getDefault).toHaveBeenCalledTimes(4);
+      expect(list).not.toHaveBeenCalled();
+      expect(panel.document.body.textContent).toContain("Firmu nelze ověřit");
+      expect(panel.document.body.textContent).not.toContain("Firma není vybraná");
+      await React.act(async () => vi.advanceTimersByTimeAsync(20_000));
+      expect(getDefault).toHaveBeenCalledTimes(4);
+    } finally { await panel.cleanup(); vi.clearAllTimers(); vi.useRealTimers(); }
+  });
+
+  it("skutečně neuloženou firmu zobrazí jako nevybranou bez opakování", async () => {
+    vi.useFakeTimers();
+    const getDefault = vi.fn(async () => ({ companyId: null }));
+    const panel = await renderRecordingCard({ canSend: true, ludoneOverrides: { getUploadCompanyDefault: getDefault, listUploadCompanies: vi.fn(async () => offer) } });
+    try {
+      expect(panel.document.body.textContent).toContain("Firma není vybraná");
+      await React.act(async () => vi.advanceTimersByTimeAsync(8_000));
+      expect(getDefault).toHaveBeenCalledOnce();
+    } finally { await panel.cleanup(); vi.clearAllTimers(); vi.useRealTimers(); }
+  });
+
+  it("opožděná původní odpověď po změně přihlášení nepřepíše nově ověřenou firmu", async () => {
+    const oldRead = deferred();
+    const getDefault = vi.fn().mockReturnValueOnce(oldRead.promise).mockResolvedValue({ companyId, companyName: "Alfa" });
+    const panel = await renderRecordingCard({ canSend: true, ludoneOverrides: { getUploadCompanyDefault: getDefault, listUploadCompanies: vi.fn(async () => offer) } });
+    try {
+      await panel.changeAccount({ email: "a@example.test" });
+      expect(panel.document.body.textContent).toContain("Cílová firma: Alfa");
+      await React.act(async () => oldRead.resolve({ companyId: null }));
+      expect(panel.document.body.textContent).toContain("Cílová firma: Alfa");
+      expect(panel.document.body.textContent).not.toContain("Firma není vybraná");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("opuštění nečinné karty zruší naplánované opakování výchozí firmy", async () => {
+    vi.useFakeTimers();
+    const getDefault = vi.fn(async () => ({ companyId: null, pending: true }));
+    const panel = await renderRecordingCard({ canSend: true, ludoneOverrides: {
+      getUploadCompanyDefault: getDefault, listUploadCompanies: vi.fn(async () => offer),
+    } });
+    try {
+      await startRecording(panel);
+      await React.act(async () => vi.advanceTimersByTimeAsync(6_000));
+      expect(getDefault).toHaveBeenCalledOnce();
+    } finally { await panel.cleanup(); vi.clearAllTimers(); vi.useRealTimers(); }
+  });
+
+  it("pending při automatickém odeslání nikdy neodešle nahrávku bez firmy", async () => {
+    const panel = await renderRecordingCard({ canSend: true, modernDecision: true,
+      finishRecordingResult: { automaticUpload: true }, ludoneOverrides: {
+        getUploadCompanyDefault: vi.fn(async () => ({ companyId: null, pending: true })),
+        listUploadCompanies: vi.fn(async () => offer),
+      } });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
+      expect(panel.document.body.textContent).toContain("Vyber cílovou firmu. Výchozí firmu se nepodařilo určit.");
+    } finally { await panel.cleanup(); }
+  });
+});
