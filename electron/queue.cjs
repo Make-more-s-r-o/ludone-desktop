@@ -1189,6 +1189,9 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
         ...(preferences ? { uploadPreferences: preferences } : {}),
         uploadIntent: approved ? "approved" : "held",
         ...(approved ? { requiresHumanAction: false } : {}),
+        // Přání „po nahrání spustit přepis“ přežije restart spolu s položkou; upload-client
+        // ho vyřídí až po dokončení uploadu. U uložení jen na Macu se nepamatuje.
+        ...(approved && options.transcribeAfterUpload === true ? { transcribeAfterUpload: true } : {}),
       };
       const items = [...queue.items];
       items[index] = item;

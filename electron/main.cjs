@@ -3442,6 +3442,7 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
       decision === "send",
       {
         uploadPreferences: preferences,
+        transcribeAfterUpload: options.transcribeAfterUpload === true,
         guard: async () => {
           try {
             requireTrustedSender(event, ["panel"]);
@@ -3784,7 +3785,13 @@ handleValidated("recording:save-decision", ["panel"], (
 ) => {
   if (extraPayload.length > 0 || !options || typeof options !== "object"
     || Array.isArray(options)
-    || !["decision|recordingName", "decision|recordingName|uploadPreferences"].includes(Object.keys(options).sort().join("|"))) {
+    || ![
+      "decision|recordingName", "decision|recordingName|uploadPreferences",
+      "decision|recordingName|transcribeAfterUpload",
+      "decision|recordingName|transcribeAfterUpload|uploadPreferences",
+    ].includes(Object.keys(options).sort().join("|"))
+    || (options.transcribeAfterUpload !== undefined
+      && (options.transcribeAfterUpload !== true || options.decision !== "send"))) {
     throw new TypeError("Save decision přijímá právě GUID, název a rozhodnutí");
   }
   if (options.uploadPreferences !== undefined) validateRecordingUploadPreferences(options.uploadPreferences);

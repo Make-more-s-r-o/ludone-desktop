@@ -124,6 +124,7 @@ const MICROPHONE_ONLY_TEXT = "Nahrává se jen mikrofon. Druhou stranu hovoru ne
  *   recordingIds?: string[],
  *   renderApp?: boolean,
  *   storedVisibility?: string,
+ *   storedSaveChoice?: string,
  * }} [options]
  */
 async function renderRecordingCard(options = {}) {
@@ -488,6 +489,9 @@ async function renderRecordingCard(options = {}) {
   let canSend = options.canSend;
   if (options.storedVisibility !== undefined) {
     dom.window.localStorage.setItem("ludone.desktop.recording-visibility", options.storedVisibility);
+  }
+  if (options.storedSaveChoice !== undefined) {
+    dom.window.localStorage.setItem("ludone.desktop.recording-save-choice", options.storedSaveChoice);
   }
   if (options.renderApp) {
     dom.window.localStorage.setItem("ludone.prototype.onboarding-complete", "true");
@@ -3594,6 +3598,123 @@ describe("přechodná výchozí firma při obnově přihlášení", () => {
       await startRecording(panel); await stopRecording(panel);
       expect(panel.ludone.saveRecordingDecision).not.toHaveBeenCalled();
       expect(panel.document.body.textContent).toContain("Vyber cílovou firmu. Výchozí firmu se nepodařilo určit.");
+    } finally { await panel.cleanup(); }
+  });
+});
+
+describe("RecordingCard: čtyři volby po zastavení nahrávky", () => {
+  const SAVE_CHOICE_KEY = "ludone.desktop.recording-save-choice";
+  const primaryTestId = (panel) => panel.document.querySelector('.recording-saved__actions .button--primary')
+    ?.getAttribute("data-testid");
+
+  it("nabídne smazání, uložení na Macu, odeslání i odeslání s přepisem a bez paměti předvybere odeslání", async () => {
+    const panel = await renderRecordingCard({ modernDecision: true });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      const labels = [...panel.document.querySelectorAll(".recording-saved__actions button")]
+        .map((button) => button.textContent.trim());
+      expect(labels).toEqual(expect.arrayContaining([
+        "Uložit a odeslat", "Uložit, odeslat a spustit přepis", "Nechat na Macu", "Smazat nahrávku",
+      ]));
+      expect(primaryTestId(panel)).toBe("save-send");
+      expect(panel.document.querySelector('[data-testid="delete-recording"]').className).not.toContain("button--primary");
+      expect(panel.document.querySelector('[data-testid="confirm-delete-recording"]')).toBeNull();
+    } finally { await panel.cleanup(); }
+  });
+
+  it.each([["keep", "skip-recording-name"], ["send", "save-send"], ["send-transcribe", "save-send-transcribe"]])(
+    "uloženou bezpečnou volbu %s předvybere jako hlavní akci", async (storedSaveChoice, testId) => {
+      const panel = await renderRecordingCard({ modernDecision: true, storedSaveChoice });
+      try {
+        await startRecording(panel); await stopRecording(panel);
+        expect(primaryTestId(panel)).toBe(testId);
+        expect(panel.document.querySelector(`[data-testid="${testId}"]`).type).toBe("submit");
+      } finally { await panel.cleanup(); }
+    });
+
+  it.each(["delete", "smazat", "neplatná"])("uložená hodnota %s nikdy nepředvybere Smazat", async (storedSaveChoice) => {
+    const panel = await renderRecordingCard({ modernDecision: true, storedSaveChoice });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      expect(primaryTestId(panel)).toBe("save-send");
+      expect(panel.document.querySelector('[data-testid="delete-recording"]').type).toBe("button");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("Odeslat s přepisem pošle příznak jen u send, zapamatuje volbu a nahlásí zařazení přepisu", async () => {
+    const panel = await renderRecordingCard({ modernDecision: true });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      await enterRecordingName(panel, "Porada výroby");
+      await panel.click(panel.document.querySelector('[data-testid="save-send-transcribe"]'));
+      await panel.waitForPhase("idle");
+      expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        decision: "send", recordingName: "Porada výroby", transcribeAfterUpload: true,
+      });
+      expect(panel.document.defaultView.localStorage.getItem(SAVE_CHOICE_KEY)).toBe("send-transcribe");
+      expect(panel.document.body.textContent).toContain("Přepis se spustí po nahrání.");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("Nechat na Macu zapamatuje volbu a nikdy neposílá příznak přepisu", async () => {
+    const panel = await renderRecordingCard({ modernDecision: true, storedSaveChoice: "send-transcribe" });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      await panel.click(panel.document.querySelector('[data-testid="skip-recording-name"]'));
+      await panel.waitForPhase("idle");
+      expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        decision: "keep", recordingName: DEFAULT_RECORDING_NAME,
+      });
+      expect(panel.document.defaultView.localStorage.getItem(SAVE_CHOICE_KEY)).toBe("keep");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("Enter ve formuláři provede zapamatovanou volbu, ne jinou", async () => {
+    const panel = await renderRecordingCard({ modernDecision: true, storedSaveChoice: "keep" });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      await React.act(async () => panel.document.querySelector("form.recording-saved").requestSubmit());
+      await panel.waitForPhase("idle");
+      expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledExactlyOnceWith(SESSION_ID, {
+        decision: "keep", recordingName: DEFAULT_RECORDING_NAME,
+      });
+    } finally { await panel.cleanup(); }
+  });
+
+  it("Smazat nahrávku se nikdy nezapamatuje a vždy vyžaduje potvrzení", async () => {
+    const panel = await renderRecordingCard({ modernDecision: true, storedSaveChoice: "keep" });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      await panel.click(panel.document.querySelector('[data-testid="delete-recording"]'));
+      expect(panel.ludone.deleteRecording).not.toHaveBeenCalled();
+      expect(panel.document.querySelector('[role="alertdialog"]').textContent).toContain("Opravdu smazat?");
+      expect(panel.document.defaultView.localStorage.getItem(SAVE_CHOICE_KEY)).toBe("keep");
+      await panel.click(panel.document.querySelector('[data-testid="confirm-delete-recording"]'));
+      await vi.waitFor(() => expect(panel.ludone.deleteRecording).toHaveBeenCalledOnce());
+      expect(panel.document.defaultView.localStorage.getItem(SAVE_CHOICE_KEY)).toBe("keep");
+    } finally { await panel.cleanup(); }
+  });
+
+  it("při selhání úložiště varuje a vybranou akci přesto provede", async () => {
+    const panel = await renderRecordingCard({ modernDecision: true });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      Object.defineProperty(panel.document.defaultView, "localStorage", {
+        configurable: true, get() { throw new Error("úložiště není dostupné"); },
+      });
+      await panel.click(panel.document.querySelector('[data-testid="save-send-transcribe"]'));
+      await vi.waitFor(() => expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledOnce());
+      expect(panel.ludone.saveRecordingDecision.mock.calls[0][1]).toMatchObject({ transcribeAfterUpload: true });
+    } finally { await panel.cleanup(); }
+  });
+
+  it("bez přihlášení je odeslání s přepisem zakázané stejně jako odeslání, uložení na Macu zůstane", async () => {
+    const panel = await renderRecordingCard({ canSend: false, modernDecision: true });
+    try {
+      await startRecording(panel); await stopRecording(panel);
+      expect(panel.document.querySelector('[data-testid="save-send"]').disabled).toBe(true);
+      expect(panel.document.querySelector('[data-testid="save-send-transcribe"]').disabled).toBe(true);
+      expect(panel.document.querySelector('[data-testid="skip-recording-name"]').disabled).toBe(false);
     } finally { await panel.cleanup(); }
   });
 });

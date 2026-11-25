@@ -1,5 +1,5 @@
 import { DEFAULT_COMPANY_MAX_RETRIES, DEFAULT_COMPANY_RETRY_DELAY_MS, RecordingUploadPreferences, freshRecordingUploadPreferences, readRecordingDefaultCompany, uploadCompanyErrorMessage, verifiedRecordingDefaultCompany } from "../../components/UploadCompanySelector.jsx";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { Fragment, forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { OsaIcon } from "../../components/osa/OsaIcon.jsx";
 import { ArchiveIcon, MicIcon, SettingsIcon, VolumeIcon } from "../../components/Icons.jsx";
 import { formatElapsed, useElapsedTime } from "../../hooks/useElapsedTime.js";
@@ -13,6 +13,7 @@ import {
 import { countLabel } from "../../lib/count-label.js";
 import { recordingSizeText } from "../../lib/format-size.js";
 import { getRecordingVisibilityPreference, persistRecordingVisibilityPreference } from "../../lib/recording-visibility.js";
+import { getRecordingSaveChoicePreference, persistRecordingSaveChoicePreference } from "../../lib/recording-save-choice.js";
 import { createStereoCapture } from "../../lib/stereo-recording.js";
 import {
   AudioLevelMeter,
@@ -252,6 +253,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
   const [copyExporting, setCopyExporting] = useState(false);
   const [recordingVisibility, setRecordingVisibility] = useState(getRecordingVisibilityPreference);
   const [visibilityStored, setVisibilityStored] = useState(true);
+  // Poslední bezpečná volba po zastavení nahrávky; Smazat se nikdy nepamatuje ani nepředvybírá.
+  const [saveChoice, setSaveChoice] = useState(getRecordingSaveChoicePreference);
+  const [saveChoiceStored, setSaveChoiceStored] = useState(true);
   const [defaultCompany, setDefaultCompany] = useState({ state: "loading", identityKey: null, company: null });
   const [defaultCompanyRefresh, setDefaultCompanyRefresh] = useState(0);
   const [uploadPreferences, setUploadPreferences] = useState(null);
@@ -567,7 +571,14 @@ export const RecordingCard = forwardRef(function RecordingCard({
     return runtime.finishPromise;
   }
 
-  async function exportSavedRecording(recording, name, decision, manual = false) {
+  function chooseSaveAction(choice) {
+    setSaveChoice(choice);
+    setSaveChoiceStored(persistRecordingSaveChoicePreference(choice));
+    void exportSavedRecording(savedRecording, recordingName, choice === "keep" ? "keep" : "send", true,
+      { transcribe: choice === "send-transcribe" });
+  }
+
+  async function exportSavedRecording(recording, name, decision, manual = false, { transcribe = false } = {}) {
     const supportsPreferences = typeof window.ludone?.listUploadCompanies === "function";
     if (manual && decision === "send" && supportsPreferences && (!uploadIdentityVerified.current || !uploadPreferences)) {
       setExportError("Před odesláním ověř a vyber cílovou firmu.");
@@ -607,7 +618,9 @@ export const RecordingCard = forwardRef(function RecordingCard({
       if (generation !== uploadAuthGeneration.current) throw new Error("Přihlášení se změnilo. Ověř volby znovu.");
       const modernDecision = window.ludone.saveRecordingDecision;
       const result = typeof modernDecision === "function"
-        ? await modernDecision(recording.clientRecordingId, { recordingName: name, decision, ...(freshPreferences ? { uploadPreferences: freshPreferences } : {}) })
+        ? await modernDecision(recording.clientRecordingId, { recordingName: name, decision,
+          ...(freshPreferences ? { uploadPreferences: freshPreferences } : {}),
+          ...(transcribe && decision === "send" ? { transcribeAfterUpload: true } : {}) })
         : await window.ludone.exportRecording(recording.clientRecordingId, {
           recordingName: name, openUploadPage: decision === "send",
         });
@@ -628,7 +641,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
       const outcomeText = result.outcome === "saved_local"
         ? "Nahrávka zůstala jen na tomto Macu a nebyla zařazena k odeslání."
         : result.outcome === "queued"
-          ? "Uloženo na Macu. Nahrávka čeká ve frontě k odeslání."
+          ? `Uloženo na Macu. Nahrávka čeká ve frontě k odeslání.${transcribe ? " Přepis se spustí po nahrání." : ""}`
           : result.outcome === "sent"
             ? "Uloženo a odesláno."
             : "Nahrávka byla uložena na Macu. Stav odeslání není potvrzený.";
@@ -1229,7 +1242,7 @@ export const RecordingCard = forwardRef(function RecordingCard({
           aria-busy={exporting}
           onSubmit={(event) => {
             event.preventDefault();
-            void exportSavedRecording(savedRecording, recordingName, "send", true);
+            chooseSaveAction(saveChoice);
           }}
         >
           <div role="status" aria-live="polite">
@@ -1323,24 +1336,28 @@ export const RecordingCard = forwardRef(function RecordingCard({
             </button>
           ) : (
             <div className="recording-saved__actions">
-              <button
-                type="submit"
-                className="button button--primary button--wide"
-                disabled={Boolean(sendDisabledReason)}
-                aria-describedby={sendDisabledReason ? "recording-send-disabled-reason" : undefined}
-              >
-                Uložit a odeslat
-              </button>
-              {sendDisabledReason && <p id="recording-send-disabled-reason" className="recording-saved__hint" role="status">{sendDisabledReason}</p>}
-              <button
-                type="button"
-                className="button button--wide recording-saved__skip"
-                data-testid="skip-recording-name"
-                disabled={exporting}
-                onClick={() => exportSavedRecording(savedRecording, recordingName, "keep", true)}
-              >
-                Nechat na Macu
-              </button>
+              {[
+                { choice: "send", label: "Uložit a odeslat", testId: "save-send", disabled: Boolean(sendDisabledReason) },
+                { choice: "send-transcribe", label: "Uložit, odeslat a spustit přepis", testId: "save-send-transcribe",
+                  disabled: Boolean(sendDisabledReason) || typeof window.ludone?.saveRecordingDecision !== "function" },
+                { choice: "keep", label: "Nechat na Macu", testId: "skip-recording-name", disabled: exporting },
+              ].map(({ choice, label, testId, disabled }) => {
+                // Jediné tlačítko poslední volby je výchozí (submit, Enter v názvu); ostatní jsou běžná tlačítka.
+                const primary = saveChoice === choice;
+                return (
+                  <Fragment key={choice}>
+                    <button type={primary ? "submit" : "button"}
+                      className={`button button--wide${primary ? " button--primary" : ""}${choice === "keep" ? " recording-saved__skip" : ""}`}
+                      data-testid={testId} disabled={disabled}
+                      aria-describedby={choice !== "keep" && sendDisabledReason ? "recording-send-disabled-reason" : undefined}
+                      onClick={primary ? undefined : () => chooseSaveAction(choice)}>
+                      {label}
+                    </button>
+                    {choice === "send" && sendDisabledReason && <p id="recording-send-disabled-reason" className="recording-saved__hint" role="status">{sendDisabledReason}</p>}
+                  </Fragment>
+                );
+              })}
+              {!saveChoiceStored && <small className="recording-card__preference-warning" role="status">Volbu se na tomto Macu nepodařilo zapamatovat.</small>}
               {typeof window.ludone?.exportRecordingCopy === "function" && (
                 <button type="button" className="button button--wide recording-action--copy"
                   data-testid="export-recording-copy" disabled={copyExporting}

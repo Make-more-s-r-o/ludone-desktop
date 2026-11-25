@@ -985,6 +985,34 @@ async function uploadTrack({
 }
 
 /**
+ * Požádá server o přepis až po úplně dokončeném uploadu. Funkce NIKDY nevyhazuje: neúspěšné
+ * zahájení přepisu nesmí upload shodit, vrátit ani znovu spustit. Výsledek se uloží u položky
+ * fronty a ukáže se člověku; token ani adresa se nelogují.
+ * @param {{ logger: any, recordingId: string, request: (pathname: string, options?: any) => Promise<any> }} options
+ * @returns {Promise<{ outcome: "started" | "already_running" | "failed", code: string | null }>}
+ */
+async function requestTranscription({ logger, recordingId, request }) {
+  try {
+    if (!UUID_PATTERN.test(recordingId)) throw localError("invalid_response", "Chybí recordingId", "permanent");
+    await request(`/api/nahravky/uploads/${recordingId}/prepis`, { method: "POST" });
+    return Object.freeze({ outcome: "started", code: null });
+  } catch (error) {
+    const status = Number.isInteger(error?.status) ? error.status : null;
+    if (status === 409 || error?.code === "transcription_already_running") {
+      return Object.freeze({ outcome: "already_running", code: "transcription_already_running" });
+    }
+    const code = typeof error?.code === "string" && SAFE_SERVER_CODE_PATTERN.test(error.code)
+      && error.code !== "upload_failed" ? error.code
+      : status === 401 ? "unauthorized"
+        : status === 403 ? "forbidden"
+          : status === 404 ? "recording_not_found"
+            : "transcription_unavailable";
+    safeLog(logger, "warn", `[upload] Přepis nahrávky se nezahájil: ${code}${status ? ` (HTTP ${status})` : ""}`);
+    return Object.freeze({ outcome: "failed", code });
+  }
+}
+
+/**
  * @param {{
  *   fetchImpl: (input: string, options?: Record<string, any>) => Promise<any>,
  *   getUploadContext: () => Promise<any>,
@@ -1079,7 +1107,14 @@ function createRecordingUploadSend({
       }
       throw error;
     }
-    return Object.freeze({ completedUploads: uploads.length, quotaWarning, uploads });
+    // Přepis se žádá až po dokončení všech stop a jen u jediné doručené nahrávky (produkční
+    // režim `requireSingleDelivery`); u více stop by nebylo jasné, kterou přepisovat.
+    const transcription = item?.transcribeAfterUpload === true && uploads.length === 1
+      ? await requestTranscription({ logger, recordingId: uploads[0].recordingId, request })
+      : null;
+    return Object.freeze({
+      completedUploads: uploads.length, quotaWarning, uploads, ...(transcription ? { transcription } : {}),
+    });
   };
 }
 

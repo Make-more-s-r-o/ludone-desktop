@@ -457,6 +457,7 @@ function safeProjectedItem(projected) {
         || pausedWithoutRetry(projected) ? projected.lastFailureReason : null), pausedWithoutRetry(projected)),
     title: typeof projected.title === "string" ? projected.title : "",
     uploadIntent: projected.uploadIntent === "approved" ? "approved" : "held",
+    ...(projected.transcription ? { transcription: projected.transcription } : {}),
   };
 }
 
