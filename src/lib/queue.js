@@ -874,10 +874,10 @@ function pauseBelongsToItem(error) {
   return typeof reason === "string" && reason.length > 0;
 }
 
-/** Výsledek žádosti o přepis po uploadu; cokoli jiného než známý tvar se zahodí. */
+/** Stav žádosti o přepis po uploadu (pending = žádá se); cokoli jiného než známý tvar se zahodí. */
 export function safeTranscription(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
-    || !["started", "already_running", "failed"].includes(value.outcome)) return null;
+    || !["pending", "started", "already_running", "failed"].includes(value.outcome)) return null;
   return { outcome: value.outcome,
     code: typeof value.code === "string" && /^[a-z][a-z0-9_]{0,63}$/u.test(value.code) ? value.code : null };
 }
@@ -1042,7 +1042,12 @@ export async function processNext(queue, killswitches, send, options = {}) {
         nextAttemptAt: null,
         sentAt: new Date(sentAt).toISOString(),
         state: QUEUE_STATES.SENT,
-        ...(safeTranscription(sendResult?.transcription) ? { transcription: safeTranscription(sendResult.transcription) } : {}),
+        // Značka „přepis se žádá“ se uloží SPOLU se stavem odesláno, tedy dřív než odejde první
+        // požadavek. Pád nebo selhaný zápis proto nikdy nevede k druhé žádosti o přepis (může být
+        // placený). Existující značka se nepřepisuje a nová počáteční žádost se pak neposílá.
+        ...(sendingItem.transcribeAfterUpload === true && !sendingItem.transcription
+          && typeof progressQueue.items[index].server?.delivery?.recordingId === "string"
+          ? { transcription: { outcome: "pending", code: null } } : {}),
       };
       return {
         item: sentItem,

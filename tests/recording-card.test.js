@@ -3702,9 +3702,13 @@ describe("RecordingCard: čtyři volby po zastavení nahrávky", () => {
       Object.defineProperty(panel.document.defaultView, "localStorage", {
         configurable: true, get() { throw new Error("úložiště není dostupné"); },
       });
+      // Rozhodnutí necháme viset, aby formulář s varováním zůstal na obrazovce.
+      panel.ludone.saveRecordingDecision.mockReturnValueOnce(new Promise(() => {}));
       await panel.click(panel.document.querySelector('[data-testid="save-send-transcribe"]'));
       await vi.waitFor(() => expect(panel.ludone.saveRecordingDecision).toHaveBeenCalledOnce());
       expect(panel.ludone.saveRecordingDecision.mock.calls[0][1]).toMatchObject({ transcribeAfterUpload: true });
+      expect(panel.document.querySelector(".recording-card__preference-warning")?.textContent)
+        .toBe("Volbu se na tomto Macu nepodařilo zapamatovat.");
     } finally { await panel.cleanup(); }
   });
 

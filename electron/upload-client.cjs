@@ -984,32 +984,79 @@ async function uploadTrack({
   return result;
 }
 
+// Server začne nahrávku normalizovat až po odpovědi na `dokoncit`; do té doby může
+// `prepis` vracet 404 `recording_not_found`. Proto se 404 opakuje po těchto prodlevách
+// (čtyři opakování, dohromady ~110 s). Jde o jediný pokus o přepis, ne o nový požadavek.
+const TRANSCRIPTION_NOT_FOUND_RETRY_DELAYS_MS = Object.freeze([5_000, 15_000, 30_000, 60_000]);
+
+function defaultSleep(milliseconds) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, milliseconds);
+    timer.unref?.();
+  });
+}
+
 /**
- * Požádá server o přepis až po úplně dokončeném uploadu. Funkce NIKDY nevyhazuje: neúspěšné
- * zahájení přepisu nesmí upload shodit, vrátit ani znovu spustit. Výsledek se uloží u položky
- * fronty a ukáže se člověku; token ani adresa se nelogují.
- * @param {{ logger: any, recordingId: string, request: (pathname: string, options?: any) => Promise<any> }} options
- * @returns {Promise<{ outcome: "started" | "already_running" | "failed", code: string | null }>}
+ * Vytvoří funkci, která po UŽ ULOŽENÉM dokončení uploadu požádá server o přepis. Běží mimo
+ * transakční řadu fronty, takže čekání mezi opakováními nezdržuje další uploady. Funkce
+ * NIKDY nevyhazuje: neúspěšné zahájení přepisu nesmí upload shodit ani vrátit. Token ani
+ * adresa se nelogují; autorizace, origin i kontrola vlastníka jdou stejnou cestou jako upload.
+ * @param {{
+ *   fetchImpl: (input: string, options?: Record<string, any>) => Promise<any>,
+ *   getContext: () => Promise<any>,
+ *   logger?: any,
+ *   origin: string,
+ *   requestTimeoutMs?: number,
+ *   sleep?: (milliseconds: number) => Promise<void>,
+ * }} options
+ * @returns {(item: any) => Promise<{ outcome: "started" | "already_running" | "failed", code: string | null }>}
  */
-async function requestTranscription({ logger, recordingId, request }) {
-  try {
-    if (!UUID_PATTERN.test(recordingId)) throw localError("invalid_response", "Chybí recordingId", "permanent");
-    await request(`/api/nahravky/uploads/${recordingId}/prepis`, { method: "POST" });
-    return Object.freeze({ outcome: "started", code: null });
-  } catch (error) {
-    const status = Number.isInteger(error?.status) ? error.status : null;
-    if (status === 409 || error?.code === "transcription_already_running") {
-      return Object.freeze({ outcome: "already_running", code: "transcription_already_running" });
+function createTranscriptionRequest({
+  fetchImpl, getContext, logger = console, origin, requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, sleep = defaultSleep,
+}) {
+  if (typeof fetchImpl !== "function") throw new TypeError("fetchImpl musí být funkce");
+  if (typeof getContext !== "function") throw new TypeError("getContext musí být funkce");
+  const requestOrigin = normalizedOrigin(origin);
+  return async function requestTranscription(item) {
+    const recordingId = safeString(item?.server?.delivery?.recordingId);
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        if (!UUID_PATTERN.test(recordingId)) throw localError("invalid_response", "Chybí recordingId", "permanent");
+        const context = await getContext();
+        if (!isPlainObject(context) || safeString(context.accessToken) === "") {
+          throw localError("session_missing", "Pro přepis chybí přihlášení", "paused");
+        }
+        if (context.issuer !== undefined && context.issuer !== requestOrigin) {
+          throw localError("session_not_found", "Přihlášení patří jinému serveru", "paused");
+        }
+        requireMatchingQueueOwner(item, context);
+        const request = createRequester({
+          accessToken: context.accessToken, fetchImpl, origin: requestOrigin, requestTimeoutMs,
+        });
+        await request(`/api/nahravky/uploads/${recordingId}/prepis`, { method: "POST" });
+        return Object.freeze({ outcome: "started", code: null });
+      } catch (error) {
+        const status = Number.isInteger(error?.status) ? error.status : null;
+        if (status === 404 && attempt < TRANSCRIPTION_NOT_FOUND_RETRY_DELAYS_MS.length) {
+          await sleep(TRANSCRIPTION_NOT_FOUND_RETRY_DELAYS_MS[attempt]);
+          continue;
+        }
+        if (status === 409 || error?.code === "transcription_already_running") {
+          return Object.freeze({ outcome: "already_running", code: "transcription_already_running" });
+        }
+        const code = typeof error?.code === "string" && SAFE_SERVER_CODE_PATTERN.test(error.code)
+          && error.code !== "upload_failed" && status !== null ? error.code
+          : status === 401 ? "unauthorized"
+            : status === 403 ? "forbidden"
+              : status === 404 ? "recording_not_found"
+                : status === null && error?.failureClass === "paused" ? "unauthorized"
+                  : status === null && error?.code === "network_error" ? "network_error"
+                    : "transcription_unavailable";
+        safeLog(logger, "warn", `[upload] Přepis nahrávky se nezahájil: ${code}${status ? ` (HTTP ${status})` : ""}`);
+        return Object.freeze({ outcome: "failed", code });
+      }
     }
-    const code = typeof error?.code === "string" && SAFE_SERVER_CODE_PATTERN.test(error.code)
-      && error.code !== "upload_failed" ? error.code
-      : status === 401 ? "unauthorized"
-        : status === 403 ? "forbidden"
-          : status === 404 ? "recording_not_found"
-            : "transcription_unavailable";
-    safeLog(logger, "warn", `[upload] Přepis nahrávky se nezahájil: ${code}${status ? ` (HTTP ${status})` : ""}`);
-    return Object.freeze({ outcome: "failed", code });
-  }
+  };
 }
 
 /**
@@ -1107,14 +1154,7 @@ function createRecordingUploadSend({
       }
       throw error;
     }
-    // Přepis se žádá až po dokončení všech stop a jen u jediné doručené nahrávky (produkční
-    // režim `requireSingleDelivery`); u více stop by nebylo jasné, kterou přepisovat.
-    const transcription = item?.transcribeAfterUpload === true && uploads.length === 1
-      ? await requestTranscription({ logger, recordingId: uploads[0].recordingId, request })
-      : null;
-    return Object.freeze({
-      completedUploads: uploads.length, quotaWarning, uploads, ...(transcription ? { transcription } : {}),
-    });
+    return Object.freeze({ completedUploads: uploads.length, quotaWarning, uploads });
   };
 }
 
@@ -1125,6 +1165,7 @@ module.exports = {
   RecordingUploadError,
   createRequester,
   createRecordingUploadSend,
+  createTranscriptionRequest,
   deriveUploadIdentity,
   failureClassForCode,
 };

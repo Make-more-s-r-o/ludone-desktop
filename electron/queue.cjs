@@ -858,7 +858,16 @@ async function recoverOrphanedRecordings({
  * Vlastník perzistentní fronty. Všechny operace nad jedním souborem řadí do
  * jediného promise řetězu, aby souběžná IPC volání nemohla přepsat novější stav.
  */
-function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecordingSent = () => {} }) {
+/**
+ * @param {{
+ *   filePath: string, queueModulePromise: Promise<any>, send: Function, onRecordingSent?: () => void,
+ *   requestTranscription?: (item: any) => Promise<{ outcome: string, code: string | null }>,
+ *   onTranscriptionChanged?: () => void,
+ * }} options
+ */
+function createOutboundQueueStore({
+  filePath, queueModulePromise, send, onRecordingSent = () => {}, requestTranscription, onTranscriptionChanged = () => {},
+}) {
   if (typeof filePath !== "string" || filePath.length === 0) {
     throw new TypeError("filePath fronty je povinný");
   }
@@ -873,6 +882,17 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
   const recordingsDirectory = path.join(path.dirname(path.dirname(path.resolve(filePath))), "nahravky");
   /** @type {Promise<unknown>} */
   let operations = Promise.resolve();
+  // Nahrávky, jejichž žádost o přepis právě běží v tomto procesu. Značka `pending` bez záznamu
+  // tady je pozůstatek přerušeného běhu (restart) a při načtení z disku se převede na „nezačal“.
+  const activeTranscriptions = new Set();
+
+  function withoutInterruptedTranscriptions(queue) {
+    const isInterrupted = (item) => item?.transcription?.outcome === "pending"
+      && !activeTranscriptions.has(item.clientRecordingId);
+    if (!queue.items.some(isInterrupted)) return { queue, changed: false };
+    return { changed: true, queue: { ...queue, items: queue.items.map((item) => (isInterrupted(item)
+      ? { ...item, transcription: { outcome: "failed", code: "transcription_interrupted" } } : item)) } };
+  }
 
   /**
    * @template T
@@ -998,9 +1018,10 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
   async function ensureLoaded() {
     if (!loaded) {
       const loadedQueue = await loadQueue(filePath, { includeMigration: true });
-      currentQueue = loadedQueue.queue;
+      const recovered = withoutInterruptedTranscriptions(loadedQueue.queue);
+      currentQueue = recovered.queue;
       loaded = true;
-      migrationPending = loadedQueue.migrated;
+      migrationPending = loadedQueue.migrated || recovered.changed;
     }
     if (migrationPending) await commit(currentQueue);
     return currentQueue;
@@ -1261,10 +1282,11 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
     return serialize(async () => {
       const queueModule = await loadQueueModule();
       const loadedQueue = await loadQueue(filePath, { includeMigration: true });
-      let queue = loadedQueue.queue;
-      currentQueue = loadedQueue.queue;
+      const recovered = withoutInterruptedTranscriptions(loadedQueue.queue);
+      let queue = recovered.queue;
+      currentQueue = recovered.queue;
       loaded = true;
-      migrationPending = loadedQueue.migrated;
+      migrationPending = loadedQueue.migrated || recovered.changed;
       if (migrationPending) await commit(queue);
       const queueItems = reduceForLocalDashboard(queueModule, queue, currentOwnerFingerprint);
       const snapshot = await createLocalRecordingsSnapshot({ queue, queueItems, recordingsDirectory });
@@ -1807,7 +1829,50 @@ function createOutboundQueueStore({ filePath, queueModulePromise, send, onRecord
       : result.queue;
     if (queueAfterResult !== currentQueue) await commit(queueAfterResult);
     if (result.outcome === "sent" && (result.item?.kind ?? "recording") === "recording") onRecordingSent();
+    // Značka `pending` je už zapsaná na disku; teprve teď se smí odeslat první žádost o přepis.
+    const hadMarker = before.items.some((item) => item.clientRecordingId === result.item?.clientRecordingId
+      && item.transcription !== undefined);
+    if (result.outcome === "sent" && result.item?.transcription?.outcome === "pending" && !hadMarker) {
+      startTranscriptionFollowUp(result.item);
+    }
     return { queueModule, result: { ...result, queue: queueAfterResult } };
+  }
+
+  // Žádost o přepis běží MIMO `serialize()`: čekání mezi opakováními (404 po dokončení, než server
+  // nahrávku normalizuje) nesmí zdržet frontu ani jiné uploady. Do fronty zasahuje jen zápis
+  // konečného výsledku. Po restartu se nedokončená žádost nikdy neopakuje (viz `ensureLoaded`).
+  function startTranscriptionFollowUp(item) {
+    const id = item.clientRecordingId;
+    activeTranscriptions.add(id);
+    onTranscriptionChanged();
+    void (async () => {
+      let outcome = { outcome: "failed", code: "transcription_unavailable" };
+      try {
+        if (typeof requestTranscription === "function") outcome = await requestTranscription(item);
+      } catch {
+        // Neočekávaná chyba nesmí upload ani frontu ovlivnit; zůstane výsledek „nezačal“.
+      }
+      try {
+        await setRecordingTranscription(id, outcome);
+      } catch (error) {
+        console.error(`[queue] Výsledek přepisu se nepodařilo uložit: ${error?.message ?? error}`);
+      } finally {
+        activeTranscriptions.delete(id);
+        onTranscriptionChanged();
+      }
+    })();
+  }
+
+  function setRecordingTranscription(clientRecordingId, transcription) {
+    return serialize(async () => {
+      const queue = await ensureLoaded();
+      const index = queue.items.findIndex((item) => item.clientRecordingId === clientRecordingId);
+      if (index < 0 || queue.items[index].transcription?.outcome !== "pending") return false;
+      const items = [...queue.items];
+      items[index] = { ...items[index], transcription: { outcome: transcription.outcome, code: transcription.code ?? null } };
+      await commit({ ...queue, items });
+      return true;
+    });
   }
 
   // 🔴 `processNext` odešle vždy nejvýš JEDNU položku a je to záměr (viz její komentář):
