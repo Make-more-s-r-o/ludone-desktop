@@ -447,6 +447,24 @@ describe("odstup po selhání obnovy", () => {
     });
   });
 
+  it("5xx s OAuth kódem jiným než server_error je dočasné, ne definitivní", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      zacniVCase();
+      const safeStorage = fakeSafeStorage();
+      const session = vyprselaRelace("5xx-invalid-request");
+      await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async (url) => (jeDiscovery(url) ? discoveryResponse() : {
+        ok: false, status: 500, json: async () => ({ error: "invalid_request" }),
+      }));
+
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      vi.advanceTimersByTime(30_001);
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(4);
+    });
+  });
+
   it("invalid_grant ve fázi discovery se nebere jako odmítnutí tokenu", async () => {
     await vDocasnemAppData(async ({ app }) => {
       zacniVCase();

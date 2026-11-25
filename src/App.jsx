@@ -112,6 +112,25 @@ export function App() {
   }, [refreshAuthSession, sessionState]);
 
   useEffect(() => {
+    if (sessionState !== "expired" || typeof window.ludone.getAuthSessionState !== "function") return;
+    // Vypršelá relace se po dočasném výpadku sítě obnoví v hlavním procesu sama (první
+    // čtení stavu po odstupu). Panel se na to musí sám zeptat, jinak by tvrdil „vypršelo“
+    // až do nového přihlášení. 30 s odpovídá základnímu odstupu obnovy v auth.cjs;
+    // rychlejší dotazy by hlavní proces stejně zodpověděl z brzdy bez sítě.
+    let cancelled = false;
+    let timer;
+    const poll = async () => {
+      await refreshAuthSession();
+      if (!cancelled) timer = window.setTimeout(poll, 30_000);
+    };
+    timer = window.setTimeout(poll, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [refreshAuthSession, sessionState]);
+
+  useEffect(() => {
     const refreshWhenFocused = () => refreshAuthSession();
     const refreshWhenShown = () => {
       if (document.visibilityState === "visible") refreshAuthSession();

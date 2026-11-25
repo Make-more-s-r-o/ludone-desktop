@@ -431,6 +431,35 @@ describe("oznámení změny session mezi okny", () => {
     expect(panel.ludone.cancelAuth).not.toHaveBeenCalled();
   });
 
+  it("vypršelý panel se sám vrátí na platný stav, jakmile hlavní proces relaci obnoví", async () => {
+    // jsdom volá globální setTimeout, takže falešné hodiny řídí i `window.setTimeout` panelu.
+    vi.useFakeTimers();
+    try {
+      let state = "expired";
+      const getAuthSessionState = vi.fn(async () => state);
+      const panel = await renderWindows({ getAuthSessionState });
+      expect(panel.document.querySelector("#panel-root")?.textContent).toContain("Přihlášení vypršelo");
+      const dotazy = getAuthSessionState.mock.calls.length;
+
+      // Rychleji než za 30 s se panel neptá.
+      await React.act(async () => { await vi.advanceTimersByTimeAsync(29_000); });
+      expect(getAuthSessionState.mock.calls.length).toBe(dotazy);
+      expect(panel.document.querySelector("#panel-root")?.textContent).toContain("Přihlášení vypršelo");
+
+      // Hlavní proces mezitím relaci obnovil; panel to zjistí sám, bez kliknutí a fokusu.
+      state = "valid";
+      await React.act(async () => { await vi.advanceTimersByTimeAsync(1_500); });
+      expect(getAuthSessionState.mock.calls.length).toBeGreaterThan(dotazy);
+      expect(panel.document.querySelector('#panel-root [data-auth-state="signed-in"]')).not.toBeNull();
+      expect(panel.ludone.beginAuth).not.toHaveBeenCalled();
+
+      // Po návratu na „valid“ se pomalé dotazování zastaví (běží už jen vteřinová kontrola).
+      expect(panel.document.querySelector("#panel-root")?.textContent).not.toContain("Přihlášení vypršelo");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("používá existující validovaný session kanál jako probuzení bez dat", () => {
     const mainSource = readFileSync(new URL("../electron/main.cjs", import.meta.url), "utf8");
     const preloadSource = readFileSync(new URL("../electron/preload.cjs", import.meta.url), "utf8");

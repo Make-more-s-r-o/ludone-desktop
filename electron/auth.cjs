@@ -162,6 +162,8 @@ function oauthResponseError(label, status, candidateCode) {
   const error = new Error(`${label} selhal${detail ? ` (${detail})` : ""}`);
   // Neenumerovat: diagnostika smí vypsat třídu a bezpečný kód, ne celé tělo odpovědi.
   Object.defineProperty(error, "oauthError", { value: oauthError });
+  // Stav HTTP rozlišuje odmítnutí klienta (4xx) od chyby serveru (5xx); žádný token v něm není.
+  Object.defineProperty(error, "httpStatus", { value: Number.isInteger(status) ? status : null });
   return error;
 }
 
@@ -958,11 +960,14 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
       // probuzení) a smazaný refresh token by zahodil relaci, která je pořád platná.
       // Relace zůstane vypršelá — fail-closed, ale bez ztráty údajů. Hlídají to testy
       // „bez mazání tokenů" a „zůstane na disku" v tests/queue-wiring.test.js.
-      // Definitivní je jen OAuth chyba z token endpointu (např. `invalid_grant`): ten
-      // token se už nezkouší. Cokoli jiného (síť, timeout, 5xx, selhané discovery,
-      // HTTP chyba bez OAuth kódu) je dočasné a po odstupu se zkusí znovu s tímž tokenem.
+      // Definitivní je jen odpověď 4xx s OAuth chybou z token endpointu (např.
+      // `invalid_grant`): ten token se už nezkouší. Cokoli jiného (síť, timeout, 5xx,
+      // selhané discovery, HTTP chyba bez OAuth kódu) je dočasné a po odstupu se zkusí
+      // znovu s tímž tokenem.
+      const status = error?.httpStatus;
       const definitive = tokenRequestSent && typeof error?.oauthError === "string"
-        && !TRANSIENT_OAUTH_ERRORS.has(error.oauthError);
+        && !TRANSIENT_OAUTH_ERRORS.has(error.oauthError)
+        && Number.isInteger(status) && status >= 400 && status < 500;
       const attempts = failedRefresh?.refreshToken === storedSession.refreshToken
         ? failedRefresh.attempts + 1
         : 1;
