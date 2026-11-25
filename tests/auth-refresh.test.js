@@ -321,3 +321,182 @@ describe("obnova access tokenu", () => {
     });
   });
 });
+
+describe("odstup po selhání obnovy", () => {
+  // Hodiny jsou záměrně jen Date: obnova používá `Date.now()` pro odstup, ale
+  // `setTimeout` pro strop pěti sekund, který tu simulovat nechceme.
+  function zacniVCase() {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-25T08:00:00Z"));
+  }
+  const siteDole = (url) => {
+    if (jeDiscovery(url)) return discoveryResponse();
+    throw new TypeError("fetch failed");
+  };
+  const uspesnyServer = (url) => (jeDiscovery(url) ? discoveryResponse() : tokenResponse());
+  const volej = (app, safeStorage, session, fetchImpl) => refreshStoredAuthSession({
+    app, safeStorage, storedSession: session, fetchImpl, logger: fakeLogger(),
+  });
+
+  it("dočasné selhání: uvnitř odstupu se na síť nesahá, po něm se zkusí znovu a relace se obnoví", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      zacniVCase();
+      const safeStorage = fakeSafeStorage();
+      const session = vyprselaRelace("docasne");
+      const blobPath = await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async (url) => siteDole(url));
+
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+      // Uvnitř odstupu (30 s): žádný další požadavek.
+      vi.advanceTimersByTime(29_000);
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+      // Po odstupu se zkusí tentýž refresh token a tentokrát projde.
+      vi.advanceTimersByTime(2_000);
+      fetchImpl.mockImplementation(/** @type {any} */ (async (url) => uspesnyServer(url)));
+      const obnovena = await volej(app, safeStorage, session, fetchImpl);
+      expect(fetchImpl).toHaveBeenCalledTimes(4);
+      expect(obnovena).toMatchObject({ accessToken: "novy-access", refreshToken: "novy-refresh" });
+      expect(await relaceNaDisku(safeStorage, blobPath)).toMatchObject({ refreshToken: "novy-refresh" });
+
+      // Úspěch brzdu vyčistí: nová vypršelá relace se zkouší hned.
+      const dalsi = vyprselaRelace("docasne-dalsi");
+      await zapisRelaci(app, safeStorage, dalsi);
+      expect(await volej(app, safeStorage, dalsi, fetchImpl)).not.toBeNull();
+    });
+  });
+
+  it("odstup se při opakovaném selhání zdvojnásobuje a má strop 4 minuty", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      zacniVCase();
+      const safeStorage = fakeSafeStorage();
+      const session = vyprselaRelace("narust");
+      await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async (url) => siteDole(url));
+      let pozadavky = 0;
+
+      for (const odstupMs of [30_000, 60_000, 120_000, 240_000, 240_000]) {
+        expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+        pozadavky += 2;
+        expect(fetchImpl).toHaveBeenCalledTimes(pozadavky);
+        vi.advanceTimersByTime(odstupMs - 1);
+        expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+        expect(fetchImpl).toHaveBeenCalledTimes(pozadavky);
+        vi.advanceTimersByTime(1);
+      }
+    });
+  });
+
+  it("selhané discovery, 5xx a HTTP chyba bez OAuth kódu jsou dočasné", async () => {
+    const pripady = {
+      discovery: (url) => {
+        if (jeDiscovery(url)) throw new TypeError("fetch failed");
+        return tokenResponse();
+      },
+      "5xx": (url) => (jeDiscovery(url) ? discoveryResponse() : { ok: false, status: 503 }),
+      "server_error": (url) => (jeDiscovery(url) ? discoveryResponse() : {
+        ok: false, status: 500, json: async () => ({ error: "server_error" }),
+      }),
+      "bez kódu": (url) => (jeDiscovery(url) ? discoveryResponse() : { ok: false, status: 401 }),
+    };
+    for (const [nazev, odpoved] of Object.entries(pripady)) {
+      await vDocasnemAppData(async ({ app }) => {
+        zacniVCase();
+        const safeStorage = fakeSafeStorage();
+        const session = vyprselaRelace(`dcasne-${nazev.replace(/\W/g, "")}`);
+        await zapisRelaci(app, safeStorage, session);
+        const fetchImpl = vi.fn(async (url) => odpoved(url));
+
+        expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+        const pocet = fetchImpl.mock.calls.length;
+        vi.advanceTimersByTime(30_001);
+        expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+        expect(fetchImpl.mock.calls.length, nazev).toBeGreaterThan(pocet);
+      });
+    }
+  });
+
+  it("invalid_grant z token endpointu je definitivní: token se nezkouší ani za hodinu a zůstane na disku", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      zacniVCase();
+      const safeStorage = fakeSafeStorage();
+      const logger = fakeLogger();
+      const session = vyprselaRelace("invalid-grant");
+      const blobPath = await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async (url) => (jeDiscovery(url) ? discoveryResponse() : {
+        ok: false, status: 400, json: async () => ({ error: "invalid_grant" }),
+      }));
+
+      expect(await refreshStoredAuthSession({
+        app, safeStorage, storedSession: session, fetchImpl, logger,
+      })).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+      vi.advanceTimersByTime(60 * 60_000);
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+      // Tokeny se nemažou (smaže je jen invalid_client) a v logu nejsou.
+      expect(await relaceNaDisku(safeStorage, blobPath)).toMatchObject({
+        refreshToken: session.refreshToken,
+      });
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(session.refreshToken);
+    });
+  });
+
+  it("invalid_grant ve fázi discovery se nebere jako odmítnutí tokenu", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      zacniVCase();
+      const safeStorage = fakeSafeStorage();
+      const session = vyprselaRelace("discovery-grant");
+      await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async () => ({
+        ok: false, status: 400, json: async () => ({ error: "invalid_grant" }),
+      }));
+
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(30_001);
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("invalid_client zůstává definitivní i po odstupu a maže relaci", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      zacniVCase();
+      const safeStorage = fakeSafeStorage();
+      const session = vyprselaRelace("invalid-client-odstup");
+      const blobPath = await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async (url) => (jeDiscovery(url) ? discoveryResponse() : {
+        ok: false, status: 401, json: async () => ({ error: "invalid_client" }),
+      }));
+
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fs.existsSync(blobPath)).toBe(false);
+      vi.advanceTimersByTime(60 * 60_000);
+      expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("žádná bouře požadavků: stovka čtení uvnitř odstupu vyrobí jediný pokus", async () => {
+    await vDocasnemAppData(async ({ app }) => {
+      zacniVCase();
+      const safeStorage = fakeSafeStorage();
+      const session = vyprselaRelace("bourka");
+      await zapisRelaci(app, safeStorage, session);
+      const fetchImpl = vi.fn(async (url) => siteDole(url));
+
+      for (let i = 0; i < 100; i += 1) {
+        expect(await volej(app, safeStorage, session, fetchImpl)).toBeNull();
+        vi.advanceTimersByTime(100);
+      }
+      // 100 čtení trvá 10 s, tedy celé uvnitř 30s odstupu: discovery + výměna jednou.
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+  });
+});

@@ -23,6 +23,12 @@ const LOGOUT_REVOKE_DEADLINE_MS = 5_000;
 // Sdílí proto její pětisekundový strop i společný AbortController vzor níž.
 const IDENTITY_LOOKUP_DEADLINE_MS = LOGOUT_DISCOVERY_DEADLINE_MS;
 const REFRESH_DEADLINE_MS = 5_000;
+// Odstup před dalším pokusem o obnovu po DOČASNÉM selhání (síť po probuzení, timeout,
+// 5xx). Začíná na půl minuty, každé další selhání téhož tokenu ho zdvojnásobí a strop
+// jsou 4 minuty: krátké výpadky se zahojí rychle, trvalá nedostupnost serveru stojí
+// nejvýš jeden požadavek za pár minut, ne jeden na každé čtení stavu relace.
+const REFRESH_RETRY_BASE_MS = 30_000;
+const REFRESH_RETRY_MAX_MS = 240_000;
 const MCP_IDENTITY_REQUEST_ID = 1;
 const TOKEN_DIRECTORY = "auth";
 const TOKEN_FILE = "oauth.enc";
@@ -31,8 +37,11 @@ const TOKEN_STORAGE_NAMESPACE = "cz.ludone.desktop";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const MCP_SCOPES = new Set(["mcp:read", "mcp:draft"]);
 const INVALID_CLIENT = "invalid_client";
+// OAuth kódy, které neříkají „token je špatný“, ale „server to teď nezvládl“.
+const TRANSIENT_OAUTH_ERRORS = new Set(["server_error", "temporarily_unavailable"]);
 const SAFE_OAUTH_ERROR_CODES = new Set([
   INVALID_CLIENT,
+  "invalid_grant",
   "invalid_request",
   "unauthorized_client",
   "access_denied",
@@ -62,9 +71,12 @@ let oauthLogicPromise;
 let tokenStorageTransaction = Promise.resolve();
 // Jediná brána pro celý proces, včetně discovery i zápisu obnovené relace.
 let refreshSessionPromise = null;
-// Refresh token, který už jednou neprošel. Bez téhle brzdy by každé čtení stavu
-// relace vyrobilo další HTTP požadavek, dokud se uživatel znovu nepřihlásí.
-let failedRefreshToken = null;
+// Refresh token, který neprošel. Bez téhle brzdy by každé čtení stavu relace vyrobilo
+// další HTTP požadavek. `retryAt` je čas, od kterého smí přijít další pokus; u
+// definitivního odmítnutí serverem (OAuth chyba z token endpointu, `invalid_client`)
+// je `Infinity`, takže se ten token nezkouší, dokud se uživatel znovu nepřihlásí.
+/** @type {{ refreshToken: string, retryAt: number, attempts: number } | null} */
+let failedRefresh = null;
 const tokenStorageInitializations = new WeakMap();
 
 function loadOauthLogic() {
@@ -859,15 +871,17 @@ function logRefreshFailure(logger, reason) {
 // Záměrně není async: souběžní čtenáři dostanou tentýž rozpracovaný slib.
 function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl = globalThis.fetch, logger = console }) {
   if (!canRefreshSession(storedSession)) return Promise.resolve(null);
-  // Tentýž refresh token už jednou neprošel. Bez téhle brzdy by každé čtení stavu
-  // relace vyrobilo další HTTP požadavek, dokud se uživatel znovu nepřihlásí.
-  if (failedRefreshToken !== null && failedRefreshToken === storedSession.refreshToken) {
+  // Tentýž refresh token neprošel a odstup (nebo trvalé odmítnutí) ještě trvá.
+  if (failedRefresh !== null && failedRefresh.refreshToken === storedSession.refreshToken
+    && Date.now() < failedRefresh.retryAt) {
     return Promise.resolve(null);
   }
   if (refreshSessionPromise !== null) return refreshSessionPromise;
 
   refreshSessionPromise = withTokenStorageTransaction(async () => {
     const storage = tokenStorageLocation(app);
+    // Až po odeslání výměny má OAuth chyba význam „server tenhle token odmítl“.
+    let tokenRequestSent = false;
     try {
       await initializeTokenStorage(app, storage);
       const encrypted = await readEncryptedSession(storage);
@@ -895,6 +909,7 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
         clientId,
         resource,
       });
+      tokenRequestSent = true;
       const tokenResponse = await runWithDeadline(
         (signal) => jsonResponse(fetchImpl, endpoints.tokenEndpoint, {
           method: "POST",
@@ -926,7 +941,7 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
       };
       // Stejný šifrovaný atomický zápis a fsync jako při přihlášení; až pak token vydáme.
       await persistEncryptedSession(safeStorage, refreshedSession, storage);
-      failedRefreshToken = null;
+      failedRefresh = null;
       return refreshedSession;
     } catch (error) {
       if (error?.oauthError === INVALID_CLIENT) {
@@ -935,7 +950,7 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
         // nepoužijeme starý refresh token a nespouštíme automatický login. Nový klient
         // vznikne až při dalším výslovném interaktivním přihlášení.
         await removeEncryptedSession(storage);
-        failedRefreshToken = storedSession.refreshToken;
+        failedRefresh = { refreshToken: storedSession.refreshToken, retryAt: Infinity, attempts: 1 };
         logRefreshFailure(logger, "invalid-client");
         return null;
       }
@@ -943,7 +958,21 @@ function refreshStoredAuthSession({ app, safeStorage, storedSession, fetchImpl =
       // probuzení) a smazaný refresh token by zahodil relaci, která je pořád platná.
       // Relace zůstane vypršelá — fail-closed, ale bez ztráty údajů. Hlídají to testy
       // „bez mazání tokenů" a „zůstane na disku" v tests/queue-wiring.test.js.
-      failedRefreshToken = storedSession.refreshToken;
+      // Definitivní je jen OAuth chyba z token endpointu (např. `invalid_grant`): ten
+      // token se už nezkouší. Cokoli jiného (síť, timeout, 5xx, selhané discovery,
+      // HTTP chyba bez OAuth kódu) je dočasné a po odstupu se zkusí znovu s tímž tokenem.
+      const definitive = tokenRequestSent && typeof error?.oauthError === "string"
+        && !TRANSIENT_OAUTH_ERRORS.has(error.oauthError);
+      const attempts = failedRefresh?.refreshToken === storedSession.refreshToken
+        ? failedRefresh.attempts + 1
+        : 1;
+      failedRefresh = {
+        refreshToken: storedSession.refreshToken,
+        retryAt: definitive
+          ? Infinity
+          : Date.now() + Math.min(REFRESH_RETRY_BASE_MS * 2 ** (attempts - 1), REFRESH_RETRY_MAX_MS),
+        attempts,
+      };
       logRefreshFailure(logger, "refresh-failed");
       return null;
     }
