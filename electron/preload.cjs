@@ -119,11 +119,14 @@ function requireUploadPreferences(value) {
 function requireRecordingDecision(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)
     || !["send", "keep"].includes(value.decision)
-    || typeof value.recordingName !== "string") {
+    || typeof value.recordingName !== "string"
+    || (value.transcribeAfterUpload !== undefined
+      && (value.transcribeAfterUpload !== true || value.decision !== "send"))) {
     throw new TypeError("Rozhodnutí nahrávky vyžaduje název a volbu send nebo keep");
   }
   return { recordingName: value.recordingName, decision: value.decision,
-    ...(value.uploadPreferences !== undefined ? { uploadPreferences: requireUploadPreferences(value.uploadPreferences) } : {}) };
+    ...(value.uploadPreferences !== undefined ? { uploadPreferences: requireUploadPreferences(value.uploadPreferences) } : {}),
+    ...(value.transcribeAfterUpload === true ? { transcribeAfterUpload: true } : {}) };
 }
 
 function requireRecordingCopyOptions(value) {

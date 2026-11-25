@@ -4301,6 +4301,19 @@ describe("produkční zapojení odchozí fronty", () => {
     expect(invoke).toHaveBeenCalledTimes(3);
   });
 
+  it("preload save-decision propustí příznak přepisu jen u send a jen jako true", async () => {
+    const { api, invoke } = loadPreload({ ok: true });
+    const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
+    await api.saveRecordingDecision(id, { decision: "send", recordingName: "Porada", transcribeAfterUpload: true });
+    expect(invoke).toHaveBeenCalledExactlyOnceWith("recording:save-decision", id,
+      { decision: "send", recordingName: "Porada", transcribeAfterUpload: true });
+    expect(() => api.saveRecordingDecision(id, { decision: "keep", recordingName: "Porada", transcribeAfterUpload: true }))
+      .toThrow(/Rozhodnutí/u);
+    expect(() => api.saveRecordingDecision(id, { decision: "send", recordingName: "Porada", transcribeAfterUpload: "ano" }))
+      .toThrow(/Rozhodnutí/u);
+    expect(invoke).toHaveBeenCalledTimes(1);
+  });
+
   it("preload ověření a otevření propustí jen GUID, revizi a známou stopu", async () => {
     const { api, invoke } = loadPreload({ opened: true });
     const id = "9e586e55-d688-43f1-8a80-a3d61e754f3e";
@@ -6144,6 +6157,48 @@ describe("produkční zapojení odchozí fronty", () => {
 
     releasePump();
     await pumpGate;
+  });
+
+  it("save-decision s přepisem uloží přání k položce fronty a pro keep ho odmítne; upload ani přepis se nespustí", async () => {
+    const pump = vi.fn().mockResolvedValue({ outcome: "idle" });
+    const queueStoreModule = actualRequire("./queue.cjs");
+    const createOutboundQueueStore = vi.fn((dependencies) => ({
+      ...queueStoreModule.createOutboundQueueStore(dependencies), pump,
+    }));
+    const harness = await loadMain({ createOutboundQueueStore });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    const decide = harness.ipcHandlers.get("recording:save-decision");
+    await expect(Promise.resolve().then(() => decide(event, sessionId,
+      { decision: "keep", recordingName: "Porada", transcribeAfterUpload: true }))).rejects.toThrow(/právě GUID/u);
+    await expect(Promise.resolve().then(() => decide(event, sessionId,
+      { decision: "send", recordingName: "Porada", transcribeAfterUpload: "ano" }))).rejects.toThrow(/právě GUID/u);
+    await expect(decide(event, sessionId,
+      { decision: "send", recordingName: "Porada výroby", transcribeAfterUpload: true }))
+      .resolves.toMatchObject({ ok: true, outcome: "queued" });
+    const queue = JSON.parse(await readFile(path.join(harness.userDataPath, "queue", "outgoing.json"), "utf8"));
+    expect(queue.items.find((item) => item.clientRecordingId === sessionId)).toMatchObject({
+      title: "Porada výroby", uploadIntent: "approved", transcribeAfterUpload: true,
+    });
+  });
+
+  it("save-decision bez přepisu a uložení jen na Macu přání k položce nepřidá", async () => {
+    const pump = vi.fn().mockResolvedValue({ outcome: "idle" });
+    const queueStoreModule = actualRequire("./queue.cjs");
+    const createOutboundQueueStore = vi.fn((dependencies) => ({
+      ...queueStoreModule.createOutboundQueueStore(dependencies), pump,
+    }));
+    const harness = await loadMain({ createOutboundQueueStore });
+    await writeStoredAuthSession(harness, {
+      ...storedAuthSession(), accessExpiresAt: Date.now() + 60_000,
+    });
+    const { event, sessionId } = await prepareRecordingExport(harness);
+    await expect(harness.ipcHandlers.get("recording:save-decision")(event, sessionId,
+      { decision: "send", recordingName: "Porada" })).resolves.toMatchObject({ ok: true, outcome: "queued" });
+    const queue = JSON.parse(await readFile(path.join(harness.userDataPath, "queue", "outgoing.json"), "utf8"));
+    expect(queue.items.find((item) => item.clientRecordingId === sessionId)).not.toHaveProperty("transcribeAfterUpload");
   });
 
   it("po trvalém uzavření časovače zařadí přes produkční store přesný časový záznam", async () => {

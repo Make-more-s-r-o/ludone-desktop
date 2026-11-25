@@ -47,7 +47,7 @@ const {
   recoverOrphanedRecordings,
   saveQueueAtomically,
 } = require("./queue.cjs");
-const { createRecordingUploadSend } = require("./upload-client.cjs");
+const { createRecordingUploadSend, createTranscriptionRequest } = require("./upload-client.cjs");
 const {
   createLivePendingDelivery,
   ensureMeetingAudioReady,
@@ -2626,6 +2626,19 @@ async function recordingUploadContext() {
   };
 }
 
+// Kontext pro žádost o přepis: jen token, server a vlastník. Firmu nerozhoduje, takže po
+// uploadu nedělá žádný další dotaz na seznam firem.
+async function transcriptionContext() {
+  const generation = authSessionGeneration;
+  const storedSession = await readUsableAuthSession();
+  if (generation !== authSessionGeneration || storedAuthSessionState(storedSession) !== "valid") return null;
+  return {
+    accessToken: storedSession.accessToken,
+    issuer: storedSession.issuer,
+    ownerFingerprint: deriveQueueOwnerFingerprint(storedSession, queueOwnerSecretStore.get()),
+  };
+}
+
 async function readCurrentQueueOwnerFingerprint() {
   try {
     const storedSession = await readStoredAuthSession();
@@ -2988,6 +3001,13 @@ async function getOutboundQueueStore() {
       queueModulePromise,
       send: createQueueSend(),
       onRecordingSent: scheduleRuntimeRetention,
+      requestTranscription: (item) => createTranscriptionRequest({
+        fetchImpl: (...args) => net.fetch(...args),
+        getContext: transcriptionContext,
+        logger: console,
+        origin: resolveCurrentAuthIssuer(),
+      })(item),
+      onTranscriptionChanged: notifyRecordingStorageChanged,
     });
   }
   return outboundQueueStore;
@@ -3442,6 +3462,7 @@ async function exportCompletedRecording(event, clientRecordingId, options) {
       decision === "send",
       {
         uploadPreferences: preferences,
+        transcribeAfterUpload: options.transcribeAfterUpload === true,
         guard: async () => {
           try {
             requireTrustedSender(event, ["panel"]);
@@ -3784,7 +3805,13 @@ handleValidated("recording:save-decision", ["panel"], (
 ) => {
   if (extraPayload.length > 0 || !options || typeof options !== "object"
     || Array.isArray(options)
-    || !["decision|recordingName", "decision|recordingName|uploadPreferences"].includes(Object.keys(options).sort().join("|"))) {
+    || ![
+      "decision|recordingName", "decision|recordingName|uploadPreferences",
+      "decision|recordingName|transcribeAfterUpload",
+      "decision|recordingName|transcribeAfterUpload|uploadPreferences",
+    ].includes(Object.keys(options).sort().join("|"))
+    || (options.transcribeAfterUpload !== undefined
+      && (options.transcribeAfterUpload !== true || options.decision !== "send"))) {
     throw new TypeError("Save decision přijímá právě GUID, název a rozhodnutí");
   }
   if (options.uploadPreferences !== undefined) validateRecordingUploadPreferences(options.uploadPreferences);

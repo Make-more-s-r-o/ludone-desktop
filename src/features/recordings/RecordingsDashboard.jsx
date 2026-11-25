@@ -9,6 +9,7 @@ import { recordingDeletionFailureMessage } from "../recording/deletion-message.j
 import { countLabel } from "../../lib/count-label.js";
 import { recordingDisplayTitle } from "../../lib/recording-display.js";
 import { recordingDeliveryStatus } from "../../lib/recording-delivery-status.js";
+import { transcriptionNotice } from "../../lib/recording-transcription.js";
 
 import "./day-polish.css";
 
@@ -60,6 +61,7 @@ function normalizeRecordingItem(value) {
     uploadPreferences: value.uploadPreferences ?? null,
     uploadPreferencesLocked: value.uploadPreferencesLocked === true,
     uploadIntent: value.uploadIntent === "approved" ? "approved" : "held",
+    ...(transcriptionNotice(value.transcription) ? { transcription: value.transcription } : {}),
     state: safeText(value.state) ?? "neznámý",
     deliveryState: ["pending", "ready", "failed"].includes(value.deliveryState)
       ? value.deliveryState : null,
@@ -928,6 +930,7 @@ export function RecordingsDashboard({ authState, authIdentity, authOrigin, onDet
                     </section>
                     {!item.recordingInProgress && item.localReason && <p className="recording-queue-card__issue" role="status">{item.localReason}</p>}
                     {!item.recordingInProgress && status.reason === "Převzatá nahrávka čeká na volbu odeslání" && <p className="recording-queue-card__issue" role="status">Převzatá nahrávka čeká na volbu odeslání. Vyber firmu a potvrď Odeslat.</p>}
+                    {transcriptionNotice(item.transcription) && <p className="recording-queue-card__issue" data-testid="recording-transcription-status" role="status">{transcriptionNotice(item.transcription)}</p>}
                     <p className="recording-queue-card__web-note">Přepis a analýzu otevřeš v LuDone na webu.</p>
                     {item.recordingInProgress && <p role="status">Akce budou dostupné po dokončení nahrávání.</p>}
                     {!snapshotMatches && snapshotItem.ownership === "current" && <p role="status">Pro serverové ověření musí být potvrzený účet i prostředí LuDone.</p>}
